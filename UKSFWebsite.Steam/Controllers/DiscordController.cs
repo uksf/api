@@ -1,0 +1,76 @@
+﻿using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Threading.Tasks;
+using System.Web;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json.Linq;
+using UKSFWebsite.Api.Services.Abstraction;
+using UKSFWebsite.Api.Services.Data;
+using UKSFWebsite.Api.Services.Utility;
+
+namespace UKSFWebsite.Steam.Controllers {
+    [Route("[controller]")]
+    public class DiscordController : Controller {
+        private readonly string url;
+        private readonly string urlReturn;
+        private readonly string clientId;
+        private readonly string clientSecret;
+        private readonly string botToken;
+
+        private readonly IConfirmationCodeService confirmationCodeService;
+
+        public DiscordController(IConfirmationCodeService confirmationCodeService, IConfiguration configuration, IHostingEnvironment currentEnvironment) {
+            this.confirmationCodeService = confirmationCodeService;
+            clientId = configuration.GetSection("Discord")["clientId"];
+            clientSecret = configuration.GetSection("Discord")["clientSecret"];
+            botToken = configuration.GetSection("Discord")["botToken"];
+
+            url = currentEnvironment.IsDevelopment() ? "http://localhost:5100" : "https://steam.uk-sf.co.uk";
+            urlReturn = currentEnvironment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
+        }
+
+        [HttpGet]
+        public IActionResult Get() => Redirect($"https://discordapp.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={HttpUtility.UrlEncode($"{url}/discord/success")}&response_type=code&scope=identify%20guilds.join");
+
+        [HttpGet("application")]
+        public IActionResult GetFromApplication() => Redirect($"https://discordapp.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={HttpUtility.UrlEncode($"{url}/discord/success/application")}&response_type=code&scope=identify%20guilds.join");
+
+        [HttpGet("success")]
+        public async Task<IActionResult> Success([FromQuery] string code) => Redirect($"{urlReturn}/profile?{await GetUrlParameters(code, $"{url}/discord/success")}");
+
+        [HttpGet("success/application")]
+        public async Task<IActionResult> SuccessFromApplication([FromQuery] string code) => Redirect($"{urlReturn}/application?{await GetUrlParameters(code, $"{url}/discord/success/application")}");
+
+        private async Task<string> GetUrlParameters(string code, string url) {
+            using (HttpClient client = new HttpClient()) {
+                HttpResponseMessage response = await client.PostAsync(
+                    "https://discordapp.com/api/oauth2/token",
+                    new FormUrlEncodedContent(
+                        new Dictionary<string, string> {
+                            {"client_id", clientId},
+                            {"client_secret", clientSecret},
+                            {"grant_type", "authorization_code"},
+                            {"code", code},
+                            {"redirect_uri", url},
+                            {"scope", "identify guilds.join"}
+                        }
+                    )
+                );
+                string result = await response.Content.ReadAsStringAsync();
+                string token = JObject.Parse(result)["access_token"].ToString();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                response = await client.GetAsync("https://discordapp.com/api/users/@me");
+                string user = await response.Content.ReadAsStringAsync();
+                string id = JObject.Parse(user)["id"].ToString();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", botToken);
+                await client.PutAsync($"https://discordapp.com/api/guilds/{VariablesWrapper.VariablesService().GetSingle("DID_SERVER").AsUlong()}/members/{id}", new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json"));
+                string confirmationCode = await confirmationCodeService.CreateConfirmationCode(id, true);
+                return $"validation={confirmationCode}&discordid={id}";
+            }
+        }
+    }
+}
