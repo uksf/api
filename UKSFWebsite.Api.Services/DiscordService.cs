@@ -125,7 +125,11 @@ namespace UKSFWebsite.Api.Services {
         private async Task UpdateAccountNickname(IGuildUser user, Account account) {
             string name = displayNameService.GetDisplayName(account);
             if (user.Nickname != name) {
-                await user.ModifyAsync(x => x.Nickname = name);
+                try {
+                    await user.ModifyAsync(x => x.Nickname = name);
+                } catch (Exception) {
+                    LogWrapper.Log($"Failed to update nickname for {user.Nickname}. Must manually be changed to: {name}");
+                }
             }
         }
 
@@ -175,11 +179,8 @@ namespace UKSFWebsite.Api.Services {
                 if (TRIGGERS.Any(x => incomingMessage.Content.Contains(x, StringComparison.InvariantCultureIgnoreCase))) {
                     string message = REPLIES[new Random().Next(0, REPLIES.Length)];
                     string[] parts = guild.GetUser(incomingMessage.Author.Id).Nickname.Split('.');
-                    string nickname = incomingMessage.Author.Id == specialUser
-                        ? "Master"
-                        : parts.Length > 1
-                            ? parts[1]
-                            : parts[0];
+                    string nickname = incomingMessage.Author.Id == specialUser ? "Master" :
+                        parts.Length > 1 ? parts[1] : parts[0];
                     await SendMessage(incomingMessage.Channel.Id, string.Format(message, nickname));
                 }
             }

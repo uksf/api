@@ -3,7 +3,7 @@ using UKSFWebsite.Api.Models;
 
 namespace UKSFWebsite.Api.Services.Abstraction {
     public interface IChainOfCommandService {
-        HashSet<string> ResolveChain(ChainOfCommandMode mode, Unit start, Unit target = null);
+        HashSet<string> ResolveChain(ChainOfCommandMode mode, string recipient, Unit start, Unit target);
         bool InContextChainOfCommand(string id);
     }
 }

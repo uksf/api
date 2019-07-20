@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +27,7 @@ namespace UKSFWebsite.Api {
                 HttpContext context = filterContext.HttpContext;
                 Log(context, filterContext.Exception);
                 filterContext.ExceptionHandled = true;
-                filterContext.Result = new BadRequestResult();
+                filterContext.Result = new ContentResult {Content = $"{filterContext.Exception.Message}", ContentType = "text/plain", StatusCode = (int?) HttpStatusCode.BadRequest};
             }
         }
 

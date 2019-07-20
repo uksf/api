@@ -41,6 +41,7 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
             List<CommandRequest> otherRequests = new List<CommandRequest>();
             string contextId = sessionService.GetContextId();
             bool canOverride = unitsService.GetSingle(x => x.shortname == "SR10").members.Any(x => x == contextId);
+            bool superAdmin = contextId == Global.SUPER_ADMIN;
             DateTime now = DateTime.Now;
             foreach (CommandRequest commandRequest in allRequests) {
                 Dictionary<string, ReviewState>.KeyCollection reviewers = commandRequest.reviews.Keys;
@@ -59,7 +60,7 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
                             x.type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.type.ToLower());
                             return new {
                                 data = x,
-                                canOverride = canOverride && x.reviews.Count > 1 && x.dateCreated.AddDays(1) < now && x.reviews.Any(y => y.Value == ReviewState.PENDING && y.Key != contextId),
+                                canOverride = superAdmin || canOverride && x.reviews.Count > 1 && x.dateCreated.AddDays(1) < now && x.reviews.Any(y => y.Value == ReviewState.PENDING && y.Key != contextId),
                                 reviews = x.reviews.Select(y => new {id = y.Key, name = displayNameService.GetDisplayName(y.Key), state = y.Value})
                             };
                         }
@@ -70,7 +71,7 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
                             x.type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.type.ToLower());
                             return new {
                                 data = x,
-                                canOverride = canOverride && x.dateCreated.AddDays(1) < now,
+                                canOverride = superAdmin || canOverride && x.dateCreated.AddDays(1) < now,
                                 reviews = x.reviews.Select(y => new {name = displayNameService.GetDisplayName(y.Key), state = y.Value})
                             };
                         }
@@ -81,6 +82,7 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
 
         [HttpPatch("{id}"), Authorize]
         public async Task<IActionResult> UpdateRequestReview(string id, [FromBody] JObject body) {
+            return Ok();
             bool overriden = bool.Parse(body["overriden"].ToString());
             ReviewState state = Enum.Parse<ReviewState>(body["reviewState"].ToString());
             Account sessionAccount = sessionService.GetContextAccount();

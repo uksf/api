@@ -28,21 +28,29 @@ namespace UKSFWebsite.Api.Services {
             commanderRoleName = rolesService.GetUnitRoleByOrder(0).name;
         }
 
-        public HashSet<string> ResolveChain(ChainOfCommandMode mode, Unit start, Unit target) {
-            HashSet<string> chain = ResolveMode(mode, start, target).Where(x => !string.IsNullOrEmpty(x)).ToHashSet();
+        public HashSet<string> ResolveChain(ChainOfCommandMode mode, string recipient, Unit start, Unit target) {
+            HashSet<string> chain = ResolveMode(mode, start, target).Where(x => !string.IsNullOrEmpty(x) && x != recipient).ToHashSet();
+            
+            // If no chain, and mode is not next commander, get next commander
             if (chain.Count == 0 && mode != ChainOfCommandMode.NEXT_COMMANDER && mode != ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF) {
-                chain = GetNextCommander(start).Where(x => !string.IsNullOrEmpty(x)).ToHashSet();
+                chain = GetNextCommander(start).Where(x => !string.IsNullOrEmpty(x) && x != recipient).ToHashSet();
             }
 
+            // If no chain, get root unit child commanders
             if (chain.Count == 0) {
                 foreach (Unit unit in unitsService.Get(x => x.parent == unitsService.GetRoot().id)) {
-                    if (UnitHasCommander(unit)) {
+                    if (UnitHasCommander(unit) && GetCommander(unit) != recipient) {
                         chain.Add(GetCommander(unit));
                     }
                 }
             }
 
-            return chain;
+            // If no chain, get root unit commander
+            if (chain.Count == 0) {
+                chain.Add(GetCommander(unitsService.GetRoot()));
+            }
+
+            return chain.Where(x => !string.IsNullOrEmpty(x)).ToHashSet();
         }
 
         public bool InContextChainOfCommand(string id) {

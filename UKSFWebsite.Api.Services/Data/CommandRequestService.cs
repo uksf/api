@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AvsAnLib;
@@ -50,7 +51,9 @@ namespace UKSFWebsite.Api.Services.Data {
             Account recipientAccount = accountService.GetSingle(request.recipient);
             request.displayRequester = displayNameService.GetDisplayName(requesterAccount);
             request.displayRecipient = displayNameService.GetDisplayName(recipientAccount);
-            HashSet<string> ids = chainOfCommandService.ResolveChain(mode, unitsService.GetSingle(x => x.name == recipientAccount.unitAssignment), unitsService.GetSingle(request.value)).Where(x => !string.IsNullOrEmpty(x)).ToHashSet();
+            HashSet<string> ids = chainOfCommandService.ResolveChain(mode, recipientAccount.id, unitsService.GetSingle(x => x.name == recipientAccount.unitAssignment), unitsService.GetSingle(request.value));
+            if (ids.Count == 0) throw new Exception($"Failed to get any commanders for review for {request.type.ToLower()} request for {request.displayRecipient}.\nContact an admin");
+            
             List<Account> accounts = ids.Select(x => accountService.GetSingle(x)).OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname).ToList();
             foreach (Account account in accounts) {
                 request.reviews.Add(account.id, ReviewState.PENDING);
@@ -58,8 +61,10 @@ namespace UKSFWebsite.Api.Services.Data {
 
             await base.Add(request);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request created for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
+            bool selfRequest = request.displayRequester == request.displayRecipient;
+            string notificationMessage = $"{request.displayRequester} requires your review on {(selfRequest ? "their" : AvsAn.Query(request.type).Article)} {request.type.ToLower()} request{(selfRequest ? "" : $" for {request.displayRecipient}")}";
             foreach (Account account in accounts.Where(x => x.id != requesterAccount.id)) {
-                notificationsService.Add(new Notification {owner = account.id, icon = NotificationIcons.REQUEST, message = $"{request.displayRequester} requires your review on {AvsAn.Query(request.type).Article} {request.type.ToLower()} request for {request.displayRecipient}", link = "/command/requests"});
+                notificationsService.Add(new Notification {owner = account.id, icon = NotificationIcons.REQUEST, message = notificationMessage, link = "/command/requests"});
             }
 
             Refresh();
