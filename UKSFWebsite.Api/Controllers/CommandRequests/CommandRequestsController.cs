@@ -82,7 +82,6 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
 
         [HttpPatch("{id}"), Authorize]
         public async Task<IActionResult> UpdateRequestReview(string id, [FromBody] JObject body) {
-            return Ok();
             bool overriden = bool.Parse(body["overriden"].ToString());
             ReviewState state = Enum.Parse<ReviewState>(body["reviewState"].ToString());
             Account sessionAccount = sessionService.GetContextAccount();
