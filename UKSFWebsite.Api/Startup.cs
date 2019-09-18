@@ -46,7 +46,7 @@ namespace UKSFWebsite.Api {
             services.BuildServiceProvider();
             services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new Info {Title = "UKSF API", Version = "v1"}); });
             services.AddCors(
-                options => options.AddPolicy("CorsPolicy", builder => { builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().AllowCredentials().WithOrigins("http://localhost","http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://steam.uk-sf.co.uk"); })
+                options => options.AddPolicy("CorsPolicy", builder => { builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().AllowCredentials().WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://steam.uk-sf.co.uk"); })
             );
             services.AddSignalR();
             services.AddAuthentication(
