@@ -69,10 +69,10 @@ namespace UKSFWebsite.Api.Services.Utility {
         public static string FormatGameServerConfig(this GameServer gameServer, int playerCount, string missionSelection) => string.Format(string.Join("\n", BASE_CONFIG), gameServer.hostName, gameServer.password, gameServer.adminPassword, playerCount, missionSelection.Replace(".pbo", ""));
 
         public static string FormatGameServerLaunchArguments(this GameServer gameServer) =>
-            $"-config={gameServer.GetGameServerConfigPath()} -profiles={GetGameServerProfilesPath()} -cfg={GetGameServerPerfConfigPath()} -name={gameServer.name} -port={gameServer.port} -apiport=\"{gameServer.apiPort}\" {(string.IsNullOrEmpty(gameServer.serverMods) ? "" : $"-serverMod={gameServer.serverMods}")} -mod={gameServer.FormatGameServerMods()}{(!GetGameServerExecutablePath().Contains("server") ? " -server" : "")} -enableHT -high -bandwidthAlg=2 -hugepages -noSounds -loadMissionToMemory -filePatching";
+            $"-config={gameServer.GetGameServerConfigPath()} -profiles={GetGameServerProfilesPath()} -cfg={GetGameServerPerfConfigPath()} -name={gameServer.name} -port={gameServer.port} -apiport=\"{gameServer.apiPort}\" {(string.IsNullOrEmpty(gameServer.serverMods) ? "" : $"-serverMod={gameServer.serverMods}")} -mod={gameServer.FormatGameServerMods()}{(!GetGameServerExecutablePath().Contains("server") ? " -server" : "")} -enableHT -high -bandwidthAlg=2 -hugepages -noSounds -loadMissionToMemory -filePatching -pid=\"${gameServer.name}\"";
 
         public static string FormatHeadlessClientLaunchArguments(this GameServer gameServer, int index) =>
-            $"-profiles={GetGameServerProfilesPath()} -name={GetHeadlessClientName(index)} -port={gameServer.port} -apiport=\"{gameServer.apiPort + index + 1}\" -mod={gameServer.FormatGameServerMods()} -localhost=127.0.0.1 -connect=localhost -password={gameServer.password} -client -nosound -enableHT -high -hugepages -filePatching";
+            $"-profiles={GetGameServerProfilesPath()} -name={GetHeadlessClientName(index)} -port={gameServer.port} -apiport=\"{gameServer.apiPort + index + 1}\" -mod={gameServer.FormatGameServerMods()} -localhost=127.0.0.1 -connect=localhost -password={gameServer.password} -client -nosound -enableHT -high -hugepages -filePatching -pid=\"${gameServer.name}_{GetHeadlessClientName(index)}\"";
 
         public static string GetMaxPlayerCountFromConfig(this GameServer gameServer) {
             string maxPlayers = File.ReadAllLines(gameServer.GetGameServerConfigPath()).First(x => x.Contains("maxPlayers"));
