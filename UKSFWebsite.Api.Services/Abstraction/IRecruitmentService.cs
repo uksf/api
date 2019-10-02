@@ -7,7 +7,7 @@ namespace UKSFWebsite.Api.Services.Abstraction {
     public interface IRecruitmentService {
         object GetAllApplications();
         JObject GetApplication(Account account);
-        object GetOtherRecruiters(string recruiterId);
+        object GetActiveRecruiters();
         IEnumerable<Account> GetSr1Members(bool skipSort = false);
         Dictionary<string, string> GetSr1Leads();
         object GetStats(string account, bool monthly);

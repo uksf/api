@@ -8,6 +8,8 @@ namespace UKSFWebsite.Api.Services.Debug {
     public class FakeDiscordService : IDiscordService {
         public Task ConnectDiscord() => Task.CompletedTask;
 
+        public bool IsAccountOnline(Account account) => false;
+
         public Task SendMessage(ulong channelId, string message) => Task.CompletedTask;
 
         public Task<IReadOnlyCollection<SocketRole>> GetRoles() => Task.FromResult<IReadOnlyCollection<SocketRole>>(new List<SocketRole>());

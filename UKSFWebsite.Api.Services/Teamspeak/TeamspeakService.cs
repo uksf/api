@@ -82,6 +82,21 @@ namespace UKSFWebsite.Api.Services.Teamspeak {
             return onlineClients.Where(x => x != null).Select(x => new {name = $"{x.clientName}", x.clientDbId}).ToList();
         }
 
+        public (bool online, string nickname) GetOnlineUserDetails(Account account) {
+            if (account.teamspeakIdentities == null) return (false, "");
+            if (string.IsNullOrEmpty(clientsString)) return (false, "");
+
+            JObject clientsObject = JObject.Parse(clientsString);
+            HashSet<TeamspeakClientSnapshot> onlineClients = JsonConvert.DeserializeObject<HashSet<TeamspeakClientSnapshot>>(clientsObject["clients"].ToString());
+            foreach (TeamspeakClientSnapshot client in onlineClients.Where(x => x != null)) {
+                if (account.teamspeakIdentities.Any(y => y == client.clientDbId)) {
+                    return (true, client.clientName);
+                }
+            }
+
+            return (false, "");
+        }
+
         private static string FormatTeamspeakMessage(string message) {
             StringBuilder messageBuilder = new StringBuilder();
             messageBuilder.AppendLine("\n========== UKSF Server Message ==========");
