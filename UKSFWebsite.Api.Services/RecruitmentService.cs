@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UKSFWebsite.Api.Models;
 using UKSFWebsite.Api.Models.Accounts;
 using UKSFWebsite.Api.Services.Abstraction;
 using UKSFWebsite.Api.Services.Data;
+using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Services {
     public class RecruitmentService : IRecruitmentService {
         private readonly IAccountService accountService;
+        private readonly IDiscordService discordService;
         private readonly IDisplayNameService displayNameService;
         private readonly ITeamspeakMetricsService metricsService;
         private readonly INotificationsService notificationsService;
@@ -26,6 +27,7 @@ namespace UKSFWebsite.Api.Services {
             IAccountService accountService,
             ISessionService sessionService,
             IDisplayNameService displayNameService,
+            IDiscordService discordService,
             IRanksService ranksService,
             INotificationsService notificationsService,
             ITeamspeakService teamspeakService,
@@ -39,6 +41,7 @@ namespace UKSFWebsite.Api.Services {
             this.notificationsService = notificationsService;
             this.teamspeakService = teamspeakService;
             this.unitsService = unitsService;
+            this.discordService = discordService;
         }
 
         public bool IsRecruiter(Account account) => GetSr1Members(true).Any(x => x.id == account.id);
@@ -80,33 +83,27 @@ namespace UKSFWebsite.Api.Services {
 
         public JObject GetApplication(Account account) {
             Account recruiterAccount = accountService.GetSingle(account.application.recruiter);
-            (bool online, string nickname) = GetOnlineUserDetails(account);
+            (bool tsOnline, string tsNickname, bool discordOnline) = GetOnlineUserDetails(account);
+            (int years, int months) = account.dob.ToAge();
             return JObject.FromObject(
                 new {
                     account,
                     displayName = displayNameService.GetDisplayNameWithoutRank(account),
-                    teamspeak = new {online, nickname = online ? nickname : ""},
+                    age = new {years, months},
+                    communications = new {tsOnline, tsNickname = tsOnline ? tsNickname : "", discordOnline},
                     daysProcessing = Math.Ceiling((DateTime.Now - account.application.dateCreated).TotalDays),
                     daysProcessed = Math.Ceiling((account.application.dateAccepted - account.application.dateCreated).TotalDays),
                     nextCandidateOp = GetNextCandidateOp(),
                     averageProcessingTime = GetAverageProcessingTime(),
                     teamspeakParticipation = metricsService.GetWeeklyParticipationTrend(account.teamspeakIdentities) + "%",
                     steamprofile = "http://steamcommunity.com/profiles/" + account.steamname,
-                    recruiter = displayNameService.GetDisplayName(recruiterAccount)
+                    recruiter = displayNameService.GetDisplayName(recruiterAccount),
+                    recruiterId = recruiterAccount.id
                 }
             );
         }
 
-        public object GetOtherRecruiters(string recruiterId) {
-            JArray recruitersJArray = new JArray();
-            foreach (Account recruiter in GetSr1Members().Where(x => x.settings.sr1Enabled)) {
-                if (recruiter.id != recruiterId) {
-                    recruitersJArray.Add(JObject.FromObject(new {value = recruiter.id, viewValue = displayNameService.GetDisplayName(recruiter)}));
-                }
-            }
-
-            return recruitersJArray;
-        }
+        public object GetActiveRecruiters() => GetSr1Members().Where(x => x.settings.sr1Enabled).Select(x => JObject.FromObject(new {value = x.id, viewValue = displayNameService.GetDisplayName(x)}));
 
         public bool IsAccountSr1Lead(Account account = null) => account != null ? GetSr1Group().roles.ContainsValue(account.id) : GetSr1Group().roles.ContainsValue(sessionService.GetContextId());
 
@@ -155,9 +152,7 @@ namespace UKSFWebsite.Api.Services {
             return sorted.First().id;
         }
 
-        public bool IsContextRecruiter() => GetSr1Members(true).Any(x => x.id == sessionService.GetContextId());
-
-        public Unit GetSr1Group() {
+        private Unit GetSr1Group() {
             return unitsService.Get(x => x.name == "SR1 Recruitment").FirstOrDefault();
         }
 
@@ -167,14 +162,14 @@ namespace UKSFWebsite.Api.Services {
             );
 
         private JObject GetWaitingApplication(Account account) {
-            (bool online, string nickname) = GetOnlineUserDetails(account);
+            (bool tsOnline, string tsNickname, bool discordOnline) = GetOnlineUserDetails(account);
             double averageProcessingTime = GetAverageProcessingTime();
             double daysProcessing = Math.Ceiling((DateTime.Now - account.application.dateCreated).TotalDays);
             double processingDifference = daysProcessing - averageProcessingTime;
             return JObject.FromObject(
                 new {
                     account,
-                    teamspeak = new {online, nickname = online ? nickname : ""},
+                    communications = new {tsOnline, tsNickname = tsOnline ? tsNickname : "", discordOnline},
                     steamprofile = "http://steamcommunity.com/profiles/" + account.steamname,
                     daysProcessing,
                     processingDifference,
@@ -183,22 +178,20 @@ namespace UKSFWebsite.Api.Services {
             );
         }
 
-        private Tuple<bool, string> GetOnlineUserDetails(Account account) {
-            if (account.teamspeakIdentities == null) return new Tuple<bool, string>(false, "");
-            string clientsString = teamspeakService.GetOnlineTeamspeakClients();
-            if (string.IsNullOrEmpty(clientsString)) return new Tuple<bool, string>(false, "");
-            JObject clientsObject = JObject.Parse(clientsString);
-            HashSet<TeamspeakClientSnapshot> onlineClients = JsonConvert.DeserializeObject<HashSet<TeamspeakClientSnapshot>>(clientsObject["clients"].ToString());
-            foreach (TeamspeakClientSnapshot client in onlineClients.Where(x => x != null)) {
-                if (account.teamspeakIdentities.Any(y => y == client.clientDbId)) {
-                    return new Tuple<bool, string>(true, client.clientName);
-                }
-            }
+        private (bool tsOnline, string tsNickname, bool discordOnline) GetOnlineUserDetails(Account account) {
+            (bool tsOnline, string tsNickname) = teamspeakService.GetOnlineUserDetails(account);
 
-            return new Tuple<bool, string>(false, "");
+            return (tsOnline, tsNickname, discordService.IsAccountOnline(account));
         }
 
-        private static DateTime GetNextCandidateOp() => DateTime.Now;
+        private static DateTime GetNextCandidateOp() {
+            DateTime nextDate = DateTime.Today.AddDays(1);
+            while (nextDate.DayOfWeek == DayOfWeek.Monday || nextDate.DayOfWeek == DayOfWeek.Wednesday || nextDate.DayOfWeek == DayOfWeek.Saturday) {
+                nextDate = nextDate.AddDays(1);
+            }
+
+            return nextDate;
+        }
 
         private double GetAverageProcessingTime() {
             List<Account> waitingApplications = accountService.Get(x => x.application != null && x.application.state != ApplicationState.WAITING).ToList();

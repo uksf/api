@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Reflection;
@@ -12,7 +13,7 @@ namespace UKSFWebsite.Api.Services.Utility {
                 object currentValue = propertyInfo.GetValue(obj);
                 expando.Add(propertyInfo.Name, currentValue);
             }
-            
+
             foreach (FieldInfo fieldInfo in typeof(T).GetFields()) {
                 object currentValue = fieldInfo.GetValue(obj);
                 expando.Add(fieldInfo.Name, currentValue);
@@ -25,6 +26,22 @@ namespace UKSFWebsite.Api.Services.Utility {
             dynamic dynamicAccount = account.ToDynamic();
             dynamicAccount.password = null;
             return dynamicAccount;
+        }
+
+        public static (int years, int months) ToAge(this DateTime dob) {
+            int months = DateTime.Today.Month - dob.Month;
+            int years = DateTime.Today.Year - dob.Year;
+
+            if (DateTime.Today.Day < dob.Day) {
+                months--;
+            }
+
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+
+            return (years, months);
         }
     }
 }
