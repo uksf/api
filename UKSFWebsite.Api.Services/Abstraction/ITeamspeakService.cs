@@ -5,6 +5,7 @@ using UKSFWebsite.Api.Models.Accounts;
 namespace UKSFWebsite.Api.Services.Abstraction {
     public interface ITeamspeakService {
         string GetOnlineTeamspeakClients();
+        (bool online, string nickname) GetOnlineUserDetails(Account account);
         object GetFormattedClients();
         Task UpdateClients(string newClientsString);
         void UpdateAccountTeamspeakGroups(Account account);

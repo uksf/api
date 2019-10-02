@@ -142,7 +142,7 @@ namespace UKSFWebsite.Api.Controllers {
         [HttpGet("recruiters/{id}"), Authorize, Roles(RoleDefinitions.SR1_LEAD)]
         public IActionResult GetRecruiters(string id) {
             Account account = accountService.GetSingle(id);
-            return Ok(recruitmentService.GetOtherRecruiters(account.application.recruiter));
+            return Ok(recruitmentService.GetActiveRecruiters());
         }
     }
 }
