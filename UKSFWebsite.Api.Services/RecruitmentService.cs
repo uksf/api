@@ -184,13 +184,17 @@ namespace UKSFWebsite.Api.Services {
             return (tsOnline, tsNickname, discordService.IsAccountOnline(account));
         }
 
-        private static DateTime GetNextCandidateOp() {
-            DateTime nextDate = DateTime.Today.AddDays(1);
+        private static string GetNextCandidateOp() {
+            DateTime nextDate = DateTime.Now;
             while (nextDate.DayOfWeek == DayOfWeek.Monday || nextDate.DayOfWeek == DayOfWeek.Wednesday || nextDate.DayOfWeek == DayOfWeek.Saturday) {
                 nextDate = nextDate.AddDays(1);
             }
 
-            return nextDate;
+            if (nextDate.Hour > 18) {
+                nextDate = nextDate.AddDays(1);
+            }
+
+            return nextDate.Day == DateTime.Today.Day ? "Today" : nextDate.Day == DateTime.Today.AddDays(1).Day ? "Tomorrow" : nextDate.ToString("dddd");
         }
 
         private double GetAverageProcessingTime() {
