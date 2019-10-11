@@ -51,7 +51,7 @@ namespace UKSFWebsite.Api.Services {
             await client.StartAsync();
         }
 
-        public async Task SendMessage(ulong channelId, string message) {
+        public virtual async Task SendMessage(ulong channelId, string message) {
             await AssertOnline();
 
             SocketTextChannel channel = guild.GetTextChannel(channelId);
@@ -63,7 +63,7 @@ namespace UKSFWebsite.Api.Services {
             return roles;
         }
 
-        public async Task UpdateAllUsers() {
+        public virtual async Task UpdateAllUsers() {
             await AssertOnline();
             await Task.Run(
                 () => {
@@ -74,7 +74,7 @@ namespace UKSFWebsite.Api.Services {
             );
         }
 
-        public async Task UpdateAccount(Account account, ulong discordId = 0) {
+        public virtual async Task UpdateAccount(Account account, ulong discordId = 0) {
             await AssertOnline();
             if (discordId == 0 && account != null && !string.IsNullOrEmpty(account.discordId)) {
                 discordId = ulong.Parse(account.discordId);

@@ -17,7 +17,7 @@ namespace UKSFWebsite.Api.Controllers {
         [HttpGet("roles"), Authorize, Roles(RoleDefinitions.ADMIN)]
         public async Task<IActionResult> GetRoles() {
             IReadOnlyCollection<SocketRole> roles = await discordService.GetRoles();
-            return Ok(roles.OrderBy(x => x.Name).Select(x => $"{x.Id},{x.Name}").Aggregate((x, y) => $"{x}\n{y}"));
+            return Ok(roles.OrderBy(x => x.Name).Select(x => $"{x.Name}: {x.Id}").Aggregate((x, y) => $"{x}\n{y}"));
         }
 
         [HttpGet("updateuserroles"), Authorize, Roles(RoleDefinitions.ADMIN)]
