@@ -93,7 +93,7 @@ namespace UKSFWebsite.Api.Services {
             await UpdateAccountNickname(user, account);
         }
 
-        public bool IsAccountOnline(Account account) => guild.GetUser(ulong.Parse(account.discordId))?.Status == UserStatus.Online;
+        public bool IsAccountOnline(Account account) => account.discordId != null && guild.GetUser(ulong.Parse(account.discordId))?.Status == UserStatus.Online;
 
         public void Dispose() {
             client.StopAsync().Wait(TimeSpan.FromSeconds(5));
