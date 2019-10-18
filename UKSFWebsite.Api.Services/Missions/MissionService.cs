@@ -12,8 +12,6 @@ namespace UKSFWebsite.Api.Services.Missions {
         private const string UNBIN = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\DeRapDos.exe";
 
         private readonly MissionPatchDataService missionPatchDataService;
-        private bool ignored;
-        private bool imageIgnored;
 
         private Mission mission;
         private List<MissionPatchingReport> reports;
@@ -25,19 +23,23 @@ namespace UKSFWebsite.Api.Services.Missions {
             reports = new List<MissionPatchingReport>();
             if (!AssertRequiredFiles()) return reports;
 
-            ignored = ReadIgnored("missionPatchingIgnore");
             if (CheckBinned()) {
                 UnBin();
             }
 
-            Read();
-            if (ignored) {
+            if (CheckIgnoreKey("missionPatchingIgnore")) {
                 PatchDescription();
+                reports.Add(
+                    new MissionPatchingReport(
+                        "Mission Patching Ignored",
+                        "Mission patching for this mission was ignored.\nThis means no changes to the mission.sqm were made. This is not an error, however errors may occur in the mission as a result of this.\nEnsure ALL the steps below have been done to the mission.sqm before reporting any errors:\n\n\n1: Remove raw newline characters. Any newline characters (\\n) in code will result in compile errors and that code will NOT run.\nFor example, a line: init = \"myTestVariable = 10; \\n myOtherTestVariable = 20;\" should be replaced with: init = \"myTestVariable = 10; myOtherTestVariable = 20;\"\n\n2: Replace embedded quotes. Any embedded quotes (\"\") in code will result in compile errors and that code will NOT run. They should be replaced with a single quote character (').\nFor example, a line: init = \"myTestVariable = \"\"hello\"\";\" should be replaced with: init = \"myTestVariable = 'hello';\""
+                    )
+                );
                 return reports;
             }
 
-            imageIgnored = ReadIgnored("missionImageIgnore");
             missionPatchDataService.UpdatePatchData();
+            Read();
             Patch();
             Write();
             PatchDescription();
@@ -62,8 +64,7 @@ namespace UKSFWebsite.Api.Services.Missions {
             return true;
         }
 
-        private bool ReadIgnored(string key) {
-            if (!File.Exists(mission.descriptionPath)) return true;
+        private bool CheckIgnoreKey(string key) {
             mission.descriptionLines = File.ReadAllLines(mission.descriptionPath).ToList();
             return mission.descriptionLines.Any(x => x.ContainsCaseInsensitive(key));
         }
@@ -109,13 +110,19 @@ namespace UKSFWebsite.Api.Services.Missions {
 
         private void Patch() {
             mission.missionEntity.Patch();
-            if (!imageIgnored) {
+            if (!CheckIgnoreKey("missionImageIgnore")) {
                 string imagePath = Path.Combine(mission.path, "uksf.paa");
                 string modpackImagePath = Path.Combine(VariablesWrapper.VariablesService().GetSingle("PATH_MODPACK").AsString(), "@uksf", "UKSFTemplate.VR", "uksf.paa");
                 if (File.Exists(modpackImagePath)) {
                     if (File.Exists(imagePath) && new FileInfo(imagePath).Length != new FileInfo(modpackImagePath).Length) {
-                        reports.Add(new MissionPatchingReport("Loading image was different", "The mission loading image `uksf.paa` was different from the default and has been replaced\n\nIf you wish this to be a custom image, see <a target=\"_blank\" href=https://github.com/uksf/modpack/wiki/SR5:-Mission-Patching#ignoring-custom-loading-image>this page</a> for details on how to achieve this"));
+                        reports.Add(
+                            new MissionPatchingReport(
+                                "Loading image was different",
+                                "The mission loading image `uksf.paa` was different from the default and has been replaced\n\nIf you wish this to be a custom image, see <a target=\"_blank\" href=https://github.com/uksf/modpack/wiki/SR5:-Mission-Patching#ignoring-custom-loading-image>this page</a> for details on how to achieve this"
+                            )
+                        );
                     }
+
                     File.Copy(modpackImagePath, imagePath, true);
                 }
             }
