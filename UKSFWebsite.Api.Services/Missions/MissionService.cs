@@ -26,20 +26,20 @@ namespace UKSFWebsite.Api.Services.Missions {
             if (CheckBinned()) {
                 UnBin();
             }
+            Read();
 
             if (CheckIgnoreKey("missionPatchingIgnore")) {
-                PatchDescription();
                 reports.Add(
                     new MissionPatchingReport(
                         "Mission Patching Ignored",
                         "Mission patching for this mission was ignored.\nThis means no changes to the mission.sqm were made. This is not an error, however errors may occur in the mission as a result of this.\nEnsure ALL the steps below have been done to the mission.sqm before reporting any errors:\n\n\n1: Remove raw newline characters. Any newline characters (\\n) in code will result in compile errors and that code will NOT run.\nFor example, a line: init = \"myTestVariable = 10; \\n myOtherTestVariable = 20;\" should be replaced with: init = \"myTestVariable = 10; myOtherTestVariable = 20;\"\n\n2: Replace embedded quotes. Any embedded quotes (\"\") in code will result in compile errors and that code will NOT run. They should be replaced with a single quote character (').\nFor example, a line: init = \"myTestVariable = \"\"hello\"\";\" should be replaced with: init = \"myTestVariable = 'hello';\""
                     )
                 );
+                PatchDescription();
                 return reports;
             }
 
             missionPatchDataService.UpdatePatchData();
-            Read();
             Patch();
             Write();
             PatchDescription();
@@ -177,7 +177,7 @@ namespace UKSFWebsite.Api.Services.Missions {
         }
 
         private void CheckDescriptionItem(string key, string defaultValue, bool required = true) {
-            int index = mission.descriptionLines.FindIndex(x => x.Contains(key));
+            int index = mission.descriptionLines.FindIndex(x => x.Contains($"{key} = ") || x.Contains($"{key}=") || x.Contains($"{key}= ") || x.Contains($"{key} ="));
             if (index != -1) {
                 string itemValue = mission.descriptionLines[index].Split("=")[1].Trim();
                 itemValue = itemValue.Remove(itemValue.Length - 1);
