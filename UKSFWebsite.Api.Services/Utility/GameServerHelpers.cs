@@ -18,7 +18,7 @@ namespace UKSFWebsite.Api.Services.Utility {
             "motdInterval = 999999;",
             "maxPlayers = {3};",
             "kickDuplicate = 1;",
-            "verifySignatures = 2;",
+            "verifySignatures = 0;",
             "allowedFilePatching = 1;",
             "disableVoN = 1;",
             "persistent = 1;",
