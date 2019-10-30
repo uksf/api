@@ -20,6 +20,7 @@ namespace UKSFWebsite.Api.Services.Utility {
             "kickDuplicate = 1;",
             "verifySignatures = 0;",
             "allowedFilePatching = 1;",
+            "unsafeCVL = 1;",
             "disableVoN = 1;",
             "persistent = 1;",
             "timeStampFormat = \"short\";",
