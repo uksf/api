@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using AvsAnLib;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
+using UKSFWebsite.Api.Models;
 using UKSFWebsite.Api.Models.Accounts;
 using UKSFWebsite.Api.Models.CommandRequests;
 using UKSFWebsite.Api.Services.Abstraction;
+using UKSFWebsite.Api.Services.Data;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Controllers.CommandRequests {
@@ -19,19 +22,22 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
         private readonly IDisplayNameService displayNameService;
         private readonly ISessionService sessionService;
         private readonly IUnitsService unitsService;
+        private readonly INotificationsService notificationsService;
 
         public CommandRequestsController(
             ICommandRequestService commandRequestService,
             ICommandRequestCompletionService commandRequestCompletionService,
             ISessionService sessionService,
             IUnitsService unitsService,
-            IDisplayNameService displayNameService
+            IDisplayNameService displayNameService,
+            INotificationsService notificationsService
         ) {
             this.commandRequestService = commandRequestService;
             this.commandRequestCompletionService = commandRequestCompletionService;
             this.sessionService = sessionService;
             this.unitsService = unitsService;
             this.displayNameService = displayNameService;
+            this.notificationsService = notificationsService;
         }
 
         [HttpGet, Authorize]
@@ -91,7 +97,11 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
             }
             if (overriden) {
                 LogWrapper.AuditLog(sessionAccount.id, $"Review state of {request.type.ToLower()} request for {request.displayRecipient} overriden to {state}");
-                await commandRequestService.SetRequestAllReviewStates(request, state, sessionAccount.id);
+                await commandRequestService.SetRequestAllReviewStates(request, state);
+
+                foreach (string reviewerId in request.reviews.Select(x => x.Key).Where(x => x != sessionAccount.id)) {
+                    notificationsService.Add(new Notification {owner = reviewerId, icon = NotificationIcons.REQUEST, message = $"Your review on {AvsAn.Query(request.type).Article} {request.type.ToLower()} request for {request.displayRecipient} was overriden by {sessionAccount.id}"});
+                }
             } else {
                 ReviewState currentState = commandRequestService.GetReviewState(request.id, sessionAccount.id);
                 if (currentState == ReviewState.ERROR) {
@@ -102,7 +112,16 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
                 await commandRequestService.SetRequestReviewState(request, sessionAccount.id, state);
             }
 
-            await commandRequestCompletionService.Resolve(request.id);
+            try {
+                await commandRequestCompletionService.Resolve(request.id);
+            } catch (Exception) {
+                if (overriden) {
+                    await commandRequestService.SetRequestAllReviewStates(request, ReviewState.PENDING);
+                } else {
+                    await commandRequestService.SetRequestReviewState(request, sessionAccount.id, ReviewState.PENDING);
+                }
+                throw;
+            }
 
             return Ok();
         }

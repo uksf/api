@@ -83,14 +83,10 @@ namespace UKSFWebsite.Api.Services.Data {
             Refresh();
         }
 
-        public async Task SetRequestAllReviewStates(CommandRequest request, ReviewState newState, string overriderId) {
+        public async Task SetRequestAllReviewStates(CommandRequest request, ReviewState newState) {
             List<string> keys = new List<string>(request.reviews.Keys);
             foreach (string key in keys) {
                 request.reviews[key] = newState;
-            }
-
-            foreach (string id in request.reviews.Select(x => x.Key).Where(x => x != overriderId)) {
-                notificationsService.Add(new Notification {owner = id, icon = NotificationIcons.REQUEST, message = $"Your review on {AvsAn.Query(request.type).Article} {request.type.ToLower()} request for {request.displayRecipient} was overriden by {overriderId}"});
             }
 
             await Update(request.id, Builders<CommandRequest>.Update.Set("reviews", request.reviews));
