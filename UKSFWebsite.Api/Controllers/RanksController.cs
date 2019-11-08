@@ -16,12 +16,14 @@ namespace UKSFWebsite.Api.Controllers {
         private readonly IAssignmentService assignmentService;
         private readonly IRanksService ranksService;
         private readonly ISessionService sessionService;
+        private readonly INotificationsService notificationsService;
 
-        public RanksController(IRanksService ranksService, IAccountService accountService, IAssignmentService assignmentService, ISessionService sessionService) {
+        public RanksController(IRanksService ranksService, IAccountService accountService, IAssignmentService assignmentService, ISessionService sessionService, INotificationsService notificationsService) {
             this.ranksService = ranksService;
             this.accountService = accountService;
             this.assignmentService = assignmentService;
             this.sessionService = sessionService;
+            this.notificationsService = notificationsService;
         }
 
         [HttpGet, Authorize]
@@ -69,7 +71,8 @@ namespace UKSFWebsite.Api.Controllers {
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Rank deleted '{rank.name}'");
             await ranksService.Delete(id);
             foreach (Account account in accountService.Get(x => x.rank == rank.name)) {
-                await assignmentService.UpdateUnitRankAndRole(account.id, rankString: AssignmentService.REMOVE_FLAG, reason: $"the '{rank.name}' rank was deleted");
+                Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, rankString: AssignmentService.REMOVE_FLAG, reason: $"the '{rank.name}' rank was deleted");
+                notificationsService.Add(notification);
             }
 
             return Ok(ranksService.Get());

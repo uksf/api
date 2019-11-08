@@ -25,6 +25,7 @@ namespace UKSFWebsite.Api.Controllers {
         private readonly ISessionService sessionService;
         private readonly ITeamspeakService teamspeakService;
         private readonly IUnitsService unitsService;
+        private readonly INotificationsService notificationsService;
 
         public UnitsController(
             ISessionService sessionService,
@@ -36,7 +37,8 @@ namespace UKSFWebsite.Api.Controllers {
             ITeamspeakService teamspeakService,
             IAssignmentService assignmentService,
             IServerService serverService,
-            IDiscordService discordService
+            IDiscordService discordService,
+            INotificationsService notificationsService
         ) {
             this.sessionService = sessionService;
             this.accountService = accountService;
@@ -48,6 +50,7 @@ namespace UKSFWebsite.Api.Controllers {
             this.assignmentService = assignmentService;
             this.serverService = serverService;
             this.discordService = discordService;
+            this.notificationsService = notificationsService;
         }
 
         [HttpGet, Authorize]
@@ -149,7 +152,8 @@ namespace UKSFWebsite.Api.Controllers {
             Unit unit = unitsService.GetSingle(id);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Unit deleted '{unit.name}'");
             foreach (Account account in accountService.Get(x => x.unitAssignment == unit.name)) {
-                await assignmentService.UpdateUnitRankAndRole(account.id, "Reserves", reason: $"{unit.name} was deleted");
+                Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, "Reserves", reason: $"{unit.name} was deleted");
+                notificationsService.Add(notification);
             }
 
             await unitsService.Delete(id);
@@ -178,7 +182,8 @@ namespace UKSFWebsite.Api.Controllers {
             unit = unitsService.GetSingle(unit.id);
             foreach (Unit child in unitsService.GetAllChildren(unit, true)) {
                 foreach (Account account in child.members.Select(x => accountService.GetSingle(x))) {
-                    await assignmentService.UpdateUnitRankAndRole(account.id, unit.name, reason: $"the hierarchy chain for {unit.name} was updated");
+                    Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, unit.name, reason: $"the hierarchy chain for {unit.name} was updated");
+                    notificationsService.Add(notification);
                 }
             }
 

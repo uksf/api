@@ -17,13 +17,15 @@ namespace UKSFWebsite.Api.Controllers {
         private readonly IRolesService rolesService;
         private readonly ISessionService sessionService;
         private readonly IUnitsService unitsService;
+        private readonly INotificationsService notificationsService;
 
-        public RolesController(IRolesService rolesService, IAccountService accountService, IAssignmentService assignmentService, ISessionService sessionService, IUnitsService unitsService) {
+        public RolesController(IRolesService rolesService, IAccountService accountService, IAssignmentService assignmentService, ISessionService sessionService, IUnitsService unitsService, INotificationsService notificationsService) {
             this.rolesService = rolesService;
             this.accountService = accountService;
             this.assignmentService = assignmentService;
             this.sessionService = sessionService;
             this.unitsService = unitsService;
+            this.notificationsService = notificationsService;
         }
 
         [HttpGet, Authorize]
@@ -75,7 +77,8 @@ namespace UKSFWebsite.Api.Controllers {
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Role deleted '{role.name}'");
             await rolesService.Delete(id);
             foreach (Account account in accountService.Get(x => x.roleAssignment == role.name)) {
-                await assignmentService.UpdateUnitRankAndRole(account.id, role: AssignmentService.REMOVE_FLAG, reason: $"the '{role.name}' role was deleted");
+                Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, role: AssignmentService.REMOVE_FLAG, reason: $"the '{role.name}' role was deleted");
+                notificationsService.Add(notification);
             }
 
             await unitsService.DeleteRole(role.name);

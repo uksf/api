@@ -45,7 +45,8 @@ namespace UKSFWebsite.Api.Controllers {
             DischargeCollection dischargeCollection = dischargeService.GetSingle(id);
             await dischargeService.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.reinstated, true));
             await accountService.Update(dischargeCollection.accountId, "membershipState", MembershipState.MEMBER);
-            await assignmentService.UpdateUnitRankAndRole(dischargeCollection.accountId, "Basic Training Unit", "Trainee", "Recruit", "", "", "your membership was reinstated");
+            Notification notification = await assignmentService.UpdateUnitRankAndRole(dischargeCollection.accountId, "Basic Training Unit", "Trainee", "Recruit", "", "", "your membership was reinstated");
+            notificationsService.Add(notification);
 
             LogWrapper.AuditLog(sessionService.GetContextId(), $"{sessionService.GetContextId()} reinstated {dischargeCollection.name}'s membership");
             foreach (string member in unitsService.GetSingle(x => x.shortname == "SR10").members.Where(x => x != sessionService.GetContextId())) {

@@ -76,11 +76,12 @@ namespace UKSFWebsite.Api.Controllers {
             if (updatedState == ApplicationState.ACCEPTED) {
                 await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now));
                 await accountService.Update(id, "membershipState", MembershipState.MEMBER);
-                await assignmentService.UpdateUnitRankAndRole(id, "Basic Training Unit", "Trainee", "Recruit", reason: "your application was accepted");
+                Notification notification = await assignmentService.UpdateUnitRankAndRole(id, "Basic Training Unit", "Trainee", "Recruit", reason: "your application was accepted");
+                notificationsService.Add(notification);
             } else if (updatedState == ApplicationState.REJECTED) {
                 await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now));
                 await accountService.Update(id, "membershipState", MembershipState.CONFIRMED);
-                await assignmentService.UpdateUnitRankAndRole(
+                Notification notification = await assignmentService.UpdateUnitRankAndRole(
                     id,
                     AssignmentService.REMOVE_FLAG,
                     AssignmentService.REMOVE_FLAG,
@@ -88,11 +89,13 @@ namespace UKSFWebsite.Api.Controllers {
                     "",
                     $"Unfortunately you have not been accepted into our unit, however we thank you for your interest and hope you find a suitable alternative. You may view any notes about your application here: [url]https://uk-sf.co.uk/recruitment/{id}[/url]"
                 );
+                notificationsService.Add(notification);
             } else if (updatedState == ApplicationState.WAITING) {
                 await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.dateCreated, DateTime.Now));
                 await accountService.Update(id, Builders<Account>.Update.Unset(x => x.application.dateAccepted));
                 await accountService.Update(id, "membershipState", MembershipState.CONFIRMED);
-                await assignmentService.UpdateUnitRankAndRole(id, AssignmentService.REMOVE_FLAG, "Applicant", "Candidate", reason: "your application was reactivated");
+                Notification notification = await assignmentService.UpdateUnitRankAndRole(id, AssignmentService.REMOVE_FLAG, "Applicant", "Candidate", reason: "your application was reactivated");
+                notificationsService.Add(notification);
                 if (recruitmentService.GetSr1Members().All(x => x.id != account.application.recruiter)) {
                     string newRecruiterId = recruitmentService.GetRecruiter();
                     LogWrapper.AuditLog(sessionId, $"Application recruiter for {id} is no longer SR1, reassigning from {account.application.recruiter} to {newRecruiterId}");
@@ -119,7 +122,12 @@ namespace UKSFWebsite.Api.Controllers {
         [HttpPost("recruiter/{id}"), Authorize, Roles(RoleDefinitions.SR1_LEAD)]
         public async Task<IActionResult> PostReassignment([FromBody] JObject newRecruiter, string id) {
             if (!sessionService.ContextHasRole(RoleDefinitions.ADMIN) && !recruitmentService.IsAccountSr1Lead()) throw new Exception($"attempted to assign recruiter to {newRecruiter}. Context is not recruitment lead.");
-            await recruitmentService.SetRecruiter(id, newRecruiter["newRecruiter"].ToString());
+            string recruiter = newRecruiter["newRecruiter"].ToString();
+            await recruitmentService.SetRecruiter(id, recruiter);
+            Account account = accountService.GetSingle(id);
+            if (account.application.state == ApplicationState.WAITING) {
+                notificationsService.Add(new Notification {owner = recruiter, icon = NotificationIcons.APPLICATION, message = $"{account.firstname} {account.lastname}'s application has been transferred to you", link = $"/recruitment/{account.id}"});
+            }
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Application recruiter changed for {id} to {newRecruiter["newRecruiter"]}");
             return Ok();
         }
@@ -139,10 +147,7 @@ namespace UKSFWebsite.Api.Controllers {
             return ratings;
         }
 
-        [HttpGet("recruiters/{id}"), Authorize, Roles(RoleDefinitions.SR1_LEAD)]
-        public IActionResult GetRecruiters(string id) {
-            Account account = accountService.GetSingle(id);
-            return Ok(recruitmentService.GetActiveRecruiters());
-        }
+        [HttpGet("recruiters"), Authorize, Roles(RoleDefinitions.SR1_LEAD)]
+        public IActionResult GetRecruiters() => Ok(recruitmentService.GetActiveRecruiters());
     }
 }

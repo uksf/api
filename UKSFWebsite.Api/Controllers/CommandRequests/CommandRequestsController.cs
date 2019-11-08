@@ -20,18 +20,11 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
         private readonly ICommandRequestCompletionService commandRequestCompletionService;
         private readonly ICommandRequestService commandRequestService;
         private readonly IDisplayNameService displayNameService;
+        private readonly INotificationsService notificationsService;
         private readonly ISessionService sessionService;
         private readonly IUnitsService unitsService;
-        private readonly INotificationsService notificationsService;
 
-        public CommandRequestsController(
-            ICommandRequestService commandRequestService,
-            ICommandRequestCompletionService commandRequestCompletionService,
-            ISessionService sessionService,
-            IUnitsService unitsService,
-            IDisplayNameService displayNameService,
-            INotificationsService notificationsService
-        ) {
+        public CommandRequestsController(ICommandRequestService commandRequestService, ICommandRequestCompletionService commandRequestCompletionService, ISessionService sessionService, IUnitsService unitsService, IDisplayNameService displayNameService, INotificationsService notificationsService) {
             this.commandRequestService = commandRequestService;
             this.commandRequestCompletionService = commandRequestCompletionService;
             this.sessionService = sessionService;
@@ -58,30 +51,29 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
                 }
             }
 
-            return Ok(
-                new {
-                    myRequests = myRequests.Select(
-                        x => {
-                            if (string.IsNullOrEmpty(x.reason)) x.reason = "None given";
-                            x.type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.type.ToLower());
-                            return new {
-                                data = x,
-                                canOverride = superAdmin || canOverride && x.reviews.Count > 1 && x.dateCreated.AddDays(1) < now && x.reviews.Any(y => y.Value == ReviewState.PENDING && y.Key != contextId),
-                                reviews = x.reviews.Select(y => new {id = y.Key, name = displayNameService.GetDisplayName(y.Key), state = y.Value})
-                            };
-                        }
-                    ),
-                    otherRequests = otherRequests.Select(
-                        x => {
-                            if (string.IsNullOrEmpty(x.reason)) x.reason = "None given";
-                            x.type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.type.ToLower());
-                            return new {
-                                data = x,
-                                canOverride = superAdmin || canOverride && x.dateCreated.AddDays(1) < now,
-                                reviews = x.reviews.Select(y => new {name = displayNameService.GetDisplayName(y.Key), state = y.Value})
-                            };
-                        }
-                    )
+            return Ok(new {myRequests = GetMyRequests(myRequests, contextId, canOverride, superAdmin, now), otherRequests = GetOtherRequests(otherRequests, canOverride, superAdmin, now)});
+        }
+
+        private object GetMyRequests(IEnumerable<CommandRequest> myRequests, string contextId, bool canOverride, bool superAdmin, DateTime now) {
+            return myRequests.Select(
+                x => {
+                    if (string.IsNullOrEmpty(x.reason)) x.reason = "None given";
+                    x.type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.type.ToLower());
+                    return new {
+                        data = x,
+                        canOverride = superAdmin || canOverride && x.reviews.Count > 1 && x.dateCreated.AddDays(1) < now && x.reviews.Any(y => y.Value == ReviewState.PENDING && y.Key != contextId),
+                        reviews = x.reviews.Select(y => new {id = y.Key, name = displayNameService.GetDisplayName(y.Key), state = y.Value})
+                    };
+                }
+            );
+        }
+
+        private object GetOtherRequests(IEnumerable<CommandRequest> otherRequests, bool canOverride, bool superAdmin, DateTime now) {
+            return otherRequests.Select(
+                x => {
+                    if (string.IsNullOrEmpty(x.reason)) x.reason = "None given";
+                    x.type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.type.ToLower());
+                    return new {data = x, canOverride = superAdmin || canOverride && x.dateCreated.AddDays(1) < now, reviews = x.reviews.Select(y => new {name = displayNameService.GetDisplayName(y.Key), state = y.Value})};
                 }
             );
         }
@@ -95,6 +87,7 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
             if (request == null) {
                 throw new NullReferenceException($"Failed to get request with id {id}, does not exist");
             }
+
             if (overriden) {
                 LogWrapper.AuditLog(sessionAccount.id, $"Review state of {request.type.ToLower()} request for {request.displayRecipient} overriden to {state}");
                 await commandRequestService.SetRequestAllReviewStates(request, state);
@@ -107,6 +100,7 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
                 if (currentState == ReviewState.ERROR) {
                     throw new ArgumentOutOfRangeException($"Getting review state for {sessionAccount} from {request.id} failed. Reviews: \n{request.reviews.Select(x => $"{x.Key}: {x.Value}").Aggregate((x, y) => $"{x}\n{y}")}");
                 }
+
                 if (currentState == state) return Ok();
                 LogWrapper.AuditLog(sessionAccount.id, $"Review state of {displayNameService.GetDisplayName(sessionAccount)} for {request.type.ToLower()} request for {request.displayRecipient} updated to {state}");
                 await commandRequestService.SetRequestReviewState(request, sessionAccount.id, state);
@@ -120,6 +114,7 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
                 } else {
                     await commandRequestService.SetRequestReviewState(request, sessionAccount.id, ReviewState.PENDING);
                 }
+
                 throw;
             }
 
