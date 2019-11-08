@@ -16,7 +16,6 @@ namespace UKSFWebsite.Api.Services {
         public const string REMOVE_FLAG = "REMOVE";
         private readonly IAccountService accountService;
         private readonly IDisplayNameService displayNameService;
-        private readonly INotificationsService notificationsService;
         private readonly IRanksService ranksService;
         private readonly IServerService serverService;
         private readonly IServiceRecordService serviceRecordService;
@@ -26,7 +25,6 @@ namespace UKSFWebsite.Api.Services {
         private readonly IHubContext<AccountHub, IAccountClient> accountHub;
 
         public AssignmentService(
-            INotificationsService notificationsService,
             IServiceRecordService serviceRecordService,
             IAccountService accountService,
             IRanksService ranksService,
@@ -37,7 +35,6 @@ namespace UKSFWebsite.Api.Services {
             IDiscordService discordService,
             IHubContext<AccountHub, IAccountClient> accountHub
         ) {
-            this.notificationsService = notificationsService;
             this.serviceRecordService = serviceRecordService;
             this.accountService = accountService;
             this.ranksService = ranksService;
@@ -49,7 +46,7 @@ namespace UKSFWebsite.Api.Services {
             this.accountHub = accountHub;
         }
 
-        public async Task UpdateUnitRankAndRole(string id, string unitString = "", string role = "", string rankString = "", string notes = "", string message = "", string reason = "") {
+        public async Task<Notification> UpdateUnitRankAndRole(string id, string unitString = "", string role = "", string rankString = "", string notes = "", string message = "", string reason = "") {
             StringBuilder notificationBuilder = new StringBuilder();
 
             (bool unitUpdate, bool unitPositive) = await UpdateUnit(id, unitString, notificationBuilder);
@@ -62,7 +59,7 @@ namespace UKSFWebsite.Api.Services {
                 positive = unitPositive || rolePositive;
             }
 
-            if (!unitUpdate && !roleUpdate && !rankUpdate) return;
+            if (!unitUpdate && !roleUpdate && !rankUpdate) return null;
             if (string.IsNullOrEmpty(message)) {
                 message = notificationBuilder.ToString();
                 if (!string.IsNullOrEmpty(reason)) {
@@ -76,15 +73,11 @@ namespace UKSFWebsite.Api.Services {
 
             serviceRecordService.AddServiceRecord(id, message, notes);
             await UpdateGroupsAndRoles(id);
-            if (message != REMOVE_FLAG) {
-                notificationsService.Add(new Notification {owner = id, message = message, icon = positive ? NotificationIcons.PROMOTION : NotificationIcons.DEMOTION});
-            }
+            return message != REMOVE_FLAG ? new Notification {owner = id, message = message, icon = positive ? NotificationIcons.PROMOTION : NotificationIcons.DEMOTION} : null;
         }
 
         public async Task AssignUnitRole(string id, string unitId, string role) {
             await unitsService.SetMemberRole(id, unitId, role);
-            Unit unit = unitsService.GetSingle(unitId);
-            notificationsService.Add(new Notification {owner = id, message = $"You have been assigned as {AvsAn.Query(role).Article} {role} in {unitsService.GetChainString(unit)}", icon = NotificationIcons.PROMOTION});
             await UpdateGroupsAndRoles(id);
         }
 
@@ -101,25 +94,23 @@ namespace UKSFWebsite.Api.Services {
                 await unitsService.SetMemberRole(id, unit);
             }
 
-            notificationsService.Add(new Notification {owner = id, message = "You have been unassigned from all roles in all units", icon = NotificationIcons.DEMOTION});
             await UpdateGroupsAndRoles(id);
         }
 
-        public async Task UnassignUnitRole(string id, string unitId) {
+        public async Task<string> UnassignUnitRole(string id, string unitId) {
             Unit unit = unitsService.GetSingle(unitId);
             string role = unit.roles.FirstOrDefault(x => x.Value == id).Key;
             if (unitsService.RolesHasMember(unit, id)) {
                 await unitsService.SetMemberRole(id, unitId);
-                notificationsService.Add(new Notification {owner = unitId, message = $"You have been unassigned as {AvsAn.Query(role).Article} {role} in {unitsService.GetChainString(unit)}", icon = NotificationIcons.DEMOTION});
                 await UpdateGroupsAndRoles(id);
             }
+
+            return role;
         }
 
         public async Task UnassignUnit(string id, string unitId) {
             Unit unit = unitsService.GetSingle(unitId);
             await unitsService.RemoveMember(id, unit);
-
-            notificationsService.Add(new Notification {owner = unitId, message = $"You have been removed from {unitsService.GetChainString(unit)}", icon = NotificationIcons.DEMOTION});
             await UpdateGroupsAndRoles(unitId);
         }
 

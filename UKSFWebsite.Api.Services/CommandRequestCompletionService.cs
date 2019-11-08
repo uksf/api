@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
+using AvsAnLib;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using UKSFWebsite.Api.Models;
 using UKSFWebsite.Api.Models.Accounts;
 using UKSFWebsite.Api.Models.CommandRequests;
 using UKSFWebsite.Api.Services.Abstraction;
+using UKSFWebsite.Api.Services.Data;
 using UKSFWebsite.Api.Services.Hubs;
 using UKSFWebsite.Api.Services.Hubs.Abstraction;
 using UKSFWebsite.Api.Services.Utility;
@@ -20,6 +22,7 @@ namespace UKSFWebsite.Api.Services {
         private readonly ILoaService loaService;
         private readonly ISessionService sessionService;
         private readonly IUnitsService unitsService;
+        private readonly INotificationsService notificationsService;
 
         public CommandRequestCompletionService(
             ISessionService sessionService,
@@ -29,7 +32,8 @@ namespace UKSFWebsite.Api.Services {
             IAssignmentService assignmentService,
             ILoaService loaService,
             IUnitsService unitsService,
-            IHubContext<CommandRequestsHub, ICommandRequestsClient> commandRequestsHub
+            IHubContext<CommandRequestsHub, ICommandRequestsClient> commandRequestsHub,
+            INotificationsService notificationsService
         ) {
             this.sessionService = sessionService;
             this.accountService = accountService;
@@ -40,6 +44,7 @@ namespace UKSFWebsite.Api.Services {
             this.unitsService = unitsService;
             this.dischargeService = dischargeService;
             this.commandRequestsHub = commandRequestsHub;
+            this.notificationsService = notificationsService;
         }
 
         public async Task Resolve(string id) {
@@ -81,7 +86,8 @@ namespace UKSFWebsite.Api.Services {
 
         private async Task Rank(CommandRequest request) {
             if (commandRequestService.IsRequestApproved(request.id)) {
-                await assignmentService.UpdateUnitRankAndRole(request.recipient, rankString: request.value, reason: request.reason);
+                Notification notification = await assignmentService.UpdateUnitRankAndRole(request.recipient, rankString: request.value, reason: request.reason);
+                notificationsService.Add(notification);
                 await commandRequestService.ArchiveRequest(request.id);
                 LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
             } else if (commandRequestService.IsRequestRejected(request.id)) {
@@ -119,7 +125,8 @@ namespace UKSFWebsite.Api.Services {
                 }
                 await accountService.Update(account.id, "membershipState", MembershipState.DISCHARGED);
                 
-                await assignmentService.UpdateUnitRankAndRole(account.id, AssignmentService.REMOVE_FLAG, AssignmentService.REMOVE_FLAG, AssignmentService.REMOVE_FLAG, request.reason, "", AssignmentService.REMOVE_FLAG);
+                Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, AssignmentService.REMOVE_FLAG, AssignmentService.REMOVE_FLAG, AssignmentService.REMOVE_FLAG, request.reason, "", AssignmentService.REMOVE_FLAG);
+                notificationsService.Add(notification);
                 await assignmentService.UnassignAllUnits(account.id);
                 await commandRequestService.ArchiveRequest(request.id);
                 LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
@@ -131,7 +138,8 @@ namespace UKSFWebsite.Api.Services {
 
         private async Task IndividualRole(CommandRequest request) {
             if (commandRequestService.IsRequestApproved(request.id)) {
-                await assignmentService.UpdateUnitRankAndRole(request.recipient, role: request.value == "None" ? AssignmentService.REMOVE_FLAG : request.value, reason: request.reason);
+                Notification notification = await assignmentService.UpdateUnitRankAndRole(request.recipient, role: request.value == "None" ? AssignmentService.REMOVE_FLAG : request.value, reason: request.reason);
+                notificationsService.Add(notification);
                 await commandRequestService.ArchiveRequest(request.id);
                 LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
             } else if (commandRequestService.IsRequestRejected(request.id)) {
@@ -145,11 +153,14 @@ namespace UKSFWebsite.Api.Services {
                 if (request.secondaryValue == "None") {
                     if (string.IsNullOrEmpty(request.value)) {
                         await assignmentService.UnassignAllUnitRoles(request.recipient);
+                        notificationsService.Add(new Notification {owner = request.recipient, message = "You have been unassigned from all roles in all units", icon = NotificationIcons.DEMOTION});
                     } else {
-                        await assignmentService.UnassignUnitRole(request.recipient, request.value);
+                        string role = await assignmentService.UnassignUnitRole(request.recipient, request.value);
+                        notificationsService.Add(new Notification {owner = request.recipient, message = $"You have been unassigned as {AvsAn.Query(role).Article} {role} in {unitsService.GetChainString(unitsService.GetSingle(request.value))}", icon = NotificationIcons.DEMOTION});
                     }
                 } else {
                     await assignmentService.AssignUnitRole(request.recipient, request.value, request.secondaryValue);
+                    notificationsService.Add(new Notification {owner = request.recipient, message = $"You have been assigned as {AvsAn.Query(request.secondaryValue).Article} {request.secondaryValue} in {unitsService.GetChainString(unitsService.GetSingle(request.value))}", icon = NotificationIcons.PROMOTION});
                 }
 
                 await commandRequestService.ArchiveRequest(request.id);
@@ -164,6 +175,7 @@ namespace UKSFWebsite.Api.Services {
             if (commandRequestService.IsRequestApproved(request.id)) {
                 Unit unit = unitsService.GetSingle(request.value);
                 await assignmentService.UnassignUnit(request.recipient, unit.id);
+                notificationsService.Add(new Notification {owner = request.recipient, message = $"You have been removed from {unitsService.GetChainString(unit)}", icon = NotificationIcons.DEMOTION});
                 await commandRequestService.ArchiveRequest(request.id);
                 LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} because '{request.reason}'");
             } else if (commandRequestService.IsRequestRejected(request.id)) {
@@ -175,7 +187,8 @@ namespace UKSFWebsite.Api.Services {
         private async Task Transfer(CommandRequest request) {
             if (commandRequestService.IsRequestApproved(request.id)) {
                 Unit unit = unitsService.GetSingle(request.value);
-                await assignmentService.UpdateUnitRankAndRole(request.recipient, unit.name, reason: request.reason);
+                Notification notification = await assignmentService.UpdateUnitRankAndRole(request.recipient, unit.name, reason: request.reason);
+                notificationsService.Add(notification);
                 await commandRequestService.ArchiveRequest(request.id);
                 LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
             } else if (commandRequestService.IsRequestRejected(request.id)) {
@@ -189,7 +202,8 @@ namespace UKSFWebsite.Api.Services {
                 DischargeCollection dischargeCollection = dischargeService.GetSingle(x => x.accountId == request.recipient);
                 await dischargeService.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.reinstated, true));
                 await accountService.Update(dischargeCollection.accountId, "membershipState", MembershipState.MEMBER);
-                await assignmentService.UpdateUnitRankAndRole(dischargeCollection.accountId, "Basic Training Unit", "Trainee", "Recruit", "", "", "your membership was reinstated");
+                Notification notification = await assignmentService.UpdateUnitRankAndRole(dischargeCollection.accountId, "Basic Training Unit", "Trainee", "Recruit", "", "", "your membership was reinstated");
+                notificationsService.Add(notification);
 
                 LogWrapper.AuditLog(sessionService.GetContextId(), $"{sessionService.GetContextId()} reinstated {dischargeCollection.name}'s membership");
                 await commandRequestService.ArchiveRequest(request.id);

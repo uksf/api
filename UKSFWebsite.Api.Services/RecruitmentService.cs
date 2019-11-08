@@ -16,7 +16,6 @@ namespace UKSFWebsite.Api.Services {
         private readonly IDiscordService discordService;
         private readonly IDisplayNameService displayNameService;
         private readonly ITeamspeakMetricsService metricsService;
-        private readonly INotificationsService notificationsService;
         private readonly IRanksService ranksService;
         private readonly ISessionService sessionService;
         private readonly ITeamspeakService teamspeakService;
@@ -29,7 +28,6 @@ namespace UKSFWebsite.Api.Services {
             IDisplayNameService displayNameService,
             IDiscordService discordService,
             IRanksService ranksService,
-            INotificationsService notificationsService,
             ITeamspeakService teamspeakService,
             IUnitsService unitsService
         ) {
@@ -38,7 +36,6 @@ namespace UKSFWebsite.Api.Services {
             this.metricsService = metricsService;
             this.displayNameService = displayNameService;
             this.ranksService = ranksService;
-            this.notificationsService = notificationsService;
             this.teamspeakService = teamspeakService;
             this.unitsService = unitsService;
             this.discordService = discordService;
@@ -109,10 +106,6 @@ namespace UKSFWebsite.Api.Services {
 
         public async Task SetRecruiter(string id, string newRecruiter) {
             await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.recruiter, newRecruiter));
-            Account account = accountService.GetSingle(id);
-            if (account.application.state == ApplicationState.WAITING) {
-                notificationsService.Add(new Notification {owner = newRecruiter, icon = NotificationIcons.APPLICATION, message = $"{account.firstname} {account.lastname}'s application has been transferred to you", link = $"/recruitment/{account.id}"});
-            }
         }
 
         public object GetStats(string account, bool monthly) {

@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using UKSFWebsite.Api.Models.Accounts;
 using UKSFWebsite.Api.Services.Abstraction;

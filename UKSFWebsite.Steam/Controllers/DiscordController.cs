@@ -45,7 +45,7 @@ namespace UKSFWebsite.Steam.Controllers {
         [HttpGet("success/application")]
         public async Task<IActionResult> SuccessFromApplication([FromQuery] string code) => Redirect($"{urlReturn}/application?{await GetUrlParameters(code, $"{url}/discord/success/application")}");
 
-        private async Task<string> GetUrlParameters(string code, string url) {
+        private async Task<string> GetUrlParameters(string code, string redirectUrl) {
             using (HttpClient client = new HttpClient()) {
                 HttpResponseMessage response = await client.PostAsync(
                     "https://discordapp.com/api/oauth2/token",
@@ -55,7 +55,7 @@ namespace UKSFWebsite.Steam.Controllers {
                             {"client_secret", clientSecret},
                             {"grant_type", "authorization_code"},
                             {"code", code},
-                            {"redirect_uri", url},
+                            {"redirect_uri", redirectUrl},
                             {"scope", "identify guilds.join"}
                         }
                     )

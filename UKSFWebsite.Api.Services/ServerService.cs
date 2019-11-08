@@ -8,6 +8,8 @@ using UKSFWebsite.Api.Models;
 using UKSFWebsite.Api.Models.Accounts;
 using UKSFWebsite.Api.Services.Abstraction;
 using UKSFWebsite.Api.Services.Data;
+// ReSharper disable HeuristicUnreachableCode
+#pragma warning disable 162
 
 namespace UKSFWebsite.Api.Services {
     public class ServerService : IServerService {

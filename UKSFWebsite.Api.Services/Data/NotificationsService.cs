@@ -53,6 +53,7 @@ namespace UKSFWebsite.Api.Services.Data {
         }
 
         public new void Add(Notification notification) {
+            if (notification == null) return;
             Task unused = AddNotificationAsync(notification);
         }
 

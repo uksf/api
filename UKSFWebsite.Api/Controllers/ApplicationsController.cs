@@ -53,7 +53,8 @@ namespace UKSFWebsite.Api.Controllers {
             };
             await accountService.Update(account.id, Builders<Account>.Update.Set(x => x.application, application));
             account = accountService.GetSingle(account.id);
-            await assignmentService.UpdateUnitRankAndRole(account.id, "", "Applicant", "Candidate", reason: "you were entered into the recruitment process");
+            Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, "", "Applicant", "Candidate", reason: "you were entered into the recruitment process");
+            notificationsService.Add(notification);
             notificationsService.Add(new Notification {owner = application.recruiter, icon = NotificationIcons.APPLICATION, message = $"You have been assigned {account.firstname} {account.lastname}'s application", link = $"/recruitment/{account.id}"});
             foreach ((_, string sr1Id) in recruitmentService.GetSr1Leads()) {
                 if (account.application.recruiter == sr1Id) continue;
