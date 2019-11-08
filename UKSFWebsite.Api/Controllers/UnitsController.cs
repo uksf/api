@@ -165,6 +165,7 @@ namespace UKSFWebsite.Api.Controllers {
         public async Task<IActionResult> UpdateParent([FromBody] JObject data) {
             Unit unit = JsonConvert.DeserializeObject<Unit>(data["unit"].ToString());
             Unit parentUnit = JsonConvert.DeserializeObject<Unit>(data["parentUnit"].ToString());
+            int index = JsonConvert.DeserializeObject<int>(data["index"].ToString());
             if (unit.parent == parentUnit.id) return Ok();
             await unitsService.Update(unit.id, "parent", parentUnit.id);
 
@@ -174,7 +175,7 @@ namespace UKSFWebsite.Api.Controllers {
 
             List<Unit> parentChildren = unitsService.Get(x => x.parent == parentUnit.id).ToList();
             parentChildren.Remove(parentChildren.FirstOrDefault(x => x.id == unit.id));
-            parentChildren.Add(unit);
+            parentChildren.Insert(index, unit);
             foreach (Unit child in parentChildren) {
                 await unitsService.Update(child.id, "order", parentChildren.IndexOf(child));
             }
