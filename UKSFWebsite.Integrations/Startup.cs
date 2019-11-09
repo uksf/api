@@ -1,20 +1,19 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Swashbuckle.AspNetCore.Swagger;
 using UKSFWebsite.Api.Services.Abstraction;
 using UKSFWebsite.Api.Services.Data;
 using UKSFWebsite.Api.Services.Utility;
 
-namespace UKSFWebsite.Steam {
+namespace UKSFWebsite.Integrations {
     public class Startup {
         private readonly IConfiguration configuration;
 
-        public Startup(IHostingEnvironment currentEnvironment, IConfiguration configuration) {
+        public Startup(IHostEnvironment currentEnvironment, IConfiguration configuration) {
             this.configuration = configuration;
             IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(currentEnvironment.ContentRootPath).AddEnvironmentVariables();
             builder.Build();
@@ -24,21 +23,18 @@ namespace UKSFWebsite.Steam {
             services.RegisterServices(configuration);
             services.BuildServiceProvider();
 
-            services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new Info {Title = "Server", Version = "v1"}); });
             services.AddCors();
             services.AddAuthentication(options => { options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; }).AddCookie().AddSteam();
 
             services.AddMvc();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory) {
-            app.UseCors(options => options.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().AllowCredentials());
-            app.UseAuthentication();
-            app.UseSwagger();
-            app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "V1 Docs"); });
-            app.UseMvc();
+        public void Configure(IApplicationBuilder app, IHostEnvironment env, ILoggerFactory loggerFactory) {
             app.UseHsts();
             app.UseHttpsRedirection();
+            app.UseRouting();
+            app.UseCors(options => options.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+            app.UseAuthentication();
 
             Global.ServiceProvider = app.ApplicationServices;
             ServiceWrapper.ServiceProvider = Global.ServiceProvider;

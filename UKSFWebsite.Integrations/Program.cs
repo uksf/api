@@ -8,9 +8,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.WindowsServices;
 using Microsoft.Extensions.Hosting;
 
-namespace UKSFWebsite.Api {
-    public static class Program {
-        public static void Main(string[] args) {
+namespace UKSFWebsite.Integrations {
+    internal static class Program {
+        private static void Main(string[] args) {
             AppDomain.CurrentDomain.GetAssemblies()
                      .ToList()
                      .SelectMany(x => x.GetReferencedAssemblies())
@@ -30,15 +30,15 @@ namespace UKSFWebsite.Api {
             }
         }
 
-        private static IWebHost BuildDebugWebHost(string[] args) => WebHost.CreateDefaultBuilder(args).UseStartup<Startup>().UseKestrel().UseContentRoot(Directory.GetCurrentDirectory()).UseUrls("http://*:5000").UseIISIntegration().Build();
+        private static IWebHost BuildDebugWebHost(string[] args) => WebHost.CreateDefaultBuilder(args).UseStartup<Startup>().UseKestrel().UseContentRoot(Directory.GetCurrentDirectory()).UseUrls("http://*:5100").UseIISIntegration().Build();
 
         private static IWebHost BuildProductionWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                    .UseStartup<Startup>()
                    .UseKestrel(
                        options => {
-                           options.Listen(IPAddress.Loopback, 5000);
-                           options.Listen(IPAddress.Loopback, 5001, listenOptions => { listenOptions.UseHttps("C:\\ProgramData\\win-acme\\httpsacme-v01.api.letsencrypt.org\\uk-sf.co.uk-all.pfx"); });
+                           options.Listen(IPAddress.Loopback, 5100);
+                           options.Listen(IPAddress.Loopback, 5101, listenOptions => { listenOptions.UseHttps("C:\\ProgramData\\win-acme\\httpsacme-v01.api.letsencrypt.org\\uk-sf.co.uk-all.pfx"); });
                        }
                    )
                    .UseContentRoot(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName))
@@ -46,7 +46,7 @@ namespace UKSFWebsite.Api {
                    .Build();
 
         private static void InitLogging() {
-            string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "UKSFWebsiteApi");
+            string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "UKSFWebsiteIntegrations");
             Directory.CreateDirectory(appData);
             string[] logFiles = new DirectoryInfo(appData).EnumerateFiles("*.log").OrderByDescending(file => file.LastWriteTime).Select(file => file.Name).ToArray();
             if (logFiles.Length > 9) {

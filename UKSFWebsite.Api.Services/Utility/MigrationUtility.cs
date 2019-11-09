@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
@@ -21,9 +22,9 @@ namespace UKSFWebsite.Api.Services.Utility {
     public class MigrationUtility {
         private const string KEY = "MIGRATED";
         private readonly IMongoDatabase database;
-        private readonly IHostingEnvironment currentEnvironment;
+        private readonly IHostEnvironment currentEnvironment;
 
-        public MigrationUtility(IMongoDatabase database, IHostingEnvironment currentEnvironment) {
+        public MigrationUtility(IMongoDatabase database, IHostEnvironment currentEnvironment) {
             this.database = database;
             this.currentEnvironment = currentEnvironment;
         }

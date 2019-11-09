@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UKSFWebsite.Steam {
+namespace UKSFWebsite.Integrations {
     public static class Global {
         public static IServiceProvider ServiceProvider;
     }

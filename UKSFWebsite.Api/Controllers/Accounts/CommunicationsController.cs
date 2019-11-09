@@ -57,10 +57,10 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
             return BadRequest(new {error = $"Code mode '{mode}' not recognized"});
         }
 
-        private async Task<IActionResult> SendTeamspeakCode(string teamspeakdbId) {
-            string code = await confirmationCodeService.CreateConfirmationCode(teamspeakdbId);
+        private async Task<IActionResult> SendTeamspeakCode(string teamspeakDbId) {
+            string code = await confirmationCodeService.CreateConfirmationCode(teamspeakDbId);
             notificationsService.SendTeamspeakNotification(
-                new HashSet<string> {teamspeakdbId},
+                new HashSet<string> {teamspeakDbId},
                 $"This Teamspeak ID was selected for connection to the website. Copy this code to your clipboard and return to the UKSF website application page to enter the code:\n{code}\nIf this request was not made by you, please contact an admin"
             );
             return Ok();
