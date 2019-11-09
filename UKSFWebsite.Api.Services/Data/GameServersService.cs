@@ -49,23 +49,22 @@ namespace UKSFWebsite.Api.Services.Data {
                 }
             }
 
-            using (HttpClient client = new HttpClient()) {
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                try {
-                    HttpResponseMessage response = await client.GetAsync($"http://localhost:{gameServer.apiPort}/server");
-                    if (!response.IsSuccessStatusCode) {
-                        gameServer.status.running = false;
-                    }
-
-                    string content = await response.Content.ReadAsStringAsync();
-                    gameServer.status = JsonConvert.DeserializeObject<GameServerStatus>(content);
-                    gameServer.status.parsedUptime = TimeSpan.FromSeconds(gameServer.status.uptime).StripMilliseconds().ToString();
-                    gameServer.status.maxPlayers = gameServer.GetMaxPlayerCountFromConfig();
-                    gameServer.status.running = true;
-                    gameServer.status.started = false;
-                } catch (Exception) {
+            using HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            try {
+                HttpResponseMessage response = await client.GetAsync($"http://localhost:{gameServer.apiPort}/server");
+                if (!response.IsSuccessStatusCode) {
                     gameServer.status.running = false;
                 }
+
+                string content = await response.Content.ReadAsStringAsync();
+                gameServer.status = JsonConvert.DeserializeObject<GameServerStatus>(content);
+                gameServer.status.parsedUptime = TimeSpan.FromSeconds(gameServer.status.uptime).StripMilliseconds().ToString();
+                gameServer.status.maxPlayers = gameServer.GetMaxPlayerCountFromConfig();
+                gameServer.status.running = true;
+                gameServer.status.started = false;
+            } catch (Exception) {
+                gameServer.status.running = false;
             }
         }
 
@@ -120,10 +119,9 @@ namespace UKSFWebsite.Api.Services.Data {
 
         public async Task StopGameServer(GameServer gameServer) {
             try {
-                using (HttpClient client = new HttpClient()) {
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    await client.GetAsync($"http://localhost:{gameServer.apiPort}/server/stop");
-                }
+                using HttpClient client = new HttpClient();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                await client.GetAsync($"http://localhost:{gameServer.apiPort}/server/stop");
             } catch (Exception) {
                 // ignored
             }
@@ -131,10 +129,9 @@ namespace UKSFWebsite.Api.Services.Data {
             if (gameServer.numberHeadlessClients > 0) {
                 for (int index = 0; index < gameServer.numberHeadlessClients; index++) {
                     try {
-                        using (HttpClient client = new HttpClient()) {
-                            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                            await client.GetAsync($"http://localhost:{gameServer.apiPort + index + 1}/server/stop");
-                        }
+                        using HttpClient client = new HttpClient();
+                        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                        await client.GetAsync($"http://localhost:{gameServer.apiPort + index + 1}/server/stop");
                     } catch (Exception) {
                         // ignored
                     }

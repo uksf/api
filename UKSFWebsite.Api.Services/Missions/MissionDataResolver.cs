@@ -17,33 +17,33 @@ namespace UKSFWebsite.Api.Services.Missions {
         
         public static string ResolveObjectClass(MissionPlayer player) {
             if (player.account?.id == "5b4b568c20e1fd00013752d1") return "UKSF_B_Medic"; // Smith, SAS Medic
-            switch (player.unit.sourceUnit.id) {
-                case "5a435eea905d47336442c75a": // "Joint Special Forces Aviation Wing"
-                case "5a848590eab14d12cc7fa618": // "RAF Cranwell"
-                case "5c98d7b396dba31f24cdb19c": // "51 Squadron"
-                    return "UKSF_B_Pilot";
-                case "5a441619730e9d162834500b": // "7 Squadron"
-                    return "UKSF_B_Pilot_7";
-                case "5a441602730e9d162834500a": // "656 Squadron"
-                    return "UKSF_B_Pilot_656";
-                case "5a4415d8730e9d1628345007": // "617 Squadron"
-                    return "UKSF_B_Pilot_617";
-                case "5a68b28e196530164c9b4fed": // "Sniper Platoon"
-                    return "UKSF_B_Sniper";
-                case "5a68c047196530164c9b4fee": // "The Pathfinder Platoon"
-                    return "UKSF_B_Pathfinder";
-                case "5bbbb8875eb3a4170c488b24": // "Air Troop"
-                    return "UKSF_B_SAS";
-                case "5ba8983ee12a331f94cb02d4": // "SAS"
-                    return "UKSF_B_Officer";
-                case "5b9123ca7a6c1f0e9875601c": // "3 Medical Regiment"
-                    return "UKSF_B_Medic";
-                case "5a42835b55d6109bf0b081bd": // "UKSF"
-                    return ResolvePlayerUnitRole(player) == 3 ? "UKSF_B_Officer" : "UKSF_B_Rifleman";
-
-                default:
-                    return ResolvePlayerUnitRole(player) != -1 ? "UKSF_B_SectionLeader" : "UKSF_B_Rifleman";
-            }
+            return player.unit.sourceUnit.id switch {
+                "5a435eea905d47336442c75a" => // "Joint Special Forces Aviation Wing"
+                "UKSF_B_Pilot",
+                "5a848590eab14d12cc7fa618" => // "RAF Cranwell"
+                "UKSF_B_Pilot",
+                "5c98d7b396dba31f24cdb19c" => // "51 Squadron"
+                "UKSF_B_Pilot",
+                "5a441619730e9d162834500b" => // "7 Squadron"
+                "UKSF_B_Pilot_7",
+                "5a441602730e9d162834500a" => // "656 Squadron"
+                "UKSF_B_Pilot_656",
+                "5a4415d8730e9d1628345007" => // "617 Squadron"
+                "UKSF_B_Pilot_617",
+                "5a68b28e196530164c9b4fed" => // "Sniper Platoon"
+                "UKSF_B_Sniper",
+                "5a68c047196530164c9b4fee" => // "The Pathfinder Platoon"
+                "UKSF_B_Pathfinder",
+                "5bbbb8875eb3a4170c488b24" => // "Air Troop"
+                "UKSF_B_SAS",
+                "5ba8983ee12a331f94cb02d4" => // "SAS"
+                "UKSF_B_Officer",
+                "5b9123ca7a6c1f0e9875601c" => // "3 Medical Regiment"
+                "UKSF_B_Medic",
+                "5a42835b55d6109bf0b081bd" => // "UKSF"
+                (ResolvePlayerUnitRole(player) == 3 ? "UKSF_B_Officer" : "UKSF_B_Rifleman"),
+                _ => (ResolvePlayerUnitRole(player) != -1 ? "UKSF_B_SectionLeader" : "UKSF_B_Rifleman")
+            };
         }
 
         private static int ResolvePlayerUnitRole(MissionPlayer player) {
@@ -57,16 +57,21 @@ namespace UKSFWebsite.Api.Services.Missions {
         public static bool IsEngineer(MissionPlayer player) => ENGINEER_IDS.Contains(player.account?.id);
 
         public static string ResolveCallsign(MissionUnit unit, string defaultCallsign) {
-            switch (unit.sourceUnit.id) {
-                case "5a435eea905d47336442c75a": // "Joint Special Forces Aviation Wing"
-                case "5a441619730e9d162834500b": // "7 Squadron"
-                case "5a441602730e9d162834500a": // "656 Squadron"
-                case "5a4415d8730e9d1628345007": // "617 Squadron"
-                case "5a848590eab14d12cc7fa618": // "RAF Cranwell"
-                case "5c98d7b396dba31f24cdb19c": // "51 Squadron"
-                    return "JSFAW";
-                default: return defaultCallsign;
-            }
+            return unit.sourceUnit.id switch {
+                "5a435eea905d47336442c75a" => // "Joint Special Forces Aviation Wing"
+                "JSFAW",
+                "5a441619730e9d162834500b" => // "7 Squadron"
+                "JSFAW",
+                "5a441602730e9d162834500a" => // "656 Squadron"
+                "JSFAW",
+                "5a4415d8730e9d1628345007" => // "617 Squadron"
+                "JSFAW",
+                "5a848590eab14d12cc7fa618" => // "RAF Cranwell"
+                "JSFAW",
+                "5c98d7b396dba31f24cdb19c" => // "51 Squadron"
+                "JSFAW",
+                _ => defaultCallsign
+            };
         }
 
         public static void ResolveSpecialUnits(ref List<MissionUnit> orderedUnits) {
@@ -154,14 +159,17 @@ namespace UKSFWebsite.Api.Services.Missions {
         }
 
         public static bool IsUnitPermanent(MissionUnit unit) {
-            switch (unit.sourceUnit.id) {
-                case "5bbbb9645eb3a4170c488b36": // "Guardian 1-1"
-                case "5bbbbdab5eb3a4170c488f2e": // "Guardian 1-2"
-                case "5bbbbe365eb3a4170c488f30": // "Guardian 1-3"
-                case "5ad748e0de5d414f4c4055e0": // "Guardian 1-R"
-                    return true;
-                default: return false;
-            }
+            return unit.sourceUnit.id switch {
+                "5bbbb9645eb3a4170c488b36" => // "Guardian 1-1"
+                true,
+                "5bbbbdab5eb3a4170c488f2e" => // "Guardian 1-2"
+                true,
+                "5bbbbe365eb3a4170c488f30" => // "Guardian 1-3"
+                true,
+                "5ad748e0de5d414f4c4055e0" => // "Guardian 1-R"
+                true,
+                _ => false
+            };
         }
     }
 }

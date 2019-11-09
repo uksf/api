@@ -40,10 +40,8 @@ namespace UKSFWebsite.Api.Services.Teamspeak {
                 }
             }
 
-            foreach (string serverGroup in allowedGroups) {
-                if (!serverGroups.Contains(serverGroup)) {
-                    AddServerGroup(clientDbId, serverGroup);
-                }
+            foreach (string serverGroup in allowedGroups.Where(serverGroup => !serverGroups.Contains(serverGroup))) {
+                AddServerGroup(clientDbId, serverGroup);
             }
         }
 

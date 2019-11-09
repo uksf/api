@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace UKSFWebsite.Api.Services.Missions {
-    public class MissionUtilities {
+    public static class MissionUtilities {
         public static List<string> ReadDataFromIndex(List<string> source, ref int index) {
             List<string> data = new List<string> {source[index]};
             index += 1;

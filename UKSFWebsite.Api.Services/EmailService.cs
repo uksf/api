@@ -15,19 +15,14 @@ namespace UKSFWebsite.Api.Services {
 
         public void SendEmail(string targetEmail, string subject, string htmlEmail) {
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password)) return;
-            using (MailMessage mail = new MailMessage()) {
-                mail.From = new MailAddress(username, "UKSF");
-                mail.To.Add(targetEmail);
-                mail.Subject = subject;
-                mail.Body = htmlEmail;
-                mail.IsBodyHtml = true;
+            using MailMessage mail = new MailMessage {From = new MailAddress(username, "UKSF")};
+            mail.To.Add(targetEmail);
+            mail.Subject = subject;
+            mail.Body = htmlEmail;
+            mail.IsBodyHtml = true;
 
-                using (SmtpClient smtp = new SmtpClient("smtp.gmail.com", 587)) {
-                    smtp.Credentials = new NetworkCredential(username, password);
-                    smtp.EnableSsl = true;
-                    smtp.Send(mail);
-                }
-            }
+            using SmtpClient smtp = new SmtpClient("smtp.gmail.com", 587) {Credentials = new NetworkCredential(username, password), EnableSsl = true};
+            smtp.Send(mail);
         }
     }
 }

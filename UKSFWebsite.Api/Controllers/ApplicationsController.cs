@@ -56,12 +56,9 @@ namespace UKSFWebsite.Api.Controllers {
             Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, "", "Applicant", "Candidate", reason: "you were entered into the recruitment process");
             notificationsService.Add(notification);
             notificationsService.Add(new Notification {owner = application.recruiter, icon = NotificationIcons.APPLICATION, message = $"You have been assigned {account.firstname} {account.lastname}'s application", link = $"/recruitment/{account.id}"});
-            foreach ((_, string sr1Id) in recruitmentService.GetSr1Leads()) {
-                if (account.application.recruiter == sr1Id) continue;
+            foreach (string sr1Id in recruitmentService.GetSr1Leads().Cast<string>().Where(sr1Id => account.application.recruiter != sr1Id)) {
                 notificationsService.Add(
-                    new Notification {
-                        owner = sr1Id, icon = NotificationIcons.APPLICATION, message = $"{displayNameService.GetDisplayName(account.application.recruiter)} has been assigned {account.firstname} {account.lastname}'s application", link = $"/recruitment/{account.id}"
-                    }
+                    new Notification {owner = sr1Id, icon = NotificationIcons.APPLICATION, message = $"{displayNameService.GetDisplayName(account.application.recruiter)} has been assigned {account.firstname} {account.lastname}'s application", link = $"/recruitment/{account.id}"}
                 );
             }
 

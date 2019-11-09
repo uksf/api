@@ -35,16 +35,15 @@ namespace UKSFWebsite.Api.Controllers {
 
             string issueUrl;
             try {
-                using (HttpClient client = new HttpClient()) {
-                    StringContent content = new StringContent(JsonConvert.SerializeObject(new {title, body}), Encoding.UTF8, "application/vnd.github.v3.full+json");
-                    string url = type == 0 ? "https://api.github.com/repos/uksf/website-issues/issues" : "https://api.github.com/repos/uksf/modpack/issues";
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", githubToken);
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd(user);
-                    HttpResponseMessage response = await client.PostAsync(url, content);
-                    string result = await response.Content.ReadAsStringAsync();
-                    issueUrl = JObject.Parse(result)["html_url"].ToString();
-                    emailService.SendEmail("contact.tim.here@gmail.com", "New Issue Created", $"New {(type == 0 ? "website" : "modpack")} issue reported by {user}\n\n{issueUrl}");
-                }
+                using HttpClient client = new HttpClient();
+                StringContent content = new StringContent(JsonConvert.SerializeObject(new {title, body}), Encoding.UTF8, "application/vnd.github.v3.full+json");
+                string url = type == 0 ? "https://api.github.com/repos/uksf/website-issues/issues" : "https://api.github.com/repos/uksf/modpack/issues";
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", githubToken);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(user);
+                HttpResponseMessage response = await client.PostAsync(url, content);
+                string result = await response.Content.ReadAsStringAsync();
+                issueUrl = JObject.Parse(result)["html_url"].ToString();
+                emailService.SendEmail("contact.tim.here@gmail.com", "New Issue Created", $"New {(type == 0 ? "website" : "modpack")} issue reported by {user}\n\n{issueUrl}");
             } catch (Exception) {
                 return BadRequest();
             }

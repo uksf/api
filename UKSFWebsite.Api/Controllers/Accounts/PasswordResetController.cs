@@ -31,13 +31,11 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
             }
 
             string code = await ConfirmationCodeService.CreateConfirmationCode(account.id);
-            string url =
-                $"https://uk-sf.co.uk/login?validatecode={code}&validatetype={WebUtility.UrlEncode("password reset")}&validateurl={WebUtility.UrlEncode("passwordreset")}";
-            string html = $"<h1>UKSF Password Reset</h1><br/>Please reset your password by clicking <strong><a href='{url}'>here</a></strong>." +
-                          "<br/><br/><p>If this request was not made by you seek assistance from UKSF staff.</p>";
+            string url = $"https://uk-sf.co.uk/login?validatecode={code}&validatetype={WebUtility.UrlEncode("password reset")}&validateurl={WebUtility.UrlEncode("passwordreset")}";
+            string html = $"<h1>UKSF Password Reset</h1><br/>Please reset your password by clicking <strong><a href='{url}'>here</a></strong>." + "<br/><br/><p>If this request was not made by you seek assistance from UKSF staff.</p>";
             emailService.SendEmail(account.email, "UKSF Password Reset", html);
             LogWrapper.AuditLog(account.id, $"Password reset request made for {account.id}");
-            return Ok(Logintoken);
+            return Ok(LoginToken);
         }
     }
 }

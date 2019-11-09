@@ -115,11 +115,9 @@ namespace UKSFWebsite.Api.Services {
                 }
             }
 
-            foreach (string role in allowedRoles) {
-                if (userRoles.All(x => x.Id.ToString() != role)) {
-                    if (ulong.TryParse(role, out ulong roleId)) {
-                        await user.AddRoleAsync(roles.First(x => x.Id == roleId));
-                    }
+            foreach (string role in allowedRoles.Where(role => userRoles.All(x => x.Id.ToString() != role))) {
+                if (ulong.TryParse(role, out ulong roleId)) {
+                    await user.AddRoleAsync(roles.First(x => x.Id == roleId));
                 }
             }
         }

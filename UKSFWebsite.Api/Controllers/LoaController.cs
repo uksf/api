@@ -16,14 +16,23 @@ namespace UKSFWebsite.Api.Controllers {
     public class LoaController : Controller {
         private readonly IAccountService accountService;
         private readonly IChainOfCommandService chainOfCommandService;
+        private readonly ICommandRequestService commandRequestService;
         private readonly IDisplayNameService displayNameService;
         private readonly ILoaService loaService;
+        private readonly INotificationsService notificationsService;
         private readonly ISessionService sessionService;
         private readonly IUnitsService unitsService;
-        private readonly ICommandRequestService commandRequestService;
-        private readonly INotificationsService notificationsService;
 
-        public LoaController(ILoaService loaService, ISessionService sessionService, IDisplayNameService displayNameService, IAccountService accountService, IUnitsService unitsService, IChainOfCommandService chainOfCommandService, ICommandRequestService commandRequestService, INotificationsService notificationsService) {
+        public LoaController(
+            ILoaService loaService,
+            ISessionService sessionService,
+            IDisplayNameService displayNameService,
+            IAccountService accountService,
+            IUnitsService unitsService,
+            IChainOfCommandService chainOfCommandService,
+            ICommandRequestService commandRequestService,
+            INotificationsService notificationsService
+        ) {
             this.loaService = loaService;
             this.sessionService = sessionService;
             this.displayNameService = displayNameService;
@@ -87,8 +96,10 @@ namespace UKSFWebsite.Api.Controllers {
                 foreach (string reviewerId in request.reviews.Keys.Where(x => x != request.requester)) {
                     notificationsService.Add(new Notification {owner = reviewerId, icon = NotificationIcons.REQUEST, message = $"Your review for {request.displayRequester}'s LOA is no longer required as they deleted their LOA", link = "/command/requests"});
                 }
+
                 LogWrapper.AuditLog(sessionService.GetContextId(), $"Loa request deleted for '{displayNameService.GetDisplayName(accountService.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
             }
+
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Loa deleted for '{displayNameService.GetDisplayName(accountService.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
             await loaService.Delete(loa.id);
 

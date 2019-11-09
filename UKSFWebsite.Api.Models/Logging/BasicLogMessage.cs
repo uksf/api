@@ -30,7 +30,7 @@ namespace UKSFWebsite.Api.Models.Logging {
             level = LogLevel.ERROR;
         }
 
-        public BasicLogMessage(DateTime time) {
+        private BasicLogMessage(DateTime time) {
             timestamp = time;
             id = ObjectId.GenerateNewId(time).ToString();
         }

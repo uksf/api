@@ -19,13 +19,13 @@ namespace UKSFWebsite.Api.Controllers {
         private readonly IAssignmentService assignmentService;
         private readonly IDiscordService discordService;
         private readonly IDisplayNameService displayNameService;
+        private readonly INotificationsService notificationsService;
         private readonly IRanksService ranksService;
         private readonly IRolesService rolesService;
         private readonly IServerService serverService;
         private readonly ISessionService sessionService;
         private readonly ITeamspeakService teamspeakService;
         private readonly IUnitsService unitsService;
-        private readonly INotificationsService notificationsService;
 
         public UnitsController(
             ISessionService sessionService,
@@ -58,11 +58,11 @@ namespace UKSFWebsite.Api.Controllers {
 
         [HttpGet("{id}"), Authorize]
         public IActionResult GetAccountUnits(string id, [FromQuery] string filter = "") {
-            switch (filter) {
-                case "auxiliary": return Ok(unitsService.GetSortedUnits(x => x.branch == UnitBranch.AUXILIARY && x.members.Contains(id)));
-                case "available": return Ok(unitsService.GetSortedUnits(x => !x.members.Contains(id)));
-                default: return Ok(unitsService.GetSortedUnits(x => x.members.Contains(id)));
-            }
+            return filter switch {
+                "auxiliary" => Ok(unitsService.GetSortedUnits(x => x.branch == UnitBranch.AUXILIARY && x.members.Contains(id))),
+                "available" => Ok(unitsService.GetSortedUnits(x => !x.members.Contains(id))),
+                _ => Ok(unitsService.GetSortedUnits(x => x.members.Contains(id)))
+            };
         }
 
         [HttpGet("tree"), Authorize]
@@ -314,12 +314,7 @@ namespace UKSFWebsite.Api.Controllers {
                                       }
                                   )
                                   .ToList();
-            accounts.Sort(
-                (a, b) => a.roleIndex < b.roleIndex ? 1 :
-                    a.roleIndex > b.roleIndex ? -1 :
-                    a.rankIndex < b.rankIndex ? -1 :
-                    a.rankIndex > b.rankIndex ? 1 : string.CompareOrdinal(a.account.lastname, b.account.lastname)
-            );
+            accounts.Sort((a, b) => a.roleIndex < b.roleIndex ? 1 : a.roleIndex > b.roleIndex ? -1 : a.rankIndex < b.rankIndex ? -1 : a.rankIndex > b.rankIndex ? 1 : string.CompareOrdinal(a.account.lastname, b.account.lastname));
             return accounts.Select(x => x.account.id);
         }
     }

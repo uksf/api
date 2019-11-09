@@ -58,23 +58,13 @@ namespace UKSFWebsite.Api.Controllers {
             bool canPost;
             Account account = sessionService.GetContextAccount();
             bool admin = sessionService.ContextHasRole(RoleDefinitions.ADMIN);
-            switch (commentThread.mode) {
-                case ThreadMode.SR1:
-                    canPost = commentThread.authors.Any(x => x == sessionService.GetContextId()) || admin || recruitmentService.IsRecruiter(sessionService.GetContextAccount());
-                    break;
-                case ThreadMode.RANKSUPERIOR:
-                    canPost = commentThread.authors.Any(x => admin || ranksService.IsSuperior(account.rank, accountService.GetSingle(x).rank));
-                    break;
-                case ThreadMode.RANKEQUAL:
-                    canPost = commentThread.authors.Any(x => admin || ranksService.IsEqual(account.rank, accountService.GetSingle(x).rank));
-                    break;
-                case ThreadMode.RANKSUPERIOROREQUAL:
-                    canPost = commentThread.authors.Any(x => admin || ranksService.IsSuperiorOrEqual(account.rank, accountService.GetSingle(x).rank));
-                    break;
-                default:
-                    canPost = true;
-                    break;
-            }
+            canPost = commentThread.mode switch {
+                ThreadMode.SR1 => (commentThread.authors.Any(x => x == sessionService.GetContextId()) || admin || recruitmentService.IsRecruiter(sessionService.GetContextAccount())),
+                ThreadMode.RANKSUPERIOR => commentThread.authors.Any(x => admin || ranksService.IsSuperior(account.rank, accountService.GetSingle(x).rank)),
+                ThreadMode.RANKEQUAL => commentThread.authors.Any(x => admin || ranksService.IsEqual(account.rank, accountService.GetSingle(x).rank)),
+                ThreadMode.RANKSUPERIOROREQUAL => commentThread.authors.Any(x => admin || ranksService.IsSuperiorOrEqual(account.rank, accountService.GetSingle(x).rank)),
+                _ => true
+            };
 
             return Ok(new {canPost});
         }

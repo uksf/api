@@ -97,7 +97,6 @@ namespace UKSFWebsite.Api.Services.Missions {
         }
 
         public static IEnumerable<string> Serialize(this MissionEntityItem missionEntityItem) {
-            List<string> serialized = new List<string>();
             if (missionEntityItem.rawMissionEntities.Count > 0) {
                 int start = MissionUtilities.GetIndexByKey(missionEntityItem.rawMissionEntityItem, "Entities");
                 int count = missionEntityItem.rawMissionEntities.Count;
@@ -105,11 +104,7 @@ namespace UKSFWebsite.Api.Services.Missions {
                 missionEntityItem.rawMissionEntityItem.InsertRange(start, missionEntityItem.missionEntity.Serialize());
             }
 
-            foreach (string s in missionEntityItem.rawMissionEntityItem) {
-                serialized.Add(s);
-            }
-
-            return serialized;
+            return missionEntityItem.rawMissionEntityItem.ToList();
         }
         
         private static void AddEngineerTrait(this ICollection<string> entity) {
