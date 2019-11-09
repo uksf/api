@@ -7,7 +7,7 @@ namespace UKSFWebsite.Api.Models {
         NORMAL,
         TEAMSPEAK_SNAPSHOT,
         LOG_PRUNE,
-        STEAM,
+        INTEGRATION,
         DISCORD_VOTE_ANNOUNCEMENT
     }
 

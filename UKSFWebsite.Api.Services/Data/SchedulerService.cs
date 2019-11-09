@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using UKSFWebsite.Api.Models;
@@ -12,17 +13,17 @@ using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Services.Data {
     public class SchedulerService : DataService<ScheduledJob>, ISchedulerService {
-        private readonly IHostingEnvironment currentEnvironment;
+        private readonly IHostEnvironment currentEnvironment;
         private static readonly ConcurrentDictionary<string, CancellationTokenSource> ACTIVE_TASKS = new ConcurrentDictionary<string, CancellationTokenSource>();
 
-        public SchedulerService(IMongoDatabase database, IHostingEnvironment currentEnvironment) : base(database, "scheduledJobs") => this.currentEnvironment = currentEnvironment;
+        public SchedulerService(IMongoDatabase database, IHostEnvironment currentEnvironment) : base(database, "scheduledJobs") => this.currentEnvironment = currentEnvironment;
 
-        public async void Load(bool steam = false) {
-            if (steam) {
-                Get(x => x.type == ScheduledJobType.STEAM).ForEach(Schedule);
+        public async void Load(bool integration = false) {
+            if (integration) {
+                Get(x => x.type == ScheduledJobType.INTEGRATION).ForEach(Schedule);
             } else {
                 if (!currentEnvironment.IsDevelopment()) await AddUnique();
-                Get(x => x.type != ScheduledJobType.STEAM).ForEach(Schedule);
+                Get(x => x.type != ScheduledJobType.INTEGRATION).ForEach(Schedule);
             }
         }
 

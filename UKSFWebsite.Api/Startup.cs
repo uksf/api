@@ -5,15 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Cors.Internal;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
-using Swashbuckle.AspNetCore.Swagger;
 using UKSFWebsite.Api.Services;
 using UKSFWebsite.Api.Services.Abstraction;
 using UKSFWebsite.Api.Services.Data;
@@ -29,9 +27,9 @@ using UKSFWebsite.Api.Services.Utility;
 namespace UKSFWebsite.Api {
     public class Startup {
         private readonly IConfiguration configuration;
-        private readonly IHostingEnvironment currentEnvironment;
+        private readonly IHostEnvironment currentEnvironment;
 
-        public Startup(IHostingEnvironment currentEnvironment, IConfiguration configuration) {
+        public Startup(IHostEnvironment currentEnvironment, IConfiguration configuration) {
             this.configuration = configuration;
             this.currentEnvironment = currentEnvironment;
             IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(currentEnvironment.ContentRootPath).AddEnvironmentVariables();
@@ -44,9 +42,11 @@ namespace UKSFWebsite.Api {
         public void ConfigureServices(IServiceCollection services) {
             services.RegisterServices(configuration, currentEnvironment);
             services.BuildServiceProvider();
-            services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new Info {Title = "UKSF API", Version = "v1"}); });
             services.AddCors(
-                options => options.AddPolicy("CorsPolicy", builder => { builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().AllowCredentials().WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://steam.uk-sf.co.uk"); })
+                options => options.AddPolicy(
+                    "CorsPolicy",
+                    builder => { builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().AllowCredentials().WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://integrations.uk-sf.co.uk"); }
+                )
             );
             services.AddSignalR();
             services.AddAuthentication(
@@ -87,38 +87,31 @@ namespace UKSFWebsite.Api {
                     );
 
             ExceptionHandler.Instance = new ExceptionHandler();
-            services.AddMvc(
-                options => {
-                    options.Filters.Add(ExceptionHandler.Instance);
-                    options.Filters.Add(new CorsAuthorizationFilterFactory("CorsPolicy"));
-                }
-            );
+            services.AddMvc(options => { options.Filters.Add(ExceptionHandler.Instance); });
         }
 
         // ReSharper disable once UnusedMember.Global
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory) {
+        public void Configure(IApplicationBuilder app, IHostEnvironment env, ILoggerFactory loggerFactory) {
+            app.UseHsts();
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
+            app.UseRouting();
             app.UseCors("CorsPolicy");
             app.UseCorsMiddleware();
             app.UseAuthentication();
-            app.UseSwagger();
-            app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "V1 Docs"); });
-            app.UseStaticFiles();
-            app.UseSignalR(
-                route => {
-                    route.MapHub<AccountHub>($"/hub/{AccountHub.END_POINT}");
-                    route.MapHub<AdminHub>($"/hub/{AdminHub.END_POINT}");
-                    route.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.END_POINT}");
-                    route.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.END_POINT}");
-                    route.MapHub<NotificationHub>($"/hub/{NotificationHub.END_POINT}");
-                    route.MapHub<TeamspeakClientsHub>($"/hub/{TeamspeakClientsHub.END_POINT}");
-                    route.MapHub<UtilityHub>($"/hub/{UtilityHub.END_POINT}");
-                    route.MapHub<ServersHub>($"/hub/{ServersHub.END_POINT}");
-                    route.MapHub<LauncherHub>($"/hub/{LauncherHub.END_POINT}");
+            app.UseEndpoints(
+                endpoints => {
+                    endpoints.MapHub<AccountHub>($"/hub/{AccountHub.END_POINT}");
+                    endpoints.MapHub<AdminHub>($"/hub/{AdminHub.END_POINT}");
+                    endpoints.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.END_POINT}");
+                    endpoints.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.END_POINT}");
+                    endpoints.MapHub<NotificationHub>($"/hub/{NotificationHub.END_POINT}");
+                    endpoints.MapHub<TeamspeakClientsHub>($"/hub/{TeamspeakClientsHub.END_POINT}");
+                    endpoints.MapHub<UtilityHub>($"/hub/{UtilityHub.END_POINT}");
+                    endpoints.MapHub<ServersHub>($"/hub/{ServersHub.END_POINT}");
+                    endpoints.MapHub<LauncherHub>($"/hub/{LauncherHub.END_POINT}");
                 }
             );
-            app.UseMvc();
-            app.UseHsts();
-            app.UseHttpsRedirection();
 
             Global.ServiceProvider = app.ApplicationServices;
             ServiceWrapper.ServiceProvider = Global.ServiceProvider;
@@ -149,16 +142,15 @@ namespace UKSFWebsite.Api {
                                                 .Where(x => !x.IsAbstract && !x.IsInterface && x.BaseType != null && x.BaseType.IsGenericType && x.BaseType.GetGenericTypeDefinition() == typeof(CachedDataService<>))
                                                 .Select(x => x.GetInterfaces().FirstOrDefault(y => !y.IsGenericType))
                                                 .ToList();
-            foreach (Type type in servicesTypes) {
-                dynamic service = Global.ServiceProvider.GetService(type);
-                cacheService.AddService(service);
-                service.Get();
+            foreach (object service in servicesTypes.Select(type => Global.ServiceProvider.GetService(type))) {
+                cacheService.AddService((dynamic) service);
+                ((dynamic) service).Get();
             }
         }
     }
 
     public static class ServiceExtensions {
-        public static void RegisterServices(this IServiceCollection services, IConfiguration configuration, IHostingEnvironment currentEnvironment) {
+        public static void RegisterServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment) {
             // Instance Objects
             services.AddTransient<IAssignmentService, AssignmentService>();
             services.AddTransient<IAttendanceService, AttendanceService>();
@@ -240,6 +232,6 @@ namespace UKSFWebsite.Api {
     }
 
     public static class CorsMiddlewareExtensions {
-        public static IApplicationBuilder UseCorsMiddleware(this IApplicationBuilder builder) => builder.UseMiddleware<CorsMiddleware>();
+        public static void UseCorsMiddleware(this IApplicationBuilder builder) => builder.UseMiddleware<CorsMiddleware>();
     }
 }

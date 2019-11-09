@@ -12,10 +12,10 @@ namespace UKSFWebsite.Api.Services.Data {
 
         public ConfirmationCodeService(IMongoDatabase database, ISchedulerService schedulerService) : base(database, "confirmationCodes") => this.schedulerService = schedulerService;
 
-        public async Task<string> CreateConfirmationCode(string value, bool steam = false) {
+        public async Task<string> CreateConfirmationCode(string value, bool integration = false) {
             ConfirmationCode code = new ConfirmationCode {value = value};
             await Add(code);
-            await schedulerService.Create(DateTime.Now.AddMinutes(30), TimeSpan.Zero, steam ? ScheduledJobType.STEAM : ScheduledJobType.NORMAL, nameof(SchedulerActionHelper.DeleteExpiredConfirmationCode), code.id);
+            await schedulerService.Create(DateTime.Now.AddMinutes(30), TimeSpan.Zero, integration ? ScheduledJobType.INTEGRATION : ScheduledJobType.NORMAL, nameof(SchedulerActionHelper.DeleteExpiredConfirmationCode), code.id);
             return code.id;
         }
 
