@@ -6,7 +6,7 @@ using UKSFWebsite.Api.Models.Accounts;
 
 namespace UKSFWebsite.Api.Services.Utility {
     public static class Utilities {
-        public static dynamic ToDynamic<T>(this T obj) {
+        private static dynamic ToDynamic<T>(this T obj) {
             IDictionary<string, object> expando = new ExpandoObject();
 
             foreach (PropertyInfo propertyInfo in typeof(T).GetProperties()) {

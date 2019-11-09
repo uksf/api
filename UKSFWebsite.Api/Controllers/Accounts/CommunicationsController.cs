@@ -37,11 +37,10 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
         [HttpPost("send"), Authorize]
         public async Task<IActionResult> SendCode([FromBody] JObject body) {
             string mode = body["mode"].ToString();
-            switch (mode) {
-                case "teamspeak": return await SendTeamspeakCode(body["data"].ToString());
-            }
-
-            return BadRequest(new {error = $"Code mode '{mode}' not recognized"});
+            return mode switch {
+                "teamspeak" => await SendTeamspeakCode(body["data"].ToString()),
+                _ => BadRequest(new {error = $"Code mode '{mode}' not recognized"})
+            };
         }
 
         [HttpPost("receive"), Authorize]
@@ -50,11 +49,10 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
             string id = body["id"].ToString();
             string code = body["code"].ToString();
             string[] data = body["data"].ToString().Split(',');
-            switch (mode) {
-                case "teamspeak": return await ReceiveTeamspeakCode(id, code, data[0]);
-            }
-
-            return BadRequest(new {error = $"Code mode '{mode}' not recognized"});
+            return mode switch {
+                "teamspeak" => await ReceiveTeamspeakCode(id, code, data[0]),
+                _ => BadRequest(new {error = $"Code mode '{mode}' not recognized"})
+            };
         }
 
         private async Task<IActionResult> SendTeamspeakCode(string teamspeakDbId) {

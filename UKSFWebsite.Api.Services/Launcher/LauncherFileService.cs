@@ -34,10 +34,8 @@ namespace UKSFWebsite.Api.Services.Launcher {
                 }
             }
 
-            foreach (LauncherFile storedVersion in storedVersions) {
-                if (fileNames.All(x => x != storedVersion.fileName)) {
-                    await Delete(storedVersion.id);
-                }
+            foreach (LauncherFile storedVersion in storedVersions.Where(storedVersion => fileNames.All(x => x != storedVersion.fileName))) {
+                await Delete(storedVersion.id);
             }
         }
 
@@ -79,7 +77,7 @@ namespace UKSFWebsite.Api.Services.Launcher {
             string updateZipPath = Path.Combine(VariablesWrapper.VariablesService().GetSingle("LAUNCHER_LOCATION").AsString(), $"{updateFolderName}.zip");
             ZipFile.CreateFromDirectory(updateFolder, updateZipPath);
             MemoryStream stream = new MemoryStream();
-            using (FileStream fileStream = new FileStream(updateZipPath, FileMode.Open, FileAccess.Read, FileShare.None)) {
+            await using (FileStream fileStream = new FileStream(updateZipPath, FileMode.Open, FileAccess.Read, FileShare.None)) {
                 await fileStream.CopyToAsync(stream);
             }
             File.Delete(updateZipPath);

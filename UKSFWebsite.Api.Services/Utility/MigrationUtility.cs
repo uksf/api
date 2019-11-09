@@ -50,7 +50,7 @@ namespace UKSFWebsite.Api.Services.Utility {
         }
 
         // TODO: CHECK BEFORE RELEASE
-        private void ExecuteMigration() {
+        private static void ExecuteMigration() {
             IUnitsService unitsService = ServiceWrapper.ServiceProvider.GetService<IUnitsService>();
             IRolesService rolesService = ServiceWrapper.ServiceProvider.GetService<IRolesService>();
             List<Role> roles = rolesService.Get(x => x.roleType == RoleType.UNIT);

@@ -57,13 +57,13 @@ namespace UKSFWebsite.Api.Services.Utility {
 
         public static string GetGameServerConfigPath(this GameServer gameServer) => Path.Combine(VariablesWrapper.VariablesService().GetSingle("SERVERS_PATH").AsString(), "configs", $"{gameServer.profileName}.cfg");
 
-        public static string GetGameServerProfilesPath() => VariablesWrapper.VariablesService().GetSingle("SERVER_PROFILES").AsString();
+        private static string GetGameServerProfilesPath() => VariablesWrapper.VariablesService().GetSingle("SERVER_PROFILES").AsString();
 
-        public static string GetGameServerPerfConfigPath() => VariablesWrapper.VariablesService().GetSingle("SERVER_PERF_CONFIG").AsString();
+        private static string GetGameServerPerfConfigPath() => VariablesWrapper.VariablesService().GetSingle("SERVER_PERF_CONFIG").AsString();
 
-        public static string GetHeadlessClientName(int index) => VariablesWrapper.VariablesService().GetSingle("HEADLESS_CLIENT_NAMES").AsArray()[index];
+        private static string GetHeadlessClientName(int index) => VariablesWrapper.VariablesService().GetSingle("HEADLESS_CLIENT_NAMES").AsArray()[index];
 
-        public static string FormatGameServerMods(this GameServer gameServer) => $"{string.Join(";", gameServer.mods.Select(x => x.pathRelativeToServerExecutable ?? x.path))};";
+        private static string FormatGameServerMods(this GameServer gameServer) => $"{string.Join(";", gameServer.mods.Select(x => x.pathRelativeToServerExecutable ?? x.path))};";
 
         public static IEnumerable<string> GetGameServerModsPaths() => VariablesWrapper.VariablesService().GetSingle("MODS_PATHS").AsArray(x => x.RemoveQuotes());
 

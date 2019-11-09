@@ -73,34 +73,43 @@ namespace UKSFWebsite.Api.Controllers {
             await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.state, updatedState));
             LogWrapper.AuditLog(sessionId, $"Application state changed for {id} from {account.application.state} to {updatedState}");
 
-            if (updatedState == ApplicationState.ACCEPTED) {
-                await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now));
-                await accountService.Update(id, "membershipState", MembershipState.MEMBER);
-                Notification notification = await assignmentService.UpdateUnitRankAndRole(id, "Basic Training Unit", "Trainee", "Recruit", reason: "your application was accepted");
-                notificationsService.Add(notification);
-            } else if (updatedState == ApplicationState.REJECTED) {
-                await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now));
-                await accountService.Update(id, "membershipState", MembershipState.CONFIRMED);
-                Notification notification = await assignmentService.UpdateUnitRankAndRole(
-                    id,
-                    AssignmentService.REMOVE_FLAG,
-                    AssignmentService.REMOVE_FLAG,
-                    AssignmentService.REMOVE_FLAG,
-                    "",
-                    $"Unfortunately you have not been accepted into our unit, however we thank you for your interest and hope you find a suitable alternative. You may view any notes about your application here: [url]https://uk-sf.co.uk/recruitment/{id}[/url]"
-                );
-                notificationsService.Add(notification);
-            } else if (updatedState == ApplicationState.WAITING) {
-                await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.dateCreated, DateTime.Now));
-                await accountService.Update(id, Builders<Account>.Update.Unset(x => x.application.dateAccepted));
-                await accountService.Update(id, "membershipState", MembershipState.CONFIRMED);
-                Notification notification = await assignmentService.UpdateUnitRankAndRole(id, AssignmentService.REMOVE_FLAG, "Applicant", "Candidate", reason: "your application was reactivated");
-                notificationsService.Add(notification);
-                if (recruitmentService.GetSr1Members().All(x => x.id != account.application.recruiter)) {
-                    string newRecruiterId = recruitmentService.GetRecruiter();
-                    LogWrapper.AuditLog(sessionId, $"Application recruiter for {id} is no longer SR1, reassigning from {account.application.recruiter} to {newRecruiterId}");
-                    await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.recruiter, newRecruiterId));
+            switch (updatedState) {
+                case ApplicationState.ACCEPTED: {
+                    await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now));
+                    await accountService.Update(id, "membershipState", MembershipState.MEMBER);
+                    Notification notification = await assignmentService.UpdateUnitRankAndRole(id, "Basic Training Unit", "Trainee", "Recruit", reason: "your application was accepted");
+                    notificationsService.Add(notification);
+                    break;
                 }
+                case ApplicationState.REJECTED: {
+                    await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now));
+                    await accountService.Update(id, "membershipState", MembershipState.CONFIRMED);
+                    Notification notification = await assignmentService.UpdateUnitRankAndRole(
+                        id,
+                        AssignmentService.REMOVE_FLAG,
+                        AssignmentService.REMOVE_FLAG,
+                        AssignmentService.REMOVE_FLAG,
+                        "",
+                        $"Unfortunately you have not been accepted into our unit, however we thank you for your interest and hope you find a suitable alternative. You may view any notes about your application here: [url]https://uk-sf.co.uk/recruitment/{id}[/url]"
+                    );
+                    notificationsService.Add(notification);
+                    break;
+                }
+                case ApplicationState.WAITING: {
+                    await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.dateCreated, DateTime.Now));
+                    await accountService.Update(id, Builders<Account>.Update.Unset(x => x.application.dateAccepted));
+                    await accountService.Update(id, "membershipState", MembershipState.CONFIRMED);
+                    Notification notification = await assignmentService.UpdateUnitRankAndRole(id, AssignmentService.REMOVE_FLAG, "Applicant", "Candidate", reason: "your application was reactivated");
+                    notificationsService.Add(notification);
+                    if (recruitmentService.GetSr1Members().All(x => x.id != account.application.recruiter)) {
+                        string newRecruiterId = recruitmentService.GetRecruiter();
+                        LogWrapper.AuditLog(sessionId, $"Application recruiter for {id} is no longer SR1, reassigning from {account.application.recruiter} to {newRecruiterId}");
+                        await accountService.Update(id, Builders<Account>.Update.Set(x => x.application.recruiter, newRecruiterId));
+                    }
+
+                    break;
+                }
+                default: throw new ArgumentOutOfRangeException();
             }
 
             account = accountService.GetSingle(id);
@@ -111,8 +120,7 @@ namespace UKSFWebsite.Api.Controllers {
                 );
             }
 
-            foreach ((_, string value) in recruitmentService.GetSr1Leads()) {
-                if (sessionId == value || account.application.recruiter == value) continue;
+            foreach (string value in recruitmentService.GetSr1Leads().Cast<string>().Where(value => sessionId != value && account.application.recruiter != value)) {
                 notificationsService.Add(new Notification {owner = value, icon = NotificationIcons.APPLICATION, message = $"{account.firstname} {account.lastname}'s application {message} by {displayNameService.GetDisplayName(sessionService.GetContextAccount())}", link = $"/recruitment/{id}"});
             }
 

@@ -11,7 +11,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
         protected readonly IConfirmationCodeService ConfirmationCodeService;
         internal readonly ILoginService LoginService;
         protected readonly IAccountService AccountService;
-        protected string Logintoken;
+        protected string LoginToken;
 
         protected ConfirmationCodeReceiver(IConfirmationCodeService confirmationCodeService, ILoginService loginService, IAccountService accountService) {
             LoginService = loginService;
@@ -25,13 +25,13 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
             try {
                 string validateCode = loginForm["code"].ToString();
                 if (codeType == "passwordreset") {
-                    Logintoken = LoginService.LoginWithoutPassword(loginForm["email"].ToString());
+                    LoginToken = LoginService.LoginWithoutPassword(loginForm["email"].ToString());
                     Account account = AccountService.GetSingle(x => string.Equals(x.email, loginForm["email"].ToString(), StringComparison.InvariantCultureIgnoreCase));
-                    if (await ConfirmationCodeService.GetConfirmationCode(validateCode) == account.id && Logintoken != null) {
+                    if (await ConfirmationCodeService.GetConfirmationCode(validateCode) == account.id && LoginToken != null) {
                         return await ApplyValidatedPayload(loginForm["password"].ToString(), account);
                     }
                 } else {
-                    Logintoken = LoginService.Login(loginForm["email"].ToString(), loginForm["password"].ToString());
+                    LoginToken = LoginService.Login(loginForm["email"].ToString(), loginForm["password"].ToString());
                     Account account = AccountService.GetSingle(x => string.Equals(x.email, loginForm["email"].ToString(), StringComparison.InvariantCultureIgnoreCase));
                     string codeValue = await ConfirmationCodeService.GetConfirmationCode(validateCode);
                     if (!string.IsNullOrWhiteSpace(codeValue)) {

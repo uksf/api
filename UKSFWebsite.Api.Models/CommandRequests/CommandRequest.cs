@@ -11,7 +11,7 @@ namespace UKSFWebsite.Api.Models.CommandRequests {
         ERROR
     }
 
-    public class CommandRequestType {
+    public static class CommandRequestType {
         public const string AUXILIARY_TRANSFER = "Axuiliary Transfer";
         public const string DEMOTION = "Demotion";
         public const string DISCHARGE = "Discharge";

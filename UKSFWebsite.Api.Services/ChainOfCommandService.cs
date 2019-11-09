@@ -38,10 +38,8 @@ namespace UKSFWebsite.Api.Services {
 
             // If no chain, get root unit child commanders
             if (chain.Count == 0) {
-                foreach (Unit unit in unitsService.Get(x => x.parent == unitsService.GetRoot().id)) {
-                    if (UnitHasCommander(unit) && GetCommander(unit) != recipient) {
-                        chain.Add(GetCommander(unit));
-                    }
+                foreach (Unit unit in unitsService.Get(x => x.parent == unitsService.GetRoot().id).Where(unit => UnitHasCommander(unit) && GetCommander(unit) != recipient)) {
+                    chain.Add(GetCommander(unit));
                 }
             }
 
@@ -61,17 +59,17 @@ namespace UKSFWebsite.Api.Services {
         }
 
         private IEnumerable<string> ResolveMode(ChainOfCommandMode mode, Unit start, Unit target) {
-            switch (mode) {
-                case ChainOfCommandMode.FULL: return Full(start);
-                case ChainOfCommandMode.NEXT_COMMANDER: return GetNextCommander(start);
-                case ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF: return GetNextCommanderExcludeSelf(start);
-                case ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE: return CommanderAndOneAbove(start);
-                case ChainOfCommandMode.COMMANDER_AND_SR10: return GetCommanderAndSr10(start);
-                case ChainOfCommandMode.COMMANDER_AND_TARGET_COMMANDER: return GetCommanderAndTargetCommander(start, target);
-                case ChainOfCommandMode.SR10: return GetSr10();
-                case ChainOfCommandMode.TARGET_COMMANDER: return GetNextCommander(target);
-                default: throw new InvalidOperationException("Chain of command mode not recognized");
-            }
+            return mode switch {
+                ChainOfCommandMode.FULL => Full(start),
+                ChainOfCommandMode.NEXT_COMMANDER => GetNextCommander(start),
+                ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF => GetNextCommanderExcludeSelf(start),
+                ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE => CommanderAndOneAbove(start),
+                ChainOfCommandMode.COMMANDER_AND_SR10 => GetCommanderAndSr10(start),
+                ChainOfCommandMode.COMMANDER_AND_TARGET_COMMANDER => GetCommanderAndTargetCommander(start, target),
+                ChainOfCommandMode.SR10 => GetSr10(),
+                ChainOfCommandMode.TARGET_COMMANDER => GetNextCommander(target),
+                _ => throw new InvalidOperationException("Chain of command mode not recognized")
+            };
         }
 
         private IEnumerable<string> Full(Unit unit) {
@@ -87,9 +85,9 @@ namespace UKSFWebsite.Api.Services {
             return chain;
         }
 
-        private HashSet<string> GetNextCommander(Unit unit) => new HashSet<string> {GetNextUnitCommander(unit)};
+        private IEnumerable<string> GetNextCommander(Unit unit) => new HashSet<string> {GetNextUnitCommander(unit)};
 
-        private HashSet<string> GetNextCommanderExcludeSelf(Unit unit) => new HashSet<string> {GetNextUnitCommanderExcludeSelf(unit)};
+        private IEnumerable<string> GetNextCommanderExcludeSelf(Unit unit) => new HashSet<string> {GetNextUnitCommanderExcludeSelf(unit)};
 
         private IEnumerable<string> CommanderAndOneAbove(Unit unit) {
             HashSet<string> chain = new HashSet<string>();

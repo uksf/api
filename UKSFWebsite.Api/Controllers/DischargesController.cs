@@ -34,7 +34,7 @@ namespace UKSFWebsite.Api.Controllers {
         [HttpGet]
         public IActionResult Get() {
             IEnumerable<DischargeCollection> discharges = dischargeService.Get();
-            foreach (dynamic discharge in discharges) {
+            foreach (DischargeCollection discharge in discharges) {
                 discharge.requestExists = commandRequestService.DoesEquivalentRequestExist(new CommandRequest {recipient = discharge.accountId, type = CommandRequestType.REINSTATE_MEMBER, displayValue = "Member", displayFrom = "Discharged"});
             }
             return Ok(discharges);
