@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -69,12 +70,7 @@ namespace UKSFWebsite.Api {
 
         public void ConfigureServices(IServiceCollection services) {
             services.RegisterServices(configuration, currentEnvironment);
-            services.AddCors(
-                options => options.AddPolicy(
-                    "CorsPolicy",
-                    builder => { builder.AllowAnyMethod().AllowAnyHeader().WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://integrations.uk-sf.co.uk").AllowCredentials(); }
-                )
-            );
+            services.AddCors(options => options.AddPolicy("CorsPolicy", builder => { builder.AllowAnyMethod().AllowAnyHeader().WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://integrations.uk-sf.co.uk").AllowCredentials(); }));
             services.AddSignalR().AddNewtonsoftJsonProtocol();
             services.AddAuthentication(
                         options => {
@@ -127,6 +123,7 @@ namespace UKSFWebsite.Api {
             app.UseAuthorization();
             app.UseHsts();
             app.UseHttpsRedirection();
+            app.UseForwardedHeaders(new ForwardedHeadersOptions {ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto});
             app.UseEndpoints(
                 endpoints => {
                     endpoints.MapControllers().RequireCors("CorsPolicy");
