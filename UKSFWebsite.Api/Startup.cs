@@ -72,7 +72,7 @@ namespace UKSFWebsite.Api {
             services.AddCors(
                 options => options.AddPolicy(
                     "CorsPolicy",
-                    builder => { builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().AllowCredentials().WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://integrations.uk-sf.co.uk"); }
+                    builder => { builder.WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://integrations.uk-sf.co.uk").AllowAnyMethod().AllowAnyHeader().AllowCredentials(); }
                 )
             );
             services.AddSignalR().AddNewtonsoftJsonProtocol();
