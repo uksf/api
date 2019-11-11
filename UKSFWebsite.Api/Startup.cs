@@ -262,7 +262,7 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<IUnitsDataService, UnitsDataService>();
             services.AddSingleton<IVariablesDataService, VariablesDataService>();
 
-            if (!currentEnvironment.IsDevelopment()) {
+            if (currentEnvironment.IsDevelopment()) {
                 services.AddSingleton<INotificationsDataService, FakeNotificationsDataService>();
             } else {
                 services.AddSingleton<INotificationsDataService, NotificationsDataService>();
@@ -288,7 +288,7 @@ namespace UKSFWebsite.Api {
             services.AddTransient<IRolesService, RolesService>();
             services.AddTransient<IUnitsService, UnitsService>();
 
-            if (!currentEnvironment.IsDevelopment()) {
+            if (currentEnvironment.IsDevelopment()) {
                 services.AddTransient<INotificationsService, FakeNotificationsService>();
             } else {
                 services.AddTransient<INotificationsService, NotificationsService>();
