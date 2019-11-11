@@ -4,6 +4,10 @@
         <TargetFramework>netcoreapp3.0</TargetFramework>
         <Nullable>disable</Nullable>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <DebugType>full</DebugType>
+        <DebugSymbols>true</DebugSymbols>
+    </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\UKSFWebsite.Api.Events\UKSFWebsite.Api.Events.csproj" />

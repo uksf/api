@@ -5,7 +5,7 @@ using UKSFWebsite.Api.Interfaces.Units;
 using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Services.Integrations;
 
-namespace UKSFWebsite.Api.Services.Debug {
+namespace UKSFWebsite.Api.Services.Fake {
     public class FakeDiscordService : DiscordService {
         public FakeDiscordService(IConfiguration configuration, IRanksService ranksService, IUnitsService unitsService, IAccountService accountService, IDisplayNameService displayNameService) : base(configuration, ranksService, unitsService, accountService, displayNameService) { }
 

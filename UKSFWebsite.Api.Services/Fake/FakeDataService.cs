@@ -6,7 +6,7 @@ using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Data;
 using UKSFWebsite.Api.Models.Events;
 
-namespace UKSFWebsite.Api.Services.Debug {
+namespace UKSFWebsite.Api.Services.Fake {
     public abstract class FakeDataService<T> : IDataService<T> {
         public List<T> Get() => new List<T>();
 
