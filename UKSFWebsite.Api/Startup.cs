@@ -123,7 +123,6 @@ namespace UKSFWebsite.Api {
             app.UseAuthorization();
             app.UseHsts();
             app.UseHttpsRedirection();
-            app.UseForwardedHeaders(new ForwardedHeadersOptions {ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto});
             app.UseEndpoints(
                 endpoints => {
                     endpoints.MapControllers().RequireCors("CorsPolicy");
