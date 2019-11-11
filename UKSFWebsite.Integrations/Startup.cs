@@ -6,8 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using UKSFWebsite.Api.Data.Utility;
+using UKSFWebsite.Api.Events.Data;
 using UKSFWebsite.Api.Interfaces.Data;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Services;
 using UKSFWebsite.Api.Services.Utility;
@@ -25,9 +27,10 @@ namespace UKSFWebsite.Integrations {
         public void ConfigureServices(IServiceCollection services) {
             services.RegisterServices(configuration);
 
-            services.AddCors();
+            services.AddCors(options => options.AddPolicy("CorsPolicy", builder => { builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().AllowCredentials().WithOrigins("http://localhost:4200", "http://localhost:5100", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk"); }));
             services.AddAuthentication(options => { options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; }).AddCookie().AddSteam();
 
+            services.AddControllers();
             services.AddMvc().AddNewtonsoftJson();
         }
 
@@ -35,8 +38,11 @@ namespace UKSFWebsite.Integrations {
             app.UseHsts();
             app.UseHttpsRedirection();
             app.UseRouting();
-            app.UseCors(options => options.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+            app.UseCors("CorsPolicy");
             app.UseAuthentication();
+            app.UseAuthentication();
+            app.UseAuthorization();
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 
             Global.ServiceProvider = app.ApplicationServices;
             ServiceWrapper.ServiceProvider = Global.ServiceProvider;
@@ -51,6 +57,7 @@ namespace UKSFWebsite.Integrations {
             // Instance Objects
             services.AddTransient<IConfirmationCodeService, ConfirmationCodeService>();
             services.AddTransient<ISchedulerService, SchedulerService>();
+            services.AddTransient<IEventBus, DataEventBus>();
 
             // Global Singletons
             services.AddSingleton(configuration);
