@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UKSFWebsite.Api.Interfaces.Integrations;
@@ -178,8 +179,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
         [HttpPut("name"), Authorize]
         public async Task<IActionResult> ChangeName([FromBody] JObject changeNameRequest) {
             Account account = sessionService.GetContextAccount();
-            await accountService.Data().Update(account.id, "firstname", changeNameRequest["firstname"].ToString());
-            await accountService.Data().Update(account.id, "lastname", changeNameRequest["lastname"].ToString());
+            await accountService.Data().Update(account.id, Builders<Account>.Update.Set(x => x.firstname, changeNameRequest["firstname"].ToString()).Set(x => x.lastname, changeNameRequest["lastname"].ToString()));
             LogWrapper.AuditLog(sessionService.GetContextId(), $"{account.lastname}, {account.firstname} changed their name to {changeNameRequest["lastname"]}, {changeNameRequest["firstname"]}");
             await discordService.UpdateAccount(accountService.Data().GetSingle(account.id));
             return Ok();

@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
     <RootNamespace>UKSFWebsite.Integrations</RootNamespace>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <OutputPath>bin\Debug\</OutputPath>
@@ -13,6 +13,7 @@
     <PackageReference Include="AspNet.Security.OpenId.Steam" Version="3.0.0" />
     <PackageReference Include="Discord.OAuth2" Version="2.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="3.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\UKSFWebsite.Api.Data\UKSFWebsite.Api.Data.csproj" />

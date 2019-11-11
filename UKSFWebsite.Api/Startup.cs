@@ -63,14 +63,13 @@ namespace UKSFWebsite.Api {
 
         public void ConfigureServices(IServiceCollection services) {
             services.RegisterServices(configuration, currentEnvironment);
-            services.BuildServiceProvider();
             services.AddCors(
                 options => options.AddPolicy(
                     "CorsPolicy",
                     builder => { builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().AllowCredentials().WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://integrations.uk-sf.co.uk"); }
                 )
             );
-            services.AddSignalR();
+            services.AddSignalR().AddNewtonsoftJsonProtocol();
             services.AddAuthentication(
                         options => {
                             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -109,10 +108,10 @@ namespace UKSFWebsite.Api {
                     );
 
             ExceptionHandler.Instance = new ExceptionHandler();
-            services.AddMvc(options => { options.Filters.Add(ExceptionHandler.Instance); });
+            services.AddControllers();
+            services.AddMvc(options => { options.Filters.Add(ExceptionHandler.Instance); }).AddNewtonsoftJson();
         }
 
-        // ReSharper disable once UnusedMember.Global
         public void Configure(IApplicationBuilder app, IHostEnvironment env, ILoggerFactory loggerFactory) {
             app.UseHsts();
             app.UseHttpsRedirection();
@@ -121,8 +120,10 @@ namespace UKSFWebsite.Api {
             app.UseCors("CorsPolicy");
             app.UseCorsMiddleware();
             app.UseAuthentication();
+            app.UseAuthorization();
             app.UseEndpoints(
                 endpoints => {
+                    endpoints.MapControllers();
                     endpoints.MapHub<AccountHub>($"/hub/{AccountHub.END_POINT}");
                     endpoints.MapHub<AdminHub>($"/hub/{AdminHub.END_POINT}");
                     endpoints.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.END_POINT}");
@@ -166,8 +167,8 @@ namespace UKSFWebsite.Api {
                                                 .ToList();
             foreach (object service in servicesTypes.Select(type => Global.ServiceProvider.GetService(type))) {
                 dataCacheService.AddDataService((dynamic) service);
-                ((dynamic) service).Get();
             }
+            dataCacheService.InvalidateDataCaches();
         }
     }
 

@@ -3,8 +3,7 @@ using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Models.Command;
 
 namespace UKSFWebsite.Api.Interfaces.Command {
-    public interface ICommandRequestService {
-        ICommandRequestDataService Data();
+    public interface ICommandRequestService : IDataBackedService<ICommandRequestDataService> {
         Task Add(CommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE);
         Task ArchiveRequest(string id);
         Task SetRequestReviewState(CommandRequest request, string reviewerId, ReviewState newState);

@@ -35,14 +35,21 @@ namespace UKSFWebsite.Api.Data {
         public virtual async Task Update(string id, string fieldName, object value) {
             UpdateDefinition<T> update = value == null ? Builders<T>.Update.Unset(fieldName) : Builders<T>.Update.Set(fieldName, value);
             await Database.GetCollection<T>(DatabaseCollection).UpdateOneAsync(Builders<T>.Filter.Eq("id", id), update);
+            DataEvent();
         }
 
         public virtual async Task Update(string id, UpdateDefinition<T> update) {
             await Database.GetCollection<T>(DatabaseCollection).UpdateOneAsync(Builders<T>.Filter.Eq("id", id), update);
+            DataEvent();
         }
 
         public virtual async Task Delete(string id) {
             await Database.GetCollection<T>(DatabaseCollection).DeleteOneAsync(Builders<T>.Filter.Eq("id", id));
+            DataEvent();
+        }
+
+        protected virtual void DataEvent() {
+            
         }
 
         internal static string GetIdValue(T data) => data.GetType().GetField("id").GetValue(data) as string;

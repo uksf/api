@@ -6,8 +6,7 @@ using UKSFWebsite.Api.Models.Game;
 using UKSFWebsite.Api.Models.Mission;
 
 namespace UKSFWebsite.Api.Interfaces.Game {
-    public interface IGameServersService {
-        IGameServersDataService Data();
+    public interface IGameServersService : IDataBackedService<IGameServersDataService> {
         int GetGameInstanceCount();
         Task UploadMissionFile(IFormFile file);
         List<MissionFile> GetMissionFiles();
