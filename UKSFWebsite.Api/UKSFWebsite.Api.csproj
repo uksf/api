@@ -39,6 +39,7 @@
   <ItemGroup>
     <ProjectReference Include="..\UKSFWebsite.Api.Data\UKSFWebsite.Api.Data.csproj" />
     <ProjectReference Include="..\UKSFWebsite.Api.Events\UKSFWebsite.Api.Events.csproj" />
+    <ProjectReference Include="..\UKSFWebsite.Api.Interfaces\UKSFWebsite.Api.Interfaces.csproj" />
     <ProjectReference Include="..\UKSFWebsite.Api.Models\UKSFWebsite.Api.Models.csproj" />
     <ProjectReference Include="..\UKSFWebsite.Api.Services\UKSFWebsite.Api.Services.csproj" />
   </ItemGroup>
