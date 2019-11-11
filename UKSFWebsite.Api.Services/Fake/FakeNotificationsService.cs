@@ -5,7 +5,7 @@ using UKSFWebsite.Api.Interfaces.Message;
 using UKSFWebsite.Api.Models.Message;
 using UKSFWebsite.Api.Models.Personnel;
 
-namespace UKSFWebsite.Api.Services.Debug {
+namespace UKSFWebsite.Api.Services.Fake {
     public class FakeNotificationsService : INotificationsService {
         public void SendTeamspeakNotification(Account account, string rawMessage) { }
 

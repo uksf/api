@@ -35,13 +35,11 @@ namespace UKSFWebsite.Api.Services.Message {
         public INotificationsDataService Data() => data;
 
         public void SendTeamspeakNotification(Account account, string rawMessage) {
-            return;
             rawMessage = rawMessage.Replace("<a href='", "[url]").Replace("'>", "[/url]");
             teamspeakService.SendTeamspeakMessageToClient(account, rawMessage);
         }
 
         public void SendTeamspeakNotification(IEnumerable<string> clientDbIds, string rawMessage) {
-            return;
             rawMessage = rawMessage.Replace("<a href='", "[url]").Replace("'>", "[/url]");
             teamspeakService.SendTeamspeakMessageToClient(clientDbIds, rawMessage);
         }
@@ -84,7 +82,6 @@ namespace UKSFWebsite.Api.Services.Message {
         }
 
         private void SendEmailNotification(string email, string message) {
-            return;
             message += "<br><br><sub>You can opt-out of these emails by unchecking 'Email notifications' in your <a href='https://uk-sf.co.uk/profile'>Profile</a></sub>";
             emailService.SendEmail(email, "UKSF Notification", message);
         }

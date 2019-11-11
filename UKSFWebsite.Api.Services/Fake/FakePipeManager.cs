@@ -1,6 +1,6 @@
 using UKSFWebsite.Api.Interfaces.Integrations;
 
-namespace UKSFWebsite.Api.Services.Debug {
+namespace UKSFWebsite.Api.Services.Fake {
     public class FakePipeManager : IPipeManager {
         public void Dispose() { }
 
