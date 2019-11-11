@@ -37,6 +37,7 @@ using UKSFWebsite.Api.Interfaces.Operations;
 using UKSFWebsite.Api.Interfaces.Personnel;
 using UKSFWebsite.Api.Interfaces.Units;
 using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Services;
 using UKSFWebsite.Api.Services.Command;
 using UKSFWebsite.Api.Services.Fake;
 using UKSFWebsite.Api.Services.Game;
@@ -128,7 +129,7 @@ namespace UKSFWebsite.Api {
             app.UseAuthorization();
             app.UseEndpoints(
                 endpoints => {
-                    endpoints.MapControllers();
+                    endpoints.MapControllers().RequireCors("CorsPolicy");
                     endpoints.MapHub<AccountHub>($"/hub/{AccountHub.END_POINT}");
                     endpoints.MapHub<AdminHub>($"/hub/{AdminHub.END_POINT}");
                     endpoints.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.END_POINT}");
@@ -142,7 +143,7 @@ namespace UKSFWebsite.Api {
             );
 
             Global.ServiceProvider = app.ApplicationServices;
-            Services.ServiceWrapper.ServiceProvider = Global.ServiceProvider;
+            ServiceWrapper.ServiceProvider = Global.ServiceProvider;
 
             // Initialise exception handler
             ExceptionHandler.Instance.Initialise(Global.ServiceProvider.GetService<ISessionService>(), Global.ServiceProvider.GetService<IDisplayNameService>());
@@ -152,7 +153,7 @@ namespace UKSFWebsite.Api {
 
             // Warm caches
             WarmDataServices();
-            
+
             // Add event handlers
             Global.ServiceProvider.GetService<EventHandlerInitialiser>().InitEventHandlers();
 
@@ -176,6 +177,7 @@ namespace UKSFWebsite.Api {
             foreach (object service in servicesTypes.Select(type => Global.ServiceProvider.GetService(type))) {
                 dataCacheService.AddDataService((dynamic) service);
             }
+
             dataCacheService.InvalidateDataCaches();
         }
     }
@@ -232,7 +234,7 @@ namespace UKSFWebsite.Api {
         private static void RegisterEventServices(this IServiceCollection services) {
             // Event Buses
             services.AddTransient<IEventBus, DataEventBus>();
-            
+
             // Event Handlers
             services.AddSingleton<EventHandlerInitialiser>();
             services.AddSingleton<IAccountEventHandler, AccountEventHandler>();

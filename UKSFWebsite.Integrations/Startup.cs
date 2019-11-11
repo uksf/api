@@ -42,7 +42,7 @@ namespace UKSFWebsite.Integrations {
             app.UseAuthentication();
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints => { endpoints.MapControllers().RequireCors("CorsPolicy"); });
 
             Global.ServiceProvider = app.ApplicationServices;
             ServiceWrapper.ServiceProvider = Global.ServiceProvider;
