@@ -20,10 +20,10 @@ namespace UKSFWebsite.Integrations.Controllers {
         }
 
         [HttpGet]
-        public IActionResult Get() => Challenge(new AuthenticationProperties {RedirectUri = $"{url}/integrations/success"}, "Steam");
+        public IActionResult Get() => Challenge(new AuthenticationProperties {RedirectUri = $"{url}/steam/success"}, "Steam");
 
         [HttpGet("application")]
-        public IActionResult GetFromApplication() => Challenge(new AuthenticationProperties {RedirectUri = $"{url}/integrations/success/application"}, "Steam");
+        public IActionResult GetFromApplication() => Challenge(new AuthenticationProperties {RedirectUri = $"{url}/steam/success/application"}, "Steam");
 
         [HttpGet("success")]
         public async Task<IActionResult> Success() => Redirect($"{urlReturn}/profile?{await GetUrlParameters()}");
