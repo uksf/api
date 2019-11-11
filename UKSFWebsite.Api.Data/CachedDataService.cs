@@ -9,7 +9,7 @@ using UKSFWebsite.Api.Models.Events;
 
 namespace UKSFWebsite.Api.Data {
     public abstract class CachedDataService<T> : DataService<T> {
-        protected List<T> Collection = new List<T>();
+        protected List<T> Collection;
 
         protected CachedDataService(IMongoDatabase database, IEventBus dataEventBus, string collectionName) : base(database, dataEventBus, collectionName) { }
 
