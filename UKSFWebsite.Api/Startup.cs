@@ -123,6 +123,7 @@ namespace UKSFWebsite.Api {
             app.UseAuthorization();
             app.UseHsts();
             app.UseHttpsRedirection();
+            app.UseForwardedHeaders(new ForwardedHeadersOptions {ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto});
             app.UseEndpoints(
                 endpoints => {
                     endpoints.MapControllers().RequireCors("CorsPolicy");
@@ -310,7 +311,7 @@ namespace UKSFWebsite.Api {
     }
 
     public static class CorsMiddlewareExtensions {
-        public static void UseCorsMiddleware(this IApplicationBuilder builder) => builder.UseMiddleware<CorsMiddleware>();
+        public static IApplicationBuilder UseCorsMiddleware(this IApplicationBuilder builder) => builder.UseMiddleware<CorsMiddleware>();
     }
 }
 

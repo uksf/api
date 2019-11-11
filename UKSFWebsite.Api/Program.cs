@@ -21,7 +21,6 @@ namespace UKSFWebsite.Api {
 
             string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             bool isDevelopment = environment == Environments.Development;
-            Console.Out.WriteLine(environment);
 
             if (isDevelopment) {
                 BuildDebugWebHost(args).Run();
