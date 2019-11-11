@@ -27,7 +27,7 @@ namespace UKSFWebsite.Integrations {
         public void ConfigureServices(IServiceCollection services) {
             services.RegisterServices(configuration);
 
-            services.AddCors(options => options.AddPolicy("CorsPolicy", builder => { builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().AllowCredentials().WithOrigins("http://localhost:4200", "http://localhost:5100", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk"); }));
+            services.AddCors(options => options.AddPolicy("CorsPolicy", builder => { builder.AllowAnyMethod().AllowAnyHeader().WithOrigins("http://localhost:4200", "http://localhost:5100", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk").AllowCredentials(); }));
             services.AddAuthentication(options => { options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; }).AddCookie().AddSteam();
 
             services.AddControllers();
@@ -35,12 +35,11 @@ namespace UKSFWebsite.Integrations {
         }
 
         public void Configure(IApplicationBuilder app, IHostEnvironment env, ILoggerFactory loggerFactory) {
-            app.UseHsts();
-            app.UseHttpsRedirection();
             app.UseRouting();
             app.UseCors("CorsPolicy");
             app.UseAuthentication();
-            app.UseAuthentication();
+            app.UseHsts();
+            app.UseHttpsRedirection();
             app.UseAuthorization();
             app.UseEndpoints(endpoints => { endpoints.MapControllers().RequireCors("CorsPolicy"); });
 
