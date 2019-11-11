@@ -23,12 +23,11 @@ namespace UKSFWebsite.Integrations {
 
         public void ConfigureServices(IServiceCollection services) {
             services.RegisterServices(configuration);
-            services.BuildServiceProvider();
 
             services.AddCors();
             services.AddAuthentication(options => { options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; }).AddCookie().AddSteam();
 
-            services.AddMvc();
+            services.AddMvc().AddNewtonsoftJson();
         }
 
         public void Configure(IApplicationBuilder app, IHostEnvironment env, ILoggerFactory loggerFactory) {

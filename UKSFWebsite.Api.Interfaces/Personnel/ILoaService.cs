@@ -6,8 +6,7 @@ using UKSFWebsite.Api.Models.Command;
 using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Interfaces.Personnel {
-    public interface ILoaService {
-        ILoaDataService Data();
+    public interface ILoaService : IDataBackedService<ILoaDataService> {
         IEnumerable<Loa> Get(List<string> ids);
         Task<string> Add(CommandRequestLoa requestBase);
         Task SetLoaState(string id, LoaReviewState state);

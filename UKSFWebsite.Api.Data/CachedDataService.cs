@@ -6,11 +6,11 @@ using MongoDB.Driver;
 
 namespace UKSFWebsite.Api.Data {
     public abstract class CachedDataService<T> : DataService<T> {
-        protected List<T> Collection;
+        protected List<T> Collection = new List<T>();
 
         protected CachedDataService(IMongoDatabase database, string collectionName) : base(database, collectionName) { }
 
-        // ReSharper disable once MemberCanBeProtected.Global // Used as dynamic call in startup
+        // ReSharper disable once MemberCanBeProtected.Global - Used in dynamic call, do not change to protected!
         public void Refresh() {
             Collection = null;
             Get();
@@ -48,16 +48,25 @@ namespace UKSFWebsite.Api.Data {
         public override async Task Update(string id, string fieldName, object value) {
             await base.Update(id, fieldName, value);
             Refresh();
+            CachedDataEvent();
         }
 
         public override async Task Update(string id, UpdateDefinition<T> update) {
             await base.Update(id, update);
             Refresh();
+            CachedDataEvent();
         }
 
         public override async Task Delete(string id) {
             await base.Delete(id);
             Refresh();
+            CachedDataEvent();
         }
+
+        private void CachedDataEvent() {
+            base.DataEvent();
+        }
+
+        protected override void DataEvent() { }
     }
 }

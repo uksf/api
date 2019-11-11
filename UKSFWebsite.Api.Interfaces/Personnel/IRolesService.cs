@@ -2,8 +2,7 @@
 using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Interfaces.Personnel {
-    public interface IRolesService {
-        IRolesDataService Data();
+    public interface IRolesService : IDataBackedService<IRolesDataService> {
         int Sort(string nameA, string nameB);
         Role GetUnitRoleByOrder(int order);
     }

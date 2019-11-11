@@ -19,7 +19,7 @@ namespace UKSFWebsite.Integrations {
                      .ToList()
                      .ForEach(x => AppDomain.CurrentDomain.GetAssemblies().ToList().Add(AppDomain.CurrentDomain.Load(x)));
 
-            string? environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             bool isDevelopment = environment == Environments.Development;
 
             if (isDevelopment) {

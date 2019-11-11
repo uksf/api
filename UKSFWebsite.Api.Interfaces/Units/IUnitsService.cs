@@ -6,8 +6,7 @@ using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Models.Units;
 
 namespace UKSFWebsite.Api.Interfaces.Units {
-    public interface IUnitsService {
-        IUnitsDataService Data();
+    public interface IUnitsService : IDataBackedService<IUnitsDataService> {
         IEnumerable<Unit> GetSortedUnits(Func<Unit, bool> predicate = null);
         Task AddMember(string id, string unitId);
         Task RemoveMember(string id, string unitName);

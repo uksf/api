@@ -5,8 +5,7 @@ using UKSFWebsite.Api.Models.Message;
 using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Interfaces.Message {
-    public interface INotificationsService {
-        INotificationsDataService Data();
+    public interface INotificationsService : IDataBackedService<INotificationsDataService> {
         void Add(Notification notification);
         void SendTeamspeakNotification(Account account, string rawMessage);
         void SendTeamspeakNotification(IEnumerable<string> clientDbIds, string rawMessage);
