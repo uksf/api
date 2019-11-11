@@ -119,14 +119,14 @@ namespace UKSFWebsite.Api {
         }
 
         public void Configure(IApplicationBuilder app, IHostEnvironment env, ILoggerFactory loggerFactory) {
-            app.UseHsts();
-            app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
             app.UseCors("CorsPolicy");
             app.UseCorsMiddleware();
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseHsts();
+            app.UseHttpsRedirection();
             app.UseEndpoints(
                 endpoints => {
                     endpoints.MapControllers().RequireCors("CorsPolicy");
