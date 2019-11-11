@@ -7,10 +7,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Models;
-using UKSFWebsite.Api.Models.Accounts;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Data;
+using UKSFWebsite.Api.Interfaces.Integrations;
+using UKSFWebsite.Api.Interfaces.Message;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Integrations;
+using UKSFWebsite.Api.Models.Personnel;
+using UKSFWebsite.Api.Services.Message;
+using UKSFWebsite.Api.Services.Personnel;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Controllers.Accounts {
@@ -18,13 +22,13 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
     public class AccountsController : Controller {
         private readonly IAccountService accountService;
         private readonly IConfirmationCodeService confirmationCodeService;
+        private readonly IDiscordService discordService;
         private readonly IDisplayNameService displayNameService;
         private readonly IEmailService emailService;
         private readonly IRanksService ranksService;
         private readonly IRecruitmentService recruitmentService;
         private readonly ISessionService sessionService;
         private readonly ITeamspeakService teamspeakService;
-        private readonly IDiscordService discordService;
 
         public AccountsController(
             IConfirmationCodeService confirmationCodeService,
@@ -56,14 +60,14 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
 
         [HttpGet("{id}"), Authorize]
         public IActionResult GetById(string id) {
-            Account account = accountService.GetSingle(id);
+            Account account = accountService.Data().GetSingle(id);
             return Ok(FormatAccount(account));
         }
 
         [HttpPut]
         public async Task<IActionResult> Put([FromBody] JObject body) {
             string email = body["email"].ToString();
-            if (accountService.Get(x => string.Equals(x.email, email, StringComparison.InvariantCultureIgnoreCase)).Any()) {
+            if (accountService.Data().Get(x => string.Equals(x.email, email, StringComparison.InvariantCultureIgnoreCase)).Any()) {
                 return BadRequest(new {error = "an account with this email or username exists"});
             }
 
@@ -76,9 +80,9 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
                 nation = body["nation"].ToString(),
                 membershipState = MembershipState.UNCONFIRMED
             };
-            await accountService.Add(account);
+            await accountService.Data().Add(account);
             await SendConfirmationCode(account);
-            LogWrapper.AuditLog(accountService.GetSingle(x => x.email == account.email).id, $"New account created: '{account.firstname} {account.lastname}, {account.email}'");
+            LogWrapper.AuditLog(accountService.Data().GetSingle(x => x.email == account.email).id, $"New account created: '{account.firstname} {account.lastname}, {account.email}'");
             return Ok(new {account.email});
         }
 
@@ -86,18 +90,18 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
         public async Task<IActionResult> ApplyConfirmationCode([FromBody] JObject body) {
             string code = body["code"].ToString();
             string email = body["email"].ToString();
-            Account account = accountService.GetSingle(x => x.email == email);
+            Account account = accountService.Data().GetSingle(x => x.email == email);
             if (account == null) {
                 return BadRequest(new {error = $"An account with the email '{email}' doesn't exist. This should be impossible so please contact an admin for help"});
             }
 
             string value = await confirmationCodeService.GetConfirmationCode(code);
             if (value == email) {
-                await accountService.Update(account.id, "membershipState", MembershipState.CONFIRMED);
+                await accountService.Data().Update(account.id, "membershipState", MembershipState.CONFIRMED);
                 LogWrapper.AuditLog(account.id, $"Email address confirmed for {account.id}");
                 return Ok();
             }
-            
+
             await SendConfirmationCode(account);
             return BadRequest(new {error = $"The confirmation code has expired. A new code has been sent to '{account.email}'"});
         }
@@ -106,7 +110,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
         public IActionResult GetAccountsUnder([FromQuery] bool reverse = false) {
             List<object> accounts = new List<object>();
 
-            List<Account> memberAccounts = accountService.Get(x => x.membershipState == MembershipState.MEMBER).ToList();
+            List<Account> memberAccounts = accountService.Data().Get(x => x.membershipState == MembershipState.MEMBER).ToList();
             if (reverse) {
                 memberAccounts.Sort((x, y) => ranksService.Sort(y.rank, x.rank));
             } else {
@@ -121,7 +125,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
         [HttpGet("roster"), Authorize]
         public IActionResult GetRosterAccounts() {
             List<object> accountObjects = new List<object>();
-            List<Account> accounts = accountService.Get(x => x.membershipState == MembershipState.MEMBER);
+            List<Account> accounts = accountService.Data().Get(x => x.membershipState == MembershipState.MEMBER);
             accounts = accounts.OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname).ToList();
             accountObjects.AddRange(
                 accounts.Select(
@@ -144,7 +148,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
             if (string.IsNullOrEmpty(clientsString)) return Ok();
             JObject clientsObject = JObject.Parse(clientsString);
             HashSet<TeamspeakClientSnapshot> onlineClients = JsonConvert.DeserializeObject<HashSet<TeamspeakClientSnapshot>>(clientsObject["clients"].ToString());
-            List<Account> allAccounts = accountService.Get();
+            List<Account> allAccounts = accountService.Data().Get();
             var clients = onlineClients.Where(x => x != null).Select(x => new {account = allAccounts.FirstOrDefault(y => y.teamspeakIdentities != null && y.teamspeakIdentities.Any(z => z == x.clientDbId)), client = x}).ToList();
             var clientAccounts = clients.Where(x => x.account != null && x.account.membershipState == MembershipState.MEMBER).OrderBy(x => x.account.rank, new RankComparer(ranksService)).ThenBy(x => x.account.lastname).ThenBy(x => x.account.firstname);
 
@@ -168,31 +172,31 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
 
         [HttpGet("exists")]
         public IActionResult CheckUsernameOrEmailExists([FromQuery] string check) {
-            return Ok(accountService.Get().Any(x => string.Equals(x.email, check, StringComparison.InvariantCultureIgnoreCase)) ? new {exists = true} : new {exists = false});
+            return Ok(accountService.Data().Get().Any(x => string.Equals(x.email, check, StringComparison.InvariantCultureIgnoreCase)) ? new {exists = true} : new {exists = false});
         }
 
         [HttpPut("name"), Authorize]
         public async Task<IActionResult> ChangeName([FromBody] JObject changeNameRequest) {
             Account account = sessionService.GetContextAccount();
-            await accountService.Update(account.id, "firstname", changeNameRequest["firstname"].ToString());
-            await accountService.Update(account.id, "lastname", changeNameRequest["lastname"].ToString());
+            await accountService.Data().Update(account.id, "firstname", changeNameRequest["firstname"].ToString());
+            await accountService.Data().Update(account.id, "lastname", changeNameRequest["lastname"].ToString());
             LogWrapper.AuditLog(sessionService.GetContextId(), $"{account.lastname}, {account.firstname} changed their name to {changeNameRequest["lastname"]}, {changeNameRequest["firstname"]}");
-            await discordService.UpdateAccount(accountService.GetSingle(account.id));
+            await discordService.UpdateAccount(accountService.Data().GetSingle(account.id));
             return Ok();
         }
 
         [HttpPut("password"), Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] JObject changePasswordRequest) {
             string contextId = sessionService.GetContextId();
-            await accountService.Update(contextId, "password", BCrypt.Net.BCrypt.HashPassword(changePasswordRequest["password"].ToString()));
+            await accountService.Data().Update(contextId, "password", BCrypt.Net.BCrypt.HashPassword(changePasswordRequest["password"].ToString()));
             LogWrapper.AuditLog(contextId, $"Password changed for {contextId}");
             return Ok();
         }
 
         [HttpPost("updatesetting/{id}"), Authorize]
         public async Task<IActionResult> UpdateSetting(string id, [FromBody] JObject body) {
-            Account account = string.IsNullOrEmpty(id) ? sessionService.GetContextAccount() : accountService.GetSingle(id);
-            await accountService.Update(account.id, $"settings.{body["name"]}", body["value"]);
+            Account account = string.IsNullOrEmpty(id) ? sessionService.GetContextAccount() : accountService.Data().GetSingle(id);
+            await accountService.Data().Update(account.id, $"settings.{body["name"]}", body["value"]);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Setting {body["name"]} updated for {account.id} from {account.settings.GetAttribute<bool>(body["name"].ToString())} to {body["value"]}");
             return Ok();
         }

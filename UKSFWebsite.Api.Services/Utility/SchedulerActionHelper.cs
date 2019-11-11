@@ -1,17 +1,17 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
-using UKSFWebsite.Api.Models;
-using UKSFWebsite.Api.Models.Logging;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Data;
+using UKSFWebsite.Api.Interfaces.Integrations;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Message;
+using UKSFWebsite.Api.Models.Message.Logging;
 
 namespace UKSFWebsite.Api.Services.Utility {
     public static class SchedulerActionHelper {
         private const ulong ID_CHANNEL_GENERAL = 311547576942067713;
 
         public static void DeleteExpiredConfirmationCode(string id) {
-            ServiceWrapper.ServiceProvider.GetService<IConfirmationCodeService>().Delete(id);
+            ServiceWrapper.ServiceProvider.GetService<IConfirmationCodeService>().Data().Delete(id);
         }
 
         public static void PruneLogs() {
@@ -28,7 +28,7 @@ namespace UKSFWebsite.Api.Services.Utility {
         }
 
         public static void DiscordVoteAnnouncement() {
-            bool run = bool.Parse(VariablesWrapper.VariablesService().GetSingle("RUN_DISCORD_CLANLIST").AsString());
+            bool run = bool.Parse(VariablesWrapper.VariablesDataService().GetSingle("RUN_DISCORD_CLANLIST").AsString());
             if (!run) return;
             ServiceWrapper.ServiceProvider.GetService<IDiscordService>().SendMessage(ID_CHANNEL_GENERAL, "@everyone - As part of our recruitment drive, we're aiming to gain exposure through a high ranking on Clanlist. To help with this, please go to https://clanlist.io/vote/UKSFMilsim and vote");
         }

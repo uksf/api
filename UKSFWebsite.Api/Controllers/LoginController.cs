@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Services;
-using UKSFWebsite.Api.Services.Abstraction;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Services.Personnel;
 
 namespace UKSFWebsite.Api.Controllers {
     [Route("[controller]")]

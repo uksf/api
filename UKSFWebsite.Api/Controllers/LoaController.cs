@@ -4,12 +4,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UKSFWebsite.Api.Models;
-using UKSFWebsite.Api.Models.Accounts;
-using UKSFWebsite.Api.Models.CommandRequests;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Data;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Interfaces.Command;
+using UKSFWebsite.Api.Interfaces.Message;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Units;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Command;
+using UKSFWebsite.Api.Models.Message;
+using UKSFWebsite.Api.Models.Personnel;
+using UKSFWebsite.Api.Models.Units;
+using UKSFWebsite.Api.Services.Message;
+using UKSFWebsite.Api.Services.Personnel;
 
 namespace UKSFWebsite.Api.Controllers {
     [Route("[controller]"), Roles(RoleDefinitions.MEMBER)]
@@ -48,13 +53,13 @@ namespace UKSFWebsite.Api.Controllers {
             List<string> objectIds;
             switch (scope) {
                 case "all":
-                    objectIds = accountService.Get(x => x.membershipState == MembershipState.MEMBER).Select(x => x.id).ToList();
+                    objectIds = accountService.Data().Get(x => x.membershipState == MembershipState.MEMBER).Select(x => x.id).ToList();
                     break;
                 case "unit":
                     Account account = sessionService.GetContextAccount();
-                    IEnumerable<Unit> groups = unitsService.GetAllChildren(unitsService.GetSingle(x => x.name == account.unitAssignment), true);
+                    IEnumerable<Unit> groups = unitsService.GetAllChildren(unitsService.Data().GetSingle(x => x.name == account.unitAssignment), true);
                     List<string> members = groups.SelectMany(x => x.members.ToList()).ToList();
-                    objectIds = accountService.Get(x => x.membershipState == MembershipState.MEMBER && members.Contains(x.id)).Select(x => x.id).ToList();
+                    objectIds = accountService.Data().Get(x => x.membershipState == MembershipState.MEMBER && members.Contains(x.id)).Select(x => x.id).ToList();
                     break;
                 case "you":
                     objectIds = new List<string> {sessionService.GetContextId()};
@@ -72,7 +77,7 @@ namespace UKSFWebsite.Api.Controllers {
                                                                 x.emergency,
                                                                 x.late,
                                                                 x.reason,
-                                                                name = displayNameService.GetDisplayName(accountService.GetSingle(x.recipient)),
+                                                                name = displayNameService.GetDisplayName(accountService.Data().GetSingle(x.recipient)),
                                                                 inChainOfCommand = chainOfCommandService.InContextChainOfCommand(x.recipient),
                                                                 longTerm = (x.end - x.start).Days > 21
                                                             }
@@ -89,19 +94,19 @@ namespace UKSFWebsite.Api.Controllers {
 
         [HttpDelete("{id}"), Authorize]
         public async Task<IActionResult> DeleteLoa(string id) {
-            Loa loa = loaService.GetSingle(id);
-            CommandRequest request = commandRequestService.GetSingle(x => x.value == id);
+            Loa loa = loaService.Data().GetSingle(id);
+            CommandRequest request = commandRequestService.Data().GetSingle(x => x.value == id);
             if (request != null) {
-                await commandRequestService.Delete(request.id);
+                await commandRequestService.Data().Delete(request.id);
                 foreach (string reviewerId in request.reviews.Keys.Where(x => x != request.requester)) {
                     notificationsService.Add(new Notification {owner = reviewerId, icon = NotificationIcons.REQUEST, message = $"Your review for {request.displayRequester}'s LOA is no longer required as they deleted their LOA", link = "/command/requests"});
                 }
 
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"Loa request deleted for '{displayNameService.GetDisplayName(accountService.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
+                LogWrapper.AuditLog(sessionService.GetContextId(), $"Loa request deleted for '{displayNameService.GetDisplayName(accountService.Data().GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
             }
 
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"Loa deleted for '{displayNameService.GetDisplayName(accountService.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
-            await loaService.Delete(loa.id);
+            LogWrapper.AuditLog(sessionService.GetContextId(), $"Loa deleted for '{displayNameService.GetDisplayName(accountService.Data().GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
+            await loaService.Data().Delete(loa.id);
 
             return Ok();
         }

@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
-using UKSFWebsite.Api.Services.Abstraction;
+using UKSFWebsite.Api.Interfaces.Data.Cached;
 
 namespace UKSFWebsite.Api.Services.Utility {
     public static class VariablesWrapper {
-        public static IVariablesService VariablesService() => ServiceWrapper.ServiceProvider.GetService<IVariablesService>();
+        public static IVariablesDataService VariablesDataService() => ServiceWrapper.ServiceProvider.GetService<IVariablesDataService>();
     }
 }

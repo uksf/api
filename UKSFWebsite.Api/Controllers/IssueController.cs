@@ -8,16 +8,18 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Interfaces.Message;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Services.Personnel;
 
 namespace UKSFWebsite.Api.Controllers {
     [Route("[controller]"), Roles(RoleDefinitions.MEMBER)]
     public class IssueController : Controller {
         private readonly IDisplayNameService displayNameService;
-        private readonly ISessionService sessionService;
         private readonly IEmailService emailService;
         private readonly string githubToken;
+        private readonly ISessionService sessionService;
 
         public IssueController(ISessionService sessionService, IDisplayNameService displayNameService, IEmailService emailService, IConfiguration configuration) {
             this.sessionService = sessionService;

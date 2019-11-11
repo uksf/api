@@ -2,9 +2,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Models.Accounts;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Personnel;
+using UKSFWebsite.Api.Services.Message;
 
 namespace UKSFWebsite.Api.Controllers.Accounts {
     [Route("[controller]")]
@@ -27,8 +28,8 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
             }
 
             string id = sessionService.GetContextId();
-            await accountService.Update(id, "steamname", steamId);
-            Account account = accountService.GetSingle(id);
+            await accountService.Data().Update(id, "steamname", steamId);
+            Account account = accountService.Data().GetSingle(id);
             LogWrapper.AuditLog(account.id, $"SteamID updated for {account.id} to {steamId}");
             return Ok();
         }

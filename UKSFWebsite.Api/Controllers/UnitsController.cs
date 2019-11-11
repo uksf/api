@@ -7,10 +7,15 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Models;
-using UKSFWebsite.Api.Models.Accounts;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Interfaces.Integrations;
+using UKSFWebsite.Api.Interfaces.Message;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Units;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Message;
+using UKSFWebsite.Api.Models.Personnel;
+using UKSFWebsite.Api.Models.Units;
+using UKSFWebsite.Api.Services.Message;
 
 namespace UKSFWebsite.Api.Controllers {
     [Route("[controller]")]
@@ -67,14 +72,14 @@ namespace UKSFWebsite.Api.Controllers {
 
         [HttpGet("tree"), Authorize]
         public IActionResult GetTree() {
-            Unit combatRoot = unitsService.GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.COMBAT);
-            Unit auxiliaryRoot = unitsService.GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.AUXILIARY);
+            Unit combatRoot = unitsService.Data().GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.COMBAT);
+            Unit auxiliaryRoot = unitsService.Data().GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.AUXILIARY);
             return Ok(new {combatUnits = new[] {new {combatRoot.id, combatRoot.name, children = GetTreeChildren(combatRoot), unit = combatRoot}}, auxiliaryUnits = new[] {new {auxiliaryRoot.id, auxiliaryRoot.name, children = GetTreeChildren(auxiliaryRoot), unit = auxiliaryRoot}}});
         }
 
         private List<object> GetTreeChildren(Unit parent) {
             List<object> children = new List<object>();
-            foreach (Unit unit in unitsService.Get(x => x.parent == parent.id).OrderBy(x => x.order)) {
+            foreach (Unit unit in unitsService.Data().Get(x => x.parent == parent.id).OrderBy(x => x.order)) {
                 children.Add(new {unit.id, unit.name, children = GetTreeChildren(unit), unit});
             }
 
@@ -84,21 +89,22 @@ namespace UKSFWebsite.Api.Controllers {
         [HttpPost("{check}"), Authorize]
         public IActionResult CheckUnit(string check, [FromBody] Unit unit = null) {
             if (string.IsNullOrEmpty(check)) return Ok();
-            return Ok(
-                unit != null
-                    ? unitsService.GetSingle(x => x.id != unit.id && (x.name == check || x.shortname == check || x.teamspeakGroup == check || x.discordRoleId == check || x.callsign == check))
-                    : unitsService.GetSingle(x => x.name == check || x.shortname == check || x.teamspeakGroup == check || x.discordRoleId == check || x.callsign == check)
-            );
+            if (unit != null) {
+                Unit safeUnit = unit;
+                return Ok(unitsService.Data().GetSingle(x => x.id != safeUnit.id && (x.name == check || x.shortname == check || x.teamspeakGroup == check || x.discordRoleId == check || x.callsign == check)));
+            }
+
+            return Ok(unitsService.Data().GetSingle(x => x.name == check || x.shortname == check || x.teamspeakGroup == check || x.discordRoleId == check || x.callsign == check));
         }
 
         [HttpPost, Authorize]
         public IActionResult CheckUnit([FromBody] Unit unit) {
-            return unit != null ? (IActionResult) Ok(unitsService.GetSingle(x => x.id != unit.id && (x.name == unit.name || x.shortname == unit.shortname || x.teamspeakGroup == unit.teamspeakGroup || x.discordRoleId == unit.discordRoleId || x.callsign == unit.callsign))) : Ok();
+            return unit != null ? (IActionResult) Ok(unitsService.Data().GetSingle(x => x.id != unit.id && (x.name == unit.name || x.shortname == unit.shortname || x.teamspeakGroup == unit.teamspeakGroup || x.discordRoleId == unit.discordRoleId || x.callsign == unit.callsign))) : Ok();
         }
 
         [HttpPut, Authorize]
         public async Task<IActionResult> AddUnit([FromBody] Unit unit) {
-            await unitsService.Add(unit);
+            await unitsService.Data().Add(unit);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"New unit added '{unit.name}, {unit.shortname}, {unit.type}, {unit.branch}, {unit.teamspeakGroup}, {unit.discordRoleId}, {unit.callsign}'");
             return Ok();
         }
@@ -106,39 +112,40 @@ namespace UKSFWebsite.Api.Controllers {
         [HttpPatch, Authorize]
         public async Task<IActionResult> EditUnit([FromBody] Unit unit) {
             Unit localUnit = unit;
-            Unit oldUnit = unitsService.GetSingle(x => x.id == localUnit.id);
+            Unit oldUnit = unitsService.Data().GetSingle(x => x.id == localUnit.id);
             LogWrapper.AuditLog(
                 sessionService.GetContextId(),
                 $"Unit updated from '{oldUnit.name}, {oldUnit.shortname}, {oldUnit.type}, {oldUnit.parent}, {oldUnit.branch}, {oldUnit.teamspeakGroup}, {oldUnit.discordRoleId}, {oldUnit.callsign}, {oldUnit.icon}' to '{unit.name}, {unit.shortname}, {unit.type}, {unit.parent}, {unit.branch}, {unit.teamspeakGroup}, {unit.discordRoleId}, {unit.callsign}, {unit.icon}'"
             );
-            await unitsService.Update(
-                unit.id,
-                Builders<Unit>.Update.Set("name", unit.name)
-                              .Set("shortname", unit.shortname)
-                              .Set("type", unit.type)
-                              .Set("parent", unit.parent)
-                              .Set("branch", unit.branch)
-                              .Set("teamspeakGroup", unit.teamspeakGroup)
-                              .Set("discordRoleId", unit.discordRoleId)
-                              .Set("callsign", unit.callsign)
-                              .Set("icon", unit.icon)
-            );
-            unit = unitsService.GetSingle(unit.id);
+            await unitsService.Data()
+                              .Update(
+                                  unit.id,
+                                  Builders<Unit>.Update.Set("name", unit.name)
+                                                .Set("shortname", unit.shortname)
+                                                .Set("type", unit.type)
+                                                .Set("parent", unit.parent)
+                                                .Set("branch", unit.branch)
+                                                .Set("teamspeakGroup", unit.teamspeakGroup)
+                                                .Set("discordRoleId", unit.discordRoleId)
+                                                .Set("callsign", unit.callsign)
+                                                .Set("icon", unit.icon)
+                              );
+            unit = unitsService.Data().GetSingle(unit.id);
             if (unit.name != oldUnit.name) {
-                foreach (Account account in accountService.Get(x => x.unitAssignment == oldUnit.name)) {
-                    await accountService.Update(account.id, "unitAssignment", unit.name);
-                    teamspeakService.UpdateAccountTeamspeakGroups(accountService.GetSingle(account.id));
+                foreach (Account account in accountService.Data().Get(x => x.unitAssignment == oldUnit.name)) {
+                    await accountService.Data().Update(account.id, "unitAssignment", unit.name);
+                    teamspeakService.UpdateAccountTeamspeakGroups(accountService.Data().GetSingle(account.id));
                 }
             }
 
             if (unit.teamspeakGroup != oldUnit.teamspeakGroup) {
-                foreach (Account account in unit.members.Select(x => accountService.GetSingle(x))) {
+                foreach (Account account in unit.members.Select(x => accountService.Data().GetSingle(x))) {
                     teamspeakService.UpdateAccountTeamspeakGroups(account);
                 }
             }
 
             if (unit.discordRoleId != oldUnit.discordRoleId) {
-                foreach (Account account in unit.members.Select(x => accountService.GetSingle(x))) {
+                foreach (Account account in unit.members.Select(x => accountService.Data().GetSingle(x))) {
                     await discordService.UpdateAccount(account);
                 }
             }
@@ -149,14 +156,14 @@ namespace UKSFWebsite.Api.Controllers {
 
         [HttpDelete("{id}"), Authorize]
         public async Task<IActionResult> DeleteUnit(string id) {
-            Unit unit = unitsService.GetSingle(id);
+            Unit unit = unitsService.Data().GetSingle(id);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Unit deleted '{unit.name}'");
-            foreach (Account account in accountService.Get(x => x.unitAssignment == unit.name)) {
+            foreach (Account account in accountService.Data().Get(x => x.unitAssignment == unit.name)) {
                 Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, "Reserves", reason: $"{unit.name} was deleted");
                 notificationsService.Add(notification);
             }
 
-            await unitsService.Delete(id);
+            await unitsService.Data().Delete(id);
             serverService.UpdateSquadXml();
             return Ok();
         }
@@ -167,22 +174,22 @@ namespace UKSFWebsite.Api.Controllers {
             Unit parentUnit = JsonConvert.DeserializeObject<Unit>(data["parentUnit"].ToString());
             int index = JsonConvert.DeserializeObject<int>(data["index"].ToString());
             if (unit.parent == parentUnit.id) return Ok();
-            await unitsService.Update(unit.id, "parent", parentUnit.id);
+            await unitsService.Data().Update(unit.id, "parent", parentUnit.id);
 
             if (unit.branch != parentUnit.branch) {
-                await unitsService.Update(unit.id, "branch", parentUnit.branch);
+                await unitsService.Data().Update(unit.id, "branch", parentUnit.branch);
             }
 
-            List<Unit> parentChildren = unitsService.Get(x => x.parent == parentUnit.id).ToList();
+            List<Unit> parentChildren = unitsService.Data().Get(x => x.parent == parentUnit.id).ToList();
             parentChildren.Remove(parentChildren.FirstOrDefault(x => x.id == unit.id));
             parentChildren.Insert(index, unit);
             foreach (Unit child in parentChildren) {
-                await unitsService.Update(child.id, "order", parentChildren.IndexOf(child));
+                await unitsService.Data().Update(child.id, "order", parentChildren.IndexOf(child));
             }
 
-            unit = unitsService.GetSingle(unit.id);
+            unit = unitsService.Data().GetSingle(unit.id);
             foreach (Unit child in unitsService.GetAllChildren(unit, true)) {
-                foreach (Account account in child.members.Select(x => accountService.GetSingle(x))) {
+                foreach (Account account in child.members.Select(x => accountService.Data().GetSingle(x))) {
                     Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, unit.name, reason: $"the hierarchy chain for {unit.name} was updated");
                     notificationsService.Add(notification);
                 }
@@ -195,12 +202,12 @@ namespace UKSFWebsite.Api.Controllers {
         public IActionResult UpdateSortOrder([FromBody] JObject data) {
             Unit unit = JsonConvert.DeserializeObject<Unit>(data["unit"].ToString());
             int index = JsonConvert.DeserializeObject<int>(data["index"].ToString());
-            Unit parentUnit = unitsService.GetSingle(x => x.id == unit.parent);
-            List<Unit> parentChildren = unitsService.Get(x => x.parent == parentUnit.id).ToList();
+            Unit parentUnit = unitsService.Data().GetSingle(x => x.id == unit.parent);
+            List<Unit> parentChildren = unitsService.Data().Get(x => x.parent == parentUnit.id).ToList();
             parentChildren.Remove(parentChildren.FirstOrDefault(x => x.id == unit.id));
             parentChildren.Insert(index, unit);
             foreach (Unit child in parentChildren) {
-                unitsService.Update(child.id, "order", parentChildren.IndexOf(child));
+                unitsService.Data().Update(child.id, "order", parentChildren.IndexOf(child));
             }
 
             return Ok();
@@ -210,10 +217,10 @@ namespace UKSFWebsite.Api.Controllers {
         public IActionResult Get([FromQuery] string typeFilter) {
             switch (typeFilter) {
                 case "regiments":
-                    string combatRootId = unitsService.GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.COMBAT).id;
-                    return Ok(unitsService.Get(x => x.parent == combatRootId || x.id == combatRootId).ToList().Select(x => new {x.name, x.shortname, id = x.id.ToString(), x.icon}));
+                    string combatRootId = unitsService.Data().GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.COMBAT).id;
+                    return Ok(unitsService.Data().Get(x => x.parent == combatRootId || x.id == combatRootId).ToList().Select(x => new {x.name, x.shortname, id = x.id.ToString(), x.icon}));
                 case "orgchart":
-                    Unit combatRoot = unitsService.GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.COMBAT);
+                    Unit combatRoot = unitsService.Data().GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.COMBAT);
                     return Ok(
                         new[] {
                             new {
@@ -228,7 +235,7 @@ namespace UKSFWebsite.Api.Controllers {
                         }
                     );
                 case "orgchartaux":
-                    Unit auziliaryRoot = unitsService.GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.AUXILIARY);
+                    Unit auziliaryRoot = unitsService.Data().GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.AUXILIARY);
                     return Ok(
                         new[] {
                             new {
@@ -242,13 +249,13 @@ namespace UKSFWebsite.Api.Controllers {
                             }
                         }
                     );
-                default: return Ok(unitsService.Get().Select(x => new {viewValue = x.name, value = x.id.ToString()}));
+                default: return Ok(unitsService.Data().Get().Select(x => new {viewValue = x.name, value = x.id.ToString()}));
             }
         }
 
         [HttpGet("info/{id}"), Authorize]
         public IActionResult GetInfo(string id) {
-            Unit unit = unitsService.GetSingle(id);
+            Unit unit = unitsService.Data().GetSingle(id);
             IEnumerable<Unit> parents = unitsService.GetParents(unit).ToList();
             Unit regiment = parents.Skip(1).FirstOrDefault(x => x.type == UnitType.REGIMENT);
             return Ok(
@@ -257,9 +264,9 @@ namespace UKSFWebsite.Api.Controllers {
                     unit.parent,
                     type = unit.type.ToString(),
                     displayName = unit.name,
-//                    oic = unit.roles == null || !unitsService.UnitHasRole(unit, rolesService.GetUnitRoleByOrder(0).name) ? "" : displayNameService.GetDisplayName(accountService.GetSingle(unit.roles[rolesService.GetUnitRoleByOrder(0).name])),
-//                    xic = unit.roles == null || !unitsService.UnitHasRole(unit, rolesService.GetUnitRoleByOrder(1).name) ? "" : displayNameService.GetDisplayName(accountService.GetSingle(unit.roles[rolesService.GetUnitRoleByOrder(1).name])),
-//                    ncoic = unit.roles == null || !unitsService.UnitHasRole(unit, rolesService.GetUnitRoleByOrder(2).name) ? "" : displayNameService.GetDisplayName(accountService.GetSingle(unit.roles[rolesService.GetUnitRoleByOrder(2).name])),
+//                    oic = unit.roles == null || !unitsService.UnitHasRole(unit, rolesService.GetUnitRoleByOrder(0).name) ? "" : displayNameService.GetDisplayName(accountService.Data().GetSingle(unit.roles[rolesService.GetUnitRoleByOrder(0).name])),
+//                    xic = unit.roles == null || !unitsService.UnitHasRole(unit, rolesService.GetUnitRoleByOrder(1).name) ? "" : displayNameService.GetDisplayName(accountService.Data().GetSingle(unit.roles[rolesService.GetUnitRoleByOrder(1).name])),
+//                    ncoic = unit.roles == null || !unitsService.UnitHasRole(unit, rolesService.GetUnitRoleByOrder(2).name) ? "" : displayNameService.GetDisplayName(accountService.Data().GetSingle(unit.roles[rolesService.GetUnitRoleByOrder(2).name])),
                     code = unitsService.GetChainString(unit),
                     parentDisplay = parents.Skip(1).FirstOrDefault()?.name,
                     regimentDisplay = regiment?.name,
@@ -270,20 +277,20 @@ namespace UKSFWebsite.Api.Controllers {
 //                    coverageLOA = "80%",
 //                    casualtyRate = "10010 instances (70% rate)",
 //                    fatalityRate = "200 instances (20% rate)",
-                    memberCollection = unit.members.Select(x => accountService.GetSingle(x)).Select(x => new {name = displayNameService.GetDisplayName(x), role = x.roleAssignment})
+                    memberCollection = unit.members.Select(x => accountService.Data().GetSingle(x)).Select(x => new {name = displayNameService.GetDisplayName(x), role = x.roleAssignment})
                 }
             );
         }
 
         [HttpGet("members/{id}"), Authorize]
         public IActionResult GetMembers(string id) {
-            Unit unit = unitsService.GetSingle(id);
-            return Ok(unit.members.Select(x => accountService.GetSingle(x)).Select(x => new {name = displayNameService.GetDisplayName(x), role = x.roleAssignment}));
+            Unit unit = unitsService.Data().GetSingle(id);
+            return Ok(unit.members.Select(x => accountService.Data().GetSingle(x)).Select(x => new {name = displayNameService.GetDisplayName(x), role = x.roleAssignment}));
         }
 
         private object[] GetChartChildren(string parent) {
             List<object> units = new List<object>();
-            foreach (Unit unit in unitsService.Get(x => x.parent == parent)) {
+            foreach (Unit unit in unitsService.Data().Get(x => x.parent == parent)) {
                 units.Add(
                     new {
                         unit.id,
@@ -309,7 +316,7 @@ namespace UKSFWebsite.Api.Controllers {
         private IEnumerable<string> SortMembers(IEnumerable<string> members, Unit unit) {
             var accounts = members.Select(
                                       x => {
-                                          Account account = accountService.GetSingle(x);
+                                          Account account = accountService.Data().GetSingle(x);
                                           return new {account, rankIndex = ranksService.GetRankIndex(account.rank), roleIndex = unitsService.GetMemberRoleOrder(account, unit)};
                                       }
                                   )

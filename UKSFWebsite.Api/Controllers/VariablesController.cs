@@ -1,60 +1,68 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UKSFWebsite.Api.Models;
-using UKSFWebsite.Api.Services.Abstraction;
+using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Utility;
+using UKSFWebsite.Api.Services.Message;
+using UKSFWebsite.Api.Services.Personnel;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Controllers {
     [Route("[controller]"), Roles(RoleDefinitions.ADMIN)]
     public class VariablesController : Controller {
         private readonly ISessionService sessionService;
-        private readonly IVariablesService variablesService;
+        private readonly IVariablesDataService variablesDataService;
 
-        public VariablesController(IVariablesService variablesService, ISessionService sessionService) {
-            this.variablesService = variablesService;
+        public VariablesController(IVariablesDataService variablesDataService, ISessionService sessionService) {
+            this.variablesDataService = variablesDataService;
             this.sessionService = sessionService;
         }
 
         [HttpGet, Authorize]
-        public IActionResult GetAll() => Ok(variablesService.Get());
+        public IActionResult GetAll() => Ok(variablesDataService.Get());
 
         [HttpGet("{key}"), Authorize]
-        public IActionResult GetVariableItems(string key) => Ok(variablesService.GetSingle(key));
+        public IActionResult GetVariableItems(string key) => Ok(variablesDataService.GetSingle(key));
 
         [HttpPost("{key}"), Authorize]
         public IActionResult CheckVariableItem(string key, [FromBody] VariableItem variableItem = null) {
             if (string.IsNullOrEmpty(key)) return Ok();
-            return Ok(variableItem != null ? variablesService.GetSingle(x => x.id != variableItem.id && x.key == key.Keyify()) : variablesService.GetSingle(x => x.key == key.Keyify()));
+            if (variableItem != null) {
+                VariableItem safeVariableItem = variableItem;
+                return Ok(variablesDataService.GetSingle(x => x.id != safeVariableItem.id && x.key == key.Keyify()));
+            }
+
+            return Ok(variablesDataService.GetSingle(x => x.key == key.Keyify()));
         }
 
         [HttpPost, Authorize]
         public IActionResult CheckVariableItem([FromBody] VariableItem variableItem) {
-            return variableItem != null ? (IActionResult) Ok(variablesService.GetSingle(x => x.id != variableItem.id && x.key == variableItem.key.Keyify())) : Ok();
+            return variableItem != null ? (IActionResult) Ok(variablesDataService.GetSingle(x => x.id != variableItem.id && x.key == variableItem.key.Keyify())) : Ok();
         }
 
         [HttpPut, Authorize]
         public async Task<IActionResult> AddVariableItem([FromBody] VariableItem variableItem) {
             variableItem.key = variableItem.key.Keyify();
-            await variablesService.Add(variableItem);
+            await variablesDataService.Add(variableItem);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"VariableItem added '{variableItem.key}, {variableItem.item}'");
             return Ok();
         }
 
         [HttpPatch, Authorize]
         public async Task<IActionResult> EditVariableItem([FromBody] VariableItem variableItem) {
-            VariableItem oldVariableItem = variablesService.GetSingle(variableItem.key);
+            VariableItem oldVariableItem = variablesDataService.GetSingle(variableItem.key);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"VariableItem '{oldVariableItem.key}' updated from '{oldVariableItem.item}' to '{variableItem.item}'");
-            await variablesService.Update(variableItem.key, variableItem.item);
-            return Ok(variablesService.Get());
+            await variablesDataService.Update(variableItem.key, variableItem.item);
+            return Ok(variablesDataService.Get());
         }
 
         [HttpDelete("{key}"), Authorize]
         public async Task<IActionResult> DeleteVariableItem(string key) {
-            VariableItem variableItem = variablesService.GetSingle(key);
+            VariableItem variableItem = variablesDataService.GetSingle(key);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"VariableItem deleted '{variableItem.key}, {variableItem.item}'");
-            await variablesService.Delete(key);
-            return Ok(variablesService.Get());
+            await variablesDataService.Delete(key);
+            return Ok(variablesDataService.Get());
         }
     }
 }

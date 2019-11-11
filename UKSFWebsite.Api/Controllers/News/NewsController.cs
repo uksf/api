@@ -18,17 +18,8 @@ namespace UKSFWebsite.Api.Controllers.News {
                 foreach (JToken jToken in json) {
                     JObject message = (JObject) jToken;
                     if (message.GetValue("content").ToString().StartsWith("@everyone")) {
-                        string user = await (await client.GetAsync($"https://discordapp.com/api/v6/guilds/311543678126653451/members/{(message.GetValue("author") as JObject)?.GetValue("id")}"))
-                                            .Content.ReadAsStringAsync();
-                        output.Add(
-                            JObject.FromObject(
-                                new {
-                                    message = CleanNewsMessage(message.GetValue("content").ToString().Replace("@everyone", "")),
-                                    author = JObject.Parse(user).GetValue("nick"),
-                                    timestamp = message.GetValue("timestamp")
-                                }
-                            )
-                        );
+                        string user = await (await client.GetAsync($"https://discordapp.com/api/v6/guilds/311543678126653451/members/{(message.GetValue("author") as JObject)?.GetValue("id")}")).Content.ReadAsStringAsync();
+                        output.Add(JObject.FromObject(new {message = CleanNewsMessage(message.GetValue("content").ToString().Replace("@everyone", "")), author = JObject.Parse(user).GetValue("nick"), timestamp = message.GetValue("timestamp")}));
                     }
                 }
             }

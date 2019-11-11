@@ -1,7 +1,9 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using UKSFWebsite.Api.Models.Accounts;
-using UKSFWebsite.Api.Services.Abstraction;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Units;
+using UKSFWebsite.Api.Models.Personnel;
+using UKSFWebsite.Api.Services.Integrations;
 
 namespace UKSFWebsite.Api.Services.Debug {
     public class FakeDiscordService : DiscordService {

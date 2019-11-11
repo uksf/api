@@ -5,8 +5,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Data;
+using UKSFWebsite.Api.Data.Utility;
+using UKSFWebsite.Api.Interfaces.Data;
+using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Integrations {
@@ -54,7 +56,9 @@ namespace UKSFWebsite.Integrations {
             services.AddSingleton(configuration);
             services.AddSingleton(_ => MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<IVariablesService, VariablesService>();
+            services.AddSingleton<IConfirmationCodeDataService, ConfirmationCodeDataService>();
+            services.AddSingleton<ISchedulerDataService, SchedulerDataService>();
+            services.AddSingleton<IVariablesDataService, VariablesDataService>();
 
             return services;
         }

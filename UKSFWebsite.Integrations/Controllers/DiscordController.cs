@@ -8,8 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Data;
+using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Integrations.Controllers {
@@ -67,7 +66,7 @@ namespace UKSFWebsite.Integrations.Controllers {
             string user = await response.Content.ReadAsStringAsync();
             string id = JObject.Parse(user)["id"].ToString();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", botToken);
-            await client.PutAsync($"https://discordapp.com/api/guilds/{VariablesWrapper.VariablesService().GetSingle("DID_SERVER").AsUlong()}/members/{id}", new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json"));
+            await client.PutAsync($"https://discordapp.com/api/guilds/{VariablesWrapper.VariablesDataService().GetSingle("DID_SERVER").AsUlong()}/members/{id}", new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json"));
             string confirmationCode = await confirmationCodeService.CreateConfirmationCode(id, true);
             return $"validation={confirmationCode}&discordid={id}";
         }

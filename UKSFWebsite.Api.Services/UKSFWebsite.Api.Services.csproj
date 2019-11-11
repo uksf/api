@@ -22,6 +22,7 @@
     <PackageReference Include="System.Runtime.Caching" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\UKSFWebsite.Api.Interfaces\UKSFWebsite.Api.Interfaces.csproj" />
     <ProjectReference Include="..\UKSFWebsite.Api.Models\UKSFWebsite.Api.Models.csproj" />
   </ItemGroup>
   <ItemGroup>

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Reflection;
-using UKSFWebsite.Api.Models.Accounts;
+using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Services.Utility {
     public static class Utilities {

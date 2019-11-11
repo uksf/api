@@ -4,9 +4,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Models.Accounts;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Interfaces.Integrations;
+using UKSFWebsite.Api.Interfaces.Message;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Personnel;
+using UKSFWebsite.Api.Services.Message;
 
 namespace UKSFWebsite.Api.Controllers.Accounts {
     [Route("[controller]")]
@@ -17,13 +20,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
         private readonly ISessionService sessionService;
         private readonly ITeamspeakService teamspeakService;
 
-        public CommunicationsController(
-            IConfirmationCodeService confirmationCodeService,
-            IAccountService accountService,
-            ISessionService sessionService,
-            ITeamspeakService teamspeakService,
-            INotificationsService notificationsService
-        ) {
+        public CommunicationsController(IConfirmationCodeService confirmationCodeService, IAccountService accountService, ISessionService sessionService, ITeamspeakService teamspeakService, INotificationsService notificationsService) {
             this.confirmationCodeService = confirmationCodeService;
             this.accountService = accountService;
             this.sessionService = sessionService;
@@ -65,7 +62,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
         }
 
         private async Task<IActionResult> ReceiveTeamspeakCode(string id, string code, string checkId) {
-            Account account = accountService.GetSingle(id);
+            Account account = accountService.Data().GetSingle(id);
             string teamspeakId = await confirmationCodeService.GetConfirmationCode(code);
             if (string.IsNullOrWhiteSpace(teamspeakId) || teamspeakId != checkId) {
                 return BadRequest(new {error = "The confirmation code has expired or is invalid. Please try again"});
@@ -73,8 +70,8 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
 
             if (account.teamspeakIdentities == null) account.teamspeakIdentities = new HashSet<string>();
             account.teamspeakIdentities.Add(teamspeakId);
-            await accountService.Update(account.id, Builders<Account>.Update.Set("teamspeakIdentities", account.teamspeakIdentities));
-            account = accountService.GetSingle(account.id);
+            await accountService.Data().Update(account.id, Builders<Account>.Update.Set("teamspeakIdentities", account.teamspeakIdentities));
+            account = accountService.Data().GetSingle(account.id);
             teamspeakService.UpdateAccountTeamspeakGroups(account);
             notificationsService.SendTeamspeakNotification(new HashSet<string> {teamspeakId}, $"This teamspeak identity has been linked to the account with email '{account.email}'\nIf this was not done by you, please contact an admin");
             LogWrapper.AuditLog(account.id, $"Teamspeak ID {teamspeakId} added for {account.id}");

@@ -7,12 +7,16 @@ using AvsAnLib;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Models;
-using UKSFWebsite.Api.Models.Accounts;
-using UKSFWebsite.Api.Models.CommandRequests;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Data;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Interfaces.Command;
+using UKSFWebsite.Api.Interfaces.Message;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Units;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Command;
+using UKSFWebsite.Api.Models.Message;
+using UKSFWebsite.Api.Models.Personnel;
+using UKSFWebsite.Api.Services.Message;
+using UKSFWebsite.Api.Services.Personnel;
 
 namespace UKSFWebsite.Api.Controllers.CommandRequests {
     [Route("[controller]"), Roles(RoleDefinitions.COMMAND)]
@@ -35,11 +39,11 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
 
         [HttpGet, Authorize]
         public IActionResult Get() {
-            List<CommandRequest> allRequests = commandRequestService.Get();
+            List<CommandRequest> allRequests = commandRequestService.Data().Get();
             List<CommandRequest> myRequests = new List<CommandRequest>();
             List<CommandRequest> otherRequests = new List<CommandRequest>();
             string contextId = sessionService.GetContextId();
-            bool canOverride = unitsService.GetSingle(x => x.shortname == "SR10").members.Any(x => x == contextId);
+            bool canOverride = unitsService.Data().GetSingle(x => x.shortname == "SR10").members.Any(x => x == contextId);
             bool superAdmin = contextId == Global.SUPER_ADMIN;
             DateTime now = DateTime.Now;
             foreach (CommandRequest commandRequest in allRequests) {
@@ -83,7 +87,7 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
             bool overriden = bool.Parse(body["overriden"].ToString());
             ReviewState state = Enum.Parse<ReviewState>(body["reviewState"].ToString());
             Account sessionAccount = sessionService.GetContextAccount();
-            CommandRequest request = commandRequestService.GetSingle(id);
+            CommandRequest request = commandRequestService.Data().GetSingle(id);
             if (request == null) {
                 throw new NullReferenceException($"Failed to get request with id {id}, does not exist");
             }

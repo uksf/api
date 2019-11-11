@@ -3,17 +3,19 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Models.Accounts;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Interfaces.Integrations;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Personnel;
+using UKSFWebsite.Api.Services.Message;
 
 namespace UKSFWebsite.Api.Controllers.Accounts {
     [Route("[controller]")]
     public class DiscordCodeController : Controller {
         private readonly IAccountService accountService;
         private readonly IConfirmationCodeService confirmationCodeService;
-        private readonly ISessionService sessionService;
         private readonly IDiscordService discordService;
+        private readonly ISessionService sessionService;
 
         public DiscordCodeController(ISessionService sessionService, IConfirmationCodeService confirmationCodeService, IAccountService accountService, IDiscordService discordService) {
             this.sessionService = sessionService;
@@ -30,8 +32,8 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
             }
 
             string id = sessionService.GetContextId();
-            await accountService.Update(id, Builders<Account>.Update.Set(x => x.discordId, discordId));
-            Account account = accountService.GetSingle(id);
+            await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.discordId, discordId));
+            Account account = accountService.Data().GetSingle(id);
             await discordService.UpdateAccount(account);
             LogWrapper.AuditLog(account.id, $"DiscordID updated for {account.id} to {discordId}");
             return Ok();
