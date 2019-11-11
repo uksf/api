@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using UKSFWebsite.Api.Events.Data;
+using UKSFWebsite.Api.Interfaces.Events;
+using UKSFWebsite.Api.Models.Events;
 
 namespace UKSFWebsite.Api.Data {
     public abstract class CachedDataService<T> : DataService<T> {
         protected List<T> Collection = new List<T>();
 
-        protected CachedDataService(IMongoDatabase database, string collectionName) : base(database, collectionName) { }
+        protected CachedDataService(IMongoDatabase database, IEventBus dataEventBus, string collectionName) : base(database, dataEventBus, collectionName) { }
 
         // ReSharper disable once MemberCanBeProtected.Global - Used in dynamic call, do not change to protected!
         public void Refresh() {
@@ -43,30 +46,31 @@ namespace UKSFWebsite.Api.Data {
         public override async Task Add(T data) {
             await base.Add(data);
             Refresh();
+            CachedDataEvent(DataEventFactory.Create(DataEventType.ADD, GetIdValue(data), data));
         }
 
         public override async Task Update(string id, string fieldName, object value) {
             await base.Update(id, fieldName, value);
             Refresh();
-            CachedDataEvent();
+            CachedDataEvent(DataEventFactory.Create(DataEventType.UPDATE, id));
         }
 
         public override async Task Update(string id, UpdateDefinition<T> update) {
             await base.Update(id, update);
             Refresh();
-            CachedDataEvent();
+            CachedDataEvent(DataEventFactory.Create(DataEventType.UPDATE, id));
         }
 
         public override async Task Delete(string id) {
             await base.Delete(id);
             Refresh();
-            CachedDataEvent();
+            CachedDataEvent(DataEventFactory.Create(DataEventType.DELETE, id));
         }
 
-        private void CachedDataEvent() {
-            base.DataEvent();
+        protected virtual void CachedDataEvent(DataEventModel dataEvent) {
+            base.DataEvent(dataEvent);
         }
 
-        protected override void DataEvent() { }
+        protected override void DataEvent(DataEventModel dataEvent) { }
     }
 }

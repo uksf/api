@@ -9,5 +9,6 @@ namespace UKSFWebsite.Api.Interfaces.Message {
         Task InsertComment(string id, Comment comment);
         Task RemoveComment(string id, Comment comment);
         IEnumerable<string> GetCommentThreadParticipants(string id);
+        object FormatComment(Comment comment);
     }
 }

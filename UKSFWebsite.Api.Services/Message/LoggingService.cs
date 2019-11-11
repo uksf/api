@@ -2,11 +2,11 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
+using UKSFWebsite.Api.Interfaces.Hubs;
 using UKSFWebsite.Api.Interfaces.Message;
 using UKSFWebsite.Api.Interfaces.Personnel;
 using UKSFWebsite.Api.Models.Message.Logging;
 using UKSFWebsite.Api.Services.Hubs;
-using UKSFWebsite.Api.Services.Hubs.Abstraction;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Services.Message {

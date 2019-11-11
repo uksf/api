@@ -6,12 +6,12 @@ using Microsoft.AspNetCore.SignalR;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Hubs;
 using UKSFWebsite.Api.Interfaces.Personnel;
 using UKSFWebsite.Api.Interfaces.Units;
 using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Models.Units;
 using UKSFWebsite.Api.Services.Hubs;
-using UKSFWebsite.Api.Services.Hubs.Abstraction;
 
 namespace UKSFWebsite.Api.Services.Units {
     public class UnitsService : IUnitsService {

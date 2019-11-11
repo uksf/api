@@ -8,11 +8,11 @@ using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UKSFWebsite.Api.Interfaces.Hubs;
 using UKSFWebsite.Api.Interfaces.Integrations;
 using UKSFWebsite.Api.Models.Integrations;
 using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Services.Hubs;
-using UKSFWebsite.Api.Services.Hubs.Abstraction;
 using UKSFWebsite.Api.Services.Integrations.Procedures;
 
 namespace UKSFWebsite.Api.Services.Integrations {

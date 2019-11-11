@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using UKSFWebsite.Api.Interfaces.Message;
 using UKSFWebsite.Api.Models.Message.Logging;
-using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Services.Message {
     public static class LogWrapper {

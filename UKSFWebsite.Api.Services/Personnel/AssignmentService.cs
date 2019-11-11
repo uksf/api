@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AvsAnLib;
 using Microsoft.AspNetCore.SignalR;
+using UKSFWebsite.Api.Interfaces.Hubs;
 using UKSFWebsite.Api.Interfaces.Integrations;
 using UKSFWebsite.Api.Interfaces.Personnel;
 using UKSFWebsite.Api.Interfaces.Units;
@@ -12,7 +13,6 @@ using UKSFWebsite.Api.Models.Message;
 using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Models.Units;
 using UKSFWebsite.Api.Services.Hubs;
-using UKSFWebsite.Api.Services.Hubs.Abstraction;
 
 namespace UKSFWebsite.Api.Services.Personnel {
     public class AssignmentService : IAssignmentService {

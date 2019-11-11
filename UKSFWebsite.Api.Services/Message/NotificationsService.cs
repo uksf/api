@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Hubs;
 using UKSFWebsite.Api.Interfaces.Integrations;
 using UKSFWebsite.Api.Interfaces.Message;
 using UKSFWebsite.Api.Interfaces.Personnel;
@@ -11,7 +12,6 @@ using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Models.Message;
 using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Services.Hubs;
-using UKSFWebsite.Api.Services.Hubs.Abstraction;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Services.Message {
@@ -35,11 +35,13 @@ namespace UKSFWebsite.Api.Services.Message {
         public INotificationsDataService Data() => data;
 
         public void SendTeamspeakNotification(Account account, string rawMessage) {
+            return;
             rawMessage = rawMessage.Replace("<a href='", "[url]").Replace("'>", "[/url]");
             teamspeakService.SendTeamspeakMessageToClient(account, rawMessage);
         }
 
         public void SendTeamspeakNotification(IEnumerable<string> clientDbIds, string rawMessage) {
+            return;
             rawMessage = rawMessage.Replace("<a href='", "[url]").Replace("'>", "[/url]");
             teamspeakService.SendTeamspeakMessageToClient(clientDbIds, rawMessage);
         }
@@ -79,11 +81,10 @@ namespace UKSFWebsite.Api.Services.Message {
             if (account.settings.notificationsTeamspeak) {
                 SendTeamspeakNotification(account, $"{notification.message}{(notification.link != null ? $"\n[url]https://uk-sf.co.uk{notification.link}[/url]" : "")}");
             }
-
-            await notificationsHub.Clients.Group(account.id).ReceiveNotification(notification);
         }
 
         private void SendEmailNotification(string email, string message) {
+            return;
             message += "<br><br><sub>You can opt-out of these emails by unchecking 'Email notifications' in your <a href='https://uk-sf.co.uk/profile'>Profile</a></sub>";
             emailService.SendEmail(email, "UKSF Notification", message);
         }

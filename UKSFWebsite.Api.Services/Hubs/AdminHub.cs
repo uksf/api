@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using UKSFWebsite.Api.Services.Hubs.Abstraction;
+using UKSFWebsite.Api.Interfaces.Hubs;
 
 namespace UKSFWebsite.Api.Services.Hubs {
     [Authorize]

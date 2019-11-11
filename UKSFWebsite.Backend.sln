@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSFWebsite.Api.Data", "UKS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSFWebsite.Api.Interfaces", "UKSFWebsite.Api.Interfaces\UKSFWebsite.Api.Interfaces.csproj", "{462304E4-442D-46F2-B0AD-73BBCEB01C8A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSFWebsite.Api.Events", "UKSFWebsite.Api.Events\UKSFWebsite.Api.Events.csproj", "{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -102,6 +104,18 @@ Global
 		{462304E4-442D-46F2-B0AD-73BBCEB01C8A}.Release|x64.Build.0 = Release|Any CPU
 		{462304E4-442D-46F2-B0AD-73BBCEB01C8A}.Release|x86.ActiveCfg = Release|Any CPU
 		{462304E4-442D-46F2-B0AD-73BBCEB01C8A}.Release|x86.Build.0 = Release|Any CPU
+		{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}.Debug|x64.Build.0 = Debug|Any CPU
+		{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}.Debug|x86.Build.0 = Debug|Any CPU
+		{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}.Release|x64.ActiveCfg = Release|Any CPU
+		{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}.Release|x64.Build.0 = Release|Any CPU
+		{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}.Release|x86.ActiveCfg = Release|Any CPU
+		{F4CC9D1C-5709-47E6-BB5A-5C489BC7E99B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

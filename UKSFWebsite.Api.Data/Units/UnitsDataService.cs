@@ -2,11 +2,12 @@
 using System.Linq;
 using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Units;
 
 namespace UKSFWebsite.Api.Data.Units {
     public class UnitsDataService : CachedDataService<Unit>, IUnitsDataService {
-        public UnitsDataService(IMongoDatabase database) : base(database, "units") { }
+        public UnitsDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "units") { }
 
         public override List<Unit> Get() {
             base.Get();

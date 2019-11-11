@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json.Linq;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Hubs;
 using UKSFWebsite.Api.Services.Hubs;
-using UKSFWebsite.Api.Services.Hubs.Abstraction;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Controllers {

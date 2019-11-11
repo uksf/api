@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AvsAnLib;
-using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Command;
 using UKSFWebsite.Api.Interfaces.Data;
@@ -15,8 +14,6 @@ using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Models.Command;
 using UKSFWebsite.Api.Models.Message;
 using UKSFWebsite.Api.Models.Personnel;
-using UKSFWebsite.Api.Services.Hubs;
-using UKSFWebsite.Api.Services.Hubs.Abstraction;
 using UKSFWebsite.Api.Services.Message;
 using UKSFWebsite.Api.Services.Personnel;
 
@@ -24,7 +21,6 @@ namespace UKSFWebsite.Api.Services.Command {
     public class CommandRequestService : ICommandRequestService {
         private readonly IAccountService accountService;
         private readonly IChainOfCommandService chainOfCommandService;
-        private readonly IHubContext<CommandRequestsHub, ICommandRequestsClient> commandRequestsHub;
         private readonly ICommandRequestDataService data;
         private readonly ICommandRequestArchiveDataService dataArchive;
         private readonly IDisplayNameService displayNameService;
@@ -42,8 +38,7 @@ namespace UKSFWebsite.Api.Services.Command {
             IAccountService accountService,
             IChainOfCommandService chainOfCommandService,
             IUnitsService unitsService,
-            IRanksService ranksService,
-            IHubContext<CommandRequestsHub, ICommandRequestsClient> commandRequestsHub
+            IRanksService ranksService
         ) {
             this.data = data;
             this.dataArchive = dataArchive;
@@ -54,7 +49,6 @@ namespace UKSFWebsite.Api.Services.Command {
             this.chainOfCommandService = chainOfCommandService;
             this.unitsService = unitsService;
             this.ranksService = ranksService;
-            this.commandRequestsHub = commandRequestsHub;
         }
 
         public ICommandRequestDataService Data() => data;
@@ -79,8 +73,6 @@ namespace UKSFWebsite.Api.Services.Command {
             foreach (Account account in accounts.Where(x => x.id != requesterAccount.id)) {
                 notificationsService.Add(new Notification {owner = account.id, icon = NotificationIcons.REQUEST, message = notificationMessage, link = "/command/requests"});
             }
-
-            await commandRequestsHub.Clients.All.ReceiveRequestUpdate();
         }
 
         public async Task ArchiveRequest(string id) {

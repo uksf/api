@@ -3,12 +3,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Utility;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Data.Utility {
     public class VariablesDataService : CachedDataService<VariableItem>, IVariablesDataService {
-        public VariablesDataService(IMongoDatabase database) : base(database, "variables") { }
+        public VariablesDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "variables") { }
 
         public override List<VariableItem> Get() {
             base.Get();

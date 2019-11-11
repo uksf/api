@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using UKSFWebsite.Api.Models.Message.Logging;
 
-namespace UKSFWebsite.Api.Services.Hubs.Abstraction {
+namespace UKSFWebsite.Api.Interfaces.Hubs {
     public interface IAdminClient {
         Task ReceiveAuditLog(AuditLogMessage log);
         Task ReceiveErrorLog(WebLogMessage log);
