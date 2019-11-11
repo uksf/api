@@ -122,7 +122,6 @@ namespace UKSFWebsite.Api {
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseHsts();
-            app.UseHttpsRedirection();
             app.UseForwardedHeaders(new ForwardedHeadersOptions {ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto});
             app.UseEndpoints(
                 endpoints => {
