@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using UKSFWebsite.Api.Interfaces.Events;
 
 namespace UKSFWebsite.Api.Interfaces.Data {
-    public interface IDataService<T> {
+    public interface IDataService<T> : IDataEventBacker {
         List<T> Get();
         List<T> Get(Func<T, bool> predicate);
         T GetSingle(string id);

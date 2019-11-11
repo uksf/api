@@ -4,6 +4,7 @@ using AvsAnLib;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Command;
+using UKSFWebsite.Api.Interfaces.Hubs;
 using UKSFWebsite.Api.Interfaces.Message;
 using UKSFWebsite.Api.Interfaces.Personnel;
 using UKSFWebsite.Api.Interfaces.Units;
@@ -13,7 +14,6 @@ using UKSFWebsite.Api.Models.Message;
 using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Models.Units;
 using UKSFWebsite.Api.Services.Hubs;
-using UKSFWebsite.Api.Services.Hubs.Abstraction;
 using UKSFWebsite.Api.Services.Message;
 using UKSFWebsite.Api.Services.Personnel;
 

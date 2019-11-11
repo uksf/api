@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\UKSFWebsite.Api.Events\UKSFWebsite.Api.Events.csproj" />
       <ProjectReference Include="..\UKSFWebsite.Api.Services\UKSFWebsite.Api.Services.csproj" />
     </ItemGroup>
 

@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Data.Personnel {
     public class RanksDataService : CachedDataService<Rank>, IRanksDataService {
-        public RanksDataService(IMongoDatabase database) : base(database, "ranks") { }
+        public RanksDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "ranks") { }
 
         public override List<Rank> Get() {
             base.Get();

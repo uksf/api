@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Data;
+using UKSFWebsite.Api.Models.Events;
 
 namespace UKSFWebsite.Api.Services.Debug {
     public abstract class FakeDataService<T> : IDataService<T> {
@@ -21,5 +23,7 @@ namespace UKSFWebsite.Api.Services.Debug {
         public Task Update(string id, UpdateDefinition<T> update) => Task.CompletedTask;
 
         public Task Delete(string id) => Task.CompletedTask;
+
+        public IObservable<DataEventModel> EventBus() => new Subject<DataEventModel>();
     }
 }

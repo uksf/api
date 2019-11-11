@@ -1,6 +1,6 @@
 using System;
 
-namespace UKSFWebsite.Api.Services.Utility {
+namespace UKSFWebsite.Api.Services {
     public static class ServiceWrapper {
         public static IServiceProvider ServiceProvider;
     }

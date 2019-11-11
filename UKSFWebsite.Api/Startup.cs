@@ -14,6 +14,7 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using UKSFWebsite.Api.Data;
 using UKSFWebsite.Api.Data.Command;
+using UKSFWebsite.Api.Data.Debug;
 using UKSFWebsite.Api.Data.Game;
 using UKSFWebsite.Api.Data.Launcher;
 using UKSFWebsite.Api.Data.Message;
@@ -21,9 +22,13 @@ using UKSFWebsite.Api.Data.Operations;
 using UKSFWebsite.Api.Data.Personnel;
 using UKSFWebsite.Api.Data.Units;
 using UKSFWebsite.Api.Data.Utility;
+using UKSFWebsite.Api.Events;
+using UKSFWebsite.Api.Events.Data;
+using UKSFWebsite.Api.Events.Handlers;
 using UKSFWebsite.Api.Interfaces.Command;
 using UKSFWebsite.Api.Interfaces.Data;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Interfaces.Game;
 using UKSFWebsite.Api.Interfaces.Integrations;
 using UKSFWebsite.Api.Interfaces.Launcher;
@@ -137,7 +142,7 @@ namespace UKSFWebsite.Api {
             );
 
             Global.ServiceProvider = app.ApplicationServices;
-            ServiceWrapper.ServiceProvider = Global.ServiceProvider;
+            Services.ServiceWrapper.ServiceProvider = Global.ServiceProvider;
 
             // Initialise exception handler
             ExceptionHandler.Instance.Initialise(Global.ServiceProvider.GetService<ISessionService>(), Global.ServiceProvider.GetService<IDisplayNameService>());
@@ -147,6 +152,9 @@ namespace UKSFWebsite.Api {
 
             // Warm caches
             WarmDataServices();
+            
+            // Add event handlers
+            Global.ServiceProvider.GetService<EventHandlerInitialiser>().InitEventHandlers();
 
             // Connect discord bot
             Global.ServiceProvider.GetService<IDiscordService>().ConnectDiscord();
@@ -163,7 +171,7 @@ namespace UKSFWebsite.Api {
             List<Type> servicesTypes = AppDomain.CurrentDomain.GetAssemblies()
                                                 .SelectMany(x => x.GetTypes())
                                                 .Where(x => !x.IsAbstract && !x.IsInterface && x.BaseType != null && x.BaseType.IsGenericType && x.BaseType.GetGenericTypeDefinition() == typeof(CachedDataService<>))
-                                                .Select(x => x.GetInterfaces().FirstOrDefault(y => !y.IsGenericType))
+                                                .Select(x => x.GetInterfaces().Reverse().FirstOrDefault(y => !y.IsGenericType))
                                                 .ToList();
             foreach (object service in servicesTypes.Select(type => Global.ServiceProvider.GetService(type))) {
                 dataCacheService.AddDataService((dynamic) service);
@@ -174,7 +182,9 @@ namespace UKSFWebsite.Api {
 
     public static class ServiceExtensions {
         public static void RegisterServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment) {
-            RegisterDataServics(services);
+            RegisterEventServices(services);
+            RegisterDataServices(services, currentEnvironment);
+            RegisterDataBackedServices(services, currentEnvironment);
 
             // Instance Objects
             services.AddTransient<IAssignmentService, AssignmentService>();
@@ -192,24 +202,6 @@ namespace UKSFWebsite.Api {
             services.AddTransient<ITeamspeakMetricsService, TeamspeakMetricsService>();
             services.AddTransient<MissionPatchDataService>();
             services.AddTransient<MissionService>();
-
-            // Instance Objects with data backing
-            services.AddTransient<IConfirmationCodeService, ConfirmationCodeService>();
-            services.AddTransient<ISchedulerService, SchedulerService>();
-
-            // Instance Objects with cached data backing
-            services.AddTransient<IAccountService, AccountService>();
-            services.AddTransient<ICommandRequestService, CommandRequestService>();
-            services.AddTransient<ICommentThreadService, CommentThreadService>();
-            services.AddTransient<IDischargeService, DischargeService>();
-            services.AddTransient<IGameServersService, GameServersService>();
-            services.AddTransient<ILauncherFileService, LauncherFileService>();
-            services.AddTransient<ILoaService, LoaService>();
-            services.AddTransient<IOperationOrderService, OperationOrderService>();
-            services.AddTransient<IOperationReportService, OperationReportService>();
-            services.AddTransient<IRanksService, RanksService>();
-            services.AddTransient<IRolesService, RolesService>();
-            services.AddTransient<IUnitsService, UnitsService>();
 
             // Global Singletons
             services.AddSingleton(configuration);
@@ -230,18 +222,26 @@ namespace UKSFWebsite.Api {
 
             if (currentEnvironment.IsDevelopment()) {
                 services.AddSingleton<IDiscordService, FakeDiscordService>();
-                services.AddSingleton<INotificationsDataService, FakeNotificationsDataService>();
-                services.AddTransient<INotificationsService, FakeNotificationsService>();
                 services.AddSingleton<IPipeManager, FakePipeManager>();
             } else {
                 services.AddSingleton<IDiscordService, DiscordService>();
-                services.AddSingleton<INotificationsDataService, NotificationsDataService>();
-                services.AddTransient<INotificationsService, NotificationsService>();
                 services.AddSingleton<IPipeManager, PipeManager>();
             }
         }
 
-        private static void RegisterDataServics(this IServiceCollection services) {
+        private static void RegisterEventServices(this IServiceCollection services) {
+            // Event Buses
+            services.AddTransient<IEventBus, DataEventBus>();
+            
+            // Event Handlers
+            services.AddSingleton<EventHandlerInitialiser>();
+            services.AddSingleton<IAccountEventHandler, AccountEventHandler>();
+            services.AddSingleton<ICommandRequestEventHandler, CommandRequestEventHandler>();
+            services.AddSingleton<ICommentThreadEventHandler, CommentThreadEventHandler>();
+            services.AddSingleton<INotificationsEventHandler, NotificationsEventHandler>();
+        }
+
+        private static void RegisterDataServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
             // Non-Cached
             services.AddTransient<IConfirmationCodeDataService, ConfirmationCodeDataService>();
             services.AddTransient<ISchedulerDataService, SchedulerDataService>();
@@ -261,6 +261,38 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<IRolesDataService, RolesDataService>();
             services.AddSingleton<IUnitsDataService, UnitsDataService>();
             services.AddSingleton<IVariablesDataService, VariablesDataService>();
+
+            if (!currentEnvironment.IsDevelopment()) {
+                services.AddSingleton<INotificationsDataService, FakeNotificationsDataService>();
+            } else {
+                services.AddSingleton<INotificationsDataService, NotificationsDataService>();
+            }
+        }
+
+        private static void RegisterDataBackedServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
+            // Non-Cached
+            services.AddTransient<IConfirmationCodeService, ConfirmationCodeService>();
+            services.AddTransient<ISchedulerService, SchedulerService>();
+
+            // Cached
+            services.AddSingleton<IAccountService, AccountService>();
+            services.AddTransient<ICommandRequestService, CommandRequestService>();
+            services.AddTransient<ICommentThreadService, CommentThreadService>();
+            services.AddTransient<IDischargeService, DischargeService>();
+            services.AddTransient<IGameServersService, GameServersService>();
+            services.AddTransient<ILauncherFileService, LauncherFileService>();
+            services.AddTransient<ILoaService, LoaService>();
+            services.AddTransient<IOperationOrderService, OperationOrderService>();
+            services.AddTransient<IOperationReportService, OperationReportService>();
+            services.AddTransient<IRanksService, RanksService>();
+            services.AddTransient<IRolesService, RolesService>();
+            services.AddTransient<IUnitsService, UnitsService>();
+
+            if (!currentEnvironment.IsDevelopment()) {
+                services.AddTransient<INotificationsService, FakeNotificationsService>();
+            } else {
+                services.AddTransient<INotificationsService, NotificationsService>();
+            }
         }
     }
 

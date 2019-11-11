@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
 
-namespace UKSFWebsite.Api.Services.Hubs.Abstraction {
+namespace UKSFWebsite.Api.Interfaces.Hubs {
     public interface ICommentThreadClient {
         Task ReceiveComment(object comment);
-        Task DeleteComment(int index);
+        Task DeleteComment(string id);
     }
 }

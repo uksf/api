@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using UKSFWebsite.Api.Events.Data;
 using UKSFWebsite.Api.Interfaces.Data;
+using UKSFWebsite.Api.Interfaces.Events;
+using UKSFWebsite.Api.Models.Events;
 
 namespace UKSFWebsite.Api.Data {
-    public abstract class DataService<T> : IDataService<T> {
+    public abstract class DataService<T> : DataEventBacker, IDataService<T> {
         protected readonly IMongoDatabase Database;
         protected readonly string DatabaseCollection;
 
-        protected DataService(IMongoDatabase database, string collectionName) {
+        protected DataService(IMongoDatabase database, IEventBus dataEventBus, string collectionName) : base(dataEventBus) {
             Database = database;
             DatabaseCollection = collectionName;
             if (Database.GetCollection<T>(DatabaseCollection) == null) {
@@ -30,26 +33,23 @@ namespace UKSFWebsite.Api.Data {
 
         public virtual async Task Add(T data) {
             await Database.GetCollection<T>(DatabaseCollection).InsertOneAsync(data);
+            DataEvent(DataEventFactory.Create(DataEventType.ADD, GetIdValue(data), data));
         }
 
         public virtual async Task Update(string id, string fieldName, object value) {
             UpdateDefinition<T> update = value == null ? Builders<T>.Update.Unset(fieldName) : Builders<T>.Update.Set(fieldName, value);
             await Database.GetCollection<T>(DatabaseCollection).UpdateOneAsync(Builders<T>.Filter.Eq("id", id), update);
-            DataEvent();
+            DataEvent(DataEventFactory.Create(DataEventType.UPDATE, id));
         }
 
         public virtual async Task Update(string id, UpdateDefinition<T> update) {
             await Database.GetCollection<T>(DatabaseCollection).UpdateOneAsync(Builders<T>.Filter.Eq("id", id), update);
-            DataEvent();
+            DataEvent(DataEventFactory.Create(DataEventType.UPDATE, id));
         }
 
         public virtual async Task Delete(string id) {
             await Database.GetCollection<T>(DatabaseCollection).DeleteOneAsync(Builders<T>.Filter.Eq("id", id));
-            DataEvent();
-        }
-
-        protected virtual void DataEvent() {
-            
+            DataEvent(DataEventFactory.Create(DataEventType.DELETE, id));
         }
 
         internal static string GetIdValue(T data) => data.GetType().GetField("id").GetValue(data) as string;

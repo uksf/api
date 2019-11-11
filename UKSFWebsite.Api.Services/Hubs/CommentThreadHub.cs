@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Primitives;
-using UKSFWebsite.Api.Services.Hubs.Abstraction;
+using UKSFWebsite.Api.Interfaces.Hubs;
 
 namespace UKSFWebsite.Api.Services.Hubs {
     [Authorize]

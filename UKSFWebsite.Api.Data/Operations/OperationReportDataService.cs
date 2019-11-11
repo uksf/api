@@ -2,11 +2,12 @@
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Operations;
 
 namespace UKSFWebsite.Api.Data.Operations {
     public class OperationReportDataService : CachedDataService<Oprep>, IOperationReportDataService {
-        public OperationReportDataService(IMongoDatabase database) : base(database, "oprep") { }
+        public OperationReportDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "oprep") { }
 
         public override List<Oprep> Get() {
             List<Oprep> reversed = base.Get();

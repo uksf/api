@@ -17,6 +17,7 @@
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="5.1.4" />
     <PackageReference Include="MimeMapping" Version="1.0.1.17" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Rx-Linq" Version="2.3.0-beta2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.1.4" />
     <PackageReference Include="System.Management" Version="4.5.0" />
     <PackageReference Include="System.Runtime.Caching" Version="4.5.0" />
