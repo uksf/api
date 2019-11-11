@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -38,9 +39,9 @@ namespace UKSFWebsite.Integrations {
             app.UseRouting();
             app.UseCors("CorsPolicy");
             app.UseAuthentication();
-            app.UseHsts();
-            app.UseHttpsRedirection();
             app.UseAuthorization();
+            app.UseHsts();
+            app.UseForwardedHeaders(new ForwardedHeadersOptions {ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto});
             app.UseEndpoints(endpoints => { endpoints.MapControllers().RequireCors("CorsPolicy"); });
 
             Global.ServiceProvider = app.ApplicationServices;
