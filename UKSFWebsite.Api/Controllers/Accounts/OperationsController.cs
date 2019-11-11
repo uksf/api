@@ -4,8 +4,8 @@ using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
-using UKSFWebsite.Api.Models;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Models.Integrations;
+using UKSFWebsite.Api.Services.Personnel;
 
 namespace UKSFWebsite.Api.Controllers.Accounts {
     [Route("[controller]"), Roles(RoleDefinitions.MEMBER)]
@@ -28,8 +28,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
                 DateTime startdate = DateTime.Today.AddMinutes(30 * i);
                 DateTime enddate = DateTime.Today.AddMinutes(30 * (i + 1));
                 try {
-                    TeamspeakServerSnapshot serverSnapshot =
-                        serverSnapshots.FirstOrDefault(x => x.timestamp.TimeOfDay > startdate.TimeOfDay && x.timestamp.TimeOfDay < enddate.TimeOfDay && x.timestamp.Date == day);
+                    TeamspeakServerSnapshot serverSnapshot = serverSnapshots.FirstOrDefault(x => x.timestamp.TimeOfDay > startdate.TimeOfDay && x.timestamp.TimeOfDay < enddate.TimeOfDay && x.timestamp.Date == day);
                     if (serverSnapshot != null) {
                         dataset.Add(acre ? serverSnapshot.users.Where(x => x.channelName == "ACRE").ToArray().Length : serverSnapshot.users.Count);
                     } else {
@@ -60,14 +59,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
             string[] colors = {"#4bc0c0", "#3992e6", "#a539e6", "#42e639", "#aae639", "#e6d239", "#e63939"};
 
             for (int i = 0; i < 7; i++) {
-                datasets.Add(
-                    new {
-                        label = $"{DateTime.Now.AddDays(-i).DayOfWeek} - {DateTime.Now.AddDays(-i).ToShortDateString()}",
-                        data = GetData(tsServerSnapshots, DateTime.Now.AddDays(-i).Date, acre),
-                        fill = true,
-                        borderColor = colors[i]
-                    }
-                );
+                datasets.Add(new {label = $"{DateTime.Now.AddDays(-i).DayOfWeek} - {DateTime.Now.AddDays(-i).ToShortDateString()}", data = GetData(tsServerSnapshots, DateTime.Now.AddDays(-i).Date, acre), fill = true, borderColor = colors[i]});
             }
 
             return datasets;

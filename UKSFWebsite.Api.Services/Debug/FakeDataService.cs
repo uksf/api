@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MongoDB.Driver;
-using UKSFWebsite.Api.Services.Abstraction;
+using UKSFWebsite.Api.Interfaces.Data;
 
 namespace UKSFWebsite.Api.Services.Debug {
     public abstract class FakeDataService<T> : IDataService<T> {

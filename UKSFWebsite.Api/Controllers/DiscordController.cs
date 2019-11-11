@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using Discord.WebSocket;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Interfaces.Integrations;
+using UKSFWebsite.Api.Services.Personnel;
 
 namespace UKSFWebsite.Api.Controllers {
     [Route("[controller]")]

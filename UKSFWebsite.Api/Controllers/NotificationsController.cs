@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Services.Abstraction;
+using UKSFWebsite.Api.Interfaces.Message;
 
 namespace UKSFWebsite.Api.Controllers {
     [Route("[controller]")]

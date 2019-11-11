@@ -3,9 +3,11 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Models.Accounts;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Interfaces.Message;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Personnel;
+using UKSFWebsite.Api.Services.Message;
 
 namespace UKSFWebsite.Api.Controllers.Accounts {
     [Route("[controller]")]
@@ -15,7 +17,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
         public PasswordResetController(IConfirmationCodeService confirmationCodeService, ILoginService loginService, IEmailService emailService, IAccountService accountService) : base(confirmationCodeService, loginService, accountService) => this.emailService = emailService;
 
         protected override async Task<IActionResult> ApplyValidatedPayload(string codePayload, Account account) {
-            await AccountService.Update(account.id, "password", BCrypt.Net.BCrypt.HashPassword(codePayload));
+            await AccountService.Data().Update(account.id, "password", BCrypt.Net.BCrypt.HashPassword(codePayload));
             LogWrapper.AuditLog(account.id, $"Password changed for {account.id}");
             return Ok(LoginService.RegenerateToken(account.id));
         }
@@ -25,7 +27,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
 
         [HttpPut]
         public async Task<IActionResult> ResetPassword([FromBody] JObject body) {
-            Account account = AccountService.GetSingle(x => string.Equals(x.email, body["email"].ToString(), StringComparison.InvariantCultureIgnoreCase));
+            Account account = AccountService.Data().GetSingle(x => string.Equals(x.email, body["email"].ToString(), StringComparison.InvariantCultureIgnoreCase));
             if (account == null) {
                 return BadRequest();
             }

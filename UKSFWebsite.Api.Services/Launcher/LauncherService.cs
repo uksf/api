@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
-using UKSFWebsite.Api.Services.Abstraction;
+using UKSFWebsite.Api.Interfaces.Launcher;
 using UKSFWebsite.Api.Services.Hubs;
 using UKSFWebsite.Api.Services.Hubs.Abstraction;
 

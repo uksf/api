@@ -29,7 +29,6 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="3.0.0-preview4-19123-01" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="3.0.0-preview4-19123-01" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="5.6.0" />
-    <PackageReference Include="Microsoft.NETCore.App" />
     <PackageReference Include="MongoDB.Driver" Version="2.10.0-beta1" />
     <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
   </ItemGroup>
@@ -37,6 +36,7 @@
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\UKSFWebsite.Api.Data\UKSFWebsite.Api.Data.csproj" />
     <ProjectReference Include="..\UKSFWebsite.Api.Models\UKSFWebsite.Api.Models.csproj" />
     <ProjectReference Include="..\UKSFWebsite.Api.Services\UKSFWebsite.Api.Services.csproj" />
   </ItemGroup>

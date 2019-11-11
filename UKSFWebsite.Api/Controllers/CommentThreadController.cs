@@ -6,13 +6,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Bson;
-using UKSFWebsite.Api.Models;
-using UKSFWebsite.Api.Models.Accounts;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Data;
+using UKSFWebsite.Api.Interfaces.Message;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Message;
+using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Services.Hubs;
 using UKSFWebsite.Api.Services.Hubs.Abstraction;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Services.Personnel;
 
 namespace UKSFWebsite.Api.Controllers {
     [Route("commentthread"), Roles(RoleDefinitions.CONFIRMED, RoleDefinitions.MEMBER, RoleDefinitions.DISCHARGED)]
@@ -48,21 +49,33 @@ namespace UKSFWebsite.Api.Controllers {
 
         [HttpGet("{id}"), Authorize]
         public IActionResult Get(string id) {
-            Comment[] comments = commentThreadService.GetCommentThreadComments(id);
-            return Ok(new {comments = comments.Select(comment => new {Id = comment.id.ToString(), Author = comment.author.ToString(), DisplayName = displayNameService.GetDisplayName(accountService.GetSingle(comment.author)), Content = comment.content, Timestamp = comment.timestamp})});
+            IEnumerable<Comment> comments = commentThreadService.GetCommentThreadComments(id);
+            return Ok(
+                new {
+                    comments = comments.Select(
+                        comment => new {
+                            Id = comment.id.ToString(),
+                            Author = comment.author.ToString(),
+                            DisplayName = displayNameService.GetDisplayName(accountService.Data().GetSingle(comment.author)),
+                            Content = comment.content,
+                            Timestamp = comment.timestamp
+                        }
+                    )
+                }
+            );
         }
 
         [HttpGet("canpost/{id}"), Authorize]
         public IActionResult GetCanPostComment(string id) {
-            CommentThread commentThread = commentThreadService.GetSingle(id);
+            CommentThread commentThread = commentThreadService.Data().GetSingle(id);
             bool canPost;
             Account account = sessionService.GetContextAccount();
             bool admin = sessionService.ContextHasRole(RoleDefinitions.ADMIN);
             canPost = commentThread.mode switch {
                 ThreadMode.SR1 => (commentThread.authors.Any(x => x == sessionService.GetContextId()) || admin || recruitmentService.IsRecruiter(sessionService.GetContextAccount())),
-                ThreadMode.RANKSUPERIOR => commentThread.authors.Any(x => admin || ranksService.IsSuperior(account.rank, accountService.GetSingle(x).rank)),
-                ThreadMode.RANKEQUAL => commentThread.authors.Any(x => admin || ranksService.IsEqual(account.rank, accountService.GetSingle(x).rank)),
-                ThreadMode.RANKSUPERIOROREQUAL => commentThread.authors.Any(x => admin || ranksService.IsSuperiorOrEqual(account.rank, accountService.GetSingle(x).rank)),
+                ThreadMode.RANKSUPERIOR => commentThread.authors.Any(x => admin || ranksService.IsSuperior(account.rank, accountService.Data().GetSingle(x).rank)),
+                ThreadMode.RANKEQUAL => commentThread.authors.Any(x => admin || ranksService.IsEqual(account.rank, accountService.Data().GetSingle(x).rank)),
+                ThreadMode.RANKSUPERIOROREQUAL => commentThread.authors.Any(x => admin || ranksService.IsSuperiorOrEqual(account.rank, accountService.Data().GetSingle(x).rank)),
                 _ => true
             };
 
@@ -74,7 +87,7 @@ namespace UKSFWebsite.Api.Controllers {
             comment.id = ObjectId.GenerateNewId().ToString();
             comment.timestamp = DateTime.Now;
             comment.author = sessionService.GetContextId();
-            CommentThread thread = commentThreadService.GetSingle(id);
+            CommentThread thread = commentThreadService.Data().GetSingle(id);
             await commentThreadService.InsertComment(id, comment);
             IEnumerable<string> participants = commentThreadService.GetCommentThreadParticipants(thread.id);
             foreach (string objectId in participants.Where(x => x != comment.author)) {
@@ -88,7 +101,13 @@ namespace UKSFWebsite.Api.Controllers {
                 );
             }
 
-            var returnComment = new {Id = comment.id, Author = comment.author, Content = comment.content, DisplayName = displayNameService.GetDisplayName(comment.author), Timestamp = comment.timestamp};
+            var returnComment = new {
+                Id = comment.id,
+                Author = comment.author,
+                Content = comment.content,
+                DisplayName = displayNameService.GetDisplayName(comment.author),
+                Timestamp = comment.timestamp
+            };
             await commentThreadHub.Clients.Group($"{id}").ReceiveComment(returnComment);
 
             return Ok();
@@ -96,9 +115,9 @@ namespace UKSFWebsite.Api.Controllers {
 
         [HttpPost("{id}/{commentId}"), Authorize]
         public async Task<IActionResult> DeleteComment(string id, string commentId) {
-            Comment[] comments = commentThreadService.GetCommentThreadComments(id);
+            List<Comment> comments = commentThreadService.GetCommentThreadComments(id).ToList();
             Comment comment = comments.FirstOrDefault(x => x.id == commentId);
-            int commentIndex = Array.IndexOf(comments, comment);
+            int commentIndex = comments.IndexOf(comment);
             await commentThreadService.RemoveComment(id, comment);
             await commentThreadHub.Clients.Group($"{id}").DeleteComment(commentIndex);
             return Ok();

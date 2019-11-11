@@ -2,9 +2,9 @@ using System;
 
 namespace UKSFWebsite.Api.Models.Mission {
     public class MissionPatchingReport {
-        public string title;
         public string detail;
         public bool error;
+        public string title;
 
         public MissionPatchingReport(Exception exception) {
             title = exception.GetBaseException().Message;

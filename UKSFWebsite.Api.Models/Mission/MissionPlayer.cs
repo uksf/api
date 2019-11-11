@@ -1,4 +1,4 @@
-﻿using UKSFWebsite.Api.Models.Accounts;
+﻿using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Models.Mission {
     public class MissionPlayer {

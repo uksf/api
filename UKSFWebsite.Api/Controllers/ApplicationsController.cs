@@ -5,10 +5,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Models;
-using UKSFWebsite.Api.Models.Accounts;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Data;
+using UKSFWebsite.Api.Interfaces.Message;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Message;
+using UKSFWebsite.Api.Models.Personnel;
+using UKSFWebsite.Api.Services.Message;
+using UKSFWebsite.Api.Services.Personnel;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Controllers {
@@ -48,11 +51,11 @@ namespace UKSFWebsite.Api.Controllers {
                 dateCreated = DateTime.Now,
                 state = ApplicationState.WAITING,
                 recruiter = recruitmentService.GetRecruiter(),
-                recruiterCommentThread = await commentThreadService.Add(new CommentThread {authors = recruitmentService.GetSr1Leads().Values.ToArray(), mode = ThreadMode.SR1}),
-                applicationCommentThread = await commentThreadService.Add(new CommentThread {authors = new[] {account.id}, mode = ThreadMode.SR1})
+                recruiterCommentThread = await commentThreadService.Data().Add(new CommentThread {authors = recruitmentService.GetSr1Leads().Values.ToArray(), mode = ThreadMode.SR1}),
+                applicationCommentThread = await commentThreadService.Data().Add(new CommentThread {authors = new[] {account.id}, mode = ThreadMode.SR1})
             };
-            await accountService.Update(account.id, Builders<Account>.Update.Set(x => x.application, application));
-            account = accountService.GetSingle(account.id);
+            await accountService.Data().Update(account.id, Builders<Account>.Update.Set(x => x.application, application));
+            account = accountService.Data().GetSingle(account.id);
             Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, "", "Applicant", "Candidate", reason: "you were entered into the recruitment process");
             notificationsService.Add(notification);
             notificationsService.Add(new Notification {owner = application.recruiter, icon = NotificationIcons.APPLICATION, message = $"You have been assigned {account.firstname} {account.lastname}'s application", link = $"/recruitment/{account.id}"});
@@ -71,23 +74,24 @@ namespace UKSFWebsite.Api.Controllers {
             Account account = sessionService.GetContextAccount();
             await Update(body, account);
             notificationsService.Add(new Notification {owner = account.application.recruiter, icon = NotificationIcons.APPLICATION, message = $"{account.firstname} {account.lastname} updated their application", link = $"/recruitment/{account.id}"});
-            string difference = account.Changes(accountService.GetSingle(account.id));
+            string difference = account.Changes(accountService.Data().GetSingle(account.id));
             LogWrapper.AuditLog(account.id, $"Application updated for {account.id}: {difference}");
             return Ok();
         }
 
         private async Task Update(JObject body, Account account) {
-            await accountService.Update(
-                account.id,
-                Builders<Account>.Update.Set(x => x.armaExperience, body["armaExperience"].ToString())
-                                 .Set(x => x.unitsExperience, body["unitsExperience"].ToString())
-                                 .Set(x => x.background, body["background"].ToString())
-                                 .Set(x => x.militaryExperience, string.Equals(body["militaryExperience"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
-                                 .Set(x => x.officer, string.Equals(body["officer"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
-                                 .Set(x => x.nco, string.Equals(body["nco"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
-                                 .Set(x => x.aviation, string.Equals(body["aviation"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
-                                 .Set(x => x.reference, body["reference"].ToString())
-            );
+            await accountService.Data()
+                                .Update(
+                                    account.id,
+                                    Builders<Account>.Update.Set(x => x.armaExperience, body["armaExperience"].ToString())
+                                                     .Set(x => x.unitsExperience, body["unitsExperience"].ToString())
+                                                     .Set(x => x.background, body["background"].ToString())
+                                                     .Set(x => x.militaryExperience, string.Equals(body["militaryExperience"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
+                                                     .Set(x => x.officer, string.Equals(body["officer"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
+                                                     .Set(x => x.nco, string.Equals(body["nco"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
+                                                     .Set(x => x.aviation, string.Equals(body["aviation"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
+                                                     .Set(x => x.reference, body["reference"].ToString())
+                                );
         }
     }
 }

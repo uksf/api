@@ -4,8 +4,9 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson;
-using UKSFWebsite.Api.Models;
-using UKSFWebsite.Api.Services.Abstraction;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Units;
+using UKSFWebsite.Api.Models.Units;
 
 namespace UKSFWebsite.Api.Services.Utility {
     public static class StringUtilities {
@@ -32,7 +33,7 @@ namespace UKSFWebsite.Api.Services.Utility {
                     if (ObjectId.TryParse(part, out ObjectId _)) {
                         string displayName = displayNameService.GetDisplayName(part);
                         if (displayName == part) {
-                            Unit unit = unitsService.GetSingle(x => x.id == part);
+                            Unit unit = unitsService.Data().GetSingle(x => x.id == part);
                             if (unit != null) {
                                 displayName = unit.name;
                             }

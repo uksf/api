@@ -6,26 +6,30 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Launcher;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Models.Launcher;
-using UKSFWebsite.Api.Models.Logging;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Data;
+using UKSFWebsite.Api.Models.Message.Logging;
 using UKSFWebsite.Api.Services.Hubs;
 using UKSFWebsite.Api.Services.Hubs.Abstraction;
+using UKSFWebsite.Api.Services.Message;
+using UKSFWebsite.Api.Services.Personnel;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Controllers {
     [Route("[controller]"), Authorize, Roles(RoleDefinitions.CONFIRMED, RoleDefinitions.MEMBER)]
     public class LauncherController : Controller {
         private readonly IDisplayNameService displayNameService;
+        private readonly ILauncherFileService launcherFileService;
         private readonly IHubContext<LauncherHub, ILauncherClient> launcherHub;
         private readonly ILauncherService launcherService;
-        private readonly ILauncherFileService launcherFileService;
         private readonly ISessionService sessionService;
-        private readonly IVariablesService variablesService;
+        private readonly IVariablesDataService variablesDataService;
 
-        public LauncherController(IVariablesService variablesService, IHubContext<LauncherHub, ILauncherClient> launcherHub, ILauncherService launcherService, ILauncherFileService launcherFileService, ISessionService sessionService, IDisplayNameService displayNameService) {
-            this.variablesService = variablesService;
+        public LauncherController(IVariablesDataService variablesDataService, IHubContext<LauncherHub, ILauncherClient> launcherHub, ILauncherService launcherService, ILauncherFileService launcherFileService, ISessionService sessionService, IDisplayNameService displayNameService) {
+            this.variablesDataService = variablesDataService;
             this.launcherHub = launcherHub;
             this.launcherService = launcherService;
             this.launcherFileService = launcherFileService;
@@ -37,12 +41,12 @@ namespace UKSFWebsite.Api.Controllers {
         public IActionResult GetUpdate(string platform, string version) => Ok();
 
         [HttpGet("version")]
-        public IActionResult GetVersion() => Ok(variablesService.GetSingle("LAUNCHER_VERSION").AsString());
+        public IActionResult GetVersion() => Ok(variablesDataService.GetSingle("LAUNCHER_VERSION").AsString());
 
         [HttpPost("version"), Roles(RoleDefinitions.ADMIN)]
         public async Task<IActionResult> UpdateVersion([FromBody] JObject body) {
             string version = body["version"].ToString();
-            await variablesService.Update("LAUNCHER_VERSION", version);
+            await variablesDataService.Update("LAUNCHER_VERSION", version);
             await launcherFileService.UpdateAllVersions();
             await launcherHub.Clients.All.ReceiveLauncherVersion(version);
             return Ok();

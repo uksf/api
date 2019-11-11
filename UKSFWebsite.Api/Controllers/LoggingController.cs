@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
-using UKSFWebsite.Api.Models.Logging;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Models.Message.Logging;
+using UKSFWebsite.Api.Services.Personnel;
 
 namespace UKSFWebsite.Api.Controllers {
     [Route("[controller]"), Roles(RoleDefinitions.ADMIN)]

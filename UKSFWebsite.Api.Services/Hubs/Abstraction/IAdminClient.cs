@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using UKSFWebsite.Api.Models.Logging;
+using UKSFWebsite.Api.Models.Message.Logging;
 
 namespace UKSFWebsite.Api.Services.Hubs.Abstraction {
     public interface IAdminClient {

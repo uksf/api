@@ -11,18 +11,18 @@ using Microsoft.Extensions.Hosting;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Units;
 using UKSFWebsite.Api.Models;
-using UKSFWebsite.Api.Models.Accounts;
-using UKSFWebsite.Api.Models.CommandRequests;
-using UKSFWebsite.Api.Models.Logging;
-using UKSFWebsite.Api.Services.Abstraction;
-using UKSFWebsite.Api.Services.Data;
+using UKSFWebsite.Api.Models.Personnel;
+using UKSFWebsite.Api.Models.Units;
+using UKSFWebsite.Api.Services.Message;
 
 namespace UKSFWebsite.Api.Services.Utility {
     public class MigrationUtility {
         private const string KEY = "MIGRATED";
-        private readonly IMongoDatabase database;
         private readonly IHostEnvironment currentEnvironment;
+        private readonly IMongoDatabase database;
 
         public MigrationUtility(IMongoDatabase database, IHostEnvironment currentEnvironment) {
             this.database = database;
@@ -32,7 +32,7 @@ namespace UKSFWebsite.Api.Services.Utility {
         public void Migrate() {
             bool migrated = true;
             if (!currentEnvironment.IsDevelopment()) {
-                string migratedString = VariablesWrapper.VariablesService().GetSingle(KEY).AsString();
+                string migratedString = VariablesWrapper.VariablesDataService().GetSingle(KEY).AsString();
                 migrated = bool.Parse(migratedString);
             }
 
@@ -44,7 +44,7 @@ namespace UKSFWebsite.Api.Services.Utility {
                 } catch (Exception e) {
                     LogWrapper.Log(e);
                 } finally {
-                    VariablesWrapper.VariablesService().Update(KEY, "true");
+                    VariablesWrapper.VariablesDataService().Update(KEY, "true");
                 }
             }
         }
@@ -53,9 +53,9 @@ namespace UKSFWebsite.Api.Services.Utility {
         private static void ExecuteMigration() {
             IUnitsService unitsService = ServiceWrapper.ServiceProvider.GetService<IUnitsService>();
             IRolesService rolesService = ServiceWrapper.ServiceProvider.GetService<IRolesService>();
-            List<Role> roles = rolesService.Get(x => x.roleType == RoleType.UNIT);
+            List<Role> roles = rolesService.Data().Get(x => x.roleType == RoleType.UNIT);
 
-            foreach (Unit unit in unitsService.Get()) {
+            foreach (Unit unit in unitsService.Data().Get()) {
                 Dictionary<string, string> unitRoles = unit.roles;
                 int originalCount = unit.roles.Count;
                 foreach ((string key, string _) in unitRoles.ToList()) {
@@ -65,7 +65,7 @@ namespace UKSFWebsite.Api.Services.Utility {
                 }
 
                 if (roles.Count != originalCount) {
-                    unitsService.Update(unit.id, Builders<Unit>.Update.Set(x => x.roles, unitRoles)).Wait();
+                    unitsService.Data().Update(unit.id, Builders<Unit>.Update.Set(x => x.roles, unitRoles)).Wait();
                 }
             }
         }

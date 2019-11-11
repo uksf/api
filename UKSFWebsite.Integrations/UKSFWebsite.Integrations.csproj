@@ -3,7 +3,6 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
-    <AssemblyName>UKSFWebsite.Integrations</AssemblyName>
     <RootNamespace>UKSFWebsite.Integrations</RootNamespace>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -16,6 +15,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\UKSFWebsite.Api.Data\UKSFWebsite.Api.Data.csproj" />
     <ProjectReference Include="..\UKSFWebsite.Api.Services\UKSFWebsite.Api.Services.csproj" />
   </ItemGroup>
 </Project>

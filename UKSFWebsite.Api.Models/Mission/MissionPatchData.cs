@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Models.Mission {
     public class MissionPatchData {
