@@ -15,14 +15,12 @@ using UKSFWebsite.Api.Services.Hubs;
 
 namespace UKSFWebsite.Api.Services.Units {
     public class UnitsService : IUnitsService {
-        private readonly IHubContext<AccountHub, IAccountClient> accountHub;
         private readonly IUnitsDataService data;
         private readonly IRolesService rolesService;
 
-        public UnitsService(IUnitsDataService data, IRolesService rolesService, IHubContext<AccountHub, IAccountClient> accountHub) {
+        public UnitsService(IUnitsDataService data, IRolesService rolesService) {
             this.data = data;
             this.rolesService = rolesService;
-            this.accountHub = accountHub;
         }
 
         public IUnitsDataService Data() => data;
@@ -42,7 +40,6 @@ namespace UKSFWebsite.Api.Services.Units {
         public async Task AddMember(string id, string unitId) {
             if (data.GetSingle(x => x.id == unitId && x.members.Contains(id)) != null) return;
             await data.Update(unitId, Builders<Unit>.Update.Push(x => x.members, id));
-            await accountHub.Clients.Group(id).ReceiveAccountUpdate();
         }
 
         public async Task RemoveMember(string id, string unitName) {
@@ -58,7 +55,6 @@ namespace UKSFWebsite.Api.Services.Units {
             }
 
             await RemoveMemberRoles(id, unit);
-            await accountHub.Clients.Group(id).ReceiveAccountUpdate();
         }
 
         public async Task SetMemberRole(string id, string unitId, string role = "") {
@@ -73,8 +69,6 @@ namespace UKSFWebsite.Api.Services.Units {
             if (!string.IsNullOrEmpty(role)) {
                 await data.Update(unit.id, Builders<Unit>.Update.Set($"roles.{role}", id));
             }
-
-            await accountHub.Clients.Group(id).ReceiveAccountUpdate();
         }
 
         public async Task RenameRole(string oldName, string newName) {
@@ -86,10 +80,8 @@ namespace UKSFWebsite.Api.Services.Units {
         }
 
         public async Task DeleteRole(string role) {
-            foreach (Unit unit in data.Get(x => x.roles.ContainsKey(role))) {
-                string id = unit.roles[role];
+            foreach (Unit unit in from unit in data.Get(x => x.roles.ContainsKey(role)) let id = unit.roles[role] select unit) {
                 await data.Update(unit.id, Builders<Unit>.Update.Unset($"roles.{role}"));
-                await accountHub.Clients.Group(id).ReceiveAccountUpdate();
             }
         }
 
