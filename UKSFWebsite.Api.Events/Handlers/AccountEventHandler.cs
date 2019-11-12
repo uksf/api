@@ -9,21 +9,29 @@ using UKSFWebsite.Api.Services.Hubs;
 
 namespace UKSFWebsite.Api.Events.Handlers {
     public class AccountEventHandler : IAccountEventHandler {
+        private readonly IAccountDataService accountData;
         private readonly IHubContext<AccountHub, IAccountClient> hub;
-        private readonly IAccountDataService data;
+        private readonly IUnitsDataService unitsData;
 
-        public AccountEventHandler(IAccountDataService data, IHubContext<AccountHub, IAccountClient> hub) {
-            this.data = data;
+        public AccountEventHandler(IAccountDataService accountData, IUnitsDataService unitsData, IHubContext<AccountHub, IAccountClient> hub) {
+            this.accountData = accountData;
+            this.unitsData = unitsData;
             this.hub = hub;
         }
 
         public void Init() {
-            data.EventBus()
-                .Subscribe(
-                    async x => {
-                        if (x.type == DataEventType.UPDATE) await UpdatedEvent(x.id);
-                    }
-                );
+            accountData.EventBus()
+                       .Subscribe(
+                           async x => {
+                               if (x.type == DataEventType.UPDATE) await UpdatedEvent(x.id);
+                           }
+                       );
+            unitsData.EventBus()
+                     .Subscribe(
+                         async x => {
+                             if (x.type == DataEventType.UPDATE) await UpdatedEvent(x.id);
+                         }
+                     );
         }
 
         private async Task UpdatedEvent(string id) {

@@ -76,30 +76,26 @@ namespace UKSFWebsite.Api.Controllers {
 
             switch (updatedState) {
                 case ApplicationState.ACCEPTED: {
-                    await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now));
-                    await accountService.Data().Update(id, "membershipState", MembershipState.MEMBER);
+                    await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now).Set(x => x.membershipState, MembershipState.MEMBER));
                     Notification notification = await assignmentService.UpdateUnitRankAndRole(id, "Basic Training Unit", "Trainee", "Recruit", reason: "your application was accepted");
                     notificationsService.Add(notification);
                     break;
                 }
                 case ApplicationState.REJECTED: {
-                    await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now));
-                    await accountService.Data().Update(id, "membershipState", MembershipState.CONFIRMED);
+                    await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now).Set(x => x.membershipState, MembershipState.CONFIRMED));
                     Notification notification = await assignmentService.UpdateUnitRankAndRole(
                         id,
                         AssignmentService.REMOVE_FLAG,
                         AssignmentService.REMOVE_FLAG,
                         AssignmentService.REMOVE_FLAG,
                         "",
-                        $"Unfortunately you have not been accepted into our unit, however we thank you for your interest and hope you find a suitable alternative. You may view any notes about your application here: [url]https://uk-sf.co.uk/recruitment/{id}[/url]"
+                        $"Unfortunately you have not been accepted into our unit, however we thank you for your interest and hope you find a suitable alternative. You can view any comments on your application here: [url]https://uk-sf.co.uk/recruitment/{id}[/url]"
                     );
                     notificationsService.Add(notification);
                     break;
                 }
                 case ApplicationState.WAITING: {
-                    await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.dateCreated, DateTime.Now));
-                    await accountService.Data().Update(id, Builders<Account>.Update.Unset(x => x.application.dateAccepted));
-                    await accountService.Data().Update(id, "membershipState", MembershipState.CONFIRMED);
+                    await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.dateCreated, DateTime.Now).Unset(x => x.application.dateAccepted).Set(x => x.membershipState, MembershipState.CONFIRMED));
                     Notification notification = await assignmentService.UpdateUnitRankAndRole(id, AssignmentService.REMOVE_FLAG, "Applicant", "Candidate", reason: "your application was reactivated");
                     notificationsService.Add(notification);
                     if (recruitmentService.GetSr1Members().All(x => x.id != account.application.recruiter)) {
@@ -121,7 +117,7 @@ namespace UKSFWebsite.Api.Controllers {
                 );
             }
 
-            foreach (string value in recruitmentService.GetSr1Leads().Cast<string>().Where(value => sessionId != value && account.application.recruiter != value)) {
+            foreach (string value in recruitmentService.GetSr1Leads().Values.Where(value => sessionId != value && account.application.recruiter != value)) {
                 notificationsService.Add(new Notification {owner = value, icon = NotificationIcons.APPLICATION, message = $"{account.firstname} {account.lastname}'s application {message} by {displayNameService.GetDisplayName(sessionService.GetContextAccount())}", link = $"/recruitment/{id}"});
             }
 
