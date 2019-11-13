@@ -11,9 +11,11 @@ using Newtonsoft.Json.Linq;
 using UKSFWebsite.Api.Interfaces.Integrations;
 using UKSFWebsite.Api.Interfaces.Message;
 using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Units;
 using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Models.Integrations;
 using UKSFWebsite.Api.Models.Personnel;
+using UKSFWebsite.Api.Models.Units;
 using UKSFWebsite.Api.Services.Message;
 using UKSFWebsite.Api.Services.Personnel;
 using UKSFWebsite.Api.Services.Utility;
@@ -30,6 +32,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
         private readonly IRecruitmentService recruitmentService;
         private readonly ISessionService sessionService;
         private readonly ITeamspeakService teamspeakService;
+        private readonly IUnitsService unitsService;
 
         public AccountsController(
             IConfirmationCodeService confirmationCodeService,
@@ -40,7 +43,8 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
             IRecruitmentService recruitmentService,
             ITeamspeakService teamspeakService,
             IEmailService emailService,
-            IDiscordService discordService
+            IDiscordService discordService,
+            IUnitsService unitsService
         ) {
             this.confirmationCodeService = confirmationCodeService;
             this.ranksService = ranksService;
@@ -51,6 +55,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
             this.teamspeakService = teamspeakService;
             this.emailService = emailService;
             this.discordService = discordService;
+            this.unitsService = unitsService;
         }
 
         [HttpGet, Authorize]
@@ -152,12 +157,16 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
             List<Account> allAccounts = accountService.Data().Get();
             var clients = onlineClients.Where(x => x != null).Select(x => new {account = allAccounts.FirstOrDefault(y => y.teamspeakIdentities != null && y.teamspeakIdentities.Any(z => z == x.clientDbId)), client = x}).ToList();
             var clientAccounts = clients.Where(x => x.account != null && x.account.membershipState == MembershipState.MEMBER).OrderBy(x => x.account.rank, new RankComparer(ranksService)).ThenBy(x => x.account.lastname).ThenBy(x => x.account.firstname);
-
+            List<string> commandAccounts = unitsService.GetAuxilliaryRoot().members;
+            
+            List<object> commanders = new List<object>();
             List<object> recruiters = new List<object>();
             List<object> members = new List<object>();
             List<object> guests = new List<object>();
             foreach (var onlineClient in clientAccounts) {
-                if (recruitmentService.IsRecruiter(onlineClient.account)) {
+                if (commandAccounts.Contains(onlineClient.account.id)) {
+                    commanders.Add(new {displayName = displayNameService.GetDisplayName(onlineClient.account)});
+                } else if (recruitmentService.IsRecruiter(onlineClient.account)) {
                     recruiters.Add(new {displayName = displayNameService.GetDisplayName(onlineClient.account)});
                 } else {
                     members.Add(new {displayName = displayNameService.GetDisplayName(onlineClient.account)});
@@ -168,7 +177,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
                 guests.Add(new {displayName = client.client.clientName});
             }
 
-            return Ok(new {recruiters, members, guests});
+            return Ok(new {commanders, recruiters, members, guests});
         }
 
         [HttpGet("exists")]
