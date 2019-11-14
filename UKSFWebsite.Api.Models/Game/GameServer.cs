@@ -10,7 +10,7 @@ namespace UKSFWebsite.Api.Models.Game {
     }
 
     public class GameServer {
-        [BsonIgnore] public readonly List<uint> headlessClientProcessIds = new List<uint>();
+        [BsonIgnore] public readonly List<int> headlessClientProcessIds = new List<int>();
         public string adminPassword;
         public int apiPort;
         [BsonIgnore] public bool canLaunch;
@@ -22,7 +22,7 @@ namespace UKSFWebsite.Api.Models.Game {
         public int order = 0;
         public string password;
         public int port;
-        [BsonIgnore] public uint? processId;
+        [BsonIgnore] public int? processId;
         public string profileName;
         public string serverMods;
         public GameServerOption serverOption;

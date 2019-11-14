@@ -26,5 +26,6 @@
   <ItemGroup>
     <ProjectReference Include="..\UKSFWebsite.Api.Interfaces\UKSFWebsite.Api.Interfaces.csproj" />
     <ProjectReference Include="..\UKSFWebsite.Api.Models\UKSFWebsite.Api.Models.csproj" />
+    <ProjectReference Include="..\ValveSockets\ValveSockets.csproj" />
   </ItemGroup>
 </Project>

@@ -7,7 +7,7 @@ using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Data.Personnel {
     public class RolesDataService : CachedDataService<Role>, IRolesDataService {
-        public RolesDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "roles") { }
+        public RolesDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "roles") { }
 
         public override List<Role> Get() {
             base.Get();

@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\UKSFWebsite.Api.Events\UKSFWebsite.Api.Events.csproj" />
+      <ProjectReference Include="..\UKSFWebsite.Api.Interfaces\UKSFWebsite.Api.Interfaces.csproj" />
+      <ProjectReference Include="..\ValveSockets\ValveSockets.csproj" />
+    </ItemGroup>
+
+</Project>

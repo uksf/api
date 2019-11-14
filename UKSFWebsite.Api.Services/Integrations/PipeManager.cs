@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using UKSFWebsite.Api.Interfaces.Integrations;
-using UKSFWebsite.Api.Services.Integrations.Procedures;
 
 namespace UKSFWebsite.Api.Services.Integrations {
     public class PipeManager : IPipeManager {
@@ -16,12 +13,9 @@ namespace UKSFWebsite.Api.Services.Integrations {
         private static DateTime connectionCheckTime = DateTime.Now;
         private static DateTime pingCheckTime = DateTime.Now;
         public static DateTime PongTime = DateTime.Now;
-        private readonly List<ITeamspeakProcedure> procedures;
         private int pipeCode;
 
         private bool runAll, runServer, serverStarted;
-
-        public PipeManager(Pong pong, CheckClientServerGroup checkClientServerGroup, SendClientsUpdate sendClientsUpdate) => procedures = new List<ITeamspeakProcedure> {pong, checkClientServerGroup, sendClientsUpdate};
 
         public void Dispose() {
             runAll = false;
@@ -91,7 +85,7 @@ namespace UKSFWebsite.Api.Services.Integrations {
         }
 
         private static bool PingCheck() {
-            ExecutePipeFunction($"{PIPE_COMMAND_WRITE}{ProcedureDefinitons.PROC_PING}:");
+//            ExecutePipeFunction($"{PIPE_COMMAND_WRITE}{ProcedureDefinitons.PROC_PING}:");
             if ((DateTime.Now - PongTime).Seconds > 10) {
                 Console.WriteLine("Resetting pipe");
                 string result = ExecutePipeFunction(PIPE_COMMAND_RESET);
@@ -127,11 +121,11 @@ namespace UKSFWebsite.Api.Services.Integrations {
             if (string.IsNullOrEmpty(procedureName)) return;
 
             if (parts.Length > 1) {
-                ITeamspeakProcedure procedure = procedures.FirstOrDefault(x => x.GetType().Name == procedureName);
-                if (procedure != null) {
-                    string[] args = parts[1].Split('|');
-                    Task.Run(() => procedure.Run(args));
-                }
+//                ITeamspeakProcedure procedure = procedures.FirstOrDefault(x => x.GetType().Name == procedureName);
+//                if (procedure != null) {
+//                    string[] args = parts[1].Split('|');
+//                    Task.Run(() => procedure.Run(args));
+//                }
             }
         }
 

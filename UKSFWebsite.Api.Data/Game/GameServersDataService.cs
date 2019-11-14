@@ -7,7 +7,7 @@ using UKSFWebsite.Api.Models.Game;
 
 namespace UKSFWebsite.Api.Data.Game {
     public class GameServersDataService : CachedDataService<GameServer>, IGameServersDataService {
-        public GameServersDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "gameServers") { }
+        public GameServersDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "gameServers") { }
 
         public override List<GameServer> Get() {
             base.Get();

@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using UKSFWebsite.Api.Models.Admin;
 using UKSFWebsite.Api.Models.Utility;
 
 namespace UKSFWebsite.Api.Interfaces.Data.Cached {
