@@ -10,10 +10,10 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using UKSFWebsite.Api.Data;
+using UKSFWebsite.Api.Data.Admin;
 using UKSFWebsite.Api.Data.Command;
 using UKSFWebsite.Api.Data.Fake;
 using UKSFWebsite.Api.Data.Game;
@@ -26,12 +26,15 @@ using UKSFWebsite.Api.Data.Utility;
 using UKSFWebsite.Api.Events;
 using UKSFWebsite.Api.Events.Data;
 using UKSFWebsite.Api.Events.Handlers;
+using UKSFWebsite.Api.Events.SocketServer;
 using UKSFWebsite.Api.Interfaces.Command;
 using UKSFWebsite.Api.Interfaces.Data;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Interfaces.Events;
+using UKSFWebsite.Api.Interfaces.Events.Handlers;
 using UKSFWebsite.Api.Interfaces.Game;
 using UKSFWebsite.Api.Interfaces.Integrations;
+using UKSFWebsite.Api.Interfaces.Integrations.Teamspeak;
 using UKSFWebsite.Api.Interfaces.Launcher;
 using UKSFWebsite.Api.Interfaces.Message;
 using UKSFWebsite.Api.Interfaces.Operations;
@@ -39,19 +42,21 @@ using UKSFWebsite.Api.Interfaces.Personnel;
 using UKSFWebsite.Api.Interfaces.Units;
 using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Services;
+using UKSFWebsite.Api.Services.Admin;
 using UKSFWebsite.Api.Services.Command;
 using UKSFWebsite.Api.Services.Fake;
 using UKSFWebsite.Api.Services.Game;
 using UKSFWebsite.Api.Services.Game.Missions;
 using UKSFWebsite.Api.Services.Hubs;
 using UKSFWebsite.Api.Services.Integrations;
-using UKSFWebsite.Api.Services.Integrations.Procedures;
+using UKSFWebsite.Api.Services.Integrations.Teamspeak;
 using UKSFWebsite.Api.Services.Launcher;
 using UKSFWebsite.Api.Services.Message;
 using UKSFWebsite.Api.Services.Operations;
 using UKSFWebsite.Api.Services.Personnel;
 using UKSFWebsite.Api.Services.Units;
 using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.SocketServer;
 
 namespace UKSFWebsite.Api {
     public class Startup {
@@ -114,7 +119,8 @@ namespace UKSFWebsite.Api {
             services.AddMvc(options => { options.Filters.Add(ExceptionHandler.Instance); }).AddNewtonsoftJson();
         }
 
-        public void Configure(IApplicationBuilder app, IHostEnvironment env, ILoggerFactory loggerFactory) {
+        // ReSharper disable once UnusedMember.Global
+        public void Configure(IApplicationBuilder app) {
             app.UseStaticFiles();
             app.UseRouting();
             app.UseCors("CorsPolicy");
@@ -147,17 +153,20 @@ namespace UKSFWebsite.Api {
             // Execute any DB migration
             Global.ServiceProvider.GetService<MigrationUtility>().Migrate();
 
-            // Warm caches
+            // Warm cached data services
             WarmDataServices();
 
             // Add event handlers
             Global.ServiceProvider.GetService<EventHandlerInitialiser>().InitEventHandlers();
+            
+            // Start socket server
+            Global.ServiceProvider.GetService<ISocket>().Start(configuration["socketPort"]);
+            
+            // Start teamspeak manager
+            Global.ServiceProvider.GetService<ITeamspeakManager>().Start();
 
             // Connect discord bot
             Global.ServiceProvider.GetService<IDiscordService>().ConnectDiscord();
-
-            // Start pipe connection
-            Global.ServiceProvider.GetService<IPipeManager>().Start();
 
             // Start scheduler
             Global.ServiceProvider.GetService<ISchedulerService>().Load();
@@ -212,24 +221,23 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<ISessionService, SessionService>();
             services.AddSingleton<ILoggingService, LoggingService>();
             services.AddSingleton<ITeamspeakService, TeamspeakService>();
-
-            // TeamSpeak procedures
-            services.AddSingleton<CheckClientServerGroup>();
-            services.AddSingleton<Pong>();
-            services.AddSingleton<SendClientsUpdate>();
+            services.AddSingleton<ITeamspeakManager, TeamspeakManager>();
 
             if (currentEnvironment.IsDevelopment()) {
                 services.AddSingleton<IDiscordService, FakeDiscordService>();
                 services.AddSingleton<IPipeManager, FakePipeManager>();
+                services.AddSingleton<ISocket, Socket>();
             } else {
                 services.AddSingleton<IDiscordService, DiscordService>();
                 services.AddSingleton<IPipeManager, PipeManager>();
+                services.AddSingleton<ISocket, Socket>();
             }
         }
 
         private static void RegisterEventServices(this IServiceCollection services) {
             // Event Buses
-            services.AddTransient<IEventBus, DataEventBus>();
+            services.AddTransient<IDataEventBus, DataEventBus>();
+            services.AddTransient<ISocketEventBus, SocketEventBus>();
 
             // Event Handlers
             services.AddSingleton<EventHandlerInitialiser>();
@@ -237,6 +245,7 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<ICommandRequestEventHandler, CommandRequestEventHandler>();
             services.AddSingleton<ICommentThreadEventHandler, CommentThreadEventHandler>();
             services.AddSingleton<INotificationsEventHandler, NotificationsEventHandler>();
+            services.AddSingleton<ITeamspeakEventHandler, TeamspeakEventHandler>();
         }
 
         private static void RegisterDataServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
@@ -294,11 +303,13 @@ namespace UKSFWebsite.Api {
         }
     }
 
+    // ReSharper disable once ClassNeverInstantiated.Global
     public class CorsMiddleware {
         private readonly RequestDelegate next;
 
         public CorsMiddleware(RequestDelegate next) => this.next = next;
 
+        // ReSharper disable once UnusedMember.Global
         public Task Invoke(HttpContext httpContext) {
             if (httpContext.Request.Path.Value.Contains("hub")) {
                 httpContext.Response.Headers["Access-Control-Allow-Origin"] = httpContext.Request.Headers["Origin"];
@@ -310,6 +321,7 @@ namespace UKSFWebsite.Api {
     }
 
     public static class CorsMiddlewareExtensions {
+        // ReSharper disable once UnusedMethodReturnValue.Global
         public static IApplicationBuilder UseCorsMiddleware(this IApplicationBuilder builder) => builder.UseMiddleware<CorsMiddleware>();
     }
 }

@@ -6,12 +6,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using UKSFWebsite.Api.Data.Admin;
 using UKSFWebsite.Api.Data.Utility;
 using UKSFWebsite.Api.Events.Data;
 using UKSFWebsite.Api.Interfaces.Data;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Interfaces.Utility;
+using UKSFWebsite.Api.Models.Events;
 using UKSFWebsite.Api.Services;
 using UKSFWebsite.Api.Services.Utility;
 
@@ -57,7 +59,7 @@ namespace UKSFWebsite.Integrations {
             // Instance Objects
             services.AddTransient<IConfirmationCodeService, ConfirmationCodeService>();
             services.AddTransient<ISchedulerService, SchedulerService>();
-            services.AddTransient<IEventBus, DataEventBus>();
+            services.AddTransient<IEventBus<DataEventModel>, DataEventBus>();
 
             // Global Singletons
             services.AddSingleton(configuration);

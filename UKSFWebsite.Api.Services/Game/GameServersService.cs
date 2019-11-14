@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Management;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -13,6 +12,7 @@ using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Interfaces.Game;
 using UKSFWebsite.Api.Models.Game;
 using UKSFWebsite.Api.Models.Mission;
+using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Services.Game {
     public class GameServersService : IGameServersService {
@@ -76,19 +76,7 @@ namespace UKSFWebsite.Api.Services.Game {
 
         public async Task LaunchGameServer(GameServer gameServer) {
             string launchArguments = gameServer.FormatGameServerLaunchArguments();
-            using (ManagementClass managementClass = new ManagementClass("Win32_Process")) {
-                ManagementClass processInfo = new ManagementClass("Win32_ProcessStartup");
-                processInfo.Properties["CreateFlags"].Value = 0x00000008;
-
-                ManagementBaseObject inParameters = managementClass.GetMethodParameters("Create");
-                inParameters["CommandLine"] = $"\"{GameServerHelpers.GetGameServerExecutablePath()}\" {launchArguments}";
-                inParameters["ProcessStartupInformation"] = processInfo;
-
-                ManagementBaseObject result = managementClass.InvokeMethod("Create", inParameters, null);
-                if (result != null && (uint) result.Properties["ReturnValue"].Value == 0) {
-                    gameServer.processId = (uint) result.Properties["ProcessId"].Value;
-                }
-            }
+            gameServer.processId = ProcessHelper.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments);
 
             await Task.Delay(TimeSpan.FromSeconds(1));
 
@@ -96,19 +84,7 @@ namespace UKSFWebsite.Api.Services.Game {
             if (gameServer.numberHeadlessClients > 0) {
                 for (int index = 0; index < gameServer.numberHeadlessClients; index++) {
                     launchArguments = gameServer.FormatHeadlessClientLaunchArguments(index);
-                    using (ManagementClass managementClass = new ManagementClass("Win32_Process")) {
-                        ManagementClass processInfo = new ManagementClass("Win32_ProcessStartup");
-                        processInfo.Properties["CreateFlags"].Value = 0x00000008;
-
-                        ManagementBaseObject inParameters = managementClass.GetMethodParameters("Create");
-                        inParameters["CommandLine"] = $"\"{GameServerHelpers.GetGameServerExecutablePath()}\" {launchArguments}";
-                        inParameters["ProcessStartupInformation"] = processInfo;
-
-                        ManagementBaseObject result = managementClass.InvokeMethod("Create", inParameters, null);
-                        if (result != null && (uint) result.Properties["ReturnValue"].Value == 0) {
-                            gameServer.headlessClientProcessIds.Add((uint) result.Properties["ProcessId"].Value);
-                        }
-                    }
+                    gameServer.headlessClientProcessIds.Add(ProcessHelper.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments));
 
                     await Task.Delay(TimeSpan.FromSeconds(1));
                 }

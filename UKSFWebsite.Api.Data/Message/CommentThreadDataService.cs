@@ -8,7 +8,7 @@ using UKSFWebsite.Api.Models.Message;
 
 namespace UKSFWebsite.Api.Data.Message {
     public class CommentThreadDataService : CachedDataService<CommentThread>, ICommentThreadDataService {
-        public CommentThreadDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "commentThreads") { }
+        public CommentThreadDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "commentThreads") { }
 
         public new async Task<string> Add(CommentThread commentThread) {
             await base.Add(commentThread);
@@ -17,7 +17,7 @@ namespace UKSFWebsite.Api.Data.Message {
         
         public async Task Update(string id, Comment comment, DataEventType updateType) {
             await base.Update(id, updateType == DataEventType.ADD ? Builders<CommentThread>.Update.Push("comments", comment) : Builders<CommentThread>.Update.Pull("comments", comment));
-            CommentThreadDataEvent(DataEventFactory.Create(updateType, id, comment));
+            CommentThreadDataEvent(EventModelFactory.CreateDataEvent(updateType, id, comment));
         }
 
         private void CommentThreadDataEvent(DataEventModel dataEvent) {

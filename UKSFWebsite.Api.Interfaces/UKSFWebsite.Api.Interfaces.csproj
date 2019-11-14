@@ -17,4 +17,8 @@
       <ProjectReference Include="..\UKSFWebsite.Api.Models\UKSFWebsite.Api.Models.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Admin" />
+    </ItemGroup>
+
 </Project>

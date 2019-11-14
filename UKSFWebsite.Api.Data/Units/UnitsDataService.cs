@@ -7,7 +7,7 @@ using UKSFWebsite.Api.Models.Units;
 
 namespace UKSFWebsite.Api.Data.Units {
     public class UnitsDataService : CachedDataService<Unit>, IUnitsDataService {
-        public UnitsDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "units") { }
+        public UnitsDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "units") { }
 
         public override List<Unit> Get() {
             base.Get();

@@ -3,11 +3,12 @@ using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Interfaces.Events;
+using UKSFWebsite.Api.Models.Events;
 using UKSFWebsite.Api.Models.Operations;
 
 namespace UKSFWebsite.Api.Data.Operations {
     public class OperationOrderDataService : CachedDataService<Opord>, IOperationOrderDataService {
-        public OperationOrderDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "opord") { }
+        public OperationOrderDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "opord") { }
 
         public override List<Opord> Get() {
             List<Opord> reversed = base.Get();

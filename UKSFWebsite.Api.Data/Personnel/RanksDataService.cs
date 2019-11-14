@@ -6,7 +6,7 @@ using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Data.Personnel {
     public class RanksDataService : CachedDataService<Rank>, IRanksDataService {
-        public RanksDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "ranks") { }
+        public RanksDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "ranks") { }
 
         public override List<Rank> Get() {
             base.Get();

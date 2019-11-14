@@ -5,6 +5,6 @@ using UKSFWebsite.Api.Models.Utility;
 
 namespace UKSFWebsite.Api.Data.Utility {
     public class ConfirmationCodeDataService : DataService<ConfirmationCode>, IConfirmationCodeDataService {
-        public ConfirmationCodeDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "confirmationCodes") { }
+        public ConfirmationCodeDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "confirmationCodes") { }
     }
 }

@@ -11,7 +11,7 @@ namespace UKSFWebsite.Api.Data {
     public abstract class CachedDataService<T> : DataService<T> {
         protected List<T> Collection;
 
-        protected CachedDataService(IMongoDatabase database, IEventBus dataEventBus, string collectionName) : base(database, dataEventBus, collectionName) { }
+        protected CachedDataService(IMongoDatabase database, IDataEventBus dataEventBus, string collectionName) : base(database, dataEventBus, collectionName) { }
 
         // ReSharper disable once MemberCanBeProtected.Global - Used in dynamic call, do not change to protected!
         public void Refresh() {
@@ -46,25 +46,25 @@ namespace UKSFWebsite.Api.Data {
         public override async Task Add(T data) {
             await base.Add(data);
             Refresh();
-            CachedDataEvent(DataEventFactory.Create(DataEventType.ADD, GetIdValue(data), data));
+            CachedDataEvent(EventModelFactory.CreateDataEvent(DataEventType.ADD, GetIdValue(data), data));
         }
 
         public override async Task Update(string id, string fieldName, object value) {
             await base.Update(id, fieldName, value);
             Refresh();
-            CachedDataEvent(DataEventFactory.Create(DataEventType.UPDATE, id));
+            CachedDataEvent(EventModelFactory.CreateDataEvent(DataEventType.UPDATE, id));
         }
 
         public override async Task Update(string id, UpdateDefinition<T> update) {
             await base.Update(id, update);
             Refresh();
-            CachedDataEvent(DataEventFactory.Create(DataEventType.UPDATE, id));
+            CachedDataEvent(EventModelFactory.CreateDataEvent(DataEventType.UPDATE, id));
         }
 
         public override async Task Delete(string id) {
             await base.Delete(id);
             Refresh();
-            CachedDataEvent(DataEventFactory.Create(DataEventType.DELETE, id));
+            CachedDataEvent(EventModelFactory.CreateDataEvent(DataEventType.DELETE, id));
         }
 
         protected virtual void CachedDataEvent(DataEventModel dataEvent) {

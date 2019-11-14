@@ -5,6 +5,6 @@ using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Data.Personnel {
     public class AccountDataService : CachedDataService<Account>, IAccountDataService {
-        public AccountDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "accounts") { }
+        public AccountDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "accounts") { }
     }
 }

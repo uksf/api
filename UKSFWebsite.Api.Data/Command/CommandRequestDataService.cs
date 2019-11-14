@@ -5,6 +5,6 @@ using UKSFWebsite.Api.Models.Command;
 
 namespace UKSFWebsite.Api.Data.Command {
     public class CommandRequestDataService : CachedDataService<CommandRequest>, ICommandRequestDataService {
-        public CommandRequestDataService(IMongoDatabase database, IEventBus dataEventBus) : base(database, dataEventBus, "commandRequests") { }
+        public CommandRequestDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "commandRequests") { }
     }
 }

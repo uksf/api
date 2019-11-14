@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Interfaces.Events;
+using UKSFWebsite.Api.Interfaces.Events.Handlers;
 using UKSFWebsite.Api.Interfaces.Hubs;
 using UKSFWebsite.Api.Interfaces.Message;
 using UKSFWebsite.Api.Models.Events;
