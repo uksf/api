@@ -166,7 +166,7 @@ namespace UKSFWebsite.Api {
             Global.ServiceProvider.GetService<EventHandlerInitialiser>().InitEventHandlers();
 
             // Start teamspeak manager
-            Global.ServiceProvider.GetService<ITeamspeakManager>().Start();
+//            Global.ServiceProvider.GetService<ITeamspeakManager>().Start();
 
             // Connect discord bot
             Global.ServiceProvider.GetService<IDiscordService>().ConnectDiscord();
