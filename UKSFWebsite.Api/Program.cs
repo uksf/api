@@ -27,7 +27,7 @@ namespace UKSFWebsite.Api {
             if (isDevelopment) {
                 BuildDebugWebHost(args).Run();
             } else {
-                InitLogging();
+                //InitLogging();
                 BuildProductionWebHost(args).RunAsService();
             }
         }
