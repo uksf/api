@@ -13,7 +13,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
-using MongoDB.Bson;
 using UKSFWebsite.Api.Data;
 using UKSFWebsite.Api.Data.Admin;
 using UKSFWebsite.Api.Data.Command;
@@ -75,9 +74,9 @@ namespace UKSFWebsite.Api {
             IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(currentEnvironment.ContentRootPath).AddEnvironmentVariables();
             builder.Build();
             Console.Out.WriteLine(configuration.GetChildren().Select(x => $"{x.Key}, {x.Value}").Aggregate((x,y) => $"{x}, {y}"));
-//            LoginService.SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Secrets")["tokenKey"]));
-//            LoginService.TokenIssuer = Global.TOKEN_ISSUER;
-//            LoginService.TokenAudience = Global.TOKEN_AUDIENCE;
+            LoginService.SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Secrets")["tokenKey"]));
+            LoginService.TokenIssuer = Global.TOKEN_ISSUER;
+            LoginService.TokenAudience = Global.TOKEN_AUDIENCE;
         }
 
         public void ConfigureServices(IServiceCollection services) {
