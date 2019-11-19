@@ -7,7 +7,6 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.WindowsServices;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace UKSFWebsite.Api {
     public static class Program {
@@ -27,8 +26,8 @@ namespace UKSFWebsite.Api {
             if (isDevelopment) {
                 BuildDebugWebHost(args).Run();
             } else {
-                InitLogging();
-                BuildProductionWebHost(args).RunAsService();
+                //InitLogging();
+                BuildProductionWebHost(args).Run();
             }
         }
 
