@@ -12,7 +12,6 @@ using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Models.Units;
 using UKSFWebsite.Api.Services.Admin;
 using UKSFWebsite.Api.Services.Message;
-using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Services.Integrations {
     public class DiscordService : IDiscordService, IDisposable {

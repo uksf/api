@@ -7,6 +7,7 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.WindowsServices;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace UKSFWebsite.Api {
     public static class Program {
@@ -30,7 +31,14 @@ namespace UKSFWebsite.Api {
             }
         }
 
-        private static IWebHost BuildDebugWebHost(string[] args) => WebHost.CreateDefaultBuilder(args).UseStartup<Startup>().UseKestrel().UseContentRoot(Directory.GetCurrentDirectory()).UseUrls("http://*:5000").UseIISIntegration().Build();
+        private static IWebHost BuildDebugWebHost(string[] args) =>
+            WebHost.CreateDefaultBuilder(args)
+                   .UseStartup<Startup>()
+                   .UseKestrel()
+                   .UseContentRoot(Directory.GetCurrentDirectory())
+                   .UseUrls("http://*:5000")
+                   .UseIISIntegration()
+                   .Build();
 
         private static IWebHost BuildProductionWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)

@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Models.Admin;
-using UKSFWebsite.Api.Models.Utility;
 using UKSFWebsite.Api.Services.Message;
 using UKSFWebsite.Api.Services.Personnel;
 using UKSFWebsite.Api.Services.Utility;

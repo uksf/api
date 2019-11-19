@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UKSFWebsite.Api.Interfaces.Integrations;
 using UKSFWebsite.Api.Interfaces.Integrations.Teamspeak;
@@ -16,7 +15,6 @@ using UKSFWebsite.Api.Interfaces.Units;
 using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Models.Integrations;
 using UKSFWebsite.Api.Models.Personnel;
-using UKSFWebsite.Api.Models.Units;
 using UKSFWebsite.Api.Services.Message;
 using UKSFWebsite.Api.Services.Personnel;
 using UKSFWebsite.Api.Services.Utility;
@@ -151,12 +149,9 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
 
         [HttpGet("online")]
         public IActionResult GetOnlineAccounts() {
-            string clientsString = teamspeakService.GetOnlineTeamspeakClients();
-            if (string.IsNullOrEmpty(clientsString)) return Ok();
-            JObject clientsObject = JObject.Parse(clientsString);
-            HashSet<TeamspeakClientSnapshot> onlineClients = JsonConvert.DeserializeObject<HashSet<TeamspeakClientSnapshot>>(clientsObject["clients"].ToString());
+            HashSet<TeamspeakClient> teamnspeakClients = teamspeakService.GetOnlineTeamspeakClients();
             List<Account> allAccounts = accountService.Data().Get();
-            var clients = onlineClients.Where(x => x != null).Select(x => new {account = allAccounts.FirstOrDefault(y => y.teamspeakIdentities != null && y.teamspeakIdentities.Any(z => z == x.clientDbId)), client = x}).ToList();
+            var clients = teamnspeakClients.Where(x => x != null).Select(x => new {account = allAccounts.FirstOrDefault(y => y.teamspeakIdentities != null && y.teamspeakIdentities.Any(z => z.Equals(x.clientDbId))), client = x}).ToList();
             var clientAccounts = clients.Where(x => x.account != null && x.account.membershipState == MembershipState.MEMBER).OrderBy(x => x.account.rank, new RankComparer(ranksService)).ThenBy(x => x.account.lastname).ThenBy(x => x.account.firstname);
             List<string> commandAccounts = unitsService.GetAuxilliaryRoot().members;
             

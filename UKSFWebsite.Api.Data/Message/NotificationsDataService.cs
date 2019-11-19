@@ -5,8 +5,8 @@ using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Message;
 
 namespace UKSFWebsite.Api.Data.Message {
-    public class NotificationsDataService : CachedDataService<Notification>, INotificationsDataService {
-        public NotificationsDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "notifications") { }
+    public class NotificationsDataService : CachedDataService<Notification, INotificationsDataService>, INotificationsDataService {
+        public NotificationsDataService(IMongoDatabase database, IDataEventBus<INotificationsDataService> dataEventBus) : base(database, dataEventBus, "notifications") { }
 
         public async Task UpdateMany(FilterDefinition<Notification> filter, UpdateDefinition<Notification> update) {
             await Database.GetCollection<Notification>(DatabaseCollection).UpdateManyAsync(filter, update);

@@ -5,15 +5,14 @@ using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Interfaces.Hubs;
-using UKSFWebsite.Api.Interfaces.Integrations;
 using UKSFWebsite.Api.Interfaces.Integrations.Teamspeak;
 using UKSFWebsite.Api.Interfaces.Message;
 using UKSFWebsite.Api.Interfaces.Personnel;
 using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Models.Message;
 using UKSFWebsite.Api.Models.Personnel;
-using UKSFWebsite.Api.Services.Hubs;
 using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Signalr.Hubs.Message;
 
 namespace UKSFWebsite.Api.Services.Message {
     public class NotificationsService : INotificationsService {
@@ -40,7 +39,7 @@ namespace UKSFWebsite.Api.Services.Message {
             teamspeakService.SendTeamspeakMessageToClient(account, rawMessage);
         }
 
-        public void SendTeamspeakNotification(IEnumerable<string> clientDbIds, string rawMessage) {
+        public void SendTeamspeakNotification(IEnumerable<double> clientDbIds, string rawMessage) {
             rawMessage = rawMessage.Replace("<a href='", "[url]").Replace("'>", "[/url]");
             teamspeakService.SendTeamspeakMessageToClient(clientDbIds, rawMessage);
         }

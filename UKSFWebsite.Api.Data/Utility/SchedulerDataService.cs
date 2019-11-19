@@ -4,7 +4,7 @@ using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Utility;
 
 namespace UKSFWebsite.Api.Data.Utility {
-    public class SchedulerDataService : DataService<ScheduledJob>, ISchedulerDataService {
-        public SchedulerDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "scheduledJobs") { }
+    public class SchedulerDataService : DataService<ScheduledJob, ISchedulerDataService>, ISchedulerDataService {
+        public SchedulerDataService(IMongoDatabase database, IDataEventBus<ISchedulerDataService> dataEventBus) : base(database, dataEventBus, "scheduledJobs") { }
     }
 }

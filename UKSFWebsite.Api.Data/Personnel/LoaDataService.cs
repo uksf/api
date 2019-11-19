@@ -4,7 +4,7 @@ using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Data.Personnel {
-    public class LoaDataService : CachedDataService<Loa>, ILoaDataService {
-        public LoaDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "loas") { }
+    public class LoaDataService : CachedDataService<Loa, ILoaDataService>, ILoaDataService {
+        public LoaDataService(IMongoDatabase database, IDataEventBus<ILoaDataService> dataEventBus) : base(database, dataEventBus, "loas") { }
     }
 }

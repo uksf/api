@@ -8,8 +8,8 @@ using UKSFWebsite.Api.Models.Admin;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Data.Admin {
-    public class VariablesDataService : CachedDataService<VariableItem>, IVariablesDataService {
-        public VariablesDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "variables") { }
+    public class VariablesDataService : CachedDataService<VariableItem, IVariablesDataService>, IVariablesDataService {
+        public VariablesDataService(IMongoDatabase database, IDataEventBus<IVariablesDataService> dataEventBus) : base(database, dataEventBus, "variables") { }
 
         public override List<VariableItem> Get() {
             base.Get();

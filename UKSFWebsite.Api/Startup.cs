@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -26,7 +27,7 @@ using UKSFWebsite.Api.Data.Utility;
 using UKSFWebsite.Api.Events;
 using UKSFWebsite.Api.Events.Data;
 using UKSFWebsite.Api.Events.Handlers;
-using UKSFWebsite.Api.Events.SocketServer;
+using UKSFWebsite.Api.Events.SignalrServer;
 using UKSFWebsite.Api.Interfaces.Command;
 using UKSFWebsite.Api.Interfaces.Data;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
@@ -47,7 +48,6 @@ using UKSFWebsite.Api.Services.Command;
 using UKSFWebsite.Api.Services.Fake;
 using UKSFWebsite.Api.Services.Game;
 using UKSFWebsite.Api.Services.Game.Missions;
-using UKSFWebsite.Api.Services.Hubs;
 using UKSFWebsite.Api.Services.Integrations;
 using UKSFWebsite.Api.Services.Integrations.Teamspeak;
 using UKSFWebsite.Api.Services.Launcher;
@@ -56,7 +56,12 @@ using UKSFWebsite.Api.Services.Operations;
 using UKSFWebsite.Api.Services.Personnel;
 using UKSFWebsite.Api.Services.Units;
 using UKSFWebsite.Api.Services.Utility;
-using UKSFWebsite.Api.SocketServer;
+using UKSFWebsite.Api.Signalr.Hubs.Command;
+using UKSFWebsite.Api.Signalr.Hubs.Game;
+using UKSFWebsite.Api.Signalr.Hubs.Integrations;
+using UKSFWebsite.Api.Signalr.Hubs.Message;
+using UKSFWebsite.Api.Signalr.Hubs.Personnel;
+using UKSFWebsite.Api.Signalr.Hubs.Utility;
 
 namespace UKSFWebsite.Api {
     public class Startup {
@@ -103,7 +108,6 @@ namespace UKSFWebsite.Api {
                             options.Events = new JwtBearerEvents {
                                 OnMessageReceived = context => {
                                     StringValues accessToken = context.Request.Query["access_token"];
-
                                     if (!string.IsNullOrEmpty(accessToken) && context.Request.Path.StartsWithSegments("/hub")) {
                                         context.Token = accessToken;
                                     }
@@ -137,6 +141,7 @@ namespace UKSFWebsite.Api {
                     endpoints.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.END_POINT}");
                     endpoints.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.END_POINT}");
                     endpoints.MapHub<NotificationHub>($"/hub/{NotificationHub.END_POINT}");
+                    endpoints.MapHub<TeamspeakHub>($"/hub/{TeamspeakHub.END_POINT}").RequireHost("localhost");
                     endpoints.MapHub<TeamspeakClientsHub>($"/hub/{TeamspeakClientsHub.END_POINT}");
                     endpoints.MapHub<UtilityHub>($"/hub/{UtilityHub.END_POINT}");
                     endpoints.MapHub<ServersHub>($"/hub/{ServersHub.END_POINT}");
@@ -158,10 +163,7 @@ namespace UKSFWebsite.Api {
 
             // Add event handlers
             Global.ServiceProvider.GetService<EventHandlerInitialiser>().InitEventHandlers();
-            
-            // Start socket server
-            Global.ServiceProvider.GetService<ISocket>().Start(configuration["socketPort"]);
-            
+
             // Start teamspeak manager
             Global.ServiceProvider.GetService<ITeamspeakManager>().Start();
 
@@ -176,7 +178,7 @@ namespace UKSFWebsite.Api {
             DataCacheService dataCacheService = Global.ServiceProvider.GetService<DataCacheService>();
             List<Type> servicesTypes = AppDomain.CurrentDomain.GetAssemblies()
                                                 .SelectMany(x => x.GetTypes())
-                                                .Where(x => !x.IsAbstract && !x.IsInterface && x.BaseType != null && x.BaseType.IsGenericType && x.BaseType.GetGenericTypeDefinition() == typeof(CachedDataService<>))
+                                                .Where(x => !x.IsAbstract && !x.IsInterface && x.BaseType != null && x.BaseType.IsGenericType && x.BaseType.GetGenericTypeDefinition() == typeof(CachedDataService<,>))
                                                 .Select(x => x.GetInterfaces().Reverse().FirstOrDefault(y => !y.IsGenericType))
                                                 .ToList();
             foreach (object service in servicesTypes.Select(type => Global.ServiceProvider.GetService(type))) {
@@ -221,23 +223,36 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<ISessionService, SessionService>();
             services.AddSingleton<ILoggingService, LoggingService>();
             services.AddSingleton<ITeamspeakService, TeamspeakService>();
-            services.AddSingleton<ITeamspeakManager, TeamspeakManager>();
 
             if (currentEnvironment.IsDevelopment()) {
+                services.AddSingleton<ITeamspeakManager, FakeTeamspeakManager>();
                 services.AddSingleton<IDiscordService, FakeDiscordService>();
-                services.AddSingleton<IPipeManager, FakePipeManager>();
-                services.AddSingleton<ISocket, Socket>();
             } else {
+                services.AddSingleton<ITeamspeakManager, TeamspeakManager>();
                 services.AddSingleton<IDiscordService, DiscordService>();
-                services.AddSingleton<IPipeManager, PipeManager>();
-                services.AddSingleton<ISocket, Socket>();
             }
         }
 
         private static void RegisterEventServices(this IServiceCollection services) {
             // Event Buses
-            services.AddTransient<IDataEventBus, DataEventBus>();
-            services.AddTransient<ISocketEventBus, SocketEventBus>();
+            services.AddSingleton<IDataEventBus<IAccountDataService>, DataEventBus<IAccountDataService>>();
+            services.AddSingleton<IDataEventBus<ICommandRequestDataService>, DataEventBus<ICommandRequestDataService>>();
+            services.AddSingleton<IDataEventBus<ICommandRequestArchiveDataService>, DataEventBus<ICommandRequestArchiveDataService>>();
+            services.AddSingleton<IDataEventBus<ICommentThreadDataService>, DataEventBus<ICommentThreadDataService>>();
+            services.AddSingleton<IDataEventBus<IConfirmationCodeDataService>, DataEventBus<IConfirmationCodeDataService>>();
+            services.AddSingleton<IDataEventBus<IDischargeDataService>, DataEventBus<IDischargeDataService>>();
+            services.AddSingleton<IDataEventBus<IGameServersDataService>, DataEventBus<IGameServersDataService>>();
+            services.AddSingleton<IDataEventBus<ILauncherFileDataService>, DataEventBus<ILauncherFileDataService>>();
+            services.AddSingleton<IDataEventBus<ILoaDataService>, DataEventBus<ILoaDataService>>();
+            services.AddSingleton<IDataEventBus<INotificationsDataService>, DataEventBus<INotificationsDataService>>();
+            services.AddSingleton<IDataEventBus<IOperationOrderDataService>, DataEventBus<IOperationOrderDataService>>();
+            services.AddSingleton<IDataEventBus<IOperationReportDataService>, DataEventBus<IOperationReportDataService>>();
+            services.AddSingleton<IDataEventBus<ISchedulerDataService>, DataEventBus<ISchedulerDataService>>();
+            services.AddSingleton<IDataEventBus<IRanksDataService>, DataEventBus<IRanksDataService>>();
+            services.AddSingleton<IDataEventBus<IRolesDataService>, DataEventBus<IRolesDataService>>();
+            services.AddSingleton<IDataEventBus<IUnitsDataService>, DataEventBus<IUnitsDataService>>();
+            services.AddSingleton<IDataEventBus<IVariablesDataService>, DataEventBus<IVariablesDataService>>();
+            services.AddSingleton<ISignalrEventBus, SignalrEventBus>();
 
             // Event Handlers
             services.AddSingleton<EventHandlerInitialiser>();
@@ -269,7 +284,7 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<IUnitsDataService, UnitsDataService>();
             services.AddSingleton<IVariablesDataService, VariablesDataService>();
 
-            if (currentEnvironment.IsDevelopment()) {
+            if (!currentEnvironment.IsDevelopment()) {
                 services.AddSingleton<INotificationsDataService, FakeNotificationsDataService>();
             } else {
                 services.AddSingleton<INotificationsDataService, NotificationsDataService>();
@@ -295,7 +310,7 @@ namespace UKSFWebsite.Api {
             services.AddTransient<IRolesService, RolesService>();
             services.AddTransient<IUnitsService, UnitsService>();
 
-            if (currentEnvironment.IsDevelopment()) {
+            if (!currentEnvironment.IsDevelopment()) {
                 services.AddTransient<INotificationsService, FakeNotificationsService>();
             } else {
                 services.AddTransient<INotificationsService, NotificationsService>();
@@ -323,6 +338,26 @@ namespace UKSFWebsite.Api {
     public static class CorsMiddlewareExtensions {
         // ReSharper disable once UnusedMethodReturnValue.Global
         public static IApplicationBuilder UseCorsMiddleware(this IApplicationBuilder builder) => builder.UseMiddleware<CorsMiddleware>();
+    }
+
+    public static class HttpRequestExtensions {
+        public static bool IsLocal(this HttpRequest req) {
+            ConnectionInfo connection = req.HttpContext.Connection;
+            if (connection.RemoteIpAddress != null) {
+                if (connection.LocalIpAddress != null) {
+                    return connection.RemoteIpAddress.Equals(connection.LocalIpAddress);
+                }
+
+                return IPAddress.IsLoopback(connection.RemoteIpAddress);
+            }
+
+            // for in memory TestServer or when dealing with default connection info
+            if (connection.RemoteIpAddress == null && connection.LocalIpAddress == null) {
+                return true;
+            }
+
+            return false;
+        }
     }
 }
 

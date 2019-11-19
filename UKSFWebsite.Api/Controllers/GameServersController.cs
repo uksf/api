@@ -15,10 +15,10 @@ using UKSFWebsite.Api.Models.Game;
 using UKSFWebsite.Api.Models.Mission;
 using UKSFWebsite.Api.Services.Admin;
 using UKSFWebsite.Api.Services.Game;
-using UKSFWebsite.Api.Services.Hubs;
 using UKSFWebsite.Api.Services.Message;
 using UKSFWebsite.Api.Services.Personnel;
 using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Signalr.Hubs.Game;
 
 namespace UKSFWebsite.Api.Controllers {
     [Route("[controller]"), Roles(RoleDefinitions.NCO, RoleDefinitions.SR5, RoleDefinitions.COMMAND)]

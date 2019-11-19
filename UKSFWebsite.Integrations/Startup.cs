@@ -59,7 +59,6 @@ namespace UKSFWebsite.Integrations {
             // Instance Objects
             services.AddTransient<IConfirmationCodeService, ConfirmationCodeService>();
             services.AddTransient<ISchedulerService, SchedulerService>();
-            services.AddTransient<IEventBus<DataEventModel>, DataEventBus>();
 
             // Global Singletons
             services.AddSingleton(configuration);
@@ -68,6 +67,11 @@ namespace UKSFWebsite.Integrations {
             services.AddSingleton<IConfirmationCodeDataService, ConfirmationCodeDataService>();
             services.AddSingleton<ISchedulerDataService, SchedulerDataService>();
             services.AddSingleton<IVariablesDataService, VariablesDataService>();
+            
+            // Event Buses
+            services.AddSingleton<IDataEventBus<IConfirmationCodeDataService>, DataEventBus<IConfirmationCodeDataService>>();
+            services.AddSingleton<IDataEventBus<ISchedulerDataService>, DataEventBus<ISchedulerDataService>>();
+            services.AddSingleton<IDataEventBus<IVariablesDataService>, DataEventBus<IVariablesDataService>>();
 
             return services;
         }

@@ -13,7 +13,7 @@ using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Models.Message;
 using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Models.Units;
-using UKSFWebsite.Api.Services.Hubs;
+using UKSFWebsite.Api.Signalr.Hubs.Personnel;
 
 namespace UKSFWebsite.Api.Services.Personnel {
     public class AssignmentService : IAssignmentService {

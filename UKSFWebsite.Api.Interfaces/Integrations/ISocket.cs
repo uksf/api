@@ -1,5 +1,3 @@
-using System;
-
 namespace UKSFWebsite.Api.Interfaces.Integrations {
     public interface ISocket {
         void Start(string port);

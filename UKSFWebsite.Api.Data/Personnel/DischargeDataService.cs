@@ -6,8 +6,8 @@ using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Data.Personnel {
-    public class DischargeDataService : CachedDataService<DischargeCollection>, IDischargeDataService {
-        public DischargeDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "discharges") { }
+    public class DischargeDataService : CachedDataService<DischargeCollection, IDischargeDataService>, IDischargeDataService {
+        public DischargeDataService(IMongoDatabase database, IDataEventBus<IDischargeDataService> dataEventBus) : base(database, dataEventBus, "discharges") { }
 
         public override List<DischargeCollection> Get() {
             return base.Get().OrderByDescending(x => x.discharges.Last().timestamp).ToList();

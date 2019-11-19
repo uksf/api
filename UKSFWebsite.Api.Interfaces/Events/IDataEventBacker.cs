@@ -2,7 +2,7 @@ using System;
 using UKSFWebsite.Api.Models.Events;
 
 namespace UKSFWebsite.Api.Interfaces.Events {
-    public interface IDataEventBacker {
-        IObservable<DataEventModel> EventBus();
+    public interface IDataEventBacker<TData> {
+        IObservable<DataEventModel<TData>> EventBus();
     }
 }

@@ -7,7 +7,7 @@ using UKSFWebsite.Api.Interfaces.Data;
 using UKSFWebsite.Api.Models.Events;
 
 namespace UKSFWebsite.Api.Services.Fake {
-    public abstract class FakeDataService<T> : IDataService<T> {
+    public abstract class FakeDataService<T, TData> : IDataService<T, TData> {
         public List<T> Get() => new List<T>();
 
         public List<T> Get(Func<T, bool> predicate) => new List<T>();
@@ -24,6 +24,6 @@ namespace UKSFWebsite.Api.Services.Fake {
 
         public Task Delete(string id) => Task.CompletedTask;
 
-        public IObservable<DataEventModel> EventBus() => new Subject<DataEventModel>();
+        public IObservable<DataEventModel<TData>> EventBus() => new Subject<DataEventModel<TData>>();
     }
 }

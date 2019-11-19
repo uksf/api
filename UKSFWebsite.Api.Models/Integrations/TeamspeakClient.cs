@@ -1,8 +1,8 @@
 ﻿namespace UKSFWebsite.Api.Models.Integrations {
-    public class TeamspeakClientSnapshot {
-        public string channelId;
+    public class TeamspeakClient {
+        public double channelId;
         public string channelName;
-        public string clientDbId;
+        public double clientDbId;
         public string clientName;
     }
 }

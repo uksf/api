@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Primitives;
 using UKSFWebsite.Api.Interfaces.Hubs;
 
-namespace UKSFWebsite.Api.Services.Hubs {
+namespace UKSFWebsite.Api.Signalr.Hubs.Message {
     [Authorize]
     public class CommentThreadHub : Hub<ICommentThreadClient> {
         public const string END_POINT = "commentThread";

@@ -21,15 +21,15 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
             this.teamspeakManager = teamspeakManager;
         }
 
-        public void UpdateAccountGroups(Account account, ICollection<string> serverGroups, string clientDbId) {
-            HashSet<string> allowedGroups = new HashSet<string>();
+        public void UpdateAccountGroups(Account account, ICollection<double> serverGroups, double clientDbId) {
+            HashSet<double> allowedGroups = new HashSet<double>();
 
             if (account == null || account.membershipState == MembershipState.UNCONFIRMED) {
-                allowedGroups.Add(VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_GID_UNVERIFIED").AsString());
+                allowedGroups.Add(VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_GID_UNVERIFIED").AsDouble());
             }
 
             if (account?.membershipState == MembershipState.DISCHARGED) {
-                allowedGroups.Add(VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_GID_DISCHARGED").AsString());
+                allowedGroups.Add(VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_GID_DISCHARGED").AsDouble());
             }
 
             if (account != null) {
@@ -37,26 +37,26 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
                 UpdateUnits(account, allowedGroups);
             }
 
-            string[] groupsBlacklist = VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_GID_BLACKLIST").AsArray();
-            foreach (string serverGroup in serverGroups) {
+            List<double> groupsBlacklist = VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_GID_BLACKLIST").AsDoublesArray().ToList();
+            foreach (double serverGroup in serverGroups) {
                 if (!allowedGroups.Contains(serverGroup) && !groupsBlacklist.Contains(serverGroup)) {
                     RemoveServerGroup(clientDbId, serverGroup);
                 }
             }
 
-            foreach (string serverGroup in allowedGroups.Where(serverGroup => !serverGroups.Contains(serverGroup))) {
+            foreach (double serverGroup in allowedGroups.Where(serverGroup => !serverGroups.Contains(serverGroup))) {
                 AddServerGroup(clientDbId, serverGroup);
             }
         }
 
-        private void UpdateRank(Account account, ISet<string> allowedGroups) {
+        private void UpdateRank(Account account, ISet<double> allowedGroups) {
             string rank = account.rank;
             foreach (Rank x in ranksService.Data().Get().Where(x => rank == x.name)) {
-                allowedGroups.Add(x.teamspeakGroup);
+                allowedGroups.Add(x.teamspeakGroup.ToDouble());
             }
         }
 
-        private void UpdateUnits(Account account, ISet<string> allowedGroups) {
+        private void UpdateUnits(Account account, ISet<double> allowedGroups) {
             Unit accountUnit = unitsService.Data().GetSingle(x => x.name == account.unitAssignment);
             List<Unit> accountUnits = unitsService.Data().Get(x => x.members.Contains(account.id)).Where(x => !string.IsNullOrEmpty(x.teamspeakGroup)).ToList();
             List<Unit> accountUnitParents = unitsService.GetParents(accountUnit).Where(x => !string.IsNullOrEmpty(x.teamspeakGroup)).ToList();
@@ -65,19 +65,19 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
             if (elcom.members.Contains(account.id)) {
                 accountUnits.Remove(accountUnits.Find(x => x.branch == UnitBranch.COMBAT));
                 accountUnitParents = accountUnitParents.TakeLast(2).ToList();
-                allowedGroups.Add(VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_GID_ELCOM").AsString());
+                allowedGroups.Add(VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_GID_ELCOM").AsDouble());
             }
 
-            accountUnits.ForEach(x => allowedGroups.Add(x.teamspeakGroup));
-            accountUnitParents.ForEach(x => allowedGroups.Add(x.teamspeakGroup));
+            accountUnits.ForEach(x => allowedGroups.Add(x.teamspeakGroup.ToDouble()));
+            accountUnitParents.ForEach(x => allowedGroups.Add(x.teamspeakGroup.ToDouble()));
         }
 
-        private void AddServerGroup(string clientDbId, string serverGroup) {
-            teamspeakManager.SendProcedure($"{TeamspeakSocketProcedureType.ASSIGN}:{clientDbId}|{serverGroup}");
+        private void AddServerGroup(double clientDbId, double serverGroup) {
+            teamspeakManager.SendProcedure(TeamspeakProcedureType.ASSIGN, new {clientDbId, serverGroup});
         }
 
-        private void RemoveServerGroup(string clientDbId, string serverGroup) {
-            teamspeakManager.SendProcedure($"{TeamspeakSocketProcedureType.UNASSIGN}:{clientDbId}|{serverGroup}");
+        private void RemoveServerGroup(double clientDbId, double serverGroup) {
+            teamspeakManager.SendProcedure(TeamspeakProcedureType.UNASSIGN, new {clientDbId, serverGroup});
         }
     }
 }

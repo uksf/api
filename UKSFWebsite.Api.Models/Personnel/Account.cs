@@ -27,7 +27,7 @@ namespace UKSFWebsite.Api.Models.Personnel {
         public ServiceRecordEntry[] serviceRecord = new ServiceRecordEntry[0];
         public AccountSettings settings = new AccountSettings();
         public string steamname;
-        public HashSet<string> teamspeakIdentities;
+        public HashSet<double> teamspeakIdentities;
         public string unitAssignment;
         public string unitsExperience;
     }

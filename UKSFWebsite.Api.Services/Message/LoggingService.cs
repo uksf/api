@@ -6,8 +6,8 @@ using UKSFWebsite.Api.Interfaces.Hubs;
 using UKSFWebsite.Api.Interfaces.Message;
 using UKSFWebsite.Api.Interfaces.Personnel;
 using UKSFWebsite.Api.Models.Message.Logging;
-using UKSFWebsite.Api.Services.Hubs;
 using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Signalr.Hubs.Utility;
 
 namespace UKSFWebsite.Api.Services.Message {
     public class LoggingService : ILoggingService {

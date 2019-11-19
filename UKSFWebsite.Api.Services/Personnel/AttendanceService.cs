@@ -51,8 +51,8 @@ namespace UKSFWebsite.Api.Services.Personnel {
             records = (await database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots").FindAsync(x => x.timestamp > start && x.timestamp < end)).ToList();
         }
 
-        private float GetAttendancePercent(ICollection<string> userTsId) {
-            IEnumerable<TeamspeakServerSnapshot> presentRecords = records.Where(record => record.users.Any(x => userTsId.Contains(x.clientDbId.ToString()) && x.channelName == "ACRE"));
+        private float GetAttendancePercent(ICollection<double> userTsId) {
+            IEnumerable<TeamspeakServerSnapshot> presentRecords = records.Where(record => record.users.Any(x => userTsId.Contains(x.clientDbId) && x.channelName == "ACRE"));
             return presentRecords.Count() / (float) records.Count;
         }
 

@@ -6,8 +6,8 @@ using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Operations;
 
 namespace UKSFWebsite.Api.Data.Operations {
-    public class OperationReportDataService : CachedDataService<Oprep>, IOperationReportDataService {
-        public OperationReportDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "oprep") { }
+    public class OperationReportDataService : CachedDataService<Oprep, IOperationReportDataService>, IOperationReportDataService {
+        public OperationReportDataService(IMongoDatabase database, IDataEventBus<IOperationReportDataService> dataEventBus) : base(database, dataEventBus, "oprep") { }
 
         public override List<Oprep> Get() {
             List<Oprep> reversed = base.Get();

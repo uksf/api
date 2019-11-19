@@ -5,7 +5,8 @@ namespace UKSFWebsite.Api.Models.Events {
         DELETE
     }
     
-    public class DataEventModel {
+    // ReSharper disable once UnusedTypeParameter
+    public class DataEventModel<TData> {
         public DataEventType type;
         public string id;
         public object data;
