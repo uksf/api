@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
-using UKSFWebsite.Api.Interfaces.Integrations;
 using UKSFWebsite.Api.Interfaces.Integrations.Teamspeak;
 using UKSFWebsite.Api.Interfaces.Message;
 using UKSFWebsite.Api.Interfaces.Personnel;
 using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Services.Message;
+using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Api.Controllers.Accounts {
     [Route("[controller]")]
@@ -56,7 +56,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
         private async Task<IActionResult> SendTeamspeakCode(string teamspeakDbId) {
             string code = await confirmationCodeService.CreateConfirmationCode(teamspeakDbId);
             notificationsService.SendTeamspeakNotification(
-                new HashSet<string> {teamspeakDbId},
+                new HashSet<double> {teamspeakDbId.ToDouble()},
                 $"This Teamspeak ID was selected for connection to the website. Copy this code to your clipboard and return to the UKSF website application page to enter the code:\n{code}\nIf this request was not made by you, please contact an admin"
             );
             return Ok();
@@ -69,12 +69,12 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
                 return BadRequest(new {error = "The confirmation code has expired or is invalid. Please try again"});
             }
 
-            if (account.teamspeakIdentities == null) account.teamspeakIdentities = new HashSet<string>();
-            account.teamspeakIdentities.Add(teamspeakId);
+            if (account.teamspeakIdentities == null) account.teamspeakIdentities = new HashSet<double>();
+            account.teamspeakIdentities.Add(double.Parse(teamspeakId));
             await accountService.Data().Update(account.id, Builders<Account>.Update.Set("teamspeakIdentities", account.teamspeakIdentities));
             account = accountService.Data().GetSingle(account.id);
             teamspeakService.UpdateAccountTeamspeakGroups(account);
-            notificationsService.SendTeamspeakNotification(new HashSet<string> {teamspeakId}, $"This teamspeak identity has been linked to the account with email '{account.email}'\nIf this was not done by you, please contact an admin");
+            notificationsService.SendTeamspeakNotification(new HashSet<double> {teamspeakId.ToDouble()}, $"This teamspeak identity has been linked to the account with email '{account.email}'\nIf this was not done by you, please contact an admin");
             LogWrapper.AuditLog(account.id, $"Teamspeak ID {teamspeakId} added for {account.id}");
             return Ok();
         }

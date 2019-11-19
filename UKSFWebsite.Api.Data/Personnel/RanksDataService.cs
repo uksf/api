@@ -5,8 +5,8 @@ using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Data.Personnel {
-    public class RanksDataService : CachedDataService<Rank>, IRanksDataService {
-        public RanksDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "ranks") { }
+    public class RanksDataService : CachedDataService<Rank, IRanksDataService>, IRanksDataService {
+        public RanksDataService(IMongoDatabase database, IDataEventBus<IRanksDataService> dataEventBus) : base(database, dataEventBus, "ranks") { }
 
         public override List<Rank> Get() {
             base.Get();

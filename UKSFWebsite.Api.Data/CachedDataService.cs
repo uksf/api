@@ -3,15 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using UKSFWebsite.Api.Events;
 using UKSFWebsite.Api.Events.Data;
+using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Events;
 
 namespace UKSFWebsite.Api.Data {
-    public abstract class CachedDataService<T> : DataService<T> {
+    public abstract class CachedDataService<T, TData> : DataService<T, TData> {
         protected List<T> Collection;
 
-        protected CachedDataService(IMongoDatabase database, IDataEventBus dataEventBus, string collectionName) : base(database, dataEventBus, collectionName) { }
+        protected CachedDataService(IMongoDatabase database, IDataEventBus<TData> dataEventBus, string collectionName) : base(database, dataEventBus, collectionName) { }
 
         // ReSharper disable once MemberCanBeProtected.Global - Used in dynamic call, do not change to protected!
         public void Refresh() {
@@ -46,31 +48,31 @@ namespace UKSFWebsite.Api.Data {
         public override async Task Add(T data) {
             await base.Add(data);
             Refresh();
-            CachedDataEvent(EventModelFactory.CreateDataEvent(DataEventType.ADD, GetIdValue(data), data));
+            CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.ADD, GetIdValue(data), data));
         }
 
         public override async Task Update(string id, string fieldName, object value) {
             await base.Update(id, fieldName, value);
             Refresh();
-            CachedDataEvent(EventModelFactory.CreateDataEvent(DataEventType.UPDATE, id));
+            CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
         }
 
         public override async Task Update(string id, UpdateDefinition<T> update) {
             await base.Update(id, update);
             Refresh();
-            CachedDataEvent(EventModelFactory.CreateDataEvent(DataEventType.UPDATE, id));
+            CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
         }
 
         public override async Task Delete(string id) {
             await base.Delete(id);
             Refresh();
-            CachedDataEvent(EventModelFactory.CreateDataEvent(DataEventType.DELETE, id));
+            CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, id));
         }
 
-        protected virtual void CachedDataEvent(DataEventModel dataEvent) {
+        protected virtual void CachedDataEvent(DataEventModel<TData> dataEvent) {
             base.DataEvent(dataEvent);
         }
 
-        protected override void DataEvent(DataEventModel dataEvent) { }
+        protected override void DataEvent(DataEventModel<TData> dataEvent) { }
     }
 }

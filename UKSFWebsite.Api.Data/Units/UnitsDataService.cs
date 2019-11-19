@@ -6,8 +6,8 @@ using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Units;
 
 namespace UKSFWebsite.Api.Data.Units {
-    public class UnitsDataService : CachedDataService<Unit>, IUnitsDataService {
-        public UnitsDataService(IMongoDatabase database, IDataEventBus dataEventBus) : base(database, dataEventBus, "units") { }
+    public class UnitsDataService : CachedDataService<Unit, IUnitsDataService>, IUnitsDataService {
+        public UnitsDataService(IMongoDatabase database, IDataEventBus<IUnitsDataService> dataEventBus) : base(database, dataEventBus, "units") { }
 
         public override List<Unit> Get() {
             base.Get();

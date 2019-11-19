@@ -10,7 +10,6 @@ using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Linq;
 using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Services.Admin;
-using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Integrations.Controllers {
     [Route("[controller]")]

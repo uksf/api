@@ -3,23 +3,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Interfaces.Events.Handlers;
 using UKSFWebsite.Api.Interfaces.Integrations.Teamspeak;
 using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Models.Events;
 using UKSFWebsite.Api.Models.Events.Types;
 using UKSFWebsite.Api.Models.Integrations;
 using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Events.Handlers {
     public class TeamspeakEventHandler : ITeamspeakEventHandler {
-        private readonly ISocketEventBus eventBus;
+        private readonly ISignalrEventBus eventBus;
         private readonly ITeamspeakService teamspeakService;
         private readonly IAccountService accountService;
         private readonly ITeamspeakGroupService teamspeakGroupService;
-        private readonly Dictionary<string, TeamspeakServerGroupUpdate> serverGroupUpdates = new Dictionary<string, TeamspeakServerGroupUpdate>();
+        private readonly Dictionary<double, TeamspeakServerGroupUpdate> serverGroupUpdates = new Dictionary<double, TeamspeakServerGroupUpdate>();
 
-        public TeamspeakEventHandler(ISocketEventBus eventBus, ITeamspeakService teamspeakService, IAccountService accountService, ITeamspeakGroupService teamspeakGroupService) {
+        public TeamspeakEventHandler(ISignalrEventBus eventBus, ITeamspeakService teamspeakService, IAccountService accountService, ITeamspeakGroupService teamspeakGroupService) {
             this.eventBus = eventBus;
             this.teamspeakService = teamspeakService;
             this.accountService = accountService;
@@ -27,30 +30,39 @@ namespace UKSFWebsite.Api.Events.Handlers {
         }
 
         public void Init() {
-            eventBus.AsObservable("0")
+            eventBus.AsObservable()
                        .Subscribe(
-                           async x => { await HandleEvent(x.message); }
+                           async x => { await HandleEvent(x); }
                        );
         }
 
-        private async Task HandleEvent(string messageString) {
-            if (!Enum.TryParse(messageString.Substring(0, 1), out TeamspeakSocketEventType eventType)) return;
-            string message = messageString.Substring(1);
-            switch (eventType) {
-                case TeamspeakSocketEventType.CLIENTS:
-                    await UpdateClients(message);
+        private async Task HandleEvent(SignalrEventModel eventModel) {
+            string args = eventModel.args.ToString();
+            switch (eventModel.procedure) {
+                case TeamspeakEventType.CLIENTS:
+                    await UpdateClients(args);
                     break;
-                case TeamspeakSocketEventType.CLIENT_SERVER_GROUPS:
-                    UpdateClientServerGroups(message);
+                case TeamspeakEventType.CLIENT_SERVER_GROUPS:
+                    UpdateClientServerGroups(args);
                     break;
+                case TeamspeakEventType.EMPTY: break;
                 default: throw new ArgumentOutOfRangeException();
             }
         }
 
-        private void UpdateClientServerGroups(string message) {
-            string[] args = message.Split('|');
-            string clientDbid = args[0];
-            string serverGroupId = args[1];
+        private async Task UpdateClients(string args) {
+            Console.Out.WriteLine(args);
+            JArray clientsArray = JArray.Parse(args);
+            if (clientsArray.Count == 0) return;
+            HashSet<TeamspeakClient> clients = clientsArray.ToObject<HashSet<TeamspeakClient>>();
+            Console.WriteLine("Updating online clients");
+            await teamspeakService.UpdateClients(clients);
+        }
+
+        private void UpdateClientServerGroups(string args) {
+            JObject updateObject = JObject.Parse(args);
+            double clientDbid = double.Parse(updateObject["clientDbid"].ToString());
+            double serverGroupId = double.Parse(updateObject["serverGroupId"].ToString());
             Console.WriteLine($"Server group for {clientDbid}: {serverGroupId}");
 
             lock (serverGroupUpdates) {
@@ -64,7 +76,7 @@ namespace UKSFWebsite.Api.Events.Handlers {
                 update.cancellationTokenSource = new CancellationTokenSource();
                 Task.Run(
                     async () => {
-                        await Task.Delay(TimeSpan.FromMilliseconds(200), update.cancellationTokenSource.Token);
+                        await Task.Delay(TimeSpan.FromMilliseconds(500), update.cancellationTokenSource.Token);
                         if (!update.cancellationTokenSource.IsCancellationRequested) {
                             update.cancellationTokenSource.Cancel();
                             ProcessAccountData(clientDbid, update.serverGroups);
@@ -75,15 +87,9 @@ namespace UKSFWebsite.Api.Events.Handlers {
             }
         }
 
-        private async Task UpdateClients(string clients) {
-            if (string.IsNullOrEmpty(clients)) return;
-            Console.WriteLine("Updating online clients");
-            await teamspeakService.UpdateClients(clients);
-        }
-
-        private void ProcessAccountData(string clientDbId, ICollection<string> serverGroups) {
+        private void ProcessAccountData(double clientDbId, ICollection<double> serverGroups) {
             Console.WriteLine($"Processing server groups for {clientDbId}");
-            Account account = accountService.Data().GetSingle(x => x.teamspeakIdentities != null && x.teamspeakIdentities.Any(y => y == clientDbId));
+            Account account = accountService.Data().GetSingle(x => x.teamspeakIdentities != null && x.teamspeakIdentities.Any(y => y.Equals(clientDbId)));
             teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
 
             lock (serverGroupUpdates) {

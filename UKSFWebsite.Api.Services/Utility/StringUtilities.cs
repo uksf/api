@@ -10,6 +10,7 @@ using UKSFWebsite.Api.Models.Units;
 
 namespace UKSFWebsite.Api.Services.Utility {
     public static class StringUtilities {
+        public static double ToDouble(this string text) => double.Parse(text);
         public static string ToTitleCase(string text) => CultureInfo.CurrentCulture.TextInfo.ToTitleCase(text);
         public static string Keyify(this string key) => key.ToUpper().Replace(" ", "_");
         public static string RemoveSpaces(this string item) => item.Replace(" ", string.Empty);

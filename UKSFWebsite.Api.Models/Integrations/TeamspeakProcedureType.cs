@@ -1,5 +1,6 @@
 namespace UKSFWebsite.Api.Models.Integrations {
-    public enum TeamspeakSocketProcedureType {
+    public enum TeamspeakProcedureType {
+        EMPTY,
         ASSIGN,
         UNASSIGN,
         GROUPS,

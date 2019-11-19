@@ -2,11 +2,10 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
-using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Interfaces.Events.Handlers;
 using UKSFWebsite.Api.Interfaces.Hubs;
 using UKSFWebsite.Api.Models.Events;
-using UKSFWebsite.Api.Services.Hubs;
+using UKSFWebsite.Api.Signalr.Hubs.Command;
 
 namespace UKSFWebsite.Api.Events.Handlers {
     public class CommandRequestEventHandler : ICommandRequestEventHandler {

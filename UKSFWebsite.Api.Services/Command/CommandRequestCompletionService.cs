@@ -13,9 +13,9 @@ using UKSFWebsite.Api.Models.Command;
 using UKSFWebsite.Api.Models.Message;
 using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Models.Units;
-using UKSFWebsite.Api.Services.Hubs;
 using UKSFWebsite.Api.Services.Message;
 using UKSFWebsite.Api.Services.Personnel;
+using UKSFWebsite.Api.Signalr.Hubs.Command;
 
 namespace UKSFWebsite.Api.Services.Command {
     public class CommandRequestCompletionService : ICommandRequestCompletionService {

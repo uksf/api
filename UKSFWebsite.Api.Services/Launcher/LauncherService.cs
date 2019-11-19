@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using UKSFWebsite.Api.Interfaces.Hubs;
 using UKSFWebsite.Api.Interfaces.Launcher;
-using UKSFWebsite.Api.Services.Hubs;
+using UKSFWebsite.Api.Signalr.Hubs.Integrations;
 
 namespace UKSFWebsite.Api.Services.Launcher {
     public class LauncherService : ILauncherService {

@@ -14,10 +14,9 @@ using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Models.Launcher;
 using UKSFWebsite.Api.Models.Message.Logging;
 using UKSFWebsite.Api.Services.Admin;
-using UKSFWebsite.Api.Services.Hubs;
 using UKSFWebsite.Api.Services.Message;
 using UKSFWebsite.Api.Services.Personnel;
-using UKSFWebsite.Api.Services.Utility;
+using UKSFWebsite.Api.Signalr.Hubs.Integrations;
 
 namespace UKSFWebsite.Api.Controllers {
     [Route("[controller]"), Authorize, Roles(RoleDefinitions.CONFIRMED, RoleDefinitions.MEMBER)]

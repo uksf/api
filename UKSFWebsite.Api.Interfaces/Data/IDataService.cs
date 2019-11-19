@@ -5,7 +5,7 @@ using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Events;
 
 namespace UKSFWebsite.Api.Interfaces.Data {
-    public interface IDataService<T> : IDataEventBacker {
+    public interface IDataService<T, TData> : IDataEventBacker<TData> {
         List<T> Get();
         List<T> Get(Func<T, bool> predicate);
         T GetSingle(string id);

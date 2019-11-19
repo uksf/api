@@ -88,7 +88,7 @@ namespace UKSFWebsite.Api.Services.Personnel {
             return JObject.FromObject(
                 new {
                     account,
-                    displayName = displayNameService.GetDisplayNameWithoutRank(account),
+                    displayName = displayNameService.GetDisplayName(account),
                     age = new {years, months},
                     communications = new {tsOnline, tsNickname = tsOnline ? tsNickname : "", discordOnline},
                     daysProcessing = Math.Ceiling((DateTime.Now - account.application.dateCreated).TotalDays),
