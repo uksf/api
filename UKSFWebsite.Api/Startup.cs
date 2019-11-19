@@ -73,6 +73,7 @@ namespace UKSFWebsite.Api {
             this.currentEnvironment = currentEnvironment;
             IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(currentEnvironment.ContentRootPath).AddEnvironmentVariables();
             builder.Build();
+            Console.Out.WriteLine(configuration.ToString());
             LoginService.SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Secrets")["tokenKey"]));
             LoginService.TokenIssuer = Global.TOKEN_ISSUER;
             LoginService.TokenAudience = Global.TOKEN_AUDIENCE;
