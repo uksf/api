@@ -38,7 +38,6 @@
     <ProjectReference Include="..\UKSFWebsite.Api.Interfaces\UKSFWebsite.Api.Interfaces.csproj" />
     <ProjectReference Include="..\UKSFWebsite.Api.Models\UKSFWebsite.Api.Models.csproj" />
     <ProjectReference Include="..\UKSFWebsite.Api.Services\UKSFWebsite.Api.Services.csproj" />
-    <ProjectReference Include="..\UKSFWebsite.Api.SocketServer\UKSFWebsite.Api.SocketServer.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Docs\test.md">
