@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Bson;
 using UKSFWebsite.Api.Data;
 using UKSFWebsite.Api.Data.Admin;
 using UKSFWebsite.Api.Data.Command;
@@ -73,7 +74,7 @@ namespace UKSFWebsite.Api {
             this.currentEnvironment = currentEnvironment;
             IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(currentEnvironment.ContentRootPath).AddEnvironmentVariables();
             builder.Build();
-            Console.Out.WriteLine(configuration.ToString());
+            Console.Out.WriteLine(configuration.GetChildren().Select(x => $"{x.Key}, {x.Value}").Aggregate((x,y) => $"{x}, {y}"));
             LoginService.SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Secrets")["tokenKey"]));
             LoginService.TokenIssuer = Global.TOKEN_ISSUER;
             LoginService.TokenAudience = Global.TOKEN_AUDIENCE;
@@ -285,7 +286,7 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<IUnitsDataService, UnitsDataService>();
             services.AddSingleton<IVariablesDataService, VariablesDataService>();
 
-            if (!currentEnvironment.IsDevelopment()) {
+            if (currentEnvironment.IsDevelopment()) {
                 services.AddSingleton<INotificationsDataService, FakeNotificationsDataService>();
             } else {
                 services.AddSingleton<INotificationsDataService, NotificationsDataService>();
@@ -311,7 +312,7 @@ namespace UKSFWebsite.Api {
             services.AddTransient<IRolesService, RolesService>();
             services.AddTransient<IUnitsService, UnitsService>();
 
-            if (!currentEnvironment.IsDevelopment()) {
+            if (currentEnvironment.IsDevelopment()) {
                 services.AddTransient<INotificationsService, FakeNotificationsService>();
             } else {
                 services.AddTransient<INotificationsService, NotificationsService>();
