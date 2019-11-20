@@ -13,12 +13,12 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
     public class TeamspeakGroupService : ITeamspeakGroupService {
         private readonly IRanksService ranksService;
         private readonly IUnitsService unitsService;
-        private readonly ITeamspeakManager teamspeakManager;
+        private readonly ITeamspeakManagerService teamspeakManagerService;
 
-        public TeamspeakGroupService(IRanksService ranksService, IUnitsService unitsService, ITeamspeakManager teamspeakManager) {
+        public TeamspeakGroupService(IRanksService ranksService, IUnitsService unitsService, ITeamspeakManagerService teamspeakManagerService) {
             this.ranksService = ranksService;
             this.unitsService = unitsService;
-            this.teamspeakManager = teamspeakManager;
+            this.teamspeakManagerService = teamspeakManagerService;
         }
 
         public void UpdateAccountGroups(Account account, ICollection<double> serverGroups, double clientDbId) {
@@ -73,11 +73,11 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
         }
 
         private void AddServerGroup(double clientDbId, double serverGroup) {
-            teamspeakManager.SendProcedure(TeamspeakProcedureType.ASSIGN, new {clientDbId, serverGroup});
+            teamspeakManagerService.SendProcedure(TeamspeakProcedureType.ASSIGN, new {clientDbId, serverGroup});
         }
 
         private void RemoveServerGroup(double clientDbId, double serverGroup) {
-            teamspeakManager.SendProcedure(TeamspeakProcedureType.UNASSIGN, new {clientDbId, serverGroup});
+            teamspeakManagerService.SendProcedure(TeamspeakProcedureType.UNASSIGN, new {clientDbId, serverGroup});
         }
     }
 }

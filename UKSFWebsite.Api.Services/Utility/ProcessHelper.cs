@@ -1,5 +1,7 @@
-using System.Diagnostics;
+using System;
 using System.Management;
+using Microsoft.Win32.TaskScheduler;
+using Task = System.Threading.Tasks.Task;
 
 namespace UKSFWebsite.Api.Services.Utility {
     public static class ProcessHelper {
@@ -15,17 +17,18 @@ namespace UKSFWebsite.Api.Services.Utility {
 
             ManagementBaseObject result = managementClass.InvokeMethod("Create", inParameters, null);
             if (result != null && (uint) result.Properties["ReturnValue"].Value == 0) {
-                processId = (int) result.Properties["ProcessId"].Value;
+                processId = Convert.ToInt32(result.Properties["ProcessId"].Value.ToString());
             }
 
             return processId;
         }
 
-        public static int LaunchProcess(string executable, string arguments = null) {
-            using Process process = new Process {StartInfo = {UseShellExecute = true, FileName = executable, Arguments = arguments, Verb = "runas"}};
-            process.Start();
-
-            return process.Id;
+        public static async Task LaunchProcess(string name, string command) {
+            using TaskDefinition taskDefinition = TaskService.Instance.NewTask();
+            taskDefinition.Actions.Add(new ExecAction("cmd", $"/C {command}"));
+            taskDefinition.Triggers.Add(new TimeTrigger(DateTime.Now.AddSeconds(1)));
+            TaskService.Instance.RootFolder.RegisterTaskDefinition(name, taskDefinition);
+            await Task.Delay(TimeSpan.FromSeconds(1));
         }
     }
 }

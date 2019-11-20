@@ -14,7 +14,13 @@
 
     <ItemGroup>
       <ProjectReference Include="..\UKSFWebsite.Api.Interfaces\UKSFWebsite.Api.Interfaces.csproj" />
-      <ProjectReference Include="..\UKSFWebsite.Api.Services\UKSFWebsite.Api.Services.csproj" />
+      <ProjectReference Include="..\UKSFWebsite.Api.Signalr\UKSFWebsite.Api.Signalr.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="UKSFWebsite.Api.Services, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <HintPath>..\UKSFWebsite.Api\bin\Release\netcoreapp3.0\win7-x64\UKSFWebsite.Api.Services.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>

@@ -16,13 +16,13 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
         private readonly SemaphoreSlim clientsSemaphore = new SemaphoreSlim(1);
         private readonly IMongoDatabase database;
         private readonly IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub;
-        private readonly ITeamspeakManager teamspeakManager;
+        private readonly ITeamspeakManagerService teamspeakManagerService;
         private HashSet<TeamspeakClient> clients = new HashSet<TeamspeakClient>();
 
-        public TeamspeakService(IMongoDatabase database, IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub, ITeamspeakManager teamspeakManager) {
+        public TeamspeakService(IMongoDatabase database, IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub, ITeamspeakManagerService teamspeakManagerService) {
             this.database = database;
             this.teamspeakClientsHub = teamspeakClientsHub;
-            this.teamspeakManager = teamspeakManager;
+            this.teamspeakManagerService = teamspeakManagerService;
         }
 
         public HashSet<TeamspeakClient> GetOnlineTeamspeakClients() => clients;
@@ -37,7 +37,7 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
         public void UpdateAccountTeamspeakGroups(Account account) {
             if (account?.teamspeakIdentities == null) return;
             foreach (double clientDbId in account.teamspeakIdentities) {
-                teamspeakManager.SendProcedure(TeamspeakProcedureType.GROUPS, new {clientDbId});
+                teamspeakManagerService.SendProcedure(TeamspeakProcedureType.GROUPS, new {clientDbId});
             }
         }
 
@@ -50,7 +50,7 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
         public void SendTeamspeakMessageToClient(IEnumerable<double> clientDbIds, string message) {
             message = FormatTeamspeakMessage(message);
             foreach (double clientDbId in clientDbIds) {
-                teamspeakManager.SendProcedure(TeamspeakProcedureType.MESSAGE, new {clientDbId, message});
+                teamspeakManagerService.SendProcedure(TeamspeakProcedureType.MESSAGE, new {clientDbId, message});
             }
         }
 
@@ -65,7 +65,7 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
         }
 
         public void Shutdown() {
-            teamspeakManager.SendProcedure(TeamspeakProcedureType.SHUTDOWN, new {});
+            teamspeakManagerService.SendProcedure(TeamspeakProcedureType.SHUTDOWN, new {});
         }
 
         public object GetFormattedClients() {
