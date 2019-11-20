@@ -73,7 +73,6 @@ namespace UKSFWebsite.Api {
             this.currentEnvironment = currentEnvironment;
             IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(currentEnvironment.ContentRootPath).AddEnvironmentVariables();
             builder.Build();
-            Console.Out.WriteLine(configuration.GetChildren().Select(x => $"{x.Key}, {x.Value}").Aggregate((x,y) => $"{x}, {y}"));
             LoginService.SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Secrets")["tokenKey"]));
             LoginService.TokenIssuer = Global.TOKEN_ISSUER;
             LoginService.TokenAudience = Global.TOKEN_AUDIENCE;
@@ -125,7 +124,8 @@ namespace UKSFWebsite.Api {
         }
 
         // ReSharper disable once UnusedMember.Global
-        public void Configure(IApplicationBuilder app) {
+        public void Configure(IApplicationBuilder app, IHostApplicationLifetime hostApplicationLifetime) {
+            hostApplicationLifetime.ApplicationStopping.Register(OnShutdown);
             app.UseStaticFiles();
             app.UseRouting();
             app.UseCors("CorsPolicy");
@@ -166,7 +166,7 @@ namespace UKSFWebsite.Api {
             Global.ServiceProvider.GetService<EventHandlerInitialiser>().InitEventHandlers();
 
             // Start teamspeak manager
-//            Global.ServiceProvider.GetService<ITeamspeakManager>().Start();
+            Global.ServiceProvider.GetService<ITeamspeakManagerService>().Start();
 
             // Connect discord bot
             Global.ServiceProvider.GetService<IDiscordService>().ConnectDiscord();
@@ -187,6 +187,11 @@ namespace UKSFWebsite.Api {
             }
 
             dataCacheService.InvalidateDataCaches();
+        }
+        
+        private static void OnShutdown() {
+            // Stop teamspeak
+            Global.ServiceProvider.GetService<ITeamspeakManagerService>().Stop();
         }
     }
 
@@ -226,10 +231,10 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<ITeamspeakService, TeamspeakService>();
 
             if (currentEnvironment.IsDevelopment()) {
-                services.AddSingleton<ITeamspeakManager, FakeTeamspeakManager>();
+                services.AddSingleton<ITeamspeakManagerService, FakeTeamspeakManagerService>();
                 services.AddSingleton<IDiscordService, FakeDiscordService>();
             } else {
-                services.AddSingleton<ITeamspeakManager, TeamspeakManager>();
+                services.AddSingleton<ITeamspeakManagerService, TeamspeakManagerService>();
                 services.AddSingleton<IDiscordService, DiscordService>();
             }
         }
