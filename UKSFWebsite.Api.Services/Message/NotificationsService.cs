@@ -34,14 +34,14 @@ namespace UKSFWebsite.Api.Services.Message {
 
         public INotificationsDataService Data() => data;
 
-        public void SendTeamspeakNotification(Account account, string rawMessage) {
+        public async Task SendTeamspeakNotification(Account account, string rawMessage) {
             rawMessage = rawMessage.Replace("<a href='", "[url]").Replace("'>", "[/url]");
-            teamspeakService.SendTeamspeakMessageToClient(account, rawMessage);
+            await teamspeakService.SendTeamspeakMessageToClient(account, rawMessage);
         }
 
-        public void SendTeamspeakNotification(IEnumerable<double> clientDbIds, string rawMessage) {
+        public async Task SendTeamspeakNotification(IEnumerable<double> clientDbIds, string rawMessage) {
             rawMessage = rawMessage.Replace("<a href='", "[url]").Replace("'>", "[/url]");
-            teamspeakService.SendTeamspeakMessageToClient(clientDbIds, rawMessage);
+            await teamspeakService.SendTeamspeakMessageToClient(clientDbIds, rawMessage);
         }
 
         public IEnumerable<Notification> GetNotificationsForContext() {
@@ -77,7 +77,7 @@ namespace UKSFWebsite.Api.Services.Message {
             }
 
             if (account.settings.notificationsTeamspeak) {
-                SendTeamspeakNotification(account, $"{notification.message}{(notification.link != null ? $"\n[url]https://uk-sf.co.uk{notification.link}[/url]" : "")}");
+                await SendTeamspeakNotification(account, $"{notification.message}{(notification.link != null ? $"\n[url]https://uk-sf.co.uk{notification.link}[/url]" : "")}");
             }
         }
 

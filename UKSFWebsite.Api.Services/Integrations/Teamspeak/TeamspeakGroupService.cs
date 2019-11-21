@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UKSFWebsite.Api.Interfaces.Integrations.Teamspeak;
 using UKSFWebsite.Api.Interfaces.Personnel;
 using UKSFWebsite.Api.Interfaces.Units;
@@ -21,7 +22,7 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
             this.teamspeakManagerService = teamspeakManagerService;
         }
 
-        public void UpdateAccountGroups(Account account, ICollection<double> serverGroups, double clientDbId) {
+        public async Task UpdateAccountGroups(Account account, ICollection<double> serverGroups, double clientDbId) {
             HashSet<double> allowedGroups = new HashSet<double>();
 
             if (account == null || account.membershipState == MembershipState.UNCONFIRMED) {
@@ -40,12 +41,12 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
             List<double> groupsBlacklist = VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_GID_BLACKLIST").AsDoublesArray().ToList();
             foreach (double serverGroup in serverGroups) {
                 if (!allowedGroups.Contains(serverGroup) && !groupsBlacklist.Contains(serverGroup)) {
-                    RemoveServerGroup(clientDbId, serverGroup);
+                    await RemoveServerGroup(clientDbId, serverGroup);
                 }
             }
 
             foreach (double serverGroup in allowedGroups.Where(serverGroup => !serverGroups.Contains(serverGroup))) {
-                AddServerGroup(clientDbId, serverGroup);
+                await AddServerGroup(clientDbId, serverGroup);
             }
         }
 
@@ -72,12 +73,12 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
             accountUnitParents.ForEach(x => allowedGroups.Add(x.teamspeakGroup.ToDouble()));
         }
 
-        private void AddServerGroup(double clientDbId, double serverGroup) {
-            teamspeakManagerService.SendProcedure(TeamspeakProcedureType.ASSIGN, new {clientDbId, serverGroup});
+        private async Task AddServerGroup(double clientDbId, double serverGroup) {
+            await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.ASSIGN, new {clientDbId, serverGroup});
         }
 
-        private void RemoveServerGroup(double clientDbId, double serverGroup) {
-            teamspeakManagerService.SendProcedure(TeamspeakProcedureType.UNASSIGN, new {clientDbId, serverGroup});
+        private async Task RemoveServerGroup(double clientDbId, double serverGroup) {
+            await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.UNASSIGN, new {clientDbId, serverGroup});
         }
     }
 }

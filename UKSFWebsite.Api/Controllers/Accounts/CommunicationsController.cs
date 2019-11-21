@@ -55,7 +55,7 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
 
         private async Task<IActionResult> SendTeamspeakCode(string teamspeakDbId) {
             string code = await confirmationCodeService.CreateConfirmationCode(teamspeakDbId);
-            notificationsService.SendTeamspeakNotification(
+            await notificationsService.SendTeamspeakNotification(
                 new HashSet<double> {teamspeakDbId.ToDouble()},
                 $"This Teamspeak ID was selected for connection to the website. Copy this code to your clipboard and return to the UKSF website application page to enter the code:\n{code}\nIf this request was not made by you, please contact an admin"
             );
@@ -73,8 +73,8 @@ namespace UKSFWebsite.Api.Controllers.Accounts {
             account.teamspeakIdentities.Add(double.Parse(teamspeakId));
             await accountService.Data().Update(account.id, Builders<Account>.Update.Set("teamspeakIdentities", account.teamspeakIdentities));
             account = accountService.Data().GetSingle(account.id);
-            teamspeakService.UpdateAccountTeamspeakGroups(account);
-            notificationsService.SendTeamspeakNotification(new HashSet<double> {teamspeakId.ToDouble()}, $"This teamspeak identity has been linked to the account with email '{account.email}'\nIf this was not done by you, please contact an admin");
+            await teamspeakService.UpdateAccountTeamspeakGroups(account);
+            await notificationsService.SendTeamspeakNotification(new HashSet<double> {teamspeakId.ToDouble()}, $"This teamspeak identity has been linked to the account with email '{account.email}'\nIf this was not done by you, please contact an admin");
             LogWrapper.AuditLog(account.id, $"Teamspeak ID {teamspeakId} added for {account.id}");
             return Ok();
         }

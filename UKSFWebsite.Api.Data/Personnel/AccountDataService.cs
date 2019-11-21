@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Personnel;

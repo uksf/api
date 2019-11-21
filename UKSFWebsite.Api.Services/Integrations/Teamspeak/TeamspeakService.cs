@@ -34,23 +34,23 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
             await teamspeakClientsHub.Clients.All.ReceiveClients(GetFormattedClients());
         }
 
-        public void UpdateAccountTeamspeakGroups(Account account) {
+        public async Task UpdateAccountTeamspeakGroups(Account account) {
             if (account?.teamspeakIdentities == null) return;
             foreach (double clientDbId in account.teamspeakIdentities) {
-                teamspeakManagerService.SendProcedure(TeamspeakProcedureType.GROUPS, new {clientDbId});
+                await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.GROUPS, new {clientDbId});
             }
         }
 
-        public void SendTeamspeakMessageToClient(Account account, string message) {
+        public async Task SendTeamspeakMessageToClient(Account account, string message) {
             if (account.teamspeakIdentities == null) return;
             if (account.teamspeakIdentities.Count == 0) return;
-            SendTeamspeakMessageToClient(account.teamspeakIdentities, message);
+            await SendTeamspeakMessageToClient(account.teamspeakIdentities, message);
         }
 
-        public void SendTeamspeakMessageToClient(IEnumerable<double> clientDbIds, string message) {
+        public async Task SendTeamspeakMessageToClient(IEnumerable<double> clientDbIds, string message) {
             message = FormatTeamspeakMessage(message);
             foreach (double clientDbId in clientDbIds) {
-                teamspeakManagerService.SendProcedure(TeamspeakProcedureType.MESSAGE, new {clientDbId, message});
+                await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.MESSAGE, new {clientDbId, message});
             }
         }
 
@@ -64,8 +64,8 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
             await database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots").InsertOneAsync(teamspeakServerSnapshot);
         }
 
-        public void Shutdown() {
-            teamspeakManagerService.SendProcedure(TeamspeakProcedureType.SHUTDOWN, new {});
+        public async Task Shutdown() {
+            await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.SHUTDOWN, new {});
         }
 
         public object GetFormattedClients() {

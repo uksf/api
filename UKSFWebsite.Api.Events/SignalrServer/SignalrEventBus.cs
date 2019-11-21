@@ -1,5 +1,3 @@
-using System;
-using System.Reactive.Linq;
 using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Models.Events;
 

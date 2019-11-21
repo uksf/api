@@ -20,7 +20,7 @@ namespace UKSFWebsite.Api.Controllers {
 
         [HttpGet("shutdown"), Authorize, Roles(RoleDefinitions.ADMIN)]
         public async Task<IActionResult> Shutdown() {
-            teamspeakService.Shutdown();
+            await teamspeakService.Shutdown();
             await Task.Delay(TimeSpan.FromSeconds(3));
             return Ok();
         }
