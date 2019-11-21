@@ -28,7 +28,7 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
         public void Stop() {
             runTeamspeak = false;
             token.Cancel();
-            Task.Delay(TimeSpan.FromSeconds(5)).Wait();
+            Task.Delay(TimeSpan.FromSeconds(10)).Wait();
             ShutTeamspeak().Wait();
         }
 
@@ -37,7 +37,7 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
         }
 
         private async void KeepOnline() {
-            await TaskUtilities.Delay(TimeSpan.FromSeconds(5), token.Token);
+            await TaskUtilities.Delay(TimeSpan.FromSeconds(10), token.Token);
             while (runTeamspeak) {
                 if (VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_RUN").AsBool()) {
                     if (!TeamspeakHubState.Connected) {
@@ -50,19 +50,24 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
                     }
                 }
 
-                await TaskUtilities.Delay(TimeSpan.FromSeconds(10), token.Token);
+                await TaskUtilities.Delay(TimeSpan.FromSeconds(30), token.Token);
             }
         }
 
         private static async Task LaunchTeamspeak() {
-            await ProcessHelper.LaunchProcess("Teamspeak", $"start \"\" \"{VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_PATH").AsString()}\"");
+            await ProcessHelper.LaunchExternalProcess("Teamspeak", $"start \"\" \"{VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_PATH").AsString()}\"");
         }
 
         private async Task ShutTeamspeak() {
             while (Process.GetProcessesByName("ts3client_win64").Length > 0) {
                 foreach (Process processToKill in Process.GetProcesses().Where(x => x.ProcessName == "ts3client_win64")) {
-                    processToKill.Kill();
-                    await TaskUtilities.Delay(TimeSpan.FromMilliseconds(100), token.Token);
+                    ProcessHelper.CloseProcessGracefully(processToKill.MainWindowHandle);
+                    processToKill.WaitForExit(5000);
+                    processToKill.Refresh();
+                    if (!processToKill.HasExited) {
+                        processToKill.Kill();
+                        await TaskUtilities.Delay(TimeSpan.FromMilliseconds(100), token.Token);
+                    }
                 }
             }
         }
