@@ -120,7 +120,7 @@ namespace UKSFWebsite.Api.Services.Personnel {
 
         private async Task UpdateGroupsAndRoles(string id) {
             Account account = accountService.Data().GetSingle(id);
-            teamspeakService.UpdateAccountTeamspeakGroups(account);
+            await teamspeakService.UpdateAccountTeamspeakGroups(account);
             await discordService.UpdateAccount(account);
             serverService.UpdateSquadXml();
             await accountHub.Clients.Group(id).ReceiveAccountUpdate();

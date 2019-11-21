@@ -89,7 +89,7 @@ namespace UKSFWebsite.Api.Events.Handlers {
         private void ProcessAccountData(double clientDbId, ICollection<double> serverGroups) {
             Console.WriteLine($"Processing server groups for {clientDbId}");
             Account account = accountService.Data().GetSingle(x => x.teamspeakIdentities != null && x.teamspeakIdentities.Any(y => y.Equals(clientDbId)));
-            teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
+            Task unused = teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
 
             lock (serverGroupUpdates) {
                 serverGroupUpdates.Remove(clientDbId);

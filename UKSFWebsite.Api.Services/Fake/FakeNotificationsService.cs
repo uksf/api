@@ -7,9 +7,9 @@ using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Services.Fake {
     public class FakeNotificationsService : INotificationsService {
-        public void SendTeamspeakNotification(Account account, string rawMessage) { }
+        public Task SendTeamspeakNotification(Account account, string rawMessage) => Task.CompletedTask;
 
-        public void SendTeamspeakNotification(IEnumerable<double> clientDbIds, string rawMessage) { }
+        public Task SendTeamspeakNotification(IEnumerable<double> clientDbIds, string rawMessage) => Task.CompletedTask;
 
         public IEnumerable<Notification> GetNotificationsForContext() => new List<Notification>();
 

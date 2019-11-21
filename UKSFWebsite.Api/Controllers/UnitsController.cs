@@ -135,13 +135,13 @@ namespace UKSFWebsite.Api.Controllers {
             if (unit.name != oldUnit.name) {
                 foreach (Account account in accountService.Data().Get(x => x.unitAssignment == oldUnit.name)) {
                     await accountService.Data().Update(account.id, "unitAssignment", unit.name);
-                    teamspeakService.UpdateAccountTeamspeakGroups(accountService.Data().GetSingle(account.id));
+                    await teamspeakService.UpdateAccountTeamspeakGroups(accountService.Data().GetSingle(account.id));
                 }
             }
 
             if (unit.teamspeakGroup != oldUnit.teamspeakGroup) {
                 foreach (Account account in unit.members.Select(x => accountService.Data().GetSingle(x))) {
-                    teamspeakService.UpdateAccountTeamspeakGroups(account);
+                    await teamspeakService.UpdateAccountTeamspeakGroups(account);
                 }
             }
 

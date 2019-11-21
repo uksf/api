@@ -13,7 +13,6 @@ using UKSFWebsite.Api.Interfaces.Data;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Interfaces.Utility;
-using UKSFWebsite.Api.Models.Events;
 using UKSFWebsite.Api.Services;
 using UKSFWebsite.Api.Services.Utility;
 
