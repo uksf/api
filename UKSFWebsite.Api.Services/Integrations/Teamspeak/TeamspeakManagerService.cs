@@ -13,6 +13,8 @@ using UKSFWebsite.Api.Signalr.Hubs.Integrations;
 
 namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
     public class TeamspeakManagerService : ITeamspeakManagerService {
+        private const int SC_CLOSE = 0xF060;
+        private const int WM_SYSCOMMAND = 0x0112;
         private readonly IHubContext<TeamspeakHub, ITeamspeakClient> hub;
         private bool runTeamspeak;
         private CancellationTokenSource token;
@@ -28,7 +30,7 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
         public void Stop() {
             runTeamspeak = false;
             token.Cancel();
-            Task.Delay(TimeSpan.FromSeconds(10)).Wait();
+            Task.Delay(TimeSpan.FromSeconds(5)).Wait();
             ShutTeamspeak().Wait();
         }
 
@@ -37,7 +39,7 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
         }
 
         private async void KeepOnline() {
-            await TaskUtilities.Delay(TimeSpan.FromSeconds(10), token.Token);
+            await TaskUtilities.Delay(TimeSpan.FromSeconds(5), token.Token);
             while (runTeamspeak) {
                 if (VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_RUN").AsBool()) {
                     if (!TeamspeakHubState.Connected) {
@@ -61,7 +63,7 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
         private async Task ShutTeamspeak() {
             while (Process.GetProcessesByName("ts3client_win64").Length > 0) {
                 foreach (Process processToKill in Process.GetProcesses().Where(x => x.ProcessName == "ts3client_win64")) {
-                    ProcessHelper.CloseProcessGracefully(processToKill.MainWindowHandle);
+                    await processToKill.CloseProcessGracefully();
                     processToKill.WaitForExit(5000);
                     processToKill.Refresh();
                     if (!processToKill.HasExited) {

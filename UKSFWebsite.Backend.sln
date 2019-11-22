@@ -24,6 +24,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSFWebsite.Api.Events", "U
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSFWebsite.Api.Signalr", "UKSFWebsite.Api.Signalr\UKSFWebsite.Api.Signalr.csproj", "{6F9B12CA-26BE-45D2-B520-A032490A53F0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostMessage", "PostMessage\PostMessage.csproj", "{B173771C-1AB7-436B-A6FF-0EF50EF5D015}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -130,6 +132,18 @@ Global
 		{6F9B12CA-26BE-45D2-B520-A032490A53F0}.Release|x64.Build.0 = Release|Any CPU
 		{6F9B12CA-26BE-45D2-B520-A032490A53F0}.Release|x86.ActiveCfg = Release|Any CPU
 		{6F9B12CA-26BE-45D2-B520-A032490A53F0}.Release|x86.Build.0 = Release|Any CPU
+		{B173771C-1AB7-436B-A6FF-0EF50EF5D015}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B173771C-1AB7-436B-A6FF-0EF50EF5D015}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B173771C-1AB7-436B-A6FF-0EF50EF5D015}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B173771C-1AB7-436B-A6FF-0EF50EF5D015}.Debug|x64.Build.0 = Debug|Any CPU
+		{B173771C-1AB7-436B-A6FF-0EF50EF5D015}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B173771C-1AB7-436B-A6FF-0EF50EF5D015}.Debug|x86.Build.0 = Debug|Any CPU
+		{B173771C-1AB7-436B-A6FF-0EF50EF5D015}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B173771C-1AB7-436B-A6FF-0EF50EF5D015}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B173771C-1AB7-436B-A6FF-0EF50EF5D015}.Release|x64.ActiveCfg = Release|Any CPU
+		{B173771C-1AB7-436B-A6FF-0EF50EF5D015}.Release|x64.Build.0 = Release|Any CPU
+		{B173771C-1AB7-436B-A6FF-0EF50EF5D015}.Release|x86.ActiveCfg = Release|Any CPU
+		{B173771C-1AB7-436B-A6FF-0EF50EF5D015}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

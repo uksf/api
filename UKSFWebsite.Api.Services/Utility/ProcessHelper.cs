@@ -1,6 +1,6 @@
 using System;
+using System.Diagnostics;
 using System.Management;
-using System.Runtime.InteropServices;
 using Microsoft.Win32.TaskScheduler;
 using Task = System.Threading.Tasks.Task;
 
@@ -35,11 +35,8 @@ namespace UKSFWebsite.Api.Services.Utility {
             await Task.Delay(TimeSpan.FromSeconds(1));
         }
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        private static extern int PostMessage(IntPtr hwnd, int msg, int wparam, int lparam);
-
-        public static void CloseProcessGracefully(IntPtr mainWindowHandle) {
-            PostMessage(mainWindowHandle, WM_SYSCOMMAND, SC_CLOSE, 0);
+        public static async Task CloseProcessGracefully(this Process process) {
+            await LaunchExternalProcess("CloseProcess", $"start \"\" \"PostMessage\" \"{process.MainWindowHandle}, {WM_SYSCOMMAND}, {SC_CLOSE}, 0\"");
         }
     }
 }
