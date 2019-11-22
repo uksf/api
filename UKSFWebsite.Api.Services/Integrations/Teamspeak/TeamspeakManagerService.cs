@@ -13,8 +13,6 @@ using UKSFWebsite.Api.Signalr.Hubs.Integrations;
 
 namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
     public class TeamspeakManagerService : ITeamspeakManagerService {
-        private const int SC_CLOSE = 0xF060;
-        private const int WM_SYSCOMMAND = 0x0112;
         private readonly IHubContext<TeamspeakHub, ITeamspeakClient> hub;
         private bool runTeamspeak;
         private CancellationTokenSource token;
