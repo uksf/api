@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Management;
 using Microsoft.Win32.TaskScheduler;
 using Task = System.Threading.Tasks.Task;
@@ -28,6 +29,7 @@ namespace UKSFWebsite.Api.Services.Utility {
         }
 
         public static async Task LaunchExternalProcess(string name, string command) {
+            TaskService.Instance.RootFolder.DeleteTask(name, false);
             using TaskDefinition taskDefinition = TaskService.Instance.NewTask();
             taskDefinition.Actions.Add(new ExecAction("cmd", $"/C {command}"));
             taskDefinition.Triggers.Add(new TimeTrigger(DateTime.Now.AddSeconds(1)));

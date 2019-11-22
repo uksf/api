@@ -59,16 +59,15 @@ namespace UKSFWebsite.Api.Services.Integrations.Teamspeak {
         }
 
         private async Task ShutTeamspeak() {
-            while (Process.GetProcessesByName("ts3client_win64").Length > 0) {
-                foreach (Process processToKill in Process.GetProcesses().Where(x => x.ProcessName == "ts3client_win64")) {
-                    await processToKill.CloseProcessGracefully();
-                    processToKill.WaitForExit(5000);
-                    processToKill.Refresh();
-                    if (!processToKill.HasExited) {
-                        processToKill.Kill();
-                        await TaskUtilities.Delay(TimeSpan.FromMilliseconds(100), token.Token);
-                    }
-                }
+            Process process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == "ts3client_win64");
+            if (process == null) return;
+            await process.CloseProcessGracefully();
+            process.Refresh();
+            process.WaitForExit(5000);
+            process.Refresh();
+            if (!process.HasExited) {
+                process.Kill();
+                await TaskUtilities.Delay(TimeSpan.FromMilliseconds(100), token.Token);
             }
         }
     }
