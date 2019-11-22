@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace PostMessage {
@@ -7,7 +9,9 @@ namespace PostMessage {
         private static extern int PostMessage(IntPtr hwnd, int msg, int wparam, int lparam);
         
         public static void Main(string[] args) {
-            PostMessage(new IntPtr(int.Parse(args[0])), int.Parse(args[1]), int.Parse(args[2]), int.Parse(args[3]));
+            Process process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == args[0]);
+            if (process == null) return;
+            PostMessage(process.MainWindowHandle, int.Parse(args[1]), int.Parse(args[2]), int.Parse(args[3]));
         }
     }
 }
