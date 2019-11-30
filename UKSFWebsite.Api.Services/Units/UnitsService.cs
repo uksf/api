@@ -11,21 +11,17 @@ using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Models.Units;
 
 namespace UKSFWebsite.Api.Services.Units {
-    public class UnitsService : IUnitsService {
-        private readonly IUnitsDataService data;
+    public class UnitsService : DataBackedService<IUnitsDataService>, IUnitsService {
         private readonly IRolesService rolesService;
 
-        public UnitsService(IUnitsDataService data, IRolesService rolesService) {
-            this.data = data;
+        public UnitsService(IUnitsDataService data, IRolesService rolesService) : base(data) {
             this.rolesService = rolesService;
         }
 
-        public IUnitsDataService Data() => data;
-
         public IEnumerable<Unit> GetSortedUnits(Func<Unit, bool> predicate = null) {
             List<Unit> sortedUnits = new List<Unit>();
-            Unit combatRoot = data.GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.COMBAT);
-            Unit auxiliaryRoot = data.GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.AUXILIARY);
+            Unit combatRoot = Data().GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.COMBAT);
+            Unit auxiliaryRoot = Data().GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.AUXILIARY);
             sortedUnits.Add(combatRoot);
             sortedUnits.AddRange(GetAllChildren(combatRoot));
             sortedUnits.Add(auxiliaryRoot);
@@ -35,12 +31,12 @@ namespace UKSFWebsite.Api.Services.Units {
         }
 
         public async Task AddMember(string id, string unitId) {
-            if (data.GetSingle(x => x.id == unitId && x.members.Contains(id)) != null) return;
-            await data.Update(unitId, Builders<Unit>.Update.Push(x => x.members, id));
+            if (Data().GetSingle(x => x.id == unitId && x.members.Contains(id)) != null) return;
+            await Data().Update(unitId, Builders<Unit>.Update.Push(x => x.members, id));
         }
 
         public async Task RemoveMember(string id, string unitName) {
-            Unit unit = data.GetSingle(x => x.name == unitName);
+            Unit unit = Data().GetSingle(x => x.name == unitName);
             if (unit == null) return;
 
             await RemoveMember(id, unit);
@@ -48,14 +44,14 @@ namespace UKSFWebsite.Api.Services.Units {
 
         public async Task RemoveMember(string id, Unit unit) {
             if (unit.members.Contains(id)) {
-                await data.Update(unit.id, Builders<Unit>.Update.Pull(x => x.members, id));
+                await Data().Update(unit.id, Builders<Unit>.Update.Pull(x => x.members, id));
             }
 
             await RemoveMemberRoles(id, unit);
         }
 
         public async Task SetMemberRole(string id, string unitId, string role = "") {
-            Unit unit = data.GetSingle(x => x.id == unitId);
+            Unit unit = Data().GetSingle(x => x.id == unitId);
             if (unit == null) return;
 
             await SetMemberRole(id, unit, role);
@@ -64,46 +60,46 @@ namespace UKSFWebsite.Api.Services.Units {
         public async Task SetMemberRole(string id, Unit unit, string role = "") {
             await RemoveMemberRoles(id, unit);
             if (!string.IsNullOrEmpty(role)) {
-                await data.Update(unit.id, Builders<Unit>.Update.Set($"roles.{role}", id));
+                await Data().Update(unit.id, Builders<Unit>.Update.Set($"roles.{role}", id));
             }
         }
 
         public async Task RenameRole(string oldName, string newName) {
-            foreach (Unit unit in data.Get(x => x.roles.ContainsKey(oldName))) {
+            foreach (Unit unit in Data().Get(x => x.roles.ContainsKey(oldName))) {
                 string id = unit.roles[oldName];
-                await data.Update(unit.id, Builders<Unit>.Update.Unset($"roles.{oldName}"));
-                await data.Update(unit.id, Builders<Unit>.Update.Set($"roles.{newName}", id));
+                await Data().Update(unit.id, Builders<Unit>.Update.Unset($"roles.{oldName}"));
+                await Data().Update(unit.id, Builders<Unit>.Update.Set($"roles.{newName}", id));
             }
         }
 
         public async Task DeleteRole(string role) {
-            foreach (Unit unit in from unit in data.Get(x => x.roles.ContainsKey(role)) let id = unit.roles[role] select unit) {
-                await data.Update(unit.id, Builders<Unit>.Update.Unset($"roles.{role}"));
+            foreach (Unit unit in from unit in Data().Get(x => x.roles.ContainsKey(role)) let id = unit.roles[role] select unit) {
+                await Data().Update(unit.id, Builders<Unit>.Update.Unset($"roles.{role}"));
             }
         }
 
         public bool HasRole(string unitId, string role) {
-            Unit unit = data.GetSingle(x => x.id == unitId);
+            Unit unit = Data().GetSingle(x => x.id == unitId);
             return HasRole(unit, role);
         }
 
         public bool HasRole(Unit unit, string role) => unit.roles.ContainsKey(role);
 
         public bool RolesHasMember(string unitId, string id) {
-            Unit unit = data.GetSingle(x => x.id == unitId);
+            Unit unit = Data().GetSingle(x => x.id == unitId);
             return RolesHasMember(unit, id);
         }
 
         public bool RolesHasMember(Unit unit, string id) => unit.roles.ContainsValue(id);
 
         public bool MemberHasRole(string id, string unitId, string role) {
-            Unit unit = data.GetSingle(x => x.id == unitId);
+            Unit unit = Data().GetSingle(x => x.id == unitId);
             return MemberHasRole(id, unit, role);
         }
 
         public bool MemberHasRole(string id, Unit unit, string role) => unit.roles.GetValueOrDefault(role, string.Empty) == id;
 
-        public bool MemberHasAnyRole(string id) => data.Get().Any(x => RolesHasMember(x, id));
+        public bool MemberHasAnyRole(string id) => Data().Get().Any(x => RolesHasMember(x, id));
 
         public int GetMemberRoleOrder(Account account, Unit unit) {
             if (RolesHasMember(unit.id, account.id)) {
@@ -113,12 +109,12 @@ namespace UKSFWebsite.Api.Services.Units {
             return -1;
         }
 
-        public Unit GetRoot() => data.GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.COMBAT);
+        public Unit GetRoot() => Data().GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.COMBAT);
 
-        public Unit GetAuxilliaryRoot() => data.GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.AUXILIARY);
+        public Unit GetAuxilliaryRoot() => Data().GetSingle(x => x.parent == ObjectId.Empty.ToString() && x.branch == UnitBranch.AUXILIARY);
 
         public Unit GetParent(Unit unit) {
-            return unit.parent != string.Empty ? data.GetSingle(x => x.id == unit.parent) : null;
+            return unit.parent != string.Empty ? Data().GetSingle(x => x.id == unit.parent) : null;
         }
 
         public IEnumerable<Unit> GetParents(Unit unit) {
@@ -127,17 +123,17 @@ namespace UKSFWebsite.Api.Services.Units {
             do {
                 parentUnits.Add(unit);
                 Unit child = unit;
-                unit = !string.IsNullOrEmpty(unit.parent) ? data.GetSingle(x => x.id == child.parent) : null;
+                unit = !string.IsNullOrEmpty(unit.parent) ? Data().GetSingle(x => x.id == child.parent) : null;
             } while (unit != null);
 
             return parentUnits;
         }
 
-        public IEnumerable<Unit> GetChildren(Unit parent) => data.Get(x => x.parent == parent.id).ToList();
+        public IEnumerable<Unit> GetChildren(Unit parent) => Data().Get(x => x.parent == parent.id).ToList();
 
         public IEnumerable<Unit> GetAllChildren(Unit parent, bool includeParent = false) {
             List<Unit> children = includeParent ? new List<Unit> {parent} : new List<Unit>();
-            foreach (Unit unit in data.Get(x => x.parent == parent.id)) {
+            foreach (Unit unit in Data().Get(x => x.parent == parent.id)) {
                 children.Add(unit);
                 children.AddRange(GetAllChildren(unit));
             }
@@ -151,10 +147,10 @@ namespace UKSFWebsite.Api.Services.Units {
             }
 
             int depth = 0;
-            Unit parent = data.GetSingle(unit.parent);
+            Unit parent = Data().GetSingle(unit.parent);
             while (parent != null) {
                 depth++;
-                parent = data.GetSingle(parent.parent);
+                parent = Data().GetSingle(parent.parent);
             }
 
             return depth;
@@ -175,7 +171,7 @@ namespace UKSFWebsite.Api.Services.Units {
             }
 
             if (roles.Count != originalCount) {
-                await data.Update(unit.id, Builders<Unit>.Update.Set(x => x.roles, roles));
+                await Data().Update(unit.id, Builders<Unit>.Update.Set(x => x.roles, roles));
             }
         }
     }

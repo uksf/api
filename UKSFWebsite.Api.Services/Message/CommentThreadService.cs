@@ -8,30 +8,24 @@ using UKSFWebsite.Api.Models.Events;
 using UKSFWebsite.Api.Models.Message;
 
 namespace UKSFWebsite.Api.Services.Message {
-    public class CommentThreadService : ICommentThreadService {
-        private readonly ICommentThreadDataService data;
+    public class CommentThreadService : DataBackedService<ICommentThreadDataService>, ICommentThreadService {
         private readonly IDisplayNameService displayNameService;
 
-        public CommentThreadService(ICommentThreadDataService data, IDisplayNameService displayNameService) {
-            this.data = data;
-            this.displayNameService = displayNameService;
-        }
+        public CommentThreadService(ICommentThreadDataService data, IDisplayNameService displayNameService) : base(data) => this.displayNameService = displayNameService;
 
-        public ICommentThreadDataService Data() => data;
-
-        public IEnumerable<Comment> GetCommentThreadComments(string id) => data.GetSingle(id).comments.Reverse();
+        public IEnumerable<Comment> GetCommentThreadComments(string id) => Data().GetSingle(id).comments.Reverse();
 
         public async Task InsertComment(string id, Comment comment) {
-            await data.Update(id, comment, DataEventType.ADD);
+            await Data().Update(id, comment, DataEventType.ADD);
         }
 
         public async Task RemoveComment(string id, Comment comment) {
-            await data.Update(id, comment, DataEventType.DELETE);
+            await Data().Update(id, comment, DataEventType.DELETE);
         }
 
         public IEnumerable<string> GetCommentThreadParticipants(string id) {
             HashSet<string> participants = GetCommentThreadComments(id).Select(x => x.author).ToHashSet();
-            participants.UnionWith(data.GetSingle(id).authors);
+            participants.UnionWith(Data().GetSingle(id).authors);
             return participants;
         }
 

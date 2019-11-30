@@ -14,15 +14,11 @@ using UKSFWebsite.Api.Models.Launcher;
 using UKSFWebsite.Api.Services.Admin;
 
 namespace UKSFWebsite.Api.Services.Launcher {
-    public class LauncherFileService : ILauncherFileService {
-        private readonly ILauncherFileDataService data;
-
-        public LauncherFileService(ILauncherFileDataService data) => this.data = data;
-
-        public ILauncherFileDataService Data() => data;
+    public class LauncherFileService : DataBackedService<ILauncherFileDataService>, ILauncherFileService {
+        public LauncherFileService(ILauncherFileDataService data) : base(data)  { }
 
         public async Task UpdateAllVersions() {
-            List<LauncherFile> storedVersions = data.Get();
+            List<LauncherFile> storedVersions = Data().Get();
             string launcherDirectory = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("LAUNCHER_LOCATION").AsString(), "Launcher");
             List<string> fileNames = new List<string>();
             foreach (string filePath in Directory.EnumerateFiles(launcherDirectory)) {
@@ -31,17 +27,17 @@ namespace UKSFWebsite.Api.Services.Launcher {
                 fileNames.Add(fileName);
                 LauncherFile storedFile = storedVersions.FirstOrDefault(x => x.fileName == fileName);
                 if (storedFile == null) {
-                    await data.Add(new LauncherFile {fileName = fileName, version = version});
+                    await Data().Add(new LauncherFile {fileName = fileName, version = version});
                     continue;
                 }
 
                 if (storedFile.version != version) {
-                    await data.Update(storedFile.id, Builders<LauncherFile>.Update.Set(x => x.version, version));
+                    await Data().Update(storedFile.id, Builders<LauncherFile>.Update.Set(x => x.version, version));
                 }
             }
 
             foreach (LauncherFile storedVersion in storedVersions.Where(storedVersion => fileNames.All(x => x != storedVersion.fileName))) {
-                await data.Delete(storedVersion.id);
+                await Data().Delete(storedVersion.id);
             }
         }
 
@@ -54,7 +50,7 @@ namespace UKSFWebsite.Api.Services.Launcher {
 
         public async Task<Stream> GetUpdatedFiles(IEnumerable<LauncherFile> files) {
             string launcherDirectory = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("LAUNCHER_LOCATION").AsString(), "Launcher");
-            List<LauncherFile> storedVersions = data.Get();
+            List<LauncherFile> storedVersions = Data().Get();
             List<string> updatedFiles = new List<string>();
             List<string> deletedFiles = new List<string>();
             foreach (LauncherFile launcherFile in files) {

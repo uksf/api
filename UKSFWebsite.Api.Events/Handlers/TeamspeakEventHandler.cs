@@ -15,13 +15,13 @@ using UKSFWebsite.Api.Models.Personnel;
 
 namespace UKSFWebsite.Api.Events.Handlers {
     public class TeamspeakEventHandler : ITeamspeakEventHandler {
-        private readonly ISignalrEventBus eventBus;
+        private readonly ITeamspeakEventBus eventBus;
         private readonly ITeamspeakService teamspeakService;
         private readonly IAccountService accountService;
         private readonly ITeamspeakGroupService teamspeakGroupService;
         private readonly Dictionary<double, TeamspeakServerGroupUpdate> serverGroupUpdates = new Dictionary<double, TeamspeakServerGroupUpdate>();
 
-        public TeamspeakEventHandler(ISignalrEventBus eventBus, ITeamspeakService teamspeakService, IAccountService accountService, ITeamspeakGroupService teamspeakGroupService) {
+        public TeamspeakEventHandler(ITeamspeakEventBus eventBus, ITeamspeakService teamspeakService, IAccountService accountService, ITeamspeakGroupService teamspeakGroupService) {
             this.eventBus = eventBus;
             this.teamspeakService = teamspeakService;
             this.accountService = accountService;
@@ -35,7 +35,7 @@ namespace UKSFWebsite.Api.Events.Handlers {
                        );
         }
 
-        private async Task HandleEvent(SignalrEventModel eventModel) {
+        private async Task HandleEvent(TeamspeakEventModel eventModel) {
             string args = eventModel.args.ToString();
             switch (eventModel.procedure) {
                 case TeamspeakEventType.CLIENTS:
@@ -52,7 +52,6 @@ namespace UKSFWebsite.Api.Events.Handlers {
         private async Task UpdateClients(string args) {
             Console.Out.WriteLine(args);
             JArray clientsArray = JArray.Parse(args);
-            if (clientsArray.Count == 0) return;
             HashSet<TeamspeakClient> clients = clientsArray.ToObject<HashSet<TeamspeakClient>>();
             Console.WriteLine("Updating online clients");
             await teamspeakService.UpdateClients(clients);

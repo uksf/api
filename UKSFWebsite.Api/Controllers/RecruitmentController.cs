@@ -143,11 +143,7 @@ namespace UKSFWebsite.Api.Controllers {
             Dictionary<string, uint> ratings = accountService.Data().GetSingle(id).application.ratings;
 
             (string key, uint rating) = value;
-            if (ratings.ContainsKey(key)) {
-                ratings[key] = rating;
-            } else {
-                ratings.Add(key, rating);
-            }
+            ratings[key] = rating;
 
             await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.ratings, ratings));
             return ratings;
