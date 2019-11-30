@@ -141,12 +141,14 @@ namespace UKSFWebsite.Api {
                     endpoints.MapHub<AdminHub>($"/hub/{AdminHub.END_POINT}");
                     endpoints.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.END_POINT}");
                     endpoints.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.END_POINT}");
+                    endpoints.MapHub<GameClientHub>($"/hub/{GameClientHub.END_POINT}");
                     endpoints.MapHub<NotificationHub>($"/hub/{NotificationHub.END_POINT}");
-                    endpoints.MapHub<TeamspeakHub>($"/hub/{TeamspeakHub.END_POINT}").RequireHost("localhost");
                     endpoints.MapHub<TeamspeakClientsHub>($"/hub/{TeamspeakClientsHub.END_POINT}");
                     endpoints.MapHub<UtilityHub>($"/hub/{UtilityHub.END_POINT}");
-                    endpoints.MapHub<ServersHub>($"/hub/{ServersHub.END_POINT}");
+                    endpoints.MapHub<GameServersHub>($"/hub/{GameServersHub.END_POINT}");
                     endpoints.MapHub<LauncherHub>($"/hub/{LauncherHub.END_POINT}");
+                    endpoints.MapHub<GameServerHub>($"/hub/{GameServerHub.END_POINT}").RequireHost("localhost");
+                    endpoints.MapHub<TeamspeakHub>($"/hub/{TeamspeakHub.END_POINT}").RequireHost("localhost");
                 }
             );
 
@@ -258,13 +260,15 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<IDataEventBus<IRolesDataService>, DataEventBus<IRolesDataService>>();
             services.AddSingleton<IDataEventBus<IUnitsDataService>, DataEventBus<IUnitsDataService>>();
             services.AddSingleton<IDataEventBus<IVariablesDataService>, DataEventBus<IVariablesDataService>>();
-            services.AddSingleton<ISignalrEventBus, SignalrEventBus>();
+            services.AddSingleton<ITeamspeakEventBus, TeamspeakEventBus>();
+            services.AddSingleton<IGameEventBus, GameEventBus>();
 
             // Event Handlers
             services.AddSingleton<EventHandlerInitialiser>();
             services.AddSingleton<IAccountEventHandler, AccountEventHandler>();
             services.AddSingleton<ICommandRequestEventHandler, CommandRequestEventHandler>();
             services.AddSingleton<ICommentThreadEventHandler, CommentThreadEventHandler>();
+            services.AddSingleton<IGameServerEventHandler, GameServerEventHandler>();
             services.AddSingleton<INotificationsEventHandler, NotificationsEventHandler>();
             services.AddSingleton<ITeamspeakEventHandler, TeamspeakEventHandler>();
         }

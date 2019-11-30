@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 
 namespace UKSFWebsite.Api.Interfaces.Hubs {
-    public interface IServersClient {
+    public interface IGameClientClient {
         Task ReceiveDisabledState(bool state);
     }
 }

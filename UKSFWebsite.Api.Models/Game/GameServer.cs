@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using UKSFWebsite.Api.Models.Utility;
 
 namespace UKSFWebsite.Api.Models.Game {
     public enum GameServerOption {
@@ -10,10 +11,7 @@ namespace UKSFWebsite.Api.Models.Game {
     }
 
     public class GameServer {
-        [BsonIgnore] public readonly List<int> headlessClientProcessIds = new List<int>();
         public string adminPassword;
-        public int apiPort;
-        [BsonIgnore] public bool canLaunch;
         public string hostName;
         [BsonId, BsonRepresentation(BsonType.ObjectId)] public string id;
         public List<GameServerMod> mods = new List<GameServerMod>();
@@ -22,23 +20,12 @@ namespace UKSFWebsite.Api.Models.Game {
         public int order = 0;
         public string password;
         public int port;
-        [BsonIgnore] public int? processId;
         public string profileName;
         public string serverMods;
-        public GameServerOption serverOption;
-        [BsonIgnore] public GameServerStatus status = new GameServerStatus();
+        public GameServerOption serverOption = GameServerOption.NONE;
 
-        public override string ToString() => $"{name}, {port}, {apiPort}, {numberHeadlessClients}, {profileName}, {hostName}, {password}, {adminPassword}, {serverOption}, {serverMods}";
-    }
-
-    public class GameServerStatus {
-        public string map;
-        public string maxPlayers;
-        public string mission;
-        public string parsedUptime;
-        public int players;
-        public bool running;
-        public bool started;
-        public float uptime;
+        public override string ToString() => $"{name}, {port}, {numberHeadlessClients}, {profileName}, {hostName}, {password}, {adminPassword}, {serverOption}, {serverMods}";
+        public string Key() => $"{port}:{GameServerType.SERVER.Value()}:{name}";
+        public string HeadlessClientKey(string headlessClientName) => $"{port}:{GameServerType.HEADLESS}:{headlessClientName}";
     }
 }

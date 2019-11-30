@@ -4,12 +4,8 @@ using UKSFWebsite.Api.Interfaces.Operations;
 using UKSFWebsite.Api.Models.Operations;
 
 namespace UKSFWebsite.Api.Services.Operations {
-    public class OperationOrderService : IOperationOrderService {
-        private readonly IOperationOrderDataService data;
-
-        public OperationOrderService(IOperationOrderDataService data) => this.data = data;
-
-        public IOperationOrderDataService Data() => data;
+    public class OperationOrderService : DataBackedService<IOperationOrderDataService>, IOperationOrderService {
+        public OperationOrderService(IOperationOrderDataService data) : base(data) { }
 
         public async Task Add(CreateOperationOrderRequest request) {
             Opord operation = new Opord {
@@ -19,7 +15,7 @@ namespace UKSFWebsite.Api.Services.Operations {
                 end = request.end.AddHours((double) request.endtime / 100),
                 type = request.type
             };
-            await data.Add(operation);
+            await Data().Add(operation);
         }
     }
 }

@@ -6,28 +6,22 @@ using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Models.Utility;
 
 namespace UKSFWebsite.Api.Services.Utility {
-    public class ConfirmationCodeService : IConfirmationCodeService {
-        private readonly IConfirmationCodeDataService data;
+    public class ConfirmationCodeService : DataBackedService<IConfirmationCodeDataService>, IConfirmationCodeService {
         private readonly ISchedulerService schedulerService;
 
-        public ConfirmationCodeService(IConfirmationCodeDataService data, ISchedulerService schedulerService) {
-            this.data = data;
-            this.schedulerService = schedulerService;
-        }
-
-        public IConfirmationCodeDataService Data() => data;
+        public ConfirmationCodeService(IConfirmationCodeDataService data, ISchedulerService schedulerService) : base(data) => this.schedulerService = schedulerService;
 
         public async Task<string> CreateConfirmationCode(string value, bool integration = false) {
             ConfirmationCode code = new ConfirmationCode {value = value};
-            await data.Add(code);
+            await Data().Add(code);
             await schedulerService.Create(DateTime.Now.AddMinutes(30), TimeSpan.Zero, integration ? ScheduledJobType.INTEGRATION : ScheduledJobType.NORMAL, nameof(SchedulerActionHelper.DeleteExpiredConfirmationCode), code.id);
             return code.id;
         }
 
         public async Task<string> GetConfirmationCode(string id) {
-            ConfirmationCode confirmationCode = data.GetSingle(x => x.id == id);
+            ConfirmationCode confirmationCode = Data().GetSingle(x => x.id == id);
             if (confirmationCode == null) return string.Empty;
-            await data.Delete(confirmationCode.id);
+            await Data().Delete(confirmationCode.id);
             string actionParameters = JsonConvert.SerializeObject(new object[] {confirmationCode.id});
             if (actionParameters != null) {
                 await schedulerService.Cancel(x => x.actionParameters == actionParameters);
