@@ -18,12 +18,13 @@ using UKSFWebsite.Api.Signalr.Hubs.Game;
 
 namespace UKSFWebsite.Api.Services.Game {
     public class GameServersService : DataBackedService<IGameServersDataService>, IGameServersService {
-        private readonly IHubContext<GameServerHub, IGameServerClient> gameServerHub;
+        private readonly IHubContext<GameServerClientHub, IGameServerClient> gameServerHub;
         private readonly IHubContext<GameServersHub, IGameServersClient> gameServersHub;
         private readonly IMissionPatchingService missionPatchingService;
         private readonly ConcurrentDictionary<string, GameServerStatus> serverStatuses = new ConcurrentDictionary<string, GameServerStatus>();
+        private readonly ConcurrentDictionary<string, Task> serverMonitors = new ConcurrentDictionary<string, Task>();
 
-        public GameServersService(IGameServersDataService data, IMissionPatchingService missionPatchingService, IHubContext<GameServersHub, IGameServersClient> gameServersHub, IHubContext<GameServerHub, IGameServerClient> gameServerHub) : base(data) {
+        public GameServersService(IGameServersDataService data, IMissionPatchingService missionPatchingService, IHubContext<GameServersHub, IGameServersClient> gameServersHub, IHubContext<GameServerClientHub, IGameServerClient> gameServerHub) : base(data) {
             this.missionPatchingService = missionPatchingService;
             this.gameServersHub = gameServersHub;
             this.gameServerHub = gameServerHub;
@@ -66,6 +67,9 @@ namespace UKSFWebsite.Api.Services.Game {
                     await UpdateGameServerStatus(new GameServerStatus {port = gameServer.port, type = GameServerType.HEADLESS, name = name, processId = processId});
                 }
             }
+
+            Task monitorTask = MonitorServer(gameServer);
+            serverMonitors[gameServer.Key()] = monitorTask;
         }
 
         public async Task StopGameServer(GameServer gameServer) {
@@ -118,9 +122,18 @@ namespace UKSFWebsite.Api.Services.Game {
         }
 
         public async Task UpdateGameServerStatus(GameServerStatus gameServerStatus) {
-            serverStatuses[gameServerStatus.Key()] = gameServerStatus;
-            await gameServersHub.Clients.Group(gameServerStatus.Key()).ReceiveServerStatusUpdate(gameServerStatus);
+            string key = gameServerStatus.Key();
+            serverStatuses[key] = gameServerStatus;
+            await gameServersHub.Clients.Group(key).ReceiveServerStatusUpdate(gameServerStatus);
             await gameServersHub.Clients.Group(GameServersHub.ALL).ReceiveServerStatusUpdate(gameServerStatus);
+            
+            // Assert monitor running if server
+            if (gameServerStatus.type == GameServerType.SERVER && !serverMonitors.ContainsKey(key)) {
+                GameServer gameServer = Data().GetSingle(x => x.Key() == key);
+                if (gameServer == null) throw new NullReferenceException($"Tried to retried game server by status ({key}). Game server was not found.");
+                Task monitorTask = MonitorServer(gameServer);
+                serverMonitors[gameServer.Key()] = monitorTask;
+            }
         }
 
         public GameServerStatus GetStatus(string key) => serverStatuses.ContainsKey(key) ? serverStatuses[key] : null;
@@ -129,12 +142,15 @@ namespace UKSFWebsite.Api.Services.Game {
 
         public bool IsServerRunning(GameServer gameServer) {
             GameServerStatus status = GetStatus(gameServer.Key());
-            if (status == null) return false;
-            // TODO: Investigate state numbers
-            return true;
+            return status != null;
         }
 
         public bool IsServerRunning(Func<KeyValuePair<string, GameServerStatus>, bool> predicate) => serverStatuses.Any(predicate);
+
+        public bool IsServerMissionRunning(GameServer gameServer) {
+            GameServerStatus status = GetStatus(gameServer.Key());
+            return status?.state == GameServerState.BRIEFING_READ;
+        }
 
         public List<GameServerMod> GetAvailableMods() {
             Uri serverExecutable = new Uri(GameServerHelpers.GetGameServerExecutablePath());
@@ -169,15 +185,70 @@ namespace UKSFWebsite.Api.Services.Game {
         }
 
         public async Task RemoveGameServerStatus(string key) {
+            if (serverMonitors.ContainsKey(key)) {
+                serverMonitors.Remove(key, out Task _);
+            }
+            
             if (!serverStatuses.ContainsKey(key)) return;
-            serverStatuses.Remove(key, out GameServerStatus unused);
+            serverStatuses.Remove(key, out GameServerStatus _);
             await gameServersHub.Clients.Group(key).ReceiveServerStatusRemoved(key);
             await gameServersHub.Clients.Group(GameServersHub.ALL).ReceiveServerStatusRemoved(key);
         }
 
         private async Task ClearGameServerStatuses() {
             serverStatuses.Clear();
+            serverMonitors.Clear();
             await gameServersHub.Clients.Group(GameServersHub.ALL).ReceiveServerStatusesCleared();
+        }
+
+        private async Task MonitorServer(GameServer gameServer) {
+            string key = gameServer.Key();
+
+            while (serverStatuses.ContainsKey(key)) {
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                
+                // Check server process. If not running, kill everything associated with it
+                GameServerStatus status = serverStatuses[key];
+                Process process = Process.GetProcesses().FirstOrDefault(x => x.Id == status.processId);
+                if (process == null || process.HasExited) {
+                    await KillGameServer(gameServer);
+                    continue;
+                }
+                // Assume from here server is meant to be still running, including headless clients
+                
+                // Check server status age. If greater than 30 seconds, mark as not responding
+                if (status.timestamp.AddSeconds(30) <= DateTime.Now) {
+                    Console.Out.WriteLine($"{status.timestamp.AddSeconds(30)} > {DateTime.Now}");
+                    status.state = GameServerState.NOT_RESPONDING;
+                    await UpdateGameServerStatus(status);
+                }
+
+                // Check server headless clients.
+                if (gameServer.numberHeadlessClients > 0) {
+                    for (int index = 0; index < gameServer.numberHeadlessClients; index++) {
+                        string name = GameServerHelpers.GetHeadlessClientName(index);
+                        // If has status and not running, or no status, add/set status and mark not responding
+                        if (serverStatuses.ContainsKey(gameServer.HeadlessClientKey(name))) {
+                            status = serverStatuses[gameServer.HeadlessClientKey(name)];
+                            process = Process.GetProcesses().FirstOrDefault(x => x.Id == status.processId);
+                            if (process == null || process.HasExited) {
+                                status.state = GameServerState.NOT_RUNNING;
+                                await UpdateGameServerStatus(status);
+                                continue;
+                            }
+                            
+                            // Check server status age. If greater than 30 seconds, mark as not responding
+                            if (status.timestamp.AddSeconds(30) <= DateTime.Now) {
+                                Console.Out.WriteLine($"{status.timestamp.AddSeconds(30)} > {DateTime.Now}");
+                                status.state = GameServerState.NOT_RESPONDING;
+                                await UpdateGameServerStatus(status);
+                            }
+                        } else {
+                            await UpdateGameServerStatus(new GameServerStatus {port = gameServer.port, type = GameServerType.HEADLESS, name = name, state = GameServerState.NOT_RESPONDING});
+                        }
+                    }
+                }
+            }
         }
     }
 }

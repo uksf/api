@@ -9,7 +9,7 @@ namespace UKSFWebsite.Api.Models.Game {
         public GameServerType type = GameServerType.SERVER;
         public string name;
         public int processId = 0;
-        public int state = 0;
+        public GameServerState state = GameServerState.NONE;
         public string map;
         public string mission;
         public float uptime = 0;

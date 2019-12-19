@@ -23,6 +23,7 @@ namespace UKSFWebsite.Api.Interfaces.Game {
         List<GameServerStatus> GetAllStatuses();
         bool IsServerRunning(GameServer gameServer);
         bool IsServerRunning(Func<KeyValuePair<string, GameServerStatus>, bool> predicate);
+        bool IsServerMissionRunning(GameServer gameServer);
         Task RemoveGameServerStatus(string key);
     }
 }

@@ -9,11 +9,11 @@ using UKSFWebsite.Api.Models.Events.Types;
 using UKSFWebsite.Api.Models.Game;
 
 namespace UKSFWebsite.Api.Signalr.Hubs.Game {
-    public class GameServerHub : Hub<IGameServerClient> {
+    public class GameServerClientHub : Hub<IGameServerClient> {
         public const string END_POINT = "gameserver";
         private readonly IGameEventBus eventBus;
 
-        public GameServerHub(IGameEventBus eventBus) => this.eventBus = eventBus;
+        public GameServerClientHub(IGameEventBus eventBus) => this.eventBus = eventBus;
 
         // ReSharper disable once UnusedMember.Global
         public void Invoke(int procedure, object args) {
