@@ -130,7 +130,7 @@ namespace UKSFWebsite.Api.Services.Integrations {
                 try {
                     await user.ModifyAsync(x => x.Nickname = name);
                 } catch (Exception) {
-                    LogWrapper.Log($"Failed to update nickname for {user.Nickname}. Must manually be changed to: {name}");
+                    LogWrapper.Log($"Failed to update nickname for {(string.IsNullOrEmpty(user.Nickname) ? user.Username : user.Nickname)}. Must manually be changed to: {name}");
                 }
             }
         }
