@@ -147,7 +147,7 @@ namespace UKSFWebsite.Api {
                     endpoints.MapHub<UtilityHub>($"/hub/{UtilityHub.END_POINT}");
                     endpoints.MapHub<GameServersHub>($"/hub/{GameServersHub.END_POINT}");
                     endpoints.MapHub<LauncherHub>($"/hub/{LauncherHub.END_POINT}");
-                    endpoints.MapHub<GameServerHub>($"/hub/{GameServerHub.END_POINT}").RequireHost("localhost");
+                    endpoints.MapHub<GameServerClientHub>($"/hub/{GameServerClientHub.END_POINT}").RequireHost("localhost");
                     endpoints.MapHub<TeamspeakHub>($"/hub/{TeamspeakHub.END_POINT}").RequireHost("localhost");
                 }
             );

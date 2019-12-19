@@ -39,20 +39,29 @@ namespace UKSFWebsite.Api.Events.Handlers {
                 case GameEventType.REMOVE_SERVER_STATUS:
                     await RemoveServerStatus(args);
                     break;
+                case GameEventType.SAFE_SHUTDOWN:
+                    await SafeShutdown(args);
+                    break;
                 case GameEventType.EMPTY: break;
                 default: throw new ArgumentOutOfRangeException();
             }
         }
 
-        private async Task UpdateServerStatus(string args) {
-            Console.Out.WriteLine(args);
-            GameServerStatus gameServerStatus = JsonConvert.DeserializeObject<GameServerStatus>(args);
+        private async Task UpdateServerStatus(string status) {
+            Console.Out.WriteLine(status);
+            GameServerStatus gameServerStatus = JsonConvert.DeserializeObject<GameServerStatus>(status);
             await gameServersService.UpdateGameServerStatus(gameServerStatus);
         }
 
         private async Task RemoveServerStatus(string key) {
             Console.Out.WriteLine($"{key} disconnected, removing");
             await gameServersService.RemoveGameServerStatus(key);
+        }
+
+        private async Task SafeShutdown(string name) {
+            Console.Out.WriteLine($"{name} requested shutdown");
+            GameServer gameServer = gameServersService.Data().GetSingle(x => x.name == name);
+            await gameServersService.StopGameServer(gameServer);
         }
     }
 }
