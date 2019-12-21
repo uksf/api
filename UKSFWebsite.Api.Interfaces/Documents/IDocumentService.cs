@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Models.Documents;
 
-namespace UKSFWebsite.Api.Services.Abstraction {
-    public interface IDocumentService : IDataService<Document> {
+namespace UKSFWebsite.Api.Interfaces.Documents {
+    public interface IDocumentService : IDataBackedService<IDocumentsDataService> {
         DocumentVersion GetVersion(string id, int version = -1);
         DocumentVersion GetVersion(Func<Document, bool> predicate, int version = -1);
         string GetFile(Document document, DocumentVersion documentVersion);

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -16,6 +15,7 @@ using Microsoft.IdentityModel.Tokens;
 using UKSFWebsite.Api.Data;
 using UKSFWebsite.Api.Data.Admin;
 using UKSFWebsite.Api.Data.Command;
+using UKSFWebsite.Api.Data.Documents;
 using UKSFWebsite.Api.Data.Fake;
 using UKSFWebsite.Api.Data.Game;
 using UKSFWebsite.Api.Data.Launcher;
@@ -31,6 +31,7 @@ using UKSFWebsite.Api.Events.SignalrServer;
 using UKSFWebsite.Api.Interfaces.Command;
 using UKSFWebsite.Api.Interfaces.Data;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
+using UKSFWebsite.Api.Interfaces.Documents;
 using UKSFWebsite.Api.Interfaces.Events;
 using UKSFWebsite.Api.Interfaces.Events.Handlers;
 using UKSFWebsite.Api.Interfaces.Game;
@@ -43,8 +44,10 @@ using UKSFWebsite.Api.Interfaces.Personnel;
 using UKSFWebsite.Api.Interfaces.Units;
 using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Services;
+using UKSFWebsite.Api.Services.Abstraction;
 using UKSFWebsite.Api.Services.Admin;
 using UKSFWebsite.Api.Services.Command;
+using UKSFWebsite.Api.Services.Documents;
 using UKSFWebsite.Api.Services.Fake;
 using UKSFWebsite.Api.Services.Game;
 using UKSFWebsite.Api.Services.Game.Missions;
@@ -202,11 +205,14 @@ namespace UKSFWebsite.Api {
             RegisterDataBackedServices(services, currentEnvironment);
 
             // Instance Objects
+            services.AddTransient<MissionPatchDataService>();
+            services.AddTransient<MissionService>();
             services.AddTransient<IAssignmentService, AssignmentService>();
             services.AddTransient<IAttendanceService, AttendanceService>();
             services.AddTransient<IChainOfCommandService, ChainOfCommandService>();
             services.AddTransient<ICommandRequestCompletionService, CommandRequestCompletionService>();
             services.AddTransient<IDisplayNameService, DisplayNameService>();
+            services.AddTransient<IDocumentPermissionService, DocumentPermissionService>();
             services.AddTransient<ILauncherService, LauncherService>();
             services.AddTransient<ILoginService, LoginService>();
             services.AddTransient<IMissionPatchingService, MissionPatchingService>();
@@ -215,8 +221,6 @@ namespace UKSFWebsite.Api {
             services.AddTransient<IServiceRecordService, ServiceRecordService>();
             services.AddTransient<ITeamspeakGroupService, TeamspeakGroupService>();
             services.AddTransient<ITeamspeakMetricsService, TeamspeakMetricsService>();
-            services.AddTransient<MissionPatchDataService>();
-            services.AddTransient<MissionService>();
 
             // Global Singletons
             services.AddSingleton(configuration);
@@ -226,16 +230,16 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<MigrationUtility>();
             services.AddSingleton<IEmailService, EmailService>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<ISessionService, SessionService>();
             services.AddSingleton<ILoggingService, LoggingService>();
+            services.AddSingleton<ISessionService, SessionService>();
             services.AddSingleton<ITeamspeakService, TeamspeakService>();
 
             if (currentEnvironment.IsDevelopment()) {
-                services.AddSingleton<ITeamspeakManagerService, FakeTeamspeakManagerService>();
                 services.AddSingleton<IDiscordService, FakeDiscordService>();
+                services.AddSingleton<ITeamspeakManagerService, FakeTeamspeakManagerService>();
             } else {
-                services.AddSingleton<ITeamspeakManagerService, TeamspeakManagerService>();
                 services.AddSingleton<IDiscordService, DiscordService>();
+                services.AddSingleton<ITeamspeakManagerService, TeamspeakManagerService>();
             }
         }
 
@@ -247,6 +251,7 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<IDataEventBus<ICommentThreadDataService>, DataEventBus<ICommentThreadDataService>>();
             services.AddSingleton<IDataEventBus<IConfirmationCodeDataService>, DataEventBus<IConfirmationCodeDataService>>();
             services.AddSingleton<IDataEventBus<IDischargeDataService>, DataEventBus<IDischargeDataService>>();
+            services.AddSingleton<IDataEventBus<IDocumentsDataService>, DataEventBus<IDocumentsDataService>>();
             services.AddSingleton<IDataEventBus<IGameServersDataService>, DataEventBus<IGameServersDataService>>();
             services.AddSingleton<IDataEventBus<ILauncherFileDataService>, DataEventBus<ILauncherFileDataService>>();
             services.AddSingleton<IDataEventBus<ILoaDataService>, DataEventBus<ILoaDataService>>();
@@ -280,6 +285,7 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<ICommandRequestArchiveDataService, CommandRequestArchiveDataService>();
             services.AddSingleton<ICommentThreadDataService, CommentThreadDataService>();
             services.AddSingleton<IDischargeDataService, DischargeDataService>();
+            services.AddSingleton<IDocumentsDataService, DocumentsDataService>();
             services.AddSingleton<IGameServersDataService, GameServersDataService>();
             services.AddSingleton<ILauncherFileDataService, LauncherFileDataService>();
             services.AddSingleton<ILoaDataService, LoaDataService>();
@@ -307,6 +313,7 @@ namespace UKSFWebsite.Api {
             services.AddTransient<ICommandRequestService, CommandRequestService>();
             services.AddTransient<ICommentThreadService, CommentThreadService>();
             services.AddTransient<IDischargeService, DischargeService>();
+            services.AddTransient<IDocumentService, DocumentService>();
             services.AddTransient<IGameServersService, GameServersService>();
             services.AddTransient<ILauncherFileService, LauncherFileService>();
             services.AddTransient<ILoaService, LoaService>();
@@ -345,27 +352,4 @@ namespace UKSFWebsite.Api {
         // ReSharper disable once UnusedMethodReturnValue.Global
         public static IApplicationBuilder UseCorsMiddleware(this IApplicationBuilder builder) => builder.UseMiddleware<CorsMiddleware>();
     }
-
-    public static class HttpRequestExtensions {
-        public static bool IsLocal(this HttpRequest req) {
-            ConnectionInfo connection = req.HttpContext.Connection;
-            if (connection.RemoteIpAddress != null) {
-                if (connection.LocalIpAddress != null) {
-                    return connection.RemoteIpAddress.Equals(connection.LocalIpAddress);
-                }
-
-                return IPAddress.IsLoopback(connection.RemoteIpAddress);
-            }
-
-            // for in memory TestServer or when dealing with default connection info
-            if (connection.RemoteIpAddress == null && connection.LocalIpAddress == null) {
-                return true;
-            }
-
-            return false;
-        }
-    }
 }
-
-// Request Singletons
-// services.AddScoped<>();

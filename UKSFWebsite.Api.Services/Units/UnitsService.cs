@@ -82,6 +82,11 @@ namespace UKSFWebsite.Api.Services.Units {
             }
         }
 
+        public bool HasMember(string unitId, string memberId) {
+            Unit unit = Data().GetSingle(unitId);
+            return unit.members.Contains(memberId);
+        }
+
         public bool HasRole(string unitId, string role) {
             Unit unit = data.GetSingle(x => x.id == unitId);
             return HasRole(unit, role);
