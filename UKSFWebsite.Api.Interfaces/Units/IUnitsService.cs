@@ -16,6 +16,7 @@ namespace UKSFWebsite.Api.Interfaces.Units {
         Task RenameRole(string oldName, string newName);
         Task DeleteRole(string role);
 
+        bool HasMember(string unitId, string memberId);
         bool HasRole(string unitId, string role);
         bool HasRole(Unit unit, string role);
         bool RolesHasMember(string unitId, string id);

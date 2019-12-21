@@ -1,9 +1,12 @@
 using System.Collections.Generic;
-using UKSFWebsite.Api.Models.Account;
+using System.Linq;
+using UKSFWebsite.Api.Interfaces.Personnel;
+using UKSFWebsite.Api.Interfaces.Units;
 using UKSFWebsite.Api.Models.Documents;
+using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Services.Abstraction;
 
-namespace UKSFWebsite.Api.Services.Data.Documents {
+namespace UKSFWebsite.Api.Services.Documents {
     public class DocumentPermissionService : IDocumentPermissionService {
         private readonly IAccountService accountService;
         private readonly IRanksService ranksService;
@@ -23,6 +26,7 @@ namespace UKSFWebsite.Api.Services.Data.Documents {
             bool hasUnit = HasUnitPermission(permissions, id);
             bool hasTraining = HasTrainingPermission(permissions, id);
 
+            // TODO: Make some better permission builder
             return permissions.firstOr
                 ? permissions.secondOr
                     ? hasRank || hasUnit || hasTraining
@@ -62,25 +66,15 @@ namespace UKSFWebsite.Api.Services.Data.Documents {
 
         private bool HasRankPermission(DocumentPermissions permissions, string id) {
             if (permissions.permissionTypes.Contains(DocumentPermissionType.RANK)) {
-                Account account = accountService.GetSingle(id);
+                Account account = accountService.Data().GetSingle(id);
                 return ranksService.IsSuperiorOrEqual(account.rank, permissions.minRank);
             }
 
-            return true;
+            return false;
         }
 
         private bool HasUnitPermission(DocumentPermissions permissions, string id) {
-            if (permissions.permissionTypes.Contains(DocumentPermissionType.UNIT)) {
-                foreach (string allowedUnit in permissions.allowedUnits) {
-                    if (unitsService.UnitHasMember(allowedUnit, id)) {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
-            return true;
+            return permissions.permissionTypes.Contains(DocumentPermissionType.UNIT) && permissions.allowedUnits.Any(unitId => unitsService.HasMember(unitId, id));
         }
 
         private bool HasTrainingPermission(DocumentPermissions permissions, string id) => true; // Not Implemented
