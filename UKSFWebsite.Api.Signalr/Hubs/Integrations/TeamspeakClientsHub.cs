@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.SignalR;
 using UKSFWebsite.Api.Interfaces.Hubs;
 
 namespace UKSFWebsite.Api.Signalr.Hubs.Integrations {
-    [Authorize]
     public class TeamspeakClientsHub : Hub<ITeamspeakClientsClient> {
         public const string END_POINT = "teamspeakClients";
     }
