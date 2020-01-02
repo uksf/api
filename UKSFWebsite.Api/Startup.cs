@@ -227,7 +227,6 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<IEmailService, EmailService>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<ISessionService, SessionService>();
-            services.AddSingleton<ILoggingService, LoggingService>();
             services.AddSingleton<ITeamspeakService, TeamspeakService>();
 
             if (currentEnvironment.IsDevelopment()) {
@@ -250,6 +249,7 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<IDataEventBus<IGameServersDataService>, DataEventBus<IGameServersDataService>>();
             services.AddSingleton<IDataEventBus<ILauncherFileDataService>, DataEventBus<ILauncherFileDataService>>();
             services.AddSingleton<IDataEventBus<ILoaDataService>, DataEventBus<ILoaDataService>>();
+            services.AddSingleton<IDataEventBus<ILogDataService>, DataEventBus<ILogDataService>>();
             services.AddSingleton<IDataEventBus<INotificationsDataService>, DataEventBus<INotificationsDataService>>();
             services.AddSingleton<IDataEventBus<IOperationOrderDataService>, DataEventBus<IOperationOrderDataService>>();
             services.AddSingleton<IDataEventBus<IOperationReportDataService>, DataEventBus<IOperationReportDataService>>();
@@ -265,6 +265,7 @@ namespace UKSFWebsite.Api {
             services.AddSingleton<IAccountEventHandler, AccountEventHandler>();
             services.AddSingleton<ICommandRequestEventHandler, CommandRequestEventHandler>();
             services.AddSingleton<ICommentThreadEventHandler, CommentThreadEventHandler>();
+            services.AddSingleton<ILogEventHandler, LogEventHandler>();
             services.AddSingleton<INotificationsEventHandler, NotificationsEventHandler>();
             services.AddSingleton<ITeamspeakEventHandler, TeamspeakEventHandler>();
         }
@@ -272,6 +273,7 @@ namespace UKSFWebsite.Api {
         private static void RegisterDataServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
             // Non-Cached
             services.AddTransient<IConfirmationCodeDataService, ConfirmationCodeDataService>();
+            services.AddSingleton<ILogDataService, LogDataService>();
             services.AddTransient<ISchedulerDataService, SchedulerDataService>();
 
             // Cached
@@ -300,6 +302,7 @@ namespace UKSFWebsite.Api {
         private static void RegisterDataBackedServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
             // Non-Cached
             services.AddTransient<IConfirmationCodeService, ConfirmationCodeService>();
+            services.AddSingleton<ILoggingService, LoggingService>();
             services.AddTransient<ISchedulerService, SchedulerService>();
 
             // Cached

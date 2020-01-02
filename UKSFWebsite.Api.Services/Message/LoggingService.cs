@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
+using UKSFWebsite.Api.Interfaces.Data;
 using UKSFWebsite.Api.Interfaces.Hubs;
 using UKSFWebsite.Api.Interfaces.Message;
 using UKSFWebsite.Api.Interfaces.Personnel;
@@ -11,15 +12,15 @@ using UKSFWebsite.Api.Signalr.Hubs.Utility;
 
 namespace UKSFWebsite.Api.Services.Message {
     public class LoggingService : ILoggingService {
-        private readonly IHubContext<AdminHub, IAdminClient> adminHub;
-        private readonly IMongoDatabase database;
+        private readonly ILogDataService data;
         private readonly IDisplayNameService displayNameService;
 
-        public LoggingService(IMongoDatabase database, IDisplayNameService displayNameService, IHubContext<AdminHub, IAdminClient> adminHub) {
-            this.database = database;
+        public LoggingService(ILogDataService data, IDisplayNameService displayNameService) {
+            this.data = data;
             this.displayNameService = displayNameService;
-            this.adminHub = adminHub;
         }
+
+        public ILogDataService Data() => data;
 
         public void Log(string message) {
             Task unused = LogAsync(new BasicLogMessage(message));
@@ -45,21 +46,17 @@ namespace UKSFWebsite.Api.Services.Message {
 
         private async Task LogToStorage(BasicLogMessage log) {
             switch (log) {
-                case WebLogMessage message:
-                    await database.GetCollection<WebLogMessage>("errorLogs").InsertOneAsync(message);
-                    await adminHub.Clients.All.ReceiveErrorLog(message);
-                    break;
                 case AuditLogMessage message:
-                    await database.GetCollection<AuditLogMessage>("auditLogs").InsertOneAsync(message);
-                    await adminHub.Clients.All.ReceiveAuditLog(message);
+                    await data.Add(message);
                     break;
                 case LauncherLogMessage message:
-                    await database.GetCollection<LauncherLogMessage>("launcherLogs").InsertOneAsync(message);
-                    await adminHub.Clients.All.ReceiveLauncherLog(message);
+                    await data.Add(message);
+                    break;
+                case WebLogMessage message:
+                    await data.Add(message);
                     break;
                 default:
-                    await database.GetCollection<BasicLogMessage>("logs").InsertOneAsync(log);
-                    await adminHub.Clients.All.ReceiveLog(log);
+                    await data.Add(log);
                     break;
             }
         }
