@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Linq;
 using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Services.Admin;
+using UKSFWebsite.Api.Services.Message;
 
 namespace UKSFWebsite.Integrations.Controllers {
     [Route("[controller]")]
@@ -60,13 +62,19 @@ namespace UKSFWebsite.Integrations.Controllers {
                 )
             );
             string result = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode) {
+                LogWrapper.Log("A discord connection request was denied");
+                return "discordid=fail";
+            }
             string token = JObject.Parse(result)["access_token"].ToString();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             response = await client.GetAsync("https://discordapp.com/api/users/@me");
             string user = await response.Content.ReadAsStringAsync();
             string id = JObject.Parse(user)["id"].ToString();
+            string username = JObject.Parse(user)["username"].ToString();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", botToken);
-            await client.PutAsync($"https://discordapp.com/api/guilds/{VariablesWrapper.VariablesDataService().GetSingle("DID_SERVER").AsUlong()}/members/{id}", new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json"));
+            response = await client.PutAsync($"https://discordapp.com/api/guilds/{VariablesWrapper.VariablesDataService().GetSingle("DID_SERVER").AsUlong()}/members/{id}", new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json"));
+            LogWrapper.Log($"Tried to add '{username}' to guild: {response.StatusCode}, {response.Content.ReadAsStringAsync().Result}");
             string confirmationCode = await confirmationCodeService.CreateConfirmationCode(id, true);
             return $"validation={confirmationCode}&discordid={id}";
         }

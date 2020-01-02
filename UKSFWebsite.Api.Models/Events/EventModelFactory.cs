@@ -1,4 +1,5 @@
 using UKSFWebsite.Api.Models.Events.Types;
+using UKSFWebsite.Api.Models.Message.Logging;
 
 namespace UKSFWebsite.Api.Models.Events {
     public static class EventModelFactory {

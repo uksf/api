@@ -7,13 +7,19 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using UKSFWebsite.Api.Data.Admin;
+using UKSFWebsite.Api.Data.Message;
+using UKSFWebsite.Api.Data.Personnel;
 using UKSFWebsite.Api.Data.Utility;
 using UKSFWebsite.Api.Events.Data;
 using UKSFWebsite.Api.Interfaces.Data;
 using UKSFWebsite.Api.Interfaces.Data.Cached;
 using UKSFWebsite.Api.Interfaces.Events;
+using UKSFWebsite.Api.Interfaces.Message;
+using UKSFWebsite.Api.Interfaces.Personnel;
 using UKSFWebsite.Api.Interfaces.Utility;
 using UKSFWebsite.Api.Services;
+using UKSFWebsite.Api.Services.Message;
+using UKSFWebsite.Api.Services.Personnel;
 using UKSFWebsite.Api.Services.Utility;
 
 namespace UKSFWebsite.Integrations {
@@ -63,12 +69,23 @@ namespace UKSFWebsite.Integrations {
             services.AddSingleton(configuration);
             services.AddSingleton(_ => MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<IAccountService, AccountService>();
+            services.AddTransient<IDisplayNameService, DisplayNameService>();
+            services.AddSingleton<ILoggingService, LoggingService>();
+            services.AddTransient<IRanksService, RanksService>();
+            
+            services.AddSingleton<IAccountDataService, AccountDataService>();
             services.AddSingleton<IConfirmationCodeDataService, ConfirmationCodeDataService>();
+            services.AddSingleton<ILogDataService, LogDataService>();
+            services.AddSingleton<IRanksDataService, RanksDataService>();
             services.AddSingleton<ISchedulerDataService, SchedulerDataService>();
             services.AddSingleton<IVariablesDataService, VariablesDataService>();
             
             // Event Buses
+            services.AddSingleton<IDataEventBus<IAccountDataService>, DataEventBus<IAccountDataService>>();
             services.AddSingleton<IDataEventBus<IConfirmationCodeDataService>, DataEventBus<IConfirmationCodeDataService>>();
+            services.AddSingleton<IDataEventBus<ILogDataService>, DataEventBus<ILogDataService>>();
+            services.AddSingleton<IDataEventBus<IRanksDataService>, DataEventBus<IRanksDataService>>();
             services.AddSingleton<IDataEventBus<ISchedulerDataService>, DataEventBus<ISchedulerDataService>>();
             services.AddSingleton<IDataEventBus<IVariablesDataService>, DataEventBus<IVariablesDataService>>();
 
