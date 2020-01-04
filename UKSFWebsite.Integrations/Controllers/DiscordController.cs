@@ -74,9 +74,14 @@ namespace UKSFWebsite.Integrations.Controllers {
             string username = JObject.Parse(user)["username"].ToString();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", botToken);
             response = await client.PutAsync($"https://discordapp.com/api/guilds/{VariablesWrapper.VariablesDataService().GetSingle("DID_SERVER").AsUlong()}/members/{id}", new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json"));
-            LogWrapper.Log($"Tried to add '{username}' to guild: {response.StatusCode}, {response.Content.ReadAsStringAsync().Result}");
+            string added = "true";
+            if (!response.IsSuccessStatusCode) {
+                LogWrapper.Log($"Failed to add '{username}' to guild: {response.StatusCode}, {response.Content.ReadAsStringAsync().Result}");
+                added = "false";
+            }
+
             string confirmationCode = await confirmationCodeService.CreateConfirmationCode(id, true);
-            return $"validation={confirmationCode}&discordid={id}";
+            return $"validation={confirmationCode}&discordid={id}&added={added}";
         }
     }
 }
