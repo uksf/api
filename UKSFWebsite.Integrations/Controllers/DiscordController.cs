@@ -72,6 +72,7 @@ namespace UKSFWebsite.Integrations.Controllers {
             string user = await response.Content.ReadAsStringAsync();
             string id = JObject.Parse(user)["id"].ToString();
             string username = JObject.Parse(user)["username"].ToString();
+            
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", botToken);
             response = await client.PutAsync($"https://discordapp.com/api/guilds/{VariablesWrapper.VariablesDataService().GetSingle("DID_SERVER").AsUlong()}/members/{id}", new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json"));
             string added = "true";
