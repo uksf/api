@@ -19,7 +19,7 @@ namespace UKSFWebsite.Api.Services.Game {
             "motdInterval = 999999;",
             "maxPlayers = {3};",
             "kickDuplicate = 1;",
-            "verifySignatures = 0;",
+            "verifySignatures = 2;",
             "allowedFilePatching = 1;",
             "unsafeCVL = 1;",
             "disableVoN = 1;",
