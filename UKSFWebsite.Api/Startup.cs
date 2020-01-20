@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using UKSFWebsite.Api.Data;
 using UKSFWebsite.Api.Data.Admin;
 using UKSFWebsite.Api.Data.Command;
@@ -120,6 +121,7 @@ namespace UKSFWebsite.Api {
 
             ExceptionHandler.Instance = new ExceptionHandler();
             services.AddControllers();
+            services.AddSwaggerGen(options => { options.SwaggerDoc("v1", new OpenApiInfo {Title = "UKSF API", Version = "v1"}); });
             services.AddMvc(options => { options.Filters.Add(ExceptionHandler.Instance); }).AddNewtonsoftJson();
         }
 
@@ -127,6 +129,8 @@ namespace UKSFWebsite.Api {
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime hostApplicationLifetime) {
             hostApplicationLifetime.ApplicationStopping.Register(OnShutdown);
             app.UseStaticFiles();
+            app.UseSwagger();
+            app.UseSwaggerUI(options => {options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF API v1");});
             app.UseRouting();
             app.UseCors("CorsPolicy");
             app.UseCorsMiddleware();

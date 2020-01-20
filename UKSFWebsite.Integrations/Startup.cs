@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using UKSFWebsite.Api.Data.Admin;
 using UKSFWebsite.Api.Data.Message;
 using UKSFWebsite.Api.Data.Personnel;
@@ -39,10 +40,13 @@ namespace UKSFWebsite.Integrations {
             services.AddAuthentication(options => { options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; }).AddCookie().AddSteam();
 
             services.AddControllers();
+            services.AddSwaggerGen(options => { options.SwaggerDoc("v1", new OpenApiInfo {Title = "UKSF Integrations API", Version = "v1"}); });
             services.AddMvc().AddNewtonsoftJson();
         }
 
         public void Configure(IApplicationBuilder app, IHostEnvironment env, ILoggerFactory loggerFactory) {
+            app.UseSwagger();
+            app.UseSwaggerUI(options => {options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF Integrations API v1");});
             app.UseRouting();
             app.UseCors("CorsPolicy");
             app.UseAuthentication();

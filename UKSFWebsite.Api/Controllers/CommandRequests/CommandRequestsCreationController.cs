@@ -13,7 +13,7 @@ using UKSFWebsite.Api.Models.Units;
 using UKSFWebsite.Api.Services.Personnel;
 
 namespace UKSFWebsite.Api.Controllers.CommandRequests {
-    [Route("commandrequests/create")]
+    [Route("CommandRequests/Create")]
     public class CommandRequestsCreationController : Controller {
         private readonly IAccountService accountService;
         private readonly ICommandRequestService commandRequestService;
