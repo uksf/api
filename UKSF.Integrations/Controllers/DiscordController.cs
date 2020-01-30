@@ -12,7 +12,7 @@ using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
 
-namespace UKSF.Api.Integrations.Controllers {
+namespace UKSF.Integrations.Controllers {
     [Route("[controller]")]
     public class DiscordController : Controller {
         private readonly string botToken;

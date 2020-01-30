@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UKSF.Api.Integrations {
+namespace UKSF.Integrations {
     public static class Global {
         public static IServiceProvider ServiceProvider;
     }

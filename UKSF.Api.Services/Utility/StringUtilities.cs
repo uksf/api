@@ -11,11 +11,17 @@ using UKSF.Api.Models.Units;
 namespace UKSF.Api.Services.Utility {
     public static class StringUtilities {
         public static double ToDouble(this string text) => double.Parse(text);
+
         public static string ToTitleCase(string text) => CultureInfo.CurrentCulture.TextInfo.ToTitleCase(text);
+
         public static string Keyify(this string key) => key.ToUpper().Replace(" ", "_");
+
         public static string RemoveSpaces(this string item) => item.Replace(" ", string.Empty);
+
         public static string RemoveNewLines(this string item) => item.Replace("\\n", string.Empty);
+
         public static string RemoveQuotes(this string item) => item.Replace("\"", string.Empty);
+
         public static bool ContainsCaseInsensitive(this string text, string element) => text.ToUpper().Contains(element.ToUpper());
 
         public static string RemoveEmbeddedQuotes(this string item) {

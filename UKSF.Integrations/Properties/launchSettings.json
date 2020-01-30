@@ -15,7 +15,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "UKSF.Api.Integrations": {
+    "UKSF.Integrations": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
