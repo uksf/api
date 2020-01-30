@@ -391,6 +391,7 @@
 	
 	
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File3D2C9B4D5581A44A80E33E1D337DA8C5/@KeyIndexDefined">True</s:Boolean>
+	
 	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File3D2C9B4D5581A44A80E33E1D337DA8C5/RelativePriority/@EntryValue">0.5</s:Double>
 	
 	
