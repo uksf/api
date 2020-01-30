@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp3.0</TargetFramework>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
         <DebugType>full</DebugType>
@@ -9,18 +9,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Rx-Linq" Version="2.3.0-beta2" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\UKSF.Api.Interfaces\UKSF.Api.Interfaces.csproj" />
       <ProjectReference Include="..\UKSF.Api.Signalr\UKSF.Api.Signalr.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <Reference Include="UKSF.Api.Services, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-        <HintPath>..\UKSF.Api\bin\Release\netcoreapp3.0\win7-x64\UKSF.Api.Services.dll</HintPath>
-      </Reference>
+      <PackageReference Include="System.Reactive.Linq" Version="4.3.2" />
     </ItemGroup>
 
 </Project>
