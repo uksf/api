@@ -46,7 +46,7 @@ namespace UKSF.Integrations {
                    .Build();
 
         private static void InitLogging() {
-            string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "UKSF.ApiIntegrations");
+            string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "UKSF.Integrations");
             Directory.CreateDirectory(appData);
             string[] logFiles = new DirectoryInfo(appData).EnumerateFiles("*.log").OrderByDescending(file => file.LastWriteTime).Select(file => file.Name).ToArray();
             if (logFiles.Length > 9) {
