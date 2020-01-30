@@ -17,6 +17,7 @@ using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Services.Message;
 using UKSFWebsite.Api.Services.Personnel;
 
+// TODO: Rip this entire module to shreds and redo it
 namespace UKSFWebsite.Api.Services.Command {
     public class CommandRequestService : ICommandRequestService {
         private readonly IAccountService accountService;
@@ -53,7 +54,7 @@ namespace UKSFWebsite.Api.Services.Command {
 
         public ICommandRequestDataService Data() => data;
 
-        public async Task Add(CommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE) {
+        public async Task Add(CommandRequest request, ChainOfCommandMode mode) {
             Account requesterAccount = sessionService.GetContextAccount();
             Account recipientAccount = accountService.Data().GetSingle(request.recipient);
             request.displayRequester = displayNameService.GetDisplayName(requesterAccount);

@@ -40,5 +40,9 @@ namespace UKSFWebsite.Api.Services.Personnel {
         public bool IsLoaCovered(string id, DateTime eventStart) {
             return data.Get(loa => loa.recipient == id && loa.start < eventStart && loa.end > eventStart).Count > 0;
         }
+
+        public bool HasLoaForDates(string id, DateTime start, DateTime end) {
+            return data.Get(x => x.recipient == id && x.start <= start && x.end > start && x.end < end).Count > 0;
+        }
     }
 }

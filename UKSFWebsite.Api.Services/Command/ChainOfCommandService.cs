@@ -9,15 +9,18 @@ using UKSFWebsite.Api.Models.Command;
 using UKSFWebsite.Api.Models.Personnel;
 using UKSFWebsite.Api.Models.Units;
 
+// TODO: Just destroy this it's so bad
 namespace UKSFWebsite.Api.Services.Command {
     public class ChainOfCommandService : IChainOfCommandService {
         private readonly string commanderRoleName;
+        private readonly ILoaService loaService;
         private readonly ISessionService sessionService;
         private readonly IUnitsService unitsService;
 
-        public ChainOfCommandService(IUnitsService unitsService, IRolesService rolesService, ISessionService sessionService) {
+        public ChainOfCommandService(IUnitsService unitsService, IRolesService rolesService, ISessionService sessionService, ILoaService loaService) {
             this.unitsService = unitsService;
             this.sessionService = sessionService;
+            this.loaService = loaService;
             commanderRoleName = rolesService.GetUnitRoleByOrder(0).name;
         }
 
@@ -61,7 +64,7 @@ namespace UKSFWebsite.Api.Services.Command {
                 ChainOfCommandMode.COMMANDER_AND_TARGET_COMMANDER => GetCommanderAndTargetCommander(start, target),
                 ChainOfCommandMode.SR10 => GetSr10(),
                 ChainOfCommandMode.TARGET_COMMANDER => GetNextCommander(target),
-                _ => throw new InvalidOperationException("Chain of command mode not recognized")
+                _ => throw new InvalidOperationException($"Chain of command mode '{mode}' not recognized")
             };
         }
 
@@ -100,10 +103,17 @@ namespace UKSFWebsite.Api.Services.Command {
 
         private IEnumerable<string> GetCommanderAndSr10(Unit unit) {
             HashSet<string> chain = new HashSet<string>();
-            if (UnitHasCommander(unit)) {
-                chain.Add(GetCommander(unit));
+            string commander = "";
+            while (unit != null) {
+                if (UnitHasCommander(unit)) {
+                    commander = GetCommander(unit);
+                    if (loaService.HasLoaForDates(commander, DateTime.Today, DateTime.Today.AddDays(2).AddSeconds(-1))) {
+                        unit = unitsService.GetParent(unit);
+                    }
+                }
             }
 
+            chain.Add(commander);
             chain.UnionWith(GetSr10());
             return chain;
         }

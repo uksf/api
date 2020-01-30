@@ -12,6 +12,7 @@ using UKSFWebsite.Api.Models.Command;
 using UKSFWebsite.Api.Models.Units;
 using UKSFWebsite.Api.Services.Personnel;
 
+// TODO: Rip this entire module to shreds and redo it
 namespace UKSFWebsite.Api.Controllers.CommandRequests {
     [Route("CommandRequests/Create")]
     public class CommandRequestsCreationController : Controller {
@@ -43,7 +44,7 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
             bool direction = ranksService.IsSuperior(request.displayValue, request.displayFrom);
             request.type = string.IsNullOrEmpty(request.displayFrom) ? CommandRequestType.PROMOTION : direction ? CommandRequestType.PROMOTION : CommandRequestType.DEMOTION;
             if (commandRequestService.DoesEquivalentRequestExist(request)) return BadRequest("An equivalent request already exists");
-            await commandRequestService.Add(request);
+            await commandRequestService.Add(request, ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE);
             return Ok();
         }
 
@@ -114,7 +115,7 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
 
             request.type = CommandRequestType.UNIT_ROLE;
             if (commandRequestService.DoesEquivalentRequestExist(request)) return BadRequest("An equivalent request already exists");
-            await commandRequestService.Add(request);
+            await commandRequestService.Add(request, ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE);
             return Ok();
         }
 
@@ -166,3 +167,26 @@ namespace UKSFWebsite.Api.Controllers.CommandRequests {
         }
     }
 }
+
+/*
+
+Rank - COMMANDER_AND_ONE_ABOVE - Loas considered for both, use commander above
+Unit role - COMMANDER_AND_ONE_ABOVE - Loas considered for both, use commander above
+
+Transfer - COMMANDER_AND_TARGET_COMMANDER - Loas considered for both, use 2iC and commander above
+
+Transfer aux - TARGET_COMMANDER - Loas considered, use sr10
+Unit removal - TARGET_COMMANDER - Loas considered, use sr10
+
+Individual role - NEXT_COMMANDER - Loas considered, use 2iC and commander above
+
+Loa - NEXT_COMMANDER_EXCLUDE_SELF - Loas considered, use 2iC and commander above
+
+Discharge - COMMANDER_AND_SR10 - Loas considered for commander, use commander above and sr10
+
+Reinstate - SR10 - Loas not considered
+
+If no 2iC, use commander above alone
+If no alone commander above, use sr10
+
+*/
