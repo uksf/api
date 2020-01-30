@@ -24,7 +24,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Events", "UKSF.Api
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Signalr", "UKSF.Api.Signalr\UKSF.Api.Signalr.csproj", "{6F9B12CA-26BE-45D2-B520-A032490A53F0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostMessage", "PostMessage\PostMessage.csproj", "{B173771C-1AB7-436B-A6FF-0EF50EF5D015}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.PostMessage", "UKSF.PostMessage\UKSF.PostMessage.csproj", "{B173771C-1AB7-436B-A6FF-0EF50EF5D015}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -37,7 +37,7 @@ namespace UKSF.Api.Services.Utility {
         }
 
         public static async Task CloseProcessGracefully(this Process process) {
-            await LaunchExternalProcess("CloseProcess", $"start \"\" \"PostMessage\" {process.ProcessName} {WM_SYSCOMMAND} {SC_CLOSE} 0");
+            await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WM_SYSCOMMAND} {SC_CLOSE} 0");
         }
     }
 }

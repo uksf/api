@@ -3,8 +3,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace PostMessage {
-    static class Program {
+namespace UKSF.PostMessage {
+    internal static class Program {
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         private static extern int PostMessage(IntPtr hwnd, int msg, int wparam, int lparam);
         
