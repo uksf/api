@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <DebugType>full</DebugType>
+        <DebugSymbols>true</DebugSymbols>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <FrameworkReference Include="Microsoft.AspNetCore.App" />
+      <PackageReference Include="Discord.Net.WebSocket" Version="2.1.1" />
+      <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="3.0.0-preview4-19123-01" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\UKSF.Api.Models\UKSF.Api.Models.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Admin" />
+    </ItemGroup>
+
+</Project>
