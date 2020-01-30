@@ -8,15 +8,13 @@ namespace UKSFWebsite.Api.Services.Game.Missions {
             "5a1e894463d0f71710089106", // Bridg
             "5a4e7effd68b7e16e46fc614", // Woodward
             "5a2439443fccaa15902aaa4e", // Mac
-            "5a1a0ad55d0a76133837eb78", // Pot
-            "5a4518559220c31b50966811", // Clarke
             "59e38f13594c603b78aa9dbf", // Carr
             "59e38f1b594c603b78aa9dc1", // Lars
             "5a1a14b5aacf7b00346dcc37" // Gilbert
         };
 
         public static string ResolveObjectClass(MissionPlayer player) {
-            if (player.account?.id == "5b4b568c20e1fd00013752d1") return "UKSF_B_Medic"; // Smith, SAS Medic
+            // if (player.account?.id == "5b4b568c20e1fd00013752d1") return "UKSF_B_Medic"; // Smith, SAS Medic
             return player.unit.sourceUnit.id switch {
                 "5a435eea905d47336442c75a" => // "Joint Special Forces Aviation Wing"
                 "UKSF_B_Pilot",

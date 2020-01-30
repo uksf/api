@@ -11,5 +11,6 @@ namespace UKSFWebsite.Api.Interfaces.Personnel {
         Task<string> Add(CommandRequestLoa requestBase);
         Task SetLoaState(string id, LoaReviewState state);
         bool IsLoaCovered(string id, DateTime eventStart);
+        bool HasLoaForDates(string id, DateTime start, DateTime end);
     }
 }
