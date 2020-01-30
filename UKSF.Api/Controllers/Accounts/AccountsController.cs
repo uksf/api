@@ -60,13 +60,13 @@ namespace UKSF.Api.Controllers.Accounts {
         [HttpGet, Authorize]
         public IActionResult Get() {
             Account account = sessionService.GetContextAccount();
-            return Ok(FormatAccount(account));
+            return Ok(ExtendAccount(account));
         }
 
         [HttpGet("{id}"), Authorize]
         public IActionResult GetById(string id) {
             Account account = accountService.Data().GetSingle(id);
-            return Ok(FormatAccount(account));
+            return Ok(ExtendAccount(account));
         }
 
         [HttpPut]
@@ -212,17 +212,17 @@ namespace UKSF.Api.Controllers.Accounts {
             return Ok(new {value = DateTime.Now.ToLongTimeString()});
         }
 
-        private dynamic FormatAccount(Account account) {
-            dynamic responseAccount = account.ToDynamicAccount();
-            responseAccount.displayName = displayNameService.GetDisplayName(account);
-            responseAccount.sr1 = sessionService.ContextHasRole(RoleDefinitions.SR1);
-            responseAccount.sr5 = sessionService.ContextHasRole(RoleDefinitions.SR5);
-            responseAccount.sr10 = sessionService.ContextHasRole(RoleDefinitions.SR10);
-            responseAccount.sr1Lead = sessionService.ContextHasRole(RoleDefinitions.SR1_LEAD);
-            responseAccount.command = sessionService.ContextHasRole(RoleDefinitions.COMMAND);
-            responseAccount.admin = sessionService.ContextHasRole(RoleDefinitions.ADMIN);
-            responseAccount.nco = sessionService.ContextHasRole(RoleDefinitions.NCO);
-            return responseAccount;
+        private ExtendedAccount ExtendAccount(Account account) {
+            ExtendedAccount extendedAccount = account.ToExtendedAccount();
+            extendedAccount.displayName = displayNameService.GetDisplayName(account);
+            extendedAccount.permissionSr1 = sessionService.ContextHasRole(RoleDefinitions.SR1);
+            extendedAccount.permissionSr5 = sessionService.ContextHasRole(RoleDefinitions.SR5);
+            extendedAccount.permissionSr10 = sessionService.ContextHasRole(RoleDefinitions.SR10);
+            extendedAccount.permissionSr1Lead = sessionService.ContextHasRole(RoleDefinitions.SR1_LEAD);
+            extendedAccount.permissionCommand = sessionService.ContextHasRole(RoleDefinitions.COMMAND);
+            extendedAccount.permissionAdmin = sessionService.ContextHasRole(RoleDefinitions.ADMIN);
+            extendedAccount.permissionNco = sessionService.ContextHasRole(RoleDefinitions.NCO);
+            return extendedAccount;
         }
 
         private async Task SendConfirmationCode(Account account) {

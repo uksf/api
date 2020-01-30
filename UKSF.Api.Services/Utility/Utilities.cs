@@ -1,31 +1,18 @@
 using System;
-using System.Collections.Generic;
-using System.Dynamic;
-using System.Reflection;
+using Newtonsoft.Json;
 using UKSF.Api.Models.Personnel;
 
 namespace UKSF.Api.Services.Utility {
     public static class Utilities {
-        private static dynamic ToDynamic<T>(this T obj) {
-            IDictionary<string, object> expando = new ExpandoObject();
-
-            foreach (PropertyInfo propertyInfo in typeof(T).GetProperties()) {
-                object currentValue = propertyInfo.GetValue(obj);
-                expando.Add(propertyInfo.Name, currentValue);
-            }
-
-            foreach (FieldInfo fieldInfo in typeof(T).GetFields()) {
-                object currentValue = fieldInfo.GetValue(obj);
-                expando.Add(fieldInfo.Name, currentValue);
-            }
-
-            return (ExpandoObject) expando;
+        private static TOut Copy<TIn, TOut>(this TIn source) {
+            JsonSerializerSettings deserializeSettings = new JsonSerializerSettings {ObjectCreationHandling = ObjectCreationHandling.Replace};
+            return JsonConvert.DeserializeObject<TOut>(JsonConvert.SerializeObject(source), deserializeSettings);
         }
 
-        public static dynamic ToDynamicAccount(this Account account) {
-            dynamic dynamicAccount = account.ToDynamic();
-            dynamicAccount.password = null;
-            return dynamicAccount;
+        public static ExtendedAccount ToExtendedAccount(this Account account) {
+            ExtendedAccount extendedAccount = account.Copy<Account, ExtendedAccount>();
+            extendedAccount.password = null;
+            return extendedAccount;
         }
 
         public static (int years, int months) ToAge(this DateTime dob) {
