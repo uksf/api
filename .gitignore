@@ -232,7 +232,6 @@ _Pvt_Extensions
 
 # Sensitive configs
 **/appconfig/**
-/UKSFWebsite.Api/website-backend-config/**
 **/build_output/**
 **/build_tests/**
 **/__pycache__/**
@@ -260,5 +259,4 @@ coverage.xml
 .idea/
 
 # Specific
-!UKSFWebsite.Api.Services/Debug**
 appsettings.Development.json
