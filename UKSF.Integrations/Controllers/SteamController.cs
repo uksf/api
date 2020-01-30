@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 using UKSF.Api.Interfaces.Utility;
 
-namespace UKSF.Api.Integrations.Controllers {
+namespace UKSF.Integrations.Controllers {
     [Route("[controller]")]
     public class SteamController : Controller {
         private readonly IConfirmationCodeService confirmationCodeService;

@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.WindowsServices;
 using Microsoft.Extensions.Hosting;
 
-namespace UKSF.Api.Integrations {
+namespace UKSF.Integrations {
     internal static class Program {
         private static void Main(string[] args) {
             AppDomain.CurrentDomain.GetAssemblies()

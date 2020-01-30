@@ -23,7 +23,7 @@ using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
 using UKSF.Api.Services.Utility;
 
-namespace UKSF.Api.Integrations {
+namespace UKSF.Integrations {
     public class Startup {
         private readonly IConfiguration configuration;
 
@@ -46,7 +46,7 @@ namespace UKSF.Api.Integrations {
 
         public void Configure(IApplicationBuilder app, IHostEnvironment env, ILoggerFactory loggerFactory) {
             app.UseSwagger();
-            app.UseSwaggerUI(options => {options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF Integrations API v1");});
+            app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF Integrations API v1"); });
             app.UseRouting();
             app.UseCors("CorsPolicy");
             app.UseAuthentication();
@@ -77,14 +77,14 @@ namespace UKSF.Api.Integrations {
             services.AddTransient<IDisplayNameService, DisplayNameService>();
             services.AddSingleton<ILoggingService, LoggingService>();
             services.AddTransient<IRanksService, RanksService>();
-            
+
             services.AddSingleton<IAccountDataService, AccountDataService>();
             services.AddSingleton<IConfirmationCodeDataService, ConfirmationCodeDataService>();
             services.AddSingleton<ILogDataService, LogDataService>();
             services.AddSingleton<IRanksDataService, RanksDataService>();
             services.AddSingleton<ISchedulerDataService, SchedulerDataService>();
             services.AddSingleton<IVariablesDataService, VariablesDataService>();
-            
+
             // Event Buses
             services.AddSingleton<IDataEventBus<IAccountDataService>, DataEventBus<IAccountDataService>>();
             services.AddSingleton<IDataEventBus<IConfirmationCodeDataService>, DataEventBus<IConfirmationCodeDataService>>();
