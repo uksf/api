@@ -46,6 +46,15 @@ namespace UKSF.Tests.Unit.UtilityTests {
         }
 
         [Fact]
+        public void ShouldGiveCorrectMonths() {
+            DateTime dob = new DateTime(2019, 1, 20);
+
+            (int _, int subjectMonths) = dob.ToAge(new DateTime(2020, 1, 16));
+
+            subjectMonths.Should().Be(11);
+        }
+
+        [Fact]
         public void ShouldNotCopyPassword() {
             string id = ObjectId.GenerateNewId().ToString();
             Account account = new Account {id = id, password = "thiswontappear"};
