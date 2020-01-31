@@ -17,8 +17,8 @@ namespace UKSF.Api.Services.Fake {
 
         public void Add(Notification notification) { }
 
-        public Task MarkNotificationsAsRead(IEnumerable<string> ids) => Task.CompletedTask;
+        public Task MarkNotificationsAsRead(List<string> ids) => Task.CompletedTask;
 
-        public Task Delete(IEnumerable<string> ids) => Task.CompletedTask;
+        public Task Delete(List<string> ids) => Task.CompletedTask;
     }
 }

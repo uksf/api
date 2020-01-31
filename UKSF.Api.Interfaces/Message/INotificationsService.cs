@@ -10,7 +10,7 @@ namespace UKSF.Api.Interfaces.Message {
         Task SendTeamspeakNotification(Account account, string rawMessage);
         Task SendTeamspeakNotification(IEnumerable<double> clientDbIds, string rawMessage);
         IEnumerable<Notification> GetNotificationsForContext();
-        Task MarkNotificationsAsRead(IEnumerable<string> ids);
-        Task Delete(IEnumerable<string> ids);
+        Task MarkNotificationsAsRead(List<string> ids);
+        Task Delete(List<string> ids);
     }
 }

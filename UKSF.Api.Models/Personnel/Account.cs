@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Models.Personnel {
-    public class Account {
+    public class Account : MongoObject {
         public Application application;
         public string armaExperience;
         public bool aviation;
@@ -13,7 +11,6 @@ namespace UKSF.Api.Models.Personnel {
         public DateTime dob;
         public string email;
         public string firstname;
-        [BsonId, BsonRepresentation(BsonType.ObjectId)] public string id;
         public string lastname;
         public MembershipState membershipState = MembershipState.UNCONFIRMED;
         public bool militaryExperience;

@@ -1,13 +1,15 @@
 ﻿using System;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Models.Personnel;
 
 namespace UKSF.Api.Models.Operations {
-    public class Oprep {
+    public class Oprep : MongoObject {
         public AttendanceReport attendanceReport;
-        [BsonId, BsonRepresentation(BsonType.ObjectId)] public string id;
-        public string name, map, type, result, description;
-        public DateTime start, end;
+        public string description;
+        public DateTime end;
+        public string map;
+        public string name;
+        public string result;
+        public DateTime start;
+        public string type;
     }
 }

@@ -1,13 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using MongoDB.Driver;
+using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Operations;
 
 namespace UKSF.Api.Data.Operations {
     public class OperationOrderDataService : CachedDataService<Opord, IOperationOrderDataService>, IOperationOrderDataService {
-        public OperationOrderDataService(IMongoDatabase database, IDataEventBus<IOperationOrderDataService> dataEventBus) : base(database, dataEventBus, "opord") { }
+        private readonly IDataCollection dataCollection;
+        
+        public OperationOrderDataService(IDataCollection dataCollection, IDataEventBus<IOperationOrderDataService> dataEventBus) : base(dataCollection, dataEventBus, "opord") => this.dataCollection = dataCollection;
 
         public override List<Opord> Get() {
             List<Opord> reversed = base.Get();
@@ -16,7 +18,7 @@ namespace UKSF.Api.Data.Operations {
         }
 
         public async Task Replace(Opord opord) {
-            await Database.GetCollection<Opord>(DatabaseCollection).ReplaceOneAsync(x => x.id == opord.id, opord);
+            await dataCollection.Replace(opord.id, opord);
             Refresh();
         }
     }

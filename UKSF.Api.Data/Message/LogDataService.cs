@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using MongoDB.Driver;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
@@ -7,28 +6,28 @@ using UKSF.Api.Models.Message.Logging;
 
 namespace UKSF.Api.Data.Message {
     public class LogDataService : DataService<BasicLogMessage, ILogDataService>, ILogDataService {
-        private readonly IMongoDatabase database;
+        private readonly IDataCollection dataCollection;
 
-        public LogDataService(IMongoDatabase database, IDataEventBus<ILogDataService> dataEventBus) : base(database, dataEventBus, "logs") => this.database = database;
+        public LogDataService(IDataCollection dataCollection, IDataEventBus<ILogDataService> dataEventBus) : base(dataCollection, dataEventBus, "logs") => this.dataCollection = dataCollection;
 
         public override async Task Add(BasicLogMessage log) {
             await base.Add(log);
-            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, GetIdValue(log), log));
+            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.GetIdValue(), log));
         }
 
         public async Task Add(AuditLogMessage log) {
-            await database.GetCollection<AuditLogMessage>("auditLogs").InsertOneAsync(log);
-            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, GetIdValue(log), log));
+            await dataCollection.Add("auditLogs", log);
+            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.GetIdValue(), log));
         }
 
         public async Task Add(LauncherLogMessage log) {
-            await database.GetCollection<LauncherLogMessage>("launcherLogs").InsertOneAsync(log);
-            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, GetIdValue(log), log));
+            await dataCollection.Add("launcherLogs", log);
+            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.GetIdValue(), log));
         }
 
         public async Task Add(WebLogMessage log) {
-            await database.GetCollection<WebLogMessage>("errorLogs").InsertOneAsync(log);
-            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, GetIdValue(log), log));
+            await dataCollection.Add("errorLogs", log);
+            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.GetIdValue(), log));
         }
     }
 }

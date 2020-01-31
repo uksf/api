@@ -276,6 +276,8 @@ namespace UKSF.Api {
         }
 
         private static void RegisterDataServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
+            services.AddTransient<IDataCollection, DataCollection>();
+            
             // Non-Cached
             services.AddTransient<IConfirmationCodeDataService, ConfirmationCodeDataService>();
             services.AddSingleton<ILogDataService, LogDataService>();

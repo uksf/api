@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
 
@@ -10,7 +11,7 @@ namespace UKSF.Api.Data {
     public abstract class CachedDataService<T, TData> : DataService<T, TData> {
         protected List<T> Collection;
 
-        protected CachedDataService(IMongoDatabase database, IDataEventBus<TData> dataEventBus, string collectionName) : base(database, dataEventBus, collectionName) { }
+        protected CachedDataService(IDataCollection dataCollection, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataCollection, dataEventBus, collectionName) { }
 
         // ReSharper disable once MemberCanBeProtected.Global - Used in dynamic call, do not change to protected!
         public void Refresh() {
@@ -34,7 +35,7 @@ namespace UKSF.Api.Data {
 
         public override T GetSingle(string id) {
             if (Collection == null) Get();
-            return Collection.FirstOrDefault(x => GetIdValue(x) == id);
+            return Collection.FirstOrDefault(x => x.GetIdValue() == id);
         }
 
         public override T GetSingle(Func<T, bool> predicate) {
@@ -45,7 +46,7 @@ namespace UKSF.Api.Data {
         public override async Task Add(T data) {
             await base.Add(data);
             Refresh();
-            CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.ADD, GetIdValue(data), data));
+            CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.ADD, data.GetIdValue(), data));
         }
 
         public override async Task Update(string id, string fieldName, object value) {
