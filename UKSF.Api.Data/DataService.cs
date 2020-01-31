@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSF.Api.Events.Data;
@@ -10,48 +9,42 @@ using UKSF.Api.Models.Events;
 
 namespace UKSF.Api.Data {
     public abstract class DataService<T, TData> : DataEventBacker<TData>, IDataService<T, TData> {
-        protected readonly IMongoDatabase Database;
-        protected readonly string DatabaseCollection;
+        private readonly IDataCollection dataCollection;
 
-        protected DataService(IMongoDatabase database, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataEventBus) {
-            Database = database;
-            DatabaseCollection = collectionName;
-            if (Database.GetCollection<T>(DatabaseCollection) == null) {
-                Database.CreateCollection(DatabaseCollection);
-            }
+        protected DataService(IDataCollection dataCollection, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataEventBus) {
+            this.dataCollection = dataCollection;
+
+            dataCollection.SetCollectionName(collectionName);
+            dataCollection.AssertCollectionExists<T>();
         }
 
-        public virtual List<T> Get() => Database.GetCollection<T>(DatabaseCollection).AsQueryable().ToList();
+        public virtual List<T> Get() => dataCollection.Get<T>();
 
-        public virtual List<T> Get(Func<T, bool> predicate) => Database.GetCollection<T>(DatabaseCollection).AsQueryable().Where(predicate).ToList();
+        public virtual List<T> Get(Func<T, bool> predicate) => dataCollection.Get(predicate);
 
-        public virtual T GetSingle(string id) {
-            return Database.GetCollection<T>(DatabaseCollection).AsQueryable().ToList().FirstOrDefault(x => GetIdValue(x) == id);
-        }
+        public virtual T GetSingle(string id) => dataCollection.GetSingle<T>(id);
 
-        public virtual T GetSingle(Func<T, bool> predicate) => Database.GetCollection<T>(DatabaseCollection).AsQueryable().ToList().FirstOrDefault(predicate);
+        public virtual T GetSingle(Func<T, bool> predicate) => dataCollection.GetSingle(predicate);
 
         public virtual async Task Add(T data) {
-            await Database.GetCollection<T>(DatabaseCollection).InsertOneAsync(data);
-            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.ADD, GetIdValue(data), data));
+            await dataCollection.Add(data);
+            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.ADD, data.GetIdValue(), data));
         }
 
         public virtual async Task Update(string id, string fieldName, object value) {
             UpdateDefinition<T> update = value == null ? Builders<T>.Update.Unset(fieldName) : Builders<T>.Update.Set(fieldName, value);
-            await Database.GetCollection<T>(DatabaseCollection).UpdateOneAsync(Builders<T>.Filter.Eq("id", id), update);
+            await dataCollection.Update(id, update);
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
         }
 
         public virtual async Task Update(string id, UpdateDefinition<T> update) {
-            await Database.GetCollection<T>(DatabaseCollection).UpdateOneAsync(Builders<T>.Filter.Eq("id", id), update);
+            await dataCollection.Update(id, update);
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
         }
 
         public virtual async Task Delete(string id) {
-            await Database.GetCollection<T>(DatabaseCollection).DeleteOneAsync(Builders<T>.Filter.Eq("id", id));
+            await dataCollection.Delete<T>(id);
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, id));
         }
-
-        internal static string GetIdValue(T data) => data.GetType().GetField("id").GetValue(data) as string;
     }
 }

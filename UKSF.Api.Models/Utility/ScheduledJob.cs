@@ -1,6 +1,4 @@
 using System;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Models.Utility {
     public enum ScheduledJobType {
@@ -11,10 +9,9 @@ namespace UKSF.Api.Models.Utility {
         DISCORD_VOTE_ANNOUNCEMENT
     }
 
-    public class ScheduledJob {
+    public class ScheduledJob : MongoObject {
         public string action;
         public string actionParameters;
-        [BsonId, BsonRepresentation(BsonType.ObjectId)] public string id;
         public TimeSpan interval;
         public DateTime next;
         public bool repeat;

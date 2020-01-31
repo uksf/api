@@ -54,17 +54,18 @@ namespace UKSF.Api.Services.Message {
             Task unused = AddNotificationAsync(notification);
         }
 
-        public async Task MarkNotificationsAsRead(IEnumerable<string> ids) {
-            ids = ids.ToList();
+        public async Task MarkNotificationsAsRead(List<string> ids) {
             string contextId = sessionService.GetContextId();
-            await data.UpdateMany(Builders<Notification>.Filter.Eq(x => x.owner, contextId) & Builders<Notification>.Filter.In(x => x.id, ids), Builders<Notification>.Update.Set(x => x.read, true));
+            // await data.UpdateMany(Builders<Notification>.Filter.Eq(x => x.owner, contextId) & Builders<Notification>.Filter.In(x => x.id, ids), Builders<Notification>.Update.Set(x => x.read, true));
+            await data.UpdateMany(x => x.owner == contextId && ids.Contains(x.id), Builders<Notification>.Update.Set(x => x.read, true));
             await notificationsHub.Clients.Group(contextId).ReceiveRead(ids);
         }
 
-        public async Task Delete(IEnumerable<string> ids) {
+        public async Task Delete(List<string> ids) {
             ids = ids.ToList();
             string contextId = sessionService.GetContextId();
-            await data.DeleteMany(Builders<Notification>.Filter.Eq(x => x.owner, contextId) & Builders<Notification>.Filter.In(x => x.id, ids));
+            // await data.DeleteMany(Builders<Notification>.Filter.Eq(x => x.owner, contextId) & Builders<Notification>.Filter.In(x => x.id, ids));
+            await data.DeleteMany(x => x.owner == contextId && ids.Contains(x.id));
             await notificationsHub.Clients.Group(contextId).ReceiveClear(ids);
         }
 
