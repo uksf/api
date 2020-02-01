@@ -11,7 +11,7 @@ on:
       - master
 
 jobs:
-  Build & Test:
+  Tests:
 
     runs-on: windows-latest
 
