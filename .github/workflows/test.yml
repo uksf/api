@@ -9,7 +9,7 @@ on:
       - master
 
 jobs:
-  build:
+  Build:
 
     runs-on: [windows-latest]
 
@@ -21,5 +21,11 @@ jobs:
         dotnet-version: 3.1.101
     - name: Build with dotnet
       run: dotnet build --configuration Release
-    - name: Test with dotnet
+
+  Test:
+    needs: [Build]
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run tests
       run: dotnet test ./UKSF.Api.sln --configuration Release
