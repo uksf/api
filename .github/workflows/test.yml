@@ -1,4 +1,6 @@
-name: Run Tests
+name: Build & Run Tests
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
 on:
   push:
@@ -9,9 +11,9 @@ on:
       - master
 
 jobs:
-  Build:
+  Build & Test:
 
-    runs-on: [windows-latest]
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -21,11 +23,5 @@ jobs:
         dotnet-version: 3.1.101
     - name: Build with dotnet
       run: dotnet build --configuration Release
-
-  Test:
-    needs: [Build]
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Run tests
-      run: dotnet test ./UKSF.Api.sln --configuration Release
+      - name: Run tests
+        run: dotnet test ./UKSF.Api.sln --configuration Release

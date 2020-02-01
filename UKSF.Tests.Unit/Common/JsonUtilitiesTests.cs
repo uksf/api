@@ -35,7 +35,7 @@ namespace UKSF.Tests.Unit.Common {
 
         [Fact]
         public void ShouldSerializePrivateFields() {
-            MockPrivateDataModel mockPrivateDataModel = new MockPrivateDataModel("5e35dafaed582b5a4cec346e", "A thing", 4, DateTime.Parse("16/01/1996")) { Name = "Charlie"};
+            MockPrivateDataModel mockPrivateDataModel = new MockPrivateDataModel("5e35dafaed582b5a4cec346e", "A thing", 4, DateTime.ParseExact("16/01/1996", "dd/MM/yyyy", null)) { Name = "Charlie"};
 
             string subject = mockPrivateDataModel.DeepJsonSerializeObject();
 
