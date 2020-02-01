@@ -29,9 +29,6 @@ namespace UKSF.Api.Models.Message.Logging {
             level = LogLevel.ERROR;
         }
 
-        private BasicLogMessage(DateTime time) {
-            timestamp = time;
-            id = ObjectId.GenerateNewId(time).ToString();
-        }
+        private BasicLogMessage(DateTime time) : base(ObjectId.GenerateNewId(time).ToString()) => timestamp = time;
     }
 }

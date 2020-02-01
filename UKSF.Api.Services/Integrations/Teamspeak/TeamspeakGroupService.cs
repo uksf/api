@@ -8,7 +8,7 @@ using UKSF.Api.Models.Integrations;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
 using UKSF.Api.Services.Admin;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Integrations.Teamspeak {
     public class TeamspeakGroupService : ITeamspeakGroupService {

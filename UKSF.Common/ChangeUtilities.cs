@@ -5,8 +5,8 @@ using System.Text;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json.Linq;
 
-namespace UKSF.Api.Services.Utility {
-    public static class ChangeHelper {
+namespace UKSF.Common {
+    public static class ChangeUtilities {
         public static string Changes<T>(this T original, T updated) {
             List<FieldInfo> fields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Instance).Where(x => !x.IsDefined(typeof(BsonIgnoreAttribute))).ToList();
             IEnumerable<Change> changes = FindChanges(JToken.FromObject(original), JToken.FromObject(updated), fields);

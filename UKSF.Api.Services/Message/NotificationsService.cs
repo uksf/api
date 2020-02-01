@@ -11,7 +11,7 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Personnel;
-using UKSF.Api.Services.Utility;
+using UKSF.Api.Services.Common;
 using UKSF.Api.Signalr.Hubs.Message;
 
 namespace UKSF.Api.Services.Message {

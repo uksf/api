@@ -5,6 +5,8 @@ namespace UKSF.Api.Models {
     public class MongoObject {
         [BsonId, BsonRepresentation(BsonType.ObjectId)] public string id;
 
-        protected MongoObject() => id = ObjectId.GenerateNewId().ToString();
+        public MongoObject() => id = ObjectId.GenerateNewId().ToString();
+
+        public MongoObject(string id) => this.id = id;
     }
 }

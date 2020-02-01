@@ -11,7 +11,7 @@ using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Personnel {
     public class RecruitmentService : IRecruitmentService {

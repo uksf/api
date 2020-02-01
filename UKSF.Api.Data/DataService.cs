@@ -37,7 +37,7 @@ namespace UKSF.Api.Data {
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
         }
 
-        public virtual async Task Update(string id, UpdateDefinition<T> update) {
+        public virtual async Task Update(string id, UpdateDefinition<T> update) { // TODO: Remove strong typing to UpdateDefinition
             await dataCollection.Update(id, update);
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
         }

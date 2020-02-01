@@ -4,8 +4,8 @@ using System.Management;
 using Microsoft.Win32.TaskScheduler;
 using Task = System.Threading.Tasks.Task;
 
-namespace UKSF.Api.Services.Utility {
-    public static class ProcessHelper {
+namespace UKSF.Common {
+    public static class ProcessUtilities {
         private const int SC_CLOSE = 0xF060;
         private const int WM_SYSCOMMAND = 0x0112;
 

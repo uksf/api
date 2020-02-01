@@ -28,5 +28,6 @@
     <ProjectReference Include="..\UKSF.Api.Interfaces\UKSF.Api.Interfaces.csproj" />
     <ProjectReference Include="..\UKSF.Api.Models\UKSF.Api.Models.csproj" />
     <ProjectReference Include="..\UKSF.Api.Signalr\UKSF.Api.Signalr.csproj" />
+    <ProjectReference Include="..\UKSF.Common\UKSF.Common.csproj" />
   </ItemGroup>
 </Project>

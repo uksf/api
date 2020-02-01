@@ -17,8 +17,8 @@ using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Game;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
-using UKSF.Api.Services.Utility;
 using UKSF.Api.Signalr.Hubs.Game;
+using UKSF.Common;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Roles(RoleDefinitions.NCO, RoleDefinitions.SR5, RoleDefinitions.COMMAND)]

@@ -11,7 +11,7 @@ using UKSF.Api.Models.Utility;
 using UKSF.Api.Services.Utility;
 using Xunit;
 
-namespace UKSF.Tests.Unit.UtilityTests {
+namespace UKSF.Tests.Unit.Services {
     public class ConfirmationCodeServiceTests {
         [Fact]
         public async Task ShouldReturnCodeId() {

@@ -4,7 +4,7 @@ using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Models.Message.Logging;
-using UKSF.Api.Services.Utility;
+using UKSF.Api.Services.Common;
 
 namespace UKSF.Api.Services.Message {
     public class LoggingService : ILoggingService {

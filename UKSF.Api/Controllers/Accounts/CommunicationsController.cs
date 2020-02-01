@@ -10,7 +10,7 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Message;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Controllers.Accounts {
     [Route("[controller]")]
