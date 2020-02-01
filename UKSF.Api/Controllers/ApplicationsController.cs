@@ -12,7 +12,7 @@ using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]")]

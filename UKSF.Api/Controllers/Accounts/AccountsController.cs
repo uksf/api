@@ -15,9 +15,10 @@ using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Integrations;
 using UKSF.Api.Models.Personnel;
+using UKSF.Api.Services.Common;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Controllers.Accounts {
     [Route("[controller]")]
@@ -79,8 +80,8 @@ namespace UKSF.Api.Controllers.Accounts {
             Account account = new Account {
                 email = email,
                 password = BCrypt.Net.BCrypt.HashPassword(body["password"].ToString()),
-                firstname = StringUtilities.ToTitleCase(body["firstname"].ToString()),
-                lastname = StringUtilities.ToTitleCase(body["lastname"].ToString()),
+                firstname = body["firstname"].ToString().ToTitleCase(),
+                lastname = body["lastname"].ToString().ToTitleCase(),
                 dob = DateTime.ParseExact($"{body["dobGroup"]["year"]}-{body["dobGroup"]["month"]}-{body["dobGroup"]["day"]}", "yyyy-M-d", CultureInfo.InvariantCulture),
                 nation = body["nation"].ToString(),
                 membershipState = MembershipState.UNCONFIRMED

@@ -28,6 +28,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.PostMessage", "UKSF.Po
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Tests.Unit", "UKSF.Tests.Unit\UKSF.Tests.Unit.csproj", "{09946FE7-A65D-483E-8B5A-ADE729760375}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Common", "UKSF.Common\UKSF.Common.csproj", "{9FB41E01-8AD4-4110-8AEE-97800CF565E8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -158,6 +160,18 @@ Global
 		{09946FE7-A65D-483E-8B5A-ADE729760375}.Release|x64.Build.0 = Release|Any CPU
 		{09946FE7-A65D-483E-8B5A-ADE729760375}.Release|x86.ActiveCfg = Release|Any CPU
 		{09946FE7-A65D-483E-8B5A-ADE729760375}.Release|x86.Build.0 = Release|Any CPU
+		{9FB41E01-8AD4-4110-8AEE-97800CF565E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FB41E01-8AD4-4110-8AEE-97800CF565E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FB41E01-8AD4-4110-8AEE-97800CF565E8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9FB41E01-8AD4-4110-8AEE-97800CF565E8}.Debug|x64.Build.0 = Debug|Any CPU
+		{9FB41E01-8AD4-4110-8AEE-97800CF565E8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9FB41E01-8AD4-4110-8AEE-97800CF565E8}.Debug|x86.Build.0 = Debug|Any CPU
+		{9FB41E01-8AD4-4110-8AEE-97800CF565E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FB41E01-8AD4-4110-8AEE-97800CF565E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FB41E01-8AD4-4110-8AEE-97800CF565E8}.Release|x64.ActiveCfg = Release|Any CPU
+		{9FB41E01-8AD4-4110-8AEE-97800CF565E8}.Release|x64.Build.0 = Release|Any CPU
+		{9FB41E01-8AD4-4110-8AEE-97800CF565E8}.Release|x86.ActiveCfg = Release|Any CPU
+		{9FB41E01-8AD4-4110-8AEE-97800CF565E8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -2,7 +2,7 @@
 using UKSF.Api.Models.Personnel;
 using Xunit;
 
-namespace UKSF.Tests.Unit.PersonnelTests {
+namespace UKSF.Tests.Unit.Models {
     public class AccountSettingsTests {
         [Fact]
         public void ShouldReturnBool() {

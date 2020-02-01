@@ -3,17 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
 using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Services;
 
 namespace UKSF.Api.Data {
     public class DataCollection : IDataCollection {
         private readonly IMongoDatabase database;
         private string collectionName;
 
-        public DataCollection() => database = ServiceWrapper.ServiceProvider.GetService<IMongoDatabase>();
+        public DataCollection(IMongoDatabase database) => this.database = database;
 
         public void SetCollectionName(string newCollectionName) => collectionName = newCollectionName;
 
@@ -28,10 +26,10 @@ namespace UKSF.Api.Data {
         public List<T> Get<T>(Func<T, bool> predicate) => GetCollection<T>().AsQueryable().Where(predicate).ToList();
 
         public T GetSingle<T>(string id) {
-            return GetCollection<T>().AsQueryable().FirstOrDefault(x => x.GetIdValue() == id); //Get<T>().FirstOrDefault(x => GetIdValue(x) == id); // TODO: Async
+            return GetCollection<T>().AsQueryable().FirstOrDefault(x => x.GetIdValue() == id); // TODO: Async
         }
 
-        public T GetSingle<T>(Func<T, bool> predicate) => GetCollection<T>().AsQueryable().FirstOrDefault(predicate); //Get<T>().FirstOrDefault(predicate); // TODO: Async
+        public T GetSingle<T>(Func<T, bool> predicate) => GetCollection<T>().AsQueryable().FirstOrDefault(predicate); // TODO: Async
 
         public async Task Add<T>(T data) {
             await GetCollection<T>().InsertOneAsync(data);

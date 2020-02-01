@@ -6,7 +6,7 @@ using System.Linq;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Game {
     public static class GameServerHelpers {

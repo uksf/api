@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace UKSF.Api.Services.Utility {
+namespace UKSF.Common {
     public static class TaskUtilities {
         public static async Task Delay(TimeSpan timeSpan, CancellationToken token) {
             try {

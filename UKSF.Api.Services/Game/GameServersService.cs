@@ -12,7 +12,7 @@ using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Mission;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Game {
     public class GameServersService : IGameServersService {
@@ -76,7 +76,7 @@ namespace UKSF.Api.Services.Game {
 
         public async Task LaunchGameServer(GameServer gameServer) {
             string launchArguments = gameServer.FormatGameServerLaunchArguments();
-            gameServer.processId = ProcessHelper.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments);
+            gameServer.processId = ProcessUtilities.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments);
 
             await Task.Delay(TimeSpan.FromSeconds(1));
 
@@ -84,7 +84,7 @@ namespace UKSF.Api.Services.Game {
             if (gameServer.numberHeadlessClients > 0) {
                 for (int index = 0; index < gameServer.numberHeadlessClients; index++) {
                     launchArguments = gameServer.FormatHeadlessClientLaunchArguments(index);
-                    gameServer.headlessClientProcessIds.Add(ProcessHelper.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments));
+                    gameServer.headlessClientProcessIds.Add(ProcessUtilities.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments));
 
                     await Task.Delay(TimeSpan.FromSeconds(1));
                 }

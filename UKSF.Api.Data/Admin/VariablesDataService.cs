@@ -6,7 +6,7 @@ using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Admin;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Data.Admin {
     public class VariablesDataService : CachedDataService<VariableItem, IVariablesDataService>, IVariablesDataService {

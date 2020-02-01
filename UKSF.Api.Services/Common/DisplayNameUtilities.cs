@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,28 +7,8 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Models.Units;
 
-namespace UKSF.Api.Services.Utility {
-    public static class StringUtilities {
-        public static double ToDouble(this string text) => double.Parse(text);
-
-        public static string ToTitleCase(string text) => CultureInfo.CurrentCulture.TextInfo.ToTitleCase(text);
-
-        public static string Keyify(this string key) => key.ToUpper().Replace(" ", "_");
-
-        public static string RemoveSpaces(this string item) => item.Replace(" ", string.Empty);
-
-        public static string RemoveNewLines(this string item) => item.Replace("\\n", string.Empty);
-
-        public static string RemoveQuotes(this string item) => item.Replace("\"", string.Empty);
-
-        public static bool ContainsCaseInsensitive(this string text, string element) => text.ToUpper().Contains(element.ToUpper());
-
-        public static string RemoveEmbeddedQuotes(this string item) {
-            Match match = new Regex("(\\\".*).+(.*?\\\")").Match(item);
-            item = item.Remove(match.Index, match.Length).Insert(match.Index, match.ToString().Replace("\"\"", "'"));
-            return Regex.Replace(item, "\\\"\\s+\\\"", string.Empty);
-        }
-
+namespace UKSF.Api.Services.Common {
+    public static class DisplayNameUtilities {
         public static string ConvertObjectIds(this string message) {
             string newMessage = message;
             if (!string.IsNullOrEmpty(message)) {
