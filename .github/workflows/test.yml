@@ -5,7 +5,7 @@ env:
 on: ["push", "pull_request"]
 
 jobs:
-  Build and Test:
+  Test:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
