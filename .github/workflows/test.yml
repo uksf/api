@@ -16,8 +16,10 @@ jobs:
     - name: Build with dotnet
       run: dotnet build --configuration Release
     - name: Run tests with coverage
-      run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=./coverage/lcov.info ./UKSF.Api.sln --configuration Release
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
+      run: 
+    - name: Test and publish code coverage
+      uses: paambaati/codeclimate-action@v2.4.0
+      env:
+        CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_API_TEST_REPORTER_ID }}
       with:
-        github-token: ${{ secrets.COVERALLS_TOKEN }}
+        coverageCommand: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=./coverage/lcov.info ./UKSF.Api.sln --configuration Release
