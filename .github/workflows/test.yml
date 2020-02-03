@@ -14,9 +14,9 @@ jobs:
       with:
         dotnet-version: 3.1.101
     - name: Build with dotnet
-      run: dotnet build --configuration Release
+      run: dotnet build -c Release
     - name: Run tests with coverage
-      run: dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=./coverage/lcov.info ./UKSF.Api.sln --configuration Release
+      run: dotnet test ./UKSF.Api.sln -c Release --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info
     - name: Coveralls
       uses: coverallsapp/github-action@master
       with:
