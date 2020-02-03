@@ -15,8 +15,6 @@ jobs:
         dotnet-version: 3.1.101
     - name: Build with dotnet
       run: dotnet build --configuration Release
-    - name: Run tests with coverage
-      run: 
     - name: Test and publish code coverage
       uses: paambaati/codeclimate-action@v2.4.0
       env:
