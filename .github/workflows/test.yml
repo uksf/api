@@ -15,8 +15,6 @@ jobs:
         dotnet-version: 3.1.101
     - name: Build with dotnet
       run: dotnet build -c Release
-    - name: Add Postmessage to path
-      run: set "PATH=%PATH%;D:\a\api\api\UKSF.PostMessage\bin\Release\netcoreapp3.1"
     - name: Run tests with coverage
       run: dotnet test ./UKSF.Api.sln -c Release --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info
     - name: Coveralls
