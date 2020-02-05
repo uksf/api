@@ -6,14 +6,15 @@ using MongoDB.Driver;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
+using UKSF.Common;
 
 namespace UKSF.Api.Data {
     public abstract class CachedDataService<T, TData> : DataService<T, TData> {
-        protected List<T> Collection;
+        public List<T> Collection { get; protected set; }
 
         protected CachedDataService(IDataCollection dataCollection, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataCollection, dataEventBus, collectionName) { }
 
-        // ReSharper disable once MemberCanBeProtected.Global - Used in dynamic call, do not change to protected!
+        // ReSharper disable once MemberCanBeProtected.Global - Used in dynamic call, do not change to protected! // TODO: Stop using this in dynamic call, switch to register or something less........dynamic
         public void Refresh() {
             Collection = null;
             Get();

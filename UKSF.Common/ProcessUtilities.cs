@@ -37,6 +37,7 @@ namespace UKSF.Common {
         }
 
         public static async Task CloseProcessGracefully(this Process process) {
+            // UKSF.PostMessage exe location should be set as a PATH variable
             await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WM_SYSCOMMAND} {SC_CLOSE} 0");
         }
     }
