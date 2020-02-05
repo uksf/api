@@ -3,6 +3,7 @@ using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
 using UKSF.Api.Models.Message.Logging;
+using UKSF.Common;
 
 namespace UKSF.Api.Data.Message {
     public class LogDataService : DataService<BasicLogMessage, ILogDataService>, ILogDataService {

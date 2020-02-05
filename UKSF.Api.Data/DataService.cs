@@ -6,6 +6,7 @@ using UKSF.Api.Events.Data;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
+using UKSF.Common;
 
 namespace UKSF.Api.Data {
     public abstract class DataService<T, TData> : DataEventBacker<TData>, IDataService<T, TData> {

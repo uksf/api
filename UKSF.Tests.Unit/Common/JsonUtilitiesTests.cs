@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using FluentAssertions;
-using MongoDB.Bson;
 using UKSF.Common;
 using Xunit;
 
@@ -31,15 +29,6 @@ namespace UKSF.Tests.Unit.Common {
 
             subject.id.Should().Be(mockDataModel.id);
             subject.Name.Should().Be(mockDataModel.Name);
-        }
-
-        [Fact]
-        public void ShouldSerializePrivateFields() {
-            MockPrivateDataModel mockPrivateDataModel = new MockPrivateDataModel("5e35dafaed582b5a4cec346e", "A thing", 4, DateTime.ParseExact("16/01/1996", "dd/MM/yyyy", null)) { Name = "Charlie"};
-
-            string subject = mockPrivateDataModel.DeepJsonSerializeObject();
-
-            subject.Should().Be("{\"count\":4,\"description\":\"A thing\",\"timestamp\":\"1996-01-16T00:00:00\",\"Name\":\"Charlie\",\"id\":\"5e35dafaed582b5a4cec346e\"}");
         }
     }
 }

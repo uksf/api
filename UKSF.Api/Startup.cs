@@ -181,6 +181,7 @@ namespace UKSF.Api {
         }
 
         private static void WarmDataServices() {
+            // TODO: Redo this trash
             DataCacheService dataCacheService = Global.ServiceProvider.GetService<DataCacheService>();
             List<Type> servicesTypes = AppDomain.CurrentDomain.GetAssemblies()
                                                 .SelectMany(x => x.GetTypes())
@@ -277,7 +278,7 @@ namespace UKSF.Api {
 
         private static void RegisterDataServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
             services.AddTransient<IDataCollection, DataCollection>();
-            
+
             // Non-Cached
             services.AddTransient<IConfirmationCodeDataService, ConfirmationCodeDataService>();
             services.AddSingleton<ILogDataService, LogDataService>();
