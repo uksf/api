@@ -5,7 +5,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace UKSF.PostMessage {
-    [ExcludeFromCodeCoverage]
     internal static class Program {
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         private static extern int PostMessage(IntPtr hwnd, int msg, int wparam, int lparam);
