@@ -70,5 +70,16 @@ namespace UKSF.Tests.Unit.Signalr {
             act.Should().Throw<ObjectDisposedException>();
             subject.Should().BeNull();
         }
+
+        [Fact]
+        public void ShouldReturnContext() {
+            CommentThreadHub commentThreadHub = new CommentThreadHub {Context = mockHubCallerContext.Object, Groups = mockGroupManager.Object};
+
+            HubCallerContext subject = null;
+            Action act = () => subject = commentThreadHub.Context;
+
+            act.Should().NotThrow<ObjectDisposedException>();
+            subject.Should().Be(mockHubCallerContext.Object);
+        }
     }
 }
