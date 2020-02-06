@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -56,6 +57,15 @@ namespace UKSF.Tests.Unit.Signalr {
             await commentThreadHub.OnDisconnectedAsync(null);
 
             subject.Should().HaveCount(0);
+        }
+
+        [Fact]
+        public void ShouldThrowOnDisposed() {
+            CommentThreadHub commentThreadHub = new CommentThreadHub {Context = mockHubCallerContext.Object, Groups = mockGroupManager.Object};
+            commentThreadHub.Dispose();
+            Func<Task> act = async () => await commentThreadHub.OnConnectedAsync();
+
+            act.Should().Throw<ObjectDisposedException>();
         }
     }
 }
