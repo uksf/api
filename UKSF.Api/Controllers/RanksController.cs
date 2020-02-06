@@ -66,6 +66,7 @@ namespace UKSF.Api.Controllers {
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Rank updated from '{oldRank.name}, {oldRank.abbreviation}, {oldRank.teamspeakGroup}, {oldRank.discordRoleId}' to '{rank.name}, {rank.abbreviation}, {rank.teamspeakGroup}, {rank.discordRoleId}'");
             await ranksService.Data().Update(rank.id, Builders<Rank>.Update.Set("name", rank.name).Set("abbreviation", rank.abbreviation).Set("teamspeakGroup", rank.teamspeakGroup).Set("discordRoleId", rank.discordRoleId));
             foreach (Account account in accountService.Data().Get(x => x.rank == oldRank.name)) {
+                // TODO: Notify user to update name in TS if rank abbreviate changed
                 await accountService.Data().Update(account.id, "rank", rank.name);
             }
 

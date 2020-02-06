@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Management;
 using Microsoft.Win32.TaskScheduler;
 using Task = System.Threading.Tasks.Task;
@@ -36,6 +37,7 @@ namespace UKSF.Common {
             await Task.Delay(TimeSpan.FromSeconds(1));
         }
 
+        [ExcludeFromCodeCoverage]
         public static async Task CloseProcessGracefully(this Process process) {
             // UKSF.PostMessage exe location should be set as a PATH variable
             await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WM_SYSCOMMAND} {SC_CLOSE} 0");
