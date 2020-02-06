@@ -63,9 +63,12 @@ namespace UKSF.Tests.Unit.Signalr {
         public void ShouldThrowOnDisposed() {
             CommentThreadHub commentThreadHub = new CommentThreadHub {Context = mockHubCallerContext.Object, Groups = mockGroupManager.Object};
             commentThreadHub.Dispose();
-            Func<Task> act = async () => await commentThreadHub.OnConnectedAsync();
+
+            HubCallerContext subject = null;
+            Action act = () => subject = commentThreadHub.Context;
 
             act.Should().Throw<ObjectDisposedException>();
+            subject.Should().BeNull();
         }
     }
 }
