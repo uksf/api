@@ -61,7 +61,7 @@ namespace UKSF.Tests.Unit.Signalr {
 
         [Fact]
         public void ShouldThrowOnDisposed() {
-            CommentThreadHub commentThreadHub = new CommentThreadHub {Context = mockHubCallerContext.Object, Groups = mockGroupManager.Object};
+            CommentThreadHub commentThreadHub = new CommentThreadHub {Context = mockHubCallerContext.Object};
             commentThreadHub.Dispose();
 
             HubCallerContext subject = null;
@@ -73,13 +73,22 @@ namespace UKSF.Tests.Unit.Signalr {
 
         [Fact]
         public void ShouldReturnContext() {
-            CommentThreadHub commentThreadHub = new CommentThreadHub {Context = mockHubCallerContext.Object, Groups = mockGroupManager.Object};
+            CommentThreadHub commentThreadHub = new CommentThreadHub {Context = mockHubCallerContext.Object};
 
             HubCallerContext subject = null;
             Action act = () => subject = commentThreadHub.Context;
 
             act.Should().NotThrow<ObjectDisposedException>();
             subject.Should().Be(mockHubCallerContext.Object);
+        }
+
+        [Fact]
+        public void ShouldReturnNullContext() {
+            CommentThreadHub commentThreadHub = new CommentThreadHub();
+
+            HubCallerContext subject = commentThreadHub.Context;
+
+            subject.Should().BeNull();
         }
     }
 }
