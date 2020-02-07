@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
-using MongoDB.Bson;
+using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Models.Units;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Common {
     public static class DisplayNameUtilities {
@@ -15,19 +15,18 @@ namespace UKSF.Api.Services.Common {
 
             IDisplayNameService displayNameService = ServiceWrapper.ServiceProvider.GetService<IDisplayNameService>();
             IUnitsService unitsService = ServiceWrapper.ServiceProvider.GetService<IUnitsService>();
-            IEnumerable<string> parts = Regex.Split(message, @"\s+").Where(s => s != string.Empty);
-            foreach (string part in parts) {
-                if (ObjectId.TryParse(part, out ObjectId _)) {
-                    string displayName = displayNameService.GetDisplayName(part);
-                    if (displayName == part) {
-                        Unit unit = unitsService.Data().GetSingle(x => x.id == part);
-                        if (unit != null) {
-                            displayName = unit.name;
-                        }
+            List<string> objectIds = message.ExtractObjectIds().Where(s => s != string.Empty).ToList();
+            foreach (string objectId in objectIds) {
+                string displayString = displayNameService.GetDisplayName(objectId);
+                if (displayString == objectId) {
+                    IUnitsDataService unitsDataService = unitsService.Data();
+                    Unit unit = unitsDataService.GetSingle(x => x.id == objectId);
+                    if (unit != null) {
+                        displayString = unit.name;
                     }
-
-                    newMessage = newMessage.Replace(part, displayName);
                 }
+
+                newMessage = newMessage.Replace(objectId, displayString);
             }
 
             return newMessage;

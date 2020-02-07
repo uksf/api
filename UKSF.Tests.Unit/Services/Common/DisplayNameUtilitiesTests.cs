@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Data;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Personnel;
@@ -10,24 +10,67 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Common {
     public class DisplayNameUtilitiesTests {
-        // [Fact]
-        // public void ShouldConvertNameObjectIds() {
-        //     // Api.Models.Units.Unit unit = new Api.Models.Units.Unit {name = "7 Squadron"};
-        //     const string EXPECTED = "Maj.Bridgford.A has requested all the things for Cpl.Carr.C";
-        //
-        //     Mock<IDisplayNameService> mockDisplayNameService = new Mock<IDisplayNameService>();
-        //     Mock<IUnitsDataService> mockUnitsDataService = new Mock<IUnitsDataService>();
-        //     Mock<IUnitsService> mockUnitsService = new Mock<IUnitsService>();
-        //
-        //     mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<Api.Models.Units.Unit, bool>>())).Returns<Api.Models.Units.Unit>(null);
-        //     mockUnitsService.Setup(x => x.Data()).Returns(mockUnitsDataService.Object);
-        //     mockDisplayNameService.Setup(x => x.GetDisplayName("5e39336e1b92ee2d14b7fe08")).Returns("Maj.Bridgford.A");
-        //     mockDisplayNameService.Setup(x => x.GetDisplayName("5e3935db1b92ee2d14b7fe09")).Returns("Cpl.Carr.C");
-        //
-        //     string subject = "5e39336e1b92ee2d14b7fe08 has requested all the things for 5e3935db1b92ee2d14b7fe09".ConvertObjectIds();
-        //
-        //     subject.Should().Be(EXPECTED);
-        // }
+        public DisplayNameUtilitiesTests() {
+            mockDisplayNameService = new Mock<IDisplayNameService>();
+            mockUnitsDataService = new Mock<IUnitsDataService>();
+            mockUnitsService = new Mock<IUnitsService>();
+
+            mockUnitsService.Setup(x => x.Data()).Returns(mockUnitsDataService.Object);
+
+            ServiceCollection serviceProvider = new ServiceCollection();
+            serviceProvider.AddTransient(provider => mockDisplayNameService.Object);
+            serviceProvider.AddTransient(provider => mockUnitsService.Object);
+            ServiceWrapper.ServiceProvider = serviceProvider.BuildServiceProvider();
+        }
+
+        private readonly Mock<IDisplayNameService> mockDisplayNameService;
+        private readonly Mock<IUnitsDataService> mockUnitsDataService;
+        private readonly Mock<IUnitsService> mockUnitsService;
+
+        [Theory, InlineData("5e39336e1b92ee2d14b7fe08", "Maj.Bridgford.A"), InlineData("5e39336e1b92ee2d14b7fe08, 5e3935db1b92ee2d14b7fe09", "Maj.Bridgford.A, Cpl.Carr.C"), InlineData("5e39336e1b92ee2d14b7fe085e3935db1b92ee2d14b7fe09", "Maj.Bridgford.ACpl.Carr.C"),
+         InlineData("5e39336e1b92ee2d14b7fe08 has requested all the things for 5e3935db1b92ee2d14b7fe09", "Maj.Bridgford.A has requested all the things for Cpl.Carr.C")]
+        public void ShouldConvertNameObjectIds(string input, string expected) {
+            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<Api.Models.Units.Unit, bool>>())).Returns<Api.Models.Units.Unit>(null);
+            mockDisplayNameService.Setup(x => x.GetDisplayName("5e39336e1b92ee2d14b7fe08")).Returns("Maj.Bridgford.A");
+            mockDisplayNameService.Setup(x => x.GetDisplayName("5e3935db1b92ee2d14b7fe09")).Returns("Cpl.Carr.C");
+
+            string subject = input.ConvertObjectIds();
+
+            subject.Should().Be(expected);
+        }
+
+        [Fact]
+        public void ShouldConvertUnitObjectIds() {
+            const string INPUT = "5e39336e1b92ee2d14b7fe08";
+            const string EXPECTED = "7 Squadron";
+            Api.Models.Units.Unit unit = new Api.Models.Units.Unit {name = EXPECTED, id = INPUT};
+
+            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<Api.Models.Units.Unit, bool>>())).Returns(unit);
+            mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(x => x);
+
+            string subject = INPUT.ConvertObjectIds();
+
+            subject.Should().Be(EXPECTED);
+        }
+
+        [Fact]
+        public void ShouldDoNothingToText() {
+            const string INPUT = "5e39336e1b92ee2d14b7fe08";
+            const string EXPECTED = "5e39336e1b92ee2d14b7fe08";
+
+            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<Api.Models.Units.Unit, bool>>())).Returns<Api.Models.Units.Unit>(null);
+            mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(x => x);
+
+            string subject = INPUT.ConvertObjectIds();
+
+            subject.Should().Be(EXPECTED);
+        }
+
+        [Fact]
+        public void ShouldReturnEmpty() {
+            string subject = "".ConvertObjectIds();
+
+            subject.Should().Be(string.Empty);
+        }
     }
 }
-

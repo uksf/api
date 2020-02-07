@@ -1,5 +1,8 @@
-﻿using System.Globalization;
+﻿using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
+using MongoDB.Bson;
 
 namespace UKSF.Common {
     public static class StringUtilities {
@@ -21,6 +24,10 @@ namespace UKSF.Common {
             Match match = new Regex("(\\\".*).+(.*?\\\")").Match(item);
             item = item.Remove(match.Index, match.Length).Insert(match.Index, match.ToString().Replace("\"\"", "'"));
             return Regex.Replace(item, "\\\"\\s+\\\"", string.Empty);
+        }
+
+        public static IEnumerable<string> ExtractObjectIds(this string text) {
+            return Regex.Matches(text, @"[{(]?[0-9a-fA-F]{24}[)}]?").Select(x => ObjectId.TryParse(x.Value, out ObjectId unused) ? x.Value : string.Empty);
         }
     }
 }
