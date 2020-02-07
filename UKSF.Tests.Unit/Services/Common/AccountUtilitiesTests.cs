@@ -7,7 +7,7 @@ using UKSF.Api.Services.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Common {
-    public class UtilitiesTests {
+    public class AccountUtilitiesTests {
         [Fact]
         public void ShouldCopyAccountCorrectly() {
             string id = ObjectId.GenerateNewId().ToString();
