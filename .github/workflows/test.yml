@@ -20,7 +20,7 @@ jobs:
     - name: Build with dotnet
       run: dotnet build -c Release
     - name: Run tests with coverage
-      run: dotnet test ./UKSF.Api.sln -c Release --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Exclude=\"[UKSF.Api.Signalr]*%2c[UKSF.PostMessage]*\"
+      run: dotnet test ./UKSF.Api.sln -c Release --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Exclude="[UKSF.Api.Signalr]*%2c[UKSF.PostMessage]*"
     - name: Coveralls
       uses: coverallsapp/github-action@master
       with:
