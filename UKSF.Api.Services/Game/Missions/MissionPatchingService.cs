@@ -86,7 +86,7 @@ namespace UKSF.Api.Services.Game.Missions {
                 StartInfo = {
                     FileName = MAKE_PBO,
                     WorkingDirectory = VariablesWrapper.VariablesDataService().GetSingle("MAKEPBO_WORKING_DIR").AsString(),
-                    Arguments = $"-Z -BD -P -X=thumbs.db,*.txt,*.h,*.dep,*.cpp,*.bak,*.png,*.log,*.pew \"{folderPath}\"",
+                    Arguments = $"-Z -BD -P -X=\"thumbs.db,*.txt,*.h,*.dep,*.cpp,*.bak,*.png,*.log,*.pew\" \"{folderPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
