@@ -100,7 +100,7 @@ namespace UKSF.Api.Services.Game.Missions {
         private void RemoveUnbinText() {
             if (mission.sqmLines.First() != "////////////////////////////////////////////////////////////////////") return;
             mission.sqmLines = mission.sqmLines.Skip(7).ToList();
-            mission.sqmLines = mission.sqmLines.Take(mission.sqmLines.Count - 1).ToList();
+            // mission.sqmLines = mission.sqmLines.Take(mission.sqmLines.Count - 1).ToList();
         }
 
         private void ReadAllData() {
