@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
-using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Models.Units;
@@ -19,8 +18,7 @@ namespace UKSF.Api.Services.Common {
             foreach (string objectId in objectIds) {
                 string displayString = displayNameService.GetDisplayName(objectId);
                 if (displayString == objectId) {
-                    IUnitsDataService unitsDataService = unitsService.Data();
-                    Unit unit = unitsDataService.GetSingle(x => x.id == objectId);
+                    Unit unit = unitsService.Data().GetSingle(x => x.id == objectId);
                     if (unit != null) {
                         displayString = unit.name;
                     }
