@@ -5,6 +5,7 @@ using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Interfaces.Hubs;
 using UKSF.Api.Models.Events;
 using UKSF.Api.Models.Events.Types;
+using UKSF.Common;
 
 namespace UKSF.Api.Signalr.Hubs.Integrations {
     public static class TeamspeakHubState {

@@ -8,11 +8,11 @@ using UKSF.Api.Models.Operations;
 namespace UKSF.Api.Data.Operations {
     public class OperationOrderDataService : CachedDataService<Opord, IOperationOrderDataService>, IOperationOrderDataService {
         private readonly IDataCollection dataCollection;
-        
+
         public OperationOrderDataService(IDataCollection dataCollection, IDataEventBus<IOperationOrderDataService> dataEventBus) : base(dataCollection, dataEventBus, "opord") => this.dataCollection = dataCollection;
 
         public override List<Opord> Get() {
-            List<Opord> reversed = base.Get();
+            List<Opord> reversed = new List<Opord>(base.Get());
             reversed.Reverse();
             return reversed;
         }
