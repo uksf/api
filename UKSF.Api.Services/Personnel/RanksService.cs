@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Models.Personnel;
+using UKSF.Api.Services.Common;
 
 namespace UKSF.Api.Services.Personnel {
     public class RanksService : IRanksService {
@@ -18,22 +19,22 @@ namespace UKSF.Api.Services.Personnel {
         public int Sort(string nameA, string nameB) {
             Rank rankA = data.GetSingle(nameA);
             Rank rankB = data.GetSingle(nameB);
-            return data.Sort(rankA, rankB);
+            return rankA.Sort(rankB);
         }
 
         public bool IsSuperior(string nameA, string nameB) {
             Rank rankA = data.GetSingle(nameA);
             Rank rankB = data.GetSingle(nameB);
-            int rankOrderA = rankA?.order ?? 0;
-            int rankOrderB = rankB?.order ?? 0;
+            int rankOrderA = rankA?.order ?? int.MaxValue;
+            int rankOrderB = rankB?.order ?? int.MaxValue;
             return rankOrderA < rankOrderB;
         }
 
         public bool IsEqual(string nameA, string nameB) {
             Rank rankA = data.GetSingle(nameA);
             Rank rankB = data.GetSingle(nameB);
-            int rankOrderA = rankA?.order ?? 0;
-            int rankOrderB = rankB?.order ?? 0;
+            int rankOrderA = rankA?.order ?? int.MinValue;
+            int rankOrderB = rankB?.order ?? int.MinValue;
             return rankOrderA == rankOrderB;
         }
 
