@@ -6,6 +6,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\UKSF.Api.Interfaces\UKSF.Api.Interfaces.csproj" />
+      <ProjectReference Include="..\UKSF.Common\UKSF.Common.csproj" />
     </ItemGroup>
 
 </Project>

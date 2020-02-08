@@ -47,12 +47,16 @@ namespace UKSF.Api.Controllers {
         public async Task<IActionResult> Post([FromBody] JObject body) {
             Account account = sessionService.GetContextAccount();
             await Update(body, account);
+            CommentThread recruiterCommentThread = new CommentThread {authors = recruitmentService.GetSr1Leads().Values.ToArray(), mode = ThreadMode.SR1};
+            CommentThread applicationCommentThread = new CommentThread {authors = new[] {account.id}, mode = ThreadMode.SR1};
+            await commentThreadService.Data().Add(recruiterCommentThread);
+            await commentThreadService.Data().Add(applicationCommentThread);
             Application application = new Application {
                 dateCreated = DateTime.Now,
                 state = ApplicationState.WAITING,
                 recruiter = recruitmentService.GetRecruiter(),
-                recruiterCommentThread = await commentThreadService.Data().Add(new CommentThread {authors = recruitmentService.GetSr1Leads().Values.ToArray(), mode = ThreadMode.SR1}),
-                applicationCommentThread = await commentThreadService.Data().Add(new CommentThread {authors = new[] {account.id}, mode = ThreadMode.SR1})
+                recruiterCommentThread = recruiterCommentThread.id,
+                applicationCommentThread = applicationCommentThread.id
             };
             await accountService.Data().Update(account.id, Builders<Account>.Update.Set(x => x.application, application));
             account = accountService.Data().GetSingle(account.id);

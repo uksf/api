@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using UKSF.Api.Events;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;

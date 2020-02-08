@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using UKSF.Api.Events;
 using UKSF.Api.Events.Data;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
