@@ -56,7 +56,7 @@ namespace UKSF.Tests.Unit.Services.Admin {
             string[] subject = variableItem.AsArray();
 
             subject.Should().HaveCount(3);
-            subject.Should().Contain(new string[] {"item1", "item2", "item3"});
+            subject.Should().Contain(new[] {"item1", "item2", "item3"});
         }
 
         [Fact]
@@ -66,7 +66,7 @@ namespace UKSF.Tests.Unit.Services.Admin {
             string[] subject = variableItem.AsArray(x => x.RemoveQuotes());
 
             subject.Should().HaveCount(2);
-            subject.Should().Contain(new string[] {"item1", "item2"});
+            subject.Should().Contain(new[] {"item1", "item2"});
         }
 
         [Fact]
@@ -76,7 +76,7 @@ namespace UKSF.Tests.Unit.Services.Admin {
             List<double> subject = variableItem.AsDoublesArray().ToList();
 
             subject.Should().HaveCount(3);
-            subject.Should().Contain(new double[] {1.5, 1.67845567657, -0.000000456});
+            subject.Should().Contain(new[] {1.5, 1.67845567657, -0.000000456});
         }
 
         [Fact]

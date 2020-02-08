@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Management;
 using FluentAssertions;
 using Microsoft.Win32.TaskScheduler;
 using UKSF.Common;

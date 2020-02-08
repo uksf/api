@@ -1,6 +1,5 @@
 ﻿using System;
 using FluentAssertions;
-using MongoDB.Bson;
 using Moq;
 using UKSF.Api.Events.Data;
 using UKSF.Api.Interfaces.Data;
