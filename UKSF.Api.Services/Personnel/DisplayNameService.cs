@@ -21,6 +21,6 @@ namespace UKSF.Api.Services.Personnel {
             return account != null ? GetDisplayName(account) : id;
         }
 
-        public string GetDisplayNameWithoutRank(Account account) => string.IsNullOrEmpty(account.lastname) ? "Guest" : $"{account.lastname}.{account.firstname[0]}";
+        public string GetDisplayNameWithoutRank(Account account) => string.IsNullOrEmpty(account?.lastname) ? "Guest" : $"{account.lastname}.{account.firstname[0]}";
     }
 }

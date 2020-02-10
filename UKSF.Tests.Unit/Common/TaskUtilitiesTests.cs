@@ -16,7 +16,7 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void ShouldNotThrowException() {
+        public void ShouldNotThrowExceptionForDelay() {
             Action act = () => {
                 CancellationTokenSource token = new CancellationTokenSource();
                 Task unused = TaskUtilities.Delay(TimeSpan.FromMilliseconds(50), token.Token);

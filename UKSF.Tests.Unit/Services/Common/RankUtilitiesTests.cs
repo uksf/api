@@ -16,7 +16,7 @@ namespace UKSF.Tests.Unit.Services.Common {
         }
 
         [Fact]
-        public void ShouldSortNullRankFirst() {
+        public void ShouldSortSecondRankAsFirstWhenFirstRankNull() {
             Rank rank1 = new Rank {name = "Private", order = 1};
 
             int subject = RankUtilities.Sort(null, rank1);
@@ -25,7 +25,7 @@ namespace UKSF.Tests.Unit.Services.Common {
         }
 
         [Fact]
-        public void ShouldSortNullRankSecond() {
+        public void ShouldSortFirstRankAsFirstWhenSecondRankNull() {
             Rank rank1 = new Rank {name = "Private", order = 1};
 
             int subject = RankUtilities.Sort(rank1, null);
@@ -34,7 +34,7 @@ namespace UKSF.Tests.Unit.Services.Common {
         }
 
         [Fact]
-        public void ShouldSortNullRanks() {
+        public void ShouldSortAsEqualWhenBothRanksNull() {
             int subject = RankUtilities.Sort(null, null);
 
             subject.Should().Be(0);

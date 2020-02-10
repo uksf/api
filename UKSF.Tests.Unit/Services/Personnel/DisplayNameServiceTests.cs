@@ -36,7 +36,7 @@ namespace UKSF.Tests.Unit.Services.Personnel {
         }
 
         [Fact]
-        public void ShouldGetNoDisplayName() {
+        public void ShouldGetNoDisplayNameWhenAccountNotFound() {
             mockAccountDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<Account>(null);
 
             string subject = displayNameService.GetDisplayName("5e39336e1b92ee2d14b7fe08");
@@ -45,7 +45,7 @@ namespace UKSF.Tests.Unit.Services.Personnel {
         }
 
         [Fact]
-        public void ShouldGetDisplayName() {
+        public void ShouldGetDisplayNameByAccount() {
             Account account = new Account {lastname = "Beswick", firstname = "Tim"};
 
             string subject = displayNameService.GetDisplayName(account);
@@ -75,10 +75,17 @@ namespace UKSF.Tests.Unit.Services.Personnel {
         }
 
         [Fact]
-        public void ShouldGetGuest() {
+        public void ShouldGetGuestWhenAccountHasNoName() {
             Account account = new Account();
 
             string subject = displayNameService.GetDisplayNameWithoutRank(account);
+
+            subject.Should().Be("Guest");
+        }
+
+        [Fact]
+        public void ShouldGetGuestWhenAccountIsNull() {
+            string subject = displayNameService.GetDisplayNameWithoutRank(null);
 
             subject.Should().Be("Guest");
         }

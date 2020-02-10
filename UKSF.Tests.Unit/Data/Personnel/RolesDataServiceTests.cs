@@ -47,5 +47,16 @@ namespace UKSF.Tests.Unit.Data.Personnel {
 
             subject.Should().Be(role2);
         }
+
+        [Theory, InlineData(""), InlineData(null)]
+        public void ShouldGetNothingWhenNoName(string name) {
+            List<Role> mockCollection = new List<Role>();
+
+            mockDataCollection.Setup(x => x.Get<Role>()).Returns(mockCollection);
+
+            Role subject = rolesDataService.GetSingle(name);
+
+            subject.Should().Be(null);
+        }
     }
 }

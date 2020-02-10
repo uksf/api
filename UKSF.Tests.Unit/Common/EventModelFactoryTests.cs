@@ -1,12 +1,11 @@
 ﻿using FluentAssertions;
 using MongoDB.Bson;
-using UKSF.Api.Events;
 using UKSF.Api.Models.Events;
 using UKSF.Api.Models.Events.Types;
 using UKSF.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Events {
+namespace UKSF.Tests.Unit.Common {
     public class EventModelFactoryTests {
         [Fact]
         public void ShouldReturnDataEvent() {

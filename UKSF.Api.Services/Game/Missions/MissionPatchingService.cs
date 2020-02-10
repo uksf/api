@@ -100,7 +100,7 @@ namespace UKSF.Api.Services.Game.Missions {
 
             if (File.Exists(filePath)) return;
             List<string> outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
-            output = outputLines.Where(x => !string.IsNullOrEmpty(x) && !x.ContainsCaseInsensitive("compressing")).Aggregate((x, y) => $"{x}\n{y}");
+            output = outputLines.Where(x => !string.IsNullOrEmpty(x) && !x.ContainsIgnoreCase("compressing")).Aggregate((x, y) => $"{x}\n{y}");
             throw new Exception(output);
         }
 

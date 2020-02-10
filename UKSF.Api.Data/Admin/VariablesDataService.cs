@@ -24,11 +24,13 @@ namespace UKSF.Api.Data.Admin {
 
         public async Task Update(string key, object value) {
             VariableItem variableItem = GetSingle(key);
+            if (variableItem == null) throw new KeyNotFoundException($"Variable Item with key '{key}' does not exist");
             await base.Update(variableItem.id, "item", value);
         }
 
         public override async Task Delete(string key) {
             VariableItem variableItem = GetSingle(key);
+            if (variableItem == null) throw new KeyNotFoundException($"Variable Item with key '{key}' does not exist");
             await base.Delete(variableItem.id);
         }
     }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Moq;
@@ -31,6 +32,17 @@ namespace UKSF.Tests.Unit.Services.Personnel {
         }
 
         [Fact]
+        public void ShouldReturnInvalidIndexGetIndexWhenRankNotFound() {
+            List<Rank> mockCollection = new List<Rank>();
+
+            mockRanksDataService.Setup(x => x.Get()).Returns(mockCollection);
+
+            int subject = ranksService.GetRankIndex("Private");
+
+            subject.Should().Be(-1);
+        }
+
+        [Fact]
         public void ShouldGetCorrectSortValueByName() {
             Rank rank1 = new Rank {name = "Private", order = 0};
             Rank rank2 = new Rank {name = "Recruit", order = 1};
@@ -43,7 +55,16 @@ namespace UKSF.Tests.Unit.Services.Personnel {
             subject.Should().Be(1);
         }
 
-        [Theory, InlineData("Private", "Recruit", true), InlineData("Recruit", "Private", false), InlineData("Corporal", "Private", false)]
+        [Fact]
+        public void ShouldReturnZeroForSortWhenRanksAreNull() {
+            mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(null);
+
+            int subject = ranksService.Sort("Recruit", "Private");
+
+            subject.Should().Be(0);
+        }
+
+        [Theory, InlineData("Private", "Recruit", true), InlineData("Recruit", "Private", false), InlineData("Corporal", "Private", false), InlineData("Sergeant", "Corporal", false)]
         public void ShouldResolveSuperior(string rankName1, string rankName2, bool expected) {
             Rank rank1 = new Rank {name = "Private", order = 0};
             Rank rank2 = new Rank {name = "Recruit", order = 1};
@@ -70,6 +91,16 @@ namespace UKSF.Tests.Unit.Services.Personnel {
 
             subject.Should().Be(expected);
         }
+
+        [Fact]
+        public void ShouldReturnEqualWhenBothNull() {
+            mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(null);
+
+            bool subject = ranksService.IsEqual("Private", "Recruit");
+
+            subject.Should().Be(true);
+        }
+
 
         [Theory, InlineData("Private", "Private", true), InlineData("Private", "Recruit", true), InlineData("Recruit", "Private", false), InlineData("Corporal", "Private", false)]
         public void ShouldResolveSuperiorOrEqual(string rankName1, string rankName2, bool expected) {

@@ -43,6 +43,16 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
+        public void ShouldThrowForAddWhenItemIsNull() {
+            mockDataCollection.Setup(x => x.AssertCollectionExists<MockDataModel>()).Callback(() => mockCollection = new List<MockDataModel>());
+
+            MockDataService mockDataService = new MockDataService(mockDataCollection.Object, mockDataEventBus.Object, "test");
+            Func<Task> act = async () => await mockDataService.Add(null);
+
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Fact]
         public void ShouldCreateCollection() {
             mockDataCollection.Setup(x => x.AssertCollectionExists<MockDataModel>()).Callback(() => mockCollection = new List<MockDataModel>());
 
@@ -62,9 +72,17 @@ namespace UKSF.Tests.Unit.Data {
             MockDataService mockDataService = new MockDataService(mockDataCollection.Object, mockDataEventBus.Object, "test");
             await mockDataService.Delete(item1.id);
 
-            mockCollection.Should().HaveCount(1);
-            mockCollection.Should().NotContain(item1);
-            mockCollection.Should().Contain(item2);
+            mockCollection.Should().HaveCount(1).And.NotContain(item1).And.Contain(item2);
+        }
+
+        [Theory, InlineData(""), InlineData(null)]
+        public void ShouldThrowForDeleteWhenNoKeyOrNull(string id) {
+            mockDataCollection.Setup(x => x.AssertCollectionExists<MockDataModel>()).Callback(() => mockCollection = new List<MockDataModel>());
+
+            MockDataService mockDataService = new MockDataService(mockDataCollection.Object, mockDataEventBus.Object, "test");
+            Func<Task> act = async () => await mockDataService.Delete(id);
+
+            act.Should().Throw<KeyNotFoundException>();
         }
 
         [Fact]
@@ -78,6 +96,16 @@ namespace UKSF.Tests.Unit.Data {
             MockDataModel subject = mockDataService.GetSingle(item1.id);
 
             subject.Should().Be(item1);
+        }
+
+        [Theory, InlineData(""), InlineData(null)]
+        public void ShouldGetNothingWhenNoKeyOrNull(string id) {
+            mockDataCollection.Setup(x => x.AssertCollectionExists<MockDataModel>()).Callback(() => mockCollection = new List<MockDataModel>());
+
+            MockDataService mockDataService = new MockDataService(mockDataCollection.Object, mockDataEventBus.Object, "test");
+            MockDataModel subject = mockDataService.GetSingle(id);
+
+            subject.Should().Be(null);
         }
 
         [Fact]
@@ -118,8 +146,7 @@ namespace UKSF.Tests.Unit.Data {
             MockDataService mockDataService = new MockDataService(mockDataCollection.Object, mockDataEventBus.Object, "test");
             List<MockDataModel> subject = mockDataService.Get(x => x.id == id);
 
-            subject.Should().HaveCount(1);
-            subject.Should().Contain(item1);
+            subject.Should().HaveCount(1).And.Contain(item1);
         }
 
         [Fact]
@@ -150,6 +177,16 @@ namespace UKSF.Tests.Unit.Data {
             await mockDataService.Update(item1.id, "Name", null);
 
             Render(subject).Should().BeEquivalentTo(expected);
+        }
+
+        [Theory, InlineData(""), InlineData(null)]
+        public void ShouldThrowForUpdateWhenNoKeyOrNull(string id) {
+            mockDataCollection.Setup(x => x.AssertCollectionExists<MockDataModel>()).Callback(() => mockCollection = new List<MockDataModel>());
+
+            MockDataService mockDataService = new MockDataService(mockDataCollection.Object, mockDataEventBus.Object, "test");
+            Func<Task> act = async () => await mockDataService.Update(id, "Name", null);
+
+            act.Should().Throw<KeyNotFoundException>();
         }
 
         [Fact]
@@ -187,6 +224,16 @@ namespace UKSF.Tests.Unit.Data {
             await mockDataService.Update(item1.id, Builders<MockDataModel>.Update.Set(x => x.Name, "2"));
 
             item1.Name.Should().Be("2");
+        }
+
+        [Theory, InlineData(""), InlineData(null)]
+        public void ShouldThrowForUpdateWithUpdateDefinitionWhenNoKeyOrNull(string id) {
+            mockDataCollection.Setup(x => x.AssertCollectionExists<MockDataModel>()).Callback(() => mockCollection = new List<MockDataModel>());
+
+            MockDataService mockDataService = new MockDataService(mockDataCollection.Object, mockDataEventBus.Object, "test");
+            Func<Task> act = async () => await mockDataService.Update(id, Builders<MockDataModel>.Update.Set(x => x.Name, "2"));
+
+            act.Should().Throw<KeyNotFoundException>();
         }
     }
 }
