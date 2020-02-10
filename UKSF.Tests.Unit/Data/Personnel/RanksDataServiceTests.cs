@@ -47,5 +47,16 @@ namespace UKSF.Tests.Unit.Data.Personnel {
 
             subject.Should().Be(rank2);
         }
+
+        [Theory, InlineData(""), InlineData(null)]
+        public void ShouldGetNothingWhenNoNameOrNull(string name) {
+            List<Rank> mockCollection = new List<Rank>();
+
+            mockDataCollection.Setup(x => x.Get<Rank>()).Returns(mockCollection);
+
+            Rank subject = ranksDataService.GetSingle(name);
+
+            subject.Should().Be(null);
+        }
     }
 }

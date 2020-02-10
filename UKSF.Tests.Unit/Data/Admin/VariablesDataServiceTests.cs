@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -51,6 +52,18 @@ namespace UKSF.Tests.Unit.Data.Admin {
             subject.Should().Be(item2);
         }
 
+        [Theory, InlineData(""), InlineData("game path")]
+        public void ShouldGetNothingWhenNoKeyOrNotFound(string key) {
+            VariableItem item1 = new VariableItem {key = "MISSIONS_PATH"};
+            VariableItem item2 = new VariableItem {key = "SERVER_PATH"};
+            VariableItem item3 = new VariableItem {key = "DISCORD_IDS"};
+            mockCollection = new List<VariableItem> {item1, item2, item3};
+
+            VariableItem subject = variablesDataService.GetSingle(key);
+
+            subject.Should().Be(null);
+        }
+
         [Fact]
         public async Task ShouldUpdateItemValue() {
             VariableItem subject = new VariableItem {key = "DISCORD_ID", item = "50"};
@@ -63,6 +76,15 @@ namespace UKSF.Tests.Unit.Data.Admin {
             subject.item.Should().Be("75");
         }
 
+        [Theory, InlineData(""), InlineData(null)]
+        public void ShouldThrowForUpdateWhenNoKeyOrNull(string key) {
+            mockCollection = new List<VariableItem>();
+
+            Func<Task> act = async () => await variablesDataService.Update(key, "75");
+
+            act.Should().Throw<KeyNotFoundException>();
+        }
+
         [Fact]
         public async Task ShouldDeleteItem() {
             VariableItem item1 = new VariableItem {key = "DISCORD_ID", item = "50"};
@@ -73,6 +95,15 @@ namespace UKSF.Tests.Unit.Data.Admin {
             await variablesDataService.Delete("discord id");
 
             mockCollection.Should().HaveCount(0);
+        }
+
+        [Theory, InlineData(""), InlineData(null)]
+        public void ShouldThrowForDeleteWhenNoKeyOrNull(string key) {
+            mockCollection = new List<VariableItem>();
+
+            Func<Task> act = async () => await variablesDataService.Delete(key);
+
+            act.Should().Throw<KeyNotFoundException>();
         }
     }
 }

@@ -6,7 +6,7 @@ using Xunit;
 namespace UKSF.Tests.Unit.Common {
     public class DataUtilitiesTests {
         [Fact]
-        public void ShouldReturnIdValue() {
+        public void ShouldReturnIdValueForValidObject() {
             MockDataModel mockDataModel = new MockDataModel();
 
             string subject = mockDataModel.GetIdValue();
@@ -15,7 +15,7 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void ShouldReturnEmptyString() {
+        public void ShouldReturnEmptyStringForInvalidObject() {
             DateTime dateTime = new DateTime();
 
             string subject = dateTime.GetIdValue();

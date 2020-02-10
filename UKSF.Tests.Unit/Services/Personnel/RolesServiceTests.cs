@@ -32,6 +32,15 @@ namespace UKSF.Tests.Unit.Services.Personnel {
             subject.Should().Be(1);
         }
 
+        [Fact]
+        public void ShouldReturnZeroForSortWhenRanksAreNull() {
+            mockRolesDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(null);
+
+            int subject = rolesService.Sort("Trainee", "Rifleman");
+
+            subject.Should().Be(0);
+        }
+
         [Theory, InlineData(3, "Trainee"), InlineData(0, "Marksman")]
         public void ShouldGetUnitRoleByOrder(int order, string expected) {
             Role role1 = new Role {name = "Rifleman", order = 0, roleType = RoleType.INDIVIDUAL};
@@ -51,13 +60,7 @@ namespace UKSF.Tests.Unit.Services.Personnel {
 
         [Fact]
         public void ShouldReturnNullWhenNoUnitRoleFound() {
-            Role role1 = new Role {name = "Gunner", order = 3, roleType = RoleType.INDIVIDUAL};
-            Role role2 = new Role {name = "Trainee", order = 3, roleType = RoleType.UNIT};
-            Role role3 = new Role {name = "Gunner", order = 2, roleType = RoleType.INDIVIDUAL};
-            List<Role> mockCollection = new List<Role> {role1, role2, role3};
-
-            mockRolesDataService.Setup(x => x.Get()).Returns(mockCollection);
-            mockRolesDataService.Setup(x => x.GetSingle(It.IsAny<Func<Role, bool>>())).Returns<Func<Role, bool>>(x => mockCollection.FirstOrDefault(x));
+            mockRolesDataService.Setup(x => x.GetSingle(It.IsAny<Func<Role, bool>>())).Returns<Func<Role, bool>>(null);
 
             Role subject = rolesService.GetUnitRoleByOrder(2);
 

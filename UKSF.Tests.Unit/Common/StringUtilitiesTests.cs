@@ -8,14 +8,14 @@ using Xunit;
 namespace UKSF.Tests.Unit.Common {
     public class StringUtilitiesTests {
         [Theory, InlineData("", "", false), InlineData("", "hello", false), InlineData("hello world hello world", "hello", true), InlineData("hello", "HELLO", true), InlineData("hello world", "HELLOWORLD", false)]
-        public void ShouldNotCompareCase(string text, string searchElement, bool expected) {
-            bool subject = text.ContainsCaseInsensitive(searchElement);
+        public void ShouldIgnoreCase(string text, string searchElement, bool expected) {
+            bool subject = text.ContainsIgnoreCase(searchElement);
 
             subject.Should().Be(expected);
         }
 
         [Theory, InlineData(""), InlineData("2"), InlineData("1E+309"), InlineData("-1E+309")] // E+309 is one more than double max/min
-        public void ShouldNotThrowException(string text) {
+        public void ShouldNotThrowExceptionForDouble(string text) {
             Action act = () => text.ToDouble();
 
             act.Should().NotThrow();
@@ -36,7 +36,7 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Theory, InlineData("", ""), InlineData("hello world", "HELLO_WORLD"), InlineData("HELLO_WORLD", "HELLO_WORLD"), InlineData("  i am key   ", "I_AM_KEY")]
-        public void ShouldConvertToKey(string text, string expected) {
+        public void ShouldKeyify(string text, string expected) {
             string subject = text.Keyify();
 
             subject.Should().Be(expected);
@@ -71,7 +71,7 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Theory, InlineData("Hello I am 5e39336e1b92ee2d14b7fe08", "5e39336e1b92ee2d14b7fe08"), InlineData("Hello I am 5e39336e1b92ee2d14b7fe08, I will be your SR1", "5e39336e1b92ee2d14b7fe08")]
-        public void ShouldExtractObjectId(string input, string expected) {
+        public void ShouldExtractObjectIds(string input, string expected) {
             List<string> subject = input.ExtractObjectIds().ToList();
 
             subject.Should().Contain(expected);

@@ -39,29 +39,5 @@ namespace UKSF.Tests.Unit.Common {
 
             TaskService.Instance.RootFolder.DeleteTask(NAME, false);
         }
-
-        // TODO: Rethink this one. Maybe just ignore CloseProcessGracefully
-        // [Fact]
-        // public async Task ShouldCloseProcess() {
-        //     const string NAME = "Test";
-        //     const string COMMAND = "timeout 5";
-        //     string expected = $"C:\\Windows\\system32\\cmd.EXE /C {COMMAND}";
-        //
-        //     await ProcessUtilities.LaunchExternalProcess(NAME, COMMAND);
-        //     await Task.Delay(TimeSpan.FromSeconds(1));
-        //
-        //     Process subject = Process.GetProcessesByName("cmd").FirstOrDefault(x => {
-        //         using ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT CommandLine FROM Win32_Process WHERE ProcessId = " + x.Id);
-        //         using ManagementObjectCollection objects = searcher.Get();
-        //         return objects.Cast<ManagementBaseObject>().SingleOrDefault()?["CommandLine"]?.ToString() == expected;
-        //     });
-        //
-        //     subject.Should().NotBeNull();
-        //
-        //     await subject.CloseProcessGracefully();
-        //     await Task.Delay(TimeSpan.FromSeconds(1));
-        //
-        //     subject?.HasExited.Should().BeTrue();
-        // }
     }
 }

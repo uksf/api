@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System;
+using FluentAssertions;
 using UKSF.Api.Models.Personnel;
 using Xunit;
 
@@ -12,7 +13,7 @@ namespace UKSF.Tests.Unit.Models {
 
             attribute.GetType().Should().Be(typeof(bool));
         }
-        
+
         [Fact]
         public void ShouldReturnCorrectValue() {
             AccountSettings subject = new AccountSettings {sr1Enabled = false, errorEmails = true};
@@ -22,6 +23,15 @@ namespace UKSF.Tests.Unit.Models {
 
             sr1Enabled.Should().BeFalse();
             errorEmails.Should().BeTrue();
+        }
+
+        [Theory, InlineData(""), InlineData(null)]
+        public void ShouldThrowWhenSettingNotFound(string name) {
+            AccountSettings accountSettings = new AccountSettings();
+
+            Action act = () => accountSettings.GetAttribute<bool>(name);
+
+            act.Should().Throw<ArgumentException>();
         }
     }
 }

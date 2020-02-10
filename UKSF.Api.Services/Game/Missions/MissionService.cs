@@ -88,7 +88,7 @@ namespace UKSF.Api.Services.Game.Missions {
 
         private bool CheckIgnoreKey(string key) {
             mission.descriptionLines = File.ReadAllLines(mission.descriptionPath).ToList();
-            return mission.descriptionLines.Any(x => x.ContainsCaseInsensitive(key));
+            return mission.descriptionLines.Any(x => x.ContainsIgnoreCase(key));
         }
 
         private bool CheckBinned() {
@@ -195,11 +195,11 @@ namespace UKSF.Api.Services.Game.Missions {
         }
 
         private void PatchDescription() {
-            int playable = mission.sqmLines.Select(x => x.RemoveSpaces()).Count(x => x.ContainsCaseInsensitive("isPlayable=1") || x.ContainsCaseInsensitive("isPlayer=1"));
+            int playable = mission.sqmLines.Select(x => x.RemoveSpaces()).Count(x => x.ContainsIgnoreCase("isPlayable=1") || x.ContainsIgnoreCase("isPlayer=1"));
             mission.playerCount = playable;
 
             mission.descriptionLines = File.ReadAllLines(mission.descriptionPath).ToList();
-            mission.descriptionLines[mission.descriptionLines.FindIndex(x => x.ContainsCaseInsensitive("maxPlayers"))] = $"    maxPlayers = {playable};";
+            mission.descriptionLines[mission.descriptionLines.FindIndex(x => x.ContainsIgnoreCase("maxPlayers"))] = $"    maxPlayers = {playable};";
             CheckRequiredDescriptionItems();
             CheckConfigurableDescriptionItems();
 
