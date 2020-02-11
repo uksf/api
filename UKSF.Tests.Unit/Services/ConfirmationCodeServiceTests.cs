@@ -39,13 +39,22 @@ namespace UKSF.Tests.Unit.Services {
             ConfirmationCode confirmationCode = new ConfirmationCode {value = "test"};
             List<ConfirmationCode> confirmationCodeData = new List<ConfirmationCode> {confirmationCode};
 
-            mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<Func<ConfirmationCode, bool>>())).Returns(() => confirmationCodeData.First());
+            mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<Func<ConfirmationCode, bool>>())).Returns<Func<ConfirmationCode, bool>>(x => confirmationCodeData.FirstOrDefault(x));
             mockConfirmationCodeDataService.Setup(x => x.Delete(It.IsAny<string>())).Returns(Task.CompletedTask).Callback<string>(x => confirmationCodeData.RemoveAll(y => y.id == x));
-            mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<ScheduledJob, bool>>())).Returns(Task.CompletedTask);
+            mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<ScheduledJob, bool>>())).Returns<Func<ScheduledJob, bool>>(x => Task.FromResult(new List<ScheduledJob>().FirstOrDefault(x)));
 
             string subject = await confirmationCodeService.GetConfirmationCode(confirmationCode.id);
 
             subject.Should().Be("test");
+        }
+
+        [Theory, InlineData(""), InlineData(null)]
+        public async Task ShouldReturnEmptyStringWhenNoIdOrNull(string id) {
+            mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<Func<ConfirmationCode, bool>>())).Returns<Func<ConfirmationCode, bool>>(null);
+
+            string subject = await confirmationCodeService.GetConfirmationCode(id);
+
+            subject.Should().Be(string.Empty);
         }
     }
 }
