@@ -115,6 +115,7 @@ namespace UKSF.Api.Controllers {
                     LogWrapper.AuditLog(sessionService.GetContextId(), $"Uploaded mission '{file.Name}'");
                 }
             } catch (Exception exception) {
+                LogWrapper.Log(exception);
                 return BadRequest(exception);
             }
 
