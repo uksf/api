@@ -17,7 +17,7 @@ namespace UKSF.Api.Controllers.Accounts {
         public PasswordResetController(IConfirmationCodeService confirmationCodeService, ILoginService loginService, IEmailService emailService, IAccountService accountService) : base(confirmationCodeService, loginService, accountService) => this.emailService = emailService;
 
         protected override async Task<IActionResult> ApplyValidatedPayload(string codePayload, Account account) {
-            await AccountService.Data().Update(account.id, "password", BCrypt.Net.BCrypt.HashPassword(codePayload));
+            await AccountService.Data.Update(account.id, "password", BCrypt.Net.BCrypt.HashPassword(codePayload));
             LogWrapper.AuditLog(account.id, $"Password changed for {account.id}");
             return Ok(LoginService.RegenerateToken(account.id));
         }
@@ -27,7 +27,7 @@ namespace UKSF.Api.Controllers.Accounts {
 
         [HttpPut]
         public async Task<IActionResult> ResetPassword([FromBody] JObject body) {
-            Account account = AccountService.Data().GetSingle(x => string.Equals(x.email, body["email"].ToString(), StringComparison.InvariantCultureIgnoreCase));
+            Account account = AccountService.Data.GetSingle(x => string.Equals(x.email, body["email"].ToString(), StringComparison.InvariantCultureIgnoreCase));
             if (account == null) {
                 return BadRequest();
             }

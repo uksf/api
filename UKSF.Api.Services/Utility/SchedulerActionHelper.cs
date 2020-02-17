@@ -14,7 +14,7 @@ namespace UKSF.Api.Services.Utility {
         private const ulong ID_CHANNEL_GENERAL = 311547576942067713;
 
         public static void DeleteExpiredConfirmationCode(string id) {
-            ServiceWrapper.ServiceProvider.GetService<IConfirmationCodeService>().Data().Delete(id);
+            ServiceWrapper.ServiceProvider.GetService<IConfirmationCodeService>().Data.Delete(id);
         }
 
         public static void PruneLogs() {

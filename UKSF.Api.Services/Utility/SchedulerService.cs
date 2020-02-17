@@ -11,24 +11,18 @@ using UKSF.Api.Models.Utility;
 using UKSF.Api.Services.Message;
 
 namespace UKSF.Api.Services.Utility {
-    public class SchedulerService : ISchedulerService {
+    public class SchedulerService : DataBackedService<ISchedulerDataService>, ISchedulerService {
         private static readonly ConcurrentDictionary<string, CancellationTokenSource> ACTIVE_TASKS = new ConcurrentDictionary<string, CancellationTokenSource>();
         private readonly IHostEnvironment currentEnvironment;
-        private readonly ISchedulerDataService data;
 
-        public SchedulerService(ISchedulerDataService data, IHostEnvironment currentEnvironment) {
-            this.data = data;
-            this.currentEnvironment = currentEnvironment;
-        }
-
-        public ISchedulerDataService Data() => data;
+        public SchedulerService(ISchedulerDataService data, IHostEnvironment currentEnvironment) : base(data) => this.currentEnvironment = currentEnvironment;
 
         public async void Load(bool integration = false) {
             if (integration) {
-                data.Get(x => x.type == ScheduledJobType.INTEGRATION).ForEach(Schedule);
+                Data.Get(x => x.type == ScheduledJobType.INTEGRATION).ForEach(Schedule);
             } else {
                 if (!currentEnvironment.IsDevelopment()) await AddUnique();
-                data.Get(x => x.type != ScheduledJobType.INTEGRATION).ForEach(Schedule);
+                Data.Get(x => x.type != ScheduledJobType.INTEGRATION).ForEach(Schedule);
             }
         }
 
@@ -43,19 +37,19 @@ namespace UKSF.Api.Services.Utility {
                 job.repeat = true;
             }
 
-            await data.Add(job);
+            await Data.Add(job);
             Schedule(job);
         }
 
         public async Task Cancel(Func<ScheduledJob, bool> predicate) {
-            ScheduledJob job = data.GetSingle(predicate);
+            ScheduledJob job = Data.GetSingle(predicate);
             if (job == null) return;
             if (ACTIVE_TASKS.TryGetValue(job.id, out CancellationTokenSource token)) {
                 token.Cancel();
                 ACTIVE_TASKS.TryRemove(job.id, out CancellationTokenSource _);
             }
 
-            await data.Delete(job.id);
+            await Data.Delete(job.id);
         }
 
         private void Schedule(ScheduledJob job) {
@@ -87,7 +81,7 @@ namespace UKSF.Api.Services.Utility {
                         await SetNext(job);
                         Schedule(job);
                     } else {
-                        await data.Delete(job.id);
+                        await Data.Delete(job.id);
                         ACTIVE_TASKS.TryRemove(job.id, out CancellationTokenSource _);
                     }
                 },
@@ -97,26 +91,26 @@ namespace UKSF.Api.Services.Utility {
         }
 
         private async Task AddUnique() {
-            if (data.GetSingle(x => x.type == ScheduledJobType.LOG_PRUNE) == null) {
+            if (Data.GetSingle(x => x.type == ScheduledJobType.LOG_PRUNE) == null) {
                 await Create(DateTime.Today.AddDays(1), TimeSpan.FromDays(1), ScheduledJobType.LOG_PRUNE, nameof(SchedulerActionHelper.PruneLogs));
             }
 
-            if (data.GetSingle(x => x.type == ScheduledJobType.TEAMSPEAK_SNAPSHOT) == null) {
+            if (Data.GetSingle(x => x.type == ScheduledJobType.TEAMSPEAK_SNAPSHOT) == null) {
                 await Create(DateTime.Today.AddDays(1), TimeSpan.FromMinutes(5), ScheduledJobType.TEAMSPEAK_SNAPSHOT, nameof(SchedulerActionHelper.TeamspeakSnapshot));
             }
 
-            if (data.GetSingle(x => x.type == ScheduledJobType.DISCORD_VOTE_ANNOUNCEMENT) == null) {
+            if (Data.GetSingle(x => x.type == ScheduledJobType.DISCORD_VOTE_ANNOUNCEMENT) == null) {
                 await Create(DateTime.Today.AddHours(19), TimeSpan.FromDays(1), ScheduledJobType.DISCORD_VOTE_ANNOUNCEMENT, nameof(SchedulerActionHelper.DiscordVoteAnnouncement));
             }
         }
 
         private async Task SetNext(ScheduledJob job) {
-            await data.Update(job.id, "next", job.next);
+            await Data.Update(job.id, "next", job.next);
         }
 
         private bool IsCancelled(ScheduledJob job, CancellationTokenSource token) {
             if (token.IsCancellationRequested) return true;
-            return data.GetSingle(job.id) == null;
+            return Data.GetSingle(job.id) == null;
         }
 
         private static void ExecuteAction(ScheduledJob job) {

@@ -39,11 +39,11 @@ namespace UKSF.Api.Controllers.CommandRequests {
 
         [HttpGet, Authorize]
         public IActionResult Get() {
-            List<CommandRequest> allRequests = commandRequestService.Data().Get();
+            List<CommandRequest> allRequests = commandRequestService.Data.Get();
             List<CommandRequest> myRequests = new List<CommandRequest>();
             List<CommandRequest> otherRequests = new List<CommandRequest>();
             string contextId = sessionService.GetContextId();
-            bool canOverride = unitsService.Data().GetSingle(x => x.shortname == "SR10").members.Any(x => x == contextId);
+            bool canOverride = unitsService.Data.GetSingle(x => x.shortname == "SR10").members.Any(x => x == contextId);
             bool superAdmin = contextId == Global.SUPER_ADMIN;
             DateTime now = DateTime.Now;
             foreach (CommandRequest commandRequest in allRequests) {
@@ -87,7 +87,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             bool overriden = bool.Parse(body["overriden"].ToString());
             ReviewState state = Enum.Parse<ReviewState>(body["reviewState"].ToString());
             Account sessionAccount = sessionService.GetContextAccount();
-            CommandRequest request = commandRequestService.Data().GetSingle(id);
+            CommandRequest request = commandRequestService.Data.GetSingle(id);
             if (request == null) {
                 throw new NullReferenceException($"Failed to get request with id {id}, does not exist");
             }

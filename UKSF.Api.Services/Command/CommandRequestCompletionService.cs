@@ -54,7 +54,7 @@ namespace UKSF.Api.Services.Command {
 
         public async Task Resolve(string id) {
             if (commandRequestService.IsRequestApproved(id) || commandRequestService.IsRequestRejected(id)) {
-                CommandRequest request = commandRequestService.Data().GetSingle(id);
+                CommandRequest request = commandRequestService.Data.GetSingle(id);
                 switch (request.type) {
                     case CommandRequestType.PROMOTION:
                     case CommandRequestType.DEMOTION:
@@ -115,7 +115,7 @@ namespace UKSF.Api.Services.Command {
 
         private async Task Discharge(CommandRequest request) {
             if (commandRequestService.IsRequestApproved(request.id)) {
-                Account account = accountService.Data().GetSingle(request.recipient);
+                Account account = accountService.Data.GetSingle(request.recipient);
                 Discharge discharge = new Discharge {
                     rank = account.rank,
                     unit = account.unitAssignment,
@@ -123,19 +123,19 @@ namespace UKSF.Api.Services.Command {
                     dischargedBy = request.displayRequester,
                     reason = request.reason
                 };
-                DischargeCollection dischargeCollection = dischargeService.Data().GetSingle(x => x.accountId == account.id);
+                DischargeCollection dischargeCollection = dischargeService.Data.GetSingle(x => x.accountId == account.id);
                 if (dischargeCollection == null) {
                     dischargeCollection = new DischargeCollection {accountId = account.id, name = $"{account.lastname}.{account.firstname[0]}"};
                     dischargeCollection.discharges.Add(discharge);
-                    await dischargeService.Data().Add(dischargeCollection);
+                    await dischargeService.Data.Add(dischargeCollection);
                 } else {
                     dischargeCollection.discharges.Add(discharge);
-                    await dischargeService.Data().Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.reinstated, false));
-                    await dischargeService.Data().Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.name, $"{account.lastname}.{account.firstname[0]}"));
-                    await dischargeService.Data().Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.discharges, dischargeCollection.discharges));
+                    await dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.reinstated, false));
+                    await dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.name, $"{account.lastname}.{account.firstname[0]}"));
+                    await dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.discharges, dischargeCollection.discharges));
                 }
 
-                await accountService.Data().Update(account.id, "membershipState", MembershipState.DISCHARGED);
+                await accountService.Data.Update(account.id, "membershipState", MembershipState.DISCHARGED);
 
                 Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, AssignmentService.REMOVE_FLAG, AssignmentService.REMOVE_FLAG, AssignmentService.REMOVE_FLAG, request.reason, "", AssignmentService.REMOVE_FLAG);
                 notificationsService.Add(notification);
@@ -168,12 +168,12 @@ namespace UKSF.Api.Services.Command {
                         notificationsService.Add(new Notification {owner = request.recipient, message = "You have been unassigned from all roles in all units", icon = NotificationIcons.DEMOTION});
                     } else {
                         string role = await assignmentService.UnassignUnitRole(request.recipient, request.value);
-                        notificationsService.Add(new Notification {owner = request.recipient, message = $"You have been unassigned as {AvsAn.Query(role).Article} {role} in {unitsService.GetChainString(unitsService.Data().GetSingle(request.value))}", icon = NotificationIcons.DEMOTION});
+                        notificationsService.Add(new Notification {owner = request.recipient, message = $"You have been unassigned as {AvsAn.Query(role).Article} {role} in {unitsService.GetChainString(unitsService.Data.GetSingle(request.value))}", icon = NotificationIcons.DEMOTION});
                     }
                 } else {
                     await assignmentService.AssignUnitRole(request.recipient, request.value, request.secondaryValue);
                     notificationsService.Add(
-                        new Notification {owner = request.recipient, message = $"You have been assigned as {AvsAn.Query(request.secondaryValue).Article} {request.secondaryValue} in {unitsService.GetChainString(unitsService.Data().GetSingle(request.value))}", icon = NotificationIcons.PROMOTION}
+                        new Notification {owner = request.recipient, message = $"You have been assigned as {AvsAn.Query(request.secondaryValue).Article} {request.secondaryValue} in {unitsService.GetChainString(unitsService.Data.GetSingle(request.value))}", icon = NotificationIcons.PROMOTION}
                     );
                 }
 
@@ -187,7 +187,7 @@ namespace UKSF.Api.Services.Command {
 
         private async Task UnitRemoval(CommandRequest request) {
             if (commandRequestService.IsRequestApproved(request.id)) {
-                Unit unit = unitsService.Data().GetSingle(request.value);
+                Unit unit = unitsService.Data.GetSingle(request.value);
                 await assignmentService.UnassignUnit(request.recipient, unit.id);
                 notificationsService.Add(new Notification {owner = request.recipient, message = $"You have been removed from {unitsService.GetChainString(unit)}", icon = NotificationIcons.DEMOTION});
                 await commandRequestService.ArchiveRequest(request.id);
@@ -200,7 +200,7 @@ namespace UKSF.Api.Services.Command {
 
         private async Task Transfer(CommandRequest request) {
             if (commandRequestService.IsRequestApproved(request.id)) {
-                Unit unit = unitsService.Data().GetSingle(request.value);
+                Unit unit = unitsService.Data.GetSingle(request.value);
                 Notification notification = await assignmentService.UpdateUnitRankAndRole(request.recipient, unit.name, reason: request.reason);
                 notificationsService.Add(notification);
                 await commandRequestService.ArchiveRequest(request.id);
@@ -213,9 +213,9 @@ namespace UKSF.Api.Services.Command {
 
         private async Task Reinstate(CommandRequest request) {
             if (commandRequestService.IsRequestApproved(request.id)) {
-                DischargeCollection dischargeCollection = dischargeService.Data().GetSingle(x => x.accountId == request.recipient);
-                await dischargeService.Data().Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.reinstated, true));
-                await accountService.Data().Update(dischargeCollection.accountId, "membershipState", MembershipState.MEMBER);
+                DischargeCollection dischargeCollection = dischargeService.Data.GetSingle(x => x.accountId == request.recipient);
+                await dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.reinstated, true));
+                await accountService.Data.Update(dischargeCollection.accountId, "membershipState", MembershipState.MEMBER);
                 Notification notification = await assignmentService.UpdateUnitRankAndRole(dischargeCollection.accountId, "Basic Training Unit", "Trainee", "Recruit", "", "", "your membership was reinstated");
                 notificationsService.Add(notification);
 

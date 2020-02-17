@@ -5,34 +5,31 @@ using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Common;
 
 namespace UKSF.Api.Services.Personnel {
-    public class RanksService : IRanksService {
-        private readonly IRanksDataService data;
+    public class RanksService : DataBackedService<IRanksDataService>, IRanksService {
 
-        public RanksService(IRanksDataService data) => this.data = data;
-
-        public IRanksDataService Data() => data;
+        public RanksService(IRanksDataService data) : base(data) { }
 
         public int GetRankIndex(string rankName) {
-            return data.Get().FindIndex(x => x.name == rankName);
+            return Data.Get().FindIndex(x => x.name == rankName);
         }
 
         public int Sort(string nameA, string nameB) {
-            Rank rankA = data.GetSingle(nameA);
-            Rank rankB = data.GetSingle(nameB);
+            Rank rankA = Data.GetSingle(nameA);
+            Rank rankB = Data.GetSingle(nameB);
             return RankUtilities.Sort(rankA, rankB);
         }
 
         public bool IsSuperior(string nameA, string nameB) {
-            Rank rankA = data.GetSingle(nameA);
-            Rank rankB = data.GetSingle(nameB);
+            Rank rankA = Data.GetSingle(nameA);
+            Rank rankB = Data.GetSingle(nameB);
             int rankOrderA = rankA?.order ?? int.MaxValue;
             int rankOrderB = rankB?.order ?? int.MaxValue;
             return rankOrderA < rankOrderB;
         }
 
         public bool IsEqual(string nameA, string nameB) {
-            Rank rankA = data.GetSingle(nameA);
-            Rank rankB = data.GetSingle(nameB);
+            Rank rankA = Data.GetSingle(nameA);
+            Rank rankB = Data.GetSingle(nameB);
             int rankOrderA = rankA?.order ?? int.MinValue;
             int rankOrderB = rankB?.order ?? int.MinValue;
             return rankOrderA == rankOrderB;

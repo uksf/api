@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
 using Moq;
+using Newtonsoft.Json;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Utility;
@@ -50,11 +51,29 @@ namespace UKSF.Tests.Unit.Services {
 
         [Theory, InlineData(""), InlineData(null)]
         public async Task ShouldReturnEmptyStringWhenNoIdOrNull(string id) {
-            mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<Func<ConfirmationCode, bool>>())).Returns<Func<ConfirmationCode, bool>>(null);
+            mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<Func<ConfirmationCode, bool>>())).Returns<Func<ConfirmationCode, bool>>(x => new List<ConfirmationCode>().FirstOrDefault(x));
 
             string subject = await confirmationCodeService.GetConfirmationCode(id);
 
             subject.Should().Be(string.Empty);
+        }
+
+        [Fact]
+        public async Task ShouldCancelScheduledJob() {
+            ConfirmationCode confirmationCode = new ConfirmationCode {value = "test"};
+            List<ConfirmationCode> confirmationCodeData = new List<ConfirmationCode> {confirmationCode};
+            string actionParameters = JsonConvert.SerializeObject(new object[] {confirmationCode.id});
+
+            ScheduledJob scheduledJob = new ScheduledJob {actionParameters = actionParameters};
+            List<ScheduledJob> subject = new List<ScheduledJob> {scheduledJob};
+
+            mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<Func<ConfirmationCode, bool>>())).Returns<Func<ConfirmationCode, bool>>(x => confirmationCodeData.FirstOrDefault(x));
+            mockConfirmationCodeDataService.Setup(x => x.Delete(It.IsAny<string>())).Returns(Task.CompletedTask);
+            mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<ScheduledJob, bool>>())).Returns(Task.CompletedTask).Callback<Func<ScheduledJob, bool>>(x => subject.Remove(subject.FirstOrDefault(x)));
+
+            await confirmationCodeService.GetConfirmationCode(confirmationCode.id);
+
+            subject.Should().BeEmpty();
         }
     }
 }

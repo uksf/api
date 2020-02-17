@@ -15,16 +15,12 @@ using UKSF.Api.Models.Mission;
 using UKSF.Common;
 
 namespace UKSF.Api.Services.Game {
-    public class GameServersService : IGameServersService {
-        private readonly IGameServersDataService data;
+    public class GameServersService : DataBackedService<IGameServersDataService>, IGameServersService {
         private readonly IMissionPatchingService missionPatchingService;
 
-        public GameServersService(IGameServersDataService data, IMissionPatchingService missionPatchingService) {
-            this.data = data;
+        public GameServersService(IGameServersDataService data, IMissionPatchingService missionPatchingService) : base(data) {
             this.missionPatchingService = missionPatchingService;
         }
-
-        public IGameServersDataService Data() => data;
 
         public int GetGameInstanceCount() => GameServerHelpers.GetArmaProcesses().Count();
 
@@ -142,7 +138,7 @@ namespace UKSF.Api.Services.Game {
                 process.Kill();
             }
 
-            data.Get()
+            Data.Get()
                 .ForEach(
                     x => {
                         x.processId = null;

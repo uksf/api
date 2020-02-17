@@ -43,10 +43,10 @@ namespace UKSF.Api.Services.Personnel {
             return GenerateToken(account);
         }
 
-        public string RegenerateToken(string accountId) => GenerateToken(accountService.Data().GetSingle(accountId));
+        public string RegenerateToken(string accountId) => GenerateToken(accountService.Data.GetSingle(accountId));
 
         private Account FindAccount(string email, string password) {
-            Account account = accountService.Data().GetSingle(x => string.Equals(x.email, email, StringComparison.InvariantCultureIgnoreCase));
+            Account account = accountService.Data.GetSingle(x => string.Equals(x.email, email, StringComparison.InvariantCultureIgnoreCase));
             if (account != null) {
                 if (!isPasswordReset) {
                     if (!BCrypt.Net.BCrypt.Verify(password, account.password)) {
@@ -91,11 +91,11 @@ namespace UKSF.Api.Services.Personnel {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.SR1));
                     }
 
-                    if (unitsService.Data().GetSingle(x => x.shortname == "SR10").members.Contains(account.id) || admin) {
+                    if (unitsService.Data.GetSingle(x => x.shortname == "SR10").members.Contains(account.id) || admin) {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.SR10));
                     }
 
-                    if (unitsService.Data().GetSingle(x => x.shortname == "SR5").members.Contains(account.id) || admin) {
+                    if (unitsService.Data.GetSingle(x => x.shortname == "SR5").members.Contains(account.id) || admin) {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.SR5));
                     }
 

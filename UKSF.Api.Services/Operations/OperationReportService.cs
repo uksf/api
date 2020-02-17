@@ -5,16 +5,10 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Models.Operations;
 
 namespace UKSF.Api.Services.Operations {
-    public class OperationReportService : IOperationReportService {
+    public class OperationReportService : DataBackedService<IOperationReportDataService>, IOperationReportService {
         private readonly IAttendanceService attendanceService;
-        private readonly IOperationReportDataService data;
 
-        public OperationReportService(IOperationReportDataService data, IAttendanceService attendanceService) {
-            this.data = data;
-            this.attendanceService = attendanceService;
-        }
-
-        public IOperationReportDataService Data() => data;
+        public OperationReportService(IOperationReportDataService data, IAttendanceService attendanceService) : base(data) => this.attendanceService = attendanceService;
 
         public async Task Create(CreateOperationReportRequest request) {
             Oprep operation = new Oprep {
@@ -26,7 +20,7 @@ namespace UKSF.Api.Services.Operations {
                 result = request.result
             };
             operation.attendanceReport = await attendanceService.GenerateAttendanceReport(operation.start, operation.end);
-            await data.Add(operation);
+            await Data.Add(operation);
         }
     }
 }

@@ -18,8 +18,8 @@ namespace UKSF.Tests.Unit.Services.Personnel {
             Mock<IRanksService> mockRanksService = new Mock<IRanksService>();
             Mock<IAccountService> mockAccountService = new Mock<IAccountService>();
 
-            mockRanksService.Setup(x => x.Data()).Returns(mockRanksDataService.Object);
-            mockAccountService.Setup(x => x.Data()).Returns(mockAccountDataService.Object);
+            mockRanksService.Setup(x => x.Data).Returns(mockRanksDataService.Object);
+            mockAccountService.Setup(x => x.Data).Returns(mockAccountDataService.Object);
 
             displayNameService = new DisplayNameService(mockRanksService.Object, mockAccountService.Object);
         }

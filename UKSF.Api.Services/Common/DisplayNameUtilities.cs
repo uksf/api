@@ -18,7 +18,7 @@ namespace UKSF.Api.Services.Common {
             foreach (string objectId in objectIds) {
                 string displayString = displayNameService.GetDisplayName(objectId);
                 if (displayString == objectId) {
-                    Unit unit = unitsService.Data().GetSingle(x => x.id == objectId);
+                    Unit unit = unitsService.Data.GetSingle(x => x.id == objectId);
                     if (unit != null) {
                         displayString = unit.name;
                     }
