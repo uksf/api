@@ -35,7 +35,7 @@ namespace UKSF.Api.Services.Personnel {
                                                                 displayName = displayNameService.GetDisplayName(x),
                                                                 attendancePercent = GetAttendancePercent(x.teamspeakIdentities),
                                                                 attendanceState = loaService.IsLoaCovered(x.id, start) ? AttendanceState.LOA : GetAttendanceState(GetAttendancePercent(x.teamspeakIdentities)),
-                                                                groupId = unitsService.Data().GetSingle(y => y.name == x.unitAssignment).id,
+                                                                groupId = unitsService.Data.GetSingle(y => y.name == x.unitAssignment).id,
                                                                 groupName = x.unitAssignment
                                                             }
                                                         )
@@ -44,7 +44,7 @@ namespace UKSF.Api.Services.Personnel {
         }
 
         private void GetAccounts() {
-            accounts = accountService.Data().Get(x => x.membershipState == MembershipState.MEMBER);
+            accounts = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER);
         }
 
         private async Task GetRecords(DateTime start, DateTime end) {

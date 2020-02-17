@@ -12,12 +12,12 @@ namespace UKSF.Api.Services.Personnel {
         }
 
         public string GetDisplayName(Account account) {
-            Rank rank = account.rank != null ? ranksService.Data().GetSingle(account.rank) : null;
+            Rank rank = account.rank != null ? ranksService.Data.GetSingle(account.rank) : null;
             return rank == null ? $"{account.lastname}.{account.firstname[0]}" : $"{rank.abbreviation}.{account.lastname}.{account.firstname[0]}";
         }
 
         public string GetDisplayName(string id) {
-            Account account = accountService.Data().GetSingle(id);
+            Account account = accountService.Data.GetSingle(id);
             return account != null ? GetDisplayName(account) : id;
         }
 

@@ -83,7 +83,7 @@ namespace UKSF.Api.Services.Integrations {
             }
 
             if (discordId != 0 && account == null) {
-                account = accountService.Data().GetSingle(x => !string.IsNullOrEmpty(x.discordId) && x.discordId == discordId.ToString());
+                account = accountService.Data.GetSingle(x => !string.IsNullOrEmpty(x.discordId) && x.discordId == discordId.ToString());
             }
 
             if (discordId == 0) return;
@@ -137,14 +137,14 @@ namespace UKSF.Api.Services.Integrations {
 
         private void UpdateAccountRanks(Account account, ISet<string> allowedRoles) {
             string rank = account.rank;
-            foreach (Rank x in ranksService.Data().Get().Where(x => rank == x.name)) {
+            foreach (Rank x in ranksService.Data.Get().Where(x => rank == x.name)) {
                 allowedRoles.Add(x.discordRoleId);
             }
         }
 
         private void UpdateAccountUnits(Account account, ISet<string> allowedRoles) {
-            Unit accountUnit = unitsService.Data().GetSingle(x => x.name == account.unitAssignment);
-            List<Unit> accountUnits = unitsService.Data().Get(x => x.members.Contains(account.id)).Where(x => !string.IsNullOrEmpty(x.discordRoleId)).ToList();
+            Unit accountUnit = unitsService.Data.GetSingle(x => x.name == account.unitAssignment);
+            List<Unit> accountUnits = unitsService.Data.Get(x => x.members.Contains(account.id)).Where(x => !string.IsNullOrEmpty(x.discordRoleId)).ToList();
             List<Unit> accountUnitParents = unitsService.GetParents(accountUnit).Where(x => !string.IsNullOrEmpty(x.discordRoleId)).ToList();
             accountUnits.ForEach(x => allowedRoles.Add(x.discordRoleId));
             accountUnitParents.ForEach(x => allowedRoles.Add(x.discordRoleId));

@@ -38,7 +38,7 @@ namespace UKSF.Api.Controllers {
 
         [HttpGet("{id}"), Authorize]
         public IActionResult GetSingle(string id) {
-            Account account = accountService.Data().GetSingle(id);
+            Account account = accountService.Data.GetSingle(id);
             return Ok(recruitmentService.GetApplication(account));
         }
 
@@ -50,7 +50,7 @@ namespace UKSF.Api.Controllers {
             string account = sessionService.GetContextId();
             List<object> activity = new List<object>();
             foreach (Account recruiterAccount in recruitmentService.GetSr1Members()) {
-                List<Account> recruiterApplications = accountService.Data().Get(x => x.application != null && x.application.recruiter == recruiterAccount.id);
+                List<Account> recruiterApplications = accountService.Data.Get(x => x.application != null && x.application.recruiter == recruiterAccount.id);
                 activity.Add(
                     new {
                         account = new {recruiterAccount.id, recruiterAccount.settings},
@@ -68,21 +68,21 @@ namespace UKSF.Api.Controllers {
         [HttpPost("{id}"), Authorize, Roles(RoleDefinitions.SR1)]
         public async Task<IActionResult> UpdateState([FromBody] dynamic body, string id) {
             ApplicationState updatedState = body.updatedState;
-            Account account = accountService.Data().GetSingle(id);
+            Account account = accountService.Data.GetSingle(id);
             if (updatedState == account.application.state) return Ok();
             string sessionId = sessionService.GetContextId();
-            await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.state, updatedState));
+            await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.state, updatedState));
             LogWrapper.AuditLog(sessionId, $"Application state changed for {id} from {account.application.state} to {updatedState}");
 
             switch (updatedState) {
                 case ApplicationState.ACCEPTED: {
-                    await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now).Set(x => x.membershipState, MembershipState.MEMBER));
+                    await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now).Set(x => x.membershipState, MembershipState.MEMBER));
                     Notification notification = await assignmentService.UpdateUnitRankAndRole(id, "Basic Training Unit", "Trainee", "Recruit", reason: "your application was accepted");
                     notificationsService.Add(notification);
                     break;
                 }
                 case ApplicationState.REJECTED: {
-                    await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now).Set(x => x.membershipState, MembershipState.CONFIRMED));
+                    await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now).Set(x => x.membershipState, MembershipState.CONFIRMED));
                     Notification notification = await assignmentService.UpdateUnitRankAndRole(
                         id,
                         AssignmentService.REMOVE_FLAG,
@@ -95,13 +95,13 @@ namespace UKSF.Api.Controllers {
                     break;
                 }
                 case ApplicationState.WAITING: {
-                    await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.dateCreated, DateTime.Now).Unset(x => x.application.dateAccepted).Set(x => x.membershipState, MembershipState.CONFIRMED));
+                    await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.dateCreated, DateTime.Now).Unset(x => x.application.dateAccepted).Set(x => x.membershipState, MembershipState.CONFIRMED));
                     Notification notification = await assignmentService.UpdateUnitRankAndRole(id, AssignmentService.REMOVE_FLAG, "Applicant", "Candidate", reason: "your application was reactivated");
                     notificationsService.Add(notification);
                     if (recruitmentService.GetSr1Members().All(x => x.id != account.application.recruiter)) {
                         string newRecruiterId = recruitmentService.GetRecruiter();
                         LogWrapper.AuditLog(sessionId, $"Application recruiter for {id} is no longer SR1, reassigning from {account.application.recruiter} to {newRecruiterId}");
-                        await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.recruiter, newRecruiterId));
+                        await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.recruiter, newRecruiterId));
                     }
 
                     break;
@@ -109,7 +109,7 @@ namespace UKSF.Api.Controllers {
                 default: throw new ArgumentOutOfRangeException();
             }
 
-            account = accountService.Data().GetSingle(id);
+            account = accountService.Data.GetSingle(id);
             string message = updatedState == ApplicationState.WAITING ? "was reactivated" : $"was {updatedState}";
             if (sessionId != account.application.recruiter) {
                 notificationsService.Add(
@@ -129,7 +129,7 @@ namespace UKSF.Api.Controllers {
             if (!sessionService.ContextHasRole(RoleDefinitions.ADMIN) && !recruitmentService.IsAccountSr1Lead()) throw new Exception($"attempted to assign recruiter to {newRecruiter}. Context is not recruitment lead.");
             string recruiter = newRecruiter["newRecruiter"].ToString();
             await recruitmentService.SetRecruiter(id, recruiter);
-            Account account = accountService.Data().GetSingle(id);
+            Account account = accountService.Data.GetSingle(id);
             if (account.application.state == ApplicationState.WAITING) {
                 notificationsService.Add(new Notification {owner = recruiter, icon = NotificationIcons.APPLICATION, message = $"{account.firstname} {account.lastname}'s application has been transferred to you", link = $"/recruitment/{account.id}"});
             }
@@ -140,7 +140,7 @@ namespace UKSF.Api.Controllers {
 
         [HttpPost("ratings/{id}"), Authorize, Roles(RoleDefinitions.SR1)]
         public async Task<Dictionary<string, uint>> Ratings([FromBody] KeyValuePair<string, uint> value, string id) {
-            Dictionary<string, uint> ratings = accountService.Data().GetSingle(id).application.ratings;
+            Dictionary<string, uint> ratings = accountService.Data.GetSingle(id).application.ratings;
 
             (string key, uint rating) = value;
             if (ratings.ContainsKey(key)) {
@@ -149,7 +149,7 @@ namespace UKSF.Api.Controllers {
                 ratings.Add(key, rating);
             }
 
-            await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.ratings, ratings));
+            await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.ratings, ratings));
             return ratings;
         }
 

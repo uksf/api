@@ -20,7 +20,7 @@ namespace UKSF.Tests.Unit.Services.Common {
             mockUnitsDataService = new Mock<IUnitsDataService>();
             Mock<IUnitsService> mockUnitsService = new Mock<IUnitsService>();
 
-            mockUnitsService.Setup(x => x.Data()).Returns(mockUnitsDataService.Object);
+            mockUnitsService.Setup(x => x.Data).Returns(mockUnitsDataService.Object);
 
             ServiceCollection serviceProvider = new ServiceCollection();
             serviceProvider.AddTransient(provider => mockDisplayNameService.Object);

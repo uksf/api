@@ -22,14 +22,14 @@ namespace UKSF.Api.Services.Game.Missions {
         }
 
         public void UpdatePatchData() {
-            MissionPatchData.instance = new MissionPatchData {units = new List<MissionUnit>(), ranks = ranksService.Data().Get(), players = new List<MissionPlayer>(), orderedUnits = new List<MissionUnit>()};
+            MissionPatchData.instance = new MissionPatchData {units = new List<MissionUnit>(), ranks = ranksService.Data.Get(), players = new List<MissionPlayer>(), orderedUnits = new List<MissionUnit>()};
 
-            foreach (Unit unit in unitsService.Data().Get(x => x.branch == UnitBranch.COMBAT).ToList()) {
+            foreach (Unit unit in unitsService.Data.Get(x => x.branch == UnitBranch.COMBAT).ToList()) {
                 MissionPatchData.instance.units.Add(new MissionUnit {sourceUnit = unit, depth = unitsService.GetUnitDepth(unit)});
             }
 
-            foreach (Account account in accountService.Data().Get().Where(x => !string.IsNullOrEmpty(x.rank) && ranksService.IsSuperiorOrEqual(x.rank, "Recruit"))) {
-                MissionPatchData.instance.players.Add(new MissionPlayer {account = account, rank = ranksService.Data().GetSingle(account.rank), name = displayNameService.GetDisplayName(account)});
+            foreach (Account account in accountService.Data.Get().Where(x => !string.IsNullOrEmpty(x.rank) && ranksService.IsSuperiorOrEqual(x.rank, "Recruit"))) {
+                MissionPatchData.instance.players.Add(new MissionPlayer {account = account, rank = ranksService.Data.GetSingle(account.rank), name = displayNameService.GetDisplayName(account)});
             }
 
             foreach (MissionUnit missionUnit in MissionPatchData.instance.units) {

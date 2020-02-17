@@ -32,8 +32,8 @@ namespace UKSF.Api.Controllers.Accounts {
             }
 
             string id = sessionService.GetContextId();
-            await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.discordId, discordId));
-            Account account = accountService.Data().GetSingle(id);
+            await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.discordId, discordId));
+            Account account = accountService.Data.GetSingle(id);
             await discordService.UpdateAccount(account);
             LogWrapper.AuditLog(account.id, $"DiscordID updated for {account.id} to {discordId}");
             return Ok();

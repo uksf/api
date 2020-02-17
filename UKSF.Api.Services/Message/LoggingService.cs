@@ -7,16 +7,10 @@ using UKSF.Api.Models.Message.Logging;
 using UKSF.Api.Services.Common;
 
 namespace UKSF.Api.Services.Message {
-    public class LoggingService : ILoggingService {
-        private readonly ILogDataService data;
+    public class LoggingService : DataBackedService<ILogDataService>, ILoggingService {
         private readonly IDisplayNameService displayNameService;
 
-        public LoggingService(ILogDataService data, IDisplayNameService displayNameService) {
-            this.data = data;
-            this.displayNameService = displayNameService;
-        }
-
-        public ILogDataService Data() => data;
+        public LoggingService(ILogDataService data, IDisplayNameService displayNameService) : base(data) => this.displayNameService = displayNameService;
 
         public void Log(string message) {
             Task unused = LogAsync(new BasicLogMessage(message));
@@ -43,16 +37,16 @@ namespace UKSF.Api.Services.Message {
         private async Task LogToStorage(BasicLogMessage log) {
             switch (log) {
                 case AuditLogMessage message:
-                    await data.Add(message);
+                    await Data.Add(message);
                     break;
                 case LauncherLogMessage message:
-                    await data.Add(message);
+                    await Data.Add(message);
                     break;
                 case WebLogMessage message:
-                    await data.Add(message);
+                    await Data.Add(message);
                     break;
                 default:
-                    await data.Add(log);
+                    await Data.Add(log);
                     break;
             }
         }

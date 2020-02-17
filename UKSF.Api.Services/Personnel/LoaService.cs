@@ -8,15 +8,11 @@ using UKSF.Api.Models.Command;
 using UKSF.Api.Models.Personnel;
 
 namespace UKSF.Api.Services.Personnel {
-    public class LoaService : ILoaService {
-        private readonly ILoaDataService data;
-
-        public LoaService(ILoaDataService data) => this.data = data;
-
-        public ILoaDataService Data() => data;
+    public class LoaService : DataBackedService<ILoaDataService>, ILoaService {
+        public LoaService(ILoaDataService data) : base(data) { }
 
         public IEnumerable<Loa> Get(List<string> ids) {
-            return data.Get(x => ids.Contains(x.recipient) && x.end > DateTime.Now.AddDays(-30));
+            return Data.Get(x => ids.Contains(x.recipient) && x.end > DateTime.Now.AddDays(-30));
         }
 
         public async Task<string> Add(CommandRequestLoa requestBase) {
@@ -29,16 +25,16 @@ namespace UKSF.Api.Services.Personnel {
                 emergency = !string.IsNullOrEmpty(requestBase.emergency) && bool.Parse(requestBase.emergency),
                 late = !string.IsNullOrEmpty(requestBase.late) && bool.Parse(requestBase.late)
             };
-            await data.Add(loa);
+            await Data.Add(loa);
             return loa.id;
         }
 
         public async Task SetLoaState(string id, LoaReviewState state) {
-            await data.Update(id, Builders<Loa>.Update.Set(x => x.state, state));
+            await Data.Update(id, Builders<Loa>.Update.Set(x => x.state, state));
         }
 
         public bool IsLoaCovered(string id, DateTime eventStart) {
-            return data.Get(loa => loa.recipient == id && loa.start < eventStart && loa.end > eventStart).Count > 0;
+            return Data.Get(loa => loa.recipient == id && loa.start < eventStart && loa.end > eventStart).Count > 0;
         }
     }
 }
