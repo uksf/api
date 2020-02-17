@@ -71,7 +71,7 @@ namespace UKSF.Integrations.Controllers {
             string user = await response.Content.ReadAsStringAsync();
             string id = JObject.Parse(user)["id"].ToString();
             string username = JObject.Parse(user)["username"].ToString();
-            
+
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", botToken);
             response = await client.PutAsync($"https://discord.com/api/guilds/{VariablesWrapper.VariablesDataService().GetSingle("DID_SERVER").AsUlong()}/members/{id}", new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json"));
             string added = "true";
@@ -80,7 +80,7 @@ namespace UKSF.Integrations.Controllers {
                 added = "false";
             }
 
-            string confirmationCode = await confirmationCodeService.CreateConfirmationCode(id, true);
+            string confirmationCode = await confirmationCodeService.CreateConfirmationCode(id);
             return $"validation={confirmationCode}&discordid={id}&added={added}";
         }
     }

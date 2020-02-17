@@ -15,9 +15,7 @@ namespace UKSF.Api.Data {
 
         protected DataService(IDataCollection dataCollection, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataEventBus) {
             this.dataCollection = dataCollection;
-
-            dataCollection.SetCollectionName(collectionName);
-            dataCollection.AssertCollectionExists<T>();
+            SetCollectionName(collectionName);
         }
 
         public virtual List<T> Get() => dataCollection.Get<T>();
@@ -51,6 +49,11 @@ namespace UKSF.Api.Data {
             if (string.IsNullOrEmpty(id)) throw new KeyNotFoundException("Key cannot be empty");
             await dataCollection.Delete<T>(id);
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, id));
+        }
+
+        public void SetCollectionName(string collectionName) {
+            dataCollection.SetCollectionName(collectionName);
+            dataCollection.AssertCollectionExists<T>();
         }
     }
 }

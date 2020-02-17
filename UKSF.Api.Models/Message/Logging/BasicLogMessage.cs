@@ -1,5 +1,4 @@
 ﻿using System;
-using MongoDB.Bson;
 
 namespace UKSF.Api.Models.Message.Logging {
     public enum LogLevel {
@@ -11,9 +10,9 @@ namespace UKSF.Api.Models.Message.Logging {
     public class BasicLogMessage : MongoObject {
         public LogLevel level = LogLevel.INFO;
         public string message;
-        public DateTime timestamp;
+        public DateTime timestamp = DateTime.UtcNow;
 
-        protected BasicLogMessage() : this(DateTime.UtcNow) { }
+        protected BasicLogMessage() { }
 
         public BasicLogMessage(string text) : this() => message = text;
 
@@ -28,7 +27,5 @@ namespace UKSF.Api.Models.Message.Logging {
             message = logException.GetBaseException().ToString();
             level = LogLevel.ERROR;
         }
-
-        private BasicLogMessage(DateTime time) : base(ObjectId.GenerateNewId(time).ToString()) => timestamp = time;
     }
 }

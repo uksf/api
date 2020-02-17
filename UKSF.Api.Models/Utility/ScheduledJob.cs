@@ -5,7 +5,6 @@ namespace UKSF.Api.Models.Utility {
         NORMAL,
         TEAMSPEAK_SNAPSHOT,
         LOG_PRUNE,
-        INTEGRATION,
         DISCORD_VOTE_ANNOUNCEMENT
     }
 

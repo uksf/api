@@ -35,7 +35,7 @@ namespace UKSF.Tests.Unit.Common {
             const string NAME = "Test";
             await ProcessUtilities.LaunchExternalProcess(NAME, "exit");
 
-            TaskService.Instance.RootFolder.Tasks.First(x => x.Name == NAME).LastRunTime.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(1));
+            TaskService.Instance.RootFolder.Tasks.First(x => x.Name == NAME).LastRunTime.Should().BeCloseTo(DateTime.Now, TimeSpan.FromSeconds(2));
 
             TaskService.Instance.RootFolder.DeleteTask(NAME, false);
         }
