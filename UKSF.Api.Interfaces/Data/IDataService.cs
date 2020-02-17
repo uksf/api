@@ -14,5 +14,6 @@ namespace UKSF.Api.Interfaces.Data {
         Task Update(string id, string fieldName, object value);
         Task Update(string id, UpdateDefinition<T> update);
         Task Delete(string id);
+        void SetCollectionName(string collectionName);
     }
 }

@@ -17,13 +17,16 @@ namespace UKSF.Api.Services.Utility {
 
         public SchedulerService(ISchedulerDataService data, IHostEnvironment currentEnvironment) : base(data) => this.currentEnvironment = currentEnvironment;
 
-        public async void Load(bool integration = false) {
-            if (integration) {
-                Data.Get(x => x.type == ScheduledJobType.INTEGRATION).ForEach(Schedule);
+        public async void Load(bool integrations = false) {
+            if (integrations) {
+                Data.SetCollectionName("scheduledJobsIntegrations");
             } else {
-                if (!currentEnvironment.IsDevelopment()) await AddUnique();
-                Data.Get(x => x.type != ScheduledJobType.INTEGRATION).ForEach(Schedule);
+                if (!currentEnvironment.IsDevelopment()) {
+                    await AddUnique();
+                }
             }
+
+            Data.Get().ForEach(Schedule);
         }
 
         public async Task Create(DateTime next, TimeSpan interval, ScheduledJobType type, string action, params object[] actionParameters) {

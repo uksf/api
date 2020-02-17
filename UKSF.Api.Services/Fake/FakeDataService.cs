@@ -24,6 +24,8 @@ namespace UKSF.Api.Services.Fake {
 
         public Task Delete(string id) => Task.CompletedTask;
 
+        public void SetCollectionName(string collectionName) { }
+
         public IObservable<DataEventModel<TData>> EventBus() => new Subject<DataEventModel<TData>>();
     }
 }
