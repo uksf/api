@@ -6,9 +6,5 @@ using UKSF.Api.Models.Message;
 using UKSF.Api.Services.Fake;
 
 namespace UKSF.Api.Data.Fake {
-    public class FakeNotificationsDataService : FakeCachedDataService<Notification, INotificationsDataService>, INotificationsDataService {
-        public Task UpdateMany(Func<Notification, bool> predicate, UpdateDefinition<Notification> update) => Task.CompletedTask;
-
-        public Task DeleteMany(Func<Notification, bool> predicate) => Task.CompletedTask;
-    }
+    public class FakeNotificationsDataService : FakeCachedDataService<Notification, INotificationsDataService>, INotificationsDataService { }
 }
