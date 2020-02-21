@@ -12,7 +12,7 @@ using UKSF.Api.Models.Utility;
 using UKSF.Api.Services.Utility;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Services {
+namespace UKSF.Tests.Unit.Services.Utility {
     public class ConfirmationCodeServiceTests {
         private readonly ConfirmationCodeService confirmationCodeService;
         private readonly Mock<IConfirmationCodeDataService> mockConfirmationCodeDataService;

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
@@ -10,9 +11,7 @@ namespace UKSF.Api.Data.Personnel {
         public RanksDataService(IDataCollection dataCollection, IDataEventBus<IRanksDataService> dataEventBus) : base(dataCollection, dataEventBus, "ranks") { }
 
         public override List<Rank> Get() {
-            base.Get();
-            Collection.Sort(RankUtilities.Sort);
-            return Collection;
+            return base.Get().OrderBy(x => x.order).ToList();
         }
 
         public override Rank GetSingle(string name) => GetSingle(x => x.name == name);

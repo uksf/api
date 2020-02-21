@@ -10,9 +10,7 @@ namespace UKSF.Api.Data.Personnel {
         public RolesDataService(IDataCollection dataCollection, IDataEventBus<IRolesDataService> dataEventBus) : base(dataCollection, dataEventBus, "roles") { }
 
         public override List<Role> Get() {
-            base.Get();
-            Collection = Collection.OrderBy(x => x.name).ToList();
-            return Collection;
+            return base.Get().OrderBy(x => x.name).ToList();
         }
 
         public override Role GetSingle(string name) => GetSingle(x => x.name == name);

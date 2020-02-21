@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
@@ -7,9 +7,7 @@ using UKSF.Api.Models.Operations;
 
 namespace UKSF.Api.Data.Operations {
     public class OperationOrderDataService : CachedDataService<Opord, IOperationOrderDataService>, IOperationOrderDataService {
-        private readonly IDataCollection dataCollection;
-
-        public OperationOrderDataService(IDataCollection dataCollection, IDataEventBus<IOperationOrderDataService> dataEventBus) : base(dataCollection, dataEventBus, "opord") => this.dataCollection = dataCollection;
+        public OperationOrderDataService(IDataCollection dataCollection, IDataEventBus<IOperationOrderDataService> dataEventBus) : base(dataCollection, dataEventBus, "opord") { }
 
         public override List<Opord> Get() {
             List<Opord> reversed = new List<Opord>(base.Get());
@@ -17,9 +15,10 @@ namespace UKSF.Api.Data.Operations {
             return reversed;
         }
 
-        public async Task Replace(Opord opord) {
-            await dataCollection.Replace(opord.id, opord);
-            Refresh();
+        public override List<Opord> Get(Func<Opord, bool> predicate) {
+            List<Opord> reversed = new List<Opord>(base.Get(predicate));
+            reversed.Reverse();
+            return reversed;
         }
     }
 }

@@ -6,6 +6,7 @@ using Microsoft.Win32.TaskScheduler;
 using Task = System.Threading.Tasks.Task;
 
 namespace UKSF.Common {
+    [ExcludeFromCodeCoverage]
     public static class ProcessUtilities {
         private const int SC_CLOSE = 0xF060;
         private const int WM_SYSCOMMAND = 0x0112;
@@ -37,7 +38,6 @@ namespace UKSF.Common {
             await Task.Delay(TimeSpan.FromSeconds(1));
         }
 
-        [ExcludeFromCodeCoverage]
         public static async Task CloseProcessGracefully(this Process process) {
             // UKSF.PostMessage exe location should be set as a PATH variable
             await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WM_SYSCOMMAND} {SC_CLOSE} 0");

@@ -25,9 +25,8 @@ namespace UKSF.Tests.Unit.Data.Personnel {
             Role role1 = new Role {name = "Rifleman"};
             Role role2 = new Role {name = "Trainee"};
             Role role3 = new Role {name = "Marksman"};
-            List<Role> mockCollection = new List<Role> {role1, role2, role3};
 
-            mockDataCollection.Setup(x => x.Get<Role>()).Returns(mockCollection);
+            mockDataCollection.Setup(x => x.Get<Role>()).Returns(new List<Role> {role1, role2, role3});
 
             List<Role> subject = rolesDataService.Get();
 
@@ -39,9 +38,8 @@ namespace UKSF.Tests.Unit.Data.Personnel {
             Role role1 = new Role {name = "Rifleman"};
             Role role2 = new Role {name = "Trainee"};
             Role role3 = new Role {name = "Marksman"};
-            List<Role> mockCollection = new List<Role> {role1, role2, role3};
 
-            mockDataCollection.Setup(x => x.Get<Role>()).Returns(mockCollection);
+            mockDataCollection.Setup(x => x.Get<Role>()).Returns(new List<Role> {role1, role2, role3});
 
             Role subject = rolesDataService.GetSingle("Trainee");
 
@@ -50,9 +48,7 @@ namespace UKSF.Tests.Unit.Data.Personnel {
 
         [Theory, InlineData(""), InlineData(null)]
         public void ShouldGetNothingWhenNoName(string name) {
-            List<Role> mockCollection = new List<Role>();
-
-            mockDataCollection.Setup(x => x.Get<Role>()).Returns(mockCollection);
+            mockDataCollection.Setup(x => x.Get<Role>()).Returns(new List<Role>());
 
             Role subject = rolesDataService.GetSingle(name);
 

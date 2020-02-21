@@ -10,9 +10,7 @@ namespace UKSF.Api.Data.Game {
         public GameServersDataService(IDataCollection dataCollection, IDataEventBus<IGameServersDataService> dataEventBus) : base(dataCollection, dataEventBus, "gameServers") { }
 
         public override List<GameServer> Get() {
-            base.Get();
-            Collection = Collection.OrderBy(x => x.order).ToList();
-            return Collection;
+            return base.Get().OrderBy(x => x.order).ToList();
         }
     }
 }

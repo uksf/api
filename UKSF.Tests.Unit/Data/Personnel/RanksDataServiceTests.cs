@@ -23,15 +23,14 @@ namespace UKSF.Tests.Unit.Data.Personnel {
         [Fact]
         public void ShouldGetSortedCollection() {
             Rank rank1 = new Rank {name = "Private", order = 2};
-            Rank rank2 = new Rank {name = "Recruit", order = 1};
-            Rank rank3 = new Rank {name = "Candidate", order = 0};
-            List<Rank> mockCollection = new List<Rank> {rank1, rank2, rank3};
+            Rank rank2 = new Rank {name = "Recruit", order = 0};
+            Rank rank3 = new Rank {name = "Candidate", order = 1};
 
-            mockDataCollection.Setup(x => x.Get<Rank>()).Returns(mockCollection);
+            mockDataCollection.Setup(x => x.Get<Rank>()).Returns(new List<Rank> {rank1, rank2, rank3});
 
             List<Rank> subject = ranksDataService.Get();
 
-            subject.Should().ContainInOrder(rank3, rank2, rank1);
+            subject.Should().ContainInOrder(rank2, rank3, rank1);
         }
 
         [Fact]
@@ -39,9 +38,8 @@ namespace UKSF.Tests.Unit.Data.Personnel {
             Rank rank1 = new Rank {name = "Private", order = 2};
             Rank rank2 = new Rank {name = "Recruit", order = 1};
             Rank rank3 = new Rank {name = "Candidate", order = 0};
-            List<Rank> mockCollection = new List<Rank> {rank1, rank2, rank3};
 
-            mockDataCollection.Setup(x => x.Get<Rank>()).Returns(mockCollection);
+            mockDataCollection.Setup(x => x.Get<Rank>()).Returns(new List<Rank> {rank1, rank2, rank3});
 
             Rank subject = ranksDataService.GetSingle("Recruit");
 
@@ -50,9 +48,7 @@ namespace UKSF.Tests.Unit.Data.Personnel {
 
         [Theory, InlineData(""), InlineData(null)]
         public void ShouldGetNothingWhenNoNameOrNull(string name) {
-            List<Rank> mockCollection = new List<Rank>();
-
-            mockDataCollection.Setup(x => x.Get<Rank>()).Returns(mockCollection);
+            mockDataCollection.Setup(x => x.Get<Rank>()).Returns(new List<Rank>());
 
             Rank subject = ranksDataService.GetSingle(name);
 

@@ -42,11 +42,6 @@ namespace UKSF.Api.Data {
             await GetCollection<T>().InsertOneAsync(data);
         }
 
-        public async Task Update<T>(string id, string fieldName, object value) {
-            UpdateDefinition<T> update = value == null ? Builders<T>.Update.Unset(fieldName) : Builders<T>.Update.Set(fieldName, value);
-            await GetCollection<T>().UpdateOneAsync(Builders<T>.Filter.Eq("id", id), update);
-        }
-
         public async Task Update<T>(string id, UpdateDefinition<T> update) { // TODO: Remove strong typing of UpdateDefinition as parameter
             await GetCollection<T>().UpdateOneAsync(Builders<T>.Filter.Eq("id", id), update);
         }
