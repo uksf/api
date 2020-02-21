@@ -45,10 +45,30 @@ namespace UKSF.Api.Data {
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
         }
 
+        public virtual async Task UpdateMany(Func<T, bool> predicate, UpdateDefinition<T> update) {
+            List<T> items = Get(predicate);
+            if (items.Count == 0) throw new KeyNotFoundException("Could not find any items to update");
+            await dataCollection.UpdateMany(x => predicate(x), update);
+            items.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, x.GetIdValue())));
+        }
+
+        public virtual async Task Replace(T item) {
+            if (GetSingle(x => x.GetIdValue() == item.GetIdValue()) == null) throw new KeyNotFoundException("Could not find item to replace");
+            await dataCollection.Replace(item.GetIdValue(), item);
+            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, item.GetIdValue()));
+        }
+
         public virtual async Task Delete(string id) {
             if (string.IsNullOrEmpty(id)) throw new KeyNotFoundException("Key cannot be empty");
             await dataCollection.Delete<T>(id);
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, id));
+        }
+
+        public virtual async Task DeleteMany(Func<T, bool> predicate) {
+            List<T> items = Get(predicate);
+            if (items.Count == 0) throw new KeyNotFoundException("Could not find any items to delete");
+            await dataCollection.DeleteMany<T>(x => predicate(x));
+            items.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, x.GetIdValue())));
         }
 
         public void SetCollectionName(string collectionName) {

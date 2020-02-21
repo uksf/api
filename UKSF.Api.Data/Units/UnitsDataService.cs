@@ -10,9 +10,7 @@ namespace UKSF.Api.Data.Units {
         public UnitsDataService(IDataCollection dataCollection, IDataEventBus<IUnitsDataService> dataEventBus) : base(dataCollection, dataEventBus, "units") { }
 
         public override List<Unit> Get() {
-            base.Get();
-            Collection = Collection.OrderBy(x => x.order).ToList();
-            return Collection;
+            return base.Get().OrderBy(x => x.order).ToList();
         }
     }
 }

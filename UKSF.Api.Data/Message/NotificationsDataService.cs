@@ -8,18 +8,6 @@ using UKSF.Api.Models.Message;
 
 namespace UKSF.Api.Data.Message {
     public class NotificationsDataService : CachedDataService<Notification, INotificationsDataService>, INotificationsDataService {
-        private readonly IDataCollection dataCollection;
-        
-        public NotificationsDataService(IDataCollection dataCollection, IDataEventBus<INotificationsDataService> dataEventBus) : base(dataCollection, dataEventBus, "notifications") => this.dataCollection = dataCollection;
-
-        public async Task UpdateMany(Func<Notification, bool> predicate, UpdateDefinition<Notification> update) {
-            await dataCollection.UpdateMany(x => predicate(x), update);
-            Refresh();
-        }
-
-        public async Task DeleteMany(Func<Notification, bool> predicate) {
-            await dataCollection.DeleteMany<Notification>(x => predicate(x));
-            Refresh();
-        }
+        public NotificationsDataService(IDataCollection dataCollection, IDataEventBus<INotificationsDataService> dataEventBus) : base(dataCollection, dataEventBus, "notifications") { }
     }
 }

@@ -227,7 +227,7 @@ namespace UKSF.Api {
             // Global Singletons
             services.AddSingleton(configuration);
             services.AddSingleton(currentEnvironment);
-            services.AddSingleton(_ => MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
+            services.AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
             services.AddSingleton<DataCacheService>();
             services.AddSingleton<MigrationUtility>();
             services.AddSingleton<IEmailService, EmailService>();

@@ -16,7 +16,9 @@ namespace UKSF.Api.Services.Personnel {
         public int Sort(string nameA, string nameB) {
             Rank rankA = Data.GetSingle(nameA);
             Rank rankB = Data.GetSingle(nameB);
-            return RankUtilities.Sort(rankA, rankB);
+            int rankOrderA = rankA?.order ?? int.MaxValue;
+            int rankOrderB = rankB?.order ?? int.MaxValue;
+            return rankOrderA < rankOrderB ? -1 : rankOrderA > rankOrderB ? 1 : 0;
         }
 
         public bool IsSuperior(string nameA, string nameB) {

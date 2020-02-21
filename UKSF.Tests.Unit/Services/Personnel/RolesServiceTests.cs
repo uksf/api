@@ -18,8 +18,8 @@ namespace UKSF.Tests.Unit.Services.Personnel {
             rolesService = new RolesService(mockRolesDataService.Object);
         }
 
-        [Fact]
-        public void ShouldGetCorrectSortValueByName() {
+        [Theory, InlineData("Trainee", "Rifleman", 1), InlineData("Rifleman", "Trainee", -1), InlineData("Rifleman", "Rifleman", 0)]
+        public void ShouldGetCorrectSortValueByName(string nameA, string nameB, int expected) {
             Role role1 = new Role {name = "Rifleman", order = 0};
             Role role2 = new Role {name = "Trainee", order = 1};
             List<Role> mockCollection = new List<Role> {role1, role2};
@@ -27,9 +27,9 @@ namespace UKSF.Tests.Unit.Services.Personnel {
             mockRolesDataService.Setup(x => x.Get()).Returns(mockCollection);
             mockRolesDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.name == x));
 
-            int subject = rolesService.Sort("Trainee", "Rifleman");
+            int subject = rolesService.Sort(nameA, nameB);
 
-            subject.Should().Be(1);
+            subject.Should().Be(expected);
         }
 
         [Fact]

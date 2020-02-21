@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
-using UKSF.Api.Events;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
@@ -11,9 +10,17 @@ using UKSF.Common;
 
 namespace UKSF.Api.Data {
     public abstract class CachedDataService<T, TData> : DataService<T, TData> {
-        public List<T> Collection { get; protected set; }
+        private List<T> collection;
+        private readonly object lockObject = new object();
 
         protected CachedDataService(IDataCollection dataCollection, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataCollection, dataEventBus, collectionName) { }
+
+        public List<T> Collection {
+            get => collection;
+            protected set {
+                lock (lockObject) collection = value;
+            }
+        }
 
         // ReSharper disable once MemberCanBeProtected.Global - Used in dynamic call, do not change to protected! // TODO: Stop using this in dynamic call, switch to register or something less........dynamic
         public void Refresh() {
@@ -63,10 +70,30 @@ namespace UKSF.Api.Data {
             CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
         }
 
+        public override async Task UpdateMany(Func<T, bool> predicate, UpdateDefinition<T> update) {
+            List<T> items = Get(predicate);
+            await base.UpdateMany(predicate, update);
+            Refresh();
+            items.ForEach(x => CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, x.GetIdValue())));
+        }
+
+        public override async Task Replace(T item) {
+            await base.Replace(item);
+            Refresh();
+            CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, item.GetIdValue()));
+        }
+
         public override async Task Delete(string id) {
             await base.Delete(id);
             Refresh();
             CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, id));
+        }
+
+        public override async Task DeleteMany(Func<T, bool> predicate) {
+            List<T> items = Get(predicate);
+            await base.DeleteMany(predicate);
+            Refresh();
+            items.ForEach(x => CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, x.GetIdValue())));
         }
 
         protected virtual void CachedDataEvent(DataEventModel<TData> dataEvent) {
