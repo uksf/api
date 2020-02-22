@@ -13,7 +13,7 @@ namespace UKSF.Api.Data.Message {
         public CommentThreadDataService(IDataCollection dataCollection, IDataEventBus<ICommentThreadDataService> dataEventBus) : base(dataCollection, dataEventBus, "commentThreads") { }
 
         public async Task Update(string id, Comment comment, DataEventType updateType) {
-            await base.Update(id, updateType == DataEventType.ADD ? Builders<CommentThread>.Update.Push("comments", comment) : Builders<CommentThread>.Update.Pull("comments", comment));
+            await base.Update(id, updateType == DataEventType.ADD ? Builders<CommentThread>.Update.Push(x => x.comments, comment) : Builders<CommentThread>.Update.Pull(x => x.comments, comment));
             CommentThreadDataEvent(EventModelFactory.CreateDataEvent<ICommentThreadDataService>(updateType, id, comment));
         }
 

@@ -17,7 +17,7 @@ namespace UKSF.Api.Data {
         public void SetCollectionName(string newCollectionName) => collectionName = newCollectionName;
 
         public void AssertCollectionExists<T>() {
-            if (Get<T>() == null) {
+            if (GetCollection<T>() == null) {
                 database.CreateCollection(collectionName);
             }
         }
@@ -37,9 +37,11 @@ namespace UKSF.Api.Data {
         }
 
         public async Task Add<T>(string collection, T data) {
-            collectionName = collection;
+            string oldCollectionName = collectionName;
+            SetCollectionName(collection);
             AssertCollectionExists<T>();
             await GetCollection<T>().InsertOneAsync(data);
+            SetCollectionName(oldCollectionName);
         }
 
         public async Task Update<T>(string id, UpdateDefinition<T> update) { // TODO: Remove strong typing of UpdateDefinition as parameter

@@ -12,24 +12,19 @@ namespace UKSF.Api.Data.Message {
 
         public LogDataService(IDataCollection dataCollection, IDataEventBus<ILogDataService> dataEventBus) : base(dataCollection, dataEventBus, "logs") => this.dataCollection = dataCollection;
 
-        public override async Task Add(BasicLogMessage log) {
-            await base.Add(log);
-            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.GetIdValue(), log));
-        }
-
         public async Task Add(AuditLogMessage log) {
             await dataCollection.Add("auditLogs", log);
-            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.GetIdValue(), log));
+            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.id, log));
         }
 
         public async Task Add(LauncherLogMessage log) {
             await dataCollection.Add("launcherLogs", log);
-            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.GetIdValue(), log));
+            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.id, log));
         }
 
         public async Task Add(WebLogMessage log) {
             await dataCollection.Add("errorLogs", log);
-            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.GetIdValue(), log));
+            DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.id, log));
         }
     }
 }
