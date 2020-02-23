@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Data;
 using UKSF.Api.Data.Personnel;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;

@@ -22,7 +22,6 @@ namespace UKSF.Tests.Unit.Common {
 
         [Fact]
         public void ShouldReturnSignalrEvent() {
-            string id = ObjectId.GenerateNewId().ToString();
             object args = new[] {"test", "item"};
 
             SignalrEventModel subject = EventModelFactory.CreateSignalrEvent(TeamspeakEventType.CLIENTS, args);

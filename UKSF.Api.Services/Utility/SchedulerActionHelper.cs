@@ -1,18 +1,14 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
-using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Message.Logging;
-using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Common;
 
 namespace UKSF.Api.Services.Utility {
     public static class SchedulerActionHelper {
-        private const ulong ID_CHANNEL_GENERAL = 311547576942067713;
-
         public static void DeleteExpiredConfirmationCode(string id) {
             ServiceWrapper.ServiceProvider.GetService<IConfirmationCodeService>().Data.Delete(id);
         }

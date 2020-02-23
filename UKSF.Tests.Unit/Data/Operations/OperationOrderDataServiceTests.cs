@@ -1,13 +1,10 @@
 ﻿using System.Collections.Generic;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Data;
 using UKSF.Api.Data.Operations;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
-using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Operations;
 using Xunit;
 

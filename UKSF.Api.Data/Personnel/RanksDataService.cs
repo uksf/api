@@ -4,7 +4,6 @@ using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Personnel;
-using UKSF.Api.Services.Common;
 
 namespace UKSF.Api.Data.Personnel {
     public class RanksDataService : CachedDataService<Rank, IRanksDataService>, IRanksDataService {
