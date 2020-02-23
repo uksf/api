@@ -1,5 +1,4 @@
-﻿using System;
-using FluentAssertions;
+﻿using FluentAssertions;
 using UKSF.Api.Models.Message.Logging;
 using Xunit;
 

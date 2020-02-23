@@ -18,9 +18,7 @@ namespace UKSF.Api.Services.Game {
     public class GameServersService : DataBackedService<IGameServersDataService>, IGameServersService {
         private readonly IMissionPatchingService missionPatchingService;
 
-        public GameServersService(IGameServersDataService data, IMissionPatchingService missionPatchingService) : base(data) {
-            this.missionPatchingService = missionPatchingService;
-        }
+        public GameServersService(IGameServersDataService data, IMissionPatchingService missionPatchingService) : base(data) => this.missionPatchingService = missionPatchingService;
 
         public int GetGameInstanceCount() => GameServerHelpers.GetArmaProcesses().Count();
 

@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using UKSF.Api.Events;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;

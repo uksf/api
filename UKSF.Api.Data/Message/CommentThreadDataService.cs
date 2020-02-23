@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using MongoDB.Driver;
-using UKSF.Api.Events;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;

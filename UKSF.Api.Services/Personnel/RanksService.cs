@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Models.Personnel;
-using UKSF.Api.Services.Common;
 
 namespace UKSF.Api.Services.Personnel {
     public class RanksService : DataBackedService<IRanksDataService>, IRanksService {

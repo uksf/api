@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using UKSF.Api.Models.Operations;
 
 namespace UKSF.Api.Interfaces.Data.Cached {

@@ -4,7 +4,6 @@ using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
-using UKSF.Api.Data;
 using UKSF.Api.Data.Message;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;

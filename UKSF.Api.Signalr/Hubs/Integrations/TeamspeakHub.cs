@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Interfaces.Hubs;
-using UKSF.Api.Models.Events;
 using UKSF.Api.Models.Events.Types;
 using UKSF.Common;
 
