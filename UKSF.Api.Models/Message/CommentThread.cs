@@ -10,7 +10,7 @@ namespace UKSF.Api.Models.Message {
         RANKSUPERIOROREQUAL
     }
 
-    public class CommentThread : MongoObject {
+    public class CommentThread : DatabaseObject {
         [BsonRepresentation(BsonType.ObjectId)] public string[] authors;
         public Comment[] comments = { };
         public ThreadMode mode;

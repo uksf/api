@@ -24,7 +24,7 @@ namespace UKSF.Api.Models.Command {
         public const string UNIT_ROLE = "Unit Role";
     }
 
-    public class CommandRequest : MongoObject {
+    public class CommandRequest : DatabaseObject {
         public DateTime dateCreated;
         public string displayFrom;
         public string displayRecipient;

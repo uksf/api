@@ -5,6 +5,6 @@ using UKSF.Api.Models.Personnel;
 
 namespace UKSF.Api.Data.Personnel {
     public class AccountDataService : CachedDataService<Account, IAccountDataService>, IAccountDataService {
-        public AccountDataService(IDataCollection dataCollection, IDataEventBus<IAccountDataService> dataEventBus) : base(dataCollection, dataEventBus, "accounts") { }
+        public AccountDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IAccountDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "accounts") { }
     }
 }

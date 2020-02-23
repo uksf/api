@@ -7,7 +7,7 @@ using UKSF.Api.Models.Personnel;
 
 namespace UKSF.Api.Data.Personnel {
     public class RolesDataService : CachedDataService<Role, IRolesDataService>, IRolesDataService {
-        public RolesDataService(IDataCollection dataCollection, IDataEventBus<IRolesDataService> dataEventBus) : base(dataCollection, dataEventBus, "roles") { }
+        public RolesDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IRolesDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "roles") { }
 
         public override List<Role> Get() {
             return base.Get().OrderBy(x => x.name).ToList();

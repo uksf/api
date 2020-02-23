@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Driver;
 using Moq;
+using UKSF.Api.Data;
 using UKSF.Api.Data.Admin;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
@@ -19,13 +20,14 @@ namespace UKSF.Tests.Unit.Data.Admin {
         private List<VariableItem> mockCollection;
 
         public VariablesDataServiceTests() {
+            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
+            Mock<IDataEventBus<IVariablesDataService>> mockDataEventBus = new Mock<IDataEventBus<IVariablesDataService>>();
             mockDataCollection = new Mock<IDataCollection>();
-            Mock<IDataEventBus<IVariablesDataService>> mockdataEventBus = new Mock<IDataEventBus<IVariablesDataService>>();
-            variablesDataService = new VariablesDataService(mockDataCollection.Object, mockdataEventBus.Object);
 
-            mockCollection = new List<VariableItem>();
-
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
             mockDataCollection.Setup(x => x.Get<VariableItem>()).Returns(() => mockCollection);
+
+            variablesDataService = new VariablesDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
 
         [Fact]
@@ -69,7 +71,7 @@ namespace UKSF.Tests.Unit.Data.Admin {
             VariableItem subject = new VariableItem {key = "DISCORD_ID", item = "50"};
             mockCollection = new List<VariableItem> {subject};
 
-            mockDataCollection.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<UpdateDefinition<VariableItem>>())).Returns(Task.CompletedTask).Callback((string id, UpdateDefinition<VariableItem> _) => mockCollection.First(x => x.id == id).item = "75");
+            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<VariableItem>>())).Returns(Task.CompletedTask).Callback((string id, UpdateDefinition<VariableItem> _) => mockCollection.First(x => x.id == id).item = "75");
 
             await variablesDataService.Update("discord id", "75");
 
@@ -90,7 +92,7 @@ namespace UKSF.Tests.Unit.Data.Admin {
             VariableItem item1 = new VariableItem {key = "DISCORD_ID", item = "50"};
             mockCollection = new List<VariableItem> {item1};
 
-            mockDataCollection.Setup(x => x.Delete<VariableItem>(It.IsAny<string>())).Returns(Task.CompletedTask).Callback((string id) => mockCollection.RemoveAll(x => x.id == id));
+            mockDataCollection.Setup(x => x.DeleteAsync<VariableItem>(It.IsAny<string>())).Returns(Task.CompletedTask).Callback((string id) => mockCollection.RemoveAll(x => x.id == id));
 
             await variablesDataService.Delete("discord id");
 

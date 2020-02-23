@@ -7,7 +7,7 @@ using UKSF.Api.Models.Operations;
 
 namespace UKSF.Api.Data.Operations {
     public class OperationReportDataService : CachedDataService<Oprep, IOperationReportDataService>, IOperationReportDataService {
-        public OperationReportDataService(IDataCollection dataCollection, IDataEventBus<IOperationReportDataService> dataEventBus) : base(dataCollection, dataEventBus, "oprep") { }
+        public OperationReportDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IOperationReportDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "oprep") { }
 
         public override List<Oprep> Get() {
             List<Oprep> reversed = new List<Oprep>(base.Get());

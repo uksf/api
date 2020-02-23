@@ -29,11 +29,5 @@ namespace UKSF.Api.Services.Utility {
         public static void TeamspeakSnapshot() {
             ServiceWrapper.ServiceProvider.GetService<ITeamspeakService>().StoreTeamspeakServerSnapshot();
         }
-
-        public static void DiscordVoteAnnouncement() {
-            bool run = bool.Parse(VariablesWrapper.VariablesDataService().GetSingle("RUN_DISCORD_CLANLIST").AsString());
-            if (!run) return;
-            ServiceWrapper.ServiceProvider.GetService<IDiscordService>().SendMessage(ID_CHANNEL_GENERAL, "@everyone - As part of our recruitment drive, we're aiming to gain exposure through a high ranking on Clanlist. To help with this, please go to https://clanlist.io/vote/UKSFMilsim and vote");
-        }
     }
 }

@@ -2,10 +2,12 @@
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using UKSF.Api.Data;
 using UKSF.Api.Data.Operations;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
+using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Operations;
 using Xunit;
 
@@ -15,10 +17,13 @@ namespace UKSF.Tests.Unit.Data.Operations {
         private readonly OperationOrderDataService operationOrderDataService;
 
         public OperationOrderDataServiceTests() {
-            mockDataCollection = new Mock<IDataCollection>();
+            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             Mock<IDataEventBus<IOperationOrderDataService>> mockDataEventBus = new Mock<IDataEventBus<IOperationOrderDataService>>();
+            mockDataCollection = new Mock<IDataCollection>();
 
-            operationOrderDataService = new OperationOrderDataService(mockDataCollection.Object, mockDataEventBus.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
+
+            operationOrderDataService = new OperationOrderDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
 
         [Fact]

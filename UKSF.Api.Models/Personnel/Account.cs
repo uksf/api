@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 namespace UKSF.Api.Models.Personnel {
-    public class Account : MongoObject {
+    public class Account : DatabaseObject {
         public Application application;
         public string armaExperience;
         public bool aviation;

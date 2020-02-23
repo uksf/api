@@ -1,5 +1,5 @@
 ﻿namespace UKSF.Api.Models.Utility {
-    public class ConfirmationCode : MongoObject {
+    public class ConfirmationCode : DatabaseObject {
         public string value;
     }
 }

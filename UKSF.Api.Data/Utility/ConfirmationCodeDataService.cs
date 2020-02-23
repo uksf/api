@@ -4,6 +4,6 @@ using UKSF.Api.Models.Utility;
 
 namespace UKSF.Api.Data.Utility {
     public class ConfirmationCodeDataService : DataService<ConfirmationCode, IConfirmationCodeDataService>, IConfirmationCodeDataService {
-        public ConfirmationCodeDataService(IDataCollection dataCollection, IDataEventBus<IConfirmationCodeDataService> dataEventBus) : base(dataCollection, dataEventBus, "confirmationCodes") { }
+        public ConfirmationCodeDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IConfirmationCodeDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "confirmationCodes") { }
     }
 }

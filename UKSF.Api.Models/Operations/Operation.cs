@@ -2,7 +2,7 @@
 using UKSF.Api.Models.Personnel;
 
 namespace UKSF.Api.Models.Operations {
-    public class Operation : MongoObject {
+    public class Operation : DatabaseObject {
         public AttendanceReport attendanceReport;
         public DateTime end;
         public string map;

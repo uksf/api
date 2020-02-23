@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using UKSF.Api.Data;
 using UKSF.Api.Data.Admin;
 using UKSF.Api.Data.Message;
 using UKSF.Api.Data.Personnel;
@@ -64,30 +65,31 @@ namespace UKSF.Integrations {
             ServiceWrapper.ServiceProvider = Global.ServiceProvider;
 
             // Start scheduler
-            Global.ServiceProvider.GetService<ISchedulerService>().Load(true);
+            Global.ServiceProvider.GetService<ISchedulerService>().Load(false);
         }
     }
 
     public static class ServiceExtensions {
-        public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration) {
+        public static void RegisterServices(this IServiceCollection services, IConfiguration configuration) {
             // Instance Objects
             services.AddTransient<IConfirmationCodeService, ConfirmationCodeService>();
             services.AddTransient<ISchedulerService, SchedulerService>();
 
             // Global Singletons
             services.AddSingleton(configuration);
-            services.AddSingleton(_ => MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<IAccountService, AccountService>();
             services.AddTransient<IDisplayNameService, DisplayNameService>();
             services.AddSingleton<ILoggingService, LoggingService>();
             services.AddTransient<IRanksService, RanksService>();
 
+            services.AddSingleton(_ => MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
+            services.AddTransient<IDataCollectionFactory, DataCollectionFactory>();
             services.AddSingleton<IAccountDataService, AccountDataService>();
             services.AddSingleton<IConfirmationCodeDataService, ConfirmationCodeDataService>();
             services.AddSingleton<ILogDataService, LogDataService>();
             services.AddSingleton<IRanksDataService, RanksDataService>();
-            services.AddSingleton<ISchedulerDataService, SchedulerDataService>();
+            services.AddSingleton<ISchedulerDataService, SchedulerIntegrationsDataService>();
             services.AddSingleton<IVariablesDataService, VariablesDataService>();
 
             // Event Buses
@@ -97,8 +99,6 @@ namespace UKSF.Integrations {
             services.AddSingleton<IDataEventBus<IRanksDataService>, DataEventBus<IRanksDataService>>();
             services.AddSingleton<IDataEventBus<ISchedulerDataService>, DataEventBus<ISchedulerDataService>>();
             services.AddSingleton<IDataEventBus<IVariablesDataService>, DataEventBus<IVariablesDataService>>();
-
-            return services;
         }
     }
 }

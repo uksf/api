@@ -7,7 +7,7 @@ using UKSF.Api.Models.Personnel;
 
 namespace UKSF.Api.Data.Personnel {
     public class DischargeDataService : CachedDataService<DischargeCollection, IDischargeDataService>, IDischargeDataService {
-        public DischargeDataService(IDataCollection dataCollection, IDataEventBus<IDischargeDataService> dataEventBus) : base(dataCollection, dataEventBus, "discharges") { }
+        public DischargeDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IDischargeDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "discharges") { }
 
         public override List<DischargeCollection> Get() {
             return base.Get().OrderByDescending(x => x.discharges.Last().timestamp).ToList();
