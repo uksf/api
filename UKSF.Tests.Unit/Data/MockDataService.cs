@@ -4,6 +4,6 @@ using UKSF.Api.Interfaces.Events;
 
 namespace UKSF.Tests.Unit.Data {
     public class MockDataService : DataService<MockDataModel, IMockDataService>, IMockDataService {
-        public MockDataService(IDataCollection dataCollection, IDataEventBus<IMockDataService> dataEventBus, string collectionName) : base(dataCollection, dataEventBus, collectionName) { }
+        public MockDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IMockDataService> dataEventBus, string collectionName) : base(dataCollectionFactory, dataEventBus, collectionName) { }
     }
 }

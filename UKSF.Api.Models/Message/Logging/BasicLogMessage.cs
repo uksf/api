@@ -7,7 +7,7 @@ namespace UKSF.Api.Models.Message.Logging {
         ERROR
     }
 
-    public class BasicLogMessage : MongoObject {
+    public class BasicLogMessage : DatabaseObject {
         public LogLevel level = LogLevel.INFO;
         public string message;
         public DateTime timestamp = DateTime.UtcNow;

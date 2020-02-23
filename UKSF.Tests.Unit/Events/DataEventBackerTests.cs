@@ -1,6 +1,7 @@
 ﻿using System;
 using FluentAssertions;
 using Moq;
+using UKSF.Api.Data;
 using UKSF.Api.Events.Data;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
@@ -10,17 +11,20 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Events {
     public class DataEventBackerTests {
-        public DataEventBackerTests() {
-            mockDataCollection = new Mock<IDataCollection>();
-            dataEventBus = new DataEventBus<IMockDataService>();
-        }
+        private readonly MockDataService mockDataService;
 
-        private readonly Mock<IDataCollection> mockDataCollection;
-        private readonly IDataEventBus<IMockDataService> dataEventBus;
+        public DataEventBackerTests() {
+            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
+            IDataEventBus<IMockDataService> dataEventBus = new DataEventBus<IMockDataService>();
+            Mock<IDataCollection> mockDataCollection = new Mock<IDataCollection>();
+
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
+
+            mockDataService = new MockDataService(mockDataCollectionFactory.Object, dataEventBus, "test");
+        }
 
         [Fact]
         public void ShouldReturnEventBus() {
-            MockDataService mockDataService = new MockDataService(mockDataCollection.Object, dataEventBus, "test");
             IObservable<DataEventModel<IMockDataService>> subject = mockDataService.EventBus();
 
             subject.Should().NotBeNull();
@@ -32,7 +36,6 @@ namespace UKSF.Tests.Unit.Events {
             string id = item1.id;
 
             DataEventModel<IMockDataService> subject = null;
-            MockDataService mockDataService = new MockDataService(mockDataCollection.Object, dataEventBus, "test");
             mockDataService.EventBus().Subscribe(x => { subject = x; });
             mockDataService.Add(item1);
 

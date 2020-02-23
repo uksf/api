@@ -5,6 +5,6 @@ using UKSF.Api.Models.Launcher;
 
 namespace UKSF.Api.Data.Launcher {
     public class LauncherFileDataService : CachedDataService<LauncherFile, ILauncherFileDataService>, ILauncherFileDataService {
-        public LauncherFileDataService(IDataCollection dataCollection, IDataEventBus<ILauncherFileDataService> dataEventBus) : base(dataCollection, dataEventBus, "launcherFiles") { }
+        public LauncherFileDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<ILauncherFileDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "launcherFiles") { }
     }
 }

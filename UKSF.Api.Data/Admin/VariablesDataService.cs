@@ -10,7 +10,7 @@ using UKSF.Common;
 
 namespace UKSF.Api.Data.Admin {
     public class VariablesDataService : CachedDataService<VariableItem, IVariablesDataService>, IVariablesDataService {
-        public VariablesDataService(IDataCollection dataCollection, IDataEventBus<IVariablesDataService> dataEventBus) : base(dataCollection, dataEventBus, "variables") { }
+        public VariablesDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IVariablesDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "variables") { }
 
         public override List<VariableItem> Get() {
             base.Get();

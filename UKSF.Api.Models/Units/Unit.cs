@@ -3,7 +3,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Models.Units {
-    public class Unit : MongoObject {
+    public class Unit : DatabaseObject {
         public UnitBranch branch = UnitBranch.COMBAT;
         public string callsign;
         public string discordRoleId;

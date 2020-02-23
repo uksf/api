@@ -1,5 +1,5 @@
 ﻿namespace UKSF.Api.Models.Personnel {
-    public class Rank : MongoObject {
+    public class Rank : DatabaseObject {
         public string abbreviation;
         public string discordRoleId;
         public string name;

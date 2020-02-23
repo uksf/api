@@ -10,7 +10,7 @@ using UKSF.Common;
 
 namespace UKSF.Api.Data.Message {
     public class CommentThreadDataService : CachedDataService<CommentThread, ICommentThreadDataService>, ICommentThreadDataService {
-        public CommentThreadDataService(IDataCollection dataCollection, IDataEventBus<ICommentThreadDataService> dataEventBus) : base(dataCollection, dataEventBus, "commentThreads") { }
+        public CommentThreadDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<ICommentThreadDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "commentThreads") { }
 
         public async Task Update(string id, Comment comment, DataEventType updateType) {
             await base.Update(id, updateType == DataEventType.ADD ? Builders<CommentThread>.Update.Push(x => x.comments, comment) : Builders<CommentThread>.Update.Pull(x => x.comments, comment));

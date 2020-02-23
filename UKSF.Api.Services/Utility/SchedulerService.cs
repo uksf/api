@@ -17,10 +17,8 @@ namespace UKSF.Api.Services.Utility {
 
         public SchedulerService(ISchedulerDataService data, IHostEnvironment currentEnvironment) : base(data) => this.currentEnvironment = currentEnvironment;
 
-        public async void Load(bool integrations = false) {
-            if (integrations) {
-                Data.SetCollectionName("scheduledJobsIntegrations");
-            } else {
+        public async void Load(bool api = true) {
+            if (api) {
                 if (!currentEnvironment.IsDevelopment()) {
                     await AddUnique();
                 }
@@ -100,10 +98,6 @@ namespace UKSF.Api.Services.Utility {
 
             if (Data.GetSingle(x => x.type == ScheduledJobType.TEAMSPEAK_SNAPSHOT) == null) {
                 await Create(DateTime.Today.AddDays(1), TimeSpan.FromMinutes(5), ScheduledJobType.TEAMSPEAK_SNAPSHOT, nameof(SchedulerActionHelper.TeamspeakSnapshot));
-            }
-
-            if (Data.GetSingle(x => x.type == ScheduledJobType.DISCORD_VOTE_ANNOUNCEMENT) == null) {
-                await Create(DateTime.Today.AddHours(19), TimeSpan.FromDays(1), ScheduledJobType.DISCORD_VOTE_ANNOUNCEMENT, nameof(SchedulerActionHelper.DiscordVoteAnnouncement));
             }
         }
 

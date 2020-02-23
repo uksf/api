@@ -8,6 +8,6 @@ using UKSF.Api.Models.Message;
 
 namespace UKSF.Api.Data.Message {
     public class NotificationsDataService : CachedDataService<Notification, INotificationsDataService>, INotificationsDataService {
-        public NotificationsDataService(IDataCollection dataCollection, IDataEventBus<INotificationsDataService> dataEventBus) : base(dataCollection, dataEventBus, "notifications") { }
+        public NotificationsDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<INotificationsDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "notifications") { }
     }
 }

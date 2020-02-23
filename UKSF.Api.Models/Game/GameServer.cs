@@ -8,7 +8,7 @@ namespace UKSF.Api.Models.Game {
         DCG
     }
 
-    public class GameServer : MongoObject {
+    public class GameServer : DatabaseObject {
         [BsonIgnore] public readonly List<int> headlessClientProcessIds = new List<int>();
         public string adminPassword;
         public int apiPort;

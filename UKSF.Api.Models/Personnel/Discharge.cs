@@ -4,7 +4,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Models.Personnel {
-    public class DischargeCollection : MongoObject {
+    public class DischargeCollection : DatabaseObject {
         [BsonRepresentation(BsonType.ObjectId)] public string accountId;
         public List<Discharge> discharges = new List<Discharge>();
         public string name;
@@ -12,7 +12,7 @@ namespace UKSF.Api.Models.Personnel {
         [BsonIgnore] public bool requestExists;
     }
 
-    public class Discharge : MongoObject {
+    public class Discharge : DatabaseObject {
         public string dischargedBy;
         public string rank;
         public string reason;

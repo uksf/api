@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
+using UKSF.Api.Data;
 using UKSF.Api.Data.Game;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
@@ -14,10 +15,13 @@ namespace UKSF.Tests.Unit.Data.Game {
         private readonly GameServersDataService gameServersDataService;
 
         public GameServersDataServiceTests() {
-            mockDataCollection = new Mock<IDataCollection>();
+            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             Mock<IDataEventBus<IGameServersDataService>> mockDataEventBus = new Mock<IDataEventBus<IGameServersDataService>>();
+            mockDataCollection = new Mock<IDataCollection>();
 
-            gameServersDataService = new GameServersDataService(mockDataCollection.Object, mockDataEventBus.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
+
+            gameServersDataService = new GameServersDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
 
         [Fact]

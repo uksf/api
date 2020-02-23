@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
+using UKSF.Api.Data;
 using UKSF.Api.Data.Personnel;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
@@ -14,10 +15,13 @@ namespace UKSF.Tests.Unit.Data.Personnel {
         private readonly RanksDataService ranksDataService;
 
         public RanksDataServiceTests() {
-            mockDataCollection = new Mock<IDataCollection>();
+            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             Mock<IDataEventBus<IRanksDataService>> mockDataEventBus = new Mock<IDataEventBus<IRanksDataService>>();
+            mockDataCollection = new Mock<IDataCollection>();
 
-            ranksDataService = new RanksDataService(mockDataCollection.Object, mockDataEventBus.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
+
+            ranksDataService = new RanksDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
 
         [Theory, InlineData(""), InlineData(null)]

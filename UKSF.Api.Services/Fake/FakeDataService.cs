@@ -30,7 +30,7 @@ namespace UKSF.Api.Services.Fake {
 
         public Task DeleteMany(Func<T, bool> predicate) => Task.CompletedTask;
 
-        public void SetCollectionName(string collectionName) { }
+        public Task SetCollectionNameAsync(string collectionName) => Task.CompletedTask;
 
         public IObservable<DataEventModel<TData>> EventBus() => new Subject<DataEventModel<TData>>();
     }

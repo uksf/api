@@ -4,6 +4,7 @@ using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
+using UKSF.Api.Data;
 using UKSF.Api.Data.Message;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
@@ -19,13 +20,14 @@ namespace UKSF.Tests.Unit.Data.Message {
         private List<CommentThread> mockCollection;
 
         public CommentThreadDataServiceTests() {
+            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
+            Mock<IDataEventBus<ICommentThreadDataService>> mockDataEventBus = new Mock<IDataEventBus<ICommentThreadDataService>>();
             mockDataCollection = new Mock<IDataCollection>();
-            Mock<IDataEventBus<ICommentThreadDataService>> mockdataEventBus = new Mock<IDataEventBus<ICommentThreadDataService>>();
-            commentThreadDataService = new CommentThreadDataService(mockDataCollection.Object, mockdataEventBus.Object);
 
-            mockCollection = new List<CommentThread>();
-
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
             mockDataCollection.Setup(x => x.Get<CommentThread>()).Returns(() => mockCollection);
+
+            commentThreadDataService = new CommentThreadDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
 
         [Fact]
@@ -37,7 +39,7 @@ namespace UKSF.Tests.Unit.Data.Message {
             BsonValue expected = TestUtilities.Render(Builders<CommentThread>.Update.Push(x => x.comments, comment));
             UpdateDefinition<CommentThread> subject = null;
 
-            mockDataCollection.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<UpdateDefinition<CommentThread>>()))
+            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<CommentThread>>()))
                               .Returns(Task.CompletedTask)
                               .Callback<string, UpdateDefinition<CommentThread>>((_, update) => subject = update);
 
@@ -55,7 +57,7 @@ namespace UKSF.Tests.Unit.Data.Message {
             BsonValue expected = TestUtilities.Render(Builders<CommentThread>.Update.Pull(x => x.comments, comment));
             UpdateDefinition<CommentThread> subject = null;
 
-            mockDataCollection.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<UpdateDefinition<CommentThread>>()))
+            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<CommentThread>>()))
                               .Returns(Task.CompletedTask)
                               .Callback<string, UpdateDefinition<CommentThread>>((_, update) => subject = update);
 

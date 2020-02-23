@@ -5,6 +5,6 @@ using UKSF.Api.Models.Personnel;
 
 namespace UKSF.Api.Data.Personnel {
     public class LoaDataService : CachedDataService<Loa, ILoaDataService>, ILoaDataService {
-        public LoaDataService(IDataCollection dataCollection, IDataEventBus<ILoaDataService> dataEventBus) : base(dataCollection, dataEventBus, "loas") { }
+        public LoaDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<ILoaDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "loas") { }
     }
 }

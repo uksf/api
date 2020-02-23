@@ -17,6 +17,5 @@ namespace UKSF.Api.Interfaces.Data {
         Task Replace(T item);
         Task Delete(string id);
         Task DeleteMany(Func<T, bool> predicate);
-        void SetCollectionName(string collectionName);
     }
 }

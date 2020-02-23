@@ -6,18 +6,16 @@ using MongoDB.Driver;
 
 namespace UKSF.Api.Interfaces.Data {
     public interface IDataCollection {
-        void SetCollectionName(string newCollectionName);
-        void AssertCollectionExists<T>();
+        Task AssertCollectionExistsAsync<T>();
         List<T> Get<T>();
         List<T> Get<T>(Func<T, bool> predicate);
         T GetSingle<T>(string id);
         T GetSingle<T>(Func<T, bool> predicate);
-        Task Add<T>(T data);
-        Task Add<T>(string collection, T data);
-        Task Update<T>(string id, UpdateDefinition<T> update);
-        Task UpdateMany<T>(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update);
-        Task Replace<T>(string id, T value);
-        Task Delete<T>(string id);
-        Task DeleteMany<T>(Expression<Func<T, bool>> predicate);
+        Task AddAsync<T>(T data);
+        Task UpdateAsync<T>(string id, UpdateDefinition<T> update);
+        Task UpdateManyAsync<T>(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update);
+        Task ReplaceAsync<T>(string id, T value);
+        Task DeleteAsync<T>(string id);
+        Task DeleteManyAsync<T>(Expression<Func<T, bool>> predicate);
     }
 }

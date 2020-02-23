@@ -4,6 +4,10 @@ using UKSF.Api.Models.Utility;
 
 namespace UKSF.Api.Data.Utility {
     public class SchedulerDataService : DataService<ScheduledJob, ISchedulerDataService>, ISchedulerDataService {
-        public SchedulerDataService(IDataCollection dataCollection, IDataEventBus<ISchedulerDataService> dataEventBus) : base(dataCollection, dataEventBus, "scheduledJobs") { }
+        public SchedulerDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<ISchedulerDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "scheduledJobs") { }
+    }
+
+    public class SchedulerIntegrationsDataService : DataService<ScheduledJob, ISchedulerDataService>, ISchedulerDataService {
+        public SchedulerIntegrationsDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<ISchedulerDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "scheduledJobsIntegrations") { }
     }
 }

@@ -4,11 +4,10 @@ namespace UKSF.Api.Models.Utility {
     public enum ScheduledJobType {
         NORMAL,
         TEAMSPEAK_SNAPSHOT,
-        LOG_PRUNE,
-        DISCORD_VOTE_ANNOUNCEMENT
+        LOG_PRUNE
     }
 
-    public class ScheduledJob : MongoObject {
+    public class ScheduledJob : DatabaseObject {
         public string action;
         public string actionParameters;
         public TimeSpan interval;

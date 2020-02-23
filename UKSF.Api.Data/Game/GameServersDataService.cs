@@ -7,7 +7,7 @@ using UKSF.Api.Models.Game;
 
 namespace UKSF.Api.Data.Game {
     public class GameServersDataService : CachedDataService<GameServer, IGameServersDataService>, IGameServersDataService {
-        public GameServersDataService(IDataCollection dataCollection, IDataEventBus<IGameServersDataService> dataEventBus) : base(dataCollection, dataEventBus, "gameServers") { }
+        public GameServersDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IGameServersDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "gameServers") { }
 
         public override List<GameServer> Get() {
             return base.Get().OrderBy(x => x.order).ToList();

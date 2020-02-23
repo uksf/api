@@ -5,6 +5,6 @@ using UKSF.Api.Models.Command;
 
 namespace UKSF.Api.Data.Command {
     public class CommandRequestDataService : CachedDataService<CommandRequest, ICommandRequestDataService>, ICommandRequestDataService {
-        public CommandRequestDataService(IDataCollection dataCollection, IDataEventBus<ICommandRequestDataService> dataEventBus) : base(dataCollection, dataEventBus, "commandRequests") { }
+        public CommandRequestDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<ICommandRequestDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "commandRequests") { }
     }
 }

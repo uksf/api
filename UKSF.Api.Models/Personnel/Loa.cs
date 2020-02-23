@@ -9,7 +9,7 @@ namespace UKSF.Api.Models.Personnel {
         REJECTED
     }
 
-    public class Loa : MongoObject {
+    public class Loa : DatabaseObject {
         public bool emergency;
         public DateTime end;
         public bool late;

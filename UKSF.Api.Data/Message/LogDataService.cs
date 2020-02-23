@@ -8,22 +8,22 @@ using UKSF.Common;
 
 namespace UKSF.Api.Data.Message {
     public class LogDataService : DataService<BasicLogMessage, ILogDataService>, ILogDataService {
-        private readonly IDataCollection dataCollection;
+        private readonly IDataCollectionFactory dataCollectionFactory;
 
-        public LogDataService(IDataCollection dataCollection, IDataEventBus<ILogDataService> dataEventBus) : base(dataCollection, dataEventBus, "logs") => this.dataCollection = dataCollection;
+        public LogDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<ILogDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "logs") => this.dataCollectionFactory = dataCollectionFactory;
 
         public async Task Add(AuditLogMessage log) {
-            await dataCollection.Add("auditLogs", log);
+            await dataCollectionFactory.CreateDataCollection("auditLogs").AddAsync(log);
             DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.id, log));
         }
 
         public async Task Add(LauncherLogMessage log) {
-            await dataCollection.Add("launcherLogs", log);
+            await dataCollectionFactory.CreateDataCollection("launcherLogs").AddAsync(log);
             DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.id, log));
         }
 
         public async Task Add(WebLogMessage log) {
-            await dataCollection.Add("errorLogs", log);
+            await dataCollectionFactory.CreateDataCollection("errorLogs").AddAsync(log);
             DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.id, log));
         }
     }
