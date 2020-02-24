@@ -1,15 +1,16 @@
 using System.Collections.Generic;
+using UKSF.Api.Interfaces.Data;
 
 namespace UKSF.Api.Services.Utility {
     public class DataCacheService {
-        private readonly List<dynamic> dataServices = new List<dynamic>();
+        private List<ICachedDataService> cachedDataServices;
 
-        public void AddDataService(dynamic dataService) => dataServices.Add(dataService);
+        public void RegisterCachedDataServices(List<ICachedDataService> newCachedDataServices) {
+            cachedDataServices = newCachedDataServices;
+        }
 
-        public void InvalidateDataCaches() {
-            foreach (dynamic dataService in dataServices) {
-                dataService.Refresh();
-            }
+        public void InvalidateCachedData() {
+            cachedDataServices.ForEach(x => x.Refresh());
         }
     }
 }

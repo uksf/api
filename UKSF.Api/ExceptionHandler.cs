@@ -32,9 +32,9 @@ namespace UKSF.Api {
             }
         }
 
-        public void Initialise(ISessionService tempSessionService, IDisplayNameService tempDisplayNameService) {
-            sessionService = tempSessionService;
-            displayNameService = tempDisplayNameService;
+        public void Initialise(ISessionService newSessionService, IDisplayNameService newDisplayNameService) {
+            sessionService = newSessionService;
+            displayNameService = newDisplayNameService;
         }
 
         private void Log(HttpContext context, Exception exception) {
@@ -44,7 +44,7 @@ namespace UKSF.Api {
             };
 
             // only log errors GET/POST/PUT/PATCH/DELETE or empty http method
-            if (!new[] {string.Empty, "POST", "GET", "PUT", "PATCH", "DELETE"}.Any(x => (context?.Request.Method ?? string.Empty).Equals(x, StringComparison.OrdinalIgnoreCase))) return;
+            if (!new[] {string.Empty, "GET", "POST", "PUT", "PATCH", "DELETE"}.Any(x => (context?.Request.Method ?? string.Empty).Equals(x, StringComparison.OrdinalIgnoreCase))) return;
             LogWrapper.Log(logMessage);
         }
     }

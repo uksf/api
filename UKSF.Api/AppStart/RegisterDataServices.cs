@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using UKSF.Api.Data;
 using UKSF.Api.Data.Admin;
 using UKSF.Api.Data.Command;
 using UKSF.Api.Data.Fake;
@@ -17,9 +16,8 @@ using UKSF.Api.Interfaces.Data.Cached;
 namespace UKSF.Api.AppStart {
     public static class DataServiceExtensions {
         public static void RegisterDataServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
-            services.AddTransient<IDataCollectionFactory, DataCollectionFactory>();
-
             // Non-Cached
+            services.AddSingleton<ICommandRequestArchiveDataService, CommandRequestArchiveDataService>();
             services.AddTransient<IConfirmationCodeDataService, ConfirmationCodeDataService>();
             services.AddSingleton<ILogDataService, LogDataService>();
             services.AddTransient<ISchedulerDataService, SchedulerDataService>();
@@ -27,7 +25,6 @@ namespace UKSF.Api.AppStart {
             // Cached
             services.AddSingleton<IAccountDataService, AccountDataService>();
             services.AddSingleton<ICommandRequestDataService, CommandRequestDataService>();
-            services.AddSingleton<ICommandRequestArchiveDataService, CommandRequestArchiveDataService>();
             services.AddSingleton<ICommentThreadDataService, CommentThreadDataService>();
             services.AddSingleton<IDischargeDataService, DischargeDataService>();
             services.AddSingleton<IGameServersDataService, GameServersDataService>();

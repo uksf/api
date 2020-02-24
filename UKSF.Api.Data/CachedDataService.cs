@@ -9,11 +9,11 @@ using UKSF.Api.Models.Events;
 using UKSF.Common;
 
 namespace UKSF.Api.Data {
-    public abstract class CachedDataService<T, TData> : DataService<T, TData> {
+    public class CachedDataService<T, TData> : DataService<T, TData>, ICachedDataService {
         private List<T> collection;
         private readonly object lockObject = new object();
 
-        protected CachedDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataCollectionFactory, dataEventBus, collectionName) { }
+        public CachedDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataCollectionFactory, dataEventBus, collectionName) { }
 
         public List<T> Collection {
             get => collection;
@@ -22,7 +22,6 @@ namespace UKSF.Api.Data {
             }
         }
 
-        // ReSharper disable once MemberCanBeProtected.Global - Used in dynamic call, do not change to protected! // TODO: Stop using this in dynamic call, switch to register or something less........dynamic
         public void Refresh() {
             Collection = null;
             Get();

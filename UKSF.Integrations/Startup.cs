@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using UKSF.Api.Data;
 using UKSF.Api.Data.Admin;
@@ -37,15 +38,23 @@ namespace UKSF.Integrations {
         public void ConfigureServices(IServiceCollection services) {
             services.RegisterServices(configuration);
 
-            services.AddCors(options => options.AddPolicy("CorsPolicy", builder => { builder.AllowAnyMethod().AllowAnyHeader().WithOrigins("http://localhost:4200", "http://localhost:5100", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk").AllowCredentials(); }));
+            services.AddCors(
+                options => options.AddPolicy(
+                    "CorsPolicy",
+                    builder => {
+                        builder.AllowAnyMethod().AllowAnyHeader().WithOrigins("http://localhost:4200", "http://localhost:5100", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk").AllowCredentials();
+                    }
+                )
+            );
             services.AddAuthentication(options => { options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; }).AddCookie().AddSteam();
 
             services.AddControllers();
-            services.AddSwaggerGen(options => { options.SwaggerDoc("v1", new OpenApiInfo {Title = "UKSF Integrations API", Version = "v1"}); });
+            services.AddSwaggerGen(options => { options.SwaggerDoc("v1", new OpenApiInfo { Title = "UKSF Integrations API", Version = "v1" }); });
             services.AddMvc().AddNewtonsoftJson();
         }
 
-        public void Configure(IApplicationBuilder app, IHostEnvironment env, ILoggerFactory loggerFactory) {
+        // ReSharper disable once UnusedMember.Global
+        public void Configure(IApplicationBuilder app) {
             if (env.IsDevelopment()) {
                 app.UseDeveloperExceptionPage();
             }
@@ -58,39 +67,35 @@ namespace UKSF.Integrations {
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseHsts();
-            app.UseForwardedHeaders(new ForwardedHeadersOptions {ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto});
+            app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto });
             app.UseEndpoints(endpoints => { endpoints.MapControllers().RequireCors("CorsPolicy"); });
 
             Global.ServiceProvider = app.ApplicationServices;
             ServiceWrapper.ServiceProvider = Global.ServiceProvider;
 
+            // Warm cached data services
+            RegisterAndWarmCachedData();
+
             // Start scheduler
             Global.ServiceProvider.GetService<ISchedulerService>().Load(false);
+        }
+
+        private static void RegisterAndWarmCachedData() {
+            IServiceProvider serviceProvider = Global.ServiceProvider;
+            IAccountDataService accountDataService = serviceProvider.GetService<IAccountDataService>();
+            IRanksDataService ranksDataService = serviceProvider.GetService<IRanksDataService>();
+            IVariablesDataService variablesDataService = serviceProvider.GetService<IVariablesDataService>();
+
+            DataCacheService dataCacheService = serviceProvider.GetService<DataCacheService>();
+            dataCacheService.RegisterCachedDataServices(new List<ICachedDataService> { accountDataService, ranksDataService, variablesDataService });
+            dataCacheService.InvalidateCachedData();
         }
     }
 
     public static class ServiceExtensions {
         public static void RegisterServices(this IServiceCollection services, IConfiguration configuration) {
-            // Instance Objects
-            services.AddTransient<IConfirmationCodeService, ConfirmationCodeService>();
-            services.AddTransient<ISchedulerService, SchedulerService>();
-
-            // Global Singletons
             services.AddSingleton(configuration);
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<IAccountService, AccountService>();
-            services.AddTransient<IDisplayNameService, DisplayNameService>();
-            services.AddSingleton<ILoggingService, LoggingService>();
-            services.AddTransient<IRanksService, RanksService>();
-
-            services.AddSingleton(_ => MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
-            services.AddTransient<IDataCollectionFactory, DataCollectionFactory>();
-            services.AddSingleton<IAccountDataService, AccountDataService>();
-            services.AddSingleton<IConfirmationCodeDataService, ConfirmationCodeDataService>();
-            services.AddSingleton<ILogDataService, LogDataService>();
-            services.AddSingleton<IRanksDataService, RanksDataService>();
-            services.AddSingleton<ISchedulerDataService, SchedulerIntegrationsDataService>();
-            services.AddSingleton<IVariablesDataService, VariablesDataService>();
+            services.AddSingleton<DataCacheService>();
 
             // Event Buses
             services.AddSingleton<IDataEventBus<IAccountDataService>, DataEventBus<IAccountDataService>>();
@@ -99,6 +104,27 @@ namespace UKSF.Integrations {
             services.AddSingleton<IDataEventBus<IRanksDataService>, DataEventBus<IRanksDataService>>();
             services.AddSingleton<IDataEventBus<ISchedulerDataService>, DataEventBus<ISchedulerDataService>>();
             services.AddSingleton<IDataEventBus<IVariablesDataService>, DataEventBus<IVariablesDataService>>();
+
+            // Database
+            services.AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
+            services.AddTransient<IDataCollectionFactory, DataCollectionFactory>();
+
+            // Data
+            services.AddSingleton<IAccountDataService, AccountDataService>();
+            services.AddSingleton<IConfirmationCodeDataService, ConfirmationCodeDataService>();
+            services.AddSingleton<ILogDataService, LogDataService>();
+            services.AddSingleton<IRanksDataService, RanksDataService>();
+            services.AddSingleton<ISchedulerDataService, SchedulerIntegrationsDataService>();
+            services.AddSingleton<IVariablesDataService, VariablesDataService>();
+
+            // Services
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<IAccountService, AccountService>();
+            services.AddTransient<IConfirmationCodeService, ConfirmationCodeService>();
+            services.AddTransient<IDisplayNameService, DisplayNameService>();
+            services.AddSingleton<ILoggingService, LoggingService>();
+            services.AddTransient<IRanksService, RanksService>();
+            services.AddTransient<ISchedulerService, SchedulerService>();
         }
     }
 }

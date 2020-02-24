@@ -2,7 +2,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using UKSF.Api.Data;
 using UKSF.Api.Interfaces.Command;
+using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
@@ -25,11 +27,19 @@ using UKSF.Api.Services.Utility;
 namespace UKSF.Api.AppStart {
     public static class ServiceExtensions {
         public static void RegisterServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment) {
+            services.AddSingleton(configuration);
+            services.AddSingleton(currentEnvironment);
+
+            services.AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
+            services.AddTransient<IDataCollectionFactory, DataCollectionFactory>();
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<DataCacheService>();
+
             services.RegisterEventServices();
             services.RegisterDataServices(currentEnvironment);
             services.RegisterDataBackedServices(currentEnvironment);
 
-            // Instance Objects
+            // Services
             services.AddTransient<IAssignmentService, AssignmentService>();
             services.AddTransient<IAttendanceService, AttendanceService>();
             services.AddTransient<IChainOfCommandService, ChainOfCommandService>();
@@ -46,14 +56,8 @@ namespace UKSF.Api.AppStart {
             services.AddTransient<MissionPatchDataService>();
             services.AddTransient<MissionService>();
 
-            // Global Singletons
-            services.AddSingleton(configuration);
-            services.AddSingleton(currentEnvironment);
-            services.AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
-            services.AddSingleton<DataCacheService>();
             services.AddSingleton<MigrationUtility>();
             services.AddSingleton<IEmailService, EmailService>();
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<ISessionService, SessionService>();
             services.AddSingleton<ITeamspeakService, TeamspeakService>();
 
