@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -14,8 +13,9 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using UKSF.Api.AppStart;
-using UKSF.Api.Data;
 using UKSF.Api.Events;
+using UKSF.Api.Interfaces.Data;
+using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
 using UKSF.Api.Interfaces.Personnel;
@@ -142,7 +142,7 @@ namespace UKSF.Api {
             Global.ServiceProvider.GetService<MigrationUtility>().Migrate();
 
             // Warm cached data services
-            WarmDataServices();
+            RegisterAndWarmCachedData();
 
             // Add event handlers
             Global.ServiceProvider.GetService<EventHandlerInitialiser>().InitEventHandlers();
@@ -157,25 +157,43 @@ namespace UKSF.Api {
             Global.ServiceProvider.GetService<ISchedulerService>().Load();
         }
 
-        private static void WarmDataServices() {
-            // TODO: Redo this trash
-            DataCacheService dataCacheService = Global.ServiceProvider.GetService<DataCacheService>();
-            List<Type> servicesTypes = AppDomain.CurrentDomain.GetAssemblies()
-                                                .SelectMany(x => x.GetTypes())
-                                                .Where(
-                                                    x => !x.IsAbstract &&
-                                                         !x.IsInterface &&
-                                                         x.BaseType != null &&
-                                                         x.BaseType.IsGenericType &&
-                                                         x.BaseType.GetGenericTypeDefinition() == typeof(CachedDataService<,>)
-                                                )
-                                                .Select(x => x.GetInterfaces().Reverse().FirstOrDefault(y => !y.IsGenericType))
-                                                .ToList();
-            foreach (object service in servicesTypes.Select(type => Global.ServiceProvider.GetService(type))) {
-                dataCacheService.AddDataService((dynamic) service);
-            }
+        private static void RegisterAndWarmCachedData() {
+            IServiceProvider serviceProvider = Global.ServiceProvider;
+            IAccountDataService accountDataService = serviceProvider.GetService<IAccountDataService>();
+            ICommandRequestDataService commandRequestDataService = serviceProvider.GetService<ICommandRequestDataService>();
+            ICommentThreadDataService commentThreadDataService = serviceProvider.GetService<ICommentThreadDataService>();
+            IDischargeDataService dischargeDataService = serviceProvider.GetService<IDischargeDataService>();
+            IGameServersDataService gameServersDataService = serviceProvider.GetService<IGameServersDataService>();
+            ILauncherFileDataService launcherFileDataService = serviceProvider.GetService<ILauncherFileDataService>();
+            ILoaDataService loaDataService = serviceProvider.GetService<ILoaDataService>();
+            INotificationsDataService notificationsDataService = serviceProvider.GetService<INotificationsDataService>();
+            IOperationOrderDataService operationOrderDataService = serviceProvider.GetService<IOperationOrderDataService>();
+            IOperationReportDataService operationReportDataService = serviceProvider.GetService<IOperationReportDataService>();
+            IRanksDataService ranksDataService = serviceProvider.GetService<IRanksDataService>();
+            IRolesDataService rolesDataService = serviceProvider.GetService<IRolesDataService>();
+            IUnitsDataService unitsDataService = serviceProvider.GetService<IUnitsDataService>();
+            IVariablesDataService variablesDataService = serviceProvider.GetService<IVariablesDataService>();
 
-            dataCacheService.InvalidateDataCaches();
+            DataCacheService dataCacheService = serviceProvider.GetService<DataCacheService>();
+            dataCacheService.RegisterCachedDataServices(
+                new List<ICachedDataService> {
+                    accountDataService,
+                    commandRequestDataService,
+                    commentThreadDataService,
+                    dischargeDataService,
+                    gameServersDataService,
+                    launcherFileDataService,
+                    loaDataService,
+                    notificationsDataService,
+                    operationOrderDataService,
+                    operationReportDataService,
+                    ranksDataService,
+                    rolesDataService,
+                    unitsDataService,
+                    variablesDataService
+                }
+            );
+            dataCacheService.InvalidateCachedData();
         }
 
         private static void OnShutdown() {
