@@ -10,22 +10,22 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Personnel {
     public class RanksDataServiceTests {
-        private readonly Mock<IDataCollection> mockDataCollection;
+        private readonly Mock<IDataCollection<Rank>> mockDataCollection;
         private readonly RanksDataService ranksDataService;
 
         public RanksDataServiceTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             Mock<IDataEventBus<IRanksDataService>> mockDataEventBus = new Mock<IDataEventBus<IRanksDataService>>();
-            mockDataCollection = new Mock<IDataCollection>();
+            mockDataCollection = new Mock<IDataCollection<Rank>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Rank>(It.IsAny<string>())).Returns(mockDataCollection.Object);
 
             ranksDataService = new RanksDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
 
         [Theory, InlineData(""), InlineData(null)]
         public void ShouldGetNothingWhenNoNameOrNull(string name) {
-            mockDataCollection.Setup(x => x.Get<Rank>()).Returns(new List<Rank>());
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<Rank>());
 
             Rank subject = ranksDataService.GetSingle(name);
 
@@ -38,7 +38,7 @@ namespace UKSF.Tests.Unit.Data.Personnel {
             Rank rank2 = new Rank { name = "Recruit", order = 1 };
             Rank rank3 = new Rank { name = "Candidate", order = 0 };
 
-            mockDataCollection.Setup(x => x.Get<Rank>()).Returns(new List<Rank> { rank1, rank2, rank3 });
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<Rank> { rank1, rank2, rank3 });
 
             Rank subject = ranksDataService.GetSingle("Recruit");
 
@@ -51,7 +51,7 @@ namespace UKSF.Tests.Unit.Data.Personnel {
             Rank rank2 = new Rank { order = 0 };
             Rank rank3 = new Rank { order = 1 };
 
-            mockDataCollection.Setup(x => x.Get<Rank>()).Returns(new List<Rank> { rank1, rank2, rank3 });
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<Rank> { rank1, rank2, rank3 });
 
             List<Rank> subject = ranksDataService.Get();
 

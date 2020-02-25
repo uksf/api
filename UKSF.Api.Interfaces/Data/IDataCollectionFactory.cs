@@ -1,5 +1,5 @@
 ﻿namespace UKSF.Api.Interfaces.Data {
     public interface IDataCollectionFactory {
-        IDataCollection CreateDataCollection(string collectionName);
+        IDataCollection<T> CreateDataCollection<T>(string collectionName);
     }
 }

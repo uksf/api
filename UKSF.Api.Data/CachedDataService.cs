@@ -13,7 +13,7 @@ namespace UKSF.Api.Data {
         private List<T> collection;
         private readonly object lockObject = new object();
 
-        public CachedDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataCollectionFactory, dataEventBus, collectionName) { }
+        protected CachedDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataCollectionFactory, dataEventBus, collectionName) { }
 
         public List<T> Collection {
             get => collection;

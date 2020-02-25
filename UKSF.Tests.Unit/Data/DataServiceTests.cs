@@ -10,21 +10,22 @@ using Moq;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
+using UKSF.Tests.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data {
     public class DataServiceTests {
-        private readonly Mock<IDataCollection> mockDataCollection;
+        private readonly Mock<IDataCollection<MockDataModel>> mockDataCollection;
         private readonly MockDataService mockDataService;
         private List<MockDataModel> mockCollection;
 
         public DataServiceTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             Mock<IDataEventBus<IMockDataService>> mockDataEventBus = new Mock<IDataEventBus<IMockDataService>>();
-            mockDataCollection = new Mock<IDataCollection>();
+            mockDataCollection = new Mock<IDataCollection<MockDataModel>>();
 
             mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<IMockDataService>>()));
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<MockDataModel>(It.IsAny<string>())).Returns(mockDataCollection.Object);
 
             mockDataService = new MockDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
         }
@@ -101,7 +102,7 @@ namespace UKSF.Tests.Unit.Data {
             MockDataModel item2 = new MockDataModel { Name = "2" };
             mockCollection = new List<MockDataModel> { item1, item2 };
 
-            mockDataCollection.Setup(x => x.DeleteAsync<MockDataModel>(It.IsAny<string>())).Callback((string id) => mockCollection.RemoveAll(x => x.id == id));
+            mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => mockCollection.RemoveAll(x => x.id == id));
 
             await mockDataService.Delete(item1.id);
 
@@ -112,7 +113,7 @@ namespace UKSF.Tests.Unit.Data {
         public void ShouldGetItem() {
             MockDataModel item1 = new MockDataModel { Name = "1" };
 
-            mockDataCollection.Setup(x => x.GetSingle<MockDataModel>(It.IsAny<string>())).Returns(item1);
+            mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(item1);
 
             MockDataModel subject = mockDataService.GetSingle(item1.id);
 
@@ -134,7 +135,7 @@ namespace UKSF.Tests.Unit.Data {
 
         [Fact]
         public void ShouldGetItems() {
-            mockDataCollection.Setup(x => x.Get<MockDataModel>()).Returns(() => mockCollection);
+            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
 
             List<MockDataModel> subject = mockDataService.Get();
 
@@ -213,7 +214,7 @@ namespace UKSF.Tests.Unit.Data {
             MockDataModel item2 = new MockDataModel { id = item1.id, Name = "2" };
             mockCollection = new List<MockDataModel> { item1 };
 
-            mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<MockDataModel, bool>>())).Returns(item1);
+            mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(item1);
             mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<MockDataModel>()))
                               .Returns(Task.CompletedTask)
                               .Callback((string id, MockDataModel item) => mockCollection[mockCollection.FindIndex(x => x.id == id)] = item);

@@ -20,6 +20,7 @@ using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
+using UKSF.Api.Services;
 using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Common;
 using UKSF.Api.Services.Personnel;
@@ -48,6 +49,16 @@ namespace UKSF.Api {
 
         public void ConfigureServices(IServiceCollection services) {
             services.RegisterServices(configuration, currentEnvironment);
+
+            ExceptionHandler exceptionHandler = null;
+            services.AddSingleton(
+                provider => {
+                    exceptionHandler = new ExceptionHandler(provider.GetService<ISessionService>(), provider.GetService<IDisplayNameService>());
+                    return exceptionHandler;
+                }
+            );
+            if (exceptionHandler == null) throw new NullReferenceException("Could not create ExceptionHandler");
+
             services.AddCors(
                 options => options.AddPolicy(
                     "CorsPolicy",
@@ -96,10 +107,9 @@ namespace UKSF.Api {
                         }
                     );
 
-            ExceptionHandler.Instance = new ExceptionHandler();
             services.AddControllers();
             services.AddSwaggerGen(options => { options.SwaggerDoc("v1", new OpenApiInfo { Title = "UKSF API", Version = "v1" }); });
-            services.AddMvc(options => { options.Filters.Add(ExceptionHandler.Instance); }).AddNewtonsoftJson();
+            services.AddMvc(options => { options.Filters.Add(exceptionHandler); }).AddNewtonsoftJson();
         }
 
         // ReSharper disable once UnusedMember.Global
@@ -135,9 +145,6 @@ namespace UKSF.Api {
             Global.ServiceProvider = app.ApplicationServices;
             ServiceWrapper.ServiceProvider = Global.ServiceProvider;
 
-            // Initialise exception handler
-            ExceptionHandler.Instance.Initialise(Global.ServiceProvider.GetService<ISessionService>(), Global.ServiceProvider.GetService<IDisplayNameService>());
-
             // Execute any DB migration
             Global.ServiceProvider.GetService<MigrationUtility>().Migrate();
 
@@ -154,7 +161,7 @@ namespace UKSF.Api {
             Global.ServiceProvider.GetService<IDiscordService>().ConnectDiscord();
 
             // Start scheduler
-            Global.ServiceProvider.GetService<ISchedulerService>().Load();
+            Global.ServiceProvider.GetService<ISchedulerService>().LoadApi();
         }
 
         private static void RegisterAndWarmCachedData() {

@@ -10,15 +10,15 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Game {
     public class GameServersDataServiceTests {
-        private readonly Mock<IDataCollection> mockDataCollection;
+        private readonly Mock<IDataCollection<GameServer>> mockDataCollection;
         private readonly GameServersDataService gameServersDataService;
 
         public GameServersDataServiceTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             Mock<IDataEventBus<IGameServersDataService>> mockDataEventBus = new Mock<IDataEventBus<IGameServersDataService>>();
-            mockDataCollection = new Mock<IDataCollection>();
+            mockDataCollection = new Mock<IDataCollection<GameServer>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<GameServer>(It.IsAny<string>())).Returns(mockDataCollection.Object);
 
             gameServersDataService = new GameServersDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
@@ -29,7 +29,7 @@ namespace UKSF.Tests.Unit.Data.Game {
             GameServer rank2 = new GameServer {order = 0};
             GameServer rank3 = new GameServer {order = 1};
 
-            mockDataCollection.Setup(x => x.Get<GameServer>()).Returns(new List<GameServer> {rank1, rank2, rank3});
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<GameServer> {rank1, rank2, rank3});
 
             List<GameServer> subject = gameServersDataService.Get();
 

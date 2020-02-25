@@ -10,15 +10,15 @@ using UKSF.Common;
 
 namespace UKSF.Api.Data {
     public abstract class DataService<T, TData> : DataEventBacker<TData>, IDataService<T, TData> {
-        private readonly IDataCollection dataCollection;
+        private readonly IDataCollection<T> dataCollection;
 
-        protected DataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataEventBus) => dataCollection = dataCollectionFactory.CreateDataCollection(collectionName);
+        protected DataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataEventBus) => dataCollection = dataCollectionFactory.CreateDataCollection<T>(collectionName);
 
-        public virtual List<T> Get() => dataCollection.Get<T>();
+        public virtual List<T> Get() => dataCollection.Get();
 
         public virtual List<T> Get(Func<T, bool> predicate) => dataCollection.Get(predicate);
 
-        public virtual T GetSingle(string id) => dataCollection.GetSingle<T>(id);
+        public virtual T GetSingle(string id) => dataCollection.GetSingle(id);
 
         public virtual T GetSingle(Func<T, bool> predicate) => dataCollection.GetSingle(predicate);
 
@@ -49,21 +49,21 @@ namespace UKSF.Api.Data {
         }
 
         public virtual async Task Replace(T item) {
-            if (GetSingle(x => x.GetIdValue() == item.GetIdValue()) == null) throw new KeyNotFoundException("Could not find item to replace"); // TODO: Evaluate performance impact of this presence check
+            if (GetSingle(item.GetIdValue()) == null) throw new KeyNotFoundException("Could not find item to replace"); // TODO: Evaluate performance impact of this presence check
             await dataCollection.ReplaceAsync(item.GetIdValue(), item);
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, item.GetIdValue()));
         }
 
         public virtual async Task Delete(string id) {
             if (string.IsNullOrEmpty(id)) throw new KeyNotFoundException("Key cannot be empty");
-            await dataCollection.DeleteAsync<T>(id);
+            await dataCollection.DeleteAsync(id);
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, id));
         }
 
         public virtual async Task DeleteMany(Func<T, bool> predicate) {
             List<T> items = Get(predicate); // TODO: Evaluate performance impact of this presence check
             if (items.Count == 0) throw new KeyNotFoundException("Could not find any items to delete");
-            await dataCollection.DeleteManyAsync<T>(x => predicate(x));
+            await dataCollection.DeleteManyAsync(x => predicate(x));
             items.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, x.GetIdValue())));
         }
     }

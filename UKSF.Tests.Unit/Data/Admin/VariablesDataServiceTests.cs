@@ -15,16 +15,16 @@ using Xunit;
 namespace UKSF.Tests.Unit.Data.Admin {
     public class VariablesDataServiceTests {
         private readonly VariablesDataService variablesDataService;
-        private readonly Mock<IDataCollection> mockDataCollection;
+        private readonly Mock<IDataCollection<VariableItem>> mockDataCollection;
         private List<VariableItem> mockCollection;
 
         public VariablesDataServiceTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             Mock<IDataEventBus<IVariablesDataService>> mockDataEventBus = new Mock<IDataEventBus<IVariablesDataService>>();
-            mockDataCollection = new Mock<IDataCollection>();
+            mockDataCollection = new Mock<IDataCollection<VariableItem>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
-            mockDataCollection.Setup(x => x.Get<VariableItem>()).Returns(() => mockCollection);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<VariableItem>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
 
             variablesDataService = new VariablesDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
@@ -91,7 +91,7 @@ namespace UKSF.Tests.Unit.Data.Admin {
             VariableItem item1 = new VariableItem {key = "DISCORD_ID", item = "50"};
             mockCollection = new List<VariableItem> {item1};
 
-            mockDataCollection.Setup(x => x.DeleteAsync<VariableItem>(It.IsAny<string>())).Returns(Task.CompletedTask).Callback((string id) => mockCollection.RemoveAll(x => x.id == id));
+            mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask).Callback((string id) => mockCollection.RemoveAll(x => x.id == id));
 
             await variablesDataService.Delete("discord id");
 

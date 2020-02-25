@@ -12,17 +12,17 @@ namespace UKSF.Api.Data.Message {
         public LogDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<ILogDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "logs") => this.dataCollectionFactory = dataCollectionFactory;
 
         public async Task Add(AuditLogMessage log) {
-            await dataCollectionFactory.CreateDataCollection("auditLogs").AddAsync(log);
+            await dataCollectionFactory.CreateDataCollection<AuditLogMessage>("auditLogs").AddAsync(log);
             DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.id, log));
         }
 
         public async Task Add(LauncherLogMessage log) {
-            await dataCollectionFactory.CreateDataCollection("launcherLogs").AddAsync(log);
+            await dataCollectionFactory.CreateDataCollection<LauncherLogMessage>("launcherLogs").AddAsync(log);
             DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.id, log));
         }
 
         public async Task Add(WebLogMessage log) {
-            await dataCollectionFactory.CreateDataCollection("errorLogs").AddAsync(log);
+            await dataCollectionFactory.CreateDataCollection<WebLogMessage>("errorLogs").AddAsync(log);
             DataEvent(EventModelFactory.CreateDataEvent<ILogDataService>(DataEventType.ADD, log.id, log));
         }
     }
