@@ -10,15 +10,15 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Operations {
     public class OperationOrderDataServiceTests {
-        private readonly Mock<IDataCollection> mockDataCollection;
+        private readonly Mock<IDataCollection<Opord>> mockDataCollection;
         private readonly OperationOrderDataService operationOrderDataService;
 
         public OperationOrderDataServiceTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             Mock<IDataEventBus<IOperationOrderDataService>> mockDataEventBus = new Mock<IDataEventBus<IOperationOrderDataService>>();
-            mockDataCollection = new Mock<IDataCollection>();
+            mockDataCollection = new Mock<IDataCollection<Opord>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Opord>(It.IsAny<string>())).Returns(mockDataCollection.Object);
 
             operationOrderDataService = new OperationOrderDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
@@ -29,7 +29,7 @@ namespace UKSF.Tests.Unit.Data.Operations {
             Opord item2 = new Opord();
             Opord item3 = new Opord();
 
-            mockDataCollection.Setup(x => x.Get<Opord>()).Returns(new List<Opord> { item1, item2, item3 });
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<Opord> { item1, item2, item3 });
 
             List<Opord> subject = operationOrderDataService.Get();
 
@@ -42,7 +42,7 @@ namespace UKSF.Tests.Unit.Data.Operations {
             Opord item2 = new Opord { description = "2" };
             Opord item3 = new Opord { description = "3" };
 
-            mockDataCollection.Setup(x => x.Get<Opord>()).Returns(new List<Opord> { item1, item2, item3 });
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<Opord> { item1, item2, item3 });
 
             List<Opord> subject = operationOrderDataService.Get(x => x.description != string.Empty);
 

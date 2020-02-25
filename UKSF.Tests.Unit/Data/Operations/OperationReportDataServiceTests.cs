@@ -10,15 +10,15 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Operations {
     public class OperationReportDataServiceTests {
-        private readonly Mock<IDataCollection> mockDataCollection;
+        private readonly Mock<IDataCollection<Oprep>> mockDataCollection;
         private readonly OperationReportDataService operationReportDataService;
 
         public OperationReportDataServiceTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             Mock<IDataEventBus<IOperationReportDataService>> mockDataEventBus = new Mock<IDataEventBus<IOperationReportDataService>>();
-            mockDataCollection = new Mock<IDataCollection>();
+            mockDataCollection = new Mock<IDataCollection<Oprep>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Oprep>(It.IsAny<string>())).Returns(mockDataCollection.Object);
 
             operationReportDataService = new OperationReportDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
@@ -29,7 +29,7 @@ namespace UKSF.Tests.Unit.Data.Operations {
             Oprep item2 = new Oprep();
             Oprep item3 = new Oprep();
 
-            mockDataCollection.Setup(x => x.Get<Oprep>()).Returns(new List<Oprep> {item1, item2, item3});
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> {item1, item2, item3});
 
             List<Oprep> subject = operationReportDataService.Get();
 
@@ -42,7 +42,7 @@ namespace UKSF.Tests.Unit.Data.Operations {
             Oprep item2 = new Oprep { description = "2" };
             Oprep item3 = new Oprep { description = "3" };
 
-            mockDataCollection.Setup(x => x.Get<Oprep>()).Returns(new List<Oprep> { item1, item2, item3 });
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> { item1, item2, item3 });
 
             List<Oprep> subject = operationReportDataService.Get(x => x.description != string.Empty);
 

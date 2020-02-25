@@ -27,14 +27,17 @@ using UKSF.Api.Services.Utility;
 namespace UKSF.Api.AppStart {
     public static class ServiceExtensions {
         public static void RegisterServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment) {
+            // Base
             services.AddSingleton(configuration);
             services.AddSingleton(currentEnvironment);
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
+            // Data common
             services.AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
             services.AddTransient<IDataCollectionFactory, DataCollectionFactory>();
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<DataCacheService>();
 
+            // Events & Data
             services.RegisterEventServices();
             services.RegisterDataServices(currentEnvironment);
             services.RegisterDataBackedServices(currentEnvironment);

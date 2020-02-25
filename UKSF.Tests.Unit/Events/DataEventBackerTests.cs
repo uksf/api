@@ -5,7 +5,7 @@ using UKSF.Api.Events.Data;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
-using UKSF.Tests.Unit.Data;
+using UKSF.Tests.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events {
@@ -15,9 +15,9 @@ namespace UKSF.Tests.Unit.Events {
         public DataEventBackerTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             IDataEventBus<IMockDataService> dataEventBus = new DataEventBus<IMockDataService>();
-            Mock<IDataCollection> mockDataCollection = new Mock<IDataCollection>();
+            Mock<IDataCollection<MockDataModel>> mockDataCollection = new Mock<IDataCollection<MockDataModel>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<MockDataModel>(It.IsAny<string>())).Returns(mockDataCollection.Object);
 
             mockDataService = new MockDataService(mockDataCollectionFactory.Object, dataEventBus, "test");
         }

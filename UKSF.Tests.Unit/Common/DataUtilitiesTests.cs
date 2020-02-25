@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using FluentAssertions;
 using UKSF.Common;
+using UKSF.Tests.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Common {
@@ -21,6 +23,18 @@ namespace UKSF.Tests.Unit.Common {
             string subject = dateTime.GetIdValue();
 
             subject.Should().Be(string.Empty);
+        }
+
+        [Fact]
+        public void ShouldReturnIdWithinOneSecond() {
+            MockDataModel mockDataModel = new MockDataModel { Stuff = new List<object>() };
+            for (int i = 0; i < 10000; i++) {
+                mockDataModel.Stuff.Add(new {index = i, data = Guid.NewGuid(), number = i * 756 * 458 * 5478});
+            }
+
+            Action act = () => mockDataModel.GetIdValue();
+
+            act.ExecutionTime().Should().BeLessThan(TimeSpan.FromSeconds(1));
         }
     }
 }

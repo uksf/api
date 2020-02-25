@@ -10,15 +10,15 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Personnel {
     public class RolesDataServiceTests {
-        private readonly Mock<IDataCollection> mockDataCollection;
+        private readonly Mock<IDataCollection<Role>> mockDataCollection;
         private readonly RolesDataService rolesDataService;
 
         public RolesDataServiceTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             Mock<IDataEventBus<IRolesDataService>> mockDataEventBus = new Mock<IDataEventBus<IRolesDataService>>();
-            mockDataCollection = new Mock<IDataCollection>();
+            mockDataCollection = new Mock<IDataCollection<Role>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Role>(It.IsAny<string>())).Returns(mockDataCollection.Object);
 
             rolesDataService = new RolesDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
@@ -29,7 +29,7 @@ namespace UKSF.Tests.Unit.Data.Personnel {
             Role role2 = new Role {name = "Trainee"};
             Role role3 = new Role {name = "Marksman"};
 
-            mockDataCollection.Setup(x => x.Get<Role>()).Returns(new List<Role> {role1, role2, role3});
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<Role> {role1, role2, role3});
 
             List<Role> subject = rolesDataService.Get();
 
@@ -42,7 +42,7 @@ namespace UKSF.Tests.Unit.Data.Personnel {
             Role role2 = new Role {name = "Trainee"};
             Role role3 = new Role {name = "Marksman"};
 
-            mockDataCollection.Setup(x => x.Get<Role>()).Returns(new List<Role> {role1, role2, role3});
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<Role> {role1, role2, role3});
 
             Role subject = rolesDataService.GetSingle("Trainee");
 
@@ -51,7 +51,7 @@ namespace UKSF.Tests.Unit.Data.Personnel {
 
         [Theory, InlineData(""), InlineData(null)]
         public void ShouldGetNothingWhenNoName(string name) {
-            mockDataCollection.Setup(x => x.Get<Role>()).Returns(new List<Role>());
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<Role>());
 
             Role subject = rolesDataService.GetSingle(name);
 

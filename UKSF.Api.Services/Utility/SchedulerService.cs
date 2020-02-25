@@ -17,18 +17,20 @@ namespace UKSF.Api.Services.Utility {
 
         public SchedulerService(ISchedulerDataService data, IHostEnvironment currentEnvironment) : base(data) => this.currentEnvironment = currentEnvironment;
 
-        public async void Load(bool api = true) {
-            if (api) {
-                if (!currentEnvironment.IsDevelopment()) {
-                    await AddUnique();
-                }
+        public async void LoadApi() {
+            if (!currentEnvironment.IsDevelopment()) {
+                await AddUnique();
             }
 
-            Data.Get().ForEach(Schedule);
+            Load();
+        }
+
+        public void LoadIntegrations() {
+            Load();
         }
 
         public async Task Create(DateTime next, TimeSpan interval, ScheduledJobType type, string action, params object[] actionParameters) {
-            ScheduledJob job = new ScheduledJob {next = next, action = action, type = type};
+            ScheduledJob job = new ScheduledJob { next = next, action = action, type = type };
             if (actionParameters.Length > 0) {
                 job.actionParameters = JsonConvert.SerializeObject(actionParameters);
             }
@@ -51,6 +53,10 @@ namespace UKSF.Api.Services.Utility {
             }
 
             await Data.Delete(job.id);
+        }
+
+        private void Load() {
+            Data.Get().ForEach(Schedule);
         }
 
         private void Schedule(ScheduledJob job) {

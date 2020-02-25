@@ -24,6 +24,7 @@
       <ProjectReference Include="..\UKSF.Api.Models\UKSF.Api.Models.csproj" />
       <ProjectReference Include="..\UKSF.Api.Services\UKSF.Api.Services.csproj" />
       <ProjectReference Include="..\UKSF.Common\UKSF.Common.csproj" />
+      <ProjectReference Include="..\UKSF.Tests.Common\UKSF.Tests.Common.csproj" />
     </ItemGroup>
 
     <ItemGroup>

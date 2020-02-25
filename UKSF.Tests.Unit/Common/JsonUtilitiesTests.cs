@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using FluentAssertions;
 using UKSF.Common;
+using UKSF.Tests.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Common {

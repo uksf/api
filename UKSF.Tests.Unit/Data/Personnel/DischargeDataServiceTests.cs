@@ -15,14 +15,14 @@ namespace UKSF.Tests.Unit.Data.Personnel {
         public void ShouldGetOrderedCollection() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             Mock<IDataEventBus<IDischargeDataService>> mockDataEventBus = new Mock<IDataEventBus<IDischargeDataService>>();
-            Mock<IDataCollection> mockDataCollection = new Mock<IDataCollection>();
+            Mock<IDataCollection<DischargeCollection>> mockDataCollection = new Mock<IDataCollection<DischargeCollection>>();
 
             DischargeCollection dischargeCollection1 = new DischargeCollection {discharges = new List<Discharge> {new Discharge {timestamp = DateTime.Now.AddDays(-3)}}};
             DischargeCollection dischargeCollection2 = new DischargeCollection {discharges = new List<Discharge> {new Discharge {timestamp = DateTime.Now.AddDays(-10)}, new Discharge {timestamp = DateTime.Now.AddDays(-1)}}};
             DischargeCollection dischargeCollection3 = new DischargeCollection {discharges = new List<Discharge> {new Discharge {timestamp = DateTime.Now.AddDays(-5)}, new Discharge {timestamp = DateTime.Now.AddDays(-2)}}};
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
-            mockDataCollection.Setup(x => x.Get<DischargeCollection>()).Returns(new List<DischargeCollection> {dischargeCollection1, dischargeCollection2, dischargeCollection3});
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<DischargeCollection>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<DischargeCollection> {dischargeCollection1, dischargeCollection2, dischargeCollection3});
 
             DischargeDataService dischargeDataService = new DischargeDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
 

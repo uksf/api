@@ -20,10 +20,10 @@ namespace UKSF.Tests.Unit.Data.Message {
             Mock<IDataEventBus<ILogDataService>> mockDataEventBus = new Mock<IDataEventBus<ILogDataService>>();
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
 
-            Mock<IDataCollection> mockBasicDataCollection = new Mock<IDataCollection>();
-            Mock<IDataCollection> mockAuditDataCollection = new Mock<IDataCollection>();
-            Mock<IDataCollection> mockLauncherDataCollection = new Mock<IDataCollection>();
-            Mock<IDataCollection> mockErrorDataCollection = new Mock<IDataCollection>();
+            Mock<IDataCollection<BasicLogMessage>> mockBasicDataCollection = new Mock<IDataCollection<BasicLogMessage>>();
+            Mock<IDataCollection<AuditLogMessage>> mockAuditDataCollection = new Mock<IDataCollection<AuditLogMessage>>();
+            Mock<IDataCollection<LauncherLogMessage>> mockLauncherDataCollection = new Mock<IDataCollection<LauncherLogMessage>>();
+            Mock<IDataCollection<WebLogMessage>> mockErrorDataCollection = new Mock<IDataCollection<WebLogMessage>>();
 
             mockBasicCollection = new List<BasicLogMessage>();
             mockAuditCollection = new List<AuditLogMessage>();
@@ -38,10 +38,10 @@ namespace UKSF.Tests.Unit.Data.Message {
 
             mockErrorDataCollection.Setup(x => x.AddAsync(It.IsAny<WebLogMessage>())).Returns(Task.CompletedTask).Callback<WebLogMessage>(x => mockErrorCollection.Add(x));
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection("logs")).Returns(mockBasicDataCollection.Object);
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection("auditLogs")).Returns(mockAuditDataCollection.Object);
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection("launcherLogs")).Returns(mockLauncherDataCollection.Object);
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection("errorLogs")).Returns(mockErrorDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<BasicLogMessage>("logs")).Returns(mockBasicDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<AuditLogMessage>("auditLogs")).Returns(mockAuditDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<LauncherLogMessage>("launcherLogs")).Returns(mockLauncherDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<WebLogMessage>("errorLogs")).Returns(mockErrorDataCollection.Object);
 
             logDataService = new LogDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }

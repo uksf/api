@@ -7,8 +7,8 @@ namespace UKSF.Api.Data {
 
         public DataCollectionFactory(IMongoDatabase database) => this.database = database;
 
-        public IDataCollection CreateDataCollection(string collectionName) {
-            IDataCollection dataCollection = new DataCollection(database, collectionName);
+        public IDataCollection<T> CreateDataCollection<T>(string collectionName) {
+            IDataCollection<T> dataCollection = new DataCollection<T>(database, collectionName);
             return dataCollection;
         }
     }

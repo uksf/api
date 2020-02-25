@@ -3,6 +3,7 @@ using MongoDB.Bson;
 using UKSF.Api.Models.Events;
 using UKSF.Api.Models.Events.Types;
 using UKSF.Common;
+using UKSF.Tests.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Common {

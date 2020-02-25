@@ -20,6 +20,7 @@ using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
+using UKSF.Api.Services;
 using UKSF.Api.Services.Common;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
@@ -38,6 +39,15 @@ namespace UKSF.Integrations {
         public void ConfigureServices(IServiceCollection services) {
             services.RegisterServices(configuration);
 
+            ExceptionHandler exceptionHandler = null;
+            services.AddSingleton(
+                provider => {
+                    exceptionHandler = new ExceptionHandler(provider.GetService<ISessionService>(), provider.GetService<IDisplayNameService>());
+                    return exceptionHandler;
+                }
+            );
+            if (exceptionHandler == null) throw new NullReferenceException("Could not create ExceptionHandler");
+
             services.AddCors(
                 options => options.AddPolicy(
                     "CorsPolicy",
@@ -50,7 +60,7 @@ namespace UKSF.Integrations {
 
             services.AddControllers();
             services.AddSwaggerGen(options => { options.SwaggerDoc("v1", new OpenApiInfo { Title = "UKSF Integrations API", Version = "v1" }); });
-            services.AddMvc().AddNewtonsoftJson();
+            services.AddMvc(options => { options.Filters.Add(exceptionHandler); }).AddNewtonsoftJson();
         }
 
         // ReSharper disable once UnusedMember.Global
@@ -77,7 +87,7 @@ namespace UKSF.Integrations {
             RegisterAndWarmCachedData();
 
             // Start scheduler
-            Global.ServiceProvider.GetService<ISchedulerService>().Load(false);
+            Global.ServiceProvider.GetService<ISchedulerService>().LoadIntegrations();
         }
 
         private static void RegisterAndWarmCachedData() {
@@ -94,7 +104,13 @@ namespace UKSF.Integrations {
 
     public static class ServiceExtensions {
         public static void RegisterServices(this IServiceCollection services, IConfiguration configuration) {
+            // Base
             services.AddSingleton(configuration);
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+            // Database
+            services.AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
+            services.AddTransient<IDataCollectionFactory, DataCollectionFactory>();
             services.AddSingleton<DataCacheService>();
 
             // Event Buses
@@ -105,10 +121,6 @@ namespace UKSF.Integrations {
             services.AddSingleton<IDataEventBus<ISchedulerDataService>, DataEventBus<ISchedulerDataService>>();
             services.AddSingleton<IDataEventBus<IVariablesDataService>, DataEventBus<IVariablesDataService>>();
 
-            // Database
-            services.AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
-            services.AddTransient<IDataCollectionFactory, DataCollectionFactory>();
-
             // Data
             services.AddSingleton<IAccountDataService, AccountDataService>();
             services.AddSingleton<IConfirmationCodeDataService, ConfirmationCodeDataService>();
@@ -118,13 +130,14 @@ namespace UKSF.Integrations {
             services.AddSingleton<IVariablesDataService, VariablesDataService>();
 
             // Services
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<IAccountService, AccountService>();
             services.AddTransient<IConfirmationCodeService, ConfirmationCodeService>();
             services.AddTransient<IDisplayNameService, DisplayNameService>();
-            services.AddSingleton<ILoggingService, LoggingService>();
             services.AddTransient<IRanksService, RanksService>();
             services.AddTransient<ISchedulerService, SchedulerService>();
+
+            services.AddSingleton<IAccountService, AccountService>();
+            services.AddSingleton<ILoggingService, LoggingService>();
+            services.AddSingleton<ISessionService, SessionService>();
         }
     }
 }

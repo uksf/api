@@ -10,21 +10,22 @@ using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
 using UKSF.Api.Models.Message;
+using UKSF.Tests.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Message {
     public class CommentThreadDataServiceTests {
         private readonly CommentThreadDataService commentThreadDataService;
-        private readonly Mock<IDataCollection> mockDataCollection;
+        private readonly Mock<IDataCollection<CommentThread>> mockDataCollection;
         private List<CommentThread> mockCollection;
 
         public CommentThreadDataServiceTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
             Mock<IDataEventBus<ICommentThreadDataService>> mockDataEventBus = new Mock<IDataEventBus<ICommentThreadDataService>>();
-            mockDataCollection = new Mock<IDataCollection>();
+            mockDataCollection = new Mock<IDataCollection<CommentThread>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection(It.IsAny<string>())).Returns(mockDataCollection.Object);
-            mockDataCollection.Setup(x => x.Get<CommentThread>()).Returns(() => mockCollection);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<CommentThread>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
 
             commentThreadDataService = new CommentThreadDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
