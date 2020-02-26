@@ -8,6 +8,7 @@ using MongoDB.Driver;
 using UKSF.Api.Data;
 using UKSF.Api.Models.Integrations;
 using Xunit;
+// ReSharper disable UnusedMember.Global
 
 namespace UKSF.Tests.Unit.Integration.Data {
     public class DataPerformanceTests {
@@ -30,21 +31,21 @@ namespace UKSF.Tests.Unit.Integration.Data {
         }
 
         // This test tests nothing, and is only used for profiling various data retrieval methods
-        [Fact]
-        public async Task TestGetPerformance() {
-            await MongoTest(
-                (mongoDbRunner, database) => {
-                    const string COLLECTION_NAME = "teamspeakSnapshots";
-                    ImportTestCollection(mongoDbRunner, COLLECTION_NAME);
-
-                    DataCollection<TeamspeakServerSnapshot> dataCollection = new DataCollection<TeamspeakServerSnapshot>(database, COLLECTION_NAME);
-                    List<TeamspeakServerSnapshot> subject = dataCollection.Get(x => x.timestamp > DateTime.Parse("2018-08-09T05:00:00.307Z"));
-
-                    subject.Should().NotBeNull();
-
-                    return Task.CompletedTask;
-                }
-            );
-        }
+        // [Fact]
+        // public async Task TestGetPerformance() {
+        //     await MongoTest(
+        //         (mongoDbRunner, database) => {
+        //             const string COLLECTION_NAME = "teamspeakSnapshots";
+        //             ImportTestCollection(mongoDbRunner, COLLECTION_NAME);
+        //
+        //             DataCollection<TeamspeakServerSnapshot> dataCollection = new DataCollection<TeamspeakServerSnapshot>(database, COLLECTION_NAME);
+        //             List<TeamspeakServerSnapshot> subject = dataCollection.Get(x => x.timestamp > DateTime.Parse("2018-08-09T05:00:00.307Z"));
+        //
+        //             subject.Should().NotBeNull();
+        //
+        //             return Task.CompletedTask;
+        //         }
+        //     );
+        // }
     }
 }

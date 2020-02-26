@@ -4,15 +4,15 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Mongo2Go;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using UKSF.Api.Data;
 using UKSF.Api.Models.Personnel;
-using UKSF.Api.Models.Utility;
 using UKSF.Tests.Unit.Common;
 using Xunit;
 
-// Available test collections:
+// Available test collections as json:
 // accounts
 // commentThreads
 // discharges
@@ -27,6 +27,8 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Integration.Data {
     public class DataCollectionTests {
+        private const string TEST_COLLECTION_NAME = "roles";
+
         private static async Task MongoTest(Func<MongoDbRunner, IMongoDatabase, Task> testFunction) {
             MongoDbRunner mongoDbRunner = MongoDbRunner.Start();
             ConventionPack conventionPack = new ConventionPack { new IgnoreExtraElementsConvention(true), new IgnoreIfNullConvention(true) };
@@ -41,25 +43,37 @@ namespace UKSF.Tests.Unit.Integration.Data {
             }
         }
 
-        private static void ImportTestCollection(MongoDbRunner mongoDbRunner, string collectionName) {
-            mongoDbRunner.Import("tests", collectionName, $"../../../testdata/{collectionName}.json", true);
+        private static async Task<(DataCollection<Role> dataCollection, string testId)> SetupTestCollection(IMongoDatabase database) {
+            DataCollection<Role> dataCollection = new DataCollection<Role>(database, TEST_COLLECTION_NAME);
+            await dataCollection.AssertCollectionExistsAsync();
+
+            string testId = ObjectId.GenerateNewId().ToString();
+            List<Role> roles = new List<Role> {
+                new Role { name = "Rifleman" },
+                new Role { name = "Trainee" },
+                new Role { name = "Marksman", id = testId },
+                new Role { name = "1iC", roleType = RoleType.UNIT, order = 0 },
+                new Role { name = "2iC", roleType = RoleType.UNIT, order = 1 },
+                new Role { name = "NCOiC", roleType = RoleType.UNIT, order = 3 },
+                new Role { name = "NCOiC Air Troop", roleType = RoleType.INDIVIDUAL, order = 0 }
+            };
+            roles.ForEach(async x => await dataCollection.AddAsync(x));
+
+            return (dataCollection, testId);
         }
 
         [Fact]
         public async Task ShouldAddItem() {
             await MongoTest(
                 async (mongoDbRunner, database) => {
-                    const string COLLECTION_NAME = "ranks";
-                    ImportTestCollection(mongoDbRunner, COLLECTION_NAME);
+                    (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
-                    DataCollection<Rank> dataCollection = new DataCollection<Rank>(database, COLLECTION_NAME);
+                    Role role = new Role { name = "Section Leader" };
+                    await dataCollection.AddAsync(role);
 
-                    Rank rank = new Rank { name = "Captain" };
-                    await dataCollection.AddAsync(rank);
+                    List<Role> subject = database.GetCollection<Role>(TEST_COLLECTION_NAME).AsQueryable().ToList();
 
-                    List<Rank> subject = database.GetCollection<Rank>(COLLECTION_NAME).AsQueryable().ToList();
-
-                    subject.Should().Contain(x => x.name == rank.name);
+                    subject.Should().Contain(x => x.name == role.name);
                 }
             );
         }
@@ -83,16 +97,13 @@ namespace UKSF.Tests.Unit.Integration.Data {
         public async Task ShouldDelete() {
             await MongoTest(
                 async (mongoDbRunner, database) => {
-                    const string COLLECTION_NAME = "roles";
-                    ImportTestCollection(mongoDbRunner, COLLECTION_NAME);
+                    (DataCollection<Role> dataCollection, string testId) = await SetupTestCollection(database);
 
-                    DataCollection<Role> dataCollection = new DataCollection<Role>(database, COLLECTION_NAME);
+                    await dataCollection.DeleteAsync(testId);
 
-                    await dataCollection.DeleteAsync("5b7424eda144bb436484fbc2");
+                    List<Role> subject = database.GetCollection<Role>(TEST_COLLECTION_NAME).AsQueryable().ToList();
 
-                    List<Role> subject = database.GetCollection<Role>(COLLECTION_NAME).AsQueryable().ToList();
-
-                    subject.Should().NotContain(x => x.id == "5b7424eda144bb436484fbc2");
+                    subject.Should().NotContain(x => x.id == testId);
                 }
             );
         }
@@ -101,14 +112,11 @@ namespace UKSF.Tests.Unit.Integration.Data {
         public async Task ShouldDeleteMany() {
             await MongoTest(
                 async (mongoDbRunner, database) => {
-                    const string COLLECTION_NAME = "roles";
-                    ImportTestCollection(mongoDbRunner, COLLECTION_NAME);
-
-                    DataCollection<Role> dataCollection = new DataCollection<Role>(database, COLLECTION_NAME);
+                    (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
                     await dataCollection.DeleteManyAsync(x => x.order == 0);
 
-                    List<Role> subject = database.GetCollection<Role>(COLLECTION_NAME).AsQueryable().ToList();
+                    List<Role> subject = database.GetCollection<Role>(TEST_COLLECTION_NAME).AsQueryable().ToList();
 
                     subject.Should().NotContain(x => x.order == 0);
                 }
@@ -118,18 +126,14 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldGetByPredicate() {
             await MongoTest(
-                (mongoDbRunner, database) => {
-                    const string COLLECTION_NAME = "roles";
-                    ImportTestCollection(mongoDbRunner, COLLECTION_NAME);
-                    DataCollection<Role> dataCollection = new DataCollection<Role>(database, COLLECTION_NAME);
+                async (mongoDbRunner, database) => {
+                    (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
                     List<Role> subject = dataCollection.Get(x => x.order == 0);
 
                     subject.Should().NotBeNull();
                     subject.Count.Should().Be(5);
                     subject.Should().Contain(x => x.name == "Trainee");
-
-                    return Task.CompletedTask;
                 }
             );
         }
@@ -137,18 +141,14 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldGetCollection() {
             await MongoTest(
-                (mongoDbRunner, database) => {
-                    const string COLLECTION_NAME = "scheduledJobs";
-                    ImportTestCollection(mongoDbRunner, COLLECTION_NAME);
-                    DataCollection<ScheduledJob> dataCollection = new DataCollection<ScheduledJob>(database, COLLECTION_NAME);
+                async (mongoDbRunner, database) => {
+                    (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
-                    List<ScheduledJob> subject = dataCollection.Get();
+                    List<Role> subject = dataCollection.Get();
 
                     subject.Should().NotBeNull();
-                    subject.Count.Should().Be(2);
-                    subject.Should().Contain(x => x.action == "PruneLogs");
-
-                    return Task.CompletedTask;
+                    subject.Count.Should().Be(7);
+                    subject.Should().Contain(x => x.name == "NCOiC");
                 }
             );
         }
@@ -156,17 +156,13 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldGetSingleById() {
             await MongoTest(
-                (mongoDbRunner, database) => {
-                    const string COLLECTION_NAME = "scheduledJobs";
-                    ImportTestCollection(mongoDbRunner, COLLECTION_NAME);
-                    DataCollection<ScheduledJob> dataCollection = new DataCollection<ScheduledJob>(database, COLLECTION_NAME);
+                async (mongoDbRunner, database) => {
+                    (DataCollection<Role> dataCollection, string testId) = await SetupTestCollection(database);
 
-                    ScheduledJob subject = dataCollection.GetSingle("5c006212238c46637025fdad");
+                    Role subject = dataCollection.GetSingle(testId);
 
                     subject.Should().NotBeNull();
-                    subject.action.Should().Be("PruneLogs");
-
-                    return Task.CompletedTask;
+                    subject.name.Should().Be("Marksman");
                 }
             );
         }
@@ -174,17 +170,13 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldGetSingleByPredicate() {
             await MongoTest(
-                (mongoDbRunner, database) => {
-                    const string COLLECTION_NAME = "scheduledJobs";
-                    ImportTestCollection(mongoDbRunner, COLLECTION_NAME);
-                    DataCollection<ScheduledJob> dataCollection = new DataCollection<ScheduledJob>(database, COLLECTION_NAME);
+                async (mongoDbRunner, database) => {
+                    (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
-                    ScheduledJob subject = dataCollection.GetSingle(x => x.type == ScheduledJobType.LOG_PRUNE);
+                    Role subject = dataCollection.GetSingle(x => x.roleType == RoleType.UNIT && x.order == 1);
 
                     subject.Should().NotBeNull();
-                    subject.action.Should().Be("PruneLogs");
-
-                    return Task.CompletedTask;
+                    subject.name.Should().Be("2iC");
                 }
             );
         }
@@ -207,15 +199,12 @@ namespace UKSF.Tests.Unit.Integration.Data {
         public async Task ShouldReplace() {
             await MongoTest(
                 async (mongoDbRunner, database) => {
-                    const string COLLECTION_NAME = "roles";
-                    ImportTestCollection(mongoDbRunner, COLLECTION_NAME);
+                    (DataCollection<Role> dataCollection, string testId) = await SetupTestCollection(database);
 
-                    DataCollection<Role> dataCollection = new DataCollection<Role>(database, COLLECTION_NAME);
-
-                    Role role = new Role { id = "5b7424eda144bb436484fbc2", name = "Sharpshooter" };
+                    Role role = new Role { id = testId, name = "Sharpshooter" };
                     await dataCollection.ReplaceAsync(role.id, role);
 
-                    Role subject = database.GetCollection<Role>(COLLECTION_NAME).AsQueryable().First(x => x.id == "5b7424eda144bb436484fbc2");
+                    Role subject = database.GetCollection<Role>(TEST_COLLECTION_NAME).AsQueryable().First(x => x.id == testId);
 
                     subject.name.Should().Be(role.name);
                     subject.order.Should().Be(0);
@@ -228,14 +217,11 @@ namespace UKSF.Tests.Unit.Integration.Data {
         public async Task ShouldUpdate() {
             await MongoTest(
                 async (mongoDbRunner, database) => {
-                    const string COLLECTION_NAME = "ranks";
-                    ImportTestCollection(mongoDbRunner, COLLECTION_NAME);
+                    (DataCollection<Role> dataCollection, string testId) = await SetupTestCollection(database);
 
-                    DataCollection<Rank> dataCollection = new DataCollection<Rank>(database, COLLECTION_NAME);
+                    await dataCollection.UpdateAsync(testId, Builders<Role>.Update.Set(x => x.order, 10));
 
-                    await dataCollection.UpdateAsync("5b72fbb52d54990cec7c4b24", Builders<Rank>.Update.Set(x => x.order, 10));
-
-                    Rank subject = database.GetCollection<Rank>(COLLECTION_NAME).AsQueryable().First(x => x.id == "5b72fbb52d54990cec7c4b24");
+                    Rank subject = database.GetCollection<Rank>(TEST_COLLECTION_NAME).AsQueryable().First(x => x.id == testId);
 
                     subject.order.Should().Be(10);
                 }
@@ -246,14 +232,11 @@ namespace UKSF.Tests.Unit.Integration.Data {
         public async Task ShouldUpdateMany() {
             await MongoTest(
                 async (mongoDbRunner, database) => {
-                    const string COLLECTION_NAME = "roles";
-                    ImportTestCollection(mongoDbRunner, COLLECTION_NAME);
-
-                    DataCollection<Role> dataCollection = new DataCollection<Role>(database, COLLECTION_NAME);
+                    (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
                     await dataCollection.UpdateManyAsync(x => x.order == 0, Builders<Role>.Update.Set(x => x.order, 10));
 
-                    List<Role> subject = database.GetCollection<Role>(COLLECTION_NAME).AsQueryable().Where(x => x.order == 10).ToList();
+                    List<Role> subject = database.GetCollection<Role>(TEST_COLLECTION_NAME).AsQueryable().Where(x => x.order == 10).ToList();
 
                     subject.Count.Should().Be(5);
                 }
