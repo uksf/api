@@ -26,28 +26,25 @@ using Xunit;
 // variables
 
 namespace UKSF.Tests.Unit.Integration.Data {
-    public class DataCollectionTests {
+    public class DataCollectionTests : IDisposable {
         private const string TEST_COLLECTION_NAME = "roles";
+        private MongoDbRunner mongoDbRunner;
 
-        private static async Task MongoTest(Func<MongoDbRunner, IMongoDatabase, Task> testFunction) {
-            MongoDbRunner mongoDbRunner = MongoDbRunner.Start(additionalMongodArguments: "--quiet");
+        public void Dispose() {
+            mongoDbRunner.Dispose();
+        }
+
+        private async Task MongoTest(Func<IMongoDatabase, Task> testFunction) {
+            mongoDbRunner = MongoDbRunner.Start(additionalMongodArguments: "--quiet");
             ConventionPack conventionPack = new ConventionPack { new IgnoreExtraElementsConvention(true), new IgnoreIfNullConvention(true) };
             ConventionRegistry.Register("DefaultConventions", conventionPack, t => true);
             MongoClient mongoClient = new MongoClient(mongoDbRunner.ConnectionString);
             IMongoDatabase database = mongoClient.GetDatabase("tests");
 
-            try {
-                await testFunction(mongoDbRunner, database);
-            } catch (Exception exception) {
-                Console.Out.WriteLine($"Mongo integration test failed: {exception.Message}");
-                throw;
-            } finally {
-                mongoDbRunner.Dispose();
-                await Task.Delay(TimeSpan.FromSeconds(1));
-            }
+            await testFunction(database);
         }
 
-        private static async Task<(DataCollection<Role> dataCollection, string testId)> SetupTestCollection(IMongoDatabase database) {
+        private async Task<(DataCollection<Role> dataCollection, string testId)> SetupTestCollection(IMongoDatabase database) {
             DataCollection<Role> dataCollection = new DataCollection<Role>(database, TEST_COLLECTION_NAME);
             await dataCollection.AssertCollectionExistsAsync();
 
@@ -69,7 +66,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldAddItem() {
             await MongoTest(
-                async (mongoDbRunner, database) => {
+                async database => {
                     (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
                     Role role = new Role { name = "Section Leader" };
@@ -85,7 +82,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldCreateCollection() {
             await MongoTest(
-                async (mongoDbRunner, database) => {
+                async database => {
                     DataCollection<MockDataModel> dataCollection = new DataCollection<MockDataModel>(database, "test");
 
                     await dataCollection.AssertCollectionExistsAsync();
@@ -100,7 +97,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldDelete() {
             await MongoTest(
-                async (mongoDbRunner, database) => {
+                async database => {
                     (DataCollection<Role> dataCollection, string testId) = await SetupTestCollection(database);
 
                     await dataCollection.DeleteAsync(testId);
@@ -115,7 +112,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldDeleteMany() {
             await MongoTest(
-                async (mongoDbRunner, database) => {
+                async database => {
                     (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
                     await dataCollection.DeleteManyAsync(x => x.order == 0);
@@ -130,7 +127,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldGetByPredicate() {
             await MongoTest(
-                async (mongoDbRunner, database) => {
+                async database => {
                     (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
                     List<Role> subject = dataCollection.Get(x => x.order == 0);
@@ -145,7 +142,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldGetCollection() {
             await MongoTest(
-                async (mongoDbRunner, database) => {
+                async database => {
                     (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
                     List<Role> subject = dataCollection.Get();
@@ -160,7 +157,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldGetSingleById() {
             await MongoTest(
-                async (mongoDbRunner, database) => {
+                async database => {
                     (DataCollection<Role> dataCollection, string testId) = await SetupTestCollection(database);
 
                     Role subject = dataCollection.GetSingle(testId);
@@ -174,7 +171,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldGetSingleByPredicate() {
             await MongoTest(
-                async (mongoDbRunner, database) => {
+                async database => {
                     (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
                     Role subject = dataCollection.GetSingle(x => x.roleType == RoleType.UNIT && x.order == 1);
@@ -188,7 +185,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldNotThrowWhenCollectionExists() {
             await MongoTest(
-                async (mongoDbRunner, database) => {
+                async database => {
                     await database.CreateCollectionAsync("test");
                     DataCollection<MockDataModel> dataCollection = new DataCollection<MockDataModel>(database, "test");
 
@@ -202,7 +199,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldReplace() {
             await MongoTest(
-                async (mongoDbRunner, database) => {
+                async database => {
                     (DataCollection<Role> dataCollection, string testId) = await SetupTestCollection(database);
 
                     Role role = new Role { id = testId, name = "Sharpshooter" };
@@ -220,7 +217,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldUpdate() {
             await MongoTest(
-                async (mongoDbRunner, database) => {
+                async database => {
                     (DataCollection<Role> dataCollection, string testId) = await SetupTestCollection(database);
 
                     await dataCollection.UpdateAsync(testId, Builders<Role>.Update.Set(x => x.order, 10));
@@ -235,7 +232,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         [Fact]
         public async Task ShouldUpdateMany() {
             await MongoTest(
-                async (mongoDbRunner, database) => {
+                async database => {
                     (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
                     await dataCollection.UpdateManyAsync(x => x.order == 0, Builders<Role>.Update.Set(x => x.order, 10));
