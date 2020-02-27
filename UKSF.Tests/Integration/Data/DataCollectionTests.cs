@@ -38,8 +38,12 @@ namespace UKSF.Tests.Unit.Integration.Data {
 
             try {
                 await testFunction(mongoDbRunner, database);
+            } catch (Exception exception) {
+                Console.Out.WriteLine($"Mongo integration test failed: {exception.Message}");
+                throw;
             } finally {
                 mongoDbRunner.Dispose();
+                await Task.Delay(TimeSpan.FromSeconds(1));
             }
         }
 
