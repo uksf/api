@@ -18,9 +18,8 @@ jobs:
       with:
         dotnet-version: 3.1.101
     - name: Run tests with coverage
-      run: dotnet test /p:CollectCoverage=true /p:Exclude="[UKSF.Api.Signalr]*%2c[UKSF.PostMessage]*" /p:CoverletOutput=../coverage/coverage.info /p:CoverletOutputFormat=lcov -m:1
+      run: dotnet test /p:CollectCoverage=true /p:Exclude="[UKSF.Api.Signalr]*%2c[UKSF.PostMessage]*" /p:CoverletOutput=../coverage/lcov.info /p:CoverletOutputFormat=lcov -m:1
     - name: Coveralls
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        path-to-lcov: ./coverage/coverage.info
