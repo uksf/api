@@ -46,7 +46,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
             mongoDbRunner.Dispose();
         }
 
-        private async Task<(DataCollection<Role> dataCollection, string testId)> SetupTestCollection(IMongoDatabase database) {
+        private static async Task<(DataCollection<Role> dataCollection, string testId)> SetupTestCollection(IMongoDatabase database) {
             DataCollection<Role> dataCollection = new DataCollection<Role>(database, TEST_COLLECTION_NAME);
             await dataCollection.AssertCollectionExistsAsync();
 
@@ -60,7 +60,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
                 new Role { name = "NCOiC", roleType = RoleType.UNIT, order = 3 },
                 new Role { name = "NCOiC Air Troop", roleType = RoleType.INDIVIDUAL, order = 0 }
             };
-            roles.ForEach(async x => await dataCollection.AddAsync(x));
+            roles.ForEach(x => dataCollection.AddAsync(x).Wait());
 
             return (dataCollection, testId);
         }
