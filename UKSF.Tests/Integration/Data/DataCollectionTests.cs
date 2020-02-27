@@ -30,7 +30,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         private const string TEST_COLLECTION_NAME = "roles";
 
         private static async Task MongoTest(Func<MongoDbRunner, IMongoDatabase, Task> testFunction) {
-            MongoDbRunner mongoDbRunner = MongoDbRunner.Start();
+            MongoDbRunner mongoDbRunner = MongoDbRunner.Start(additionalMongodArguments: "--quiet");
             ConventionPack conventionPack = new ConventionPack { new IgnoreExtraElementsConvention(true), new IgnoreIfNullConvention(true) };
             ConventionRegistry.Register("DefaultConventions", conventionPack, t => true);
             MongoClient mongoClient = new MongoClient(mongoDbRunner.ConnectionString);
