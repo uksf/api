@@ -13,7 +13,7 @@ using Xunit;
 namespace UKSF.Tests.Unit.Integration.Data {
     public class DataPerformanceTests {
         private static async Task MongoTest(Func<MongoDbRunner, IMongoDatabase, Task> testFunction) {
-            MongoDbRunner mongoDbRunner = MongoDbRunner.Start();
+            MongoDbRunner mongoDbRunner = MongoDbRunner.Start(additionalMongodArguments: "--quiet");
             ConventionPack conventionPack = new ConventionPack { new IgnoreExtraElementsConvention(true), new IgnoreIfNullConvention(true) };
             ConventionRegistry.Register("DefaultConventions", conventionPack, t => true);
             MongoClient mongoClient = new MongoClient(mongoDbRunner.ConnectionString);
