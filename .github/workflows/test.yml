@@ -17,8 +17,10 @@ jobs:
       uses: actions/setup-dotnet@v1.4.0
       with:
         dotnet-version: 3.1.101
+    - name: Build with dotnet
+      run: dotnet build
     - name: Run tests with coverage
-      run: dotnet test /p:CollectCoverage=true /p:Exclude="[UKSF.Api.Signalr]*%2c[UKSF.PostMessage]*" /p:CoverletOutput=../coverage/lcov.info /p:CoverletOutputFormat=lcov -m:1
+      run: dotnet test --no-build /p:CollectCoverage=true /p:Exclude="[UKSF.Api.Signalr]*%2c[UKSF.PostMessage]*" /p:CoverletOutput=../coverage/lcov.info /p:CoverletOutputFormat=lcov -m:1
     - name: Coveralls
       uses: coverallsapp/github-action@master
       with:
