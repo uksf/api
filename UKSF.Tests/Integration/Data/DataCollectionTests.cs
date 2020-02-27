@@ -31,7 +31,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
         private MongoDbRunner mongoDbRunner;
 
         public void Dispose() {
-            mongoDbRunner.Dispose();
+            mongoDbRunner?.Dispose();
         }
 
         private async Task MongoTest(Func<IMongoDatabase, Task> testFunction) {
@@ -39,9 +39,11 @@ namespace UKSF.Tests.Unit.Integration.Data {
             ConventionPack conventionPack = new ConventionPack { new IgnoreExtraElementsConvention(true), new IgnoreIfNullConvention(true) };
             ConventionRegistry.Register("DefaultConventions", conventionPack, t => true);
             MongoClient mongoClient = new MongoClient(mongoDbRunner.ConnectionString);
-            IMongoDatabase database = mongoClient.GetDatabase("tests");
+            IMongoDatabase database = mongoClient.GetDatabase(Guid.NewGuid().ToString());
 
             await testFunction(database);
+
+            mongoDbRunner.Dispose();
         }
 
         private async Task<(DataCollection<Role> dataCollection, string testId)> SetupTestCollection(IMongoDatabase database) {
