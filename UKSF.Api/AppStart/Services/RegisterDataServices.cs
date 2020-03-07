@@ -13,7 +13,7 @@ using UKSF.Api.Data.Utility;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 
-namespace UKSF.Api.AppStart {
+namespace UKSF.Api.AppStart.Services {
     public static class DataServiceExtensions {
         public static void RegisterDataServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
             // Non-Cached

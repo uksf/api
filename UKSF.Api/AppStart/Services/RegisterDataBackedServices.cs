@@ -18,7 +18,7 @@ using UKSF.Api.Services.Personnel;
 using UKSF.Api.Services.Units;
 using UKSF.Api.Services.Utility;
 
-namespace UKSF.Api.AppStart {
+namespace UKSF.Api.AppStart.Services {
     public static class DataBackedServiceExtensions {
         public static void RegisterDataBackedServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
             // Non-Cached

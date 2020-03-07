@@ -9,6 +9,7 @@ using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using UKSF.Api.Data;
 using UKSF.Api.Models.Personnel;
+using UKSF.Api.Services.Utility;
 using UKSF.Tests.Unit.Common;
 using Xunit;
 
@@ -36,10 +37,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
 
         private async Task MongoTest(Func<IMongoDatabase, Task> testFunction) {
             mongoDbRunner = MongoDbRunner.Start(additionalMongodArguments: "--quiet");
-            ConventionPack conventionPack = new ConventionPack { new IgnoreExtraElementsConvention(true), new IgnoreIfNullConvention(true) };
-            ConventionRegistry.Register("DefaultConventions", conventionPack, t => true);
-            MongoClient mongoClient = new MongoClient(mongoDbRunner.ConnectionString);
-            IMongoDatabase database = mongoClient.GetDatabase(Guid.NewGuid().ToString());
+            IMongoDatabase database = MongoClientFactory.GetDatabase($"{mongoDbRunner.ConnectionString}{Guid.NewGuid()}");
 
             await testFunction(database);
 

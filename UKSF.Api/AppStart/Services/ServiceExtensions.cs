@@ -12,6 +12,7 @@ using UKSF.Api.Interfaces.Launcher;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
+using UKSF.Api.Services;
 using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Command;
 using UKSF.Api.Services.Fake;
@@ -24,13 +25,14 @@ using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
 using UKSF.Api.Services.Utility;
 
-namespace UKSF.Api.AppStart {
+namespace UKSF.Api.AppStart.Services {
     public static class ServiceExtensions {
         public static void RegisterServices(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment) {
             // Base
             services.AddSingleton(configuration);
             services.AddSingleton(currentEnvironment);
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<ExceptionHandler>();
 
             // Data common
             services.AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
@@ -41,6 +43,10 @@ namespace UKSF.Api.AppStart {
             services.RegisterEventServices();
             services.RegisterDataServices(currentEnvironment);
             services.RegisterDataBackedServices(currentEnvironment);
+
+            // Scheduled action services
+            services.AddSingleton<IScheduledActionService, ScheduledActionService>();
+            services.RegisterScheduledActionServices();
 
             // Services
             services.AddTransient<IAssignmentService, AssignmentService>();

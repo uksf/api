@@ -1,21 +1,27 @@
 using System;
 using System.Collections.Concurrent;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Utility;
+using UKSF.Api.Interfaces.Utility.ScheduledActions;
+using UKSF.Api.Models;
 using UKSF.Api.Models.Utility;
 using UKSF.Api.Services.Message;
+using UKSF.Api.Services.Utility.ScheduledActions;
 
 namespace UKSF.Api.Services.Utility {
     public class SchedulerService : DataBackedService<ISchedulerDataService>, ISchedulerService {
         private static readonly ConcurrentDictionary<string, CancellationTokenSource> ACTIVE_TASKS = new ConcurrentDictionary<string, CancellationTokenSource>();
+        private readonly IScheduledActionService scheduledActionService;
         private readonly IHostEnvironment currentEnvironment;
 
-        public SchedulerService(ISchedulerDataService data, IHostEnvironment currentEnvironment) : base(data) => this.currentEnvironment = currentEnvironment;
+        public SchedulerService(ISchedulerDataService data, IScheduledActionService scheduledActionService, IHostEnvironment currentEnvironment) : base(data) {
+            this.scheduledActionService = scheduledActionService;
+            this.currentEnvironment = currentEnvironment;
+        }
 
         public async void LoadApi() {
             if (!currentEnvironment.IsDevelopment()) {
@@ -99,11 +105,11 @@ namespace UKSF.Api.Services.Utility {
 
         private async Task AddUnique() {
             if (Data.GetSingle(x => x.type == ScheduledJobType.LOG_PRUNE) == null) {
-                await Create(DateTime.Today.AddDays(1), TimeSpan.FromDays(1), ScheduledJobType.LOG_PRUNE, nameof(SchedulerActionHelper.PruneLogs));
+                await Create(DateTime.Today.AddDays(1), TimeSpan.FromDays(1), ScheduledJobType.LOG_PRUNE, PruneLogsAction.ACTION_NAME);
             }
 
             if (Data.GetSingle(x => x.type == ScheduledJobType.TEAMSPEAK_SNAPSHOT) == null) {
-                await Create(DateTime.Today.AddDays(1), TimeSpan.FromMinutes(5), ScheduledJobType.TEAMSPEAK_SNAPSHOT, nameof(SchedulerActionHelper.TeamspeakSnapshot));
+                await Create(DateTime.Today.AddDays(1), TimeSpan.FromMinutes(5), ScheduledJobType.TEAMSPEAK_SNAPSHOT, TeamspeakSnapshotAction.ACTION_NAME);
             }
         }
 
@@ -111,20 +117,15 @@ namespace UKSF.Api.Services.Utility {
             await Data.Update(job.id, "next", job.next);
         }
 
-        private bool IsCancelled(ScheduledJob job, CancellationTokenSource token) {
+        private bool IsCancelled(DatabaseObject job, CancellationTokenSource token) {
             if (token.IsCancellationRequested) return true;
             return Data.GetSingle(job.id) == null;
         }
 
-        private static void ExecuteAction(ScheduledJob job) {
-            MethodInfo action = typeof(SchedulerActionHelper).GetMethod(job.action);
-            if (action == null) {
-                LogWrapper.Log($"Failed to find action '{job.action}' for scheduled job");
-                return;
-            }
-
+        private void ExecuteAction(ScheduledJob job) {
+            IScheduledAction action = scheduledActionService.GetScheduledAction(job.action);
             object[] parameters = job.actionParameters == null ? null : JsonConvert.DeserializeObject<object[]>(job.actionParameters);
-            action.Invoke(null, parameters);
+            action.Run(parameters);
         }
     }
 }

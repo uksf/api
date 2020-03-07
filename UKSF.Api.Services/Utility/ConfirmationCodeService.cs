@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Utility;
+using UKSF.Api.Services.Utility.ScheduledActions;
 
 namespace UKSF.Api.Services.Utility {
     public class ConfirmationCodeService : DataBackedService<IConfirmationCodeDataService>, IConfirmationCodeService {
@@ -16,10 +17,10 @@ namespace UKSF.Api.Services.Utility {
             ConfirmationCode code = new ConfirmationCode {value = value};
             await Data.Add(code);
             await schedulerService.Create(
-                DateTime.Now.AddMinutes(30),
+                DateTime.Now.AddSeconds(30),
                 TimeSpan.Zero,
                 ScheduledJobType.NORMAL,
-                nameof(SchedulerActionHelper.DeleteExpiredConfirmationCode),
+                DeleteExpiredConfirmationCodeAction.ACTION_NAME,
                 code.id
             );
             return code.id;
@@ -30,9 +31,7 @@ namespace UKSF.Api.Services.Utility {
             if (confirmationCode == null) return string.Empty;
             await Data.Delete(confirmationCode.id);
             string actionParameters = JsonConvert.SerializeObject(new object[] {confirmationCode.id});
-            if (actionParameters != null) {
-                await schedulerService.Cancel(x => x.actionParameters == actionParameters);
-            }
+            await schedulerService.Cancel(x => x.actionParameters == actionParameters);
 
             return confirmationCode.value;
         }
