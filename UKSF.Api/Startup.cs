@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -13,18 +12,13 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using UKSF.Api.AppStart;
-using UKSF.Api.Events;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Data.Cached;
-using UKSF.Api.Interfaces.Integrations;
+using UKSF.Api.AppStart.Services;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Services;
-using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Common;
 using UKSF.Api.Services.Personnel;
-using UKSF.Api.Services.Utility;
 using UKSF.Api.Signalr.Hubs.Command;
 using UKSF.Api.Signalr.Hubs.Game;
 using UKSF.Api.Signalr.Hubs.Integrations;
@@ -49,15 +43,6 @@ namespace UKSF.Api {
 
         public void ConfigureServices(IServiceCollection services) {
             services.RegisterServices(configuration, currentEnvironment);
-
-            ExceptionHandler exceptionHandler = null;
-            services.AddSingleton(
-                provider => {
-                    exceptionHandler = new ExceptionHandler(provider.GetService<ISessionService>(), provider.GetService<IDisplayNameService>());
-                    return exceptionHandler;
-                }
-            );
-            if (exceptionHandler == null) throw new NullReferenceException("Could not create ExceptionHandler");
 
             services.AddCors(
                 options => options.AddPolicy(
@@ -109,7 +94,7 @@ namespace UKSF.Api {
 
             services.AddControllers();
             services.AddSwaggerGen(options => { options.SwaggerDoc("v1", new OpenApiInfo { Title = "UKSF API", Version = "v1" }); });
-            services.AddMvc(options => { options.Filters.Add(exceptionHandler); }).AddNewtonsoftJson();
+            services.AddMvc(options => { options.Filters.Add<ExceptionHandler>(); }).AddNewtonsoftJson();
         }
 
         // ReSharper disable once UnusedMember.Global
@@ -145,62 +130,7 @@ namespace UKSF.Api {
             Global.ServiceProvider = app.ApplicationServices;
             ServiceWrapper.ServiceProvider = Global.ServiceProvider;
 
-            // Execute any DB migration
-            Global.ServiceProvider.GetService<MigrationUtility>().Migrate();
-
-            // Warm cached data services
-            RegisterAndWarmCachedData();
-
-            // Add event handlers
-            Global.ServiceProvider.GetService<EventHandlerInitialiser>().InitEventHandlers();
-
-            // Start teamspeak manager
-            Global.ServiceProvider.GetService<ITeamspeakManagerService>().Start();
-
-            // Connect discord bot
-            Global.ServiceProvider.GetService<IDiscordService>().ConnectDiscord();
-
-            // Start scheduler
-            Global.ServiceProvider.GetService<ISchedulerService>().LoadApi();
-        }
-
-        private static void RegisterAndWarmCachedData() {
-            IServiceProvider serviceProvider = Global.ServiceProvider;
-            IAccountDataService accountDataService = serviceProvider.GetService<IAccountDataService>();
-            ICommandRequestDataService commandRequestDataService = serviceProvider.GetService<ICommandRequestDataService>();
-            ICommentThreadDataService commentThreadDataService = serviceProvider.GetService<ICommentThreadDataService>();
-            IDischargeDataService dischargeDataService = serviceProvider.GetService<IDischargeDataService>();
-            IGameServersDataService gameServersDataService = serviceProvider.GetService<IGameServersDataService>();
-            ILauncherFileDataService launcherFileDataService = serviceProvider.GetService<ILauncherFileDataService>();
-            ILoaDataService loaDataService = serviceProvider.GetService<ILoaDataService>();
-            INotificationsDataService notificationsDataService = serviceProvider.GetService<INotificationsDataService>();
-            IOperationOrderDataService operationOrderDataService = serviceProvider.GetService<IOperationOrderDataService>();
-            IOperationReportDataService operationReportDataService = serviceProvider.GetService<IOperationReportDataService>();
-            IRanksDataService ranksDataService = serviceProvider.GetService<IRanksDataService>();
-            IRolesDataService rolesDataService = serviceProvider.GetService<IRolesDataService>();
-            IUnitsDataService unitsDataService = serviceProvider.GetService<IUnitsDataService>();
-            IVariablesDataService variablesDataService = serviceProvider.GetService<IVariablesDataService>();
-
-            DataCacheService dataCacheService = serviceProvider.GetService<DataCacheService>();
-            dataCacheService.RegisterCachedDataServices(
-                new List<ICachedDataService> {
-                    accountDataService,
-                    commandRequestDataService,
-                    commentThreadDataService,
-                    dischargeDataService,
-                    gameServersDataService,
-                    launcherFileDataService,
-                    loaDataService,
-                    notificationsDataService,
-                    operationOrderDataService,
-                    operationReportDataService,
-                    ranksDataService,
-                    rolesDataService,
-                    unitsDataService,
-                    variablesDataService
-                }
-            );
-            dataCacheService.InvalidateCachedData();
+            StartServices.Start();
         }
 
         private static void OnShutdown() {

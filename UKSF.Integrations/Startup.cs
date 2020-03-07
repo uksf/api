@@ -20,11 +20,13 @@ using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
+using UKSF.Api.Interfaces.Utility.ScheduledActions;
 using UKSF.Api.Services;
 using UKSF.Api.Services.Common;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
 using UKSF.Api.Services.Utility;
+using UKSF.Api.Services.Utility.ScheduledActions;
 
 namespace UKSF.Integrations {
     public class Startup {
@@ -39,15 +41,6 @@ namespace UKSF.Integrations {
         public void ConfigureServices(IServiceCollection services) {
             services.RegisterServices(configuration);
 
-            ExceptionHandler exceptionHandler = null;
-            services.AddSingleton(
-                provider => {
-                    exceptionHandler = new ExceptionHandler(provider.GetService<ISessionService>(), provider.GetService<IDisplayNameService>());
-                    return exceptionHandler;
-                }
-            );
-            if (exceptionHandler == null) throw new NullReferenceException("Could not create ExceptionHandler");
-
             services.AddCors(
                 options => options.AddPolicy(
                     "CorsPolicy",
@@ -60,7 +53,7 @@ namespace UKSF.Integrations {
 
             services.AddControllers();
             services.AddSwaggerGen(options => { options.SwaggerDoc("v1", new OpenApiInfo { Title = "UKSF Integrations API", Version = "v1" }); });
-            services.AddMvc(options => { options.Filters.Add(exceptionHandler); }).AddNewtonsoftJson();
+            services.AddMvc(options => { options.Filters.Add<ExceptionHandler>(); }).AddNewtonsoftJson();
         }
 
         // ReSharper disable once UnusedMember.Global
@@ -86,6 +79,9 @@ namespace UKSF.Integrations {
             // Warm cached data services
             RegisterAndWarmCachedData();
 
+            // Register scheduled actions
+            RegisterScheduledActions();
+
             // Start scheduler
             Global.ServiceProvider.GetService<ISchedulerService>().LoadIntegrations();
         }
@@ -97,8 +93,16 @@ namespace UKSF.Integrations {
             IVariablesDataService variablesDataService = serviceProvider.GetService<IVariablesDataService>();
 
             DataCacheService dataCacheService = serviceProvider.GetService<DataCacheService>();
-            dataCacheService.RegisterCachedDataServices(new List<ICachedDataService> { accountDataService, ranksDataService, variablesDataService });
+            dataCacheService.RegisterCachedDataServices(new HashSet<ICachedDataService> { accountDataService, ranksDataService, variablesDataService });
             dataCacheService.InvalidateCachedData();
+        }
+
+        private static void RegisterScheduledActions() {
+            IServiceProvider serviceProvider = Global.ServiceProvider;
+            IDeleteExpiredConfirmationCodeAction deleteExpiredConfirmationCodeAction = serviceProvider.GetService<IDeleteExpiredConfirmationCodeAction>();
+
+            IScheduledActionService scheduledActionService = serviceProvider.GetService<IScheduledActionService>();
+            scheduledActionService.RegisterScheduledActions(new HashSet<IScheduledAction> { deleteExpiredConfirmationCodeAction });
         }
     }
 
@@ -107,6 +111,7 @@ namespace UKSF.Integrations {
             // Base
             services.AddSingleton(configuration);
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<ExceptionHandler>();
 
             // Database
             services.AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
@@ -129,10 +134,14 @@ namespace UKSF.Integrations {
             services.AddSingleton<ISchedulerDataService, SchedulerIntegrationsDataService>();
             services.AddSingleton<IVariablesDataService, VariablesDataService>();
 
+            // Scheduled Actions
+            services.AddTransient<IDeleteExpiredConfirmationCodeAction, DeleteExpiredConfirmationCodeAction>();
+
             // Services
             services.AddTransient<IConfirmationCodeService, ConfirmationCodeService>();
             services.AddTransient<IDisplayNameService, DisplayNameService>();
             services.AddTransient<IRanksService, RanksService>();
+            services.AddSingleton<IScheduledActionService, ScheduledActionService>();
             services.AddTransient<ISchedulerService, SchedulerService>();
 
             services.AddSingleton<IAccountService, AccountService>();

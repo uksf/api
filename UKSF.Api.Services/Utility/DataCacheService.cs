@@ -3,14 +3,16 @@ using UKSF.Api.Interfaces.Data;
 
 namespace UKSF.Api.Services.Utility {
     public class DataCacheService {
-        private List<ICachedDataService> cachedDataServices;
+        private HashSet<ICachedDataService> cachedDataServices;
 
-        public void RegisterCachedDataServices(List<ICachedDataService> newCachedDataServices) {
+        public void RegisterCachedDataServices(HashSet<ICachedDataService> newCachedDataServices) {
             cachedDataServices = newCachedDataServices;
         }
 
         public void InvalidateCachedData() {
-            cachedDataServices.ForEach(x => x.Refresh());
+            foreach (ICachedDataService cachedDataService in cachedDataServices) {
+                cachedDataService.Refresh();
+            }
         }
     }
 }

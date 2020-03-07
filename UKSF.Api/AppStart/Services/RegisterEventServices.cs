@@ -8,7 +8,7 @@ using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Interfaces.Events.Handlers;
 
-namespace UKSF.Api.AppStart {
+namespace UKSF.Api.AppStart.Services {
     public static class EventServiceExtensions {
         public static void RegisterEventServices(this IServiceCollection services) {
             // Event Buses
