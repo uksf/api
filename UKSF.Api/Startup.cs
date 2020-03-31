@@ -129,6 +129,7 @@ namespace UKSF.Api {
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime hostApplicationLifetime) {
             hostApplicationLifetime.ApplicationStopping.Register(OnShutdown);
             app.UseStaticFiles();
+            app.UseCookiePolicy(new CookiePolicyOptions {MinimumSameSitePolicy = SameSiteMode.Lax});
             app.UseSwagger();
             app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF API v1"); });
             app.UseRouting();
