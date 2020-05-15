@@ -53,7 +53,7 @@ namespace UKSF.Api.Services.Game.Missions {
                 if (index >= source.Count) return "";
                 string line = source[index];
                 string[] parts = line.Split('=');
-                if (parts.Length == 2 && parts.First().ToLower().Equals(key.ToLower())) {
+                if (parts.Length == 2 && parts.First().Trim().ToLower().Equals(key.ToLower())) {
                     return parts.Last().Replace(";", "").Replace("\"", "").Trim();
                 }
 
