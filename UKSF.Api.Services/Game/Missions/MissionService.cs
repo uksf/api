@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using UKSF.Api.Models.Mission;
 using UKSF.Api.Services.Admin;
+using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Utility;
 
 namespace UKSF.Api.Services.Game.Missions {
@@ -33,7 +34,13 @@ namespace UKSF.Api.Services.Game.Missions {
                 reports.Add(
                     new MissionPatchingReport(
                         "Mission Patching Ignored",
-                        "Mission patching for this mission was ignored.\nThis means no changes to the mission.sqm were made. This is not an error, however errors may occur in the mission as a result of this.\nEnsure ALL the steps below have been done to the mission.sqm before reporting any errors:\n\n\n1: Remove raw newline characters. Any newline characters (\\n) in code will result in compile errors and that code will NOT run.\nFor example, a line: init = \"myTestVariable = 10; \\n myOtherTestVariable = 20;\" should be replaced with: init = \"myTestVariable = 10; myOtherTestVariable = 20;\"\n\n2: Replace embedded quotes. Any embedded quotes (\"\") in code will result in compile errors and that code will NOT run. They should be replaced with a single quote character (').\nFor example, a line: init = \"myTestVariable = \"\"hello\"\";\" should be replaced with: init = \"myTestVariable = 'hello';\""
+                        "Mission patching for this mission was ignored.\nThis means no changes to the mission.sqm were made." +
+                        "This is not an error, however errors may occur in the mission as a result of this.\n" +
+                        "Ensure ALL the steps below have been done to the mission.sqm before reporting any errors:\n\n\n" +
+                        "1: Remove raw newline characters. Any newline characters (\\n) in code will result in compile errors and that code will NOT run.\n" +
+                        "For example, a line: init = \"myTestVariable = 10; \\n myOtherTestVariable = 20;\" should be replaced with: init = \"myTestVariable = 10; myOtherTestVariable = 20;\"\n\n" +
+                        "2: Replace embedded quotes. Any embedded quotes (\"\") in code will result in compile errors and that code will NOT run. They should be replaced with a single quote character (').\n" +
+                        "For example, a line: init = \"myTestVariable = \"\"hello\"\";\" should be replaced with: init = \"myTestVariable = 'hello';\""
                     )
                 );
                 PatchDescription();
@@ -49,12 +56,27 @@ namespace UKSF.Api.Services.Game.Missions {
 
         private bool AssertRequiredFiles() {
             if (!File.Exists(mission.descriptionPath)) {
-                reports.Add(new MissionPatchingReport("Missing file: description.ext", "The mission is missing a required file:\ndescription.ext\n\nIt is advised to copy this file directly from the template mission to your mission\nUKSFTemplate.VR is located in the modpack files", true));
+                reports.Add(
+                    new MissionPatchingReport(
+                        "Missing file: description.ext",
+                        "The mission is missing a required file:\ndescription.ext\n\n" +
+                        "It is advised to copy this file directly from the template mission to your mission\nUKSFTemplate.VR is located in the modpack files",
+                        true
+                    )
+                );
                 return false;
             }
 
             if (!File.Exists(Path.Combine(mission.path, "cba_settings.sqf"))) {
-                reports.Add(new MissionPatchingReport("Missing file: cba_settings.sqf", "The mission is missing a required file:\ncba_settings.sqf\n\nIt is advised to copy this file directly from the template mission to your mission\nUKSFTemplate.VR is located in the modpack files", true));
+                reports.Add(
+                    new MissionPatchingReport(
+                        "Missing file: cba_settings.sqf",
+                        "The mission is missing a required file:\ncba_settings.sqf\n\n" +
+                        "It is advised to copy this file directly from the template mission to your mission\n" +
+                        "UKSFTemplate.VR is located in the modpack files and make changes according to the needs of the mission",
+                        true
+                    )
+                );
                 return false;
             }
 
@@ -95,10 +117,12 @@ namespace UKSF.Api.Services.Game.Missions {
             mission.sqmLines.RemoveAll(string.IsNullOrEmpty);
             RemoveUnbinText();
             ReadAllData();
+            ReadSettings();
         }
 
         private void RemoveUnbinText() {
             if (mission.sqmLines.First() != "////////////////////////////////////////////////////////////////////") return;
+
             mission.sqmLines = mission.sqmLines.Skip(7).ToList();
             // mission.sqmLines = mission.sqmLines.Take(mission.sqmLines.Count - 1).ToList();
         }
@@ -109,8 +133,38 @@ namespace UKSF.Api.Services.Game.Missions {
             mission.missionEntity = MissionEntityHelper.CreateFromItems(mission.rawEntities);
         }
 
+        private void ReadSettings() {
+            mission.maxCurators = 5;
+            string curatorsMaxLine = File.ReadAllLines(Path.Combine(mission.path, "cba_settings.sqf")).FirstOrDefault(x => x.Contains("uksf_curator_curatorsMax"));
+            if (string.IsNullOrEmpty(curatorsMaxLine)) {
+                mission.maxCurators = GameServerHelpers.GetMaxCuratorCountFromSettings();
+                reports.Add(
+                    new MissionPatchingReport(
+                        "Using server setting 'uksf_curator_curatorsMax'",
+                        "Could not find setting 'uksf_curator_curatorsMax' in cba_settings.sqf" +
+                        "This is required to add the correct nubmer of pre-defined curator objects." +
+                        $"The server setting value ({mission.maxCurators}) for this will be used instead."
+                    )
+                );
+                return;
+            }
+
+            string curatorsMaxString = curatorsMaxLine.Split("=")[1].RemoveSpaces().Replace(";", "");
+            if (!int.TryParse(curatorsMaxString, out mission.maxCurators)) {
+                reports.Add(
+                    new MissionPatchingReport(
+                        "Using hardcoded setting 'uksf_curator_curatorsMax'",
+                        $"Could not read malformed setting: '{curatorsMaxLine}' in cba_settings.sqf" +
+                        "This is required to add the correct nubmer of pre-defined curator objects." +
+                        "The hardcoded value (5) will be used instead."
+                    )
+                );
+            }
+        }
+
         private void Patch() {
-            mission.missionEntity.Patch();
+            mission.missionEntity.Patch(mission.maxCurators);
+
             if (!CheckIgnoreKey("missionImageIgnore")) {
                 string imagePath = Path.Combine(mission.path, "uksf.paa");
                 string modpackImagePath = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("PATH_MODPACK").AsString(), "@uksf", "UKSFTemplate.VR", "uksf.paa");
@@ -119,7 +173,9 @@ namespace UKSF.Api.Services.Game.Missions {
                         reports.Add(
                             new MissionPatchingReport(
                                 "Loading image was different",
-                                "The mission loading image `uksf.paa` was different from the default and has been replaced\n\nIf you wish this to be a custom image, see <a target=\"_blank\" href=https://github.com/uksf/modpack/wiki/SR5:-Mission-Patching#ignoring-custom-loading-image>this page</a> for details on how to achieve this"
+                                "The mission loading image `uksf.paa` was found to be different from the default." +
+                                "It has been replaced with the default UKSF image.\n\n" +
+                                "If you wish this to be a custom image, see <a target=\"_blank\" href=https://github.com/uksf/modpack/wiki/SR5:-Mission-Patching#ignoring-custom-loading-image>this page</a> for details on how to configure this"
                             )
                         );
                     }
@@ -145,24 +201,21 @@ namespace UKSF.Api.Services.Game.Missions {
 
             mission.descriptionLines = File.ReadAllLines(mission.descriptionPath).ToList();
             mission.descriptionLines[mission.descriptionLines.FindIndex(x => x.ContainsCaseInsensitive("maxPlayers"))] = $"    maxPlayers = {playable};";
-            CheckDescriptionRequireds();
-            CheckDescriptionConfigurables();
+            CheckRequiredDescriptionItems();
+            CheckConfigurableDescriptionItems();
 
-            int index = mission.descriptionLines.FindIndex(x => x.Contains("__EXEC"));
-            if (index != -1) {
-                mission.descriptionLines.RemoveAt(index);
-            }
+            mission.descriptionLines = mission.descriptionLines.Where(x => !x.Contains("__EXEC")).ToList();
 
             File.WriteAllLines(mission.descriptionPath, mission.descriptionLines);
         }
 
-        private void CheckDescriptionConfigurables() {
+        private void CheckConfigurableDescriptionItems() {
             CheckDescriptionItem("onLoadName", "\"UKSF: Operation\"", false);
             CheckDescriptionItem("onLoadMission", "\"UKSF: Operation\"", false);
             CheckDescriptionItem("overviewText", "\"UKSF: Operation\"", false);
         }
 
-        private void CheckDescriptionRequireds() {
+        private void CheckRequiredDescriptionItems() {
             CheckDescriptionItem("author", "\"UKSF\"");
             CheckDescriptionItem("loadScreen", "\"uksf.paa\"");
             CheckDescriptionItem("respawn", "\"BASE\"");
@@ -184,9 +237,19 @@ namespace UKSF.Api.Services.Game.Missions {
                 itemValue = itemValue.Remove(itemValue.Length - 1);
                 bool equal = string.Equals(itemValue, defaultValue, StringComparison.InvariantCultureIgnoreCase);
                 if (!equal && required) {
-                    reports.Add(new MissionPatchingReport($"Required description.ext item <i>{key}</i>  value is not default", $"<i>{key}</i>  in description.ext is '{itemValue}'\nThe default value is '{defaultValue}'\n\nYou should only change this if you know what you're doing"));
+                    reports.Add(
+                        new MissionPatchingReport(
+                            $"Required description.ext item <i>{key}</i>  value is not default",
+                            $"<i>{key}</i>  in description.ext is '{itemValue}'\nThe default value is '{defaultValue}'\n\nYou should only change this if you know what you're doing"
+                        )
+                    );
                 } else if (equal && !required) {
-                    reports.Add(new MissionPatchingReport($"Configurable description.ext item <i>{key}</i>  value is default", $"<i>{key}</i>  in description.ext is the same as the default value '{itemValue}'\n\nThis should be changed based on your mission"));
+                    reports.Add(
+                        new MissionPatchingReport(
+                            $"Configurable description.ext item <i>{key}</i>  value is default",
+                            $"<i>{key}</i>  in description.ext is the same as the default value '{itemValue}'\n\nThis should be changed based on your mission"
+                        )
+                    );
                 }
 
                 return;
@@ -198,7 +261,8 @@ namespace UKSF.Api.Services.Game.Missions {
                 reports.Add(
                     new MissionPatchingReport(
                         $"Configurable description.ext item <i>{key}</i>  is missing",
-                        $"<i>{key}</i>  in description.ext is missing\nThis is required for the mission\n\nIt is advised to copy the description.ext file directly from the template mission to your mission\nUKSFTemplate.VR is located in the modpack files",
+                        $"<i>{key}</i>  in description.ext is missing\nThis is required for the mission\n\n" +
+                        "It is advised to copy the description.ext file directly from the template mission to your mission\nUKSFTemplate.VR is located in the modpack files",
                         true
                     )
                 );

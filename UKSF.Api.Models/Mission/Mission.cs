@@ -9,6 +9,7 @@ namespace UKSF.Api.Models.Mission {
         public List<string> descriptionLines;
         public MissionEntity missionEntity;
         public int playerCount;
+        public int maxCurators;
         public List<string> rawEntities;
         public List<string> sqmLines;
 

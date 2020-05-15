@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Services.Admin;
+using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Utility;
 
 namespace UKSF.Api.Services.Game {
@@ -54,9 +55,12 @@ namespace UKSF.Api.Services.Game {
 
         public static string GetGameServerExecutablePath() => VariablesWrapper.VariablesDataService().GetSingle("SERVER_EXECUTABLE").AsString();
 
+        public static string GetGameServerSettingsPath() => VariablesWrapper.VariablesDataService().GetSingle("SERVER_SETTINGS").AsString();
+
         public static string GetGameServerMissionsPath() => VariablesWrapper.VariablesDataService().GetSingle("MISSIONS_PATH").AsString();
 
-        public static string GetGameServerConfigPath(this GameServer gameServer) => Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("SERVERS_PATH").AsString(), "configs", $"{gameServer.profileName}.cfg");
+        public static string GetGameServerConfigPath(this GameServer gameServer) =>
+            Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("SERVERS_PATH").AsString(), "configs", $"{gameServer.profileName}.cfg");
 
         private static string GetGameServerProfilesPath() => VariablesWrapper.VariablesDataService().GetSingle("SERVER_PROFILES").AsString();
 
@@ -68,18 +72,36 @@ namespace UKSF.Api.Services.Game {
 
         public static IEnumerable<string> GetGameServerModsPaths() => VariablesWrapper.VariablesDataService().GetSingle("MODS_PATHS").AsArray(x => x.RemoveQuotes());
 
-        public static string FormatGameServerConfig(this GameServer gameServer, int playerCount, string missionSelection) => string.Format(string.Join("\n", BASE_CONFIG), gameServer.hostName, gameServer.password, gameServer.adminPassword, playerCount, missionSelection.Replace(".pbo", ""));
+        public static string FormatGameServerConfig(this GameServer gameServer, int playerCount, string missionSelection) =>
+            string.Format(string.Join("\n", BASE_CONFIG), gameServer.hostName, gameServer.password, gameServer.adminPassword, playerCount, missionSelection.Replace(".pbo", ""));
 
         public static string FormatGameServerLaunchArguments(this GameServer gameServer) =>
-            $"-config={gameServer.GetGameServerConfigPath()} -profiles={GetGameServerProfilesPath()} -cfg={GetGameServerPerfConfigPath()} -name={gameServer.name} -port={gameServer.port} -apiport=\"{gameServer.apiPort}\" {(string.IsNullOrEmpty(gameServer.serverMods) ? "" : $"-serverMod={gameServer.serverMods}")} -mod={gameServer.FormatGameServerMods()}{(!GetGameServerExecutablePath().Contains("server") ? " -server" : "")} -enableHT -high -bandwidthAlg=2 -hugepages -noSounds -loadMissionToMemory -filePatching -limitFPS=200";
+            $"-config={gameServer.GetGameServerConfigPath()} -profiles={GetGameServerProfilesPath()} -cfg={GetGameServerPerfConfigPath()} -name={gameServer.name}" +
+            $"-port={gameServer.port} -apiport=\"{gameServer.apiPort}\" {(string.IsNullOrEmpty(gameServer.serverMods) ? "" : $"-serverMod={gameServer.serverMods}")}" +
+            $"-mod={gameServer.FormatGameServerMods()}{(!GetGameServerExecutablePath().Contains("server") ? " -server" : "")}" +
+            "-enableHT -high -bandwidthAlg=2 -hugepages -noSounds -loadMissionToMemory -filePatching -limitFPS=200";
 
         public static string FormatHeadlessClientLaunchArguments(this GameServer gameServer, int index) =>
-            $"-profiles={GetGameServerProfilesPath()} -name={GetHeadlessClientName(index)} -port={gameServer.port} -apiport=\"{gameServer.apiPort + index + 1}\" -mod={gameServer.FormatGameServerMods()} -localhost=127.0.0.1 -connect=localhost -password={gameServer.password} -client -nosound -enableHT -high -hugepages -filePatching -limitFPS=200";
+            $"-profiles={GetGameServerProfilesPath()} -name={GetHeadlessClientName(index)}" +
+            $"-port={gameServer.port} -apiport=\"{gameServer.apiPort + index + 1}\"" +
+            $"-mod={gameServer.FormatGameServerMods()} -localhost=127.0.0.1 -connect=localhost -password={gameServer.password}" +
+            "-client -nosound -enableHT -high -hugepages -filePatching -limitFPS=200";
 
         public static string GetMaxPlayerCountFromConfig(this GameServer gameServer) {
             string maxPlayers = File.ReadAllLines(gameServer.GetGameServerConfigPath()).First(x => x.Contains("maxPlayers"));
             maxPlayers = maxPlayers.RemoveSpaces().Replace(";", "");
             return maxPlayers.Split("=")[1];
+        }
+
+        public static int GetMaxCuratorCountFromSettings() {
+            string[] lines = File.ReadAllLines(GetGameServerSettingsPath());
+            string curatorsMaxString = lines.FirstOrDefault(x => x.Contains("uksf_curator_curatorsMax"));
+            if (string.IsNullOrEmpty(curatorsMaxString)) {
+                LogWrapper.Log($"Could not find max curators in server settings file. Loading hardcoded deault '5'");
+                return 5;
+            }
+            curatorsMaxString = curatorsMaxString.Split("=")[1].RemoveSpaces().Replace(";", "");
+            return int.Parse(curatorsMaxString);
         }
 
         public static TimeSpan StripMilliseconds(this TimeSpan time) => new TimeSpan(time.Hours, time.Minutes, time.Seconds);

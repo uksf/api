@@ -25,17 +25,22 @@ namespace UKSF.Api.Services.Game.Missions {
             return missionEntity;
         }
 
-        public static void Patch(this MissionEntity missionEntity) {
-            missionEntity.missionEntityItems.RemoveAll(x => x.itemType.Equals("Group") && x.missionEntity != null && x.missionEntity.missionEntityItems.All(y => y.isPlayable && !y.Ignored()));
+        public static void Patch(this MissionEntity missionEntity, int maxCurators) {
+            MissionEntityItem.position = 10;
+            missionEntity.missionEntityItems.RemoveAll(x => x.dataType.Equals("Group") && x.missionEntity != null && x.missionEntity.missionEntityItems.All(y => y.isPlayable && !y.Ignored()));
             foreach (MissionUnit unit in MissionPatchData.instance.orderedUnits) {
-                MissionEntity entity = CreateFromUnit(unit);
-                missionEntity.missionEntityItems.Add(MissionEntityItemHelper.CreateFromMissionEntity(entity, unit.callsign));
+                missionEntity.missionEntityItems.Add(MissionEntityItemHelper.CreateFromMissionEntity(CreateFromUnit(unit), unit.callsign));
+            }
+            
+            MissionEntityItem.curatorPosition = 0.5;
+            missionEntity.missionEntityItems.RemoveAll(x => x.dataType == "Logic" && x.type == "ModuleCurator_F");
+            for (int index = 0; index < maxCurators; index++) {
+                missionEntity.missionEntityItems.Add(MissionEntityItemHelper.CreateCuratorEntity());
             }
 
             missionEntity.itemsCount = missionEntity.missionEntityItems.Count;
             for (int index = 0; index < missionEntity.missionEntityItems.Count; index++) {
-                MissionEntityItem item = missionEntity.missionEntityItems[index];
-                item.Patch(index);
+                missionEntity.missionEntityItems[index].Patch(index);
             }
         }
 
