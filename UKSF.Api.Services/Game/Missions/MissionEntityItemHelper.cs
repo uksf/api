@@ -6,19 +6,24 @@ namespace UKSF.Api.Services.Game.Missions {
     public static class MissionEntityItemHelper {
         public static MissionEntityItem CreateFromList(List<string> rawItem) {
             MissionEntityItem missionEntityItem = new MissionEntityItem {rawMissionEntityItem = rawItem};
-            missionEntityItem.itemType = MissionUtilities.ReadSingleDataByKey(missionEntityItem.rawMissionEntityItem, "dataType").ToString();
-            if (missionEntityItem.itemType.Equals("Group")) {
+            missionEntityItem.dataType = MissionUtilities.ReadSingleDataByKey(missionEntityItem.rawMissionEntityItem, "dataType").ToString();
+            if (missionEntityItem.dataType.Equals("Group")) {
                 missionEntityItem.rawMissionEntities = MissionUtilities.ReadDataByKey(missionEntityItem.rawMissionEntityItem, "Entities");
                 if (missionEntityItem.rawMissionEntities.Count > 0) {
                     missionEntityItem.missionEntity = MissionEntityHelper.CreateFromItems(missionEntityItem.rawMissionEntities);
                 }
-            } else if (missionEntityItem.itemType.Equals("Object")) {
+            } else if (missionEntityItem.dataType.Equals("Object")) {
                 string isPlayable = MissionUtilities.ReadSingleDataByKey(missionEntityItem.rawMissionEntityItem, "isPlayable").ToString();
                 string isPlayer = MissionUtilities.ReadSingleDataByKey(missionEntityItem.rawMissionEntityItem, "isPlayer").ToString();
                 if (!string.IsNullOrEmpty(isPlayable)) {
                     missionEntityItem.isPlayable = isPlayable == "1";
                 } else if (!string.IsNullOrEmpty(isPlayer)) {
                     missionEntityItem.isPlayable = isPlayer == "1";
+                }
+            } else if (missionEntityItem.dataType.Equals("Logic")) {
+                string type = MissionUtilities.ReadSingleDataByKey(missionEntityItem.rawMissionEntityItem, "type").ToString();
+                if (!string.IsNullOrEmpty(type)) {
+                    missionEntityItem.type = type;
                 }
             }
 
@@ -34,7 +39,7 @@ namespace UKSF.Api.Services.Game.Missions {
             missionEntityItem.rawMissionEntityItem.Add($"id={Mission.nextId++};");
             missionEntityItem.rawMissionEntityItem.Add("class PositionInfo");
             missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("position[]={" + $"{MissionEntityItem.position += 1}" + ",0,0};");
+            missionEntityItem.rawMissionEntityItem.Add("position[]={" + $"{MissionEntityItem.position++}" + ",0,0};");
             missionEntityItem.rawMissionEntityItem.Add("};");
             missionEntityItem.rawMissionEntityItem.Add("side=\"West\";");
             missionEntityItem.rawMissionEntityItem.Add($"type=\"{missionPlayer.objectClass}\";");
@@ -85,6 +90,24 @@ namespace UKSF.Api.Services.Game.Missions {
             missionEntityItem.rawMissionEntityItem.Add("};");
             missionEntityItem.rawMissionEntityItem.Add("};");
             missionEntityItem.rawMissionEntities = MissionUtilities.ReadDataByKey(missionEntityItem.rawMissionEntityItem, "Entities");
+            return missionEntityItem;
+        }
+
+        public static MissionEntityItem CreateCuratorEntity() {
+            MissionEntityItem missionEntityItem = new MissionEntityItem();
+            missionEntityItem.rawMissionEntityItem.Add("class Item");
+            missionEntityItem.rawMissionEntityItem.Add("{");
+            missionEntityItem.rawMissionEntityItem.Add("dataType=\"Logic\";");
+            missionEntityItem.rawMissionEntityItem.Add($"id={Mission.nextId++};");
+            missionEntityItem.rawMissionEntityItem.Add("class PositionInfo");
+            missionEntityItem.rawMissionEntityItem.Add("{");
+            missionEntityItem.rawMissionEntityItem.Add("position[]={" + $"{MissionEntityItem.curatorPosition++}" + ",0,0.25};");
+            missionEntityItem.rawMissionEntityItem.Add("};");
+            missionEntityItem.rawMissionEntityItem.Add("type=\"ModuleCurator_F\";");
+            missionEntityItem.rawMissionEntityItem.Add("class CustomAttributes");
+            missionEntityItem.rawMissionEntityItem.Add("{");
+            missionEntityItem.rawMissionEntityItem.Add("};");
+            missionEntityItem.rawMissionEntityItem.Add("};");
             return missionEntityItem;
         }
 

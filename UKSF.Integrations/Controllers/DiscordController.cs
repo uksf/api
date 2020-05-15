@@ -34,10 +34,10 @@ namespace UKSF.Integrations.Controllers {
         }
 
         [HttpGet]
-        public IActionResult Get() => Redirect($"https://discordapp.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={HttpUtility.UrlEncode($"{url}/discord/success")}&response_type=code&scope=identify%20guilds.join");
+        public IActionResult Get() => Redirect($"https://discord.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={HttpUtility.UrlEncode($"{url}/discord/success")}&response_type=code&scope=identify%20guilds.join");
 
         [HttpGet("application")]
-        public IActionResult GetFromApplication() => Redirect($"https://discordapp.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={HttpUtility.UrlEncode($"{url}/discord/success/application")}&response_type=code&scope=identify%20guilds.join");
+        public IActionResult GetFromApplication() => Redirect($"https://discord.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={HttpUtility.UrlEncode($"{url}/discord/success/application")}&response_type=code&scope=identify%20guilds.join");
 
         [HttpGet("success")]
         public async Task<IActionResult> Success([FromQuery] string code) => Redirect($"{urlReturn}/profile?{await GetUrlParameters(code, $"{url}/discord/success")}");
@@ -48,7 +48,7 @@ namespace UKSF.Integrations.Controllers {
         private async Task<string> GetUrlParameters(string code, string redirectUrl) {
             using HttpClient client = new HttpClient();
             HttpResponseMessage response = await client.PostAsync(
-                "https://discordapp.com/api/oauth2/token",
+                "https://discord.com/api/oauth2/token",
                 new FormUrlEncodedContent(
                     new Dictionary<string, string> {
                         {"client_id", clientId},
@@ -62,18 +62,18 @@ namespace UKSF.Integrations.Controllers {
             );
             string result = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode) {
-                LogWrapper.Log("A discord connection request was denied");
+                LogWrapper.Log($"A discord connection request was denied");
                 return "discordid=fail";
             }
             string token = JObject.Parse(result)["access_token"].ToString();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            response = await client.GetAsync("https://discordapp.com/api/users/@me");
+            response = await client.GetAsync("https://discord.com//api/users/@me");
             string user = await response.Content.ReadAsStringAsync();
             string id = JObject.Parse(user)["id"].ToString();
             string username = JObject.Parse(user)["username"].ToString();
             
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", botToken);
-            response = await client.PutAsync($"https://discordapp.com/api/guilds/{VariablesWrapper.VariablesDataService().GetSingle("DID_SERVER").AsUlong()}/members/{id}", new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json"));
+            response = await client.PutAsync($"https://discord.com//api/guilds/{VariablesWrapper.VariablesDataService().GetSingle("DID_SERVER").AsUlong()}/members/{id}", new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json"));
             string added = "true";
             if (!response.IsSuccessStatusCode) {
                 LogWrapper.Log($"Failed to add '{username}' to guild: {response.StatusCode}, {response.Content.ReadAsStringAsync().Result}");

@@ -52,8 +52,9 @@ namespace UKSF.Api.Services.Game.Missions {
             while (true) {
                 if (index >= source.Count) return "";
                 string line = source[index];
-                if (line.ToLower().Contains(key.ToLower())) {
-                    return line.Split('=').Last().Replace(";", "").Replace("\"", "").Trim();
+                string[] parts = line.Split('=');
+                if (parts.Length == 2 && parts.First().ToLower().Equals(key.ToLower())) {
+                    return parts.Last().Replace(";", "").Replace("\"", "").Trim();
                 }
 
                 index++;
