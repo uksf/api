@@ -68,7 +68,7 @@ namespace UKSF.Api.Services.Game {
 
         private static string GetHeadlessClientName(int index) => VariablesWrapper.VariablesDataService().GetSingle("HEADLESS_CLIENT_NAMES").AsArray()[index];
 
-        private static string FormatGameServerMods(this GameServer gameServer) => $"{string.Join(";", gameServer.mods.Select(x => x.pathRelativeToServerExecutable ?? x.path))};";
+        private static string FormatGameServerMods(this GameServer gameServer) => gameServer.mods.Count > 0 ? $"{string.Join(";", gameServer.mods.Select(x => x.pathRelativeToServerExecutable ?? x.path))};" : string.Empty;
 
         public static IEnumerable<string> GetGameServerModsPaths() => VariablesWrapper.VariablesDataService().GetSingle("MODS_PATHS").AsArray(x => x.RemoveQuotes());
 
@@ -83,7 +83,7 @@ namespace UKSF.Api.Services.Game {
             $" -port={gameServer.port}" +
             $" -apiport=\"{gameServer.apiPort}\"" +
             $" {(string.IsNullOrEmpty(gameServer.serverMods) ? "" : $"-serverMod={gameServer.serverMods}")}" +
-            $" -mod={gameServer.FormatGameServerMods()}" +
+            $" {(string.IsNullOrEmpty(gameServer.FormatGameServerMods()) ? "" : $"-mod={gameServer.FormatGameServerMods()}")}" +
             $" {(GetGameServerExecutablePath().Contains("server") ? "" : "-server")}" +
             " -bandwidthAlg=2 -hugepages -loadMissionToMemory -filePatching -limitFPS=200";
 
@@ -92,7 +92,7 @@ namespace UKSF.Api.Services.Game {
             $" -name={GetHeadlessClientName(index)}" +
             $" -port={gameServer.port}" +
             $" -apiport=\"{gameServer.apiPort + index + 1}\"" +
-            $" -mod={gameServer.FormatGameServerMods()}" +
+            $" {(string.IsNullOrEmpty(gameServer.FormatGameServerMods()) ? "" : $"-mod={gameServer.FormatGameServerMods()}")}" +
             $" -password={gameServer.password}" +
             " -localhost=127.0.0.1 -connect=localhost -client -hugepages -filePatching -limitFPS=200";
 
