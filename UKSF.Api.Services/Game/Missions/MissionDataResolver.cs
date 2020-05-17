@@ -6,43 +6,30 @@ namespace UKSF.Api.Services.Game.Missions {
     public class MissionDataResolver {
         private static readonly string[] ENGINEER_IDS = {
             "5a1e894463d0f71710089106", // Bridg
-            "5a4e7effd68b7e16e46fc614", // Woodward
-            "5a2439443fccaa15902aaa4e", // Mac
-            "5a1a0ad55d0a76133837eb78", // Pot
-            "5a4518559220c31b50966811", // Clarke
+            "59e38f31594c603b78aa9dc3", // Handi
             "59e38f13594c603b78aa9dbf", // Carr
-            "59e38f1b594c603b78aa9dc1", // Lars
+            "5bc3bccdffbf7a11b803c3f6", // Delta
+            "59e3958b594c603b78aa9dcd", // Joho
+            "5a2439443fccaa15902aaa4e", // Mac
+            "5a1a16ce630e7413645b73fd", // Penn
             "5a1a14b5aacf7b00346dcc37" // Gilbert
         };
 
         public static string ResolveObjectClass(MissionPlayer player) {
-            if (player.account?.id == "5b4b568c20e1fd00013752d1") return "UKSF_B_Medic"; // Smith, SAS Medic
             return player.unit.sourceUnit.id switch {
-                "5a435eea905d47336442c75a" => // "Joint Special Forces Aviation Wing"
-                "UKSF_B_Pilot",
-                "5a848590eab14d12cc7fa618" => // "RAF Cranwell"
-                "UKSF_B_Pilot",
-                "5c98d7b396dba31f24cdb19c" => // "51 Squadron"
-                "UKSF_B_Pilot",
-                "5a441619730e9d162834500b" => // "7 Squadron"
-                "UKSF_B_Pilot_7",
-                "5a441602730e9d162834500a" => // "656 Squadron"
-                "UKSF_B_Pilot_656",
-                "5a4415d8730e9d1628345007" => // "617 Squadron"
-                "UKSF_B_Pilot_617",
-                "5a68b28e196530164c9b4fed" => // "Sniper Platoon"
-                "UKSF_B_Sniper",
-                "5a68c047196530164c9b4fee" => // "The Pathfinder Platoon"
-                "UKSF_B_Pathfinder",
-                "5bbbb8875eb3a4170c488b24" => // "Air Troop"
-                "UKSF_B_SAS",
-                "5ba8983ee12a331f94cb02d4" => // "SAS"
-                "UKSF_B_Officer",
-                "5b9123ca7a6c1f0e9875601c" => // "3 Medical Regiment"
-                "UKSF_B_Medic",
-                "5a42835b55d6109bf0b081bd" => // "UKSF"
-                (ResolvePlayerUnitRole(player) == 3 ? "UKSF_B_Officer" : "UKSF_B_Rifleman"),
-                _ => (ResolvePlayerUnitRole(player) != -1 ? "UKSF_B_SectionLeader" : "UKSF_B_Rifleman")
+                "5a435eea905d47336442c75a" => "UKSF_B_Pilot", // "Joint Special Forces Aviation Wing"
+                "5a848590eab14d12cc7fa618" => "UKSF_B_Pilot", // "RAF Cranwell"
+                "5c98d7b396dba31f24cdb19c" => "UKSF_B_Pilot", // "51 Squadron"
+                "5a441619730e9d162834500b" => "UKSF_B_Pilot_7", // "7 Squadron"
+                "5a441602730e9d162834500a" => "UKSF_B_Pilot_656", // "656 Squadron"
+                "5a4415d8730e9d1628345007" => "UKSF_B_Pilot_617", // "617 Squadron"
+                "5a68b28e196530164c9b4fed" => "UKSF_B_Sniper", // "Sniper Platoon"
+                "5a68c047196530164c9b4fee" => "UKSF_B_Pathfinder", // "The Pathfinder Platoon"
+                "5bbbb8875eb3a4170c488b24" => "UKSF_B_SAS", // "Air Troop"
+                "5ba8983ee12a331f94cb02d4" => "UKSF_B_Officer", // "SAS"
+                "5b9123ca7a6c1f0e9875601c" => "UKSF_B_Medic", // "3 Medical Regiment"
+                "5a42835b55d6109bf0b081bd" => ResolvePlayerUnitRole(player) == 3 ? "UKSF_B_Officer" : "UKSF_B_Rifleman", // "UKSF"
+                _ => ResolvePlayerUnitRole(player) != -1 ? "UKSF_B_SectionLeader" : "UKSF_B_Rifleman"
             };
         }
 
@@ -58,18 +45,12 @@ namespace UKSF.Api.Services.Game.Missions {
 
         public static string ResolveCallsign(MissionUnit unit, string defaultCallsign) {
             return unit.sourceUnit.id switch {
-                "5a435eea905d47336442c75a" => // "Joint Special Forces Aviation Wing"
-                "JSFAW",
-                "5a441619730e9d162834500b" => // "7 Squadron"
-                "JSFAW",
-                "5a441602730e9d162834500a" => // "656 Squadron"
-                "JSFAW",
-                "5a4415d8730e9d1628345007" => // "617 Squadron"
-                "JSFAW",
-                "5a848590eab14d12cc7fa618" => // "RAF Cranwell"
-                "JSFAW",
-                "5c98d7b396dba31f24cdb19c" => // "51 Squadron"
-                "JSFAW",
+                "5a435eea905d47336442c75a" => "JSFAW", // "Joint Special Forces Aviation Wing"
+                "5a441619730e9d162834500b" => "JSFAW", // "7 Squadron"
+                "5a441602730e9d162834500a" => "JSFAW", // "656 Squadron"
+                "5a4415d8730e9d1628345007" => "JSFAW", // "617 Squadron"
+                "5a848590eab14d12cc7fa618" => "JSFAW", // "RAF Cranwell"
+                "5c98d7b396dba31f24cdb19c" => "JSFAW", // "51 Squadron"
                 _ => defaultCallsign
             };
         }
@@ -152,7 +133,14 @@ namespace UKSF.Api.Services.Game.Missions {
                     int unitOrderB = b.unit.sourceUnit.order;
                     int rankA = MissionPatchData.instance.ranks.IndexOf(a.rank);
                     int rankB = MissionPatchData.instance.ranks.IndexOf(b.rank);
-                    return unitDepthA < unitDepthB ? -1 : unitDepthA > unitDepthB ? 1 : unitOrderA < unitOrderB ? -1 : unitOrderA > unitOrderB ? 1 : roleA < roleB ? 1 : roleA > roleB ? -1 : rankA < rankB ? -1 : rankA > rankB ? 1 : string.CompareOrdinal(a.name, b.name);
+                    return unitDepthA < unitDepthB ? -1 :
+                        unitDepthA > unitDepthB ? 1 :
+                        unitOrderA < unitOrderB ? -1 :
+                        unitOrderA > unitOrderB ? 1 :
+                        roleA < roleB ? 1 :
+                        roleA > roleB ? -1 :
+                        rankA < rankB ? -1 :
+                        rankA > rankB ? 1 : string.CompareOrdinal(a.name, b.name);
                 }
             );
             return slots;
@@ -160,14 +148,10 @@ namespace UKSF.Api.Services.Game.Missions {
 
         public static bool IsUnitPermanent(MissionUnit unit) {
             return unit.sourceUnit.id switch {
-                "5bbbb9645eb3a4170c488b36" => // "Guardian 1-1"
-                true,
-                "5bbbbdab5eb3a4170c488f2e" => // "Guardian 1-2"
-                true,
-                "5bbbbe365eb3a4170c488f30" => // "Guardian 1-3"
-                true,
-                "5ad748e0de5d414f4c4055e0" => // "Guardian 1-R"
-                true,
+                "5bbbb9645eb3a4170c488b36" => true, // "Guardian 1-1"
+                "5bbbbdab5eb3a4170c488f2e" => true, // "Guardian 1-2"
+                "5bbbbe365eb3a4170c488f30" => true, // "Guardian 1-3"
+                "5ad748e0de5d414f4c4055e0" => true, // "Guardian 1-R"
                 _ => false
             };
         }

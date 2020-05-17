@@ -67,13 +67,13 @@ namespace UKSF.Integrations.Controllers {
             }
             string token = JObject.Parse(result)["access_token"].ToString();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            response = await client.GetAsync("https://discord.com//api/users/@me");
+            response = await client.GetAsync("https://discord.com/api/users/@me");
             string user = await response.Content.ReadAsStringAsync();
             string id = JObject.Parse(user)["id"].ToString();
             string username = JObject.Parse(user)["username"].ToString();
             
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", botToken);
-            response = await client.PutAsync($"https://discord.com//api/guilds/{VariablesWrapper.VariablesDataService().GetSingle("DID_SERVER").AsUlong()}/members/{id}", new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json"));
+            response = await client.PutAsync($"https://discord.com/api/guilds/{VariablesWrapper.VariablesDataService().GetSingle("DID_SERVER").AsUlong()}/members/{id}", new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json"));
             string added = "true";
             if (!response.IsSuccessStatusCode) {
                 LogWrapper.Log($"Failed to add '{username}' to guild: {response.StatusCode}, {response.Content.ReadAsStringAsync().Result}");
