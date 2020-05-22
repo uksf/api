@@ -3,7 +3,7 @@ using System.Linq;
 using UKSF.Api.Models.Mission;
 
 namespace UKSF.Api.Services.Game.Missions {
-    public class MissionDataResolver {
+    public static class MissionDataResolver {
         private static readonly string[] ENGINEER_IDS = {
             "5a1e894463d0f71710089106", // Bridg
             "59e38f31594c603b78aa9dc3", // Handi
@@ -15,7 +15,18 @@ namespace UKSF.Api.Services.Game.Missions {
             "5a1a14b5aacf7b00346dcc37" // Gilbert
         };
 
+        private static readonly string[] MEDIC_IDS = {
+            "59e3958b594c603b78aa9dcd", // Joho
+            "5acfd72259f89d08ec1c21d8", // Stan
+            "5e0d3273b91cc00aa001213f", // Baxter
+            "5e0d31c3b91cc00aa001213b", // Gibney
+            "5a1a14b5aacf7b00346dcc37", // Gilbert
+            "5e24bbe949ddd04030d72ca5" // Hass
+        };
+
         public static string ResolveObjectClass(MissionPlayer player) {
+            if (IsMedic(player)) return "UKSF_B_Medic"; // Team Medic
+
             return player.unit.sourceUnit.id switch {
                 "5a435eea905d47336442c75a" => "UKSF_B_Pilot", // "Joint Special Forces Aviation Wing"
                 "5a848590eab14d12cc7fa618" => "UKSF_B_Pilot", // "RAF Cranwell"
@@ -24,9 +35,6 @@ namespace UKSF.Api.Services.Game.Missions {
                 "5a441602730e9d162834500a" => "UKSF_B_Pilot_656", // "656 Squadron"
                 "5a4415d8730e9d1628345007" => "UKSF_B_Pilot_617", // "617 Squadron"
                 "5a68b28e196530164c9b4fed" => "UKSF_B_Sniper", // "Sniper Platoon"
-                "5a68c047196530164c9b4fee" => "UKSF_B_Pathfinder", // "The Pathfinder Platoon"
-                "5bbbb8875eb3a4170c488b24" => "UKSF_B_SAS", // "Air Troop"
-                "5ba8983ee12a331f94cb02d4" => "UKSF_B_Officer", // "SAS"
                 "5b9123ca7a6c1f0e9875601c" => "UKSF_B_Medic", // "3 Medical Regiment"
                 "5a42835b55d6109bf0b081bd" => ResolvePlayerUnitRole(player) == 3 ? "UKSF_B_Officer" : "UKSF_B_Rifleman", // "UKSF"
                 _ => ResolvePlayerUnitRole(player) != -1 ? "UKSF_B_SectionLeader" : "UKSF_B_Rifleman"
@@ -40,6 +48,8 @@ namespace UKSF.Api.Services.Game.Missions {
             if (player.unit.roles.ContainsKey("NCOiC") && player.unit.roles["NCOiC"] == player) return 0;
             return -1;
         }
+
+        private static bool IsMedic(MissionPlayer player) => MEDIC_IDS.Contains(player.account?.id);
 
         public static bool IsEngineer(MissionPlayer player) => ENGINEER_IDS.Contains(player.account?.id);
 
@@ -80,12 +90,12 @@ namespace UKSF.Api.Services.Game.Missions {
             int fillerCount;
             switch (unit.sourceUnit.id) {
                 case "5a435eea905d47336442c75a": // "Joint Special Forces Aviation Wing"
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a435eea905d47336442c75a").members);
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a441619730e9d162834500b").members);
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a441602730e9d162834500a").members);
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a4415d8730e9d1628345007").members);
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a848590eab14d12cc7fa618").members);
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5c98d7b396dba31f24cdb19c").members);
+                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a435eea905d47336442c75a")?.members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a441619730e9d162834500b")?.members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a441602730e9d162834500a")?.members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a4415d8730e9d1628345007")?.members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a848590eab14d12cc7fa618")?.members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5c98d7b396dba31f24cdb19c")?.members ?? new List<MissionPlayer>());
                     break;
                 case "5a68b28e196530164c9b4fed": // "Sniper Platoon"
                     max = 3;
