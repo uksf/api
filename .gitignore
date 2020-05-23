@@ -260,3 +260,4 @@ coverage.xml
 
 # Specific
 appsettings.Development.json
+*.info

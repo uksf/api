@@ -24,13 +24,12 @@ namespace UKSF.Api.Models.Command {
         public const string UNIT_ROLE = "Unit Role";
     }
 
-    public class CommandRequest {
+    public class CommandRequest : DatabaseObject {
         public DateTime dateCreated;
         public string displayFrom;
         public string displayRecipient;
         public string displayRequester;
         public string displayValue;
-        [BsonId, BsonRepresentation(BsonType.ObjectId)] public string id;
         public string reason, type;
         [BsonRepresentation(BsonType.ObjectId)] public string recipient;
         [BsonRepresentation(BsonType.ObjectId)] public string requester;

@@ -9,10 +9,9 @@ namespace UKSF.Api.Models.Personnel {
         REJECTED
     }
 
-    public class Loa {
+    public class Loa : DatabaseObject {
         public bool emergency;
         public DateTime end;
-        [BsonId, BsonRepresentation(BsonType.ObjectId)] public string id;
         public bool late;
         public string reason;
         [BsonRepresentation(BsonType.ObjectId)] public string recipient;

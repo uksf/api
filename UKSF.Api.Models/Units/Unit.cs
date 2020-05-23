@@ -3,12 +3,11 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Models.Units {
-    public class Unit {
+    public class Unit : DatabaseObject {
         public UnitBranch branch = UnitBranch.COMBAT;
         public string callsign;
         public string discordRoleId;
         public string icon;
-        [BsonId, BsonRepresentation(BsonType.ObjectId)] public string id;
         [BsonRepresentation(BsonType.ObjectId)] public List<string> members = new List<string>();
         public string name;
         public int order = 0;

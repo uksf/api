@@ -11,28 +11,24 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Personnel;
-using UKSF.Api.Services.Utility;
+using UKSF.Api.Services.Common;
 using UKSF.Api.Signalr.Hubs.Message;
 
 namespace UKSF.Api.Services.Message {
-    public class NotificationsService : INotificationsService {
+    public class NotificationsService : DataBackedService<INotificationsDataService>, INotificationsService {
         private readonly IAccountService accountService;
-        private readonly INotificationsDataService data;
         private readonly IEmailService emailService;
         private readonly IHubContext<NotificationHub, INotificationsClient> notificationsHub;
         private readonly ISessionService sessionService;
         private readonly ITeamspeakService teamspeakService;
 
-        public NotificationsService(INotificationsDataService data, ITeamspeakService teamspeakService, IAccountService accountService, ISessionService sessionService, IEmailService emailService, IHubContext<NotificationHub, INotificationsClient> notificationsHub) {
-            this.data = data;
+        public NotificationsService(INotificationsDataService data, ITeamspeakService teamspeakService, IAccountService accountService, ISessionService sessionService, IEmailService emailService, IHubContext<NotificationHub, INotificationsClient> notificationsHub) : base(data) {
             this.teamspeakService = teamspeakService;
             this.accountService = accountService;
             this.sessionService = sessionService;
             this.emailService = emailService;
             this.notificationsHub = notificationsHub;
         }
-
-        public INotificationsDataService Data() => data;
 
         public async Task SendTeamspeakNotification(Account account, string rawMessage) {
             rawMessage = rawMessage.Replace("<a href='", "[url]").Replace("'>", "[/url]");
@@ -46,7 +42,7 @@ namespace UKSF.Api.Services.Message {
 
         public IEnumerable<Notification> GetNotificationsForContext() {
             string contextId = sessionService.GetContextId();
-            return data.Get(x => x.owner == contextId);
+            return Data.Get(x => x.owner == contextId);
         }
 
         public void Add(Notification notification) {
@@ -54,24 +50,25 @@ namespace UKSF.Api.Services.Message {
             Task unused = AddNotificationAsync(notification);
         }
 
-        public async Task MarkNotificationsAsRead(IEnumerable<string> ids) {
-            ids = ids.ToList();
+        public async Task MarkNotificationsAsRead(List<string> ids) {
             string contextId = sessionService.GetContextId();
-            await data.UpdateMany(Builders<Notification>.Filter.Eq(x => x.owner, contextId) & Builders<Notification>.Filter.In(x => x.id, ids), Builders<Notification>.Update.Set(x => x.read, true));
+            // await Data.UpdateMany(Builders<Notification>.Filter.Eq(x => x.owner, contextId) & Builders<Notification>.Filter.In(x => x.id, ids), Builders<Notification>.Update.Set(x => x.read, true));
+            await Data.UpdateMany(x => x.owner == contextId && ids.Contains(x.id), Builders<Notification>.Update.Set(x => x.read, true));
             await notificationsHub.Clients.Group(contextId).ReceiveRead(ids);
         }
 
-        public async Task Delete(IEnumerable<string> ids) {
+        public async Task Delete(List<string> ids) {
             ids = ids.ToList();
             string contextId = sessionService.GetContextId();
-            await data.DeleteMany(Builders<Notification>.Filter.Eq(x => x.owner, contextId) & Builders<Notification>.Filter.In(x => x.id, ids));
+            // await Data.DeleteMany(Builders<Notification>.Filter.Eq(x => x.owner, contextId) & Builders<Notification>.Filter.In(x => x.id, ids));
+            await Data.DeleteMany(x => x.owner == contextId && ids.Contains(x.id));
             await notificationsHub.Clients.Group(contextId).ReceiveClear(ids);
         }
 
         private async Task AddNotificationAsync(Notification notification) {
             notification.message = notification.message.ConvertObjectIds();
-            await data.Add(notification);
-            Account account = accountService.Data().GetSingle(notification.owner);
+            await Data.Add(notification);
+            Account account = accountService.Data.GetSingle(notification.owner);
             if (account.settings.notificationsEmail) {
                 SendEmailNotification(account.email, $"{notification.message}{(notification.link != null ? $"<br><a href='https://uk-sf.co.uk{notification.link}'>https://uk-sf.co.uk{notification.link}</a>" : "")}");
             }

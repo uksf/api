@@ -42,7 +42,7 @@ namespace UKSF.Api.Controllers {
                         comment => new {
                             Id = comment.id.ToString(),
                             Author = comment.author.ToString(),
-                            DisplayName = displayNameService.GetDisplayName(accountService.Data().GetSingle(comment.author)),
+                            DisplayName = displayNameService.GetDisplayName(accountService.Data.GetSingle(comment.author)),
                             Content = comment.content,
                             Timestamp = comment.timestamp
                         }
@@ -53,14 +53,14 @@ namespace UKSF.Api.Controllers {
 
         [HttpGet("canpost/{id}"), Authorize]
         public IActionResult GetCanPostComment(string id) {
-            CommentThread commentThread = commentThreadService.Data().GetSingle(id);
+            CommentThread commentThread = commentThreadService.Data.GetSingle(id);
             Account account = sessionService.GetContextAccount();
             bool admin = sessionService.ContextHasRole(RoleDefinitions.ADMIN);
             bool canPost = commentThread.mode switch {
                 ThreadMode.SR1 => (commentThread.authors.Any(x => x == sessionService.GetContextId()) || admin || recruitmentService.IsRecruiter(sessionService.GetContextAccount())),
-                ThreadMode.RANKSUPERIOR => commentThread.authors.Any(x => admin || ranksService.IsSuperior(account.rank, accountService.Data().GetSingle(x).rank)),
-                ThreadMode.RANKEQUAL => commentThread.authors.Any(x => admin || ranksService.IsEqual(account.rank, accountService.Data().GetSingle(x).rank)),
-                ThreadMode.RANKSUPERIOROREQUAL => commentThread.authors.Any(x => admin || ranksService.IsSuperiorOrEqual(account.rank, accountService.Data().GetSingle(x).rank)),
+                ThreadMode.RANKSUPERIOR => commentThread.authors.Any(x => admin || ranksService.IsSuperior(account.rank, accountService.Data.GetSingle(x).rank)),
+                ThreadMode.RANKEQUAL => commentThread.authors.Any(x => admin || ranksService.IsEqual(account.rank, accountService.Data.GetSingle(x).rank)),
+                ThreadMode.RANKSUPERIOROREQUAL => commentThread.authors.Any(x => admin || ranksService.IsSuperiorOrEqual(account.rank, accountService.Data.GetSingle(x).rank)),
                 _ => true
             };
 
@@ -73,7 +73,7 @@ namespace UKSF.Api.Controllers {
             comment.timestamp = DateTime.Now;
             comment.author = sessionService.GetContextId();
             await commentThreadService.InsertComment(id, comment);
-            CommentThread thread = commentThreadService.Data().GetSingle(id);
+            CommentThread thread = commentThreadService.Data.GetSingle(id);
             IEnumerable<string> participants = commentThreadService.GetCommentThreadParticipants(thread.id);
             foreach (string objectId in participants.Where(x => x != comment.author)) {
                 notificationsService.Add( // TODO: Set correct link when comment thread is between /application and /recruitment/id

@@ -13,10 +13,10 @@ namespace UKSF.Api.Controllers.Accounts {
         public OperationOrderController(IOperationOrderService operationOrderService) => this.operationOrderService = operationOrderService;
 
         [HttpGet, Authorize]
-        public IActionResult Get() => Ok(operationOrderService.Data().Get());
+        public IActionResult Get() => Ok(operationOrderService.Data.Get());
 
         [HttpGet("{id}"), Authorize]
-        public IActionResult Get(string id) => Ok(new {result = operationOrderService.Data().GetSingle(id)});
+        public IActionResult Get(string id) => Ok(new {result = operationOrderService.Data.GetSingle(id)});
 
         [HttpPost, Authorize]
         public async Task<IActionResult> Post([FromBody] CreateOperationOrderRequest request) {
@@ -26,7 +26,7 @@ namespace UKSF.Api.Controllers.Accounts {
 
         [HttpPut, Authorize]
         public async Task<IActionResult> Put([FromBody] Opord request) {
-            await operationOrderService.Data().Replace(request);
+            await operationOrderService.Data.Replace(request);
             return Ok();
         }
     }

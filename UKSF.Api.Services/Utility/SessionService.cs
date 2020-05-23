@@ -15,7 +15,7 @@ namespace UKSF.Api.Services.Utility {
             this.accountService = accountService;
         }
 
-        public Account GetContextAccount() => accountService.Data().GetSingle(GetContextId());
+        public Account GetContextAccount() => accountService.Data.GetSingle(GetContextId());
 
         public string GetContextId() {
             return httpContextAccessor.HttpContext.User.Claims.Single(x => x.Type == ClaimTypes.Sid).Value;

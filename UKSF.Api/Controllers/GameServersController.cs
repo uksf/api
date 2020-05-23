@@ -17,8 +17,8 @@ using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Game;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
-using UKSF.Api.Services.Utility;
 using UKSF.Api.Signalr.Hubs.Game;
+using UKSF.Common;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Roles(RoleDefinitions.NCO, RoleDefinitions.SR5, RoleDefinitions.COMMAND)]
@@ -34,11 +34,11 @@ namespace UKSF.Api.Controllers {
         }
 
         [HttpGet, Authorize]
-        public IActionResult GetGameServers() => Ok(new {servers = gameServersService.Data().Get(), missions = gameServersService.GetMissionFiles(), instanceCount = gameServersService.GetGameInstanceCount()});
+        public IActionResult GetGameServers() => Ok(new {servers = gameServersService.Data.Get(), missions = gameServersService.GetMissionFiles(), instanceCount = gameServersService.GetGameInstanceCount()});
 
         [HttpGet("status/{id}"), Authorize]
         public async Task<IActionResult> GetGameServerStatus(string id) {
-            GameServer gameServer = gameServersService.Data().GetSingle(id);
+            GameServer gameServer = gameServersService.Data.GetSingle(id);
             await gameServersService.GetGameServerStatus(gameServer);
             return Ok(new {gameServer, instanceCount = gameServersService.GetGameInstanceCount()});
         }
@@ -47,24 +47,24 @@ namespace UKSF.Api.Controllers {
         public IActionResult CheckGameServers(string check, [FromBody] GameServer gameServer = null) {
             if (gameServer != null) {
                 GameServer safeGameServer = gameServer;
-                return Ok(gameServersService.Data().GetSingle(x => x.id != safeGameServer.id && (x.name == check || x.apiPort.ToString() == check)));
+                return Ok(gameServersService.Data.GetSingle(x => x.id != safeGameServer.id && (x.name == check || x.apiPort.ToString() == check)));
             }
 
-            return Ok(gameServersService.Data().GetSingle(x => x.name == check || x.apiPort.ToString() == check));
+            return Ok(gameServersService.Data.GetSingle(x => x.name == check || x.apiPort.ToString() == check));
         }
 
         [HttpPut, Authorize]
         public async Task<IActionResult> AddServer([FromBody] GameServer gameServer) {
-            await gameServersService.Data().Add(gameServer);
+            await gameServersService.Data.Add(gameServer);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Server added '{gameServer}'");
             return Ok();
         }
 
         [HttpPatch, Authorize]
         public async Task<IActionResult> EditGameServer([FromBody] GameServer gameServer) {
-            GameServer oldGameServer = gameServersService.Data().GetSingle(x => x.id == gameServer.id);
+            GameServer oldGameServer = gameServersService.Data.GetSingle(x => x.id == gameServer.id);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Game server '{gameServer.name}' updated:{oldGameServer.Changes(gameServer)}");
-            await gameServersService.Data()
+            await gameServersService.Data
                                     .Update(
                                         gameServer.id,
                                         Builders<GameServer>.Update.Set("name", gameServer.name)
@@ -79,28 +79,28 @@ namespace UKSF.Api.Controllers {
                                                             .Set("serverMods", gameServer.serverMods)
                                     );
 
-            return Ok(gameServersService.Data().Get());
+            return Ok(gameServersService.Data.Get());
         }
 
         [HttpDelete("{id}"), Authorize]
         public async Task<IActionResult> DeleteGameServer(string id) {
-            GameServer gameServer = gameServersService.Data().GetSingle(x => x.id == id);
+            GameServer gameServer = gameServersService.Data.GetSingle(x => x.id == id);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Game server deleted '{gameServer.name}'");
-            await gameServersService.Data().Delete(id);
+            await gameServersService.Data.Delete(id);
 
-            return Ok(gameServersService.Data().Get());
+            return Ok(gameServersService.Data.Get());
         }
 
         [HttpPost("order"), Authorize]
         public async Task<IActionResult> UpdateOrder([FromBody] List<GameServer> newServerOrder) {
             for (int index = 0; index < newServerOrder.Count; index++) {
                 GameServer gameServer = newServerOrder[index];
-                if (gameServersService.Data().GetSingle(gameServer.id).order != index) {
-                    await gameServersService.Data().Update(gameServer.id, "order", index);
+                if (gameServersService.Data.GetSingle(gameServer.id).order != index) {
+                    await gameServersService.Data.Update(gameServer.id, "order", index);
                 }
             }
 
-            return Ok(gameServersService.Data().Get());
+            return Ok(gameServersService.Data.Get());
         }
 
         [HttpPost("mission"), Authorize, RequestSizeLimit(10485760), RequestFormLimits(MultipartBodyLengthLimit = 10485760)]
@@ -124,22 +124,22 @@ namespace UKSF.Api.Controllers {
 
         [HttpPost("launch/{id}"), Authorize]
         public async Task<IActionResult> LaunchServer(string id, [FromBody] JObject data) {
-            Task.WaitAll(gameServersService.Data().Get().Select(x => gameServersService.GetGameServerStatus(x)).ToArray());
-            GameServer gameServer = gameServersService.Data().GetSingle(id);
+            Task.WaitAll(gameServersService.Data.Get().Select(x => gameServersService.GetGameServerStatus(x)).ToArray());
+            GameServer gameServer = gameServersService.Data.GetSingle(id);
             if (gameServer.status.running) return BadRequest("Server is already running. This shouldn't happen so please contact an admin");
             if (GameServerHelpers.IsMainOpTime()) {
                 if (gameServer.serverOption == GameServerOption.SINGLETON) {
-                    if (gameServersService.Data().Get(x => x.serverOption != GameServerOption.SINGLETON).Any(x => x.status.started || x.status.running)) {
+                    if (gameServersService.Data.Get(x => x.serverOption != GameServerOption.SINGLETON).Any(x => x.status.started || x.status.running)) {
                         return BadRequest("Server must be launched on its own. Stop the other running servers first");
                     }
                 }
 
-                if (gameServersService.Data().Get(x => x.serverOption == GameServerOption.SINGLETON).Any(x => x.status.started || x.status.running)) {
+                if (gameServersService.Data.Get(x => x.serverOption == GameServerOption.SINGLETON).Any(x => x.status.started || x.status.running)) {
                     return BadRequest("Server cannot be launched whilst main server is running at this time");
                 }
             }
 
-            if (gameServersService.Data().Get(x => x.port == gameServer.port).Any(x => x.status.started || x.status.running)) {
+            if (gameServersService.Data.Get(x => x.port == gameServer.port).Any(x => x.status.started || x.status.running)) {
                 return BadRequest("Server cannot be launched while another server with the same port is running");
             }
 
@@ -163,7 +163,7 @@ namespace UKSF.Api.Controllers {
 
         [HttpGet("stop/{id}"), Authorize]
         public async Task<IActionResult> StopServer(string id) {
-            GameServer gameServer = gameServersService.Data().GetSingle(id);
+            GameServer gameServer = gameServersService.Data.GetSingle(id);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Game server stopped '{gameServer.name}'");
             await gameServersService.GetGameServerStatus(gameServer);
             if (!gameServer.status.started && !gameServer.status.running) return BadRequest("Server is not running. This shouldn't happen so please contact an admin");
@@ -174,7 +174,7 @@ namespace UKSF.Api.Controllers {
 
         [HttpGet("kill/{id}"), Authorize]
         public async Task<IActionResult> KillServer(string id) {
-            GameServer gameServer = gameServersService.Data().GetSingle(id);
+            GameServer gameServer = gameServersService.Data.GetSingle(id);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Game server killed '{gameServer.name}'");
             await gameServersService.GetGameServerStatus(gameServer);
             if (!gameServer.status.started && !gameServer.status.running) return BadRequest("Server is not running. This shouldn't happen so please contact an admin");
@@ -200,10 +200,10 @@ namespace UKSF.Api.Controllers {
 
         [HttpPost("mods/{id}"), Authorize]
         public async Task<IActionResult> SetGameServerMods(string id, [FromBody] List<GameServerMod> mods) {
-            GameServer gameServer = gameServersService.Data().GetSingle(id);
+            GameServer gameServer = gameServersService.Data.GetSingle(id);
             LogWrapper.AuditLog(sessionService.GetContextId(), $"Game server '{gameServer.name}' mods updated:{gameServer.mods.Select(x => x.name).Changes(mods.Select(x => x.name))}");
-            await gameServersService.Data().Update(id, Builders<GameServer>.Update.Unset(x => x.mods));
-            await gameServersService.Data().Update(id, Builders<GameServer>.Update.PushEach(x => x.mods, mods));
+            await gameServersService.Data.Update(id, Builders<GameServer>.Update.Unset(x => x.mods));
+            await gameServersService.Data.Update(id, Builders<GameServer>.Update.PushEach(x => x.mods, mods));
             return Ok(gameServersService.GetAvailableMods());
         }
 

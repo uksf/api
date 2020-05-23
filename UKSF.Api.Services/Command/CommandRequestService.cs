@@ -51,17 +51,17 @@ namespace UKSF.Api.Services.Command {
             this.ranksService = ranksService;
         }
 
-        public ICommandRequestDataService Data() => data;
+        public ICommandRequestDataService Data => data;
 
         public async Task Add(CommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE) {
             Account requesterAccount = sessionService.GetContextAccount();
-            Account recipientAccount = accountService.Data().GetSingle(request.recipient);
+            Account recipientAccount = accountService.Data.GetSingle(request.recipient);
             request.displayRequester = displayNameService.GetDisplayName(requesterAccount);
             request.displayRecipient = displayNameService.GetDisplayName(recipientAccount);
-            HashSet<string> ids = chainOfCommandService.ResolveChain(mode, recipientAccount.id, unitsService.Data().GetSingle(x => x.name == recipientAccount.unitAssignment), unitsService.Data().GetSingle(request.value));
+            HashSet<string> ids = chainOfCommandService.ResolveChain(mode, recipientAccount.id, unitsService.Data.GetSingle(x => x.name == recipientAccount.unitAssignment), unitsService.Data.GetSingle(request.value));
             if (ids.Count == 0) throw new Exception($"Failed to get any commanders for review for {request.type.ToLower()} request for {request.displayRecipient}.\nContact an admin");
 
-            List<Account> accounts = ids.Select(x => accountService.Data().GetSingle(x)).OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname).ToList();
+            List<Account> accounts = ids.Select(x => accountService.Data.GetSingle(x)).OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname).ToList();
             foreach (Account account in accounts) {
                 request.reviews.Add(account.id, ReviewState.PENDING);
             }

@@ -1,15 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MongoDB.Driver;
+using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Admin;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Data.Admin {
     public class VariablesDataService : CachedDataService<VariableItem, IVariablesDataService>, IVariablesDataService {
-        public VariablesDataService(IMongoDatabase database, IDataEventBus<IVariablesDataService> dataEventBus) : base(database, dataEventBus, "variables") { }
+        public VariablesDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IVariablesDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "variables") { }
 
         public override List<VariableItem> Get() {
             base.Get();
@@ -22,19 +22,15 @@ namespace UKSF.Api.Data.Admin {
         }
 
         public async Task Update(string key, object value) {
-            UpdateDefinition<VariableItem> update = value == null ? Builders<VariableItem>.Update.Unset("item") : Builders<VariableItem>.Update.Set("item", value);
-            await Database.GetCollection<VariableItem>(DatabaseCollection).UpdateOneAsync(x => x.key == key.Keyify(), update);
-            Refresh();
-        }
-
-        public override async Task Update(string key, UpdateDefinition<VariableItem> update) {
-            await Database.GetCollection<VariableItem>(DatabaseCollection).UpdateOneAsync(x => x.key == key.Keyify(), update);
-            Refresh();
+            VariableItem variableItem = GetSingle(key);
+            if (variableItem == null) throw new KeyNotFoundException($"Variable Item with key '{key}' does not exist");
+            await base.Update(variableItem.id, "item", value);
         }
 
         public override async Task Delete(string key) {
-            await Database.GetCollection<VariableItem>(DatabaseCollection).DeleteOneAsync(x => x.key == key.Keyify());
-            Refresh();
+            VariableItem variableItem = GetSingle(key);
+            if (variableItem == null) throw new KeyNotFoundException($"Variable Item with key '{key}' does not exist");
+            await base.Delete(variableItem.id);
         }
     }
 }

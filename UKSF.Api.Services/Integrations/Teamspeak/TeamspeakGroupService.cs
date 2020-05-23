@@ -8,7 +8,7 @@ using UKSF.Api.Models.Integrations;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
 using UKSF.Api.Services.Admin;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Integrations.Teamspeak {
     public class TeamspeakGroupService : ITeamspeakGroupService {
@@ -52,14 +52,14 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
 
         private void UpdateRank(Account account, ISet<double> allowedGroups) {
             string rank = account.rank;
-            foreach (Rank x in ranksService.Data().Get().Where(x => rank == x.name)) {
+            foreach (Rank x in ranksService.Data.Get().Where(x => rank == x.name)) {
                 allowedGroups.Add(x.teamspeakGroup.ToDouble());
             }
         }
 
         private void UpdateUnits(Account account, ISet<double> allowedGroups) {
-            Unit accountUnit = unitsService.Data().GetSingle(x => x.name == account.unitAssignment);
-            List<Unit> accountUnits = unitsService.Data().Get(x => x.members.Contains(account.id)).Where(x => !string.IsNullOrEmpty(x.teamspeakGroup)).ToList();
+            Unit accountUnit = unitsService.Data.GetSingle(x => x.name == account.unitAssignment);
+            List<Unit> accountUnits = unitsService.Data.Get(x => x.members.Contains(account.id)).Where(x => !string.IsNullOrEmpty(x.teamspeakGroup)).ToList();
             List<Unit> accountUnitParents = unitsService.GetParents(accountUnit).Where(x => !string.IsNullOrEmpty(x.teamspeakGroup)).ToList();
 
             Unit elcom = unitsService.GetAuxilliaryRoot();

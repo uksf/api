@@ -5,7 +5,8 @@ using UKSF.Api.Models.Utility;
 
 namespace UKSF.Api.Interfaces.Utility {
     public interface ISchedulerService : IDataBackedService<ISchedulerDataService> {
-        void Load(bool integration = false);
+        void LoadApi();
+        void LoadIntegrations();
         Task Create(DateTime next, TimeSpan interval, ScheduledJobType type, string action, params object[] actionParameters);
         Task Cancel(Func<ScheduledJob, bool> predicate);
     }

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Models.Game {
@@ -9,13 +8,12 @@ namespace UKSF.Api.Models.Game {
         DCG
     }
 
-    public class GameServer {
+    public class GameServer : DatabaseObject {
         [BsonIgnore] public readonly List<int> headlessClientProcessIds = new List<int>();
         public string adminPassword;
         public int apiPort;
         [BsonIgnore] public bool canLaunch;
         public string hostName;
-        [BsonId, BsonRepresentation(BsonType.ObjectId)] public string id;
         public List<GameServerMod> mods = new List<GameServerMod>();
         public string name;
         public int numberHeadlessClients;

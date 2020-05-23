@@ -27,13 +27,13 @@ namespace UKSF.Api.Controllers.Accounts {
                 string validateCode = loginForm["code"].ToString();
                 if (codeType == "passwordreset") {
                     LoginToken = LoginService.LoginWithoutPassword(loginForm["email"].ToString());
-                    Account account = AccountService.Data().GetSingle(x => string.Equals(x.email, loginForm["email"].ToString(), StringComparison.InvariantCultureIgnoreCase));
+                    Account account = AccountService.Data.GetSingle(x => string.Equals(x.email, loginForm["email"].ToString(), StringComparison.InvariantCultureIgnoreCase));
                     if (await ConfirmationCodeService.GetConfirmationCode(validateCode) == account.id && LoginToken != null) {
                         return await ApplyValidatedPayload(loginForm["password"].ToString(), account);
                     }
                 } else {
                     LoginToken = LoginService.Login(loginForm["email"].ToString(), loginForm["password"].ToString());
-                    Account account = AccountService.Data().GetSingle(x => string.Equals(x.email, loginForm["email"].ToString(), StringComparison.InvariantCultureIgnoreCase));
+                    Account account = AccountService.Data.GetSingle(x => string.Equals(x.email, loginForm["email"].ToString(), StringComparison.InvariantCultureIgnoreCase));
                     string codeValue = await ConfirmationCodeService.GetConfirmationCode(validateCode);
                     if (!string.IsNullOrWhiteSpace(codeValue)) {
                         return await ApplyValidatedPayload(codeValue, account);

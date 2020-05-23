@@ -8,8 +8,8 @@ using UKSF.Api.Interfaces.Hubs;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
 using UKSF.Api.Models.Integrations;
 using UKSF.Api.Services.Admin;
-using UKSF.Api.Services.Utility;
 using UKSF.Api.Signalr.Hubs.Integrations;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Integrations.Teamspeak {
     public class TeamspeakManagerService : ITeamspeakManagerService {
@@ -55,7 +55,7 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
         }
 
         private static async Task LaunchTeamspeak() {
-            await ProcessHelper.LaunchExternalProcess("Teamspeak", $"start \"\" \"{VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_PATH").AsString()}\"");
+            await ProcessUtilities.LaunchExternalProcess("Teamspeak", $"start \"\" \"{VariablesWrapper.VariablesDataService().GetSingle("TEAMSPEAK_PATH").AsString()}\"");
         }
 
         private async Task ShutTeamspeak() {

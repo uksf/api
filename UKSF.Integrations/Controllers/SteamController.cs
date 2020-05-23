@@ -34,7 +34,7 @@ namespace UKSF.Integrations.Controllers {
         private async Task<string> GetUrlParameters() {
             string[] idParts = HttpContext.User.Claims.First(claim => claim.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value.Split('/');
             string id = idParts[^1];
-            string code = await confirmationCodeService.CreateConfirmationCode(id, true);
+            string code = await confirmationCodeService.CreateConfirmationCode(id);
             return $"validation={code}&steamid={id}";
         }
     }
