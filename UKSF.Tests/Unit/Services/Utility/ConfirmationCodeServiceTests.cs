@@ -38,7 +38,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Utility {
             ConfirmationCode subject = null;
 
             mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>())).Returns(Task.CompletedTask).Callback<ConfirmationCode>(x => subject = x);
-            mockSchedulerService.Setup(x => x.Create(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<ScheduledJobType>(), It.IsAny<string>(), It.IsAny<object[]>())).Returns(Task.CompletedTask);
+            mockSchedulerService.Setup(x => x.Create(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<string>(), It.IsAny<object[]>())).Returns(Task.CompletedTask);
 
             await confirmationCodeService.CreateConfirmationCode("test");
 
@@ -49,7 +49,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Utility {
         [Theory, InlineData(null), InlineData("")]
         public void ShouldThrowForCreateWhenValueNullOrEmpty(string value) {
             mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>())).Returns(Task.CompletedTask);
-            mockSchedulerService.Setup(x => x.Create(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<ScheduledJobType>(), It.IsAny<string>(), It.IsAny<object[]>())).Returns(Task.CompletedTask);
+            mockSchedulerService.Setup(x => x.Create(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<string>(), It.IsAny<object[]>())).Returns(Task.CompletedTask);
 
             Func<Task> act = async () => await confirmationCodeService.CreateConfirmationCode(value);
 
@@ -81,7 +81,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Utility {
             ConfirmationCode subject = null;
 
             mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>())).Returns(Task.CompletedTask).Callback<ConfirmationCode>(x => subject = x);
-            mockSchedulerService.Setup(x => x.Create(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<ScheduledJobType>(), It.IsAny<string>(), It.IsAny<object[]>())).Returns(Task.CompletedTask);
+            mockSchedulerService.Setup(x => x.Create(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<string>(), It.IsAny<object[]>())).Returns(Task.CompletedTask);
 
             await confirmationCodeService.CreateConfirmationCode("test");
 
@@ -121,7 +121,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Utility {
         [Fact]
         public async Task ShouldReturnValidCodeId() {
             mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>())).Returns(Task.CompletedTask);
-            mockSchedulerService.Setup(x => x.Create(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<ScheduledJobType>(), It.IsAny<string>(), It.IsAny<object[]>())).Returns(Task.CompletedTask);
+            mockSchedulerService.Setup(x => x.Create(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<string>(), It.IsAny<object[]>())).Returns(Task.CompletedTask);
 
             string subject = await confirmationCodeService.CreateConfirmationCode("test");
 

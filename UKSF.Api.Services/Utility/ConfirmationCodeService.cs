@@ -19,7 +19,6 @@ namespace UKSF.Api.Services.Utility {
             await schedulerService.Create(
                 DateTime.Now.AddMinutes(30),
                 TimeSpan.Zero,
-                ScheduledJobType.NORMAL,
                 DeleteExpiredConfirmationCodeAction.ACTION_NAME,
                 code.id
             );
