@@ -35,8 +35,8 @@ namespace UKSF.Api.Services.Utility {
             Load();
         }
 
-        public async Task Create(DateTime next, TimeSpan interval, ScheduledJobType type, string action, params object[] actionParameters) {
-            ScheduledJob job = new ScheduledJob { next = next, action = action, type = type };
+        public async Task Create(DateTime next, TimeSpan interval, string action, params object[] actionParameters) {
+            ScheduledJob job = new ScheduledJob { next = next, action = action };
             if (actionParameters.Length > 0) {
                 job.actionParameters = JsonConvert.SerializeObject(actionParameters);
             }
@@ -104,12 +104,12 @@ namespace UKSF.Api.Services.Utility {
         }
 
         private async Task AddUnique() {
-            if (Data.GetSingle(x => x.type == ScheduledJobType.LOG_PRUNE) == null) {
-                await Create(DateTime.Today.AddDays(1), TimeSpan.FromDays(1), ScheduledJobType.LOG_PRUNE, PruneLogsAction.ACTION_NAME);
+            if (Data.GetSingle(x => x.action == PruneLogsAction.ACTION_NAME) == null) {
+                await Create(DateTime.Today.AddDays(1), TimeSpan.FromDays(1), PruneLogsAction.ACTION_NAME);
             }
 
-            if (Data.GetSingle(x => x.type == ScheduledJobType.TEAMSPEAK_SNAPSHOT) == null) {
-                await Create(DateTime.Today.AddDays(1), TimeSpan.FromMinutes(5), ScheduledJobType.TEAMSPEAK_SNAPSHOT, TeamspeakSnapshotAction.ACTION_NAME);
+            if (Data.GetSingle(x => x.action == TeamspeakSnapshotAction.ACTION_NAME) == null) {
+                await Create(DateTime.Today.AddDays(1), TimeSpan.FromMinutes(5), TeamspeakSnapshotAction.ACTION_NAME);
             }
         }
 

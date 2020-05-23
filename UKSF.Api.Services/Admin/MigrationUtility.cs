@@ -6,10 +6,14 @@ using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
+using UKSF.Api.Interfaces.Data;
+using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
+using UKSF.Api.Models;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
+using UKSF.Api.Models.Utility;
 using UKSF.Api.Services.Common;
 using UKSF.Api.Services.Message;
 
@@ -17,12 +21,8 @@ namespace UKSF.Api.Services.Admin {
     public class MigrationUtility {
         private const string KEY = "MIGRATED";
         private readonly IHostEnvironment currentEnvironment;
-        private readonly IMongoDatabase database;
 
-        public MigrationUtility(IMongoDatabase database, IHostEnvironment currentEnvironment) {
-            this.database = database;
-            this.currentEnvironment = currentEnvironment;
-        }
+        public MigrationUtility(IHostEnvironment currentEnvironment) => this.currentEnvironment = currentEnvironment;
 
         public void Migrate() {
             bool migrated = true;
@@ -46,35 +46,40 @@ namespace UKSF.Api.Services.Admin {
 
         // TODO: CHECK BEFORE RELEASE
         private static void ExecuteMigration() {
-            IUnitsService unitsService = ServiceWrapper.ServiceProvider.GetService<IUnitsService>();
-            IRolesService rolesService = ServiceWrapper.ServiceProvider.GetService<IRolesService>();
-            List<Role> roles = rolesService.Data.Get(x => x.roleType == RoleType.UNIT);
+            IDataCollectionFactory dataCollectionFactory = ServiceWrapper.ServiceProvider.GetService<IDataCollectionFactory>();
+            IDataCollection<OldScheduledJob> oldDataCollection = dataCollectionFactory.CreateDataCollection<OldScheduledJob>("scheduledJobs");
+            List<OldScheduledJob> oldScheduledJobs = oldDataCollection.Get();
 
-            foreach (Unit unit in unitsService.Data.Get()) {
-                Dictionary<string, string> unitRoles = unit.roles;
-                int originalCount = unit.roles.Count;
-                foreach ((string key, string _) in unitRoles.ToList()) {
-                    if (roles.All(x => x.name != key)) {
-                        unitRoles.Remove(key);
-                    }
-                }
+            ISchedulerDataService schedulerDataService = ServiceWrapper.ServiceProvider.GetService<ISchedulerDataService>();
 
-                if (roles.Count != originalCount) {
-                    unitsService.Data.Update(unit.id, Builders<Unit>.Update.Set(x => x.roles, unitRoles)).Wait();
+            foreach (ScheduledJob newScheduledJob in oldScheduledJobs.Select(
+                oldScheduledJob => new ScheduledJob {
+                    id = oldScheduledJob.id,
+                    action = oldScheduledJob.action,
+                    actionParameters = oldScheduledJob.actionParameters,
+                    interval = oldScheduledJob.interval,
+                    next = oldScheduledJob.next,
+                    repeat = oldScheduledJob.repeat
                 }
+            )) {
+                schedulerDataService.Delete(newScheduledJob.id).Wait();
+                schedulerDataService.Add(newScheduledJob).Wait();
             }
         }
     }
 
-//    public class OldLoa {
-//        public bool approved;
-//        [BsonId, BsonRepresentation(BsonType.ObjectId)] public string id;
-//        public bool late;
-//        public string reason;
-//        public string emergency;
-//        [BsonRepresentation(BsonType.ObjectId)] public string recipient;
-//        public DateTime start;
-//        public DateTime end;
-//        public DateTime submitted;
-//    }
+    public enum ScheduledJobType {
+        NORMAL,
+        TEAMSPEAK_SNAPSHOT,
+        LOG_PRUNE
+    }
+
+    public class OldScheduledJob : DatabaseObject {
+        public string action;
+        public string actionParameters;
+        public TimeSpan interval;
+        public DateTime next;
+        public bool repeat;
+        public ScheduledJobType type = ScheduledJobType.NORMAL;
+    }
 }
