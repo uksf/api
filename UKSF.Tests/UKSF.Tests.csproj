@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+
+        <IsPackable>false</IsPackable>
+
+        <RootNamespace>UKSF.Tests.Unit</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.msbuild" Version="2.8.31-gbcd754a70e">
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="FluentAssertions" Version="5.10.2" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
+        <PackageReference Include="Mongo2Go" Version="2.2.12" />
+        <PackageReference Include="Moq" Version="4.13.1" />
+        <PackageReference Include="xunit" Version="2.4.1" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
+        <PackageReference Include="coverlet.collector" Version="1.2.33-g84dcfdb7b4" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\UKSF.Api.Data\UKSF.Api.Data.csproj" />
+      <ProjectReference Include="..\UKSF.Api.Models\UKSF.Api.Models.csproj" />
+      <ProjectReference Include="..\UKSF.Api.Services\UKSF.Api.Services.csproj" />
+      <ProjectReference Include="..\UKSF.Common\UKSF.Common.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Integration" />
+      <Folder Include="Unit" />
+    </ItemGroup>
+
+</Project>

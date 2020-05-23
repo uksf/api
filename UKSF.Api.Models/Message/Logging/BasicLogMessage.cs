@@ -1,6 +1,4 @@
 ﻿using System;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Models.Message.Logging {
     public enum LogLevel {
@@ -9,12 +7,12 @@ namespace UKSF.Api.Models.Message.Logging {
         ERROR
     }
 
-    public class BasicLogMessage {
-        [BsonId, BsonRepresentation(BsonType.ObjectId)] public string id;
+    public class BasicLogMessage : DatabaseObject {
         public LogLevel level = LogLevel.INFO;
         public string message;
-        public DateTime timestamp;
-        public BasicLogMessage() : this(DateTime.UtcNow) { }
+        public DateTime timestamp = DateTime.UtcNow;
+
+        protected BasicLogMessage() { }
 
         public BasicLogMessage(string text) : this() => message = text;
 
@@ -28,11 +26,6 @@ namespace UKSF.Api.Models.Message.Logging {
         public BasicLogMessage(Exception logException) : this() {
             message = logException.GetBaseException().ToString();
             level = LogLevel.ERROR;
-        }
-
-        private BasicLogMessage(DateTime time) {
-            timestamp = time;
-            id = ObjectId.GenerateNewId(time).ToString();
         }
     }
 }

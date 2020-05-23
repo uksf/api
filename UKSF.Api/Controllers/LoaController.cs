@@ -53,13 +53,13 @@ namespace UKSF.Api.Controllers {
             List<string> objectIds;
             switch (scope) {
                 case "all":
-                    objectIds = accountService.Data().Get(x => x.membershipState == MembershipState.MEMBER).Select(x => x.id).ToList();
+                    objectIds = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER).Select(x => x.id).ToList();
                     break;
                 case "unit":
                     Account account = sessionService.GetContextAccount();
-                    IEnumerable<Unit> groups = unitsService.GetAllChildren(unitsService.Data().GetSingle(x => x.name == account.unitAssignment), true);
+                    IEnumerable<Unit> groups = unitsService.GetAllChildren(unitsService.Data.GetSingle(x => x.name == account.unitAssignment), true);
                     List<string> members = groups.SelectMany(x => x.members.ToList()).ToList();
-                    objectIds = accountService.Data().Get(x => x.membershipState == MembershipState.MEMBER && members.Contains(x.id)).Select(x => x.id).ToList();
+                    objectIds = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER && members.Contains(x.id)).Select(x => x.id).ToList();
                     break;
                 case "you":
                     objectIds = new List<string> {sessionService.GetContextId()};
@@ -77,7 +77,7 @@ namespace UKSF.Api.Controllers {
                                                                 x.emergency,
                                                                 x.late,
                                                                 x.reason,
-                                                                name = displayNameService.GetDisplayName(accountService.Data().GetSingle(x.recipient)),
+                                                                name = displayNameService.GetDisplayName(accountService.Data.GetSingle(x.recipient)),
                                                                 inChainOfCommand = chainOfCommandService.InContextChainOfCommand(x.recipient),
                                                                 longTerm = (x.end - x.start).Days > 21
                                                             }
@@ -94,19 +94,19 @@ namespace UKSF.Api.Controllers {
 
         [HttpDelete("{id}"), Authorize]
         public async Task<IActionResult> DeleteLoa(string id) {
-            Loa loa = loaService.Data().GetSingle(id);
-            CommandRequest request = commandRequestService.Data().GetSingle(x => x.value == id);
+            Loa loa = loaService.Data.GetSingle(id);
+            CommandRequest request = commandRequestService.Data.GetSingle(x => x.value == id);
             if (request != null) {
-                await commandRequestService.Data().Delete(request.id);
+                await commandRequestService.Data.Delete(request.id);
                 foreach (string reviewerId in request.reviews.Keys.Where(x => x != request.requester)) {
                     notificationsService.Add(new Notification {owner = reviewerId, icon = NotificationIcons.REQUEST, message = $"Your review for {request.displayRequester}'s LOA is no longer required as they deleted their LOA", link = "/command/requests"});
                 }
 
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"Loa request deleted for '{displayNameService.GetDisplayName(accountService.Data().GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
+                LogWrapper.AuditLog(sessionService.GetContextId(), $"Loa request deleted for '{displayNameService.GetDisplayName(accountService.Data.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
             }
 
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"Loa deleted for '{displayNameService.GetDisplayName(accountService.Data().GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
-            await loaService.Data().Delete(loa.id);
+            LogWrapper.AuditLog(sessionService.GetContextId(), $"Loa deleted for '{displayNameService.GetDisplayName(accountService.Data.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
+            await loaService.Data.Delete(loa.id);
 
             return Ok();
         }

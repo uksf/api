@@ -12,19 +12,13 @@ using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Mission;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Game {
-    public class GameServersService : IGameServersService {
-        private readonly IGameServersDataService data;
+    public class GameServersService : DataBackedService<IGameServersDataService>, IGameServersService {
         private readonly IMissionPatchingService missionPatchingService;
 
-        public GameServersService(IGameServersDataService data, IMissionPatchingService missionPatchingService) {
-            this.data = data;
-            this.missionPatchingService = missionPatchingService;
-        }
-
-        public IGameServersDataService Data() => data;
+        public GameServersService(IGameServersDataService data, IMissionPatchingService missionPatchingService) : base(data) => this.missionPatchingService = missionPatchingService;
 
         public int GetGameInstanceCount() => GameServerHelpers.GetArmaProcesses().Count();
 
@@ -76,7 +70,7 @@ namespace UKSF.Api.Services.Game {
 
         public async Task LaunchGameServer(GameServer gameServer) {
             string launchArguments = gameServer.FormatGameServerLaunchArguments();
-            gameServer.processId = ProcessHelper.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments);
+            gameServer.processId = ProcessUtilities.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments);
 
             await Task.Delay(TimeSpan.FromSeconds(1));
 
@@ -84,7 +78,7 @@ namespace UKSF.Api.Services.Game {
             if (gameServer.numberHeadlessClients > 0) {
                 for (int index = 0; index < gameServer.numberHeadlessClients; index++) {
                     launchArguments = gameServer.FormatHeadlessClientLaunchArguments(index);
-                    gameServer.headlessClientProcessIds.Add(ProcessHelper.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments));
+                    gameServer.headlessClientProcessIds.Add(ProcessUtilities.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments));
 
                     await Task.Delay(TimeSpan.FromSeconds(1));
                 }
@@ -142,7 +136,7 @@ namespace UKSF.Api.Services.Game {
                 process.Kill();
             }
 
-            data.Get()
+            Data.Get()
                 .ForEach(
                     x => {
                         x.processId = null;

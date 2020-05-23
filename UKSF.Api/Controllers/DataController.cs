@@ -12,7 +12,7 @@ namespace UKSF.Api.Controllers {
 
         [HttpGet("invalidate"), Authorize]
         public IActionResult Invalidate() {
-            dataCacheService.InvalidateDataCaches();
+            dataCacheService.InvalidateCachedData();
             return Ok();
         }
     }

@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 
 namespace UKSF.Api.Services.Personnel {
@@ -16,6 +17,6 @@ namespace UKSF.Api.Services.Personnel {
     }
 
     public class RolesAttribute : AuthorizeAttribute {
-        public RolesAttribute(params string[] roles) => Roles = string.Join(",", roles);
+        public RolesAttribute(params string[] roles) => Roles = string.Join(",", roles.Distinct());
     }
 }

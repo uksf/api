@@ -15,7 +15,7 @@ namespace UKSF.Api.Controllers.Accounts {
 
         [HttpGet("{id}"), Authorize]
         public IActionResult Get(string id) {
-            Oprep oprep = operationReportService.Data().GetSingle(id);
+            Oprep oprep = operationReportService.Data.GetSingle(id);
             return Ok(new {operationEntity = oprep, groupedAttendance = oprep.attendanceReport.users.GroupBy(x => x.groupName)});
         }
 
@@ -27,11 +27,11 @@ namespace UKSF.Api.Controllers.Accounts {
 
         [HttpPut, Authorize]
         public async Task<IActionResult> Put([FromBody] Oprep request) {
-            await operationReportService.Data().Replace(request);
+            await operationReportService.Data.Replace(request);
             return Ok();
         }
 
         [HttpGet, Authorize]
-        public IActionResult Get() => Ok(operationReportService.Data().Get());
+        public IActionResult Get() => Ok(operationReportService.Data.Get());
     }
 }

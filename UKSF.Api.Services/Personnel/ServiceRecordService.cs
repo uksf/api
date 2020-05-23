@@ -10,7 +10,7 @@ namespace UKSF.Api.Services.Personnel {
         public ServiceRecordService(IAccountService accountService) => this.accountService = accountService;
 
         public void AddServiceRecord(string id, string occurence, string notes) {
-            accountService.Data().Update(id, Builders<Account>.Update.Push("serviceRecord", new ServiceRecordEntry {timestamp = DateTime.Now, occurence = occurence, notes = notes}));
+            accountService.Data.Update(id, Builders<Account>.Update.Push("serviceRecord", new ServiceRecordEntry {timestamp = DateTime.Now, occurence = occurence, notes = notes}));
         }
     }
 }

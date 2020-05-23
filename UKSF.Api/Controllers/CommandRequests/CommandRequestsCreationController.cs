@@ -38,7 +38,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
         public async Task<IActionResult> CreateRequestRank([FromBody] CommandRequest request) {
             request.requester = sessionId;
             request.displayValue = request.value;
-            request.displayFrom = accountService.Data().GetSingle(request.recipient).rank;
+            request.displayFrom = accountService.Data.GetSingle(request.recipient).rank;
             if (request.displayValue == request.displayFrom) return BadRequest("Ranks are equal");
             bool direction = ranksService.IsSuperior(request.displayValue, request.displayFrom);
             request.type = string.IsNullOrEmpty(request.displayFrom) ? CommandRequestType.PROMOTION : direction ? CommandRequestType.PROMOTION : CommandRequestType.DEMOTION;
@@ -88,7 +88,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
         public async Task<IActionResult> CreateRequestIndividualRole([FromBody] CommandRequest request) {
             request.requester = sessionId;
             request.displayValue = request.value;
-            request.displayFrom = accountService.Data().GetSingle(request.recipient).roleAssignment;
+            request.displayFrom = accountService.Data.GetSingle(request.recipient).roleAssignment;
             request.type = CommandRequestType.INDIVIDUAL_ROLE;
             if (commandRequestService.DoesEquivalentRequestExist(request)) return BadRequest("An equivalent request already exists");
             await commandRequestService.Add(request, ChainOfCommandMode.NEXT_COMMANDER);
@@ -97,7 +97,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
 
         [HttpPut("unitrole"), Authorize, Roles(RoleDefinitions.COMMAND)]
         public async Task<IActionResult> CreateRequestUnitRole([FromBody] CommandRequest request) {
-            Unit unit = unitsService.Data().GetSingle(request.value);
+            Unit unit = unitsService.Data.GetSingle(request.value);
             bool recipientHasUnitRole = unitsService.RolesHasMember(unit, request.recipient);
             if (!recipientHasUnitRole && request.secondaryValue == "None") {
                 return BadRequest($"{displayNameService.GetDisplayName(request.recipient)} has no unit role in {unit.name}. If you are trying to remove them from the unit, use a Unit Removal request");
@@ -120,7 +120,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
 
         [HttpPut("unitremoval"), Authorize, Roles(RoleDefinitions.COMMAND)]
         public async Task<IActionResult> CreateRequestUnitRemoval([FromBody] CommandRequest request) {
-            Unit removeUnit = unitsService.Data().GetSingle(request.value);
+            Unit removeUnit = unitsService.Data.GetSingle(request.value);
             if (removeUnit.branch == UnitBranch.COMBAT) {
                 return BadRequest("To remove from a combat unit, use a Transfer request");
             }
@@ -136,7 +136,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
 
         [HttpPut("transfer"), Authorize, Roles(RoleDefinitions.COMMAND)]
         public async Task<IActionResult> CreateRequestTransfer([FromBody] CommandRequest request) {
-            Unit toUnit = unitsService.Data().GetSingle(request.value);
+            Unit toUnit = unitsService.Data.GetSingle(request.value);
             request.requester = sessionId;
             request.displayValue = toUnit.name;
             if (toUnit.branch == UnitBranch.AUXILIARY) {
@@ -145,7 +145,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
                 if (commandRequestService.DoesEquivalentRequestExist(request)) return BadRequest("An equivalent request already exists");
                 await commandRequestService.Add(request, ChainOfCommandMode.TARGET_COMMANDER);
             } else {
-                request.displayFrom = accountService.Data().GetSingle(request.recipient).unitAssignment;
+                request.displayFrom = accountService.Data.GetSingle(request.recipient).unitAssignment;
                 request.type = CommandRequestType.TRANSFER;
                 if (commandRequestService.DoesEquivalentRequestExist(request)) return BadRequest("An equivalent request already exists");
                 await commandRequestService.Add(request, ChainOfCommandMode.COMMANDER_AND_TARGET_COMMANDER);

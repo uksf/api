@@ -22,7 +22,15 @@ namespace UKSF.Api.Services.Fake {
 
         public Task Update(string id, UpdateDefinition<T> update) => Task.CompletedTask;
 
+        public Task UpdateMany(Func<T, bool> predicate, UpdateDefinition<T> update) => Task.CompletedTask;
+
+        public Task Replace(T item) => Task.CompletedTask;
+
         public Task Delete(string id) => Task.CompletedTask;
+
+        public Task DeleteMany(Func<T, bool> predicate) => Task.CompletedTask;
+
+        public Task SetCollectionNameAsync(string collectionName) => Task.CompletedTask;
 
         public IObservable<DataEventModel<TData>> EventBus() => new Subject<DataEventModel<TData>>();
     }

@@ -11,7 +11,7 @@ using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Personnel {
     public class RecruitmentService : IRecruitmentService {
@@ -49,8 +49,8 @@ namespace UKSF.Api.Services.Personnel {
         public Dictionary<string, string> GetSr1Leads() => GetSr1Group().roles;
 
         public IEnumerable<Account> GetSr1Members(bool skipSort = false) {
-            IEnumerable<string> members = unitsService.Data().GetSingle(x => x.name == "SR1 Recruitment").members;
-            List<Account> accounts = members.Select(x => accountService.Data().GetSingle(x)).ToList();
+            IEnumerable<string> members = unitsService.Data.GetSingle(x => x.name == "SR1 Recruitment").members;
+            List<Account> accounts = members.Select(x => accountService.Data.GetSingle(x)).ToList();
             if (skipSort) return accounts;
             return accounts.OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname);
         }
@@ -61,7 +61,7 @@ namespace UKSF.Api.Services.Personnel {
             JArray complete = new JArray();
             JArray recruiters = new JArray();
             string me = sessionService.GetContextId();
-            IEnumerable<Account> accounts = accountService.Data().Get(x => x.application != null);
+            IEnumerable<Account> accounts = accountService.Data.Get(x => x.application != null);
             foreach (Account account in accounts) {
                 if (account.application.state == ApplicationState.WAITING) {
                     if (account.application.recruiter == me) {
@@ -82,7 +82,7 @@ namespace UKSF.Api.Services.Personnel {
         }
 
         public JObject GetApplication(Account account) {
-            Account recruiterAccount = accountService.Data().GetSingle(account.application.recruiter);
+            Account recruiterAccount = accountService.Data.GetSingle(account.application.recruiter);
             (bool tsOnline, string tsNickname, bool discordOnline) = GetOnlineUserDetails(account);
             (int years, int months) = account.dob.ToAge();
             return JObject.FromObject(
@@ -108,11 +108,11 @@ namespace UKSF.Api.Services.Personnel {
         public bool IsAccountSr1Lead(Account account = null) => account != null ? GetSr1Group().roles.ContainsValue(account.id) : GetSr1Group().roles.ContainsValue(sessionService.GetContextId());
 
         public async Task SetRecruiter(string id, string newRecruiter) {
-            await accountService.Data().Update(id, Builders<Account>.Update.Set(x => x.application.recruiter, newRecruiter));
+            await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.recruiter, newRecruiter));
         }
 
         public object GetStats(string account, bool monthly) {
-            List<Account> accounts = accountService.Data().Get(x => x.application != null);
+            List<Account> accounts = accountService.Data.Get(x => x.application != null);
             if (account != string.Empty) {
                 accounts = accounts.Where(x => x.application.recruiter == account).ToList();
             }
@@ -141,15 +141,15 @@ namespace UKSF.Api.Services.Personnel {
 
         public string GetRecruiter() {
             List<Account> recruiters = GetSr1Members().Where(x => x.settings.sr1Enabled).ToList();
-            List<Account> waiting = accountService.Data().Get(x => x.application != null && x.application.state == ApplicationState.WAITING);
-            List<Account> complete = accountService.Data().Get(x => x.application != null && x.application.state != ApplicationState.WAITING);
+            List<Account> waiting = accountService.Data.Get(x => x.application != null && x.application.state == ApplicationState.WAITING);
+            List<Account> complete = accountService.Data.Get(x => x.application != null && x.application.state != ApplicationState.WAITING);
             var unsorted = recruiters.Select(x => new {x.id, complete = complete.Count(y => y.application.recruiter == x.id), waiting = waiting.Count(y => y.application.recruiter == x.id)});
             var sorted = unsorted.OrderBy(x => x.waiting).ThenBy(x => x.complete);
             return sorted.First().id;
         }
 
         private Unit GetSr1Group() {
-            return unitsService.Data().Get(x => x.name == "SR1 Recruitment").FirstOrDefault();
+            return unitsService.Data.Get(x => x.name == "SR1 Recruitment").FirstOrDefault();
         }
 
         private JObject GetCompletedApplication(Account account) =>
@@ -194,7 +194,7 @@ namespace UKSF.Api.Services.Personnel {
         }
 
         private double GetAverageProcessingTime() {
-            List<Account> waitingApplications = accountService.Data().Get(x => x.application != null && x.application.state != ApplicationState.WAITING).ToList();
+            List<Account> waitingApplications = accountService.Data.Get(x => x.application != null && x.application.state != ApplicationState.WAITING).ToList();
             double days = waitingApplications.Sum(x => (x.application.dateAccepted - x.application.dateCreated).TotalDays);
             double time = Math.Round(days / waitingApplications.Count, 1);
             return time;

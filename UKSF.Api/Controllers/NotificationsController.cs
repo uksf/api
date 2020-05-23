@@ -20,7 +20,7 @@ namespace UKSF.Api.Controllers {
 
         [HttpPost("read"), Authorize]
         public async Task<IActionResult> MarkAsRead([FromBody] JObject jObject) {
-            IEnumerable<string> ids = JArray.Parse(jObject["notifications"].ToString()).Select(notification => notification["id"].ToString());
+            List<string> ids = JArray.Parse(jObject["notifications"].ToString()).Select(notification => notification["id"].ToString()).ToList();
             await notificationsService.MarkNotificationsAsRead(ids);
             return Ok();
         }
@@ -28,7 +28,7 @@ namespace UKSF.Api.Controllers {
         [HttpPost("clear"), Authorize]
         public async Task<IActionResult> Clear([FromBody] JObject jObject) {
             JArray clear = JArray.Parse(jObject["clear"].ToString());
-            IEnumerable<string> ids = clear.Select(notification => notification["id"].ToString());
+            List<string> ids = clear.Select(notification => notification["id"].ToString()).ToList();
             await notificationsService.Delete(ids);
             return Ok();
         }

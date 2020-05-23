@@ -3,9 +3,8 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Models.Message {
-    public class Notification {
+    public class Notification : DatabaseObject {
         public string icon;
-        [BsonId, BsonRepresentation(BsonType.ObjectId)] public string id;
         public string link;
         public string message;
         [BsonRepresentation(BsonType.ObjectId)] public string owner;

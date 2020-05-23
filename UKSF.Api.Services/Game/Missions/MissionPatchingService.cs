@@ -9,7 +9,7 @@ using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Models.Mission;
 using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Game.Missions {
     public class MissionPatchingService : IMissionPatchingService {
@@ -100,7 +100,7 @@ namespace UKSF.Api.Services.Game.Missions {
 
             if (File.Exists(filePath)) return;
             List<string> outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
-            output = outputLines.Where(x => !string.IsNullOrEmpty(x) && !x.ContainsCaseInsensitive("compressing")).Aggregate((x, y) => $"{x}\n{y}");
+            output = outputLines.Where(x => !string.IsNullOrEmpty(x) && !x.ContainsIgnoreCase("compressing")).Aggregate((x, y) => $"{x}\n{y}");
             throw new Exception(output);
         }
 

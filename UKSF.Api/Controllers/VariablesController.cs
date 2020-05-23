@@ -6,7 +6,7 @@ using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Admin;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
-using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Roles(RoleDefinitions.ADMIN)]

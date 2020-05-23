@@ -10,6 +10,7 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
+using UKSF.Api.Services.Common;
 using UKSF.Api.Services.Message;
 
 namespace UKSF.Api.Services.Admin {
@@ -47,9 +48,9 @@ namespace UKSF.Api.Services.Admin {
         private static void ExecuteMigration() {
             IUnitsService unitsService = ServiceWrapper.ServiceProvider.GetService<IUnitsService>();
             IRolesService rolesService = ServiceWrapper.ServiceProvider.GetService<IRolesService>();
-            List<Role> roles = rolesService.Data().Get(x => x.roleType == RoleType.UNIT);
+            List<Role> roles = rolesService.Data.Get(x => x.roleType == RoleType.UNIT);
 
-            foreach (Unit unit in unitsService.Data().Get()) {
+            foreach (Unit unit in unitsService.Data.Get()) {
                 Dictionary<string, string> unitRoles = unit.roles;
                 int originalCount = unit.roles.Count;
                 foreach ((string key, string _) in unitRoles.ToList()) {
@@ -59,7 +60,7 @@ namespace UKSF.Api.Services.Admin {
                 }
 
                 if (roles.Count != originalCount) {
-                    unitsService.Data().Update(unit.id, Builders<Unit>.Update.Set(x => x.roles, unitRoles)).Wait();
+                    unitsService.Data.Update(unit.id, Builders<Unit>.Update.Set(x => x.roles, unitRoles)).Wait();
                 }
             }
         }
