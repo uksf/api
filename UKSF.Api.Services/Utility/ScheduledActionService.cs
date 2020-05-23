@@ -17,6 +17,7 @@ namespace UKSF.Api.Services.Utility {
             if (scheduledActions.TryGetValue(actionName, out IScheduledAction action)) {
                 return action;
             }
+
             throw new ArgumentException($"Failed to find action '{actionName}'");
         }
     }

@@ -17,7 +17,7 @@ namespace UKSF.Api.Services.Utility {
             ConfirmationCode code = new ConfirmationCode {value = value};
             await Data.Add(code);
             await schedulerService.Create(
-                DateTime.Now.AddSeconds(30),
+                DateTime.Now.AddMinutes(30),
                 TimeSpan.Zero,
                 ScheduledJobType.NORMAL,
                 DeleteExpiredConfirmationCodeAction.ACTION_NAME,
