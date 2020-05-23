@@ -14,8 +14,6 @@ using Microsoft.OpenApi.Models;
 using UKSF.Api.AppStart;
 using UKSF.Api.AppStart.Services;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
-using UKSF.Api.Interfaces.Personnel;
-using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Services;
 using UKSF.Api.Services.Common;
 using UKSF.Api.Services.Personnel;
