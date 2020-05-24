@@ -18,7 +18,7 @@ namespace UKSF.Integrations.AppStart {
             RegisterScheduledActions.Register();
 
             // Start scheduler
-            serviceProvider.GetService<ISchedulerService>().LoadApi();
+            serviceProvider.GetService<ISchedulerService>().LoadIntegrations();
         }
     }
 }
