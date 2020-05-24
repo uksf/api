@@ -12,7 +12,7 @@ namespace UKSF.Integrations.AppStart.Services {
             // Non-Cached
             services.AddTransient<IConfirmationCodeDataService, ConfirmationCodeDataService>();
             services.AddSingleton<ILogDataService, LogDataService>();
-            services.AddTransient<ISchedulerDataService, SchedulerDataService>();
+            services.AddTransient<ISchedulerDataService, SchedulerIntegrationsDataService>();
 
             // Cached
             services.AddSingleton<IAccountDataService, AccountDataService>();
