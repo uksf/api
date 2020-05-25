@@ -29,7 +29,7 @@ namespace UKSF.Api.Controllers {
             clientSecret = configuration.GetSection("Discord")["clientSecret"];
             botToken = configuration.GetSection("Discord")["botToken"];
 
-            url = currentEnvironment.IsDevelopment() ? "http://localhost:5000" : "https://uk-sf.co.uk";
+            url = currentEnvironment.IsDevelopment() ? "http://localhost:5000" : "https://api.uk-sf.co.uk";
             urlReturn = currentEnvironment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
         }
 
