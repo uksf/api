@@ -21,7 +21,6 @@ using Xunit;
 // ranks
 // roles
 // scheduledJobs
-// scheduledJobsIntegrations
 // teamspeakSnapshots
 // units
 // variables

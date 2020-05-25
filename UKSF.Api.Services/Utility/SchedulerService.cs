@@ -31,10 +31,6 @@ namespace UKSF.Api.Services.Utility {
             Load();
         }
 
-        public void LoadIntegrations() {
-            Load();
-        }
-
         public async Task Create(DateTime next, TimeSpan interval, string action, params object[] actionParameters) {
             ScheduledJob job = new ScheduledJob { next = next, action = action };
             if (actionParameters.Length > 0) {

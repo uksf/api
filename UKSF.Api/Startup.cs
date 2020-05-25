@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AspNet.Security.OpenId;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -48,7 +51,7 @@ namespace UKSF.Api {
                     builder => {
                         builder.AllowAnyMethod()
                                .AllowAnyHeader()
-                               .WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://integrations.uk-sf.co.uk")
+                               .WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://uk-sf.co.uk")
                                .AllowCredentials();
                     }
                 )
@@ -58,6 +61,7 @@ namespace UKSF.Api {
                         options => {
                             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                            options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                         }
                     )
                     .AddJwtBearer(
@@ -88,6 +92,24 @@ namespace UKSF.Api {
                                 }
                             };
                         }
+                    )
+                    .AddCookie()
+                    .AddSteam(
+                        options => {
+                            options.ForwardAuthenticate = JwtBearerDefaults.AuthenticationScheme;
+                            options.Events = new OpenIdAuthenticationEvents {
+                                OnAccessDenied = context => {
+                                    context.Response.StatusCode = 401;
+                                    return Task.CompletedTask;
+                                },
+                                OnTicketReceived = context => {
+                                    string[] idParts = context.Principal.Claims.First(claim => claim.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value.Split('/');
+                                    string id = idParts[^1];
+                                    context.ReturnUri = $"{context.ReturnUri}?id={id}";
+                                    return Task.CompletedTask;
+                                }
+                            };
+                        }
                     );
 
             services.AddControllers();
@@ -99,7 +121,7 @@ namespace UKSF.Api {
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime hostApplicationLifetime) {
             hostApplicationLifetime.ApplicationStopping.Register(OnShutdown);
             app.UseStaticFiles();
-            app.UseCookiePolicy(new CookiePolicyOptions {MinimumSameSitePolicy = SameSiteMode.Lax});
+            app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMode.Lax });
             app.UseSwagger();
             app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF API v1"); });
             app.UseRouting();

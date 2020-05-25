@@ -12,9 +12,9 @@ using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
 
-namespace UKSF.Integrations.Controllers {
+namespace UKSF.Api.Controllers {
     [Route("[controller]")]
-    public class DiscordController : Controller {
+    public class DiscordConnectionController : Controller {
         private readonly string botToken;
         private readonly string clientId;
         private readonly string clientSecret;
@@ -23,31 +23,34 @@ namespace UKSF.Integrations.Controllers {
         private readonly string url;
         private readonly string urlReturn;
 
-        public DiscordController(IConfirmationCodeService confirmationCodeService, IConfiguration configuration, IHostEnvironment currentEnvironment) {
+        public DiscordConnectionController(IConfirmationCodeService confirmationCodeService, IConfiguration configuration, IHostEnvironment currentEnvironment) {
             this.confirmationCodeService = confirmationCodeService;
             clientId = configuration.GetSection("Discord")["clientId"];
             clientSecret = configuration.GetSection("Discord")["clientSecret"];
             botToken = configuration.GetSection("Discord")["botToken"];
 
-            url = currentEnvironment.IsDevelopment() ? "http://localhost:5100" : "https://integrations.uk-sf.co.uk";
+            url = currentEnvironment.IsDevelopment() ? "http://localhost:5000" : "https://uk-sf.co.uk";
             urlReturn = currentEnvironment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
         }
 
         [HttpGet]
         public IActionResult Get() =>
-            Redirect($"https://discord.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={HttpUtility.UrlEncode($"{url}/discord/success")}&response_type=code&scope=identify%20guilds.join");
+            Redirect(
+                $"https://discord.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={HttpUtility.UrlEncode($"{url}/discordconnection/success")}&response_type=code&scope=identify%20guilds.join"
+            );
 
         [HttpGet("application")]
         public IActionResult GetFromApplication() =>
             Redirect(
-                $"https://discord.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={HttpUtility.UrlEncode($"{url}/discord/success/application")}&response_type=code&scope=identify%20guilds.join"
+                $"https://discord.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={HttpUtility.UrlEncode($"{url}/discordconnection/success/application")}&response_type=code&scope=identify%20guilds.join"
             );
 
         [HttpGet("success")]
-        public async Task<IActionResult> Success([FromQuery] string code) => Redirect($"{urlReturn}/profile?{await GetUrlParameters(code, $"{url}/discord/success")}");
+        public async Task<IActionResult> Success([FromQuery] string code) => Redirect($"{urlReturn}/profile?{await GetUrlParameters(code, $"{url}/discordconnection/success")}");
 
         [HttpGet("success/application")]
-        public async Task<IActionResult> SuccessFromApplication([FromQuery] string code) => Redirect($"{urlReturn}/application?{await GetUrlParameters(code, $"{url}/discord/success/application")}");
+        public async Task<IActionResult> SuccessFromApplication([FromQuery] string code) =>
+            Redirect($"{urlReturn}/application?{await GetUrlParameters(code, $"{url}/discordconnection/success/application")}");
 
         private async Task<string> GetUrlParameters(string code, string redirectUrl) {
             using HttpClient client = new HttpClient();

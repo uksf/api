@@ -14,14 +14,9 @@ namespace UKSF.Api.Services.Utility {
 
         public async Task<string> CreateConfirmationCode(string value) {
             if (string.IsNullOrEmpty(value)) throw new ArgumentNullException(nameof(value), "Value for confirmation code cannot be null or empty");
-            ConfirmationCode code = new ConfirmationCode {value = value};
+            ConfirmationCode code = new ConfirmationCode { value = value };
             await Data.Add(code);
-            await schedulerService.Create(
-                DateTime.Now.AddMinutes(30),
-                TimeSpan.Zero,
-                DeleteExpiredConfirmationCodeAction.ACTION_NAME,
-                code.id
-            );
+            await schedulerService.Create(DateTime.Now.AddMinutes(30), TimeSpan.Zero, DeleteExpiredConfirmationCodeAction.ACTION_NAME, code.id);
             return code.id;
         }
 
@@ -29,9 +24,8 @@ namespace UKSF.Api.Services.Utility {
             ConfirmationCode confirmationCode = Data.GetSingle(id);
             if (confirmationCode == null) return string.Empty;
             await Data.Delete(confirmationCode.id);
-            string actionParameters = JsonConvert.SerializeObject(new object[] {confirmationCode.id});
+            string actionParameters = JsonConvert.SerializeObject(new object[] { confirmationCode.id });
             await schedulerService.Cancel(x => x.actionParameters == actionParameters);
-
             return confirmationCode.value;
         }
     }

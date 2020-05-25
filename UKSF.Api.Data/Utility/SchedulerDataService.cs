@@ -6,8 +6,4 @@ namespace UKSF.Api.Data.Utility {
     public class SchedulerDataService : DataService<ScheduledJob, ISchedulerDataService>, ISchedulerDataService {
         public SchedulerDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<ISchedulerDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "scheduledJobs") { }
     }
-
-    public class SchedulerIntegrationsDataService : DataService<ScheduledJob, ISchedulerDataService>, ISchedulerDataService {
-        public SchedulerIntegrationsDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<ISchedulerDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "scheduledJobsIntegrations") { }
-    }
 }

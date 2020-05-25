@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -10,6 +11,7 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Message;
+using UKSF.Api.Services.Utility.ScheduledActions;
 using UKSF.Common;
 
 namespace UKSF.Api.Controllers.Accounts {
@@ -21,7 +23,13 @@ namespace UKSF.Api.Controllers.Accounts {
         private readonly ISessionService sessionService;
         private readonly ITeamspeakService teamspeakService;
 
-        public CommunicationsController(IConfirmationCodeService confirmationCodeService, IAccountService accountService, ISessionService sessionService, ITeamspeakService teamspeakService, INotificationsService notificationsService) {
+        public CommunicationsController(
+            IConfirmationCodeService confirmationCodeService,
+            IAccountService accountService,
+            ISessionService sessionService,
+            ITeamspeakService teamspeakService,
+            INotificationsService notificationsService
+        ) {
             this.confirmationCodeService = confirmationCodeService;
             this.accountService = accountService;
             this.sessionService = sessionService;
@@ -30,33 +38,59 @@ namespace UKSF.Api.Controllers.Accounts {
         }
 
         [HttpGet, Authorize]
-        public IActionResult GetTeamspeakStatus() => Ok(new {isConnected = sessionService.GetContextAccount().teamspeakIdentities?.Count > 0});
+        public IActionResult GetTeamspeakStatus() => Ok(new { isConnected = sessionService.GetContextAccount().teamspeakIdentities?.Count > 0 });
 
         [HttpPost("send"), Authorize]
         public async Task<IActionResult> SendCode([FromBody] JObject body) {
-            string mode = body["mode"].ToString();
+            string mode = body["mode"]?.ToString();
+            if (string.IsNullOrEmpty(mode)) {
+                return BadRequest(new { error = $"Code mode '{mode}' not given" });
+            }
+
+            string data = body["data"]?.ToString();
+            if (string.IsNullOrEmpty(mode)) {
+                return BadRequest(new { error = $"Code data '{data}' not given" });
+            }
+
             return mode switch {
-                "teamspeak" => await SendTeamspeakCode(body["data"].ToString()),
-                _ => BadRequest(new {error = $"Code mode '{mode}' not recognized"})
+                "teamspeak" => await SendTeamspeakCode(data),
+                _ => BadRequest(new { error = $"Code mode '{mode}' not recognized" })
             };
         }
 
         [HttpPost("receive"), Authorize]
         public async Task<IActionResult> ReceiveCode([FromBody] JObject body) {
-            string mode = body["mode"].ToString();
-            string id = body["id"].ToString();
-            string code = body["code"].ToString();
-            string[] data = body["data"].ToString().Split(',');
+            string mode = body["mode"]?.ToString();
+            if (string.IsNullOrEmpty(mode)) {
+                return BadRequest(new { error = $"Code mode '{mode}' not given" });
+            }
+
+            string id = body["id"]?.ToString();
+            if (string.IsNullOrEmpty(id)) {
+                return BadRequest(new { error = $"Code id '{id}' not given" });
+            }
+
+            string code = body["code"]?.ToString();
+            if (string.IsNullOrEmpty(code)) {
+                return BadRequest(new { error = $"Code '{code}' not given" });
+            }
+
+            string dataString = body["data"]?.ToString();
+            if (string.IsNullOrEmpty(dataString)) {
+                return BadRequest(new { error = $"Code data '{dataString}' not given" });
+            }
+
+            string[] data = dataString.Split(',');
             return mode switch {
                 "teamspeak" => await ReceiveTeamspeakCode(id, code, data[0]),
-                _ => BadRequest(new {error = $"Code mode '{mode}' not recognized"})
+                _ => BadRequest(new { error = $"Code mode '{mode}' not recognized" })
             };
         }
 
         private async Task<IActionResult> SendTeamspeakCode(string teamspeakDbId) {
             string code = await confirmationCodeService.CreateConfirmationCode(teamspeakDbId);
             await notificationsService.SendTeamspeakNotification(
-                new HashSet<double> {teamspeakDbId.ToDouble()},
+                new HashSet<double> { teamspeakDbId.ToDouble() },
                 $"This Teamspeak ID was selected for connection to the website. Copy this code to your clipboard and return to the UKSF website application page to enter the code:\n{code}\nIf this request was not made by you, please contact an admin"
             );
             return Ok();
@@ -66,15 +100,18 @@ namespace UKSF.Api.Controllers.Accounts {
             Account account = accountService.Data.GetSingle(id);
             string teamspeakId = await confirmationCodeService.GetConfirmationCode(code);
             if (string.IsNullOrWhiteSpace(teamspeakId) || teamspeakId != checkId) {
-                return BadRequest(new {error = "The confirmation code has expired or is invalid. Please try again"});
+                return BadRequest(new { error = "The confirmation code has expired or is invalid. Please try again" });
             }
 
-            if (account.teamspeakIdentities == null) account.teamspeakIdentities = new HashSet<double>();
+            account.teamspeakIdentities ??= new HashSet<double>();
             account.teamspeakIdentities.Add(double.Parse(teamspeakId));
             await accountService.Data.Update(account.id, Builders<Account>.Update.Set("teamspeakIdentities", account.teamspeakIdentities));
             account = accountService.Data.GetSingle(account.id);
             await teamspeakService.UpdateAccountTeamspeakGroups(account);
-            await notificationsService.SendTeamspeakNotification(new HashSet<double> {teamspeakId.ToDouble()}, $"This teamspeak identity has been linked to the account with email '{account.email}'\nIf this was not done by you, please contact an admin");
+            await notificationsService.SendTeamspeakNotification(
+                new HashSet<double> { teamspeakId.ToDouble() },
+                $"This teamspeak identity has been linked to the account with email '{account.email}'\nIf this was not done by you, please contact an admin"
+            );
             LogWrapper.AuditLog(account.id, $"Teamspeak ID {teamspeakId} added for {account.id}");
             return Ok();
         }
