@@ -14,7 +14,7 @@ namespace UKSF.Api.Controllers {
         public SteamConnectionController(IConfirmationCodeService confirmationCodeService, IHostEnvironment currentEnvironment) {
             this.confirmationCodeService = confirmationCodeService;
 
-            url = currentEnvironment.IsDevelopment() ? "http://localhost:5000" : "https://uk-sf.co.uk";
+            url = currentEnvironment.IsDevelopment() ? "http://localhost:5000" : "https://api.uk-sf.co.uk";
             urlReturn = currentEnvironment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
         }
 
