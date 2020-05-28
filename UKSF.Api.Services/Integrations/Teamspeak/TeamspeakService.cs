@@ -56,7 +56,7 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
 
         public async Task StoreTeamspeakServerSnapshot() {
             if (clients.Count == 0) {
-                Console.WriteLine("No client data for snapshot");
+                await Console.Out.WriteLineAsync("No client data for snapshot");
                 return;
             }
 

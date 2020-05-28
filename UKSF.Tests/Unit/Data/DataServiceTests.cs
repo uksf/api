@@ -32,7 +32,6 @@ namespace UKSF.Tests.Unit.Unit.Data {
 
         [Theory, InlineData(""), InlineData(null)]
         public void ShouldThrowForDeleteWhenNoKeyOrNull(string id) {
-
             Func<Task> act = async () => await mockDataService.Delete(id);
 
             act.Should().Throw<KeyNotFoundException>();

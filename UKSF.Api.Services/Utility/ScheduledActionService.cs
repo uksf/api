@@ -9,7 +9,7 @@ namespace UKSF.Api.Services.Utility {
 
         public void RegisterScheduledActions(HashSet<IScheduledAction> newScheduledActions) {
             foreach (IScheduledAction scheduledAction in newScheduledActions) {
-                scheduledActions.Add(scheduledAction.Name, scheduledAction);
+                scheduledActions[scheduledAction.Name] = scheduledAction;
             }
         }
 

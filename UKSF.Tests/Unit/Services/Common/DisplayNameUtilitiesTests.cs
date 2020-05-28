@@ -25,7 +25,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Common {
             ServiceCollection serviceProvider = new ServiceCollection();
             serviceProvider.AddTransient(provider => mockDisplayNameService.Object);
             serviceProvider.AddTransient(provider => mockUnitsService.Object);
-            ServiceWrapper.ServiceProvider = serviceProvider.BuildServiceProvider();
+            ServiceWrapper.Provider = serviceProvider.BuildServiceProvider();
         }
 
         [Theory, InlineData("5e39336e1b92ee2d14b7fe08", "Maj.Bridgford.A"), InlineData("5e39336e1b92ee2d14b7fe08, 5e3935db1b92ee2d14b7fe09", "Maj.Bridgford.A, Cpl.Carr.C"), InlineData("5e39336e1b92ee2d14b7fe085e3935db1b92ee2d14b7fe09", "Maj.Bridgford.ACpl.Carr.C"),

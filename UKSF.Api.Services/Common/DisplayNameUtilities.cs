@@ -12,8 +12,8 @@ namespace UKSF.Api.Services.Common {
             string newMessage = message;
             if (string.IsNullOrEmpty(message)) return newMessage;
 
-            IDisplayNameService displayNameService = ServiceWrapper.ServiceProvider.GetService<IDisplayNameService>();
-            IUnitsService unitsService = ServiceWrapper.ServiceProvider.GetService<IUnitsService>();
+            IDisplayNameService displayNameService = ServiceWrapper.Provider.GetService<IDisplayNameService>();
+            IUnitsService unitsService = ServiceWrapper.Provider.GetService<IUnitsService>();
             List<string> objectIds = message.ExtractObjectIds().Where(s => s != string.Empty).ToList();
             foreach (string objectId in objectIds) {
                 string displayString = displayNameService.GetDisplayName(objectId);

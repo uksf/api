@@ -64,7 +64,7 @@ namespace UKSF.Api {
             try {
                 File.Create(logFile).Close();
             } catch (Exception e) {
-                Console.WriteLine($"Log file not created: {logFile}. {e.Message}");
+                Console.Out.WriteLine($"Log file not created: {logFile}. {e.Message}");
             }
 
             FileStream fileStream = new FileStream(logFile, FileMode.Create);
