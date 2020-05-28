@@ -46,11 +46,11 @@ namespace UKSF.Api.Services.Admin {
 
         // TODO: CHECK BEFORE RELEASE
         private static void ExecuteMigration() {
-            IDataCollectionFactory dataCollectionFactory = ServiceWrapper.ServiceProvider.GetService<IDataCollectionFactory>();
+            IDataCollectionFactory dataCollectionFactory = ServiceWrapper.Provider.GetService<IDataCollectionFactory>();
             IDataCollection<OldScheduledJob> oldDataCollection = dataCollectionFactory.CreateDataCollection<OldScheduledJob>("scheduledJobs");
             List<OldScheduledJob> oldScheduledJobs = oldDataCollection.Get();
 
-            ISchedulerDataService schedulerDataService = ServiceWrapper.ServiceProvider.GetService<ISchedulerDataService>();
+            ISchedulerDataService schedulerDataService = ServiceWrapper.Provider.GetService<ISchedulerDataService>();
 
             foreach (ScheduledJob newScheduledJob in oldScheduledJobs.Select(
                 oldScheduledJob => new ScheduledJob {

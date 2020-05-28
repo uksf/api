@@ -30,6 +30,11 @@ namespace UKSF.Api.Services.Message {
             Task unused = LogAsync(exception);
         }
 
+        public void Log(string userId, string message) {
+            AuditLogMessage log = new AuditLogMessage { who = userId, level = LogLevel.INFO, message = message };
+            Log(log);
+        }
+
         private async Task LogAsync(BasicLogMessage log) => await LogToStorage(log);
 
         private async Task LogAsync(Exception exception) => await LogToStorage(new BasicLogMessage(exception));

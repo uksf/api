@@ -148,7 +148,7 @@ namespace UKSF.Api {
             );
 
             Global.ServiceProvider = app.ApplicationServices;
-            ServiceWrapper.ServiceProvider = Global.ServiceProvider;
+            ServiceWrapper.Provider = Global.ServiceProvider;
 
             StartServices.Start();
         }

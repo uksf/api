@@ -56,7 +56,7 @@ namespace UKSF.Api.Services.Integrations {
                             WriteCheck();
                             await Task.Delay(TimeSpan.FromMilliseconds(1));
                         } catch (Exception exception) {
-                            Console.WriteLine(exception);
+                            Console.Out.WriteLine(exception);
                         }
                     }
                 }
@@ -71,13 +71,13 @@ namespace UKSF.Api.Services.Integrations {
             if (pipeCode != 1) {
                 try {
                     PongTime = DateTime.Now;
-                    Console.WriteLine("Opening pipe");
+                    Console.Out.WriteLine("Opening pipe");
                     string result = ExecutePipeFunction(PIPE_COMMAND_OPEN);
-                    Console.WriteLine(result);
+                    Console.Out.WriteLine(result);
                     int.TryParse(result, out pipeCode);
                     serverStarted = pipeCode == 1;
                 } catch (Exception exception) {
-                    Console.WriteLine(exception);
+                    Console.Out.WriteLine(exception);
                     pipeCode = 0;
                     serverStarted = false;
                 }
@@ -87,9 +87,9 @@ namespace UKSF.Api.Services.Integrations {
         private static bool PingCheck() {
 //            ExecutePipeFunction($"{PIPE_COMMAND_WRITE}{ProcedureDefinitons.PROC_PING}:");
             if ((DateTime.Now - PongTime).Seconds > 10) {
-                Console.WriteLine("Resetting pipe");
+                Console.Out.WriteLine("Resetting pipe");
                 string result = ExecutePipeFunction(PIPE_COMMAND_RESET);
-                Console.WriteLine(result);
+                Console.Out.WriteLine(result);
                 return false;
             }
 
@@ -102,9 +102,9 @@ namespace UKSF.Api.Services.Integrations {
             if (string.IsNullOrEmpty(result)) return;
             switch (result) {
                 case "FALSE":
-                    Console.WriteLine("Closing pipe");
+                    Console.Out.WriteLine("Closing pipe");
                     result = ExecutePipeFunction(PIPE_COMMAND_CLOSE);
-                    Console.WriteLine(result);
+                    Console.Out.WriteLine(result);
                     pipeCode = 0;
                     return;
                 case "NULL":
@@ -135,7 +135,7 @@ namespace UKSF.Api.Services.Integrations {
             if (string.IsNullOrEmpty(message)) return;
             string result = ExecutePipeFunction($"{PIPE_COMMAND_WRITE}{message}");
             if (result != "WRITE") {
-                Console.WriteLine(result);
+                Console.Out.WriteLine(result);
             }
         }
     }
