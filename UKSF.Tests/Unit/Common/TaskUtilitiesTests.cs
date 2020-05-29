@@ -25,5 +25,46 @@ namespace UKSF.Tests.Unit.Unit.Common {
 
             act.Should().NotThrow();
         }
+
+        [Fact]
+        public void ShouldCallbackAfterDelay() {
+            bool subject = false;
+            Func<Task> act = async () => {
+                CancellationTokenSource token = new CancellationTokenSource();
+                await TaskUtilities.DelayWithCallback(
+                    TimeSpan.FromMilliseconds(10),
+                    token.Token,
+                    () => {
+                        subject = true;
+                        return Task.CompletedTask;
+                    }
+                );
+            };
+
+            act.Should().NotThrow();
+            act.ExecutionTime().Should().BeGreaterThan(TimeSpan.FromMilliseconds(10));
+            subject.Should().BeTrue();
+        }
+
+        [Fact]
+        public void ShouldNotCallbackForCancellation() {
+            bool subject = false;
+            Action act = () => {
+                CancellationTokenSource token = new CancellationTokenSource();
+                Task unused = TaskUtilities.DelayWithCallback(
+                    TimeSpan.FromMilliseconds(10),
+                    token.Token,
+                    () => {
+                        subject = true;
+                        return Task.CompletedTask;
+                    }
+                );
+                token.Cancel();
+            };
+
+            act.Should().NotThrow();
+            act.ExecutionTime().Should().BeLessThan(TimeSpan.FromMilliseconds(10));
+            subject.Should().BeFalse();
+        }
     }
 }
