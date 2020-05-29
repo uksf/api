@@ -21,7 +21,6 @@ namespace UKSF.Api.Events.Handlers {
         private readonly IAccountService accountService;
         private readonly ISignalrEventBus eventBus;
         private readonly ILoggingService loggingService;
-        private readonly AsyncLock mutex = new AsyncLock();
         private readonly ConcurrentDictionary<double, TeamspeakServerGroupUpdate> serverGroupUpdates = new ConcurrentDictionary<double, TeamspeakServerGroupUpdate>();
         private readonly ITeamspeakGroupService teamspeakGroupService;
         private readonly ITeamspeakService teamspeakService;
