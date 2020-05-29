@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -17,11 +18,11 @@ using UKSF.Common;
 
 namespace UKSF.Api.Events.Handlers {
     public class TeamspeakEventHandler : ITeamspeakEventHandler {
-        private readonly AsyncLock mutex = new AsyncLock();
         private readonly IAccountService accountService;
         private readonly ISignalrEventBus eventBus;
         private readonly ILoggingService loggingService;
-        private readonly Dictionary<double, TeamspeakServerGroupUpdate> serverGroupUpdates = new Dictionary<double, TeamspeakServerGroupUpdate>();
+        private readonly AsyncLock mutex = new AsyncLock();
+        private readonly ConcurrentDictionary<double, TeamspeakServerGroupUpdate> serverGroupUpdates = new ConcurrentDictionary<double, TeamspeakServerGroupUpdate>();
         private readonly ITeamspeakGroupService teamspeakGroupService;
         private readonly ITeamspeakService teamspeakService;
 
@@ -72,44 +73,18 @@ namespace UKSF.Api.Events.Handlers {
             double serverGroupId = double.Parse(updateObject["serverGroupId"].ToString());
             await Console.Out.WriteLineAsync($"Server group for {clientDbid}: {serverGroupId}");
 
-            // lock (serverGroupUpdates) {
-            //     if (!serverGroupUpdates.ContainsKey(clientDbid)) {
-            //         serverGroupUpdates.Add(clientDbid, new TeamspeakServerGroupUpdate());
-            //     }
-            //
-            //     TeamspeakServerGroupUpdate update = serverGroupUpdates[clientDbid];
-            //
-            //     update.serverGroups.Add(serverGroupId);
-            //     update.cancellationTokenSource?.Cancel();
-            //     update.cancellationTokenSource = new CancellationTokenSource();
-            //     TaskUtilities.DelayWithCallback(TimeSpan.FromMilliseconds(500), update.cancellationTokenSource.Token, () => );
-            //     // if (!update.cancellationTokenSource.IsCancellationRequested) {
-            //     //     update.cancellationTokenSource.Cancel();
-            //     //
-            //     // }
-            // }
-
-            using (await mutex.LockAsync()) {
-                if (!serverGroupUpdates.ContainsKey(clientDbid)) {
-                    serverGroupUpdates.Add(clientDbid, new TeamspeakServerGroupUpdate());
+            TeamspeakServerGroupUpdate update = serverGroupUpdates.GetOrAdd(clientDbid, x => new TeamspeakServerGroupUpdate());
+            update.serverGroups.Add(serverGroupId);
+            update.cancellationTokenSource?.Cancel();
+            update.cancellationTokenSource = new CancellationTokenSource();
+            Task unused = TaskUtilities.DelayWithCallback(
+                TimeSpan.FromMilliseconds(500),
+                update.cancellationTokenSource.Token,
+                async () => {
+                    update.cancellationTokenSource.Cancel();
+                    await ProcessAccountData(clientDbid, update.serverGroups);
                 }
-
-                TeamspeakServerGroupUpdate update = serverGroupUpdates[clientDbid];
-
-                update.serverGroups.Add(serverGroupId);
-                update.cancellationTokenSource?.Cancel();
-                update.cancellationTokenSource = new CancellationTokenSource();
-                Task unused = Task.Run(
-                    async () => {
-                        await Task.Delay(TimeSpan.FromMilliseconds(500), update.cancellationTokenSource.Token);
-                        if (!update.cancellationTokenSource.IsCancellationRequested) {
-                            update.cancellationTokenSource.Cancel();
-                            await ProcessAccountData(clientDbid, update.serverGroups);
-                        }
-                    },
-                    update.cancellationTokenSource.Token
-                );
-            }
+            );
         }
 
         private async Task ProcessAccountData(double clientDbId, ICollection<double> serverGroups) {
@@ -117,9 +92,7 @@ namespace UKSF.Api.Events.Handlers {
             Account account = accountService.Data.GetSingle(x => x.teamspeakIdentities != null && x.teamspeakIdentities.Any(y => y.Equals(clientDbId)));
             Task unused = teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
 
-            using (await mutex.LockAsync()) {
-                serverGroupUpdates.Remove(clientDbId);
-            }
+            serverGroupUpdates.TryRemove(clientDbId, out TeamspeakServerGroupUpdate _);
         }
     }
 }

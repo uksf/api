@@ -36,6 +36,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
 
         private async Task MongoTest(Func<IMongoDatabase, Task> testFunction) {
             mongoDbRunner = MongoDbRunner.Start(additionalMongodArguments: "--quiet");
+
             IMongoDatabase database = MongoClientFactory.GetDatabase($"{mongoDbRunner.ConnectionString}{Guid.NewGuid()}");
 
             await testFunction(database);
