@@ -117,10 +117,9 @@ namespace UKSF.Api.Controllers.Accounts {
             List<object> accounts = new List<object>();
 
             List<Account> memberAccounts = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER).ToList();
+            memberAccounts = memberAccounts.OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname).ToList();
             if (reverse) {
-                memberAccounts.Sort((x, y) => ranksService.Sort(y.rank, x.rank));
-            } else {
-                memberAccounts.Sort((x, y) => ranksService.Sort(x.rank, y.rank));
+                memberAccounts.Reverse();
             }
 
             accounts.AddRange(memberAccounts.Select(x => new {value = x.id, displayValue = displayNameService.GetDisplayName(x)}));
