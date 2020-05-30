@@ -83,14 +83,14 @@ namespace UKSF.Api.Services.Personnel {
 
         public JObject GetApplication(Account account) {
             Account recruiterAccount = accountService.Data.GetSingle(account.application.recruiter);
-            (bool tsOnline, string tsNickname, bool discordOnline) = GetOnlineUserDetails(account);
+            (bool tsOnline, string tsNickname, bool discordOnline, string discordNickname) = GetOnlineUserDetails(account);
             (int years, int months) = account.dob.ToAge();
             return JObject.FromObject(
                 new {
                     account,
                     displayName = displayNameService.GetDisplayName(account),
                     age = new {years, months},
-                    communications = new {tsOnline, tsNickname = tsOnline ? tsNickname : "", discordOnline},
+                    communications = new {tsOnline, tsNickname = tsOnline ? tsNickname : "", discordOnline, discordNickname},
                     daysProcessing = Math.Ceiling((DateTime.Now - account.application.dateCreated).TotalDays),
                     daysProcessed = Math.Ceiling((account.application.dateAccepted - account.application.dateCreated).TotalDays),
                     nextCandidateOp = GetNextCandidateOp(),
@@ -158,14 +158,14 @@ namespace UKSF.Api.Services.Personnel {
             );
 
         private JObject GetWaitingApplication(Account account) {
-            (bool tsOnline, string tsNickname, bool discordOnline) = GetOnlineUserDetails(account);
+            (bool tsOnline, string tsNickname, bool discordOnline, string discordNickname) = GetOnlineUserDetails(account);
             double averageProcessingTime = GetAverageProcessingTime();
             double daysProcessing = Math.Ceiling((DateTime.Now - account.application.dateCreated).TotalDays);
             double processingDifference = daysProcessing - averageProcessingTime;
             return JObject.FromObject(
                 new {
                     account,
-                    communications = new {tsOnline, tsNickname = tsOnline ? tsNickname : "", discordOnline},
+                    communications = new {tsOnline, tsNickname = tsOnline ? tsNickname : "", discordOnline, discordNickname},
                     steamprofile = "http://steamcommunity.com/profiles/" + account.steamname,
                     daysProcessing,
                     processingDifference,
@@ -174,10 +174,11 @@ namespace UKSF.Api.Services.Personnel {
             );
         }
 
-        private (bool tsOnline, string tsNickname, bool discordOnline) GetOnlineUserDetails(Account account) {
+        private (bool tsOnline, string tsNickname, bool discordOnline, string discordNickname) GetOnlineUserDetails(Account account) {
             (bool tsOnline, string tsNickname) = teamspeakService.GetOnlineUserDetails(account);
+            (bool discordOnline, string discordNickname) = discordService.GetOnlineUserDetails(account);
 
-            return (tsOnline, tsNickname, discordService.IsAccountOnline(account));
+            return (tsOnline, tsNickname, discordOnline, discordNickname);
         }
 
         private static string GetNextCandidateOp() {

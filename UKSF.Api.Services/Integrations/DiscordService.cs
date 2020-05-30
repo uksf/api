@@ -95,7 +95,21 @@ namespace UKSF.Api.Services.Integrations {
             await UpdateAccountNickname(user, account);
         }
 
-        public bool IsAccountOnline(Account account) => account.discordId != null && guild.GetUser(ulong.Parse(account.discordId))?.Status == UserStatus.Online;
+        public (bool online, string nickname) GetOnlineUserDetails(Account account) {
+            bool online = IsAccountOnline(account);
+            string nickname = GetAccountNickname(account);
+
+            return (online, nickname);
+        }
+
+        private bool IsAccountOnline(Account account) => account.discordId != null && guild.GetUser(ulong.Parse(account.discordId))?.Status == UserStatus.Online;
+
+        private string GetAccountNickname(Account account) {
+            if (account.discordId == null) return "";
+
+            SocketGuildUser user = guild.GetUser(ulong.Parse(account.discordId));
+            return user == null ? "" : string.IsNullOrEmpty(user.Nickname) ? user.Username : user.Nickname;
+        }
 
         public void Dispose() {
             client.StopAsync().Wait(TimeSpan.FromSeconds(5));

@@ -6,7 +6,7 @@ using UKSF.Api.Models.Personnel;
 namespace UKSF.Api.Interfaces.Integrations {
     public interface IDiscordService {
         Task ConnectDiscord();
-        bool IsAccountOnline(Account account);
+        (bool online, string nickname) GetOnlineUserDetails(Account account);
         Task SendMessage(ulong channelId, string message);
         Task<IReadOnlyCollection<SocketRole>> GetRoles();
         Task UpdateAllUsers();

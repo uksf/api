@@ -43,7 +43,7 @@ namespace UKSF.Api.Data {
 
         public virtual async Task UpdateMany(Func<T, bool> predicate, UpdateDefinition<T> update) {
             List<T> items = Get(predicate); // TODO: Evaluate performance impact of this presence check
-            if (items.Count == 0) throw new KeyNotFoundException("Could not find any items to update");
+            if (items.Count == 0) return; // throw new KeyNotFoundException("Could not find any items to update");
             await dataCollection.UpdateManyAsync(x => predicate(x), update);
             items.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, x.GetIdValue())));
         }
@@ -62,7 +62,7 @@ namespace UKSF.Api.Data {
 
         public virtual async Task DeleteMany(Func<T, bool> predicate) {
             List<T> items = Get(predicate); // TODO: Evaluate performance impact of this presence check
-            if (items.Count == 0) throw new KeyNotFoundException("Could not find any items to delete");
+            if (items.Count == 0) return; // throw new KeyNotFoundException("Could not find any items to delete");
             await dataCollection.DeleteManyAsync(x => predicate(x));
             items.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, x.GetIdValue())));
         }

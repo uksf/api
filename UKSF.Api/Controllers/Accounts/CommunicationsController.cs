@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -11,7 +10,6 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Message;
-using UKSF.Api.Services.Utility.ScheduledActions;
 using UKSF.Common;
 
 namespace UKSF.Api.Controllers.Accounts {

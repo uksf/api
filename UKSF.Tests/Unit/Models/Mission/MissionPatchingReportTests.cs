@@ -1,7 +1,5 @@
 ﻿using System;
-using System.IO;
 using FluentAssertions;
-using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Mission;
 using Xunit;
 
