@@ -37,13 +37,14 @@ namespace UKSF.Tests.Unit.Unit.Data {
             act.Should().Throw<KeyNotFoundException>();
         }
 
-        // [Fact]
-        // public void ShouldThrowForDeleteManyWhenNoMatchingItems() {
-        //     mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns(new List<MockDataModel>());
-        //     Func<Task> act = async () => await mockDataService.DeleteMany(null);
-        //
-        //     act.Should().Throw<KeyNotFoundException>();
-        // }
+        [Fact]
+        public async Task ShouldDoNothingForDeleteManyWhenNoMatchingItems() {
+            mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns(new List<MockDataModel>());
+
+            await mockDataService.DeleteMany(null);
+
+            mockDataCollection.Verify(x => x.DeleteManyAsync(It.IsAny<Expression<Func<MockDataModel, bool>>>()), Times.Never);
+        }
 
         [Theory, InlineData(""), InlineData(null)]
         public void ShouldGetNothingWhenNoKeyOrNull(string id) {
@@ -68,13 +69,14 @@ namespace UKSF.Tests.Unit.Unit.Data {
             act.Should().Throw<KeyNotFoundException>();
         }
 
-        // [Fact]
-        // public void ShouldThrowForUpdateManyWhenNoMatchingItems() {
-        //     mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns(new List<MockDataModel>());
-        //     Func<Task> act = async () => await mockDataService.UpdateMany(null, null);
-        //
-        //     act.Should().Throw<KeyNotFoundException>();
-        // }
+        [Fact]
+        public async Task ShouldDoNothingForUpdateManyWhenNoMatchingItems() {
+            mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns(new List<MockDataModel>());
+
+            await mockDataService.UpdateMany(null, null);
+
+            mockDataCollection.Verify(x => x.UpdateManyAsync(It.IsAny<Expression<Func<MockDataModel, bool>>>(), It.IsAny<UpdateDefinition<MockDataModel>>()), Times.Never);
+        }
 
         [Theory, InlineData(""), InlineData(null)]
         public void ShouldThrowForUpdateWithUpdateDefinitionWhenNoKeyOrNull(string id) {
