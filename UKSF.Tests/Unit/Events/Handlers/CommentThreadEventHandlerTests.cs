@@ -18,7 +18,7 @@ namespace UKSF.Tests.Unit.Unit.Events.Handlers {
         private readonly CommentThreadEventHandler commentThreadEventHandler;
         private readonly DataEventBus<ICommentThreadDataService> dataEventBus;
         private readonly Mock<IHubContext<CommentThreadHub, ICommentThreadClient>> mockHub;
-        private Mock<ILoggingService> mockLoggingService;
+        private readonly Mock<ILoggingService> mockLoggingService;
 
         public CommentThreadEventHandlerTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
@@ -91,17 +91,11 @@ namespace UKSF.Tests.Unit.Unit.Events.Handlers {
 
         [Fact]
         public void ShouldLogOnException() {
-            Mock<IHubClients<ICommentThreadClient>> mockHubClients = new Mock<IHubClients<ICommentThreadClient>>();
-            Mock<ICommentThreadClient> mockClient = new Mock<ICommentThreadClient>();
-
-            mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
-            mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockClient.Object);
-            mockClient.Setup(x => x.ReceiveComment(It.IsAny<object>())).Throws(new Exception());
             mockLoggingService.Setup(x => x.Log(It.IsAny<Exception>()));
 
             commentThreadEventHandler.Init();
 
-            dataEventBus.Send(new DataEventModel<ICommentThreadDataService> { type = DataEventType.ADD });
+            dataEventBus.Send(new DataEventModel<ICommentThreadDataService> { type = (DataEventType) 5 });
 
             mockLoggingService.Verify(x => x.Log(It.IsAny<Exception>()), Times.Once);
         }
