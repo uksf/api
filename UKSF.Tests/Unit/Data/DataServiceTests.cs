@@ -37,13 +37,13 @@ namespace UKSF.Tests.Unit.Unit.Data {
             act.Should().Throw<KeyNotFoundException>();
         }
 
-        [Fact]
-        public void ShouldThrowForDeleteManyWhenNoMatchingItems() {
-            mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns(new List<MockDataModel>());
-            Func<Task> act = async () => await mockDataService.DeleteMany(null);
-
-            act.Should().Throw<KeyNotFoundException>();
-        }
+        // [Fact]
+        // public void ShouldThrowForDeleteManyWhenNoMatchingItems() {
+        //     mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns(new List<MockDataModel>());
+        //     Func<Task> act = async () => await mockDataService.DeleteMany(null);
+        //
+        //     act.Should().Throw<KeyNotFoundException>();
+        // }
 
         [Theory, InlineData(""), InlineData(null)]
         public void ShouldGetNothingWhenNoKeyOrNull(string id) {
@@ -68,13 +68,13 @@ namespace UKSF.Tests.Unit.Unit.Data {
             act.Should().Throw<KeyNotFoundException>();
         }
 
-        [Fact]
-        public void ShouldThrowForUpdateManyWhenNoMatchingItems() {
-            mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns(new List<MockDataModel>());
-            Func<Task> act = async () => await mockDataService.UpdateMany(null, null);
-
-            act.Should().Throw<KeyNotFoundException>();
-        }
+        // [Fact]
+        // public void ShouldThrowForUpdateManyWhenNoMatchingItems() {
+        //     mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns(new List<MockDataModel>());
+        //     Func<Task> act = async () => await mockDataService.UpdateMany(null, null);
+        //
+        //     act.Should().Throw<KeyNotFoundException>();
+        // }
 
         [Theory, InlineData(""), InlineData(null)]
         public void ShouldThrowForUpdateWithUpdateDefinitionWhenNoKeyOrNull(string id) {
