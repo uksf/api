@@ -36,6 +36,24 @@ namespace UKSF.Tests.Unit.Unit.Events.Handlers {
             teamspeakEventHandler = new TeamspeakEventHandler(signalrEventBus, mockTeamspeakService.Object, mockAccountService.Object, mockTeamspeakGroupService.Object, mockLoggingService.Object);
         }
 
+        [Theory, InlineData(2), InlineData(-1)]
+        public async Task ShouldGetNoAccountForNoMatchingIdsOrNull(double id) {
+            Account account = new Account { teamspeakIdentities = Math.Abs(id - -1) < 0.01 ? null : new HashSet<double> { id } };
+            List<Account> mockAccountCollection = new List<Account> { account };
+            Mock<IAccountDataService> mockAccountDataService = new Mock<IAccountDataService>();
+
+            mockAccountDataService.Setup(x => x.GetSingle(It.IsAny<Func<Account, bool>>())).Returns<Func<Account, bool>>(x => mockAccountCollection.FirstOrDefault(x));
+            mockAccountService.Setup(x => x.Data).Returns(mockAccountDataService.Object);
+            mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(It.IsAny<Account>(), It.IsAny<ICollection<double>>(), It.IsAny<double>())).Returns(Task.CompletedTask);
+
+            teamspeakEventHandler.Init();
+
+            signalrEventBus.Send(new SignalrEventModel { procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" });
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
+            mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(null, new List<double> { 5 }, 1), Times.Once);
+        }
+
         [Fact]
         public void LogOnException() {
             mockLoggingService.Setup(x => x.Log(It.IsAny<Exception>()));
