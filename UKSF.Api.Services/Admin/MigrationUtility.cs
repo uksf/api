@@ -45,41 +45,6 @@ namespace UKSF.Api.Services.Admin {
         }
 
         // TODO: CHECK BEFORE RELEASE
-        private static void ExecuteMigration() {
-            IDataCollectionFactory dataCollectionFactory = ServiceWrapper.Provider.GetService<IDataCollectionFactory>();
-            IDataCollection<OldScheduledJob> oldDataCollection = dataCollectionFactory.CreateDataCollection<OldScheduledJob>("scheduledJobs");
-            List<OldScheduledJob> oldScheduledJobs = oldDataCollection.Get();
-
-            ISchedulerDataService schedulerDataService = ServiceWrapper.Provider.GetService<ISchedulerDataService>();
-
-            foreach (ScheduledJob newScheduledJob in oldScheduledJobs.Select(
-                oldScheduledJob => new ScheduledJob {
-                    id = oldScheduledJob.id,
-                    action = oldScheduledJob.action,
-                    actionParameters = oldScheduledJob.actionParameters,
-                    interval = oldScheduledJob.interval,
-                    next = oldScheduledJob.next,
-                    repeat = oldScheduledJob.repeat
-                }
-            )) {
-                schedulerDataService.Delete(newScheduledJob.id).Wait();
-                schedulerDataService.Add(newScheduledJob).Wait();
-            }
-        }
-    }
-
-    public enum ScheduledJobType {
-        NORMAL,
-        TEAMSPEAK_SNAPSHOT,
-        LOG_PRUNE
-    }
-
-    public class OldScheduledJob : DatabaseObject {
-        public string action;
-        public string actionParameters;
-        public TimeSpan interval;
-        public DateTime next;
-        public bool repeat;
-        public ScheduledJobType type = ScheduledJobType.NORMAL;
+        private static void ExecuteMigration() { }
     }
 }
