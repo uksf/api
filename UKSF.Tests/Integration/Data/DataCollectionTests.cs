@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Mongo2Go;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using UKSF.Api.Data;
 using UKSF.Api.Models.Personnel;

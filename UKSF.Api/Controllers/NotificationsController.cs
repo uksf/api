@@ -29,10 +29,6 @@ namespace UKSF.Api.Controllers {
         public async Task<IActionResult> Clear([FromBody] JObject jObject) {
             JArray clear = JArray.Parse(jObject["clear"].ToString());
             List<string> ids = clear.Select(notification => notification["id"].ToString()).ToList();
-            if (ids.Count == 0) {
-                return Ok();
-            }
-
             await notificationsService.Delete(ids);
             return Ok();
         }

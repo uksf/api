@@ -18,7 +18,7 @@ using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Services.Command {
-    public class CommandRequestService : ICommandRequestService {
+    public class CommandRequestService : DataBackedService<ICommandRequestDataService>, ICommandRequestService {
         private readonly IAccountService accountService;
         private readonly IChainOfCommandService chainOfCommandService;
         private readonly ICommandRequestDataService data;
@@ -39,7 +39,7 @@ namespace UKSF.Api.Services.Command {
             IChainOfCommandService chainOfCommandService,
             IUnitsService unitsService,
             IRanksService ranksService
-        ) {
+        ) : base(data) {
             this.data = data;
             this.dataArchive = dataArchive;
             this.notificationsService = notificationsService;
@@ -50,8 +50,6 @@ namespace UKSF.Api.Services.Command {
             this.unitsService = unitsService;
             this.ranksService = ranksService;
         }
-
-        public ICommandRequestDataService Data => data;
 
         public async Task Add(CommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE) {
             Account requesterAccount = sessionService.GetContextAccount();

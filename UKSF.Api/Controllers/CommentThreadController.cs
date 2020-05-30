@@ -57,7 +57,7 @@ namespace UKSF.Api.Controllers {
             Account account = sessionService.GetContextAccount();
             bool admin = sessionService.ContextHasRole(RoleDefinitions.ADMIN);
             bool canPost = commentThread.mode switch {
-                ThreadMode.SR1 => (commentThread.authors.Any(x => x == sessionService.GetContextId()) || admin || recruitmentService.IsRecruiter(sessionService.GetContextAccount())),
+                ThreadMode.SR1 => commentThread.authors.Any(x => x == sessionService.GetContextId()) || admin || recruitmentService.IsRecruiter(sessionService.GetContextAccount()),
                 ThreadMode.RANKSUPERIOR => commentThread.authors.Any(x => admin || ranksService.IsSuperior(account.rank, accountService.Data.GetSingle(x).rank)),
                 ThreadMode.RANKEQUAL => commentThread.authors.Any(x => admin || ranksService.IsEqual(account.rank, accountService.Data.GetSingle(x).rank)),
                 ThreadMode.RANKSUPERIOROREQUAL => commentThread.authors.Any(x => admin || ranksService.IsSuperiorOrEqual(account.rank, accountService.Data.GetSingle(x).rank)),
