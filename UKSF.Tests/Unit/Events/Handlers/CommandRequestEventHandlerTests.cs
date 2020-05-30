@@ -68,17 +68,11 @@ namespace UKSF.Tests.Unit.Unit.Events.Handlers {
 
         [Fact]
         public void ShouldLogOnException() {
-            Mock<IHubClients<ICommandRequestsClient>> mockHubClients = new Mock<IHubClients<ICommandRequestsClient>>();
-            Mock<ICommandRequestsClient> mockClient = new Mock<ICommandRequestsClient>();
-
-            mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
-            mockHubClients.Setup(x => x.All).Returns(mockClient.Object);
-            mockClient.Setup(x => x.ReceiveRequestUpdate()).Throws(new Exception());
             mockLoggingService.Setup(x => x.Log(It.IsAny<Exception>()));
 
             commandRequestEventHandler.Init();
 
-            dataEventBus.Send(new DataEventModel<ICommandRequestDataService> { type = DataEventType.UPDATE });
+            dataEventBus.Send(new DataEventModel<ICommandRequestDataService> { type = (DataEventType) 5 });
 
             mockLoggingService.Verify(x => x.Log(It.IsAny<Exception>()), Times.Once);
         }
