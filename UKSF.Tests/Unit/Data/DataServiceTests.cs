@@ -30,8 +30,8 @@ namespace UKSF.Tests.Unit.Unit.Data {
             mockDataService = new MockDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
         }
 
-        [Theory, InlineData(""), InlineData(null)]
-        public void ShouldThrowForDeleteWhenNoKeyOrNull(string id) {
+        [Theory, InlineData(""), InlineData("1"), InlineData(null)]
+        public void ShouldThrowForDeleteForInvalidKey(string id) {
             Func<Task> act = async () => await mockDataService.Delete(id);
 
             act.Should().Throw<KeyNotFoundException>();
@@ -46,15 +46,15 @@ namespace UKSF.Tests.Unit.Unit.Data {
             mockDataCollection.Verify(x => x.DeleteManyAsync(It.IsAny<Expression<Func<MockDataModel, bool>>>()), Times.Never);
         }
 
-        [Theory, InlineData(""), InlineData(null)]
-        public void ShouldGetNothingWhenNoKeyOrNull(string id) {
-            MockDataModel subject = mockDataService.GetSingle(id);
+        [Theory, InlineData(""), InlineData("1"), InlineData(null)]
+        public void ShouldThrowForInvalidKey(string id) {
+            Action act = () => mockDataService.GetSingle(id);
 
-            subject.Should().Be(null);
+            act.Should().Throw<KeyNotFoundException>();
         }
 
-        [Theory, InlineData(""), InlineData(null)]
-        public void ShouldThrowForUpdateWhenNoKeyOrNull(string id) {
+        [Theory, InlineData(""), InlineData("1"), InlineData(null)]
+        public void ShouldThrowForUpdateForInvalidKey(string id) {
             Func<Task> act = async () => await mockDataService.Update(id, "Name", null);
 
             act.Should().Throw<KeyNotFoundException>();
@@ -78,8 +78,8 @@ namespace UKSF.Tests.Unit.Unit.Data {
             mockDataCollection.Verify(x => x.UpdateManyAsync(It.IsAny<Expression<Func<MockDataModel, bool>>>(), It.IsAny<UpdateDefinition<MockDataModel>>()), Times.Never);
         }
 
-        [Theory, InlineData(""), InlineData(null)]
-        public void ShouldThrowForUpdateWithUpdateDefinitionWhenNoKeyOrNull(string id) {
+        [Theory, InlineData(""), InlineData("1"), InlineData(null)]
+        public void ShouldThrowForUpdateWithUpdateDefinitionForInvalidKey(string id) {
             Func<Task> act = async () => await mockDataService.Update(id, Builders<MockDataModel>.Update.Set(x => x.Name, "2"));
 
             act.Should().Throw<KeyNotFoundException>();

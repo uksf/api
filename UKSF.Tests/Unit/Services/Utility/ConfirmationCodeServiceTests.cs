@@ -24,8 +24,8 @@ namespace UKSF.Tests.Unit.Unit.Services.Utility {
             confirmationCodeService = new ConfirmationCodeService(mockConfirmationCodeDataService.Object, mockSchedulerService.Object);
         }
 
-        [Theory, InlineData(""), InlineData(null)]
-        public async Task ShouldReturnEmptyStringWhenNoIdOrNull(string id) {
+        [Theory, InlineData(""), InlineData("1"), InlineData(null)]
+        public async Task ShouldReturnEmptyStringWhenBadIdOrNull(string id) {
             mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<ConfirmationCode>(null);
 
             string subject = await confirmationCodeService.GetConfirmationCode(id);
