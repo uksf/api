@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Events.Data;
 using UKSF.Api.Interfaces.Data;
@@ -18,7 +19,10 @@ namespace UKSF.Api.Data {
 
         public virtual List<T> Get(Func<T, bool> predicate) => dataCollection.Get(predicate);
 
-        public virtual T GetSingle(string id) => dataCollection.GetSingle(id);
+        public virtual T GetSingle(string id) {
+            ValidateId(id);
+            return dataCollection.GetSingle(id);
+        }
 
         public virtual T GetSingle(Func<T, bool> predicate) => dataCollection.GetSingle(predicate);
 
@@ -29,14 +33,14 @@ namespace UKSF.Api.Data {
         }
 
         public virtual async Task Update(string id, string fieldName, object value) {
-            if (string.IsNullOrEmpty(id)) throw new KeyNotFoundException("Key cannot be empty");
+            ValidateId(id);
             UpdateDefinition<T> update = value == null ? Builders<T>.Update.Unset(fieldName) : Builders<T>.Update.Set(fieldName, value);
             await dataCollection.UpdateAsync(id, update);
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
         }
 
         public virtual async Task Update(string id, UpdateDefinition<T> update) { // TODO: Remove strong typing to UpdateDefinition
-            if (string.IsNullOrEmpty(id)) throw new KeyNotFoundException("Key cannot be empty");
+            ValidateId(id);
             await dataCollection.UpdateAsync(id, update);
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
         }
@@ -55,7 +59,7 @@ namespace UKSF.Api.Data {
         }
 
         public virtual async Task Delete(string id) {
-            if (string.IsNullOrEmpty(id)) throw new KeyNotFoundException("Key cannot be empty");
+            ValidateId(id);
             await dataCollection.DeleteAsync(id);
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, id));
         }
@@ -65,6 +69,11 @@ namespace UKSF.Api.Data {
             if (items.Count == 0) return; // throw new KeyNotFoundException("Could not find any items to delete");
             await dataCollection.DeleteManyAsync(x => predicate(x));
             items.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, x.GetIdValue())));
+        }
+
+        private static void ValidateId(string id) {
+            if (string.IsNullOrEmpty(id)) throw new KeyNotFoundException("Key cannot be empty");
+            if (!ObjectId.TryParse(id, out ObjectId _)) throw new KeyNotFoundException("Key must be valid");
         }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -40,48 +41,43 @@ namespace UKSF.Api.Controllers.Accounts {
 
         [HttpPost("send"), Authorize]
         public async Task<IActionResult> SendCode([FromBody] JObject body) {
-            string mode = body["mode"]?.ToString();
-            if (string.IsNullOrEmpty(mode)) {
-                return BadRequest(new { error = $"Code mode '{mode}' not given" });
-            }
+            string mode = body.GetValueFromBody("mode");
+            string data = body.GetValueFromBody("data");
 
-            string data = body["data"]?.ToString();
-            if (string.IsNullOrEmpty(mode)) {
-                return BadRequest(new { error = $"Code data '{data}' not given" });
+            try {
+                GuardUtilites.ValidateString(mode, _ => throw new ArgumentException("Mode is invalid"));
+                GuardUtilites.ValidateString(data, _ => throw new ArgumentException("Data is invalid"));
+            } catch (ArgumentException exception) {
+                return BadRequest(new { error = exception.Message });
             }
 
             return mode switch {
                 "teamspeak" => await SendTeamspeakCode(data),
-                _ => BadRequest(new { error = $"Code mode '{mode}' not recognized" })
+                _ => BadRequest(new { error = $"Mode '{mode}' not recognized" })
             };
         }
 
         [HttpPost("receive"), Authorize]
         public async Task<IActionResult> ReceiveCode([FromBody] JObject body) {
-            string mode = body["mode"]?.ToString();
-            if (string.IsNullOrEmpty(mode)) {
-                return BadRequest(new { error = $"Code mode '{mode}' not given" });
+            string id = body.GetValueFromBody("id");
+            string code = body.GetValueFromBody("code");
+            string mode = body.GetValueFromBody("mode");
+            string data = body.GetValueFromBody("data");
+            string[] dataArray = data.Split(',');
+
+            try {
+                GuardUtilites.ValidateId(id, _ => throw new ArgumentException($"Id '{id}' is invalid"));
+                GuardUtilites.ValidateId(code, _ => throw new ArgumentException($"Code '{code}' is invalid. Please try again"));
+                GuardUtilites.ValidateString(mode, _ => throw new ArgumentException("Mode is invalid"));
+                GuardUtilites.ValidateString(data, _ => throw new ArgumentException("Data is invalid"));
+                GuardUtilites.ValidateArray(dataArray, x => x.Length > 0, x => true, () => throw new ArgumentException("Data array is empty"));
+            } catch (ArgumentException exception) {
+                return BadRequest(new { error = exception.Message });
             }
 
-            string id = body["id"]?.ToString();
-            if (string.IsNullOrEmpty(id)) {
-                return BadRequest(new { error = $"Code id '{id}' not given" });
-            }
-
-            string code = body["code"]?.ToString();
-            if (string.IsNullOrEmpty(code)) {
-                return BadRequest(new { error = $"Code '{code}' not given" });
-            }
-
-            string dataString = body["data"]?.ToString();
-            if (string.IsNullOrEmpty(dataString)) {
-                return BadRequest(new { error = $"Code data '{dataString}' not given" });
-            }
-
-            string[] data = dataString.Split(',');
             return mode switch {
-                "teamspeak" => await ReceiveTeamspeakCode(id, code, data[0]),
-                _ => BadRequest(new { error = $"Code mode '{mode}' not recognized" })
+                "teamspeak" => await ReceiveTeamspeakCode(id, code, dataArray[0]),
+                _ => BadRequest(new { error = $"Mode '{mode}' not recognized" })
             };
         }
 

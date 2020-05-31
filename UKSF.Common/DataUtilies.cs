@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Newtonsoft.Json.Linq;
 
 namespace UKSF.Common {
     public static class DataUtilies {
@@ -7,5 +8,7 @@ namespace UKSF.Common {
             if (id == null) return "";
             return id.GetValue(data) as string;
         }
+
+        public static string GetValueFromBody(this JObject body, string key) => body[key]?.ToString();
     }
 }

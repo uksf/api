@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using UKSF.Api.Interfaces.Hubs;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
@@ -17,12 +18,14 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
         private readonly IMongoDatabase database;
         private readonly IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub;
         private readonly ITeamspeakManagerService teamspeakManagerService;
+        private readonly IHostEnvironment environment;
         private HashSet<TeamspeakClient> clients = new HashSet<TeamspeakClient>();
 
-        public TeamspeakService(IMongoDatabase database, IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub, ITeamspeakManagerService teamspeakManagerService) {
+        public TeamspeakService(IMongoDatabase database, IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub, ITeamspeakManagerService teamspeakManagerService, IHostEnvironment environment) {
             this.database = database;
             this.teamspeakClientsHub = teamspeakClientsHub;
             this.teamspeakManagerService = teamspeakManagerService;
+            this.environment = environment;
         }
 
         public HashSet<TeamspeakClient> GetOnlineTeamspeakClients() => clients;
@@ -69,6 +72,7 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
         }
 
         public object GetFormattedClients() {
+            if (environment.IsDevelopment()) return new List<object> {new {name = $"SqnLdr.Beswick.T", clientDbId = (double) 2}};
             return clients.Count == 0 ? null : clients.Where(x => x != null).Select(x => new {name = $"{x.clientName}", x.clientDbId}).ToList();
         }
 
