@@ -9,6 +9,6 @@ namespace UKSF.Common {
             return id.GetValue(data) as string;
         }
 
-        public static string GetValueFromBody(this JObject body, string key) => body[key]?.ToString();
+        public static string GetValueFromBody(this JObject body, string key) => body[key] != null ? body[key].ToString() : string.Empty;
     }
 }
