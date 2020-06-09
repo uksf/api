@@ -215,10 +215,10 @@ namespace UKSF.Api.Controllers.Accounts {
         private ExtendedAccount ExtendAccount(Account account) {
             ExtendedAccount extendedAccount = account.ToExtendedAccount();
             extendedAccount.displayName = displayNameService.GetDisplayName(account);
-            extendedAccount.permissionSr1 = sessionService.ContextHasRole(RoleDefinitions.SR1);
-            extendedAccount.permissionSr5 = sessionService.ContextHasRole(RoleDefinitions.SR5);
-            extendedAccount.permissionSr10 = sessionService.ContextHasRole(RoleDefinitions.SR10);
-            extendedAccount.permissionSr1Lead = sessionService.ContextHasRole(RoleDefinitions.SR1_LEAD);
+            extendedAccount.permissionRecruiter = sessionService.ContextHasRole(RoleDefinitions.RECRUITER);
+            extendedAccount.permissionServers = sessionService.ContextHasRole(RoleDefinitions.SERVERS);
+            extendedAccount.permissionPersonnel = sessionService.ContextHasRole(RoleDefinitions.PERSONNEL);
+            extendedAccount.permissionRecruiterLead = sessionService.ContextHasRole(RoleDefinitions.RECRUITER_LEAD);
             extendedAccount.permissionCommand = sessionService.ContextHasRole(RoleDefinitions.COMMAND);
             extendedAccount.permissionAdmin = sessionService.ContextHasRole(RoleDefinitions.ADMIN);
             extendedAccount.permissionNco = sessionService.ContextHasRole(RoleDefinitions.NCO);

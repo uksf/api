@@ -11,6 +11,7 @@ using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
+using UKSF.Api.Services.Admin;
 using UKSF.Common;
 
 namespace UKSF.Api.Services.Personnel {
@@ -44,12 +45,12 @@ namespace UKSF.Api.Services.Personnel {
             this.discordService = discordService;
         }
 
-        public bool IsRecruiter(Account account) => GetSr1Members(true).Any(x => x.id == account.id);
+        public bool IsRecruiter(Account account) => GetRecruiters(true).Any(x => x.id == account.id);
 
-        public Dictionary<string, string> GetSr1Leads() => GetSr1Group().roles;
+        public Dictionary<string, string> GetRecruiterLeads() => GetRecruiterUnit().roles;
 
-        public IEnumerable<Account> GetSr1Members(bool skipSort = false) {
-            IEnumerable<string> members = unitsService.Data.GetSingle(x => x.name == "SR1 Recruitment").members;
+        public IEnumerable<Account> GetRecruiters(bool skipSort = false) {
+            IEnumerable<string> members = GetRecruiterUnit().members;
             List<Account> accounts = members.Select(x => accountService.Data.GetSingle(x)).ToList();
             if (skipSort) return accounts;
             return accounts.OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname);
@@ -74,7 +75,7 @@ namespace UKSF.Api.Services.Personnel {
                 }
             }
 
-            foreach (Account account in GetSr1Members(true)) {
+            foreach (Account account in GetRecruiters(true)) {
                 recruiters.Add(displayNameService.GetDisplayName(account));
             }
 
@@ -103,9 +104,9 @@ namespace UKSF.Api.Services.Personnel {
             );
         }
 
-        public object GetActiveRecruiters() => GetSr1Members().Where(x => x.settings.sr1Enabled).Select(x => JObject.FromObject(new {value = x.id, viewValue = displayNameService.GetDisplayName(x)}));
+        public object GetActiveRecruiters() => GetRecruiters().Where(x => x.settings.sr1Enabled).Select(x => JObject.FromObject(new {value = x.id, viewValue = displayNameService.GetDisplayName(x)}));
 
-        public bool IsAccountSr1Lead(Account account = null) => account != null ? GetSr1Group().roles.ContainsValue(account.id) : GetSr1Group().roles.ContainsValue(sessionService.GetContextId());
+        public bool IsRecruiterLead(Account account = null) => account != null ? GetRecruiterUnit().roles.ContainsValue(account.id) : GetRecruiterUnit().roles.ContainsValue(sessionService.GetContextId());
 
         public async Task SetRecruiter(string id, string newRecruiter) {
             await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.recruiter, newRecruiter));
@@ -140,7 +141,7 @@ namespace UKSF.Api.Services.Personnel {
         }
 
         public string GetRecruiter() {
-            List<Account> recruiters = GetSr1Members().Where(x => x.settings.sr1Enabled).ToList();
+            List<Account> recruiters = GetRecruiters().Where(x => x.settings.sr1Enabled).ToList();
             List<Account> waiting = accountService.Data.Get(x => x.application != null && x.application.state == ApplicationState.WAITING);
             List<Account> complete = accountService.Data.Get(x => x.application != null && x.application.state != ApplicationState.WAITING);
             var unsorted = recruiters.Select(x => new {x.id, complete = complete.Count(y => y.application.recruiter == x.id), waiting = waiting.Count(y => y.application.recruiter == x.id)});
@@ -148,8 +149,9 @@ namespace UKSF.Api.Services.Personnel {
             return sorted.First().id;
         }
 
-        private Unit GetSr1Group() {
-            return unitsService.Data.Get(x => x.name == "SR1 Recruitment").FirstOrDefault();
+        private Unit GetRecruiterUnit() {
+            string id = VariablesWrapper.VariablesDataService().GetSingle("ROLE_ID_RECRUITMENT").AsString();
+            return unitsService.Data.GetSingle(id);
         }
 
         private JObject GetCompletedApplication(Account account) =>

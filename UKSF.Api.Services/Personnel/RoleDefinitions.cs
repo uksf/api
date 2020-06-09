@@ -9,10 +9,10 @@ namespace UKSF.Api.Services.Personnel {
         public const string DISCHARGED = "DISCHARGED";
         public const string MEMBER = "MEMBER";
         public const string NCO = "NCO";
-        public const string SR1 = "SR1";
-        public const string SR1_LEAD = "SR1_LEAD";
-        public const string SR10 = "SR10";
-        public const string SR5 = "SR5";
+        public const string RECRUITER = "RECRUITER";
+        public const string RECRUITER_LEAD = "RECRUITER_LEAD";
+        public const string PERSONNEL = "PERSONNEL";
+        public const string SERVERS = "SERVERS";
         public const string UNCONFIRMED = "UNCONFIRMED";
     }
 

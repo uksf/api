@@ -4,7 +4,7 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace UKSF.Api.Models.Message {
     public enum ThreadMode {
         ALL,
-        SR1,
+        RECRUITER,
         RANKSUPERIOR,
         RANKEQUAL,
         RANKSUPERIOROREQUAL

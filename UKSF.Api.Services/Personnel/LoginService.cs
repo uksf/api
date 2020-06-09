@@ -9,6 +9,7 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Personnel;
+using UKSF.Api.Services.Admin;
 
 namespace UKSF.Api.Services.Personnel {
     public class LoginService : ILoginService {
@@ -75,28 +76,30 @@ namespace UKSF.Api.Services.Personnel {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.ADMIN));
                     }
 
-                    if (unitsService.MemberHasAnyRole(account.id) || admin) {
+                    if (admin || unitsService.MemberHasAnyRole(account.id)) {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.COMMAND));
                     }
 
-                    if (account.rank != null && ranksService.IsSuperiorOrEqual(account.rank, "Senior Aircraftman") || admin) {
+                    if (admin || account.rank != null && ranksService.IsSuperiorOrEqual(account.rank, "Senior Aircraftman")) {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.NCO));
                     }
 
-                    if (recruitmentService.IsAccountSr1Lead(account) || admin) {
-                        claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.SR1_LEAD));
+                    if (admin || recruitmentService.IsRecruiterLead(account)) {
+                        claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.RECRUITER_LEAD));
                     }
 
-                    if (recruitmentService.IsRecruiter(account) || admin) {
-                        claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.SR1));
+                    if (admin || recruitmentService.IsRecruiter(account)) {
+                        claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.RECRUITER));
                     }
 
-                    if (unitsService.Data.GetSingle(x => x.shortname == "SR10").members.Contains(account.id) || admin) {
-                        claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.SR10));
+                    string personnelId = VariablesWrapper.VariablesDataService().GetSingle("ROLE_ID_PERSONNEL").AsString();
+                    if (admin || unitsService.Data.GetSingle(personnelId).members.Contains(account.id)) {
+                        claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.PERSONNEL));
                     }
 
-                    if (unitsService.Data.GetSingle(x => x.shortname == "SR5").members.Contains(account.id) || admin) {
-                        claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.SR5));
+                    string[] missionsId = VariablesWrapper.VariablesDataService().GetSingle("ROLE_ID_MISSIONS").AsArray();
+                    if (admin || unitsService.Data.GetSingle(x => missionsId.Contains(x.id)).members.Contains(account.id)) {
+                        claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.SERVERS));
                     }
 
                     break;

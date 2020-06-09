@@ -33,7 +33,7 @@ namespace UKSF.Api.Controllers {
             this.notificationsService = notificationsService;
         }
 
-        [HttpGet, Authorize, Roles(RoleDefinitions.SR1)]
+        [HttpGet, Authorize, Roles(RoleDefinitions.RECRUITER)]
         public IActionResult GetAll() => Ok(recruitmentService.GetAllApplications());
 
         [HttpGet("{id}"), Authorize]
@@ -42,14 +42,14 @@ namespace UKSF.Api.Controllers {
             return Ok(recruitmentService.GetApplication(account));
         }
 
-        [HttpGet("isrecruiter"), Authorize, Roles(RoleDefinitions.SR1)]
+        [HttpGet("isrecruiter"), Authorize, Roles(RoleDefinitions.RECRUITER)]
         public IActionResult GetIsRecruiter() => Ok(new {recruiter = recruitmentService.IsRecruiter(sessionService.GetContextAccount())});
 
-        [HttpGet("stats"), Authorize, Roles(RoleDefinitions.SR1)]
+        [HttpGet("stats"), Authorize, Roles(RoleDefinitions.RECRUITER)]
         public IActionResult GetRecruitmentStats() {
             string account = sessionService.GetContextId();
             List<object> activity = new List<object>();
-            foreach (Account recruiterAccount in recruitmentService.GetSr1Members()) {
+            foreach (Account recruiterAccount in recruitmentService.GetRecruiters()) {
                 List<Account> recruiterApplications = accountService.Data.Get(x => x.application != null && x.application.recruiter == recruiterAccount.id);
                 activity.Add(
                     new {
@@ -65,7 +65,7 @@ namespace UKSF.Api.Controllers {
             return Ok(new {activity, yourStats = new {lastMonth = recruitmentService.GetStats(account, true), overall = recruitmentService.GetStats(account, false)}, sr1Stats = new {lastMonth = recruitmentService.GetStats("", true), overall = recruitmentService.GetStats("", false)}});
         }
 
-        [HttpPost("{id}"), Authorize, Roles(RoleDefinitions.SR1)]
+        [HttpPost("{id}"), Authorize, Roles(RoleDefinitions.RECRUITER)]
         public async Task<IActionResult> UpdateState([FromBody] dynamic body, string id) {
             ApplicationState updatedState = body.updatedState;
             Account account = accountService.Data.GetSingle(id);
@@ -98,7 +98,7 @@ namespace UKSF.Api.Controllers {
                     await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.dateCreated, DateTime.Now).Unset(x => x.application.dateAccepted).Set(x => x.membershipState, MembershipState.CONFIRMED));
                     Notification notification = await assignmentService.UpdateUnitRankAndRole(id, AssignmentService.REMOVE_FLAG, "Applicant", "Candidate", reason: "your application was reactivated");
                     notificationsService.Add(notification);
-                    if (recruitmentService.GetSr1Members().All(x => x.id != account.application.recruiter)) {
+                    if (recruitmentService.GetRecruiters().All(x => x.id != account.application.recruiter)) {
                         string newRecruiterId = recruitmentService.GetRecruiter();
                         LogWrapper.AuditLog(sessionId, $"Application recruiter for {id} is no longer SR1, reassigning from {account.application.recruiter} to {newRecruiterId}");
                         await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.recruiter, newRecruiterId));
@@ -117,16 +117,16 @@ namespace UKSF.Api.Controllers {
                 );
             }
 
-            foreach (string value in recruitmentService.GetSr1Leads().Values.Where(value => sessionId != value && account.application.recruiter != value)) {
+            foreach (string value in recruitmentService.GetRecruiterLeads().Values.Where(value => sessionId != value && account.application.recruiter != value)) {
                 notificationsService.Add(new Notification {owner = value, icon = NotificationIcons.APPLICATION, message = $"{account.firstname} {account.lastname}'s application {message} by {displayNameService.GetDisplayName(sessionService.GetContextAccount())}", link = $"/recruitment/{id}"});
             }
 
             return Ok();
         }
 
-        [HttpPost("recruiter/{id}"), Authorize, Roles(RoleDefinitions.SR1_LEAD)]
+        [HttpPost("recruiter/{id}"), Authorize, Roles(RoleDefinitions.RECRUITER_LEAD)]
         public async Task<IActionResult> PostReassignment([FromBody] JObject newRecruiter, string id) {
-            if (!sessionService.ContextHasRole(RoleDefinitions.ADMIN) && !recruitmentService.IsAccountSr1Lead()) throw new Exception($"attempted to assign recruiter to {newRecruiter}. Context is not recruitment lead.");
+            if (!sessionService.ContextHasRole(RoleDefinitions.ADMIN) && !recruitmentService.IsRecruiterLead()) throw new Exception($"attempted to assign recruiter to {newRecruiter}. Context is not recruitment lead.");
             string recruiter = newRecruiter["newRecruiter"].ToString();
             await recruitmentService.SetRecruiter(id, recruiter);
             Account account = accountService.Data.GetSingle(id);
@@ -138,7 +138,7 @@ namespace UKSF.Api.Controllers {
             return Ok();
         }
 
-        [HttpPost("ratings/{id}"), Authorize, Roles(RoleDefinitions.SR1)]
+        [HttpPost("ratings/{id}"), Authorize, Roles(RoleDefinitions.RECRUITER)]
         public async Task<Dictionary<string, uint>> Ratings([FromBody] KeyValuePair<string, uint> value, string id) {
             Dictionary<string, uint> ratings = accountService.Data.GetSingle(id).application.ratings;
 
@@ -153,7 +153,7 @@ namespace UKSF.Api.Controllers {
             return ratings;
         }
 
-        [HttpGet("recruiters"), Authorize, Roles(RoleDefinitions.SR1_LEAD)]
+        [HttpGet("recruiters"), Authorize, Roles(RoleDefinitions.RECRUITER_LEAD)]
         public IActionResult GetRecruiters() => Ok(recruitmentService.GetActiveRecruiters());
     }
 }

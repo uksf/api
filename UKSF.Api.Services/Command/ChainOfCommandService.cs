@@ -57,9 +57,9 @@ namespace UKSF.Api.Services.Command {
                 ChainOfCommandMode.NEXT_COMMANDER => GetNextCommander(start),
                 ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF => GetNextCommanderExcludeSelf(start),
                 ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE => CommanderAndOneAbove(start),
-                ChainOfCommandMode.COMMANDER_AND_SR10 => GetCommanderAndSr10(start),
+                ChainOfCommandMode.COMMANDER_AND_PERSONNEL => GetCommanderAndPersonnel(start),
                 ChainOfCommandMode.COMMANDER_AND_TARGET_COMMANDER => GetCommanderAndTargetCommander(start, target),
-                ChainOfCommandMode.SR10 => GetSr10(),
+                ChainOfCommandMode.PERSONNEL => GetPersonnel(),
                 ChainOfCommandMode.TARGET_COMMANDER => GetNextCommander(target),
                 _ => throw new InvalidOperationException("Chain of command mode not recognized")
             };
@@ -98,17 +98,17 @@ namespace UKSF.Api.Services.Command {
             return chain;
         }
 
-        private IEnumerable<string> GetCommanderAndSr10(Unit unit) {
+        private IEnumerable<string> GetCommanderAndPersonnel(Unit unit) {
             HashSet<string> chain = new HashSet<string>();
             if (UnitHasCommander(unit)) {
                 chain.Add(GetCommander(unit));
             }
 
-            chain.UnionWith(GetSr10());
+            chain.UnionWith(GetPersonnel());
             return chain;
         }
 
-        private IEnumerable<string> GetSr10() => unitsService.Data.GetSingle(x => x.shortname == "SR10").members.ToHashSet();
+        private IEnumerable<string> GetPersonnel() => unitsService.Data.GetSingle(x => x.shortname == "SR7").members.ToHashSet();
 
         private IEnumerable<string> GetCommanderAndTargetCommander(Unit unit, Unit targetUnit) => new HashSet<string> {GetNextUnitCommander(unit), GetNextUnitCommander(targetUnit)};
 

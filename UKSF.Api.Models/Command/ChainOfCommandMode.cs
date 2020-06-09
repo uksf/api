@@ -4,9 +4,9 @@ namespace UKSF.Api.Models.Command {
         NEXT_COMMANDER,
         NEXT_COMMANDER_EXCLUDE_SELF,
         COMMANDER_AND_ONE_ABOVE,
-        COMMANDER_AND_SR10,
+        COMMANDER_AND_PERSONNEL,
         COMMANDER_AND_TARGET_COMMANDER,
-        SR10,
+        PERSONNEL,
         TARGET_COMMANDER
     }
 }
