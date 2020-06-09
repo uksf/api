@@ -8,6 +8,7 @@ using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Command;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Command {
     public class ChainOfCommandService : IChainOfCommandService {
@@ -22,11 +23,13 @@ namespace UKSF.Api.Services.Command {
         }
 
         public HashSet<string> ResolveChain(ChainOfCommandMode mode, string recipient, Unit start, Unit target) {
-            HashSet<string> chain = ResolveMode(mode, start, target).Where(x => !string.IsNullOrEmpty(x) && x != recipient).ToHashSet();
+            HashSet<string> chain = ResolveMode(mode, start, target).Where(x => x != recipient).ToHashSet();
+            chain.CleanHashset();
 
             // If no chain, and mode is not next commander, get next commander
             if (chain.Count == 0 && mode != ChainOfCommandMode.NEXT_COMMANDER && mode != ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF) {
-                chain = GetNextCommander(start).Where(x => !string.IsNullOrEmpty(x) && x != recipient).ToHashSet();
+                chain = GetNextCommander(start).Where(x => x != recipient).ToHashSet();
+                chain.CleanHashset();
             }
 
             // If no chain, get root unit child commanders
@@ -34,14 +37,22 @@ namespace UKSF.Api.Services.Command {
                 foreach (Unit unit in unitsService.Data.Get(x => x.parent == unitsService.GetRoot().id).Where(unit => UnitHasCommander(unit) && GetCommander(unit) != recipient)) {
                     chain.Add(GetCommander(unit));
                 }
+                chain.CleanHashset();
             }
 
             // If no chain, get root unit commander
             if (chain.Count == 0) {
                 chain.Add(GetCommander(unitsService.GetRoot()));
+                chain.CleanHashset();
             }
 
-            return chain.Where(x => !string.IsNullOrEmpty(x)).ToHashSet();
+            // If no chain, get personnel
+            if (chain.Count == 0) {
+                chain.UnionWith(GetPersonnel());
+                chain.CleanHashset();
+            }
+
+            return chain;
         }
 
         public bool InContextChainOfCommand(string id) {
