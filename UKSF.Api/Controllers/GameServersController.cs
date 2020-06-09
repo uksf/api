@@ -21,7 +21,7 @@ using UKSF.Api.Signalr.Hubs.Game;
 using UKSF.Common;
 
 namespace UKSF.Api.Controllers {
-    [Route("[controller]"), Roles(RoleDefinitions.NCO, RoleDefinitions.SR5, RoleDefinitions.COMMAND)]
+    [Route("[controller]"), Roles(RoleDefinitions.NCO, RoleDefinitions.SERVERS, RoleDefinitions.COMMAND)]
     public class GameServersController : Controller {
         private readonly IGameServersService gameServersService;
         private readonly IHubContext<ServersHub, IServersClient> serversHub;

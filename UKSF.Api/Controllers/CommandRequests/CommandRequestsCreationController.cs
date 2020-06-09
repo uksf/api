@@ -80,7 +80,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             request.displayFrom = "Member";
             request.type = CommandRequestType.DISCHARGE;
             if (commandRequestService.DoesEquivalentRequestExist(request)) return BadRequest("An equivalent request already exists");
-            await commandRequestService.Add(request, ChainOfCommandMode.COMMANDER_AND_SR10);
+            await commandRequestService.Add(request, ChainOfCommandMode.COMMANDER_AND_PERSONNEL);
             return Ok();
         }
 
@@ -154,14 +154,14 @@ namespace UKSF.Api.Controllers.CommandRequests {
             return Ok();
         }
 
-        [HttpPut("reinstate"), Authorize, Roles(RoleDefinitions.COMMAND, RoleDefinitions.SR1, RoleDefinitions.NCO)]
+        [HttpPut("reinstate"), Authorize, Roles(RoleDefinitions.COMMAND, RoleDefinitions.RECRUITER, RoleDefinitions.NCO)]
         public async Task<IActionResult> CreateRequestReinstateMember([FromBody] CommandRequest request) {
             request.requester = sessionId;
             request.displayValue = "Member";
             request.displayFrom = "Discharged";
             request.type = CommandRequestType.REINSTATE_MEMBER;
             if (commandRequestService.DoesEquivalentRequestExist(request)) return BadRequest("An equivalent request already exists");
-            await commandRequestService.Add(request, ChainOfCommandMode.SR10);
+            await commandRequestService.Add(request, ChainOfCommandMode.PERSONNEL);
             return Ok();
         }
     }

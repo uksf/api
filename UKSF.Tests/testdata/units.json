@@ -139,13 +139,13 @@
 		},
 		"2iC": {
 			"$oid": "59e38f1b594c603b78aa9dc1"
-		}		
+		}
 	},
 	"teamspeakGroup": "26",
 	"order": 0,
 	"callsign": null,
 	"icon": null,
-	"shortname": "Sr1",
+	"shortname": "SR1",
 	"discordRoleId": "311545206266920960"
 }
 {
@@ -162,7 +162,7 @@
 			"$oid": "59e38f13594c603b78aa9dbf"
 		}
 	],
-	"name": "SR10 Personnel and Processing",
+	"name": "SR7 Personnel & Processing",
 	"parent": {
 		"$oid": "5a4283ce55d6109bf0b081bf"
 	},
@@ -171,7 +171,7 @@
 			"$oid": "59e38f10594c603b78aa9dbd"
 		}
 	},
-	"shortname": "SR10",
+	"shortname": "SR7",
 	"teamspeakGroup": "35",
 	"order": 8,
 	"callsign": null,

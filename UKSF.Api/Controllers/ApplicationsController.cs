@@ -47,8 +47,8 @@ namespace UKSF.Api.Controllers {
         public async Task<IActionResult> Post([FromBody] JObject body) {
             Account account = sessionService.GetContextAccount();
             await Update(body, account);
-            CommentThread recruiterCommentThread = new CommentThread {authors = recruitmentService.GetSr1Leads().Values.ToArray(), mode = ThreadMode.SR1};
-            CommentThread applicationCommentThread = new CommentThread {authors = new[] {account.id}, mode = ThreadMode.SR1};
+            CommentThread recruiterCommentThread = new CommentThread {authors = recruitmentService.GetRecruiterLeads().Values.ToArray(), mode = ThreadMode.RECRUITER};
+            CommentThread applicationCommentThread = new CommentThread {authors = new[] {account.id}, mode = ThreadMode.RECRUITER};
             await commentThreadService.Data.Add(recruiterCommentThread);
             await commentThreadService.Data.Add(applicationCommentThread);
             Application application = new Application {
@@ -63,9 +63,9 @@ namespace UKSF.Api.Controllers {
             Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, "", "Applicant", "Candidate", reason: "you were entered into the recruitment process");
             notificationsService.Add(notification);
             notificationsService.Add(new Notification {owner = application.recruiter, icon = NotificationIcons.APPLICATION, message = $"You have been assigned {account.firstname} {account.lastname}'s application", link = $"/recruitment/{account.id}"});
-            foreach (string sr1Id in recruitmentService.GetSr1Leads().Values.Where(sr1Id => account.application.recruiter != sr1Id)) {
+            foreach (string id in recruitmentService.GetRecruiterLeads().Values.Where(x => account.application.recruiter != x)) {
                 notificationsService.Add(
-                    new Notification {owner = sr1Id, icon = NotificationIcons.APPLICATION, message = $"{displayNameService.GetDisplayName(account.application.recruiter)} has been assigned {account.firstname} {account.lastname}'s application", link = $"/recruitment/{account.id}"}
+                    new Notification {owner = id, icon = NotificationIcons.APPLICATION, message = $"{displayNameService.GetDisplayName(account.application.recruiter)} has been assigned {account.firstname} {account.lastname}'s application", link = $"/recruitment/{account.id}"}
                 );
             }
 

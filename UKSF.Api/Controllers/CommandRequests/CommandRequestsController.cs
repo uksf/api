@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Interfaces.Command;
+using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
@@ -15,6 +16,7 @@ using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Command;
 using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Personnel;
+using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
 
@@ -27,14 +29,24 @@ namespace UKSF.Api.Controllers.CommandRequests {
         private readonly INotificationsService notificationsService;
         private readonly ISessionService sessionService;
         private readonly IUnitsService unitsService;
+        private readonly IVariablesDataService variablesDataService;
 
-        public CommandRequestsController(ICommandRequestService commandRequestService, ICommandRequestCompletionService commandRequestCompletionService, ISessionService sessionService, IUnitsService unitsService, IDisplayNameService displayNameService, INotificationsService notificationsService) {
+        public CommandRequestsController(
+            ICommandRequestService commandRequestService,
+            ICommandRequestCompletionService commandRequestCompletionService,
+            ISessionService sessionService,
+            IUnitsService unitsService,
+            IDisplayNameService displayNameService,
+            INotificationsService notificationsService,
+            IVariablesDataService variablesDataService
+        ) {
             this.commandRequestService = commandRequestService;
             this.commandRequestCompletionService = commandRequestCompletionService;
             this.sessionService = sessionService;
             this.unitsService = unitsService;
             this.displayNameService = displayNameService;
             this.notificationsService = notificationsService;
+            this.variablesDataService = variablesDataService;
         }
 
         [HttpGet, Authorize]
@@ -43,7 +55,8 @@ namespace UKSF.Api.Controllers.CommandRequests {
             List<CommandRequest> myRequests = new List<CommandRequest>();
             List<CommandRequest> otherRequests = new List<CommandRequest>();
             string contextId = sessionService.GetContextId();
-            bool canOverride = unitsService.Data.GetSingle(x => x.shortname == "SR10").members.Any(x => x == contextId);
+            string id = variablesDataService.GetSingle("ROLE_ID_PERSONNEL").AsString();
+            bool canOverride = unitsService.Data.GetSingle(id).members.Any(x => x == contextId);
             bool superAdmin = contextId == Global.SUPER_ADMIN;
             DateTime now = DateTime.Now;
             foreach (CommandRequest commandRequest in allRequests) {
@@ -55,7 +68,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
                 }
             }
 
-            return Ok(new {myRequests = GetMyRequests(myRequests, contextId, canOverride, superAdmin, now), otherRequests = GetOtherRequests(otherRequests, canOverride, superAdmin, now)});
+            return Ok(new { myRequests = GetMyRequests(myRequests, contextId, canOverride, superAdmin, now), otherRequests = GetOtherRequests(otherRequests, canOverride, superAdmin, now) });
         }
 
         private object GetMyRequests(IEnumerable<CommandRequest> myRequests, string contextId, bool canOverride, bool superAdmin, DateTime now) {
@@ -66,7 +79,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
                     return new {
                         data = x,
                         canOverride = superAdmin || canOverride && x.reviews.Count > 1 && x.dateCreated.AddDays(1) < now && x.reviews.Any(y => y.Value == ReviewState.PENDING && y.Key != contextId),
-                        reviews = x.reviews.Select(y => new {id = y.Key, name = displayNameService.GetDisplayName(y.Key), state = y.Value})
+                        reviews = x.reviews.Select(y => new { id = y.Key, name = displayNameService.GetDisplayName(y.Key), state = y.Value })
                     };
                 }
             );
@@ -77,7 +90,11 @@ namespace UKSF.Api.Controllers.CommandRequests {
                 x => {
                     if (string.IsNullOrEmpty(x.reason)) x.reason = "None given";
                     x.type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.type.ToLower());
-                    return new {data = x, canOverride = superAdmin || canOverride && x.dateCreated.AddDays(1) < now, reviews = x.reviews.Select(y => new {name = displayNameService.GetDisplayName(y.Key), state = y.Value})};
+                    return new {
+                        data = x,
+                        canOverride = superAdmin || canOverride && x.dateCreated.AddDays(1) < now,
+                        reviews = x.reviews.Select(y => new { name = displayNameService.GetDisplayName(y.Key), state = y.Value })
+                    };
                 }
             );
         }
@@ -97,16 +114,27 @@ namespace UKSF.Api.Controllers.CommandRequests {
                 await commandRequestService.SetRequestAllReviewStates(request, state);
 
                 foreach (string reviewerId in request.reviews.Select(x => x.Key).Where(x => x != sessionAccount.id)) {
-                    notificationsService.Add(new Notification {owner = reviewerId, icon = NotificationIcons.REQUEST, message = $"Your review on {AvsAn.Query(request.type).Article} {request.type.ToLower()} request for {request.displayRecipient} was overriden by {sessionAccount.id}"});
+                    notificationsService.Add(
+                        new Notification {
+                            owner = reviewerId,
+                            icon = NotificationIcons.REQUEST,
+                            message = $"Your review on {AvsAn.Query(request.type).Article} {request.type.ToLower()} request for {request.displayRecipient} was overriden by {sessionAccount.id}"
+                        }
+                    );
                 }
             } else {
                 ReviewState currentState = commandRequestService.GetReviewState(request.id, sessionAccount.id);
                 if (currentState == ReviewState.ERROR) {
-                    throw new ArgumentOutOfRangeException($"Getting review state for {sessionAccount} from {request.id} failed. Reviews: \n{request.reviews.Select(x => $"{x.Key}: {x.Value}").Aggregate((x, y) => $"{x}\n{y}")}");
+                    throw new ArgumentOutOfRangeException(
+                        $"Getting review state for {sessionAccount} from {request.id} failed. Reviews: \n{request.reviews.Select(x => $"{x.Key}: {x.Value}").Aggregate((x, y) => $"{x}\n{y}")}"
+                    );
                 }
 
                 if (currentState == state) return Ok();
-                LogWrapper.AuditLog(sessionAccount.id, $"Review state of {displayNameService.GetDisplayName(sessionAccount)} for {request.type.ToLower()} request for {request.displayRecipient} updated to {state}");
+                LogWrapper.AuditLog(
+                    sessionAccount.id,
+                    $"Review state of {displayNameService.GetDisplayName(sessionAccount)} for {request.type.ToLower()} request for {request.displayRecipient} updated to {state}"
+                );
                 await commandRequestService.SetRequestReviewState(request, sessionAccount.id, state);
             }
 
