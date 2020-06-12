@@ -23,7 +23,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Common {
                 militaryExperience = false
             };
 
-            ExtendedAccount subject = account.ToExtendedAccount();
+            PublicAccount subject = account.ToPublicAccount();
 
             subject.id.Should().Be(id);
             subject.firstname.Should().Be("Bob");
@@ -40,7 +40,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Common {
             string id = ObjectId.GenerateNewId().ToString();
             Account account = new Account {id = id, password = "thiswontappear"};
 
-            ExtendedAccount subject = account.ToExtendedAccount();
+            PublicAccount subject = account.ToPublicAccount();
 
             subject.id.Should().Be(id);
             subject.password.Should().BeNull();
