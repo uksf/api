@@ -61,13 +61,13 @@ namespace UKSF.Api.Controllers.Accounts {
         [HttpGet, Authorize]
         public IActionResult Get() {
             Account account = sessionService.GetContextAccount();
-            return Ok(ExtendAccount(account));
+            return Ok(PubliciseAccount(account));
         }
 
         [HttpGet("{id}"), Authorize]
         public IActionResult GetById(string id) {
             Account account = accountService.Data.GetSingle(id);
-            return Ok(ExtendAccount(account));
+            return Ok(PubliciseAccount(account));
         }
 
         [HttpPut]
@@ -92,10 +92,18 @@ namespace UKSF.Api.Controllers.Accounts {
             return Ok(new {account.email});
         }
 
-        [HttpPost]
+        [HttpPost, Authorize]
         public async Task<IActionResult> ApplyConfirmationCode([FromBody] JObject body) {
-            string code = body["code"].ToString();
-            string email = body["email"].ToString();
+            string email = body.GetValueFromBody("email");
+            string code = body.GetValueFromBody("code");
+
+            try {
+                GuardUtilites.ValidateString(email, _ => throw new ArgumentException($"Email '{email}' is invalid. Please refresh the page."));
+                GuardUtilites.ValidateId(code, _ => throw new ArgumentException($"Code '{code}' is invalid. Please try again"));
+            } catch (ArgumentException exception) {
+                return BadRequest(new { error = exception.Message });
+            }
+
             Account account = accountService.Data.GetSingle(x => x.email == email);
             if (account == null) {
                 return BadRequest(new {error = $"An account with the email '{email}' doesn't exist. This should be impossible so please contact an admin for help"});
@@ -108,8 +116,17 @@ namespace UKSF.Api.Controllers.Accounts {
                 return Ok();
             }
 
+            await confirmationCodeService.ClearConfirmationCodes(x => x.value == email);
             await SendConfirmationCode(account);
             return BadRequest(new {error = $"The confirmation code has expired. A new code has been sent to '{account.email}'"});
+        }
+
+        [HttpGet("resend-email-code"), Authorize]
+        public async Task<IActionResult> ResendConfirmationCode() {
+            Account account = sessionService.GetContextAccount();
+            await confirmationCodeService.ClearConfirmationCodes(x => x.value == account.email);
+            await SendConfirmationCode(account);
+            return Ok(PubliciseAccount(account));
         }
 
         [HttpGet("under"), Authorize(Roles = RoleDefinitions.COMMAND)]
@@ -212,17 +229,19 @@ namespace UKSF.Api.Controllers.Accounts {
             return Ok(new {value = DateTime.Now.ToLongTimeString()});
         }
 
-        private ExtendedAccount ExtendAccount(Account account) {
-            ExtendedAccount extendedAccount = account.ToExtendedAccount();
-            extendedAccount.displayName = displayNameService.GetDisplayName(account);
-            extendedAccount.permissionRecruiter = sessionService.ContextHasRole(RoleDefinitions.RECRUITER);
-            extendedAccount.permissionServers = sessionService.ContextHasRole(RoleDefinitions.SERVERS);
-            extendedAccount.permissionPersonnel = sessionService.ContextHasRole(RoleDefinitions.PERSONNEL);
-            extendedAccount.permissionRecruiterLead = sessionService.ContextHasRole(RoleDefinitions.RECRUITER_LEAD);
-            extendedAccount.permissionCommand = sessionService.ContextHasRole(RoleDefinitions.COMMAND);
-            extendedAccount.permissionAdmin = sessionService.ContextHasRole(RoleDefinitions.ADMIN);
-            extendedAccount.permissionNco = sessionService.ContextHasRole(RoleDefinitions.NCO);
-            return extendedAccount;
+        private PublicAccount PubliciseAccount(Account account) {
+            PublicAccount publicAccount = account.ToPublicAccount();
+            publicAccount.displayName = displayNameService.GetDisplayName(account);
+            publicAccount.permissions = new AccountPermissions {
+                recruiter = sessionService.ContextHasRole(RoleDefinitions.RECRUITER),
+                recruiterLead = sessionService.ContextHasRole(RoleDefinitions.RECRUITER_LEAD),
+                servers = sessionService.ContextHasRole(RoleDefinitions.SERVERS),
+                personnel = sessionService.ContextHasRole(RoleDefinitions.PERSONNEL),
+                nco = sessionService.ContextHasRole(RoleDefinitions.NCO),
+                command = sessionService.ContextHasRole(RoleDefinitions.COMMAND),
+                admin = sessionService.ContextHasRole(RoleDefinitions.ADMIN)
+            };
+            return publicAccount;
         }
 
         private async Task SendConfirmationCode(Account account) {

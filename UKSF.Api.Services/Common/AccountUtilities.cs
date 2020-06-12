@@ -3,10 +3,10 @@ using UKSF.Common;
 
 namespace UKSF.Api.Services.Common {
     public static class AccountUtilities {
-        public static ExtendedAccount ToExtendedAccount(this Account account) {
-            ExtendedAccount extendedAccount = account.Copy<ExtendedAccount>();
-            extendedAccount.password = null;
-            return extendedAccount;
+        public static PublicAccount ToPublicAccount(this Account account) {
+            PublicAccount publicAccount = account.Copy<PublicAccount>();
+            publicAccount.password = null;
+            return publicAccount;
         }
     }
 }

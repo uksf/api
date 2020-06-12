@@ -28,5 +28,9 @@ namespace UKSF.Api.Services.Utility {
             await schedulerService.Cancel(x => x.actionParameters == actionParameters);
             return confirmationCode.value;
         }
+
+        public async Task ClearConfirmationCodes(Func<ConfirmationCode, bool> predicate) {
+            await Data.DeleteMany(predicate);
+        }
     }
 }
