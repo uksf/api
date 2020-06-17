@@ -15,6 +15,7 @@ using UKSF.Api.Services.Message;
 
 namespace UKSF.Api.Services.Integrations {
     public class DiscordService : IDiscordService, IDisposable {
+        private static readonly string[] OWNER_REPLIES = {"Why thank you {0} owo", "Thank you {0}, you're too kind", "Thank you so much {0} uwu", "Aw shucks {0} you're embarrassing me"};
         private static readonly string[] REPLIES = {"Why thank you {0}", "Thank you {0}, you're too kind", "Thank you so much {0}", "Aw shucks {0} you're embarrassing me"};
         private static readonly string[] TRIGGERS = {"thank you", "thank", "best", "mvp", "love you", "appreciate you", "good"};
         private readonly IAccountService accountService;
@@ -34,7 +35,7 @@ namespace UKSF.Api.Services.Integrations {
             this.unitsService = unitsService;
             this.accountService = accountService;
             this.displayNameService = displayNameService;
-            specialUser = VariablesWrapper.VariablesDataService().GetSingle("DID_U_MASTER").AsUlong();
+            specialUser = VariablesWrapper.VariablesDataService().GetSingle("DID_U_OWNER").AsUlong();
         }
 
         public async Task ConnectDiscord() {
@@ -188,9 +189,10 @@ namespace UKSF.Api.Services.Integrations {
         private async Task ClientOnMessageReceived(SocketMessage incomingMessage) {
             if (incomingMessage.Content.Contains("bot", StringComparison.InvariantCultureIgnoreCase) || incomingMessage.MentionedUsers.Any(x => x.IsBot)) {
                 if (TRIGGERS.Any(x => incomingMessage.Content.Contains(x, StringComparison.InvariantCultureIgnoreCase))) {
-                    string message = REPLIES[new Random().Next(0, REPLIES.Length)];
+                    bool owner = incomingMessage.Author.Id == specialUser;
+                    string message = owner ? OWNER_REPLIES[new Random().Next(0, OWNER_REPLIES.Length)] : REPLIES[new Random().Next(0, REPLIES.Length)];
                     string[] parts = guild.GetUser(incomingMessage.Author.Id).Nickname.Split('.');
-                    string nickname = incomingMessage.Author.Id == specialUser ? "Master" : parts.Length > 1 ? parts[1] : parts[0];
+                    string nickname = owner ? "Daddy" : parts.Length > 1 ? parts[1] : parts[0];
                     await SendMessage(incomingMessage.Channel.Id, string.Format(message, nickname));
                 }
             }
