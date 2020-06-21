@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -91,9 +92,7 @@ namespace UKSF.Api.Controllers {
                                                      .Set(x => x.unitsExperience, body["unitsExperience"].ToString())
                                                      .Set(x => x.background, body["background"].ToString())
                                                      .Set(x => x.militaryExperience, string.Equals(body["militaryExperience"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
-                                                     .Set(x => x.officer, string.Equals(body["officer"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
-                                                     .Set(x => x.nco, string.Equals(body["nco"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
-                                                     .Set(x => x.aviation, string.Equals(body["aviation"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
+                                                     .Set(x => x.rolePreferences, body["rolePreferences"].ToObject<List<string>>())
                                                      .Set(x => x.reference, body["reference"].ToString())
                                 );
         }

@@ -19,7 +19,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Common {
                 membershipState = MembershipState.MEMBER,
                 teamspeakIdentities = new HashSet<double> {4, 4},
                 serviceRecord = new[] {new ServiceRecordEntry {occurence = "Test", timestamp = timestamp}},
-                aviation = true,
+                rolePreferences = new List<string> {"Aviation"},
                 militaryExperience = false
             };
 
@@ -31,7 +31,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Common {
             subject.membershipState.Should().Be(MembershipState.MEMBER);
             subject.teamspeakIdentities.Should().NotBeEmpty().And.HaveCount(1).And.ContainInOrder(new[] {4});
             subject.serviceRecord.Should().NotBeEmpty().And.HaveCount(1).And.OnlyContain(x => x.occurence == "Test" && x.timestamp == timestamp);
-            subject.aviation.Should().BeTrue();
+            subject.rolePreferences.Should().Contain("Aviation");
             subject.militaryExperience.Should().BeFalse();
         }
 
