@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -75,14 +76,26 @@ namespace UKSF.Common {
                 List<string> unchanged = originalObject.Properties().Where(c => JToken.DeepEquals(c.Value, updated[c.Name])).Select(c => c.Name).ToList();
                 List<string> changed = originalObject.Properties().Select(c => c.Name).Except(added).Except(unchanged).ToList();
 
-                changes.AddRange(added.Where(x => allowedFields.Any(y => y.Name == x)).Select(key => updatedObject.Properties().First(x => x.Name == key)).Select(addedObject => new Change {Name = addedObject.Name, Original = null, Updated = addedObject.Value.Value<string>()}));
-                changes.AddRange(removed.Where(x => allowedFields.Any(y => y.Name == x)).Select(key => originalObject.Properties().First(x => x.Name == key)).Select(removedObject => new Change {Name = removedObject.Name, Original = removedObject.Value.Value<string>(), Updated = null}));
+                changes.AddRange(
+                    added.Where(x => allowedFields.Any(y => y.Name == x))
+                         .Select(key => updatedObject.Properties().First(x => x.Name == key))
+                         .Select(addedObject => new Change { Name = addedObject.Name, Original = null, Updated = addedObject.Value.Value<string>() })
+                );
+                changes.AddRange(
+                    removed.Where(x => allowedFields.Any(y => y.Name == x))
+                           .Select(key => originalObject.Properties().First(x => x.Name == key))
+                           .Select(removedObject => new Change { Name = removedObject.Name, Original = removedObject.Value.Value<string>(), Updated = null })
+                );
 
                 foreach (string key in changed.Where(x => allowedFields.Any(y => y.Name == x))) {
                     JToken originalChangedObject = originalObject[key];
                     JToken updatedChangedObject = updatedObject[key];
                     changes.AddRange(FindChanges(originalChangedObject, updatedChangedObject, allowedFields));
                 }
+            } else if (original.Type == JTokenType.Array) {
+                string originalString = original.ToObject<List<string>>().Aggregate(string.Empty, (a, b) => $"{a}, {b}");
+                string updatedString = updated.ToObject<List<string>>().Aggregate(string.Empty, (a, b) => $"{a}, {b}");
+                changes.Add(new Change {Name = ((JProperty) updated.Parent).Name, Original = originalString, Updated = updatedString});
             } else {
                 changes.Add(new Change {Name = ((JProperty) updated.Parent).Name, Original = original.Value<string>(), Updated = updated.Value<string>()});
             }
