@@ -30,7 +30,7 @@ namespace UKSF.Api.AppStart {
             serviceProvider.GetService<IDiscordService>().ConnectDiscord();
 
             // Start scheduler
-            serviceProvider.GetService<ISchedulerService>().LoadApi();
+            serviceProvider.GetService<ISchedulerService>().Load();
         }
     }
 }

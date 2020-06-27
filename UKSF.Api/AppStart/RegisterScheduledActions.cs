@@ -10,11 +10,12 @@ namespace UKSF.Api.AppStart {
             IServiceProvider serviceProvider = Global.ServiceProvider;
 
             IDeleteExpiredConfirmationCodeAction deleteExpiredConfirmationCodeAction = serviceProvider.GetService<IDeleteExpiredConfirmationCodeAction>();
+            IInstagramImagesAction instagramImagesAction = serviceProvider.GetService<IInstagramImagesAction>();
             IPruneLogsAction pruneLogsAction = serviceProvider.GetService<IPruneLogsAction>();
             ITeamspeakSnapshotAction teamspeakSnapshotAction = serviceProvider.GetService<ITeamspeakSnapshotAction>();
 
             IScheduledActionService scheduledActionService = serviceProvider.GetService<IScheduledActionService>();
-            scheduledActionService.RegisterScheduledActions(new HashSet<IScheduledAction> { deleteExpiredConfirmationCodeAction, pruneLogsAction, teamspeakSnapshotAction });
+            scheduledActionService.RegisterScheduledActions(new HashSet<IScheduledAction> { deleteExpiredConfirmationCodeAction, instagramImagesAction, pruneLogsAction, teamspeakSnapshotAction });
         }
     }
 }
