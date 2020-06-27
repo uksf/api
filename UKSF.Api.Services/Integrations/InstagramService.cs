@@ -12,6 +12,7 @@ namespace UKSF.Api.Services.Integrations {
         private List<InstagramImage> images = new List<InstagramImage>();
 
         public async Task CacheInstagramImages() {
+            LogWrapper.Log("Running instagram get");
             using HttpClient client = new HttpClient();
             HttpResponseMessage response = await client.GetAsync("https://www.instagram.com/uksfmilsim/?__a=1");
             if (!response.IsSuccessStatusCode) {
@@ -30,7 +31,8 @@ namespace UKSF.Api.Services.Integrations {
 
             List<InstagramImage> allNewImages = imagesToken.Select(x => new InstagramImage { shortcode = x["node"]?["shortcode"]?.ToString(), url = x["node"]?["display_url"]?.ToString() }).ToList();
             if (images.Count > 0 && allNewImages.First().shortcode == images.First().shortcode) {
-                // Most recent image is the same, therefore all images are already processed
+                // Most recent image is the same, therefore all images are already present
+                LogWrapper.Log("No instagram images processed");
                 return;
             }
 
