@@ -103,7 +103,7 @@ namespace UKSF.Api.Services.Utility {
                 await Data.Delete(instagramAction.id);
             }
 
-            await Create(DateTime.Now, TimeSpan.FromHours(1), InstagramImagesAction.ACTION_NAME);
+            await Create(DateTime.Today, TimeSpan.FromHours(1), InstagramImagesAction.ACTION_NAME);
 
             if (!currentEnvironment.IsDevelopment()) {
                 if (Data.GetSingle(x => x.action == PruneLogsAction.ACTION_NAME) == null) {

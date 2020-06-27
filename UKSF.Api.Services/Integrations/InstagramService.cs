@@ -40,6 +40,7 @@ namespace UKSF.Api.Services.Integrations {
             IEnumerable<InstagramImage> newImages = allNewImages.Where(x => images.All(y => x.shortcode != y.shortcode));
             images.InsertRange(0, newImages);
             images = images.Take(12).ToList();
+            LogWrapper.Log($"Insta images: {images}");
         }
 
         public List<InstagramImage> GetImages() => images;
