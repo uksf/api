@@ -15,34 +15,21 @@ using UKSF.Api.Services.Utility.ScheduledActions;
 namespace UKSF.Api.Services.Utility {
     public class SchedulerService : DataBackedService<ISchedulerDataService>, ISchedulerService {
         private static readonly ConcurrentDictionary<string, CancellationTokenSource> ACTIVE_TASKS = new ConcurrentDictionary<string, CancellationTokenSource>();
-        private readonly IScheduledActionService scheduledActionService;
         private readonly IHostEnvironment currentEnvironment;
+        private readonly IScheduledActionService scheduledActionService;
 
         public SchedulerService(ISchedulerDataService data, IScheduledActionService scheduledActionService, IHostEnvironment currentEnvironment) : base(data) {
             this.scheduledActionService = scheduledActionService;
             this.currentEnvironment = currentEnvironment;
         }
 
-        public async void LoadApi() {
-            if (!currentEnvironment.IsDevelopment()) {
-                await AddUnique();
-            }
-
-            Load();
+        public async void Load() {
+            await AddUnique();
+            Data.Get().ForEach(Schedule);
         }
 
-        public async Task Create(DateTime next, TimeSpan interval, string action, params object[] actionParameters) {
-            ScheduledJob job = new ScheduledJob { next = next, action = action };
-            if (actionParameters.Length > 0) {
-                job.actionParameters = JsonConvert.SerializeObject(actionParameters);
-            }
-
-            if (interval != TimeSpan.Zero) {
-                job.interval = interval;
-                job.repeat = true;
-            }
-
-            await Data.Add(job);
+        public async Task CreateAndSchedule(DateTime next, TimeSpan interval, string action, params object[] actionParameters) {
+            ScheduledJob job = await Create(next, interval, action, actionParameters);
             Schedule(job);
         }
 
@@ -57,8 +44,19 @@ namespace UKSF.Api.Services.Utility {
             await Data.Delete(job.id);
         }
 
-        private void Load() {
-            Data.Get().ForEach(Schedule);
+        private async Task<ScheduledJob> Create(DateTime next, TimeSpan interval, string action, params object[] actionParameters) {
+            ScheduledJob job = new ScheduledJob { next = next, action = action };
+            if (actionParameters.Length > 0) {
+                job.actionParameters = JsonConvert.SerializeObject(actionParameters);
+            }
+
+            if (interval != TimeSpan.Zero) {
+                job.interval = interval;
+                job.repeat = true;
+            }
+
+            await Data.Add(job);
+            return job;
         }
 
         private void Schedule(ScheduledJob job) {
@@ -100,12 +98,21 @@ namespace UKSF.Api.Services.Utility {
         }
 
         private async Task AddUnique() {
-            if (Data.GetSingle(x => x.action == PruneLogsAction.ACTION_NAME) == null) {
-                await Create(DateTime.Today.AddDays(1), TimeSpan.FromDays(1), PruneLogsAction.ACTION_NAME);
+            ScheduledJob instagramAction = Data.GetSingle(x => x.action == InstagramImagesAction.ACTION_NAME);
+            if (instagramAction != null) {
+                await Data.Delete(instagramAction.id);
             }
 
-            if (Data.GetSingle(x => x.action == TeamspeakSnapshotAction.ACTION_NAME) == null) {
-                await Create(DateTime.Today.AddDays(1), TimeSpan.FromMinutes(5), TeamspeakSnapshotAction.ACTION_NAME);
+            await Create(DateTime.Now, TimeSpan.FromHours(1), InstagramImagesAction.ACTION_NAME);
+
+            if (!currentEnvironment.IsDevelopment()) {
+                if (Data.GetSingle(x => x.action == PruneLogsAction.ACTION_NAME) == null) {
+                    await Create(DateTime.Today.AddDays(1), TimeSpan.FromDays(1), PruneLogsAction.ACTION_NAME);
+                }
+
+                if (Data.GetSingle(x => x.action == TeamspeakSnapshotAction.ACTION_NAME) == null) {
+                    await Create(DateTime.Today.AddMinutes(5), TimeSpan.FromMinutes(5), TeamspeakSnapshotAction.ACTION_NAME);
+                }
             }
         }
 

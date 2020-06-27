@@ -67,6 +67,7 @@ namespace UKSF.Api.AppStart.Services {
 
             services.AddSingleton<MigrationUtility>();
             services.AddSingleton<IEmailService, EmailService>();
+            services.AddSingleton<IInstagramService, InstagramService>();
             services.AddSingleton<ISessionService, SessionService>();
             services.AddSingleton<ITeamspeakService, TeamspeakService>();
 

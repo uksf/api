@@ -16,7 +16,7 @@ namespace UKSF.Api.Services.Utility {
             if (string.IsNullOrEmpty(value)) throw new ArgumentNullException(nameof(value), "Value for confirmation code cannot be null or empty");
             ConfirmationCode code = new ConfirmationCode { value = value };
             await Data.Add(code);
-            await schedulerService.Create(DateTime.Now.AddMinutes(30), TimeSpan.Zero, DeleteExpiredConfirmationCodeAction.ACTION_NAME, code.id);
+            await schedulerService.CreateAndSchedule(DateTime.Now.AddMinutes(30), TimeSpan.Zero, DeleteExpiredConfirmationCodeAction.ACTION_NAME, code.id);
             return code.id;
         }
 
