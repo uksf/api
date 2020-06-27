@@ -54,7 +54,6 @@ namespace UKSF.Api.Services.Integrations {
                 }
 
                 string contentString = await response.Content.ReadAsStringAsync();
-                LogWrapper.Log($"Instagram response: {contentString}");
                 JObject contentObject = JObject.Parse(contentString);
                 List<InstagramImage> allNewImages = JsonConvert.DeserializeObject<List<InstagramImage>>(contentObject["data"]?.ToString() ?? "");
 
