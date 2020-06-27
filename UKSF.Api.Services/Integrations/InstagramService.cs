@@ -14,7 +14,6 @@ namespace UKSF.Api.Services.Integrations {
 
         public async Task CacheInstagramImages() {
             try {
-                LogWrapper.Log("Running instagram get");
                 using HttpClient client = new HttpClient();
                 HttpResponseMessage response = await client.GetAsync("https://www.instagram.com/uksfmilsim/?__a=1");
                 if (!response.IsSuccessStatusCode) {
@@ -23,6 +22,7 @@ namespace UKSF.Api.Services.Integrations {
                 }
 
                 string contentString = await response.Content.ReadAsStringAsync();
+                LogWrapper.Log($"Instagram response: {contentString}");
                 JObject contentObject = JObject.Parse(contentString);
                 JToken imagesToken = contentObject["graphql"]?["user"]?["edge_owner_to_timeline_media"]?["edges"];
 
@@ -35,7 +35,6 @@ namespace UKSF.Api.Services.Integrations {
                                                                .ToList();
                 if (images.Count > 0 && allNewImages.First().shortcode == images.First().shortcode) {
                     // Most recent image is the same, therefore all images are already present
-                    LogWrapper.Log("No instagram images processed");
                     return;
                 }
 
@@ -43,8 +42,8 @@ namespace UKSF.Api.Services.Integrations {
                 IEnumerable<InstagramImage> newImages = allNewImages.Where(x => images.All(y => x.shortcode != y.shortcode));
                 images.InsertRange(0, newImages);
                 images = images.Take(12).ToList();
-                LogWrapper.Log($"Insta images: {images}");
 
+                LogWrapper.Log($"Insta images: {images}");
             } catch (Exception exception) {
                 LogWrapper.Log(exception);
             }
