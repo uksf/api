@@ -24,6 +24,7 @@ using UKSF.Api.Signalr.Hubs.Command;
 using UKSF.Api.Signalr.Hubs.Game;
 using UKSF.Api.Signalr.Hubs.Integrations;
 using UKSF.Api.Signalr.Hubs.Message;
+using UKSF.Api.Signalr.Hubs.Modpack;
 using UKSF.Api.Signalr.Hubs.Personnel;
 using UKSF.Api.Signalr.Hubs.Utility;
 
@@ -138,12 +139,13 @@ namespace UKSF.Api {
                     endpoints.MapHub<AdminHub>($"/hub/{AdminHub.END_POINT}");
                     endpoints.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.END_POINT}");
                     endpoints.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.END_POINT}");
+                    endpoints.MapHub<LauncherHub>($"/hub/{LauncherHub.END_POINT}");
+                    endpoints.MapHub<BuildsHub>($"/hub/{BuildsHub.END_POINT}");
                     endpoints.MapHub<NotificationHub>($"/hub/{NotificationHub.END_POINT}");
                     endpoints.MapHub<TeamspeakHub>($"/hub/{TeamspeakHub.END_POINT}").RequireHost("localhost");
                     endpoints.MapHub<TeamspeakClientsHub>($"/hub/{TeamspeakClientsHub.END_POINT}");
-                    endpoints.MapHub<UtilityHub>($"/hub/{UtilityHub.END_POINT}");
                     endpoints.MapHub<ServersHub>($"/hub/{ServersHub.END_POINT}");
-                    endpoints.MapHub<LauncherHub>($"/hub/{LauncherHub.END_POINT}");
+                    endpoints.MapHub<UtilityHub>($"/hub/{UtilityHub.END_POINT}");
                 }
             );
 

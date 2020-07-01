@@ -40,6 +40,10 @@ namespace UKSF.Api.Data {
             await GetCollection().UpdateOneAsync(Builders<T>.Filter.Eq("id", id), update);
         }
 
+        public async Task UpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update) { // TODO: Remove strong typing of UpdateDefinition as parameter
+            await GetCollection().UpdateOneAsync(filter, update);
+        }
+
         public async Task UpdateManyAsync(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update) { // TODO: Remove strong typing of UpdateDefinition as parameter
             IEnumerable<string> ids = Get(predicate.Compile()).Select(x => x.GetIdValue()); // This is necessary for filtering items by a default model value (e.g Role order default 0, may not be stored in document)
             await GetCollection().UpdateManyAsync(Builders<T>.Filter.In("id", ids), update);

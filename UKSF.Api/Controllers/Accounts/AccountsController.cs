@@ -233,13 +233,14 @@ namespace UKSF.Api.Controllers.Accounts {
             PublicAccount publicAccount = account.ToPublicAccount();
             publicAccount.displayName = displayNameService.GetDisplayName(account);
             publicAccount.permissions = new AccountPermissions {
+                admin = sessionService.ContextHasRole(RoleDefinitions.ADMIN),
+                command = sessionService.ContextHasRole(RoleDefinitions.COMMAND),
+                nco = sessionService.ContextHasRole(RoleDefinitions.NCO),
+                personnel = sessionService.ContextHasRole(RoleDefinitions.PERSONNEL),
                 recruiter = sessionService.ContextHasRole(RoleDefinitions.RECRUITER),
                 recruiterLead = sessionService.ContextHasRole(RoleDefinitions.RECRUITER_LEAD),
                 servers = sessionService.ContextHasRole(RoleDefinitions.SERVERS),
-                personnel = sessionService.ContextHasRole(RoleDefinitions.PERSONNEL),
-                nco = sessionService.ContextHasRole(RoleDefinitions.NCO),
-                command = sessionService.ContextHasRole(RoleDefinitions.COMMAND),
-                admin = sessionService.ContextHasRole(RoleDefinitions.ADMIN)
+                tester = sessionService.ContextHasRole(RoleDefinitions.TESTER)
             };
             return publicAccount;
         }

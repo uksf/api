@@ -11,6 +11,7 @@ namespace UKSF.Api.AppStart {
             IServiceProvider serviceProvider = Global.ServiceProvider;
 
             IAccountDataService accountDataService = serviceProvider.GetService<IAccountDataService>();
+            IBuildsDataService buildsDataService = serviceProvider.GetService<IBuildsDataService>();
             ICommandRequestDataService commandRequestDataService = serviceProvider.GetService<ICommandRequestDataService>();
             ICommentThreadDataService commentThreadDataService = serviceProvider.GetService<ICommentThreadDataService>();
             IDischargeDataService dischargeDataService = serviceProvider.GetService<IDischargeDataService>();
@@ -21,6 +22,7 @@ namespace UKSF.Api.AppStart {
             IOperationOrderDataService operationOrderDataService = serviceProvider.GetService<IOperationOrderDataService>();
             IOperationReportDataService operationReportDataService = serviceProvider.GetService<IOperationReportDataService>();
             IRanksDataService ranksDataService = serviceProvider.GetService<IRanksDataService>();
+            IReleasesDataService releasesDataService = serviceProvider.GetService<IReleasesDataService>();
             IRolesDataService rolesDataService = serviceProvider.GetService<IRolesDataService>();
             IUnitsDataService unitsDataService = serviceProvider.GetService<IUnitsDataService>();
             IVariablesDataService variablesDataService = serviceProvider.GetService<IVariablesDataService>();
@@ -29,6 +31,7 @@ namespace UKSF.Api.AppStart {
             dataCacheService.RegisterCachedDataServices(
                 new HashSet<ICachedDataService> {
                     accountDataService,
+                    buildsDataService,
                     commandRequestDataService,
                     commentThreadDataService,
                     dischargeDataService,
@@ -39,6 +42,7 @@ namespace UKSF.Api.AppStart {
                     operationOrderDataService,
                     operationReportDataService,
                     ranksDataService,
+                    releasesDataService,
                     rolesDataService,
                     unitsDataService,
                     variablesDataService
