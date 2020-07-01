@@ -1,9 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using UKSF.Api.Data.Modpack;
 using UKSF.Api.Interfaces.Command;
+using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Interfaces.Launcher;
 using UKSF.Api.Interfaces.Message;
+using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Operations;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
@@ -13,6 +16,7 @@ using UKSF.Api.Services.Fake;
 using UKSF.Api.Services.Game;
 using UKSF.Api.Services.Launcher;
 using UKSF.Api.Services.Message;
+using UKSF.Api.Services.Modpack;
 using UKSF.Api.Services.Operations;
 using UKSF.Api.Services.Personnel;
 using UKSF.Api.Services.Units;
@@ -28,6 +32,7 @@ namespace UKSF.Api.AppStart.Services {
 
             // Cached
             services.AddSingleton<IAccountService, AccountService>();
+            services.AddTransient<IBuildsService, BuildsService>();
             services.AddTransient<ICommandRequestService, CommandRequestService>();
             services.AddTransient<ICommentThreadService, CommentThreadService>();
             services.AddTransient<IDischargeService, DischargeService>();
@@ -37,6 +42,7 @@ namespace UKSF.Api.AppStart.Services {
             services.AddTransient<IOperationOrderService, OperationOrderService>();
             services.AddTransient<IOperationReportService, OperationReportService>();
             services.AddTransient<IRanksService, RanksService>();
+            services.AddTransient<IReleaseService, ReleaseService>();
             services.AddTransient<IRolesService, RolesService>();
             services.AddTransient<IUnitsService, UnitsService>();
 

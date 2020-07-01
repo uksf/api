@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSF.Api.Interfaces.Events;
@@ -13,6 +14,7 @@ namespace UKSF.Api.Interfaces.Data {
         Task Add(T data);
         Task Update(string id, string fieldName, object value);
         Task Update(string id, UpdateDefinition<T> update);
+        Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update);
         Task UpdateMany(Func<T, bool> predicate, UpdateDefinition<T> update);
         Task Replace(T item);
         Task Delete(string id);

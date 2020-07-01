@@ -102,6 +102,11 @@ namespace UKSF.Api.Services.Personnel {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.SERVERS));
                     }
 
+                    string testersId = VariablesWrapper.VariablesDataService().GetSingle("ROLE_ID_TESTERS").AsString();
+                    if (admin || unitsService.Data.GetSingle(testersId).members.Contains(account.id)) {
+                        claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.TESTER));
+                    }
+
                     break;
                 }
 

@@ -5,6 +5,7 @@ using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events.Handlers;
 using UKSF.Api.Interfaces.Hubs;
 using UKSF.Api.Interfaces.Message;
+using UKSF.Api.Models;
 using UKSF.Api.Models.Events;
 using UKSF.Api.Models.Message;
 using UKSF.Api.Signalr.Hubs.Message;
@@ -50,7 +51,7 @@ namespace UKSF.Api.Events.Handlers {
             await hub.Clients.Group(id).ReceiveComment(commentThreadService.FormatComment(comment));
         }
 
-        private async Task DeletedEvent(string id, Comment comment) {
+        private async Task DeletedEvent(string id, DatabaseObject comment) {
             await hub.Clients.Group(id).DeleteComment(comment.id);
         }
     }

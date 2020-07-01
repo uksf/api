@@ -12,6 +12,7 @@ namespace UKSF.Api.Interfaces.Data {
         T GetSingle(Func<T, bool> predicate);
         Task AddAsync(T data);
         Task UpdateAsync(string id, UpdateDefinition<T> update);
+        Task UpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
         Task UpdateManyAsync(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update);
         Task ReplaceAsync(string id, T value);
         Task DeleteAsync(string id);

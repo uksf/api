@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -43,6 +45,12 @@ namespace UKSF.Api.Data {
             ValidateId(id);
             await dataCollection.UpdateAsync(id, update);
             DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
+        }
+
+        public virtual async Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update) { // TODO: Remove strong typing to UpdateDefinition
+            List<string> ids = Get(filterExpression.Compile()).Select(x => x.GetIdValue()).ToList();
+            await dataCollection.UpdateAsync(Builders<T>.Filter.Where(filterExpression), update);
+            ids.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, x)));
         }
 
         public virtual async Task UpdateMany(Func<T, bool> predicate, UpdateDefinition<T> update) {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSF.Api.Interfaces.Data;
@@ -67,6 +68,13 @@ namespace UKSF.Api.Data {
             await base.Update(id, update);
             Refresh();
             CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
+        }
+
+        public override async Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update) {
+            await base.Update(filterExpression, update);
+            Refresh();
+            List<string> ids = Get(filterExpression.Compile()).Select(x => x.GetIdValue()).ToList();
+            ids.ForEach(x => CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, x)));
         }
 
         public override async Task UpdateMany(Func<T, bool> predicate, UpdateDefinition<T> update) {

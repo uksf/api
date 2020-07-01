@@ -13,6 +13,7 @@ namespace UKSF.Api.AppStart.Services {
         public static void RegisterEventServices(this IServiceCollection services) {
             // Event Buses
             services.AddSingleton<IDataEventBus<IAccountDataService>, DataEventBus<IAccountDataService>>();
+            services.AddSingleton<IDataEventBus<IBuildsDataService>, DataEventBus<IBuildsDataService>>();
             services.AddSingleton<IDataEventBus<ICommandRequestDataService>, DataEventBus<ICommandRequestDataService>>();
             services.AddSingleton<IDataEventBus<ICommandRequestArchiveDataService>, DataEventBus<ICommandRequestArchiveDataService>>();
             services.AddSingleton<IDataEventBus<ICommentThreadDataService>, DataEventBus<ICommentThreadDataService>>();
@@ -27,6 +28,7 @@ namespace UKSF.Api.AppStart.Services {
             services.AddSingleton<IDataEventBus<IOperationReportDataService>, DataEventBus<IOperationReportDataService>>();
             services.AddSingleton<IDataEventBus<ISchedulerDataService>, DataEventBus<ISchedulerDataService>>();
             services.AddSingleton<IDataEventBus<IRanksDataService>, DataEventBus<IRanksDataService>>();
+            services.AddSingleton<IDataEventBus<IReleasesDataService>, DataEventBus<IReleasesDataService>>();
             services.AddSingleton<IDataEventBus<IRolesDataService>, DataEventBus<IRolesDataService>>();
             services.AddSingleton<IDataEventBus<IUnitsDataService>, DataEventBus<IUnitsDataService>>();
             services.AddSingleton<IDataEventBus<IVariablesDataService>, DataEventBus<IVariablesDataService>>();
@@ -35,6 +37,7 @@ namespace UKSF.Api.AppStart.Services {
             // Event Handlers
             services.AddSingleton<EventHandlerInitialiser>();
             services.AddSingleton<IAccountEventHandler, AccountEventHandler>();
+            services.AddSingleton<IBuildsEventHandler, BuildsEventHandler>();
             services.AddSingleton<ICommandRequestEventHandler, CommandRequestEventHandler>();
             services.AddSingleton<ICommentThreadEventHandler, CommentThreadEventHandler>();
             services.AddSingleton<ILogEventHandler, LogEventHandler>();

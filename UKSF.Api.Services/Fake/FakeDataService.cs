@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using MongoDB.Driver;
@@ -21,6 +22,8 @@ namespace UKSF.Api.Services.Fake {
         public Task Update(string id, string fieldName, object value) => Task.CompletedTask;
 
         public Task Update(string id, UpdateDefinition<T> update) => Task.CompletedTask;
+
+        public Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update) => Task.CompletedTask;
 
         public Task UpdateMany(Func<T, bool> predicate, UpdateDefinition<T> update) => Task.CompletedTask;
 
