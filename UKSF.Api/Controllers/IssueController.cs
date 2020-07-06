@@ -25,7 +25,7 @@ namespace UKSF.Api.Controllers {
             this.sessionService = sessionService;
             this.displayNameService = displayNameService;
             this.emailService = emailService;
-            githubToken = configuration.GetSection("Secrets")["githubToken"];
+            githubToken = configuration.GetSection("Github")["token"];
         }
 
         [HttpPut, Authorize]

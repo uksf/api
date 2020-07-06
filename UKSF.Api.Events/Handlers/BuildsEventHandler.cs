@@ -56,7 +56,7 @@ namespace UKSF.Api.Events.Handlers {
                     await hub.Clients.All.ReceiveBuild(version, build);
                     break;
                 case ModpackBuildStep step:
-                    await hub.Clients.All.ReceiveBuildStep(step);
+                    await hub.Clients.Group(version).ReceiveBuildStep(step);
                     break;
             }
         }

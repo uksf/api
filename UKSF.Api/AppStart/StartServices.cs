@@ -14,7 +14,7 @@ namespace UKSF.Api.AppStart {
 
             if (serviceProvider.GetService<IHostEnvironment>().IsDevelopment()) {
                 // Do any test data setup
-                TestDataSetup.Run(serviceProvider);
+                // TestDataSetup.Run(serviceProvider);
             }
 
             // Execute any DB migration

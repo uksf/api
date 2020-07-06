@@ -1,15 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace UKSF.Api.Models.Modpack {
     public class ModpackBuildStep {
+        public ModpackBuildResult buildResult = ModpackBuildResult.NONE;
+        public DateTime endTime = DateTime.ParseExact("20000101", "yyyyMMdd", CultureInfo.InvariantCulture);
+        public bool finished;
         public int index;
-        public DateTime startTime = DateTime.Parse("20000101");
-        public DateTime endTime = DateTime.Parse("20000101");
+        public List<string> logs = new List<string>();
         public string name;
         public bool running;
-        public bool success;
-        public bool fail;
-        public List<string> logs = new List<string>();
+        public DateTime startTime = DateTime.ParseExact("20000101", "yyyyMMdd", CultureInfo.InvariantCulture);
+
+        public ModpackBuildStep(int index, string name) {
+            this.index = index;
+            this.name = name;
+        }
     }
 }

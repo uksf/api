@@ -17,6 +17,7 @@ using Microsoft.OpenApi.Models;
 using UKSF.Api.AppStart;
 using UKSF.Api.AppStart.Services;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
+using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Services;
 using UKSF.Api.Services.Common;
 using UKSF.Api.Services.Personnel;
@@ -156,6 +157,9 @@ namespace UKSF.Api {
         }
 
         private static void OnShutdown() {
+            // Cancel any running builds
+            Global.ServiceProvider.GetService<IBuildQueueService>().Cancel();
+
             // Stop teamspeak
             Global.ServiceProvider.GetService<ITeamspeakManagerService>().Stop();
         }
