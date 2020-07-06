@@ -12,6 +12,7 @@ using UKSF.Api.Interfaces.Integrations.Teamspeak;
 using UKSF.Api.Interfaces.Launcher;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Modpack;
+using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Services;
@@ -26,6 +27,7 @@ using UKSF.Api.Services.Integrations.Teamspeak;
 using UKSF.Api.Services.Launcher;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Modpack;
+using UKSF.Api.Services.Modpack.BuildProcess;
 using UKSF.Api.Services.Personnel;
 using UKSF.Api.Services.Utility;
 
@@ -55,6 +57,7 @@ namespace UKSF.Api.AppStart.Services {
             // Services
             services.AddTransient<IAssignmentService, AssignmentService>();
             services.AddTransient<IAttendanceService, AttendanceService>();
+            services.AddTransient<IBuildProcessorService, BuildProcessorService>();
             services.AddTransient<IChainOfCommandService, ChainOfCommandService>();
             services.AddTransient<ICommandRequestCompletionService, CommandRequestCompletionService>();
             services.AddTransient<IDisplayNameService, DisplayNameService>();
@@ -73,6 +76,8 @@ namespace UKSF.Api.AppStart.Services {
             services.AddTransient<MissionService>();
 
             services.AddSingleton<MigrationUtility>();
+            services.AddSingleton<IBuildQueueService, BuildQueueService>();
+            services.AddSingleton<IBuildStepService, BuildStepService>();
             services.AddSingleton<IEmailService, EmailService>();
             services.AddSingleton<IInstagramService, InstagramService>();
             services.AddSingleton<ISessionService, SessionService>();
