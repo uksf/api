@@ -11,18 +11,18 @@ namespace UKSF.Api.Signalr.Hubs.Modpack {
         public const string END_POINT = "builds";
 
         public override async Task OnConnectedAsync() {
-            StringValues version = Context.GetHttpContext().Request.Query["version"];
-            if (!string.IsNullOrEmpty(version)) {
-                await Groups.AddToGroupAsync(Context.ConnectionId, version);
+            StringValues buildId = Context.GetHttpContext().Request.Query["buildId"];
+            if (!string.IsNullOrEmpty(buildId)) {
+                await Groups.AddToGroupAsync(Context.ConnectionId, buildId);
             }
 
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception exception) {
-            StringValues version = Context.GetHttpContext().Request.Query["version"];
-            if (!string.IsNullOrEmpty(version)) {
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, version);
+            StringValues buildId = Context.GetHttpContext().Request.Query["buildId"];
+            if (!string.IsNullOrEmpty(buildId)) {
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, buildId);
             }
 
             await base.OnDisconnectedAsync(exception);

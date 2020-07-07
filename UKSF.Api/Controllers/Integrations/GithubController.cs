@@ -49,19 +49,21 @@ namespace UKSF.Api.Controllers.Integrations {
             }
 
             switch (payload.Ref) {
-                case DEV when payload.BaseRef == MASTER:
-                    string devVersion = await githubService.GetCommitVersion(payload.Ref);
-                    ModpackBuild previousDevBuild = buildsService.GetLatestBuild(devVersion);
-                    GithubCommit devCommit = await githubService.GetPushEvent(payload, previousDevBuild?.commit.after);
-                    ModpackBuild devBuild = await buildsService.CreateDevBuild(devVersion, devCommit);
-                    buildQueueService.QueueBuild(devVersion, devBuild);
+                case DEV when payload.BaseRef != RELEASE:
+                    GithubCommit devCommit = await githubService.GetPushEvent(payload);
+                    ModpackBuild devBuild = await buildsService.CreateDevBuild(devCommit);
+                    buildQueueService.QueueBuild(devBuild);
                     return Ok();
-                case RELEASE when payload.BaseRef == null && !payload.HeadCommit.Message.Contains("Release Candidate"):
+                case RELEASE:
                     string rcVersion = await githubService.GetCommitVersion(payload.Ref);
-                    ModpackBuild previousRcBuild = buildsService.GetLatestBuild(rcVersion);
-                    GithubCommit rcCommit = await githubService.GetPushEvent(payload, previousRcBuild?.commit.after);
+                    GithubCommit rcCommit = await githubService.GetPushEvent(payload);
+                    ModpackBuild previousBuild = buildsService.GetLatestRcBuild(rcVersion);
+                    if (previousBuild == null) {
+                        await releaseService.MakeDraftRelease(rcVersion, rcCommit);
+                    }
+
                     ModpackBuild rcBuild = await buildsService.CreateRcBuild(rcVersion, rcCommit);
-                    buildQueueService.QueueBuild(rcVersion, rcBuild);
+                    buildQueueService.QueueBuild(rcBuild);
                     return Ok();
                 default: return Ok();
             }

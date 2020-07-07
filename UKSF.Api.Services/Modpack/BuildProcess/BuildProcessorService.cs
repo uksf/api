@@ -16,17 +16,17 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             this.buildsService = buildsService;
         }
 
-        public async Task ProcessBuild(string id, ModpackBuild build, CancellationTokenSource cancellationTokenSource) {
-            await buildsService.SetBuildRunning(id, build);
+        public async Task ProcessBuild(ModpackBuild build, CancellationTokenSource cancellationTokenSource) {
+            await buildsService.SetBuildRunning(build);
 
             foreach (ModpackBuildStep buildStep in build.steps) {
                 if (cancellationTokenSource.IsCancellationRequested) {
-                    await buildsService.CancelBuild(id, build);
+                    await buildsService.CancelBuild(build);
                     return;
                 };
 
                 IBuildStep step = buildStepService.ResolveBuildStep(buildStep.name);
-                step.Init(buildStep, async () => await buildsService.UpdateBuildStep(id, build, buildStep), cancellationTokenSource);
+                step.Init(buildStep, async () => await buildsService.UpdateBuildStep(build, buildStep), cancellationTokenSource);
 
                 try {
                     await step.Start();
@@ -36,16 +36,16 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                     await step.Succeed();
                 } catch (OperationCanceledException) {
                     await step.Cancel();
-                    await buildsService.CancelBuild(id, build);
+                    await buildsService.CancelBuild(build);
                     return;
                 } catch (Exception exception) {
                     await step.Fail(exception);
-                    await buildsService.FailBuild(id, build);
+                    await buildsService.FailBuild(build);
                     return;
                 }
             }
 
-            await buildsService.SucceedBuild(id, build);
+            await buildsService.SucceedBuild(build);
         }
     }
 }

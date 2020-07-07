@@ -11,6 +11,7 @@ using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
 using UKSF.Api.Services.Personnel;
+using UKSF.Common;
 
 namespace UKSF.Api.Controllers.Modpack {
     [Route("[controller]")]
@@ -30,12 +31,15 @@ namespace UKSF.Api.Controllers.Modpack {
         [HttpGet("releases"), Authorize, Roles(RoleDefinitions.MEMBER)]
         public IActionResult GetReleases() => Ok(releaseService.Data.Get());
 
-        [HttpGet("builds"), Authorize, Roles(RoleDefinitions.TESTER, RoleDefinitions.SERVERS)]
-        public IActionResult GetBuilds() => Ok(buildsService.Data.Get());
+        [HttpGet("rcs"), Authorize, Roles(RoleDefinitions.TESTER, RoleDefinitions.SERVERS)]
+        public IActionResult GetReleaseCandidates() => Ok(buildsService.GetRcBuilds());
 
-        [HttpGet("builds/{version}/{buildNumber}"), Authorize, Roles(RoleDefinitions.TESTER, RoleDefinitions.SERVERS)]
-        public IActionResult GetBuild(string version, int buildNumber) {
-            ModpackBuild build = buildsService.Data.GetSingle(x => x.version == version).builds.FirstOrDefault(x => x.buildNumber == buildNumber);
+        [HttpGet("builds"), Authorize, Roles(RoleDefinitions.TESTER, RoleDefinitions.SERVERS)]
+        public IActionResult GetBuilds() => Ok(buildsService.GetDevBuilds());
+
+        [HttpGet("builds/{id}"), Authorize, Roles(RoleDefinitions.TESTER, RoleDefinitions.SERVERS)]
+        public IActionResult GetBuild(string id) {
+            ModpackBuild build = buildsService.Data.GetSingle(x => x.id == id);
             if (build == null) {
                 return BadRequest("Build does not exist");
             }
@@ -43,38 +47,26 @@ namespace UKSF.Api.Controllers.Modpack {
             return Ok(build);
         }
 
-        [HttpGet("builds/cancel"), Authorize, Roles(RoleDefinitions.ADMIN)]
-        public IActionResult CancelBuild() {
-            buildQueueService.Cancel();
+        [HttpGet("builds/{id}/rebuild"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        public async Task<IActionResult> Rebuild(string id) {
+            ModpackBuild build = buildsService.Data.GetSingle(x => x.id == id);
+            if (build == null) {
+                return BadRequest("Build does not exist");
+            }
+
+            ModpackBuild rebuild = await buildsService.CreateRebuild(build);
+            buildQueueService.QueueBuild(rebuild);
             return Ok();
         }
 
-        [HttpPost("makerc/{version}"), Authorize, Roles(RoleDefinitions.ADMIN)]
-        public async Task<IActionResult> MakeRcBuild(string version, [FromBody] ModpackBuild build) {
-            if (releaseService.GetRelease(version) != null) {
-                return BadRequest($"{version} has already been released");
+        [HttpGet("builds/{id}/cancel"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        public IActionResult CancelBuild(string id) {
+            ModpackBuild build = buildsService.Data.GetSingle(x => x.id == id);
+            if (build == null) {
+                return BadRequest("Build does not exist");
             }
 
-            ModpackBuild newBuild = await buildsService.CreateFirstRcBuild(version, build);
-            Merge mergeResult = await githubService.MergeBranch("release", "dev", $"Release Candidate {version}");
-            newBuild.commit.after = mergeResult.Sha;
-            newBuild.commit.message = mergeResult.Commit.Message;
-            await buildsService.UpdateBuild(buildsService.GetBuildRelease(version).id, newBuild);
-            await releaseService.MakeDraftRelease(version, build);
-            buildQueueService.QueueBuild(version, newBuild);
-
-            // create message on discord modpack tester channel
-            return Ok();
-        }
-
-        [HttpPost("rebuild/{version}"), Authorize, Roles(RoleDefinitions.ADMIN)]
-        public async Task<IActionResult> Rebuild(string version, [FromBody] ModpackBuild build) {
-            if (build.isNewVersion || build.isRelease) {
-                return BadRequest("Cannot rebuild new or release version");
-            }
-
-            ModpackBuild newBuild = await buildsService.CreateRebuild(version, build);
-            buildQueueService.QueueBuild(version, newBuild);
+            buildQueueService.Cancel(id);
             return Ok();
         }
 
@@ -92,7 +84,7 @@ namespace UKSF.Api.Controllers.Modpack {
         public async Task<IActionResult> Release(string version) {
             await releaseService.PublishRelease(version);
             ModpackBuild releaseBuild = await buildsService.CreateReleaseBuild(version);
-            buildQueueService.QueueBuild(version, releaseBuild);
+            buildQueueService.QueueBuild(releaseBuild);
             await githubService.MergeBranch("dev", "release", $"Release {version}");
             await githubService.MergeBranch("master", "dev", $"Release {version}");
 
@@ -101,26 +93,42 @@ namespace UKSF.Api.Controllers.Modpack {
         }
 
 
+        // [HttpPost("makerc/{version}"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        // public async Task<IActionResult> MakeRcBuild(string version, [FromBody] ModpackBuild build) {
+        //     if (releaseService.GetRelease(version) != null) {
+        //         return BadRequest($"{version} has already been released");
+        //     }
+        //
+        //     ModpackBuild newBuild = await buildsService.CreateFirstRcBuild(version, build);
+        //     Merge mergeResult = await githubService.MergeBranch("release", "dev", $"Release Candidate {version}");
+        //     newBuild.commit.after = mergeResult.Sha;
+        //     newBuild.commit.message = mergeResult.Commit.Message;
+        //     await buildsService.UpdateBuild(buildsService.GetBuildRelease(version).id, newBuild);
+        //     await releaseService.MakeDraftRelease(version, build);
+        //     buildQueueService.QueueBuild(version, newBuild);
+        //
+        //     // create message on discord modpack tester channel
+        //     return Ok();
+        // }
 
 
-        [HttpPost("testRelease")]
-        public IActionResult TestRelease() {
-            buildsService.Data.Add(
-                new ModpackBuildRelease {
-                    version = "5.17.18",
-                    builds = new List<ModpackBuild> {
-                        new ModpackBuild { buildNumber = 0, isNewVersion = true, commit = new GithubCommit { message = "New version" } }
-                    }
-                }
-            );
-            return Ok();
-        }
 
+        // [HttpPost("testRelease")]
+        // public IActionResult TestRelease() {
+        //     buildsService.Data.Add(
+        //         new ModpackReleaseCandidate {
+        //             version = "5.17.18",
+        //             builds = new List<ModpackBuild> {
+        //                 new ModpackBuild { buildNumber = 0, isNewVersion = true, commit = new GithubCommit { message = "New version" } }
+        //             }
+        //         }
+        //     );
+        //     return Ok();
+        // }
+        //
         [HttpPost("testBuild")]
         public IActionResult TestBuild([FromBody] ModpackBuild build) {
-            ModpackBuildRelease buildRelease = buildsService.Data.GetSingle(x => x.version == "5.17.18");
-            build.buildNumber = buildRelease.builds.First().buildNumber + 1;
-            buildsService.InsertBuild(buildRelease.id, build);
+            buildsService.Data.Add(build);
             return Ok();
         }
 
@@ -131,8 +139,8 @@ namespace UKSF.Api.Controllers.Modpack {
         //     return Ok();
         // }
 
-        [HttpGet("testdraft/{version}")]
-        public async Task<IActionResult> TestDraft(string version) => Ok(await githubService.GenerateChangelog(version));
+        // [HttpGet("testdraft/{version}")]
+        // public async Task<IActionResult> TestDraft(string version) => Ok(await githubService.GenerateChangelog(version));
 
         // [HttpPost("testBuildLog")]
         // public IActionResult TestBuildLog([FromBody] ModpackBuildStep step) {

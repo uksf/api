@@ -63,7 +63,7 @@ namespace UKSF.Api.Services.Integrations.Github {
             return result;
         }
 
-        public async Task<GithubCommit> GetPushEvent(PushWebhookPayload payload, string latestCommit) {
+        public async Task<GithubCommit> GetPushEvent(PushWebhookPayload payload, string latestCommit = "") {
             if (string.IsNullOrEmpty(latestCommit)) {
                 latestCommit = payload.Before;
             }
@@ -71,7 +71,7 @@ namespace UKSF.Api.Services.Integrations.Github {
             GitHubClient client = await AuthenticateClient();
             CompareResult result = await client.Repository.Commit.Compare(REPO_ORG, REPO_NAME, latestCommit, payload.After);
             string message = result.Commits.Count > 0 ? CombineCommitMessages(result.Commits) : result.BaseCommit.Commit.Message;
-            return new GithubCommit { branch = payload.Ref, baseBranch = payload.BaseRef, before = payload.Before, after = payload.After, message = message };
+            return new GithubCommit { branch = payload.Ref, baseBranch = payload.BaseRef, before = payload.Before, after = payload.After, message = message, author = payload.HeadCommit.Author.Email };
         }
 
         public async Task<string> GenerateChangelog(string version) {

@@ -19,8 +19,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             return step;
         }
 
-        public List<ModpackBuildStep> GetStepsForNewVersion() => new List<ModpackBuildStep> { new ModpackBuildStep(0, BuildStep0Prep.NAME), new ModpackBuildStep(1, BuildStep1dSource.NAME) };
-
         public List<ModpackBuildStep> GetStepsForRc() => new List<ModpackBuildStep> { new ModpackBuildStep(0, BuildStep0Prep.NAME), new ModpackBuildStep(1, BuildStep1dSource.NAME) };
 
         public List<ModpackBuildStep> GetStepsForRelease() => new List<ModpackBuildStep> { new ModpackBuildStep(0, BuildStep0Prep.NAME) };

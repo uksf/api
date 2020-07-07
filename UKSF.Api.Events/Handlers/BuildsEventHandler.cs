@@ -12,24 +12,24 @@ using UKSF.Common;
 
 namespace UKSF.Api.Events.Handlers {
     public class BuildsEventHandler : IBuildsEventHandler {
-        private readonly IBuildsDataService data;
+        private readonly IBuildsDataService buildsData;
         private readonly IHubContext<BuildsHub, IModpackClient> hub;
         private readonly ILoggingService loggingService;
 
-        public BuildsEventHandler(IBuildsDataService data, IHubContext<BuildsHub, IModpackClient> hub, ILoggingService loggingService) {
-            this.data = data;
+        public BuildsEventHandler(IBuildsDataService buildsData, IHubContext<BuildsHub, IModpackClient> hub, ILoggingService loggingService) {
+            this.buildsData = buildsData;
             this.hub = hub;
             this.loggingService = loggingService;
         }
 
         public void Init() {
-            data.EventBus().SubscribeAsync(HandleEvent, exception => loggingService.Log(exception));
+            buildsData.EventBus().SubscribeAsync(HandleBuildEvent, exception => loggingService.Log(exception));
         }
 
-        private async Task HandleEvent(DataEventModel<IBuildsDataService> x) {
+        private async Task HandleBuildEvent(DataEventModel<IBuildsDataService> x) {
             switch (x.type) {
                 case DataEventType.ADD:
-                    await AddedEvent(x.id, x.data);
+                    await AddedEvent(x.data as ModpackBuild);
                     break;
                 case DataEventType.UPDATE:
                     await UpdatedEvent(x.id, x.data);
@@ -39,24 +39,26 @@ namespace UKSF.Api.Events.Handlers {
             }
         }
 
-        private async Task AddedEvent(string version, object dataObject) {
-            switch (dataObject) {
-                case ModpackBuild build:
-                    await hub.Clients.All.ReceiveBuild(version, build);
-                    break;
-                case ModpackBuildRelease buildRelease:
-                    await hub.Clients.All.ReceiveBuildRelease(buildRelease);
-                    break;
+        private async Task AddedEvent(ModpackBuild build) {
+            if (build.isReleaseCandidate) {
+                await hub.Clients.All.ReceiveReleaseCandidateBuild(build);
+            } else {
+                await hub.Clients.All.ReceiveBuild(build);
             }
         }
 
-        private async Task UpdatedEvent(string version, object dataObject) {
-            switch (dataObject) {
+        private async Task UpdatedEvent(string id, object data) {
+            switch (data) {
                 case ModpackBuild build:
-                    await hub.Clients.All.ReceiveBuild(version, build);
+                    if (build.isReleaseCandidate) {
+                        await hub.Clients.All.ReceiveReleaseCandidateBuild(build);
+                    } else {
+                        await hub.Clients.All.ReceiveBuild(build);
+                    }
+
                     break;
                 case ModpackBuildStep step:
-                    await hub.Clients.Group(version).ReceiveBuildStep(step);
+                    await hub.Clients.Group(id).ReceiveBuildStep(step);
                     break;
             }
         }

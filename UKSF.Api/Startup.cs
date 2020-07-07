@@ -143,9 +143,9 @@ namespace UKSF.Api {
                     endpoints.MapHub<LauncherHub>($"/hub/{LauncherHub.END_POINT}");
                     endpoints.MapHub<BuildsHub>($"/hub/{BuildsHub.END_POINT}");
                     endpoints.MapHub<NotificationHub>($"/hub/{NotificationHub.END_POINT}");
+                    endpoints.MapHub<ServersHub>($"/hub/{ServersHub.END_POINT}");
                     endpoints.MapHub<TeamspeakHub>($"/hub/{TeamspeakHub.END_POINT}").RequireHost("localhost");
                     endpoints.MapHub<TeamspeakClientsHub>($"/hub/{TeamspeakClientsHub.END_POINT}");
-                    endpoints.MapHub<ServersHub>($"/hub/{ServersHub.END_POINT}");
                     endpoints.MapHub<UtilityHub>($"/hub/{UtilityHub.END_POINT}");
                 }
             );
@@ -158,7 +158,7 @@ namespace UKSF.Api {
 
         private static void OnShutdown() {
             // Cancel any running builds
-            Global.ServiceProvider.GetService<IBuildQueueService>().Cancel();
+            Global.ServiceProvider.GetService<IBuildQueueService>().CancelAll();
 
             // Stop teamspeak
             Global.ServiceProvider.GetService<ITeamspeakManagerService>().Stop();

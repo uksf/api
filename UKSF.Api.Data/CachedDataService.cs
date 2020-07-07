@@ -71,10 +71,10 @@ namespace UKSF.Api.Data {
         }
 
         public override async Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update) {
+            List<T> items = Get(filterExpression.Compile());
             await base.Update(filterExpression, update);
             Refresh();
-            List<string> ids = Get(filterExpression.Compile()).Select(x => x.GetIdValue()).ToList();
-            ids.ForEach(x => CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, x)));
+            items.ForEach(x => CachedDataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, x.GetIdValue())));
         }
 
         public override async Task UpdateMany(Func<T, bool> predicate, UpdateDefinition<T> update) {

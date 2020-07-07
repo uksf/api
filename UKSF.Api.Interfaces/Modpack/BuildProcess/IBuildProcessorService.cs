@@ -4,6 +4,6 @@ using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Interfaces.Modpack.BuildProcess {
     public interface IBuildProcessorService {
-        Task ProcessBuild(string id, ModpackBuild build, CancellationTokenSource cancellationTokenSource);
+        Task ProcessBuild(ModpackBuild build, CancellationTokenSource cancellationTokenSource);
     }
 }
