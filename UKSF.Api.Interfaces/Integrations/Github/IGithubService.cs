@@ -9,7 +9,7 @@ namespace UKSF.Api.Interfaces.Integrations.Github {
         bool VerifySignature(string signature, string body);
         Task<string> GetCommitVersion(string branch);
         Task<Merge> MergeBranch(string branch, string sourceBranch, string version);
-        Task<GithubCommit> GetPushEvent(PushWebhookPayload payload, string latestCommit);
+        Task<GithubCommit> GetPushEvent(PushWebhookPayload payload, string latestCommit = "");
         Task<string> GenerateChangelog(string version);
         Task<List<ModpackRelease>> GetHistoricReleases();
         Task PublishRelease(ModpackRelease release);

@@ -5,5 +5,6 @@
         public string before;
         public string branch;
         public string message;
+        public string author;
     }
 }
