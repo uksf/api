@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -10,6 +12,7 @@ using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
+using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers.Integrations {
     [Route("[controller]")]
@@ -38,14 +41,13 @@ namespace UKSF.Api.Controllers.Integrations {
             [FromHeader(Name = "x-github-event")] string githubEvent,
             [FromBody] JObject body
         ) {
-            PushWebhookPayload payload = new SimpleJsonSerializer().Deserialize<PushWebhookPayload>(body.ToString());
-
-            if (payload.Repository.Name != REPO_NAME || githubEvent != PUSH_EVENT) {
-                return Ok();
-            }
-
             if (!githubService.VerifySignature(githubSignature, body.ToString(Formatting.None))) {
                 return Unauthorized();
+            }
+
+            PushWebhookPayload payload = new SimpleJsonSerializer().Deserialize<PushWebhookPayload>(body.ToString());
+            if (payload.Repository.Name != REPO_NAME || githubEvent != PUSH_EVENT) {
+                return Ok();
             }
 
             switch (payload.Ref) {
@@ -55,7 +57,7 @@ namespace UKSF.Api.Controllers.Integrations {
                     buildQueueService.QueueBuild(devBuild);
                     return Ok();
                 case RELEASE:
-                    string rcVersion = await githubService.GetCommitVersion(payload.Ref);
+                    string rcVersion = await githubService.GetReferenceVersion(payload.Ref);
                     GithubCommit rcCommit = await githubService.GetPushEvent(payload);
                     ModpackBuild previousBuild = buildsService.GetLatestRcBuild(rcVersion);
                     if (previousBuild == null) {
@@ -69,7 +71,13 @@ namespace UKSF.Api.Controllers.Integrations {
             }
         }
 
-        [HttpGet("populatereleases")]
+        [HttpGet("branches"), Authorize, Roles(RoleDefinitions.TESTER)]
+        public async Task<IActionResult> GetBranches() {
+            List<string> branches = await githubService.GetBranches();
+            return Ok(branches);
+        }
+
+        [HttpGet("populatereleases"), Authorize, Roles(RoleDefinitions.ADMIN)]
         public async Task<IActionResult> Release() {
             List<ModpackRelease> releases = await githubService.GetHistoricReleases();
             await releaseService.AddHistoricReleases(releases);

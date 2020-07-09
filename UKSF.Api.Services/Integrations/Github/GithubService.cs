@@ -43,14 +43,32 @@ namespace UKSF.Api.Services.Integrations.Github {
             return string.Equals(sha1, signature);
         }
 
-        public async Task<string> GetCommitVersion(string branch) {
-            branch = branch.Split('/')[^1];
+        public async Task<string> GetReferenceVersion(string reference) {
+            reference = reference.Split('/')[^1];
             GitHubClient client = await AuthenticateClient();
-            byte[] contentBytes = await client.Repository.Content.GetRawContentByRef(REPO_ORG, REPO_NAME, VERSION_FILE, branch);
+            byte[] contentBytes = await client.Repository.Content.GetRawContentByRef(REPO_ORG, REPO_NAME, VERSION_FILE, reference);
+            if (contentBytes.Length == 0) {
+                return "0.0.0";
+            }
+
             string content = Encoding.UTF8.GetString(contentBytes);
             IEnumerable<string> lines = content.Split("\n").Take(3);
             string version = string.Join('.', lines.Select(x => x.Split(' ')[^1]));
             return version;
+        }
+
+        public async Task<bool> IsReferenceValid(string reference) {
+            string version = await GetReferenceVersion(reference);
+            int[] versionParts = version.Split('.').Select(int.Parse).ToArray();
+            // TODO: Update minor with version with udpated make for this build system
+            return versionParts[0] >= 5;// && versionParts[1] > 18;
+        }
+
+        public async Task<GithubCommit> GetLatestReferenceCommit(string reference) {
+            GitHubClient client = await AuthenticateClient();
+            GitHubCommit commit = await client.Repository.Commit.Get(REPO_ORG, REPO_NAME, reference);
+            string branch = Regex.Match(reference, @"^[a-fA-F0-9]{40}$").Success ? "None" : reference;
+            return new GithubCommit { branch = branch, before = commit.Parents.FirstOrDefault()?.Sha, after = commit.Sha, message = commit.Commit.Message, author = commit.Commit.Author.Email };
         }
 
         public async Task<Merge> MergeBranch(string branch, string sourceBranch, string commitMessage) {
@@ -122,6 +140,19 @@ namespace UKSF.Api.Services.Integrations.Github {
                 REPO_NAME,
                 new NewRelease(release.version) { Name = $"Modpack Version {release.version}", Body = $"{release.description}\n\n{release.changelog}" }
             );
+        }
+
+        public async Task<List<string>> GetBranches() {
+            GitHubClient client = await AuthenticateClient();
+            IReadOnlyList<Branch> branches = await client.Repository.Branch.GetAll(REPO_ORG, REPO_NAME);
+            List<string> validBranches = new List<string>();
+            foreach (Branch branch in branches) {
+                if (await IsReferenceValid(branch.Name)) {
+                    validBranches.Add(branch.Name);
+                }
+            }
+
+            return validBranches;
         }
 
         public async Task<List<ModpackRelease>> GetHistoricReleases() {
