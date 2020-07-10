@@ -102,6 +102,8 @@ namespace UKSF.Api.Services.Utility {
                 await Create(DateTime.Today, TimeSpan.FromHours(1), InstagramImagesAction.ACTION_NAME);
             }
 
+            scheduledActionService.GetScheduledAction(InstagramImagesAction.ACTION_NAME).Run();
+
             if (!currentEnvironment.IsDevelopment()) {
                 if (Data.GetSingle(x => x.action == InstagramTokenAction.ACTION_NAME) == null) {
                     await Create(DateTime.Today.AddDays(45), TimeSpan.FromDays(45), InstagramTokenAction.ACTION_NAME);
