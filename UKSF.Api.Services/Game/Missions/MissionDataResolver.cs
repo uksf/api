@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UKSF.Api.Models.Mission;
+using UKSF.Api.Services.Admin;
 
 namespace UKSF.Api.Services.Game.Missions {
     public static class MissionDataResolver {
@@ -17,8 +18,10 @@ namespace UKSF.Api.Services.Game.Missions {
 
         private static readonly string[] MEDIC_IDS = {
             "59e3958b594c603b78aa9dcd", // Joho
+            "5a2439443fccaa15902aaa4e", // Mac
             "5acfd72259f89d08ec1c21d8", // Stan
             "5e0d3273b91cc00aa001213f", // Baxter
+            "5eee34c8ddf6642260aa6a4b", // Eliason
             "5e0d31c3b91cc00aa001213b", // Gibney
             "5a1a14b5aacf7b00346dcc37", // Gilbert
             "5e24bbe949ddd04030d72ca5" // Hass
