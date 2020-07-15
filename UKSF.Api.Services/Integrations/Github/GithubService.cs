@@ -138,7 +138,7 @@ namespace UKSF.Api.Services.Integrations.Github {
             await client.Repository.Release.Create(
                 REPO_ORG,
                 REPO_NAME,
-                new NewRelease(release.version) { Name = $"Modpack Version {release.version}", Body = $"{release.description}\n\n{release.changelog}" }
+                new NewRelease(release.version) { Name = $"Modpack Version {release.version}", Body = $"{release.description}\n\n{release.changelog.Replace("<br>", "")}" }
             );
         }
 

@@ -57,6 +57,7 @@ namespace UKSF.Api.Controllers.Integrations {
                     buildQueueService.QueueBuild(devBuild);
                     return Ok();
                 case RELEASE:
+                    // TODO: Don't make rc build if version has been released
                     string rcVersion = await githubService.GetReferenceVersion(payload.Ref);
                     GithubCommit rcCommit = await githubService.GetPushEvent(payload);
                     ModpackBuild previousBuild = buildsService.GetLatestRcBuild(rcVersion);
