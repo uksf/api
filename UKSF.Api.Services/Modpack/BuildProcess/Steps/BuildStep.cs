@@ -42,31 +42,32 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
         }
 
         public async Task Succeed() {
-            Stop();
-            buildStep.buildResult = ModpackBuildResult.SUCCESS;
             await Logger.LogSuccess();
+            buildStep.buildResult = ModpackBuildResult.SUCCESS;
+            await Stop();
         }
 
         public async Task Fail(Exception exception) {
-            Stop();
-            buildStep.buildResult = ModpackBuildResult.FAILED;
             await Logger.LogError(exception);
+            buildStep.buildResult = ModpackBuildResult.FAILED;
+            await Stop();
         }
 
         public async Task Cancel() {
-            Stop();
-            buildStep.buildResult = ModpackBuildResult.CANCELLED;
             await Logger.LogCancelled();
+            buildStep.buildResult = ModpackBuildResult.CANCELLED;
+            await Stop();
         }
 
         private async Task LogCallback() {
             await updateCallback();
         }
 
-        private void Stop() {
+        private async Task Stop() {
             buildStep.running = false;
             buildStep.finished = true;
             buildStep.endTime = DateTime.Now;
+            await updateCallback();
         }
     }
 }

@@ -15,9 +15,10 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
         public override async Task Process() {
             await base.Process();
             await TaskUtilities.Delay(TimeSpan.FromSeconds(1), CancellationTokenSource.Token);
-            await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, "echo", "C:/", "dfghfgh");
-            await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, "echo", "C:/", "h fgd");
-            await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, "echo", "C:/", "456");
+            for (int i = 0; i < 100; i++) {
+                await TaskUtilities.Delay(TimeSpan.FromMilliseconds(50), CancellationTokenSource.Token);
+                await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, "echo", "C:/", Guid.NewGuid().ToString());
+            }
         }
 
         public override async Task Teardown() {
