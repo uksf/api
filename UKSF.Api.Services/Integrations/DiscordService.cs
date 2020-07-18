@@ -62,7 +62,7 @@ namespace UKSF.Api.Services.Integrations {
         }
 
         public virtual async Task SendMessageToEveryone(ulong channelId, string message) {
-            await SendMessage(channelId, $"{guild.EveryoneRole} - {message}");
+            await SendMessage(channelId, $"{guild.EveryoneRole} {message}");
         }
 
         public async Task<IReadOnlyCollection<SocketRole>> GetRoles() {
