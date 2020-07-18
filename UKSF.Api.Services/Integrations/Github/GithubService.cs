@@ -45,7 +45,7 @@ namespace UKSF.Api.Services.Integrations.Github {
 
         public async Task<string> GetReferenceVersion(string reference) {
             reference = reference.Split('/')[^1];
-            GitHubClient client = await AuthenticateClient();
+            GitHubClient client = await GetAuthenticatedClient();
             byte[] contentBytes = await client.Repository.Content.GetRawContentByRef(REPO_ORG, REPO_NAME, VERSION_FILE, reference);
             if (contentBytes.Length == 0) {
                 return "0.0.0";
@@ -65,14 +65,14 @@ namespace UKSF.Api.Services.Integrations.Github {
         }
 
         public async Task<GithubCommit> GetLatestReferenceCommit(string reference) {
-            GitHubClient client = await AuthenticateClient();
+            GitHubClient client = await GetAuthenticatedClient();
             GitHubCommit commit = await client.Repository.Commit.Get(REPO_ORG, REPO_NAME, reference);
             string branch = Regex.Match(reference, @"^[a-fA-F0-9]{40}$").Success ? "None" : reference;
             return new GithubCommit { branch = branch, before = commit.Parents.FirstOrDefault()?.Sha, after = commit.Sha, message = commit.Commit.Message, author = commit.Commit.Author.Email };
         }
 
         public async Task<Merge> MergeBranch(string branch, string sourceBranch, string commitMessage) {
-            GitHubClient client = await AuthenticateClient();
+            GitHubClient client = await GetAuthenticatedClient();
             Merge result = await client.Repository.Merging.Create(REPO_ORG, REPO_NAME, new NewMerge(branch, sourceBranch) { CommitMessage = commitMessage });
             if (result == null || string.IsNullOrEmpty(result.Sha)) {
                 throw new Exception($"Merge of {sourceBranch} into {branch} failed");
@@ -86,14 +86,14 @@ namespace UKSF.Api.Services.Integrations.Github {
                 latestCommit = payload.Before;
             }
 
-            GitHubClient client = await AuthenticateClient();
+            GitHubClient client = await GetAuthenticatedClient();
             CompareResult result = await client.Repository.Commit.Compare(REPO_ORG, REPO_NAME, latestCommit, payload.After);
             string message = result.Commits.Count > 0 ? CombineCommitMessages(result.Commits) : result.BaseCommit.Commit.Message;
             return new GithubCommit { branch = payload.Ref, baseBranch = payload.BaseRef, before = payload.Before, after = payload.After, message = message, author = payload.HeadCommit.Author.Email };
         }
 
         public async Task<string> GenerateChangelog(string version) {
-            GitHubClient client = await AuthenticateClient();
+            GitHubClient client = await GetAuthenticatedClient();
 
             IReadOnlyList<Milestone> milestones = await client.Issue.Milestone.GetAllForRepository(
                 REPO_ORG,
@@ -133,7 +133,7 @@ namespace UKSF.Api.Services.Integrations.Github {
         }
 
         public async Task PublishRelease(ModpackRelease release) {
-            GitHubClient client = await AuthenticateClient();
+            GitHubClient client = await GetAuthenticatedClient();
 
             try {
                 await client.Repository.Release.Create(
@@ -147,7 +147,7 @@ namespace UKSF.Api.Services.Integrations.Github {
         }
 
         public async Task<List<string>> GetBranches() {
-            GitHubClient client = await AuthenticateClient();
+            GitHubClient client = await GetAuthenticatedClient();
             IReadOnlyList<Branch> branches = await client.Repository.Branch.GetAll(REPO_ORG, REPO_NAME);
             List<string> validBranches = new List<string>();
             foreach (Branch branch in branches) {
@@ -160,7 +160,7 @@ namespace UKSF.Api.Services.Integrations.Github {
         }
 
         public async Task<List<ModpackRelease>> GetHistoricReleases() {
-            GitHubClient client = await AuthenticateClient();
+            GitHubClient client = await GetAuthenticatedClient();
 
             IReadOnlyList<Release> releases = await client.Repository.Release.GetAll(REPO_ORG, "modpack");
             return releases.Select(x => new ModpackRelease { version = x.Name.Split(" ")[^1], timestamp = x.CreatedAt.DateTime, changelog = FormatChangelog(x.Body) }).ToList();
@@ -218,7 +218,7 @@ namespace UKSF.Api.Services.Integrations.Github {
             return string.Join("\n", lines);
         }
 
-        private async Task<GitHubClient> AuthenticateClient() {
+        private async Task<GitHubClient> GetAuthenticatedClient() {
             GitHubClient client = new GitHubClient(new ProductHeaderValue(APP_NAME)) { Credentials = new Credentials(GetJwtToken(), AuthenticationType.Bearer) };
             AccessToken response = await client.GitHubApps.CreateInstallationToken(APP_INSTALLATION);
             GitHubClient installationClient = new GitHubClient(new ProductHeaderValue(APP_NAME)) { Credentials = new Credentials(response.Token) };
