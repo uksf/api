@@ -30,7 +30,7 @@ namespace UKSF.Api.Controllers.Accounts {
             string id = sessionService.GetContextId();
             await accountService.Data.Update(id, "steamname", steamId);
             Account account = accountService.Data.GetSingle(id);
-            LogWrapper.AuditLog(account.id, $"SteamID updated for {account.id} to {steamId}");
+            LogWrapper.AuditLog($"SteamID updated for {account.id} to {steamId}");
             return Ok();
         }
     }

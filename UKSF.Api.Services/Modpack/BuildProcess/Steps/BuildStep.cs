@@ -7,12 +7,14 @@ using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class BuildStep : IBuildStep {
+        protected ModpackBuild Build;
         private ModpackBuildStep buildStep;
         protected CancellationTokenSource CancellationTokenSource;
         protected IStepLogger Logger;
         private Func<Task> updateCallback;
 
-        public void Init(ModpackBuildStep modpackBuildStep, Func<Task> stepUpdateCallback, CancellationTokenSource newCancellationTokenSource) {
+        public void Init(ModpackBuild modpackBuild, ModpackBuildStep modpackBuildStep, Func<Task> stepUpdateCallback, CancellationTokenSource newCancellationTokenSource) {
+            Build = modpackBuild;
             buildStep = modpackBuildStep;
             updateCallback = stepUpdateCallback;
             CancellationTokenSource = newCancellationTokenSource;

@@ -5,7 +5,7 @@ using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Interfaces.Modpack.BuildProcess.Steps {
     public interface IBuildStep {
-        void Init(ModpackBuildStep modpackBuildStep, Func<Task> updateCallback, CancellationTokenSource cancellationTokenSource);
+        void Init(ModpackBuild modpackBuild, ModpackBuildStep modpackBuildStep, Func<Task> updateCallback, CancellationTokenSource cancellationTokenSource);
         Task Start();
         Task Setup();
         Task Process();

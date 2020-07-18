@@ -36,7 +36,7 @@ namespace UKSF.Api.Services.Admin {
             if (!migrated) {
                 try {
                     ExecuteMigration();
-                    LogWrapper.AuditLog("SERVER", "Migration utility successfully ran");
+                    LogWrapper.AuditLog("Migration utility successfully ran", "SERVER");
                 } catch (Exception e) {
                     LogWrapper.Log(e);
                 } finally {

@@ -4,9 +4,9 @@ using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Interfaces.Modpack.BuildProcess {
     public interface IBuildStepService {
+        List<ModpackBuildStep> GetStepsForBuild();
         List<ModpackBuildStep> GetStepsForRc();
         List<ModpackBuildStep> GetStepsForRelease();
-        List<ModpackBuildStep> GetStepsForBuild();
         IBuildStep ResolveBuildStep(string buildStepName);
     }
 }

@@ -26,7 +26,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 };
 
                 IBuildStep step = buildStepService.ResolveBuildStep(buildStep.name);
-                step.Init(buildStep, async () => await buildsService.UpdateBuildStep(build, buildStep), cancellationTokenSource);
+                step.Init(build, buildStep, async () => await buildsService.UpdateBuildStep(build, buildStep), cancellationTokenSource);
 
                 try {
                     await step.Start();

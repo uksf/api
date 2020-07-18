@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord.WebSocket;
+using Microsoft.AspNetCore.Identity;
 using UKSF.Api.Models.Personnel;
 
 namespace UKSF.Api.Interfaces.Integrations {
     public interface IDiscordService {
         Task ConnectDiscord();
         (bool online, string nickname) GetOnlineUserDetails(Account account);
+        Task SendMessageToEveryone(ulong channelId, string message);
         Task SendMessage(ulong channelId, string message);
         Task<IReadOnlyCollection<SocketRole>> GetRoles();
         Task UpdateAllUsers();

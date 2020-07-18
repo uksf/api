@@ -135,11 +135,15 @@ namespace UKSF.Api.Services.Integrations.Github {
         public async Task PublishRelease(ModpackRelease release) {
             GitHubClient client = await AuthenticateClient();
 
-            await client.Repository.Release.Create(
-                REPO_ORG,
-                REPO_NAME,
-                new NewRelease(release.version) { Name = $"Modpack Version {release.version}", Body = $"{release.description}\n\n{release.changelog.Replace("<br>", "")}" }
-            );
+            try {
+                await client.Repository.Release.Create(
+                    REPO_ORG,
+                    REPO_NAME,
+                    new NewRelease(release.version) { Name = $"Modpack Version {release.version}", Body = $"{release.description}\n\n{release.changelog.Replace("<br>", "")}" }
+                );
+            } catch (Exception exception) {
+                LogWrapper.Log(exception);
+            }
         }
 
         public async Task<List<string>> GetBranches() {

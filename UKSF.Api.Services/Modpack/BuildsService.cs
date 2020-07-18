@@ -13,8 +13,8 @@ using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Services.Modpack {
     public class BuildsService : DataBackedService<IBuildsDataService>, IBuildsService {
-        private readonly IBuildStepService buildStepService;
         private readonly IAccountService accountService;
+        private readonly IBuildStepService buildStepService;
         private readonly ISessionService sessionService;
 
         public BuildsService(IBuildsDataService data, IBuildStepService buildStepService, IAccountService accountService, ISessionService sessionService) : base(data) {
@@ -27,9 +27,9 @@ namespace UKSF.Api.Services.Modpack {
             await Data.Update(build, buildStep);
         }
 
-        public List<ModpackBuild> GetDevBuilds() => Data.Get(x => !x.isReleaseCandidate);
+        public List<ModpackBuild> GetDevBuilds() => Data.Get(x => !x.isReleaseCandidate && !x.isRelease);
 
-        public List<ModpackBuild> GetRcBuilds() => Data.Get(x => x.isReleaseCandidate);
+        public List<ModpackBuild> GetRcBuilds() => Data.Get(x => x.isReleaseCandidate || x.isRelease);
 
         public ModpackBuild GetLatestDevBuild() => GetDevBuilds().FirstOrDefault();
 
@@ -38,7 +38,7 @@ namespace UKSF.Api.Services.Modpack {
         public async Task<ModpackBuild> CreateDevBuild(GithubCommit commit) {
             ModpackBuild previousBuild = GetLatestDevBuild();
             string builderId = accountService.Data.GetSingle(x => x.email == commit.author)?.id;
-            ModpackBuild build = new ModpackBuild { buildNumber = previousBuild?.buildNumber + 1 ?? 0, commit = commit, builderId = builderId, steps = buildStepService.GetStepsForBuild() };
+            ModpackBuild build = new ModpackBuild { buildNumber = previousBuild?.buildNumber + 1 ?? 1, commit = commit, builderId = builderId, steps = buildStepService.GetStepsForBuild() };
             await Data.Add(build);
             return build;
         }
@@ -47,7 +47,7 @@ namespace UKSF.Api.Services.Modpack {
             ModpackBuild previousBuild = GetLatestRcBuild(version);
             string builderId = accountService.Data.GetSingle(x => x.email == commit.author)?.id;
             ModpackBuild build = new ModpackBuild {
-                version = version, buildNumber = previousBuild?.buildNumber + 1 ?? 0, isReleaseCandidate = true, commit = commit, builderId = builderId, steps = buildStepService.GetStepsForRc()
+                version = version, buildNumber = previousBuild?.buildNumber + 1 ?? 1, isReleaseCandidate = true, commit = commit, builderId = builderId, steps = buildStepService.GetStepsForRc()
             };
 
             await Data.Add(build);
@@ -61,15 +61,30 @@ namespace UKSF.Api.Services.Modpack {
                 throw new InvalidOperationException("Release build requires at leaste one RC build");
             }
 
-            ModpackBuild build = new ModpackBuild { buildNumber = previousBuild.buildNumber + 1, isRelease = true, commit = previousBuild.commit, builderId = sessionService.GetContextId(), steps = buildStepService.GetStepsForRelease() };
+            ModpackBuild build = new ModpackBuild {
+                version = version,
+                buildNumber = previousBuild.buildNumber + 1,
+                isRelease = true,
+                commit = previousBuild.commit,
+                builderId = sessionService.GetContextId(),
+                steps = buildStepService.GetStepsForRelease()
+            };
             build.commit.message = "Release deployment (no content changes)";
             await Data.Add(build);
             return build;
         }
 
         public async Task<ModpackBuild> CreateRebuild(ModpackBuild build) {
-            ModpackBuild previousBuild = GetLatestDevBuild();
-            ModpackBuild rebuild = new ModpackBuild { buildNumber = previousBuild?.buildNumber + 1 ?? 0, steps = buildStepService.GetStepsForBuild(), commit = build.commit, builderId = sessionService.GetContextId() };
+            ModpackBuild rebuild = new ModpackBuild {
+                version = build.isRelease || build.isReleaseCandidate ? build.version : null,
+                buildNumber = build.buildNumber + 1,
+                isReleaseCandidate = build.isReleaseCandidate,
+                isRelease = build.isRelease,
+                steps = build.isReleaseCandidate ? buildStepService.GetStepsForRc() : buildStepService.GetStepsForBuild(),
+                commit = build.commit,
+                builderId = sessionService.GetContextId()
+            };
+
             rebuild.commit.message = $"Rebuild of #{build.buildNumber}\n\n{rebuild.commit.message}";
             await Data.Add(rebuild);
             return rebuild;

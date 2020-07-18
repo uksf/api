@@ -106,7 +106,7 @@ namespace UKSF.Api.Controllers.Accounts {
                 new HashSet<double> { teamspeakId.ToDouble() },
                 $"This teamspeak identity has been linked to the account with email '{account.email}'\nIf this was not done by you, please contact an admin"
             );
-            LogWrapper.AuditLog(account.id, $"Teamspeak ID {teamspeakId} added for {account.id}");
+            LogWrapper.AuditLog($"Teamspeak ID {teamspeakId} added for {account.id}");
             return Ok();
         }
     }

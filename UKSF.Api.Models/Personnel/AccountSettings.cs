@@ -6,6 +6,7 @@ namespace UKSF.Api.Models.Personnel {
         public bool errorEmails = false;
         public bool notificationsEmail = true;
         public bool notificationsTeamspeak = true;
+        public bool notificationsBuilds = false;
         public bool sr1Enabled = true;
 
         public T GetAttribute<T>(string name) {

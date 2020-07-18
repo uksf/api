@@ -8,7 +8,10 @@ using UKSF.Api.Services.Modpack.BuildProcess.Steps;
 namespace UKSF.Api.Services.Modpack.BuildProcess {
     public class BuildStepService : IBuildStepService {
         private readonly Dictionary<string, Type> buildStepDictionary = new Dictionary<string, Type> {
-            { BuildStep0Prep.NAME, typeof(BuildStep0Prep) }, { BuildStep1Source.NAME, typeof(BuildStep1Source) }, { BuildStep2Build.NAME, typeof(BuildStep2Build) }
+            { BuildStep0Prep.NAME, typeof(BuildStep0Prep) },
+            { BuildStep1Source.NAME, typeof(BuildStep1Source) },
+            { BuildStep2Build.NAME, typeof(BuildStep2Build) },
+            { BuildStep99Notify.NAME, typeof(BuildStep99Notify) }
         };
 
         public IBuildStep ResolveBuildStep(string buildStepName) {
@@ -21,12 +24,32 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             return step;
         }
 
-        public List<ModpackBuildStep> GetStepsForRc() =>
-            new List<ModpackBuildStep> { new ModpackBuildStep(0, BuildStep0Prep.NAME), new ModpackBuildStep(1, BuildStep1Source.NAME), new ModpackBuildStep(2, BuildStep2Build.NAME) };
+        public List<ModpackBuildStep> GetStepsForBuild() {
+            List<ModpackBuildStep> steps = new List<ModpackBuildStep> {
+                new ModpackBuildStep(BuildStep0Prep.NAME), new ModpackBuildStep(BuildStep1Source.NAME), new ModpackBuildStep(BuildStep2Build.NAME), new ModpackBuildStep(BuildStep99Notify.NAME)
+            };
+            ResolveIndices(steps);
+            return steps;
+        }
 
-        public List<ModpackBuildStep> GetStepsForRelease() => new List<ModpackBuildStep> { new ModpackBuildStep(0, BuildStep0Prep.NAME) };
+        public List<ModpackBuildStep> GetStepsForRc() {
+            List<ModpackBuildStep> steps = new List<ModpackBuildStep> {
+                new ModpackBuildStep(BuildStep0Prep.NAME), new ModpackBuildStep(BuildStep1Source.NAME), new ModpackBuildStep(BuildStep2Build.NAME), new ModpackBuildStep(BuildStep99Notify.NAME)
+            };
+            ResolveIndices(steps);
+            return steps;
+        }
 
-        public List<ModpackBuildStep> GetStepsForBuild() =>
-            new List<ModpackBuildStep> { new ModpackBuildStep(0, BuildStep0Prep.NAME), new ModpackBuildStep(1, BuildStep1Source.NAME), new ModpackBuildStep(2, BuildStep2Build.NAME) };
+        public List<ModpackBuildStep> GetStepsForRelease() {
+            List<ModpackBuildStep> steps = new List<ModpackBuildStep> { new ModpackBuildStep(BuildStep0Prep.NAME), new ModpackBuildStep(BuildStep99Notify.NAME) };
+            ResolveIndices(steps);
+            return steps;
+        }
+
+        private static void ResolveIndices(IReadOnlyList<ModpackBuildStep> steps) {
+            for (int i = 0; i < steps.Count; i++) {
+                steps[i].index = i;
+            }
+        }
     }
 }

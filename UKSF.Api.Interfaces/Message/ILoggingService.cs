@@ -7,6 +7,6 @@ namespace UKSF.Api.Interfaces.Message {
         void Log(string message);
         void Log(BasicLogMessage log);
         void Log(Exception exception);
-        void Log(string userId, string message);
+        void AuditLog(string message, string userId = "");
     }
 }

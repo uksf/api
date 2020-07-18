@@ -110,7 +110,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             }
 
             if (overriden) {
-                LogWrapper.AuditLog(sessionAccount.id, $"Review state of {request.type.ToLower()} request for {request.displayRecipient} overriden to {state}");
+                LogWrapper.AuditLog($"Review state of {request.type.ToLower()} request for {request.displayRecipient} overriden to {state}");
                 await commandRequestService.SetRequestAllReviewStates(request, state);
 
                 foreach (string reviewerId in request.reviews.Select(x => x.Key).Where(x => x != sessionAccount.id)) {
@@ -131,10 +131,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
                 }
 
                 if (currentState == state) return Ok();
-                LogWrapper.AuditLog(
-                    sessionAccount.id,
-                    $"Review state of {displayNameService.GetDisplayName(sessionAccount)} for {request.type.ToLower()} request for {request.displayRecipient} updated to {state}"
-                );
+                LogWrapper.AuditLog($"Review state of {displayNameService.GetDisplayName(sessionAccount)} for {request.type.ToLower()} request for {request.displayRecipient} updated to {state}");
                 await commandRequestService.SetRequestReviewState(request, sessionAccount.id, state);
             }
 
