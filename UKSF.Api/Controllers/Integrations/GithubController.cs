@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -12,6 +13,7 @@ using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
+using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers.Integrations {
@@ -51,22 +53,12 @@ namespace UKSF.Api.Controllers.Integrations {
             }
 
             switch (payload.Ref) {
-                case DEV when payload.BaseRef != RELEASE:
-                    GithubCommit devCommit = await githubService.GetPushEvent(payload);
-                    ModpackBuild devBuild = await buildsService.CreateDevBuild(devCommit);
-                    buildQueueService.QueueBuild(devBuild);
+                case DEV when payload.BaseRef != RELEASE: {
+                    await OnPushDev(payload);
                     return Ok();
+                }
                 case RELEASE:
-                    // TODO: Don't make rc build if version has been released
-                    string rcVersion = await githubService.GetReferenceVersion(payload.Ref);
-                    GithubCommit rcCommit = await githubService.GetPushEvent(payload);
-                    ModpackBuild previousBuild = buildsService.GetLatestRcBuild(rcVersion);
-                    if (previousBuild == null) {
-                        await releaseService.MakeDraftRelease(rcVersion, rcCommit);
-                    }
-
-                    ModpackBuild rcBuild = await buildsService.CreateRcBuild(rcVersion, rcCommit);
-                    buildQueueService.QueueBuild(rcBuild);
+                    await OnPushRelease(payload);
                     return Ok();
                 default: return Ok();
             }
@@ -83,6 +75,30 @@ namespace UKSF.Api.Controllers.Integrations {
             List<ModpackRelease> releases = await githubService.GetHistoricReleases();
             await releaseService.AddHistoricReleases(releases);
             return Ok();
+        }
+
+        private async Task OnPushDev(PushWebhookPayload payload) {
+            GithubCommit devCommit = await githubService.GetPushEvent(payload);
+            ModpackBuild devBuild = await buildsService.CreateDevBuild(devCommit);
+            buildQueueService.QueueBuild(devBuild);
+        }
+
+        private async Task OnPushRelease(PushWebhookPayload payload) {
+            string rcVersion = await githubService.GetReferenceVersion(payload.Ref);
+            ModpackRelease release = releaseService.GetRelease(rcVersion);
+            if (release != null && !release.isDraft) {
+                LogWrapper.Log($"An attempt to build a release candidate for version {rcVersion} failed because the version has already been released.");
+                return;
+            }
+
+            ModpackBuild previousBuild = buildsService.GetLatestRcBuild(rcVersion);
+            GithubCommit rcCommit = await githubService.GetPushEvent(payload, previousBuild != null ? previousBuild.commit.after : string.Empty);
+            if (previousBuild == null) {
+                await releaseService.MakeDraftRelease(rcVersion, rcCommit);
+            }
+
+            ModpackBuild rcBuild = await buildsService.CreateRcBuild(rcVersion, rcCommit);
+            buildQueueService.QueueBuild(rcBuild);
         }
     }
 }

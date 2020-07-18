@@ -45,14 +45,14 @@ namespace UKSF.Api.Controllers {
         public async Task<IActionResult> AddVariableItem([FromBody] VariableItem variableItem) {
             variableItem.key = variableItem.key.Keyify();
             await variablesDataService.Add(variableItem);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"VariableItem added '{variableItem.key}, {variableItem.item}'");
+            LogWrapper.AuditLog($"VariableItem added '{variableItem.key}, {variableItem.item}'");
             return Ok();
         }
 
         [HttpPatch, Authorize]
         public async Task<IActionResult> EditVariableItem([FromBody] VariableItem variableItem) {
             VariableItem oldVariableItem = variablesDataService.GetSingle(variableItem.key);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"VariableItem '{oldVariableItem.key}' updated from '{oldVariableItem.item}' to '{variableItem.item}'");
+            LogWrapper.AuditLog($"VariableItem '{oldVariableItem.key}' updated from '{oldVariableItem.item}' to '{variableItem.item}'");
             await variablesDataService.Update(variableItem.key, variableItem.item);
             return Ok(variablesDataService.Get());
         }
@@ -60,7 +60,7 @@ namespace UKSF.Api.Controllers {
         [HttpDelete("{key}"), Authorize]
         public async Task<IActionResult> DeleteVariableItem(string key) {
             VariableItem variableItem = variablesDataService.GetSingle(key);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"VariableItem deleted '{variableItem.key}, {variableItem.item}'");
+            LogWrapper.AuditLog($"VariableItem deleted '{variableItem.key}, {variableItem.item}'");
             await variablesDataService.Delete(key);
             return Ok(variablesDataService.Get());
         }

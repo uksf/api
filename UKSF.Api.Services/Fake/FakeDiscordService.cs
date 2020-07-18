@@ -9,7 +9,9 @@ namespace UKSF.Api.Services.Fake {
     public class FakeDiscordService : DiscordService {
         public FakeDiscordService(IConfiguration configuration, IRanksService ranksService, IUnitsService unitsService, IAccountService accountService, IDisplayNameService displayNameService) : base(configuration, ranksService, unitsService, accountService, displayNameService) { }
 
-        public override Task SendMessage(ulong channelId, string message) => Task.CompletedTask;
+        // public override Task SendMessageToEveryone(ulong channelId, string message) => Task.CompletedTask;
+
+        // public override Task SendMessage(ulong channelId, string message) => Task.CompletedTask;
 
         public override Task UpdateAllUsers() => Task.CompletedTask;
 

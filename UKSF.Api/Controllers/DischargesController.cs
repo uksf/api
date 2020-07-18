@@ -76,7 +76,7 @@ namespace UKSF.Api.Controllers {
             );
             notificationsService.Add(notification);
 
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"{sessionService.GetContextId()} reinstated {dischargeCollection.name}'s membership");
+            LogWrapper.AuditLog($"{sessionService.GetContextId()} reinstated {dischargeCollection.name}'s membership", sessionService.GetContextId());
             string personnelId = variablesDataService.GetSingle("ROLE_ID_PERSONNEL").AsString();
             foreach (string member in unitsService.Data.GetSingle(personnelId).members.Where(x => x != sessionService.GetContextId())) {
                 notificationsService.Add(

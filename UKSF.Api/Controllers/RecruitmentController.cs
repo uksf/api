@@ -72,7 +72,7 @@ namespace UKSF.Api.Controllers {
             if (updatedState == account.application.state) return Ok();
             string sessionId = sessionService.GetContextId();
             await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.state, updatedState));
-            LogWrapper.AuditLog(sessionId, $"Application state changed for {id} from {account.application.state} to {updatedState}");
+            LogWrapper.AuditLog($"Application state changed for {id} from {account.application.state} to {updatedState}");
 
             switch (updatedState) {
                 case ApplicationState.ACCEPTED: {
@@ -100,7 +100,7 @@ namespace UKSF.Api.Controllers {
                     notificationsService.Add(notification);
                     if (recruitmentService.GetRecruiters().All(x => x.id != account.application.recruiter)) {
                         string newRecruiterId = recruitmentService.GetRecruiter();
-                        LogWrapper.AuditLog(sessionId, $"Application recruiter for {id} is no longer SR1, reassigning from {account.application.recruiter} to {newRecruiterId}");
+                        LogWrapper.AuditLog($"Application recruiter for {id} is no longer SR1, reassigning from {account.application.recruiter} to {newRecruiterId}");
                         await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.recruiter, newRecruiterId));
                     }
 
@@ -134,7 +134,7 @@ namespace UKSF.Api.Controllers {
                 notificationsService.Add(new Notification {owner = recruiter, icon = NotificationIcons.APPLICATION, message = $"{account.firstname} {account.lastname}'s application has been transferred to you", link = $"/recruitment/{account.id}"});
             }
 
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"Application recruiter changed for {id} to {newRecruiter["newRecruiter"]}");
+            LogWrapper.AuditLog($"Application recruiter changed for {id} to {newRecruiter["newRecruiter"]}");
             return Ok();
         }
 

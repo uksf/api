@@ -13,9 +13,6 @@ namespace UKSF.Api.Models.Modpack {
         public bool running;
         public DateTime startTime = DateTime.ParseExact("20000101", "yyyyMMdd", CultureInfo.InvariantCulture);
 
-        public ModpackBuildStep(int index, string name) {
-            this.index = index;
-            this.name = name;
-        }
+        public ModpackBuildStep(string name) => this.name = name;
     }
 }

@@ -1,12 +1,14 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Interfaces.Integrations.Github;
 using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
+using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers.Modpack {
@@ -52,6 +54,7 @@ namespace UKSF.Api.Controllers.Modpack {
                 return BadRequest("Build does not exist");
             }
 
+            LogWrapper.AuditLog($"Rebuild triggered for {build.buildNumber}.");
             ModpackBuild rebuild = await buildsService.CreateRebuild(build);
             buildQueueService.QueueBuild(rebuild);
             return Ok();
@@ -64,6 +67,7 @@ namespace UKSF.Api.Controllers.Modpack {
                 return BadRequest("Build does not exist");
             }
 
+            LogWrapper.AuditLog($"Build {build.buildNumber} cancelled");
             buildQueueService.Cancel(id);
             return Ok();
         }
@@ -74,6 +78,7 @@ namespace UKSF.Api.Controllers.Modpack {
                 return BadRequest($"Release {version} is not a draft");
             }
 
+            LogWrapper.AuditLog($"Release {version} draft updated");
             await releaseService.UpdateDraft(release);
             return Ok();
         }
@@ -86,7 +91,7 @@ namespace UKSF.Api.Controllers.Modpack {
             await githubService.MergeBranch("dev", "release", $"Release {version}");
             await githubService.MergeBranch("master", "dev", $"Release {version}");
 
-            // create message on discord modpack channel
+            LogWrapper.AuditLog($"{version} released");
             return Ok();
         }
 
@@ -102,6 +107,7 @@ namespace UKSF.Api.Controllers.Modpack {
             }
 
             ModpackBuild build = await buildsService.CreateDevBuild(commit);
+            LogWrapper.AuditLog($"New build created ({build.buildNumber})");
             buildQueueService.QueueBuild(build);
             return Ok();
         }

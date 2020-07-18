@@ -3,14 +3,19 @@ using System.Threading.Tasks;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Personnel;
+using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Message.Logging;
 using UKSF.Api.Services.Common;
 
 namespace UKSF.Api.Services.Message {
     public class LoggingService : DataBackedService<ILogDataService>, ILoggingService {
         private readonly IDisplayNameService displayNameService;
+        private readonly ISessionService sessionService;
 
-        public LoggingService(ILogDataService data, IDisplayNameService displayNameService) : base(data) => this.displayNameService = displayNameService;
+        public LoggingService(ILogDataService data, IDisplayNameService displayNameService, ISessionService sessionService) : base(data) {
+            this.displayNameService = displayNameService;
+            this.sessionService = sessionService;
+        }
 
         public void Log(string message) {
             Task unused = LogAsync(new BasicLogMessage(message));
@@ -30,7 +35,11 @@ namespace UKSF.Api.Services.Message {
             Task unused = LogAsync(exception);
         }
 
-        public void Log(string userId, string message) {
+        public void AuditLog(string message, string userId = "") {
+            if (string.IsNullOrEmpty(userId)) {
+                userId = sessionService.GetContextId();
+            }
+
             AuditLogMessage log = new AuditLogMessage { who = userId, level = LogLevel.INFO, message = message };
             Log(log);
         }

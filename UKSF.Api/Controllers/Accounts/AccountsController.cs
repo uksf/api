@@ -88,7 +88,7 @@ namespace UKSF.Api.Controllers.Accounts {
             };
             await accountService.Data.Add(account);
             await SendConfirmationCode(account);
-            LogWrapper.AuditLog(accountService.Data.GetSingle(x => x.email == account.email).id, $"New account created: '{account.firstname} {account.lastname}, {account.email}'");
+            LogWrapper.AuditLog($"New account created: '{account.firstname} {account.lastname}, {account.email}'", accountService.Data.GetSingle(x => x.email == account.email).id);
             return Ok(new {account.email});
         }
 
@@ -112,7 +112,7 @@ namespace UKSF.Api.Controllers.Accounts {
             string value = await confirmationCodeService.GetConfirmationCode(code);
             if (value == email) {
                 await accountService.Data.Update(account.id, "membershipState", MembershipState.CONFIRMED);
-                LogWrapper.AuditLog(account.id, $"Email address confirmed for {account.id}");
+                LogWrapper.AuditLog($"Email address confirmed for {account.id}");
                 return Ok();
             }
 
@@ -202,7 +202,7 @@ namespace UKSF.Api.Controllers.Accounts {
         public async Task<IActionResult> ChangeName([FromBody] JObject changeNameRequest) {
             Account account = sessionService.GetContextAccount();
             await accountService.Data.Update(account.id, Builders<Account>.Update.Set(x => x.firstname, changeNameRequest["firstname"].ToString()).Set(x => x.lastname, changeNameRequest["lastname"].ToString()));
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"{account.lastname}, {account.firstname} changed their name to {changeNameRequest["lastname"]}, {changeNameRequest["firstname"]}");
+            LogWrapper.AuditLog($"{account.lastname}, {account.firstname} changed their name to {changeNameRequest["lastname"]}, {changeNameRequest["firstname"]}");
             await discordService.UpdateAccount(accountService.Data.GetSingle(account.id));
             return Ok();
         }
@@ -211,7 +211,7 @@ namespace UKSF.Api.Controllers.Accounts {
         public async Task<IActionResult> ChangePassword([FromBody] JObject changePasswordRequest) {
             string contextId = sessionService.GetContextId();
             await accountService.Data.Update(contextId, "password", BCrypt.Net.BCrypt.HashPassword(changePasswordRequest["password"].ToString()));
-            LogWrapper.AuditLog(contextId, $"Password changed for {contextId}");
+            LogWrapper.AuditLog($"Password changed for {contextId}");
             return Ok();
         }
 
@@ -219,7 +219,7 @@ namespace UKSF.Api.Controllers.Accounts {
         public async Task<IActionResult> UpdateSetting(string id, [FromBody] JObject body) {
             Account account = string.IsNullOrEmpty(id) ? sessionService.GetContextAccount() : accountService.Data.GetSingle(id);
             await accountService.Data.Update(account.id, $"settings.{body["name"]}", body["value"]);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"Setting {body["name"]} updated for {account.id} from {account.settings.GetAttribute<bool>(body["name"].ToString())} to {body["value"]}");
+            LogWrapper.AuditLog($"Setting {body["name"]} updated for {account.id} from {account.settings.GetAttribute<bool>(body["name"].ToString())} to {body["value"]}");
             return Ok();
         }
 
