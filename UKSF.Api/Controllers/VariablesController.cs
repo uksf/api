@@ -36,11 +36,6 @@ namespace UKSF.Api.Controllers {
             return Ok(variablesDataService.GetSingle(x => x.key == key.Keyify()));
         }
 
-        [HttpPost, Authorize]
-        public IActionResult CheckVariableItem([FromBody] VariableItem variableItem) {
-            return variableItem != null ? (IActionResult) Ok(variablesDataService.GetSingle(x => x.id != variableItem.id && x.key == variableItem.key.Keyify())) : Ok();
-        }
-
         [HttpPut, Authorize]
         public async Task<IActionResult> AddVariableItem([FromBody] VariableItem variableItem) {
             variableItem.key = variableItem.key.Keyify();

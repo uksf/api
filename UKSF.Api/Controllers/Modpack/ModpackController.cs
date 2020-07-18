@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Interfaces.Integrations.Github;
 using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Models.Modpack;
 using UKSF.Api.Services.Personnel;
@@ -9,8 +10,12 @@ namespace UKSF.Api.Controllers.Modpack {
     [Route("[controller]")]
     public class ModpackController : Controller {
         private readonly IModpackService modpackService;
+        private readonly IGithubService githubService;
 
-        public ModpackController(IModpackService modpackService) => this.modpackService = modpackService;
+        public ModpackController(IModpackService modpackService, IGithubService githubService) {
+            this.modpackService = modpackService;
+            this.githubService = githubService;
+        }
 
         [HttpGet("releases"), Authorize, Roles(RoleDefinitions.MEMBER)]
         public IActionResult GetReleases() => Ok(modpackService.GetReleases());
@@ -65,10 +70,20 @@ namespace UKSF.Api.Controllers.Modpack {
             return Ok();
         }
 
+        [HttpGet("release/{version}/changelog"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        public async Task<IActionResult> RegenerateChangelog(string version) {
+            await modpackService.RegnerateReleaseDraftChangelog(version);
+            return Ok();
+        }
+
         [HttpGet("newbuild/{reference}"), Authorize, Roles(RoleDefinitions.TESTER)]
         public async Task<IActionResult> NewBuild(string reference) {
-            bool success = await modpackService.NewBuild(reference);
-            return !success ? (IActionResult) BadRequest($"{reference} cannot be built as its version does not have the required make files") : Ok();
+            if (!await githubService.IsReferenceValid(reference)) {
+                return BadRequest($"{reference} cannot be built as its version does not have the required make files");
+            }
+
+            await modpackService.NewBuild(reference);
+            return Ok();
         }
     }
 }

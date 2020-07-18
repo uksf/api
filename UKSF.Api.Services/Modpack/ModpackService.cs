@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Octokit;
 using UKSF.Api.Interfaces.Integrations.Github;
 using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
@@ -32,11 +33,7 @@ namespace UKSF.Api.Services.Modpack {
 
         public ModpackBuild GetBuild(string id) => buildsService.Data.GetSingle(x => x.id == id);
 
-        public async Task<bool> NewBuild(string reference) {
-            if (!await githubService.IsReferenceValid(reference)) {
-                return false;
-            }
-
+        public async Task NewBuild(string reference) {
             GithubCommit commit = await githubService.GetLatestReferenceCommit(reference);
             if (!string.IsNullOrEmpty(sessionService.GetContextId())) {
                 commit.author = sessionService.GetContextEmail();
@@ -45,7 +42,6 @@ namespace UKSF.Api.Services.Modpack {
             ModpackBuild build = await buildsService.CreateDevBuild(commit);
             LogWrapper.AuditLog($"New build created ({build.buildNumber})");
             buildQueueService.QueueBuild(build);
-            return true;
         }
 
         public async Task Rebuild(ModpackBuild build) {
@@ -72,6 +68,39 @@ namespace UKSF.Api.Services.Modpack {
             await githubService.MergeBranch("master", "dev", $"Release {version}");
 
             LogWrapper.AuditLog($"{version} released");
+        }
+
+        public async Task RegnerateReleaseDraftChangelog(string version) {
+            ModpackRelease release = releaseService.GetRelease(version);
+            string newChangelog = await githubService.GenerateChangelog(version);
+            release.changelog = newChangelog;
+
+            LogWrapper.AuditLog($"Release {version} draft changelog regenerated from github");
+            await releaseService.UpdateDraft(release);
+        }
+
+        public async Task CreateDevBuildFromPush(PushWebhookPayload payload) {
+            GithubCommit devCommit = await githubService.GetPushEvent(payload);
+            ModpackBuild devBuild = await buildsService.CreateDevBuild(devCommit);
+            buildQueueService.QueueBuild(devBuild);
+        }
+
+        public async Task CreateRcBuildFromPush(PushWebhookPayload payload) {
+            string rcVersion = await githubService.GetReferenceVersion(payload.Ref);
+            ModpackRelease release = releaseService.GetRelease(rcVersion);
+            if (release != null && !release.isDraft) {
+                LogWrapper.Log($"An attempt to build a release candidate for version {rcVersion} failed because the version has already been released.");
+                return;
+            }
+
+            ModpackBuild previousBuild = buildsService.GetLatestRcBuild(rcVersion);
+            GithubCommit rcCommit = await githubService.GetPushEvent(payload, previousBuild != null ? previousBuild.commit.after : string.Empty);
+            if (previousBuild == null) {
+                await releaseService.MakeDraftRelease(rcVersion, rcCommit);
+            }
+
+            ModpackBuild rcBuild = await buildsService.CreateRcBuild(rcVersion, rcCommit);
+            buildQueueService.QueueBuild(rcBuild);
         }
     }
 }

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices.WindowsRuntime;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,10 +8,7 @@ using Octokit;
 using Octokit.Internal;
 using UKSF.Api.Interfaces.Integrations.Github;
 using UKSF.Api.Interfaces.Modpack;
-using UKSF.Api.Interfaces.Modpack.BuildProcess;
-using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
-using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers.Integrations {
@@ -21,20 +16,17 @@ namespace UKSF.Api.Controllers.Integrations {
     public class GithubController : Controller {
         private const string PUSH_EVENT = "push";
         private const string REPO_NAME = "BuildTest"; //"modpack";
-        private const string MASTER = "refs/heads/master";
         private const string DEV = "refs/heads/dev";
         private const string RELEASE = "refs/heads/release";
-        private readonly IBuildsService buildsService;
 
         private readonly IGithubService githubService;
+        private readonly IModpackService modpackService;
         private readonly IReleaseService releaseService;
-        private readonly IBuildQueueService buildQueueService;
 
-        public GithubController(IGithubService githubService, IBuildsService buildsService, IReleaseService releaseService, IBuildQueueService buildQueueService) {
+        public GithubController(IModpackService modpackService, IGithubService githubService, IReleaseService releaseService) {
+            this.modpackService = modpackService;
             this.githubService = githubService;
-            this.buildsService = buildsService;
             this.releaseService = releaseService;
-            this.buildQueueService = buildQueueService;
         }
 
         [HttpPost]
@@ -54,51 +46,24 @@ namespace UKSF.Api.Controllers.Integrations {
 
             switch (payload.Ref) {
                 case DEV when payload.BaseRef != RELEASE: {
-                    await OnPushDev(payload);
+                    await modpackService.CreateDevBuildFromPush(payload);
                     return Ok();
                 }
                 case RELEASE:
-                    await OnPushRelease(payload);
+                    await modpackService.CreateRcBuildFromPush(payload);
                     return Ok();
                 default: return Ok();
             }
         }
 
         [HttpGet("branches"), Authorize, Roles(RoleDefinitions.TESTER)]
-        public async Task<IActionResult> GetBranches() {
-            List<string> branches = await githubService.GetBranches();
-            return Ok(branches);
-        }
+        public async Task<IActionResult> GetBranches() => Ok(await githubService.GetBranches());
 
         [HttpGet("populatereleases"), Authorize, Roles(RoleDefinitions.ADMIN)]
         public async Task<IActionResult> Release() {
             List<ModpackRelease> releases = await githubService.GetHistoricReleases();
             await releaseService.AddHistoricReleases(releases);
             return Ok();
-        }
-
-        private async Task OnPushDev(PushWebhookPayload payload) {
-            GithubCommit devCommit = await githubService.GetPushEvent(payload);
-            ModpackBuild devBuild = await buildsService.CreateDevBuild(devCommit);
-            buildQueueService.QueueBuild(devBuild);
-        }
-
-        private async Task OnPushRelease(PushWebhookPayload payload) {
-            string rcVersion = await githubService.GetReferenceVersion(payload.Ref);
-            ModpackRelease release = releaseService.GetRelease(rcVersion);
-            if (release != null && !release.isDraft) {
-                LogWrapper.Log($"An attempt to build a release candidate for version {rcVersion} failed because the version has already been released.");
-                return;
-            }
-
-            ModpackBuild previousBuild = buildsService.GetLatestRcBuild(rcVersion);
-            GithubCommit rcCommit = await githubService.GetPushEvent(payload, previousBuild != null ? previousBuild.commit.after : string.Empty);
-            if (previousBuild == null) {
-                await releaseService.MakeDraftRelease(rcVersion, rcCommit);
-            }
-
-            ModpackBuild rcBuild = await buildsService.CreateRcBuild(rcVersion, rcCommit);
-            buildQueueService.QueueBuild(rcBuild);
         }
     }
 }
