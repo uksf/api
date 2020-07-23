@@ -17,6 +17,7 @@ namespace UKSF.Api.Interfaces.Game {
         Task StopGameServer(GameServer gameServer);
         void KillGameServer(GameServer gameServer);
         int KillAllArmaProcesses();
-        List<GameServerMod> GetAvailableMods();
+        List<GameServerMod> GetAvailableMods(string id);
+        List<GameServerMod> GetEnvironmentMods(GameServerEnvironment environment);
     }
 }

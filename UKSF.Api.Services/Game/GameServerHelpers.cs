@@ -68,9 +68,23 @@ namespace UKSF.Api.Services.Game {
 
         private static string GetHeadlessClientName(int index) => VariablesWrapper.VariablesDataService().GetSingle("HEADLESS_CLIENT_NAMES").AsArray()[index];
 
-        private static string FormatGameServerMods(this GameServer gameServer) => gameServer.mods.Count > 0 ? $"{string.Join(";", gameServer.mods.Select(x => x.pathRelativeToServerExecutable ?? x.path))};" : string.Empty;
+        private static string FormatGameServerMods(this GameServer gameServer) =>
+            gameServer.mods.Count > 0 ? $"{string.Join(";", gameServer.mods.Select(x => x.pathRelativeToServerExecutable ?? x.path))};" : string.Empty;
 
-        public static IEnumerable<string> GetGameServerModsPaths() => VariablesWrapper.VariablesDataService().GetSingle("MODS_PATHS").AsArray(x => x.RemoveQuotes());
+        private static string FormatGameServerServerMods(this GameServer gameServer) =>
+            gameServer.serverMods.Count > 0 ? $"{string.Join(";", gameServer.serverMods.Select(x => x.name))};" : string.Empty;
+
+        public static string GetGameServerModsPaths(GameServerEnvironment environment) {
+            string variableKey = environment switch {
+                GameServerEnvironment.RELEASE => "REPO_RELEASE",
+                GameServerEnvironment.STAGE => "REPO_STAGE",
+                GameServerEnvironment.DEV => "REPO_DEV",
+                _ => throw new ArgumentException("Server environment is invalid")
+            };
+            return VariablesWrapper.VariablesDataService().GetSingle(variableKey).AsString();
+        }
+
+        public static IEnumerable<string> GetGameServerExtraModsPaths() => VariablesWrapper.VariablesDataService().GetSingle("SERVERS_EXTRA_MODS").AsArray(x => x.RemoveQuotes());
 
         public static string FormatGameServerConfig(this GameServer gameServer, int playerCount, string missionSelection) =>
             string.Format(string.Join("\n", BASE_CONFIG), gameServer.hostName, gameServer.password, gameServer.adminPassword, playerCount, missionSelection.Replace(".pbo", ""));
@@ -82,7 +96,7 @@ namespace UKSF.Api.Services.Game {
             $" -name={gameServer.name}" +
             $" -port={gameServer.port}" +
             $" -apiport=\"{gameServer.apiPort}\"" +
-            $" {(string.IsNullOrEmpty(gameServer.serverMods) ? "" : $"-serverMod={gameServer.serverMods}")}" +
+            $" {(string.IsNullOrEmpty(gameServer.FormatGameServerServerMods()) ? "" : $"-serverMod={gameServer.FormatGameServerServerMods()}")}" +
             $" {(string.IsNullOrEmpty(gameServer.FormatGameServerMods()) ? "" : $"-mod={gameServer.FormatGameServerMods()}")}" +
             $" {(GetGameServerExecutablePath().Contains("server") ? "" : "-server")}" +
             " -bandwidthAlg=2 -hugepages -loadMissionToMemory -filePatching -limitFPS=200";
@@ -109,6 +123,7 @@ namespace UKSF.Api.Services.Game {
                 LogWrapper.Log("Could not find max curators in server settings file. Loading hardcoded deault '5'");
                 return 5;
             }
+
             curatorsMaxString = curatorsMaxString.Split("=")[1].RemoveSpaces().Replace(";", "");
             return int.Parse(curatorsMaxString);
         }

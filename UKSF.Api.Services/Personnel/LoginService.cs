@@ -92,17 +92,17 @@ namespace UKSF.Api.Services.Personnel {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.RECRUITER));
                     }
 
-                    string personnelId = VariablesWrapper.VariablesDataService().GetSingle("ROLE_ID_PERSONNEL").AsString();
+                    string personnelId = VariablesWrapper.VariablesDataService().GetSingle("UNIT_ID_PERSONNEL").AsString();
                     if (admin || unitsService.Data.GetSingle(personnelId).members.Contains(account.id)) {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.PERSONNEL));
                     }
 
-                    string[] missionsId = VariablesWrapper.VariablesDataService().GetSingle("ROLE_ID_MISSIONS").AsArray();
+                    string[] missionsId = VariablesWrapper.VariablesDataService().GetSingle("UNIT_ID_MISSIONS").AsArray();
                     if (admin || unitsService.Data.GetSingle(x => missionsId.Contains(x.id)).members.Contains(account.id)) {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.SERVERS));
                     }
 
-                    string testersId = VariablesWrapper.VariablesDataService().GetSingle("ROLE_ID_TESTERS").AsString();
+                    string testersId = VariablesWrapper.VariablesDataService().GetSingle("UNIT_ID_TESTERS").AsString();
                     if (admin || unitsService.Data.GetSingle(testersId).members.Contains(account.id)) {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.TESTER));
                     }

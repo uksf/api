@@ -61,14 +61,8 @@ namespace UKSF.Common {
             if (original.Type == JTokenType.Object) {
                 JObject originalObject = original as JObject;
                 JObject updatedObject = updated as JObject;
-
-                if (originalObject == null) {
-                    originalObject = new JObject();
-                }
-
-                if (updatedObject == null) {
-                    updatedObject = new JObject();
-                }
+                originalObject ??= new JObject();
+                updatedObject ??= new JObject();
 
                 List<string> added = updatedObject.Properties().Select(c => c.Name).Except(originalObject.Properties().Select(c => c.Name)).ToList();
                 List<string> removed = originalObject.Properties().Select(c => c.Name).Except(updatedObject.Properties().Select(c => c.Name)).ToList();
