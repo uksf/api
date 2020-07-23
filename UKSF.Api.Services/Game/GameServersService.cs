@@ -61,6 +61,12 @@ namespace UKSF.Api.Services.Game {
             }
         }
 
+        public async Task<List<GameServer>> GetAllGameServerStatuses() {
+            List<GameServer> gameServers = Data.Get();
+            await Task.WhenAll(gameServers.Select(GetGameServerStatus));
+            return gameServers;
+        }
+
         public async Task<MissionPatchingResult> PatchMissionFile(string missionName) {
             string missionPath = Path.Combine(GameServerHelpers.GetGameServerMissionsPath(), missionName);
             MissionPatchingResult result = await missionPatchingService.PatchMission(missionPath);
