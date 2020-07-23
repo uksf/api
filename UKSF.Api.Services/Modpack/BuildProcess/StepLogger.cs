@@ -29,12 +29,12 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         }
 
         public async Task LogSkipped() {
-            LogLines($"\nSkipped: {buildStep.name}", "orange");
+            LogLines($"\nSkipped: {buildStep.name}", "orangered");
             await logCallback();
         }
 
         public async Task LogWarning(string message) {
-            LogLines($"Warning\n{message}", "orange");
+            LogLines($"Warning\n{message}", "orangered");
             await logCallback();
         }
 
