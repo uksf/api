@@ -9,7 +9,7 @@ using UKSF.Api.Interfaces.Modpack.BuildProcess;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess {
     public static class BuildProcessHelper {
-        public static void RunProcess(IStepLogger logger, CancellationToken cancellationToken, string executable, string args, string workingDirectory) {
+        public static void RunProcess(IStepLogger logger, bool raiseErrors, CancellationToken cancellationToken, string executable, string workingDirectory, string args) {
             using Process process = new Process {
                 StartInfo = {
                     FileName = executable,
@@ -25,7 +25,14 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             try {
                 process.EnableRaisingEvents = false;
                 process.OutputDataReceived += (sender, receivedEventArgs) => logger.Log(receivedEventArgs.Data);
-                process.ErrorDataReceived += (sender, receivedEventArgs) => logger.LogError(new Exception(receivedEventArgs.Data));
+                process.ErrorDataReceived += (sender, receivedEventArgs) => {
+                    Exception exception = new Exception(receivedEventArgs.Data);
+                    if (raiseErrors) {
+                        throw exception;
+                    }
+
+                    logger.LogError(exception);
+                };
                 using CancellationTokenRegistration unused = cancellationToken.Register(process.Kill);
                 process.Start();
                 process.BeginOutputReadLine();
@@ -40,8 +47,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             }
         }
 
-        [SuppressMessage("ReSharper", "MethodHasAsyncOverload")]
-        public static async Task RunPowershell(IStepLogger logger, CancellationToken cancellationToken, string command, string workingDirectory, params string[] args) {
+        [SuppressMessage("ReSharper", "MethodHasAsyncOverload")] // async runspace.OpenAsync is not as it seems
+        public static async Task RunPowershell(IStepLogger logger, bool raiseErrors, CancellationToken cancellationToken, string command, string workingDirectory, params string[] args) {
             using Runspace runspace = RunspaceFactory.CreateRunspace();
             runspace.Open();
             runspace.SessionStateProxy.Path.SetLocation(workingDirectory);
@@ -59,10 +66,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 await logger.Log(currentStreamRecord?.MessageData.ToString());
             }
 
-            async void Error(object sender, DataAddedEventArgs eventArgs) {
-                PSDataCollection<InformationRecord> streamObjectsReceived = sender as PSDataCollection<InformationRecord>;
-                InformationRecord currentStreamRecord = streamObjectsReceived?[eventArgs.Index];
-                await logger.LogError(new Exception(currentStreamRecord?.MessageData.ToString()));
+            Exception exception = null;
+            void Error(object sender, DataAddedEventArgs eventArgs) {
+                PSDataCollection<ErrorRecord> streamObjectsReceived = sender as PSDataCollection<ErrorRecord>;
+                ErrorRecord currentStreamRecord = streamObjectsReceived?[eventArgs.Index];
+                exception = currentStreamRecord?.Exception;
             }
 
             powerShell.Streams.Information.DataAdded += Log;
@@ -70,6 +78,15 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             powerShell.Streams.Error.DataAdded += Error;
 
             PSDataCollection<PSObject> result = await powerShell.InvokeAsync(cancellationToken);
+            if (exception != null) {
+                if (raiseErrors) {
+                    runspace.Close();
+                    throw exception;
+                }
+
+                await logger.LogError(exception);
+            }
+
             foreach (PSObject psObject in result) {
                 await logger.Log(psObject.BaseObject.ToString());
             }

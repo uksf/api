@@ -8,6 +8,7 @@ namespace UKSF.Api.Interfaces.Modpack {
         List<ModpackRelease> GetReleases();
         List<ModpackBuild> GetRcBuilds();
         List<ModpackBuild> GetDevBuilds();
+        ModpackRelease GetRelease(string version);
         ModpackBuild GetBuild(string id);
         Task NewBuild(string reference);
         Task Rebuild(ModpackBuild build);

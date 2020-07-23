@@ -9,8 +9,8 @@ using UKSF.Api.Services.Personnel;
 namespace UKSF.Api.Controllers.Modpack {
     [Route("[controller]")]
     public class ModpackController : Controller {
-        private readonly IModpackService modpackService;
         private readonly IGithubService githubService;
+        private readonly IModpackService modpackService;
 
         public ModpackController(IModpackService modpackService, IGithubService githubService) {
             this.modpackService = modpackService;
@@ -73,7 +73,7 @@ namespace UKSF.Api.Controllers.Modpack {
         [HttpGet("release/{version}/changelog"), Authorize, Roles(RoleDefinitions.ADMIN)]
         public async Task<IActionResult> RegenerateChangelog(string version) {
             await modpackService.RegnerateReleaseDraftChangelog(version);
-            return Ok();
+            return Ok(modpackService.GetRelease(version));
         }
 
         [HttpGet("newbuild/{reference}"), Authorize, Roles(RoleDefinitions.TESTER)]

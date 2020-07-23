@@ -61,7 +61,7 @@ namespace UKSF.Api.Services.Integrations.Github {
             string version = await GetReferenceVersion(reference);
             int[] versionParts = version.Split('.').Select(int.Parse).ToArray();
             // TODO: Update minor with version with udpated make for this build system
-            return versionParts[0] >= 5;// && versionParts[1] > 18;
+            return versionParts[0] >= 5; // && versionParts[1] > 18;
         }
 
         public async Task<GithubCommit> GetLatestReferenceCommit(string reference) {
@@ -94,21 +94,14 @@ namespace UKSF.Api.Services.Integrations.Github {
 
         public async Task<string> GenerateChangelog(string version) {
             GitHubClient client = await GetAuthenticatedClient();
-
-            IReadOnlyList<Milestone> milestones = await client.Issue.Milestone.GetAllForRepository(
-                REPO_ORG,
-                "modpack",
-                new MilestoneRequest { State = ItemStateFilter.Open }
-            ); // TODO: Repo name setting
-            Milestone milestone = milestones.FirstOrDefault(x => x.Title == version);
+            Milestone milestone = await GetOpenMilestone(version);
             if (milestone == null) {
-                LogWrapper.Log($"Could not find open milestone for version {version}");
                 return "No milestone found";
             }
 
             IReadOnlyList<Issue> issues = await client.Issue.GetAllForRepository(
                 REPO_ORG,
-                "modpack",
+                REPO_NAME,
                 new RepositoryIssueRequest { Milestone = milestone.Number.ToString(), State = ItemStateFilter.Closed }
             );
 
@@ -141,6 +134,11 @@ namespace UKSF.Api.Services.Integrations.Github {
                     REPO_NAME,
                     new NewRelease(release.version) { Name = $"Modpack Version {release.version}", Body = $"{release.description}\n\n{release.changelog.Replace("<br>", "")}" }
                 );
+
+                Milestone milestone = await GetOpenMilestone(release.version);
+                if (milestone != null) {
+                    await client.Issue.Milestone.Update(REPO_ORG, REPO_NAME, milestone.Number, new MilestoneUpdate { State = ItemState.Closed });
+                }
             } catch (Exception exception) {
                 LogWrapper.Log(exception);
             }
@@ -168,6 +166,17 @@ namespace UKSF.Api.Services.Integrations.Github {
 
         private static string CombineCommitMessages(IEnumerable<GitHubCommit> commits) {
             return commits.Select(x => x.Commit.Message).Reverse().Aggregate((a, b) => $"{a}\n\n{b}");
+        }
+
+        private async Task<Milestone> GetOpenMilestone(string version) {
+            GitHubClient client = await GetAuthenticatedClient();
+            IReadOnlyList<Milestone> milestones = await client.Issue.Milestone.GetAllForRepository(REPO_ORG, REPO_NAME, new MilestoneRequest { State = ItemStateFilter.Open });
+            Milestone milestone = milestones.FirstOrDefault(x => x.Title == version);
+            if (milestone == null) {
+                LogWrapper.Log($"Could not find open milestone for version {version}");
+            }
+
+            return milestone;
         }
 
         private static void AddChangelogSection(ref string changelog, IReadOnlyCollection<Issue> issues, string header) {

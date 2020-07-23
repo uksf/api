@@ -7,6 +7,8 @@ using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class BuildStep : IBuildStep {
+        protected const string COLOUR_BLUE = "#0c78ff";
+
         protected ModpackBuild Build;
         private ModpackBuildStep buildStep;
         protected CancellationTokenSource CancellationTokenSource;
@@ -28,19 +30,24 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             await Logger.LogStart();
         }
 
+        public virtual Task<bool> CheckGuards() => Task.FromResult(true);
+
         public virtual async Task Setup() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
-            await Logger.Log("\nSetup");
+            await Logger.Log("\nSetup", COLOUR_BLUE);
+            await SetupExecute();
         }
 
         public virtual async Task Process() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
-            await Logger.Log("\nProcess");
+            await Logger.Log("\nProcess", COLOUR_BLUE);
+            await ProcessExecute();
         }
 
         public virtual async Task Teardown() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
-            await Logger.Log("\nTeardown");
+            await Logger.Log("\nTeardown", COLOUR_BLUE);
+            await TeardownExecute();
         }
 
         public async Task Succeed() {
@@ -59,6 +66,33 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             await Logger.LogCancelled();
             buildStep.buildResult = ModpackBuildResult.CANCELLED;
             await Stop();
+        }
+
+        public async Task Skip() {
+            await Logger.LogSkipped();
+            buildStep.buildResult = ModpackBuildResult.SKIPPED;
+            await Stop();
+        }
+
+        protected virtual async Task SetupExecute() {
+            await Logger.Log("---");
+        }
+
+        protected virtual async Task ProcessExecute() {
+            await Logger.Log("---");
+        }
+
+        protected virtual async Task TeardownExecute() {
+            await Logger.Log("---");
+        }
+
+        protected async Task<bool> ReleaseBuildGuard() {
+            if (!Build.isRelease) {
+                await Logger.LogWarning("Build is not a release build, but the definition contains a release step.\nThis is a configuration error, please notify an admin.");
+                return false;
+            }
+
+            return true;
         }
 
         private async Task LogCallback() {

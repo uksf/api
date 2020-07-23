@@ -31,6 +31,8 @@ namespace UKSF.Api.Services.Modpack {
 
         public List<ModpackBuild> GetDevBuilds() => buildsService.GetDevBuilds();
 
+        public ModpackRelease GetRelease(string version) => releaseService.GetRelease(version);
+
         public ModpackBuild GetBuild(string id) => buildsService.Data.GetSingle(x => x.id == id);
 
         public async Task NewBuild(string reference) {
@@ -40,18 +42,18 @@ namespace UKSF.Api.Services.Modpack {
             }
 
             ModpackBuild build = await buildsService.CreateDevBuild(commit);
-            LogWrapper.AuditLog($"New build created ({build.buildNumber})");
+            LogWrapper.AuditLog($"New build created ({GetBuildName(build)})");
             buildQueueService.QueueBuild(build);
         }
 
         public async Task Rebuild(ModpackBuild build) {
-            LogWrapper.AuditLog($"Rebuild triggered for {build.buildNumber}.");
+            LogWrapper.AuditLog($"Rebuild triggered for {GetBuildName(build)}.");
             ModpackBuild rebuild = await buildsService.CreateRebuild(build);
             buildQueueService.QueueBuild(rebuild);
         }
 
         public void CancelBuild(ModpackBuild build) {
-            LogWrapper.AuditLog($"Build {build.buildNumber} cancelled");
+            LogWrapper.AuditLog($"Build {GetBuildName(build)} cancelled");
             buildQueueService.Cancel(build.id);
         }
 
@@ -61,11 +63,8 @@ namespace UKSF.Api.Services.Modpack {
         }
 
         public async Task Release(string version) {
-            await releaseService.PublishRelease(version);
             ModpackBuild releaseBuild = await buildsService.CreateReleaseBuild(version);
             buildQueueService.QueueBuild(releaseBuild);
-            await githubService.MergeBranch("dev", "release", $"Release {version}");
-            await githubService.MergeBranch("master", "dev", $"Release {version}");
 
             LogWrapper.AuditLog($"{version} released");
         }
@@ -102,5 +101,8 @@ namespace UKSF.Api.Services.Modpack {
             ModpackBuild rcBuild = await buildsService.CreateRcBuild(rcVersion, rcCommit);
             buildQueueService.QueueBuild(rcBuild);
         }
+
+        private static string GetBuildName(ModpackBuild build) =>
+            $"{(build.isRelease ? $"release {build.version}" : $"{(build.isReleaseCandidate ? $"{build.version} RC# {build.buildNumber}" : $"#{build.buildNumber}")}")}";
     }
 }
