@@ -8,7 +8,7 @@ namespace UKSF.Api.Models.Modpack {
         public DateTime endTime = DateTime.ParseExact("20000101", "yyyyMMdd", CultureInfo.InvariantCulture);
         public bool finished;
         public int index;
-        public List<string> logs = new List<string>();
+        public List<ModpackBuildStepLogItem> logs = new List<ModpackBuildStepLogItem>();
         public string name;
         public bool running;
         public DateTime startTime = DateTime.ParseExact("20000101", "yyyyMMdd", CultureInfo.InvariantCulture);

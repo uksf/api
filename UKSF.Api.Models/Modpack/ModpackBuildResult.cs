@@ -3,6 +3,7 @@
         NONE,
         SUCCESS,
         FAILED,
-        CANCELLED
+        CANCELLED,
+        SKIPPED
     }
 }

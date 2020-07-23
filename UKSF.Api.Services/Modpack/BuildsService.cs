@@ -79,13 +79,12 @@ namespace UKSF.Api.Services.Modpack {
                 version = build.isRelease || build.isReleaseCandidate ? build.version : null,
                 buildNumber = build.buildNumber + 1,
                 isReleaseCandidate = build.isReleaseCandidate,
-                isRelease = build.isRelease,
                 steps = build.isReleaseCandidate ? buildStepService.GetStepsForRc() : buildStepService.GetStepsForBuild(),
                 commit = build.commit,
                 builderId = sessionService.GetContextId()
             };
 
-            rebuild.commit.message = $"Rebuild of #{build.buildNumber}\n\n{rebuild.commit.message}";
+            rebuild.commit.message = rebuild.isRelease ? $"Re-deployment of release {rebuild.version}" : $"Rebuild of #{build.buildNumber}\n\n{rebuild.commit.message}";
             await Data.Add(rebuild);
             return rebuild;
         }

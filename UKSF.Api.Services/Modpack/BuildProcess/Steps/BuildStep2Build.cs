@@ -6,25 +6,22 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class BuildStep2Build : BuildStep {
         public const string NAME = "Build";
 
-        public override async Task Setup() {
-            await base.Setup();
+        protected override async Task SetupExecute() {
             await TaskUtilities.Delay(TimeSpan.FromSeconds(1), CancellationTokenSource.Token);
-            await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, "echo", "C:/", "y45 4y5 dgfh");
+            await BuildProcessHelper.RunPowershell(Logger, true, CancellationTokenSource.Token, "echo", "C:/", "ibguyredsrgiuhbi7dh54t");
         }
 
-        public override async Task Process() {
-            await base.Process();
+        protected override async Task ProcessExecute() {
             await TaskUtilities.Delay(TimeSpan.FromSeconds(1), CancellationTokenSource.Token);
             for (int i = 0; i < 100; i++) {
-                await TaskUtilities.Delay(TimeSpan.FromMilliseconds(50), CancellationTokenSource.Token);
-                await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, "echo", "C:/", Guid.NewGuid().ToString());
+                await TaskUtilities.Delay(TimeSpan.FromMilliseconds(25), CancellationTokenSource.Token);
+                await BuildProcessHelper.RunPowershell(Logger, true, CancellationTokenSource.Token, "echo", "C:/", Guid.NewGuid().ToString());
             }
         }
 
-        public override async Task Teardown() {
-            await base.Teardown();
+        protected override async Task TeardownExecute() {
             await TaskUtilities.Delay(TimeSpan.FromSeconds(1), CancellationTokenSource.Token);
-            await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, "echo", "C:/", "hfg");
+            await BuildProcessHelper.RunPowershell(Logger, true, CancellationTokenSource.Token, "echo", "C:/", "hfg");
         }
     }
 }

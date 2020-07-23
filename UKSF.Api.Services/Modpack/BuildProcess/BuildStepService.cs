@@ -11,7 +11,9 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             { BuildStep0Prep.NAME, typeof(BuildStep0Prep) },
             { BuildStep1Source.NAME, typeof(BuildStep1Source) },
             { BuildStep2Build.NAME, typeof(BuildStep2Build) },
-            { BuildStep99Notify.NAME, typeof(BuildStep99Notify) }
+            { BuildStep90PublishRelease.NAME, typeof(BuildStep90PublishRelease) },
+            { BuildStep95Notify.NAME, typeof(BuildStep95Notify) },
+            { BuildStep99MergeRelease.NAME, typeof(BuildStep99MergeRelease) }
         };
 
         public IBuildStep ResolveBuildStep(string buildStepName) {
@@ -26,7 +28,10 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
 
         public List<ModpackBuildStep> GetStepsForBuild() {
             List<ModpackBuildStep> steps = new List<ModpackBuildStep> {
-                new ModpackBuildStep(BuildStep0Prep.NAME), new ModpackBuildStep(BuildStep1Source.NAME), new ModpackBuildStep(BuildStep2Build.NAME), new ModpackBuildStep(BuildStep99Notify.NAME)
+                new ModpackBuildStep(BuildStep0Prep.NAME),
+                new ModpackBuildStep(BuildStep1Source.NAME),
+                new ModpackBuildStep(BuildStep2Build.NAME),
+                new ModpackBuildStep(BuildStep95Notify.NAME)
             };
             ResolveIndices(steps);
             return steps;
@@ -34,14 +39,19 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
 
         public List<ModpackBuildStep> GetStepsForRc() {
             List<ModpackBuildStep> steps = new List<ModpackBuildStep> {
-                new ModpackBuildStep(BuildStep0Prep.NAME), new ModpackBuildStep(BuildStep1Source.NAME), new ModpackBuildStep(BuildStep2Build.NAME), new ModpackBuildStep(BuildStep99Notify.NAME)
+                new ModpackBuildStep(BuildStep0Prep.NAME), new ModpackBuildStep(BuildStep1Source.NAME), new ModpackBuildStep(BuildStep2Build.NAME), new ModpackBuildStep(BuildStep95Notify.NAME)
             };
             ResolveIndices(steps);
             return steps;
         }
 
         public List<ModpackBuildStep> GetStepsForRelease() {
-            List<ModpackBuildStep> steps = new List<ModpackBuildStep> { new ModpackBuildStep(BuildStep0Prep.NAME), new ModpackBuildStep(BuildStep99Notify.NAME) };
+            List<ModpackBuildStep> steps = new List<ModpackBuildStep> {
+                new ModpackBuildStep(BuildStep0Prep.NAME),
+                new ModpackBuildStep(BuildStep90PublishRelease.NAME),
+                new ModpackBuildStep(BuildStep95Notify.NAME),
+                new ModpackBuildStep(BuildStep99MergeRelease.NAME)
+            };
             ResolveIndices(steps);
             return steps;
         }

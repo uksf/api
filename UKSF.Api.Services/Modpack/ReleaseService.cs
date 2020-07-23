@@ -7,19 +7,16 @@ using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Integrations.Github;
 using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Personnel;
-using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Services.Modpack {
     public class ReleaseService : DataBackedService<IReleasesDataService>, IReleaseService {
         private readonly IGithubService githubService;
-        private readonly ISessionService sessionService;
         private readonly IAccountService accountService;
 
-        public ReleaseService(IReleasesDataService data, IGithubService githubService, ISessionService sessionService, IAccountService accountService) : base(data) {
+        public ReleaseService(IReleasesDataService data, IGithubService githubService, IAccountService accountService) : base(data) {
             this.githubService = githubService;
-            this.sessionService = sessionService;
             this.accountService = accountService;
         }
 
@@ -43,7 +40,7 @@ namespace UKSF.Api.Services.Modpack {
                 throw new NullReferenceException($"Could not find release {version}");
             }
 
-            await Data.Update(release.id, Builders<ModpackRelease>.Update.Set(x => x.timestamp, DateTime.Now).Set(x => x.isDraft, false).Set(x => x.releaserId, sessionService.GetContextId()));
+            await Data.Update(release.id, Builders<ModpackRelease>.Update.Set(x => x.timestamp, DateTime.Now).Set(x => x.isDraft, false));
             await githubService.PublishRelease(release);
         }
 

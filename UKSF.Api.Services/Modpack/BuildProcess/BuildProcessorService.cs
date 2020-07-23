@@ -30,6 +30,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
 
                 try {
                     await step.Start();
+                    if (!await step.CheckGuards()) {
+                        await step.Skip();
+                        continue;
+                    }
+
                     await step.Setup();
                     await step.Process();
                     await step.Teardown();
