@@ -53,7 +53,7 @@ namespace UKSF.Api.Services.Game.Missions {
         }
 
         private void CreateBackup() {
-            string backupPath = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("MISSION_BACKUPS_FOLDER").AsString(), Path.GetFileName(filePath) ?? throw new FileNotFoundException());
+            string backupPath = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("MISSIONS_BACKUPS").AsString(), Path.GetFileName(filePath) ?? throw new FileNotFoundException());
 
             Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? throw new DirectoryNotFoundException());
             File.Copy(filePath, backupPath, true);

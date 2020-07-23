@@ -150,7 +150,7 @@ namespace UKSF.Api.Services.Personnel {
         }
 
         private Unit GetRecruiterUnit() {
-            string id = VariablesWrapper.VariablesDataService().GetSingle("ROLE_ID_RECRUITMENT").AsString();
+            string id = VariablesWrapper.VariablesDataService().GetSingle("UNIT_ID_RECRUITMENT").AsString();
             return unitsService.Data.GetSingle(id);
         }
 

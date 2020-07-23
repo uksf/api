@@ -55,7 +55,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             List<CommandRequest> myRequests = new List<CommandRequest>();
             List<CommandRequest> otherRequests = new List<CommandRequest>();
             string contextId = sessionService.GetContextId();
-            string id = variablesDataService.GetSingle("ROLE_ID_PERSONNEL").AsString();
+            string id = variablesDataService.GetSingle("UNIT_ID_PERSONNEL").AsString();
             bool canOverride = unitsService.Data.GetSingle(id).members.Any(x => x == contextId);
             bool superAdmin = contextId == Global.SUPER_ADMIN;
             DateTime now = DateTime.Now;

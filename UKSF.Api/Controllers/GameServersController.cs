@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Interfaces.Hubs;
@@ -34,13 +35,14 @@ namespace UKSF.Api.Controllers {
         }
 
         [HttpGet, Authorize]
-        public IActionResult GetGameServers() => Ok(new {servers = gameServersService.Data.Get(), missions = gameServersService.GetMissionFiles(), instanceCount = gameServersService.GetGameInstanceCount()});
+        public IActionResult GetGameServers() =>
+            Ok(new { servers = gameServersService.Data.Get(), missions = gameServersService.GetMissionFiles(), instanceCount = gameServersService.GetGameInstanceCount() });
 
         [HttpGet("status/{id}"), Authorize]
         public async Task<IActionResult> GetGameServerStatus(string id) {
             GameServer gameServer = gameServersService.Data.GetSingle(id);
             await gameServersService.GetGameServerStatus(gameServer);
-            return Ok(new {gameServer, instanceCount = gameServersService.GetGameInstanceCount()});
+            return Ok(new { gameServer, instanceCount = gameServersService.GetGameInstanceCount() });
         }
 
         [HttpPost("{check}"), Authorize]
@@ -64,22 +66,29 @@ namespace UKSF.Api.Controllers {
         public async Task<IActionResult> EditGameServer([FromBody] GameServer gameServer) {
             GameServer oldGameServer = gameServersService.Data.GetSingle(x => x.id == gameServer.id);
             LogWrapper.AuditLog($"Game server '{gameServer.name}' updated:{oldGameServer.Changes(gameServer)}");
-            await gameServersService.Data
-                                    .Update(
-                                        gameServer.id,
-                                        Builders<GameServer>.Update.Set("name", gameServer.name)
-                                                            .Set("port", gameServer.port)
-                                                            .Set("apiPort", gameServer.apiPort)
-                                                            .Set("numberHeadlessClients", gameServer.numberHeadlessClients)
-                                                            .Set("profileName", gameServer.profileName)
-                                                            .Set("hostName", gameServer.hostName)
-                                                            .Set("password", gameServer.password)
-                                                            .Set("adminPassword", gameServer.adminPassword)
-                                                            .Set("serverOption", gameServer.serverOption)
-                                                            .Set("serverMods", gameServer.serverMods)
-                                    );
+            bool environmentChanged = false;
+            if (oldGameServer.serverEnvironment != gameServer.serverEnvironment) {
+                environmentChanged = true;
+                gameServer.mods = gameServersService.GetEnvironmentMods(gameServer.serverEnvironment);
+                gameServer.serverMods = new List<GameServerMod>();
+            }
 
-            return Ok(gameServersService.Data.Get());
+            await gameServersService.Data.Update(
+                gameServer.id,
+                Builders<GameServer>.Update.Set("name", gameServer.name)
+                                    .Set("port", gameServer.port)
+                                    .Set("apiPort", gameServer.apiPort)
+                                    .Set("numberHeadlessClients", gameServer.numberHeadlessClients)
+                                    .Set("profileName", gameServer.profileName)
+                                    .Set("hostName", gameServer.hostName)
+                                    .Set("password", gameServer.password)
+                                    .Set("adminPassword", gameServer.adminPassword)
+                                    .Set("serverEnvironment", gameServer.serverEnvironment)
+                                    .Set("serverOption", gameServer.serverOption)
+                                    .Set("mods", gameServer.mods)
+                                    .Set("serverMods", gameServer.serverMods)
+            );
+            return Ok(new { environmentChanged });
         }
 
         [HttpDelete("{id}"), Authorize]
@@ -111,7 +120,7 @@ namespace UKSF.Api.Controllers {
                     await gameServersService.UploadMissionFile(file);
                     MissionPatchingResult missionPatchingResult = await gameServersService.PatchMissionFile(file.Name);
                     missionPatchingResult.reports = missionPatchingResult.reports.OrderByDescending(x => x.error).ToList();
-                    missionReports.Add(new {mission = file.Name, missionPatchingResult.reports});
+                    missionReports.Add(new { mission = file.Name, missionPatchingResult.reports });
                     LogWrapper.AuditLog($"Uploaded mission '{file.Name}'");
                 }
             } catch (Exception exception) {
@@ -119,7 +128,7 @@ namespace UKSF.Api.Controllers {
                 return BadRequest(exception);
             }
 
-            return Ok(new {missions = gameServersService.GetMissionFiles(), missionReports});
+            return Ok(new { missions = gameServersService.GetMissionFiles(), missionReports });
         }
 
         [HttpPost("launch/{id}"), Authorize]
@@ -148,7 +157,13 @@ namespace UKSF.Api.Controllers {
             MissionPatchingResult patchingResult = await gameServersService.PatchMissionFile(missionSelection);
             if (!patchingResult.success) {
                 patchingResult.reports = patchingResult.reports.OrderByDescending(x => x.error).ToList();
-                return BadRequest(new {patchingResult.reports, message = $"{(patchingResult.reports.Count > 0 ? "Failed to patch mission for the reasons detailed below" : "Failed to patch mission for an unknown reason")}.\n\nContact an admin for help"});
+                return BadRequest(
+                    new {
+                        patchingResult.reports,
+                        message =
+                            $"{(patchingResult.reports.Count > 0 ? "Failed to patch mission for the reasons detailed below" : "Failed to patch mission for an unknown reason")}.\n\nContact an admin for help"
+                    }
+                );
             }
 
             // Write config
@@ -169,7 +184,7 @@ namespace UKSF.Api.Controllers {
             if (!gameServer.status.started && !gameServer.status.running) return BadRequest("Server is not running. This shouldn't happen so please contact an admin");
             await gameServersService.StopGameServer(gameServer);
             await gameServersService.GetGameServerStatus(gameServer);
-            return Ok(new {gameServer, instanceCount = gameServersService.GetGameInstanceCount()});
+            return Ok(new { gameServer, instanceCount = gameServersService.GetGameInstanceCount() });
         }
 
         [HttpGet("kill/{id}"), Authorize]
@@ -185,7 +200,7 @@ namespace UKSF.Api.Controllers {
             }
 
             await gameServersService.GetGameServerStatus(gameServer);
-            return Ok(new {gameServer, instanceCount = gameServersService.GetGameInstanceCount()});
+            return Ok(new { gameServer, instanceCount = gameServersService.GetGameInstanceCount() });
         }
 
         [HttpGet("killall"), Authorize]
@@ -195,20 +210,23 @@ namespace UKSF.Api.Controllers {
             return Ok();
         }
 
-        [HttpGet("mods"), Authorize]
-        public IActionResult GetAvailableMods() => Ok(gameServersService.GetAvailableMods());
+        [HttpGet("{id}/mods"), Authorize]
+        public IActionResult GetAvailableMods(string id) => Ok(gameServersService.GetAvailableMods(id));
 
-        [HttpPost("mods/{id}"), Authorize]
-        public async Task<IActionResult> SetGameServerMods(string id, [FromBody] List<GameServerMod> mods) {
+        [HttpPost("{id}/mods"), Authorize]
+        public async Task<IActionResult> SetGameServerMods(string id, [FromBody] JObject body) {
+            List<GameServerMod> mods = JsonConvert.DeserializeObject<List<GameServerMod>>(body.GetValueFromBody("mods"));
+            List<GameServerMod> serverMods = JsonConvert.DeserializeObject<List<GameServerMod>>(body.GetValueFromBody("serverMods"));
             GameServer gameServer = gameServersService.Data.GetSingle(id);
             LogWrapper.AuditLog($"Game server '{gameServer.name}' mods updated:{gameServer.mods.Select(x => x.name).Changes(mods.Select(x => x.name))}");
-            await gameServersService.Data.Update(id, Builders<GameServer>.Update.Unset(x => x.mods));
-            await gameServersService.Data.Update(id, Builders<GameServer>.Update.PushEach(x => x.mods, mods));
-            return Ok(gameServersService.GetAvailableMods());
+            LogWrapper.AuditLog($"Game server '{gameServer.name}' serverMods updated:{gameServer.serverMods.Select(x => x.name).Changes(serverMods.Select(x => x.name))}");
+            await gameServersService.Data.Update(id, Builders<GameServer>.Update.Unset(x => x.mods).Unset(x => x.serverMods));
+            await gameServersService.Data.Update(id, Builders<GameServer>.Update.Set(x => x.mods, mods).Set(x => x.serverMods, serverMods));
+            return Ok(gameServersService.GetAvailableMods(id));
         }
 
         [HttpGet("disabled"), Authorize]
-        public IActionResult GetDisabledState() => Ok(new {state = VariablesWrapper.VariablesDataService().GetSingle("SERVERS_DISABLED").AsBool()});
+        public IActionResult GetDisabledState() => Ok(new { state = VariablesWrapper.VariablesDataService().GetSingle("SERVERS_DISABLED").AsBool() });
 
         [HttpPost("disabled"), Authorize]
         public async Task<IActionResult> SetDisabledState([FromBody] JObject body) {
