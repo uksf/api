@@ -45,7 +45,7 @@ namespace UKSF.Api {
                    .UseKestrel(
                        options => {
                            options.Listen(IPAddress.Loopback, 5000);
-                           options.Listen(IPAddress.Loopback, 5001, listenOptions => { listenOptions.UseHttps("C:\\ProgramData\\win-acme\\httpsacme-v01.api.letsencrypt.org\\uk-sf.co.uk-all.pfx"); });
+                           options.Listen(IPAddress.Loopback, 5001, listenOptions => { listenOptions.UseHttps("C:\\ProgramData\\win-acme\\acme-v02.api.letsencrypt.org\\Certificates\\uk-sf.co.uk.pfx"); });
                        }
                    )
                    .UseContentRoot(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName))
