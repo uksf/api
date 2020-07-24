@@ -32,7 +32,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
         private string GetBuildMessage() =>
             Build.isReleaseCandidate
                 ? $"New dev build available ({Build.buildNumber}) on the dev repository"
-                : $"New release candidate ({Build.buildNumber}) available for {Build.version} on the stage repository";
+                : $"New release candidate ({Build.buildNumber}) available for {Build.version} on the rc repository";
 
         private string GetBuildLink() =>
             Build.isReleaseCandidate ? $"https://uk-sf.co.uk/modpack/builds-rc?version={Build.version}&build={Build.id}" : $"https://uk-sf.co.uk/modpack/builds-dev?build={Build.id}";

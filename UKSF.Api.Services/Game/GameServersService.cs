@@ -12,6 +12,7 @@ using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Mission;
+using UKSF.Api.Services.Message;
 using UKSF.Common;
 
 namespace UKSF.Api.Services.Game {
@@ -24,7 +25,8 @@ namespace UKSF.Api.Services.Game {
 
         public async Task UploadMissionFile(IFormFile file) {
             string fileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
-            await using FileStream stream = new FileStream(Path.Combine(GameServerHelpers.GetGameServerMissionsPath(), fileName), FileMode.Create);
+            string filePath = Path.Combine(GameServerHelpers.GetGameServerMissionsPath(), fileName);
+            await using FileStream stream = new FileStream(filePath, FileMode.Create);
             await file.CopyToAsync(stream);
         }
 
@@ -68,6 +70,13 @@ namespace UKSF.Api.Services.Game {
         }
 
         public async Task<MissionPatchingResult> PatchMissionFile(string missionName) {
+            // if (Data.GetSingle(x => x.status.mission == missionName) != null) { // TODO: Needs better server <-> api interaction to properly get running missions
+            //     return new MissionPatchingResult {
+            //         success = true,
+            //         reports = new List<MissionPatchingReport> { new MissionPatchingReport("Mission in use", $"'{missionName}' is currently in use by another server.\nIt has not been patched.") }
+            //     };
+            // }
+
             string missionPath = Path.Combine(GameServerHelpers.GetGameServerMissionsPath(), missionName);
             MissionPatchingResult result = await missionPatchingService.PatchMission(missionPath);
             return result;
@@ -78,7 +87,7 @@ namespace UKSF.Api.Services.Game {
 
         public async Task LaunchGameServer(GameServer gameServer) {
             string launchArguments = gameServer.FormatGameServerLaunchArguments();
-            gameServer.processId = ProcessUtilities.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments);
+            gameServer.processId = ProcessUtilities.LaunchManagedProcess(gameServer.GetGameServerExecutablePath(), launchArguments);
 
             await Task.Delay(TimeSpan.FromSeconds(1));
 
@@ -86,7 +95,7 @@ namespace UKSF.Api.Services.Game {
             if (gameServer.numberHeadlessClients > 0) {
                 for (int index = 0; index < gameServer.numberHeadlessClients; index++) {
                     launchArguments = gameServer.FormatHeadlessClientLaunchArguments(index);
-                    gameServer.headlessClientProcessIds.Add(ProcessUtilities.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments));
+                    gameServer.headlessClientProcessIds.Add(ProcessUtilities.LaunchManagedProcess(gameServer.GetGameServerExecutablePath(), launchArguments));
 
                     await Task.Delay(TimeSpan.FromSeconds(1));
                 }
@@ -156,7 +165,7 @@ namespace UKSF.Api.Services.Game {
 
         public List<GameServerMod> GetAvailableMods(string id) {
             GameServer gameServer = Data.GetSingle(id);
-            Uri serverExecutable = new Uri(GameServerHelpers.GetGameServerExecutablePath());
+            Uri serverExecutable = new Uri(gameServer.GetGameServerExecutablePath());
             List<GameServerMod> mods = new List<GameServerMod>();
             IEnumerable<string> availableModsFolders = new[] { GameServerHelpers.GetGameServerModsPaths(gameServer.serverEnvironment) };
             IEnumerable<string> extraModsFolders = GameServerHelpers.GetGameServerExtraModsPaths();

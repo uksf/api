@@ -168,6 +168,7 @@ namespace UKSF.Api.Controllers {
 
             // Write config
             gameServersService.WriteServerConfig(gameServer, patchingResult.playerCount, missionSelection);
+            gameServer.status.mission = missionSelection;
 
             // Execute launch
             await gameServersService.LaunchGameServer(gameServer);
@@ -225,13 +226,26 @@ namespace UKSF.Api.Controllers {
             return Ok(gameServersService.GetAvailableMods(id));
         }
 
+        [HttpGet("{id}/mods/reset"), Authorize]
+        public async Task<IActionResult> ResetGameServerMods(string id) {
+            GameServer gameServer = gameServersService.Data.GetSingle(id);
+            LogWrapper.AuditLog($"Game server '{gameServer.name}' mods & serverMods reset");
+            await gameServersService.Data.Update(id, Builders<GameServer>.Update.Unset(x => x.mods).Unset(x => x.serverMods));
+            await gameServersService.Data.Update(
+                id,
+                Builders<GameServer>.Update.Set(x => x.mods, gameServersService.GetEnvironmentMods(gameServer.serverEnvironment))
+                                    .Set(x => x.serverMods, new List<GameServerMod>())
+            );
+            return Ok(gameServersService.GetAvailableMods(id));
+        }
+
         [HttpGet("disabled"), Authorize]
-        public IActionResult GetDisabledState() => Ok(new { state = VariablesWrapper.VariablesDataService().GetSingle("SERVERS_DISABLED").AsBool() });
+        public IActionResult GetDisabledState() => Ok(new { state = VariablesWrapper.VariablesDataService().GetSingle("SERVER_CONTROL_DISABLED").AsBool() });
 
         [HttpPost("disabled"), Authorize]
         public async Task<IActionResult> SetDisabledState([FromBody] JObject body) {
             bool state = bool.Parse(body["state"].ToString());
-            await VariablesWrapper.VariablesDataService().Update("SERVERS_DISABLED", state);
+            await VariablesWrapper.VariablesDataService().Update("SERVER_CONTROL_DISABLED", state);
             await serversHub.Clients.All.ReceiveDisabledState(state);
             return Ok();
         }
