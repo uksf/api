@@ -56,8 +56,9 @@ namespace UKSF.Api.Services.Integrations {
                 string contentString = await response.Content.ReadAsStringAsync();
                 JObject contentObject = JObject.Parse(contentString);
                 List<InstagramImage> allNewImages = JsonConvert.DeserializeObject<List<InstagramImage>>(contentObject["data"]?.ToString() ?? "");
+                allNewImages = allNewImages.OrderByDescending(x => x.timestamp).ToList();
 
-                if (allNewImages == null || allNewImages.Count == 0) {
+                if (allNewImages.Count == 0) {
                     LogWrapper.Log($"Instagram response contains no images: {contentObject}");
                     return;
                 }

@@ -98,12 +98,11 @@ namespace UKSF.Api.Services.Utility {
         }
 
         private async Task AddUnique() {
-            ScheduledJob instagramAction = Data.GetSingle(x => x.action == InstagramImagesAction.ACTION_NAME);
-            if (instagramAction != null) {
-                await Data.Delete(instagramAction.id);
+            if (Data.GetSingle(x => x.action == InstagramImagesAction.ACTION_NAME) == null) {
+                await Create(DateTime.Today, TimeSpan.FromHours(1), InstagramImagesAction.ACTION_NAME);
             }
 
-            await Create(DateTime.Today, TimeSpan.FromHours(1), InstagramImagesAction.ACTION_NAME);
+            scheduledActionService.GetScheduledAction(InstagramImagesAction.ACTION_NAME).Run();
 
             if (!currentEnvironment.IsDevelopment()) {
                 if (Data.GetSingle(x => x.action == InstagramTokenAction.ACTION_NAME) == null) {
