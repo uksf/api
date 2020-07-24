@@ -4,7 +4,7 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace UKSF.Api.Models.Game {
     public enum GameServerEnvironment {
         RELEASE,
-        STAGE,
+        RC,
         DEV
     }
 
