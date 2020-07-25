@@ -12,6 +12,7 @@ namespace UKSF.Api.Services.Game.Missions {
             "5bc3bccdffbf7a11b803c3f6", // Delta
             "59e3958b594c603b78aa9dcd", // Joho
             "5a2439443fccaa15902aaa4e", // Mac
+            "5a4e7effd68b7e16e46fc614", // Woody
             "5a1a16ce630e7413645b73fd", // Penn
             "5a1a14b5aacf7b00346dcc37" // Gilbert
         };
