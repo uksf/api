@@ -6,7 +6,8 @@ using MongoDB.Bson;
 
 namespace UKSF.Common {
     public static class StringUtilities {
-        public static bool ContainsIgnoreCase(this string text, string searchElement) => !string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(searchElement) && text.ToUpper().Contains(searchElement.ToUpper());
+        public static bool ContainsIgnoreCase(this string text, string searchElement) =>
+            !string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(searchElement) && text.ToUpper().Contains(searchElement.ToUpper());
 
         public static double ToDouble(this string text) => double.TryParse(text, out double number) ? number : 0d;
 

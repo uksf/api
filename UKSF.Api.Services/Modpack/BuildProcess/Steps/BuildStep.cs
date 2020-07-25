@@ -3,7 +3,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Interfaces.Modpack.BuildProcess.Steps;
+using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Modpack;
+using UKSF.Api.Services.Admin;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class BuildStep : IBuildStep {
@@ -32,19 +34,19 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
 
         public virtual Task<bool> CheckGuards() => Task.FromResult(true);
 
-        public virtual async Task Setup() {
+        public async Task Setup() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
             await Logger.Log("\nSetup", COLOUR_BLUE);
             await SetupExecute();
         }
 
-        public virtual async Task Process() {
+        public async Task Process() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
             await Logger.Log("\nProcess", COLOUR_BLUE);
             await ProcessExecute();
         }
 
-        public virtual async Task Teardown() {
+        public async Task Teardown() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
             await Logger.Log("\nTeardown", COLOUR_BLUE);
             await TeardownExecute();
@@ -52,7 +54,10 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
 
         public async Task Succeed() {
             await Logger.LogSuccess();
-            buildStep.buildResult = ModpackBuildResult.SUCCESS;
+            if (buildStep.buildResult != ModpackBuildResult.WARNING) {
+                buildStep.buildResult = ModpackBuildResult.SUCCESS;
+            }
+
             await Stop();
         }
 
@@ -66,6 +71,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             await Logger.LogCancelled();
             buildStep.buildResult = ModpackBuildResult.CANCELLED;
             await Stop();
+        }
+
+        public async Task Warning(string message) {
+            await Logger.LogWarning(message);
+            buildStep.buildResult = ModpackBuildResult.WARNING;
         }
 
         public async Task Skip() {
@@ -87,13 +97,39 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
         }
 
         protected async Task<bool> ReleaseBuildGuard() {
-            if (!Build.isRelease) {
-                await Logger.LogWarning("Build is not a release build, but the definition contains a release step.\nThis is a configuration error, please notify an admin.");
+            if (Build.environment != GameEnvironment.RELEASE) {
+                await Warning("\nBuild is not a release build, but the definition contains a release step.\nThis is a configuration error, please notify an admin.");
                 return false;
             }
 
             return true;
         }
+
+        internal string GetBuildEnvironmentPath() => GetEnvironmentPath(Build.environment);
+
+        internal static string GetEnvironmentPath(GameEnvironment environment) =>
+            environment switch {
+                GameEnvironment.RELEASE => VariablesWrapper.VariablesDataService().GetSingle("MODPACK_PATH_RELEASE").AsString(),
+                GameEnvironment.RC => VariablesWrapper.VariablesDataService().GetSingle("MODPACK_PATH_RC").AsString(),
+                GameEnvironment.DEV => VariablesWrapper.VariablesDataService().GetSingle("MODPACK_PATH_DEV").AsString(),
+                _ => throw new ArgumentException("Invalid build environment")
+            };
+
+        internal static string GetServerEnvironmentPath(GameEnvironment environment) =>
+            environment switch {
+                GameEnvironment.RELEASE => VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_RELEASE").AsString(),
+                GameEnvironment.RC => VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_RC").AsString(),
+                GameEnvironment.DEV => VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_DEV").AsString(),
+                _ => throw new ArgumentException("Invalid build environment")
+            };
+
+        internal string GetEnvironmentRepoName() =>
+            Build.environment switch {
+                GameEnvironment.RELEASE => "UKSF",
+                GameEnvironment.RC => "UKSF-Rc",
+                GameEnvironment.DEV => "UKSF-Dev",
+                _ => throw new ArgumentException("Invalid build environment")
+            };
 
         private async Task LogCallback() {
             await updateCallback();

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using UKSF.Api.Events;
 using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
+using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Services.Admin;
 
@@ -25,6 +26,9 @@ namespace UKSF.Api.AppStart {
 
             // Register scheduled actions
             RegisterScheduledActions.Register();
+
+            // Register buidl steps
+            serviceProvider.GetService<IBuildStepService>().RegisterBuildSteps();
 
             // Add event handlers
             serviceProvider.GetService<EventHandlerInitialiser>().InitEventHandlers();

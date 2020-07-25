@@ -1,10 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Octokit;
 using UKSF.Api.Interfaces.Integrations.Github;
 using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Interfaces.Utility;
+using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
 using UKSF.Api.Services.Message;
@@ -103,6 +105,11 @@ namespace UKSF.Api.Services.Modpack {
         }
 
         private static string GetBuildName(ModpackBuild build) =>
-            $"{(build.isRelease ? $"release {build.version}" : $"{(build.isReleaseCandidate ? $"{build.version} RC# {build.buildNumber}" : $"#{build.buildNumber}")}")}";
+            build.environment switch {
+                GameEnvironment.RELEASE => $"release {build.version}",
+                GameEnvironment.RC => $"{build.version} RC# {build.buildNumber}",
+                GameEnvironment.DEV => $"#{build.buildNumber}",
+                _ => throw new ArgumentException("Invalid build environment")
+            };
     }
 }

@@ -14,6 +14,7 @@ namespace UKSF.Api.Interfaces.Modpack.BuildProcess.Steps {
         Task Succeed();
         Task Fail(Exception exception);
         Task Cancel();
+        Task Warning(string message);
         Task Skip();
     }
 }

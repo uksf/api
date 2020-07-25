@@ -1,14 +1,18 @@
 ﻿using System;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using MongoDB.Bson.IO;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events.Handlers;
 using UKSF.Api.Interfaces.Hubs;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Models.Events;
+using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Modpack;
 using UKSF.Api.Signalr.Hubs.Modpack;
 using UKSF.Common;
+using JsonConvert = Newtonsoft.Json.JsonConvert;
 
 namespace UKSF.Api.Events.Handlers {
     public class BuildsEventHandler : IBuildsEventHandler {
@@ -40,20 +44,20 @@ namespace UKSF.Api.Events.Handlers {
         }
 
         private async Task AddedEvent(ModpackBuild build) {
-            if (build.isReleaseCandidate) {
-                await hub.Clients.All.ReceiveReleaseCandidateBuild(build);
-            } else {
+            if (build.environment == GameEnvironment.DEV) {
                 await hub.Clients.All.ReceiveBuild(build);
+            } else {
+                await hub.Clients.All.ReceiveReleaseCandidateBuild(build);
             }
         }
 
         private async Task UpdatedEvent(string id, object data) {
             switch (data) {
                 case ModpackBuild build:
-                    if (build.isReleaseCandidate) {
-                        await hub.Clients.All.ReceiveReleaseCandidateBuild(build);
-                    } else {
+                    if (build.environment == GameEnvironment.DEV) {
                         await hub.Clients.All.ReceiveBuild(build);
+                    } else {
+                        await hub.Clients.All.ReceiveReleaseCandidateBuild(build);
                     }
 
                     break;

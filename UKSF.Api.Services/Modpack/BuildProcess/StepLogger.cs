@@ -19,7 +19,10 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         }
 
         public async Task LogSuccess() {
-            LogLines($"\nFinished: {buildStep.name}", "green");
+            LogLines(
+                $"\nFinished{(buildStep.buildResult == ModpackBuildResult.WARNING ? " with warning" : "")}: {buildStep.name}",
+                buildStep.buildResult == ModpackBuildResult.WARNING ? "orangered" : "green"
+            );
             await logCallback();
         }
 
@@ -43,6 +46,16 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             await logCallback();
         }
 
+        public async Task LogSurround(string log) {
+            LogLines(log, "cadetblue");
+            await logCallback();
+        }
+
+        public async Task LogInline(string log) {
+            buildStep.logs[^1] = new ModpackBuildStepLogItem { text = log };
+            await logCallback();
+        }
+
         public async Task Log(string log, string colour = "") {
             LogLines(log, colour);
             await logCallback();
@@ -50,7 +63,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
 
         private void LogLines(string log, string colour = "") {
             foreach (string line in log.Split("\n")) {
-                buildStep.logs.Add(new ModpackBuildStepLogItem {text = line, colour = string.IsNullOrEmpty(line) ? "" : colour});
+                buildStep.logs.Add(new ModpackBuildStepLogItem { text = line, colour = string.IsNullOrEmpty(line) ? "" : colour });
             }
         }
     }
