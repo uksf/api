@@ -12,7 +12,6 @@ using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Mission;
-using UKSF.Api.Services.Message;
 using UKSF.Common;
 
 namespace UKSF.Api.Services.Game {
@@ -167,7 +166,7 @@ namespace UKSF.Api.Services.Game {
             GameServer gameServer = Data.GetSingle(id);
             Uri serverExecutable = new Uri(gameServer.GetGameServerExecutablePath());
             List<GameServerMod> mods = new List<GameServerMod>();
-            IEnumerable<string> availableModsFolders = new[] { GameServerHelpers.GetGameServerModsPaths(gameServer.serverEnvironment) };
+            IEnumerable<string> availableModsFolders = new[] { GameServerHelpers.GetGameServerModsPaths(gameServer.environment) };
             IEnumerable<string> extraModsFolders = GameServerHelpers.GetGameServerExtraModsPaths();
             availableModsFolders = availableModsFolders.Concat(extraModsFolders);
             foreach (string modsPath in availableModsFolders) {
@@ -201,7 +200,7 @@ namespace UKSF.Api.Services.Game {
             return mods;
         }
 
-        public List<GameServerMod> GetEnvironmentMods(GameServerEnvironment environment) {
+        public List<GameServerMod> GetEnvironmentMods(GameEnvironment environment) {
             string repoModsFolder = GameServerHelpers.GetGameServerModsPaths(environment);
             IEnumerable<DirectoryInfo> modFolders = new DirectoryInfo(repoModsFolder).EnumerateDirectories("@*", SearchOption.TopDirectoryOnly);
             return modFolders.Select(modFolder => new { modFolder, modFiles = new DirectoryInfo(modFolder.FullName).EnumerateFiles("*.pbo", SearchOption.AllDirectories) })

@@ -2,12 +2,6 @@ using System.Collections.Generic;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Models.Game {
-    public enum GameServerEnvironment {
-        RELEASE,
-        RC,
-        DEV
-    }
-
     public enum GameServerOption {
         NONE,
         SINGLETON,
@@ -28,12 +22,12 @@ namespace UKSF.Api.Models.Game {
         public int port;
         [BsonIgnore] public int? processId;
         public string profileName;
-        public GameServerEnvironment serverEnvironment;
+        public GameEnvironment environment;
         public List<GameServerMod> serverMods = new List<GameServerMod>();
         public GameServerOption serverOption;
         [BsonIgnore] public GameServerStatus status = new GameServerStatus();
 
-        public override string ToString() => $"{name}, {port}, {apiPort}, {numberHeadlessClients}, {profileName}, {hostName}, {password}, {adminPassword}, {serverEnvironment}, {serverOption}";
+        public override string ToString() => $"{name}, {port}, {apiPort}, {numberHeadlessClients}, {profileName}, {hostName}, {password}, {adminPassword}, {environment}, {serverOption}";
     }
 
     public class GameServerStatus {

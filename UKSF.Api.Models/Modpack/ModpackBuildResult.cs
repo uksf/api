@@ -4,6 +4,7 @@
         SUCCESS,
         FAILED,
         CANCELLED,
+        WARNING,
         SKIPPED
     }
 }

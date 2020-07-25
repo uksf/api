@@ -1,20 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Interfaces.Modpack.BuildProcess.Steps;
+using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Modpack;
 using UKSF.Api.Services.Modpack.BuildProcess.Steps;
+using UKSF.Api.Services.Modpack.BuildProcess.Steps.Build;
+using UKSF.Api.Services.Modpack.BuildProcess.Steps.Common;
+using UKSF.Api.Services.Modpack.BuildProcess.Steps.Release;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess {
     public class BuildStepService : IBuildStepService {
-        private readonly Dictionary<string, Type> buildStepDictionary = new Dictionary<string, Type> {
-            { BuildStep0Prep.NAME, typeof(BuildStep0Prep) },
-            { BuildStep1Source.NAME, typeof(BuildStep1Source) },
-            { BuildStep2Build.NAME, typeof(BuildStep2Build) },
-            { BuildStep90PublishRelease.NAME, typeof(BuildStep90PublishRelease) },
-            { BuildStep95Notify.NAME, typeof(BuildStep95Notify) },
-            { BuildStep99MergeRelease.NAME, typeof(BuildStep99MergeRelease) }
-        };
+        private Dictionary<string, Type> buildStepDictionary = new Dictionary<string, Type>();
+
+        public void RegisterBuildSteps() {
+            buildStepDictionary = AppDomain.CurrentDomain.GetAssemblies()
+                                           .SelectMany(x => x.GetTypes(), (_, type) => new { type })
+                                           .Select(x => new { x.type, attributes = x.type.GetCustomAttributes(typeof(BuildStepAttribute), true) })
+                                           .Where(x => x.attributes != null && x.attributes.Length > 0)
+                                           .Select(x => new { Key = x.attributes.Cast<BuildStepAttribute>().First().Name, Value = x.type })
+                                           .ToDictionary(x => x.Key, x => x.Value);
+        }
+
+        public List<ModpackBuildStep> GetSteps(GameEnvironment environment) {
+            List<ModpackBuildStep> steps = environment switch {
+                GameEnvironment.RELEASE => GetStepsForRelease(),
+                GameEnvironment.RC => GetStepsForRc(),
+                GameEnvironment.DEV => GetStepsForBuild(),
+                _ => throw new ArgumentException("Invalid build environment")
+            };
+            ResolveIndices(steps);
+            return steps;
+        }
+
+        public ModpackBuildStep GetRestoreStepForRelease() => new ModpackBuildStep(BuildStepRestore.NAME);
 
         public IBuildStep ResolveBuildStep(string buildStepName) {
             if (!buildStepDictionary.ContainsKey(buildStepName)) {
@@ -26,35 +46,40 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             return step;
         }
 
-        public List<ModpackBuildStep> GetStepsForBuild() {
-            List<ModpackBuildStep> steps = new List<ModpackBuildStep> {
-                new ModpackBuildStep(BuildStep0Prep.NAME),
-                new ModpackBuildStep(BuildStep1Source.NAME),
-                new ModpackBuildStep(BuildStep2Build.NAME),
-                new ModpackBuildStep(BuildStep95Notify.NAME)
+        private static List<ModpackBuildStep> GetStepsForBuild() =>
+            new List<ModpackBuildStep> {
+                new ModpackBuildStep(BuildStepPrep.NAME),
+                new ModpackBuildStep(BuildStepClean.NAME),
+                new ModpackBuildStep(BuildStepBuild.NAME),
+                new ModpackBuildStep(BuildStepDeploy.NAME),
+                new ModpackBuildStep(BuildStepKeys.NAME),
+                new ModpackBuildStep(BuildStepCbaSettings.NAME),
+                new ModpackBuildStep(BuildStepNotify.NAME)
             };
-            ResolveIndices(steps);
-            return steps;
-        }
 
-        public List<ModpackBuildStep> GetStepsForRc() {
-            List<ModpackBuildStep> steps = new List<ModpackBuildStep> {
-                new ModpackBuildStep(BuildStep0Prep.NAME), new ModpackBuildStep(BuildStep1Source.NAME), new ModpackBuildStep(BuildStep2Build.NAME), new ModpackBuildStep(BuildStep95Notify.NAME)
+        private static List<ModpackBuildStep> GetStepsForRc() =>
+            new List<ModpackBuildStep> {
+                new ModpackBuildStep(BuildStepPrep.NAME),
+                new ModpackBuildStep(BuildStepClean.NAME),
+                new ModpackBuildStep(BuildStepBuild.NAME),
+                new ModpackBuildStep(BuildStepDeploy.NAME),
+                new ModpackBuildStep(BuildStepKeys.NAME),
+                new ModpackBuildStep(BuildStepCbaSettings.NAME),
+                new ModpackBuildStep(BuildStepNotify.NAME)
             };
-            ResolveIndices(steps);
-            return steps;
-        }
 
-        public List<ModpackBuildStep> GetStepsForRelease() {
-            List<ModpackBuildStep> steps = new List<ModpackBuildStep> {
-                new ModpackBuildStep(BuildStep0Prep.NAME),
-                new ModpackBuildStep(BuildStep90PublishRelease.NAME),
-                new ModpackBuildStep(BuildStep95Notify.NAME),
-                new ModpackBuildStep(BuildStep99MergeRelease.NAME)
+        private static List<ModpackBuildStep> GetStepsForRelease() =>
+            new List<ModpackBuildStep> {
+                new ModpackBuildStep(BuildStepClean.NAME),
+                new ModpackBuildStep(BuildStepBackup.NAME),
+                new ModpackBuildStep(BuildStepDeploy.NAME),
+                new ModpackBuildStep(BuildStepReleaseKeys.NAME),
+                new ModpackBuildStep(BuildStepCbaSettings.NAME),
+                new ModpackBuildStep(BuildStepBuildRepo.NAME),
+                new ModpackBuildStep(BuildStepPublish.NAME),
+                new ModpackBuildStep(BuildStepNotify.NAME),
+                new ModpackBuildStep(BuildStepMerge.NAME)
             };
-            ResolveIndices(steps);
-            return steps;
-        }
 
         private static void ResolveIndices(IReadOnlyList<ModpackBuildStep> steps) {
             for (int i = 0; i < steps.Count; i++) {

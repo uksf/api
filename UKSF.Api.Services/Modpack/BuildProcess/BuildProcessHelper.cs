@@ -48,17 +48,14 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         }
 
         [SuppressMessage("ReSharper", "MethodHasAsyncOverload")] // async runspace.OpenAsync is not as it seems
-        public static async Task RunPowershell(IStepLogger logger, bool raiseErrors, CancellationToken cancellationToken, string command, string workingDirectory, params string[] args) {
+        public static async Task RunPowershell(IStepLogger logger, bool raiseErrors, CancellationToken cancellationToken, string command, string workingDirectory) {
             using Runspace runspace = RunspaceFactory.CreateRunspace();
             runspace.Open();
             runspace.SessionStateProxy.Path.SetLocation(workingDirectory);
 
             using PowerShell powerShell = PowerShell.Create();
             powerShell.Runspace = runspace;
-            powerShell.AddCommand(command);
-            foreach (string arg in args) {
-                powerShell.AddArgument(arg);
-            }
+            powerShell.AddScript(command);
 
             async void Log(object sender, DataAddedEventArgs eventArgs) {
                 PSDataCollection<InformationRecord> streamObjectsReceived = sender as PSDataCollection<InformationRecord>;

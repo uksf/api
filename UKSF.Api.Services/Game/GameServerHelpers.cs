@@ -54,10 +54,10 @@ namespace UKSF.Api.Services.Game {
         };
 
         public static string GetGameServerExecutablePath(this GameServer gameServer) {
-            string variableKey = gameServer.serverEnvironment switch {
-                GameServerEnvironment.RELEASE => "SERVER_PATH_RELEASE",
-                GameServerEnvironment.RC => "SERVER_PATH_RC",
-                GameServerEnvironment.DEV => "SERVER_PATH_DEV",
+            string variableKey = gameServer.environment switch {
+                GameEnvironment.RELEASE => "SERVER_PATH_RELEASE",
+                GameEnvironment.RC => "SERVER_PATH_RC",
+                GameEnvironment.DEV => "SERVER_PATH_DEV",
                 _ => throw new ArgumentException("Server environment is invalid")
             };
             return Path.Join(VariablesWrapper.VariablesDataService().GetSingle(variableKey).AsString(), "arma3server_x64.exe");
@@ -82,11 +82,11 @@ namespace UKSF.Api.Services.Game {
         private static string FormatGameServerServerMods(this GameServer gameServer) =>
             gameServer.serverMods.Count > 0 ? $"{string.Join(";", gameServer.serverMods.Select(x => x.name))};" : string.Empty;
 
-        public static string GetGameServerModsPaths(GameServerEnvironment environment) {
+        public static string GetGameServerModsPaths(GameEnvironment environment) {
             string variableKey = environment switch {
-                GameServerEnvironment.RELEASE => "MODPACK_PATH_RELEASE",
-                GameServerEnvironment.RC => "MODPACK_PATH_RC",
-                GameServerEnvironment.DEV => "MODPACK_PATH_DEV",
+                GameEnvironment.RELEASE => "MODPACK_PATH_RELEASE",
+                GameEnvironment.RC => "MODPACK_PATH_RC",
+                GameEnvironment.DEV => "MODPACK_PATH_DEV",
                 _ => throw new ArgumentException("Server environment is invalid")
             };
             return Path.Join(VariablesWrapper.VariablesDataService().GetSingle(variableKey).AsString(), "Repo");

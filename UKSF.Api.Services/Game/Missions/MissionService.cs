@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Mission;
-using UKSF.Api.Services.Admin;
 using UKSF.Common;
 
 namespace UKSF.Api.Services.Game.Missions {
@@ -167,7 +166,7 @@ namespace UKSF.Api.Services.Game.Missions {
 
             if (!CheckIgnoreKey("missionImageIgnore")) {
                 string imagePath = Path.Combine(mission.path, "uksf.paa");
-                string modpackImagePath = Path.Combine(GameServerHelpers.GetGameServerModsPaths(GameServerEnvironment.RELEASE), "@uksf", "UKSFTemplate.VR", "uksf.paa");
+                string modpackImagePath = Path.Combine(GameServerHelpers.GetGameServerModsPaths(GameEnvironment.RELEASE), "@uksf", "UKSFTemplate.VR", "uksf.paa");
                 if (File.Exists(modpackImagePath)) {
                     if (File.Exists(imagePath) && new FileInfo(imagePath).Length != new FileInfo(modpackImagePath).Length) {
                         reports.Add(

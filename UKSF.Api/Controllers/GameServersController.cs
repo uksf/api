@@ -67,9 +67,9 @@ namespace UKSF.Api.Controllers {
             GameServer oldGameServer = gameServersService.Data.GetSingle(x => x.id == gameServer.id);
             LogWrapper.AuditLog($"Game server '{gameServer.name}' updated:{oldGameServer.Changes(gameServer)}");
             bool environmentChanged = false;
-            if (oldGameServer.serverEnvironment != gameServer.serverEnvironment) {
+            if (oldGameServer.environment != gameServer.environment) {
                 environmentChanged = true;
-                gameServer.mods = gameServersService.GetEnvironmentMods(gameServer.serverEnvironment);
+                gameServer.mods = gameServersService.GetEnvironmentMods(gameServer.environment);
                 gameServer.serverMods = new List<GameServerMod>();
             }
 
@@ -83,7 +83,7 @@ namespace UKSF.Api.Controllers {
                                     .Set("hostName", gameServer.hostName)
                                     .Set("password", gameServer.password)
                                     .Set("adminPassword", gameServer.adminPassword)
-                                    .Set("serverEnvironment", gameServer.serverEnvironment)
+                                    .Set("environment", gameServer.environment)
                                     .Set("serverOption", gameServer.serverOption)
                                     .Set("mods", gameServer.mods)
                                     .Set("serverMods", gameServer.serverMods)
@@ -233,7 +233,7 @@ namespace UKSF.Api.Controllers {
             await gameServersService.Data.Update(id, Builders<GameServer>.Update.Unset(x => x.mods).Unset(x => x.serverMods));
             await gameServersService.Data.Update(
                 id,
-                Builders<GameServer>.Update.Set(x => x.mods, gameServersService.GetEnvironmentMods(gameServer.serverEnvironment))
+                Builders<GameServer>.Update.Set(x => x.mods, gameServersService.GetEnvironmentMods(gameServer.environment))
                                     .Set(x => x.serverMods, new List<GameServerMod>())
             );
             return Ok(gameServersService.GetAvailableMods(id));
