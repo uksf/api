@@ -1,70 +1,106 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess {
     public class StepLogger : IStepLogger {
+        private const int LOG_COUNT_MAX = 10;
         private readonly ModpackBuildStep buildStep;
-        private readonly Func<Task> logCallback;
+        private readonly object lockObject = new object();
+        private readonly Action logEvent;
+        private readonly Func<Task> updateCallback;
+        private int logCount;
 
-        public StepLogger(ModpackBuildStep buildStep, Func<Task> logCallback) {
+        public StepLogger(ModpackBuildStep buildStep, Func<Task> updateCallback, Action logEvent) {
             this.buildStep = buildStep;
-            this.logCallback = logCallback;
+            this.updateCallback = updateCallback;
+            this.logEvent = logEvent;
         }
 
-        public async Task LogStart() {
+        public void LogStart() {
             LogLines($"Starting: {buildStep.name}");
-            await logCallback();
+            FlushLogsInstantly();
         }
 
-        public async Task LogSuccess() {
+        public void LogSuccess() {
             LogLines(
                 $"\nFinished{(buildStep.buildResult == ModpackBuildResult.WARNING ? " with warning" : "")}: {buildStep.name}",
                 buildStep.buildResult == ModpackBuildResult.WARNING ? "orangered" : "green"
             );
-            await logCallback();
+            FlushLogsInstantly();
         }
 
-        public async Task LogCancelled() {
+        public void LogCancelled() {
             LogLines("\nBuild cancelled", "goldenrod");
-            await logCallback();
+            FlushLogsInstantly();
         }
 
-        public async Task LogSkipped() {
+        public void LogSkipped() {
             LogLines($"\nSkipped: {buildStep.name}", "orangered");
-            await logCallback();
+            FlushLogsInstantly();
         }
 
-        public async Task LogWarning(string message) {
+        public void LogWarning(string message) {
             LogLines($"Warning\n{message}", "orangered");
-            await logCallback();
+            FlushLogsInstantly();
         }
 
-        public async Task LogError(Exception exception) {
+        public void LogError(Exception exception) {
             LogLines($"Error\n{exception.Message}\n{exception.StackTrace}\n\nFailed: {buildStep.name}", "red");
-            await logCallback();
+            FlushLogsInstantly();
         }
 
-        public async Task LogSurround(string log) {
+        public void LogSurround(string log) {
             LogLines(log, "cadetblue");
-            await logCallback();
         }
 
-        public async Task LogInline(string log) {
-            buildStep.logs[^1] = new ModpackBuildStepLogItem { text = log };
-            await logCallback();
+        public void LogInline(string log) {
+            lock (lockObject) {
+                buildStep.logs[^1] = new ModpackBuildStepLogItem { text = log };
+            }
+
+            IncrementCountAndFlushLogs();
         }
 
-        public async Task Log(string log, string colour = "") {
+        public void Log(string log, string colour = "") {
             LogLines(log, colour);
-            await logCallback();
+        }
+
+        public void LogInstant(string log, string colour = "") {
+            LogLines(log, colour);
+            FlushLogsInstantly();
+        }
+
+        public void FlushLogs(bool force = false, bool synchronous = false) {
+            if (force || logCount > LOG_COUNT_MAX) {
+                logCount = 0;
+                Task callback = updateCallback();
+                if (synchronous) {
+                    callback.Wait();
+                }
+            }
+        }
+
+        private void FlushLogsInstantly() {
+            FlushLogs(true, true);
         }
 
         private void LogLines(string log, string colour = "") {
-            foreach (string line in log.Split("\n")) {
-                buildStep.logs.Add(new ModpackBuildStepLogItem { text = line, colour = string.IsNullOrEmpty(line) ? "" : colour });
+            lock (lockObject) {
+                foreach (string line in log.Split("\n")) {
+                    buildStep.logs.Add(new ModpackBuildStepLogItem { text = line, colour = string.IsNullOrEmpty(line) ? "" : colour });
+                }
             }
+
+            logEvent();
+            IncrementCountAndFlushLogs();
+        }
+
+        private void IncrementCountAndFlushLogs() {
+            Interlocked.Increment(ref logCount);
+            FlushLogs();
         }
     }
 }

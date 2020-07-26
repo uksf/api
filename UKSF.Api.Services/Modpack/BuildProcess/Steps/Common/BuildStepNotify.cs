@@ -14,10 +14,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
         private IDiscordService discordService;
         private IReleaseService releaseService;
 
-        protected override async Task SetupExecute() {
+        protected override Task SetupExecute() {
             discordService = ServiceWrapper.Provider.GetService<IDiscordService>();
             releaseService = ServiceWrapper.Provider.GetService<IReleaseService>();
-            await Logger.Log("Retrieved services");
+            Logger.Log("Retrieved services");
+            return Task.CompletedTask;
         }
 
         protected override async Task ProcessExecute() {
@@ -28,7 +29,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
                 await discordService.SendMessage(VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_DEV").AsUlong(), GetDiscordMessage());
             }
 
-            await Logger.Log("Notifications sent");
+            Logger.Log("Notifications sent");
         }
 
         private string GetBuildMessage() =>

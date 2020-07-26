@@ -8,34 +8,33 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
         public const string NAME = "Keys";
 
         protected override async Task SetupExecute() {
-            await Logger.Log("Wiping server keys folder");
+            Logger.Log("Wiping server keys folder");
             string keysPath = Path.Join(GetBuildEnvironmentPath(), "Keys");
             await DeleteDirectoryContents(keysPath);
-            await Logger.Log("Server keys folder wiped");
+            Logger.Log("Server keys folder wiped");
         }
 
         protected override async Task ProcessExecute() {
-            await Logger.Log("Updating keys");
+            Logger.Log("Updating keys");
 
             string sourceBasePath = Path.Join(GetBuildEnvironmentPath(), "BaseKeys");
             string sourceRepoPath = Path.Join(GetBuildEnvironmentPath(), "Repo");
             string targetPath = Path.Join(GetBuildEnvironmentPath(), "Keys");
-
             DirectoryInfo sourceBase = new DirectoryInfo(sourceBasePath);
             DirectoryInfo sourceRepo = new DirectoryInfo(sourceRepoPath);
             DirectoryInfo target = new DirectoryInfo(targetPath);
-            List<FileInfo> baseKeys = GetDirectoryContents(sourceRepo, "*.bikey");
-            List<FileInfo> repoKeys = GetDirectoryContents(sourceRepo, "*.bikey");
-            await Logger.Log($"Found {baseKeys.Count} keys in base keys");
-            await Logger.Log($"Found {repoKeys.Count} keys in repo");
 
-            await Logger.LogSurround("\nCopying base keys...");
+            Logger.LogSurround("\nCopying base keys...");
+            List<FileInfo> baseKeys = GetDirectoryContents(sourceBase, "*.bikey");
+            Logger.Log($"Found {baseKeys.Count} keys in base keys");
             await CopyFiles(sourceBase, target, baseKeys, true);
-            await Logger.LogSurround("Copied base keys");
+            Logger.LogSurround("Copied base keys");
 
-            await Logger.LogSurround("\nCopying repo keys...");
+            Logger.LogSurround("\nCopying repo keys...");
+            List<FileInfo> repoKeys = GetDirectoryContents(sourceRepo, "*.bikey");
+            Logger.Log($"Found {repoKeys.Count} keys in repo");
             await CopyFiles(sourceRepo, target, repoKeys, true);
-            await Logger.LogSurround("Copied repo keys");
+            Logger.LogSurround("Copied repo keys");
         }
     }
 }

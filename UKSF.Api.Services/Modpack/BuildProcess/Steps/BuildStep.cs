@@ -16,44 +16,47 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
         protected CancellationTokenSource CancellationTokenSource;
         protected IStepLogger Logger;
         private Func<Task> updateCallback;
+        private Action logEvent;
 
-        public void Init(ModpackBuild modpackBuild, ModpackBuildStep modpackBuildStep, Func<Task> stepUpdateCallback, CancellationTokenSource newCancellationTokenSource) {
+        public void Init(ModpackBuild modpackBuild, ModpackBuildStep modpackBuildStep, Func<Task> stepUpdateCallback, Action stepLogEvent, CancellationTokenSource newCancellationTokenSource) {
             Build = modpackBuild;
             buildStep = modpackBuildStep;
             updateCallback = stepUpdateCallback;
+            logEvent = stepLogEvent;
             CancellationTokenSource = newCancellationTokenSource;
-            Logger = new StepLogger(buildStep, LogCallback);
+            Logger = new StepLogger(buildStep, async () => await updateCallback(), logEvent);
         }
 
         public async Task Start() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
             buildStep.running = true;
             buildStep.startTime = DateTime.Now;
-            await Logger.LogStart();
+            Logger.LogStart();
+            await updateCallback();
         }
 
-        public virtual Task<bool> CheckGuards() => Task.FromResult(true);
+        public virtual bool CheckGuards() => true;
 
         public async Task Setup() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
-            await Logger.Log("\nSetup", COLOUR_BLUE);
+            Logger.Log("\nSetup", COLOUR_BLUE);
             await SetupExecute();
         }
 
         public async Task Process() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
-            await Logger.Log("\nProcess", COLOUR_BLUE);
+            Logger.Log("\nProcess", COLOUR_BLUE);
             await ProcessExecute();
         }
 
         public async Task Teardown() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
-            await Logger.Log("\nTeardown", COLOUR_BLUE);
+            Logger.Log("\nTeardown", COLOUR_BLUE);
             await TeardownExecute();
         }
 
         public async Task Succeed() {
-            await Logger.LogSuccess();
+            Logger.LogSuccess();
             if (buildStep.buildResult != ModpackBuildResult.WARNING) {
                 buildStep.buildResult = ModpackBuildResult.SUCCESS;
             }
@@ -62,43 +65,46 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
         }
 
         public async Task Fail(Exception exception) {
-            await Logger.LogError(exception);
+            Logger.LogError(exception);
             buildStep.buildResult = ModpackBuildResult.FAILED;
             await Stop();
         }
 
         public async Task Cancel() {
-            await Logger.LogCancelled();
+            Logger.LogCancelled();
             buildStep.buildResult = ModpackBuildResult.CANCELLED;
             await Stop();
         }
 
-        public async Task Warning(string message) {
-            await Logger.LogWarning(message);
+        public void Warning(string message) {
+            Logger.LogWarning(message);
             buildStep.buildResult = ModpackBuildResult.WARNING;
         }
 
         public async Task Skip() {
-            await Logger.LogSkipped();
+            Logger.LogSkipped();
             buildStep.buildResult = ModpackBuildResult.SKIPPED;
             await Stop();
         }
 
-        protected virtual async Task SetupExecute() {
-            await Logger.Log("---");
+        protected virtual Task SetupExecute() {
+            Logger.Log("---");
+            return Task.CompletedTask;
         }
 
-        protected virtual async Task ProcessExecute() {
-            await Logger.Log("---");
+        protected virtual Task ProcessExecute() {
+            Logger.Log("---");
+            return Task.CompletedTask;
         }
 
-        protected virtual async Task TeardownExecute() {
-            await Logger.Log("---");
+        protected virtual Task TeardownExecute() {
+            Logger.Log("---");
+            return Task.CompletedTask;
         }
 
-        protected async Task<bool> ReleaseBuildGuard() {
+        protected bool ReleaseBuildGuard() {
             if (Build.environment != GameEnvironment.RELEASE) {
-                await Warning("\nBuild is not a release build, but the definition contains a release step.\nThis is a configuration error, please notify an admin.");
+                Warning("\nBuild is not a release build, but the definition contains a release step.\nThis is a configuration error, please notify an admin.");
                 return false;
             }
 
@@ -130,10 +136,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
                 GameEnvironment.DEV => "UKSF-Dev",
                 _ => throw new ArgumentException("Invalid build environment")
             };
-
-        private async Task LogCallback() {
-            await updateCallback();
-        }
 
         private async Task Stop() {
             buildStep.running = false;

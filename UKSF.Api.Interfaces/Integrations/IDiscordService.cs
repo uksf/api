@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord.WebSocket;
-using Microsoft.AspNetCore.Identity;
 using UKSF.Api.Models.Personnel;
 
 namespace UKSF.Api.Interfaces.Integrations {

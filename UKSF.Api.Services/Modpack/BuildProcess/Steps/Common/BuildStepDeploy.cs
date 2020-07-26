@@ -8,29 +8,29 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
         public const string NAME = "Deploy";
 
         protected override async Task ProcessExecute() {
-            await Logger.Log("Deploying files from RC to release");
-
             string sourcePath;
             string targetPath;
             if (Build.environment == GameEnvironment.RELEASE) {
+                Logger.Log("Deploying files from RC to release");
                 sourcePath = Path.Join(GetEnvironmentPath(GameEnvironment.RC), "Repo");
                 targetPath = Path.Join(GetBuildEnvironmentPath(), "Repo");
             } else {
+                Logger.Log("Deploying files from build to repo");
                 sourcePath = Path.Join(GetBuildEnvironmentPath(), "Build");
                 targetPath = Path.Join(GetBuildEnvironmentPath(), "Repo");
             }
 
-            await Logger.LogSurround("\nAdding new files...");
+            Logger.LogSurround("\nAdding new files...");
             await AddFiles(sourcePath, targetPath);
-            await Logger.LogSurround("Added new files");
+            Logger.LogSurround("Added new files");
 
-            await Logger.LogSurround("\nCopying updated files...");
+            Logger.LogSurround("\nCopying updated files...");
             await UpdateFiles(sourcePath, targetPath);
-            await Logger.LogSurround("Copied updated files");
+            Logger.LogSurround("Copied updated files");
 
-            await Logger.LogSurround("\nDeleting removed files...");
-            await DeleteFiles(sourcePath, targetPath);
-            await Logger.LogSurround("Deleted removed files");
+            Logger.LogSurround("\nDeleting removed files...");
+            await DeleteFiles(sourcePath, targetPath, Build.environment != GameEnvironment.RELEASE);
+            Logger.LogSurround("Deleted removed files");
         }
     }
 }

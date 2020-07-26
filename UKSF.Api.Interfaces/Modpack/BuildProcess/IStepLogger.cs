@@ -1,16 +1,17 @@
 ﻿using System;
-using System.Threading.Tasks;
 
 namespace UKSF.Api.Interfaces.Modpack.BuildProcess {
     public interface IStepLogger {
-        Task LogStart();
-        Task LogSuccess();
-        Task LogCancelled();
-        Task LogSkipped();
-        Task LogWarning(string message);
-        Task LogError(Exception exception);
-        Task LogSurround(string log);
-        Task LogInline(string log);
-        Task Log(string log, string colour = "");
+        void LogStart();
+        void LogSuccess();
+        void LogCancelled();
+        void LogSkipped();
+        void LogWarning(string message);
+        void LogError(Exception exception);
+        void LogSurround(string log);
+        void LogInline(string log);
+        void Log(string log, string colour = "");
+        void LogInstant(string log, string colour = "");
+        void FlushLogs(bool force = false, bool synchronous = false);
     }
 }

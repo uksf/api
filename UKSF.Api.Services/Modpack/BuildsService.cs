@@ -28,6 +28,10 @@ namespace UKSF.Api.Services.Modpack {
             await Data.Update(build, buildStep);
         }
 
+        public void BuildStepLogEvent(ModpackBuild build, ModpackBuildStep buildStep) {
+            Data.LogEvent(build, buildStep);
+        }
+
         public List<ModpackBuild> GetDevBuilds() => Data.Get(x => x.environment == GameEnvironment.DEV);
 
         public List<ModpackBuild> GetRcBuilds() => Data.Get(x => x.environment != GameEnvironment.DEV);
@@ -36,10 +40,17 @@ namespace UKSF.Api.Services.Modpack {
 
         public ModpackBuild GetLatestRcBuild(string version) => GetRcBuilds().FirstOrDefault(x => x.version == version);
 
-        public async Task<ModpackBuild> CreateDevBuild(GithubCommit commit) {
+        public async Task<ModpackBuild> CreateDevBuild(string version, GithubCommit commit) {
             ModpackBuild previousBuild = GetLatestDevBuild();
             string builderId = accountService.Data.GetSingle(x => x.email == commit.author)?.id;
-            ModpackBuild build = new ModpackBuild { buildNumber = previousBuild?.buildNumber + 1 ?? 1, environment = GameEnvironment.DEV, commit = commit, builderId = builderId, steps = buildStepService.GetSteps(GameEnvironment.DEV) };
+            ModpackBuild build = new ModpackBuild {
+                version = version,
+                buildNumber = previousBuild?.buildNumber + 1 ?? 1,
+                environment = GameEnvironment.DEV,
+                commit = commit,
+                builderId = builderId,
+                steps = buildStepService.GetSteps(GameEnvironment.DEV)
+            };
             await Data.Add(build);
             return build;
         }
@@ -48,7 +59,12 @@ namespace UKSF.Api.Services.Modpack {
             ModpackBuild previousBuild = GetLatestRcBuild(version);
             string builderId = accountService.Data.GetSingle(x => x.email == commit.author)?.id;
             ModpackBuild build = new ModpackBuild {
-                version = version, buildNumber = previousBuild?.buildNumber + 1 ?? 1, environment = GameEnvironment.RC, commit = commit, builderId = builderId, steps = buildStepService.GetSteps(GameEnvironment.RC)
+                version = version,
+                buildNumber = previousBuild?.buildNumber + 1 ?? 1,
+                environment = GameEnvironment.RC,
+                commit = commit,
+                builderId = builderId,
+                steps = buildStepService.GetSteps(GameEnvironment.RC)
             };
 
             await Data.Add(build);
@@ -86,7 +102,9 @@ namespace UKSF.Api.Services.Modpack {
                 commit = latestBuild.commit,
                 builderId = sessionService.GetContextId()
             };
-            rebuild.commit.message = latestBuild.environment == GameEnvironment.RELEASE ? $"Re-deployment of release {rebuild.version}" : $"Rebuild of #{build.buildNumber}\n\n{rebuild.commit.message}";
+            rebuild.commit.message = latestBuild.environment == GameEnvironment.RELEASE
+                ? $"Re-deployment of release {rebuild.version}"
+                : $"Rebuild of #{build.buildNumber}\n\n{rebuild.commit.message}";
             await Data.Add(rebuild);
             return rebuild;
         }

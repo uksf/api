@@ -43,7 +43,8 @@ namespace UKSF.Api.Services.Modpack {
                 commit.author = sessionService.GetContextEmail();
             }
 
-            ModpackBuild build = await buildsService.CreateDevBuild(commit);
+            string version = await githubService.GetReferenceVersion(reference);
+            ModpackBuild build = await buildsService.CreateDevBuild(version, commit);
             LogWrapper.AuditLog($"New build created ({GetBuildName(build)})");
             buildQueueService.QueueBuild(build);
         }
@@ -82,7 +83,8 @@ namespace UKSF.Api.Services.Modpack {
 
         public async Task CreateDevBuildFromPush(PushWebhookPayload payload) {
             GithubCommit devCommit = await githubService.GetPushEvent(payload);
-            ModpackBuild devBuild = await buildsService.CreateDevBuild(devCommit);
+            string version = await githubService.GetReferenceVersion(payload.Ref);
+            ModpackBuild devBuild = await buildsService.CreateDevBuild(version, devCommit);
             buildQueueService.QueueBuild(devBuild);
         }
 

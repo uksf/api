@@ -11,7 +11,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Interfaces.Hubs;
-using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Mission;
 using UKSF.Api.Services.Admin;
@@ -26,10 +25,8 @@ namespace UKSF.Api.Controllers {
     public class GameServersController : Controller {
         private readonly IGameServersService gameServersService;
         private readonly IHubContext<ServersHub, IServersClient> serversHub;
-        private readonly ISessionService sessionService;
 
-        public GameServersController(ISessionService sessionService, IGameServersService gameServersService, IHubContext<ServersHub, IServersClient> serversHub) {
-            this.sessionService = sessionService;
+        public GameServersController(IGameServersService gameServersService, IHubContext<ServersHub, IServersClient> serversHub) {
             this.gameServersService = gameServersService;
             this.serversHub = serversHub;
         }

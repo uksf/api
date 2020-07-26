@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
-using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
@@ -20,14 +19,12 @@ namespace UKSF.Api.Controllers {
         private readonly IAssignmentService assignmentService;
         private readonly INotificationsService notificationsService;
         private readonly IRolesService rolesService;
-        private readonly ISessionService sessionService;
         private readonly IUnitsService unitsService;
 
-        public RolesController(IRolesService rolesService, IAccountService accountService, IAssignmentService assignmentService, ISessionService sessionService, IUnitsService unitsService, INotificationsService notificationsService) {
+        public RolesController(IRolesService rolesService, IAccountService accountService, IAssignmentService assignmentService, IUnitsService unitsService, INotificationsService notificationsService) {
             this.rolesService = rolesService;
             this.accountService = accountService;
             this.assignmentService = assignmentService;
-            this.sessionService = sessionService;
             this.unitsService = unitsService;
             this.notificationsService = notificationsService;
         }
