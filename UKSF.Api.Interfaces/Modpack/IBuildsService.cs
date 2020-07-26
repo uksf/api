@@ -11,7 +11,8 @@ namespace UKSF.Api.Interfaces.Modpack {
         ModpackBuild GetLatestDevBuild();
         ModpackBuild GetLatestRcBuild(string version);
         Task UpdateBuildStep(ModpackBuild build, ModpackBuildStep buildStep);
-        Task<ModpackBuild> CreateDevBuild(GithubCommit commit);
+        void BuildStepLogEvent(ModpackBuild build, ModpackBuildStep buildStep);
+        Task<ModpackBuild> CreateDevBuild(string version, GithubCommit commit);
         Task<ModpackBuild> CreateRcBuild(string version, GithubCommit commit);
         Task<ModpackBuild> CreateReleaseBuild(string version);
         Task SetBuildRunning(ModpackBuild build);

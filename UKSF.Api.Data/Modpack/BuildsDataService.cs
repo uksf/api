@@ -30,5 +30,9 @@ namespace UKSF.Api.Data.Modpack {
             await base.Update(build.id, updateDefinition);
             CachedDataEvent(EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.UPDATE, build.id, build));
         }
+
+        public void LogEvent(ModpackBuild build, ModpackBuildStep buildStep) {
+            CachedDataEvent(EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.UPDATE, build.id, buildStep));
+        }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
@@ -9,46 +8,8 @@ using UKSF.Api.Interfaces.Modpack.BuildProcess;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess {
     public static class BuildProcessHelper {
-        public static void RunProcess(IStepLogger logger, bool raiseErrors, CancellationToken cancellationToken, string executable, string workingDirectory, string args) {
-            using Process process = new Process {
-                StartInfo = {
-                    FileName = executable,
-                    WorkingDirectory = workingDirectory,
-                    Arguments = args,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                }
-            };
-
-            try {
-                process.EnableRaisingEvents = false;
-                process.OutputDataReceived += (sender, receivedEventArgs) => logger.Log(receivedEventArgs.Data);
-                process.ErrorDataReceived += (sender, receivedEventArgs) => {
-                    Exception exception = new Exception(receivedEventArgs.Data);
-                    if (raiseErrors) {
-                        throw exception;
-                    }
-
-                    logger.LogError(exception);
-                };
-                using CancellationTokenRegistration unused = cancellationToken.Register(process.Kill);
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                process.WaitForExit();
-
-                if (process.ExitCode != 0) {
-                    throw new Exception($"Process exited with non-zero exit code of: {process.ExitCode}");
-                }
-            } finally {
-                process.Close();
-            }
-        }
-
         [SuppressMessage("ReSharper", "MethodHasAsyncOverload")] // async runspace.OpenAsync is not as it seems
-        public static async Task RunPowershell(IStepLogger logger, bool raiseErrors, CancellationToken cancellationToken, string command, string workingDirectory) {
+        public static async Task RunPowershell(IStepLogger logger, bool raiseErrors, CancellationToken cancellationToken, string workingDirectory, string command) {
             using Runspace runspace = RunspaceFactory.CreateRunspace();
             runspace.Open();
             runspace.SessionStateProxy.Path.SetLocation(workingDirectory);
@@ -57,13 +18,14 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             powerShell.Runspace = runspace;
             powerShell.AddScript(command);
 
-            async void Log(object sender, DataAddedEventArgs eventArgs) {
+            void Log(object sender, DataAddedEventArgs eventArgs) {
                 PSDataCollection<InformationRecord> streamObjectsReceived = sender as PSDataCollection<InformationRecord>;
                 InformationRecord currentStreamRecord = streamObjectsReceived?[eventArgs.Index];
-                await logger.Log(currentStreamRecord?.MessageData.ToString());
+                logger.Log(currentStreamRecord?.MessageData.ToString());
             }
 
             Exception exception = null;
+
             void Error(object sender, DataAddedEventArgs eventArgs) {
                 PSDataCollection<ErrorRecord> streamObjectsReceived = sender as PSDataCollection<ErrorRecord>;
                 ErrorRecord currentStreamRecord = streamObjectsReceived?[eventArgs.Index];
@@ -81,11 +43,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                     throw exception;
                 }
 
-                await logger.LogError(exception);
+                logger.LogError(exception);
             }
 
             foreach (PSObject psObject in result) {
-                await logger.Log(psObject.BaseObject.ToString());
+                logger.Log(psObject.BaseObject.ToString());
             }
 
             runspace.Close();

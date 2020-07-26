@@ -2,24 +2,17 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Humanizer;
-using MoreLinq;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class FileBuildStep : BuildStep {
         private const double FILE_COPY_TASK_SIZE_THRESHOLD = 5_000_000_000;
-        private const double FILE_COPY_TASK_OUNT_THRESHOLD = 150;
+        private const double FILE_COPY_TASK_COUNT_THRESHOLD = 50;
+        private const double FILE_DELETE_TASK_COUNT_THRESHOLD = 25;
 
-        internal List<FileInfo> GetDirectoryContents(DirectoryInfo source, string searchPattern = "*") {
-            List<FileInfo> files = source.GetFiles(searchPattern).ToList();
-            foreach (DirectoryInfo subDirectory in source.GetDirectories()) {
-                CancellationTokenSource.Token.ThrowIfCancellationRequested();
-                files.AddRange(GetDirectoryContents(subDirectory));
-            }
-
-            return files;
-        }
+        internal static List<FileInfo> GetDirectoryContents(DirectoryInfo source, string searchPattern = "*") => source.GetFiles(searchPattern, SearchOption.AllDirectories).ToList();
 
         internal async Task AddFiles(string sourcePath, string targetPath) {
             DirectoryInfo source = new DirectoryInfo(sourcePath);
@@ -43,12 +36,23 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             await CopyFiles(source, target, updatedFiles);
         }
 
-        internal async Task DeleteFiles(string sourcePath, string targetPath) {
+        internal async Task DeleteFiles(string sourcePath, string targetPath, bool matchSubdirectories = false) {
             DirectoryInfo source = new DirectoryInfo(sourcePath);
             DirectoryInfo target = new DirectoryInfo(targetPath);
             IEnumerable<FileInfo> targetFiles = GetDirectoryContents(target);
             List<FileInfo> deletedFiles = targetFiles.Select(targetFile => new { targetFile, sourceFile = new FileInfo(targetFile.FullName.Replace(target.FullName, source.FullName)) })
-                                                     .Where(x => !x.sourceFile.Exists)
+                                                     .Where(
+                                                         x => {
+                                                             if (x.sourceFile.Exists) return false;
+                                                             if (!matchSubdirectories) return true;
+
+                                                             string sourceSubdirectoryPath = x.sourceFile.FullName.Replace(sourcePath, "")
+                                                                                              .Split(new[] { Path.DirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries)
+                                                                                              .First();
+                                                             DirectoryInfo sourceSubdirectory = new DirectoryInfo(Path.Join(sourcePath, sourceSubdirectoryPath));
+                                                             return sourceSubdirectory.Exists;
+                                                         }
+                                                     )
                                                      .Select(x => x.targetFile)
                                                      .ToList();
             await DeleteFiles(deletedFiles);
@@ -65,35 +69,47 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
         internal async Task CopyFiles(FileSystemInfo source, FileSystemInfo target, List<FileInfo> files, bool flatten = false) {
             Directory.CreateDirectory(target.FullName);
             if (files.Count == 0) {
-                await Logger.Log("No files to copy");
+                Logger.Log("No files to copy");
                 return;
             }
 
-            double totalSize = files.Select(x => x.Length).Sum();
-            await Logger.Log($"{totalSize.Bytes().ToString("#.#")} of files to copy");
-            if (files.Count > FILE_COPY_TASK_OUNT_THRESHOLD || totalSize > FILE_COPY_TASK_SIZE_THRESHOLD) {
-                await BatchCopyFiles(source, target, files, totalSize, flatten);
+            long totalSize = files.Select(x => x.Length).Sum();
+            if (files.Count > FILE_COPY_TASK_COUNT_THRESHOLD || totalSize > FILE_COPY_TASK_SIZE_THRESHOLD) {
+                await ParallelCopyFiles(source, target, files, totalSize, flatten);
             } else {
-                await SimpleCopyFiles(source, target, files, flatten);
+                SimpleCopyFiles(source, target, files, flatten);
             }
         }
 
-        internal async Task DeleteDirectoryContents(string path, string searchPattern = "*") {
+        internal async Task DeleteDirectoryContents(string path) {
             DirectoryInfo directory = new DirectoryInfo(path);
-            foreach (DirectoryInfo subDirectory in directory.GetDirectories("*", SearchOption.TopDirectoryOnly)) {
-                CancellationTokenSource.Token.ThrowIfCancellationRequested();
-                await Logger.Log($"Deleting: {subDirectory}");
-                subDirectory.Delete(true);
-            }
-
-            await DeleteFiles(directory.GetFiles("*", SearchOption.AllDirectories));
+            DeleteDirectories(directory.GetDirectories("*", SearchOption.TopDirectoryOnly).ToList());
+            await DeleteFiles(directory.GetFiles("*", SearchOption.AllDirectories).ToList());
         }
 
-        internal async Task DeleteFiles(IEnumerable<FileInfo> files) {
-            foreach (FileInfo file in files) {
+        internal void DeleteDirectories(List<DirectoryInfo> directories) {
+            if (directories.Count == 0) {
+                Logger.Log("No directories to delete");
+                return;
+            }
+
+            foreach (DirectoryInfo directory in directories) {
                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
-                await Logger.Log($"Deleting: {file}");
-                file.Delete();
+                Logger.Log($"Deleting directory: {directory}");
+                directory.Delete(true);
+            }
+        }
+
+        internal async Task DeleteFiles(List<FileInfo> files) {
+            if (files.Count == 0) {
+                Logger.Log("No files to delete");
+                return;
+            }
+
+            if (files.Count > FILE_DELETE_TASK_COUNT_THRESHOLD) {
+                await ParallelDeleteFiles(files);
+            } else {
+                SimpleDeleteFiles(files);
             }
         }
 
@@ -101,48 +117,88 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             foreach (DirectoryInfo subDirectory in directory.GetDirectories()) {
                 await DeleteEmptyDirectories(subDirectory);
                 if (subDirectory.GetFiles().Length == 0 && subDirectory.GetDirectories().Length == 0) {
-                    await Logger.Log($"Deleting: {subDirectory}");
+                    Logger.Log($"Deleting directory: {subDirectory}");
                     subDirectory.Delete(false);
                 }
             }
         }
 
-        private async Task SimpleCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, bool flatten = false) {
+        private void SimpleCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, bool flatten = false) {
             foreach (FileInfo file in files) {
                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
                 string targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
-                await Logger.Log($"Copying file: {file}");
+                Logger.Log($"Copying '{file}' to '{target.FullName}'");
                 Directory.CreateDirectory(Path.GetDirectoryName(targetFile));
                 file.CopyTo(targetFile, true);
             }
         }
 
-        private async Task BatchCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, double totalSize, bool flatten = false) {
-            double copiedSize = 0;
-            await Logger.Log($"Copied {copiedSize.Bytes().ToString("#.#")} of {totalSize.Bytes().ToString("#.#")}");
-            IEnumerable<IEnumerable<FileInfo>> fileBatches = files.Batch(10);
-            foreach (IEnumerable<FileInfo> fileBatch in fileBatches) {
-                List<FileInfo> fileList = fileBatch.ToList();
-                IEnumerable<Task> tasks = fileList.Select(
-                    file => {
-                        try {
-                            CancellationTokenSource.Token.ThrowIfCancellationRequested();
-                            string targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
-                            Directory.CreateDirectory(Path.GetDirectoryName(targetFile));
-                            file.CopyTo(targetFile, true);
-                        } catch (OperationCanceledException) {
-                            throw;
-                        } catch (Exception exception) {
-                            throw new Exception($"Failed copying file '{file}'\n{exception.Message}", exception);
-                        }
+        private async Task ParallelCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, long totalSize, bool flatten = false) {
+            long copiedSize = 0;
 
-                        return Task.CompletedTask;
+            SemaphoreSlim taskLimiter = new SemaphoreSlim(100);
+            IEnumerable<Task> tasks = files.Select(
+                async file => {
+                    if (CancellationTokenSource.Token.IsCancellationRequested) return;
+
+                    try {
+                        await taskLimiter.WaitAsync(CancellationTokenSource.Token);
+                        if (CancellationTokenSource.Token.IsCancellationRequested) return;
+
+                        string targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
+                        Directory.CreateDirectory(Path.GetDirectoryName(targetFile));
+                        file.CopyTo(targetFile, true);
+                        Interlocked.Add(ref copiedSize, file.Length);
+                        Logger.LogInline($"Copied {copiedSize.Bytes().ToString("#.#")} of {totalSize.Bytes().ToString("#.#")}");
+                    } catch (OperationCanceledException) {
+                        throw;
+                    } catch (Exception exception) {
+                        throw new Exception($"Failed to copy file '{file}'\n{exception.Message}", exception);
+                    } finally {
+                        taskLimiter.Release();
                     }
-                );
-                await Task.WhenAll(tasks);
-                copiedSize += fileList.Select(x => x.Length).Sum();
-                await Logger.LogInline($"Copied {copiedSize.Bytes().ToString("#.#")} of {totalSize.Bytes().ToString("#.#")}");
+                }
+            );
+
+            Logger.LogInstant($"Copied {copiedSize.Bytes().ToString("#.#")} of {totalSize.Bytes().ToString("#.#")}");
+            await Task.WhenAll(tasks);
+        }
+
+        private void SimpleDeleteFiles(IEnumerable<FileInfo> files) {
+            foreach (FileInfo file in files) {
+                CancellationTokenSource.Token.ThrowIfCancellationRequested();
+                Logger.Log($"Deleting file: {file}");
+                file.Delete();
             }
+        }
+
+        private async Task ParallelDeleteFiles(IReadOnlyCollection<FileInfo> files) {
+            int deleted = 0;
+
+            SemaphoreSlim taskLimiter = new SemaphoreSlim(100);
+            IEnumerable<Task> tasks = files.Select(
+                async file => {
+                    if (CancellationTokenSource.Token.IsCancellationRequested) return;
+
+                    try {
+                        await taskLimiter.WaitAsync(CancellationTokenSource.Token);
+                        if (CancellationTokenSource.Token.IsCancellationRequested) return;
+
+                        file.Delete();
+                        Interlocked.Increment(ref deleted);
+                        Logger.LogInline($"Deleted {deleted} of {files.Count} files");
+                    } catch (OperationCanceledException) {
+                        throw;
+                    } catch (Exception exception) {
+                        throw new Exception($"Failed to delete file '{file}'\n{exception.Message}", exception);
+                    } finally {
+                        taskLimiter.Release();
+                    }
+                }
+            );
+
+            Logger.LogInstant($"Deleted {deleted} of {files.Count} files");
+            await Task.WhenAll(tasks);
         }
     }
 }

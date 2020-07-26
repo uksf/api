@@ -9,7 +9,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
         public const string NAME = "CBA Settings";
 
         protected override async Task ProcessExecute() {
-            await Logger.Log("Updating CBA settings");
+            Logger.Log("Updating CBA settings");
 
             string sourceUserconfigPath;
             string targetUserconfigPath;
@@ -23,9 +23,9 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
 
             FileInfo cbaSettingsFile = new FileInfo(Path.Join(sourceUserconfigPath, "cba_settings.sqf"));
 
-            await Logger.LogSurround("\nCopying cba_settings.sqf...");
+            Logger.LogSurround("\nCopying cba_settings.sqf...");
             await CopyFiles(new DirectoryInfo(sourceUserconfigPath), new DirectoryInfo(targetUserconfigPath), new List<FileInfo> { cbaSettingsFile });
-            await Logger.LogSurround("Copied cba_settings.sqf");
+            Logger.LogSurround("Copied cba_settings.sqf");
         }
     }
 }

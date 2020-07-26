@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using UKSF.Api.Models.Game;
 
@@ -8,21 +9,30 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
         public const string NAME = "Clean folders";
 
         protected override async Task ProcessExecute() {
-            await Logger.Log("Cleaning build environment");
-
             string environmentPath = GetBuildEnvironmentPath();
             if (Build.environment == GameEnvironment.RELEASE) {
                 string repoPath = Path.Join(environmentPath, "Backup", "Repo");
                 string keysPath = Path.Join(environmentPath, "Backup", "Keys");
-                await Logger.LogSurround("\nCleaning backup folder");
+
+                Logger.LogSurround("\nCleaning backup folder");
+                Logger.Log("Cleaning repo backup");
                 await DeleteDirectoryContents(repoPath);
+                Logger.Log("\nCleaning keys backup");
                 await DeleteDirectoryContents(keysPath);
-                await Logger.LogSurround("Cleaned backup folder");
+                Logger.LogSurround("Cleaned backup folder");
             } else {
                 string path = Path.Join(environmentPath, "Build");
-                await Logger.LogSurround("\nCleaning build folder");
+                string repoPath = Path.Join(environmentPath, "Repo");
+                DirectoryInfo repo = new DirectoryInfo(repoPath);
+
+                Logger.LogSurround("\nCleaning build folder");
                 await DeleteDirectoryContents(path);
-                await Logger.LogSurround("Cleaned build folder");
+                Logger.LogSurround("Cleaned build folder");
+
+                Logger.LogSurround("\nCleaning repo zsync files...");
+                List<FileInfo> files = GetDirectoryContents(repo, "*.zsync");
+                await DeleteFiles(files);
+                Logger.LogSurround("Cleaned repo zsync files");
             }
         }
     }

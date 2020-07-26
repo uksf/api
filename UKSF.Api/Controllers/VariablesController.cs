@@ -11,12 +11,10 @@ using UKSF.Common;
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Roles(RoleDefinitions.ADMIN)]
     public class VariablesController : Controller {
-        private readonly ISessionService sessionService;
         private readonly IVariablesDataService variablesDataService;
 
-        public VariablesController(IVariablesDataService variablesDataService, ISessionService sessionService) {
+        public VariablesController(IVariablesDataService variablesDataService) {
             this.variablesDataService = variablesDataService;
-            this.sessionService = sessionService;
         }
 
         [HttpGet, Authorize]

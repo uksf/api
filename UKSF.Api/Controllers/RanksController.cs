@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Personnel;
-using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Message;
@@ -18,13 +17,11 @@ namespace UKSF.Api.Controllers {
         private readonly IAssignmentService assignmentService;
         private readonly INotificationsService notificationsService;
         private readonly IRanksService ranksService;
-        private readonly ISessionService sessionService;
 
-        public RanksController(IRanksService ranksService, IAccountService accountService, IAssignmentService assignmentService, ISessionService sessionService, INotificationsService notificationsService) {
+        public RanksController(IRanksService ranksService, IAccountService accountService, IAssignmentService assignmentService, INotificationsService notificationsService) {
             this.ranksService = ranksService;
             this.accountService = accountService;
             this.assignmentService = assignmentService;
-            this.sessionService = sessionService;
             this.notificationsService = notificationsService;
         }
 

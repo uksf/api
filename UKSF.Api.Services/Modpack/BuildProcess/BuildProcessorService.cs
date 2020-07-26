@@ -29,11 +29,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 }
 
                 IBuildStep step = buildStepService.ResolveBuildStep(buildStep.name);
-                step.Init(build, buildStep, async () => await buildsService.UpdateBuildStep(build, buildStep), cancellationTokenSource);
+                step.Init(build, buildStep, async () => await buildsService.UpdateBuildStep(build, buildStep), () => buildsService.BuildStepLogEvent(build, buildStep), cancellationTokenSource);
 
                 try {
                     await step.Start();
-                    if (!await step.CheckGuards()) {
+                    if (!step.CheckGuards()) {
                         await step.Skip();
                         continue;
                     }
@@ -64,19 +64,21 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             ModpackBuildStep restoreStep = buildStepService.GetRestoreStepForRelease();
             if (restoreStep == null) return;
 
-            async Task UpdateCallback() {
-                await buildsService.UpdateBuildStep(build, restoreStep);
-            }
-
             restoreStep.index = build.steps.Count;
             IBuildStep step = buildStepService.ResolveBuildStep(restoreStep.name);
-            step.Init(build, restoreStep, UpdateCallback, new CancellationTokenSource());
+            step.Init(
+                build,
+                restoreStep,
+                async () => await buildsService.UpdateBuildStep(build, restoreStep),
+                () => buildsService.BuildStepLogEvent(build, restoreStep),
+                new CancellationTokenSource()
+            );
             build.steps.Add(restoreStep);
-            await UpdateCallback();
+            await buildsService.UpdateBuildStep(build, restoreStep);
 
             try {
                 await step.Start();
-                if (!await step.CheckGuards()) {
+                if (!step.CheckGuards()) {
                     await step.Skip();
                 } else {
                     await step.Setup();

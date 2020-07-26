@@ -8,10 +8,10 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
 
         protected override async Task ProcessExecute() {
             string repoName = GetEnvironmentRepoName();
-            await Logger.Log($"Building {repoName} repo");
+            Logger.Log($"Building {repoName} repo");
 
             string arma3SyncPath = VariablesWrapper.VariablesDataService().GetSingle("BUILD_ARMA3SYNC_PATH").AsString();
-            await BuildProcessHelper.RunPowershell(Logger, true, CancellationTokenSource.Token, $"Java -jar .\\ArmA3Sync.jar -BUILD {repoName}", arma3SyncPath);
+            await BuildProcessHelper.RunPowershell(Logger, true, CancellationTokenSource.Token, arma3SyncPath, $"Java -jar .\\ArmA3Sync.jar -BUILD {repoName}");
         }
     }
 }
