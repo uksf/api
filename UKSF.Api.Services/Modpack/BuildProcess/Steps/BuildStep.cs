@@ -9,14 +9,14 @@ using UKSF.Api.Services.Admin;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class BuildStep : IBuildStep {
-        protected const string COLOUR_BLUE = "#0c78ff";
+        private const string COLOUR_BLUE = "#0c78ff";
 
         protected ModpackBuild Build;
         private ModpackBuildStep buildStep;
         protected CancellationTokenSource CancellationTokenSource;
+        private Action logEvent;
         protected IStepLogger Logger;
         private Func<Task> updateCallback;
-        private Action logEvent;
 
         public void Init(ModpackBuild modpackBuild, ModpackBuildStep modpackBuildStep, Func<Task> stepUpdateCallback, Action stepLogEvent, CancellationTokenSource newCancellationTokenSource) {
             Build = modpackBuild;
@@ -47,12 +47,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
             Logger.Log("\nProcess", COLOUR_BLUE);
             await ProcessExecute();
-        }
-
-        public async Task Teardown() {
-            CancellationTokenSource.Token.ThrowIfCancellationRequested();
-            Logger.Log("\nTeardown", COLOUR_BLUE);
-            await TeardownExecute();
         }
 
         public async Task Succeed() {
@@ -97,11 +91,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             return Task.CompletedTask;
         }
 
-        protected virtual Task TeardownExecute() {
-            Logger.Log("---");
-            return Task.CompletedTask;
-        }
-
         protected bool ReleaseBuildGuard() {
             if (Build.environment != GameEnvironment.RELEASE) {
                 Warning("\nBuild is not a release build, but the definition contains a release step.\nThis is a configuration error, please notify an admin.");
@@ -138,6 +127,25 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             };
 
         internal string GetBuildSourcesPath() => VariablesWrapper.VariablesDataService().GetSingle("BUILD_SOURCES_PATH").AsString();
+
+        internal void SetEnvironmentVariable(string key, object value) {
+            if (Build.environmentVariables.ContainsKey(key)) {
+                Build.environmentVariables[key] = value;
+            } else {
+                Build.environmentVariables.Add(key, value);
+            }
+
+            updateCallback();
+        }
+
+        internal T GetEnvironmentVariable<T>(string key) {
+            if (Build.environmentVariables.ContainsKey(key)) {
+                object value = Build.environmentVariables[key];
+                return (T) value;
+            }
+
+            return default;
+        }
 
         private async Task Stop() {
             buildStep.running = false;

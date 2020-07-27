@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Humanizer;
-using MoreLinq;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class FileBuildStep : BuildStep {

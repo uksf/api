@@ -32,7 +32,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
             Logger.LogSurround("Cleared keys directories");
 
             Logger.LogSurround("\nCreating key...");
-            await BuildProcessHelper.RunPowershell(Logger, true, CancellationTokenSource.Token, keygenPath, $".\"{dsCreateKey}\" {keyName}");
+            await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, keygenPath, new List<string> { $".\"{dsCreateKey}\" {keyName}" });
             Logger.Log($"Created {keyName}");
             await CopyFiles(keygen, keys, new List<FileInfo> { new FileInfo(Path.Join(keygenPath, $"{keyName}.bikey")) });
             Logger.LogSurround("Created key");
@@ -76,7 +76,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
                 files,
                 100,
                 async file => {
-                    await BuildProcessHelper.RunPowershell(Logger, true, CancellationTokenSource.Token, addonsPath, $".\"{dsSignFile}\" \"{privateKey}\" \"{file.FullName}\"");
+                    await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, addonsPath, new List<string> { $".\"{dsSignFile}\" \"{privateKey}\" \"{file.FullName}\"" });
                     Interlocked.Increment(ref signed);
                 },
                 () => $"Signed {signed} of {files.Count} files",

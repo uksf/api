@@ -19,5 +19,6 @@ namespace UKSF.Api.Models.Modpack {
         public DateTime startTime = DateTime.Now;
         public DateTime endTime = DateTime.Now;
         public string version;
+        public Dictionary<string, object> environmentVariables = new Dictionary<string, object>();
     }
 }
