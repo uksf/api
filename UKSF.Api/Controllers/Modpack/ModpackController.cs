@@ -20,13 +20,13 @@ namespace UKSF.Api.Controllers.Modpack {
         [HttpGet("releases"), Authorize, Roles(RoleDefinitions.MEMBER)]
         public IActionResult GetReleases() => Ok(modpackService.GetReleases());
 
-        [HttpGet("rcs"), Authorize, Roles(RoleDefinitions.TESTER, RoleDefinitions.SERVERS)]
+        [HttpGet("rcs"), Authorize, Roles(RoleDefinitions.MEMBER)]
         public IActionResult GetReleaseCandidates() => Ok(modpackService.GetRcBuilds());
 
-        [HttpGet("builds"), Authorize, Roles(RoleDefinitions.TESTER, RoleDefinitions.SERVERS)]
+        [HttpGet("builds"), Authorize, Roles(RoleDefinitions.MEMBER)]
         public IActionResult GetBuilds() => Ok(modpackService.GetDevBuilds());
 
-        [HttpGet("builds/{id}"), Authorize, Roles(RoleDefinitions.TESTER, RoleDefinitions.SERVERS)]
+        [HttpGet("builds/{id}"), Authorize, Roles(RoleDefinitions.MEMBER)]
         public IActionResult GetBuild(string id) {
             ModpackBuild build = modpackService.GetBuild(id);
             return build == null ? (IActionResult) BadRequest("Build does not exist") : Ok(build);

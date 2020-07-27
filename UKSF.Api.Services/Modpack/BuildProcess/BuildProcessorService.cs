@@ -40,7 +40,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
 
                     await step.Setup();
                     await step.Process();
-                    await step.Teardown();
                     await step.Succeed();
                 } catch (OperationCanceledException) {
                     await step.Cancel();
@@ -83,7 +82,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 } else {
                     await step.Setup();
                     await step.Process();
-                    await step.Teardown();
                     await step.Succeed();
                 }
             } catch (Exception exception) {

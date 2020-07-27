@@ -10,7 +10,6 @@ namespace UKSF.Api.Interfaces.Modpack.BuildProcess.Steps {
         bool CheckGuards();
         Task Setup();
         Task Process();
-        Task Teardown();
         Task Succeed();
         Task Fail(Exception exception);
         Task Cancel();
