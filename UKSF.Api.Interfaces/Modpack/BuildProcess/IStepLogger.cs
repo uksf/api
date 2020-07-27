@@ -12,6 +12,6 @@ namespace UKSF.Api.Interfaces.Modpack.BuildProcess {
         void LogInline(string log);
         void Log(string log, string colour = "");
         void LogInstant(string log, string colour = "");
-        void FlushLogs(bool force = false, bool synchronous = false);
+        void LogInlineInstant(string log);
     }
 }

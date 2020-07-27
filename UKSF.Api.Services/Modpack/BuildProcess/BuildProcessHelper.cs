@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
@@ -9,7 +10,7 @@ using UKSF.Api.Interfaces.Modpack.BuildProcess;
 namespace UKSF.Api.Services.Modpack.BuildProcess {
     public static class BuildProcessHelper {
         [SuppressMessage("ReSharper", "MethodHasAsyncOverload")] // async runspace.OpenAsync is not as it seems
-        public static async Task RunPowershell(IStepLogger logger, bool raiseErrors, CancellationToken cancellationToken, string workingDirectory, string command) {
+        public static async Task RunPowershell(IStepLogger logger, bool raiseErrors, CancellationToken cancellationToken, string workingDirectory, string command, bool suppressOutput = false) {
             using Runspace runspace = RunspaceFactory.CreateRunspace();
             runspace.Open();
             runspace.SessionStateProxy.Path.SetLocation(workingDirectory);
@@ -32,22 +33,30 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 exception = currentStreamRecord?.Exception;
             }
 
-            powerShell.Streams.Information.DataAdded += Log;
-            powerShell.Streams.Warning.DataAdded += Log;
+            if (!suppressOutput) {
+                powerShell.Streams.Information.DataAdded += Log;
+                powerShell.Streams.Warning.DataAdded += Log;
+            }
+
             powerShell.Streams.Error.DataAdded += Error;
 
             PSDataCollection<PSObject> result = await powerShell.InvokeAsync(cancellationToken);
             if (exception != null) {
                 if (raiseErrors) {
+                    LogPowershellResult(logger, result);
                     runspace.Close();
                     throw exception;
+                }
+
+                if (!suppressOutput) {
+                    LogPowershellResult(logger, result);
                 }
 
                 logger.LogError(exception);
             }
 
-            foreach (PSObject psObject in result) {
-                logger.Log(psObject.BaseObject.ToString());
+            if (!suppressOutput) {
+                LogPowershellResult(logger, result);
             }
 
             runspace.Close();
@@ -68,6 +77,12 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 },
                 cancellationToken
             );
+        }
+
+        private static void LogPowershellResult(IStepLogger logger, IEnumerable<PSObject> result) {
+            foreach (PSObject psObject in result) {
+                logger.Log(psObject.BaseObject.ToString());
+            }
         }
     }
 }
