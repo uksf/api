@@ -137,6 +137,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
                 _ => throw new ArgumentException("Invalid build environment")
             };
 
+        internal string GetBuildSourcesPath() => VariablesWrapper.VariablesDataService().GetSingle("BUILD_SOURCES_PATH").AsString();
+
         private async Task Stop() {
             buildStep.running = false;
             buildStep.finished = true;

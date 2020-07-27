@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Humanizer;
+using MoreLinq;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class FileBuildStep : BuildStep {
@@ -83,6 +84,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
 
         internal async Task DeleteDirectoryContents(string path) {
             DirectoryInfo directory = new DirectoryInfo(path);
+            if (!directory.Exists) {
+                Logger.Log("Directory does not exist");
+                return;
+            }
+
             DeleteDirectories(directory.GetDirectories("*", SearchOption.TopDirectoryOnly).ToList());
             await DeleteFiles(directory.GetFiles("*", SearchOption.AllDirectories).ToList());
         }
@@ -123,6 +129,41 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             }
         }
 
+        internal async Task ParallelProcessFiles(IEnumerable<FileInfo> files, int taskLimit, Func<FileInfo, Task> process, Func<string> getLog, string error, bool logInstantly = false) {
+            SemaphoreSlim taskLimiter = new SemaphoreSlim(taskLimit);
+            IEnumerable<Task> tasks = files.Select(
+                file => {
+                    return Task.Run(
+                        async () => {
+                            CancellationTokenSource.Token.ThrowIfCancellationRequested();
+
+                            try {
+                                await taskLimiter.WaitAsync(CancellationTokenSource.Token);
+                                CancellationTokenSource.Token.ThrowIfCancellationRequested();
+
+                                await process(file);
+                                if (logInstantly) {
+                                    Logger.LogInlineInstant(getLog());
+                                } else {
+                                    Logger.LogInline(getLog());
+                                }
+                            } catch (OperationCanceledException) {
+                                throw;
+                            } catch (Exception exception) {
+                                throw new Exception($"{error} '{file}'\n{exception.Message}", exception);
+                            } finally {
+                                taskLimiter.Release();
+                            }
+                        },
+                        CancellationTokenSource.Token
+                    );
+                }
+            );
+
+            Logger.LogInstant(getLog());
+            await Task.WhenAll(tasks);
+        }
+
         private void SimpleCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, bool flatten = false) {
             foreach (FileInfo file in files) {
                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
@@ -135,33 +176,19 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
 
         private async Task ParallelCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, long totalSize, bool flatten = false) {
             long copiedSize = 0;
-
-            SemaphoreSlim taskLimiter = new SemaphoreSlim(100);
-            IEnumerable<Task> tasks = files.Select(
-                async file => {
-                    if (CancellationTokenSource.Token.IsCancellationRequested) return;
-
-                    try {
-                        await taskLimiter.WaitAsync(CancellationTokenSource.Token);
-                        if (CancellationTokenSource.Token.IsCancellationRequested) return;
-
-                        string targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
-                        Directory.CreateDirectory(Path.GetDirectoryName(targetFile));
-                        file.CopyTo(targetFile, true);
-                        Interlocked.Add(ref copiedSize, file.Length);
-                        Logger.LogInline($"Copied {copiedSize.Bytes().ToString("#.#")} of {totalSize.Bytes().ToString("#.#")}");
-                    } catch (OperationCanceledException) {
-                        throw;
-                    } catch (Exception exception) {
-                        throw new Exception($"Failed to copy file '{file}'\n{exception.Message}", exception);
-                    } finally {
-                        taskLimiter.Release();
-                    }
-                }
+            await ParallelProcessFiles(
+                files,
+                100,
+                file => {
+                    string targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(targetFile));
+                    file.CopyTo(targetFile, true);
+                    Interlocked.Add(ref copiedSize, file.Length);
+                    return Task.CompletedTask;
+                },
+                () => $"Copied {copiedSize.Bytes().ToString("#.#")} of {totalSize.Bytes().ToString("#.#")}",
+                "Failed to copy file"
             );
-
-            Logger.LogInstant($"Copied {copiedSize.Bytes().ToString("#.#")} of {totalSize.Bytes().ToString("#.#")}");
-            await Task.WhenAll(tasks);
         }
 
         private void SimpleDeleteFiles(IEnumerable<FileInfo> files) {
@@ -174,31 +201,17 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
 
         private async Task ParallelDeleteFiles(IReadOnlyCollection<FileInfo> files) {
             int deleted = 0;
-
-            SemaphoreSlim taskLimiter = new SemaphoreSlim(100);
-            IEnumerable<Task> tasks = files.Select(
-                async file => {
-                    if (CancellationTokenSource.Token.IsCancellationRequested) return;
-
-                    try {
-                        await taskLimiter.WaitAsync(CancellationTokenSource.Token);
-                        if (CancellationTokenSource.Token.IsCancellationRequested) return;
-
-                        file.Delete();
-                        Interlocked.Increment(ref deleted);
-                        Logger.LogInline($"Deleted {deleted} of {files.Count} files");
-                    } catch (OperationCanceledException) {
-                        throw;
-                    } catch (Exception exception) {
-                        throw new Exception($"Failed to delete file '{file}'\n{exception.Message}", exception);
-                    } finally {
-                        taskLimiter.Release();
-                    }
-                }
+            await ParallelProcessFiles(
+                files,
+                100,
+                file => {
+                    file.Delete();
+                    Interlocked.Increment(ref deleted);
+                    return Task.CompletedTask;
+                },
+                () => $"Deleted {deleted} of {files.Count} files",
+                "Failed to delete file"
             );
-
-            Logger.LogInstant($"Deleted {deleted} of {files.Count} files");
-            await Task.WhenAll(tasks);
         }
     }
 }

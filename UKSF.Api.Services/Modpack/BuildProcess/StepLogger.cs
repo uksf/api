@@ -73,6 +73,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             FlushLogsInstantly();
         }
 
+        public void LogInlineInstant(string log) {
+            LogInline(log);
+            FlushLogsInstantly(false);
+        }
+
         public void FlushLogs(bool force = false, bool synchronous = false) {
             if (force || logCount > LOG_COUNT_MAX) {
                 logCount = 0;
@@ -83,8 +88,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             }
         }
 
-        private void FlushLogsInstantly() {
-            FlushLogs(true, true);
+        private void FlushLogsInstantly(bool synchronous = true) {
+            FlushLogs(true, synchronous);
         }
 
         private void LogLines(string log, string colour = "") {

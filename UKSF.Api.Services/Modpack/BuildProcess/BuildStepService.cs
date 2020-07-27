@@ -49,8 +49,10 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         private static List<ModpackBuildStep> GetStepsForBuild() =>
             new List<ModpackBuildStep> {
                 new ModpackBuildStep(BuildStepPrep.NAME),
-                new ModpackBuildStep(BuildStepClean.NAME),
+                // new ModpackBuildStep(BuildStepClean.NAME),
                 new ModpackBuildStep(BuildStepBuild.NAME),
+                new ModpackBuildStep(BuildStepIntercept.NAME),
+                new ModpackBuildStep(BuildStepExtensions.NAME),
                 new ModpackBuildStep(BuildStepSignDependencies.NAME),
                 new ModpackBuildStep(BuildStepDeploy.NAME),
                 new ModpackBuildStep(BuildStepKeys.NAME),
@@ -63,6 +65,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 new ModpackBuildStep(BuildStepPrep.NAME),
                 new ModpackBuildStep(BuildStepClean.NAME),
                 new ModpackBuildStep(BuildStepBuild.NAME),
+                new ModpackBuildStep(BuildStepIntercept.NAME),
+                new ModpackBuildStep(BuildStepExtensions.NAME),
                 new ModpackBuildStep(BuildStepSignDependencies.NAME),
                 new ModpackBuildStep(BuildStepDeploy.NAME),
                 new ModpackBuildStep(BuildStepKeys.NAME),
