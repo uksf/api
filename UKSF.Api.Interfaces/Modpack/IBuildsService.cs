@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using MongoDB.Driver;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
@@ -10,6 +11,7 @@ namespace UKSF.Api.Interfaces.Modpack {
         List<ModpackBuild> GetRcBuilds();
         ModpackBuild GetLatestDevBuild();
         ModpackBuild GetLatestRcBuild(string version);
+        Task UpdateBuild(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition);
         Task UpdateBuildStep(ModpackBuild build, ModpackBuildStep buildStep);
         void BuildStepLogEvent(ModpackBuild build, ModpackBuildStep buildStep);
         Task<ModpackBuild> CreateDevBuild(string version, GithubCommit commit);

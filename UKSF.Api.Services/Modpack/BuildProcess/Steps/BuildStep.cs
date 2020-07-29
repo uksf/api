@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using MongoDB.Driver;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Interfaces.Modpack.BuildProcess.Steps;
 using UKSF.Api.Models.Game;
@@ -14,17 +15,19 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
         protected ModpackBuild Build;
         private ModpackBuildStep buildStep;
         protected CancellationTokenSource CancellationTokenSource;
-        private Action logEvent;
         protected IStepLogger Logger;
-        private Func<Task> updateCallback;
+        private Func<UpdateDefinition<ModpackBuild>, Task> updateBuildCallback;
+        private Func<Task> updateStepCallback;
+        private Action logEvent;
 
-        public void Init(ModpackBuild modpackBuild, ModpackBuildStep modpackBuildStep, Func<Task> stepUpdateCallback, Action stepLogEvent, CancellationTokenSource newCancellationTokenSource) {
+        public void Init(ModpackBuild modpackBuild, ModpackBuildStep modpackBuildStep, Func<UpdateDefinition<ModpackBuild>, Task> buildUpdateCallback, Func<Task> stepUpdateCallback, Action stepLogEvent, CancellationTokenSource newCancellationTokenSource) {
             Build = modpackBuild;
             buildStep = modpackBuildStep;
-            updateCallback = stepUpdateCallback;
+            updateBuildCallback = buildUpdateCallback;
+            updateStepCallback = stepUpdateCallback;
             logEvent = stepLogEvent;
             CancellationTokenSource = newCancellationTokenSource;
-            Logger = new StepLogger(buildStep, async () => await updateCallback(), logEvent);
+            Logger = new StepLogger(buildStep, async () => await updateStepCallback(), logEvent);
         }
 
         public async Task Start() {
@@ -32,7 +35,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             buildStep.running = true;
             buildStep.startTime = DateTime.Now;
             Logger.LogStart();
-            await updateCallback();
+            await updateStepCallback();
         }
 
         public virtual bool CheckGuards() => true;
@@ -91,15 +94,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             return Task.CompletedTask;
         }
 
-        protected bool ReleaseBuildGuard() {
-            if (Build.environment != GameEnvironment.RELEASE) {
-                Warning("\nBuild is not a release build, but the definition contains a release step.\nThis is a configuration error, please notify an admin.");
-                return false;
-            }
-
-            return true;
-        }
-
         internal string GetBuildEnvironmentPath() => GetEnvironmentPath(Build.environment);
 
         internal static string GetEnvironmentPath(GameEnvironment environment) =>
@@ -126,7 +120,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
                 _ => throw new ArgumentException("Invalid build environment")
             };
 
-        internal string GetBuildSourcesPath() => VariablesWrapper.VariablesDataService().GetSingle("BUILD_SOURCES_PATH").AsString();
+        internal static string GetBuildSourcesPath() => VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_SOURCES").AsString();
 
         internal void SetEnvironmentVariable(string key, object value) {
             if (Build.environmentVariables.ContainsKey(key)) {
@@ -135,7 +129,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
                 Build.environmentVariables.Add(key, value);
             }
 
-            updateCallback();
+            updateBuildCallback(Builders<ModpackBuild>.Update.Set(x => x.environmentVariables, Build.environmentVariables));
         }
 
         internal T GetEnvironmentVariable<T>(string key) {
@@ -151,7 +145,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             buildStep.running = false;
             buildStep.finished = true;
             buildStep.endTime = DateTime.Now;
-            await updateCallback();
+            await updateStepCallback();
         }
     }
 }

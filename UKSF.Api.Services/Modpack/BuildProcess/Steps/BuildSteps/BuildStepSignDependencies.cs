@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Services.Admin;
 
-namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
+namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
     [BuildStep(NAME)]
     public class BuildStepSignDependencies : FileBuildStep {
         public const string NAME = "Signatures";
@@ -15,8 +15,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
         private string keyName;
 
         protected override async Task SetupExecute() {
-            dsSignFile = Path.Join(VariablesWrapper.VariablesDataService().GetSingle("BUILD_DSSIGN_PATH").AsString(), "DSSignFile.exe");
-            dsCreateKey = Path.Join(VariablesWrapper.VariablesDataService().GetSingle("BUILD_DSSIGN_PATH").AsString(), "DSCreateKey.exe");
+            dsSignFile = Path.Join(VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_DSSIGN").AsString(), "DSSignFile.exe");
+            dsCreateKey = Path.Join(VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_DSSIGN").AsString(), "DSCreateKey.exe");
             keyName = GetKeyname();
 
             string keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
@@ -72,14 +72,15 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
         private async Task SignFiles(string keygenPath, string addonsPath, IReadOnlyCollection<FileInfo> files) {
             string privateKey = Path.Join(keygenPath, $"{keyName}.biprivatekey");
             int signed = 0;
+            int total = files.Count;
             await ParallelProcessFiles(
                 files,
-                100,
+                50,
                 async file => {
                     await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, addonsPath, new List<string> { $".\"{dsSignFile}\" \"{privateKey}\" \"{file.FullName}\"" });
                     Interlocked.Increment(ref signed);
                 },
-                () => $"Signed {signed} of {files.Count} files",
+                () => $"Signed {signed} of {total} files",
                 "Failed to sign file"
             );
         }

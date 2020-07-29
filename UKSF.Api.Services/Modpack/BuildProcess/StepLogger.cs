@@ -38,7 +38,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         }
 
         public void LogSkipped() {
-            LogLines($"\nSkipped: {buildStep.name}", "orangered");
+            LogLines($"\nSkipped: {buildStep.name}", "gray");
             FlushLogsInstantly();
         }
 
@@ -52,6 +52,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             FlushLogsInstantly();
         }
 
+        public void LogError(string message) {
+            LogLines($"Error\n{message}\n\nFailed: {buildStep.name}", "red");
+            FlushLogsInstantly();
+        }
+
         public void LogSurround(string log) {
             LogLines(log, "cadetblue");
         }
@@ -61,6 +66,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 buildStep.logs[^1] = new ModpackBuildStepLogItem { text = log };
             }
 
+            logEvent();
             IncrementCountAndFlushLogs();
         }
 
@@ -79,11 +85,13 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         }
 
         public void FlushLogs(bool force = false, bool synchronous = false) {
-            if (force || logCount > LOG_COUNT_MAX) {
-                logCount = 0;
-                Task callback = updateCallback();
-                if (synchronous) {
-                    callback.Wait();
+            lock (lockObject) {
+                if (force || logCount > LOG_COUNT_MAX) {
+                    logCount = 0;
+                    Task callback = updateCallback();
+                    if (synchronous) {
+                        callback.Wait();
+                    }
                 }
             }
         }

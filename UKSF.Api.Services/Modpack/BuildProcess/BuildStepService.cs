@@ -6,7 +6,8 @@ using UKSF.Api.Interfaces.Modpack.BuildProcess.Steps;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Modpack;
 using UKSF.Api.Services.Modpack.BuildProcess.Steps;
-using UKSF.Api.Services.Modpack.BuildProcess.Steps.Build;
+using UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps;
+using UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods;
 using UKSF.Api.Services.Modpack.BuildProcess.Steps.Common;
 using UKSF.Api.Services.Modpack.BuildProcess.Steps.Release;
 
@@ -49,30 +50,38 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         private static List<ModpackBuildStep> GetStepsForBuild() =>
             new List<ModpackBuildStep> {
                 new ModpackBuildStep(BuildStepPrep.NAME),
-                // new ModpackBuildStep(BuildStepClean.NAME),
+                new ModpackBuildStep(BuildStepClean.NAME),
                 new ModpackBuildStep(BuildStepSources.NAME),
-                new ModpackBuildStep(BuildStepBuild.NAME),
+                new ModpackBuildStep(BuildStepBuildAce.NAME),
+                new ModpackBuildStep(BuildStepBuildAcre.NAME),
+                new ModpackBuildStep(BuildStepBuildF35.NAME),
+                new ModpackBuildStep(BuildStepBuildModpack.NAME),
                 new ModpackBuildStep(BuildStepIntercept.NAME),
                 new ModpackBuildStep(BuildStepExtensions.NAME),
                 new ModpackBuildStep(BuildStepSignDependencies.NAME),
                 new ModpackBuildStep(BuildStepDeploy.NAME),
                 new ModpackBuildStep(BuildStepKeys.NAME),
                 new ModpackBuildStep(BuildStepCbaSettings.NAME),
+                new ModpackBuildStep(BuildStepBuildRepo.NAME),
                 new ModpackBuildStep(BuildStepNotify.NAME)
             };
 
         private static List<ModpackBuildStep> GetStepsForRc() =>
             new List<ModpackBuildStep> {
                 new ModpackBuildStep(BuildStepPrep.NAME),
-                // new ModpackBuildStep(BuildStepClean.NAME),
+                new ModpackBuildStep(BuildStepClean.NAME),
                 new ModpackBuildStep(BuildStepSources.NAME),
-                new ModpackBuildStep(BuildStepBuild.NAME),
+                new ModpackBuildStep(BuildStepBuildAce.NAME),
+                new ModpackBuildStep(BuildStepBuildAcre.NAME),
+                new ModpackBuildStep(BuildStepBuildF35.NAME),
+                new ModpackBuildStep(BuildStepBuildModpack.NAME),
                 new ModpackBuildStep(BuildStepIntercept.NAME),
                 new ModpackBuildStep(BuildStepExtensions.NAME),
                 new ModpackBuildStep(BuildStepSignDependencies.NAME),
                 new ModpackBuildStep(BuildStepDeploy.NAME),
                 new ModpackBuildStep(BuildStepKeys.NAME),
                 new ModpackBuildStep(BuildStepCbaSettings.NAME),
+                new ModpackBuildStep(BuildStepBuildRepo.NAME),
                 new ModpackBuildStep(BuildStepNotify.NAME)
             };
 

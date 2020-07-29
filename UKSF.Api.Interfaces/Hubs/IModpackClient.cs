@@ -6,5 +6,6 @@ namespace UKSF.Api.Interfaces.Hubs {
         Task ReceiveReleaseCandidateBuild(ModpackBuild build);
         Task ReceiveBuild(ModpackBuild build);
         Task ReceiveBuildStep(ModpackBuildStep step);
+        Task ReceiveLargeBuildStep(int index);
     }
 }

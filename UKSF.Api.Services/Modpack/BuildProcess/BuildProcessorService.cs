@@ -23,13 +23,21 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             await buildsService.SetBuildRunning(build);
 
             foreach (ModpackBuildStep buildStep in build.steps) {
+                IBuildStep step = buildStepService.ResolveBuildStep(buildStep.name);
+                step.Init(
+                    build,
+                    buildStep,
+                    async updateDefinition => await buildsService.UpdateBuild(build, updateDefinition),
+                    async () => await buildsService.UpdateBuildStep(build, buildStep),
+                    () => buildsService.BuildStepLogEvent(build, buildStep),
+                    cancellationTokenSource
+                );
+
                 if (cancellationTokenSource.IsCancellationRequested) {
+                    await step.Cancel();
                     await buildsService.CancelBuild(build);
                     return;
                 }
-
-                IBuildStep step = buildStepService.ResolveBuildStep(buildStep.name);
-                step.Init(build, buildStep, async () => await buildsService.UpdateBuildStep(build, buildStep), () => buildsService.BuildStepLogEvent(build, buildStep), cancellationTokenSource);
 
                 try {
                     await step.Start();
@@ -68,6 +76,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             step.Init(
                 build,
                 restoreStep,
+                async updateDefinition => await buildsService.UpdateBuild(build, updateDefinition),
                 async () => await buildsService.UpdateBuildStep(build, restoreStep),
                 () => buildsService.BuildStepLogEvent(build, restoreStep),
                 new CancellationTokenSource()

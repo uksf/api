@@ -32,6 +32,20 @@ namespace UKSF.Api.Controllers.Modpack {
             return build == null ? (IActionResult) BadRequest("Build does not exist") : Ok(build);
         }
 
+        [HttpGet("builds/{id}/step/{index}"), Authorize, Roles(RoleDefinitions.MEMBER)]
+        public IActionResult GetBuild(string id, int index) {
+            ModpackBuild build = modpackService.GetBuild(id);
+            if (build == null) {
+                return BadRequest("Build does not exist");
+            }
+
+            if (build.steps.Count > index) {
+                return Ok(build.steps[index]);
+            }
+
+            return BadRequest("Build step does not exist");
+        }
+
         [HttpGet("builds/{id}/rebuild"), Authorize, Roles(RoleDefinitions.ADMIN)]
         public async Task<IActionResult> Rebuild(string id) {
             ModpackBuild build = modpackService.GetBuild(id);

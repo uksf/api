@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -17,7 +18,7 @@ namespace UKSF.Api.Services.Integrations.Github {
     public class GithubService : IGithubService {
         // TODO: Use variables for some of these
         private const string REPO_ORG = "uksf";
-        private const string REPO_NAME = "BuildTest"; // "modpack";
+        private const string REPO_NAME = "modpack"; // "BuildTest";
         private const string VERSION_FILE = "addons/main/script_version.hpp";
         private const int APP_ID = 53456;
         private const long APP_INSTALLATION = 6681715;
@@ -147,11 +148,30 @@ namespace UKSF.Api.Services.Integrations.Github {
         public async Task<List<string>> GetBranches() {
             GitHubClient client = await GetAuthenticatedClient();
             IReadOnlyList<Branch> branches = await client.Repository.Branch.GetAll(REPO_ORG, REPO_NAME);
-            List<string> validBranches = new List<string>();
-            foreach (Branch branch in branches) {
-                if (await IsReferenceValid(branch.Name)) {
-                    validBranches.Add(branch.Name);
+            ConcurrentBag<string> validBranchesBag = new ConcurrentBag<string>();
+            IEnumerable<Task> task = branches.Select(
+                async branch => {
+                    if (await IsReferenceValid(branch.Name)) {
+                        validBranchesBag.Add(branch.Name);
+                    }
                 }
+            );
+            await Task.WhenAll(task);
+
+            List<string> validBranches = validBranchesBag.OrderBy(x => x).ToList();
+            if (validBranches.Contains("release")) {
+                validBranches.Remove("release");
+                validBranches.Insert(0, "release");
+            }
+
+            if (validBranches.Contains("master")) {
+                validBranches.Remove("master");
+                validBranches.Insert(0, "master");
+            }
+
+            if (validBranches.Contains("dev")) {
+                validBranches.Remove("dev");
+                validBranches.Insert(0, "dev");
             }
 
             return validBranches;
