@@ -2,7 +2,8 @@ namespace UKSF.Api.Models.Events {
     public enum DataEventType {
         ADD,
         UPDATE,
-        DELETE
+        DELETE,
+        SPECIAL
     }
 
     // ReSharper disable once UnusedTypeParameter

@@ -1,17 +1,20 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Utility.ScheduledActions;
+using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Message.Logging;
+using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Services.Utility.ScheduledActions {
-    public class PruneLogsAction : IPruneLogsAction {
-        public const string ACTION_NAME = nameof(PruneLogsAction);
+    public class PruneDataAction : IPruneLogsAction {
+        public const string ACTION_NAME = nameof(PruneDataAction);
 
         private readonly IDataCollectionFactory dataCollectionFactory;
 
-        public PruneLogsAction(IDataCollectionFactory dataCollectionFactory) => this.dataCollectionFactory = dataCollectionFactory;
+        public PruneDataAction(IDataCollectionFactory dataCollectionFactory) => this.dataCollectionFactory = dataCollectionFactory;
 
         public string Name => ACTION_NAME;
 
@@ -22,7 +25,11 @@ namespace UKSF.Api.Services.Utility.ScheduledActions {
             Task auditLogsTask = dataCollectionFactory.CreateDataCollection<AuditLogMessage>("auditLogs").DeleteManyAsync(x => x.timestamp < now.AddMonths(-3));
             Task notificationsTask = dataCollectionFactory.CreateDataCollection<Notification>("notifications").DeleteManyAsync(x => x.timestamp < now.AddMonths(-1));
 
-            Task.WaitAll(logsTask, errorLogsTask, auditLogsTask, notificationsTask);
+            IDataCollection<ModpackBuild> buildsData = dataCollectionFactory.CreateDataCollection<ModpackBuild>("modpackBuilds");
+            int threshold = buildsData.Get(x => x.environment == GameEnvironment.DEV).Select(x => x.buildNumber).OrderByDescending(x => x).First() - 100;
+            Task modpackBuildsTask = buildsData.DeleteManyAsync(x => x.buildNumber < threshold);
+
+            Task.WaitAll(logsTask, errorLogsTask, auditLogsTask, notificationsTask, modpackBuildsTask);
         }
     }
 }

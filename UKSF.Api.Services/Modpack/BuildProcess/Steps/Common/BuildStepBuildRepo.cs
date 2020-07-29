@@ -11,7 +11,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
             string repoName = GetEnvironmentRepoName();
             Logger.Log($"Building {repoName} repo");
 
-            string arma3SyncPath = VariablesWrapper.VariablesDataService().GetSingle("BUILD_ARMA3SYNC_PATH").AsString();
+            string arma3SyncPath = VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_ARMA3SYNC").AsString();
             await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, arma3SyncPath, new List<string> { $"Java -jar .\\ArmA3Sync.jar -BUILD {repoName}" });
         }
     }

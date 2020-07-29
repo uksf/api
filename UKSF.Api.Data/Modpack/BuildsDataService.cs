@@ -32,7 +32,11 @@ namespace UKSF.Api.Data.Modpack {
         }
 
         public void LogEvent(ModpackBuild build, ModpackBuildStep buildStep) {
-            CachedDataEvent(EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.UPDATE, build.id, buildStep));
+            CachedDataEvent(
+                buildStep.logs.Count > 300
+                    ? EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.SPECIAL, build.id, buildStep.index)
+                    : EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.UPDATE, build.id, buildStep)
+            );
         }
     }
 }

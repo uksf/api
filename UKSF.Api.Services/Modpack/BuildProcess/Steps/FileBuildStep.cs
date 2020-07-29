@@ -10,7 +10,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class FileBuildStep : BuildStep {
         private const double FILE_COPY_TASK_SIZE_THRESHOLD = 5_000_000_000;
         private const double FILE_COPY_TASK_COUNT_THRESHOLD = 50;
-        private const double FILE_DELETE_TASK_COUNT_THRESHOLD = 25;
+        private const double FILE_DELETE_TASK_COUNT_THRESHOLD = 50;
 
         internal static List<FileInfo> GetDirectoryContents(DirectoryInfo source, string searchPattern = "*") => source.GetFiles(searchPattern, SearchOption.AllDirectories).ToList();
 
@@ -175,6 +175,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
 
         private async Task ParallelCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, long totalSize, bool flatten = false) {
             long copiedSize = 0;
+            string totalSizeString = totalSize.Bytes().ToString("#.#");
             await ParallelProcessFiles(
                 files,
                 100,
@@ -185,7 +186,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
                     Interlocked.Add(ref copiedSize, file.Length);
                     return Task.CompletedTask;
                 },
-                () => $"Copied {copiedSize.Bytes().ToString("#.#")} of {totalSize.Bytes().ToString("#.#")}",
+                () => $"Copied {copiedSize.Bytes().ToString("#.#")} of {totalSizeString}",
                 "Failed to copy file"
             );
         }
@@ -200,15 +201,16 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
 
         private async Task ParallelDeleteFiles(IReadOnlyCollection<FileInfo> files) {
             int deleted = 0;
+            int total = files.Count;
             await ParallelProcessFiles(
                 files,
-                100,
+                50,
                 file => {
                     file.Delete();
                     Interlocked.Increment(ref deleted);
                     return Task.CompletedTask;
                 },
-                () => $"Deleted {deleted} of {files.Count} files",
+                () => $"Deleted {deleted} of {total} files",
                 "Failed to delete file"
             );
         }

@@ -35,7 +35,10 @@ namespace UKSF.Api.Events.Handlers {
                 case DataEventType.UPDATE:
                     await UpdatedEvent(x.id, x.data);
                     break;
-                case DataEventType.DELETE: break;
+                case DataEventType.DELETE:
+                    await SpecialEvent(x.id, x.data);
+                    break;
+                case DataEventType.SPECIAL: break;
                 default: throw new ArgumentOutOfRangeException();
             }
         }
@@ -60,6 +63,14 @@ namespace UKSF.Api.Events.Handlers {
                     break;
                 case ModpackBuildStep step:
                     await hub.Clients.Group(id).ReceiveBuildStep(step);
+                    break;
+            }
+        }
+
+        private async Task SpecialEvent(string id, object data) {
+            switch (data) {
+                case int index:
+                    await hub.Clients.Group(id).ReceiveLargeBuildStep(index);
                     break;
             }
         }

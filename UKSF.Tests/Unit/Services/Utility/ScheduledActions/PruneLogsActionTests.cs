@@ -57,7 +57,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Utility.ScheduledActions {
             mockDataCollectionFactory.Setup(x => x.CreateDataCollection<AuditLogMessage>("auditLogs")).Returns(mockAuditLogMessageDataColection.Object);
             mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Notification>("notifications")).Returns(mockNotificationDataColection.Object);
 
-            pruneLogsAction = new PruneLogsAction(mockDataCollectionFactory.Object);
+            pruneLogsAction = new PruneDataAction(mockDataCollectionFactory.Object);
 
             pruneLogsAction.Run();
 
@@ -69,7 +69,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Utility.ScheduledActions {
 
         [Fact]
         public void ShouldReturnActionName() {
-            pruneLogsAction = new PruneLogsAction(mockDataCollectionFactory.Object);
+            pruneLogsAction = new PruneDataAction(mockDataCollectionFactory.Object);
 
             string subject = pruneLogsAction.Name;
 

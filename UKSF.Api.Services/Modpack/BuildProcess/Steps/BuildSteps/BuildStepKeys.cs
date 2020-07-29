@@ -2,16 +2,16 @@
 using System.IO;
 using System.Threading.Tasks;
 
-namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
+namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
     [BuildStep(NAME)]
     public class BuildStepKeys : FileBuildStep {
         public const string NAME = "Keys";
 
         protected override async Task SetupExecute() {
-            Logger.Log("Wiping server keys folder");
+            Logger.LogSurround("\nWiping server keys folder");
             string keysPath = Path.Join(GetBuildEnvironmentPath(), "Keys");
             await DeleteDirectoryContents(keysPath);
-            Logger.Log("Server keys folder wiped");
+            Logger.LogSurround("Server keys folder wiped");
         }
 
         protected override async Task ProcessExecute() {

@@ -14,7 +14,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
                 string repoPath = Path.Join(environmentPath, "Backup", "Repo");
                 string keysPath = Path.Join(environmentPath, "Backup", "Keys");
 
-                Logger.LogSurround("\nCleaning backup folder");
+                Logger.LogSurround("\nCleaning backup folder...");
                 Logger.Log("Cleaning repo backup");
                 await DeleteDirectoryContents(repoPath);
                 Logger.Log("\nCleaning keys backup");
@@ -25,7 +25,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
                 string repoPath = Path.Join(environmentPath, "Repo");
                 DirectoryInfo repo = new DirectoryInfo(repoPath);
 
-                Logger.LogSurround("\nCleaning build folder");
+                Logger.LogSurround("\nCleaning build folder...");
                 await DeleteDirectoryContents(path);
                 Logger.LogSurround("Cleaned build folder");
 

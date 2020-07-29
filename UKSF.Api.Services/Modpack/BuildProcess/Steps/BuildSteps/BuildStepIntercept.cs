@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
 
-namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
+namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
     [BuildStep(NAME)]
     public class BuildStepIntercept : FileBuildStep {
         public const string NAME = "Intercept";

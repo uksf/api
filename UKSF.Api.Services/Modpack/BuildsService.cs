@@ -24,6 +24,10 @@ namespace UKSF.Api.Services.Modpack {
             this.sessionService = sessionService;
         }
 
+        public async Task UpdateBuild(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition) {
+            await Data.Update(build, updateDefinition);
+        }
+
         public async Task UpdateBuildStep(ModpackBuild build, ModpackBuildStep buildStep) {
             await Data.Update(build, buildStep);
         }
