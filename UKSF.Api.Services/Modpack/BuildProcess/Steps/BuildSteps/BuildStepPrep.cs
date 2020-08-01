@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using UKSF.Api.Services.Admin;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
@@ -7,11 +6,13 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
     public class BuildStepPrep : BuildStep {
         public const string NAME = "Prep";
 
-        protected override async Task ProcessExecute() {
+        protected override Task ProcessExecute() {
             Logger.Log("Mounting build environment");
 
             string projectsPath = VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_PROJECTS").AsString();
-            await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, "C:/", new List<string> { $"subst P: \"{projectsPath}\"", "subst" });
+            BuildProcessHelper.RunProcess(Logger, CancellationTokenSource.Token, "C:/", "cmd.exe", $"/c \"subst P: \"{projectsPath}\"");
+
+            return Task.CompletedTask;
         }
     }
 }

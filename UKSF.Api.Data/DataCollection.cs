@@ -24,9 +24,9 @@ namespace UKSF.Api.Data {
             }
         }
 
-        public List<T> Get() => GetCollection().AsQueryable().ToList();
+        public IEnumerable<T> Get() => GetCollection().AsQueryable();
 
-        public List<T> Get(Func<T, bool> predicate) => GetCollection().AsQueryable().Where(predicate).ToList();
+        public IEnumerable<T> Get(Func<T, bool> predicate) => GetCollection().AsQueryable().Where(predicate);
 
         public T GetSingle(string id) => GetCollection().FindSync(Builders<T>.Filter.Eq("id", id)).FirstOrDefault();
 

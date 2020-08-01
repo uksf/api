@@ -7,8 +7,8 @@ using UKSF.Api.Interfaces.Events;
 
 namespace UKSF.Api.Interfaces.Data {
     public interface IDataService<T, TData> : IDataEventBacker<TData> {
-        List<T> Get();
-        List<T> Get(Func<T, bool> predicate);
+        IEnumerable<T> Get();
+        IEnumerable<T> Get(Func<T, bool> predicate);
         T GetSingle(string id);
         T GetSingle(Func<T, bool> predicate);
         Task Add(T data);

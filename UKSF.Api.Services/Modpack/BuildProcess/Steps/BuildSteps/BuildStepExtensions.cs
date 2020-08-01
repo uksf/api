@@ -27,40 +27,17 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             string signTool = VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_SIGNTOOL").AsString();
             int signed = 0;
             int total = files.Count;
-            await ParallelProcessFiles(
+            await BatchProcessFiles(
                 files,
-                10,
-                async file => {
-                    await BuildProcessHelper.RunPowershell(
-                        Logger,
-                        CancellationTokenSource.Token,
-                        file.DirectoryName,
-                        new List<string> { $".\"{signTool}\" sign /f \"{certPath}\" \"{file.FullName}\"" },
-                        true
-                    );
+                2,
+                file => {
+                    BuildProcessHelper.RunProcess(Logger, CancellationTokenSource.Token, file.DirectoryName, signTool, $"sign /f \"{certPath}\" \"{file.FullName}\"", true);
                     Interlocked.Increment(ref signed);
+                    return Task.CompletedTask;
                 },
                 () => $"Signed {signed} of {total} extensions",
-                "Failed to sign extension",
-                true
+                "Failed to sign extension"
             );
         }
-
-        // private async Task SignExtensions(IReadOnlyCollection<FileInfo> files) {
-        //     string thumbprint = VariablesWrapper.VariablesDataService().GetSingle("BUILD_CERTIFICATE_THUMBPRINT").AsString();
-        //     int signed = 0;
-        //     await ParallelProcessFiles(
-        //         files,
-        //         10,
-        //         file => {
-        //             CertificateUtilities.SignWithThumbprint(file.FullName, thumbprint);
-        //             Interlocked.Increment(ref signed);
-        //             return Task.CompletedTask;
-        //         },
-        //         () => $"Signed {signed} of {files.Count} extensions",
-        //         "Failed to sign extension",
-        //         true
-        //     );
-        // }
     }
 }

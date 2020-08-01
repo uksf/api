@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Interfaces.Data.Cached;
-using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Admin;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
@@ -13,9 +12,7 @@ namespace UKSF.Api.Controllers {
     public class VariablesController : Controller {
         private readonly IVariablesDataService variablesDataService;
 
-        public VariablesController(IVariablesDataService variablesDataService) {
-            this.variablesDataService = variablesDataService;
-        }
+        public VariablesController(IVariablesDataService variablesDataService) => this.variablesDataService = variablesDataService;
 
         [HttpGet, Authorize]
         public IActionResult GetAll() => Ok(variablesDataService.Get());

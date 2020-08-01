@@ -5,9 +5,9 @@ using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Interfaces.Modpack {
     public interface IModpackService {
-        List<ModpackRelease> GetReleases();
-        List<ModpackBuild> GetRcBuilds();
-        List<ModpackBuild> GetDevBuilds();
+        IEnumerable<ModpackRelease> GetReleases();
+        IEnumerable<ModpackBuild> GetRcBuilds();
+        IEnumerable<ModpackBuild> GetDevBuilds();
         ModpackRelease GetRelease(string version);
         ModpackBuild GetBuild(string id);
         Task NewBuild(string reference);
@@ -18,5 +18,6 @@ namespace UKSF.Api.Interfaces.Modpack {
         Task RegnerateReleaseDraftChangelog(string version);
         Task CreateDevBuildFromPush(PushWebhookPayload payload);
         Task CreateRcBuildFromPush(PushWebhookPayload payload);
+        void RunQueuedBuilds();
     }
 }

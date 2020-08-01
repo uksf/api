@@ -51,7 +51,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
 
         [HttpGet, Authorize]
         public IActionResult Get() {
-            List<CommandRequest> allRequests = commandRequestService.Data.Get();
+            IEnumerable<CommandRequest> allRequests = commandRequestService.Data.Get();
             List<CommandRequest> myRequests = new List<CommandRequest>();
             List<CommandRequest> otherRequests = new List<CommandRequest>();
             string contextId = sessionService.GetContextId();

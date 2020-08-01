@@ -9,7 +9,7 @@ using UKSF.Api.Services.Modpack.BuildProcess.Steps;
 using UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps;
 using UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods;
 using UKSF.Api.Services.Modpack.BuildProcess.Steps.Common;
-using UKSF.Api.Services.Modpack.BuildProcess.Steps.Release;
+using UKSF.Api.Services.Modpack.BuildProcess.Steps.ReleaseSteps;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess {
     public class BuildStepService : IBuildStepService {

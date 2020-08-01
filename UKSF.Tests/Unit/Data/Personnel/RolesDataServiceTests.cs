@@ -31,7 +31,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Personnel {
 
             mockDataCollection.Setup(x => x.Get()).Returns(new List<Role> {role1, role2, role3});
 
-            List<Role> subject = rolesDataService.Get();
+            IEnumerable<Role> subject = rolesDataService.Get();
 
             subject.Should().ContainInOrder(role3, role1, role2);
         }

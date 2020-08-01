@@ -32,9 +32,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Personnel {
 
         [Fact]
         public void ShouldReturnInvalidIndexGetIndexWhenRankNotFound() {
-            List<Rank> mockCollection = new List<Rank>();
-
-            mockRanksDataService.Setup(x => x.Get()).Returns(mockCollection);
+            mockRanksDataService.Setup(x => x.Get()).Returns(new List<Rank>());
 
             int subject = ranksService.GetRankIndex("Private");
 

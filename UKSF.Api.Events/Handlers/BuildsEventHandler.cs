@@ -28,6 +28,8 @@ namespace UKSF.Api.Events.Handlers {
         }
 
         private async Task HandleBuildEvent(DataEventModel<IBuildsDataService> x) {
+            if (x.data == null) return;
+
             switch (x.type) {
                 case DataEventType.ADD:
                     await AddedEvent(x.data as ModpackBuild);
@@ -35,10 +37,7 @@ namespace UKSF.Api.Events.Handlers {
                 case DataEventType.UPDATE:
                     await UpdatedEvent(x.id, x.data);
                     break;
-                case DataEventType.DELETE:
-                    await SpecialEvent(x.id, x.data);
-                    break;
-                case DataEventType.SPECIAL: break;
+                case DataEventType.DELETE: break;
                 default: throw new ArgumentOutOfRangeException();
             }
         }
@@ -63,14 +62,6 @@ namespace UKSF.Api.Events.Handlers {
                     break;
                 case ModpackBuildStep step:
                     await hub.Clients.Group(id).ReceiveBuildStep(step);
-                    break;
-            }
-        }
-
-        private async Task SpecialEvent(string id, object data) {
-            switch (data) {
-                case int index:
-                    await hub.Clients.Group(id).ReceiveLargeBuildStep(index);
                     break;
             }
         }

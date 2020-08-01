@@ -147,8 +147,8 @@ namespace UKSF.Api.Controllers.Accounts {
         [HttpGet("roster"), Authorize]
         public IActionResult GetRosterAccounts() {
             List<object> accountObjects = new List<object>();
-            List<Account> accounts = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER);
-            accounts = accounts.OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname).ToList();
+            IEnumerable<Account> accounts = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER);
+            accounts = accounts.OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname);
             accountObjects.AddRange(
                 accounts.Select(
                     document => new {
@@ -167,7 +167,7 @@ namespace UKSF.Api.Controllers.Accounts {
         [HttpGet("online")]
         public IActionResult GetOnlineAccounts() {
             HashSet<TeamspeakClient> teamnspeakClients = teamspeakService.GetOnlineTeamspeakClients();
-            List<Account> allAccounts = accountService.Data.Get();
+            IEnumerable<Account> allAccounts = accountService.Data.Get();
             var clients = teamnspeakClients.Where(x => x != null).Select(x => new {account = allAccounts.FirstOrDefault(y => y.teamspeakIdentities != null && y.teamspeakIdentities.Any(z => z.Equals(x.clientDbId))), client = x}).ToList();
             var clientAccounts = clients.Where(x => x.account != null && x.account.membershipState == MembershipState.MEMBER).OrderBy(x => x.account.rank, new RankComparer(ranksService)).ThenBy(x => x.account.lastname).ThenBy(x => x.account.firstname);
             List<string> commandAccounts = unitsService.GetAuxilliaryRoot().members;

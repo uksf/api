@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Services.Common;
 
-namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Release {
+namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.ReleaseSteps {
     [BuildStep(NAME)]
     public class BuildStepPublish : BuildStep {
         public const string NAME = "Publish";

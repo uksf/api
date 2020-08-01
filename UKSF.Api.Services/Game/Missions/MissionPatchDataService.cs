@@ -22,7 +22,7 @@ namespace UKSF.Api.Services.Game.Missions {
         }
 
         public void UpdatePatchData() {
-            MissionPatchData.instance = new MissionPatchData {units = new List<MissionUnit>(), ranks = ranksService.Data.Get(), players = new List<MissionPlayer>(), orderedUnits = new List<MissionUnit>()};
+            MissionPatchData.instance = new MissionPatchData {units = new List<MissionUnit>(), ranks = ranksService.Data.Get().ToList(), players = new List<MissionPlayer>(), orderedUnits = new List<MissionUnit>()};
 
             foreach (Unit unit in unitsService.Data.Get(x => x.branch == UnitBranch.COMBAT).ToList()) {
                 MissionPatchData.instance.units.Add(new MissionUnit {sourceUnit = unit, depth = unitsService.GetUnitDepth(unit)});

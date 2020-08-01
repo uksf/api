@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
@@ -25,7 +26,7 @@ namespace UKSF.Api.Services.Utility {
 
         public async void Load() {
             await AddUnique();
-            Data.Get().ForEach(Schedule);
+            Data.Get().ToList().ForEach(Schedule);
         }
 
         public async Task CreateAndSchedule(DateTime next, TimeSpan interval, string action, params object[] actionParameters) {

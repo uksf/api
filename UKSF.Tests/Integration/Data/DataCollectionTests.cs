@@ -129,7 +129,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
                 async database => {
                     (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
-                    List<Role> subject = dataCollection.Get(x => x.order == 0);
+                    List<Role> subject = dataCollection.Get(x => x.order == 0).ToList();
 
                     subject.Should().NotBeNull();
                     subject.Count.Should().Be(5);
@@ -144,7 +144,7 @@ namespace UKSF.Tests.Unit.Integration.Data {
                 async database => {
                     (DataCollection<Role> dataCollection, _) = await SetupTestCollection(database);
 
-                    List<Role> subject = dataCollection.Get();
+                    List<Role> subject = dataCollection.Get().ToList();
 
                     subject.Should().NotBeNull();
                     subject.Count.Should().Be(7);

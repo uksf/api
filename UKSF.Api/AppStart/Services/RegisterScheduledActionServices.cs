@@ -8,7 +8,7 @@ namespace UKSF.Api.AppStart.Services {
             services.AddTransient<IDeleteExpiredConfirmationCodeAction, DeleteExpiredConfirmationCodeAction>();
             services.AddTransient<IInstagramImagesAction, InstagramImagesAction>();
             services.AddTransient<IInstagramTokenAction, InstagramTokenAction>();
-            services.AddTransient<IPruneLogsAction, PruneDataAction>();
+            services.AddTransient<IPruneDataAction, PruneDataAction>();
             services.AddTransient<ITeamspeakSnapshotAction, TeamspeakSnapshotAction>();
         }
     }

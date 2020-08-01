@@ -31,7 +31,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Game {
 
             mockDataCollection.Setup(x => x.Get()).Returns(new List<GameServer> {rank1, rank2, rank3});
 
-            List<GameServer> subject = gameServersDataService.Get();
+            IEnumerable<GameServer> subject = gameServersDataService.Get();
 
             subject.Should().ContainInOrder(rank2, rank3, rank1);
         }

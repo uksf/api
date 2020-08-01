@@ -26,7 +26,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Units {
 
             UnitsDataService unitsDataService = new UnitsDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
 
-            List<UksfUnit> subject = unitsDataService.Get();
+            IEnumerable<UksfUnit> subject = unitsDataService.Get();
 
             subject.Should().ContainInOrder(rank2, rank3, rank1);
         }
@@ -47,7 +47,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Units {
 
             UnitsDataService unitsDataService = new UnitsDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
 
-            List<UksfUnit> subject = unitsDataService.Get(x => x.type == UnitType.SECTION);
+            IEnumerable<UksfUnit> subject = unitsDataService.Get(x => x.type == UnitType.SECTION);
 
             subject.Should().ContainInOrder(rank2, rank1);
         }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using UKSF.Api.Events;
 using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
+using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Services.Admin;
@@ -27,7 +28,7 @@ namespace UKSF.Api.AppStart {
             // Register scheduled actions
             RegisterScheduledActions.Register();
 
-            // Register buidl steps
+            // Register build steps
             serviceProvider.GetService<IBuildStepService>().RegisterBuildSteps();
 
             // Add event handlers
@@ -41,6 +42,10 @@ namespace UKSF.Api.AppStart {
 
             // Start scheduler
             serviceProvider.GetService<ISchedulerService>().Load();
+
+            // Mark running builds as cancelled & run queued builds
+            serviceProvider.GetService<IBuildsService>().CancelInterruptedBuilds();
+            serviceProvider.GetService<IModpackService>().RunQueuedBuilds();
         }
     }
 }

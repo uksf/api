@@ -50,7 +50,7 @@ namespace UKSF.Api.Controllers {
             string account = sessionService.GetContextId();
             List<object> activity = new List<object>();
             foreach (Account recruiterAccount in recruitmentService.GetRecruiters()) {
-                List<Account> recruiterApplications = accountService.Data.Get(x => x.application != null && x.application.recruiter == recruiterAccount.id);
+                List<Account> recruiterApplications = accountService.Data.Get(x => x.application != null && x.application.recruiter == recruiterAccount.id).ToList();
                 activity.Add(
                     new {
                         account = new {recruiterAccount.id, recruiterAccount.settings},

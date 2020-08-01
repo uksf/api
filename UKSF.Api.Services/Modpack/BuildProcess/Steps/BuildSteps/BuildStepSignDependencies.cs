@@ -32,7 +32,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             Logger.LogSurround("Cleared keys directories");
 
             Logger.LogSurround("\nCreating key...");
-            await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, keygenPath, new List<string> { $".\"{dsCreateKey}\" {keyName}" });
+            BuildProcessHelper.RunProcess(Logger, CancellationTokenSource.Token, keygenPath, dsCreateKey, keyName, true);
             Logger.Log($"Created {keyName}");
             await CopyFiles(keygen, keys, new List<FileInfo> { new FileInfo(Path.Join(keygenPath, $"{keyName}.bikey")) });
             Logger.LogSurround("Created key");
@@ -40,7 +40,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
 
         protected override async Task ProcessExecute() {
             string addonsPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "addons");
-            string interceptPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@intercept", "addons");
+            string interceptPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@intercept", "addons");
             string keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
             DirectoryInfo addons = new DirectoryInfo(addonsPath);
             DirectoryInfo intercept = new DirectoryInfo(interceptPath);
@@ -54,9 +54,9 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             await SignFiles(keygenPath, addonsPath, repoFiles);
             Logger.LogSurround("Signed dependencies");
 
-            List<FileInfo> interceptIiles = GetDirectoryContents(intercept, "*.pbo");
+            List<FileInfo> interceptFiles = GetDirectoryContents(intercept, "*.pbo");
             Logger.LogSurround("\nSigning intercept...");
-            await SignFiles(keygenPath, addonsPath, interceptIiles);
+            await SignFiles(keygenPath, addonsPath, interceptFiles);
             Logger.LogSurround("Signed intercept");
         }
 
@@ -73,12 +73,14 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             string privateKey = Path.Join(keygenPath, $"{keyName}.biprivatekey");
             int signed = 0;
             int total = files.Count;
-            await ParallelProcessFiles(
+            await BatchProcessFiles(
                 files,
-                50,
-                async file => {
-                    await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, addonsPath, new List<string> { $".\"{dsSignFile}\" \"{privateKey}\" \"{file.FullName}\"" });
+                10,
+                file => {
+                    BuildProcessHelper.RunProcess(Logger, CancellationTokenSource.Token, addonsPath, dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", true);
                     Interlocked.Increment(ref signed);
+
+                    return Task.CompletedTask;
                 },
                 () => $"Signed {signed} of {total} files",
                 "Failed to sign file"

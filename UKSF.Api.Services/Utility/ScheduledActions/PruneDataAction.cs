@@ -9,7 +9,7 @@ using UKSF.Api.Models.Message.Logging;
 using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Services.Utility.ScheduledActions {
-    public class PruneDataAction : IPruneLogsAction {
+    public class PruneDataAction : IPruneDataAction {
         public const string ACTION_NAME = nameof(PruneDataAction);
 
         private readonly IDataCollectionFactory dataCollectionFactory;

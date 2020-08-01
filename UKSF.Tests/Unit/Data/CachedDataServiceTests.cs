@@ -40,7 +40,7 @@ namespace UKSF.Tests.Unit.Unit.Data {
             mockCachedDataService.Get();
 
             mockCachedDataService.Collection.Should().NotBeNull();
-            mockCachedDataService.Collection.Should().BeSameAs(mockCollection);
+            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
         }
 
         [Fact]
@@ -51,7 +51,7 @@ namespace UKSF.Tests.Unit.Unit.Data {
 
             mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
 
-            List<MockDataModel> subject = mockCachedDataService.Get(x => x.Name == "1");
+            IEnumerable<MockDataModel> subject = mockCachedDataService.Get(x => x.Name == "1");
 
             mockCachedDataService.Collection.Should().NotBeNull();
             subject.Should().BeSubsetOf(mockCachedDataService.Collection);
@@ -68,7 +68,7 @@ namespace UKSF.Tests.Unit.Unit.Data {
             MockDataModel subject = mockCachedDataService.GetSingle(item2.id);
 
             mockCachedDataService.Collection.Should().NotBeNull();
-            mockCachedDataService.Collection.Should().BeSameAs(mockCollection);
+            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
             subject.Should().Be(item2);
         }
 
@@ -83,7 +83,7 @@ namespace UKSF.Tests.Unit.Unit.Data {
             MockDataModel subject = mockCachedDataService.GetSingle(x => x.Name == "2");
 
             mockCachedDataService.Collection.Should().NotBeNull();
-            mockCachedDataService.Collection.Should().BeSameAs(mockCollection);
+            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
             subject.Should().Be(item2);
         }
 
@@ -98,7 +98,7 @@ namespace UKSF.Tests.Unit.Unit.Data {
             mockCachedDataService.Refresh();
 
             mockCachedDataService.Collection.Should().NotBeNull();
-            mockCachedDataService.Collection.Should().BeSameAs(mockCollection);
+            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
         }
 
         [Fact]
@@ -109,15 +109,15 @@ namespace UKSF.Tests.Unit.Unit.Data {
 
             mockCachedDataService.Collection.Should().BeNull();
 
-            List<MockDataModel> subject1 = mockCachedDataService.Get();
+            List<MockDataModel> subject1 = mockCachedDataService.Get().ToList();
 
             subject1.Should().NotBeNull();
-            subject1.Should().BeSameAs(mockCollection);
+            subject1.Should().BeEquivalentTo(mockCollection);
 
-            List<MockDataModel> subject2 = mockCachedDataService.Get();
+            List<MockDataModel> subject2 = mockCachedDataService.Get().ToList();
 
             subject2.Should().NotBeNull();
-            subject2.Should().BeSameAs(mockCollection).And.BeSameAs(subject1);
+            subject2.Should().BeEquivalentTo(mockCollection).And.BeEquivalentTo(subject1);
         }
 
         [Fact]
@@ -132,7 +132,7 @@ namespace UKSF.Tests.Unit.Unit.Data {
 
             await mockCachedDataService.Add(item1);
 
-            mockCachedDataService.Collection.Should().BeSameAs(mockCollection);
+            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
             mockCachedDataService.Collection.Should().Contain(item1);
         }
 
@@ -147,7 +147,7 @@ namespace UKSF.Tests.Unit.Unit.Data {
 
             await mockCachedDataService.Delete(item1.id);
 
-            mockCachedDataService.Collection.Should().BeSameAs(mockCollection);
+            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
             mockCachedDataService.Collection.Should().HaveCount(1).And.NotContain(item1).And.Contain(item2);
         }
 
@@ -165,7 +165,7 @@ namespace UKSF.Tests.Unit.Unit.Data {
 
             await mockCachedDataService.DeleteMany(x => x.Name == "1");
 
-            mockCachedDataService.Collection.Should().BeSameAs(mockCollection);
+            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
             mockCachedDataService.Collection.Should().HaveCount(1);
             mockCachedDataService.Collection.Should().Contain(item3);
         }
@@ -183,7 +183,7 @@ namespace UKSF.Tests.Unit.Unit.Data {
 
             await mockCachedDataService.Replace(item2);
 
-            mockCachedDataService.Collection.Should().BeSameAs(mockCollection);
+            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
             mockCachedDataService.Collection.First().Name.Should().Be("2");
         }
 
@@ -199,7 +199,7 @@ namespace UKSF.Tests.Unit.Unit.Data {
 
             await mockCachedDataService.Update(item1.id, "Name", "2");
 
-            mockCachedDataService.Collection.Should().BeSameAs(mockCollection);
+            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
             mockCachedDataService.Collection.First().Name.Should().Be("2");
         }
 
@@ -215,7 +215,7 @@ namespace UKSF.Tests.Unit.Unit.Data {
 
             await mockCachedDataService.Update(item1.id, Builders<MockDataModel>.Update.Set(x => x.Name, "2"));
 
-            mockCachedDataService.Collection.Should().BeSameAs(mockCollection);
+            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
             mockCachedDataService.Collection.First().Name.Should().Be("2");
         }
 
@@ -236,10 +236,10 @@ namespace UKSF.Tests.Unit.Unit.Data {
 
             await mockCachedDataService.UpdateMany(x => x.Name == "1", Builders<MockDataModel>.Update.Set(x => x.Name, "3"));
 
-            mockCachedDataService.Collection.Should().BeSameAs(mockCollection);
-            mockCachedDataService.Collection[0].Name.Should().Be("3");
-            mockCachedDataService.Collection[1].Name.Should().Be("3");
-            mockCachedDataService.Collection[2].Name.Should().Be("3");
+            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
+            mockCachedDataService.Collection.ToList()[0].Name.Should().Be("3");
+            mockCachedDataService.Collection.ToList()[1].Name.Should().Be("3");
+            mockCachedDataService.Collection.ToList()[2].Name.Should().Be("3");
         }
     }
 }
