@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Octokit;
 using UKSF.Api.Interfaces.Integrations.Github;
@@ -27,11 +28,11 @@ namespace UKSF.Api.Services.Modpack {
             this.sessionService = sessionService;
         }
 
-        public List<ModpackRelease> GetReleases() => releaseService.Data.Get();
+        public IEnumerable<ModpackRelease> GetReleases() => releaseService.Data.Get();
 
-        public List<ModpackBuild> GetRcBuilds() => buildsService.GetRcBuilds();
+        public IEnumerable<ModpackBuild> GetRcBuilds() => buildsService.GetRcBuilds();
 
-        public List<ModpackBuild> GetDevBuilds() => buildsService.GetDevBuilds();
+        public IEnumerable<ModpackBuild> GetDevBuilds() => buildsService.GetDevBuilds();
 
         public ModpackRelease GetRelease(string version) => releaseService.GetRelease(version);
 
@@ -51,7 +52,8 @@ namespace UKSF.Api.Services.Modpack {
 
         public async Task Rebuild(ModpackBuild build) {
             LogWrapper.AuditLog($"Rebuild triggered for {GetBuildName(build)}.");
-            ModpackBuild rebuild = await buildsService.CreateRebuild(build);
+            ModpackBuild rebuild = await buildsService.CreateRebuild(build, build.commit.branch == "None" ? string.Empty : (await githubService.GetLatestReferenceCommit(build.commit.branch)).after);
+
             buildQueueService.QueueBuild(rebuild);
         }
 
@@ -104,6 +106,16 @@ namespace UKSF.Api.Services.Modpack {
 
             ModpackBuild rcBuild = await buildsService.CreateRcBuild(rcVersion, rcCommit);
             buildQueueService.QueueBuild(rcBuild);
+        }
+
+        public void RunQueuedBuilds() {
+            List<ModpackBuild> builds = buildsService.GetDevBuilds().Where(x => !x.finished && !x.running).ToList();
+            builds = builds.Concat(buildsService.GetRcBuilds().Where(x => !x.finished && !x.running)).ToList();
+            if (!builds.Any()) return;
+
+            foreach (ModpackBuild build in builds) {
+                buildQueueService.QueueBuild(build);
+            }
         }
 
         private static string GetBuildName(ModpackBuild build) =>

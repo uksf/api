@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Models.Personnel;
@@ -9,7 +10,7 @@ namespace UKSF.Api.Services.Personnel {
         public RanksService(IRanksDataService data) : base(data) { }
 
         public int GetRankIndex(string rankName) {
-            return Data.Get().FindIndex(x => x.name == rankName);
+            return Data.Get().ToList().FindIndex(x => x.name == rankName);
         }
 
         public int Sort(string nameA, string nameB) {

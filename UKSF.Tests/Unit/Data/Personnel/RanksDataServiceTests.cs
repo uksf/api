@@ -53,7 +53,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Personnel {
 
             mockDataCollection.Setup(x => x.Get()).Returns(new List<Rank> { rank1, rank2, rank3 });
 
-            List<Rank> subject = ranksDataService.Get();
+            IEnumerable<Rank> subject = ranksDataService.Get();
 
             subject.Should().ContainInOrder(rank2, rank3, rank1);
         }

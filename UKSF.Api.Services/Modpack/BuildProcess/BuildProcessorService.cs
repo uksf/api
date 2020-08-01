@@ -7,7 +7,7 @@ using UKSF.Api.Interfaces.Modpack.BuildProcess.Steps;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Modpack;
 using UKSF.Api.Services.Modpack.BuildProcess.Steps.Common;
-using UKSF.Api.Services.Modpack.BuildProcess.Steps.Release;
+using UKSF.Api.Services.Modpack.BuildProcess.Steps.ReleaseSteps;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess {
     public class BuildProcessorService : IBuildProcessorService {
@@ -29,7 +29,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                     buildStep,
                     async updateDefinition => await buildsService.UpdateBuild(build, updateDefinition),
                     async () => await buildsService.UpdateBuildStep(build, buildStep),
-                    () => buildsService.BuildStepLogEvent(build, buildStep),
                     cancellationTokenSource
                 );
 
@@ -78,7 +77,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 restoreStep,
                 async updateDefinition => await buildsService.UpdateBuild(build, updateDefinition),
                 async () => await buildsService.UpdateBuildStep(build, restoreStep),
-                () => buildsService.BuildStepLogEvent(build, restoreStep),
                 new CancellationTokenSource()
             );
             build.steps.Add(restoreStep);

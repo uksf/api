@@ -49,7 +49,7 @@ namespace UKSF.Api.Services.Admin {
         private static void ExecuteMigration() {
             IDataCollectionFactory dataCollectionFactory = ServiceWrapper.Provider.GetService<IDataCollectionFactory>();
             IDataCollection<OldAccount> oldDataCollection = dataCollectionFactory.CreateDataCollection<OldAccount>("accounts");
-            List<OldAccount> oldAccounts = oldDataCollection.Get();
+            IEnumerable<OldAccount> oldAccounts = oldDataCollection.Get();
 
             IAccountDataService accountDataService = ServiceWrapper.Provider.GetService<IAccountDataService>();
 

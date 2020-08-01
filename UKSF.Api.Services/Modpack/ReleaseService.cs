@@ -45,7 +45,7 @@ namespace UKSF.Api.Services.Modpack {
         }
 
         public async Task AddHistoricReleases(IEnumerable<ModpackRelease> releases) {
-            List<ModpackRelease> existingReleases = Data.Get();
+            IEnumerable<ModpackRelease> existingReleases = Data.Get();
             foreach (ModpackRelease release in releases.Where(x => existingReleases.All(y => y.version != x.version))) {
                 await Data.Add(release);
             }

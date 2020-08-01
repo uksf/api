@@ -26,7 +26,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Personnel {
 
             DischargeDataService dischargeDataService = new DischargeDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
 
-            List<DischargeCollection> subject = dischargeDataService.Get();
+            IEnumerable<DischargeCollection> subject = dischargeDataService.Get();
 
             subject.Should().ContainInOrder(dischargeCollection2, dischargeCollection3, dischargeCollection1);
         }

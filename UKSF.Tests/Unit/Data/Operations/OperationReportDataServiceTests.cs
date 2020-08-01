@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Data.Operations;
@@ -24,29 +25,29 @@ namespace UKSF.Tests.Unit.Unit.Data.Operations {
         }
 
         [Fact]
-        public void ShouldGetReversedCollection() {
-            Oprep item1 = new Oprep();
-            Oprep item2 = new Oprep();
-            Oprep item3 = new Oprep();
+        public void ShouldGetOrderedCollection() {
+            Oprep item1 = new Oprep { start = DateTime.Now.AddDays(-1) };
+            Oprep item2 = new Oprep { start = DateTime.Now.AddDays(-2) };
+            Oprep item3 = new Oprep { start = DateTime.Now.AddDays(-3) };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> {item1, item2, item3});
+            mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> { item1, item2, item3 });
 
-            List<Oprep> subject = operationReportDataService.Get();
+            IEnumerable<Oprep> subject = operationReportDataService.Get();
 
             subject.Should().ContainInOrder(item3, item2, item1);
         }
 
         [Fact]
-        public void ShouldGetReversedCollectionByPredicate() {
-            Oprep item1 = new Oprep { description = "1" };
-            Oprep item2 = new Oprep { description = "2" };
-            Oprep item3 = new Oprep { description = "3" };
+        public void ShouldGetOrderedCollectionByPredicate() {
+            Oprep item1 = new Oprep { description = "1", start = DateTime.Now.AddDays(-1) };
+            Oprep item2 = new Oprep { description = "2", start = DateTime.Now.AddDays(-2) };
+            Oprep item3 = new Oprep { description = "1", start = DateTime.Now.AddDays(-3) };
 
             mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> { item1, item2, item3 });
 
-            List<Oprep> subject = operationReportDataService.Get(x => x.description != string.Empty);
+            IEnumerable<Oprep> subject = operationReportDataService.Get(x => x.description == "1");
 
-            subject.Should().ContainInOrder(item3, item2, item1);
+            subject.Should().ContainInOrder(item3, item1);
         }
     }
 }

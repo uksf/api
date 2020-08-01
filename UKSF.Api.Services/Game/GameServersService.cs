@@ -63,7 +63,7 @@ namespace UKSF.Api.Services.Game {
         }
 
         public async Task<List<GameServer>> GetAllGameServerStatuses() {
-            List<GameServer> gameServers = Data.Get();
+            List<GameServer> gameServers = Data.Get().ToList();
             await Task.WhenAll(gameServers.Select(GetGameServerStatus));
             return gameServers;
         }
@@ -153,6 +153,7 @@ namespace UKSF.Api.Services.Game {
             }
 
             Data.Get()
+                .ToList()
                 .ForEach(
                     x => {
                         x.processId = null;

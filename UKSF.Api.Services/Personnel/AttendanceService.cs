@@ -15,7 +15,7 @@ namespace UKSF.Api.Services.Personnel {
         private readonly IDisplayNameService displayNameService;
         private readonly ILoaService loaService;
         private readonly IUnitsService unitsService;
-        private List<Account> accounts;
+        private IEnumerable<Account> accounts;
         private List<TeamspeakServerSnapshot> records;
 
         public AttendanceService(IAccountService accountService, IDisplayNameService displayNameService, ILoaService loaService, IMongoDatabase database, IUnitsService unitsService) {

@@ -9,8 +9,11 @@ namespace UKSF.Api.Data.Personnel {
     public class DischargeDataService : CachedDataService<DischargeCollection, IDischargeDataService>, IDischargeDataService {
         public DischargeDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IDischargeDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "discharges") { }
 
-        public override List<DischargeCollection> Get() {
-            return base.Get().OrderByDescending(x => x.discharges.Last().timestamp).ToList();
+        public override List<DischargeCollection> Collection {
+            get => base.Collection;
+            protected set {
+                lock (LockObject) base.Collection = value?.OrderByDescending(x => x.discharges.Last().timestamp).ToList();
+            }
         }
     }
 }

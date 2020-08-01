@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -9,6 +9,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
         private const string MOD_NAME = "modpack";
 
         protected override async Task ProcessExecute() {
+            UpdateInterval = TimeSpan.FromMilliseconds(250);
+
             Logger.Log("Running build for UKSF");
 
             string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
@@ -16,7 +18,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
 
             Logger.LogSurround("\nRunning make.py...");
-            await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, toolsPath, new List<string> { MakeCommand() }, true);
+            BuildProcessHelper.RunProcess(Logger, CancellationTokenSource.Token, toolsPath, PythonPath, MakeCommand("redirect"));
             Logger.LogSurround("Make.py complete");
 
             Logger.LogSurround("\nMoving UKSF release to build...");

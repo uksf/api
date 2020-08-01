@@ -20,7 +20,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             DirectoryInfo dependencies = new DirectoryInfo(dependenciesPath);
 
             Logger.LogSurround("\nRunning make.py...");
-            await BuildProcessHelper.RunPowershell(Logger, CancellationTokenSource.Token, toolsPath, new List<string> { MakeCommand() }, true);
+            BuildProcessHelper.RunProcess(Logger, CancellationTokenSource.Token, toolsPath, PythonPath, MakeCommand());
             Logger.LogSurround("Make.py complete");
 
             Logger.LogSurround("\nMoving F-35 pbos to uksf dependencies...");

@@ -9,9 +9,9 @@ using UKSF.Api.Models.Events;
 
 namespace UKSF.Api.Services.Fake {
     public abstract class FakeDataService<T, TData> : IDataService<T, TData> {
-        public List<T> Get() => new List<T>();
+        public IEnumerable<T> Get() => new List<T>();
 
-        public List<T> Get(Func<T, bool> predicate) => new List<T>();
+        public IEnumerable<T> Get(Func<T, bool> predicate) => new List<T>();
 
         public T GetSingle(string id) => default;
 

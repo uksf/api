@@ -17,9 +17,9 @@ namespace UKSF.Api.Data.Message {
         }
 
         private void CommentThreadDataEvent(DataEventModel<ICommentThreadDataService> dataEvent) {
-            base.CachedDataEvent(dataEvent);
+            base.DataEvent(dataEvent);
         }
 
-        protected override void CachedDataEvent(DataEventModel<ICommentThreadDataService> dataEvent) { }
+        protected override void DataEvent(DataEventModel<ICommentThreadDataService> dataEvent) { }
     }
 }

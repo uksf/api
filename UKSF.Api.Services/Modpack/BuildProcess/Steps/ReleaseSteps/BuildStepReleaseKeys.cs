@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using UKSF.Api.Models.Game;
 
-namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Release {
+namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.ReleaseSteps {
     [BuildStep(NAME)]
     public class BuildStepReleaseKeys : FileBuildStep {
         public const string NAME = "Copy Keys";

@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Interfaces.Integrations.Github;
 using UKSF.Api.Services.Common;
 
-namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Release {
+namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.ReleaseSteps {
     [BuildStep(NAME)]
     public class BuildStepMerge : BuildStep {
         public const string NAME = "Merge";

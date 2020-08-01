@@ -11,31 +11,38 @@ using UKSF.Api.Services.Admin;
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class BuildStep : IBuildStep {
         private const string COLOUR_BLUE = "#0c78ff";
-
+        private readonly CancellationTokenSource updatePusherCancellationTokenSource = new CancellationTokenSource();
+        private readonly SemaphoreSlim updateSemaphore = new SemaphoreSlim(1);
         protected ModpackBuild Build;
         private ModpackBuildStep buildStep;
         protected CancellationTokenSource CancellationTokenSource;
         protected IStepLogger Logger;
         private Func<UpdateDefinition<ModpackBuild>, Task> updateBuildCallback;
         private Func<Task> updateStepCallback;
-        private Action logEvent;
+        protected TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
 
-        public void Init(ModpackBuild modpackBuild, ModpackBuildStep modpackBuildStep, Func<UpdateDefinition<ModpackBuild>, Task> buildUpdateCallback, Func<Task> stepUpdateCallback, Action stepLogEvent, CancellationTokenSource newCancellationTokenSource) {
+        public void Init(
+            ModpackBuild modpackBuild,
+            ModpackBuildStep modpackBuildStep,
+            Func<UpdateDefinition<ModpackBuild>, Task> buildUpdateCallback,
+            Func<Task> stepUpdateCallback,
+            CancellationTokenSource newCancellationTokenSource
+        ) {
             Build = modpackBuild;
             buildStep = modpackBuildStep;
             updateBuildCallback = buildUpdateCallback;
             updateStepCallback = stepUpdateCallback;
-            logEvent = stepLogEvent;
             CancellationTokenSource = newCancellationTokenSource;
-            Logger = new StepLogger(buildStep, async () => await updateStepCallback(), logEvent);
+            Logger = new StepLogger(buildStep);
         }
 
         public async Task Start() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
+            StartUpdatePusher();
             buildStep.running = true;
             buildStep.startTime = DateTime.Now;
             Logger.LogStart();
-            await updateStepCallback();
+            await Update();
         }
 
         public virtual bool CheckGuards() => true;
@@ -44,12 +51,14 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
             Logger.Log("\nSetup", COLOUR_BLUE);
             await SetupExecute();
+            await Update();
         }
 
         public async Task Process() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
             Logger.Log("\nProcess", COLOUR_BLUE);
             await ProcessExecute();
+            await Update();
         }
 
         public async Task Succeed() {
@@ -141,11 +150,41 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             return default;
         }
 
+        private void StartUpdatePusher() {
+            try {
+                _ = Task.Run(
+                    async () => {
+                        do {
+                            await Task.Delay(UpdateInterval, updatePusherCancellationTokenSource.Token);
+                            await Update();
+                        } while (!updatePusherCancellationTokenSource.IsCancellationRequested);
+                    },
+                    updatePusherCancellationTokenSource.Token
+                );
+            } catch (OperationCanceledException) {
+                // ignored
+                Console.Out.WriteLine("cancelled");
+            } catch (Exception exception) {
+                Console.Out.WriteLine(exception);
+            }
+        }
+
+        private void StopUpdatePusher() {
+            updatePusherCancellationTokenSource.Cancel();
+        }
+
+        private async Task Update() {
+            await updateSemaphore.WaitAsync();
+            await updateStepCallback();
+            updateSemaphore.Release();
+        }
+
         private async Task Stop() {
             buildStep.running = false;
             buildStep.finished = true;
             buildStep.endTime = DateTime.Now;
-            await updateStepCallback();
+            StopUpdatePusher();
+            await Update();
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Humanizer;
+using MoreLinq;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class FileBuildStep : BuildStep {
@@ -128,7 +129,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             }
         }
 
-        internal async Task ParallelProcessFiles(IEnumerable<FileInfo> files, int taskLimit, Func<FileInfo, Task> process, Func<string> getLog, string error, bool logInstantly = false) {
+        internal async Task ParallelProcessFiles(IEnumerable<FileInfo> files, int taskLimit, Func<FileInfo, Task> process, Func<string> getLog, string error) {
             SemaphoreSlim taskLimiter = new SemaphoreSlim(taskLimit);
             IEnumerable<Task> tasks = files.Select(
                 file => {
@@ -141,15 +142,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
                                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
                                 await process(file);
-                                if (logInstantly) {
-                                    Logger.LogInlineInstant(getLog());
-                                } else {
-                                    Logger.LogInline(getLog());
-                                }
+                                Logger.LogInline(getLog());
                             } catch (OperationCanceledException) {
                                 throw;
                             } catch (Exception exception) {
-                                throw new Exception($"{error} '{file}'\n{exception.Message}", exception);
+                                throw new Exception($"{error} '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}", exception);
                             } finally {
                                 taskLimiter.Release();
                             }
@@ -159,8 +156,30 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
                 }
             );
 
-            Logger.LogInstant(getLog());
+            Logger.Log(getLog());
             await Task.WhenAll(tasks);
+        }
+
+        internal async Task BatchProcessFiles(IEnumerable<FileInfo> files, int batchSize, Func<FileInfo, Task> process, Func<string> getLog, string error) {
+            Logger.Log(getLog());
+            IEnumerable<IEnumerable<FileInfo>> fileBatches = files.Batch(batchSize);
+            foreach (IEnumerable<FileInfo> fileBatch in fileBatches) {
+                List<FileInfo> fileList = fileBatch.ToList();
+                IEnumerable<Task> tasks = fileList.Select(
+                    async file => {
+                        try {
+                            CancellationTokenSource.Token.ThrowIfCancellationRequested();
+                            await process(file);
+                        } catch (OperationCanceledException) {
+                            throw;
+                        } catch (Exception exception) {
+                            throw new Exception($"{error} '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}", exception);
+                        }
+                    }
+                );
+                await Task.WhenAll(tasks);
+                Logger.LogInline(getLog());
+            }
         }
 
         private void SimpleCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, bool flatten = false) {
@@ -176,9 +195,9 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
         private async Task ParallelCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, long totalSize, bool flatten = false) {
             long copiedSize = 0;
             string totalSizeString = totalSize.Bytes().ToString("#.#");
-            await ParallelProcessFiles(
+            await BatchProcessFiles(
                 files,
-                100,
+                10,
                 file => {
                     string targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
                     Directory.CreateDirectory(Path.GetDirectoryName(targetFile));
@@ -202,9 +221,9 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
         private async Task ParallelDeleteFiles(IReadOnlyCollection<FileInfo> files) {
             int deleted = 0;
             int total = files.Count;
-            await ParallelProcessFiles(
+            await BatchProcessFiles(
                 files,
-                50,
+                10,
                 file => {
                     file.Delete();
                     Interlocked.Increment(ref deleted);

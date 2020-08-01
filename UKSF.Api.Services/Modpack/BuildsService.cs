@@ -11,6 +11,7 @@ using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
+using UKSF.Api.Services.Message;
 
 namespace UKSF.Api.Services.Modpack {
     public class BuildsService : DataBackedService<IBuildsDataService>, IBuildsService {
@@ -32,13 +33,9 @@ namespace UKSF.Api.Services.Modpack {
             await Data.Update(build, buildStep);
         }
 
-        public void BuildStepLogEvent(ModpackBuild build, ModpackBuildStep buildStep) {
-            Data.LogEvent(build, buildStep);
-        }
+        public IEnumerable<ModpackBuild> GetDevBuilds() => Data.Get(x => x.environment == GameEnvironment.DEV);
 
-        public List<ModpackBuild> GetDevBuilds() => Data.Get(x => x.environment == GameEnvironment.DEV);
-
-        public List<ModpackBuild> GetRcBuilds() => Data.Get(x => x.environment != GameEnvironment.DEV);
+        public IEnumerable<ModpackBuild> GetRcBuilds() => Data.Get(x => x.environment != GameEnvironment.DEV);
 
         public ModpackBuild GetLatestDevBuild() => GetDevBuilds().FirstOrDefault();
 
@@ -95,7 +92,7 @@ namespace UKSF.Api.Services.Modpack {
             return build;
         }
 
-        public async Task<ModpackBuild> CreateRebuild(ModpackBuild build) {
+        public async Task<ModpackBuild> CreateRebuild(ModpackBuild build, string newSha = "") {
             ModpackBuild latestBuild = build.environment == GameEnvironment.DEV ? GetLatestDevBuild() : GetLatestRcBuild(build.version);
             ModpackBuild rebuild = new ModpackBuild {
                 version = latestBuild.environment == GameEnvironment.DEV ? null : latestBuild.version,
@@ -106,6 +103,10 @@ namespace UKSF.Api.Services.Modpack {
                 commit = latestBuild.commit,
                 builderId = sessionService.GetContextId()
             };
+            if (!string.IsNullOrEmpty(newSha)) {
+                rebuild.commit.after = newSha;
+            }
+
             rebuild.commit.message = latestBuild.environment == GameEnvironment.RELEASE
                 ? $"Re-deployment of release {rebuild.version}"
                 : $"Rebuild of #{build.buildNumber}\n\n{rebuild.commit.message}";
@@ -129,6 +130,29 @@ namespace UKSF.Api.Services.Modpack {
 
         public async Task CancelBuild(ModpackBuild build) {
             await FinishBuild(build, build.steps.Any(x => x.buildResult == ModpackBuildResult.WARNING) ? ModpackBuildResult.WARNING : ModpackBuildResult.CANCELLED);
+        }
+
+        public void CancelInterruptedBuilds() {
+            List<ModpackBuild> builds = Data.Get(x => x.running || x.steps.Any(y => y.running)).ToList();
+            if (!builds.Any()) return;
+
+            IEnumerable<Task> tasks = builds.Select(
+                async build => {
+                    ModpackBuildStep runningStep = build.steps.FirstOrDefault(x => x.running);
+                    if (runningStep != null) {
+                        runningStep.running = false;
+                        runningStep.finished = true;
+                        runningStep.endTime = DateTime.Now;
+                        runningStep.buildResult = ModpackBuildResult.CANCELLED;
+                        runningStep.logs.Add(new ModpackBuildStepLogItem { text = "\nBuild was interrupted", colour = "goldenrod" });
+                        await Data.Update(build, runningStep);
+                    }
+
+                    await FinishBuild(build, ModpackBuildResult.CANCELLED);
+                }
+            );
+            _ = Task.WhenAll(tasks);
+            LogWrapper.AuditLog($"Marked {builds.Count} interrupted builds as cancelled", "SERVER");
         }
 
         private async Task FinishBuild(ModpackBuild build, ModpackBuildResult result) {

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
@@ -13,30 +14,22 @@ namespace UKSF.Api.Data.Modpack {
     public class BuildsDataService : CachedDataService<ModpackBuild, IBuildsDataService>, IBuildsDataService {
         public BuildsDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IBuildsDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "modpackBuilds") { }
 
-        public override List<ModpackBuild> Get() {
-            base.Get();
-            Collection = Collection.OrderByDescending(x => x.buildNumber).ToList();
-            return Collection;
+        public override List<ModpackBuild> Collection {
+            get => base.Collection;
+            protected set {
+                lock (LockObject) base.Collection = value?.OrderByDescending(x => x.buildNumber).ToList();
+            }
         }
 
         public async Task Update(ModpackBuild build, ModpackBuildStep buildStep) {
             UpdateDefinition<ModpackBuild> updateDefinition = Builders<ModpackBuild>.Update.Set(x => x.steps[buildStep.index], buildStep);
             await base.Update(x => x.id == build.id, updateDefinition);
-            Refresh();
-            CachedDataEvent(EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.UPDATE, build.id, buildStep));
+            DataEvent(EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.UPDATE, build.id, buildStep));
         }
 
         public async Task Update(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition) {
             await base.Update(build.id, updateDefinition);
-            CachedDataEvent(EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.UPDATE, build.id, build));
-        }
-
-        public void LogEvent(ModpackBuild build, ModpackBuildStep buildStep) {
-            CachedDataEvent(
-                buildStep.logs.Count > 300
-                    ? EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.SPECIAL, build.id, buildStep.index)
-                    : EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.UPDATE, build.id, buildStep)
-            );
+            DataEvent(EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.UPDATE, build.id, build));
         }
     }
 }
