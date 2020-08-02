@@ -26,16 +26,17 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
                 ModpackRelease release = releaseService.GetRelease(Build.version);
                 await discordService.SendMessageToEveryone(VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage(release));
             } else {
-                await discordService.SendMessage(VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage()); // TODO: Change back to DID_C_MODPACK_DEV and change DID_C_MODPACK_RELEASE to live channel
+                await discordService.SendMessage(
+                    VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_RELEASE").AsUlong(),
+                    GetDiscordMessage()
+                ); // TODO: Change back to DID_C_MODPACK_DEV and change DID_C_MODPACK_RELEASE to live channel
             }
 
             Logger.Log("Notifications sent");
         }
 
         private string GetBuildMessage() =>
-            Build.environment == GameEnvironment.RC
-                ? $"New dev build available ({Build.buildNumber}) on the dev repository"
-                : $"New release candidate ({Build.buildNumber}) available for {Build.version} on the rc repository";
+            Build.environment == GameEnvironment.RC ? $"New release candidate available for {Build.version} on the rc repository" : "New dev build available on the dev repository";
 
         private string GetBuildLink() =>
             Build.environment == GameEnvironment.RC ? $"https://uk-sf.co.uk/modpack/builds-rc?version={Build.version}&build={Build.id}" : $"https://uk-sf.co.uk/modpack/builds-dev?build={Build.id}";

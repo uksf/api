@@ -13,23 +13,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             "Linking statically",
             "Visual Studio 16",
             "INFO: Building",
-            "Build Type",
-            "MakePbo Version",
-            "-args-",
-            "-P",
-            "-A",
-            "-G",
-            "-N",
-            "-X",
-            @"P:\z\ace\addons\fonts",
-            @"P:\z\ace\release\@ace\addons",
-            "-------------------",
-            "configuring with ",
-            "entries",
-            "prefix",
-            "...............",
-            "Writing",
-            "written"
+            "Build Type"
         };
 
         public override bool CheckGuards() => IsBuildNeeded(MOD_NAME);
