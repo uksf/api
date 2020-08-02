@@ -40,7 +40,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_ace");
 
             Logger.LogSurround("\nRunning make.py...");
-            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, toolsPath, PythonPath, MakeCommand("redirect"), TimeSpan.FromMinutes(3).TotalMilliseconds, errorExclusions: errorExclusions);
+            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, toolsPath, PythonPath, MakeCommand("redirect"), TimeSpan.FromMinutes(10).TotalMilliseconds, errorExclusions: errorExclusions);
             Logger.LogSurround("Make.py complete");
 
             Logger.LogSurround("\nMoving ACE release to build...");

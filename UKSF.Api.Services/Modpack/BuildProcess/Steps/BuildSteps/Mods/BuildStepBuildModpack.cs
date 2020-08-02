@@ -18,7 +18,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
 
             Logger.LogSurround("\nRunning make.py...");
-            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, toolsPath, PythonPath, MakeCommand("redirect"), TimeSpan.FromMinutes(3).TotalMilliseconds);
+            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, toolsPath, PythonPath, MakeCommand("redirect"), TimeSpan.FromMinutes(5).TotalMilliseconds);
             Logger.LogSurround("Make.py complete");
 
             Logger.LogSurround("\nMoving UKSF release to build...");
