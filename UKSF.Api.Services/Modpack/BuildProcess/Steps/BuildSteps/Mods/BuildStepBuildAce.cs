@@ -9,12 +9,28 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
         public const string NAME = "Build ACE";
         private const string MOD_NAME = "ace";
         private readonly List<string> allowedOptionals = new List<string> { "ace_compat_rksl_pm_ii", "ace_nouniformrestrictions" };
+        private readonly List<string> errorExclusions = new List<string> { // stupid mikero returns this output as an error...
+            "MakePbo Version",
+            "-args-",
+            "-P",
+            "-A",
+            "-G",
+            "-N",
+            "-X",
+            @"P:\z\ace\addons\fonts",
+            @"P:\z\ace\release\@ace\addons",
+            "-------------------",
+            "configuring with ",
+            "entries",
+            "prefix",
+            "...............",
+            "Writing",
+            "written"
+        };
 
         public override bool CheckGuards() => IsBuildNeeded(MOD_NAME);
 
         protected override async Task ProcessExecute() {
-            UpdateInterval = TimeSpan.FromMilliseconds(500);
-
             Logger.Log("Running build for ACE");
 
             string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
@@ -22,7 +38,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_ace");
 
             Logger.LogSurround("\nRunning make.py...");
-            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, toolsPath, PythonPath, MakeCommand("redirect"), TimeSpan.FromMinutes(3).TotalMilliseconds);
+            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, toolsPath, PythonPath, MakeCommand("redirect"), TimeSpan.FromMinutes(3).TotalMilliseconds, errorExclusions: errorExclusions);
             Logger.LogSurround("Make.py complete");
 
             Logger.LogSurround("\nMoving ACE release to build...");
