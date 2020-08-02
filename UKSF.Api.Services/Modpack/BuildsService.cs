@@ -52,7 +52,10 @@ namespace UKSF.Api.Services.Modpack {
                 builderId = builderId,
                 steps = buildStepService.GetSteps(GameEnvironment.DEV)
             };
-            SetEnvironmentVariables(build, previousBuild, newBuild);
+
+            if (previousBuild != null) {
+                SetEnvironmentVariables(build, previousBuild, newBuild);
+            }
 
             await Data.Add(build);
             return build;
@@ -69,7 +72,10 @@ namespace UKSF.Api.Services.Modpack {
                 builderId = builderId,
                 steps = buildStepService.GetSteps(GameEnvironment.RC)
             };
-            SetEnvironmentVariables(build, previousBuild);
+
+            if (previousBuild != null) {
+                SetEnvironmentVariables(build, previousBuild);
+            }
 
             await Data.Add(build);
             return build;
