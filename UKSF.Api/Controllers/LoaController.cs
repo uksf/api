@@ -102,10 +102,10 @@ namespace UKSF.Api.Controllers {
                     notificationsService.Add(new Notification {owner = reviewerId, icon = NotificationIcons.REQUEST, message = $"Your review for {request.displayRequester}'s LOA is no longer required as they deleted their LOA", link = "/command/requests"});
                 }
 
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"Loa request deleted for '{displayNameService.GetDisplayName(accountService.Data.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
+                LogWrapper.AuditLog($"Loa request deleted for '{displayNameService.GetDisplayName(accountService.Data.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
             }
 
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"Loa deleted for '{displayNameService.GetDisplayName(accountService.Data.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
+            LogWrapper.AuditLog($"Loa deleted for '{displayNameService.GetDisplayName(accountService.Data.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
             await loaService.Data.Delete(loa.id);
 
             return Ok();

@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Personnel;
-using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Message;
@@ -18,13 +17,11 @@ namespace UKSF.Api.Controllers {
         private readonly IAssignmentService assignmentService;
         private readonly INotificationsService notificationsService;
         private readonly IRanksService ranksService;
-        private readonly ISessionService sessionService;
 
-        public RanksController(IRanksService ranksService, IAccountService accountService, IAssignmentService assignmentService, ISessionService sessionService, INotificationsService notificationsService) {
+        public RanksController(IRanksService ranksService, IAccountService accountService, IAssignmentService assignmentService, INotificationsService notificationsService) {
             this.ranksService = ranksService;
             this.accountService = accountService;
             this.assignmentService = assignmentService;
-            this.sessionService = sessionService;
             this.notificationsService = notificationsService;
         }
 
@@ -56,14 +53,14 @@ namespace UKSF.Api.Controllers {
         [HttpPut, Authorize]
         public async Task<IActionResult> AddRank([FromBody] Rank rank) {
             await ranksService.Data.Add(rank);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"Rank added '{rank.name}, {rank.abbreviation}, {rank.teamspeakGroup}'");
+            LogWrapper.AuditLog($"Rank added '{rank.name}, {rank.abbreviation}, {rank.teamspeakGroup}'");
             return Ok();
         }
 
         [HttpPatch, Authorize]
         public async Task<IActionResult> EditRank([FromBody] Rank rank) {
             Rank oldRank = ranksService.Data.GetSingle(x => x.id == rank.id);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"Rank updated from '{oldRank.name}, {oldRank.abbreviation}, {oldRank.teamspeakGroup}, {oldRank.discordRoleId}' to '{rank.name}, {rank.abbreviation}, {rank.teamspeakGroup}, {rank.discordRoleId}'");
+            LogWrapper.AuditLog($"Rank updated from '{oldRank.name}, {oldRank.abbreviation}, {oldRank.teamspeakGroup}, {oldRank.discordRoleId}' to '{rank.name}, {rank.abbreviation}, {rank.teamspeakGroup}, {rank.discordRoleId}'");
             await ranksService.Data.Update(rank.id, Builders<Rank>.Update.Set("name", rank.name).Set("abbreviation", rank.abbreviation).Set("teamspeakGroup", rank.teamspeakGroup).Set("discordRoleId", rank.discordRoleId));
             foreach (Account account in accountService.Data.Get(x => x.rank == oldRank.name)) {
                 // TODO: Notify user to update name in TS if rank abbreviate changed
@@ -76,7 +73,7 @@ namespace UKSF.Api.Controllers {
         [HttpDelete("{id}"), Authorize]
         public async Task<IActionResult> DeleteRank(string id) {
             Rank rank = ranksService.Data.GetSingle(x => x.id == id);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"Rank deleted '{rank.name}'");
+            LogWrapper.AuditLog($"Rank deleted '{rank.name}'");
             await ranksService.Data.Delete(id);
             foreach (Account account in accountService.Data.Get(x => x.rank == rank.name)) {
                 Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, rankString: AssignmentService.REMOVE_FLAG, reason: $"the '{rank.name}' rank was deleted");

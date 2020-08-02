@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Mission;
-using UKSF.Api.Services.Admin;
 using UKSF.Common;
 
 namespace UKSF.Api.Services.Game.Missions {
@@ -92,14 +92,14 @@ namespace UKSF.Api.Services.Game.Missions {
         }
 
         private bool CheckBinned() {
-            Process process = new Process {StartInfo = {FileName = UNBIN, Arguments = $"-p -q \"{mission.sqmPath}\"", UseShellExecute = false, CreateNoWindow = true}};
+            Process process = new Process { StartInfo = { FileName = UNBIN, Arguments = $"-p -q \"{mission.sqmPath}\"", UseShellExecute = false, CreateNoWindow = true } };
             process.Start();
             process.WaitForExit();
             return process.ExitCode == 0;
         }
 
         private void UnBin() {
-            Process process = new Process {StartInfo = {FileName = UNBIN, Arguments = $"-p \"{mission.sqmPath}\"", UseShellExecute = false, CreateNoWindow = true}};
+            Process process = new Process { StartInfo = { FileName = UNBIN, Arguments = $"-p \"{mission.sqmPath}\"", UseShellExecute = false, CreateNoWindow = true } };
             process.Start();
             process.WaitForExit();
 
@@ -166,7 +166,7 @@ namespace UKSF.Api.Services.Game.Missions {
 
             if (!CheckIgnoreKey("missionImageIgnore")) {
                 string imagePath = Path.Combine(mission.path, "uksf.paa");
-                string modpackImagePath = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("PATH_MODPACK").AsString(), "@uksf", "UKSFTemplate.VR", "uksf.paa");
+                string modpackImagePath = Path.Combine(GameServerHelpers.GetGameServerModsPaths(GameEnvironment.RELEASE), "@uksf", "UKSFTemplate.VR", "uksf.paa");
                 if (File.Exists(modpackImagePath)) {
                     if (File.Exists(imagePath) && new FileInfo(imagePath).Length != new FileInfo(modpackImagePath).Length) {
                         reports.Add(

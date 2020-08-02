@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
@@ -25,7 +26,7 @@ namespace UKSF.Api.Services.Utility {
 
         public async void Load() {
             await AddUnique();
-            Data.Get().ForEach(Schedule);
+            Data.Get().ToList().ForEach(Schedule);
         }
 
         public async Task CreateAndSchedule(DateTime next, TimeSpan interval, string action, params object[] actionParameters) {
@@ -109,8 +110,8 @@ namespace UKSF.Api.Services.Utility {
                     await Create(DateTime.Today.AddDays(45), TimeSpan.FromDays(45), InstagramTokenAction.ACTION_NAME);
                 }
 
-                if (Data.GetSingle(x => x.action == PruneLogsAction.ACTION_NAME) == null) {
-                    await Create(DateTime.Today.AddDays(1), TimeSpan.FromDays(1), PruneLogsAction.ACTION_NAME);
+                if (Data.GetSingle(x => x.action == PruneDataAction.ACTION_NAME) == null) {
+                    await Create(DateTime.Today.AddDays(1), TimeSpan.FromDays(1), PruneDataAction.ACTION_NAME);
                 }
 
                 if (Data.GetSingle(x => x.action == TeamspeakSnapshotAction.ACTION_NAME) == null) {

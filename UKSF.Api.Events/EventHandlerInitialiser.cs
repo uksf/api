@@ -3,6 +3,7 @@ using UKSF.Api.Interfaces.Events.Handlers;
 namespace UKSF.Api.Events {
     public class EventHandlerInitialiser {
         private readonly IAccountEventHandler accountEventHandler;
+        private readonly IBuildsEventHandler buildsEventHandler;
         private readonly ICommandRequestEventHandler commandRequestEventHandler;
         private readonly ICommentThreadEventHandler commentThreadEventHandler;
         private readonly ILogEventHandler logEventHandler;
@@ -11,6 +12,7 @@ namespace UKSF.Api.Events {
 
         public EventHandlerInitialiser(
             IAccountEventHandler accountEventHandler,
+            IBuildsEventHandler buildsEventHandler,
             ICommandRequestEventHandler commandRequestEventHandler,
             ICommentThreadEventHandler commentThreadEventHandler,
             ILogEventHandler logEventHandler,
@@ -18,6 +20,7 @@ namespace UKSF.Api.Events {
             ITeamspeakEventHandler teamspeakEventHandler
         ) {
             this.accountEventHandler = accountEventHandler;
+            this.buildsEventHandler = buildsEventHandler;
             this.commandRequestEventHandler = commandRequestEventHandler;
             this.commentThreadEventHandler = commentThreadEventHandler;
             this.logEventHandler = logEventHandler;
@@ -27,6 +30,7 @@ namespace UKSF.Api.Events {
 
         public void InitEventHandlers() {
             accountEventHandler.Init();
+            buildsEventHandler.Init();
             commandRequestEventHandler.Init();
             commentThreadEventHandler.Init();
             logEventHandler.Init();

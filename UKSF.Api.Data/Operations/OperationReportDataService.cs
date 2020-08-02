@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
@@ -9,16 +9,11 @@ namespace UKSF.Api.Data.Operations {
     public class OperationReportDataService : CachedDataService<Oprep, IOperationReportDataService>, IOperationReportDataService {
         public OperationReportDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IOperationReportDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "oprep") { }
 
-        public override List<Oprep> Get() {
-            List<Oprep> reversed = new List<Oprep>(base.Get());
-            reversed.Reverse();
-            return reversed;
-        }
-
-        public override List<Oprep> Get(Func<Oprep, bool> predicate) {
-            List<Oprep> reversed = new List<Oprep>(base.Get(predicate));
-            reversed.Reverse();
-            return reversed;
+        public override List<Oprep> Collection {
+            get => base.Collection;
+            protected set {
+                lock (LockObject) base.Collection = value?.OrderBy(x => x.start).ToList();
+            }
         }
     }
 }

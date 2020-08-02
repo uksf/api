@@ -52,7 +52,6 @@ namespace UKSF.Api.Services.Message {
 
         public async Task MarkNotificationsAsRead(List<string> ids) {
             string contextId = sessionService.GetContextId();
-            // await Data.UpdateMany(Builders<Notification>.Filter.Eq(x => x.owner, contextId) & Builders<Notification>.Filter.In(x => x.id, ids), Builders<Notification>.Update.Set(x => x.read, true));
             await Data.UpdateMany(x => x.owner == contextId && ids.Contains(x.id), Builders<Notification>.Update.Set(x => x.read, true));
             await notificationsHub.Clients.Group(contextId).ReceiveRead(ids);
         }
@@ -60,7 +59,6 @@ namespace UKSF.Api.Services.Message {
         public async Task Delete(List<string> ids) {
             ids = ids.ToList();
             string contextId = sessionService.GetContextId();
-            // await Data.DeleteMany(Builders<Notification>.Filter.Eq(x => x.owner, contextId) & Builders<Notification>.Filter.In(x => x.id, ids));
             await Data.DeleteMany(x => x.owner == contextId && ids.Contains(x.id));
             await notificationsHub.Clients.Group(contextId).ReceiveClear(ids);
         }

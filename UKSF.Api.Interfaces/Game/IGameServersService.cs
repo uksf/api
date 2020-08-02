@@ -11,12 +11,14 @@ namespace UKSF.Api.Interfaces.Game {
         Task UploadMissionFile(IFormFile file);
         List<MissionFile> GetMissionFiles();
         Task GetGameServerStatus(GameServer gameServer);
+        Task<List<GameServer>> GetAllGameServerStatuses();
         Task<MissionPatchingResult> PatchMissionFile(string missionName);
         void WriteServerConfig(GameServer gameServer, int playerCount, string missionSelection);
         Task LaunchGameServer(GameServer gameServer);
         Task StopGameServer(GameServer gameServer);
         void KillGameServer(GameServer gameServer);
         int KillAllArmaProcesses();
-        List<GameServerMod> GetAvailableMods();
+        List<GameServerMod> GetAvailableMods(string id);
+        List<GameServerMod> GetEnvironmentMods(GameEnvironment environment);
     }
 }

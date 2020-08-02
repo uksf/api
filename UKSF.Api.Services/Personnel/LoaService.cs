@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSF.Api.Interfaces.Data.Cached;
@@ -34,7 +35,7 @@ namespace UKSF.Api.Services.Personnel {
         }
 
         public bool IsLoaCovered(string id, DateTime eventStart) {
-            return Data.Get(loa => loa.recipient == id && loa.start < eventStart && loa.end > eventStart).Count > 0;
+            return Data.Get(loa => loa.recipient == id && loa.start < eventStart && loa.end > eventStart).Any();
         }
     }
 }

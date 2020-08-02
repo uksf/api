@@ -113,20 +113,21 @@ namespace UKSF.Api.Services.Personnel {
         }
 
         public object GetStats(string account, bool monthly) {
-            List<Account> accounts = accountService.Data.Get(x => x.application != null);
+            IEnumerable<Account> accounts = accountService.Data.Get(x => x.application != null);
             if (account != string.Empty) {
-                accounts = accounts.Where(x => x.application.recruiter == account).ToList();
+                accounts = accounts.Where(x => x.application.recruiter == account);
             }
 
             if (monthly) {
-                accounts = accounts.Where(x => x.application.dateAccepted < DateTime.Now && x.application.dateAccepted > DateTime.Now.AddMonths(-1)).ToList();
+                accounts = accounts.Where(x => x.application.dateAccepted < DateTime.Now && x.application.dateAccepted > DateTime.Now.AddMonths(-1));
             }
 
-            int acceptedApps = accounts.Count(x => x.application.state == ApplicationState.ACCEPTED);
-            int rejectedApps = accounts.Count(x => x.application.state == ApplicationState.REJECTED);
-            int waitingApps = accounts.Count(x => x.application.state == ApplicationState.WAITING);
+            List<Account> accountsList = accounts.ToList();
+            int acceptedApps = accountsList.Count(x => x.application.state == ApplicationState.ACCEPTED);
+            int rejectedApps = accountsList.Count(x => x.application.state == ApplicationState.REJECTED);
+            int waitingApps = accountsList.Count(x => x.application.state == ApplicationState.WAITING);
 
-            List<Account> processedApplications = accounts.Where(x => x.application.state != ApplicationState.WAITING).ToList();
+            List<Account> processedApplications = accountsList.Where(x => x.application.state != ApplicationState.WAITING).ToList();
             double totalProcessingTime = processedApplications.Sum(x => (x.application.dateAccepted - x.application.dateCreated).TotalDays);
             double averageProcessingTime = totalProcessingTime > 0 ? Math.Round(totalProcessingTime / processedApplications.Count, 1) : 0;
             double enlistmentRate = acceptedApps != 0 || rejectedApps != 0 ? Math.Round((double) acceptedApps / (acceptedApps + rejectedApps) * 100, 1) : 0;
@@ -141,16 +142,16 @@ namespace UKSF.Api.Services.Personnel {
         }
 
         public string GetRecruiter() {
-            List<Account> recruiters = GetRecruiters().Where(x => x.settings.sr1Enabled).ToList();
-            List<Account> waiting = accountService.Data.Get(x => x.application != null && x.application.state == ApplicationState.WAITING);
-            List<Account> complete = accountService.Data.Get(x => x.application != null && x.application.state != ApplicationState.WAITING);
+            IEnumerable<Account> recruiters = GetRecruiters().Where(x => x.settings.sr1Enabled);
+            List<Account> waiting = accountService.Data.Get(x => x.application != null && x.application.state == ApplicationState.WAITING).ToList();
+            List<Account> complete = accountService.Data.Get(x => x.application != null && x.application.state != ApplicationState.WAITING).ToList();
             var unsorted = recruiters.Select(x => new {x.id, complete = complete.Count(y => y.application.recruiter == x.id), waiting = waiting.Count(y => y.application.recruiter == x.id)});
             var sorted = unsorted.OrderBy(x => x.waiting).ThenBy(x => x.complete);
             return sorted.First().id;
         }
 
         private Unit GetRecruiterUnit() {
-            string id = VariablesWrapper.VariablesDataService().GetSingle("ROLE_ID_RECRUITMENT").AsString();
+            string id = VariablesWrapper.VariablesDataService().GetSingle("UNIT_ID_RECRUITMENT").AsString();
             return unitsService.Data.GetSingle(id);
         }
 

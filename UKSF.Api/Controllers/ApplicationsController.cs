@@ -70,7 +70,7 @@ namespace UKSF.Api.Controllers {
                 );
             }
 
-            LogWrapper.AuditLog(account.id, $"Application submitted for {account.id}. Assigned to {displayNameService.GetDisplayName(account.application.recruiter)}");
+            LogWrapper.AuditLog($"Application submitted for {account.id}. Assigned to {displayNameService.GetDisplayName(account.application.recruiter)}");
             return Ok();
         }
 
@@ -80,7 +80,7 @@ namespace UKSF.Api.Controllers {
             await Update(body, account);
             notificationsService.Add(new Notification {owner = account.application.recruiter, icon = NotificationIcons.APPLICATION, message = $"{account.firstname} {account.lastname} updated their application", link = $"/recruitment/{account.id}"});
             string difference = account.Changes(accountService.Data.GetSingle(account.id));
-            LogWrapper.AuditLog(account.id, $"Application updated for {account.id}: {difference}");
+            LogWrapper.AuditLog($"Application updated for {account.id}: {difference}");
             return Ok();
         }
 

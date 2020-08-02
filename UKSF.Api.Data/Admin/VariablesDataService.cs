@@ -11,10 +11,11 @@ namespace UKSF.Api.Data.Admin {
     public class VariablesDataService : CachedDataService<VariableItem, IVariablesDataService>, IVariablesDataService {
         public VariablesDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IVariablesDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "variables") { }
 
-        public override List<VariableItem> Get() {
-            base.Get();
-            Collection = Collection.OrderBy(x => x.key).ToList();
-            return Collection;
+        public override List<VariableItem> Collection {
+            get => base.Collection;
+            protected set {
+                lock (LockObject) base.Collection = value?.OrderBy(x => x.key).ToList();
+            }
         }
 
         public override VariableItem GetSingle(string key) {

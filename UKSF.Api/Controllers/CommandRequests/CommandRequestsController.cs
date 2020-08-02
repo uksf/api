@@ -51,11 +51,11 @@ namespace UKSF.Api.Controllers.CommandRequests {
 
         [HttpGet, Authorize]
         public IActionResult Get() {
-            List<CommandRequest> allRequests = commandRequestService.Data.Get();
+            IEnumerable<CommandRequest> allRequests = commandRequestService.Data.Get();
             List<CommandRequest> myRequests = new List<CommandRequest>();
             List<CommandRequest> otherRequests = new List<CommandRequest>();
             string contextId = sessionService.GetContextId();
-            string id = variablesDataService.GetSingle("ROLE_ID_PERSONNEL").AsString();
+            string id = variablesDataService.GetSingle("UNIT_ID_PERSONNEL").AsString();
             bool canOverride = unitsService.Data.GetSingle(id).members.Any(x => x == contextId);
             bool superAdmin = contextId == Global.SUPER_ADMIN;
             DateTime now = DateTime.Now;
@@ -110,7 +110,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             }
 
             if (overriden) {
-                LogWrapper.AuditLog(sessionAccount.id, $"Review state of {request.type.ToLower()} request for {request.displayRecipient} overriden to {state}");
+                LogWrapper.AuditLog($"Review state of {request.type.ToLower()} request for {request.displayRecipient} overriden to {state}");
                 await commandRequestService.SetRequestAllReviewStates(request, state);
 
                 foreach (string reviewerId in request.reviews.Select(x => x.Key).Where(x => x != sessionAccount.id)) {
@@ -131,10 +131,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
                 }
 
                 if (currentState == state) return Ok();
-                LogWrapper.AuditLog(
-                    sessionAccount.id,
-                    $"Review state of {displayNameService.GetDisplayName(sessionAccount)} for {request.type.ToLower()} request for {request.displayRecipient} updated to {state}"
-                );
+                LogWrapper.AuditLog($"Review state of {displayNameService.GetDisplayName(sessionAccount)} for {request.type.ToLower()} request for {request.displayRecipient} updated to {state}");
                 await commandRequestService.SetRequestReviewState(request, sessionAccount.id, state);
             }
 

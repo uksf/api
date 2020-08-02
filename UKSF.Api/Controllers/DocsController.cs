@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Markdig;
 using Microsoft.AspNetCore.Mvc;
 
 #pragma warning disable 649
@@ -41,7 +40,8 @@ namespace UKSF.Api.Controllers {
             if (!System.IO.File.Exists(filePath)) return Ok(new {doc = $"'{filePath}' does not exist"});
             try {
                 using StreamReader streamReader = new StreamReader(System.IO.File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read));
-                return Ok(new {doc = Markdown.ToHtml(streamReader.ReadToEnd())});
+                // return Ok(new {doc = Markdown.ToHtml(streamReader.ReadToEnd())});
+                return Ok();
             } catch (Exception) {
                 return Ok(new {doc = $"Could not read file '{filePath}'"});
             }

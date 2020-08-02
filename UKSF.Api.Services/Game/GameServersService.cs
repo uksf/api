@@ -24,7 +24,8 @@ namespace UKSF.Api.Services.Game {
 
         public async Task UploadMissionFile(IFormFile file) {
             string fileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
-            await using FileStream stream = new FileStream(Path.Combine(GameServerHelpers.GetGameServerMissionsPath(), fileName), FileMode.Create);
+            string filePath = Path.Combine(GameServerHelpers.GetGameServerMissionsPath(), fileName);
+            await using FileStream stream = new FileStream(filePath, FileMode.Create);
             await file.CopyToAsync(stream);
         }
 
@@ -60,17 +61,31 @@ namespace UKSF.Api.Services.Game {
             }
         }
 
+        public async Task<List<GameServer>> GetAllGameServerStatuses() {
+            List<GameServer> gameServers = Data.Get().ToList();
+            await Task.WhenAll(gameServers.Select(GetGameServerStatus));
+            return gameServers;
+        }
+
         public async Task<MissionPatchingResult> PatchMissionFile(string missionName) {
+            // if (Data.GetSingle(x => x.status.mission == missionName) != null) { // TODO: Needs better server <-> api interaction to properly get running missions
+            //     return new MissionPatchingResult {
+            //         success = true,
+            //         reports = new List<MissionPatchingReport> { new MissionPatchingReport("Mission in use", $"'{missionName}' is currently in use by another server.\nIt has not been patched.") }
+            //     };
+            // }
+
             string missionPath = Path.Combine(GameServerHelpers.GetGameServerMissionsPath(), missionName);
             MissionPatchingResult result = await missionPatchingService.PatchMission(missionPath);
             return result;
         }
 
-        public void WriteServerConfig(GameServer gameServer, int playerCount, string missionSelection) => File.WriteAllText(gameServer.GetGameServerConfigPath(), gameServer.FormatGameServerConfig(playerCount, missionSelection));
+        public void WriteServerConfig(GameServer gameServer, int playerCount, string missionSelection) =>
+            File.WriteAllText(gameServer.GetGameServerConfigPath(), gameServer.FormatGameServerConfig(playerCount, missionSelection));
 
         public async Task LaunchGameServer(GameServer gameServer) {
             string launchArguments = gameServer.FormatGameServerLaunchArguments();
-            gameServer.processId = ProcessUtilities.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments);
+            gameServer.processId = ProcessUtilities.LaunchManagedProcess(gameServer.GetGameServerExecutablePath(), launchArguments);
 
             await Task.Delay(TimeSpan.FromSeconds(1));
 
@@ -78,7 +93,7 @@ namespace UKSF.Api.Services.Game {
             if (gameServer.numberHeadlessClients > 0) {
                 for (int index = 0; index < gameServer.numberHeadlessClients; index++) {
                     launchArguments = gameServer.FormatHeadlessClientLaunchArguments(index);
-                    gameServer.headlessClientProcessIds.Add(ProcessUtilities.LaunchManagedProcess(GameServerHelpers.GetGameServerExecutablePath(), launchArguments));
+                    gameServer.headlessClientProcessIds.Add(ProcessUtilities.LaunchManagedProcess(gameServer.GetGameServerExecutablePath(), launchArguments));
 
                     await Task.Delay(TimeSpan.FromSeconds(1));
                 }
@@ -137,6 +152,7 @@ namespace UKSF.Api.Services.Game {
             }
 
             Data.Get()
+                .ToList()
                 .ForEach(
                     x => {
                         x.processId = null;
@@ -146,15 +162,22 @@ namespace UKSF.Api.Services.Game {
             return processes.Count;
         }
 
-        public List<GameServerMod> GetAvailableMods() {
-            Uri serverExecutable = new Uri(GameServerHelpers.GetGameServerExecutablePath());
+        public List<GameServerMod> GetAvailableMods(string id) {
+            GameServer gameServer = Data.GetSingle(id);
+            Uri serverExecutable = new Uri(gameServer.GetGameServerExecutablePath());
             List<GameServerMod> mods = new List<GameServerMod>();
-            foreach (string modsPath in GameServerHelpers.GetGameServerModsPaths()) {
-                IEnumerable<DirectoryInfo> folders = new DirectoryInfo(modsPath).EnumerateDirectories("@*", SearchOption.TopDirectoryOnly);
-                foreach (DirectoryInfo folder in folders) {
-                    IEnumerable<FileInfo> modFiles = new DirectoryInfo(folder.FullName).EnumerateFiles("*.pbo", SearchOption.AllDirectories);
+            IEnumerable<string> availableModsFolders = new[] { GameServerHelpers.GetGameServerModsPaths(gameServer.environment) };
+            IEnumerable<string> extraModsFolders = GameServerHelpers.GetGameServerExtraModsPaths();
+            availableModsFolders = availableModsFolders.Concat(extraModsFolders);
+            foreach (string modsPath in availableModsFolders) {
+                IEnumerable<DirectoryInfo> modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("@*", SearchOption.TopDirectoryOnly);
+                foreach (DirectoryInfo modFolder in modFolders) {
+                    if (mods.Any(x => x.path == modFolder.FullName)) continue;
+
+                    IEnumerable<FileInfo> modFiles = new DirectoryInfo(modFolder.FullName).EnumerateFiles("*.pbo", SearchOption.AllDirectories);
                     if (!modFiles.Any()) continue;
-                    GameServerMod mod = new GameServerMod {name = folder.Name, path = folder.FullName};
+
+                    GameServerMod mod = new GameServerMod { name = modFolder.Name, path = modFolder.FullName };
                     Uri modFolderUri = new Uri(mod.path);
                     if (serverExecutable.IsBaseOf(modFolderUri)) {
                         mod.pathRelativeToServerExecutable = Uri.UnescapeDataString(serverExecutable.MakeRelativeUri(modFolderUri).ToString());
@@ -175,6 +198,15 @@ namespace UKSF.Api.Services.Game {
             }
 
             return mods;
+        }
+
+        public List<GameServerMod> GetEnvironmentMods(GameEnvironment environment) {
+            string repoModsFolder = GameServerHelpers.GetGameServerModsPaths(environment);
+            IEnumerable<DirectoryInfo> modFolders = new DirectoryInfo(repoModsFolder).EnumerateDirectories("@*", SearchOption.TopDirectoryOnly);
+            return modFolders.Select(modFolder => new { modFolder, modFiles = new DirectoryInfo(modFolder.FullName).EnumerateFiles("*.pbo", SearchOption.AllDirectories) })
+                             .Where(x => x.modFiles.Any())
+                             .Select(x => new GameServerMod { name = x.modFolder.Name, path = x.modFolder.FullName })
+                             .ToList();
         }
     }
 }
