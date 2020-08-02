@@ -32,7 +32,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
                 files,
                 2,
                 async file => {
-                    await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, file.DirectoryName, signTool, $"sign /f \"{certPath}\" \"{file.FullName}\"", TimeSpan.FromSeconds(10).Milliseconds, true);
+                    await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, file.DirectoryName, signTool, $"sign /f \"{certPath}\" \"{file.FullName}\"", TimeSpan.FromSeconds(10).Milliseconds, true, false, true);
                     Interlocked.Increment(ref signed);
                 },
                 () => $"Signed {signed} of {total} extensions",

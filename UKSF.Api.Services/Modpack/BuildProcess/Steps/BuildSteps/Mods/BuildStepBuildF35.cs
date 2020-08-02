@@ -12,8 +12,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
         public override bool CheckGuards() => IsBuildNeeded(MOD_NAME);
 
         protected override async Task ProcessExecute() {
-            UpdateInterval = TimeSpan.FromMilliseconds(500);
-
             Logger.Log("Running build for F-35");
 
             string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");

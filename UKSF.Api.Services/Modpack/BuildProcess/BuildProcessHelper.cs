@@ -41,7 +41,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
 
             TaskCompletionSource<object> processExitEvent = new TaskCompletionSource<object>();
             process.Exited += (sender, receivedEventArgs) => {
-                ((Process) sender)?.WaitForExit();
+                // ((Process) sender)?.WaitForExit();
                 processExitEvent.TrySetResult(true);
             };
             processTasks.Add(processExitEvent.Task);
@@ -62,16 +62,9 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 if (!suppressOutput) {
                     string json = "";
                     try {
-                        if (message.Length > 5 && message.Substring(0, 4) == "JSON") {
-                            string[] parts = message.Split('{', '}'); // covers cases where buffer gets extra data flushed to it after the closing brace
-                            json = $"{{{parts[1].Escape().Replace("\\\\n", "\\n")}}}";
-                            JObject jsonObject = JObject.Parse(json);
-                            logger.Log(jsonObject.GetValueFromBody("message"), jsonObject.GetValueFromBody("colour"));
-                            foreach (string extra in parts.Skip(2)) {
-                                logger.Log(extra);
-                            }
-                        } else {
-                            logger.Log(message);
+                        List<Tuple<string, string>> messages = ExtractMessages(message, ref json);
+                        foreach ((string text, string colour) in messages) {
+                            logger.Log(text, colour);
                         }
                     } catch (Exception exception) {
                         capturedException = new Exception($"Json failed: {json}\n\n{exception}");
@@ -91,7 +84,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 string message = receivedEventArgs.Data;
                 if (string.IsNullOrEmpty(message)) return;
 
-                if (errorExclusions != null && errorExclusions.All(x => !message.ContainsIgnoreCase(x))) return;
+                if (errorExclusions != null && errorExclusions.Any(x => message.ContainsIgnoreCase(x))) return;
 
                 capturedException = new Exception(message);
                 errorCancellationTokenSource.Cancel();
@@ -116,6 +109,16 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                         logger.LogError(capturedException);
                     }
                 }
+
+                if (raiseErrors && process.ExitCode != 0) {
+                    string json = "";
+                    List<Tuple<string, string>> messages = ExtractMessages(results.Last(), ref json);
+                    if (messages.Any()) {
+                        throw new Exception(messages.First().Item1);
+                    }
+
+                    throw new Exception();
+                }
             } else {
                 process.Kill();
 
@@ -132,6 +135,21 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             }
 
             return results;
+        }
+
+        private static List<Tuple<string, string>> ExtractMessages(string message, ref string json) {
+            List<Tuple<string, string>> messages = new List<Tuple<string, string>>();
+            if (message.Length > 5 && message.Substring(0, 4) == "JSON") {
+                string[] parts = message.Split('{', '}'); // covers cases where buffer gets extra data flushed to it after the closing brace
+                json = $"{{{parts[1].Escape().Replace("\\\\n", "\\n")}}}";
+                JObject jsonObject = JObject.Parse(json);
+                messages.Add(new Tuple<string, string>(jsonObject.GetValueFromBody("message"), jsonObject.GetValueFromBody("colour")));
+                messages.AddRange(parts.Skip(2).Where(x => !string.IsNullOrEmpty(x)).Select(extra => new Tuple<string, string>(extra, "")));
+            } else {
+                messages.Add(new Tuple<string, string>(message, ""));
+            }
+
+            return messages;
         }
     }
 }
