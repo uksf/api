@@ -73,16 +73,35 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             string privateKey = Path.Join(keygenPath, $"{keyName}.biprivatekey");
             int signed = 0;
             int total = files.Count;
-            await BatchProcessFiles(
-                files,
-                10,
-                async file => {
-                    await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, addonsPath, dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", TimeSpan.FromSeconds(10).TotalMilliseconds, true);
-                    Interlocked.Increment(ref signed);
-                },
-                () => $"Signed {signed} of {total} files",
-                "Failed to sign file"
-            );
+            foreach (FileInfo file in files) {
+                try {
+                    await BuildProcessHelper.RunProcess(
+                        Logger,
+                        CancellationTokenSource,
+                        addonsPath,
+                        dsSignFile,
+                        $"\"{privateKey}\" \"{file.FullName}\"",
+                        TimeSpan.FromSeconds(10).TotalMilliseconds,
+                        true
+                    );
+                    signed++;
+                    Logger.LogInline($"Signed {signed} of {total} files");
+                } catch (OperationCanceledException) {
+                    throw;
+                } catch (Exception exception) {
+                    throw new Exception($"Failed to sign file '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}", exception);
+                }
+            }
+            // await BatchProcessFiles(
+            //     files,
+            //     10,
+            //     async file => {
+            //         await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, addonsPath, dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", TimeSpan.FromSeconds(10).TotalMilliseconds, true);
+            //         Interlocked.Increment(ref signed);
+            //     },
+            //     () => $"Signed {signed} of {total} files",
+            //     "Failed to sign file"
+            // );
         }
     }
 }
