@@ -11,8 +11,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             Logger.Log("Mounting build environment");
 
             string projectsPath = VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_PROJECTS").AsString();
-            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, "C:/", "cmd.exe", $"/c \"subst P: \"{projectsPath}\"", TimeSpan.FromSeconds(10).TotalMilliseconds);
-            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, "C:/", "cmd.exe", $"/c \"subst", TimeSpan.FromSeconds(10).TotalMilliseconds);
+            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, "C:/", "cmd.exe", $"/c \"subst P: \"{projectsPath}\"\"", TimeSpan.FromSeconds(10).TotalMilliseconds);
+            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, "C:/", "cmd.exe", "/c \"subst\"", TimeSpan.FromSeconds(10).TotalMilliseconds);
         }
     }
 }
