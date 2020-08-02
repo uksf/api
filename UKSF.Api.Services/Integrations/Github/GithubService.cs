@@ -61,7 +61,7 @@ namespace UKSF.Api.Services.Integrations.Github {
             string version = await GetReferenceVersion(reference);
             int[] versionParts = version.Split('.').Select(int.Parse).ToArray();
             // TODO: Update minor with version with udpated make for this build system
-            return versionParts[0] >= 5 && versionParts[1] > 18;
+            return versionParts[0] >= 5 && versionParts[1] >= 17 && versionParts[2] >= 19;
         }
 
         public async Task<GithubCommit> GetLatestReferenceCommit(string reference) {
