@@ -26,7 +26,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
                 ModpackRelease release = releaseService.GetRelease(Build.version);
                 await discordService.SendMessageToEveryone(VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage(release));
             } else {
-                await discordService.SendMessage(VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_DEV").AsUlong(), GetDiscordMessage());
+                await discordService.SendMessage(VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage()); // TODO: Change back to DID_C_MODPACK_DEV and change DID_C_MODPACK_RELEASE to live channel
             }
 
             Logger.Log("Notifications sent");
