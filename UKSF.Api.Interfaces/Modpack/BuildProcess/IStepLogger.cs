@@ -8,7 +8,6 @@ namespace UKSF.Api.Interfaces.Modpack.BuildProcess {
         void LogSkipped();
         void LogWarning(string message);
         void LogError(Exception exception);
-        void LogError(string message);
         void LogSurround(string log);
         void Log(string log, string colour = "");
         void LogInline(string log);

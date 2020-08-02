@@ -162,7 +162,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
                     updatePusherCancellationTokenSource.Token
                 );
             } catch (OperationCanceledException) {
-                // ignored
                 Console.Out.WriteLine("cancelled");
             } catch (Exception exception) {
                 Console.Out.WriteLine(exception);

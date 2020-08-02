@@ -32,7 +32,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             Logger.LogSurround("Cleared keys directories");
 
             Logger.LogSurround("\nCreating key...");
-            BuildProcessHelper.RunProcess(Logger, CancellationTokenSource.Token, keygenPath, dsCreateKey, keyName, true);
+            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, keygenPath, dsCreateKey, keyName, TimeSpan.FromSeconds(10).TotalMilliseconds, true);
             Logger.Log($"Created {keyName}");
             await CopyFiles(keygen, keys, new List<FileInfo> { new FileInfo(Path.Join(keygenPath, $"{keyName}.bikey")) });
             Logger.LogSurround("Created key");
@@ -76,11 +76,9 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             await BatchProcessFiles(
                 files,
                 10,
-                file => {
-                    BuildProcessHelper.RunProcess(Logger, CancellationTokenSource.Token, addonsPath, dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", true);
+                async file => {
+                    await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, addonsPath, dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", TimeSpan.FromSeconds(10).TotalMilliseconds, true);
                     Interlocked.Increment(ref signed);
-
-                    return Task.CompletedTask;
                 },
                 () => $"Signed {signed} of {total} files",
                 "Failed to sign file"

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -18,6 +19,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
         public override bool CheckGuards() => IsBuildNeeded(MOD_NAME);
 
         protected override async Task ProcessExecute() {
+            UpdateInterval = TimeSpan.FromMilliseconds(500);
+
             Logger.Log("Running build for ACRE");
 
             string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
@@ -25,7 +28,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@acre2");
 
             Logger.LogSurround("\nRunning make.py...");
-            BuildProcessHelper.RunProcess(Logger, CancellationTokenSource.Token, toolsPath, PythonPath, MakeCommand("compile"), errorExclusions: errorExclusions);
+            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, toolsPath, PythonPath, MakeCommand("redirect compile"), TimeSpan.FromMinutes(3).TotalMilliseconds, errorExclusions: errorExclusions);
             Logger.LogSurround("Make.py complete");
 
             Logger.LogSurround("\nMoving ACRE release to build...");

@@ -9,7 +9,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
         private const string MOD_NAME = "modpack";
 
         protected override async Task ProcessExecute() {
-            UpdateInterval = TimeSpan.FromMilliseconds(250);
+            UpdateInterval = TimeSpan.FromMilliseconds(500);
 
             Logger.Log("Running build for UKSF");
 
@@ -18,7 +18,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
 
             Logger.LogSurround("\nRunning make.py...");
-            BuildProcessHelper.RunProcess(Logger, CancellationTokenSource.Token, toolsPath, PythonPath, MakeCommand("redirect"));
+            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, toolsPath, PythonPath, MakeCommand("redirect"), TimeSpan.FromMinutes(3).TotalMilliseconds);
             Logger.LogSurround("Make.py complete");
 
             Logger.LogSurround("\nMoving UKSF release to build...");

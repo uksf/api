@@ -37,10 +37,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             LogLines($"Error\n{exception.Message}\n{exception.StackTrace}\n\nFailed: {buildStep.name}", "red");
         }
 
-        public void LogError(string message) {
-            LogLines($"Error\n{message}\n\nFailed: {buildStep.name}", "red");
-        }
-
         public void LogSurround(string log) {
             LogLines(log, "cadetblue");
         }

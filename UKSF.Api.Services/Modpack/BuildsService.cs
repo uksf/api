@@ -41,7 +41,7 @@ namespace UKSF.Api.Services.Modpack {
 
         public ModpackBuild GetLatestRcBuild(string version) => GetRcBuilds().FirstOrDefault(x => x.version == version);
 
-        public async Task<ModpackBuild> CreateDevBuild(string version, GithubCommit commit) {
+        public async Task<ModpackBuild> CreateDevBuild(string version, GithubCommit commit, NewBuild newBuild = null) {
             ModpackBuild previousBuild = GetLatestDevBuild();
             string builderId = accountService.Data.GetSingle(x => x.email == commit.author)?.id;
             ModpackBuild build = new ModpackBuild {
@@ -52,6 +52,8 @@ namespace UKSF.Api.Services.Modpack {
                 builderId = builderId,
                 steps = buildStepService.GetSteps(GameEnvironment.DEV)
             };
+            SetEnvironmentVariables(build, previousBuild, newBuild);
+
             await Data.Add(build);
             return build;
         }
@@ -67,6 +69,7 @@ namespace UKSF.Api.Services.Modpack {
                 builderId = builderId,
                 steps = buildStepService.GetSteps(GameEnvironment.RC)
             };
+            SetEnvironmentVariables(build, previousBuild);
 
             await Data.Add(build);
             return build;
@@ -101,7 +104,8 @@ namespace UKSF.Api.Services.Modpack {
                 environment = latestBuild.environment,
                 steps = buildStepService.GetSteps(build.environment),
                 commit = latestBuild.commit,
-                builderId = sessionService.GetContextId()
+                builderId = sessionService.GetContextId(),
+                environmentVariables = latestBuild.environmentVariables
             };
             if (!string.IsNullOrEmpty(newSha)) {
                 rebuild.commit.after = newSha;
@@ -161,6 +165,29 @@ namespace UKSF.Api.Services.Modpack {
             build.buildResult = result;
             build.endTime = DateTime.Now;
             await Data.Update(build, Builders<ModpackBuild>.Update.Set(x => x.running, false).Set(x => x.finished, true).Set(x => x.buildResult, result).Set(x => x.endTime, DateTime.Now));
+        }
+
+        private static void SetEnvironmentVariables(ModpackBuild build, ModpackBuild previousBuild, NewBuild newBuild = null) {
+            CheckEnvironmentVariable(build, previousBuild, "ace_updated", "Build ACE", newBuild?.ace ?? false);
+            CheckEnvironmentVariable(build, previousBuild, "acre_updated", "Build ACRE", newBuild?.acre ?? false);
+            CheckEnvironmentVariable(build, previousBuild, "f35_updated", "Build F-35", newBuild?.f35 ?? false);
+        }
+
+        private static void CheckEnvironmentVariable(ModpackBuild build, ModpackBuild previousBuild, string key, string stepName, bool force) {
+            if (force) {
+                build.environmentVariables[key] = true;
+                return;
+            }
+
+            if (previousBuild.environmentVariables.ContainsKey(key)) {
+                bool updated = (bool) previousBuild.environmentVariables[key];
+                if (updated) {
+                    ModpackBuildStep step = previousBuild.steps.FirstOrDefault(x => x.name == stepName);
+                    if (step != null && (!step.finished || step.buildResult == ModpackBuildResult.FAILED || step.buildResult == ModpackBuildResult.CANCELLED)) {
+                        build.environmentVariables[key] = true;
+                    }
+                }
+            }
         }
     }
 }
