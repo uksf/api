@@ -41,7 +41,7 @@ namespace UKSF.Api.Services.Game.Missions {
                         result.success = result.reports.All(x => !x.error);
                     } catch (Exception exception) {
                         LogWrapper.Log(exception);
-                        result.reports = new List<MissionPatchingReport> {new MissionPatchingReport(exception)};
+                        result.reports = new List<MissionPatchingReport> { new MissionPatchingReport(exception) };
                         result.success = false;
                     } finally {
                         Cleanup();
@@ -53,7 +53,7 @@ namespace UKSF.Api.Services.Game.Missions {
         }
 
         private void CreateBackup() {
-            string backupPath = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("MISSION_BACKUPS_FOLDER").AsString(), Path.GetFileName(filePath) ?? throw new FileNotFoundException());
+            string backupPath = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("MISSIONS_BACKUPS").AsString(), Path.GetFileName(filePath) ?? throw new FileNotFoundException());
 
             Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? throw new DirectoryNotFoundException());
             File.Copy(filePath, backupPath, true);
@@ -68,7 +68,11 @@ namespace UKSF.Api.Services.Game.Missions {
             }
 
             folderPath = Path.Combine(parentFolderPath, Path.GetFileNameWithoutExtension(filePath) ?? throw new FileNotFoundException());
-            Process process = new Process {StartInfo = {FileName = EXTRACT_PBO, Arguments = $"-D -P \"{filePath}\"", UseShellExecute = false, CreateNoWindow = true}};
+            if (Directory.Exists(folderPath)) {
+                Directory.Delete(folderPath, true);
+            }
+
+            Process process = new Process { StartInfo = { FileName = EXTRACT_PBO, Arguments = $"-D -P \"{filePath}\"", UseShellExecute = false, CreateNoWindow = true } };
             process.Start();
             process.WaitForExit();
 
@@ -85,7 +89,7 @@ namespace UKSF.Api.Services.Game.Missions {
             Process process = new Process {
                 StartInfo = {
                     FileName = MAKE_PBO,
-                    WorkingDirectory = VariablesWrapper.VariablesDataService().GetSingle("MAKEPBO_WORKING_DIR").AsString(),
+                    WorkingDirectory = VariablesWrapper.VariablesDataService().GetSingle("MISSIONS_WORKING_DIR").AsString(),
                     Arguments = $"-Z -BD -P -X=\"thumbs.db,*.txt,*.h,*.dep,*.cpp,*.bak,*.png,*.log,*.pew\" \"{folderPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true,

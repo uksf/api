@@ -24,9 +24,9 @@ namespace UKSF.Api.Data {
             }
         }
 
-        public List<T> Get() => GetCollection().AsQueryable().ToList();
+        public IEnumerable<T> Get() => GetCollection().AsQueryable();
 
-        public List<T> Get(Func<T, bool> predicate) => GetCollection().AsQueryable().Where(predicate).ToList();
+        public IEnumerable<T> Get(Func<T, bool> predicate) => GetCollection().AsQueryable().Where(predicate);
 
         public T GetSingle(string id) => GetCollection().FindSync(Builders<T>.Filter.Eq("id", id)).FirstOrDefault();
 
@@ -38,6 +38,10 @@ namespace UKSF.Api.Data {
 
         public async Task UpdateAsync(string id, UpdateDefinition<T> update) { // TODO: Remove strong typing of UpdateDefinition as parameter
             await GetCollection().UpdateOneAsync(Builders<T>.Filter.Eq("id", id), update);
+        }
+
+        public async Task UpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update) { // TODO: Remove strong typing of UpdateDefinition as parameter
+            await GetCollection().UpdateOneAsync(filter, update);
         }
 
         public async Task UpdateManyAsync(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update) { // TODO: Remove strong typing of UpdateDefinition as parameter

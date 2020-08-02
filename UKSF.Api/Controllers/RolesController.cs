@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
-using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
@@ -20,14 +19,12 @@ namespace UKSF.Api.Controllers {
         private readonly IAssignmentService assignmentService;
         private readonly INotificationsService notificationsService;
         private readonly IRolesService rolesService;
-        private readonly ISessionService sessionService;
         private readonly IUnitsService unitsService;
 
-        public RolesController(IRolesService rolesService, IAccountService accountService, IAssignmentService assignmentService, ISessionService sessionService, IUnitsService unitsService, INotificationsService notificationsService) {
+        public RolesController(IRolesService rolesService, IAccountService accountService, IAssignmentService assignmentService, IUnitsService unitsService, INotificationsService notificationsService) {
             this.rolesService = rolesService;
             this.accountService = accountService;
             this.assignmentService = assignmentService;
-            this.sessionService = sessionService;
             this.unitsService = unitsService;
             this.notificationsService = notificationsService;
         }
@@ -64,14 +61,14 @@ namespace UKSF.Api.Controllers {
         [HttpPut, Authorize]
         public async Task<IActionResult> AddRole([FromBody] Role role) {
             await rolesService.Data.Add(role);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"Role added '{role.name}'");
+            LogWrapper.AuditLog($"Role added '{role.name}'");
             return Ok(new {individualRoles = rolesService.Data.Get(x => x.roleType == RoleType.INDIVIDUAL), unitRoles = rolesService.Data.Get(x => x.roleType == RoleType.UNIT).OrderBy(x => x.order)});
         }
 
         [HttpPatch, Authorize]
         public async Task<IActionResult> EditRole([FromBody] Role role) {
             Role oldRole = rolesService.Data.GetSingle(x => x.id == role.id);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"Role updated from '{oldRole.name}' to '{role.name}'");
+            LogWrapper.AuditLog($"Role updated from '{oldRole.name}' to '{role.name}'");
             await rolesService.Data.Update(role.id, "name", role.name);
             foreach (Account account in accountService.Data.Get(x => x.roleAssignment == oldRole.name)) {
                 await accountService.Data.Update(account.id, "roleAssignment", role.name);
@@ -84,7 +81,7 @@ namespace UKSF.Api.Controllers {
         [HttpDelete("{id}"), Authorize]
         public async Task<IActionResult> DeleteRole(string id) {
             Role role = rolesService.Data.GetSingle(x => x.id == id);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"Role deleted '{role.name}'");
+            LogWrapper.AuditLog($"Role deleted '{role.name}'");
             await rolesService.Data.Delete(id);
             foreach (Account account in accountService.Data.Get(x => x.roleAssignment == role.name)) {
                 Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, role: AssignmentService.REMOVE_FLAG, reason: $"the '{role.name}' role was deleted");

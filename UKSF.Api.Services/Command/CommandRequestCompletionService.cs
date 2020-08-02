@@ -94,10 +94,10 @@ namespace UKSF.Api.Services.Command {
                 Notification notification = await assignmentService.UpdateUnitRankAndRole(request.recipient, rankString: request.value, reason: request.reason);
                 notificationsService.Add(notification);
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
+                LogWrapper.AuditLog($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
             } else if (commandRequestService.IsRequestRejected(request.id)) {
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
+                LogWrapper.AuditLog($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
             }
         }
 
@@ -105,11 +105,11 @@ namespace UKSF.Api.Services.Command {
             if (commandRequestService.IsRequestApproved(request.id)) {
                 await loaService.SetLoaState(request.value, LoaReviewState.APPROVED);
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
+                LogWrapper.AuditLog($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
             } else if (commandRequestService.IsRequestRejected(request.id)) {
                 await loaService.SetLoaState(request.value, LoaReviewState.REJECTED);
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
+                LogWrapper.AuditLog($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
             }
         }
 
@@ -141,10 +141,10 @@ namespace UKSF.Api.Services.Command {
                 notificationsService.Add(notification);
                 await assignmentService.UnassignAllUnits(account.id);
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
+                LogWrapper.AuditLog($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
             } else if (commandRequestService.IsRequestRejected(request.id)) {
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
+                LogWrapper.AuditLog($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
             }
         }
 
@@ -153,10 +153,10 @@ namespace UKSF.Api.Services.Command {
                 Notification notification = await assignmentService.UpdateUnitRankAndRole(request.recipient, role: request.value == "None" ? AssignmentService.REMOVE_FLAG : request.value, reason: request.reason);
                 notificationsService.Add(notification);
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
+                LogWrapper.AuditLog($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
             } else if (commandRequestService.IsRequestRejected(request.id)) {
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
+                LogWrapper.AuditLog($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
             }
         }
 
@@ -178,10 +178,10 @@ namespace UKSF.Api.Services.Command {
                 }
 
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} as {request.displayValue} in {request.value} because '{request.reason}'");
+                LogWrapper.AuditLog($"{request.type} request approved for {request.displayRecipient} as {request.displayValue} in {request.value} because '{request.reason}'");
             } else if (commandRequestService.IsRequestRejected(request.id)) {
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request rejected for {request.displayRecipient} as {request.displayValue} in {request.value}");
+                LogWrapper.AuditLog($"{request.type} request rejected for {request.displayRecipient} as {request.displayValue} in {request.value}");
             }
         }
 
@@ -191,10 +191,10 @@ namespace UKSF.Api.Services.Command {
                 await assignmentService.UnassignUnit(request.recipient, unit.id);
                 notificationsService.Add(new Notification {owner = request.recipient, message = $"You have been removed from {unitsService.GetChainString(unit)}", icon = NotificationIcons.DEMOTION});
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} because '{request.reason}'");
+                LogWrapper.AuditLog($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} because '{request.reason}'");
             } else if (commandRequestService.IsRequestRejected(request.id)) {
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom}");
+                LogWrapper.AuditLog($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom}");
             }
         }
 
@@ -204,10 +204,10 @@ namespace UKSF.Api.Services.Command {
                 Notification notification = await assignmentService.UpdateUnitRankAndRole(request.recipient, unit.name, reason: request.reason);
                 notificationsService.Add(notification);
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
+                LogWrapper.AuditLog($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
             } else if (commandRequestService.IsRequestRejected(request.id)) {
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
+                LogWrapper.AuditLog($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
             }
         }
 
@@ -219,12 +219,12 @@ namespace UKSF.Api.Services.Command {
                 Notification notification = await assignmentService.UpdateUnitRankAndRole(dischargeCollection.accountId, "Basic Training Unit", "Trainee", "Recruit", "", "", "your membership was reinstated");
                 notificationsService.Add(notification);
 
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{sessionService.GetContextId()} reinstated {dischargeCollection.name}'s membership");
+                LogWrapper.AuditLog($"{sessionService.GetContextId()} reinstated {dischargeCollection.name}'s membership");
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
+                LogWrapper.AuditLog($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
             } else if (commandRequestService.IsRequestRejected(request.id)) {
                 await commandRequestService.ArchiveRequest(request.id);
-                LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
+                LogWrapper.AuditLog($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
             }
         }
     }

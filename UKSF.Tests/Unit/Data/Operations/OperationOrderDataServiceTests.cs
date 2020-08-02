@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Data.Operations;
@@ -24,29 +25,29 @@ namespace UKSF.Tests.Unit.Unit.Data.Operations {
         }
 
         [Fact]
-        public void ShouldGetReversedCollection() {
-            Opord item1 = new Opord();
-            Opord item2 = new Opord();
-            Opord item3 = new Opord();
+        public void ShouldGetOrderedCollection() {
+            Opord item1 = new Opord { start = DateTime.Now.AddDays(-1) };
+            Opord item2 = new Opord { start = DateTime.Now.AddDays(-2) };
+            Opord item3 = new Opord { start = DateTime.Now.AddDays(-3) };
 
             mockDataCollection.Setup(x => x.Get()).Returns(new List<Opord> { item1, item2, item3 });
 
-            List<Opord> subject = operationOrderDataService.Get();
+            IEnumerable<Opord> subject = operationOrderDataService.Get();
 
             subject.Should().ContainInOrder(item3, item2, item1);
         }
 
         [Fact]
-        public void ShouldGetReversedCollectionByPredicate() {
-            Opord item1 = new Opord { description = "1" };
-            Opord item2 = new Opord { description = "2" };
-            Opord item3 = new Opord { description = "3" };
+        public void ShouldGetOrderedCollectionByPredicate() {
+            Opord item1 = new Opord { description = "1", start = DateTime.Now.AddDays(-1) };
+            Opord item2 = new Opord { description = "2", start = DateTime.Now.AddDays(-2) };
+            Opord item3 = new Opord { description = "1", start = DateTime.Now.AddDays(-3) };
 
             mockDataCollection.Setup(x => x.Get()).Returns(new List<Opord> { item1, item2, item3 });
 
-            List<Opord> subject = operationOrderDataService.Get(x => x.description != string.Empty);
+            IEnumerable<Opord> subject = operationOrderDataService.Get(x => x.description == "1");
 
-            subject.Should().ContainInOrder(item3, item2, item1);
+            subject.Should().ContainInOrder(item3, item1);
         }
     }
 }

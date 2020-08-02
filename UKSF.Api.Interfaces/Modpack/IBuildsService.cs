@@ -1,0 +1,26 @@
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using MongoDB.Driver;
+using UKSF.Api.Interfaces.Data.Cached;
+using UKSF.Api.Models.Integrations.Github;
+using UKSF.Api.Models.Modpack;
+
+namespace UKSF.Api.Interfaces.Modpack {
+    public interface IBuildsService : IDataBackedService<IBuildsDataService> {
+        IEnumerable<ModpackBuild> GetDevBuilds();
+        IEnumerable<ModpackBuild> GetRcBuilds();
+        ModpackBuild GetLatestDevBuild();
+        ModpackBuild GetLatestRcBuild(string version);
+        Task UpdateBuild(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition);
+        Task UpdateBuildStep(ModpackBuild build, ModpackBuildStep buildStep);
+        Task<ModpackBuild> CreateDevBuild(string version, GithubCommit commit, NewBuild newBuild = null);
+        Task<ModpackBuild> CreateRcBuild(string version, GithubCommit commit);
+        Task<ModpackBuild> CreateReleaseBuild(string version);
+        Task SetBuildRunning(ModpackBuild build);
+        Task SucceedBuild(ModpackBuild build);
+        Task FailBuild(ModpackBuild build);
+        Task CancelBuild(ModpackBuild build);
+        Task<ModpackBuild> CreateRebuild(ModpackBuild build, string newSha = "");
+        void CancelInterruptedBuilds();
+    }
+}

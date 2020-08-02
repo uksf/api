@@ -23,7 +23,7 @@ namespace UKSF.Api.Controllers.Accounts {
 
         protected override async Task<IActionResult> ApplyValidatedPayload(string codePayload, Account account) {
             await AccountService.Data.Update(account.id, "password", BCrypt.Net.BCrypt.HashPassword(codePayload));
-            LogWrapper.AuditLog(account.id, $"Password changed for {account.id}");
+            LogWrapper.AuditLog($"Password changed for {account.id}");
             return Ok(LoginService.RegenerateToken(account.id));
         }
 
@@ -42,7 +42,7 @@ namespace UKSF.Api.Controllers.Accounts {
             string html = $"<h1>UKSF Password Reset</h1><br/>Please reset your password by clicking <strong><a href='{url}'>here</a></strong>." +
                           "<br/><br/><p>If this request was not made by you seek assistance from UKSF staff.</p>";
             emailService.SendEmail(account.email, "UKSF Password Reset", html);
-            LogWrapper.AuditLog(account.id, $"Password reset request made for {account.id}");
+            LogWrapper.AuditLog($"Password reset request made for {account.id}", account.id);
             return Ok(LoginToken);
         }
     }

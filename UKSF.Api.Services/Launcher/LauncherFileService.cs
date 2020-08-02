@@ -18,7 +18,7 @@ namespace UKSF.Api.Services.Launcher {
         public LauncherFileService(ILauncherFileDataService data) : base(data) { }
 
         public async Task UpdateAllVersions() {
-            List<LauncherFile> storedVersions = Data.Get();
+            List<LauncherFile> storedVersions = Data.Get().ToList();
             string launcherDirectory = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("LAUNCHER_LOCATION").AsString(), "Launcher");
             List<string> fileNames = new List<string>();
             foreach (string filePath in Directory.EnumerateFiles(launcherDirectory)) {
@@ -50,7 +50,7 @@ namespace UKSF.Api.Services.Launcher {
 
         public async Task<Stream> GetUpdatedFiles(IEnumerable<LauncherFile> files) {
             string launcherDirectory = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("LAUNCHER_LOCATION").AsString(), "Launcher");
-            List<LauncherFile> storedVersions = Data.Get();
+            List<LauncherFile> storedVersions = Data.Get().ToList();
             List<string> updatedFiles = new List<string>();
             List<string> deletedFiles = new List<string>();
             foreach (LauncherFile launcherFile in files) {
@@ -70,7 +70,7 @@ namespace UKSF.Api.Services.Launcher {
             Directory.CreateDirectory(updateFolder);
 
             string deletedFilesPath = Path.Combine(updateFolder, "deleted");
-            File.WriteAllLines(deletedFilesPath, deletedFiles);
+            await File.WriteAllLinesAsync(deletedFilesPath, deletedFiles);
 
             foreach (string file in updatedFiles) {
                 File.Copy(Path.Combine(launcherDirectory, file), Path.Combine(updateFolder, file), true);

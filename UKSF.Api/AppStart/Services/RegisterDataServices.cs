@@ -6,6 +6,7 @@ using UKSF.Api.Data.Fake;
 using UKSF.Api.Data.Game;
 using UKSF.Api.Data.Launcher;
 using UKSF.Api.Data.Message;
+using UKSF.Api.Data.Modpack;
 using UKSF.Api.Data.Operations;
 using UKSF.Api.Data.Personnel;
 using UKSF.Api.Data.Units;
@@ -24,6 +25,7 @@ namespace UKSF.Api.AppStart.Services {
 
             // Cached
             services.AddSingleton<IAccountDataService, AccountDataService>();
+            services.AddSingleton<IBuildsDataService, BuildsDataService>();
             services.AddSingleton<ICommandRequestDataService, CommandRequestDataService>();
             services.AddSingleton<ICommentThreadDataService, CommentThreadDataService>();
             services.AddSingleton<IDischargeDataService, DischargeDataService>();
@@ -33,6 +35,7 @@ namespace UKSF.Api.AppStart.Services {
             services.AddSingleton<IOperationOrderDataService, OperationOrderDataService>();
             services.AddSingleton<IOperationReportDataService, OperationReportDataService>();
             services.AddSingleton<IRanksDataService, RanksDataService>();
+            services.AddSingleton<IReleasesDataService, ReleasesDataService>();
             services.AddSingleton<IRolesDataService, RolesDataService>();
             services.AddSingleton<IUnitsDataService, UnitsDataService>();
             services.AddSingleton<IVariablesDataService, VariablesDataService>();

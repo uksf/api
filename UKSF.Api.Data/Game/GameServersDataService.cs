@@ -9,8 +9,11 @@ namespace UKSF.Api.Data.Game {
     public class GameServersDataService : CachedDataService<GameServer, IGameServersDataService>, IGameServersDataService {
         public GameServersDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IGameServersDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "gameServers") { }
 
-        public override List<GameServer> Get() {
-            return base.Get().OrderBy(x => x.order).ToList();
+        public override List<GameServer> Collection {
+            get => base.Collection;
+            protected set {
+                lock (LockObject) base.Collection = value?.OrderBy(x => x.order).ToList();
+            }
         }
     }
 }

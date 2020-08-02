@@ -22,11 +22,12 @@ namespace UKSF.Api.Models.Game {
         public int port;
         [BsonIgnore] public int? processId;
         public string profileName;
-        public string serverMods;
+        public GameEnvironment environment;
+        public List<GameServerMod> serverMods = new List<GameServerMod>();
         public GameServerOption serverOption;
         [BsonIgnore] public GameServerStatus status = new GameServerStatus();
 
-        public override string ToString() => $"{name}, {port}, {apiPort}, {numberHeadlessClients}, {profileName}, {hostName}, {password}, {adminPassword}, {serverOption}, {serverMods}";
+        public override string ToString() => $"{name}, {port}, {apiPort}, {numberHeadlessClients}, {profileName}, {hostName}, {password}, {adminPassword}, {environment}, {serverOption}";
     }
 
     public class GameServerStatus {

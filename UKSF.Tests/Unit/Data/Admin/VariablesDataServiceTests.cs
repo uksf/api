@@ -36,7 +36,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Admin {
             VariableItem item3 = new VariableItem {key = "DISCORD_IDS"};
             mockCollection = new List<VariableItem> {item1, item2, item3};
 
-            List<VariableItem> subject = variablesDataService.Get();
+            IEnumerable<VariableItem> subject = variablesDataService.Get();
 
             subject.Should().ContainInOrder(item3, item1, item2);
         }

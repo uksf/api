@@ -8,6 +8,7 @@ namespace UKSF.Tests.Unit.Unit.Events {
         [Fact]
         public void ShouldInitEventHandlers() {
             Mock<IAccountEventHandler> mockAccountEventHandler = new Mock<IAccountEventHandler>();
+            Mock<IBuildsEventHandler> mockBuildsEventHandler = new Mock<IBuildsEventHandler>();
             Mock<ICommandRequestEventHandler> mockCommandRequestEventHandler = new Mock<ICommandRequestEventHandler>();
             Mock<ICommentThreadEventHandler> mockCommentThreadEventHandler = new Mock<ICommentThreadEventHandler>();
             Mock<ILogEventHandler> mockLogEventHandler = new Mock<ILogEventHandler>();
@@ -23,6 +24,7 @@ namespace UKSF.Tests.Unit.Unit.Events {
 
             EventHandlerInitialiser eventHandlerInitialiser = new EventHandlerInitialiser(
                 mockAccountEventHandler.Object,
+                mockBuildsEventHandler.Object,
                 mockCommandRequestEventHandler.Object,
                 mockCommentThreadEventHandler.Object,
                 mockLogEventHandler.Object,
@@ -33,6 +35,7 @@ namespace UKSF.Tests.Unit.Unit.Events {
             eventHandlerInitialiser.InitEventHandlers();
 
             mockAccountEventHandler.Verify(x => x.Init(), Times.Once);
+            mockBuildsEventHandler.Verify(x => x.Init(), Times.Once);
             mockCommandRequestEventHandler.Verify(x => x.Init(), Times.Once);
             mockCommentThreadEventHandler.Verify(x => x.Init(), Times.Once);
             mockLogEventHandler.Verify(x => x.Init(), Times.Once);

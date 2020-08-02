@@ -36,8 +36,8 @@ namespace UKSF.Api.Services.Game {
             return;
             Task.Run(
                 () => {
-                    List<Account> accounts = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER && x.rank != null);
-                    accounts = accounts.OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname).ToList();
+                    IEnumerable<Account> accounts = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER && x.rank != null);
+                    accounts = accounts.OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname);
 
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.AppendLine(

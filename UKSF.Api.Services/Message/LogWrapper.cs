@@ -12,6 +12,6 @@ namespace UKSF.Api.Services.Message {
 
         public static void Log(Exception exception) => ServiceWrapper.Provider.GetService<ILoggingService>().Log(exception);
 
-        public static void AuditLog(string userId, string message) => ServiceWrapper.Provider.GetService<ILoggingService>().Log(userId, message);
+        public static void AuditLog(string message, string userId = "") => ServiceWrapper.Provider.GetService<ILoggingService>().AuditLog(message, userId);
     }
 }
