@@ -63,9 +63,13 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                     string json = "";
                     try {
                         if (message.Length > 5 && message.Substring(0, 4) == "JSON") {
-                            json = message.Replace("JSON:", "").Escape().Replace("\\\\n", "\\n");
+                            string[] parts = message.Split('{', '}'); // covers cases where buffer gets extra data flushed to it after the closing brace
+                            json = $"{{{parts[1].Escape().Replace("\\\\n", "\\n")}}}";
                             JObject jsonObject = JObject.Parse(json);
                             logger.Log(jsonObject.GetValueFromBody("message"), jsonObject.GetValueFromBody("colour"));
+                            foreach (string extra in parts.Skip(2)) {
+                                logger.Log(extra);
+                            }
                         } else {
                             logger.Log(message);
                         }
