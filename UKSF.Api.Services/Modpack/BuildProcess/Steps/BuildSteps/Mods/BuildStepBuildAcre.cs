@@ -44,7 +44,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@acre2");
 
             Logger.LogSurround("\nRunning make.py...");
-            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, toolsPath, PythonPath, MakeCommand("redirect compile"), TimeSpan.FromMinutes(3).TotalMilliseconds, errorExclusions: errorExclusions);
+            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, toolsPath, PythonPath, MakeCommand("redirect compile"), TimeSpan.FromMinutes(10).TotalMilliseconds, errorExclusions: errorExclusions);
             Logger.LogSurround("Make.py complete");
 
             Logger.LogSurround("\nMoving ACRE release to build...");
