@@ -74,6 +74,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             };
             processTasks.Add(outputCloseEvent.Task);
 
+            bool ignoreErrors = false;
             TaskCompletionSource<bool> errorCloseEvent = new TaskCompletionSource<bool>();
             process.ErrorDataReceived += (sender, receivedEventArgs) => {
                 if (receivedEventArgs.Data == null) {
@@ -83,6 +84,19 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
 
                 string message = receivedEventArgs.Data;
                 if (string.IsNullOrEmpty(message)) return;
+
+                // TODO: Handle this better
+                if (message.ContainsIgnoreCase("File written to")) {
+                    ignoreErrors = false;
+                    return;
+                }
+
+                if (ignoreErrors) return;
+
+                if (message.ContainsIgnoreCase("MakePbo Version")) {
+                    ignoreErrors = true;
+                    return;
+                }
 
                 if (errorExclusions != null && errorExclusions.Any(x => message.ContainsIgnoreCase(x))) return;
 

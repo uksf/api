@@ -9,6 +9,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
         private const string MOD_NAME = "modpack";
 
         protected override async Task ProcessExecute() {
+            UpdateInterval = TimeSpan.FromSeconds(2);
+
             Logger.Log("Running build for UKSF");
 
             string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
