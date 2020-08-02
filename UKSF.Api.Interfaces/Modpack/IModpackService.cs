@@ -10,7 +10,7 @@ namespace UKSF.Api.Interfaces.Modpack {
         IEnumerable<ModpackBuild> GetDevBuilds();
         ModpackRelease GetRelease(string version);
         ModpackBuild GetBuild(string id);
-        Task NewBuild(string reference);
+        Task NewBuild(NewBuild newBuild);
         Task Rebuild(ModpackBuild build);
         void CancelBuild(ModpackBuild build);
         Task UpdateReleaseDraft(ModpackRelease release);

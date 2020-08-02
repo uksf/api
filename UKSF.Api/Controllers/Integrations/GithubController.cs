@@ -15,7 +15,7 @@ namespace UKSF.Api.Controllers.Integrations {
     [Route("[controller]")]
     public class GithubController : Controller {
         private const string PUSH_EVENT = "push";
-        private const string REPO_NAME = "modpack"; //"BuildTest";
+        private const string REPO_NAME = "modpack";
         private const string DEV = "refs/heads/dev";
         private const string RELEASE = "refs/heads/release";
 

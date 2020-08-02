@@ -63,7 +63,7 @@ namespace UKSF.Api.Services.Game {
             return Path.Join(VariablesWrapper.VariablesDataService().GetSingle(variableKey).AsString(), "arma3server_x64.exe");
         }
 
-        public static string GetGameServerSettingsPath() => Path.Join(VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_RELEASE").AsString(), "userconfig");
+        public static string GetGameServerSettingsPath() => Path.Join(VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_RELEASE").AsString(), "userconfig", "cba_settings.sqf");
 
         public static string GetGameServerMissionsPath() => VariablesWrapper.VariablesDataService().GetSingle("MISSIONS_PATH").AsString();
 

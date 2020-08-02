@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -30,10 +31,9 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             await BatchProcessFiles(
                 files,
                 2,
-                file => {
-                    BuildProcessHelper.RunProcess(Logger, CancellationTokenSource.Token, file.DirectoryName, signTool, $"sign /f \"{certPath}\" \"{file.FullName}\"", true);
+                async file => {
+                    await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, file.DirectoryName, signTool, $"sign /f \"{certPath}\" \"{file.FullName}\"", TimeSpan.FromSeconds(10).Milliseconds, true);
                     Interlocked.Increment(ref signed);
-                    return Task.CompletedTask;
                 },
                 () => $"Signed {signed} of {total} extensions",
                 "Failed to sign extension"

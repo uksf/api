@@ -90,13 +90,13 @@ namespace UKSF.Api.Controllers.Modpack {
             return Ok(modpackService.GetRelease(version));
         }
 
-        [HttpGet("newbuild/{reference}"), Authorize, Roles(RoleDefinitions.TESTER)]
-        public async Task<IActionResult> NewBuild(string reference) {
-            if (!await githubService.IsReferenceValid(reference)) {
-                return BadRequest($"{reference} cannot be built as its version does not have the required make files");
+        [HttpPost("newbuild"), Authorize, Roles(RoleDefinitions.TESTER)]
+        public async Task<IActionResult> NewBuild([FromBody] NewBuild newBuild) {
+            if (!await githubService.IsReferenceValid(newBuild.reference)) {
+                return BadRequest($"{newBuild.reference} cannot be built as its version does not have the required make files");
             }
 
-            await modpackService.NewBuild(reference);
+            await modpackService.NewBuild(newBuild);
             return Ok();
         }
     }

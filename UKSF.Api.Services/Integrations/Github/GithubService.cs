@@ -16,9 +16,8 @@ using UKSF.Api.Services.Message;
 
 namespace UKSF.Api.Services.Integrations.Github {
     public class GithubService : IGithubService {
-        // TODO: Use variables for some of these
         private const string REPO_ORG = "uksf";
-        private const string REPO_NAME = "modpack"; // "BuildTest";
+        private const string REPO_NAME = "modpack";
         private const string VERSION_FILE = "addons/main/script_version.hpp";
         private const int APP_ID = 53456;
         private const long APP_INSTALLATION = 6681715;
@@ -62,7 +61,7 @@ namespace UKSF.Api.Services.Integrations.Github {
             string version = await GetReferenceVersion(reference);
             int[] versionParts = version.Split('.').Select(int.Parse).ToArray();
             // TODO: Update minor with version with udpated make for this build system
-            return versionParts[0] >= 5; // && versionParts[1] > 18;
+            return versionParts[0] >= 5 && versionParts[1] > 18;
         }
 
         public async Task<GithubCommit> GetLatestReferenceCommit(string reference) {

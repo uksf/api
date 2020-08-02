@@ -44,7 +44,6 @@ namespace UKSF.Api.Services.Game {
 
             using HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            client.Timeout = TimeSpan.FromMilliseconds(5); // TODO: REMOVE
             try {
                 HttpResponseMessage response = await client.GetAsync($"http://localhost:{gameServer.apiPort}/server");
                 if (!response.IsSuccessStatusCode) {

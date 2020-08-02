@@ -38,14 +38,14 @@ namespace UKSF.Api.Services.Modpack {
 
         public ModpackBuild GetBuild(string id) => buildsService.Data.GetSingle(x => x.id == id);
 
-        public async Task NewBuild(string reference) {
-            GithubCommit commit = await githubService.GetLatestReferenceCommit(reference);
+        public async Task NewBuild(NewBuild newBuild) {
+            GithubCommit commit = await githubService.GetLatestReferenceCommit(newBuild.reference);
             if (!string.IsNullOrEmpty(sessionService.GetContextId())) {
                 commit.author = sessionService.GetContextEmail();
             }
 
-            string version = await githubService.GetReferenceVersion(reference);
-            ModpackBuild build = await buildsService.CreateDevBuild(version, commit);
+            string version = await githubService.GetReferenceVersion(newBuild.reference);
+            ModpackBuild build = await buildsService.CreateDevBuild(version, commit, newBuild);
             LogWrapper.AuditLog($"New build created ({GetBuildName(build)})");
             buildQueueService.QueueBuild(build);
         }
