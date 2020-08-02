@@ -113,6 +113,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                         }
                     }
                 } else {
+                    logger.LogWarning("Process error");
                     try {
                         process.Kill();
                     } catch {
