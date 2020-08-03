@@ -42,6 +42,10 @@ namespace UKSF.Common {
                 changes.Append($"\n\tRemoved: '{removal}'");
             }
 
+            if (changes.Length == 0) {
+                changes.Append("\tNo changes");
+            }
+
             return changes.ToString();
         }
 
