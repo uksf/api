@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Common;
@@ -46,7 +45,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             this.ignoreErrorGateOpen = ignoreErrorGateOpen;
         }
 
-        public async Task<List<string>> Run(string workingDirectory, string executable, string args, int timeout) {
+        public List<string> Run(string workingDirectory, string executable, string args, int timeout) {
             process = new Process {
                 StartInfo = {
                     FileName = executable,
@@ -63,8 +62,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             process.OutputDataReceived += OnOutputDataReceived;
             process.ErrorDataReceived += OnErrorDataReceived;
 
-            await using CancellationTokenRegistration unused = cancellationTokenSource.Token.Register(process.Kill);
-            await using CancellationTokenRegistration _ = errorCancellationTokenSource.Token.Register(process.Kill);
+            using CancellationTokenRegistration unused = cancellationTokenSource.Token.Register(process.Kill);
+            using CancellationTokenRegistration _ = errorCancellationTokenSource.Token.Register(process.Kill);
 
             process.Start();
             process.BeginOutputReadLine();
@@ -208,8 +207,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         //     Exception capturedException = null;
         //     CancellationTokenSource errorCancellationTokenSource = new CancellationTokenSource();
         //
-        //     // TODO: Try with WaitForExit and ouput counter instead of tasks. Handle timeout?
-        //
         //     TaskCompletionSource<object> processExitEvent = new TaskCompletionSource<object>();
         //     process.Exited += (sender, receivedEventArgs) => {
         //         // ((Process) sender)?.WaitForExit();
@@ -256,7 +253,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         //         string message = receivedEventArgs.Data;
         //         if (string.IsNullOrEmpty(message)) return;
         //
-        //         // TODO: Handle this better
         //         if (message.ContainsIgnoreCase("File written to")) {
         //             ignoreErrors = false;
         //             return;

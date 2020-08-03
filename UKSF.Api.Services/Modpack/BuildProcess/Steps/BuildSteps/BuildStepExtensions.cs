@@ -31,10 +31,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             await BatchProcessFiles(
                 files,
                 2,
-                async file => {
+                file => {
                     BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true);
-                    await processHelper.Run(file.DirectoryName, signTool, $"sign /f \"{certPath}\" \"{file.FullName}\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
+                    processHelper.Run(file.DirectoryName, signTool, $"sign /f \"{certPath}\" \"{file.FullName}\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
                     Interlocked.Increment(ref signed);
+                    return Task.CompletedTask;
                 },
                 () => $"Signed {signed} of {total} extensions",
                 "Failed to sign extension"

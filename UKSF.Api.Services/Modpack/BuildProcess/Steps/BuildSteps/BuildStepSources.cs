@@ -17,7 +17,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             await CheckoutModpack();
         }
 
-        private async Task CheckoutStaticSource(string displayName, string modName, string releaseName, string repoName, string branchName) {
+        private Task CheckoutStaticSource(string displayName, string modName, string releaseName, string repoName, string branchName) {
             Logger.LogSurround($"\nChecking out latest {displayName}...");
 
             bool forceBuild = GetEnvironmentVariable<bool>($"{modName}_updated");
@@ -37,28 +37,30 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
                 DirectoryInfo release = new DirectoryInfo(releasePath);
                 DirectoryInfo repo = new DirectoryInfo(repoPath);
 
-                await new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
+                new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
                     path,
                     "cmd.exe",
                     $"/c \"git reset --hard HEAD && git clean -d -f && git checkout {branchName}\"",
                     (int) TimeSpan.FromSeconds(30).TotalMilliseconds
                 );
 
-                string before = (await new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
-                    path,
-                    "cmd.exe",
-                    "/c \"git rev-parse HEAD\"",
-                    (int) TimeSpan.FromSeconds(10).TotalMilliseconds
-                )).Last();
+                string before = new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
+                                                                                                              path,
+                                                                                                              "cmd.exe",
+                                                                                                              "/c \"git rev-parse HEAD\"",
+                                                                                                              (int) TimeSpan.FromSeconds(10).TotalMilliseconds
+                                                                                                          )
+                                                                                                          .Last();
 
-                await new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(path, "cmd.exe", "/c \"git pull\"", (int) TimeSpan.FromSeconds(30).TotalMilliseconds);
+                new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(path, "cmd.exe", "/c \"git pull\"", (int) TimeSpan.FromSeconds(30).TotalMilliseconds);
 
-                string after = (await new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
-                    path,
-                    "cmd.exe",
-                    "/c \"git rev-parse HEAD\"",
-                    (int) TimeSpan.FromSeconds(10).TotalMilliseconds
-                )).Last();
+                string after = new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
+                                                                                                             path,
+                                                                                                             "cmd.exe",
+                                                                                                             "/c \"git rev-parse HEAD\"",
+                                                                                                             (int) TimeSpan.FromSeconds(10).TotalMilliseconds
+                                                                                                         )
+                                                                                                         .Last();
 
                 if (release.Exists && repo.Exists) {
                     Logger.Log($"{before?.Substring(0, 7)} vs {after?.Substring(0, 7)}");
@@ -71,9 +73,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
 
             SetEnvironmentVariable($"{modName}_updated", updated);
             Logger.LogSurround($"Checked out latest {displayName}{(updated ? "" : " (No Changes)")}");
+
+            return Task.CompletedTask;
         }
 
-        private async Task CheckoutModpack() {
+        private Task CheckoutModpack() {
             string reference = string.Equals(Build.commit.branch, "None") ? Build.commit.after : Build.commit.branch;
             string referenceName = string.Equals(Build.commit.branch, "None") ? reference : $"latest {reference}";
             Logger.LogSurround("\nChecking out modpack...");
@@ -84,14 +88,15 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             }
 
             Logger.Log($"Checking out {referenceName}");
-            await new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
+            new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
                 modpackPath,
                 "cmd.exe",
                 $"/c \"git reset --hard HEAD && git clean -d -f && git checkout {reference} && git pull\"",
                 (int) TimeSpan.FromSeconds(30).TotalMilliseconds
             );
-
             Logger.LogSurround("Checked out modpack");
+
+            return Task.CompletedTask;
         }
     }
 }
