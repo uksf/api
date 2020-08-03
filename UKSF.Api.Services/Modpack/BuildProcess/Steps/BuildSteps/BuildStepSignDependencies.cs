@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Services.Admin;
@@ -32,7 +31,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             Logger.LogSurround("Cleared keys directories");
 
             Logger.LogSurround("\nCreating key...");
-            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, keygenPath, dsCreateKey, keyName, TimeSpan.FromSeconds(10).TotalMilliseconds, true);
+            BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, true);
+            await processHelper.Run(keygenPath, dsCreateKey, keyName, (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
             Logger.Log($"Created {keyName}");
             await CopyFiles(keygen, keys, new List<FileInfo> { new FileInfo(Path.Join(keygenPath, $"{keyName}.bikey")) });
             Logger.LogSurround("Created key");
@@ -73,17 +73,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             string privateKey = Path.Join(keygenPath, $"{keyName}.biprivatekey");
             int signed = 0;
             int total = files.Count;
+            Logger.Log($"Signed {signed} of {total} files");
             foreach (FileInfo file in files) {
                 try {
-                    await BuildProcessHelper.RunProcess(
-                        Logger,
-                        CancellationTokenSource,
-                        addonsPath,
-                        dsSignFile,
-                        $"\"{privateKey}\" \"{file.FullName}\"",
-                        TimeSpan.FromSeconds(10).TotalMilliseconds,
-                        true
-                    );
+                    BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, true);
+                    await processHelper.Run(addonsPath, dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
                     signed++;
                     Logger.LogInline($"Signed {signed} of {total} files");
                 } catch (OperationCanceledException) {
@@ -92,16 +86,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
                     throw new Exception($"Failed to sign file '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}", exception);
                 }
             }
-            // await BatchProcessFiles(
-            //     files,
-            //     10,
-            //     async file => {
-            //         await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, addonsPath, dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", TimeSpan.FromSeconds(10).TotalMilliseconds, true);
-            //         Interlocked.Increment(ref signed);
-            //     },
-            //     () => $"Signed {signed} of {total} files",
-            //     "Failed to sign file"
-            // );
         }
     }
 }

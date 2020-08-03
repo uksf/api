@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using UKSF.Api.Models.Game;
 
@@ -29,10 +30,12 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
                 await DeleteDirectoryContents(path);
                 Logger.LogSurround("Cleaned build folder");
 
-                Logger.LogSurround("\nCleaning repo zsync files...");
-                List<FileInfo> files = GetDirectoryContents(repo, "*.zsync");
-                await DeleteFiles(files);
-                Logger.LogSurround("Cleaned repo zsync files");
+                Logger.LogSurround("\nCleaning orphaned zsync files...");
+                IEnumerable<FileInfo> contentFiles = GetDirectoryContents(repo).Where(x => !x.Name.Contains(".zsync"));
+                IEnumerable<FileInfo> zsyncFiles = GetDirectoryContents(repo, "*.zsync");
+                List<FileInfo> orphanedFiles = zsyncFiles.Where(x => contentFiles.All(y => !x.FullName.Contains(y.FullName))).ToList();
+                await DeleteFiles(orphanedFiles);
+                Logger.LogSurround("Cleaned orphaned zsync files");
             }
         }
     }

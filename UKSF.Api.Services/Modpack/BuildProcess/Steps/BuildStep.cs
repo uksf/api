@@ -11,6 +11,7 @@ using UKSF.Api.Services.Admin;
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class BuildStep : IBuildStep {
         private const string COLOUR_BLUE = "#0c78ff";
+        private readonly TimeSpan updateInterval = TimeSpan.FromSeconds(2);
         private readonly CancellationTokenSource updatePusherCancellationTokenSource = new CancellationTokenSource();
         private readonly SemaphoreSlim updateSemaphore = new SemaphoreSlim(1);
         protected ModpackBuild Build;
@@ -19,7 +20,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
         protected IStepLogger Logger;
         private Func<UpdateDefinition<ModpackBuild>, Task> updateBuildCallback;
         private Func<Task> updateStepCallback;
-        protected TimeSpan UpdateInterval = TimeSpan.FromSeconds(1);
 
         public void Init(
             ModpackBuild modpackBuild,
@@ -155,7 +155,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
                 _ = Task.Run(
                     async () => {
                         do {
-                            await Task.Delay(UpdateInterval, updatePusherCancellationTokenSource.Token);
+                            await Task.Delay(updateInterval, updatePusherCancellationTokenSource.Token);
                             await Update();
                         } while (!updatePusherCancellationTokenSource.IsCancellationRequested);
                     },
