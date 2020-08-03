@@ -13,8 +13,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
         public override bool CheckGuards() => IsBuildNeeded(MOD_NAME);
 
         protected override async Task ProcessExecute() {
-            UpdateInterval = TimeSpan.FromSeconds(2);
-
             Logger.Log("Running build for ACE");
 
             string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
@@ -22,7 +20,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_ace");
 
             Logger.LogSurround("\nRunning make.py...");
-            await BuildProcessHelper.RunProcess(Logger, CancellationTokenSource, toolsPath, PythonPath, MakeCommand("redirect"), TimeSpan.FromMinutes(10).TotalMilliseconds);
+            BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, ignoreErrorGateClose: "File written to", ignoreErrorGateOpen: "MakePbo Version");
+            await processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int) TimeSpan.FromMinutes(10).TotalMilliseconds);
             Logger.LogSurround("Make.py complete");
 
             Logger.LogSurround("\nMoving ACE release to build...");
