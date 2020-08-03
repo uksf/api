@@ -224,16 +224,9 @@ namespace UKSF.Api.Controllers {
         }
 
         [HttpGet("{id}/mods/reset"), Authorize]
-        public async Task<IActionResult> ResetGameServerMods(string id) {
+        public IActionResult ResetGameServerMods(string id) {
             GameServer gameServer = gameServersService.Data.GetSingle(id);
-            LogWrapper.AuditLog($"Game server '{gameServer.name}' mods & serverMods reset");
-            await gameServersService.Data.Update(id, Builders<GameServer>.Update.Unset(x => x.mods).Unset(x => x.serverMods));
-            await gameServersService.Data.Update(
-                id,
-                Builders<GameServer>.Update.Set(x => x.mods, gameServersService.GetEnvironmentMods(gameServer.environment))
-                                    .Set(x => x.serverMods, new List<GameServerMod>())
-            );
-            return Ok(gameServersService.GetAvailableMods(id));
+            return Ok(new { availableMods = gameServersService.GetAvailableMods(id), mods = gameServersService.GetEnvironmentMods(gameServer.environment), serverMods = new List<GameServerMod>()});
         }
 
         [HttpGet("disabled"), Authorize]
