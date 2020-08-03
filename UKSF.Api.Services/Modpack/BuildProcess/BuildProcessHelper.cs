@@ -91,8 +91,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 }
             } else {
                 // Timeout or cancelled
-                process.Kill();
-
                 if (!cancellationTokenSource.IsCancellationRequested) {
                     Exception exception = new Exception($"Process exited with non-zero code ({process.ExitCode})");
                     if (raiseErrors) {
