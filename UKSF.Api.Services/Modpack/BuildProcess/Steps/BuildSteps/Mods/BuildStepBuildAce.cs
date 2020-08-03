@@ -21,7 +21,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
 
             Logger.LogSurround("\nRunning make.py...");
             BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, ignoreErrorGateClose: "File written to", ignoreErrorGateOpen: "MakePbo Version");
-            await processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int) TimeSpan.FromMinutes(10).TotalMilliseconds);
+            processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int) TimeSpan.FromMinutes(10).TotalMilliseconds);
             Logger.LogSurround("Make.py complete");
 
             Logger.LogSurround("\nMoving ACE release to build...");

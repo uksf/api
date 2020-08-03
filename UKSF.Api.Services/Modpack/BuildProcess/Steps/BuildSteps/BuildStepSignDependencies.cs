@@ -32,7 +32,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
 
             Logger.LogSurround("\nCreating key...");
             BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, true);
-            await processHelper.Run(keygenPath, dsCreateKey, keyName, (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
+            processHelper.Run(keygenPath, dsCreateKey, keyName, (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
             Logger.Log($"Created {keyName}");
             await CopyFiles(keygen, keys, new List<FileInfo> { new FileInfo(Path.Join(keygenPath, $"{keyName}.bikey")) });
             Logger.LogSurround("Created key");
@@ -69,15 +69,16 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             };
         }
 
-        private async Task SignFiles(string keygenPath, string addonsPath, IReadOnlyCollection<FileInfo> files) {
+        private Task SignFiles(string keygenPath, string addonsPath, IReadOnlyCollection<FileInfo> files) {
             string privateKey = Path.Join(keygenPath, $"{keyName}.biprivatekey");
             int signed = 0;
             int total = files.Count;
             Logger.Log($"Signed {signed} of {total} files");
+            // TODO: Maybe batch the commands together to do several in one process
             foreach (FileInfo file in files) {
                 try {
                     BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, true);
-                    await processHelper.Run(addonsPath, dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
+                    processHelper.Run(addonsPath, dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
                     signed++;
                     Logger.LogInline($"Signed {signed} of {total} files");
                 } catch (OperationCanceledException) {
@@ -86,6 +87,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
                     throw new Exception($"Failed to sign file '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}", exception);
                 }
             }
+
+            return Task.CompletedTask;
         }
     }
 }
