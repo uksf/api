@@ -15,12 +15,13 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
                 string repoPath = Path.Join(environmentPath, "Backup", "Repo");
                 string keysPath = Path.Join(environmentPath, "Backup", "Keys");
 
-                Logger.LogSurround("\nCleaning backup folder...");
-                Logger.Log("Cleaning repo backup");
+                Logger.LogSurround("\nCleaning repo backup...");
                 await DeleteDirectoryContents(repoPath);
-                Logger.Log("\nCleaning keys backup");
+                Logger.LogSurround("Cleaned repo backup");
+
+                Logger.LogSurround("\nCleaning keys backup...");
                 await DeleteDirectoryContents(keysPath);
-                Logger.LogSurround("Cleaned backup folder");
+                Logger.LogSurround("Cleaned keys backup");
             } else {
                 string path = Path.Join(environmentPath, "Build");
                 string repoPath = Path.Join(environmentPath, "Repo");
