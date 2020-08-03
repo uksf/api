@@ -16,7 +16,9 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.ReleaseSteps {
             string keysBackupPath = Path.Join(environmentPath, "Backup", "Keys");
 
             Logger.LogSurround("\nBacking up repo...");
-            await CopyDirectory(repoPath, repoBackupPath);
+            await AddFiles(repoPath, repoBackupPath);
+            await UpdateFiles(repoPath, repoBackupPath);
+            await DeleteFiles(repoPath, repoBackupPath);
             Logger.LogSurround("Backed up repo");
 
             Logger.LogSurround("\nBacking up keys...");

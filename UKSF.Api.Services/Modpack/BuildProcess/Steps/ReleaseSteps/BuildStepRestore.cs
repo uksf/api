@@ -15,8 +15,9 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.ReleaseSteps {
             string keysBackupPath = Path.Join(environmentPath, "Backup", "Keys");
 
             Logger.LogSurround("\nRestoring repo...");
-            await DeleteDirectoryContents(repoPath);
-            await CopyDirectory(repoBackupPath, repoPath);
+            await AddFiles(repoBackupPath, repoPath);
+            await UpdateFiles(repoBackupPath, repoPath);
+            await DeleteFiles(repoBackupPath, repoPath);
             Logger.LogSurround("Restored repo");
 
             Logger.LogSurround("\nRestoring keys...");
