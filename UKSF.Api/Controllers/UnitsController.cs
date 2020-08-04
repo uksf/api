@@ -106,7 +106,7 @@ namespace UKSF.Api.Controllers {
         [HttpPut, Authorize]
         public async Task<IActionResult> AddUnit([FromBody] Unit unit) {
             await unitsService.Data.Add(unit);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"New unit added '{unit.name}, {unit.shortname}, {unit.type}, {unit.branch}, {unit.teamspeakGroup}, {unit.discordRoleId}, {unit.callsign}'");
+            LogWrapper.AuditLog($"New unit added '{unit.name}, {unit.shortname}, {unit.type}, {unit.branch}, {unit.teamspeakGroup}, {unit.discordRoleId}, {unit.callsign}'");
             return Ok();
         }
 
@@ -115,7 +115,6 @@ namespace UKSF.Api.Controllers {
             Unit localUnit = unit;
             Unit oldUnit = unitsService.Data.GetSingle(x => x.id == localUnit.id);
             LogWrapper.AuditLog(
-                sessionService.GetContextId(),
                 $"Unit updated from '{oldUnit.name}, {oldUnit.shortname}, {oldUnit.type}, {oldUnit.parent}, {oldUnit.branch}, {oldUnit.teamspeakGroup}, {oldUnit.discordRoleId}, {oldUnit.callsign}, {oldUnit.icon}' to '{unit.name}, {unit.shortname}, {unit.type}, {unit.parent}, {unit.branch}, {unit.teamspeakGroup}, {unit.discordRoleId}, {unit.callsign}, {unit.icon}'"
             );
             await unitsService.Data
@@ -158,7 +157,7 @@ namespace UKSF.Api.Controllers {
         [HttpDelete("{id}"), Authorize]
         public async Task<IActionResult> DeleteUnit(string id) {
             Unit unit = unitsService.Data.GetSingle(id);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"Unit deleted '{unit.name}'");
+            LogWrapper.AuditLog($"Unit deleted '{unit.name}'");
             foreach (Account account in accountService.Data.Get(x => x.unitAssignment == unit.name)) {
                 Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, "Reserves", reason: $"{unit.name} was deleted");
                 notificationsService.Add(notification);
