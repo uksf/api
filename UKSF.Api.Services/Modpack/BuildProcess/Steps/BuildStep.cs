@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using Newtonsoft.Json;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Interfaces.Modpack.BuildProcess.Steps;
 using UKSF.Api.Models.Game;
@@ -154,9 +155,16 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
             try {
                 _ = Task.Run(
                     async () => {
+                        string previousBuildStepState = JsonConvert.SerializeObject(buildStep);
+
                         do {
                             await Task.Delay(updateInterval, updatePusherCancellationTokenSource.Token);
-                            await Update();
+
+                            string newBuildStepState = JsonConvert.SerializeObject(buildStep);
+                            if (newBuildStepState != previousBuildStepState) {
+                                await Update();
+                                previousBuildStepState = newBuildStepState;
+                            }
                         } while (!updatePusherCancellationTokenSource.IsCancellationRequested);
                     },
                     updatePusherCancellationTokenSource.Token
