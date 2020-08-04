@@ -65,7 +65,7 @@ namespace UKSF.Api.Services.Command {
             }
 
             await data.Add(request);
-            LogWrapper.AuditLog(sessionService.GetContextId(), $"{request.type} request created for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
+            LogWrapper.AuditLog($"{request.type} request created for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
             bool selfRequest = request.displayRequester == request.displayRecipient;
             string notificationMessage = $"{request.displayRequester} requires your review on {(selfRequest ? "their" : AvsAn.Query(request.type).Article)} {request.type.ToLower()} request{(selfRequest ? "" : $" for {request.displayRecipient}")}";
             foreach (Account account in accounts.Where(x => x.id != requesterAccount.id)) {
