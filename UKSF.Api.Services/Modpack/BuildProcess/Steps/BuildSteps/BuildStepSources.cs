@@ -78,7 +78,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
         }
 
         private Task CheckoutModpack() {
-            string reference = string.Equals(Build.commit.branch, "None") ? Build.commit.after : Build.commit.branch;
+            string reference = string.Equals(Build.commit.branch, "None") ? Build.commit.after : Build.commit.branch.Replace("refs/heads/", "");
             string referenceName = string.Equals(Build.commit.branch, "None") ? reference : $"latest {reference}";
             Logger.LogSurround("\nChecking out modpack...");
             string modpackPath = Path.Join(GetBuildSourcesPath(), "modpack");
