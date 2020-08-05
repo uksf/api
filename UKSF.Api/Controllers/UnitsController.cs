@@ -29,12 +29,10 @@ namespace UKSF.Api.Controllers {
         private readonly IRanksService ranksService;
         private readonly IRolesService rolesService;
         private readonly IServerService serverService;
-        private readonly ISessionService sessionService;
         private readonly ITeamspeakService teamspeakService;
         private readonly IUnitsService unitsService;
 
         public UnitsController(
-            ISessionService sessionService,
             IAccountService accountService,
             IDisplayNameService displayNameService,
             IRanksService ranksService,
@@ -46,7 +44,6 @@ namespace UKSF.Api.Controllers {
             IDiscordService discordService,
             INotificationsService notificationsService
         ) {
-            this.sessionService = sessionService;
             this.accountService = accountService;
             this.displayNameService = displayNameService;
             this.ranksService = ranksService;
