@@ -183,8 +183,13 @@ namespace UKSF.Api.Services.Integrations.Github {
             return releases.Select(x => new ModpackRelease { version = x.Name.Split(" ")[^1], timestamp = x.CreatedAt.DateTime, changelog = FormatChangelog(x.Body) }).ToList();
         }
 
-        private static string CombineCommitMessages(IEnumerable<GitHubCommit> commits) {
-            return commits.Select(x => x.Commit.Message).Reverse().Aggregate((a, b) => $"{a}\n\n{b}");
+        private static string CombineCommitMessages(IReadOnlyCollection<GitHubCommit> commits) {
+            List<string> filteredCommitMessages = commits.Select(x => x.Commit.Message).Reverse().Where(x => !x.Contains("Merge branch")).ToList();
+            if (filteredCommitMessages.Count == 0) {
+                filteredCommitMessages = new List<string> {commits.First().Commit.Message};
+            }
+
+            return filteredCommitMessages.Aggregate((a, b) => $"{a}\n\n{b}");
         }
 
         private async Task<Milestone> GetOpenMilestone(string version) {
