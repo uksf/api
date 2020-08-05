@@ -63,7 +63,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 new ModpackBuildStep(BuildStepKeys.NAME),
                 new ModpackBuildStep(BuildStepCbaSettings.NAME),
                 new ModpackBuildStep(BuildStepBuildRepo.NAME),
-                new ModpackBuildStep(BuildStepNotify.NAME)
+                // new ModpackBuildStep(BuildStepNotify.NAME)
             };
 
         private static List<ModpackBuildStep> GetStepsForRc() =>
