@@ -12,8 +12,8 @@ using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Services.Modpack {
     public class ReleaseService : DataBackedService<IReleasesDataService>, IReleaseService {
-        private readonly IGithubService githubService;
         private readonly IAccountService accountService;
+        private readonly IGithubService githubService;
 
         public ReleaseService(IReleasesDataService data, IGithubService githubService, IAccountService accountService) : base(data) {
             this.githubService = githubService;
@@ -40,7 +40,13 @@ namespace UKSF.Api.Services.Modpack {
                 throw new NullReferenceException($"Could not find release {version}");
             }
 
-            await Data.Update(release.id, Builders<ModpackRelease>.Update.Set(x => x.timestamp, DateTime.Now).Set(x => x.isDraft, false));
+            if (release.changelog.EndsWith("\n\n")) {
+                release.changelog += "\n\n";
+            }
+
+            release.changelog += "SR3 - Development Team\n[Report and track issues here](https://github.com/uksf/modpack/issues)";
+
+            await Data.Update(release.id, Builders<ModpackRelease>.Update.Set(x => x.timestamp, DateTime.Now).Set(x => x.isDraft, false).Set(x => x.changelog, release.changelog));
             await githubService.PublishRelease(release);
         }
 

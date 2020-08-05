@@ -119,9 +119,6 @@ namespace UKSF.Api.Services.Integrations.Github {
             AddChangelogUpdated(ref changelog, updated, "Updated");
             AddChangelogSection(ref changelog, removed, "Removed");
 
-            changelog += "SR3 - Development Team";
-            changelog += "\n[Report and track issues here](https://github.com/uksf/modpack/issues)";
-
             return changelog;
         }
 
@@ -132,7 +129,7 @@ namespace UKSF.Api.Services.Integrations.Github {
                 await client.Repository.Release.Create(
                     REPO_ORG,
                     REPO_NAME,
-                    new NewRelease(release.version) { Name = $"Modpack Version {release.version}", Body = $"{release.description}\n\n{release.changelog.Replace("<br>", "")}" }
+                    new NewRelease(release.version) { Name = $"Modpack Version {release.version}", Body = $"{release.description}\n\n## Changelog\n{release.changelog.Replace("<br>", "")}" }
                 );
 
                 Milestone milestone = await GetOpenMilestone(release.version);
