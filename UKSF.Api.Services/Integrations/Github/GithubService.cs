@@ -185,11 +185,7 @@ namespace UKSF.Api.Services.Integrations.Github {
 
         private static string CombineCommitMessages(IReadOnlyCollection<GitHubCommit> commits) {
             List<string> filteredCommitMessages = commits.Select(x => x.Commit.Message).Reverse().Where(x => !x.Contains("Merge branch")).ToList();
-            if (filteredCommitMessages.Count == 0) {
-                filteredCommitMessages = new List<string> {commits.First().Commit.Message};
-            }
-
-            return filteredCommitMessages.Aggregate((a, b) => $"{a}\n\n{b}");
+            return filteredCommitMessages.Count == 0 ? commits.First().Commit.Message : filteredCommitMessages.Aggregate((a, b) => $"{a}\n\n{b}");
         }
 
         private async Task<Milestone> GetOpenMilestone(string version) {
