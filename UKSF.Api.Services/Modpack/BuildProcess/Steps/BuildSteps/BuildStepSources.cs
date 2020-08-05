@@ -52,7 +52,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
                                                                                                           )
                                                                                                           .Last();
 
-                new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(path, "cmd.exe", "/c \"git pull\"", (int) TimeSpan.FromSeconds(30).TotalMilliseconds);
+                new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(path, "cmd.exe", "/c \"git fetch && git pull\"", (int) TimeSpan.FromSeconds(30).TotalMilliseconds);
 
                 string after = new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
                                                                                                              path,
@@ -91,7 +91,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
                 modpackPath,
                 "cmd.exe",
-                $"/c \"git reset --hard HEAD && git clean -d -f && git checkout {reference} && git pull\"",
+                $"/c \"git reset --hard HEAD && git clean -d -f && git fetch && git checkout {reference} && git pull\"",
                 (int) TimeSpan.FromSeconds(30).TotalMilliseconds
             );
             Logger.LogSurround("Checked out modpack");
