@@ -1,31 +1,34 @@
 using System.Collections.Generic;
 using System.Linq;
 using UKSF.Api.Models.Mission;
+using UKSF.Api.Services.Admin;
 
 namespace UKSF.Api.Services.Game.Missions {
     public static class MissionDataResolver {
-        private static readonly string[] ENGINEER_IDS = {
-            "5a1e894463d0f71710089106", // Bridg
-            "59e38f31594c603b78aa9dc3", // Handi
-            "59e38f13594c603b78aa9dbf", // Carr
-            "5bc3bccdffbf7a11b803c3f6", // Delta
-            "59e3958b594c603b78aa9dcd", // Joho
-            "5a2439443fccaa15902aaa4e", // Mac
-            "5a4e7effd68b7e16e46fc614", // Woody
-            "5a1a16ce630e7413645b73fd", // Penn
-            "5a1a14b5aacf7b00346dcc37" // Gilbert
-        };
-
-        private static readonly string[] MEDIC_IDS = {
-            "59e3958b594c603b78aa9dcd", // Joho
-            "5a2439443fccaa15902aaa4e", // Mac
-            "5acfd72259f89d08ec1c21d8", // Stan
-            "5e0d3273b91cc00aa001213f", // Baxter
-            "5eee34c8ddf6642260aa6a4b", // Eliason
-            "5e0d31c3b91cc00aa001213b", // Gibney
-            "5a1a14b5aacf7b00346dcc37", // Gilbert
-            "5e24bbe949ddd04030d72ca5" // Hass
-        };
+        // TODO: Add special display to variables area that resolves IDs as display names, unit names, ranks, roles, etc
+        // Possibly do a selection list of all items per type?
+        // private static readonly string[] ENGINEER_IDS = {
+        //     "5a1e894463d0f71710089106", // Bridg
+        //     "59e38f31594c603b78aa9dc3", // Handi
+        //     "59e38f13594c603b78aa9dbf", // Carr
+        //     "5bc3bccdffbf7a11b803c3f6", // Delta
+        //     "59e3958b594c603b78aa9dcd", // Joho
+        //     "5a2439443fccaa15902aaa4e", // Mac
+        //     "5a4e7effd68b7e16e46fc614", // Woody
+        //     "5a1a16ce630e7413645b73fd", // Penn
+        //     "5a1a14b5aacf7b00346dcc37" // Gilbert
+        // };
+        //
+        // private static readonly string[] MEDIC_IDS = {
+        //     "59e3958b594c603b78aa9dcd", // Joho
+        //     "5a2439443fccaa15902aaa4e", // Mac
+        //     "5acfd72259f89d08ec1c21d8", // Stan
+        //     "5e0d3273b91cc00aa001213f", // Baxter
+        //     "5eee34c8ddf6642260aa6a4b", // Eliason
+        //     "5e0d31c3b91cc00aa001213b", // Gibney
+        //     "5a1a14b5aacf7b00346dcc37", // Gilbert
+        //     "5e24bbe949ddd04030d72ca5" // Hass
+        // };
 
         public static string ResolveObjectClass(MissionPlayer player) {
             if (IsMedic(player)) return "UKSF_B_Medic"; // Team Medic
@@ -52,9 +55,14 @@ namespace UKSF.Api.Services.Game.Missions {
             return -1;
         }
 
-        private static bool IsMedic(MissionPlayer player) => MEDIC_IDS.Contains(player.account?.id);
+        private static bool IsMedic(MissionPlayer player) => IsSpecialist(player, "MISSIONS_MEDIC_IDS");
 
-        public static bool IsEngineer(MissionPlayer player) => ENGINEER_IDS.Contains(player.account?.id);
+        public static bool IsEngineer(MissionPlayer player) => IsSpecialist(player, "MISSIONS_ENGINEER_IDS");
+
+        private static bool IsSpecialist(MissionPlayer player, string idsVariableName) {
+            string[] ids = VariablesWrapper.VariablesDataService().GetSingle(idsVariableName).AsArray();
+            return ids.Contains(player.account?.id);
+        }
 
         public static string ResolveCallsign(MissionUnit unit, string defaultCallsign) {
             return unit.sourceUnit.id switch {
@@ -105,7 +113,7 @@ namespace UKSF.Api.Services.Game.Missions {
                     slots.AddRange(unit.members);
                     fillerCount = max - slots.Count;
                     for (int i = 0; i < fillerCount; i++) {
-                        MissionPlayer player = new MissionPlayer {name = "Sniper", unit = unit, rank = MissionPatchData.instance.ranks.Find(x => x.name == "Private")};
+                        MissionPlayer player = new MissionPlayer { name = "Sniper", unit = unit, rank = MissionPatchData.instance.ranks.Find(x => x.name == "Private") };
                         player.objectClass = ResolveObjectClass(player);
                         slots.Add(player);
                     }
@@ -117,7 +125,7 @@ namespace UKSF.Api.Services.Game.Missions {
                     slots.AddRange(unit.members);
                     fillerCount = max - slots.Count;
                     for (int i = 0; i < fillerCount; i++) {
-                        MissionPlayer player = new MissionPlayer {name = "Reserve", unit = unit, rank = MissionPatchData.instance.ranks.Find(x => x.name == "Recruit")};
+                        MissionPlayer player = new MissionPlayer { name = "Reserve", unit = unit, rank = MissionPatchData.instance.ranks.Find(x => x.name == "Recruit") };
                         player.objectClass = ResolveObjectClass(player);
                         slots.Add(player);
                     }
@@ -125,7 +133,7 @@ namespace UKSF.Api.Services.Game.Missions {
                     break;
                 case "5ad748e0de5d414f4c4055e0": // "Guardian 1-R"
                     for (int i = 0; i < 6; i++) {
-                        MissionPlayer player = new MissionPlayer {name = "Reserve", unit = unit, rank = MissionPatchData.instance.ranks.Find(x => x.name == "Recruit")};
+                        MissionPlayer player = new MissionPlayer { name = "Reserve", unit = unit, rank = MissionPatchData.instance.ranks.Find(x => x.name == "Recruit") };
                         player.objectClass = ResolveObjectClass(player);
                         slots.Add(player);
                     }
