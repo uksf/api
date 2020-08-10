@@ -202,12 +202,9 @@ namespace UKSF.Tests.Unit.Unit.Events.Handlers {
 
             teamspeakEventHandler.Init();
 
-            void Act1() => Task.Run(() => signalrEventBus.Send(new SignalrEventModel { procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }));
-            void Act2() => Task.Run(() => signalrEventBus.Send(new SignalrEventModel { procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, args = "{\"clientDbid\": 1, \"serverGroupId\": 10}" }));
-
-            Act1();
-            Act2();
-            await Task.Delay(TimeSpan.FromSeconds(1));
+            signalrEventBus.Send(new SignalrEventModel { procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" });
+            signalrEventBus.Send(new SignalrEventModel { procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, args = "{\"clientDbid\": 1, \"serverGroupId\": 10}" });
+            await Task.Delay(TimeSpan.FromSeconds(2));
 
             mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(account, new List<double> { 5, 10 }, 1), Times.Once);
         }
