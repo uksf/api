@@ -19,7 +19,7 @@ namespace UKSF.Api.Services.Integrations {
                 string accessToken = VariablesWrapper.VariablesDataService().GetSingle("INSTAGRAM_ACCESS_TOKEN").AsString();
 
                 using HttpClient client = new HttpClient();
-                HttpResponseMessage response = await client.GetAsync($"https://graph.instagram.com/refresh_access_token?access_token={accessToken}&grant_type=ig_exchange_token");
+                HttpResponseMessage response = await client.GetAsync($"https://graph.instagram.com/refresh_access_token?access_token={accessToken}&grant_type=ig_refresh_token");
                 if (!response.IsSuccessStatusCode) {
                     LogWrapper.Log($"Failed to get instagram access token, error: {response}");
                     return;
