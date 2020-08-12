@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Interfaces.Modpack;
@@ -22,25 +23,29 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
         }
 
         protected override async Task ProcessExecute() {
-            if (Build.environment == GameEnvironment.RELEASE) {
-                ModpackRelease release = releaseService.GetRelease(Build.version);
-                await discordService.SendMessageToEveryone(VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage(release));
-            } else {
-                await discordService.SendMessage(VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_DEV").AsUlong(), GetDiscordMessage());
+            switch (Build.environment) {
+                case GameEnvironment.RELEASE: {
+                    ModpackRelease release = releaseService.GetRelease(Build.version);
+                    await discordService.SendMessageToEveryone(VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage(release));
+                    break;
+                }
+                case GameEnvironment.RC:
+                    await discordService.SendMessage(VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_DEV").AsUlong(), GetDiscordMessage());
+                    break;
+                case GameEnvironment.DEV: break;
+                default: throw new ArgumentOutOfRangeException();
             }
 
             Logger.Log("Notifications sent");
         }
 
-        private string GetBuildMessage() =>
-            Build.environment == GameEnvironment.RC ? $"New release candidate available for {Build.version} on the rc repository" : "New dev build available on the dev repository";
+        private string GetBuildMessage() => $"New release candidate available for {Build.version} on the rc repository";
 
-        private string GetBuildLink() =>
-            Build.environment == GameEnvironment.RC ? $"https://uk-sf.co.uk/modpack/builds-rc?version={Build.version}&build={Build.id}" : $"https://uk-sf.co.uk/modpack/builds-dev?build={Build.id}";
+        private string GetBuildLink() => $"https://uk-sf.co.uk/modpack/builds-rc?version={Build.version}&build={Build.id}";
 
         private string GetDiscordMessage(ModpackRelease release = null) =>
             release == null
-                ? $"Modpack {(Build.environment == GameEnvironment.RC ? "RC" : "Dev")} Build - {(Build.environment == GameEnvironment.RC ? $"{Build.version} RC# {Build.buildNumber}" : $"#{Build.buildNumber}")}\n{GetBuildMessage()}\n<{GetBuildLink()}>"
+                ? $"Modpack RC Build - {Build.version} RC# {Build.buildNumber}\n{GetBuildMessage()}\n<{GetBuildLink()}>"
                 : $"Modpack Update - {release.version}\nChangelog: <https://uk-sf.co.uk/modpack/releases?version={release.version}>\n\n```{release.description}```";
     }
 }
