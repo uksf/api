@@ -16,8 +16,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             "Build Type"
         };
 
-        public override bool CheckGuards() => IsBuildNeeded(MOD_NAME);
-
         protected override async Task ProcessExecute() {
             Logger.Log("Running build for ACRE");
 
@@ -25,10 +23,18 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             string releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@acre2");
             string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@acre2");
 
-            Logger.LogSurround("\nRunning make.py...");
-            BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, errorExclusions: errorExclusions, ignoreErrorGateClose: "File written to", ignoreErrorGateOpen: "MakePbo Version");
-            processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect compile"), (int) TimeSpan.FromMinutes(10).TotalMilliseconds);
-            Logger.LogSurround("Make.py complete");
+            if (IsBuildNeeded(MOD_NAME)) {
+                Logger.LogSurround("\nRunning make.py...");
+                BuildProcessHelper processHelper = new BuildProcessHelper(
+                    Logger,
+                    CancellationTokenSource,
+                    errorExclusions: errorExclusions,
+                    ignoreErrorGateClose: "File written to",
+                    ignoreErrorGateOpen: "MakePbo Version"
+                );
+                processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect compile"), (int) TimeSpan.FromMinutes(10).TotalMilliseconds);
+                Logger.LogSurround("Make.py complete");
+            }
 
             Logger.LogSurround("\nMoving ACRE release to build...");
             await CopyDirectory(releasePath, buildPath);
