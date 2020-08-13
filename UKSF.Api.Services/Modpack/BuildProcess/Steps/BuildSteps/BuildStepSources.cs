@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -79,12 +80,14 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             return Task.CompletedTask;
         }
 
-        private string GitCommand(string workingDirectory, string command) =>
-            new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
+        private string GitCommand(string workingDirectory, string command) {
+            List<string> results = new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
                 workingDirectory,
                 "cmd.exe",
                 $"/c \"{command}\"",
                 (int) TimeSpan.FromSeconds(10).TotalMilliseconds
-            ).Last();
+            );
+            return results.Count > 0 ? results.Last() : string.Empty;
+        }
     }
 }
