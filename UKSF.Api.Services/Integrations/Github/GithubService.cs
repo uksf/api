@@ -102,7 +102,7 @@ namespace UKSF.Api.Services.Integrations.Github {
             IReadOnlyList<Issue> issues = await client.Issue.GetAllForRepository(
                 REPO_ORG,
                 REPO_NAME,
-                new RepositoryIssueRequest { Milestone = milestone.Number.ToString(), State = ItemStateFilter.Closed }
+                new RepositoryIssueRequest { Milestone = milestone.Number.ToString(), State = ItemStateFilter.All }
             );
 
             string changelog = "";
