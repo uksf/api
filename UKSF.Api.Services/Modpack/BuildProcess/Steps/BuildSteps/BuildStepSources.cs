@@ -88,10 +88,16 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             }
 
             Logger.Log($"Checking out {referenceName} ({reference})");
-            new BuildProcessHelper(Logger, CancellationTokenSource, false, false, false).Run(
+            new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
                 modpackPath,
                 "cmd.exe",
-                $"/c \"git reset --hard HEAD && git clean -d -f && git fetch && git checkout {reference} && git pull\"",
+                $"/c \"git reset --hard HEAD && git clean -d -f && git checkout {reference} && git pull\"",
+                (int) TimeSpan.FromSeconds(30).TotalMilliseconds
+            );
+            new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
+                modpackPath,
+                "cmd.exe",
+                "/c \"git fetch && git pull\"",
                 (int) TimeSpan.FromSeconds(30).TotalMilliseconds
             );
             Logger.LogSurround("Checked out modpack");
