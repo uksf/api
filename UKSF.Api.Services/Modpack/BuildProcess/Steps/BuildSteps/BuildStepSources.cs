@@ -87,8 +87,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
                 throw new Exception("Modpack source directory does not exist. Modpack should be cloned before running a build.");
             }
 
-            Logger.Log($"Checking out {referenceName}");
-            new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
+            Logger.Log($"Checking out {referenceName} ({reference})");
+            new BuildProcessHelper(Logger, CancellationTokenSource, false, true, false).Run(
                 modpackPath,
                 "cmd.exe",
                 $"/c \"git reset --hard HEAD && git clean -d -f && git fetch && git checkout {reference} && git pull\"",
