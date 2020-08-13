@@ -88,7 +88,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             }
 
             Logger.Log($"Checking out {referenceName} ({reference})");
-            new BuildProcessHelper(Logger, CancellationTokenSource, false, true, false).Run(
+            new BuildProcessHelper(Logger, CancellationTokenSource, false, false, false).Run(
                 modpackPath,
                 "cmd.exe",
                 $"/c \"git reset --hard HEAD && git clean -d -f && git fetch && git checkout {reference} && git pull\"",
