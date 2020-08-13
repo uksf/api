@@ -37,30 +37,12 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
                 DirectoryInfo release = new DirectoryInfo(releasePath);
                 DirectoryInfo repo = new DirectoryInfo(repoPath);
 
-                new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
-                    path,
-                    "cmd.exe",
-                    $"/c \"git reset --hard HEAD && git clean -d -f && git checkout {branchName}\"",
-                    (int) TimeSpan.FromSeconds(30).TotalMilliseconds
-                );
-
-                string before = new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
-                                                                                                              path,
-                                                                                                              "cmd.exe",
-                                                                                                              "/c \"git rev-parse HEAD\"",
-                                                                                                              (int) TimeSpan.FromSeconds(10).TotalMilliseconds
-                                                                                                          )
-                                                                                                          .Last();
-
-                new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(path, "cmd.exe", "/c \"git fetch && git pull\"", (int) TimeSpan.FromSeconds(30).TotalMilliseconds);
-
-                string after = new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
-                                                                                                             path,
-                                                                                                             "cmd.exe",
-                                                                                                             "/c \"git rev-parse HEAD\"",
-                                                                                                             (int) TimeSpan.FromSeconds(10).TotalMilliseconds
-                                                                                                         )
-                                                                                                         .Last();
+                GitCommand(path, "git reset --hard HEAD && git clean -d -f && git fetch");
+                GitCommand(path, $"git checkout {branchName}");
+                string before = GitCommand(path, "git rev-parse HEAD");
+                GitCommand(path, "git fetch");
+                GitCommand(path, "git pull");
+                string after = GitCommand(path, "git rev-parse HEAD");
 
                 if (release.Exists && repo.Exists) {
                     Logger.Log($"{before?.Substring(0, 7)} vs {after?.Substring(0, 7)}");
@@ -87,22 +69,22 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
                 throw new Exception("Modpack source directory does not exist. Modpack should be cloned before running a build.");
             }
 
-            Logger.Log($"Checking out {referenceName} ({reference})");
-            new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
-                modpackPath,
-                "cmd.exe",
-                $"/c \"git reset --hard HEAD && git clean -d -f && git checkout {reference} && git pull\"",
-                (int) TimeSpan.FromSeconds(30).TotalMilliseconds
-            );
-            new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
-                modpackPath,
-                "cmd.exe",
-                "/c \"git fetch && git pull\"",
-                (int) TimeSpan.FromSeconds(30).TotalMilliseconds
-            );
+            Logger.Log($"Checking out {referenceName}");
+            GitCommand(modpackPath, "git reset --hard HEAD && git clean -d -f && git fetch");
+            GitCommand(modpackPath, $"git checkout {reference}");
+            GitCommand(modpackPath, "git fetch");
+            GitCommand(modpackPath, "git pull");
             Logger.LogSurround("Checked out modpack");
 
             return Task.CompletedTask;
         }
+
+        private string GitCommand(string workingDirectory, string command) =>
+            new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
+                workingDirectory,
+                "cmd.exe",
+                $"/c \"{command}\"",
+                (int) TimeSpan.FromSeconds(10).TotalMilliseconds
+            ).Last();
     }
 }

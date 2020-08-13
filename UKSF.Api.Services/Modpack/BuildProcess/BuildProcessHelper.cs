@@ -70,6 +70,10 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
             process.BeginErrorReadLine();
 
             if (process.WaitForExit(timeout) && outputWaitHandle.WaitOne(timeout) && errorWaitHandle.WaitOne(timeout)) {
+                if (cancellationTokenSource.IsCancellationRequested) {
+                    return results;
+                }
+
                 if (capturedException != null) {
                     if (raiseErrors) {
                         throw capturedException;
