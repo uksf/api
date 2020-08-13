@@ -9,8 +9,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
         public const string NAME = "Build F-35";
         private const string MOD_NAME = "f35";
 
-        public override bool CheckGuards() => IsBuildNeeded(MOD_NAME);
-
         protected override async Task ProcessExecute() {
             Logger.Log("Running build for F-35");
 
@@ -20,10 +18,12 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             DirectoryInfo release = new DirectoryInfo(releasePath);
             DirectoryInfo dependencies = new DirectoryInfo(dependenciesPath);
 
-            Logger.LogSurround("\nRunning make.py...");
-            BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource);
-            processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int) TimeSpan.FromMinutes(1).TotalMilliseconds);
-            Logger.LogSurround("Make.py complete");
+            if (IsBuildNeeded(MOD_NAME)) {
+                Logger.LogSurround("\nRunning make.py...");
+                BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource);
+                processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int) TimeSpan.FromMinutes(1).TotalMilliseconds);
+                Logger.LogSurround("Make.py complete");
+            }
 
             Logger.LogSurround("\nMoving F-35 pbos to uksf dependencies...");
             List<FileInfo> files = GetDirectoryContents(release, "*.pbo");

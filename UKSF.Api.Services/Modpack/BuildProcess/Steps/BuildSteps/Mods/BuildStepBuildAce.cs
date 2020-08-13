@@ -10,8 +10,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
         private const string MOD_NAME = "ace";
         private readonly List<string> allowedOptionals = new List<string> { "ace_compat_rksl_pm_ii", "ace_nouniformrestrictions" };
 
-        public override bool CheckGuards() => IsBuildNeeded(MOD_NAME);
-
         protected override async Task ProcessExecute() {
             Logger.Log("Running build for ACE");
 
@@ -19,10 +17,12 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps.Mods {
             string releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@ace");
             string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_ace");
 
-            Logger.LogSurround("\nRunning make.py...");
-            BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, ignoreErrorGateClose: "File written to", ignoreErrorGateOpen: "MakePbo Version");
-            processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int) TimeSpan.FromMinutes(10).TotalMilliseconds);
-            Logger.LogSurround("Make.py complete");
+            if (IsBuildNeeded(MOD_NAME)) {
+                Logger.LogSurround("\nRunning make.py...");
+                BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, ignoreErrorGateClose: "File written to", ignoreErrorGateOpen: "MakePbo Version");
+                processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int) TimeSpan.FromMinutes(10).TotalMilliseconds);
+                Logger.LogSurround("Make.py complete");
+            }
 
             Logger.LogSurround("\nMoving ACE release to build...");
             await CopyDirectory(releasePath, buildPath);
