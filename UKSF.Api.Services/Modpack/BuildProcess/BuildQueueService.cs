@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UKSF.Api.Interfaces.Game;
@@ -13,7 +14,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         private readonly ConcurrentDictionary<string, Task> buildTasks = new ConcurrentDictionary<string, Task>();
         private readonly ConcurrentDictionary<string, CancellationTokenSource> cancellationTokenSources = new ConcurrentDictionary<string, CancellationTokenSource>();
         private readonly IGameServersService gameServersService;
-        private readonly ConcurrentQueue<ModpackBuild> queue = new ConcurrentQueue<ModpackBuild>();
+        private ConcurrentQueue<ModpackBuild> queue = new ConcurrentQueue<ModpackBuild>();
         private bool processing;
 
         public BuildQueueService(IBuildProcessorService buildProcessorService, IGameServersService gameServersService) {
@@ -32,25 +33,32 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         }
 
         public void Cancel(string id) {
+            if (queue.Any(x => x.id == id)) {
+                queue = new ConcurrentQueue<ModpackBuild>(queue.Where(x => x.id != id));
+            }
+
             if (cancellationTokenSources.ContainsKey(id)) {
                 CancellationTokenSource cancellationTokenSource = cancellationTokenSources[id];
                 cancellationTokenSource.Cancel();
+                cancellationTokenSources.TryRemove(id, out CancellationTokenSource _);
             }
 
-            _ = Task.Run(
-                async () => {
-                    await Task.Delay(TimeSpan.FromMinutes(1));
-                    if (buildTasks.ContainsKey(id)) {
-                        Task buildTask = buildTasks[id];
+            if (buildTasks.ContainsKey(id)) {
+                _ = Task.Run(
+                    async () => {
+                        await Task.Delay(TimeSpan.FromMinutes(1));
+                        if (buildTasks.ContainsKey(id)) {
+                            Task buildTask = buildTasks[id];
 
-                        if (buildTask.IsCompleted) {
-                            buildTasks.TryRemove(id, out Task _);
-                        } else {
-                            LogWrapper.Log($"Build {id} was cancelled but has not completed");
+                            if (buildTask.IsCompleted) {
+                                buildTasks.TryRemove(id, out Task _);
+                            } else {
+                                LogWrapper.Log($"Build {id} was cancelled but has not completed");
+                            }
                         }
                     }
-                }
-            );
+                );
+            }
         }
 
         public void CancelAll() {
@@ -76,6 +84,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 Task buildTask = buildProcessorService.ProcessBuild(build, cancellationTokenSource);
                 buildTasks.TryAdd(build.id, buildTask);
                 await buildTask;
+                cancellationTokenSources.TryRemove(build.id, out CancellationTokenSource _);
             }
 
             processing = false;
