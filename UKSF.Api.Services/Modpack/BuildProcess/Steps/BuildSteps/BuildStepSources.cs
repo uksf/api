@@ -41,7 +41,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
                 GitCommand(path, "git reset --hard HEAD && git clean -d -f && git fetch");
                 GitCommand(path, $"git checkout {branchName}");
                 string before = GitCommand(path, "git rev-parse HEAD");
-                GitCommand(path, "git fetch");
+                // GitCommand(path, "git fetch");
                 GitCommand(path, "git pull");
                 string after = GitCommand(path, "git rev-parse HEAD");
 
@@ -70,10 +70,10 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
                 throw new Exception("Modpack source directory does not exist. Modpack should be cloned before running a build.");
             }
 
-            Logger.Log($"Checking out {referenceName}");
-            GitCommand(modpackPath, "git reset --hard HEAD && git clean -d -f && git fetch");
+            Logger.Log($"Checking out {reference}");
+            GitCommand(modpackPath, "git reset --hard HEAD && git clean -d -f");
             GitCommand(modpackPath, $"git checkout {reference}");
-            GitCommand(modpackPath, "git fetch");
+            // GitCommand(modpackPath, "git fetch");
             GitCommand(modpackPath, "git pull");
             Logger.LogSurround("Checked out modpack");
 
