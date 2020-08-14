@@ -12,12 +12,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
         protected override async Task ProcessExecute() {
             string environmentPath = GetBuildEnvironmentPath();
             if (Build.environment == GameEnvironment.RELEASE) {
-                string repoPath = Path.Join(environmentPath, "Backup", "Repo");
                 string keysPath = Path.Join(environmentPath, "Backup", "Keys");
-
-                Logger.LogSurround("\nCleaning repo backup...");
-                await DeleteDirectoryContents(repoPath);
-                Logger.LogSurround("Cleaned repo backup");
 
                 Logger.LogSurround("\nCleaning keys backup...");
                 await DeleteDirectoryContents(keysPath);
