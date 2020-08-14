@@ -81,7 +81,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
         }
 
         private string GitCommand(string workingDirectory, string command) {
-            List<string> results = new BuildProcessHelper(Logger, CancellationTokenSource, true, false, true).Run(
+            List<string> results = new BuildProcessHelper(Logger, CancellationTokenSource, false, false, true).Run(
                 workingDirectory,
                 "cmd.exe",
                 $"/c \"{command}\"",
