@@ -57,9 +57,14 @@ namespace UKSF.Api.Services.Modpack {
             buildQueueService.QueueBuild(rebuild);
         }
 
-        public void CancelBuild(ModpackBuild build) {
+        public async Task CancelBuild(ModpackBuild build) {
             LogWrapper.AuditLog($"Build {GetBuildName(build)} cancelled");
-            buildQueueService.Cancel(build.id);
+
+            if (buildQueueService.CancelQueued(build.id)) {
+                await buildsService.CancelBuild(build);
+            } else {
+                buildQueueService.Cancel(build.id);
+            }
         }
 
         public async Task UpdateReleaseDraft(ModpackRelease release) {
