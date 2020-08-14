@@ -19,7 +19,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.ReleaseSteps {
         protected override async Task ProcessExecute() {
             try {
                 await githubService.MergeBranch("dev", "release", $"Release {Build.version}");
-                await githubService.MergeBranch("master", "dev", $"Release {Build.version}");
+                await githubService.MergeBranch("master", "release", $"Release {Build.version}");
                 Logger.Log("Release branch merges complete");
             } catch (Exception exception) {
                 Warning($"Release branch merges failed:\n{exception}");
