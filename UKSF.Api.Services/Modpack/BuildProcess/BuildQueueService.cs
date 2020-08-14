@@ -24,19 +24,22 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
 
         public void QueueBuild(ModpackBuild build) {
             queue.Enqueue(build);
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSources.TryAdd(build.id, cancellationTokenSource);
             if (!processing) {
                 // Processor not running, process as separate task
                 _ = ProcessQueue();
             }
         }
 
-        public void Cancel(string id) {
+        public bool CancelQueued(string id) {
             if (queue.Any(x => x.id == id)) {
                 queue = new ConcurrentQueue<ModpackBuild>(queue.Where(x => x.id != id));
+                return true;
             }
 
+            return false;
+        }
+
+        public void Cancel(string id) {
             if (cancellationTokenSources.ContainsKey(id)) {
                 CancellationTokenSource cancellationTokenSource = cancellationTokenSources[id];
                 cancellationTokenSource.Cancel();
@@ -62,6 +65,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         }
 
         public void CancelAll() {
+            queue.Clear();
+
             foreach ((string _, CancellationTokenSource cancellationTokenSource) in cancellationTokenSources) {
                 cancellationTokenSource.Cancel();
             }
@@ -80,7 +85,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                     continue;
                 }
 
-                CancellationTokenSource cancellationTokenSource = cancellationTokenSources[build.id];
+                CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                cancellationTokenSources.TryAdd(build.id, cancellationTokenSource);
                 Task buildTask = buildProcessorService.ProcessBuild(build, cancellationTokenSource);
                 buildTasks.TryAdd(build.id, buildTask);
                 await buildTask;

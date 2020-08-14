@@ -12,7 +12,7 @@ namespace UKSF.Api.Interfaces.Modpack {
         ModpackBuild GetBuild(string id);
         Task NewBuild(NewBuild newBuild);
         Task Rebuild(ModpackBuild build);
-        void CancelBuild(ModpackBuild build);
+        Task CancelBuild(ModpackBuild build);
         Task UpdateReleaseDraft(ModpackRelease release);
         Task Release(string version);
         Task RegnerateReleaseDraftChangelog(string version);

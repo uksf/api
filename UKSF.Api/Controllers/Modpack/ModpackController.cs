@@ -58,13 +58,13 @@ namespace UKSF.Api.Controllers.Modpack {
         }
 
         [HttpGet("builds/{id}/cancel"), Authorize, Roles(RoleDefinitions.ADMIN)]
-        public IActionResult CancelBuild(string id) {
+        public async Task<IActionResult> CancelBuild(string id) {
             ModpackBuild build = modpackService.GetBuild(id);
             if (build == null) {
                 return BadRequest("Build does not exist");
             }
 
-            modpackService.CancelBuild(build);
+            await modpackService.CancelBuild(build);
             return Ok();
         }
 
