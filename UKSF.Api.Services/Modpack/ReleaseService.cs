@@ -40,13 +40,8 @@ namespace UKSF.Api.Services.Modpack {
                 throw new NullReferenceException($"Could not find release {version}");
             }
 
-            if (release.changelog.EndsWith("\n\n")) {
-                release.changelog += "\n\n";
-            } else {
-                release.changelog += "\n\n\n\n";
-            }
-
-            release.changelog += "SR3 - Development Team\n[Report and track issues here](https://github.com/uksf/modpack/issues)";
+            release.changelog += release.changelog.EndsWith("\n\n") ? "<br>" : "\n\n<br>";
+            release.changelog += "SR3 - Development Team<br>[Report and track issues here](https://github.com/uksf/modpack/issues)";
 
             await Data.Update(release.id, Builders<ModpackRelease>.Update.Set(x => x.timestamp, DateTime.Now).Set(x => x.isDraft, false).Set(x => x.changelog, release.changelog));
             await githubService.PublishRelease(release);
