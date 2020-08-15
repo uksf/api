@@ -42,6 +42,8 @@ namespace UKSF.Api.Services.Modpack {
 
             if (release.changelog.EndsWith("\n\n")) {
                 release.changelog += "\n\n";
+            } else {
+                release.changelog += "\n\n\n\n";
             }
 
             release.changelog += "SR3 - Development Team\n[Report and track issues here](https://github.com/uksf/modpack/issues)";
