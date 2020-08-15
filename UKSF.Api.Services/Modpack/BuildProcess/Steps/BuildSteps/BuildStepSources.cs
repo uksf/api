@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
     [BuildStep(NAME)]
-    public class BuildStepSources : BuildStep {
+    public class BuildStepSources : GitBuildStep {
         public const string NAME = "Sources";
 
         protected override async Task ProcessExecute() {
@@ -78,16 +76,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             Logger.LogSurround("Checked out modpack");
 
             return Task.CompletedTask;
-        }
-
-        private string GitCommand(string workingDirectory, string command) {
-            List<string> results = new BuildProcessHelper(Logger, CancellationTokenSource, false, false, true).Run(
-                workingDirectory,
-                "cmd.exe",
-                $"/c \"{command}\"",
-                (int) TimeSpan.FromSeconds(10).TotalMilliseconds
-            );
-            return results.Count > 0 ? results.Last() : string.Empty;
         }
     }
 }
