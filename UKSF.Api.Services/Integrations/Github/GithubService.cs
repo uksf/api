@@ -71,7 +71,7 @@ namespace UKSF.Api.Services.Integrations.Github {
             return new GithubCommit { branch = branch, before = commit.Parents.FirstOrDefault()?.Sha, after = commit.Sha, message = commit.Commit.Message, author = commit.Commit.Author.Email };
         }
 
-        public async Task<Merge> MergeBranch(string branch, string sourceBranch, string commitMessage) {
+        public async Task<Merge> MergeBranch(string sourceBranch, string branch, string commitMessage) {
             GitHubClient client = await GetAuthenticatedClient();
             Merge result = await client.Repository.Merging.Create(REPO_ORG, REPO_NAME, new NewMerge(branch, sourceBranch) { CommitMessage = commitMessage });
             if (result == null || string.IsNullOrEmpty(result.Sha)) {
