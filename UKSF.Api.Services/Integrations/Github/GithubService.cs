@@ -61,7 +61,7 @@ namespace UKSF.Api.Services.Integrations.Github {
             string version = await GetReferenceVersion(reference);
             int[] versionParts = version.Split('.').Select(int.Parse).ToArray();
             // Version when make.py was changed to accommodate this system
-            return versionParts[0] >= 5 && versionParts[1] >= 17 && versionParts[2] >= 19;
+            return versionParts[0] == 5 ? versionParts[1] == 17 ? versionParts[2] >= 19 : versionParts[1] > 17 : versionParts[0] > 5;
         }
 
         public async Task<GithubCommit> GetLatestReferenceCommit(string reference) {
