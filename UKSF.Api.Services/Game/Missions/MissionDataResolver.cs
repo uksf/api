@@ -26,8 +26,7 @@ namespace UKSF.Api.Services.Game.Missions {
         //     "5e0d3273b91cc00aa001213f", // Baxter
         //     "5eee34c8ddf6642260aa6a4b", // Eliason
         //     "5e0d31c3b91cc00aa001213b", // Gibney
-        //     "5a1a14b5aacf7b00346dcc37", // Gilbert
-        //     "5e24bbe949ddd04030d72ca5" // Hass
+        //     "5a1a14b5aacf7b00346dcc37" // Gilbert
         // };
 
         public static string ResolveObjectClass(MissionPlayer player) {
