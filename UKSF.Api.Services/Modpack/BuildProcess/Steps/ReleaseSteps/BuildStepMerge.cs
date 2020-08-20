@@ -23,7 +23,13 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.ReleaseSteps {
 
                 // Necessary to get around branch protection rules for master
                 string modpackPath = Path.Join(GetBuildSourcesPath(), "modpack");
+                GitCommand(modpackPath, "git fetch");
+                GitCommand(modpackPath, "git checkout -t origin/dev");
+                GitCommand(modpackPath, "git checkout dev");
+                GitCommand(modpackPath, "git pull");
+                GitCommand(modpackPath, "git checkout -t origin/master");
                 GitCommand(modpackPath, "git checkout master");
+                GitCommand(modpackPath, "git pull");
                 GitCommand(modpackPath, "git merge dev");
                 GitCommand(modpackPath, "git push -u origin master");
                 Logger.Log("Release branch merges complete");
