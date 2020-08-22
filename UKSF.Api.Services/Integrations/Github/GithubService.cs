@@ -181,7 +181,7 @@ namespace UKSF.Api.Services.Integrations.Github {
         }
 
         private static string CombineCommitMessages(IReadOnlyCollection<GitHubCommit> commits) {
-            List<string> filteredCommitMessages = commits.Select(x => x.Commit.Message).Reverse().Where(x => !x.Contains("Merge branch")).ToList();
+            List<string> filteredCommitMessages = commits.Select(x => x.Commit.Message).Reverse().Where(x => !x.Contains("Merge branch") && !Regex.IsMatch(x, "Release \\d*\\.\\d*\\.\\d*")).ToList();
             return filteredCommitMessages.Count == 0 ? commits.First().Commit.Message : filteredCommitMessages.Aggregate((a, b) => $"{a}\n\n{b}");
         }
 
