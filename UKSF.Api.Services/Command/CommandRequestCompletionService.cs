@@ -91,7 +91,8 @@ namespace UKSF.Api.Services.Command {
 
         private async Task Rank(CommandRequest request) {
             if (commandRequestService.IsRequestApproved(request.id)) {
-                Notification notification = await assignmentService.UpdateUnitRankAndRole(request.recipient, rankString: request.value, reason: request.reason);
+                string role = HandleRecruitToPrivate(request.recipient, request.value);
+                Notification notification = await assignmentService.UpdateUnitRankAndRole(request.recipient, rankString: request.value,  role: role, reason: request.reason);
                 notificationsService.Add(notification);
                 await commandRequestService.ArchiveRequest(request.id);
                 LogWrapper.AuditLog($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
@@ -226,6 +227,11 @@ namespace UKSF.Api.Services.Command {
                 await commandRequestService.ArchiveRequest(request.id);
                 LogWrapper.AuditLog($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
             }
+        }
+
+        private string HandleRecruitToPrivate(string id, string targetRank) {
+            Account account = accountService.Data.GetSingle(id);
+            return account.rank == "Recruit" && targetRank == "Private" ? "Rifleman" : account.roleAssignment;
         }
     }
 }
