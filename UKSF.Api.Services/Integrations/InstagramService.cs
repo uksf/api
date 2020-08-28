@@ -79,8 +79,7 @@ namespace UKSF.Api.Services.Integrations {
                 // }
 
                 // Insert new images at start of list, and take only 12
-                images.InsertRange(0, newImages);
-                images = images.Take(12).ToList();
+                images = newImages.Take(12).ToList();
             } catch (Exception exception) {
                 LogWrapper.Log(exception);
             }

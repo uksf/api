@@ -100,7 +100,7 @@ namespace UKSF.Api.Services.Utility {
 
         private async Task AddUnique() {
             if (Data.GetSingle(x => x.action == InstagramImagesAction.ACTION_NAME) == null) {
-                await Create(DateTime.Today, TimeSpan.FromHours(1), InstagramImagesAction.ACTION_NAME);
+                await Create(DateTime.Today, TimeSpan.FromMinutes(15), InstagramImagesAction.ACTION_NAME);
             }
 
             scheduledActionService.GetScheduledAction(InstagramImagesAction.ACTION_NAME).Run();
