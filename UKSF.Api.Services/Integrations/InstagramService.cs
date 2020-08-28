@@ -69,7 +69,7 @@ namespace UKSF.Api.Services.Integrations {
                 }
 
                 // Isolate new images
-                List<InstagramImage> newImages = allNewImages.Where(x => x.mediaType == "IMAGE" && images.All(y => x.id != y.id)).ToList();
+                List<InstagramImage> newImages = allNewImages.Where(x => x.mediaType == "IMAGE").ToList();
 
                 // // Handle carousel images
                 // foreach ((InstagramImage value, int index) instagramImage in newImages.Select((value, index) => ( value, index ))) {
