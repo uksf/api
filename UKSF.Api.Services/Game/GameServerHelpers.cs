@@ -104,8 +104,8 @@ namespace UKSF.Api.Services.Game {
             $" -name={gameServer.name}" +
             $" -port={gameServer.port}" +
             $" -apiport=\"{gameServer.apiPort}\"" +
-            $" {(string.IsNullOrEmpty(gameServer.FormatGameServerServerMods()) ? "" : $"-serverMod={gameServer.FormatGameServerServerMods()}")}" +
-            $" {(string.IsNullOrEmpty(gameServer.FormatGameServerMods()) ? "" : $"-mod={gameServer.FormatGameServerMods()}")}" +
+            $" {(string.IsNullOrEmpty(gameServer.FormatGameServerServerMods()) ? "" : $"\"-serverMod={gameServer.FormatGameServerServerMods()}\"")}" +
+            $" {(string.IsNullOrEmpty(gameServer.FormatGameServerMods()) ? "" : $"\"-mod={gameServer.FormatGameServerMods()}\"")}" +
             " -bandwidthAlg=2 -hugepages -loadMissionToMemory -filePatching -limitFPS=200";
 
         public static string FormatHeadlessClientLaunchArguments(this GameServer gameServer, int index) =>
@@ -113,7 +113,7 @@ namespace UKSF.Api.Services.Game {
             $" -name={GetHeadlessClientName(index)}" +
             $" -port={gameServer.port}" +
             $" -apiport=\"{gameServer.apiPort + index + 1}\"" +
-            $" {(string.IsNullOrEmpty(gameServer.FormatGameServerMods()) ? "" : $"-mod={gameServer.FormatGameServerMods()}")}" +
+            $" {(string.IsNullOrEmpty(gameServer.FormatGameServerMods()) ? "" : $"\"-mod={gameServer.FormatGameServerMods()}\"")}" +
             $" -password={gameServer.password}" +
             " -localhost=127.0.0.1 -connect=localhost -client -hugepages -filePatching -limitFPS=200";
 
