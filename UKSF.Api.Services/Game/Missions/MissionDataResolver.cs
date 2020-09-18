@@ -42,7 +42,7 @@ namespace UKSF.Api.Services.Game.Missions {
                 "5a68b28e196530164c9b4fed" => "UKSF_B_Sniper", // "Sniper Platoon"
                 "5b9123ca7a6c1f0e9875601c" => "UKSF_B_Medic", // "3 Medical Regiment"
                 "5a42835b55d6109bf0b081bd" => ResolvePlayerUnitRole(player) == 3 ? "UKSF_B_Officer" : "UKSF_B_Rifleman", // "UKSF"
-                _ => ResolvePlayerUnitRole(player) != -1 ? "UKSF_B_SectionLeader" : "UKSF_B_Rifleman"
+                _                          => ResolvePlayerUnitRole(player) != -1 ? "UKSF_B_SectionLeader" : "UKSF_B_Rifleman"
             };
         }
 
@@ -71,7 +71,7 @@ namespace UKSF.Api.Services.Game.Missions {
                 "5a4415d8730e9d1628345007" => "JSFAW", // "617 Squadron"
                 "5a848590eab14d12cc7fa618" => "JSFAW", // "RAF Cranwell"
                 "5c98d7b396dba31f24cdb19c" => "JSFAW", // "51 Squadron"
-                _ => defaultCallsign
+                _                          => defaultCallsign
             };
         }
 
@@ -154,13 +154,13 @@ namespace UKSF.Api.Services.Game.Missions {
                     int rankA = MissionPatchData.instance.ranks.IndexOf(a.rank);
                     int rankB = MissionPatchData.instance.ranks.IndexOf(b.rank);
                     return unitDepthA < unitDepthB ? -1 :
-                        unitDepthA > unitDepthB ? 1 :
-                        unitOrderA < unitOrderB ? -1 :
-                        unitOrderA > unitOrderB ? 1 :
-                        roleA < roleB ? 1 :
-                        roleA > roleB ? -1 :
-                        rankA < rankB ? -1 :
-                        rankA > rankB ? 1 : string.CompareOrdinal(a.name, b.name);
+                        unitDepthA > unitDepthB    ? 1 :
+                        unitOrderA < unitOrderB    ? -1 :
+                        unitOrderA > unitOrderB    ? 1 :
+                        roleA < roleB              ? 1 :
+                        roleA > roleB              ? -1 :
+                        rankA < rankB              ? -1 :
+                        rankA > rankB              ? 1 : string.CompareOrdinal(a.name, b.name);
                 }
             );
             return slots;
@@ -172,7 +172,7 @@ namespace UKSF.Api.Services.Game.Missions {
                 "5bbbbdab5eb3a4170c488f2e" => true, // "Guardian 1-2"
                 "5bbbbe365eb3a4170c488f30" => true, // "Guardian 1-3"
                 "5ad748e0de5d414f4c4055e0" => true, // "Guardian 1-R"
-                _ => false
+                _                          => false
             };
         }
     }
