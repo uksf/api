@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Services.Admin;
@@ -63,9 +64,9 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
         private string GetKeyname() {
             return Build.environment switch {
                 GameEnvironment.RELEASE => $"uksf_dependencies_{Build.version}",
-                GameEnvironment.RC => $"uksf_dependencies_{Build.version}_rc{Build.buildNumber}",
-                GameEnvironment.DEV => $"uksf_dependencies_dev_{Build.buildNumber}",
-                _ => throw new ArgumentException("Invalid build environment")
+                GameEnvironment.RC      => $"uksf_dependencies_{Build.version}_rc{Build.buildNumber}",
+                GameEnvironment.DEV     => $"uksf_dependencies_dev_{Build.buildNumber}",
+                _                       => throw new ArgumentException("Invalid build environment")
             };
         }
 
@@ -74,21 +75,34 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             int signed = 0;
             int total = files.Count;
             Logger.Log($"Signed {signed} of {total} files");
-            // TODO: Maybe batch the commands together to do several in one process
-            foreach (FileInfo file in files) {
-                try {
+
+            return BatchProcessFiles(
+                files,
+                10,
+                file => {
                     BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, true);
                     processHelper.Run(addonsPath, dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
-                    signed++;
-                    Logger.LogInline($"Signed {signed} of {total} files");
-                } catch (OperationCanceledException) {
-                    throw;
-                } catch (Exception exception) {
-                    throw new Exception($"Failed to sign file '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}", exception);
-                }
-            }
+                    Interlocked.Increment(ref signed);
+                    return Task.CompletedTask;
+                },
+                () => $"Signed {signed} of {total} files",
+                "Failed to sign file"
+            );
 
-            return Task.CompletedTask;
+            // foreach (FileInfo file in files) {
+            //     try {
+            //         BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, true);
+            //         processHelper.Run(addonsPath, dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
+            //         signed++;
+            //         Logger.LogInline($"Signed {signed} of {total} files");
+            //     } catch (OperationCanceledException) {
+            //         throw;
+            //     } catch (Exception exception) {
+            //         throw new Exception($"Failed to sign file '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}", exception);
+            //     }
+            // }
+            //
+            // return Task.CompletedTask;
         }
     }
 }
