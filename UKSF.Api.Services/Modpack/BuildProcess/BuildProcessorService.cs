@@ -6,6 +6,7 @@ using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Interfaces.Modpack.BuildProcess.Steps;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Modpack;
+using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Modpack.BuildProcess.Steps.Common;
 using UKSF.Api.Services.Modpack.BuildProcess.Steps.ReleaseSteps;
 
@@ -65,10 +66,17 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         }
 
         private async Task ProcessRestore(IBuildStep runningStep, ModpackBuild build) {
-            if (build.environment != GameEnvironment.RELEASE || runningStep is BuildStepClean || runningStep is BuildStepBackup) return;
+            LogWrapper.Log($"Attempting to restore repo prior to {build.version}");
+            if (build.environment != GameEnvironment.RELEASE || runningStep is BuildStepClean || runningStep is BuildStepBackup) {
+                LogWrapper.Log($"Won't restore. Env: {build.environment}, Step: {runningStep.GetType().Name}");
+                return;
+            }
 
             ModpackBuildStep restoreStep = buildStepService.GetRestoreStepForRelease();
-            if (restoreStep == null) return;
+            if (restoreStep == null) {
+                LogWrapper.Log($"Won't restore. Restore step not found");
+                return;
+            }
 
             restoreStep.index = build.steps.Count;
             IBuildStep step = buildStepService.ResolveBuildStep(restoreStep.name);

@@ -9,6 +9,7 @@ using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
+using UKSF.Api.Services.Message;
 
 namespace UKSF.Api.Services.Modpack {
     public class ReleaseService : DataBackedService<IReleasesDataService>, IReleaseService {
@@ -38,6 +39,10 @@ namespace UKSF.Api.Services.Modpack {
             ModpackRelease release = GetRelease(version);
             if (release == null) {
                 throw new NullReferenceException($"Could not find release {version}");
+            }
+
+            if (!release.isDraft) {
+                LogWrapper.Log($"Attempted to release {version} again. Halting publish");
             }
 
             release.changelog += release.changelog.EndsWith("\n\n") ? "<br>" : "\n\n<br>";
