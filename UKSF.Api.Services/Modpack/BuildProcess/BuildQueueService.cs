@@ -81,7 +81,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 // Will require better game <-> api interaction to communicate with servers and headless clients properly
                 if (gameServersService.GetGameInstanceCount() > 0) {
                     queue.Enqueue(build);
-                    await Task.Delay(TimeSpan.FromMinutes(15));
+                    await Task.Delay(TimeSpan.FromMinutes(5));
                     continue;
                 }
 
