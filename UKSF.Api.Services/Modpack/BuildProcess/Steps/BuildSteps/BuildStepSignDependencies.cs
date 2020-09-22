@@ -74,7 +74,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
             string privateKey = Path.Join(keygenPath, $"{keyName}.biprivatekey");
             int signed = 0;
             int total = files.Count;
-            Logger.Log($"Signed {signed} of {total} files");
 
             return BatchProcessFiles(
                 files,
