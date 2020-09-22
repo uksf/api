@@ -71,16 +71,6 @@ namespace UKSF.Api.Services.Integrations.Github {
             return new GithubCommit { branch = branch, before = commit.Parents.FirstOrDefault()?.Sha, after = commit.Sha, message = commit.Commit.Message, author = commit.Commit.Author.Email };
         }
 
-        public async Task<Merge> MergeBranch(string sourceBranch, string branch, string commitMessage) {
-            GitHubClient client = await GetAuthenticatedClient();
-            Merge result = await client.Repository.Merging.Create(REPO_ORG, REPO_NAME, new NewMerge(branch, sourceBranch) { CommitMessage = commitMessage });
-            if (result == null || string.IsNullOrEmpty(result.Sha)) {
-                throw new Exception($"Merge of {sourceBranch} into {branch} failed");
-            }
-
-            return result;
-        }
-
         public async Task<GithubCommit> GetPushEvent(PushWebhookPayload payload, string latestCommit = "") {
             if (string.IsNullOrEmpty(latestCommit)) {
                 latestCommit = payload.Before;
@@ -163,11 +153,6 @@ namespace UKSF.Api.Services.Integrations.Github {
             if (validBranches.Contains("master")) {
                 validBranches.Remove("master");
                 validBranches.Insert(0, "master");
-            }
-
-            if (validBranches.Contains("dev")) {
-                validBranches.Remove("dev");
-                validBranches.Insert(0, "dev");
             }
 
             return validBranches;
