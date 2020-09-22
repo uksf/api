@@ -16,7 +16,7 @@ namespace UKSF.Api.Controllers.Integrations {
     public class GithubController : Controller {
         private const string PUSH_EVENT = "push";
         private const string REPO_NAME = "modpack";
-        private const string DEV = "refs/heads/dev";
+        private const string MASTER = "refs/heads/master";
         private const string RELEASE = "refs/heads/release";
 
         private readonly IGithubService githubService;
@@ -45,7 +45,7 @@ namespace UKSF.Api.Controllers.Integrations {
             }
 
             switch (payload.Ref) {
-                case DEV when payload.BaseRef != RELEASE: {
+                case MASTER when payload.BaseRef != RELEASE: {
                     await modpackService.CreateDevBuildFromPush(payload);
                     return Ok();
                 }

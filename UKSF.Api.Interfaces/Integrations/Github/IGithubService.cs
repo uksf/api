@@ -15,6 +15,5 @@ namespace UKSF.Api.Interfaces.Integrations.Github {
         Task<bool> IsReferenceValid(string reference);
         Task<string> GenerateChangelog(string version);
         Task PublishRelease(ModpackRelease release);
-        Task<Merge> MergeBranch(string sourceBranch, string branch, string version);
     }
 }
