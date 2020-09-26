@@ -15,6 +15,7 @@ using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Integrations;
 using UKSF.Api.Models.Personnel;
+using UKSF.Api.Models.Utility;
 using UKSF.Api.Services.Common;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
@@ -118,12 +119,17 @@ namespace UKSF.Api.Controllers.Accounts {
 
             await confirmationCodeService.ClearConfirmationCodes(x => x.value == email);
             await SendConfirmationCode(account);
-            return BadRequest(new {error = $"The confirmation code has expired. A new code has been sent to '{account.email}'"});
+            return BadRequest(new {error = $"The confirmation code was invalid or expired. A new code has been sent to '{account.email}'"});
         }
 
-        [HttpGet("resend-email-code"), Authorize]
+        [HttpPost("resend-email-code"), Authorize]
         public async Task<IActionResult> ResendConfirmationCode() {
             Account account = sessionService.GetContextAccount();
+
+            if (account.membershipState != MembershipState.UNCONFIRMED) {
+                return BadRequest(new { error = "Account email has already been confirmed"});
+            }
+
             await confirmationCodeService.ClearConfirmationCodes(x => x.value == account.email);
             await SendConfirmationCode(account);
             return Ok(PubliciseAccount(account));
@@ -166,7 +172,7 @@ namespace UKSF.Api.Controllers.Accounts {
 
         [HttpGet("online")]
         public IActionResult GetOnlineAccounts() {
-            HashSet<TeamspeakClient> teamnspeakClients = teamspeakService.GetOnlineTeamspeakClients();
+            IEnumerable<TeamspeakClient> teamnspeakClients = teamspeakService.GetOnlineTeamspeakClients();
             IEnumerable<Account> allAccounts = accountService.Data.Get();
             var clients = teamnspeakClients.Where(x => x != null).Select(x => new {account = allAccounts.FirstOrDefault(y => y.teamspeakIdentities != null && y.teamspeakIdentities.Any(z => z.Equals(x.clientDbId))), client = x}).ToList();
             var clientAccounts = clients.Where(x => x.account != null && x.account.membershipState == MembershipState.MEMBER).OrderBy(x => x.account.rank, new RankComparer(ranksService)).ThenBy(x => x.account.lastname).ThenBy(x => x.account.firstname);

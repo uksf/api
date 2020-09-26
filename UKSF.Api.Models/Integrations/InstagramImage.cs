@@ -10,5 +10,6 @@ namespace UKSF.Api.Models.Integrations {
 
         public string permalink;
         public DateTime timestamp;
+        public string base64;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +14,7 @@ namespace UKSF.Api.Controllers {
         public TeamspeakController(ITeamspeakService teamspeakService) => this.teamspeakService = teamspeakService;
 
         [HttpGet("online"), Authorize, Roles(RoleDefinitions.CONFIRMED, RoleDefinitions.MEMBER, RoleDefinitions.DISCHARGED)]
-        public IActionResult GetOnlineClients() {
-            object clients = teamspeakService.GetFormattedClients();
-            return clients == null ? Ok(new { }) : Ok(new {clients});
-        }
+        public IEnumerable<object> GetOnlineClients() => teamspeakService.GetFormattedClients();
 
         [HttpGet("shutdown"), Authorize, Roles(RoleDefinitions.ADMIN)]
         public async Task<IActionResult> Shutdown() {

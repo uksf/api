@@ -1,16 +1,16 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Interfaces.Integrations;
-using UKSF.Api.Services.Personnel;
+using UKSF.Api.Models.Integrations;
 
 namespace UKSF.Api.Controllers {
-    [Route("[controller]"), Roles(RoleDefinitions.MEMBER)]
+    [Route("[controller]")]
     public class InstagramController : Controller {
         private readonly IInstagramService instagramService;
 
         public InstagramController(IInstagramService instagramService) => this.instagramService = instagramService;
 
-        [HttpGet, Authorize]
-        public IActionResult GetImages() => Ok(instagramService.GetImages());
+        [HttpGet]
+        public IEnumerable<InstagramImage> GetImages() => instagramService.GetImages();
     }
 }

@@ -6,6 +6,6 @@ namespace UKSF.Api.Interfaces.Integrations {
     public interface IInstagramService {
         Task RefreshAccessToken();
         Task CacheInstagramImages();
-        List<InstagramImage> GetImages();
+        IEnumerable<InstagramImage> GetImages();
     }
 }
