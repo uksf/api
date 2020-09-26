@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using UKSF.Api.Interfaces.Data;
@@ -30,6 +31,11 @@ namespace UKSF.Api.Services.Utility {
         }
 
         public async Task ClearConfirmationCodes(Func<ConfirmationCode, bool> predicate) {
+            IEnumerable<ConfirmationCode> codes = Data.Get(predicate);
+            foreach (ConfirmationCode confirmationCode in codes) {
+                string actionParameters = JsonConvert.SerializeObject(new object[] { confirmationCode.id });
+                await schedulerService.Cancel(x => x.actionParameters == actionParameters);
+            }
             await Data.DeleteMany(predicate);
         }
     }

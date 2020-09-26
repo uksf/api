@@ -9,6 +9,7 @@ using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Models.Integrations;
 using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Integrations {
     public class InstagramService : IInstagramService {
@@ -55,21 +56,19 @@ namespace UKSF.Api.Services.Integrations {
 
                 string contentString = await response.Content.ReadAsStringAsync();
                 JObject contentObject = JObject.Parse(contentString);
-                List<InstagramImage> allNewImages = JsonConvert.DeserializeObject<List<InstagramImage>>(contentObject["data"]?.ToString() ?? "");
-                allNewImages = allNewImages.OrderByDescending(x => x.timestamp).ToList();
+                List<InstagramImage> allMedia = JsonConvert.DeserializeObject<List<InstagramImage>>(contentObject["data"]?.ToString() ?? "");
+                allMedia = allMedia.OrderByDescending(x => x.timestamp).ToList();
 
-                if (allNewImages.Count == 0) {
+                if (allMedia.Count == 0) {
                     LogWrapper.Log($"Instagram response contains no images: {contentObject}");
                     return;
                 }
 
-                if (images.Count > 0 && allNewImages.First().id == images.First().id) {
-                    // Most recent image is the same, therefore all images are already present
+                if (images.Count > 0 && allMedia.First().id == images.First().id) {
                     return;
                 }
 
-                // Isolate new images
-                List<InstagramImage> newImages = allNewImages.Where(x => x.mediaType == "IMAGE").ToList();
+                List<InstagramImage> newImages = allMedia.Where(x => x.mediaType == "IMAGE").ToList();
 
                 // // Handle carousel images
                 // foreach ((InstagramImage value, int index) instagramImage in newImages.Select((value, index) => ( value, index ))) {
@@ -78,13 +77,16 @@ namespace UKSF.Api.Services.Integrations {
                 //     }
                 // }
 
-                // Insert new images at start of list, and take only 12
                 images = newImages.Take(12).ToList();
+
+                foreach (InstagramImage instagramImage in images) {
+                    instagramImage.base64 = await instagramImage.AsBase64();
+                }
             } catch (Exception exception) {
                 LogWrapper.Log(exception);
             }
         }
 
-        public List<InstagramImage> GetImages() => images;
+        public IEnumerable<InstagramImage> GetImages() => images;
     }
 }

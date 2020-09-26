@@ -28,7 +28,7 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
             this.environment = environment;
         }
 
-        public HashSet<TeamspeakClient> GetOnlineTeamspeakClients() => clients;
+        public IEnumerable<TeamspeakClient> GetOnlineTeamspeakClients() => clients;
 
         public async Task UpdateClients(HashSet<TeamspeakClient> newClients) {
             await clientsSemaphore.WaitAsync();
@@ -71,9 +71,9 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
             await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.SHUTDOWN, new {});
         }
 
-        public object GetFormattedClients() {
-            if (environment.IsDevelopment()) return new List<object> {new {name = $"SqnLdr.Beswick.T", clientDbId = (double) 2}};
-            return clients.Count == 0 ? null : clients.Where(x => x != null).Select(x => new {name = $"{x.clientName}", x.clientDbId}).ToList();
+        public IEnumerable<object> GetFormattedClients() {
+            if (environment.IsDevelopment()) return new List<object> {new {name = "SqnLdr.Beswick.T", clientDbId = (double) 2}};
+            return clients.Where(x => x != null).Select(x => new {name = $"{x.clientName}", x.clientDbId});
         }
 
         public (bool online, string nickname) GetOnlineUserDetails(Account account) {
