@@ -1,109 +1,107 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json.Linq;
 
 namespace UKSF.Common {
     public static class ChangeUtilities {
-        public static string Changes<T>(this T original, T updated) {
-            List<FieldInfo> fields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Instance).Where(x => !x.IsDefined(typeof(BsonIgnoreAttribute))).ToList();
-            IEnumerable<Change> changes = FindChanges(JToken.FromObject(original), JToken.FromObject(updated), fields);
-            return changes.Aggregate(
-                string.Empty,
-                (a, b) => {
-                    if (b.Original == null && b.Updated != null) {
-                        return $"{a}\n\t{b.Name} added: '{b.Updated}'";
-                    }
+        public static string Changes<T>(this T original, T updated) => DeepEquals(original, updated) ? "" : FormatChanges(GetChanges(original, updated));
 
-                    if (b.Original != null && b.Updated == null) {
-                        return $"{a}\n\t{b.Name} removed: '{b.Original}'";
-                    }
-
-//                        if (b.Original is IEnumerable && b.Updated is IEnumerable) {
-//                            string listChanges = ((IEnumerable<string>) b.Original).Select(x => x.ToString()).Changes(((IEnumerable<string>) b.Updated).Select(x => x.ToString()));
-//                            return string.IsNullOrEmpty(listChanges) ? string.Empty : $"{a}\n\t{b.Name} changed:\n{listChanges}";
-//                        }
-
-                    return !Equals(b.Original, b.Updated) ? $"{a}\n\t'{b.Name}' changed: '{b.Original}' to '{b.Updated}'" : "";
-                }
-            );
-        }
-
-        public static string Changes(this IEnumerable<string> original, IEnumerable<string> updated) {
-            StringBuilder changes = new StringBuilder();
-            List<string> updatedList = updated.ToList();
-            foreach (string addition in updatedList.Where(x => !original.Contains(x))) {
-                changes.Append($"\n\tAdded: '{addition}'");
-            }
-
-            foreach (string removal in original.Where(x => !updatedList.Contains(x))) {
-                changes.Append($"\n\tRemoved: '{removal}'");
-            }
-
-            if (changes.Length == 0) {
-                changes.Append("\tNo changes");
-            }
-
-            return changes.ToString();
-        }
-
-//        private static IEnumerable<Change> FindChanges<T>(this T original, T updated) {
-//            IEnumerable<FieldInfo> fields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Instance).Where(x => !x.IsDefined(typeof(BsonIgnoreAttribute)));
-//            return fields.Select(fieldInfo => new {fieldInfo, originalValue = fieldInfo.GetValue(original), updatedValue = fieldInfo.GetValue(updated)})
-//                         .Where(x => !Equals(x.originalValue, x.updatedValue))
-//                         .Select(x => new Change {Name = x.fieldInfo.Name, Original = x.originalValue, Updated = x.updatedValue})
-//                         .ToList();
-//        }
-
-        private static IEnumerable<Change> FindChanges(this JToken original, JToken updated, IReadOnlyCollection<FieldInfo> allowedFields) {
+        private static List<Change> GetChanges<T>(this T original, T updated) {
             List<Change> changes = new List<Change>();
-            if (JToken.DeepEquals(original, updated)) return changes;
+            Type type = original.GetType();
+            foreach (FieldInfo fieldInfo in type.GetFields()) {
+                string name = fieldInfo.Name;
+                object originalValue = fieldInfo.GetValue(original);
+                object updatedValue = fieldInfo.GetValue(updated);
+                if (originalValue == null && updatedValue == null) continue;
+                if (DeepEquals(originalValue, updatedValue)) continue;
 
-            // ReSharper disable once ConvertIfStatementToSwitchStatement
-            if (original.Type == JTokenType.Object) {
-                JObject originalObject = original as JObject;
-                JObject updatedObject = updated as JObject;
-                originalObject ??= new JObject();
-                updatedObject ??= new JObject();
-
-                List<string> added = updatedObject.Properties().Select(c => c.Name).Except(originalObject.Properties().Select(c => c.Name)).ToList();
-                List<string> removed = originalObject.Properties().Select(c => c.Name).Except(updatedObject.Properties().Select(c => c.Name)).ToList();
-                List<string> unchanged = originalObject.Properties().Where(c => JToken.DeepEquals(c.Value, updated[c.Name])).Select(c => c.Name).ToList();
-                List<string> changed = originalObject.Properties().Select(c => c.Name).Except(added).Except(unchanged).ToList();
-
-                changes.AddRange(
-                    added.Where(x => allowedFields.Any(y => y.Name == x))
-                         .Select(key => updatedObject.Properties().First(x => x.Name == key))
-                         .Select(addedObject => new Change { Name = addedObject.Name, Original = null, Updated = addedObject.Value.Value<string>() })
-                );
-                changes.AddRange(
-                    removed.Where(x => allowedFields.Any(y => y.Name == x))
-                           .Select(key => originalObject.Properties().First(x => x.Name == key))
-                           .Select(removedObject => new Change { Name = removedObject.Name, Original = removedObject.Value.Value<string>(), Updated = null })
-                );
-
-                foreach (string key in changed.Where(x => allowedFields.Any(y => y.Name == x))) {
-                    JToken originalChangedObject = originalObject[key];
-                    JToken updatedChangedObject = updatedObject[key];
-                    changes.AddRange(FindChanges(originalChangedObject, updatedChangedObject, allowedFields));
+                if (fieldInfo.FieldType.IsClass && !fieldInfo.FieldType.IsSerializable) {
+                    // Class, recurse
+                    changes.Add(new Change { Type = ChangeType.CLASS, Name = name, InnerChanges = GetChanges(originalValue, updatedValue) });
+                } else if (fieldInfo.FieldType != typeof(string) && updatedValue is IEnumerable originalListValue && originalValue is IEnumerable updatedListValue) {
+                    // List, get list changes
+                    changes.Add(new Change { Type = ChangeType.LIST, Name = name, InnerChanges = GetListChanges(originalListValue, updatedListValue) });
+                } else {
+                    // Assume otherwise normal field
+                    if (originalValue == null) {
+                        changes.Add(new Change { Type = ChangeType.ADDITION, Name = name, Updated = updatedValue.ToString() });
+                    } else if (updatedValue == null) {
+                        changes.Add(new Change { Type = ChangeType.REMOVAL, Name = name, Original = originalValue.ToString() });
+                    } else {
+                        changes.Add(new Change { Type = ChangeType.CHANGE, Name = name, Original = originalValue.ToString(), Updated = updatedValue.ToString() });
+                    }
                 }
-            } else if (original.Type == JTokenType.Array) {
-                string originalString = original.ToObject<List<string>>().Aggregate(string.Empty, (a, b) => $"{a}, {b}");
-                string updatedString = updated.ToObject<List<string>>().Aggregate(string.Empty, (a, b) => $"{a}, {b}");
-                changes.Add(new Change {Name = ((JProperty) updated.Parent).Name, Original = originalString, Updated = updatedString});
-            } else {
-                changes.Add(new Change {Name = ((JProperty) updated.Parent).Name, Original = original.Value<string>(), Updated = updated.Value<string>()});
             }
 
             return changes;
         }
+
+        private static List<Change> GetListChanges(this IEnumerable original, IEnumerable updated) {
+            List<object> originalObjects = original == null ? new List<object>() : original.Cast<object>().ToList();
+            List<object> updatedObjects = updated == null ? new List<object>() : updated.Cast<object>().ToList();
+            List<Change> changes = originalObjects.Where(x => !updatedObjects.Contains(x)).Select(x => new Change { Type = ChangeType.ADDITION, Updated = x.ToString() }).ToList();
+            changes.AddRange(updatedObjects.Where(x => !originalObjects.Contains(x)).Select(x => new Change { Type = ChangeType.REMOVAL, Original = x.ToString() }));
+            return changes;
+        }
+
+        private static bool DeepEquals(object original, object updated) {
+            if (original == null && updated == null) return true;
+            if (original == null || updated == null) return false;
+
+            JToken originalObject = JToken.FromObject(original);
+            JToken updatedObject = JToken.FromObject(updated);
+            return JToken.DeepEquals(originalObject, updatedObject);
+        }
+
+        private static string FormatChanges(IEnumerable<Change> changes, string indentation = "") {
+            return changes.OrderBy(x => x.Type)
+                          .ThenBy(x => x.Name)
+                          .Aggregate(
+                              "",
+                              (current, change) => current +
+                                                   $"\n\t{indentation}'{change.Name}'" +
+                                                   " " +
+                                                   change.Type switch {
+                                                       ChangeType.ADDITION => $"added as '{change.Updated}'",
+                                                       ChangeType.REMOVAL  => $"as '{change.Original}' removed",
+                                                       ChangeType.CLASS    => $"changed:{FormatChanges(change.InnerChanges, indentation + "\t")}",
+                                                       ChangeType.LIST     => $"changed:{FormatListChanges(change.InnerChanges, indentation + "\t")}",
+                                                       _                   => $"changed from '{change.Original}' to '{change.Updated}'"
+                                                   }
+                          );
+        }
+
+        private static string FormatListChanges(IEnumerable<Change> changes, string indentation = "") {
+            string changesString = "";
+            foreach (Change change in changes.OrderBy(x => x.Type).ThenBy(x => x.Name)) {
+                if (change.Type == ChangeType.ADDITION) {
+                    changesString += $"\n\t{indentation}added: '{change.Updated}'";
+                } else if (change.Type == ChangeType.REMOVAL) {
+                    changesString += $"\n\t{indentation}removed: '{change.Original}'";
+                }
+            }
+
+            return changesString;
+        }
     }
 
     public class Change {
+        public List<Change> InnerChanges = new List<Change>();
         public string Name;
         public string Original;
+        public ChangeType Type;
         public string Updated;
+    }
+
+    public enum ChangeType {
+        ADDITION,
+        CHANGE,
+        LIST,
+        REMOVAL,
+        CLASS
     }
 }

@@ -7,20 +7,19 @@ using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Data.Admin;
 using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Admin;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Data.Admin {
+namespace UKSF.Tests.Unit.Data.Admin {
     public class VariablesDataServiceTests {
-        private readonly VariablesDataService variablesDataService;
         private readonly Mock<IDataCollection<VariableItem>> mockDataCollection;
+        private readonly VariablesDataService variablesDataService;
         private List<VariableItem> mockCollection;
 
         public VariablesDataServiceTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            Mock<IDataEventBus<IVariablesDataService>> mockDataEventBus = new Mock<IDataEventBus<IVariablesDataService>>();
+            Mock<IDataEventBus<VariableItem>> mockDataEventBus = new Mock<IDataEventBus<VariableItem>>();
             mockDataCollection = new Mock<IDataCollection<VariableItem>>();
 
             mockDataCollectionFactory.Setup(x => x.CreateDataCollection<VariableItem>(It.IsAny<string>())).Returns(mockDataCollection.Object);
@@ -29,67 +28,40 @@ namespace UKSF.Tests.Unit.Unit.Data.Admin {
             variablesDataService = new VariablesDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
 
-        [Fact]
-        public void ShouldGetOrderedCollection() {
-            VariableItem item1 = new VariableItem {key = "MISSIONS_PATH"};
-            VariableItem item2 = new VariableItem {key = "SERVER_PATH"};
-            VariableItem item3 = new VariableItem {key = "DISCORD_IDS"};
-            mockCollection = new List<VariableItem> {item1, item2, item3};
-
-            IEnumerable<VariableItem> subject = variablesDataService.Get();
-
-            subject.Should().ContainInOrder(item3, item1, item2);
-        }
-
-        [Fact]
-        public void ShouldGetItemByKey() {
-            VariableItem item1 = new VariableItem {key = "MISSIONS_PATH"};
-            VariableItem item2 = new VariableItem {key = "SERVER_PATH"};
-            VariableItem item3 = new VariableItem {key = "DISCORD_IDS"};
-            mockCollection = new List<VariableItem> {item1, item2, item3};
-
-            VariableItem subject = variablesDataService.GetSingle("server path");
-
-            subject.Should().Be(item2);
-        }
-
         [Theory, InlineData(""), InlineData("game path")]
         public void ShouldGetNothingWhenNoKeyOrNotFound(string key) {
-            VariableItem item1 = new VariableItem {key = "MISSIONS_PATH"};
-            VariableItem item2 = new VariableItem {key = "SERVER_PATH"};
-            VariableItem item3 = new VariableItem {key = "DISCORD_IDS"};
-            mockCollection = new List<VariableItem> {item1, item2, item3};
+            VariableItem item1 = new VariableItem { key = "MISSIONS_PATH" };
+            VariableItem item2 = new VariableItem { key = "SERVER_PATH" };
+            VariableItem item3 = new VariableItem { key = "DISCORD_IDS" };
+            mockCollection = new List<VariableItem> { item1, item2, item3 };
 
             VariableItem subject = variablesDataService.GetSingle(key);
 
             subject.Should().Be(null);
         }
 
-        [Fact]
-        public async Task ShouldUpdateItemValue() {
-            VariableItem subject = new VariableItem {key = "DISCORD_ID", item = "50"};
-            mockCollection = new List<VariableItem> {subject};
-
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<VariableItem>>())).Returns(Task.CompletedTask).Callback((string id, UpdateDefinition<VariableItem> _) => mockCollection.First(x => x.id == id).item = "75");
-
-            await variablesDataService.Update("discord id", "75");
-
-            subject.item.Should().Be("75");
-        }
-
         [Theory, InlineData(""), InlineData(null)]
-        public void ShouldThrowForUpdateWhenNoKeyOrNull(string key) {
+        public async Task ShouldThrowForUpdateWhenNoKeyOrNull(string key) {
             mockCollection = new List<VariableItem>();
 
             Func<Task> act = async () => await variablesDataService.Update(key, "75");
 
-            act.Should().Throw<KeyNotFoundException>();
+            await act.Should().ThrowAsync<KeyNotFoundException>();
+        }
+
+        [Theory, InlineData(""), InlineData(null)]
+        public async Task ShouldThrowForDeleteWhenNoKeyOrNull(string key) {
+            mockCollection = new List<VariableItem>();
+
+            Func<Task> act = async () => await variablesDataService.Delete(key);
+
+            await act.Should().ThrowAsync<KeyNotFoundException>();
         }
 
         [Fact]
         public async Task ShouldDeleteItem() {
-            VariableItem item1 = new VariableItem {key = "DISCORD_ID", item = "50"};
-            mockCollection = new List<VariableItem> {item1};
+            VariableItem item1 = new VariableItem { key = "DISCORD_ID", item = "50" };
+            mockCollection = new List<VariableItem> { item1 };
 
             mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask).Callback((string id) => mockCollection.RemoveAll(x => x.id == id));
 
@@ -98,13 +70,42 @@ namespace UKSF.Tests.Unit.Unit.Data.Admin {
             mockCollection.Should().HaveCount(0);
         }
 
-        [Theory, InlineData(""), InlineData(null)]
-        public void ShouldThrowForDeleteWhenNoKeyOrNull(string key) {
-            mockCollection = new List<VariableItem>();
+        [Fact]
+        public void ShouldGetItemByKey() {
+            VariableItem item1 = new VariableItem { key = "MISSIONS_PATH" };
+            VariableItem item2 = new VariableItem { key = "SERVER_PATH" };
+            VariableItem item3 = new VariableItem { key = "DISCORD_IDS" };
+            mockCollection = new List<VariableItem> { item1, item2, item3 };
 
-            Func<Task> act = async () => await variablesDataService.Delete(key);
+            VariableItem subject = variablesDataService.GetSingle("server path");
 
-            act.Should().Throw<KeyNotFoundException>();
+            subject.Should().Be(item2);
+        }
+
+        [Fact]
+        public void Should_get_collection_in_order() {
+            VariableItem item1 = new VariableItem { key = "MISSIONS_PATH" };
+            VariableItem item2 = new VariableItem { key = "SERVER_PATH" };
+            VariableItem item3 = new VariableItem { key = "DISCORD_IDS" };
+            mockCollection = new List<VariableItem> { item1, item2, item3 };
+
+            IEnumerable<VariableItem> subject = variablesDataService.Get();
+
+            subject.Should().ContainInOrder(item3, item1, item2);
+        }
+
+        [Fact]
+        public async Task ShouldUpdateItemValue() {
+            VariableItem subject = new VariableItem { key = "DISCORD_ID", item = "50" };
+            mockCollection = new List<VariableItem> { subject };
+
+            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<VariableItem>>()))
+                              .Returns(Task.CompletedTask)
+                              .Callback((string id, UpdateDefinition<VariableItem> _) => mockCollection.First(x => x.id == id).item = "75");
+
+            await variablesDataService.Update("discord id", "75");
+
+            subject.item.Should().Be("75");
         }
     }
 }

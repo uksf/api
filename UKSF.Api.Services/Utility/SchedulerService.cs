@@ -42,7 +42,7 @@ namespace UKSF.Api.Services.Utility {
                 ACTIVE_TASKS.TryRemove(job.id, out CancellationTokenSource _);
             }
 
-            await Data.Delete(job.id);
+            await Data.Delete(job);
         }
 
         private async Task<ScheduledJob> Create(DateTime next, TimeSpan interval, string action, params object[] actionParameters) {
@@ -89,7 +89,7 @@ namespace UKSF.Api.Services.Utility {
                         await SetNext(job);
                         Schedule(job);
                     } else {
-                        await Data.Delete(job.id);
+                        await Data.Delete(job);
                         ACTIVE_TASKS.TryRemove(job.id, out CancellationTokenSource _);
                     }
                 },

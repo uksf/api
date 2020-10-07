@@ -6,14 +6,13 @@ using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Data.Message;
 using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
 using UKSF.Api.Models.Message;
-using UKSF.Tests.Unit.Common;
+using UKSF.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Data.Message {
+namespace UKSF.Tests.Unit.Data.Message {
     public class CommentThreadDataServiceTests {
         private readonly CommentThreadDataService commentThreadDataService;
         private readonly Mock<IDataCollection<CommentThread>> mockDataCollection;
@@ -21,7 +20,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Message {
 
         public CommentThreadDataServiceTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            Mock<IDataEventBus<ICommentThreadDataService>> mockDataEventBus = new Mock<IDataEventBus<ICommentThreadDataService>>();
+            Mock<IDataEventBus<CommentThread>> mockDataEventBus = new Mock<IDataEventBus<CommentThread>>();
             mockDataCollection = new Mock<IDataCollection<CommentThread>>();
 
             mockDataCollectionFactory.Setup(x => x.CreateDataCollection<CommentThread>(It.IsAny<string>())).Returns(mockDataCollection.Object);
@@ -36,7 +35,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Message {
             mockCollection = new List<CommentThread> { commentThread };
 
             Comment comment = new Comment { author = ObjectId.GenerateNewId().ToString(), content = "Hello there" };
-            BsonValue expected = TestUtilities.Render(Builders<CommentThread>.Update.Push(x => x.comments, comment));
+            BsonValue expected = TestUtilities.RenderUpdate(Builders<CommentThread>.Update.Push(x => x.comments, comment));
             UpdateDefinition<CommentThread> subject = null;
 
             mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<CommentThread>>()))
@@ -45,7 +44,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Message {
 
             await commentThreadDataService.Update(commentThread.id, comment, DataEventType.ADD);
 
-            TestUtilities.Render(subject).Should().BeEquivalentTo(expected);
+            TestUtilities.RenderUpdate(subject).Should().BeEquivalentTo(expected);
         }
 
         [Fact]
@@ -54,7 +53,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Message {
             mockCollection = new List<CommentThread> { commentThread };
 
             Comment comment = new Comment { author = ObjectId.GenerateNewId().ToString(), content = "Hello there" };
-            BsonValue expected = TestUtilities.Render(Builders<CommentThread>.Update.Pull(x => x.comments, comment));
+            BsonValue expected = TestUtilities.RenderUpdate(Builders<CommentThread>.Update.Pull(x => x.comments, comment));
             UpdateDefinition<CommentThread> subject = null;
 
             mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<CommentThread>>()))
@@ -63,7 +62,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Message {
 
             await commentThreadDataService.Update(commentThread.id, comment, DataEventType.DELETE);
 
-            TestUtilities.Render(subject).Should().BeEquivalentTo(expected);
+            TestUtilities.RenderUpdate(subject).Should().BeEquivalentTo(expected);
         }
     }
 }

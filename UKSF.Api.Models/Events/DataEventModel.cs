@@ -6,7 +6,7 @@ namespace UKSF.Api.Models.Events {
     }
 
     // ReSharper disable once UnusedTypeParameter
-    public class DataEventModel<TData> {
+    public class DataEventModel<T> where T : DatabaseObject {
         public object data;
         public string id;
         public DataEventType type;

@@ -4,103 +4,131 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using MoreLinq;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
+using UKSF.Api.Models;
 using UKSF.Api.Models.Events;
-using UKSF.Common;
 
 namespace UKSF.Api.Data {
-    public class CachedDataService<T, TData> : DataServiceBase<T, TData>, IDataService<T, TData>, ICachedDataService {
-        private List<T> collection;
+    public class CachedDataService<T> : DataServiceBase<T>, IDataService<T>, ICachedDataService where T : DatabaseObject {
+        private readonly IDataEventBus<T> dataEventBus;
         protected readonly object LockObject = new object();
 
-        protected CachedDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataCollectionFactory, dataEventBus, collectionName) { }
+        protected CachedDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<T> dataEventBus, string collectionName) : base(dataCollectionFactory, collectionName) =>
+            this.dataEventBus = dataEventBus;
 
-        public virtual List<T> Collection {
-            get => collection;
-            protected set {
-                lock (LockObject) collection = value;
-            }
-        }
+        public List<T> Cache { get; protected set; }
 
         public void Refresh() {
-            Collection = null;
+            SetCache(null);
             Get();
         }
 
-        public override IEnumerable<T> Get() {
-            if (Collection != null) {
-                return Collection;
+        public sealed override IEnumerable<T> Get() {
+            if (Cache != null) {
+                return Cache;
             }
 
-            Collection = base.Get().ToList();
-            return Collection;
+            SetCache(base.Get());
+            return Cache;
         }
 
         public override IEnumerable<T> Get(Func<T, bool> predicate) {
-            if (Collection == null) Get();
-            return Collection.Where(predicate);
+            if (Cache == null) Get();
+            return Cache.Where(predicate);
         }
 
         public override T GetSingle(string id) {
-            if (Collection == null) Get();
-            return Collection.FirstOrDefault(x => x.GetIdValue() == id);
+            if (Cache == null) Get();
+            return Cache.FirstOrDefault(x => x.id == id);
         }
 
         public override T GetSingle(Func<T, bool> predicate) {
-            if (Collection == null) Get();
-            return Collection.FirstOrDefault(predicate);
+            if (Cache == null) Get();
+            return Cache.FirstOrDefault(predicate);
         }
 
-        public override async Task Add(T data) {
-            await base.Add(data);
-            Refresh(); // TODO: intelligent refresh
-            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.ADD, data.GetIdValue(), data));
+        public override async Task Add(T item) {
+            if (Cache == null) Get();
+            await base.Add(item);
+            SetCache(Cache.Concat(new[] { item }));
+            DataAddEvent(item.id, item);
         }
 
         public override async Task Update(string id, string fieldName, object value) {
             await base.Update(id, fieldName, value);
             Refresh(); // TODO: intelligent refresh
-            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
+            DataUpdateEvent(id);
         }
 
         public override async Task Update(string id, UpdateDefinition<T> update) {
             await base.Update(id, update);
             Refresh(); // TODO: intelligent refresh
-            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
+            DataUpdateEvent(id);
         }
 
         public override async Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update) {
             await base.Update(filterExpression, update);
             Refresh(); // TODO: intelligent refresh
-            List<T> items = Get(filterExpression.Compile()).ToList();
-            items.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, x.GetIdValue())));
+            DataUpdateEvent(GetSingle(filterExpression.Compile()).id);
         }
 
-        public override async Task UpdateMany(Func<T, bool> predicate, UpdateDefinition<T> update) {
-            await base.UpdateMany(predicate, update);
+        public override async Task UpdateMany(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update) {
+            await base.UpdateMany(filterExpression, update);
             Refresh(); // TODO: intelligent refresh
-            List<T> items = Get(predicate).ToList();
-            items.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, x.GetIdValue())));
+            Get(filterExpression.Compile()).ForEach(x => DataUpdateEvent(x.id));
         }
 
         public override async Task Replace(T item) {
+            string id = item.id;
+            T cacheItem = GetSingle(id);
             await base.Replace(item);
-            Refresh(); // TODO: intelligent refresh
-            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, item.GetIdValue()));
+            SetCache(Cache.Except(new[] { cacheItem }).Concat(new[] { item }));
+            DataUpdateEvent(item.id);
         }
 
         public override async Task Delete(string id) {
+            T cacheItem = GetSingle(id);
             await base.Delete(id);
-            Refresh(); // TODO: intelligent refresh
-            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, id));
+            SetCache(Cache.Except(new[] { cacheItem }));
+            DataDeleteEvent(id);
         }
 
-        public override async Task DeleteMany(Func<T, bool> predicate) {
-            await base.DeleteMany(predicate);
-            Refresh(); // TODO: intelligent refresh
-            List<T> items = Get(predicate).ToList();
-            items.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, x.GetIdValue())));
+        public override async Task Delete(T item) {
+            if (Cache == null) Get();
+            await base.Delete(item);
+            SetCache(Cache.Except(new[] { item }));
+            DataDeleteEvent(item.id);
+        }
+
+        public override async Task DeleteMany(Expression<Func<T, bool>> filterExpression) {
+            List<T> ids = Get(filterExpression.Compile()).ToList();
+            await base.DeleteMany(filterExpression);
+            SetCache(Cache.Except(ids));
+            ids.ForEach(x => DataDeleteEvent(x.id));
+        }
+
+        protected virtual void SetCache(IEnumerable<T> newCollection) {
+            lock (LockObject) {
+                Cache = newCollection?.ToList();
+            }
+        }
+
+        private void DataAddEvent(string id, T item) {
+            DataEvent(EventModelFactory.CreateDataEvent<T>(DataEventType.ADD, id, item));
+        }
+
+        private void DataUpdateEvent(string id) {
+            DataEvent(EventModelFactory.CreateDataEvent<T>(DataEventType.UPDATE, id));
+        }
+
+        private void DataDeleteEvent(string id) {
+            DataEvent(EventModelFactory.CreateDataEvent<T>(DataEventType.DELETE, id));
+        }
+
+        protected virtual void DataEvent(DataEventModel<T> dataEvent) {
+            dataEventBus.Send(dataEvent);
         }
     }
 }

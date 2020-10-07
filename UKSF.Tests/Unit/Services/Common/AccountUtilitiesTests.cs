@@ -6,7 +6,7 @@ using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Services.Common {
+namespace UKSF.Tests.Unit.Services.Common {
     public class AccountUtilitiesTests {
         [Fact]
         public void ShouldCopyAccountCorrectly() {
@@ -18,7 +18,7 @@ namespace UKSF.Tests.Unit.Unit.Services.Common {
                 lastname = "McTest",
                 membershipState = MembershipState.MEMBER,
                 teamspeakIdentities = new HashSet<double> {4, 4},
-                serviceRecord = new[] {new ServiceRecordEntry {occurence = "Test", timestamp = timestamp}},
+                serviceRecord = new List<ServiceRecordEntry> {new ServiceRecordEntry {occurence = "Test", timestamp = timestamp}},
                 rolePreferences = new List<string> {"Aviation"},
                 militaryExperience = false
             };

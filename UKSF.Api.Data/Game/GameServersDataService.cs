@@ -6,13 +6,12 @@ using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Game;
 
 namespace UKSF.Api.Data.Game {
-    public class GameServersDataService : CachedDataService<GameServer, IGameServersDataService>, IGameServersDataService {
-        public GameServersDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IGameServersDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "gameServers") { }
+    public class GameServersDataService : CachedDataService<GameServer>, IGameServersDataService {
+        public GameServersDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<GameServer> dataEventBus) : base(dataCollectionFactory, dataEventBus, "gameServers") { }
 
-        public override List<GameServer> Collection {
-            get => base.Collection;
-            protected set {
-                lock (LockObject) base.Collection = value?.OrderBy(x => x.order).ToList();
+        protected override void SetCache(IEnumerable<GameServer> newCollection) {
+            lock (LockObject) {
+                Cache = newCollection?.OrderBy(x => x.order).ToList();
             }
         }
     }

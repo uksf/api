@@ -5,7 +5,7 @@ using FluentAssertions;
 using UKSF.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Common {
+namespace UKSF.Tests.Unit.Common {
     public class TaskUtilitiesTests {
         [Fact]
         public void ShouldDelay() {
@@ -27,7 +27,7 @@ namespace UKSF.Tests.Unit.Unit.Common {
         }
 
         [Fact]
-        public void ShouldCallbackAfterDelay() {
+        public async Task ShouldCallbackAfterDelay() {
             bool subject = false;
             Func<Task> act = async () => {
                 CancellationTokenSource token = new CancellationTokenSource();
@@ -41,7 +41,7 @@ namespace UKSF.Tests.Unit.Unit.Common {
                 );
             };
 
-            act.Should().NotThrow();
+            await act.Should().NotThrowAsync();
             act.ExecutionTime().Should().BeGreaterThan(TimeSpan.FromMilliseconds(10));
             subject.Should().BeTrue();
         }

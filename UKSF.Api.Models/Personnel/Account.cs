@@ -19,7 +19,7 @@ namespace UKSF.Api.Models.Personnel {
         public string reference;
         public string roleAssignment;
         public List<string> rolePreferences = new List<string>();
-        public ServiceRecordEntry[] serviceRecord = new ServiceRecordEntry[0];
+        public List<ServiceRecordEntry> serviceRecord = new List<ServiceRecordEntry>();
         public AccountSettings settings = new AccountSettings();
         public string steamname;
         public HashSet<double> teamspeakIdentities;

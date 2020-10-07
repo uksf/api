@@ -17,7 +17,7 @@ using UKSF.Api.Models.Integrations;
 using UKSF.Api.Models.Personnel;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Events.Handlers {
+namespace UKSF.Tests.Unit.Events.Handlers {
     public class TeamspeakEventHandlerTests {
         private readonly Mock<IAccountService> mockAccountService;
         private readonly Mock<ILoggingService> mockLoggingService;

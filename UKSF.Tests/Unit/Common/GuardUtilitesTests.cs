@@ -2,7 +2,7 @@
 using UKSF.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Common {
+namespace UKSF.Tests.Unit.Common {
     public class GuardUtilitesTests {
         [Theory, InlineData("", false), InlineData(null, false), InlineData("1", false), InlineData("5ed43018bea2f1945440f37d", true)]
         public void ShouldValidateIdCorrectly(string id, bool valid) {

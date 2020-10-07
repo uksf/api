@@ -3,43 +3,13 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Newtonsoft.Json.Linq;
 using UKSF.Common;
-using UKSF.Tests.Unit.Common;
+using UKSF.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Common {
+namespace UKSF.Tests.Unit.Common {
     public class DataUtilitiesTests {
         [Fact]
-        public void ShouldReturnIdValueForValidObject() {
-            MockDataModel mockDataModel = new MockDataModel();
-
-            string subject = mockDataModel.GetIdValue();
-
-            subject.Should().Be(mockDataModel.id);
-        }
-
-        [Fact]
-        public void ShouldReturnEmptyStringForInvalidObject() {
-            DateTime dateTime = new DateTime();
-
-            string subject = dateTime.GetIdValue();
-
-            subject.Should().Be(string.Empty);
-        }
-
-        [Fact]
-        public void ShouldReturnIdWithinOneSecond() {
-            MockDataModel mockDataModel = new MockDataModel { Stuff = new List<object>() };
-            for (int i = 0; i < 10000; i++) {
-                mockDataModel.Stuff.Add(new {index = i, data = Guid.NewGuid(), number = i * 756 * 458 * 5478});
-            }
-
-            Action act = () => mockDataModel.GetIdValue();
-
-            act.ExecutionTime().Should().BeLessThan(TimeSpan.FromSeconds(1));
-        }
-
-        [Fact]
-        public void ShouldGetCorrectValueFromBody() {
+        public void Should_return_correct_value_from_body() {
             JObject jObject = JObject.Parse("{\"key1\":\"item1\", \"key2\":\"item2\"}");
 
             string subject = jObject.GetValueFromBody("key2");
@@ -48,7 +18,7 @@ namespace UKSF.Tests.Unit.Unit.Common {
         }
 
         [Fact]
-        public void ShouldGetValueAsStringFromBody() {
+        public void Should_return_value_as_string_from_body_when_data_is_not_string() {
             JObject jObject = JObject.Parse("{\"key\":2}");
 
             string subject = jObject.GetValueFromBody("key");
@@ -57,7 +27,7 @@ namespace UKSF.Tests.Unit.Unit.Common {
         }
 
         [Fact]
-        public void ShouldReturnEmptyStringFromBodyForInvalidKey() {
+        public void Should_return_nothing_from_body_for_invalid_key() {
             JObject jObject = JObject.Parse("{\"key\":\"value\"}");
 
             string subject = jObject.GetValueFromBody("notthekey");

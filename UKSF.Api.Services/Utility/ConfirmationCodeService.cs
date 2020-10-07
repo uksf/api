@@ -24,7 +24,7 @@ namespace UKSF.Api.Services.Utility {
         public async Task<string> GetConfirmationCode(string id) {
             ConfirmationCode confirmationCode = Data.GetSingle(id);
             if (confirmationCode == null) return string.Empty;
-            await Data.Delete(confirmationCode.id);
+            await Data.Delete(confirmationCode);
             string actionParameters = JsonConvert.SerializeObject(new object[] { confirmationCode.id });
             await schedulerService.Cancel(x => x.actionParameters == actionParameters);
             return confirmationCode.value;
@@ -36,7 +36,7 @@ namespace UKSF.Api.Services.Utility {
                 string actionParameters = JsonConvert.SerializeObject(new object[] { confirmationCode.id });
                 await schedulerService.Cancel(x => x.actionParameters == actionParameters);
             }
-            await Data.DeleteMany(predicate);
+            await Data.DeleteMany(x => predicate(x));
         }
     }
 }

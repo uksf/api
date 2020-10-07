@@ -5,7 +5,7 @@ using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Services.Utility;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Services.Utility {
+namespace UKSF.Tests.Unit.Services.Utility {
     public class DataCacheServiceTests {
         [Fact]
         public void ShouldCallDataServiceRefresh() {

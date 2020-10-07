@@ -97,7 +97,7 @@ namespace UKSF.Api.Controllers {
             Loa loa = loaService.Data.GetSingle(id);
             CommandRequest request = commandRequestService.Data.GetSingle(x => x.value == id);
             if (request != null) {
-                await commandRequestService.Data.Delete(request.id);
+                await commandRequestService.Data.Delete(request);
                 foreach (string reviewerId in request.reviews.Keys.Where(x => x != request.requester)) {
                     notificationsService.Add(new Notification {owner = reviewerId, icon = NotificationIcons.REQUEST, message = $"Your review for {request.displayRequester}'s LOA is no longer required as they deleted their LOA", link = "/command/requests"});
                 }
@@ -106,7 +106,7 @@ namespace UKSF.Api.Controllers {
             }
 
             LogWrapper.AuditLog($"Loa deleted for '{displayNameService.GetDisplayName(accountService.Data.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
-            await loaService.Data.Delete(loa.id);
+            await loaService.Data.Delete(loa);
 
             return Ok();
         }

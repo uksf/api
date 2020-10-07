@@ -1,35 +1,45 @@
 ﻿using System.Collections.Generic;
 using FluentAssertions;
 using UKSF.Common;
-using UKSF.Tests.Unit.Common;
+using UKSF.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Common {
+namespace UKSF.Tests.Unit.Common {
     public class JsonUtilitiesTests {
         [Fact]
         public void ShouldCopyComplexObject() {
-            MockDataModel mockDataModel1 = new MockDataModel {Name = "1"};
-            MockDataModel mockDataModel2 = new MockDataModel {Name = "2"};
-            MockDataModel mockDataModel3 = new MockDataModel {Name = "3"};
-            MockComplexDataModel mockComplexDataModel = new MockComplexDataModel {Name = "Test", Data = mockDataModel1, List = new List<string> {"a", "b", "c"}, DataList = new List<MockDataModel> {mockDataModel1, mockDataModel2, mockDataModel3}};
+            TestDataModel testDataModel1 = new TestDataModel {Name = "1"};
+            TestDataModel testDataModel2 = new TestDataModel {Name = "2"};
+            TestDataModel testDataModel3 = new TestDataModel {Name = "3"};
+            TestComplexDataModel testComplexDataModel = new TestComplexDataModel {Name = "Test", Data = testDataModel1, List = new List<string> {"a", "b", "c"}, DataList = new List<TestDataModel> {testDataModel1, testDataModel2, testDataModel3}};
 
-            MockComplexDataModel subject = mockComplexDataModel.Copy<MockComplexDataModel>();
+            TestComplexDataModel subject = testComplexDataModel.Copy<TestComplexDataModel>();
 
-            subject.id.Should().Be(mockComplexDataModel.id);
-            subject.Name.Should().Be(mockComplexDataModel.Name);
-            subject.Data.Should().NotBe(mockDataModel1);
+            subject.id.Should().Be(testComplexDataModel.id);
+            subject.Name.Should().Be(testComplexDataModel.Name);
+            subject.Data.Should().NotBe(testDataModel1);
             subject.List.Should().HaveCount(3).And.Contain(new List<string> {"a", "b", "c"});
-            subject.DataList.Should().HaveCount(3).And.NotContain(new List<MockDataModel> {mockDataModel1, mockDataModel2, mockDataModel3});
+            subject.DataList.Should().HaveCount(3).And.NotContain(new List<TestDataModel> {testDataModel1, testDataModel2, testDataModel3});
         }
 
         [Fact]
         public void ShouldCopyObject() {
-            MockDataModel mockDataModel = new MockDataModel {Name = "Test"};
+            TestDataModel testDataModel = new TestDataModel {Name = "Test"};
 
-            MockDataModel subject = mockDataModel.Copy<MockDataModel>();
+            TestDataModel subject = testDataModel.Copy<TestDataModel>();
 
-            subject.id.Should().Be(mockDataModel.id);
-            subject.Name.Should().Be(mockDataModel.Name);
+            subject.id.Should().Be(testDataModel.id);
+            subject.Name.Should().Be(testDataModel.Name);
+        }
+
+
+        [Fact]
+        public void ShouldEscapeJsonString() {
+            const string UNESCAPED_JSON = "JSON:{\"message\": \"\\nMaking zeus \\ at 'C:\\test\\path'\", \"colour\": \"#20d18b\"}";
+
+            string subject = UNESCAPED_JSON.Escape();
+
+            subject.Should().Be("JSON:{\"message\": \"\\\\nMaking zeus \\\\ at 'C:\\\\test\\\\path'\", \"colour\": \"#20d18b\"}");
         }
     }
 }

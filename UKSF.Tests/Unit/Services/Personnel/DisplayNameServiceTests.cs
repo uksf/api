@@ -6,7 +6,7 @@ using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Personnel;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Services.Personnel {
+namespace UKSF.Tests.Unit.Services.Personnel {
     public class DisplayNameServiceTests {
         private readonly Mock<IRanksDataService> mockRanksDataService;
         private readonly Mock<IAccountDataService> mockAccountDataService;

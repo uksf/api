@@ -12,7 +12,7 @@ using UKSF.Api.Models.Utility;
 using UKSF.Api.Services.Utility;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Services.Utility {
+namespace UKSF.Tests.Unit.Services.Utility {
     public class ConfirmationCodeServiceTests {
         private readonly ConfirmationCodeService confirmationCodeService;
         private readonly Mock<IConfirmationCodeDataService> mockConfirmationCodeDataService;
@@ -47,13 +47,13 @@ namespace UKSF.Tests.Unit.Unit.Services.Utility {
         }
 
         [Theory, InlineData(null), InlineData("")]
-        public void ShouldThrowForCreateWhenValueNullOrEmpty(string value) {
+        public async Task ShouldThrowForCreateWhenValueNullOrEmpty(string value) {
             mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>())).Returns(Task.CompletedTask);
             mockSchedulerService.Setup(x => x.CreateAndSchedule(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<string>(), It.IsAny<object[]>())).Returns(Task.CompletedTask);
 
             Func<Task> act = async () => await confirmationCodeService.CreateConfirmationCode(value);
 
-            act.Should().Throw<ArgumentNullException>();
+            await act.Should().ThrowAsync<ArgumentNullException>();
         }
 
         [Fact]

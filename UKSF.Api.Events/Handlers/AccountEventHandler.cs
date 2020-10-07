@@ -1,41 +1,43 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
-using UKSF.Api.Interfaces.Data.Cached;
+using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Interfaces.Events.Handlers;
 using UKSF.Api.Interfaces.Hubs;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Models.Events;
+using UKSF.Api.Models.Personnel;
+using UKSF.Api.Models.Units;
 using UKSF.Api.Signalr.Hubs.Personnel;
 using UKSF.Common;
 
 namespace UKSF.Api.Events.Handlers {
     public class AccountEventHandler : IAccountEventHandler {
-        private readonly IAccountDataService accountData;
+        private readonly IDataEventBus<Account> accountDataEventBus;
         private readonly IHubContext<AccountHub, IAccountClient> hub;
         private readonly ILoggingService loggingService;
-        private readonly IUnitsDataService unitsData;
+        private readonly IDataEventBus<Unit> unitDataEventBus;
 
-        public AccountEventHandler(IAccountDataService accountData, IUnitsDataService unitsData, IHubContext<AccountHub, IAccountClient> hub, ILoggingService loggingService) {
-            this.accountData = accountData;
-            this.unitsData = unitsData;
+        public AccountEventHandler(IDataEventBus<Account> accountDataEventBus, IDataEventBus<Unit> unitDataEventBus, IHubContext<AccountHub, IAccountClient> hub, ILoggingService loggingService) {
+            this.accountDataEventBus = accountDataEventBus;
+            this.unitDataEventBus = unitDataEventBus;
             this.hub = hub;
             this.loggingService = loggingService;
         }
 
         public void Init() {
-            accountData.EventBus().SubscribeAsync(HandleAccountsEvent, exception => loggingService.Log(exception));
-            unitsData.EventBus().SubscribeAsync(HandleUnitsEvent, exception => loggingService.Log(exception));
+            accountDataEventBus.AsObservable().SubscribeAsync(HandleAccountsEvent, exception => loggingService.Log(exception));
+            unitDataEventBus.AsObservable().SubscribeAsync(HandleUnitsEvent, exception => loggingService.Log(exception));
         }
 
-        private async Task HandleAccountsEvent(DataEventModel<IAccountDataService> x) {
-            if (x.type == DataEventType.UPDATE) {
-                await UpdatedEvent(x.id);
+        private async Task HandleAccountsEvent(DataEventModel<Account> dataEventModel) {
+            if (dataEventModel.type == DataEventType.UPDATE) {
+                await UpdatedEvent(dataEventModel.id);
             }
         }
 
-        private async Task HandleUnitsEvent(DataEventModel<IUnitsDataService> x) {
-            if (x.type == DataEventType.UPDATE) {
-                await UpdatedEvent(x.id);
+        private async Task HandleUnitsEvent(DataEventModel<Unit> dataEventModel) {
+            if (dataEventModel.type == DataEventType.UPDATE) {
+                await UpdatedEvent(dataEventModel.id);
             }
         }
 

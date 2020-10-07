@@ -4,7 +4,7 @@ using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Message;
 
 namespace UKSF.Api.Data.Message {
-    public class NotificationsDataService : CachedDataService<Notification, INotificationsDataService>, INotificationsDataService {
-        public NotificationsDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<INotificationsDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "notifications") { }
+    public class NotificationsDataService : CachedDataService<Notification>, INotificationsDataService {
+        public NotificationsDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<Notification> dataEventBus) : base(dataCollectionFactory, dataEventBus, "notifications") { }
     }
 }

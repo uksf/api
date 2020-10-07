@@ -8,7 +8,7 @@ using UKSF.Api.Interfaces.Utility.ScheduledActions;
 using UKSF.Api.Services.Utility.ScheduledActions;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Services.Utility.ScheduledActions {
+namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
     public class DeleteExpiredConfirmationCodeActionTests {
         private readonly Mock<IConfirmationCodeDataService> mockConfirmationCodeDataService;
         private readonly Mock<IConfirmationCodeService> mockConfirmationCodeService;

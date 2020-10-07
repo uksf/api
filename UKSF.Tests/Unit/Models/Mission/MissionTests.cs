@@ -1,7 +1,7 @@
 ﻿using FluentAssertions;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Models.Mission {
+namespace UKSF.Tests.Unit.Models.Mission {
     public class MissionTests {
         [Fact]
         public void ShouldSetFields() {

@@ -30,6 +30,7 @@ using UKSF.Api.Services.Modpack;
 using UKSF.Api.Services.Modpack.BuildProcess;
 using UKSF.Api.Services.Personnel;
 using UKSF.Api.Services.Utility;
+using UKSF.Common;
 
 namespace UKSF.Api.AppStart.Services {
     public static class ServiceExtensions {
@@ -39,6 +40,7 @@ namespace UKSF.Api.AppStart.Services {
             services.AddSingleton(currentEnvironment);
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<ExceptionHandler>();
+            services.AddSingleton<IClock, Clock>();
 
             // Data common
             services.AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));

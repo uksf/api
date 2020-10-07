@@ -6,13 +6,12 @@ using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Operations;
 
 namespace UKSF.Api.Data.Operations {
-    public class OperationOrderDataService : CachedDataService<Opord, IOperationOrderDataService>, IOperationOrderDataService {
-        public OperationOrderDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IOperationOrderDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "opord") { }
+    public class OperationOrderDataService : CachedDataService<Opord>, IOperationOrderDataService {
+        public OperationOrderDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<Opord> dataEventBus) : base(dataCollectionFactory, dataEventBus, "opord") { }
 
-        public override List<Opord> Collection {
-            get => base.Collection;
-            protected set {
-                lock (LockObject) base.Collection = value?.OrderBy(x => x.start).ToList();
+        protected override void SetCache(IEnumerable<Opord> newCollection) {
+            lock (LockObject) {
+                Cache = newCollection?.OrderBy(x => x.start).ToList();
             }
         }
     }

@@ -3,10 +3,10 @@ using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Data;
 using UKSF.Api.Interfaces.Data;
-using UKSF.Tests.Unit.Common;
+using UKSF.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Data {
+namespace UKSF.Tests.Unit.Data {
     public class DataCollectionFactoryTests {
         [Fact]
         public void ShouldCreateDataCollection() {
@@ -14,7 +14,7 @@ namespace UKSF.Tests.Unit.Unit.Data {
 
             DataCollectionFactory dataCollectionFactory = new DataCollectionFactory(mockMongoDatabase.Object);
 
-            IDataCollection<MockDataModel> subject = dataCollectionFactory.CreateDataCollection<MockDataModel>("test");
+            IDataCollection<TestDataModel> subject = dataCollectionFactory.CreateDataCollection<TestDataModel>("test");
 
             subject.Should().NotBeNull();
         }

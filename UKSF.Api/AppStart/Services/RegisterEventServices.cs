@@ -3,35 +3,43 @@ using UKSF.Api.Events;
 using UKSF.Api.Events.Data;
 using UKSF.Api.Events.Handlers;
 using UKSF.Api.Events.SignalrServer;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Interfaces.Events.Handlers;
+using UKSF.Api.Models.Admin;
+using UKSF.Api.Models.Command;
+using UKSF.Api.Models.Game;
+using UKSF.Api.Models.Launcher;
+using UKSF.Api.Models.Message;
+using UKSF.Api.Models.Message.Logging;
+using UKSF.Api.Models.Modpack;
+using UKSF.Api.Models.Operations;
+using UKSF.Api.Models.Personnel;
+using UKSF.Api.Models.Units;
+using UKSF.Api.Models.Utility;
 
 namespace UKSF.Api.AppStart.Services {
     public static class EventServiceExtensions {
         public static void RegisterEventServices(this IServiceCollection services) {
             // Event Buses
-            services.AddSingleton<IDataEventBus<IAccountDataService>, DataEventBus<IAccountDataService>>();
-            services.AddSingleton<IDataEventBus<IBuildsDataService>, DataEventBus<IBuildsDataService>>();
-            services.AddSingleton<IDataEventBus<ICommandRequestDataService>, DataEventBus<ICommandRequestDataService>>();
-            services.AddSingleton<IDataEventBus<ICommandRequestArchiveDataService>, DataEventBus<ICommandRequestArchiveDataService>>();
-            services.AddSingleton<IDataEventBus<ICommentThreadDataService>, DataEventBus<ICommentThreadDataService>>();
-            services.AddSingleton<IDataEventBus<IConfirmationCodeDataService>, DataEventBus<IConfirmationCodeDataService>>();
-            services.AddSingleton<IDataEventBus<IDischargeDataService>, DataEventBus<IDischargeDataService>>();
-            services.AddSingleton<IDataEventBus<IGameServersDataService>, DataEventBus<IGameServersDataService>>();
-            services.AddSingleton<IDataEventBus<ILauncherFileDataService>, DataEventBus<ILauncherFileDataService>>();
-            services.AddSingleton<IDataEventBus<ILoaDataService>, DataEventBus<ILoaDataService>>();
-            services.AddSingleton<IDataEventBus<ILogDataService>, DataEventBus<ILogDataService>>();
-            services.AddSingleton<IDataEventBus<INotificationsDataService>, DataEventBus<INotificationsDataService>>();
-            services.AddSingleton<IDataEventBus<IOperationOrderDataService>, DataEventBus<IOperationOrderDataService>>();
-            services.AddSingleton<IDataEventBus<IOperationReportDataService>, DataEventBus<IOperationReportDataService>>();
-            services.AddSingleton<IDataEventBus<ISchedulerDataService>, DataEventBus<ISchedulerDataService>>();
-            services.AddSingleton<IDataEventBus<IRanksDataService>, DataEventBus<IRanksDataService>>();
-            services.AddSingleton<IDataEventBus<IReleasesDataService>, DataEventBus<IReleasesDataService>>();
-            services.AddSingleton<IDataEventBus<IRolesDataService>, DataEventBus<IRolesDataService>>();
-            services.AddSingleton<IDataEventBus<IUnitsDataService>, DataEventBus<IUnitsDataService>>();
-            services.AddSingleton<IDataEventBus<IVariablesDataService>, DataEventBus<IVariablesDataService>>();
+            services.AddSingleton<IDataEventBus<Account>, DataEventBus<Account>>();
+            services.AddSingleton<IDataEventBus<BasicLogMessage>, DataEventBus<BasicLogMessage>>();
+            services.AddSingleton<IDataEventBus<CommandRequest>, DataEventBus<CommandRequest>>();
+            services.AddSingleton<IDataEventBus<CommentThread>, DataEventBus<CommentThread>>();
+            services.AddSingleton<IDataEventBus<ConfirmationCode>, DataEventBus<ConfirmationCode>>();
+            services.AddSingleton<IDataEventBus<DischargeCollection>, DataEventBus<DischargeCollection>>();
+            services.AddSingleton<IDataEventBus<GameServer>, DataEventBus<GameServer>>();
+            services.AddSingleton<IDataEventBus<LauncherFile>, DataEventBus<LauncherFile>>();
+            services.AddSingleton<IDataEventBus<Loa>, DataEventBus<Loa>>();
+            services.AddSingleton<IDataEventBus<ModpackBuild>, DataEventBus<ModpackBuild>>();
+            services.AddSingleton<IDataEventBus<ModpackRelease>, DataEventBus<ModpackRelease>>();
+            services.AddSingleton<IDataEventBus<Notification>, DataEventBus<Notification>>();
+            services.AddSingleton<IDataEventBus<Opord>, DataEventBus<Opord>>();
+            services.AddSingleton<IDataEventBus<Oprep>, DataEventBus<Oprep>>();
+            services.AddSingleton<IDataEventBus<Rank>, DataEventBus<Rank>>();
+            services.AddSingleton<IDataEventBus<Role>, DataEventBus<Role>>();
+            services.AddSingleton<IDataEventBus<ScheduledJob>, DataEventBus<ScheduledJob>>();
+            services.AddSingleton<IDataEventBus<Unit>, DataEventBus<Unit>>();
+            services.AddSingleton<IDataEventBus<VariableItem>, DataEventBus<VariableItem>>();
             services.AddSingleton<ISignalrEventBus, SignalrEventBus>();
 
             // Event Handlers

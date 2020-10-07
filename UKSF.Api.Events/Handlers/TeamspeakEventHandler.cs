@@ -43,16 +43,16 @@ namespace UKSF.Api.Events.Handlers {
             eventBus.AsObservable().SubscribeAsync(HandleEvent, exception => loggingService.Log(exception));
         }
 
-        private async Task HandleEvent(SignalrEventModel x) {
-            switch (x.procedure) {
+        private async Task HandleEvent(SignalrEventModel signalrEventModel) {
+            switch (signalrEventModel.procedure) {
                 case TeamspeakEventType.CLIENTS:
-                    await UpdateClients(x.args.ToString());
+                    await UpdateClients(signalrEventModel.args.ToString());
                     break;
                 case TeamspeakEventType.CLIENT_SERVER_GROUPS:
-                    await UpdateClientServerGroups(x.args.ToString());
+                    await UpdateClientServerGroups(signalrEventModel.args.ToString());
                     break;
                 case TeamspeakEventType.EMPTY: break;
-                default: throw new ArgumentOutOfRangeException();
+                default:                       throw new ArgumentOutOfRangeException(nameof(signalrEventModel));
             }
         }
 

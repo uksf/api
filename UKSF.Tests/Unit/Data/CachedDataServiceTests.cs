@@ -9,237 +9,261 @@ using Moq;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
-using UKSF.Tests.Unit.Common;
+using UKSF.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Data {
+namespace UKSF.Tests.Unit.Data {
     public class CachedDataServiceTests {
-        private readonly MockCachedDataService mockCachedDataService;
-        private readonly Mock<IDataCollection<MockDataModel>> mockDataCollection;
-        private List<MockDataModel> mockCollection;
+        private readonly Mock<IDataCollection<TestDataModel>> mockDataCollection;
+        private readonly Mock<IDataCollectionFactory> mockDataCollectionFactory;
+        private readonly Mock<IDataEventBus<TestDataModel>> mockDataEventBus;
+        private List<TestDataModel> mockCollection;
+        private TestCachedDataService testCachedDataService;
 
         public CachedDataServiceTests() {
-            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            Mock<IDataEventBus<IMockCachedDataService>> mockDataEventBus = new Mock<IDataEventBus<IMockCachedDataService>>();
-            mockDataCollection = new Mock<IDataCollection<MockDataModel>>();
+            mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
+            mockDataEventBus = new Mock<IDataEventBus<TestDataModel>>();
+            mockDataCollection = new Mock<IDataCollection<TestDataModel>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<MockDataModel>(It.IsAny<string>())).Returns(mockDataCollection.Object);
-            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<IMockCachedDataService>>()));
-
-            mockCachedDataService = new MockCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<TestDataModel>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollection.Setup(x => x.Get()).Returns(() => new List<TestDataModel>(mockCollection));
+            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()));
         }
 
         [Fact]
-        public void ShouldCacheCollectionForGet() {
-            mockCollection = new List<MockDataModel>();
+        public void Should_cache_collection_when_null_for_get() {
+            mockCollection = new List<TestDataModel>();
 
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
 
-            mockCachedDataService.Collection.Should().BeNull();
+            testCachedDataService.Cache.Should().BeNull();
 
-            mockCachedDataService.Get();
+            testCachedDataService.Get();
 
-            mockCachedDataService.Collection.Should().NotBeNull();
-            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
+            testCachedDataService.Cache.Should().NotBeNull();
+            testCachedDataService.Cache.Should().BeEquivalentTo(mockCollection);
         }
 
         [Fact]
-        public void ShouldCacheCollectionForGetByPredicate() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { Name = "2" };
-            mockCollection = new List<MockDataModel> { item1, item2 };
+        public void Should_cache_collection_when_null_for_get_single_by_id() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "2" };
+            mockCollection = new List<TestDataModel> { item1, item2 };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
 
-            IEnumerable<MockDataModel> subject = mockCachedDataService.Get(x => x.Name == "1");
+            TestDataModel subject = testCachedDataService.GetSingle(item2.id);
 
-            mockCachedDataService.Collection.Should().NotBeNull();
-            subject.Should().BeSubsetOf(mockCachedDataService.Collection);
-        }
-
-        [Fact]
-        public void ShouldCacheCollectionForGetSingle() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { Name = "2" };
-            mockCollection = new List<MockDataModel> { item1, item2 };
-
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
-
-            MockDataModel subject = mockCachedDataService.GetSingle(item2.id);
-
-            mockCachedDataService.Collection.Should().NotBeNull();
-            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
+            testCachedDataService.Cache.Should().NotBeNull();
+            testCachedDataService.Cache.Should().BeEquivalentTo(mockCollection);
             subject.Should().Be(item2);
         }
 
         [Fact]
-        public void ShouldCacheCollectionForGetSingleByPredicate() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { Name = "2" };
-            mockCollection = new List<MockDataModel> { item1, item2 };
+        public void Should_cache_collection_when_null_for_get_single_by_predicate() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "2" };
+            mockCollection = new List<TestDataModel> { item1, item2 };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
 
-            MockDataModel subject = mockCachedDataService.GetSingle(x => x.Name == "2");
+            TestDataModel subject = testCachedDataService.GetSingle(x => x.Name == "2");
 
-            mockCachedDataService.Collection.Should().NotBeNull();
-            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
+            testCachedDataService.Cache.Should().NotBeNull();
+            testCachedDataService.Cache.Should().BeEquivalentTo(mockCollection);
             subject.Should().Be(item2);
         }
 
         [Fact]
-        public void ShouldCacheCollectionForRefreshWhenNull() {
-            mockCollection = new List<MockDataModel>();
+        public void Should_cache_collection_when_null_for_get_with_predicate() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "2" };
+            mockCollection = new List<TestDataModel> { item1, item2 };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
 
-            mockCachedDataService.Collection.Should().BeNull();
+            IEnumerable<TestDataModel> subject = testCachedDataService.Get(x => x.Name == "1");
 
-            mockCachedDataService.Refresh();
-
-            mockCachedDataService.Collection.Should().NotBeNull();
-            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
+            testCachedDataService.Cache.Should().NotBeNull();
+            subject.Should().BeSubsetOf(testCachedDataService.Cache);
         }
 
         [Fact]
-        public void ShouldGetCachedCollection() {
-            mockCollection = new List<MockDataModel>();
+        public void Should_cache_collection_when_null_for_refresh() {
+            mockCollection = new List<TestDataModel>();
 
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
 
-            mockCachedDataService.Collection.Should().BeNull();
+            testCachedDataService.Cache.Should().BeNull();
 
-            List<MockDataModel> subject1 = mockCachedDataService.Get().ToList();
+            testCachedDataService.Refresh();
+
+            testCachedDataService.Cache.Should().NotBeNull();
+            testCachedDataService.Cache.Should().BeEquivalentTo(mockCollection);
+        }
+
+        [Fact]
+        public void Should_return_cached_collection_for_get() {
+            mockCollection = new List<TestDataModel>();
+
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
+
+            testCachedDataService.Cache.Should().BeNull();
+
+            List<TestDataModel> subject1 = testCachedDataService.Get().ToList();
 
             subject1.Should().NotBeNull();
             subject1.Should().BeEquivalentTo(mockCollection);
 
-            List<MockDataModel> subject2 = mockCachedDataService.Get().ToList();
+            List<TestDataModel> subject2 = testCachedDataService.Get().ToList();
 
             subject2.Should().NotBeNull();
             subject2.Should().BeEquivalentTo(mockCollection).And.BeEquivalentTo(subject1);
         }
 
         [Fact]
-        public async Task ShouldRefreshCollectionForAdd() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            mockCollection = new List<MockDataModel>();
+        public async Task Should_update_cache_for_add() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            mockCollection = new List<TestDataModel>();
 
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
-            mockDataCollection.Setup(x => x.AddAsync(It.IsAny<MockDataModel>())).Callback<MockDataModel>(x => mockCollection.Add(x));
+            mockDataCollection.Setup(x => x.AddAsync(It.IsAny<TestDataModel>())).Callback<TestDataModel>(x => mockCollection.Add(x));
 
-            mockCachedDataService.Collection.Should().BeNull();
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
 
-            await mockCachedDataService.Add(item1);
+            testCachedDataService.Cache.Should().BeNull();
 
-            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
-            mockCachedDataService.Collection.Should().Contain(item1);
+            await testCachedDataService.Add(item1);
+
+            testCachedDataService.Cache.Should().BeEquivalentTo(mockCollection);
+            testCachedDataService.Cache.Should().Contain(item1);
         }
 
         [Fact]
-        public async Task ShouldRefreshCollectionForDelete() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { Name = "2" };
-            mockCollection = new List<MockDataModel> { item1, item2 };
+        public async Task Should_update_cache_for_delete_by_id() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "2" };
+            mockCollection = new List<TestDataModel> { item1, item2 };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
             mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => mockCollection.RemoveAll(x => x.id == id));
 
-            await mockCachedDataService.Delete(item1.id);
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
 
-            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
-            mockCachedDataService.Collection.Should().HaveCount(1).And.NotContain(item1).And.Contain(item2);
+            await testCachedDataService.Delete(item1.id);
+
+            testCachedDataService.Cache.Should().BeEquivalentTo(mockCollection);
+            testCachedDataService.Cache.Should().HaveCount(1).And.NotContain(item1).And.Contain(item2);
         }
 
         [Fact]
-        public async Task ShouldRefreshCollectionForDeleteMany() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { Name = "1" };
-            MockDataModel item3 = new MockDataModel { Name = "3" };
-            mockCollection = new List<MockDataModel> { item1, item2, item3 };
+        public async Task Should_update_cache_for_delete() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "2" };
+            mockCollection = new List<TestDataModel> { item1, item2 };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
-            mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<MockDataModel, bool>>>()))
+            mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => mockCollection.RemoveAll(x => x.id == id));
+
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
+
+            await testCachedDataService.Delete(item1);
+
+            testCachedDataService.Cache.Should().BeEquivalentTo(mockCollection);
+            testCachedDataService.Cache.Should().HaveCount(1).And.NotContain(item1).And.Contain(item2);
+        }
+
+        [Fact]
+        public async Task Should_update_cache_for_delete_many() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "1" };
+            TestDataModel item3 = new TestDataModel { Name = "3" };
+            mockCollection = new List<TestDataModel> { item1, item2, item3 };
+
+            mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>()))
                               .Returns(Task.CompletedTask)
-                              .Callback((Expression<Func<MockDataModel, bool>> expression) => mockCollection.RemoveAll(x => mockCollection.Where(expression.Compile()).Contains(x)));
+                              .Callback((Expression<Func<TestDataModel, bool>> expression) => mockCollection.RemoveAll(x => mockCollection.Where(expression.Compile()).Contains(x)));
 
-            await mockCachedDataService.DeleteMany(x => x.Name == "1");
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
 
-            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
-            mockCachedDataService.Collection.Should().HaveCount(1);
-            mockCachedDataService.Collection.Should().Contain(item3);
+            await testCachedDataService.DeleteMany(x => x.Name == "1");
+
+            testCachedDataService.Cache.Should().BeEquivalentTo(mockCollection);
+            testCachedDataService.Cache.Should().HaveCount(1);
+            testCachedDataService.Cache.Should().Contain(item3);
         }
 
         [Fact]
         public async Task ShouldRefreshCollectionForReplace() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { id = item1.id, Name = "2" };
-            mockCollection = new List<MockDataModel> { item1 };
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { id = item1.id, Name = "2" };
+            mockCollection = new List<TestDataModel> { item1 };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
-            mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<MockDataModel>()))
+            mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<TestDataModel>()))
                               .Returns(Task.CompletedTask)
-                              .Callback((string id, MockDataModel value) => mockCollection[mockCollection.FindIndex(x => x.id == id)] = value);
+                              .Callback((string id, TestDataModel value) => mockCollection[mockCollection.FindIndex(x => x.id == id)] = value);
 
-            await mockCachedDataService.Replace(item2);
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
 
-            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
-            mockCachedDataService.Collection.First().Name.Should().Be("2");
+            await testCachedDataService.Replace(item2);
+
+            testCachedDataService.Cache.Should().BeEquivalentTo(mockCollection);
+            testCachedDataService.Cache.First().Name.Should().Be("2");
         }
 
         [Fact]
         public async Task ShouldRefreshCollectionForUpdate() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            mockCollection = new List<MockDataModel> { item1 };
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            mockCollection = new List<TestDataModel> { item1 };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<MockDataModel>>()))
+            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                               .Returns(Task.CompletedTask)
-                              .Callback((string id, UpdateDefinition<MockDataModel> _) => mockCollection.First(x => x.id == id).Name = "2");
+                              .Callback((string id, UpdateDefinition<TestDataModel> _) => mockCollection.First(x => x.id == id).Name = "2");
 
-            await mockCachedDataService.Update(item1.id, "Name", "2");
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
 
-            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
-            mockCachedDataService.Collection.First().Name.Should().Be("2");
+            await testCachedDataService.Update(item1.id, "Name", "2");
+
+            testCachedDataService.Cache.Should().BeEquivalentTo(mockCollection);
+            testCachedDataService.Cache.First().Name.Should().Be("2");
         }
 
         [Fact]
         public async Task ShouldRefreshCollectionForUpdateByUpdateDefinition() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            mockCollection = new List<MockDataModel> { item1 };
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            mockCollection = new List<TestDataModel> { item1 };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<MockDataModel>>()))
+            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                               .Returns(Task.CompletedTask)
-                              .Callback((string id, UpdateDefinition<MockDataModel> _) => mockCollection.First(x => x.id == id).Name = "2");
+                              .Callback((string id, UpdateDefinition<TestDataModel> _) => mockCollection.First(x => x.id == id).Name = "2");
 
-            await mockCachedDataService.Update(item1.id, Builders<MockDataModel>.Update.Set(x => x.Name, "2"));
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
 
-            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
-            mockCachedDataService.Collection.First().Name.Should().Be("2");
+            await testCachedDataService.Update(item1.id, Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
+
+            testCachedDataService.Cache.Should().BeEquivalentTo(mockCollection);
+            testCachedDataService.Cache.First().Name.Should().Be("2");
         }
 
         [Fact]
         public async Task ShouldRefreshCollectionForUpdateMany() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { Name = "1" };
-            MockDataModel item3 = new MockDataModel { Name = "3" };
-            mockCollection = new List<MockDataModel> { item1, item2, item3 };
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "1" };
+            TestDataModel item3 = new TestDataModel { Name = "3" };
+            mockCollection = new List<TestDataModel> { item1, item2, item3 };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
-            mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<MockDataModel, bool>>>(), It.IsAny<UpdateDefinition<MockDataModel>>()))
+            mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                               .Returns(Task.CompletedTask)
                               .Callback(
-                                  (Expression<Func<MockDataModel, bool>> expression, UpdateDefinition<MockDataModel> _) =>
+                                  (Expression<Func<TestDataModel, bool>> expression, UpdateDefinition<TestDataModel> _) =>
                                       mockCollection.Where(expression.Compile()).ToList().ForEach(x => x.Name = "3")
                               );
 
-            await mockCachedDataService.UpdateMany(x => x.Name == "1", Builders<MockDataModel>.Update.Set(x => x.Name, "3"));
+            testCachedDataService = new TestCachedDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
 
-            mockCachedDataService.Collection.Should().BeEquivalentTo(mockCollection);
-            mockCachedDataService.Collection.ToList()[0].Name.Should().Be("3");
-            mockCachedDataService.Collection.ToList()[1].Name.Should().Be("3");
-            mockCachedDataService.Collection.ToList()[2].Name.Should().Be("3");
+            await testCachedDataService.UpdateMany(x => x.Name == "1", Builders<TestDataModel>.Update.Set(x => x.Name, "3"));
+
+            testCachedDataService.Cache.Should().BeEquivalentTo(mockCollection);
+            testCachedDataService.Cache.ToList()[0].Name.Should().Be("3");
+            testCachedDataService.Cache.ToList()[1].Name.Should().Be("3");
+            testCachedDataService.Cache.ToList()[2].Name.Should().Be("3");
         }
     }
 }

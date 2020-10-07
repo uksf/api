@@ -3,7 +3,7 @@ using FluentAssertions;
 using UKSF.Api.Models.Mission;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Models.Mission {
+namespace UKSF.Tests.Unit.Models.Mission {
     public class MissionPatchingReportTests {
         [Fact]
         public void ShouldSetFieldsAsError() {
