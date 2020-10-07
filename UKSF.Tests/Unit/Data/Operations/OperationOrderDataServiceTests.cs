@@ -4,19 +4,18 @@ using FluentAssertions;
 using Moq;
 using UKSF.Api.Data.Operations;
 using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Operations;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Data.Operations {
+namespace UKSF.Tests.Unit.Data.Operations {
     public class OperationOrderDataServiceTests {
         private readonly Mock<IDataCollection<Opord>> mockDataCollection;
         private readonly OperationOrderDataService operationOrderDataService;
 
         public OperationOrderDataServiceTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            Mock<IDataEventBus<IOperationOrderDataService>> mockDataEventBus = new Mock<IDataEventBus<IOperationOrderDataService>>();
+            Mock<IDataEventBus<Opord>> mockDataEventBus = new Mock<IDataEventBus<Opord>>();
             mockDataCollection = new Mock<IDataCollection<Opord>>();
 
             mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Opord>(It.IsAny<string>())).Returns(mockDataCollection.Object);
@@ -25,7 +24,7 @@ namespace UKSF.Tests.Unit.Unit.Data.Operations {
         }
 
         [Fact]
-        public void ShouldGetOrderedCollection() {
+        public void Should_get_collection_in_order() {
             Opord item1 = new Opord { start = DateTime.Now.AddDays(-1) };
             Opord item2 = new Opord { start = DateTime.Now.AddDays(-2) };
             Opord item3 = new Opord { start = DateTime.Now.AddDays(-3) };

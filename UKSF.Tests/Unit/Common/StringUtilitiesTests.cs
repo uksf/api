@@ -5,7 +5,7 @@ using FluentAssertions;
 using UKSF.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Common {
+namespace UKSF.Tests.Unit.Common {
     public class StringUtilitiesTests {
         [Theory, InlineData("", "", false), InlineData("", "hello", false), InlineData("hello world hello world", "hello", true), InlineData("hello", "HELLO", true), InlineData("hello world", "HELLOWORLD", false)]
         public void ShouldIgnoreCase(string text, string searchElement, bool expected) {

@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Interfaces.Data.Cached;
+using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Interfaces.Events.Handlers;
 using UKSF.Api.Interfaces.Hubs;
 using UKSF.Api.Interfaces.Message;
@@ -13,32 +14,32 @@ using UKSF.Common;
 
 namespace UKSF.Api.Events.Handlers {
     public class BuildsEventHandler : IBuildsEventHandler {
-        private readonly IBuildsDataService buildsData;
+        private readonly IDataEventBus<ModpackBuild> modpackBuildEventBus;
         private readonly IHubContext<BuildsHub, IModpackClient> hub;
         private readonly ILoggingService loggingService;
 
-        public BuildsEventHandler(IBuildsDataService buildsData, IHubContext<BuildsHub, IModpackClient> hub, ILoggingService loggingService) {
-            this.buildsData = buildsData;
+        public BuildsEventHandler(IDataEventBus<ModpackBuild> modpackBuildEventBus, IHubContext<BuildsHub, IModpackClient> hub, ILoggingService loggingService) {
+            this.modpackBuildEventBus = modpackBuildEventBus;
             this.hub = hub;
             this.loggingService = loggingService;
         }
 
         public void Init() {
-            buildsData.EventBus().SubscribeAsync(HandleBuildEvent, exception => loggingService.Log(exception));
+            modpackBuildEventBus.AsObservable().SubscribeAsync(HandleBuildEvent, exception => loggingService.Log(exception));
         }
 
-        private async Task HandleBuildEvent(DataEventModel<IBuildsDataService> x) {
-            if (x.data == null) return;
+        private async Task HandleBuildEvent(DataEventModel<ModpackBuild> dataEventModel) {
+            if (dataEventModel.data == null) return;
 
-            switch (x.type) {
+            switch (dataEventModel.type) {
                 case DataEventType.ADD:
-                    await AddedEvent(x.data as ModpackBuild);
+                    await AddedEvent(dataEventModel.data as ModpackBuild);
                     break;
                 case DataEventType.UPDATE:
-                    await UpdatedEvent(x.id, x.data);
+                    await UpdatedEvent(dataEventModel.id, dataEventModel.data);
                     break;
                 case DataEventType.DELETE: break;
-                default: throw new ArgumentOutOfRangeException();
+                default: throw new ArgumentOutOfRangeException(nameof(dataEventModel));
             }
         }
 

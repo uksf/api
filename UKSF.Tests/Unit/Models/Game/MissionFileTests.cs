@@ -3,7 +3,7 @@ using FluentAssertions;
 using UKSF.Api.Models.Game;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Models.Game {
+namespace UKSF.Tests.Unit.Models.Game {
     public class MissionFileTests {
         [Fact]
         public void ShouldSetFields() {

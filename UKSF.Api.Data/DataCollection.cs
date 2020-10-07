@@ -6,22 +6,16 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Interfaces.Data;
-using UKSF.Common;
+using UKSF.Api.Models;
 
 namespace UKSF.Api.Data {
-    public class DataCollection<T> : IDataCollection<T> {
-        private readonly IMongoDatabase database;
+    public class DataCollection<T> : IDataCollection<T> where T : DatabaseObject {
         private readonly string collectionName;
+        private readonly IMongoDatabase database;
 
         public DataCollection(IMongoDatabase database, string collectionName) {
             this.database = database;
             this.collectionName = collectionName;
-        }
-
-        public async Task AssertCollectionExistsAsync() {
-            if (!await CollectionExistsAsync()) {
-                await database.CreateCollectionAsync(collectionName);
-            }
         }
 
         public IEnumerable<T> Get() => GetCollection().AsQueryable();
@@ -45,7 +39,9 @@ namespace UKSF.Api.Data {
         }
 
         public async Task UpdateManyAsync(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update) { // TODO: Remove strong typing of UpdateDefinition as parameter
-            IEnumerable<string> ids = Get(predicate.Compile()).Select(x => x.GetIdValue()); // This is necessary for filtering items by a default model value (e.g Role order default 0, may not be stored in document)
+            // Getting ids by the filter predicate is necessary to cover filtering items by a default model value
+            // (e.g Role order default 0, may not be stored in document, and is thus not filterable)
+            IEnumerable<string> ids = Get(predicate.Compile()).Select(x => x.id);
             await GetCollection().UpdateManyAsync(Builders<T>.Filter.In("id", ids), update);
         }
 
@@ -58,8 +54,15 @@ namespace UKSF.Api.Data {
         }
 
         public async Task DeleteManyAsync(Expression<Func<T, bool>> predicate) {
-            IEnumerable<string> ids = Get(predicate.Compile()).Select(x => x.GetIdValue()); // This is necessary for filtering items by a default model value (e.g Role order default 0, may not be stored in document)
+            IEnumerable<string> ids = Get(predicate.Compile())
+                .Select(x => x.id); // This is necessary for filtering items by a default model value (e.g Role order default 0, may not be stored in document)
             await GetCollection().DeleteManyAsync(Builders<T>.Filter.In("id", ids));
+        }
+
+        public async Task AssertCollectionExistsAsync() {
+            if (!await CollectionExistsAsync()) {
+                await database.CreateCollectionAsync(collectionName);
+            }
         }
 
         private IMongoCollection<T> GetCollection() => database.GetCollection<T>(collectionName);

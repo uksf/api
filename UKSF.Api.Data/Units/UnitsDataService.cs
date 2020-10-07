@@ -6,13 +6,12 @@ using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Units;
 
 namespace UKSF.Api.Data.Units {
-    public class UnitsDataService : CachedDataService<Unit, IUnitsDataService>, IUnitsDataService {
-        public UnitsDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IUnitsDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "units") { }
+    public class UnitsDataService : CachedDataService<Unit>, IUnitsDataService {
+        public UnitsDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<Unit> dataEventBus) : base(dataCollectionFactory, dataEventBus, "units") { }
 
-        public override List<Unit> Collection {
-            get => base.Collection;
-            protected set {
-                lock (LockObject) base.Collection = value?.OrderBy(x => x.order).ToList();
+        protected override void SetCache(IEnumerable<Unit> newCollection) {
+            lock (LockObject) {
+                Cache = newCollection?.OrderBy(x => x.order).ToList();
             }
         }
     }

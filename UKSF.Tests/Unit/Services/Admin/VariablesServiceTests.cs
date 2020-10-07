@@ -7,7 +7,7 @@ using UKSF.Api.Services.Admin;
 using UKSF.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Services.Admin {
+namespace UKSF.Tests.Unit.Services.Admin {
     public class VariablesServiceTests {
         [Fact]
         public void ShouldGetVariableAsString() {

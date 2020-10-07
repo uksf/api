@@ -11,7 +11,7 @@ using UKSF.Api.Services.Personnel;
 using UKSF.Api.Services.Utility;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Services.Utility {
+namespace UKSF.Tests.Unit.Services.Utility {
     public class SessionServiceTests {
         private readonly Mock<IHttpContextAccessor> mockHttpContextAccessor;
         private readonly Mock<IAccountDataService> mockAccountDataService;

@@ -7,28 +7,26 @@ using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
 using UKSF.Api.Models.Modpack;
-using UKSF.Common;
 
 namespace UKSF.Api.Data.Modpack {
-    public class BuildsDataService : CachedDataService<ModpackBuild, IBuildsDataService>, IBuildsDataService {
-        public BuildsDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IBuildsDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "modpackBuilds") { }
+    public class BuildsDataService : CachedDataService<ModpackBuild>, IBuildsDataService {
+        public BuildsDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<ModpackBuild> dataEventBus) : base(dataCollectionFactory, dataEventBus, "modpackBuilds") { }
 
-        public override List<ModpackBuild> Collection {
-            get => base.Collection;
-            protected set {
-                lock (LockObject) base.Collection = value?.OrderByDescending(x => x.buildNumber).ToList();
+        protected override void SetCache(IEnumerable<ModpackBuild> newCollection) {
+            lock (LockObject) {
+                Cache = newCollection?.OrderByDescending(x => x.buildNumber).ToList();
             }
         }
 
         public async Task Update(ModpackBuild build, ModpackBuildStep buildStep) {
             UpdateDefinition<ModpackBuild> updateDefinition = Builders<ModpackBuild>.Update.Set(x => x.steps[buildStep.index], buildStep);
-            await base.Update(x => x.id == build.id, updateDefinition);
-            DataEvent(EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.UPDATE, build.id, buildStep));
+            await base.Update(build.id, updateDefinition);
+            DataEvent(EventModelFactory.CreateDataEvent<ModpackBuild>(DataEventType.UPDATE, build.id, buildStep));
         }
 
         public async Task Update(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition) {
             await base.Update(build.id, updateDefinition);
-            DataEvent(EventModelFactory.CreateDataEvent<IBuildsDataService>(DataEventType.UPDATE, build.id, build));
+            DataEvent(EventModelFactory.CreateDataEvent<ModpackBuild>(DataEventType.UPDATE, build.id, build));
         }
     }
 }

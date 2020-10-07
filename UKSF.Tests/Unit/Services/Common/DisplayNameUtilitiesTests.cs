@@ -10,7 +10,7 @@ using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Services.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Services.Common {
+namespace UKSF.Tests.Unit.Services.Common {
     public class DisplayNameUtilitiesTests {
         private readonly Mock<IDisplayNameService> mockDisplayNameService;
         private readonly Mock<IUnitsDataService> mockUnitsDataService;

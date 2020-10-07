@@ -80,7 +80,7 @@ namespace UKSF.Api.Services.Integrations {
                 images = newImages.Take(12).ToList();
 
                 foreach (InstagramImage instagramImage in images) {
-                    instagramImage.base64 = await instagramImage.AsBase64();
+                    instagramImage.base64 = await GetBase64(instagramImage);
                 }
             } catch (Exception exception) {
                 LogWrapper.Log(exception);
@@ -88,5 +88,11 @@ namespace UKSF.Api.Services.Integrations {
         }
 
         public IEnumerable<InstagramImage> GetImages() => images;
+
+        private static async Task<string> GetBase64(InstagramImage image) {
+            using HttpClient client = new HttpClient();
+            byte[] bytes = await client.GetByteArrayAsync(image.mediaUrl);
+            return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
+        }
     }
 }

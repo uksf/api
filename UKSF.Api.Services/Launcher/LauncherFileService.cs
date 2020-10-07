@@ -37,7 +37,7 @@ namespace UKSF.Api.Services.Launcher {
             }
 
             foreach (LauncherFile storedVersion in storedVersions.Where(storedVersion => fileNames.All(x => x != storedVersion.fileName))) {
-                await Data.Delete(storedVersion.id);
+                await Data.Delete(storedVersion);
             }
         }
 

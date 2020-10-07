@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Interfaces.Data;
+using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Interfaces.Events.Handlers;
 using UKSF.Api.Interfaces.Hubs;
 using UKSF.Api.Interfaces.Message;
@@ -12,23 +13,23 @@ using UKSF.Common;
 
 namespace UKSF.Api.Events.Handlers {
     public class LogEventHandler : ILogEventHandler {
-        private readonly ILogDataService data;
+        private readonly IDataEventBus<BasicLogMessage> logDataEventBus;
         private readonly IHubContext<AdminHub, IAdminClient> hub;
         private readonly ILoggingService loggingService;
 
-        public LogEventHandler(ILogDataService data, IHubContext<AdminHub, IAdminClient> hub, ILoggingService loggingService) {
-            this.data = data;
+        public LogEventHandler(IDataEventBus<BasicLogMessage> logDataEventBus, IHubContext<AdminHub, IAdminClient> hub, ILoggingService loggingService) {
+            this.logDataEventBus = logDataEventBus;
             this.hub = hub;
             this.loggingService = loggingService;
         }
 
         public void Init() {
-            data.EventBus().SubscribeAsync(HandleEvent, exception => loggingService.Log(exception));
+            logDataEventBus.AsObservable().SubscribeAsync(HandleEvent, exception => loggingService.Log(exception));
         }
 
-        private async Task HandleEvent(DataEventModel<ILogDataService> x) {
-            if (x.type == DataEventType.ADD) {
-                await AddedEvent(x.data);
+        private async Task HandleEvent(DataEventModel<BasicLogMessage> dataEventModel) {
+            if (dataEventModel.type == DataEventType.ADD) {
+                await AddedEvent(dataEventModel.data);
             }
         }
 

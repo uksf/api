@@ -6,13 +6,12 @@ using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Personnel;
 
 namespace UKSF.Api.Data.Personnel {
-    public class RanksDataService : CachedDataService<Rank, IRanksDataService>, IRanksDataService {
-        public RanksDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IRanksDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "ranks") { }
+    public class RanksDataService : CachedDataService<Rank>, IRanksDataService {
+        public RanksDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<Rank> dataEventBus) : base(dataCollectionFactory, dataEventBus, "ranks") { }
 
-        public override List<Rank> Collection {
-            get => base.Collection;
-            protected set {
-                lock (LockObject) base.Collection = value?.OrderBy(x => x.order).ToList();
+        protected override void SetCache(IEnumerable<Rank> newCollection) {
+            lock (LockObject) {
+                Cache = newCollection?.OrderBy(x => x.order).ToList();
             }
         }
 

@@ -89,7 +89,7 @@ namespace UKSF.Api.Services.Admin {
             }
 
             foreach (Account accountnewAccount in newAccounts) {
-                accountDataService.Delete(accountnewAccount.id).Wait();
+                accountDataService.Delete(accountnewAccount).Wait();
                 accountDataService.Add(accountnewAccount).Wait();
             }
         }
@@ -111,7 +111,7 @@ namespace UKSF.Api.Services.Admin {
         public string rank;
         public string reference;
         public string roleAssignment;
-        public ServiceRecordEntry[] serviceRecord = new ServiceRecordEntry[0];
+        public List<ServiceRecordEntry> serviceRecord = new List<ServiceRecordEntry>();
         public readonly AccountSettings settings = new AccountSettings();
         public string steamname;
         public HashSet<double> teamspeakIdentities;

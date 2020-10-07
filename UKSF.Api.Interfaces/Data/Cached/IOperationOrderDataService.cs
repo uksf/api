@@ -1,5 +1,5 @@
 using UKSF.Api.Models.Operations;
 
 namespace UKSF.Api.Interfaces.Data.Cached {
-    public interface IOperationOrderDataService : IDataService<Opord, IOperationOrderDataService>, ICachedDataService { }
+    public interface IOperationOrderDataService : IDataService<Opord>, ICachedDataService { }
 }

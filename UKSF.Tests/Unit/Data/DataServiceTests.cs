@@ -10,267 +10,281 @@ using Moq;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
-using UKSF.Tests.Unit.Common;
+using UKSF.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Data {
+namespace UKSF.Tests.Unit.Data {
     public class DataServiceTests {
-        private readonly Mock<IDataCollection<MockDataModel>> mockDataCollection;
-        private readonly MockDataService mockDataService;
-        private List<MockDataModel> mockCollection;
+        private readonly Mock<IDataCollection<TestDataModel>> mockDataCollection;
+        private readonly TestDataService testDataService;
+        private List<TestDataModel> mockCollection;
 
         public DataServiceTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            Mock<IDataEventBus<IMockDataService>> mockDataEventBus = new Mock<IDataEventBus<IMockDataService>>();
-            mockDataCollection = new Mock<IDataCollection<MockDataModel>>();
+            Mock<IDataEventBus<TestDataModel>> mockDataEventBus = new Mock<IDataEventBus<TestDataModel>>();
+            mockDataCollection = new Mock<IDataCollection<TestDataModel>>();
 
-            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<IMockDataService>>()));
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<MockDataModel>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()));
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<TestDataModel>(It.IsAny<string>())).Returns(mockDataCollection.Object);
 
-            mockDataService = new MockDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
+            testDataService = new TestDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
         }
 
         [Theory, InlineData(""), InlineData("1"), InlineData(null)]
-        public void ShouldThrowForDeleteForInvalidKey(string id) {
-            Func<Task> act = async () => await mockDataService.Delete(id);
+        public async Task Should_throw_for_delete_single_item_when_key_is_invalid(string id) {
+            Func<Task> act = async () => await testDataService.Delete(id);
 
-            act.Should().Throw<KeyNotFoundException>();
+            await act.Should().ThrowAsync<KeyNotFoundException>();
         }
 
-        // [Fact]
-        // public async Task ShouldDoNothingForDeleteManyWhenNoMatchingItems() {
-        //     mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns(new List<MockDataModel>());
-        //
-        //     await mockDataService.DeleteMany(null);
-        //
-        //     mockDataCollection.Verify(x => x.DeleteManyAsync(It.IsAny<Expression<Func<MockDataModel, bool>>>()), Times.Never);
-        // }
-
         [Theory, InlineData(""), InlineData("1"), InlineData(null)]
-        public void ShouldThrowForInvalidKey(string id) {
-            Action act = () => mockDataService.GetSingle(id);
+        public void Should_throw_for_get_single_item_when_key_is_invalid(string id) {
+            Action act = () => testDataService.GetSingle(id);
 
             act.Should().Throw<KeyNotFoundException>();
         }
 
         [Theory, InlineData(""), InlineData("1"), InlineData(null)]
-        public void ShouldThrowForUpdateForInvalidKey(string id) {
-            Func<Task> act = async () => await mockDataService.Update(id, "Name", null);
+        public async Task Should_throw_for_update_by_id_when_key_is_invalid(string id) {
+            Func<Task> act = async () => await testDataService.Update(id, "Name", null);
 
-            act.Should().Throw<KeyNotFoundException>();
+            await act.Should().ThrowAsync<KeyNotFoundException>();
         }
 
-        // [Fact]
-        // public void ShouldThrowForReplaceWhenItemNotFound() {
-        //     MockDataModel item = new MockDataModel { Name = "1" };
-        //
-        //     Func<Task> act = async () => await mockDataService.Replace(item);
-        //
-        //     act.Should().Throw<KeyNotFoundException>();
-        // }
-        //
-        // [Fact]
-        // public async Task ShouldDoNothingForUpdateManyWhenNoMatchingItems() {
-        //     mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns(new List<MockDataModel>());
-        //
-        //     await mockDataService.UpdateMany(null, null);
-        //
-        //     mockDataCollection.Verify(x => x.UpdateManyAsync(It.IsAny<Expression<Func<MockDataModel, bool>>>(), It.IsAny<UpdateDefinition<MockDataModel>>()), Times.Never);
-        // }
-
         [Theory, InlineData(""), InlineData("1"), InlineData(null)]
-        public void ShouldThrowForUpdateWithUpdateDefinitionForInvalidKey(string id) {
-            Func<Task> act = async () => await mockDataService.Update(id, Builders<MockDataModel>.Update.Set(x => x.Name, "2"));
+        public async Task Should_throw_for_update_by_update_definition_when_key_is_invalid(string id) {
+            Func<Task> act = async () => await testDataService.Update(id, Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
 
-            act.Should().Throw<KeyNotFoundException>();
+            await act.Should().ThrowAsync<KeyNotFoundException>();
         }
 
         [Fact]
-        public async Task ShouldAddItem() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            mockCollection = new List<MockDataModel>();
+        public async Task Should_add_single_item() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            mockCollection = new List<TestDataModel>();
 
-            mockDataCollection.Setup(x => x.AddAsync(It.IsAny<MockDataModel>())).Callback<MockDataModel>(x => mockCollection.Add(x));
+            mockDataCollection.Setup(x => x.AddAsync(It.IsAny<TestDataModel>())).Callback<TestDataModel>(x => mockCollection.Add(x));
 
-            await mockDataService.Add(item1);
+            await testDataService.Add(item1);
 
             mockCollection.Should().Contain(item1);
         }
 
         [Fact]
-        public async Task ShouldDeleteItem() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { Name = "2" };
-            mockCollection = new List<MockDataModel> { item1, item2 };
+        public async Task Should_delete_many_items() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "1" };
+            mockCollection = new List<TestDataModel> { item1, item2 };
+
+            mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns(() => mockCollection);
+            mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>()))
+                              .Returns(Task.CompletedTask)
+                              .Callback((Expression<Func<TestDataModel, bool>> expression) => mockCollection.RemoveAll(x => mockCollection.Where(expression.Compile()).Contains(x)));
+
+            await testDataService.DeleteMany(x => x.Name == "1");
+
+            mockCollection.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Should_delete_single_item_by_id() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "2" };
+            mockCollection = new List<TestDataModel> { item1, item2 };
 
             mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => mockCollection.RemoveAll(x => x.id == id));
 
-            await mockDataService.Delete(item1.id);
+            await testDataService.Delete(item1.id);
 
             mockCollection.Should().HaveCount(1).And.NotContain(item1).And.Contain(item2);
         }
 
         [Fact]
-        public void ShouldGetItem() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
+        public async Task Should_delete_single_item() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "2" };
+            mockCollection = new List<TestDataModel> { item1, item2 };
 
-            mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(item1);
+            mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => mockCollection.RemoveAll(x => x.id == id));
 
-            MockDataModel subject = mockDataService.GetSingle(item1.id);
+            await testDataService.Delete(item1);
 
-            subject.Should().Be(item1);
+            mockCollection.Should().HaveCount(1).And.NotContain(item1).And.Contain(item2);
         }
 
         [Fact]
-        public void ShouldGetItemByPredicate() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { Name = "2" };
-            mockCollection = new List<MockDataModel> { item1, item2 };
-
-            mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<MockDataModel, bool>>())).Returns<Func<MockDataModel, bool>>(x => mockCollection.First(x));
-
-            MockDataModel subject = mockDataService.GetSingle(x => x.id == item1.id);
-
-            subject.Should().Be(item1);
-        }
-
-        [Fact]
-        public void ShouldGetItems() {
+        public void Should_get_all_items() {
             mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
 
-            IEnumerable<MockDataModel> subject = mockDataService.Get();
+            IEnumerable<TestDataModel> subject = testDataService.Get();
 
             subject.Should().BeSameAs(mockCollection);
         }
 
         [Fact]
-        public void ShouldGetItemsByPredicate() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { Name = "2" };
-            mockCollection = new List<MockDataModel> { item1, item2 };
+        public void Should_get_items_matching_predicate() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "2" };
+            mockCollection = new List<TestDataModel> { item1, item2 };
 
-            mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns<Func<MockDataModel, bool>>(x => mockCollection.Where(x).ToList());
+            mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(x => mockCollection.Where(x).ToList());
 
-            IEnumerable<MockDataModel> subject = mockDataService.Get(x => x.id == item1.id);
+            IEnumerable<TestDataModel> subject = testDataService.Get(x => x.id == item1.id);
 
             subject.Should().HaveCount(1).And.Contain(item1);
         }
 
         [Fact]
-        public async Task ShouldMakeSetUpdate() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            mockCollection = new List<MockDataModel> { item1 };
-            BsonValue expected = TestUtilities.Render(Builders<MockDataModel>.Update.Set(x => x.Name, "2"));
-            UpdateDefinition<MockDataModel> subject = null;
-
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<MockDataModel>>()))
-                              .Returns(Task.CompletedTask)
-                              .Callback((string x, UpdateDefinition<MockDataModel> y) => subject = y);
-
-            await mockDataService.Update(item1.id, "Name", "2");
-
-            TestUtilities.Render(subject).Should().BeEquivalentTo(expected);
-        }
-
-        [Fact]
-        public async Task ShouldMakeUnsetUpdate() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            mockCollection = new List<MockDataModel> { item1 };
-            BsonValue expected = TestUtilities.Render(Builders<MockDataModel>.Update.Unset(x => x.Name));
-            UpdateDefinition<MockDataModel> subject = null;
-
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<MockDataModel>>()))
-                              .Returns(Task.CompletedTask)
-                              .Callback((string x, UpdateDefinition<MockDataModel> y) => subject = y);
-
-            await mockDataService.Update(item1.id, "Name", null);
-
-            TestUtilities.Render(subject).Should().BeEquivalentTo(expected);
-        }
-
-        [Fact]
-        public void ShouldThrowForAddWhenItemIsNull() {
-            Func<Task> act = async () => await mockDataService.Add(null);
-
-            act.Should().Throw<ArgumentNullException>();
-        }
-
-        [Fact]
-        public async Task ShouldUpdateItemValue() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            mockCollection = new List<MockDataModel> { item1 };
-
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<MockDataModel>>()))
-                              .Returns(Task.CompletedTask)
-                              .Callback((string id, UpdateDefinition<MockDataModel> _) => mockCollection.First(x => x.id == id).Name = "2");
-
-            await mockDataService.Update(item1.id, "Name", "2");
-
-            item1.Name.Should().Be("2");
-        }
-
-        [Fact]
-        public async Task ShouldReplaceItem() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { id = item1.id, Name = "2" };
-            mockCollection = new List<MockDataModel> { item1 };
+        public void Should_get_single_item_by_id() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
 
             mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(item1);
-            mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<MockDataModel>()))
-                              .Returns(Task.CompletedTask)
-                              .Callback((string id, MockDataModel item) => mockCollection[mockCollection.FindIndex(x => x.id == id)] = item);
 
-            await mockDataService.Replace(item2);
+            TestDataModel subject = testDataService.GetSingle(item1.id);
+
+            subject.Should().Be(item1);
+        }
+
+        [Fact]
+        public void Should_get_single_item_matching_predicate() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "2" };
+            mockCollection = new List<TestDataModel> { item1, item2 };
+
+            mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(x => mockCollection.First(x));
+
+            TestDataModel subject = testDataService.GetSingle(x => x.id == item1.id);
+
+            subject.Should().Be(item1);
+        }
+
+        [Fact]
+        public async Task Should_replace_item() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { id = item1.id, Name = "2" };
+            mockCollection = new List<TestDataModel> { item1 };
+
+            mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(item1);
+            mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<TestDataModel>()))
+                              .Returns(Task.CompletedTask)
+                              .Callback((string id, TestDataModel item) => mockCollection[mockCollection.FindIndex(x => x.id == id)] = item);
+
+            await testDataService.Replace(item2);
 
             mockCollection.Should().ContainSingle();
             mockCollection.First().Should().Be(item2);
         }
 
         [Fact]
-        public async Task ShouldUpdateItemValueByUpdateDefinition() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            mockCollection = new List<MockDataModel> { item1 };
+        public async Task Should_throw_for_add_when_item_is_null() {
+            Func<Task> act = async () => await testDataService.Add(null);
 
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<MockDataModel>>()))
+            await act.Should().ThrowAsync<ArgumentNullException>();
+        }
+
+        [Fact]
+        public async Task Should_update_item_by_filter_and_update_definition() {
+            TestDataModel item1 = new TestDataModel { id = "1", Name = "1" };
+            mockCollection = new List<TestDataModel> { item1 };
+            BsonValue expectedFilter = TestUtilities.RenderFilter(Builders<TestDataModel>.Filter.Where(x => x.Name == "1"));
+            BsonValue expectedUpdate = TestUtilities.RenderUpdate(Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
+            FilterDefinition<TestDataModel> subjectFilter = null;
+            UpdateDefinition<TestDataModel> subjectUpdate = null;
+
+            mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<TestDataModel, bool>>())).Returns(item1);
+            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<TestDataModel>>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                               .Returns(Task.CompletedTask)
-                              .Callback((string id, UpdateDefinition<MockDataModel> _) => mockCollection.First(x => x.id == id).Name = "2");
+                              .Callback(
+                                  (FilterDefinition<TestDataModel> filter, UpdateDefinition<TestDataModel> update) => {
+                                      subjectFilter = filter;
+                                      subjectUpdate = update;
+                                  }
+                              );
 
-            await mockDataService.Update(item1.id, Builders<MockDataModel>.Update.Set(x => x.Name, "2"));
+            await testDataService.Update(x => x.Name == "1", Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
+
+            TestUtilities.RenderFilter(subjectFilter).Should().BeEquivalentTo(expectedFilter);
+            TestUtilities.RenderUpdate(subjectUpdate).Should().BeEquivalentTo(expectedUpdate);
+        }
+
+        [Fact]
+        public async Task Should_update_item_by_id() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            mockCollection = new List<TestDataModel> { item1 };
+
+            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
+                              .Returns(Task.CompletedTask)
+                              .Callback((string id, UpdateDefinition<TestDataModel> _) => mockCollection.First(x => x.id == id).Name = "2");
+
+            await testDataService.Update(item1.id, "Name", "2");
 
             item1.Name.Should().Be("2");
         }
 
         [Fact]
-        public async Task ShouldUpdateMany() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { Name = "1" };
-            mockCollection = new List<MockDataModel> { item1, item2 };
+        public async Task Should_update_item_by_update_definition() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            mockCollection = new List<TestDataModel> { item1 };
 
-            mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns(() => mockCollection);
-            mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<MockDataModel, bool>>>(), It.IsAny<UpdateDefinition<MockDataModel>>()))
+            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                               .Returns(Task.CompletedTask)
-                              .Callback((Expression<Func<MockDataModel, bool>> expression, UpdateDefinition<MockDataModel> _) => mockCollection.Where(expression.Compile()).ToList().ForEach(y => y.Name = "2"));
+                              .Callback((string id, UpdateDefinition<TestDataModel> _) => mockCollection.First(x => x.id == id).Name = "2");
 
-            await mockDataService.UpdateMany(x => x.Name == "1", Builders<MockDataModel>.Update.Set(x => x.Name, "2"));
+            await testDataService.Update(item1.id, Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
+
+            item1.Name.Should().Be("2");
+        }
+
+        [Fact]
+        public async Task Should_update_item_with_set() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            mockCollection = new List<TestDataModel> { item1 };
+            BsonValue expected = TestUtilities.RenderUpdate(Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
+            UpdateDefinition<TestDataModel> subject = null;
+
+            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
+                              .Returns(Task.CompletedTask)
+                              .Callback((string x, UpdateDefinition<TestDataModel> y) => subject = y);
+
+            await testDataService.Update(item1.id, "Name", "2");
+
+            TestUtilities.RenderUpdate(subject).Should().BeEquivalentTo(expected);
+        }
+
+        [Fact]
+        public async Task Should_update_item_with_unset() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            mockCollection = new List<TestDataModel> { item1 };
+            BsonValue expected = TestUtilities.RenderUpdate(Builders<TestDataModel>.Update.Unset(x => x.Name));
+            UpdateDefinition<TestDataModel> subject = null;
+
+            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
+                              .Returns(Task.CompletedTask)
+                              .Callback((string x, UpdateDefinition<TestDataModel> y) => subject = y);
+
+            await testDataService.Update(item1.id, "Name", null);
+
+            TestUtilities.RenderUpdate(subject).Should().BeEquivalentTo(expected);
+        }
+
+        [Fact]
+        public async Task Should_update_many_items() {
+            TestDataModel item1 = new TestDataModel { Name = "1" };
+            TestDataModel item2 = new TestDataModel { Name = "1" };
+            mockCollection = new List<TestDataModel> { item1, item2 };
+
+            mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns(() => mockCollection);
+            mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
+                              .Returns(Task.CompletedTask)
+                              .Callback(
+                                  (Expression<Func<TestDataModel, bool>> expression, UpdateDefinition<TestDataModel> _) =>
+                                      mockCollection.Where(expression.Compile()).ToList().ForEach(y => y.Name = "2")
+                              );
+
+            await testDataService.UpdateMany(x => x.Name == "1", Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
 
             item1.Name.Should().Be("2");
             item2.Name.Should().Be("2");
-        }
-
-        [Fact]
-        public async Task ShouldDeleteMany() {
-            MockDataModel item1 = new MockDataModel { Name = "1" };
-            MockDataModel item2 = new MockDataModel { Name = "1" };
-            mockCollection = new List<MockDataModel> { item1, item2 };
-
-            mockDataCollection.Setup(x => x.Get(It.IsAny<Func<MockDataModel, bool>>())).Returns(() => mockCollection);
-            mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<MockDataModel, bool>>>()))
-                              .Returns(Task.CompletedTask)
-                              .Callback((Expression<Func<MockDataModel, bool>> expression) => mockCollection.RemoveAll(x => mockCollection.Where(expression.Compile()).Contains(x)));
-
-            await mockDataService.DeleteMany(x => x.Name == "1");
-
-            mockCollection.Should().BeEmpty();
         }
     }
 }

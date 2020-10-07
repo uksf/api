@@ -3,8 +3,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Interfaces.Hubs;
+using UKSF.Api.Models.Events;
 using UKSF.Api.Models.Events.Types;
-using UKSF.Common;
 
 namespace UKSF.Api.Signalr.Hubs.Integrations {
     public static class TeamspeakHubState {
@@ -19,7 +19,7 @@ namespace UKSF.Api.Signalr.Hubs.Integrations {
 
         // ReSharper disable once UnusedMember.Global
         public void Invoke(int procedure, object args) {
-            eventBus.Send(EventModelFactory.CreateSignalrEvent((TeamspeakEventType) procedure, args));
+            eventBus.Send(new SignalrEventModel {procedure = (TeamspeakEventType) procedure, args = args});
         }
 
         public override Task OnConnectedAsync() {

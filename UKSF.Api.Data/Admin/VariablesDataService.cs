@@ -8,13 +8,12 @@ using UKSF.Api.Models.Admin;
 using UKSF.Common;
 
 namespace UKSF.Api.Data.Admin {
-    public class VariablesDataService : CachedDataService<VariableItem, IVariablesDataService>, IVariablesDataService {
-        public VariablesDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<IVariablesDataService> dataEventBus) : base(dataCollectionFactory, dataEventBus, "variables") { }
+    public class VariablesDataService : CachedDataService<VariableItem>, IVariablesDataService {
+        public VariablesDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<VariableItem> dataEventBus) : base(dataCollectionFactory, dataEventBus, "variables") { }
 
-        public override List<VariableItem> Collection {
-            get => base.Collection;
-            protected set {
-                lock (LockObject) base.Collection = value?.OrderBy(x => x.key).ToList();
+        protected override void SetCache(IEnumerable<VariableItem> newCollection) {
+            lock (LockObject) {
+                Cache = newCollection?.OrderBy(x => x.key).ToList();
             }
         }
 
@@ -25,13 +24,13 @@ namespace UKSF.Api.Data.Admin {
         public async Task Update(string key, object value) {
             VariableItem variableItem = GetSingle(key);
             if (variableItem == null) throw new KeyNotFoundException($"Variable Item with key '{key}' does not exist");
-            await base.Update(variableItem.id, "item", value);
+            await base.Update(variableItem.id, nameof(variableItem.item), value);
         }
 
         public override async Task Delete(string key) {
             VariableItem variableItem = GetSingle(key);
             if (variableItem == null) throw new KeyNotFoundException($"Variable Item with key '{key}' does not exist");
-            await base.Delete(variableItem.id);
+            await base.Delete(variableItem);
         }
     }
 }

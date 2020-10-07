@@ -1,59 +1,79 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using MoreLinq;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
+using UKSF.Api.Models;
 using UKSF.Api.Models.Events;
-using UKSF.Common;
 
 namespace UKSF.Api.Data {
-    public abstract class DataService<T, TData> : DataServiceBase<T, TData>, IDataService<T, TData> {
-        protected DataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<TData> dataEventBus, string collectionName) : base(dataCollectionFactory, dataEventBus, collectionName) { }
+    public abstract class DataService<T> : DataServiceBase<T>, IDataService<T> where T : DatabaseObject {
+        private readonly IDataEventBus<T> dataEventBus;
 
-        public override async Task Add(T data) {
-            await base.Add(data);
-            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.ADD, data.GetIdValue(), data));
+        protected DataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<T> dataEventBus, string collectionName) : base(dataCollectionFactory, collectionName) =>
+            this.dataEventBus = dataEventBus;
+
+        public override async Task Add(T item) {
+            await base.Add(item);
+            DataAddEvent(item.id, item);
         }
 
         public override async Task Update(string id, string fieldName, object value) {
             await base.Update(id, fieldName, value);
-            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
+            DataUpdateEvent(id);
         }
 
         public override async Task Update(string id, UpdateDefinition<T> update) {
             await base.Update(id, update);
-            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, id));
+            DataUpdateEvent(id);
         }
 
         public override async Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update) {
             await base.Update(filterExpression, update);
-            List<string> ids = Get(filterExpression.Compile()).Select(x => x.GetIdValue()).ToList();
-            ids.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, x)));
+            DataUpdateEvent(GetSingle(filterExpression.Compile()).id);
         }
 
-        public override async Task UpdateMany(Func<T, bool> predicate, UpdateDefinition<T> update) {
-            await base.UpdateMany(predicate, update);
-            List<T> items = Get(predicate).ToList();
-            items.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, x.GetIdValue())));
+        public override async Task UpdateMany(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update) {
+            await base.UpdateMany(filterExpression, update);
+            Get(filterExpression.Compile()).ForEach(x => DataUpdateEvent(x.id));
         }
 
         public override async Task Replace(T item) {
             await base.Replace(item);
-            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.UPDATE, item.GetIdValue()));
+            DataUpdateEvent(item.id);
         }
 
         public override async Task Delete(string id) {
             await base.Delete(id);
-            DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, id));
+            DataDeleteEvent(id);
         }
 
-        public override async Task DeleteMany(Func<T, bool> predicate) {
-            await base.DeleteMany(predicate);
-            List<T> items = Get(predicate).ToList(); // TODO: Evaluate performance impact of this presence check
-            items.ForEach(x => DataEvent(EventModelFactory.CreateDataEvent<TData>(DataEventType.DELETE, x.GetIdValue())));
+        public override async Task Delete(T item) {
+            await base.Delete(item);
+            DataDeleteEvent(item.id);
+        }
+
+        public override async Task DeleteMany(Expression<Func<T, bool>> filterExpression) {
+            await base.DeleteMany(filterExpression);
+            Get(filterExpression.Compile()).ForEach(x => DataDeleteEvent(x.id));
+        }
+
+        private void DataAddEvent(string id, T item) {
+            DataEvent(EventModelFactory.CreateDataEvent<T>(DataEventType.ADD, id, item));
+        }
+
+        private void DataUpdateEvent(string id) {
+            DataEvent(EventModelFactory.CreateDataEvent<T>(DataEventType.UPDATE, id));
+        }
+
+        private void DataDeleteEvent(string id) {
+            DataEvent(EventModelFactory.CreateDataEvent<T>(DataEventType.DELETE, id));
+        }
+
+        protected virtual void DataEvent(DataEventModel<T> dataEvent) {
+            dataEventBus.Send(dataEvent);
         }
     }
 }

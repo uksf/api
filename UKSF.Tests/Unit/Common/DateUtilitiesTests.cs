@@ -3,7 +3,7 @@ using FluentAssertions;
 using UKSF.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Common {
+namespace UKSF.Tests.Unit.Common {
     public class DateUtilitiesTests {
         [Theory, InlineData(25, 4, 25, 4), InlineData(25, 13, 26, 1)]
         public void ShouldGiveCorrectAge(int years, int months, int expectedYears, int expectedMonths) {

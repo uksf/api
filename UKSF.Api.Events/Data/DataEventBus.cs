@@ -1,10 +1,11 @@
 using System;
 using System.Reactive.Linq;
 using UKSF.Api.Interfaces.Events;
+using UKSF.Api.Models;
 using UKSF.Api.Models.Events;
 
 namespace UKSF.Api.Events.Data {
-    public class DataEventBus<TData> : EventBus<DataEventModel<TData>>, IDataEventBus<TData> {
-        public override IObservable<DataEventModel<TData>> AsObservable() => Subject.OfType<DataEventModel<TData>>();
+    public class DataEventBus<T> : EventBus<DataEventModel<T>>, IDataEventBus<T> where T : DatabaseObject {
+        public override IObservable<DataEventModel<T>> AsObservable() => Subject.OfType<DataEventModel<T>>();
     }
 }

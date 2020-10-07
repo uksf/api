@@ -7,7 +7,7 @@ using UKSF.Api.Interfaces.Utility.ScheduledActions;
 using UKSF.Api.Services.Utility;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Services.Utility {
+namespace UKSF.Tests.Unit.Services.Utility {
     public class ScheduledActionServiceTests {
         [Fact]
         public void ShouldRegisterActions() {

@@ -5,7 +5,7 @@ using UKSF.Api.Interfaces.Utility.ScheduledActions;
 using UKSF.Api.Services.Utility.ScheduledActions;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Services.Utility.ScheduledActions {
+namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
     public class TeamspeakSnapshotActionTests {
         private readonly Mock<ITeamspeakService> mockTeamspeakService;
         private ITeamspeakSnapshotAction teamspeakSnapshotAction;

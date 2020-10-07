@@ -3,7 +3,7 @@ using FluentAssertions;
 using UKSF.Api.Models.Message.Logging;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Models.Message.Logging {
+namespace UKSF.Tests.Unit.Models.Message.Logging {
     public class WebLogMessageTests {
         [Fact]
         public void ShouldCreateFromException() {

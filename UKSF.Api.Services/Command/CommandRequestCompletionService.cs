@@ -136,7 +136,7 @@ namespace UKSF.Api.Services.Command {
                     await dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.discharges, dischargeCollection.discharges));
                 }
 
-                await accountService.Data.Update(account.id, "membershipState", MembershipState.DISCHARGED);
+                await accountService.Data.Update(account.id, nameof(account.membershipState), MembershipState.DISCHARGED);
 
                 Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, AssignmentService.REMOVE_FLAG, AssignmentService.REMOVE_FLAG, AssignmentService.REMOVE_FLAG, request.reason, "", AssignmentService.REMOVE_FLAG);
                 notificationsService.Add(notification);

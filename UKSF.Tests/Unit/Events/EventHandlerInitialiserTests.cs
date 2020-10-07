@@ -3,7 +3,7 @@ using UKSF.Api.Events;
 using UKSF.Api.Interfaces.Events.Handlers;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Events {
+namespace UKSF.Tests.Unit.Events {
     public class EventHandlerInitialiserTests {
         [Fact]
         public void ShouldInitEventHandlers() {

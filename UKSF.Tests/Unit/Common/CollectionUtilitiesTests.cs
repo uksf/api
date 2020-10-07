@@ -3,11 +3,11 @@ using FluentAssertions;
 using UKSF.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Unit.Common {
+namespace UKSF.Tests.Unit.Common {
     public class CollectionUtilitiesTests {
         [Fact]
-        public void ShouldCleanHashset() {
-            HashSet<string> subject = new HashSet<string> {"1", "", "3"};
+        public void Should_remove_empty_strings_from_hashset() {
+            HashSet<string> subject = new HashSet<string> {"1", "", null, "3"};
 
             subject.CleanHashset();
 
