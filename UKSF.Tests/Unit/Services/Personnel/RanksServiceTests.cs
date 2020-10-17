@@ -24,6 +24,7 @@ namespace UKSF.Tests.Unit.Services.Personnel {
             List<Rank> mockCollection = new List<Rank> {rank1, rank2};
 
             mockRanksDataService.Setup(x => x.Get()).Returns(mockCollection);
+            mockRanksDataService.Setup(x => x.GetSingle("Private")).Returns(rank1);
 
             int subject = ranksService.GetRankOrder("Private");
 
@@ -35,6 +36,7 @@ namespace UKSF.Tests.Unit.Services.Personnel {
             mockRanksDataService.Setup(x => x.Get()).Returns(new List<Rank>());
 
             int subject = ranksService.GetRankOrder("Private");
+            mockRanksDataService.Setup(x => x.GetSingle("Private")).Returns<Rank>(null);
 
             subject.Should().Be(-1);
         }
