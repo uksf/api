@@ -22,5 +22,10 @@ namespace UKSF.Common {
             if (!validate(array)) onInvalid();
             Array.ForEach(array, x => ValidateId(x, onIdInvalid));
         }
+
+        public static void ValidateTwoStrings(string first, string second, Action<string> onInvalid) {
+            if (string.IsNullOrEmpty(first)) onInvalid(first);
+            if (string.IsNullOrEmpty(second)) onInvalid(second);
+        }
     }
 }

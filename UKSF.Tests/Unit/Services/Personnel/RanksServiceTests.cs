@@ -25,7 +25,7 @@ namespace UKSF.Tests.Unit.Services.Personnel {
 
             mockRanksDataService.Setup(x => x.Get()).Returns(mockCollection);
 
-            int subject = ranksService.GetRankIndex("Private");
+            int subject = ranksService.GetRankOrder("Private");
 
             subject.Should().Be(0);
         }
@@ -34,7 +34,7 @@ namespace UKSF.Tests.Unit.Services.Personnel {
         public void ShouldReturnInvalidIndexGetIndexWhenRankNotFound() {
             mockRanksDataService.Setup(x => x.Get()).Returns(new List<Rank>());
 
-            int subject = ranksService.GetRankIndex("Private");
+            int subject = ranksService.GetRankOrder("Private");
 
             subject.Should().Be(-1);
         }

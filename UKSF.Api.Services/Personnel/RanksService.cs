@@ -9,9 +9,7 @@ namespace UKSF.Api.Services.Personnel {
 
         public RanksService(IRanksDataService data) : base(data) { }
 
-        public int GetRankIndex(string rankName) {
-            return Data.Get().ToList().FindIndex(x => x.name == rankName);
-        }
+        public int GetRankOrder(string rankName) => Data.GetSingle(rankName).order;
 
         public int Sort(string nameA, string nameB) {
             Rank rankA = Data.GetSingle(nameA);

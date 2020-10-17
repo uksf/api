@@ -20,32 +20,32 @@ namespace UKSF.Api.AppStart {
             }
 
             // Execute any DB migration
-            serviceProvider.GetService<MigrationUtility>().Migrate();
+            serviceProvider.GetService<MigrationUtility>()?.Migrate();
 
             // Warm cached data services
             RegisterAndWarmCachedData.Warm();
 
             // Register scheduled actions
-            RegisterScheduledActions.Register();
+            RegisterScheduledActions.Register(serviceProvider);
 
             // Register build steps
-            serviceProvider.GetService<IBuildStepService>().RegisterBuildSteps();
+            serviceProvider.GetService<IBuildStepService>()?.RegisterBuildSteps();
 
             // Add event handlers
-            serviceProvider.GetService<EventHandlerInitialiser>().InitEventHandlers();
+            serviceProvider.GetService<EventHandlerInitialiser>()?.InitEventHandlers();
 
             // Start teamspeak manager
-            serviceProvider.GetService<ITeamspeakManagerService>().Start();
+            serviceProvider.GetService<ITeamspeakManagerService>()?.Start();
 
             // Connect discord bot
-            serviceProvider.GetService<IDiscordService>().ConnectDiscord();
+            serviceProvider.GetService<IDiscordService>()?.ConnectDiscord();
 
             // Start scheduler
-            serviceProvider.GetService<ISchedulerService>().Load();
+            serviceProvider.GetService<ISchedulerService>()?.Load();
 
             // Mark running builds as cancelled & run queued builds
-            serviceProvider.GetService<IBuildsService>().CancelInterruptedBuilds();
-            serviceProvider.GetService<IModpackService>().RunQueuedBuilds();
+            serviceProvider.GetService<IBuildsService>()?.CancelInterruptedBuilds();
+            serviceProvider.GetService<IModpackService>()?.RunQueuedBuilds();
         }
     }
 }
