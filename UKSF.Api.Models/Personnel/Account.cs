@@ -26,4 +26,12 @@ namespace UKSF.Api.Models.Personnel {
         public string unitAssignment;
         public string unitsExperience;
     }
+
+    public class RosterAccount : DatabaseObject {
+        public string name;
+        public string rank;
+        public string roleAssignment;
+        public string unitAssignment;
+        public string nation;
+    }
 }

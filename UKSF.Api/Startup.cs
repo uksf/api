@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AspNet.Security.OpenId;
+using AutoMapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -14,6 +15,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerUI;
 using UKSF.Api.AppStart;
 using UKSF.Api.AppStart.Services;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
@@ -114,6 +116,7 @@ namespace UKSF.Api {
                         }
                     );
 
+            services.AddAutoMapper(typeof(AutoMapperConfigurationProfile));
             services.AddControllers();
             services.AddSwaggerGen(options => { options.SwaggerDoc("v1", new OpenApiInfo { Title = "UKSF API", Version = "v1" }); });
             services.AddMvc(options => { options.Filters.Add<ExceptionHandler>(); }).AddNewtonsoftJson();
@@ -125,7 +128,7 @@ namespace UKSF.Api {
             app.UseStaticFiles();
             app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMode.Lax });
             app.UseSwagger();
-            app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF API v1"); });
+            app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF API v1"); options.DocExpansion(DocExpansion.None); });
             app.UseRouting();
             app.UseCors("CorsPolicy");
             app.UseCorsMiddleware();

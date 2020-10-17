@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Interfaces.Integrations.Github;
@@ -18,13 +19,13 @@ namespace UKSF.Api.Controllers.Modpack {
         }
 
         [HttpGet("releases"), Authorize, Roles(RoleDefinitions.MEMBER)]
-        public IActionResult GetReleases() => Ok(modpackService.GetReleases());
+        public IEnumerable<ModpackRelease> GetReleases() => modpackService.GetReleases();
 
         [HttpGet("rcs"), Authorize, Roles(RoleDefinitions.MEMBER)]
-        public IActionResult GetReleaseCandidates() => Ok(modpackService.GetRcBuilds());
+        public IEnumerable<ModpackBuild> GetReleaseCandidates() => modpackService.GetRcBuilds();
 
         [HttpGet("builds"), Authorize, Roles(RoleDefinitions.MEMBER)]
-        public IActionResult GetBuilds() => Ok(modpackService.GetDevBuilds());
+        public IEnumerable<ModpackBuild> GetBuilds() => modpackService.GetDevBuilds();
 
         [HttpGet("builds/{id}"), Authorize, Roles(RoleDefinitions.MEMBER)]
         public IActionResult GetBuild(string id) {
@@ -33,7 +34,7 @@ namespace UKSF.Api.Controllers.Modpack {
         }
 
         [HttpGet("builds/{id}/step/{index}"), Authorize, Roles(RoleDefinitions.MEMBER)]
-        public IActionResult GetBuild(string id, int index) {
+        public IActionResult GetBuildStep(string id, int index) {
             ModpackBuild build = modpackService.GetBuild(id);
             if (build == null) {
                 return BadRequest("Build does not exist");

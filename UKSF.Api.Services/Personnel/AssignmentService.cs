@@ -122,7 +122,7 @@ namespace UKSF.Api.Services.Personnel {
             Account account = accountService.Data.GetSingle(id);
             await teamspeakService.UpdateAccountTeamspeakGroups(account);
             await discordService.UpdateAccount(account);
-            serverService.UpdateSquadXml();
+            // serverService.UpdateSquadXml();
             await accountHub.Clients.Group(id).ReceiveAccountUpdate();
         }
 

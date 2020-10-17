@@ -15,7 +15,6 @@ using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Integrations;
 using UKSF.Api.Models.Personnel;
-using UKSF.Api.Models.Utility;
 using UKSF.Api.Services.Common;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
@@ -75,7 +74,7 @@ namespace UKSF.Api.Controllers.Accounts {
         public async Task<IActionResult> Put([FromBody] JObject body) {
             string email = body["email"].ToString();
             if (accountService.Data.Get(x => string.Equals(x.email, email, StringComparison.InvariantCultureIgnoreCase)).Any()) {
-                return BadRequest(new {error = "an account with this email or username exists"});
+                return BadRequest(new { error = "an account with this email or username exists" });
             }
 
             Account account = new Account {
@@ -90,7 +89,7 @@ namespace UKSF.Api.Controllers.Accounts {
             await accountService.Data.Add(account);
             await SendConfirmationCode(account);
             LogWrapper.AuditLog($"New account created: '{account.firstname} {account.lastname}, {account.email}'", accountService.Data.GetSingle(x => x.email == account.email).id);
-            return Ok(new {account.email});
+            return Ok(new { account.email });
         }
 
         [HttpPost, Authorize]
@@ -107,7 +106,7 @@ namespace UKSF.Api.Controllers.Accounts {
 
             Account account = accountService.Data.GetSingle(x => x.email == email);
             if (account == null) {
-                return BadRequest(new {error = $"An account with the email '{email}' doesn't exist. This should be impossible so please contact an admin for help"});
+                return BadRequest(new { error = $"An account with the email '{email}' doesn't exist. This should be impossible so please contact an admin for help" });
             }
 
             string value = await confirmationCodeService.GetConfirmationCode(code);
@@ -119,7 +118,7 @@ namespace UKSF.Api.Controllers.Accounts {
 
             await confirmationCodeService.ClearConfirmationCodes(x => x.value == email);
             await SendConfirmationCode(account);
-            return BadRequest(new {error = $"The confirmation code was invalid or expired. A new code has been sent to '{account.email}'"});
+            return BadRequest(new { error = $"The confirmation code was invalid or expired. A new code has been sent to '{account.email}'" });
         }
 
         [HttpPost("resend-email-code"), Authorize]
@@ -127,7 +126,7 @@ namespace UKSF.Api.Controllers.Accounts {
             Account account = sessionService.GetContextAccount();
 
             if (account.membershipState != MembershipState.UNCONFIRMED) {
-                return BadRequest(new { error = "Account email has already been confirmed"});
+                return BadRequest(new { error = "Account email has already been confirmed" });
             }
 
             await confirmationCodeService.ClearConfirmationCodes(x => x.value == account.email);
@@ -145,37 +144,36 @@ namespace UKSF.Api.Controllers.Accounts {
                 memberAccounts.Reverse();
             }
 
-            accounts.AddRange(memberAccounts.Select(x => new {value = x.id, displayValue = displayNameService.GetDisplayName(x)}));
+            accounts.AddRange(memberAccounts.Select(x => new { value = x.id, displayValue = displayNameService.GetDisplayName(x) }));
 
             return Ok(accounts);
         }
 
         [HttpGet("roster"), Authorize]
-        public IActionResult GetRosterAccounts() {
-            List<object> accountObjects = new List<object>();
+        public IEnumerable<RosterAccount> GetRosterAccounts() {
             IEnumerable<Account> accounts = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER);
-            accounts = accounts.OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname);
-            accountObjects.AddRange(
-                accounts.Select(
-                    document => new {
-                        document.id,
-                        document.nation,
-                        document.rank,
-                        document.roleAssignment,
-                        document.unitAssignment,
-                        name = $"{document.lastname}, {document.firstname}"
-                    }
-                )
-            );
-            return Ok(accountObjects);
+            IEnumerable<RosterAccount> accountObjects = accounts.OrderBy(x => x.rank, new RankComparer(ranksService))
+                                                                .ThenBy(x => x.lastname)
+                                                                .ThenBy(x => x.firstname)
+                                                                .Select(x => new RosterAccount { id = x.id, nation = x.nation, rank = x.rank, roleAssignment = x.roleAssignment, unitAssignment = x.unitAssignment, name = $"{x.lastname}, {x.firstname}" });
+            return accountObjects;
         }
 
         [HttpGet("online")]
         public IActionResult GetOnlineAccounts() {
             IEnumerable<TeamspeakClient> teamnspeakClients = teamspeakService.GetOnlineTeamspeakClients();
             IEnumerable<Account> allAccounts = accountService.Data.Get();
-            var clients = teamnspeakClients.Where(x => x != null).Select(x => new {account = allAccounts.FirstOrDefault(y => y.teamspeakIdentities != null && y.teamspeakIdentities.Any(z => z.Equals(x.clientDbId))), client = x}).ToList();
-            var clientAccounts = clients.Where(x => x.account != null && x.account.membershipState == MembershipState.MEMBER).OrderBy(x => x.account.rank, new RankComparer(ranksService)).ThenBy(x => x.account.lastname).ThenBy(x => x.account.firstname);
+            var clients = teamnspeakClients.Where(x => x != null)
+                                           .Select(
+                                               x => new {
+                                                   account = allAccounts.FirstOrDefault(y => y.teamspeakIdentities != null && y.teamspeakIdentities.Any(z => z.Equals(x.clientDbId))), client = x
+                                               }
+                                           )
+                                           .ToList();
+            var clientAccounts = clients.Where(x => x.account != null && x.account.membershipState == MembershipState.MEMBER)
+                                        .OrderBy(x => x.account.rank, new RankComparer(ranksService))
+                                        .ThenBy(x => x.account.lastname)
+                                        .ThenBy(x => x.account.firstname);
             List<string> commandAccounts = unitsService.GetAuxilliaryRoot().members;
 
             List<object> commanders = new List<object>();
@@ -184,30 +182,33 @@ namespace UKSF.Api.Controllers.Accounts {
             List<object> guests = new List<object>();
             foreach (var onlineClient in clientAccounts) {
                 if (commandAccounts.Contains(onlineClient.account.id)) {
-                    commanders.Add(new {displayName = displayNameService.GetDisplayName(onlineClient.account)});
+                    commanders.Add(new { displayName = displayNameService.GetDisplayName(onlineClient.account) });
                 } else if (recruitmentService.IsRecruiter(onlineClient.account)) {
-                    recruiters.Add(new {displayName = displayNameService.GetDisplayName(onlineClient.account)});
+                    recruiters.Add(new { displayName = displayNameService.GetDisplayName(onlineClient.account) });
                 } else {
-                    members.Add(new {displayName = displayNameService.GetDisplayName(onlineClient.account)});
+                    members.Add(new { displayName = displayNameService.GetDisplayName(onlineClient.account) });
                 }
             }
 
             foreach (var client in clients.Where(x => x.account == null || x.account.membershipState != MembershipState.MEMBER)) {
-                guests.Add(new {displayName = client.client.clientName});
+                guests.Add(new { displayName = client.client.clientName });
             }
 
-            return Ok(new {commanders, recruiters, members, guests});
+            return Ok(new { commanders, recruiters, members, guests });
         }
 
         [HttpGet("exists")]
         public IActionResult CheckUsernameOrEmailExists([FromQuery] string check) {
-            return Ok(accountService.Data.Get().Any(x => string.Equals(x.email, check, StringComparison.InvariantCultureIgnoreCase)) ? new {exists = true} : new {exists = false});
+            return Ok(accountService.Data.Get().Any(x => string.Equals(x.email, check, StringComparison.InvariantCultureIgnoreCase)) ? new { exists = true } : new { exists = false });
         }
 
         [HttpPut("name"), Authorize]
         public async Task<IActionResult> ChangeName([FromBody] JObject changeNameRequest) {
             Account account = sessionService.GetContextAccount();
-            await accountService.Data.Update(account.id, Builders<Account>.Update.Set(x => x.firstname, changeNameRequest["firstname"].ToString()).Set(x => x.lastname, changeNameRequest["lastname"].ToString()));
+            await accountService.Data.Update(
+                account.id,
+                Builders<Account>.Update.Set(x => x.firstname, changeNameRequest["firstname"].ToString()).Set(x => x.lastname, changeNameRequest["lastname"].ToString())
+            );
             LogWrapper.AuditLog($"{account.lastname}, {account.firstname} changed their name to {changeNameRequest["lastname"]}, {changeNameRequest["firstname"]}");
             await discordService.UpdateAccount(accountService.Data.GetSingle(account.id));
             return Ok();
@@ -232,7 +233,7 @@ namespace UKSF.Api.Controllers.Accounts {
         [HttpGet("test")]
         public IActionResult Test() {
             LogWrapper.Log("This is a test");
-            return Ok(new {value = DateTime.Now.ToLongTimeString()});
+            return Ok(new { value = DateTime.Now.ToLongTimeString() });
         }
 
         private PublicAccount PubliciseAccount(Account account) {
@@ -253,7 +254,8 @@ namespace UKSF.Api.Controllers.Accounts {
 
         private async Task SendConfirmationCode(Account account) {
             string code = await confirmationCodeService.CreateConfirmationCode(account.email);
-            string htmlContent = $"<strong>Your email was given for an application to join UKSF<br>Copy this code to your clipboard and return to the UKSF website application page to enter the code:<br><h3>{code}<h3></strong><br><p>If this request was not made by you, please contact an admin</p>";
+            string htmlContent =
+                $"<strong>Your email was given for an application to join UKSF<br>Copy this code to your clipboard and return to the UKSF website application page to enter the code:<br><h3>{code}<h3></strong><br><p>If this request was not made by you, please contact an admin</p>";
             emailService.SendEmail(account.email, "UKSF Email Confirmation", htmlContent);
         }
     }

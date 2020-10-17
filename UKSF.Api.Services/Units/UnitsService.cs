@@ -25,7 +25,7 @@ namespace UKSF.Api.Services.Units {
             sortedUnits.Add(auxiliaryRoot);
             sortedUnits.AddRange(GetAllChildren(auxiliaryRoot));
 
-            return predicate != null ? sortedUnits.Where(predicate).ToList() : sortedUnits;
+            return predicate != null ? sortedUnits.Where(predicate) : sortedUnits;
         }
 
         public async Task AddMember(string id, string unitId) {
@@ -100,7 +100,7 @@ namespace UKSF.Api.Services.Units {
         public bool MemberHasAnyRole(string id) => Data.Get().Any(x => RolesHasMember(x, id));
 
         public int GetMemberRoleOrder(Account account, Unit unit) {
-            if (RolesHasMember(unit.id, account.id)) {
+            if (RolesHasMember(unit, account.id)) {
                 return int.MaxValue - rolesService.Data.GetSingle(x => x.name == unit.roles.FirstOrDefault(y => y.Value == account.id).Key).order;
             }
 
@@ -122,6 +122,7 @@ namespace UKSF.Api.Services.Units {
                 parentUnits.Add(unit);
                 Unit child = unit;
                 unit = !string.IsNullOrEmpty(unit.parent) ? Data.GetSingle(x => x.id == child.parent) : null;
+                if (unit == child) break;
             } while (unit != null);
 
             return parentUnits;

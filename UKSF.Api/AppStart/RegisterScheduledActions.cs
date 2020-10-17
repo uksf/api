@@ -6,9 +6,7 @@ using UKSF.Api.Interfaces.Utility.ScheduledActions;
 
 namespace UKSF.Api.AppStart {
     public static class RegisterScheduledActions {
-        public static void Register() {
-            IServiceProvider serviceProvider = Global.ServiceProvider;
-
+        public static void Register(IServiceProvider serviceProvider) {
             IDeleteExpiredConfirmationCodeAction deleteExpiredConfirmationCodeAction = serviceProvider.GetService<IDeleteExpiredConfirmationCodeAction>();
             IInstagramImagesAction instagramImagesAction = serviceProvider.GetService<IInstagramImagesAction>();
             IInstagramTokenAction instagramTokenAction = serviceProvider.GetService<IInstagramTokenAction>();
@@ -16,7 +14,7 @@ namespace UKSF.Api.AppStart {
             ITeamspeakSnapshotAction teamspeakSnapshotAction = serviceProvider.GetService<ITeamspeakSnapshotAction>();
 
             IScheduledActionService scheduledActionService = serviceProvider.GetService<IScheduledActionService>();
-            scheduledActionService.RegisterScheduledActions(new HashSet<IScheduledAction> { deleteExpiredConfirmationCodeAction, instagramImagesAction, instagramTokenAction, pruneDataAction, teamspeakSnapshotAction });
+            scheduledActionService?.RegisterScheduledActions(new HashSet<IScheduledAction> { deleteExpiredConfirmationCodeAction, instagramImagesAction, instagramTokenAction, pruneDataAction, teamspeakSnapshotAction });
         }
     }
 }
