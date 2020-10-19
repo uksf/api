@@ -8,18 +8,23 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using MimeMapping;
 using MongoDB.Driver;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Launcher;
 using UKSF.Api.Models.Launcher;
 using UKSF.Api.Services.Admin;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Launcher {
     public class LauncherFileService : DataBackedService<ILauncherFileDataService>, ILauncherFileService {
-        public LauncherFileService(ILauncherFileDataService data) : base(data) { }
+        private readonly IVariablesService variablesService;
+        public LauncherFileService(ILauncherFileDataService data, IVariablesService variablesService) : base(data) {
+            this.variablesService = variablesService;
+        }
 
         public async Task UpdateAllVersions() {
             List<LauncherFile> storedVersions = Data.Get().ToList();
-            string launcherDirectory = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("LAUNCHER_LOCATION").AsString(), "Launcher");
+            string launcherDirectory = Path.Combine(variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), "Launcher");
             List<string> fileNames = new List<string>();
             foreach (string filePath in Directory.EnumerateFiles(launcherDirectory)) {
                 string fileName = Path.GetFileName(filePath);
@@ -42,14 +47,14 @@ namespace UKSF.Api.Services.Launcher {
         }
 
         public FileStreamResult GetLauncherFile(params string[] file) {
-            string[] paths = file.Prepend(VariablesWrapper.VariablesDataService().GetSingle("LAUNCHER_LOCATION").AsString()).ToArray();
+            string[] paths = file.Prepend(variablesService.GetVariable("LAUNCHER_LOCATION").AsString()).ToArray();
             string path = Path.Combine(paths);
             FileStreamResult fileStreamResult = new FileStreamResult(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read), MimeUtility.GetMimeMapping(path));
             return fileStreamResult;
         }
 
         public async Task<Stream> GetUpdatedFiles(IEnumerable<LauncherFile> files) {
-            string launcherDirectory = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("LAUNCHER_LOCATION").AsString(), "Launcher");
+            string launcherDirectory = Path.Combine(variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), "Launcher");
             List<LauncherFile> storedVersions = Data.Get().ToList();
             List<string> updatedFiles = new List<string>();
             List<string> deletedFiles = new List<string>();
@@ -66,7 +71,7 @@ namespace UKSF.Api.Services.Launcher {
             }
 
             string updateFolderName = Guid.NewGuid().ToString("N");
-            string updateFolder = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("LAUNCHER_LOCATION").AsString(), updateFolderName);
+            string updateFolder = Path.Combine(variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), updateFolderName);
             Directory.CreateDirectory(updateFolder);
 
             string deletedFilesPath = Path.Combine(updateFolder, "deleted");
@@ -76,7 +81,7 @@ namespace UKSF.Api.Services.Launcher {
                 File.Copy(Path.Combine(launcherDirectory, file), Path.Combine(updateFolder, file), true);
             }
 
-            string updateZipPath = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("LAUNCHER_LOCATION").AsString(), $"{updateFolderName}.zip");
+            string updateZipPath = Path.Combine(variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), $"{updateFolderName}.zip");
             ZipFile.CreateFromDirectory(updateFolder, updateZipPath);
             MemoryStream stream = new MemoryStream();
             await using (FileStream fileStream = new FileStream(updateZipPath, FileMode.Open, FileAccess.Read, FileShare.None)) {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Command;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Interfaces.Launcher;
@@ -9,6 +10,7 @@ using UKSF.Api.Interfaces.Operations;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
+using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Command;
 using UKSF.Api.Services.Fake;
 using UKSF.Api.Services.Game;
@@ -43,6 +45,7 @@ namespace UKSF.Api.AppStart.Services {
             services.AddTransient<IReleaseService, ReleaseService>();
             services.AddTransient<IRolesService, RolesService>();
             services.AddTransient<IUnitsService, UnitsService>();
+            services.AddTransient<IVariablesService, VariablesService>();
 
             if (currentEnvironment.IsDevelopment()) {
                 services.AddTransient<INotificationsService, FakeNotificationsService>();

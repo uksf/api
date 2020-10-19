@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Models.Mission;
 using UKSF.Api.Services.Admin;
@@ -17,12 +18,16 @@ namespace UKSF.Api.Services.Game.Missions {
         private const string MAKE_PBO = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\MakePbo.exe";
 
         private readonly MissionService missionService;
+        private readonly IVariablesService variablesService;
 
         private string filePath;
         private string folderPath;
         private string parentFolderPath;
 
-        public MissionPatchingService(MissionService missionService) => this.missionService = missionService;
+        public MissionPatchingService(MissionService missionService, IVariablesService variablesService) {
+            this.missionService = missionService;
+            this.variablesService = variablesService;
+        }
 
         public Task<MissionPatchingResult> PatchMission(string path) {
             return Task.Run(
@@ -53,7 +58,7 @@ namespace UKSF.Api.Services.Game.Missions {
         }
 
         private void CreateBackup() {
-            string backupPath = Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("MISSIONS_BACKUPS").AsString(), Path.GetFileName(filePath) ?? throw new FileNotFoundException());
+            string backupPath = Path.Combine(variablesService.GetVariable("MISSIONS_BACKUPS").AsString(), Path.GetFileName(filePath) ?? throw new FileNotFoundException());
 
             Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? throw new DirectoryNotFoundException());
             File.Copy(filePath, backupPath, true);
@@ -89,7 +94,7 @@ namespace UKSF.Api.Services.Game.Missions {
             Process process = new Process {
                 StartInfo = {
                     FileName = MAKE_PBO,
-                    WorkingDirectory = VariablesWrapper.VariablesDataService().GetSingle("MISSIONS_WORKING_DIR").AsString(),
+                    WorkingDirectory = variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
                     Arguments = $"-Z -BD -P -X=\"thumbs.db,*.txt,*.h,*.dep,*.cpp,*.bak,*.png,*.log,*.pew\" \"{folderPath}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true,

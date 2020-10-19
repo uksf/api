@@ -7,7 +7,7 @@ using Newtonsoft.Json.Linq;
 
 namespace UKSF.Common {
     public static class ChangeUtilities {
-        public static string Changes<T>(this T original, T updated) => DeepEquals(original, updated) ? "" : FormatChanges(GetChanges(original, updated));
+        public static string Changes<T>(this T original, T updated) => DeepEquals(original, updated) ? "No changes" : FormatChanges(GetChanges(original, updated));
 
         private static List<Change> GetChanges<T>(this T original, T updated) {
             List<Change> changes = new List<Change>();
@@ -57,7 +57,9 @@ namespace UKSF.Common {
             return JToken.DeepEquals(originalObject, updatedObject);
         }
 
-        private static string FormatChanges(IEnumerable<Change> changes, string indentation = "") {
+        private static string FormatChanges(IReadOnlyCollection<Change> changes, string indentation = "") {
+            if (!changes.Any()) return "No changes";
+
             return changes.OrderBy(x => x.Type)
                           .ThenBy(x => x.Name)
                           .Aggregate(

@@ -9,12 +9,12 @@ using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Interfaces.Hubs;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Mission;
 using UKSF.Api.Services.Admin;
-using UKSF.Api.Services.Game;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
 using UKSF.Api.Signalr.Hubs.Game;
@@ -25,10 +25,14 @@ namespace UKSF.Api.Controllers {
     public class GameServersController : Controller {
         private readonly IGameServersService gameServersService;
         private readonly IHubContext<ServersHub, IServersClient> serversHub;
+        private readonly IVariablesService variablesService;
+        private readonly IGameServerHelpers gameServerHelpers;
 
-        public GameServersController(IGameServersService gameServersService, IHubContext<ServersHub, IServersClient> serversHub) {
+        public GameServersController(IGameServersService gameServersService, IHubContext<ServersHub, IServersClient> serversHub, IVariablesService variablesService, IGameServerHelpers gameServerHelpers) {
             this.gameServersService = gameServersService;
             this.serversHub = serversHub;
+            this.variablesService = variablesService;
+            this.gameServerHelpers = gameServerHelpers;
         }
 
         [HttpGet, Authorize]
@@ -133,7 +137,7 @@ namespace UKSF.Api.Controllers {
             Task.WaitAll(gameServersService.Data.Get().Select(x => gameServersService.GetGameServerStatus(x)).ToArray());
             GameServer gameServer = gameServersService.Data.GetSingle(id);
             if (gameServer.status.running) return BadRequest("Server is already running. This shouldn't happen so please contact an admin");
-            if (GameServerHelpers.IsMainOpTime()) {
+            if (gameServerHelpers.IsMainOpTime()) {
                 if (gameServer.serverOption == GameServerOption.SINGLETON) {
                     if (gameServersService.Data.Get(x => x.serverOption != GameServerOption.SINGLETON).Any(x => x.status.started || x.status.running)) {
                         return BadRequest("Server must be launched on its own. Stop the other running servers first");
@@ -230,12 +234,12 @@ namespace UKSF.Api.Controllers {
         }
 
         [HttpGet("disabled"), Authorize]
-        public IActionResult GetDisabledState() => Ok(new { state = VariablesWrapper.VariablesDataService().GetSingle("SERVER_CONTROL_DISABLED").AsBool() });
+        public IActionResult GetDisabledState() => Ok(new { state = variablesService.GetVariable("SERVER_CONTROL_DISABLED").AsBool() });
 
         [HttpPost("disabled"), Authorize]
         public async Task<IActionResult> SetDisabledState([FromBody] JObject body) {
             bool state = bool.Parse(body["state"].ToString());
-            await VariablesWrapper.VariablesDataService().Update("SERVER_CONTROL_DISABLED", state);
+            await variablesService.Data.Update("SERVER_CONTROL_DISABLED", state);
             await serversHub.Clients.All.ReceiveDisabledState(state);
             return Ok();
         }

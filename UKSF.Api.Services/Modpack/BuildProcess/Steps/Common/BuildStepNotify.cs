@@ -7,6 +7,7 @@ using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Modpack;
 using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Common;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
     [BuildStep(NAME)]
@@ -26,11 +27,11 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
             switch (Build.environment) {
                 case GameEnvironment.RELEASE: {
                     ModpackRelease release = releaseService.GetRelease(Build.version);
-                    await discordService.SendMessageToEveryone(VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage(release));
+                    await discordService.SendMessageToEveryone(VariablesService.GetVariable("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage(release));
                     break;
                 }
                 case GameEnvironment.RC:
-                    await discordService.SendMessage(VariablesWrapper.VariablesDataService().GetSingle("DID_C_MODPACK_DEV").AsUlong(), GetDiscordMessage());
+                    await discordService.SendMessage(VariablesService.GetVariable("DID_C_MODPACK_DEV").AsUlong(), GetDiscordMessage());
                     break;
                 case GameEnvironment.DEV: break;
                 default: throw new ArgumentOutOfRangeException();

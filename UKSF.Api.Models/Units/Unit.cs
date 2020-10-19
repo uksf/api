@@ -27,7 +27,6 @@ namespace UKSF.Api.Models.Units {
 
     public class ResponseUnit : Unit {
         public string code;
-        public string parentId;
         public string parentName;
         public IEnumerable<ResponseUnitMember> unitMembers;
     }

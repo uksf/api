@@ -5,19 +5,22 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Models.Integrations;
-using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
 using UKSF.Common;
 
 namespace UKSF.Api.Services.Integrations {
     public class InstagramService : IInstagramService {
+        private readonly IVariablesService variablesService;
         private List<InstagramImage> images = new List<InstagramImage>();
+
+        public InstagramService(IVariablesService variablesService) => this.variablesService = variablesService;
 
         public async Task RefreshAccessToken() {
             try {
-                string accessToken = VariablesWrapper.VariablesDataService().GetSingle("INSTAGRAM_ACCESS_TOKEN").AsString();
+                string accessToken = variablesService.GetVariable("INSTAGRAM_ACCESS_TOKEN").AsString();
 
                 using HttpClient client = new HttpClient();
                 HttpResponseMessage response = await client.GetAsync($"https://graph.instagram.com/refresh_access_token?access_token={accessToken}&grant_type=ig_refresh_token");
@@ -35,7 +38,7 @@ namespace UKSF.Api.Services.Integrations {
                     return;
                 }
 
-                await VariablesWrapper.VariablesDataService().Update("INSTAGRAM_ACCESS_TOKEN", newAccessToken);
+                await variablesService.Data.Update("INSTAGRAM_ACCESS_TOKEN", newAccessToken);
                 LogWrapper.Log("Updated Instagram access token");
             } catch (Exception exception) {
                 LogWrapper.Log(exception);
@@ -44,8 +47,8 @@ namespace UKSF.Api.Services.Integrations {
 
         public async Task CacheInstagramImages() {
             try {
-                string userId = VariablesWrapper.VariablesDataService().GetSingle("INSTAGRAM_USER_ID").AsString();
-                string accessToken = VariablesWrapper.VariablesDataService().GetSingle("INSTAGRAM_ACCESS_TOKEN").AsString();
+                string userId = variablesService.GetVariable("INSTAGRAM_USER_ID").AsString();
+                string accessToken = variablesService.GetVariable("INSTAGRAM_ACCESS_TOKEN").AsString();
 
                 using HttpClient client = new HttpClient();
                 HttpResponseMessage response = await client.GetAsync($"https://graph.instagram.com/{userId}/media?access_token={accessToken}&fields=id,timestamp,media_type,media_url,permalink");

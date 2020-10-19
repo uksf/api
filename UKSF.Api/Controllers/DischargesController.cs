@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Command;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Message;
@@ -15,6 +16,7 @@ using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
+using UKSF.Common;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Roles(RoleDefinitions.PERSONNEL, RoleDefinitions.NCO, RoleDefinitions.RECRUITER)]
@@ -27,6 +29,7 @@ namespace UKSF.Api.Controllers {
         private readonly ISessionService sessionService;
         private readonly IUnitsService unitsService;
         private readonly IVariablesDataService variablesDataService;
+        private readonly IVariablesService variablesService;
 
         public DischargesController(
             IAccountService accountService,
@@ -36,7 +39,8 @@ namespace UKSF.Api.Controllers {
             INotificationsService notificationsService,
             ISessionService sessionService,
             IUnitsService unitsService,
-            IVariablesDataService variablesDataService
+            IVariablesDataService variablesDataService,
+            IVariablesService variablesService
         ) {
             this.accountService = accountService;
             this.assignmentService = assignmentService;
@@ -46,6 +50,7 @@ namespace UKSF.Api.Controllers {
             this.sessionService = sessionService;
             this.unitsService = unitsService;
             this.variablesDataService = variablesDataService;
+            this.variablesService = variablesService;
         }
 
         [HttpGet]

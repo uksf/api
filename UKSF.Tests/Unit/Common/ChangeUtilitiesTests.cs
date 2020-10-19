@@ -138,7 +138,7 @@ namespace UKSF.Tests.Unit.Common {
         public void Should_do_nothing_when_null() {
             string subject = ((Rank) null).Changes(null);
 
-            subject.Should().Be("");
+            subject.Should().Be("No changes");
         }
 
         [Fact]
@@ -149,7 +149,7 @@ namespace UKSF.Tests.Unit.Common {
 
             string subject = original.Changes(updated);
 
-            subject.Should().Be("");
+            subject.Should().Be("No changes");
         }
 
         [Fact]
@@ -160,7 +160,7 @@ namespace UKSF.Tests.Unit.Common {
 
             string subject = original.Changes(updated);
 
-            subject.Should().Be("");
+            subject.Should().Be("No changes");
         }
     }
 }

@@ -6,6 +6,7 @@ using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Events;
@@ -17,18 +18,23 @@ using UKSF.Api.Models.Units;
 using UKSF.Api.Models.Utility;
 using UKSF.Api.Services.Common;
 using UKSF.Api.Services.Message;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Admin {
     public class MigrationUtility {
         private const string KEY = "MIGRATED";
         private readonly IHostEnvironment currentEnvironment;
+        private readonly IVariablesService variablesService;
 
-        public MigrationUtility(IHostEnvironment currentEnvironment) => this.currentEnvironment = currentEnvironment;
+        public MigrationUtility(IHostEnvironment currentEnvironment, IVariablesService variablesService) {
+            this.currentEnvironment = currentEnvironment;
+            this.variablesService = variablesService;
+        }
 
         public void Migrate() {
             bool migrated = true;
             if (!currentEnvironment.IsDevelopment()) {
-                string migratedString = VariablesWrapper.VariablesDataService().GetSingle(KEY).AsString();
+                string migratedString = variablesService.GetVariable(KEY).AsString();
                 migrated = bool.Parse(migratedString);
             }
 
@@ -40,7 +46,7 @@ namespace UKSF.Api.Services.Admin {
                 } catch (Exception e) {
                     LogWrapper.Log(e);
                 } finally {
-                    VariablesWrapper.VariablesDataService().Update(KEY, "true");
+                    variablesService.Data.Update(KEY, "true");
                 }
             }
         }

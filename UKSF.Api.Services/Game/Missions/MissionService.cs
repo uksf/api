@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Mission;
 using UKSF.Common;
@@ -12,11 +13,15 @@ namespace UKSF.Api.Services.Game.Missions {
         private const string UNBIN = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\DeRapDos.exe";
 
         private readonly MissionPatchDataService missionPatchDataService;
+        private readonly IGameServerHelpers gameServerHelpers;
 
         private Mission mission;
         private List<MissionPatchingReport> reports;
 
-        public MissionService(MissionPatchDataService missionPatchDataService) => this.missionPatchDataService = missionPatchDataService;
+        public MissionService(MissionPatchDataService missionPatchDataService, IGameServerHelpers gameServerHelpers) {
+            this.missionPatchDataService = missionPatchDataService;
+            this.gameServerHelpers = gameServerHelpers;
+        }
 
         public List<MissionPatchingReport> ProcessMission(Mission tempMission) {
             mission = tempMission;
@@ -136,7 +141,7 @@ namespace UKSF.Api.Services.Game.Missions {
             mission.maxCurators = 5;
             string curatorsMaxLine = File.ReadAllLines(Path.Combine(mission.path, "cba_settings.sqf")).FirstOrDefault(x => x.Contains("uksf_curator_curatorsMax"));
             if (string.IsNullOrEmpty(curatorsMaxLine)) {
-                mission.maxCurators = GameServerHelpers.GetMaxCuratorCountFromSettings();
+                mission.maxCurators = gameServerHelpers.GetMaxCuratorCountFromSettings();
                 reports.Add(
                     new MissionPatchingReport(
                         "Using server setting 'uksf_curator_curatorsMax'",
@@ -166,7 +171,7 @@ namespace UKSF.Api.Services.Game.Missions {
 
             if (!CheckIgnoreKey("missionImageIgnore")) {
                 string imagePath = Path.Combine(mission.path, "uksf.paa");
-                string modpackImagePath = Path.Combine(GameServerHelpers.GetGameServerModsPaths(GameEnvironment.RELEASE), "@uksf", "UKSFTemplate.VR", "uksf.paa");
+                string modpackImagePath = Path.Combine(gameServerHelpers.GetGameServerModsPaths(GameEnvironment.RELEASE), "@uksf", "UKSFTemplate.VR", "uksf.paa");
                 if (File.Exists(modpackImagePath)) {
                     if (File.Exists(imagePath) && new FileInfo(imagePath).Length != new FileInfo(modpackImagePath).Length) {
                         reports.Add(

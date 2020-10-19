@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
@@ -12,6 +13,7 @@ using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
 using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Integrations {
     public class DiscordService : IDiscordService, IDisposable {
@@ -21,6 +23,7 @@ namespace UKSF.Api.Services.Integrations {
         private readonly IAccountService accountService;
         private readonly IConfiguration configuration;
         private readonly IDisplayNameService displayNameService;
+        private readonly IVariablesService variablesService;
         private readonly IRanksService ranksService;
         private readonly ulong specialUser;
         private readonly IUnitsService unitsService;
@@ -29,13 +32,14 @@ namespace UKSF.Api.Services.Integrations {
         private SocketGuild guild;
         private IReadOnlyCollection<SocketRole> roles;
 
-        public DiscordService(IConfiguration configuration, IRanksService ranksService, IUnitsService unitsService, IAccountService accountService, IDisplayNameService displayNameService) {
+        public DiscordService(IConfiguration configuration, IRanksService ranksService, IUnitsService unitsService, IAccountService accountService, IDisplayNameService displayNameService, IVariablesService variablesService) {
             this.configuration = configuration;
             this.ranksService = ranksService;
             this.unitsService = unitsService;
             this.accountService = accountService;
             this.displayNameService = displayNameService;
-            specialUser = VariablesWrapper.VariablesDataService().GetSingle("DID_U_OWNER").AsUlong();
+            this.variablesService = variablesService;
+            specialUser = variablesService.GetVariable("DID_U_OWNER").AsUlong();
         }
 
         public async Task ConnectDiscord() {
@@ -92,7 +96,7 @@ namespace UKSF.Api.Services.Integrations {
             }
 
             if (discordId == 0) return;
-            if (VariablesWrapper.VariablesDataService().GetSingle("DID_U_BLACKLIST").AsArray().Contains(discordId.ToString())) return;
+            if (variablesService.GetVariable("DID_U_BLACKLIST").AsArray().Contains(discordId.ToString())) return;
 
             SocketGuildUser user = guild.GetUser(discordId);
             if (user == null) return;
@@ -129,7 +133,7 @@ namespace UKSF.Api.Services.Integrations {
                 UpdateAccountUnits(account, allowedRoles);
             }
 
-            string[] rolesBlacklist = VariablesWrapper.VariablesDataService().GetSingle("DID_R_BLACKLIST").AsArray();
+            string[] rolesBlacklist = variablesService.GetVariable("DID_R_BLACKLIST").AsArray();
             foreach (SocketRole role in userRoles) {
                 if (!allowedRoles.Contains(role.Id.ToString()) && !rolesBlacklist.Contains(role.Id.ToString())) {
                     await user.RemoveRoleAsync(role);
@@ -203,7 +207,7 @@ namespace UKSF.Api.Services.Integrations {
         }
 
         private Task OnClientOnReady() {
-            guild = client.GetGuild(VariablesWrapper.VariablesDataService().GetSingle("DID_SERVER").AsUlong());
+            guild = client.GetGuild(variablesService.GetVariable("DID_SERVER").AsUlong());
             roles = guild.Roles;
             connected = true;
             return null;

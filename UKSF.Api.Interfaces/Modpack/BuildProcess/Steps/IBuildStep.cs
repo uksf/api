@@ -2,11 +2,20 @@
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Models.Modpack;
 
 namespace UKSF.Api.Interfaces.Modpack.BuildProcess.Steps {
     public interface IBuildStep {
-        void Init(ModpackBuild modpackBuild, ModpackBuildStep modpackBuildStep, Func<UpdateDefinition<ModpackBuild>, Task> buildUpdateCallback, Func<Task> stepUpdateCallback, CancellationTokenSource cancellationTokenSource);
+        void Init(
+            ModpackBuild modpackBuild,
+            ModpackBuildStep modpackBuildStep,
+            Func<UpdateDefinition<ModpackBuild>, Task> buildUpdateCallback,
+            Func<Task> stepUpdateCallback,
+            CancellationTokenSource cancellationTokenSource,
+            IVariablesService variablesService
+        );
+
         Task Start();
         bool CheckGuards();
         Task Setup();

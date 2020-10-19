@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Interfaces.Modpack.BuildProcess.Steps;
@@ -14,10 +15,12 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
     public class BuildProcessorService : IBuildProcessorService {
         private readonly IBuildsService buildsService;
         private readonly IBuildStepService buildStepService;
+        private readonly IVariablesService variablesService;
 
-        public BuildProcessorService(IBuildStepService buildStepService, IBuildsService buildsService) {
+        public BuildProcessorService(IBuildStepService buildStepService, IBuildsService buildsService, IVariablesService variablesService) {
             this.buildStepService = buildStepService;
             this.buildsService = buildsService;
+            this.variablesService = variablesService;
         }
 
         public async Task ProcessBuild(ModpackBuild build, CancellationTokenSource cancellationTokenSource) {
@@ -30,7 +33,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                     buildStep,
                     async updateDefinition => await buildsService.UpdateBuild(build, updateDefinition),
                     async () => await buildsService.UpdateBuildStep(build, buildStep),
-                    cancellationTokenSource
+                    cancellationTokenSource,
+                    variablesService
                 );
 
                 if (cancellationTokenSource.IsCancellationRequested) {
@@ -74,7 +78,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
 
             ModpackBuildStep restoreStep = buildStepService.GetRestoreStepForRelease();
             if (restoreStep == null) {
-                LogWrapper.Log($"Won't restore. Restore step not found");
+                LogWrapper.Log("Won't restore. Restore step not found");
                 return;
             }
 
@@ -85,7 +89,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                 restoreStep,
                 async updateDefinition => await buildsService.UpdateBuild(build, updateDefinition),
                 async () => await buildsService.UpdateBuildStep(build, restoreStep),
-                new CancellationTokenSource()
+                new CancellationTokenSource(),
+                variablesService
             );
             build.steps.Add(restoreStep);
             await buildsService.UpdateBuildStep(build, restoreStep);

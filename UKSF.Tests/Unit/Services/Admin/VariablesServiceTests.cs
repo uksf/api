@@ -59,6 +59,19 @@ namespace UKSF.Tests.Unit.Services.Admin {
             subject.Should().Contain(new[] {"item1", "item2", "item3"});
         }
 
+        // ReSharper disable PossibleMultipleEnumeration
+        [Fact]
+        public void ShouldGetVariableAsEnumerable() {
+            VariableItem variableItem = new VariableItem {key = "Test", item = "item1,item2, item3"};
+
+            IEnumerable<string> subject = variableItem.AsEnumerable();
+
+            subject.Should().BeAssignableTo<IEnumerable<string>>();
+            subject.Should().HaveCount(3);
+            subject.Should().Contain(new[] {"item1", "item2", "item3"});
+        }
+        // ReSharper restore PossibleMultipleEnumeration
+
         [Fact]
         public void ShouldGetVariableAsArrayWithPredicate() {
             VariableItem variableItem = new VariableItem {key = "Test", item = "\"item1\",item2"};

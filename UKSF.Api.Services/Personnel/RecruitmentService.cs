@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
 using UKSF.Api.Interfaces.Personnel;
@@ -24,6 +25,7 @@ namespace UKSF.Api.Services.Personnel {
         private readonly ISessionService sessionService;
         private readonly ITeamspeakService teamspeakService;
         private readonly IUnitsService unitsService;
+        private readonly IVariablesService variablesService;
 
         public RecruitmentService(
             ITeamspeakMetricsService metricsService,
@@ -33,7 +35,8 @@ namespace UKSF.Api.Services.Personnel {
             IDiscordService discordService,
             IRanksService ranksService,
             ITeamspeakService teamspeakService,
-            IUnitsService unitsService
+            IUnitsService unitsService,
+            IVariablesService variablesService
         ) {
             this.accountService = accountService;
             this.sessionService = sessionService;
@@ -42,6 +45,7 @@ namespace UKSF.Api.Services.Personnel {
             this.ranksService = ranksService;
             this.teamspeakService = teamspeakService;
             this.unitsService = unitsService;
+            this.variablesService = variablesService;
             this.discordService = discordService;
         }
 
@@ -151,7 +155,7 @@ namespace UKSF.Api.Services.Personnel {
         }
 
         private Unit GetRecruiterUnit() {
-            string id = VariablesWrapper.VariablesDataService().GetSingle("UNIT_ID_RECRUITMENT").AsString();
+            string id = variablesService.GetVariable("UNIT_ID_RECRUITMENT").AsString();
             return unitsService.Data.GetSingle(id);
         }
 

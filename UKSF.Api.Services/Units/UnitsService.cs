@@ -115,6 +115,7 @@ namespace UKSF.Api.Services.Units {
             return unit.parent != string.Empty ? Data.GetSingle(x => x.id == unit.parent) : null;
         }
 
+        // TODO: Change this to not add the child unit to the return
         public IEnumerable<Unit> GetParents(Unit unit) {
             if (unit == null) return new List<Unit>();
             List<Unit> parentUnits = new List<Unit>();

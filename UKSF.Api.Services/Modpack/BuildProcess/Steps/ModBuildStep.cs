@@ -1,12 +1,12 @@
 ﻿using System.Threading.Tasks;
-using UKSF.Api.Services.Admin;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class ModBuildStep : FileBuildStep {
         protected string PythonPath;
 
         protected override Task SetupExecute() {
-            PythonPath = VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_PYTHON").AsString();
+            PythonPath = VariablesService.GetVariable("BUILD_PATH_PYTHON").AsString();
             Logger.Log("Retrieved python path");
             return Task.CompletedTask;
         }

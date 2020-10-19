@@ -32,17 +32,17 @@ namespace UKSF.Api.Services.Command {
                 chain.CleanHashset();
             }
 
+            // If no chain, get root unit commander
+            if (chain.Count == 0) {
+                chain.Add(GetCommander(unitsService.GetRoot()));
+                chain.CleanHashset();
+            }
+
             // If no chain, get root unit child commanders
             if (chain.Count == 0) {
                 foreach (Unit unit in unitsService.Data.Get(x => x.parent == unitsService.GetRoot().id).Where(unit => UnitHasCommander(unit) && GetCommander(unit) != recipient)) {
                     chain.Add(GetCommander(unit));
                 }
-                chain.CleanHashset();
-            }
-
-            // If no chain, get root unit commander
-            if (chain.Count == 0) {
-                chain.Add(GetCommander(unitsService.GetRoot()));
                 chain.CleanHashset();
             }
 
