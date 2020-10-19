@@ -9,5 +9,6 @@ namespace UKSF.Api.Interfaces.Personnel {
         Task<Notification> UpdateUnitRankAndRole(string id, string unitString = "", string role = "", string rankString = "", string notes = "", string message = "", string reason = "");
         Task<string> UnassignUnitRole(string id, string unitId);
         Task UnassignUnit(string id, string unitId);
+        Task UpdateGroupsAndRoles(string id);
     }
 }

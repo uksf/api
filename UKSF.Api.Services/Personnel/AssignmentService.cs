@@ -118,7 +118,7 @@ namespace UKSF.Api.Services.Personnel {
             await UpdateGroupsAndRoles(unitId);
         }
 
-        private async Task UpdateGroupsAndRoles(string id) {
+        public async Task UpdateGroupsAndRoles(string id) {
             Account account = accountService.Data.GetSingle(id);
             await teamspeakService.UpdateAccountTeamspeakGroups(account);
             await discordService.UpdateAccount(account);
