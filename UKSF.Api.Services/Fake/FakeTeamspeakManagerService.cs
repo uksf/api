@@ -8,6 +8,8 @@ namespace UKSF.Api.Services.Fake {
 
         public void Stop() { }
 
+        public Task SendGroupProcedure(TeamspeakProcedureType procedure, TeamspeakGroupProcedure groupProcedure) => Task.CompletedTask;
+
         public Task SendProcedure(TeamspeakProcedureType procedure, object args) => Task.CompletedTask;
     }
 }

@@ -8,9 +8,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
+using UKSF.Common;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]")]
@@ -20,11 +22,13 @@ namespace UKSF.Api.Controllers {
         private readonly string clientSecret;
 
         private readonly IConfirmationCodeService confirmationCodeService;
+        private readonly IVariablesService variablesService;
         private readonly string url;
         private readonly string urlReturn;
 
-        public DiscordConnectionController(IConfirmationCodeService confirmationCodeService, IConfiguration configuration, IHostEnvironment currentEnvironment) {
+        public DiscordConnectionController(IConfirmationCodeService confirmationCodeService, IConfiguration configuration, IHostEnvironment currentEnvironment, IVariablesService variablesService) {
             this.confirmationCodeService = confirmationCodeService;
+            this.variablesService = variablesService;
             clientId = configuration.GetSection("Discord")["clientId"];
             clientSecret = configuration.GetSection("Discord")["clientSecret"];
             botToken = configuration.GetSection("Discord")["botToken"];
@@ -91,7 +95,7 @@ namespace UKSF.Api.Controllers {
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", botToken);
             response = await client.PutAsync(
-                $"https://discord.com/api/guilds/{VariablesWrapper.VariablesDataService().GetSingle("DID_SERVER").AsUlong()}/members/{id}",
+                $"https://discord.com/api/guilds/{variablesService.GetVariable("DID_SERVER").AsUlong()}/members/{id}",
                 new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json")
             );
             string added = "true";

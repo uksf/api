@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using UKSF.Api.Interfaces.Admin;
+using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Models.Game;
-using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
 using UKSF.Common;
 
 namespace UKSF.Api.Services.Game {
-    public static class GameServerHelpers {
+    public class GameServerHelpers : IGameServerHelpers {
         private static readonly string[] BASE_CONFIG = {
             "hostname = \"{0}\";",
             "password = \"{1}\";",
@@ -53,77 +54,68 @@ namespace UKSF.Api.Services.Game {
             "}};"
         };
 
-        public static string GetGameServerExecutablePath(this GameServer gameServer) {
+        private readonly IVariablesService variablesService;
+
+        public GameServerHelpers(IVariablesService variablesService) => this.variablesService = variablesService;
+
+        public string GetGameServerExecutablePath(GameServer gameServer) {
             string variableKey = gameServer.environment switch {
                 GameEnvironment.RELEASE => "SERVER_PATH_RELEASE",
-                GameEnvironment.RC => "SERVER_PATH_RC",
-                GameEnvironment.DEV => "SERVER_PATH_DEV",
-                _ => throw new ArgumentException("Server environment is invalid")
+                GameEnvironment.RC      => "SERVER_PATH_RC",
+                GameEnvironment.DEV     => "SERVER_PATH_DEV",
+                _                       => throw new ArgumentException("Server environment is invalid")
             };
-            return Path.Join(VariablesWrapper.VariablesDataService().GetSingle(variableKey).AsString(), "arma3server_x64.exe");
+            return Path.Join(variablesService.GetVariable(variableKey).AsString(), "arma3server_x64.exe");
         }
 
-        public static string GetGameServerSettingsPath() => Path.Join(VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_RELEASE").AsString(), "userconfig", "cba_settings.sqf");
+        public string GetGameServerSettingsPath() => Path.Join(variablesService.GetVariable("SERVER_PATH_RELEASE").AsString(), "userconfig", "cba_settings.sqf");
 
-        public static string GetGameServerMissionsPath() => VariablesWrapper.VariablesDataService().GetSingle("MISSIONS_PATH").AsString();
+        public string GetGameServerMissionsPath() => variablesService.GetVariable("MISSIONS_PATH").AsString();
 
-        public static string GetGameServerConfigPath(this GameServer gameServer) =>
-            Path.Combine(VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_CONFIGS").AsString(), $"{gameServer.profileName}.cfg");
+        public string GetGameServerConfigPath(GameServer gameServer) => Path.Combine(variablesService.GetVariable("SERVER_PATH_CONFIGS").AsString(), $"{gameServer.profileName}.cfg");
 
-        private static string GetGameServerProfilesPath() => VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_PROFILES").AsString();
-
-        private static string GetGameServerPerfConfigPath() => VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_PERF").AsString();
-
-        private static string GetHeadlessClientName(int index) => VariablesWrapper.VariablesDataService().GetSingle("SERVER_HEADLESS_NAMES").AsArray()[index];
-
-        private static string FormatGameServerMods(this GameServer gameServer) =>
-            gameServer.mods.Count > 0 ? $"{string.Join(";", gameServer.mods.Select(x => x.pathRelativeToServerExecutable ?? x.path))};" : string.Empty;
-
-        private static string FormatGameServerServerMods(this GameServer gameServer) =>
-            gameServer.serverMods.Count > 0 ? $"{string.Join(";", gameServer.serverMods.Select(x => x.name))};" : string.Empty;
-
-        public static string GetGameServerModsPaths(GameEnvironment environment) {
+        public string GetGameServerModsPaths(GameEnvironment environment) {
             string variableKey = environment switch {
                 GameEnvironment.RELEASE => "MODPACK_PATH_RELEASE",
-                GameEnvironment.RC => "MODPACK_PATH_RC",
-                GameEnvironment.DEV => "MODPACK_PATH_DEV",
-                _ => throw new ArgumentException("Server environment is invalid")
+                GameEnvironment.RC      => "MODPACK_PATH_RC",
+                GameEnvironment.DEV     => "MODPACK_PATH_DEV",
+                _                       => throw new ArgumentException("Server environment is invalid")
             };
-            return Path.Join(VariablesWrapper.VariablesDataService().GetSingle(variableKey).AsString(), "Repo");
+            return Path.Join(variablesService.GetVariable(variableKey).AsString(), "Repo");
         }
 
-        public static IEnumerable<string> GetGameServerExtraModsPaths() => VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_MODS").AsArray(x => x.RemoveQuotes());
+        public IEnumerable<string> GetGameServerExtraModsPaths() => variablesService.GetVariable("SERVER_PATH_MODS").AsArray(x => x.RemoveQuotes());
 
-        public static string FormatGameServerConfig(this GameServer gameServer, int playerCount, string missionSelection) =>
+        public string FormatGameServerConfig(GameServer gameServer, int playerCount, string missionSelection) =>
             string.Format(string.Join("\n", BASE_CONFIG), gameServer.hostName, gameServer.password, gameServer.adminPassword, playerCount, missionSelection.Replace(".pbo", ""));
 
-        public static string FormatGameServerLaunchArguments(this GameServer gameServer) =>
-            $"-config={gameServer.GetGameServerConfigPath()}" +
+        public string FormatGameServerLaunchArguments(GameServer gameServer) =>
+            $"-config={GetGameServerConfigPath(gameServer)}" +
             $" -profiles={GetGameServerProfilesPath()}" +
             $" -cfg={GetGameServerPerfConfigPath()}" +
             $" -name={gameServer.name}" +
             $" -port={gameServer.port}" +
             $" -apiport=\"{gameServer.apiPort}\"" +
-            $" {(string.IsNullOrEmpty(gameServer.FormatGameServerServerMods()) ? "" : $"\"-serverMod={gameServer.FormatGameServerServerMods()}\"")}" +
-            $" {(string.IsNullOrEmpty(gameServer.FormatGameServerMods()) ? "" : $"\"-mod={gameServer.FormatGameServerMods()}\"")}" +
+            $" {(string.IsNullOrEmpty(FormatGameServerServerMods(gameServer)) ? "" : $"\"-serverMod={FormatGameServerServerMods(gameServer)}\"")}" +
+            $" {(string.IsNullOrEmpty(FormatGameServerMods(gameServer)) ? "" : $"\"-mod={FormatGameServerMods(gameServer)}\"")}" +
             " -bandwidthAlg=2 -hugepages -loadMissionToMemory -filePatching -limitFPS=200";
 
-        public static string FormatHeadlessClientLaunchArguments(this GameServer gameServer, int index) =>
+        public string FormatHeadlessClientLaunchArguments(GameServer gameServer, int index) =>
             $"-profiles={GetGameServerProfilesPath()}" +
             $" -name={GetHeadlessClientName(index)}" +
             $" -port={gameServer.port}" +
             $" -apiport=\"{gameServer.apiPort + index + 1}\"" +
-            $" {(string.IsNullOrEmpty(gameServer.FormatGameServerMods()) ? "" : $"\"-mod={gameServer.FormatGameServerMods()}\"")}" +
+            $" {(string.IsNullOrEmpty(FormatGameServerMods(gameServer)) ? "" : $"\"-mod={FormatGameServerMods(gameServer)}\"")}" +
             $" -password={gameServer.password}" +
             " -localhost=127.0.0.1 -connect=localhost -client -hugepages -filePatching -limitFPS=200";
 
-        public static string GetMaxPlayerCountFromConfig(this GameServer gameServer) {
-            string maxPlayers = File.ReadAllLines(gameServer.GetGameServerConfigPath()).First(x => x.Contains("maxPlayers"));
+        public string GetMaxPlayerCountFromConfig(GameServer gameServer) {
+            string maxPlayers = File.ReadAllLines(GetGameServerConfigPath(gameServer)).First(x => x.Contains("maxPlayers"));
             maxPlayers = maxPlayers.RemoveSpaces().Replace(";", "");
             return maxPlayers.Split("=")[1];
         }
 
-        public static int GetMaxCuratorCountFromSettings() {
+        public int GetMaxCuratorCountFromSettings() {
             string[] lines = File.ReadAllLines(GetGameServerSettingsPath());
             string curatorsMaxString = lines.FirstOrDefault(x => x.Contains("uksf_curator_curatorsMax"));
             if (string.IsNullOrEmpty(curatorsMaxString)) {
@@ -135,15 +127,24 @@ namespace UKSF.Api.Services.Game {
             return int.Parse(curatorsMaxString);
         }
 
-        public static TimeSpan StripMilliseconds(this TimeSpan time) => new TimeSpan(time.Hours, time.Minutes, time.Seconds);
+        public TimeSpan StripMilliseconds(TimeSpan time) => new TimeSpan(time.Hours, time.Minutes, time.Seconds);
 
-        public static IEnumerable<Process> GetArmaProcesses() => Process.GetProcesses().Where(x => x.ProcessName.StartsWith("arma3"));
+        public IEnumerable<Process> GetArmaProcesses() => Process.GetProcesses().Where(x => x.ProcessName.StartsWith("arma3"));
 
-        public static bool IsMainOpTime() {
+        public bool IsMainOpTime() {
             DateTime now = DateTime.UtcNow;
             return now.DayOfWeek == DayOfWeek.Saturday && now.Hour >= 19 && now.Minute >= 30;
         }
+
+        private string FormatGameServerMods(GameServer gameServer) =>
+            gameServer.mods.Count > 0 ? $"{string.Join(";", gameServer.mods.Select(x => x.pathRelativeToServerExecutable ?? x.path))};" : string.Empty;
+
+        private string FormatGameServerServerMods(GameServer gameServer) => gameServer.serverMods.Count > 0 ? $"{string.Join(";", gameServer.serverMods.Select(x => x.name))};" : string.Empty;
+
+        private string GetGameServerProfilesPath() => variablesService.GetVariable("SERVER_PATH_PROFILES").AsString();
+
+        private string GetGameServerPerfConfigPath() => variablesService.GetVariable("SERVER_PATH_PERF").AsString();
+
+        private string GetHeadlessClientName(int index) => variablesService.GetVariable("SERVER_HEADLESS_NAMES").AsArray()[index];
     }
 }
-
-// $" {(GetGameServerExecutablePath().Contains("server") ? "" : "-server")}" +

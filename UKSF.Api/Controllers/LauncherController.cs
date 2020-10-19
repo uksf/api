@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Hubs;
 using UKSF.Api.Interfaces.Launcher;
@@ -13,10 +14,10 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Launcher;
 using UKSF.Api.Models.Message.Logging;
-using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
 using UKSF.Api.Signalr.Hubs.Integrations;
+using UKSF.Common;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Authorize, Roles(RoleDefinitions.CONFIRMED, RoleDefinitions.MEMBER)]
@@ -27,14 +28,24 @@ namespace UKSF.Api.Controllers {
         private readonly ILauncherService launcherService;
         private readonly ISessionService sessionService;
         private readonly IVariablesDataService variablesDataService;
+        private readonly IVariablesService variablesService;
 
-        public LauncherController(IVariablesDataService variablesDataService, IHubContext<LauncherHub, ILauncherClient> launcherHub, ILauncherService launcherService, ILauncherFileService launcherFileService, ISessionService sessionService, IDisplayNameService displayNameService) {
+        public LauncherController(
+            IVariablesDataService variablesDataService,
+            IHubContext<LauncherHub, ILauncherClient> launcherHub,
+            ILauncherService launcherService,
+            ILauncherFileService launcherFileService,
+            ISessionService sessionService,
+            IDisplayNameService displayNameService,
+            IVariablesService variablesService
+        ) {
             this.variablesDataService = variablesDataService;
             this.launcherHub = launcherHub;
             this.launcherService = launcherService;
             this.launcherFileService = launcherFileService;
             this.sessionService = sessionService;
             this.displayNameService = displayNameService;
+            this.variablesService = variablesService;
         }
 
         [HttpGet("update/{platform}/{version}")]
@@ -70,7 +81,7 @@ namespace UKSF.Api.Controllers {
         public IActionResult ReportError([FromBody] JObject body) {
             string version = body["version"].ToString();
             string message = body["message"].ToString();
-            LogWrapper.Log(new LauncherLogMessage(version, message) {userId = sessionService.GetContextId(), name = displayNameService.GetDisplayName(sessionService.GetContextAccount())});
+            LogWrapper.Log(new LauncherLogMessage(version, message) { userId = sessionService.GetContextId(), name = displayNameService.GetDisplayName(sessionService.GetContextAccount()) });
 
             return Ok();
         }

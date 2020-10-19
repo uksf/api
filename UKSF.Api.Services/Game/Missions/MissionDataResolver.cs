@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UKSF.Api.Models.Mission;
-using UKSF.Api.Services.Admin;
 
 namespace UKSF.Api.Services.Game.Missions {
     public static class MissionDataResolver {
@@ -54,14 +53,9 @@ namespace UKSF.Api.Services.Game.Missions {
             return -1;
         }
 
-        private static bool IsMedic(MissionPlayer player) => IsSpecialist(player, "MISSIONS_MEDIC_IDS");
+        private static bool IsMedic(MissionPlayer player) => MissionPatchData.instance.medicIds.Contains(player.account?.id);
 
-        public static bool IsEngineer(MissionPlayer player) => IsSpecialist(player, "MISSIONS_ENGINEER_IDS");
-
-        private static bool IsSpecialist(MissionPlayer player, string idsVariableName) {
-            string[] ids = VariablesWrapper.VariablesDataService().GetSingle(idsVariableName).AsArray();
-            return ids.Contains(player.account?.id);
-        }
+        public static bool IsEngineer(MissionPlayer player) => MissionPatchData.instance.engineerIds.Contains(player.account?.id);
 
         public static string ResolveCallsign(MissionUnit unit, string defaultCallsign) {
             return unit.sourceUnit.id switch {

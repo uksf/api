@@ -3,11 +3,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using Newtonsoft.Json;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
 using UKSF.Api.Interfaces.Modpack.BuildProcess.Steps;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Modpack;
 using UKSF.Api.Services.Admin;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
     public class BuildStep : IBuildStep {
@@ -21,14 +23,17 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
         protected IStepLogger Logger;
         private Func<UpdateDefinition<ModpackBuild>, Task> updateBuildCallback;
         private Func<Task> updateStepCallback;
+        protected IVariablesService VariablesService;
 
         public void Init(
             ModpackBuild modpackBuild,
             ModpackBuildStep modpackBuildStep,
             Func<UpdateDefinition<ModpackBuild>, Task> buildUpdateCallback,
             Func<Task> stepUpdateCallback,
-            CancellationTokenSource newCancellationTokenSource
+            CancellationTokenSource newCancellationTokenSource,
+            IVariablesService newVariablesService
         ) {
+            VariablesService = newVariablesService;
             Build = modpackBuild;
             buildStep = modpackBuildStep;
             updateBuildCallback = buildUpdateCallback;
@@ -106,19 +111,19 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
 
         internal string GetBuildEnvironmentPath() => GetEnvironmentPath(Build.environment);
 
-        internal static string GetEnvironmentPath(GameEnvironment environment) =>
+        internal string GetEnvironmentPath(GameEnvironment environment) =>
             environment switch {
-                GameEnvironment.RELEASE => VariablesWrapper.VariablesDataService().GetSingle("MODPACK_PATH_RELEASE").AsString(),
-                GameEnvironment.RC => VariablesWrapper.VariablesDataService().GetSingle("MODPACK_PATH_RC").AsString(),
-                GameEnvironment.DEV => VariablesWrapper.VariablesDataService().GetSingle("MODPACK_PATH_DEV").AsString(),
+                GameEnvironment.RELEASE => VariablesService.GetVariable("MODPACK_PATH_RELEASE").AsString(),
+                GameEnvironment.RC => VariablesService.GetVariable("MODPACK_PATH_RC").AsString(),
+                GameEnvironment.DEV => VariablesService.GetVariable("MODPACK_PATH_DEV").AsString(),
                 _ => throw new ArgumentException("Invalid build environment")
             };
 
-        internal static string GetServerEnvironmentPath(GameEnvironment environment) =>
+        internal string GetServerEnvironmentPath(GameEnvironment environment) =>
             environment switch {
-                GameEnvironment.RELEASE => VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_RELEASE").AsString(),
-                GameEnvironment.RC => VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_RC").AsString(),
-                GameEnvironment.DEV => VariablesWrapper.VariablesDataService().GetSingle("SERVER_PATH_DEV").AsString(),
+                GameEnvironment.RELEASE => VariablesService.GetVariable("SERVER_PATH_RELEASE").AsString(),
+                GameEnvironment.RC => VariablesService.GetVariable("SERVER_PATH_RC").AsString(),
+                GameEnvironment.DEV => VariablesService.GetVariable("SERVER_PATH_DEV").AsString(),
                 _ => throw new ArgumentException("Invalid build environment")
             };
 
@@ -130,7 +135,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps {
                 _ => throw new ArgumentException("Invalid build environment")
             };
 
-        internal static string GetBuildSourcesPath() => VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_SOURCES").AsString();
+        internal string GetBuildSourcesPath() => VariablesService.GetVariable("BUILD_PATH_SOURCES").AsString();
 
         internal void SetEnvironmentVariable(string key, object value) {
             if (Build.environmentVariables.ContainsKey(key)) {

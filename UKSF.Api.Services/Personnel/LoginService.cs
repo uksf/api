@@ -5,11 +5,13 @@ using System.Linq;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Admin;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Personnel {
     public class LoginService : ILoginService {
@@ -18,14 +20,16 @@ namespace UKSF.Api.Services.Personnel {
         private readonly string[] admins = {"59e38f10594c603b78aa9dbd", "5a1e894463d0f71710089106", "5a1ae0f0b9bcb113a44edada"};
         private readonly IRanksService ranksService;
         private readonly IRecruitmentService recruitmentService;
+        private readonly IVariablesService variablesService;
         private readonly IUnitsService unitsService;
         private bool isPasswordReset;
 
-        public LoginService(IAccountService accountService, IRanksService ranksService, IUnitsService unitsService, IRecruitmentService recruitmentService) {
+        public LoginService(IAccountService accountService, IRanksService ranksService, IUnitsService unitsService, IRecruitmentService recruitmentService, IVariablesService variablesService) {
             this.accountService = accountService;
             this.ranksService = ranksService;
             this.unitsService = unitsService;
             this.recruitmentService = recruitmentService;
+            this.variablesService = variablesService;
             isPasswordReset = false;
         }
 
@@ -92,17 +96,17 @@ namespace UKSF.Api.Services.Personnel {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.RECRUITER));
                     }
 
-                    string personnelId = VariablesWrapper.VariablesDataService().GetSingle("UNIT_ID_PERSONNEL").AsString();
+                    string personnelId = variablesService.GetVariable("UNIT_ID_PERSONNEL").AsString();
                     if (admin || unitsService.Data.GetSingle(personnelId).members.Contains(account.id)) {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.PERSONNEL));
                     }
 
-                    string[] missionsId = VariablesWrapper.VariablesDataService().GetSingle("UNIT_ID_MISSIONS").AsArray();
+                    string[] missionsId = variablesService.GetVariable("UNIT_ID_MISSIONS").AsArray();
                     if (admin || unitsService.Data.GetSingle(x => missionsId.Contains(x.id)).members.Contains(account.id)) {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.SERVERS));
                     }
 
-                    string testersId = VariablesWrapper.VariablesDataService().GetSingle("UNIT_ID_TESTERS").AsString();
+                    string testersId = variablesService.GetVariable("UNIT_ID_TESTERS").AsString();
                     if (admin || unitsService.Data.GetSingle(testersId).members.Contains(account.id)) {
                         claims.Add(new Claim(ClaimTypes.Role, RoleDefinitions.TESTER));
                     }

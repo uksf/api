@@ -81,6 +81,7 @@ namespace UKSF.Api.AppStart.Services {
             services.AddSingleton<IBuildQueueService, BuildQueueService>();
             services.AddSingleton<IBuildStepService, BuildStepService>();
             services.AddSingleton<IEmailService, EmailService>();
+            services.AddSingleton<IGameServerHelpers, GameServerHelpers>();
             services.AddSingleton<IInstagramService, InstagramService>();
             services.AddSingleton<ISessionService, SessionService>();
             services.AddSingleton<ITeamspeakService, TeamspeakService>();

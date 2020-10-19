@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using UKSF.Api.Services.Admin;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
     [BuildStep(NAME)]
@@ -24,8 +24,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
         }
 
         private async Task SignExtensions(IReadOnlyCollection<FileInfo> files) {
-            string certPath = Path.Join(VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_CERTS").AsString(), "UKSFCert.pfx");
-            string signTool = VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_SIGNTOOL").AsString();
+            string certPath = Path.Join(VariablesService.GetVariable("BUILD_PATH_CERTS").AsString(), "UKSFCert.pfx");
+            string signTool = VariablesService.GetVariable("BUILD_PATH_SIGNTOOL").AsString();
             int signed = 0;
             int total = files.Count;
             await BatchProcessFiles(

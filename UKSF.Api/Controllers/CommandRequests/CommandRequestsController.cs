@@ -7,6 +7,7 @@ using AvsAnLib;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Command;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Message;
@@ -19,6 +20,7 @@ using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Admin;
 using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
+using UKSF.Common;
 
 namespace UKSF.Api.Controllers.CommandRequests {
     [Route("[controller]"), Roles(RoleDefinitions.COMMAND)]
@@ -30,6 +32,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
         private readonly ISessionService sessionService;
         private readonly IUnitsService unitsService;
         private readonly IVariablesDataService variablesDataService;
+        private readonly IVariablesService variablesService;
 
         public CommandRequestsController(
             ICommandRequestService commandRequestService,
@@ -38,7 +41,8 @@ namespace UKSF.Api.Controllers.CommandRequests {
             IUnitsService unitsService,
             IDisplayNameService displayNameService,
             INotificationsService notificationsService,
-            IVariablesDataService variablesDataService
+            IVariablesDataService variablesDataService,
+            IVariablesService variablesService
         ) {
             this.commandRequestService = commandRequestService;
             this.commandRequestCompletionService = commandRequestCompletionService;
@@ -47,6 +51,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             this.displayNameService = displayNameService;
             this.notificationsService = notificationsService;
             this.variablesDataService = variablesDataService;
+            this.variablesService = variablesService;
         }
 
         [HttpGet, Authorize]

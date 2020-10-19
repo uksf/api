@@ -1,35 +1,43 @@
 using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
+using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Models.Mission;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Game.Missions {
     public class MissionPatchDataService {
         private readonly IAccountService accountService;
         private readonly IDisplayNameService displayNameService;
+        private readonly IVariablesService variablesService;
         private readonly IRanksService ranksService;
         private readonly IUnitsService unitsService;
 
-        public MissionPatchDataService(IRanksService ranksService, IUnitsService unitsService, IAccountService accountService, IDisplayNameService displayNameService) {
+        public MissionPatchDataService(IRanksService ranksService, IUnitsService unitsService, IAccountService accountService, IDisplayNameService displayNameService, IVariablesService variablesService) {
             this.ranksService = ranksService;
             this.unitsService = unitsService;
             this.accountService = accountService;
             this.displayNameService = displayNameService;
+            this.variablesService = variablesService;
         }
 
         public void UpdatePatchData() {
-            MissionPatchData.instance = new MissionPatchData {units = new List<MissionUnit>(), ranks = ranksService.Data.Get().ToList(), players = new List<MissionPlayer>(), orderedUnits = new List<MissionUnit>()};
+            MissionPatchData.instance = new MissionPatchData {
+                units = new List<MissionUnit>(), ranks = ranksService.Data.Get().ToList(), players = new List<MissionPlayer>(), orderedUnits = new List<MissionUnit>(),
+                medicIds = variablesService.GetVariable("MISSIONS_MEDIC_IDS").AsEnumerable(),
+                engineerIds = variablesService.GetVariable("MISSIONS_ENGINEER_IDS").AsEnumerable()
+            };
 
             foreach (Unit unit in unitsService.Data.Get(x => x.branch == UnitBranch.COMBAT).ToList()) {
-                MissionPatchData.instance.units.Add(new MissionUnit {sourceUnit = unit, depth = unitsService.GetUnitDepth(unit)});
+                MissionPatchData.instance.units.Add(new MissionUnit { sourceUnit = unit, depth = unitsService.GetUnitDepth(unit) });
             }
 
             foreach (Account account in accountService.Data.Get().Where(x => !string.IsNullOrEmpty(x.rank) && ranksService.IsSuperiorOrEqual(x.rank, "Recruit"))) {
-                MissionPatchData.instance.players.Add(new MissionPlayer {account = account, rank = ranksService.Data.GetSingle(account.rank), name = displayNameService.GetDisplayName(account)});
+                MissionPatchData.instance.players.Add(new MissionPlayer { account = account, rank = ranksService.Data.GetSingle(account.rank), name = displayNameService.GetDisplayName(account) });
             }
 
             foreach (MissionUnit missionUnit in MissionPatchData.instance.units) {

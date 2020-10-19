@@ -77,7 +77,6 @@ namespace UKSF.Api.Controllers {
             // TODO: Use a factory or mapper
             ResponseUnit response = mapper.Map<ResponseUnit>(unit);
             response.code = unitsService.GetChainString(unit);
-            response.parentId = parent?.id;
             response.parentName = parent?.name;
             response.unitMembers = MapUnitMembers(unit);
             return Ok(response);
@@ -184,13 +183,13 @@ namespace UKSF.Api.Controllers {
             }
 
             // TODO: Move elsewhere
-            unit = unitsService.Data.GetSingle(unit.id);
-            foreach (Unit child in unitsService.GetAllChildren(unit, true)) {
-                foreach (Account account in child.members.Select(x => accountService.Data.GetSingle(x))) {
-                    Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, child.name, reason: $"the hierarchy chain for {unit.name} was updated");
-                    notificationsService.Add(notification);
-                }
-            }
+            // unit = unitsService.Data.GetSingle(unit.id);
+            // foreach (Unit child in unitsService.GetAllChildren(unit, true)) {
+            //     foreach (Account account in child.members.Select(x => accountService.Data.GetSingle(x))) {
+            //         Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, child.name, reason: $"the hierarchy chain for {unit.name} was updated");
+            //         notificationsService.Add(notification);
+            //     }
+            // }
 
             return Ok();
         }

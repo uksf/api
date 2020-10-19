@@ -4,7 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using UKSF.Api.Models.Game;
-using UKSF.Api.Services.Admin;
+using UKSF.Common;
 
 namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
     [BuildStep(NAME)]
@@ -15,8 +15,8 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.BuildSteps {
         private string keyName;
 
         protected override async Task SetupExecute() {
-            dsSignFile = Path.Join(VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_DSSIGN").AsString(), "DSSignFile.exe");
-            dsCreateKey = Path.Join(VariablesWrapper.VariablesDataService().GetSingle("BUILD_PATH_DSSIGN").AsString(), "DSCreateKey.exe");
+            dsSignFile = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSSignFile.exe");
+            dsCreateKey = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSCreateKey.exe");
             keyName = GetKeyname();
 
             string keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
