@@ -112,6 +112,29 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak {
         }
 
         [Fact]
+        public async Task Should_add_correct_groups_for_member_with_gaps_in_parents() {
+            string id = ObjectId.GenerateNewId().ToString();
+            string parentId = ObjectId.GenerateNewId().ToString();
+            string parentParentId = ObjectId.GenerateNewId().ToString();
+            string parentParentParentId = ObjectId.GenerateNewId().ToString();
+            UksfUnit unit = new UksfUnit { name = "1 Section", members = new List<string> { id }, parent = parentId };
+            UksfUnit unitParent = new UksfUnit { id = parentId, name = "1 Platoon", teamspeakGroup = "7", parent = parentParentId };
+            UksfUnit unitParentParent = new UksfUnit { id = parentParentId, name = "A Company", parent = parentParentParentId };
+            UksfUnit unitParentParentParent = new UksfUnit { id = parentParentParentId, name = "SFSG", teamspeakGroup = "8" };
+            List<UksfUnit> units = new List<UksfUnit> { unit, unitParent, unitParentParent, unitParentParentParent, elcomUnit };
+
+            mockUnitsDataService.Setup(x => x.Get()).Returns(units);
+            mockUnitsDataService.Setup(x => x.Get(It.IsAny<Func<UksfUnit, bool>>())).Returns<Func<UksfUnit, bool>>(predicate => units.Where(predicate));
+            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<UksfUnit, bool>>())).Returns<Func<UksfUnit, bool>>(predicate => units.FirstOrDefault(predicate));
+            mockRanksDataService.Setup(x => x.GetSingle("Private")).Returns(new Rank { name = "Private", teamspeakGroup = "5" });
+
+            await teamspeakGroupService.UpdateAccountGroups(new Account { id = id, membershipState = MembershipState.MEMBER, rank = "Private", unitAssignment = "1 Section" }, new List<double>(), 2);
+
+            addedGroups.Should().BeEquivalentTo(3, 5, 7, 8);
+            removedGroups.Should().BeEmpty();
+        }
+
+        [Fact]
         public async Task Should_add_correct_groups_for_non_member_with_no_account() {
             await teamspeakGroupService.UpdateAccountGroups(null, new List<double>(), 2);
 

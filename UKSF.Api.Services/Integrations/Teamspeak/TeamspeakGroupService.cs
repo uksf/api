@@ -41,8 +41,8 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
                         break;
                     case MembershipState.MEMBER:
                         ResolveRankGroup(account, memberGroups);
-                        ResolveParentUnitGroup(account, memberGroups);
                         ResolveUnitGroup(account, memberGroups);
+                        ResolveParentUnitGroup(account, memberGroups);
                         ResolveAuxiliaryUnitGroups(account, memberGroups);
                         memberGroups.Add(variablesService.GetVariable("TEAMSPEAK_GID_ROOT").AsDouble());
                         break;
@@ -65,16 +65,6 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
             memberGroups.Add(ranksService.Data.GetSingle(account.rank).teamspeakGroup.ToDouble());
         }
 
-        private void ResolveParentUnitGroup(Account account, ISet<double> memberGroups) {
-            Unit accountUnit = unitsService.Data.GetSingle(x => x.name == account.unitAssignment);
-            Unit parentUnit = unitsService.GetParents(accountUnit).Skip(1).FirstOrDefault(x => !string.IsNullOrEmpty(x.teamspeakGroup));
-            if (parentUnit != null && parentUnit.parent != ObjectId.Empty.ToString()) {
-                memberGroups.Add(parentUnit.teamspeakGroup.ToDouble());
-            } else {
-                memberGroups.Add(accountUnit.teamspeakGroup.ToDouble());
-            }
-        }
-
         private void ResolveUnitGroup(Account account, ISet<double> memberGroups) {
             Unit accountUnit = unitsService.Data.GetSingle(x => x.name == account.unitAssignment);
             Unit elcom = unitsService.GetAuxilliaryRoot();
@@ -83,7 +73,22 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
                 memberGroups.Add(accountUnit.teamspeakGroup.ToDouble());
             }
 
-            memberGroups.Add(elcom.members.Contains(account.id) ? variablesService.GetVariable("TEAMSPEAK_GID_ELCOM").AsDouble() : accountUnit.teamspeakGroup.ToDouble());
+            double group = elcom.members.Contains(account.id) ? variablesService.GetVariable("TEAMSPEAK_GID_ELCOM").AsDouble() : accountUnit.teamspeakGroup.ToDouble();
+            if (group == 0) {
+                ResolveParentUnitGroup(account, memberGroups);
+            } else {
+                memberGroups.Add(@group);
+            }
+        }
+
+        private void ResolveParentUnitGroup(Account account, ISet<double> memberGroups) {
+            Unit accountUnit = unitsService.Data.GetSingle(x => x.name == account.unitAssignment);
+            Unit parentUnit = unitsService.GetParents(accountUnit).Skip(1).FirstOrDefault(x => !string.IsNullOrEmpty(x.teamspeakGroup) && !memberGroups.Contains(x.teamspeakGroup.ToDouble()));
+            if (parentUnit != null && parentUnit.parent != ObjectId.Empty.ToString()) {
+                memberGroups.Add(parentUnit.teamspeakGroup.ToDouble());
+            } else {
+                memberGroups.Add(accountUnit.teamspeakGroup.ToDouble());
+            }
         }
 
         private void ResolveAuxiliaryUnitGroups(DatabaseObject account, ISet<double> memberGroups) {
