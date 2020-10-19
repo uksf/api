@@ -147,6 +147,47 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak {
         }
 
         [Fact]
+        public async Task Should_add_correct_groups_for_first_root_child() {
+            string id = ObjectId.GenerateNewId().ToString();
+            string rootId = ObjectId.GenerateNewId().ToString();
+            UksfUnit rootUnit = new UksfUnit { id = rootId, name = "UKSF", teamspeakGroup = "10", parent = ObjectId.Empty.ToString() };
+            UksfUnit unit = new UksfUnit { name = "1 Section", teamspeakGroup = "6", members = new List<string> { id }, parent = rootId };
+            UksfUnit auxiliaryUnit = new UksfUnit { branch = UnitBranch.AUXILIARY, name = "SR1", teamspeakGroup = "9", parent = elcomUnit.id, members = new List<string> { id } };
+            List<UksfUnit> units = new List<UksfUnit> { rootUnit, unit, elcomUnit, auxiliaryUnit };
+
+            mockUnitsDataService.Setup(x => x.Get()).Returns(units);
+            mockUnitsDataService.Setup(x => x.Get(It.IsAny<Func<UksfUnit, bool>>())).Returns<Func<UksfUnit, bool>>(predicate => units.Where(predicate));
+            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<UksfUnit, bool>>())).Returns<Func<UksfUnit, bool>>(predicate => units.FirstOrDefault(predicate));
+            mockRanksDataService.Setup(x => x.GetSingle("Private")).Returns(new Rank { name = "Private", teamspeakGroup = "5" });
+
+            await teamspeakGroupService.UpdateAccountGroups(new Account { id = id, membershipState = MembershipState.MEMBER, rank = "Private", unitAssignment = "1 Section" }, new List<double>(), 2);
+
+            addedGroups.Should().BeEquivalentTo(3, 5, 6, 9);
+            removedGroups.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Should_add_correct_groups_for_first_root_child_in_elcom() {
+            string id = ObjectId.GenerateNewId().ToString();
+            string rootId = ObjectId.GenerateNewId().ToString();
+            UksfUnit rootUnit = new UksfUnit { id = rootId, name = "UKSF", teamspeakGroup = "10", parent = ObjectId.Empty.ToString() };
+            UksfUnit unit = new UksfUnit { name = "1 Section", teamspeakGroup = "6", members = new List<string> { id }, parent = rootId };
+            UksfUnit auxiliaryUnit = new UksfUnit { branch = UnitBranch.AUXILIARY, name = "SR1", teamspeakGroup = "9", parent = elcomUnit.id, members = new List<string> { id } };
+            List<UksfUnit> units = new List<UksfUnit> { rootUnit, unit, elcomUnit, auxiliaryUnit };
+            elcomUnit.members.Add(id);
+
+            mockUnitsDataService.Setup(x => x.Get()).Returns(units);
+            mockUnitsDataService.Setup(x => x.Get(It.IsAny<Func<UksfUnit, bool>>())).Returns<Func<UksfUnit, bool>>(predicate => units.Where(predicate));
+            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<UksfUnit, bool>>())).Returns<Func<UksfUnit, bool>>(predicate => units.FirstOrDefault(predicate));
+            mockRanksDataService.Setup(x => x.GetSingle("Private")).Returns(new Rank { name = "Private", teamspeakGroup = "5" });
+
+            await teamspeakGroupService.UpdateAccountGroups(new Account { id = id, membershipState = MembershipState.MEMBER, rank = "Private", unitAssignment = "1 Section" }, new List<double>(), 2);
+
+            addedGroups.Should().BeEquivalentTo(3, 5, 4, 6, 9);
+            removedGroups.Should().BeEmpty();
+        }
+
+        [Fact]
         public async Task Should_only_add_groups_if_not_set() {
             string id = ObjectId.GenerateNewId().ToString();
             string parentId = ObjectId.GenerateNewId().ToString();

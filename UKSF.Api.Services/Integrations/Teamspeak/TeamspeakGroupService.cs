@@ -68,8 +68,10 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
         private void ResolveParentUnitGroup(Account account, ISet<double> memberGroups) {
             Unit accountUnit = unitsService.Data.GetSingle(x => x.name == account.unitAssignment);
             Unit parentUnit = unitsService.GetParents(accountUnit).Skip(1).FirstOrDefault(x => !string.IsNullOrEmpty(x.teamspeakGroup));
-            if (parentUnit != null) {
+            if (parentUnit != null && parentUnit.parent != ObjectId.Empty.ToString()) {
                 memberGroups.Add(parentUnit.teamspeakGroup.ToDouble());
+            } else {
+                memberGroups.Add(accountUnit.teamspeakGroup.ToDouble());
             }
         }
 
