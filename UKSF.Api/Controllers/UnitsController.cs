@@ -182,14 +182,12 @@ namespace UKSF.Api.Controllers {
                 await unitsService.Data.Update(child.id, "order", parentChildren.IndexOf(child));
             }
 
-            // TODO: Move elsewhere
-            // unit = unitsService.Data.GetSingle(unit.id);
-            // foreach (Unit child in unitsService.GetAllChildren(unit, true)) {
-            //     foreach (Account account in child.members.Select(x => accountService.Data.GetSingle(x))) {
-            //         Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, child.name, reason: $"the hierarchy chain for {unit.name} was updated");
-            //         notificationsService.Add(notification);
-            //     }
-            // }
+            unit = unitsService.Data.GetSingle(unit.id);
+            foreach (Unit child in unitsService.GetAllChildren(unit, true)) {
+                foreach (string accountId in child.members) {
+                    await assignmentService.UpdateGroupsAndRoles(accountId);
+                }
+            }
 
             return Ok();
         }
