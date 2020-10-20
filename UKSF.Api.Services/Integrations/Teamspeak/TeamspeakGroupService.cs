@@ -39,6 +39,9 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
                     case MembershipState.DISCHARGED:
                         memberGroups.Add(variablesService.GetVariable("TEAMSPEAK_GID_DISCHARGED").AsDouble());
                         break;
+                    case MembershipState.CONFIRMED:
+                        ResolveRankGroup(account, memberGroups);
+                        break;
                     case MembershipState.MEMBER:
                         ResolveRankGroup(account, memberGroups);
                         ResolveUnitGroup(account, memberGroups);
@@ -77,7 +80,7 @@ namespace UKSF.Api.Services.Integrations.Teamspeak {
             if (group == 0) {
                 ResolveParentUnitGroup(account, memberGroups);
             } else {
-                memberGroups.Add(@group);
+                memberGroups.Add(group);
             }
         }
 
