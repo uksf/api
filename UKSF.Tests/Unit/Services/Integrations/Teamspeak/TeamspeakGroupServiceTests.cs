@@ -112,6 +112,18 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak {
         }
 
         [Fact]
+        public async Task Should_add_correct_groups_for_candidate() {
+            string id = ObjectId.GenerateNewId().ToString();
+
+            mockRanksDataService.Setup(x => x.GetSingle("Candidate")).Returns(new Rank { name = "Candidate", teamspeakGroup = "5" });
+
+            await teamspeakGroupService.UpdateAccountGroups(new Account { id = id, membershipState = MembershipState.CONFIRMED, rank = "Candidate" }, new List<double>(), 2);
+
+            addedGroups.Should().BeEquivalentTo(5);
+            removedGroups.Should().BeEmpty();
+        }
+
+        [Fact]
         public async Task Should_add_correct_groups_for_member_with_gaps_in_parents() {
             string id = ObjectId.GenerateNewId().ToString();
             string parentId = ObjectId.GenerateNewId().ToString();
