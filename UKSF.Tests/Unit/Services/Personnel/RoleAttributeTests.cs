@@ -4,11 +4,11 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Personnel {
     public class RoleAttributeTests {
-        [Theory, InlineData("ADMIN,PERSONNEL", RoleDefinitions.ADMIN, RoleDefinitions.PERSONNEL), InlineData("ADMIN", RoleDefinitions.ADMIN), InlineData("ADMIN", RoleDefinitions.ADMIN, RoleDefinitions.ADMIN)]
+        [Theory, InlineData("ADMIN,PERSONNEL", Permissions.ADMIN, Permissions.PERSONNEL), InlineData("ADMIN", Permissions.ADMIN), InlineData("ADMIN", Permissions.ADMIN, Permissions.ADMIN)]
         public void ShouldCombineRoles(string expected, params string[] roles) {
-            RolesAttribute rolesAttribute = new RolesAttribute(roles);
+            PermissionsAttribute permissionsAttribute = new PermissionsAttribute(roles);
 
-            string subject = rolesAttribute.Roles;
+            string subject = permissionsAttribute.Roles;
 
             subject.Should().Be(expected);
         }

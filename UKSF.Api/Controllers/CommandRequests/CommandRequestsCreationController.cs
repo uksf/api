@@ -34,7 +34,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             sessionId = sessionService.GetContextId();
         }
 
-        [HttpPut("rank"), Authorize, Roles(RoleDefinitions.COMMAND)]
+        [HttpPut("rank"), Authorize, Permissions(Permissions.COMMAND)]
         public async Task<IActionResult> CreateRequestRank([FromBody] CommandRequest request) {
             request.requester = sessionId;
             request.displayValue = request.value;
@@ -47,7 +47,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             return Ok();
         }
 
-        [HttpPut("loa"), Authorize, Roles(RoleDefinitions.MEMBER)]
+        [HttpPut("loa"), Authorize, Permissions(Permissions.MEMBER)]
         public async Task<IActionResult> CreateRequestLoa([FromBody] CommandRequestLoa request) {
             DateTime now = DateTime.UtcNow;
             if (request.start <= now.AddDays(-1)) {
@@ -73,7 +73,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             return Ok();
         }
 
-        [HttpPut("discharge"), Authorize, Roles(RoleDefinitions.COMMAND)]
+        [HttpPut("discharge"), Authorize, Permissions(Permissions.COMMAND)]
         public async Task<IActionResult> CreateRequestDischarge([FromBody] CommandRequest request) {
             request.requester = sessionId;
             request.displayValue = "Discharged";
@@ -84,7 +84,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             return Ok();
         }
 
-        [HttpPut("role"), Authorize, Roles(RoleDefinitions.COMMAND)]
+        [HttpPut("role"), Authorize, Permissions(Permissions.COMMAND)]
         public async Task<IActionResult> CreateRequestIndividualRole([FromBody] CommandRequest request) {
             request.requester = sessionId;
             request.displayValue = request.value;
@@ -95,7 +95,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             return Ok();
         }
 
-        [HttpPut("unitrole"), Authorize, Roles(RoleDefinitions.COMMAND)]
+        [HttpPut("unitrole"), Authorize, Permissions(Permissions.COMMAND)]
         public async Task<IActionResult> CreateRequestUnitRole([FromBody] CommandRequest request) {
             Unit unit = unitsService.Data.GetSingle(request.value);
             bool recipientHasUnitRole = unitsService.RolesHasMember(unit, request.recipient);
@@ -118,7 +118,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             return Ok();
         }
 
-        [HttpPut("unitremoval"), Authorize, Roles(RoleDefinitions.COMMAND)]
+        [HttpPut("unitremoval"), Authorize, Permissions(Permissions.COMMAND)]
         public async Task<IActionResult> CreateRequestUnitRemoval([FromBody] CommandRequest request) {
             Unit removeUnit = unitsService.Data.GetSingle(request.value);
             if (removeUnit.branch == UnitBranch.COMBAT) {
@@ -134,7 +134,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             return Ok();
         }
 
-        [HttpPut("transfer"), Authorize, Roles(RoleDefinitions.COMMAND)]
+        [HttpPut("transfer"), Authorize, Permissions(Permissions.COMMAND)]
         public async Task<IActionResult> CreateRequestTransfer([FromBody] CommandRequest request) {
             Unit toUnit = unitsService.Data.GetSingle(request.value);
             request.requester = sessionId;
@@ -154,7 +154,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             return Ok();
         }
 
-        [HttpPut("reinstate"), Authorize, Roles(RoleDefinitions.COMMAND, RoleDefinitions.RECRUITER, RoleDefinitions.NCO)]
+        [HttpPut("reinstate"), Authorize, Permissions(Permissions.COMMAND, Permissions.RECRUITER, Permissions.NCO)]
         public async Task<IActionResult> CreateRequestReinstateMember([FromBody] CommandRequest request) {
             request.requester = sessionId;
             request.displayValue = "Member";

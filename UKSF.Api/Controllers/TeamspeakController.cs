@@ -13,10 +13,10 @@ namespace UKSF.Api.Controllers {
 
         public TeamspeakController(ITeamspeakService teamspeakService) => this.teamspeakService = teamspeakService;
 
-        [HttpGet("online"), Authorize, Roles(RoleDefinitions.CONFIRMED, RoleDefinitions.MEMBER, RoleDefinitions.DISCHARGED)]
+        [HttpGet("online"), Authorize, Permissions(Permissions.CONFIRMED, Permissions.MEMBER, Permissions.DISCHARGED)]
         public IEnumerable<object> GetOnlineClients() => teamspeakService.GetFormattedClients();
 
-        [HttpGet("shutdown"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        [HttpGet("shutdown"), Authorize, Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> Shutdown() {
             await teamspeakService.Shutdown();
             await Task.Delay(TimeSpan.FromSeconds(3));

@@ -56,10 +56,10 @@ namespace UKSF.Api.Controllers.Integrations {
             }
         }
 
-        [HttpGet("branches"), Authorize, Roles(RoleDefinitions.TESTER)]
+        [HttpGet("branches"), Authorize, Permissions(Permissions.TESTER)]
         public async Task<IActionResult> GetBranches() => Ok(await githubService.GetBranches());
 
-        [HttpGet("populatereleases"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        [HttpGet("populatereleases"), Authorize, Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> Release() {
             List<ModpackRelease> releases = await githubService.GetHistoricReleases();
             await releaseService.AddHistoricReleases(releases);

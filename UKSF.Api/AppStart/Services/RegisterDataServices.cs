@@ -19,7 +19,6 @@ namespace UKSF.Api.AppStart.Services {
         public static void RegisterDataServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
             // Non-Cached
             services.AddSingleton<ICommandRequestArchiveDataService, CommandRequestArchiveDataService>();
-            services.AddTransient<IConfirmationCodeDataService, ConfirmationCodeDataService>();
             services.AddSingleton<ILogDataService, LogDataService>();
             services.AddTransient<ISchedulerDataService, SchedulerDataService>();
 

@@ -44,7 +44,7 @@ namespace UKSF.Api.Controllers {
             this.displayNameService = displayNameService;
         }
 
-        [HttpPost, Authorize, Roles(RoleDefinitions.CONFIRMED)]
+        [HttpPost, Authorize, Permissions(Permissions.CONFIRMED)]
         public async Task<IActionResult> Post([FromBody] JObject body) {
             Account account = sessionService.GetContextAccount();
             await Update(body, account);
@@ -74,7 +74,7 @@ namespace UKSF.Api.Controllers {
             return Ok();
         }
 
-        [HttpPost("update"), Authorize, Roles(RoleDefinitions.CONFIRMED)]
+        [HttpPost("update"), Authorize, Permissions(Permissions.CONFIRMED)]
         public async Task<IActionResult> PostUpdate([FromBody] JObject body) {
             Account account = sessionService.GetContextAccount();
             await Update(body, account);

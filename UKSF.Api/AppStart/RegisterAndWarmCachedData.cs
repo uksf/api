@@ -7,6 +7,7 @@ using UKSF.Api.Services.Utility;
 
 namespace UKSF.Api.AppStart {
     public static class RegisterAndWarmCachedData {
+        // TODO: Nah
         public static void Warm() {
             IServiceProvider serviceProvider = Global.ServiceProvider;
 

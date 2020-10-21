@@ -17,7 +17,7 @@ using UKSF.Api.Services.Message;
 using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers {
-    [Route("[controller]"), Roles(RoleDefinitions.MEMBER)]
+    [Route("[controller]"), Permissions(Permissions.MEMBER)]
     public class LoaController : Controller {
         private readonly IAccountService accountService;
         private readonly IChainOfCommandService chainOfCommandService;

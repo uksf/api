@@ -6,7 +6,7 @@ using UKSF.Api.Models.Message.Logging;
 using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers {
-    [Route("[controller]"), Roles(RoleDefinitions.ADMIN)]
+    [Route("[controller]"), Permissions(Permissions.ADMIN)]
     public class LoggingController : Controller {
         private readonly IMongoDatabase database;
 

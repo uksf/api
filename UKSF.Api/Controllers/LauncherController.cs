@@ -20,7 +20,7 @@ using UKSF.Api.Signalr.Hubs.Integrations;
 using UKSF.Common;
 
 namespace UKSF.Api.Controllers {
-    [Route("[controller]"), Authorize, Roles(RoleDefinitions.CONFIRMED, RoleDefinitions.MEMBER)]
+    [Route("[controller]"), Authorize, Permissions(Permissions.CONFIRMED, Permissions.MEMBER)]
     public class LauncherController : Controller {
         private readonly IDisplayNameService displayNameService;
         private readonly ILauncherFileService launcherFileService;
@@ -54,7 +54,7 @@ namespace UKSF.Api.Controllers {
         [HttpGet("version")]
         public IActionResult GetVersion() => Ok(variablesDataService.GetSingle("LAUNCHER_VERSION").AsString());
 
-        [HttpPost("version"), Roles(RoleDefinitions.ADMIN)]
+        [HttpPost("version"), Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> UpdateVersion([FromBody] JObject body) {
             string version = body["version"].ToString();
             await variablesDataService.Update("LAUNCHER_VERSION", version);

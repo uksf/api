@@ -8,7 +8,7 @@ using UKSF.Api.Services.Personnel;
 using UKSF.Common;
 
 namespace UKSF.Api.Controllers {
-    [Route("[controller]"), Roles(RoleDefinitions.ADMIN)]
+    [Route("[controller]"), Permissions(Permissions.ADMIN)]
     public class VariablesController : Controller {
         private readonly IVariablesDataService variablesDataService;
 

@@ -62,10 +62,8 @@ namespace UKSF.Api.AppStart.Services {
             services.AddTransient<IBuildProcessorService, BuildProcessorService>();
             services.AddTransient<IChainOfCommandService, ChainOfCommandService>();
             services.AddTransient<ICommandRequestCompletionService, CommandRequestCompletionService>();
-            services.AddTransient<IDisplayNameService, DisplayNameService>();
             services.AddTransient<IGithubService, GithubService>();
             services.AddTransient<ILauncherService, LauncherService>();
-            services.AddTransient<ILoginService, LoginService>();
             services.AddTransient<IMissionPatchingService, MissionPatchingService>();
             services.AddTransient<IModpackService, ModpackService>();
             services.AddTransient<IRecruitmentService, RecruitmentService>();
@@ -83,7 +81,6 @@ namespace UKSF.Api.AppStart.Services {
             services.AddSingleton<IEmailService, EmailService>();
             services.AddSingleton<IGameServerHelpers, GameServerHelpers>();
             services.AddSingleton<IInstagramService, InstagramService>();
-            services.AddSingleton<ISessionService, SessionService>();
             services.AddSingleton<ITeamspeakService, TeamspeakService>();
 
             if (currentEnvironment.IsDevelopment()) {

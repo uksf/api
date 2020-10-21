@@ -76,26 +76,26 @@ namespace UKSF.Tests.Unit.Services.Utility {
 
         [Fact]
         public void ShouldReturnTrueForValidRole() {
-            List<Claim> claims = new List<Claim> {new Claim(ClaimTypes.Role, RoleDefinitions.ADMIN)};
+            List<Claim> claims = new List<Claim> {new Claim(ClaimTypes.Role, Permissions.ADMIN)};
             ClaimsPrincipal contextUser = new ClaimsPrincipal(new ClaimsIdentity(claims));
             httpContext = new DefaultHttpContext {User = contextUser};
 
             sessionService = new SessionService(mockHttpContextAccessor.Object, mockAccountService.Object);
 
-            bool subject = sessionService.ContextHasRole(RoleDefinitions.ADMIN);
+            bool subject = sessionService.ContextHasRole(Permissions.ADMIN);
 
             subject.Should().BeTrue();
         }
 
         [Fact]
         public void ShouldReturnFalseForInvalidRole() {
-            List<Claim> claims = new List<Claim> {new Claim(ClaimTypes.Role, RoleDefinitions.ADMIN)};
+            List<Claim> claims = new List<Claim> {new Claim(ClaimTypes.Role, Permissions.ADMIN)};
             ClaimsPrincipal contextUser = new ClaimsPrincipal(new ClaimsIdentity(claims));
             httpContext = new DefaultHttpContext {User = contextUser};
 
             sessionService = new SessionService(mockHttpContextAccessor.Object, mockAccountService.Object);
 
-            bool subject = sessionService.ContextHasRole(RoleDefinitions.COMMAND);
+            bool subject = sessionService.ContextHasRole(Permissions.COMMAND);
 
             subject.Should().BeFalse();
         }
