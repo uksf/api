@@ -23,7 +23,7 @@ using UKSF.Api.Services.Personnel;
 using UKSF.Common;
 
 namespace UKSF.Api.Controllers.CommandRequests {
-    [Route("[controller]"), Roles(RoleDefinitions.COMMAND)]
+    [Route("[controller]"), Permissions(Permissions.COMMAND)]
     public class CommandRequestsController : Controller {
         private readonly ICommandRequestCompletionService commandRequestCompletionService;
         private readonly ICommandRequestService commandRequestService;

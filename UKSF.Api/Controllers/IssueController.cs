@@ -14,7 +14,7 @@ using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers {
-    [Route("[controller]"), Roles(RoleDefinitions.MEMBER)]
+    [Route("[controller]"), Permissions(Permissions.MEMBER)]
     public class IssueController : Controller {
         private readonly IDisplayNameService displayNameService;
         private readonly IEmailService emailService;

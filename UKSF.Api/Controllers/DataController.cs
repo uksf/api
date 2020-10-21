@@ -4,7 +4,7 @@ using UKSF.Api.Services.Personnel;
 using UKSF.Api.Services.Utility;
 
 namespace UKSF.Api.Controllers {
-    [Route("[controller]"), Roles(RoleDefinitions.ADMIN)]
+    [Route("[controller]"), Permissions(Permissions.ADMIN)]
     public class DataController : Controller {
         private readonly DataCacheService dataCacheService;
 

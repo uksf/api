@@ -33,7 +33,7 @@ namespace UKSF.Api.Controllers {
             this.notificationsService = notificationsService;
         }
 
-        [HttpGet, Authorize, Roles(RoleDefinitions.RECRUITER)]
+        [HttpGet, Authorize, Permissions(Permissions.RECRUITER)]
         public IActionResult GetAll() => Ok(recruitmentService.GetAllApplications());
 
         [HttpGet("{id}"), Authorize]
@@ -42,10 +42,10 @@ namespace UKSF.Api.Controllers {
             return Ok(recruitmentService.GetApplication(account));
         }
 
-        [HttpGet("isrecruiter"), Authorize, Roles(RoleDefinitions.RECRUITER)]
+        [HttpGet("isrecruiter"), Authorize, Permissions(Permissions.RECRUITER)]
         public IActionResult GetIsRecruiter() => Ok(new {recruiter = recruitmentService.IsRecruiter(sessionService.GetContextAccount())});
 
-        [HttpGet("stats"), Authorize, Roles(RoleDefinitions.RECRUITER)]
+        [HttpGet("stats"), Authorize, Permissions(Permissions.RECRUITER)]
         public IActionResult GetRecruitmentStats() {
             string account = sessionService.GetContextId();
             List<object> activity = new List<object>();
@@ -65,7 +65,7 @@ namespace UKSF.Api.Controllers {
             return Ok(new {activity, yourStats = new {lastMonth = recruitmentService.GetStats(account, true), overall = recruitmentService.GetStats(account, false)}, sr1Stats = new {lastMonth = recruitmentService.GetStats("", true), overall = recruitmentService.GetStats("", false)}});
         }
 
-        [HttpPost("{id}"), Authorize, Roles(RoleDefinitions.RECRUITER)]
+        [HttpPost("{id}"), Authorize, Permissions(Permissions.RECRUITER)]
         public async Task<IActionResult> UpdateState([FromBody] dynamic body, string id) {
             ApplicationState updatedState = body.updatedState;
             Account account = accountService.Data.GetSingle(id);
@@ -124,9 +124,9 @@ namespace UKSF.Api.Controllers {
             return Ok();
         }
 
-        [HttpPost("recruiter/{id}"), Authorize, Roles(RoleDefinitions.RECRUITER_LEAD)]
+        [HttpPost("recruiter/{id}"), Authorize, Permissions(Permissions.RECRUITER_LEAD)]
         public async Task<IActionResult> PostReassignment([FromBody] JObject newRecruiter, string id) {
-            if (!sessionService.ContextHasRole(RoleDefinitions.ADMIN) && !recruitmentService.IsRecruiterLead()) throw new Exception($"attempted to assign recruiter to {newRecruiter}. Context is not recruitment lead.");
+            if (!sessionService.ContextHasRole(Permissions.ADMIN) && !recruitmentService.IsRecruiterLead()) throw new Exception($"attempted to assign recruiter to {newRecruiter}. Context is not recruitment lead.");
             string recruiter = newRecruiter["newRecruiter"].ToString();
             await recruitmentService.SetRecruiter(id, recruiter);
             Account account = accountService.Data.GetSingle(id);
@@ -138,7 +138,7 @@ namespace UKSF.Api.Controllers {
             return Ok();
         }
 
-        [HttpPost("ratings/{id}"), Authorize, Roles(RoleDefinitions.RECRUITER)]
+        [HttpPost("ratings/{id}"), Authorize, Permissions(Permissions.RECRUITER)]
         public async Task<Dictionary<string, uint>> Ratings([FromBody] KeyValuePair<string, uint> value, string id) {
             Dictionary<string, uint> ratings = accountService.Data.GetSingle(id).application.ratings;
 
@@ -153,7 +153,7 @@ namespace UKSF.Api.Controllers {
             return ratings;
         }
 
-        [HttpGet("recruiters"), Authorize, Roles(RoleDefinitions.RECRUITER_LEAD)]
+        [HttpGet("recruiters"), Authorize, Permissions(Permissions.RECRUITER_LEAD)]
         public IActionResult GetRecruiters() => Ok(recruitmentService.GetActiveRecruiters());
     }
 }

@@ -14,13 +14,13 @@ namespace UKSF.Api.Controllers {
 
         public DiscordController(IDiscordService discordService) => this.discordService = discordService;
 
-        [HttpGet("roles"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        [HttpGet("roles"), Authorize, Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> GetRoles() {
             IReadOnlyCollection<SocketRole> roles = await discordService.GetRoles();
             return Ok(roles.OrderBy(x => x.Name).Select(x => $"{x.Name}: {x.Id}").Aggregate((x, y) => $"{x}\n{y}"));
         }
 
-        [HttpGet("updateuserroles"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        [HttpGet("updateuserroles"), Authorize, Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> UpdateUserRoles() {
             await discordService.UpdateAllUsers();
             return Ok();

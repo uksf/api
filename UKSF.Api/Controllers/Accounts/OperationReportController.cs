@@ -7,7 +7,7 @@ using UKSF.Api.Models.Operations;
 using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers.Accounts {
-    [Route("[controller]"), Roles(RoleDefinitions.MEMBER)]
+    [Route("[controller]"), Permissions(Permissions.MEMBER)]
     public class OperationReportController : Controller {
         private readonly IOperationReportService operationReportService;
 

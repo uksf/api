@@ -5,9 +5,10 @@ using Newtonsoft.Json;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Utility;
+using UKSF.Api.Services;
 using UKSF.Api.Services.Utility.ScheduledActions;
 
-namespace UKSF.Api.Services.Utility {
+namespace UKSF.Api.Accounts.Services {
     public class ConfirmationCodeService : DataBackedService<IConfirmationCodeDataService>, IConfirmationCodeService {
         private readonly ISchedulerService schedulerService;
 

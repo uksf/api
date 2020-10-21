@@ -41,9 +41,6 @@ namespace UKSF.Api {
             this.currentEnvironment = currentEnvironment;
             IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(currentEnvironment.ContentRootPath).AddEnvironmentVariables();
             builder.Build();
-            LoginService.SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Secrets")["tokenKey"]));
-            LoginService.TokenIssuer = Global.TOKEN_ISSUER;
-            LoginService.TokenAudience = Global.TOKEN_AUDIENCE;
         }
 
         public void ConfigureServices(IServiceCollection services) {
@@ -61,60 +58,7 @@ namespace UKSF.Api {
                 )
             );
             services.AddSignalR().AddNewtonsoftJsonProtocol();
-            services.AddAuthentication(
-                        options => {
-                            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                            options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                        }
-                    )
-                    .AddJwtBearer(
-                        options => {
-                            options.TokenValidationParameters = new TokenValidationParameters {
-                                RequireExpirationTime = true,
-                                RequireSignedTokens = true,
-                                ValidateIssuerSigningKey = true,
-                                IssuerSigningKey = LoginService.SecurityKey,
-                                ValidateIssuer = true,
-                                ValidIssuer = Global.TOKEN_ISSUER,
-                                ValidateAudience = true,
-                                ValidAudience = Global.TOKEN_AUDIENCE,
-                                ValidateLifetime = true,
-                                ClockSkew = TimeSpan.Zero
-                            };
-                            options.Audience = Global.TOKEN_AUDIENCE;
-                            options.ClaimsIssuer = Global.TOKEN_ISSUER;
-                            options.SaveToken = true;
-                            options.Events = new JwtBearerEvents {
-                                OnMessageReceived = context => {
-                                    StringValues accessToken = context.Request.Query["access_token"];
-                                    if (!string.IsNullOrEmpty(accessToken) && context.Request.Path.StartsWithSegments("/hub")) {
-                                        context.Token = accessToken;
-                                    }
 
-                                    return Task.CompletedTask;
-                                }
-                            };
-                        }
-                    )
-                    .AddCookie()
-                    .AddSteam(
-                        options => {
-                            options.ForwardAuthenticate = JwtBearerDefaults.AuthenticationScheme;
-                            options.Events = new OpenIdAuthenticationEvents {
-                                OnAccessDenied = context => {
-                                    context.Response.StatusCode = 401;
-                                    return Task.CompletedTask;
-                                },
-                                OnTicketReceived = context => {
-                                    string[] idParts = context.Principal.Claims.First(claim => claim.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value.Split('/');
-                                    string id = idParts[^1];
-                                    context.ReturnUri = $"{context.ReturnUri}?id={id}";
-                                    return Task.CompletedTask;
-                                }
-                            };
-                        }
-                    );
 
             services.AddAutoMapper(typeof(AutoMapperConfigurationProfile));
             services.AddControllers();

@@ -19,7 +19,7 @@ using UKSF.Api.Services.Personnel;
 using UKSF.Common;
 
 namespace UKSF.Api.Controllers {
-    [Route("[controller]"), Roles(RoleDefinitions.PERSONNEL, RoleDefinitions.NCO, RoleDefinitions.RECRUITER)]
+    [Route("[controller]"), Permissions(Permissions.PERSONNEL, Permissions.NCO, Permissions.RECRUITER)]
     public class DischargesController : Controller {
         private readonly IAccountService accountService;
         private readonly IAssignmentService assignmentService;

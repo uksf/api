@@ -8,7 +8,7 @@ using UKSF.Api.Models.Integrations;
 using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers.Accounts {
-    [Route("[controller]"), Roles(RoleDefinitions.MEMBER)]
+    [Route("[controller]"), Permissions(Permissions.MEMBER)]
     public class OperationsController : Controller {
         private readonly IMongoDatabase database;
 

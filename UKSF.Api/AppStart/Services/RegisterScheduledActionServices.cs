@@ -5,7 +5,6 @@ using UKSF.Api.Services.Utility.ScheduledActions;
 namespace UKSF.Api.AppStart.Services {
     public static class ScheduledActionServiceExtensions {
         public static void RegisterScheduledActionServices(this IServiceCollection services) {
-            services.AddTransient<IDeleteExpiredConfirmationCodeAction, DeleteExpiredConfirmationCodeAction>();
             services.AddTransient<IInstagramImagesAction, InstagramImagesAction>();
             services.AddTransient<IInstagramTokenAction, InstagramTokenAction>();
             services.AddTransient<IPruneDataAction, PruneDataAction>();

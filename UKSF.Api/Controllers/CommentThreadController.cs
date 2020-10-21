@@ -13,7 +13,7 @@ using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers {
-    [Route("commentthread"), Roles(RoleDefinitions.CONFIRMED, RoleDefinitions.MEMBER, RoleDefinitions.DISCHARGED)]
+    [Route("commentthread"), Permissions(Permissions.CONFIRMED, Permissions.MEMBER, Permissions.DISCHARGED)]
     public class CommentThreadController : Controller {
         private readonly IAccountService accountService;
         private readonly ICommentThreadService commentThreadService;
@@ -55,7 +55,7 @@ namespace UKSF.Api.Controllers {
         public IActionResult GetCanPostComment(string id) {
             CommentThread commentThread = commentThreadService.Data.GetSingle(id);
             Account account = sessionService.GetContextAccount();
-            bool admin = sessionService.ContextHasRole(RoleDefinitions.ADMIN);
+            bool admin = sessionService.ContextHasRole(Permissions.ADMIN);
             bool canPost = commentThread.mode switch {
                 ThreadMode.RECRUITER => commentThread.authors.Any(x => x == sessionService.GetContextId()) || admin || recruitmentService.IsRecruiter(sessionService.GetContextAccount()),
                 ThreadMode.RANKSUPERIOR => commentThread.authors.Any(x => admin || ranksService.IsSuperior(account.rank, accountService.Data.GetSingle(x).rank)),

@@ -1,8 +1,9 @@
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 
-namespace UKSF.Api.Services.Personnel {
-    public static class RoleDefinitions {
+namespace UKSF.Api.Accounts.Services.Auth {
+    public static class Permissions {
         #region MemberStates
 
         public const string CONFIRMED = "CONFIRMED";
@@ -24,9 +25,21 @@ namespace UKSF.Api.Services.Personnel {
         public const string TESTER = "TESTER";
 
         #endregion
+
+        public static readonly HashSet<string> ALL = new HashSet<string> {
+            MEMBER,
+            ADMIN,
+            COMMAND,
+            NCO,
+            RECRUITER,
+            RECRUITER_LEAD,
+            PERSONNEL,
+            SERVERS,
+            TESTER
+        };
     }
 
-    public class RolesAttribute : AuthorizeAttribute {
-        public RolesAttribute(params string[] roles) => Roles = string.Join(",", roles.Distinct());
+    public class PermissionsAttribute : AuthorizeAttribute {
+        public PermissionsAttribute(params string[] roles) => Roles = string.Join(",", roles.Distinct());
     }
 }

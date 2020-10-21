@@ -134,7 +134,7 @@ namespace UKSF.Api.Controllers.Accounts {
             return Ok(PubliciseAccount(account));
         }
 
-        [HttpGet("under"), Authorize(Roles = RoleDefinitions.COMMAND)]
+        [HttpGet("under"), Authorize(Roles = Permissions.COMMAND)]
         public IActionResult GetAccountsUnder([FromQuery] bool reverse = false) {
             List<object> accounts = new List<object>();
 
@@ -240,14 +240,14 @@ namespace UKSF.Api.Controllers.Accounts {
             PublicAccount publicAccount = account.ToPublicAccount();
             publicAccount.displayName = displayNameService.GetDisplayName(account);
             publicAccount.permissions = new AccountPermissions {
-                admin = sessionService.ContextHasRole(RoleDefinitions.ADMIN),
-                command = sessionService.ContextHasRole(RoleDefinitions.COMMAND),
-                nco = sessionService.ContextHasRole(RoleDefinitions.NCO),
-                personnel = sessionService.ContextHasRole(RoleDefinitions.PERSONNEL),
-                recruiter = sessionService.ContextHasRole(RoleDefinitions.RECRUITER),
-                recruiterLead = sessionService.ContextHasRole(RoleDefinitions.RECRUITER_LEAD),
-                servers = sessionService.ContextHasRole(RoleDefinitions.SERVERS),
-                tester = sessionService.ContextHasRole(RoleDefinitions.TESTER)
+                admin = sessionService.ContextHasRole(Permissions.ADMIN),
+                command = sessionService.ContextHasRole(Permissions.COMMAND),
+                nco = sessionService.ContextHasRole(Permissions.NCO),
+                personnel = sessionService.ContextHasRole(Permissions.PERSONNEL),
+                recruiter = sessionService.ContextHasRole(Permissions.RECRUITER),
+                recruiterLead = sessionService.ContextHasRole(Permissions.RECRUITER_LEAD),
+                servers = sessionService.ContextHasRole(Permissions.SERVERS),
+                tester = sessionService.ContextHasRole(Permissions.TESTER)
             };
             return publicAccount;
         }

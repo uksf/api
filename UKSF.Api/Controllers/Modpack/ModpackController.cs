@@ -18,22 +18,22 @@ namespace UKSF.Api.Controllers.Modpack {
             this.githubService = githubService;
         }
 
-        [HttpGet("releases"), Authorize, Roles(RoleDefinitions.MEMBER)]
+        [HttpGet("releases"), Authorize, Permissions(Permissions.MEMBER)]
         public IEnumerable<ModpackRelease> GetReleases() => modpackService.GetReleases();
 
-        [HttpGet("rcs"), Authorize, Roles(RoleDefinitions.MEMBER)]
+        [HttpGet("rcs"), Authorize, Permissions(Permissions.MEMBER)]
         public IEnumerable<ModpackBuild> GetReleaseCandidates() => modpackService.GetRcBuilds();
 
-        [HttpGet("builds"), Authorize, Roles(RoleDefinitions.MEMBER)]
+        [HttpGet("builds"), Authorize, Permissions(Permissions.MEMBER)]
         public IEnumerable<ModpackBuild> GetBuilds() => modpackService.GetDevBuilds();
 
-        [HttpGet("builds/{id}"), Authorize, Roles(RoleDefinitions.MEMBER)]
+        [HttpGet("builds/{id}"), Authorize, Permissions(Permissions.MEMBER)]
         public IActionResult GetBuild(string id) {
             ModpackBuild build = modpackService.GetBuild(id);
             return build == null ? (IActionResult) BadRequest("Build does not exist") : Ok(build);
         }
 
-        [HttpGet("builds/{id}/step/{index}"), Authorize, Roles(RoleDefinitions.MEMBER)]
+        [HttpGet("builds/{id}/step/{index}"), Authorize, Permissions(Permissions.MEMBER)]
         public IActionResult GetBuildStep(string id, int index) {
             ModpackBuild build = modpackService.GetBuild(id);
             if (build == null) {
@@ -47,7 +47,7 @@ namespace UKSF.Api.Controllers.Modpack {
             return BadRequest("Build step does not exist");
         }
 
-        [HttpGet("builds/{id}/rebuild"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        [HttpGet("builds/{id}/rebuild"), Authorize, Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> Rebuild(string id) {
             ModpackBuild build = modpackService.GetBuild(id);
             if (build == null) {
@@ -58,7 +58,7 @@ namespace UKSF.Api.Controllers.Modpack {
             return Ok();
         }
 
-        [HttpGet("builds/{id}/cancel"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        [HttpGet("builds/{id}/cancel"), Authorize, Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> CancelBuild(string id) {
             ModpackBuild build = modpackService.GetBuild(id);
             if (build == null) {
@@ -69,7 +69,7 @@ namespace UKSF.Api.Controllers.Modpack {
             return Ok();
         }
 
-        [HttpPatch("release/{version}"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        [HttpPatch("release/{version}"), Authorize, Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> UpdateRelease(string version, [FromBody] ModpackRelease release) {
             if (!release.isDraft) {
                 return BadRequest($"Release {version} is not a draft");
@@ -79,19 +79,19 @@ namespace UKSF.Api.Controllers.Modpack {
             return Ok();
         }
 
-        [HttpGet("release/{version}"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        [HttpGet("release/{version}"), Authorize, Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> Release(string version) {
             await modpackService.Release(version);
             return Ok();
         }
 
-        [HttpGet("release/{version}/changelog"), Authorize, Roles(RoleDefinitions.ADMIN)]
+        [HttpGet("release/{version}/changelog"), Authorize, Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> RegenerateChangelog(string version) {
             await modpackService.RegnerateReleaseDraftChangelog(version);
             return Ok(modpackService.GetRelease(version));
         }
 
-        [HttpPost("newbuild"), Authorize, Roles(RoleDefinitions.TESTER)]
+        [HttpPost("newbuild"), Authorize, Permissions(Permissions.TESTER)]
         public async Task<IActionResult> NewBuild([FromBody] NewBuild newBuild) {
             if (!await githubService.IsReferenceValid(newBuild.reference)) {
                 return BadRequest($"{newBuild.reference} cannot be built as its version does not have the required make files");
