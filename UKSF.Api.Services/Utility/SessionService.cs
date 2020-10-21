@@ -18,15 +18,15 @@ namespace UKSF.Api.Services.Utility {
         public Account GetContextAccount() => accountService.Data.GetSingle(GetContextId());
 
         public string GetContextId() {
-            return httpContextAccessor.HttpContext.User.Claims.Single(x => x.Type == ClaimTypes.Sid).Value;
+            return httpContextAccessor.HttpContext?.User.Claims.Single(x => x.Type == ClaimTypes.Sid).Value;
         }
 
         public string GetContextEmail() {
-            return httpContextAccessor.HttpContext.User.Claims.Single(x => x.Type == ClaimTypes.Email).Value;
+            return httpContextAccessor.HttpContext?.User.Claims.Single(x => x.Type == ClaimTypes.Email).Value;
         }
 
         public bool ContextHasRole(string role) {
-            return httpContextAccessor.HttpContext.User.Claims.Any(x => x.Type == ClaimTypes.Role && x.Value == role);
+            return httpContextAccessor.HttpContext != null && httpContextAccessor.HttpContext.User.Claims.Any(x => x.Type == ClaimTypes.Role && x.Value == role);
         }
     }
 }
