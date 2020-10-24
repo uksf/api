@@ -5,28 +5,6 @@ using UKSF.Api.Models.Mission;
 namespace UKSF.Api.Services.Game.Missions {
     public static class MissionDataResolver {
         // TODO: Add special display to variables area that resolves IDs as display names, unit names, ranks, roles, etc
-        // Possibly do a selection list of all items per type?
-        // private static readonly string[] ENGINEER_IDS = {
-        //     "5a1e894463d0f71710089106", // Bridg
-        //     "59e38f31594c603b78aa9dc3", // Handi
-        //     "59e38f13594c603b78aa9dbf", // Carr
-        //     "5bc3bccdffbf7a11b803c3f6", // Delta
-        //     "59e3958b594c603b78aa9dcd", // Joho
-        //     "5a2439443fccaa15902aaa4e", // Mac
-        //     "5a4e7effd68b7e16e46fc614", // Woody
-        //     "5a1a16ce630e7413645b73fd", // Penn
-        //     "5a1a14b5aacf7b00346dcc37" // Gilbert
-        // };
-        //
-        // private static readonly string[] MEDIC_IDS = {
-        //     "59e3958b594c603b78aa9dcd", // Joho
-        //     "5a2439443fccaa15902aaa4e", // Mac
-        //     "5acfd72259f89d08ec1c21d8", // Stan
-        //     "5e0d3273b91cc00aa001213f", // Baxter
-        //     "5eee34c8ddf6642260aa6a4b", // Eliason
-        //     "5e0d31c3b91cc00aa001213b", // Gibney
-        //     "5a1a14b5aacf7b00346dcc37" // Gilbert
-        // };
 
         public static string ResolveObjectClass(MissionPlayer player) {
             if (IsMedic(player)) return "UKSF_B_Medic"; // Team Medic
@@ -40,7 +18,8 @@ namespace UKSF.Api.Services.Game.Missions {
                 "5a4415d8730e9d1628345007" => "UKSF_B_Pilot_617", // "617 Squadron"
                 "5a68b28e196530164c9b4fed" => "UKSF_B_Sniper", // "Sniper Platoon"
                 "5b9123ca7a6c1f0e9875601c" => "UKSF_B_Medic", // "3 Medical Regiment"
-                "5a42835b55d6109bf0b081bd" => ResolvePlayerUnitRole(player) == 3 ? "UKSF_B_Officer" : "UKSF_B_Rifleman", // "UKSF"
+                // "5a42835b55d6109bf0b081bd" => ResolvePlayerUnitRole(player) == 3 ? "UKSF_B_Officer" : "UKSF_B_Rifleman", // "UKSF"
+                "5a42835b55d6109bf0b081bd" => "UKSF_B_Pilot", // "UKSF"
                 _                          => ResolvePlayerUnitRole(player) != -1 ? "UKSF_B_SectionLeader" : "UKSF_B_Rifleman"
             };
         }
@@ -59,6 +38,7 @@ namespace UKSF.Api.Services.Game.Missions {
 
         public static string ResolveCallsign(MissionUnit unit, string defaultCallsign) {
             return unit.sourceUnit.id switch {
+                "5a42835b55d6109bf0b081bd" => "JSFAW", // "UKSF"
                 "5a435eea905d47336442c75a" => "JSFAW", // "Joint Special Forces Aviation Wing"
                 "5a441619730e9d162834500b" => "JSFAW", // "7 Squadron"
                 "5a441602730e9d162834500a" => "JSFAW", // "656 Squadron"
@@ -73,6 +53,7 @@ namespace UKSF.Api.Services.Game.Missions {
             List<MissionUnit> newOrderedUnits = new List<MissionUnit>();
             foreach (MissionUnit unit in orderedUnits) {
                 switch (unit.sourceUnit.id) {
+                    case "5a42835b55d6109bf0b081bd": // "UKSF"
                     case "5a441619730e9d162834500b": // "7 Squadron"
                     case "5a441602730e9d162834500a": // "656 Squadron"
                     case "5a4415d8730e9d1628345007": // "617 Squadron"
@@ -94,6 +75,7 @@ namespace UKSF.Api.Services.Game.Missions {
             int fillerCount;
             switch (unit.sourceUnit.id) {
                 case "5a435eea905d47336442c75a": // "Joint Special Forces Aviation Wing"
+                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a42835b55d6109bf0b081bd")?.members ?? new List<MissionPlayer>());
                     slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a435eea905d47336442c75a")?.members ?? new List<MissionPlayer>());
                     slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a441619730e9d162834500b")?.members ?? new List<MissionPlayer>());
                     slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a441602730e9d162834500a")?.members ?? new List<MissionPlayer>());
@@ -141,20 +123,9 @@ namespace UKSF.Api.Services.Game.Missions {
                 (a, b) => {
                     int roleA = ResolvePlayerUnitRole(a);
                     int roleB = ResolvePlayerUnitRole(b);
-                    int unitDepthA = a.unit.depth;
-                    int unitDepthB = b.unit.depth;
-                    int unitOrderA = a.unit.sourceUnit.order;
-                    int unitOrderB = b.unit.sourceUnit.order;
                     int rankA = MissionPatchData.instance.ranks.IndexOf(a.rank);
                     int rankB = MissionPatchData.instance.ranks.IndexOf(b.rank);
-                    return unitDepthA < unitDepthB ? -1 :
-                        unitDepthA > unitDepthB    ? 1 :
-                        unitOrderA < unitOrderB    ? -1 :
-                        unitOrderA > unitOrderB    ? 1 :
-                        roleA < roleB              ? 1 :
-                        roleA > roleB              ? -1 :
-                        rankA < rankB              ? -1 :
-                        rankA > rankB              ? 1 : string.CompareOrdinal(a.name, b.name);
+                    return roleA < roleB ? 1 : roleA > roleB ? -1 : rankA < rankB ? -1 : rankA > rankB ? 1 : string.CompareOrdinal(a.name, b.name);
                 }
             );
             return slots;
