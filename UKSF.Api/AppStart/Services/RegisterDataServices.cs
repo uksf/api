@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using UKSF.Api.Data.Admin;
 using UKSF.Api.Data.Command;
 using UKSF.Api.Data.Fake;
 using UKSF.Api.Data.Game;
@@ -10,7 +9,6 @@ using UKSF.Api.Data.Modpack;
 using UKSF.Api.Data.Operations;
 using UKSF.Api.Data.Personnel;
 using UKSF.Api.Data.Units;
-using UKSF.Api.Data.Utility;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 
@@ -19,8 +17,6 @@ namespace UKSF.Api.AppStart.Services {
         public static void RegisterDataServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
             // Non-Cached
             services.AddSingleton<ICommandRequestArchiveDataService, CommandRequestArchiveDataService>();
-            services.AddSingleton<ILogDataService, LogDataService>();
-            services.AddTransient<ISchedulerDataService, SchedulerDataService>();
 
             // Cached
             services.AddSingleton<IAccountDataService, AccountDataService>();
@@ -37,7 +33,6 @@ namespace UKSF.Api.AppStart.Services {
             services.AddSingleton<IReleasesDataService, ReleasesDataService>();
             services.AddSingleton<IRolesDataService, RolesDataService>();
             services.AddSingleton<IUnitsDataService, UnitsDataService>();
-            services.AddSingleton<IVariablesDataService, VariablesDataService>();
 
             if (currentEnvironment.IsDevelopment()) {
                 services.AddSingleton<INotificationsDataService, FakeNotificationsDataService>();

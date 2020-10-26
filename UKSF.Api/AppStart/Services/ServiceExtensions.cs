@@ -43,9 +43,6 @@ namespace UKSF.Api.AppStart.Services {
             services.AddSingleton<IClock, Clock>();
 
             // Data common
-            services.AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")));
-            services.AddTransient<IDataCollectionFactory, DataCollectionFactory>();
-            services.AddSingleton<DataCacheService>();
 
             // Events & Data
             services.RegisterEventServices();
@@ -53,8 +50,6 @@ namespace UKSF.Api.AppStart.Services {
             services.RegisterDataBackedServices(currentEnvironment);
 
             // Scheduled action services
-            services.AddSingleton<IScheduledActionService, ScheduledActionService>();
-            services.RegisterScheduledActionServices();
 
             // Services
             services.AddTransient<IAssignmentService, AssignmentService>();

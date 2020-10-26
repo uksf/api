@@ -33,7 +33,7 @@ namespace UKSF.Api.Services.Game.Missions {
             };
 
             foreach (Unit unit in unitsService.Data.Get(x => x.branch == UnitBranch.COMBAT).ToList()) {
-                MissionPatchData.instance.units.Add(new MissionUnit { sourceUnit = unit, depth = unitsService.GetUnitDepth(unit) });
+                MissionPatchData.instance.units.Add(new MissionUnit { sourceUnit = unit });
             }
 
             foreach (Account account in accountService.Data.Get().Where(x => !string.IsNullOrEmpty(x.rank) && ranksService.IsSuperiorOrEqual(x.rank, "Recruit"))) {
