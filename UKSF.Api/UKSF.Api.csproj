@@ -41,6 +41,7 @@
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\UKSF.Api.Admin\UKSF.Api.Admin.csproj" />
     <ProjectReference Include="..\UKSF.Api.Data\UKSF.Api.Data.csproj" />
     <ProjectReference Include="..\UKSF.Api.Events\UKSF.Api.Events.csproj" />
     <ProjectReference Include="..\UKSF.Api.Interfaces\UKSF.Api.Interfaces.csproj" />
@@ -51,5 +52,8 @@
     <None Update="Docs\test.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Controllers\Utility" />
   </ItemGroup>
 </Project>

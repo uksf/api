@@ -23,7 +23,7 @@ namespace UKSF.Api.Controllers.Accounts {
 
         protected override async Task<IActionResult> ApplyValidatedPayload(string codePayload, Account account) {
             await AccountService.Data.Update(account.id, "password", BCrypt.Net.BCrypt.HashPassword(codePayload));
-            LogWrapper.AuditLog($"Password changed for {account.id}");
+            LogWrapper.AuditLog($"Password changed for {account.id}", account.id);
             return Ok(LoginService.RegenerateToken(account.id));
         }
 

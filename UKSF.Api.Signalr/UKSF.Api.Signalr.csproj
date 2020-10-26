@@ -9,4 +9,8 @@
       <ProjectReference Include="..\UKSF.Common\UKSF.Common.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Hubs\Utility" />
+    </ItemGroup>
+
 </Project>

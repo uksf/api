@@ -26,8 +26,6 @@ namespace UKSF.Api.AppStart.Services {
     public static class DataBackedServiceExtensions {
         public static void RegisterDataBackedServices(this IServiceCollection services, IHostEnvironment currentEnvironment) {
             // Non-Cached
-            services.AddSingleton<ILoggingService, LoggingService>();
-            services.AddTransient<ISchedulerService, SchedulerService>();
 
             // Cached
             services.AddSingleton<IAccountService, AccountService>();
@@ -44,7 +42,6 @@ namespace UKSF.Api.AppStart.Services {
             services.AddTransient<IReleaseService, ReleaseService>();
             services.AddTransient<IRolesService, RolesService>();
             services.AddTransient<IUnitsService, UnitsService>();
-            services.AddTransient<IVariablesService, VariablesService>();
 
             if (currentEnvironment.IsDevelopment()) {
                 services.AddTransient<INotificationsService, FakeNotificationsService>();

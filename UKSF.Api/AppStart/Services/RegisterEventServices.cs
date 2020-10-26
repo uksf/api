@@ -22,7 +22,6 @@ namespace UKSF.Api.AppStart.Services {
         public static void RegisterEventServices(this IServiceCollection services) {
             // Event Buses
             services.AddSingleton<IDataEventBus<Account>, DataEventBus<Account>>();
-            services.AddSingleton<IDataEventBus<BasicLogMessage>, DataEventBus<BasicLogMessage>>();
             services.AddSingleton<IDataEventBus<CommandRequest>, DataEventBus<CommandRequest>>();
             services.AddSingleton<IDataEventBus<CommentThread>, DataEventBus<CommentThread>>();
             services.AddSingleton<IDataEventBus<ConfirmationCode>, DataEventBus<ConfirmationCode>>();
@@ -37,9 +36,7 @@ namespace UKSF.Api.AppStart.Services {
             services.AddSingleton<IDataEventBus<Oprep>, DataEventBus<Oprep>>();
             services.AddSingleton<IDataEventBus<Rank>, DataEventBus<Rank>>();
             services.AddSingleton<IDataEventBus<Role>, DataEventBus<Role>>();
-            services.AddSingleton<IDataEventBus<ScheduledJob>, DataEventBus<ScheduledJob>>();
             services.AddSingleton<IDataEventBus<Unit>, DataEventBus<Unit>>();
-            services.AddSingleton<IDataEventBus<VariableItem>, DataEventBus<VariableItem>>();
             services.AddSingleton<ISignalrEventBus, SignalrEventBus>();
 
             // Event Handlers
@@ -48,7 +45,6 @@ namespace UKSF.Api.AppStart.Services {
             services.AddSingleton<IBuildsEventHandler, BuildsEventHandler>();
             services.AddSingleton<ICommandRequestEventHandler, CommandRequestEventHandler>();
             services.AddSingleton<ICommentThreadEventHandler, CommentThreadEventHandler>();
-            services.AddSingleton<ILogEventHandler, LogEventHandler>();
             services.AddSingleton<INotificationsEventHandler, NotificationsEventHandler>();
             services.AddSingleton<ITeamspeakEventHandler, TeamspeakEventHandler>();
         }
