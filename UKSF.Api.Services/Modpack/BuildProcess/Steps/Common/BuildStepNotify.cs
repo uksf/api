@@ -47,6 +47,6 @@ namespace UKSF.Api.Services.Modpack.BuildProcess.Steps.Common {
         private string GetDiscordMessage(ModpackRelease release = null) =>
             release == null
                 ? $"Modpack RC Build - {Build.version} RC# {Build.buildNumber}\n{GetBuildMessage()}\n<{GetBuildLink()}>"
-                : $"Modpack Update - {release.version}\nChangelog: <https://uk-sf.co.uk/modpack/releases?version={release.version}>\n\n```{release.description}```";
+                : $"Modpack Update - {release.version}\nFull Changelog: <https://uk-sf.co.uk/modpack/releases?version={release.version}>\n\nSummary:\n```{release.description}```";
     }
 }
