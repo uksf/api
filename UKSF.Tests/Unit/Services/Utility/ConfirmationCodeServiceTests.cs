@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Utility;
+using UKSF.Api.Personnel.Models;
 using UKSF.Api.Services.Utility;
 using Xunit;
 

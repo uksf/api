@@ -6,6 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Admin.Extensions;
+using UKSF.Api.Admin.Services;
+using UKSF.Api.Admin.Services.Data;
+using UKSF.Api.Base;
+using UKSF.Api.Base.Services;
 using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Hubs;
@@ -14,8 +19,7 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Launcher;
 using UKSF.Api.Models.Message.Logging;
-using UKSF.Api.Services.Message;
-using UKSF.Api.Services.Personnel;
+using UKSF.Api.Personnel.Services;
 using UKSF.Api.Signalr.Hubs.Integrations;
 using UKSF.Common;
 
@@ -24,9 +28,10 @@ namespace UKSF.Api.Controllers {
     public class LauncherController : Controller {
         private readonly IDisplayNameService displayNameService;
         private readonly ILauncherFileService launcherFileService;
+        private readonly IHttpContextService httpContextService;
         private readonly IHubContext<LauncherHub, ILauncherClient> launcherHub;
         private readonly ILauncherService launcherService;
-        private readonly ISessionService sessionService;
+
         private readonly IVariablesDataService variablesDataService;
         private readonly IVariablesService variablesService;
 
@@ -35,7 +40,7 @@ namespace UKSF.Api.Controllers {
             IHubContext<LauncherHub, ILauncherClient> launcherHub,
             ILauncherService launcherService,
             ILauncherFileService launcherFileService,
-            ISessionService sessionService,
+            IHttpContextService httpContextService,
             IDisplayNameService displayNameService,
             IVariablesService variablesService
         ) {
@@ -43,7 +48,8 @@ namespace UKSF.Api.Controllers {
             this.launcherHub = launcherHub;
             this.launcherService = launcherService;
             this.launcherFileService = launcherFileService;
-            this.sessionService = sessionService;
+            this.httpContextService = httpContextService;
+
             this.displayNameService = displayNameService;
             this.variablesService = variablesService;
         }
@@ -81,7 +87,7 @@ namespace UKSF.Api.Controllers {
         public IActionResult ReportError([FromBody] JObject body) {
             string version = body["version"].ToString();
             string message = body["message"].ToString();
-            LogWrapper.Log(new LauncherLogMessage(version, message) { userId = sessionService.GetContextId(), name = displayNameService.GetDisplayName(sessionService.GetContextAccount()) });
+            // logger.Log(new LauncherLogMessage(version, message) { userId = httpContextService.GetUserId(), name = displayNameService.GetDisplayName(accountService.GetUserAccount()) });
 
             return Ok();
         }

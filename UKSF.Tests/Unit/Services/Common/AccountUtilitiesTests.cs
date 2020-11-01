@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using MongoDB.Bson;
-using UKSF.Api.Models.Personnel;
-using UKSF.Api.Services.Common;
+using UKSF.Api.Personnel.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Common {

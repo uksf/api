@@ -4,11 +4,11 @@ using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
-using UKSF.Api.Data.Message;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Events;
-using UKSF.Api.Models.Message;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services.Data;
 using UKSF.Tests.Common;
 using Xunit;
 

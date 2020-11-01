@@ -7,7 +7,6 @@ using Moq;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
-using UKSF.Api.Services.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Common {
@@ -31,7 +30,7 @@ namespace UKSF.Tests.Unit.Services.Common {
         [Theory, InlineData("5e39336e1b92ee2d14b7fe08", "Maj.Bridgford.A"), InlineData("5e39336e1b92ee2d14b7fe08, 5e3935db1b92ee2d14b7fe09", "Maj.Bridgford.A, Cpl.Carr.C"), InlineData("5e39336e1b92ee2d14b7fe085e3935db1b92ee2d14b7fe09", "Maj.Bridgford.ACpl.Carr.C"),
          InlineData("5e39336e1b92ee2d14b7fe08 has requested all the things for 5e3935db1b92ee2d14b7fe09", "Maj.Bridgford.A has requested all the things for Cpl.Carr.C")]
         public void ShouldConvertNameObjectIds(string input, string expected) {
-            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<Api.Models.Units.Unit, bool>>())).Returns<Api.Models.Units.Unit>(null);
+            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<Api.Personnel.Models.Unit, bool>>())).Returns<Api.Personnel.Models.Unit>(null);
             mockDisplayNameService.Setup(x => x.GetDisplayName("5e39336e1b92ee2d14b7fe08")).Returns("Maj.Bridgford.A");
             mockDisplayNameService.Setup(x => x.GetDisplayName("5e3935db1b92ee2d14b7fe09")).Returns("Cpl.Carr.C");
 
@@ -42,11 +41,11 @@ namespace UKSF.Tests.Unit.Services.Common {
 
         [Fact]
         public void ShouldConvertCorrectUnitWithPredicate() {
-            Api.Models.Units.Unit unit1 = new Api.Models.Units.Unit {name = "7 Squadron"};
-            Api.Models.Units.Unit unit2 = new Api.Models.Units.Unit {name = "656 Squadron"};
-            List<Api.Models.Units.Unit> collection = new List<Api.Models.Units.Unit> {unit1, unit2};
+            Api.Personnel.Models.Unit unit1 = new Api.Personnel.Models.Unit {name = "7 Squadron"};
+            Api.Personnel.Models.Unit unit2 = new Api.Personnel.Models.Unit {name = "656 Squadron"};
+            List<Api.Personnel.Models.Unit> collection = new List<Api.Personnel.Models.Unit> {unit1, unit2};
 
-            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<Api.Models.Units.Unit, bool>>())).Returns<Func<Api.Models.Units.Unit, bool>>(x => collection.FirstOrDefault(x));
+            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<Api.Personnel.Models.Unit, bool>>())).Returns<Func<Api.Personnel.Models.Unit, bool>>(x => collection.FirstOrDefault(x));
             mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(x => x);
 
             string subject = unit1.id.ConvertObjectIds();
@@ -58,9 +57,9 @@ namespace UKSF.Tests.Unit.Services.Common {
         public void ShouldConvertUnitObjectIds() {
             const string INPUT = "5e39336e1b92ee2d14b7fe08";
             const string EXPECTED = "7 Squadron";
-            Api.Models.Units.Unit unit = new Api.Models.Units.Unit {name = EXPECTED, id = INPUT};
+            Api.Personnel.Models.Unit unit = new Api.Personnel.Models.Unit {name = EXPECTED, id = INPUT};
 
-            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<Api.Models.Units.Unit, bool>>())).Returns(unit);
+            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<Api.Personnel.Models.Unit, bool>>())).Returns(unit);
             mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(x => x);
 
             string subject = INPUT.ConvertObjectIds();
@@ -73,7 +72,7 @@ namespace UKSF.Tests.Unit.Services.Common {
             const string INPUT = "5e39336e1b92ee2d14b7fe08";
             const string EXPECTED = "5e39336e1b92ee2d14b7fe08";
 
-            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<Api.Models.Units.Unit, bool>>())).Returns<Api.Models.Units.Unit>(null);
+            mockUnitsDataService.Setup(x => x.GetSingle(It.IsAny<Func<Api.Personnel.Models.Unit, bool>>())).Returns<Api.Personnel.Models.Unit>(null);
             mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(x => x);
 
             string subject = INPUT.ConvertObjectIds();

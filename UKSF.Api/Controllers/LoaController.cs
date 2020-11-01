@@ -4,17 +4,16 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Base;
+using UKSF.Api.Base.Services;
 using UKSF.Api.Interfaces.Command;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Command;
-using UKSF.Api.Models.Message;
-using UKSF.Api.Models.Personnel;
-using UKSF.Api.Models.Units;
-using UKSF.Api.Services.Message;
-using UKSF.Api.Services.Personnel;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Permissions(Permissions.MEMBER)]
@@ -24,13 +23,14 @@ namespace UKSF.Api.Controllers {
         private readonly ICommandRequestService commandRequestService;
         private readonly IDisplayNameService displayNameService;
         private readonly ILoaService loaService;
+        private readonly IHttpContextService httpContextService;
         private readonly INotificationsService notificationsService;
-        private readonly ISessionService sessionService;
+
         private readonly IUnitsService unitsService;
 
         public LoaController(
             ILoaService loaService,
-            ISessionService sessionService,
+            IHttpContextService httpContextService,
             IDisplayNameService displayNameService,
             IAccountService accountService,
             IUnitsService unitsService,
@@ -39,7 +39,8 @@ namespace UKSF.Api.Controllers {
             INotificationsService notificationsService
         ) {
             this.loaService = loaService;
-            this.sessionService = sessionService;
+            this.httpContextService = httpContextService;
+
             this.displayNameService = displayNameService;
             this.accountService = accountService;
             this.unitsService = unitsService;
@@ -56,13 +57,13 @@ namespace UKSF.Api.Controllers {
                     objectIds = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER).Select(x => x.id).ToList();
                     break;
                 case "unit":
-                    Account account = sessionService.GetContextAccount();
+                    Account account = accountService.GetUserAccount();
                     IEnumerable<Unit> groups = unitsService.GetAllChildren(unitsService.Data.GetSingle(x => x.name == account.unitAssignment), true);
                     List<string> members = groups.SelectMany(x => x.members.ToList()).ToList();
                     objectIds = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER && members.Contains(x.id)).Select(x => x.id).ToList();
                     break;
                 case "you":
-                    objectIds = new List<string> {sessionService.GetContextId()};
+                    objectIds = new List<string> {httpContextService.GetUserId()};
                     break;
                 default: return BadRequest();
             }
@@ -102,10 +103,10 @@ namespace UKSF.Api.Controllers {
                     notificationsService.Add(new Notification {owner = reviewerId, icon = NotificationIcons.REQUEST, message = $"Your review for {request.displayRequester}'s LOA is no longer required as they deleted their LOA", link = "/command/requests"});
                 }
 
-                LogWrapper.AuditLog($"Loa request deleted for '{displayNameService.GetDisplayName(accountService.Data.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
+                logger.LogAudit($"Loa request deleted for '{displayNameService.GetDisplayName(accountService.Data.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
             }
 
-            LogWrapper.AuditLog($"Loa deleted for '{displayNameService.GetDisplayName(accountService.Data.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
+            logger.LogAudit($"Loa deleted for '{displayNameService.GetDisplayName(accountService.Data.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");
             await loaService.Data.Delete(loa);
 
             return Ok();

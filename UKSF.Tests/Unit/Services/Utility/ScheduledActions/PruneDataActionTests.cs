@@ -7,9 +7,9 @@ using Moq;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Utility.ScheduledActions;
 using UKSF.Api.Models.Game;
-using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Message.Logging;
 using UKSF.Api.Models.Modpack;
+using UKSF.Api.Personnel.Models;
 using UKSF.Api.Services.Utility.ScheduledActions;
 using Xunit;
 

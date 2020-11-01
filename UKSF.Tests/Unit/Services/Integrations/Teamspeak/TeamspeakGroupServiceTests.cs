@@ -12,12 +12,11 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Models.Admin;
 using UKSF.Api.Models.Integrations;
-using UKSF.Api.Models.Personnel;
-using UKSF.Api.Models.Units;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services;
 using UKSF.Api.Services.Integrations.Teamspeak;
-using UKSF.Api.Services.Units;
 using Xunit;
-using UksfUnit = UKSF.Api.Models.Units.Unit;
+using UksfUnit = UKSF.Api.Personnel.Models.Unit;
 
 namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak {
     public class TeamspeakGroupServiceTests {

@@ -5,11 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using UKSF.Api.Interfaces.Admin;
+using UKSF.Api.Admin.Extensions;
+using UKSF.Api.Admin.Services;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Models.Mission;
-using UKSF.Api.Services.Admin;
-using UKSF.Api.Services.Message;
 using UKSF.Common;
 
 namespace UKSF.Api.Services.Game.Missions {
@@ -19,14 +19,16 @@ namespace UKSF.Api.Services.Game.Missions {
 
         private readonly MissionService missionService;
         private readonly IVariablesService variablesService;
+        private readonly ILogger logger;
 
         private string filePath;
         private string folderPath;
         private string parentFolderPath;
 
-        public MissionPatchingService(MissionService missionService, IVariablesService variablesService) {
+        public MissionPatchingService(MissionService missionService, IVariablesService variablesService, ILogger logger) {
             this.missionService = missionService;
             this.variablesService = variablesService;
+            this.logger = logger;
         }
 
         public Task<MissionPatchingResult> PatchMission(string path) {
@@ -45,7 +47,7 @@ namespace UKSF.Api.Services.Game.Missions {
                         result.playerCount = mission.playerCount;
                         result.success = result.reports.All(x => !x.error);
                     } catch (Exception exception) {
-                        LogWrapper.Log(exception);
+                        logger.LogError(exception);
                         result.reports = new List<MissionPatchingReport> { new MissionPatchingReport(exception) };
                         result.success = false;
                     } finally {

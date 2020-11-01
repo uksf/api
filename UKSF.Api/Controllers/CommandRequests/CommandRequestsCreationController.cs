@@ -4,13 +4,15 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Base;
+using UKSF.Api.Base.Services;
 using UKSF.Api.Interfaces.Command;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Command;
-using UKSF.Api.Models.Units;
-using UKSF.Api.Services.Personnel;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services;
 
 namespace UKSF.Api.Controllers.CommandRequests {
     [Route("CommandRequests/Create")]
@@ -18,20 +20,22 @@ namespace UKSF.Api.Controllers.CommandRequests {
         private readonly IAccountService accountService;
         private readonly ICommandRequestService commandRequestService;
         private readonly IDisplayNameService displayNameService;
+        private readonly IHttpContextService httpContextService;
         private readonly ILoaService loaService;
         private readonly IRanksService ranksService;
 
         private readonly string sessionId;
         private readonly IUnitsService unitsService;
 
-        public CommandRequestsCreationController(ISessionService sessionService, IAccountService accountService, ICommandRequestService commandRequestService, IRanksService ranksService, ILoaService loaService, IUnitsService unitsService, IDisplayNameService displayNameService) {
+        public CommandRequestsCreationController(IAccountService accountService, ICommandRequestService commandRequestService, IRanksService ranksService, ILoaService loaService, IUnitsService unitsService, IDisplayNameService displayNameService, IHttpContextService httpContextService) {
             this.accountService = accountService;
             this.commandRequestService = commandRequestService;
             this.ranksService = ranksService;
             this.loaService = loaService;
             this.unitsService = unitsService;
             this.displayNameService = displayNameService;
-            sessionId = sessionService.GetContextId();
+            this.httpContextService = httpContextService;
+            sessionId = httpContextService.GetUserId();
         }
 
         [HttpPut("rank"), Authorize, Permissions(Permissions.COMMAND)]

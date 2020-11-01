@@ -7,6 +7,11 @@ using AvsAnLib;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Admin.Extensions;
+using UKSF.Api.Admin.Services;
+using UKSF.Api.Admin.Services.Data;
+using UKSF.Api.Base;
+using UKSF.Api.Base.Services;
 using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Command;
 using UKSF.Api.Interfaces.Data.Cached;
@@ -15,21 +20,19 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Command;
-using UKSF.Api.Models.Message;
-using UKSF.Api.Models.Personnel;
-using UKSF.Api.Services.Admin;
-using UKSF.Api.Services.Message;
-using UKSF.Api.Services.Personnel;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services;
 using UKSF.Common;
 
 namespace UKSF.Api.Controllers.CommandRequests {
     [Route("[controller]"), Permissions(Permissions.COMMAND)]
     public class CommandRequestsController : Controller {
         private readonly ICommandRequestCompletionService commandRequestCompletionService;
+        private readonly IHttpContextService httpContextService;
         private readonly ICommandRequestService commandRequestService;
         private readonly IDisplayNameService displayNameService;
         private readonly INotificationsService notificationsService;
-        private readonly ISessionService sessionService;
+
         private readonly IUnitsService unitsService;
         private readonly IVariablesDataService variablesDataService;
         private readonly IVariablesService variablesService;
@@ -37,7 +40,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
         public CommandRequestsController(
             ICommandRequestService commandRequestService,
             ICommandRequestCompletionService commandRequestCompletionService,
-            ISessionService sessionService,
+            IHttpContextService httpContextService,
             IUnitsService unitsService,
             IDisplayNameService displayNameService,
             INotificationsService notificationsService,
@@ -46,7 +49,8 @@ namespace UKSF.Api.Controllers.CommandRequests {
         ) {
             this.commandRequestService = commandRequestService;
             this.commandRequestCompletionService = commandRequestCompletionService;
-            this.sessionService = sessionService;
+            this.httpContextService = httpContextService;
+
             this.unitsService = unitsService;
             this.displayNameService = displayNameService;
             this.notificationsService = notificationsService;
@@ -59,7 +63,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
             IEnumerable<CommandRequest> allRequests = commandRequestService.Data.Get();
             List<CommandRequest> myRequests = new List<CommandRequest>();
             List<CommandRequest> otherRequests = new List<CommandRequest>();
-            string contextId = sessionService.GetContextId();
+            string contextId = httpContextService.GetUserId();
             string id = variablesDataService.GetSingle("UNIT_ID_PERSONNEL").AsString();
             bool canOverride = unitsService.Data.GetSingle(id).members.Any(x => x == contextId);
             bool superAdmin = contextId == Global.SUPER_ADMIN;
@@ -108,14 +112,14 @@ namespace UKSF.Api.Controllers.CommandRequests {
         public async Task<IActionResult> UpdateRequestReview(string id, [FromBody] JObject body) {
             bool overriden = bool.Parse(body["overriden"].ToString());
             ReviewState state = Enum.Parse<ReviewState>(body["reviewState"].ToString());
-            Account sessionAccount = sessionService.GetContextAccount();
+            Account sessionAccount = accountService.GetUserAccount();
             CommandRequest request = commandRequestService.Data.GetSingle(id);
             if (request == null) {
                 throw new NullReferenceException($"Failed to get request with id {id}, does not exist");
             }
 
             if (overriden) {
-                LogWrapper.AuditLog($"Review state of {request.type.ToLower()} request for {request.displayRecipient} overriden to {state}");
+                logger.LogAudit($"Review state of {request.type.ToLower()} request for {request.displayRecipient} overriden to {state}");
                 await commandRequestService.SetRequestAllReviewStates(request, state);
 
                 foreach (string reviewerId in request.reviews.Select(x => x.Key).Where(x => x != sessionAccount.id)) {
@@ -136,7 +140,7 @@ namespace UKSF.Api.Controllers.CommandRequests {
                 }
 
                 if (currentState == state) return Ok();
-                LogWrapper.AuditLog($"Review state of {displayNameService.GetDisplayName(sessionAccount)} for {request.type.ToLower()} request for {request.displayRecipient} updated to {state}");
+                logger.LogAudit($"Review state of {displayNameService.GetDisplayName(sessionAccount)} for {request.type.ToLower()} request for {request.displayRecipient} updated to {state}");
                 await commandRequestService.SetRequestReviewState(request, sessionAccount.id, state);
             }
 

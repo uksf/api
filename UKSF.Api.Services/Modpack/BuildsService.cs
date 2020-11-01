@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using UKSF.Api.Base.Services;
+using UKSF.Api.Base.Services.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
@@ -16,13 +18,14 @@ using UKSF.Api.Services.Message;
 namespace UKSF.Api.Services.Modpack {
     public class BuildsService : DataBackedService<IBuildsDataService>, IBuildsService {
         private readonly IAccountService accountService;
+        private readonly IHttpContextService httpContextService;
         private readonly IBuildStepService buildStepService;
-        private readonly ISessionService sessionService;
 
-        public BuildsService(IBuildsDataService data, IBuildStepService buildStepService, IAccountService accountService, ISessionService sessionService) : base(data) {
+
+        public BuildsService(IBuildsDataService data, IBuildStepService buildStepService, IAccountService accountService, IHttpContextService httpContextService) : base(data) {
             this.buildStepService = buildStepService;
             this.accountService = accountService;
-            this.sessionService = sessionService;
+            this.httpContextService = httpContextService;
         }
 
         public async Task UpdateBuild(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition) {
@@ -93,7 +96,7 @@ namespace UKSF.Api.Services.Modpack {
                 buildNumber = previousBuild.buildNumber + 1,
                 environment = GameEnvironment.RELEASE,
                 commit = previousBuild.commit,
-                builderId = sessionService.GetContextId(),
+                builderId = httpContextService.GetUserId(),
                 steps = buildStepService.GetSteps(GameEnvironment.RELEASE)
             };
             build.commit.message = "Release deployment (no content changes)";
@@ -110,7 +113,7 @@ namespace UKSF.Api.Services.Modpack {
                 environment = latestBuild.environment,
                 steps = buildStepService.GetSteps(build.environment),
                 commit = latestBuild.commit,
-                builderId = sessionService.GetContextId(),
+                builderId = httpContextService.GetUserId(),
                 environmentVariables = latestBuild.environmentVariables
             };
             if (!string.IsNullOrEmpty(newSha)) {
@@ -162,7 +165,7 @@ namespace UKSF.Api.Services.Modpack {
                 }
             );
             _ = Task.WhenAll(tasks);
-            LogWrapper.AuditLog($"Marked {builds.Count} interrupted builds as cancelled", "SERVER");
+            logger.LogAudit($"Marked {builds.Count} interrupted builds as cancelled", "SERVER");
         }
 
         private async Task FinishBuild(ModpackBuild build, ModpackBuildResult result) {

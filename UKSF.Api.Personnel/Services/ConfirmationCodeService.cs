@@ -2,13 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Utility;
-using UKSF.Api.Models.Utility;
-using UKSF.Api.Services;
-using UKSF.Api.Services.Utility.ScheduledActions;
+using UKSF.Api.Base.Services.Data;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.ScheduledActions;
+using UKSF.Api.Personnel.Services.Data;
+using UKSF.Api.Utility.Services;
 
-namespace UKSF.Api.Accounts.Services {
+namespace UKSF.Api.Personnel.Services {
+    public interface IConfirmationCodeService : IDataBackedService<IConfirmationCodeDataService> {
+        Task<string> CreateConfirmationCode(string value);
+        Task<string> GetConfirmationCode(string id);
+        Task ClearConfirmationCodes(Func<ConfirmationCode, bool> predicate);
+    }
+
     public class ConfirmationCodeService : DataBackedService<IConfirmationCodeDataService>, IConfirmationCodeService {
         private readonly ISchedulerService schedulerService;
 

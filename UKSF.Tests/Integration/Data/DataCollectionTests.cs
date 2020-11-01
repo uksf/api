@@ -7,7 +7,7 @@ using Mongo2Go;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Data;
-using UKSF.Api.Models.Personnel;
+using UKSF.Api.Personnel.Models;
 using UKSF.Api.Services.Utility;
 using UKSF.Tests.Common;
 using Xunit;

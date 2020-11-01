@@ -9,7 +9,6 @@ using UKSF.Api.Interfaces.Units;
 using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Units;
-using UKSF.Api.Services.Personnel;
 
 // ReSharper disable HeuristicUnreachableCode
 #pragma warning disable 162

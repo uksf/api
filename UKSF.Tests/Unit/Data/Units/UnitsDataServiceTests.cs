@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Data.Units;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
-using UKSF.Api.Models.Units;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services.Data;
 using Xunit;
-using UksfUnit = UKSF.Api.Models.Units.Unit;
+using UksfUnit = UKSF.Api.Personnel.Models.Unit;
 
 namespace UKSF.Tests.Unit.Data.Units {
     public class UnitsDataServiceTests {

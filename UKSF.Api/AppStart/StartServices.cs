@@ -1,19 +1,20 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using UKSF.Api.Events;
+using MoreLinq;
+using UKSF.Api.Admin.Services;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
 using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
-using UKSF.Api.Interfaces.Utility;
-using UKSF.Api.Services.Admin;
+using UKSF.Api.Services;
+using UKSF.Api.Utility.ScheduledActions;
+using UKSF.Api.Utility.Services;
 
 namespace UKSF.Api.AppStart {
     public static class StartServices {
-        public static void Start() {
-            IServiceProvider serviceProvider = Global.ServiceProvider;
-
+        public static void StartUksfServices(this IServiceProvider serviceProvider) {
             if (serviceProvider.GetService<IHostEnvironment>().IsDevelopment()) {
                 // Do any test data setup
                 // TestDataSetup.Run(serviceProvider);
@@ -23,16 +24,16 @@ namespace UKSF.Api.AppStart {
             serviceProvider.GetService<MigrationUtility>()?.Migrate();
 
             // Warm cached data services
-            RegisterAndWarmCachedData.Warm();
+            serviceProvider.GetService<IDataCacheService>()?.InvalidateCachedData();
 
             // Register scheduled actions
-            RegisterScheduledActions.Register(serviceProvider);
+            serviceProvider.GetService<IScheduledActionService>()?.RegisterScheduledActions(serviceProvider.GetServices<IScheduledAction>());
 
             // Register build steps
             serviceProvider.GetService<IBuildStepService>()?.RegisterBuildSteps();
 
             // Add event handlers
-            serviceProvider.GetService<EventHandlerInitialiser>()?.InitEventHandlers();
+            serviceProvider.GetServices<IEventHandler>().ForEach(x => x.Init());
 
             // Start teamspeak manager
             serviceProvider.GetService<ITeamspeakManagerService>()?.Start();

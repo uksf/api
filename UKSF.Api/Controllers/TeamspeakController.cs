@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UKSF.Api.Interfaces.Integrations.Teamspeak;
-using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]")]

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using UKSF.Api.Base.Services;
 using UKSF.Api.Interfaces.Command;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Units;
@@ -13,12 +14,14 @@ using UKSF.Common;
 namespace UKSF.Api.Services.Command {
     public class ChainOfCommandService : IChainOfCommandService {
         private readonly string commanderRoleName;
-        private readonly ISessionService sessionService;
-        private readonly IUnitsService unitsService;
 
-        public ChainOfCommandService(IUnitsService unitsService, IRolesService rolesService, ISessionService sessionService) {
+        private readonly IUnitsService unitsService;
+        private readonly IHttpContextService httpContextService;
+
+        public ChainOfCommandService(IUnitsService unitsService, IRolesService rolesService, IHttpContextService httpContextService) {
             this.unitsService = unitsService;
-            this.sessionService = sessionService;
+            this.httpContextService = httpContextService;
+
             commanderRoleName = rolesService.GetUnitRoleByOrder(0).name;
         }
 
@@ -56,7 +59,7 @@ namespace UKSF.Api.Services.Command {
         }
 
         public bool InContextChainOfCommand(string id) {
-            Account contextAccount = sessionService.GetContextAccount();
+            Account contextAccount = accountService.GetUserAccount();
             if (id == contextAccount.id) return true;
             Unit unit = unitsService.Data.GetSingle(x => x.name == contextAccount.unitAssignment);
             return unitsService.RolesHasMember(unit, contextAccount.id) && (unit.members.Contains(id) || unitsService.GetAllChildren(unit, true).Any(unitChild => unitChild.members.Contains(id)));
@@ -139,7 +142,7 @@ namespace UKSF.Api.Services.Command {
             while (unit != null) {
                 if (UnitHasCommander(unit)) {
                     string commander = GetCommander(unit);
-                    if (commander != sessionService.GetContextId()) return commander;
+                    if (commander != httpContextService.GetUserId()) return commander;
                 }
 
                 unit = unitsService.GetParent(unit);

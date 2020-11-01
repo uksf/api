@@ -9,7 +9,6 @@ using Octokit.Internal;
 using UKSF.Api.Interfaces.Integrations.Github;
 using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Models.Modpack;
-using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers.Integrations {
     [Route("[controller]")]

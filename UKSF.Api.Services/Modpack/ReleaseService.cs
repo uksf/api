@@ -3,22 +3,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Services.Data;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Integrations.Github;
 using UKSF.Api.Interfaces.Modpack;
-using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
-using UKSF.Api.Services.Message;
+using UKSF.Api.Personnel.Services;
 
 namespace UKSF.Api.Services.Modpack {
     public class ReleaseService : DataBackedService<IReleasesDataService>, IReleaseService {
         private readonly IAccountService accountService;
+        private readonly ILogger logger;
         private readonly IGithubService githubService;
 
-        public ReleaseService(IReleasesDataService data, IGithubService githubService, IAccountService accountService) : base(data) {
+        public ReleaseService(IReleasesDataService data, IGithubService githubService, IAccountService accountService, ILogger logger) : base(data) {
             this.githubService = githubService;
             this.accountService = accountService;
+            this.logger = logger;
         }
 
         public ModpackRelease GetRelease(string version) {
@@ -42,7 +45,7 @@ namespace UKSF.Api.Services.Modpack {
             }
 
             if (!release.isDraft) {
-                LogWrapper.Log($"Attempted to release {version} again. Halting publish");
+                logger.LogWarning($"Attempted to release {version} again. Halting publish");
             }
 
             release.changelog += release.changelog.EndsWith("\n\n") ? "<br>" : "\n\n<br>";

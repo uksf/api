@@ -1,16 +1,14 @@
 ﻿using Moq;
 using UKSF.Api.Data.Command;
 using UKSF.Api.Data.Launcher;
-using UKSF.Api.Data.Message;
-using UKSF.Api.Data.Personnel;
-using UKSF.Api.Data.Utility;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
 using UKSF.Api.Models.Command;
 using UKSF.Api.Models.Launcher;
-using UKSF.Api.Models.Message;
-using UKSF.Api.Models.Personnel;
 using UKSF.Api.Models.Utility;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services;
+using UKSF.Api.Personnel.Services.Data;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data {

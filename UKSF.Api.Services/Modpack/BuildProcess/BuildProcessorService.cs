@@ -70,15 +70,14 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
         }
 
         private async Task ProcessRestore(IBuildStep runningStep, ModpackBuild build) {
-            LogWrapper.Log($"Attempting to restore repo prior to {build.version}");
+            logger.LogInfo($"Attempting to restore repo prior to {build.version}");
             if (build.environment != GameEnvironment.RELEASE || runningStep is BuildStepClean || runningStep is BuildStepBackup) {
-                LogWrapper.Log($"Won't restore. Env: {build.environment}, Step: {runningStep.GetType().Name}");
                 return;
             }
 
             ModpackBuildStep restoreStep = buildStepService.GetRestoreStepForRelease();
             if (restoreStep == null) {
-                LogWrapper.Log("Won't restore. Restore step not found");
+                logger.LogError("Restore step expected but not found. Won't restore");
                 return;
             }
 

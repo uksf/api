@@ -8,8 +8,10 @@ using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Hubs;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Models.Events;
-using UKSF.Api.Models.Message;
-using UKSF.Api.Signalr.Hubs.Message;
+using UKSF.Api.Personnel.EventHandlers;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.SignalrHubs.Clients;
+using UKSF.Api.Personnel.SignalrHubs.Hubs;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {

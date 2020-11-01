@@ -14,4 +14,9 @@
       <ProjectReference Include="..\UKSF.Api.Services\UKSF.Api.Services.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Personnel" />
+      <Folder Include="Units" />
+    </ItemGroup>
+
 </Project>

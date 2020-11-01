@@ -3,8 +3,8 @@ using System.Linq;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Interfaces.Data.Cached;
-using UKSF.Api.Models.Personnel;
-using UKSF.Api.Services.Personnel;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Personnel {

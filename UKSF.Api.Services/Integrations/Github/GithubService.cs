@@ -9,10 +9,10 @@ using System.Threading.Tasks;
 using GitHubJwt;
 using Microsoft.Extensions.Configuration;
 using Octokit;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Interfaces.Integrations.Github;
 using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
-using UKSF.Api.Services.Message;
 
 namespace UKSF.Api.Services.Integrations.Github {
     public class GithubService : IGithubService {
@@ -30,8 +30,12 @@ namespace UKSF.Api.Services.Integrations.Github {
         private static readonly string[] LABELS_EXCLUDE = { "type/cleanup", "type/by design", "fault/bi", "fault/other mod" };
 
         private readonly IConfiguration configuration;
+        private readonly ILogger logger;
 
-        public GithubService(IConfiguration configuration) => this.configuration = configuration;
+        public GithubService(IConfiguration configuration, ILogger logger) {
+            this.configuration = configuration;
+            this.logger = logger;
+        }
 
         public bool VerifySignature(string signature, string body) {
             string secret = configuration.GetSection("Github")["webhookSecret"];
@@ -127,7 +131,7 @@ namespace UKSF.Api.Services.Integrations.Github {
                     await client.Issue.Milestone.Update(REPO_ORG, REPO_NAME, milestone.Number, new MilestoneUpdate { State = ItemState.Closed });
                 }
             } catch (Exception exception) {
-                LogWrapper.Log(exception);
+                logger.LogError(exception);
             }
         }
 
@@ -175,7 +179,7 @@ namespace UKSF.Api.Services.Integrations.Github {
             IReadOnlyList<Milestone> milestones = await client.Issue.Milestone.GetAllForRepository(REPO_ORG, REPO_NAME, new MilestoneRequest { State = ItemStateFilter.Open });
             Milestone milestone = milestones.FirstOrDefault(x => x.Title == version);
             if (milestone == null) {
-                LogWrapper.Log($"Could not find open milestone for version {version}");
+                logger.LogWarning($"Could not find open milestone for version {version}");
             }
 
             return milestone;
