@@ -22,7 +22,6 @@ namespace UKSF.Api.Auth {
 
             services.AddTransient<ILoginService, LoginService>();
             services.AddTransient<IPermissionsService, PermissionsService>();
-            services.AddSingleton<ISessionService, SessionService>();
 
             services.AddAuthentication(
                         options => {

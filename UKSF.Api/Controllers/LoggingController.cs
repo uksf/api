@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using UKSF.Api.Models.Message.Logging;
-using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]

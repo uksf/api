@@ -15,7 +15,6 @@ using UKSF.Api.Models.Command;
 using UKSF.Api.Models.Message;
 using UKSF.Api.Models.Personnel;
 using UKSF.Api.Services.Message;
-using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Services.Command {
     public class CommandRequestService : DataBackedService<ICommandRequestDataService>, ICommandRequestService {
@@ -26,14 +25,14 @@ namespace UKSF.Api.Services.Command {
         private readonly IDisplayNameService displayNameService;
         private readonly INotificationsService notificationsService;
         private readonly IRanksService ranksService;
-        private readonly ISessionService sessionService;
+
         private readonly IUnitsService unitsService;
 
         public CommandRequestService(
             ICommandRequestDataService data,
             ICommandRequestArchiveDataService dataArchive,
             INotificationsService notificationsService,
-            ISessionService sessionService,
+
             IDisplayNameService displayNameService,
             IAccountService accountService,
             IChainOfCommandService chainOfCommandService,
@@ -43,7 +42,7 @@ namespace UKSF.Api.Services.Command {
             this.data = data;
             this.dataArchive = dataArchive;
             this.notificationsService = notificationsService;
-            this.sessionService = sessionService;
+
             this.displayNameService = displayNameService;
             this.accountService = accountService;
             this.chainOfCommandService = chainOfCommandService;
@@ -52,7 +51,7 @@ namespace UKSF.Api.Services.Command {
         }
 
         public async Task Add(CommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE) {
-            Account requesterAccount = sessionService.GetContextAccount();
+            Account requesterAccount = accountService.GetUserAccount();
             Account recipientAccount = accountService.Data.GetSingle(request.recipient);
             request.displayRequester = displayNameService.GetDisplayName(requesterAccount);
             request.displayRecipient = displayNameService.GetDisplayName(recipientAccount);
@@ -65,7 +64,7 @@ namespace UKSF.Api.Services.Command {
             }
 
             await data.Add(request);
-            LogWrapper.AuditLog($"{request.type} request created for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
+            logger.LogAudit($"{request.type} request created for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
             bool selfRequest = request.displayRequester == request.displayRecipient;
             string notificationMessage = $"{request.displayRequester} requires your review on {(selfRequest ? "their" : AvsAn.Query(request.type).Article)} {request.type.ToLower()} request{(selfRequest ? "" : $" for {request.displayRecipient}")}";
             foreach (Account account in accounts.Where(x => x.id != requesterAccount.id)) {

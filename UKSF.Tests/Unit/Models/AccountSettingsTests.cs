@@ -1,6 +1,6 @@
 ﻿using System;
 using FluentAssertions;
-using UKSF.Api.Models.Personnel;
+using UKSF.Api.Personnel.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Models {

@@ -2,8 +2,7 @@
 using Moq;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Personnel;
-using UKSF.Api.Models.Personnel;
-using UKSF.Api.Services.Personnel;
+using UKSF.Api.Personnel.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Personnel {

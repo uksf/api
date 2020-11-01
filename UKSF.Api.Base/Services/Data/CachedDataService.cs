@@ -18,8 +18,7 @@ namespace UKSF.Api.Base.Services.Data {
         private readonly IDataEventBus<T> dataEventBus;
         protected readonly object LockObject = new object();
 
-        protected CachedDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<T> dataEventBus, string collectionName) : base(dataCollectionFactory, collectionName) =>
-            this.dataEventBus = dataEventBus;
+        protected CachedDataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<T> dataEventBus, string collectionName) : base(dataCollectionFactory, collectionName) => this.dataEventBus = dataEventBus;
 
         public List<T> Cache { get; protected set; }
 

@@ -1,7 +1,12 @@
-﻿using UKSF.Api.Interfaces.Personnel;
-using UKSF.Api.Models.Personnel;
+﻿using UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.Services.Personnel {
+namespace UKSF.Api.Personnel.Services {
+    public interface IDisplayNameService {
+        string GetDisplayName(Account account);
+        string GetDisplayName(string id);
+        string GetDisplayNameWithoutRank(Account account);
+    }
+
     public class DisplayNameService : IDisplayNameService {
         private readonly IAccountService accountService;
         private readonly IRanksService ranksService;

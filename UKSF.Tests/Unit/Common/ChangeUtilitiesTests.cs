@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using MongoDB.Bson;
 using UKSF.Api.Models;
-using UKSF.Api.Models.Personnel;
+using UKSF.Api.Personnel.Models;
 using UKSF.Common;
 using UKSF.Tests.Common;
 using Xunit;

@@ -5,12 +5,13 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
+using UKSF.Api.Base;
+using UKSF.Api.Base.Services;
 using UKSF.Api.Interfaces.Message;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
-using UKSF.Api.Models.Message;
-using UKSF.Api.Models.Personnel;
-using UKSF.Api.Services.Personnel;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services;
 
 namespace UKSF.Api.Controllers {
     [Route("commentthread"), Permissions(Permissions.CONFIRMED, Permissions.MEMBER, Permissions.DISCHARGED)]
@@ -19,18 +20,20 @@ namespace UKSF.Api.Controllers {
         private readonly ICommentThreadService commentThreadService;
         private readonly IDisplayNameService displayNameService;
         private readonly INotificationsService notificationsService;
+        private readonly IHttpContextService httpContextService;
         private readonly IRanksService ranksService;
         private readonly IRecruitmentService recruitmentService;
-        private readonly ISessionService sessionService;
 
-        public CommentThreadController(ICommentThreadService commentThreadService, ISessionService sessionService, IRanksService ranksService, IAccountService accountService, IDisplayNameService displayNameService, IRecruitmentService recruitmentService, INotificationsService notificationsService) {
+
+        public CommentThreadController(ICommentThreadService commentThreadService, IRanksService ranksService, IAccountService accountService, IDisplayNameService displayNameService, IRecruitmentService recruitmentService, INotificationsService notificationsService, IHttpContextService httpContextService) {
             this.commentThreadService = commentThreadService;
-            this.sessionService = sessionService;
+
             this.ranksService = ranksService;
             this.accountService = accountService;
             this.displayNameService = displayNameService;
             this.recruitmentService = recruitmentService;
             this.notificationsService = notificationsService;
+            this.httpContextService = httpContextService;
         }
 
         [HttpGet("{id}"), Authorize]
@@ -54,10 +57,10 @@ namespace UKSF.Api.Controllers {
         [HttpGet("canpost/{id}"), Authorize]
         public IActionResult GetCanPostComment(string id) {
             CommentThread commentThread = commentThreadService.Data.GetSingle(id);
-            Account account = sessionService.GetContextAccount();
-            bool admin = sessionService.ContextHasRole(Permissions.ADMIN);
+            Account account = accountService.GetUserAccount();
+            bool admin = httpContextService.UserHasPermission(Permissions.ADMIN);
             bool canPost = commentThread.mode switch {
-                ThreadMode.RECRUITER => commentThread.authors.Any(x => x == sessionService.GetContextId()) || admin || recruitmentService.IsRecruiter(sessionService.GetContextAccount()),
+                ThreadMode.RECRUITER => commentThread.authors.Any(x => x == httpContextService.GetUserId()) || admin || recruitmentService.IsRecruiter(accountService.GetUserAccount()),
                 ThreadMode.RANKSUPERIOR => commentThread.authors.Any(x => admin || ranksService.IsSuperior(account.rank, accountService.Data.GetSingle(x).rank)),
                 ThreadMode.RANKEQUAL => commentThread.authors.Any(x => admin || ranksService.IsEqual(account.rank, accountService.Data.GetSingle(x).rank)),
                 ThreadMode.RANKSUPERIOROREQUAL => commentThread.authors.Any(x => admin || ranksService.IsSuperiorOrEqual(account.rank, accountService.Data.GetSingle(x).rank)),
@@ -71,7 +74,7 @@ namespace UKSF.Api.Controllers {
         public async Task<IActionResult> AddComment(string id, [FromBody] Comment comment) {
             comment.id = ObjectId.GenerateNewId().ToString();
             comment.timestamp = DateTime.Now;
-            comment.author = sessionService.GetContextId();
+            comment.author = httpContextService.GetUserId();
             await commentThreadService.InsertComment(id, comment);
             CommentThread thread = commentThreadService.Data.GetSingle(id);
             IEnumerable<string> participants = commentThreadService.GetCommentThreadParticipants(thread.id);

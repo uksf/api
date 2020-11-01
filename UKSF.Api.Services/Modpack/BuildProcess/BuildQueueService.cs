@@ -56,7 +56,7 @@ namespace UKSF.Api.Services.Modpack.BuildProcess {
                             if (buildTask.IsCompleted) {
                                 buildTasks.TryRemove(id, out Task _);
                             } else {
-                                LogWrapper.Log($"Build {id} was cancelled but has not completed");
+                                logger.LogWarning($"Build {id} was cancelled but has not completed within 1 minute of cancelling");
                             }
                         }
                     }

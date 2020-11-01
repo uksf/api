@@ -4,19 +4,21 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using UKSF.Api.Interfaces.Personnel;
-using UKSF.Api.Interfaces.Utility;
-using UKSF.Api.Models.Message.Logging;
-using UKSF.Api.Services.Message;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models.Logging;
+using UKSF.Api.Base.Services;
+using UKSF.Api.Personnel.Services;
 
 namespace UKSF.Api.Services {
     public class ExceptionHandler : IExceptionFilter {
         private readonly IDisplayNameService displayNameService;
-        private readonly ISessionService sessionService;
+        private readonly IHttpContextService httpContextService;
+        private readonly ILogger logger;
 
-        public ExceptionHandler(ISessionService sessionService, IDisplayNameService displayNameService) {
-            this.sessionService = sessionService;
+        public ExceptionHandler(IDisplayNameService displayNameService, IHttpContextService httpContextService, ILogger logger) {
             this.displayNameService = displayNameService;
+            this.httpContextService = httpContextService;
+            this.logger = logger;
         }
 
         public void OnException(ExceptionContext filterContext) {
@@ -37,10 +39,11 @@ namespace UKSF.Api.Services {
 
         private void Log(HttpContext context, Exception exception) {
             bool authenticated = context != null && context.User.Identity.IsAuthenticated;
-            WebLogMessage logMessage = new WebLogMessage(exception) {
-                httpMethod = context?.Request.Method ?? string.Empty, url = context?.Request.GetDisplayUrl(), userId = authenticated ? sessionService.GetContextId() : "GUEST", name = authenticated ? displayNameService.GetDisplayName(sessionService.GetContextAccount()) : "GUEST"
+            string userId = httpContextService.GetUserId();
+            HttpErrorLog log = new HttpErrorLog(exception) {
+                httpMethod = context?.Request.Method ?? string.Empty, url = context?.Request.GetDisplayUrl(), userId = authenticated ? userId : "GUEST", name = authenticated ? displayNameService.GetDisplayName(userId) : "GUEST"
             };
-            LogWrapper.Log(logMessage);
+            logger.LogHttpError(log);
         }
     }
 }

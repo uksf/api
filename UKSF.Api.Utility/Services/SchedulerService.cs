@@ -85,7 +85,7 @@ namespace UKSF.Api.Utility.Services {
                     try {
                         ExecuteAction(job);
                     } catch (Exception exception) {
-                        LogWrapper.Log(exception);
+                        logger.LogError(exception);
                     }
 
                     if (job.repeat) {

@@ -29,9 +29,16 @@
     <PackageReference Include="TaskScheduler" Version="2.8.21" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj" />
     <ProjectReference Include="..\UKSF.Api.Interfaces\UKSF.Api.Interfaces.csproj" />
     <ProjectReference Include="..\UKSF.Api.Models\UKSF.Api.Models.csproj" />
+    <ProjectReference Include="..\UKSF.Api.Personnel\UKSF.Api.Personnel.csproj" />
     <ProjectReference Include="..\UKSF.Api.Signalr\UKSF.Api.Signalr.csproj" />
     <ProjectReference Include="..\UKSF.Common\UKSF.Common.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Common" />
+    <Folder Include="Personnel" />
+    <Folder Include="Units" />
   </ItemGroup>
 </Project>

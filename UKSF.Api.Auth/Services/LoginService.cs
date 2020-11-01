@@ -5,6 +5,8 @@ using System.Linq;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services;
 
 namespace UKSF.Api.Auth.Services {
     public interface ILoginService {

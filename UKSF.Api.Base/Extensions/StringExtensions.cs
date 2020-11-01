@@ -28,7 +28,9 @@ namespace UKSF.Api.Base.Extensions {
         }
 
         public static IEnumerable<string> ExtractObjectIds(this string text) {
-            return Regex.Matches(text, @"[{(]?[0-9a-fA-F]{24}[)}]?").Select(x => ObjectId.TryParse(x.Value, out ObjectId unused) ? x.Value : string.Empty);
+            return Regex.Matches(text, @"[{(]?[0-9a-fA-F]{24}[)}]?").Where(x => IsObjectId(x.Value)).Select(x => x.Value);
         }
+
+        public static bool IsObjectId(this string text) => ObjectId.TryParse(text, out ObjectId unused);
     }
 }

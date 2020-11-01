@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Auth.Services;
+using UKSF.Api.Base.Extensions;
 using UKSF.Api.Base.Services;
 
 namespace UKSF.Api.Auth.Controllers {

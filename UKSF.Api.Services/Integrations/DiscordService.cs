@@ -5,15 +5,12 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
-using UKSF.Api.Interfaces.Admin;
+using UKSF.Api.Admin.Extensions;
+using UKSF.Api.Admin.Services;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Interfaces.Integrations;
-using UKSF.Api.Interfaces.Personnel;
-using UKSF.Api.Interfaces.Units;
-using UKSF.Api.Models.Personnel;
-using UKSF.Api.Models.Units;
-using UKSF.Api.Services.Admin;
-using UKSF.Api.Services.Message;
-using UKSF.Common;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services;
 
 namespace UKSF.Api.Services.Integrations {
     public class DiscordService : IDiscordService, IDisposable {
@@ -24,6 +21,7 @@ namespace UKSF.Api.Services.Integrations {
         private readonly IConfiguration configuration;
         private readonly IDisplayNameService displayNameService;
         private readonly IVariablesService variablesService;
+        private readonly ILogger logger;
         private readonly IRanksService ranksService;
         private readonly ulong specialUser;
         private readonly IUnitsService unitsService;
@@ -32,13 +30,14 @@ namespace UKSF.Api.Services.Integrations {
         private SocketGuild guild;
         private IReadOnlyCollection<SocketRole> roles;
 
-        public DiscordService(IConfiguration configuration, IRanksService ranksService, IUnitsService unitsService, IAccountService accountService, IDisplayNameService displayNameService, IVariablesService variablesService) {
+        public DiscordService(IConfiguration configuration, IRanksService ranksService, IUnitsService unitsService, IAccountService accountService, IDisplayNameService displayNameService, IVariablesService variablesService, ILogger logger) {
             this.configuration = configuration;
             this.ranksService = ranksService;
             this.unitsService = unitsService;
             this.accountService = accountService;
             this.displayNameService = displayNameService;
             this.variablesService = variablesService;
+            this.logger = logger;
             specialUser = variablesService.GetVariable("DID_U_OWNER").AsUlong();
         }
 
@@ -153,7 +152,7 @@ namespace UKSF.Api.Services.Integrations {
                 try {
                     await user.ModifyAsync(x => x.Nickname = name);
                 } catch (Exception) {
-                    LogWrapper.Log($"Failed to update nickname for {(string.IsNullOrEmpty(user.Nickname) ? user.Username : user.Nickname)}. Must manually be changed to: {name}");
+                    logger.LogError($"Failed to update nickname for {(string.IsNullOrEmpty(user.Nickname) ? user.Username : user.Nickname)}. Must manually be changed to: {name}");
                 }
             }
         }

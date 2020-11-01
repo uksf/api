@@ -1,11 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>netcoreapp5.0</TargetFramework>
+        <OutputType>Library</OutputType>
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Controllers" />
+      <ProjectReference Include="..\UKSF.Api.Admin\UKSF.Api.Admin.csproj" />
+      <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj" />
+      <ProjectReference Include="..\UKSF.Api.Utility\UKSF.Api.Utility.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="AutoMapper" Version="10.0.0" />
+      <PackageReference Include="AvsAn" Version="3.2.0" />
+      <PackageReference Include="BCrypt.Net-Next" Version="4.0.0" />
     </ItemGroup>
 
 </Project>

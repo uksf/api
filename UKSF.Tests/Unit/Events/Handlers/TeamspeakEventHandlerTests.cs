@@ -14,7 +14,7 @@ using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Models.Events;
 using UKSF.Api.Models.Events.Types;
 using UKSF.Api.Models.Integrations;
-using UKSF.Api.Models.Personnel;
+using UKSF.Api.Personnel.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {

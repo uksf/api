@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using UKSF.Api.Models.Admin;
-using UKSF.Api.Services.Admin;
 using UKSF.Common;
 using Xunit;
 

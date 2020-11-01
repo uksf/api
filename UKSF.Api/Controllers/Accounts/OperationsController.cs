@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using UKSF.Api.Models.Integrations;
-using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers.Accounts {
     [Route("[controller]"), Permissions(Permissions.MEMBER)]

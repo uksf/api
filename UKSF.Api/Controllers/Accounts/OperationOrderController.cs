@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Interfaces.Operations;
 using UKSF.Api.Models.Operations;
-using UKSF.Api.Services.Personnel;
 
 namespace UKSF.Api.Controllers.Accounts {
     [Route("[controller]"), Permissions(Permissions.MEMBER)]

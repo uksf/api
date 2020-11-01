@@ -5,10 +5,8 @@ using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services.Data;
-using UKSF.Api.Admin.SignalrHubs;
 using UKSF.Api.Admin.SignalrHubs.Clients;
 using UKSF.Api.Admin.SignalrHubs.Hubs;
-using UKSF.Api.Interfaces.Hubs;
 
 namespace UKSF.Api.Admin.Controllers {
     [Route("[controller]")]

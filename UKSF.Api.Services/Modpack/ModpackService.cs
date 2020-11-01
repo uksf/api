@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Octokit;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Services;
 using UKSF.Api.Interfaces.Integrations.Github;
 using UKSF.Api.Interfaces.Modpack;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
@@ -10,22 +12,24 @@ using UKSF.Api.Interfaces.Utility;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Integrations.Github;
 using UKSF.Api.Models.Modpack;
-using UKSF.Api.Services.Message;
 
 namespace UKSF.Api.Services.Modpack {
     public class ModpackService : IModpackService {
         private readonly IBuildQueueService buildQueueService;
         private readonly IBuildsService buildsService;
         private readonly IGithubService githubService;
+        private readonly IHttpContextService httpContextService;
+        private readonly ILogger logger;
         private readonly IReleaseService releaseService;
-        private readonly ISessionService sessionService;
 
-        public ModpackService(IReleaseService releaseService, IBuildsService buildsService, IBuildQueueService buildQueueService, IGithubService githubService, ISessionService sessionService) {
+
+        public ModpackService(IReleaseService releaseService, IBuildsService buildsService, IBuildQueueService buildQueueService, IGithubService githubService, IHttpContextService httpContextService, ILogger logger) {
             this.releaseService = releaseService;
             this.buildsService = buildsService;
             this.buildQueueService = buildQueueService;
             this.githubService = githubService;
-            this.sessionService = sessionService;
+            this.httpContextService = httpContextService;
+            this.logger = logger;
         }
 
         public IEnumerable<ModpackRelease> GetReleases() => releaseService.Data.Get();
@@ -40,25 +44,25 @@ namespace UKSF.Api.Services.Modpack {
 
         public async Task NewBuild(NewBuild newBuild) {
             GithubCommit commit = await githubService.GetLatestReferenceCommit(newBuild.reference);
-            if (!string.IsNullOrEmpty(sessionService.GetContextId())) {
-                commit.author = sessionService.GetContextEmail();
+            if (!string.IsNullOrEmpty(httpContextService.GetUserId())) {
+                commit.author = httpContextService.GetUserEmail();
             }
 
             string version = await githubService.GetReferenceVersion(newBuild.reference);
             ModpackBuild build = await buildsService.CreateDevBuild(version, commit, newBuild);
-            LogWrapper.AuditLog($"New build created ({GetBuildName(build)})");
+            logger.LogAudit($"New build created ({GetBuildName(build)})");
             buildQueueService.QueueBuild(build);
         }
 
         public async Task Rebuild(ModpackBuild build) {
-            LogWrapper.AuditLog($"Rebuild triggered for {GetBuildName(build)}.");
+            logger.LogAudit($"Rebuild triggered for {GetBuildName(build)}.");
             ModpackBuild rebuild = await buildsService.CreateRebuild(build, build.commit.branch == "None" ? string.Empty : (await githubService.GetLatestReferenceCommit(build.commit.branch)).after);
 
             buildQueueService.QueueBuild(rebuild);
         }
 
         public async Task CancelBuild(ModpackBuild build) {
-            LogWrapper.AuditLog($"Build {GetBuildName(build)} cancelled");
+            logger.LogAudit($"Build {GetBuildName(build)} cancelled");
 
             if (buildQueueService.CancelQueued(build.id)) {
                 await buildsService.CancelBuild(build);
@@ -68,7 +72,7 @@ namespace UKSF.Api.Services.Modpack {
         }
 
         public async Task UpdateReleaseDraft(ModpackRelease release) {
-            LogWrapper.AuditLog($"Release {release.version} draft updated");
+            logger.LogAudit($"Release {release.version} draft updated");
             await releaseService.UpdateDraft(release);
         }
 
@@ -76,7 +80,7 @@ namespace UKSF.Api.Services.Modpack {
             ModpackBuild releaseBuild = await buildsService.CreateReleaseBuild(version);
             buildQueueService.QueueBuild(releaseBuild);
 
-            LogWrapper.AuditLog($"{version} released");
+            logger.LogAudit($"{version} released");
         }
 
         public async Task RegnerateReleaseDraftChangelog(string version) {
@@ -84,7 +88,7 @@ namespace UKSF.Api.Services.Modpack {
             string newChangelog = await githubService.GenerateChangelog(version);
             release.changelog = newChangelog;
 
-            LogWrapper.AuditLog($"Release {version} draft changelog regenerated from github");
+            logger.LogAudit($"Release {version} draft changelog regenerated from github");
             await releaseService.UpdateDraft(release);
         }
 
@@ -99,7 +103,7 @@ namespace UKSF.Api.Services.Modpack {
             string rcVersion = await githubService.GetReferenceVersion(payload.Ref);
             ModpackRelease release = releaseService.GetRelease(rcVersion);
             if (release != null && !release.isDraft) {
-                LogWrapper.Log($"An attempt to build a release candidate for version {rcVersion} failed because the version has already been released.");
+                logger.LogWarning($"An attempt to build a release candidate for version {rcVersion} failed because the version has already been released.");
                 return;
             }
 

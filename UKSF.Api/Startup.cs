@@ -16,19 +16,18 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using UKSF.Api.Admin;
 using UKSF.Api.AppStart;
 using UKSF.Api.AppStart.Services;
 using UKSF.Api.Interfaces.Integrations.Teamspeak;
 using UKSF.Api.Interfaces.Modpack.BuildProcess;
+using UKSF.Api.Personnel.SignalrHubs;
+using UKSF.Api.Personnel.SignalrHubs.Hubs;
 using UKSF.Api.Services;
-using UKSF.Api.Services.Common;
-using UKSF.Api.Services.Personnel;
 using UKSF.Api.Signalr.Hubs.Command;
 using UKSF.Api.Signalr.Hubs.Game;
 using UKSF.Api.Signalr.Hubs.Integrations;
-using UKSF.Api.Signalr.Hubs.Message;
 using UKSF.Api.Signalr.Hubs.Modpack;
-using UKSF.Api.Signalr.Hubs.Personnel;
 using UKSF.Api.Signalr.Hubs.Utility;
 
 namespace UKSF.Api {
@@ -67,8 +66,8 @@ namespace UKSF.Api {
         }
 
         // ReSharper disable once UnusedMember.Global
-        public void Configure(IApplicationBuilder app, IHostApplicationLifetime hostApplicationLifetime) {
-            hostApplicationLifetime.ApplicationStopping.Register(OnShutdown);
+        public void Configure(IApplicationBuilder app, IHostApplicationLifetime hostApplicationLifetime, IServiceProvider serviceProvider) {
+            hostApplicationLifetime.ApplicationStopping.Register(() => OnShutdown(serviceProvider));
             app.UseStaticFiles();
             app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMode.Lax });
             app.UseSwagger();
@@ -84,7 +83,6 @@ namespace UKSF.Api {
                 endpoints => {
                     endpoints.MapControllers().RequireCors("CorsPolicy");
                     endpoints.MapHub<AccountHub>($"/hub/{AccountHub.END_POINT}");
-                    endpoints.MapHub<AdminHub>($"/hub/{AdminHub.END_POINT}");
                     endpoints.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.END_POINT}");
                     endpoints.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.END_POINT}");
                     endpoints.MapHub<LauncherHub>($"/hub/{LauncherHub.END_POINT}");
@@ -93,22 +91,20 @@ namespace UKSF.Api {
                     endpoints.MapHub<ServersHub>($"/hub/{ServersHub.END_POINT}");
                     endpoints.MapHub<TeamspeakHub>($"/hub/{TeamspeakHub.END_POINT}").RequireHost("localhost");
                     endpoints.MapHub<TeamspeakClientsHub>($"/hub/{TeamspeakClientsHub.END_POINT}");
-                    endpoints.MapHub<UtilityHub>($"/hub/{UtilityHub.END_POINT}");
+                    endpoints.AddUksfAdminSignalr();
                 }
             );
 
-            Global.ServiceProvider = app.ApplicationServices;
-            ServiceWrapper.Provider = Global.ServiceProvider;
-
-            StartServices.Start();
+            serviceProvider.StartUksfServices();
         }
 
-        private static void OnShutdown() {
+        // TODO: Check this works
+        private static void OnShutdown(IServiceProvider serviceProvider) {
             // Cancel any running builds
-            Global.ServiceProvider.GetService<IBuildQueueService>().CancelAll();
+            serviceProvider.GetService<IBuildQueueService>()?.CancelAll();
 
             // Stop teamspeak
-            Global.ServiceProvider.GetService<ITeamspeakManagerService>().Stop();
+            serviceProvider.GetService<ITeamspeakManagerService>()?.Stop();
         }
     }
 

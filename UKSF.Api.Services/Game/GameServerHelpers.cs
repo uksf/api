@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using UKSF.Api.Admin.Extensions;
+using UKSF.Api.Admin.Services;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Models.Game;
@@ -55,8 +58,12 @@ namespace UKSF.Api.Services.Game {
         };
 
         private readonly IVariablesService variablesService;
+        private readonly ILogger logger;
 
-        public GameServerHelpers(IVariablesService variablesService) => this.variablesService = variablesService;
+        public GameServerHelpers(IVariablesService variablesService, ILogger logger) {
+            this.variablesService = variablesService;
+            this.logger = logger;
+        }
 
         public string GetGameServerExecutablePath(GameServer gameServer) {
             string variableKey = gameServer.environment switch {
@@ -119,7 +126,7 @@ namespace UKSF.Api.Services.Game {
             string[] lines = File.ReadAllLines(GetGameServerSettingsPath());
             string curatorsMaxString = lines.FirstOrDefault(x => x.Contains("uksf_curator_curatorsMax"));
             if (string.IsNullOrEmpty(curatorsMaxString)) {
-                LogWrapper.Log("Could not find max curators in server settings file. Loading hardcoded deault '5'");
+                logger.LogWarning("Could not find max curators in server settings file. Loading hardcoded deault '5'");
                 return 5;
             }
 

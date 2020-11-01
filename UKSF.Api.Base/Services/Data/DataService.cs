@@ -25,7 +25,8 @@ namespace UKSF.Api.Base.Services.Data {
         Task DeleteMany(Expression<Func<T, bool>> filterExpression);
     }
 
-    public abstract class DataService<T> : DataServiceBase<T>, IDataService<T> where T : DatabaseObject {
+    public abstract class
+        DataService<T> : DataServiceBase<T>, IDataService<T> where T : DatabaseObject {
         private readonly IDataEventBus<T> dataEventBus;
 
         protected DataService(IDataCollectionFactory dataCollectionFactory, IDataEventBus<T> dataEventBus, string collectionName) : base(dataCollectionFactory, collectionName) =>

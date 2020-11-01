@@ -5,18 +5,22 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using UKSF.Api.Interfaces.Admin;
+using UKSF.Api.Admin.Extensions;
+using UKSF.Api.Admin.Services;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Interfaces.Integrations;
 using UKSF.Api.Models.Integrations;
-using UKSF.Api.Services.Message;
-using UKSF.Common;
 
 namespace UKSF.Api.Services.Integrations {
     public class InstagramService : IInstagramService {
         private readonly IVariablesService variablesService;
+        private readonly ILogger logger;
         private List<InstagramImage> images = new List<InstagramImage>();
 
-        public InstagramService(IVariablesService variablesService) => this.variablesService = variablesService;
+        public InstagramService(IVariablesService variablesService, ILogger logger) {
+            this.variablesService = variablesService;
+            this.logger = logger;
+        }
 
         public async Task RefreshAccessToken() {
             try {
@@ -25,23 +29,23 @@ namespace UKSF.Api.Services.Integrations {
                 using HttpClient client = new HttpClient();
                 HttpResponseMessage response = await client.GetAsync($"https://graph.instagram.com/refresh_access_token?access_token={accessToken}&grant_type=ig_refresh_token");
                 if (!response.IsSuccessStatusCode) {
-                    LogWrapper.Log($"Failed to get instagram access token, error: {response}");
+                    logger.LogError($"Failed to get instagram access token, error: {response}");
                     return;
                 }
 
                 string contentString = await response.Content.ReadAsStringAsync();
-                LogWrapper.Log($"Instagram response: {contentString}");
+                logger.LogInfo($"Instagram response: {contentString}");
                 string newAccessToken = JObject.Parse(contentString)["access_token"]?.ToString();
 
                 if (string.IsNullOrEmpty(newAccessToken)) {
-                    LogWrapper.Log($"Failed to get instagram access token from response: {contentString}");
+                    logger.LogError($"Failed to get instagram access token from response: {contentString}");
                     return;
                 }
 
                 await variablesService.Data.Update("INSTAGRAM_ACCESS_TOKEN", newAccessToken);
-                LogWrapper.Log("Updated Instagram access token");
+                logger.LogInfo("Updated Instagram access token");
             } catch (Exception exception) {
-                LogWrapper.Log(exception);
+                logger.LogError(exception);
             }
         }
 
@@ -53,7 +57,7 @@ namespace UKSF.Api.Services.Integrations {
                 using HttpClient client = new HttpClient();
                 HttpResponseMessage response = await client.GetAsync($"https://graph.instagram.com/{userId}/media?access_token={accessToken}&fields=id,timestamp,media_type,media_url,permalink");
                 if (!response.IsSuccessStatusCode) {
-                    LogWrapper.Log($"Failed to get instagram images, error: {response}");
+                    logger.LogError($"Failed to get instagram images, error: {response}");
                     return;
                 }
 
@@ -63,7 +67,7 @@ namespace UKSF.Api.Services.Integrations {
                 allMedia = allMedia.OrderByDescending(x => x.timestamp).ToList();
 
                 if (allMedia.Count == 0) {
-                    LogWrapper.Log($"Instagram response contains no images: {contentObject}");
+                    logger.LogWarning($"Instagram response contains no images: {contentObject}");
                     return;
                 }
 
@@ -86,7 +90,7 @@ namespace UKSF.Api.Services.Integrations {
                     instagramImage.base64 = await GetBase64(instagramImage);
                 }
             } catch (Exception exception) {
-                LogWrapper.Log(exception);
+                logger.LogError(exception);
             }
         }
 

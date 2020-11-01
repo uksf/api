@@ -1,5 +1,4 @@
 ﻿using FluentAssertions;
-using UKSF.Api.Services.Personnel;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Personnel {

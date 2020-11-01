@@ -6,8 +6,7 @@ using Moq;
 using UKSF.Api.Interfaces.Data.Cached;
 using UKSF.Api.Interfaces.Personnel;
 using UKSF.Api.Interfaces.Utility;
-using UKSF.Api.Models.Personnel;
-using UKSF.Api.Services.Personnel;
+using UKSF.Api.Personnel.Models;
 using UKSF.Api.Services.Utility;
 using Xunit;
 
@@ -16,7 +15,6 @@ namespace UKSF.Tests.Unit.Services.Utility {
         private readonly Mock<IHttpContextAccessor> mockHttpContextAccessor;
         private readonly Mock<IAccountDataService> mockAccountDataService;
         private readonly Mock<IAccountService> mockAccountService;
-        private ISessionService sessionService;
         private DefaultHttpContext httpContext;
 
         public SessionServiceTests() {
@@ -37,7 +35,7 @@ namespace UKSF.Tests.Unit.Services.Utility {
 
             sessionService = new SessionService(mockHttpContextAccessor.Object, mockAccountService.Object);
 
-            string subject = sessionService.GetContextId();
+            string subject = httpContextService.GetUserId();
 
             subject.Should().Be(account.id);
         }
@@ -51,7 +49,7 @@ namespace UKSF.Tests.Unit.Services.Utility {
 
             sessionService = new SessionService(mockHttpContextAccessor.Object, mockAccountService.Object);
 
-            string subject = sessionService.GetContextEmail();
+            string subject = httpContextService.GetUserEmail();
 
             subject.Should().Be(account.email);
         }
@@ -69,7 +67,7 @@ namespace UKSF.Tests.Unit.Services.Utility {
 
             sessionService = new SessionService(mockHttpContextAccessor.Object, mockAccountService.Object);
 
-            Account subject = sessionService.GetContextAccount();
+            Account subject = accountService.GetUserAccount();
 
             subject.Should().Be(account2);
         }

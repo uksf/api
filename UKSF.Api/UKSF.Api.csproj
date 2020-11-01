@@ -29,7 +29,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.0-rc.1.20451.17" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="5.0.0-rc.1.20451.17" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.0-rc.1.20451.17" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="5.0.0-rc.1.20451.17" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="5.0.0-rc.2.20475.17" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.7.2-preview-10803222715" />
     <PackageReference Include="MongoDB.Driver" Version="2.11.2" />
     <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
@@ -46,14 +46,13 @@
     <ProjectReference Include="..\UKSF.Api.Events\UKSF.Api.Events.csproj" />
     <ProjectReference Include="..\UKSF.Api.Interfaces\UKSF.Api.Interfaces.csproj" />
     <ProjectReference Include="..\UKSF.Api.Models\UKSF.Api.Models.csproj" />
+    <ProjectReference Include="..\UKSF.Api.Personnel\UKSF.Api.Personnel.csproj" />
     <ProjectReference Include="..\UKSF.Api.Services\UKSF.Api.Services.csproj" />
+    <ProjectReference Include="..\UKSF.Api.Utility\UKSF.Api.Utility.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Docs\test.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Controllers\Utility" />
   </ItemGroup>
 </Project>

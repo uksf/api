@@ -8,10 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Utility;
-using UKSF.Api.Services.Admin;
-using UKSF.Api.Services.Message;
 using UKSF.Common;
 
 namespace UKSF.Api.Controllers {
@@ -23,12 +22,14 @@ namespace UKSF.Api.Controllers {
 
         private readonly IConfirmationCodeService confirmationCodeService;
         private readonly IVariablesService variablesService;
+        private readonly ILogger logger;
         private readonly string url;
         private readonly string urlReturn;
 
-        public DiscordConnectionController(IConfirmationCodeService confirmationCodeService, IConfiguration configuration, IHostEnvironment currentEnvironment, IVariablesService variablesService) {
+        public DiscordConnectionController(IConfirmationCodeService confirmationCodeService, IConfiguration configuration, IHostEnvironment currentEnvironment, IVariablesService variablesService, ILogger logger) {
             this.confirmationCodeService = confirmationCodeService;
             this.variablesService = variablesService;
+            this.logger = logger;
             clientId = configuration.GetSection("Discord")["clientId"];
             clientSecret = configuration.GetSection("Discord")["clientSecret"];
             botToken = configuration.GetSection("Discord")["botToken"];
@@ -73,13 +74,13 @@ namespace UKSF.Api.Controllers {
             );
             string result = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode) {
-                LogWrapper.Log($"A discord connection request was denied by the user, or an error occurred: {result}");
+                logger.LogWarning($"A discord connection request was denied by the user, or an error occurred: {result}");
                 return "discordid=fail";
             }
 
             string token = JObject.Parse(result)["access_token"]?.ToString();
             if (string.IsNullOrEmpty(token)) {
-                LogWrapper.Log("A discord connection request failed. Could not get access token");
+                logger.LogWarning("A discord connection request failed. Could not get access token");
                 return "discordid=fail";
             }
 
@@ -89,7 +90,7 @@ namespace UKSF.Api.Controllers {
             string id = JObject.Parse(result)["id"]?.ToString();
             string username = JObject.Parse(result)["username"]?.ToString();
             if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(username)) {
-                LogWrapper.Log($"A discord connection request failed. Could not get username ({username}) or id ({id}) or an error occurred: {result}");
+                logger.LogWarning($"A discord connection request failed. Could not get username ({username}) or id ({id}) or an error occurred: {result}");
                 return "discordid=fail";
             }
 
@@ -100,7 +101,7 @@ namespace UKSF.Api.Controllers {
             );
             string added = "true";
             if (!response.IsSuccessStatusCode) {
-                LogWrapper.Log($"Failed to add '{username}' to guild: {response.StatusCode}, {response.Content.ReadAsStringAsync().Result}");
+                logger.LogWarning($"Failed to add '{username}' to guild: {response.StatusCode}, {response.Content.ReadAsStringAsync().Result}");
                 added = "false";
             }
 

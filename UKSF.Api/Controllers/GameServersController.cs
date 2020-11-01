@@ -9,14 +9,15 @@ using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Admin.Extensions;
+using UKSF.Api.Admin.Services;
+using UKSF.Api.Base;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Interfaces.Admin;
 using UKSF.Api.Interfaces.Game;
 using UKSF.Api.Interfaces.Hubs;
 using UKSF.Api.Models.Game;
 using UKSF.Api.Models.Mission;
-using UKSF.Api.Services.Admin;
-using UKSF.Api.Services.Message;
-using UKSF.Api.Services.Personnel;
 using UKSF.Api.Signalr.Hubs.Game;
 using UKSF.Common;
 
@@ -27,12 +28,14 @@ namespace UKSF.Api.Controllers {
         private readonly IHubContext<ServersHub, IServersClient> serversHub;
         private readonly IVariablesService variablesService;
         private readonly IGameServerHelpers gameServerHelpers;
+        private readonly ILogger logger;
 
-        public GameServersController(IGameServersService gameServersService, IHubContext<ServersHub, IServersClient> serversHub, IVariablesService variablesService, IGameServerHelpers gameServerHelpers) {
+        public GameServersController(IGameServersService gameServersService, IHubContext<ServersHub, IServersClient> serversHub, IVariablesService variablesService, IGameServerHelpers gameServerHelpers, ILogger logger) {
             this.gameServersService = gameServersService;
             this.serversHub = serversHub;
             this.variablesService = variablesService;
             this.gameServerHelpers = gameServerHelpers;
+            this.logger = logger;
         }
 
         [HttpGet, Authorize]
@@ -59,14 +62,14 @@ namespace UKSF.Api.Controllers {
         [HttpPut, Authorize]
         public async Task<IActionResult> AddServer([FromBody] GameServer gameServer) {
             await gameServersService.Data.Add(gameServer);
-            LogWrapper.AuditLog($"Server added '{gameServer}'");
+            logger.LogAudit($"Server added '{gameServer}'");
             return Ok();
         }
 
         [HttpPatch, Authorize]
         public async Task<IActionResult> EditGameServer([FromBody] GameServer gameServer) {
             GameServer oldGameServer = gameServersService.Data.GetSingle(x => x.id == gameServer.id);
-            LogWrapper.AuditLog($"Game server '{gameServer.name}' updated:{oldGameServer.Changes(gameServer)}");
+            logger.LogAudit($"Game server '{gameServer.name}' updated:{oldGameServer.Changes(gameServer)}");
             bool environmentChanged = false;
             if (oldGameServer.environment != gameServer.environment) {
                 environmentChanged = true;
@@ -95,7 +98,7 @@ namespace UKSF.Api.Controllers {
         [HttpDelete("{id}"), Authorize]
         public async Task<IActionResult> DeleteGameServer(string id) {
             GameServer gameServer = gameServersService.Data.GetSingle(x => x.id == id);
-            LogWrapper.AuditLog($"Game server deleted '{gameServer.name}'");
+            logger.LogAudit($"Game server deleted '{gameServer.name}'");
             await gameServersService.Data.Delete(id);
 
             return Ok(gameServersService.Data.Get());
@@ -122,10 +125,10 @@ namespace UKSF.Api.Controllers {
                     MissionPatchingResult missionPatchingResult = await gameServersService.PatchMissionFile(file.Name);
                     missionPatchingResult.reports = missionPatchingResult.reports.OrderByDescending(x => x.error).ToList();
                     missionReports.Add(new { mission = file.Name, missionPatchingResult.reports });
-                    LogWrapper.AuditLog($"Uploaded mission '{file.Name}'");
+                    logger.LogAudit($"Uploaded mission '{file.Name}'");
                 }
             } catch (Exception exception) {
-                LogWrapper.Log(exception);
+                logger.LogError(exception);
                 return BadRequest(exception);
             }
 
@@ -174,14 +177,14 @@ namespace UKSF.Api.Controllers {
             // Execute launch
             await gameServersService.LaunchGameServer(gameServer);
 
-            LogWrapper.AuditLog($"Game server launched '{missionSelection}' on '{gameServer.name}'");
+            logger.LogAudit($"Game server launched '{missionSelection}' on '{gameServer.name}'");
             return Ok(patchingResult.reports);
         }
 
         [HttpGet("stop/{id}"), Authorize]
         public async Task<IActionResult> StopServer(string id) {
             GameServer gameServer = gameServersService.Data.GetSingle(id);
-            LogWrapper.AuditLog($"Game server stopped '{gameServer.name}'");
+            logger.LogAudit($"Game server stopped '{gameServer.name}'");
             await gameServersService.GetGameServerStatus(gameServer);
             if (!gameServer.status.started && !gameServer.status.running) return BadRequest("Server is not running. This shouldn't happen so please contact an admin");
             await gameServersService.StopGameServer(gameServer);
@@ -192,7 +195,7 @@ namespace UKSF.Api.Controllers {
         [HttpGet("kill/{id}"), Authorize]
         public async Task<IActionResult> KillServer(string id) {
             GameServer gameServer = gameServersService.Data.GetSingle(id);
-            LogWrapper.AuditLog($"Game server killed '{gameServer.name}'");
+            logger.LogAudit($"Game server killed '{gameServer.name}'");
             await gameServersService.GetGameServerStatus(gameServer);
             if (!gameServer.status.started && !gameServer.status.running) return BadRequest("Server is not running. This shouldn't happen so please contact an admin");
             try {
@@ -208,7 +211,7 @@ namespace UKSF.Api.Controllers {
         [HttpGet("killall"), Authorize]
         public IActionResult KillAllArmaProcesses() {
             int killed = gameServersService.KillAllArmaProcesses();
-            LogWrapper.AuditLog($"Killed {killed} Arma instances");
+            logger.LogAudit($"Killed {killed} Arma instances");
             return Ok();
         }
 
@@ -220,8 +223,8 @@ namespace UKSF.Api.Controllers {
             List<GameServerMod> mods = JsonConvert.DeserializeObject<List<GameServerMod>>(body.GetValueFromBody("mods"));
             List<GameServerMod> serverMods = JsonConvert.DeserializeObject<List<GameServerMod>>(body.GetValueFromBody("serverMods"));
             GameServer gameServer = gameServersService.Data.GetSingle(id);
-            LogWrapper.AuditLog($"Game server '{gameServer.name}' mods updated:{gameServer.mods.Select(x => x.name).Changes(mods.Select(x => x.name))}");
-            LogWrapper.AuditLog($"Game server '{gameServer.name}' serverMods updated:{gameServer.serverMods.Select(x => x.name).Changes(serverMods.Select(x => x.name))}");
+            logger.LogAudit($"Game server '{gameServer.name}' mods updated:{gameServer.mods.Select(x => x.name).Changes(mods.Select(x => x.name))}");
+            logger.LogAudit($"Game server '{gameServer.name}' serverMods updated:{gameServer.serverMods.Select(x => x.name).Changes(serverMods.Select(x => x.name))}");
             await gameServersService.Data.Update(id, Builders<GameServer>.Update.Unset(x => x.mods).Unset(x => x.serverMods));
             await gameServersService.Data.Update(id, Builders<GameServer>.Update.Set(x => x.mods, mods).Set(x => x.serverMods, serverMods));
             return Ok(gameServersService.GetAvailableMods(id));

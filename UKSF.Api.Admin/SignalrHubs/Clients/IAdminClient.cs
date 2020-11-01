@@ -1,11 +1,12 @@
 using System.Threading.Tasks;
-using UKSF.Api.Logging.Models;
+using UKSF.Api.Base.Models;
+using UKSF.Api.Base.Models.Logging;
 
 namespace UKSF.Api.Admin.SignalrHubs.Clients {
     public interface IAdminClient {
-        Task ReceiveAuditLog(AuditLogMessage log);
-        Task ReceiveErrorLog(WebLogMessage log);
-        Task ReceiveLauncherLog(LauncherLogMessage log);
-        Task ReceiveLog(BasicLogMessage log);
+        Task ReceiveAuditLog(AuditLog log);
+        Task ReceiveErrorLog(HttpErrorLog log);
+        Task ReceiveLauncherLog(LauncherLog log);
+        Task ReceiveLog(BasicLog log);
     }
 }

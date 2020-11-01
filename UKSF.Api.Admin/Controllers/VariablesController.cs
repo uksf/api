@@ -4,14 +4,19 @@ using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Admin.Models;
 using UKSF.Api.Admin.Services.Data;
 using UKSF.Api.Base;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Extensions;
 
 namespace UKSF.Api.Admin.Controllers {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]
     public class VariablesController : Controller {
         private readonly IVariablesDataService variablesDataService;
+        private readonly ILogger logger;
 
-        public VariablesController(IVariablesDataService variablesDataService) => this.variablesDataService = variablesDataService;
+        public VariablesController(IVariablesDataService variablesDataService, ILogger logger) {
+            this.variablesDataService = variablesDataService;
+            this.logger = logger;
+        }
 
         [HttpGet, Authorize]
         public IActionResult GetAll() => Ok(variablesDataService.Get());
@@ -34,14 +39,14 @@ namespace UKSF.Api.Admin.Controllers {
         public async Task<IActionResult> AddVariableItem([FromBody] VariableItem variableItem) {
             variableItem.key = variableItem.key.Keyify();
             await variablesDataService.Add(variableItem);
-            LogWrapper.AuditLog($"VariableItem added '{variableItem.key}, {variableItem.item}'");
+            logger.LogAudit($"VariableItem added '{variableItem.key}, {variableItem.item}'");
             return Ok();
         }
 
         [HttpPatch, Authorize]
         public async Task<IActionResult> EditVariableItem([FromBody] VariableItem variableItem) {
             VariableItem oldVariableItem = variablesDataService.GetSingle(variableItem.key);
-            LogWrapper.AuditLog($"VariableItem '{oldVariableItem.key}' updated from '{oldVariableItem.item}' to '{variableItem.item}'");
+            logger.LogAudit($"VariableItem '{oldVariableItem.key}' updated from '{oldVariableItem.item}' to '{variableItem.item}'");
             await variablesDataService.Update(variableItem.key, variableItem.item);
             return Ok(variablesDataService.Get());
         }
@@ -49,7 +54,7 @@ namespace UKSF.Api.Admin.Controllers {
         [HttpDelete("{key}"), Authorize]
         public async Task<IActionResult> DeleteVariableItem(string key) {
             VariableItem variableItem = variablesDataService.GetSingle(key);
-            LogWrapper.AuditLog($"VariableItem deleted '{variableItem.key}, {variableItem.item}'");
+            logger.LogAudit($"VariableItem deleted '{variableItem.key}, {variableItem.item}'");
             await variablesDataService.Delete(key);
             return Ok(variablesDataService.Get());
         }

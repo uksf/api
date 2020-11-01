@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Data.Personnel;
 using UKSF.Api.Interfaces.Data;
 using UKSF.Api.Interfaces.Events;
-using UKSF.Api.Models.Personnel;
+using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services.Data;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Personnel {

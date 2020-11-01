@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using UKSF.Api.Models.Units;
+using UKSF.Api.Personnel.Models;
 
 namespace UKSF.Api.AppStart {
     public class AutoMapperConfigurationProfile : Profile {
