@@ -4,7 +4,7 @@ using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
-using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
 using UKSF.Api.Modpack.Models;
@@ -29,9 +29,9 @@ namespace UKSF.Tests.Unit.Data.Modpack {
 
         [Fact]
         public void Should_get_collection_in_order() {
-            ModpackBuild item1 = new ModpackBuild { buildNumber = 4 };
-            ModpackBuild item2 = new ModpackBuild { buildNumber = 10 };
-            ModpackBuild item3 = new ModpackBuild { buildNumber = 9 };
+            ModpackBuild item1 = new ModpackBuild { BuildNumber = 4 };
+            ModpackBuild item2 = new ModpackBuild { BuildNumber = 10 };
+            ModpackBuild item3 = new ModpackBuild { BuildNumber = 9 };
 
             mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackBuild> { item1, item2, item3 });
 
@@ -43,18 +43,18 @@ namespace UKSF.Tests.Unit.Data.Modpack {
         [Fact]
         public void Should_update_build_step_with_event() {
             string id = ObjectId.GenerateNewId().ToString();
-            ModpackBuildStep modpackBuildStep = new ModpackBuildStep("step") { index = 0, running = false };
-            ModpackBuild modpackBuild = new ModpackBuild { id = id, buildNumber = 1, steps = new List<ModpackBuildStep> { modpackBuildStep } };
+            ModpackBuildStep modpackBuildStep = new ModpackBuildStep("step") { Index = 0, Running = false };
+            ModpackBuild modpackBuild = new ModpackBuild { id = id, BuildNumber = 1, Steps = new List<ModpackBuildStep> { modpackBuildStep } };
             DataEventModel<ModpackBuild> subject = null;
 
             mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackBuild>());
             mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<ModpackBuild>>()))
-                              .Callback(() => { modpackBuild.steps.First().running = true; });
+                              .Callback(() => { modpackBuild.Steps.First().Running = true; });
             mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<ModpackBuild>>())).Callback<DataEventModel<ModpackBuild>>(x => subject = x);
 
             buildsDataService.Update(modpackBuild, modpackBuildStep);
 
-            modpackBuildStep.running.Should().BeTrue();
+            modpackBuildStep.Running.Should().BeTrue();
             subject.data.Should().NotBeNull();
             subject.data.Should().Be(modpackBuildStep);
         }
@@ -68,8 +68,8 @@ namespace UKSF.Tests.Unit.Data.Modpack {
             mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<ModpackBuild>>()));
             mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<ModpackBuild>>())).Callback<DataEventModel<ModpackBuild>>(x => subject = x);
 
-            ModpackBuild modpackBuild = new ModpackBuild { id = id, buildNumber = 1 };
-            buildsDataService.Update(modpackBuild, Builders<ModpackBuild>.Update.Set(x => x.running, true));
+            ModpackBuild modpackBuild = new ModpackBuild { id = id, BuildNumber = 1 };
+            buildsDataService.Update(modpackBuild, Builders<ModpackBuild>.Update.Set(x => x.Running, true));
 
             subject.data.Should().NotBeNull();
             subject.data.Should().Be(modpackBuild);

@@ -9,8 +9,8 @@ namespace UKSF.Api.Integration.Instagram {
                     .AddEventBuses()
                     .AddEventHandlers()
                     .AddServices()
-                    .AddTransient<IInstagramImagesAction, InstagramImagesAction>()
-                    .AddTransient<IInstagramTokenAction, InstagramTokenAction>();
+                    .AddTransient<IActionInstagramImages, ActionInstagramImages>()
+                    .AddTransient<IActionInstagramToken, ActionInstagramToken>();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services;
 

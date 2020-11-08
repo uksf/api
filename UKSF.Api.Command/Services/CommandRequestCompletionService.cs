@@ -17,17 +17,17 @@ namespace UKSF.Api.Command.Services {
     }
 
     public class CommandRequestCompletionService : ICommandRequestCompletionService {
-        private readonly IHttpContextService httpContextService;
-        private readonly IAccountService accountService;
-        private readonly IAssignmentService assignmentService;
-        private readonly ICommandRequestService commandRequestService;
-        private readonly IHubContext<CommandRequestsHub, ICommandRequestsClient> commandRequestsHub;
-        private readonly IDischargeService dischargeService;
-        private readonly ILoaService loaService;
-        private readonly INotificationsService notificationsService;
-        private readonly ILogger logger;
+        private readonly IHttpContextService _httpContextService;
+        private readonly IAccountService _accountService;
+        private readonly IAssignmentService _assignmentService;
+        private readonly ICommandRequestService _commandRequestService;
+        private readonly IHubContext<CommandRequestsHub, ICommandRequestsClient> _commandRequestsHub;
+        private readonly IDischargeService _dischargeService;
+        private readonly ILoaService _loaService;
+        private readonly INotificationsService _notificationsService;
+        private readonly ILogger _logger;
 
-        private readonly IUnitsService unitsService;
+        private readonly IUnitsService _unitsService;
 
         public CommandRequestCompletionService(
             IHttpContextService httpContextService,
@@ -41,23 +41,23 @@ namespace UKSF.Api.Command.Services {
             INotificationsService notificationsService,
             ILogger logger
         ) {
-            this.httpContextService = httpContextService;
-            this.accountService = accountService;
-            this.commandRequestService = commandRequestService;
-            this.dischargeService = dischargeService;
-            this.assignmentService = assignmentService;
-            this.loaService = loaService;
-            this.unitsService = unitsService;
-            this.dischargeService = dischargeService;
-            this.commandRequestsHub = commandRequestsHub;
-            this.notificationsService = notificationsService;
-            this.logger = logger;
+            _httpContextService = httpContextService;
+            _accountService = accountService;
+            _commandRequestService = commandRequestService;
+            _dischargeService = dischargeService;
+            _assignmentService = assignmentService;
+            _loaService = loaService;
+            _unitsService = unitsService;
+            _dischargeService = dischargeService;
+            _commandRequestsHub = commandRequestsHub;
+            _notificationsService = notificationsService;
+            _logger = logger;
         }
 
         public async Task Resolve(string id) {
-            if (commandRequestService.IsRequestApproved(id) || commandRequestService.IsRequestRejected(id)) {
-                CommandRequest request = commandRequestService.Data.GetSingle(id);
-                switch (request.type) {
+            if (_commandRequestService.IsRequestApproved(id) || _commandRequestService.IsRequestRejected(id)) {
+                CommandRequest request = _commandRequestService.Data.GetSingle(id);
+                switch (request.Type) {
                     case CommandRequestType.PROMOTION:
                     case CommandRequestType.DEMOTION:
                         await Rank(request);
@@ -84,155 +84,155 @@ namespace UKSF.Api.Command.Services {
                     case CommandRequestType.REINSTATE_MEMBER:
                         await Reinstate(request);
                         break;
-                    default: throw new InvalidOperationException($"Request type not recognized: '{request.type}'");
+                    default: throw new InvalidOperationException($"Request type not recognized: '{request.Type}'");
                 }
             }
 
-            await commandRequestsHub.Clients.All.ReceiveRequestUpdate();
+            await _commandRequestsHub.Clients.All.ReceiveRequestUpdate();
         }
 
         private async Task Rank(CommandRequest request) {
-            if (commandRequestService.IsRequestApproved(request.id)) {
-                string role = HandleRecruitToPrivate(request.recipient, request.value);
-                Notification notification = await assignmentService.UpdateUnitRankAndRole(request.recipient, rankString: request.value,  role: role, reason: request.reason);
-                notificationsService.Add(notification);
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
-            } else if (commandRequestService.IsRequestRejected(request.id)) {
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
+            if (_commandRequestService.IsRequestApproved(request.id)) {
+                string role = HandleRecruitToPrivate(request.Recipient, request.Value);
+                Notification notification = await _assignmentService.UpdateUnitRankAndRole(request.Recipient, rankString: request.Value,  role: role, reason: request.Reason);
+                _notificationsService.Add(notification);
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+            } else if (_commandRequestService.IsRequestRejected(request.id)) {
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue}");
             }
         }
 
         private async Task Loa(CommandRequest request) {
-            if (commandRequestService.IsRequestApproved(request.id)) {
-                await loaService.SetLoaState(request.value, LoaReviewState.APPROVED);
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
-            } else if (commandRequestService.IsRequestRejected(request.id)) {
-                await loaService.SetLoaState(request.value, LoaReviewState.REJECTED);
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
+            if (_commandRequestService.IsRequestApproved(request.id)) {
+                await _loaService.SetLoaState(request.Value, LoaReviewState.APPROVED);
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+            } else if (_commandRequestService.IsRequestRejected(request.id)) {
+                await _loaService.SetLoaState(request.Value, LoaReviewState.REJECTED);
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue}");
             }
         }
 
         private async Task Discharge(CommandRequest request) {
-            if (commandRequestService.IsRequestApproved(request.id)) {
-                Account account = accountService.Data.GetSingle(request.recipient);
+            if (_commandRequestService.IsRequestApproved(request.id)) {
+                Account account = _accountService.Data.GetSingle(request.Recipient);
                 Discharge discharge = new Discharge {
                     rank = account.rank,
                     unit = account.unitAssignment,
                     role = account.roleAssignment,
-                    dischargedBy = request.displayRequester,
-                    reason = request.reason
+                    dischargedBy = request.DisplayRequester,
+                    reason = request.Reason
                 };
-                DischargeCollection dischargeCollection = dischargeService.Data.GetSingle(x => x.accountId == account.id);
+                DischargeCollection dischargeCollection = _dischargeService.Data.GetSingle(x => x.accountId == account.id);
                 if (dischargeCollection == null) {
                     dischargeCollection = new DischargeCollection {accountId = account.id, name = $"{account.lastname}.{account.firstname[0]}"};
                     dischargeCollection.discharges.Add(discharge);
-                    await dischargeService.Data.Add(dischargeCollection);
+                    await _dischargeService.Data.Add(dischargeCollection);
                 } else {
                     dischargeCollection.discharges.Add(discharge);
-                    await dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.reinstated, false));
-                    await dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.name, $"{account.lastname}.{account.firstname[0]}"));
-                    await dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.discharges, dischargeCollection.discharges));
+                    await _dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.reinstated, false));
+                    await _dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.name, $"{account.lastname}.{account.firstname[0]}"));
+                    await _dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.discharges, dischargeCollection.discharges));
                 }
 
-                await accountService.Data.Update(account.id, nameof(account.membershipState), MembershipState.DISCHARGED);
+                await _accountService.Data.Update(account.id, nameof(account.membershipState), MembershipState.DISCHARGED);
 
-                Notification notification = await assignmentService.UpdateUnitRankAndRole(account.id, AssignmentService.REMOVE_FLAG, AssignmentService.REMOVE_FLAG, AssignmentService.REMOVE_FLAG, request.reason, "", AssignmentService.REMOVE_FLAG);
-                notificationsService.Add(notification);
-                await assignmentService.UnassignAllUnits(account.id);
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
-            } else if (commandRequestService.IsRequestRejected(request.id)) {
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
+                Notification notification = await _assignmentService.UpdateUnitRankAndRole(account.id, AssignmentService.REMOVE_FLAG, AssignmentService.REMOVE_FLAG, AssignmentService.REMOVE_FLAG, request.Reason, "", AssignmentService.REMOVE_FLAG);
+                _notificationsService.Add(notification);
+                await _assignmentService.UnassignAllUnits(account.id);
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+            } else if (_commandRequestService.IsRequestRejected(request.id)) {
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue}");
             }
         }
 
         private async Task IndividualRole(CommandRequest request) {
-            if (commandRequestService.IsRequestApproved(request.id)) {
-                Notification notification = await assignmentService.UpdateUnitRankAndRole(request.recipient, role: request.value == "None" ? AssignmentService.REMOVE_FLAG : request.value, reason: request.reason);
-                notificationsService.Add(notification);
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
-            } else if (commandRequestService.IsRequestRejected(request.id)) {
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
+            if (_commandRequestService.IsRequestApproved(request.id)) {
+                Notification notification = await _assignmentService.UpdateUnitRankAndRole(request.Recipient, role: request.Value == "None" ? AssignmentService.REMOVE_FLAG : request.Value, reason: request.Reason);
+                _notificationsService.Add(notification);
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+            } else if (_commandRequestService.IsRequestRejected(request.id)) {
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue}");
             }
         }
 
         private async Task UnitRole(CommandRequest request) {
-            if (commandRequestService.IsRequestApproved(request.id)) {
-                if (request.secondaryValue == "None") {
-                    if (string.IsNullOrEmpty(request.value)) {
-                        await assignmentService.UnassignAllUnitRoles(request.recipient);
-                        notificationsService.Add(new Notification {owner = request.recipient, message = "You have been unassigned from all roles in all units", icon = NotificationIcons.DEMOTION});
+            if (_commandRequestService.IsRequestApproved(request.id)) {
+                if (request.SecondaryValue == "None") {
+                    if (string.IsNullOrEmpty(request.Value)) {
+                        await _assignmentService.UnassignAllUnitRoles(request.Recipient);
+                        _notificationsService.Add(new Notification {owner = request.Recipient, message = "You have been unassigned from all roles in all units", icon = NotificationIcons.DEMOTION});
                     } else {
-                        string role = await assignmentService.UnassignUnitRole(request.recipient, request.value);
-                        notificationsService.Add(new Notification {owner = request.recipient, message = $"You have been unassigned as {AvsAn.Query(role).Article} {role} in {unitsService.GetChainString(unitsService.Data.GetSingle(request.value))}", icon = NotificationIcons.DEMOTION});
+                        string role = await _assignmentService.UnassignUnitRole(request.Recipient, request.Value);
+                        _notificationsService.Add(new Notification {owner = request.Recipient, message = $"You have been unassigned as {AvsAn.Query(role).Article} {role} in {_unitsService.GetChainString(_unitsService.Data.GetSingle(request.Value))}", icon = NotificationIcons.DEMOTION});
                     }
                 } else {
-                    await assignmentService.AssignUnitRole(request.recipient, request.value, request.secondaryValue);
-                    notificationsService.Add(
-                        new Notification {owner = request.recipient, message = $"You have been assigned as {AvsAn.Query(request.secondaryValue).Article} {request.secondaryValue} in {unitsService.GetChainString(unitsService.Data.GetSingle(request.value))}", icon = NotificationIcons.PROMOTION}
+                    await _assignmentService.AssignUnitRole(request.Recipient, request.Value, request.SecondaryValue);
+                    _notificationsService.Add(
+                        new Notification {owner = request.Recipient, message = $"You have been assigned as {AvsAn.Query(request.SecondaryValue).Article} {request.SecondaryValue} in {_unitsService.GetChainString(_unitsService.Data.GetSingle(request.Value))}", icon = NotificationIcons.PROMOTION}
                     );
                 }
 
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request approved for {request.displayRecipient} as {request.displayValue} in {request.value} because '{request.reason}'");
-            } else if (commandRequestService.IsRequestRejected(request.id)) {
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request rejected for {request.displayRecipient} as {request.displayValue} in {request.value}");
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} as {request.DisplayValue} in {request.Value} because '{request.Reason}'");
+            } else if (_commandRequestService.IsRequestRejected(request.id)) {
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} as {request.DisplayValue} in {request.Value}");
             }
         }
 
         private async Task UnitRemoval(CommandRequest request) {
-            if (commandRequestService.IsRequestApproved(request.id)) {
-                Unit unit = unitsService.Data.GetSingle(request.value);
-                await assignmentService.UnassignUnit(request.recipient, unit.id);
-                notificationsService.Add(new Notification {owner = request.recipient, message = $"You have been removed from {unitsService.GetChainString(unit)}", icon = NotificationIcons.DEMOTION});
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} because '{request.reason}'");
-            } else if (commandRequestService.IsRequestRejected(request.id)) {
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom}");
+            if (_commandRequestService.IsRequestApproved(request.id)) {
+                Unit unit = _unitsService.Data.GetSingle(request.Value);
+                await _assignmentService.UnassignUnit(request.Recipient, unit.id);
+                _notificationsService.Add(new Notification {owner = request.Recipient, message = $"You have been removed from {_unitsService.GetChainString(unit)}", icon = NotificationIcons.DEMOTION});
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} because '{request.Reason}'");
+            } else if (_commandRequestService.IsRequestRejected(request.id)) {
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom}");
             }
         }
 
         private async Task Transfer(CommandRequest request) {
-            if (commandRequestService.IsRequestApproved(request.id)) {
-                Unit unit = unitsService.Data.GetSingle(request.value);
-                Notification notification = await assignmentService.UpdateUnitRankAndRole(request.recipient, unit.name, reason: request.reason);
-                notificationsService.Add(notification);
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
-            } else if (commandRequestService.IsRequestRejected(request.id)) {
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
+            if (_commandRequestService.IsRequestApproved(request.id)) {
+                Unit unit = _unitsService.Data.GetSingle(request.Value);
+                Notification notification = await _assignmentService.UpdateUnitRankAndRole(request.Recipient, unit.name, reason: request.Reason);
+                _notificationsService.Add(notification);
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+            } else if (_commandRequestService.IsRequestRejected(request.id)) {
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue}");
             }
         }
 
         private async Task Reinstate(CommandRequest request) {
-            if (commandRequestService.IsRequestApproved(request.id)) {
-                DischargeCollection dischargeCollection = dischargeService.Data.GetSingle(x => x.accountId == request.recipient);
-                await dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.reinstated, true));
-                await accountService.Data.Update(dischargeCollection.accountId, "membershipState", MembershipState.MEMBER);
-                Notification notification = await assignmentService.UpdateUnitRankAndRole(dischargeCollection.accountId, "Basic Training Unit", "Trainee", "Recruit", "", "", "your membership was reinstated");
-                notificationsService.Add(notification);
+            if (_commandRequestService.IsRequestApproved(request.id)) {
+                DischargeCollection dischargeCollection = _dischargeService.Data.GetSingle(x => x.accountId == request.Recipient);
+                await _dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.reinstated, true));
+                await _accountService.Data.Update(dischargeCollection.accountId, "membershipState", MembershipState.MEMBER);
+                Notification notification = await _assignmentService.UpdateUnitRankAndRole(dischargeCollection.accountId, "Basic Training Unit", "Trainee", "Recruit", "", "", "your membership was reinstated");
+                _notificationsService.Add(notification);
 
-                logger.LogAudit($"{httpContextService.GetUserId()} reinstated {dischargeCollection.name}'s membership");
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request approved for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
-            } else if (commandRequestService.IsRequestRejected(request.id)) {
-                await commandRequestService.ArchiveRequest(request.id);
-                logger.LogAudit($"{request.type} request rejected for {request.displayRecipient} from {request.displayFrom} to {request.displayValue}");
+                _logger.LogAudit($"{_httpContextService.GetUserId()} reinstated {dischargeCollection.name}'s membership");
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+            } else if (_commandRequestService.IsRequestRejected(request.id)) {
+                await _commandRequestService.ArchiveRequest(request.id);
+                _logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue}");
             }
         }
 
         private string HandleRecruitToPrivate(string id, string targetRank) {
-            Account account = accountService.Data.GetSingle(id);
+            Account account = _accountService.Data.GetSingle(id);
             return account.rank == "Recruit" && targetRank == "Private" ? "Rifleman" : account.roleAssignment;
         }
     }

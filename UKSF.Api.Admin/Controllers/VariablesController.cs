@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Models;
-using UKSF.Api.Admin.Services.Data;
 using UKSF.Api.Base;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Extensions;

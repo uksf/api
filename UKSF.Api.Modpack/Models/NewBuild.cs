@@ -1,8 +1,8 @@
 ﻿namespace UKSF.Api.Modpack.Models {
     public class NewBuild {
-        public string reference;
-        public bool ace;
-        public bool acre;
-        public bool f35;
+        public string Reference;
+        public bool Ace;
+        public bool Acre;
+        public bool F35;
     }
 }

@@ -2,47 +2,47 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
+using UKSF.Api.Base.ScheduledActions;
+using UKSF.Api.Base.Services;
 using UKSF.Api.Personnel.ScheduledActions;
-using UKSF.Api.Utility.ScheduledActions;
-using UKSF.Api.Utility.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility {
     public class ScheduledActionServiceTests {
         [Fact]
         public void ShouldRegisterActions() {
-            Mock<IDeleteExpiredConfirmationCodeAction> mockDeleteExpiredConfirmationCodeAction = new Mock<IDeleteExpiredConfirmationCodeAction>();
+            Mock<IActionDeleteExpiredConfirmationCode> mockDeleteExpiredConfirmationCodeAction = new Mock<IActionDeleteExpiredConfirmationCode>();
             mockDeleteExpiredConfirmationCodeAction.Setup(x => x.Name).Returns("TestAction");
 
-            IScheduledActionService scheduledActionService = new ScheduledActionService();
-            scheduledActionService.RegisterScheduledActions(new HashSet<IScheduledAction> {mockDeleteExpiredConfirmationCodeAction.Object});
+            IScheduledActionFactory scheduledActionFactory = new ScheduledActionFactory();
+            scheduledActionFactory.RegisterScheduledActions(new HashSet<IScheduledAction> {mockDeleteExpiredConfirmationCodeAction.Object});
 
-            IScheduledAction subject = scheduledActionService.GetScheduledAction("TestAction");
+            IScheduledAction subject = scheduledActionFactory.GetScheduledAction("TestAction");
 
             subject.Should().Be(mockDeleteExpiredConfirmationCodeAction.Object);
         }
 
         [Fact]
         public void ShouldOverwriteRegisteredActions() {
-            Mock<IDeleteExpiredConfirmationCodeAction> mockDeleteExpiredConfirmationCodeAction1 = new Mock<IDeleteExpiredConfirmationCodeAction>();
-            Mock<IDeleteExpiredConfirmationCodeAction> mockDeleteExpiredConfirmationCodeAction2 = new Mock<IDeleteExpiredConfirmationCodeAction>();
+            Mock<IActionDeleteExpiredConfirmationCode> mockDeleteExpiredConfirmationCodeAction1 = new Mock<IActionDeleteExpiredConfirmationCode>();
+            Mock<IActionDeleteExpiredConfirmationCode> mockDeleteExpiredConfirmationCodeAction2 = new Mock<IActionDeleteExpiredConfirmationCode>();
             mockDeleteExpiredConfirmationCodeAction1.Setup(x => x.Name).Returns("TestAction");
             mockDeleteExpiredConfirmationCodeAction2.Setup(x => x.Name).Returns("TestAction");
 
-            IScheduledActionService scheduledActionService = new ScheduledActionService();
-            scheduledActionService.RegisterScheduledActions(new HashSet<IScheduledAction> {mockDeleteExpiredConfirmationCodeAction1.Object});
-            scheduledActionService.RegisterScheduledActions(new HashSet<IScheduledAction> {mockDeleteExpiredConfirmationCodeAction2.Object});
+            IScheduledActionFactory scheduledActionFactory = new ScheduledActionFactory();
+            scheduledActionFactory.RegisterScheduledActions(new HashSet<IScheduledAction> {mockDeleteExpiredConfirmationCodeAction1.Object});
+            scheduledActionFactory.RegisterScheduledActions(new HashSet<IScheduledAction> {mockDeleteExpiredConfirmationCodeAction2.Object});
 
-            IScheduledAction subject = scheduledActionService.GetScheduledAction("TestAction");
+            IScheduledAction subject = scheduledActionFactory.GetScheduledAction("TestAction");
 
             subject.Should().Be(mockDeleteExpiredConfirmationCodeAction2.Object);
         }
 
         [Fact]
         public void ShouldThrowWhenActionNotFound() {
-            IScheduledActionService scheduledActionService = new ScheduledActionService();
+            IScheduledActionFactory scheduledActionFactory = new ScheduledActionFactory();
 
-            Action act = () => scheduledActionService.GetScheduledAction("TestAction");
+            Action act = () => scheduledActionFactory.GetScheduledAction("TestAction");
 
             act.Should().Throw<ArgumentException>();
         }

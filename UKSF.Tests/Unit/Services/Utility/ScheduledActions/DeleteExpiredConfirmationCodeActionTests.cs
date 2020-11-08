@@ -2,16 +2,16 @@
 using FluentAssertions;
 using MongoDB.Bson;
 using Moq;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.ScheduledActions;
 using UKSF.Api.Personnel.Services;
-using UKSF.Api.Personnel.Services.Data;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
     public class DeleteExpiredConfirmationCodeActionTests {
         private readonly Mock<IConfirmationCodeDataService> mockConfirmationCodeDataService;
         private readonly Mock<IConfirmationCodeService> mockConfirmationCodeService;
-        private IDeleteExpiredConfirmationCodeAction deleteExpiredConfirmationCodeAction;
+        private IActionDeleteExpiredConfirmationCode actionDeleteExpiredConfirmationCode;
 
         public DeleteExpiredConfirmationCodeActionTests() {
             mockConfirmationCodeDataService = new Mock<IConfirmationCodeDataService>();
@@ -24,27 +24,27 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
         public void ShouldDeleteCorrectId() {
             string id = ObjectId.GenerateNewId().ToString();
 
-            deleteExpiredConfirmationCodeAction = new DeleteExpiredConfirmationCodeAction(mockConfirmationCodeService.Object);
+            actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(mockConfirmationCodeService.Object);
 
-            deleteExpiredConfirmationCodeAction.Run(id);
+            actionDeleteExpiredConfirmationCode.Run(id);
 
             mockConfirmationCodeDataService.Verify(x => x.Delete(id), Times.Once);
         }
 
         [Fact]
         public void ShouldReturnActionName() {
-            deleteExpiredConfirmationCodeAction = new DeleteExpiredConfirmationCodeAction(mockConfirmationCodeService.Object);
+            actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(mockConfirmationCodeService.Object);
 
-            string subject = deleteExpiredConfirmationCodeAction.Name;
+            string subject = actionDeleteExpiredConfirmationCode.Name;
 
             subject.Should().Be("DeleteExpiredConfirmationCodeAction");
         }
 
         [Fact]
         public void ShouldThrowForNoId() {
-            deleteExpiredConfirmationCodeAction = new DeleteExpiredConfirmationCodeAction(mockConfirmationCodeService.Object);
+            actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(mockConfirmationCodeService.Object);
 
-            Action act = () => deleteExpiredConfirmationCodeAction.Run();
+            Action act = () => actionDeleteExpiredConfirmationCode.Run();
 
             act.Should().Throw<ArgumentException>();
         }

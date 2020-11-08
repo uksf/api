@@ -2,9 +2,9 @@
 
 namespace UKSF.Api.Command.Models {
     public class CommandRequestLoa : CommandRequest {
-        public string emergency;
-        public DateTime end;
-        public string late;
-        public DateTime start;
+        public string Emergency;
+        public DateTime End;
+        public string Late;
+        public DateTime Start;
     }
 }

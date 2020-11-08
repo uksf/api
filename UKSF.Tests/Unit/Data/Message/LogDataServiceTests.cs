@@ -2,10 +2,9 @@
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models.Logging;
-using UKSF.Api.Base.Services.Data;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Message {

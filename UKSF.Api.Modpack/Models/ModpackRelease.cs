@@ -5,11 +5,11 @@ using UKSF.Api.Base.Models;
 
 namespace UKSF.Api.Modpack.Models {
     public class ModpackRelease : DatabaseObject {
-        public string changelog;
-        [BsonRepresentation(BsonType.ObjectId)] public string creatorId;
-        public string description;
-        public bool isDraft;
-        public DateTime timestamp;
-        public string version;
+        public string Changelog;
+        [BsonRepresentation(BsonType.ObjectId)] public string CreatorId;
+        public string Description;
+        public bool IsDraft;
+        public DateTime Timestamp;
+        public string Version;
     }
 }

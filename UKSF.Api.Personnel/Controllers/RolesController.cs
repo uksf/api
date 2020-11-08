@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
+using Notification = UKSF.Api.Personnel.Models.Notification;
 using Unit = UKSF.Api.Personnel.Models.Unit;
 
 namespace UKSF.Api.Personnel.Controllers {

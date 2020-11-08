@@ -4,20 +4,33 @@ using System.Linq;
 using System.Linq.Expressions;
 using FluentAssertions;
 using Moq;
+using UKSF.Api.Admin.ScheduledActions;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Models.Logging;
+using UKSF.Api.Base.Services;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Utility.ScheduledActions;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
     public class PruneDataActionTests {
-        private readonly Mock<IDataCollectionFactory> mockDataCollectionFactory;
-        private IPruneDataAction pruneDataAction;
+        private readonly Mock<IAuditLogDataService> _mockAuditLogDataService;
+        private readonly Mock<IHttpErrorLogDataService> _mockHttpErrorLogDataService;
+        private readonly Mock<ILogDataService> _mockLogDataService;
+        private readonly Mock<IClock> _mockClock;
+        private readonly Mock<ISchedulerService> _mockSchedulerService;
+        private IActionPruneLogs _actionPruneLogs;
 
-        public PruneDataActionTests() => mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
+        public PruneDataActionTests() {
+            _mockLogDataService = new Mock<ILogDataService>();
+            _mockAuditLogDataService = new Mock<IAuditLogDataService>();
+            _mockHttpErrorLogDataService = new Mock<IHttpErrorLogDataService>();
+            _mockClock = new Mock<IClock>();
+            _mockSchedulerService = new Mock<ISchedulerService>();
+
+            _actionPruneLogs = new ActionPruneLogs(_mockLogDataService.Object, _mockAuditLogDataService.Object, _mockHttpErrorLogDataService.Object, _mockSchedulerService.Object, _mockClock.Object);
+        }
 
         [Fact]
         public void ShouldRemoveOldLogsAndNotifications() {
@@ -40,10 +53,10 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
                 new Notification { message = "notification3", timestamp = DateTime.Now.AddDays(-25) }
             };
             List<ModpackBuild> mockModpackBuildCollection = new List<ModpackBuild> {
-                new ModpackBuild { environment = GameEnvironment.DEV, buildNumber = 1, version = "5.0.0" },
-                new ModpackBuild { environment = GameEnvironment.RC, buildNumber = 1, version = "5.18.0" },
-                new ModpackBuild { environment = GameEnvironment.RELEASE, buildNumber = 2, version = "5.18.0" },
-                new ModpackBuild { environment = GameEnvironment.DEV, buildNumber = 150, version = "5.19.0" }
+                new ModpackBuild { Environment = GameEnvironment.DEV, BuildNumber = 1, Version = "5.0.0" },
+                new ModpackBuild { Environment = GameEnvironment.RC, BuildNumber = 1, Version = "5.18.0" },
+                new ModpackBuild { Environment = GameEnvironment.RELEASE, BuildNumber = 2, Version = "5.18.0" },
+                new ModpackBuild { Environment = GameEnvironment.DEV, BuildNumber = 150, Version = "5.19.0" }
             };
 
             Mock<IDataCollection<BasicLog>> mockBasicLogMessageDataColection = new Mock<IDataCollection<BasicLog>>();
@@ -65,29 +78,19 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
             mockModpackBuildDataColection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<ModpackBuild, bool>>>()))
                                          .Callback<Expression<Func<ModpackBuild, bool>>>(x => mockModpackBuildCollection.RemoveAll(y => x.Compile()(y)));
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<BasicLog>("logs")).Returns(mockBasicLogMessageDataColection.Object);
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<HttpErrorLog>("errorLogs")).Returns(mockWebLogMessageDataColection.Object);
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<AuditLog>("auditLogs")).Returns(mockAuditLogMessageDataColection.Object);
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Notification>("notifications")).Returns(mockNotificationDataColection.Object);
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<ModpackBuild>("modpackBuilds")).Returns(mockModpackBuildDataColection.Object);
-
-            pruneDataAction = new PruneDataAction(mockDataCollectionFactory.Object);
-
-            pruneDataAction.Run();
+            _actionPruneLogs.Run();
 
             mockBasicLogMessageCollection.Should().NotContain(x => x.message == "test2");
             mockWebLogMessageCollection.Should().NotContain(x => x.message == "error2");
             mockAuditLogMessageCollection.Should().NotContain(x => x.message == "audit2");
             mockNotificationCollection.Should().NotContain(x => x.message == "notification2");
-            mockModpackBuildCollection.Should().NotContain(x => x.version == "5.0.0");
-            mockModpackBuildCollection.Should().NotContain(x => x.version == "5.18.0");
+            mockModpackBuildCollection.Should().NotContain(x => x.Version == "5.0.0");
+            mockModpackBuildCollection.Should().NotContain(x => x.Version == "5.18.0");
         }
 
         [Fact]
         public void ShouldReturnActionName() {
-            pruneDataAction = new PruneDataAction(mockDataCollectionFactory.Object);
-
-            string subject = pruneDataAction.Name;
+            string subject = _actionPruneLogs.Name;
 
             subject.Should().Be("PruneDataAction");
         }

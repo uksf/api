@@ -13,18 +13,18 @@ namespace UKSF.Api.Modpack.EventHandlers {
     public interface IBuildsEventHandler : IEventHandler { }
 
     public class BuildsEventHandler : IBuildsEventHandler {
-        private readonly IDataEventBus<ModpackBuild> modpackBuildEventBus;
-        private readonly IHubContext<BuildsHub, IModpackClient> hub;
-        private readonly ILogger logger;
+        private readonly IDataEventBus<ModpackBuild> _modpackBuildEventBus;
+        private readonly IHubContext<BuildsHub, IModpackClient> _hub;
+        private readonly ILogger _logger;
 
         public BuildsEventHandler(IDataEventBus<ModpackBuild> modpackBuildEventBus, IHubContext<BuildsHub, IModpackClient> hub, ILogger logger) {
-            this.modpackBuildEventBus = modpackBuildEventBus;
-            this.hub = hub;
-            this.logger = logger;
+            _modpackBuildEventBus = modpackBuildEventBus;
+            _hub = hub;
+            _logger = logger;
         }
 
         public void Init() {
-            modpackBuildEventBus.AsObservable().SubscribeWithAsyncNext(HandleBuildEvent, exception => logger.LogError(exception));
+            _modpackBuildEventBus.AsObservable().SubscribeWithAsyncNext(HandleBuildEvent, exception => _logger.LogError(exception));
         }
 
         private async Task HandleBuildEvent(DataEventModel<ModpackBuild> dataEventModel) {
@@ -43,25 +43,25 @@ namespace UKSF.Api.Modpack.EventHandlers {
         }
 
         private async Task AddedEvent(ModpackBuild build) {
-            if (build.environment == GameEnvironment.DEV) {
-                await hub.Clients.All.ReceiveBuild(build);
+            if (build.Environment == GameEnvironment.DEV) {
+                await _hub.Clients.All.ReceiveBuild(build);
             } else {
-                await hub.Clients.All.ReceiveReleaseCandidateBuild(build);
+                await _hub.Clients.All.ReceiveReleaseCandidateBuild(build);
             }
         }
 
         private async Task UpdatedEvent(string id, object data) {
             switch (data) {
                 case ModpackBuild build:
-                    if (build.environment == GameEnvironment.DEV) {
-                        await hub.Clients.All.ReceiveBuild(build);
+                    if (build.Environment == GameEnvironment.DEV) {
+                        await _hub.Clients.All.ReceiveBuild(build);
                     } else {
-                        await hub.Clients.All.ReceiveReleaseCandidateBuild(build);
+                        await _hub.Clients.All.ReceiveReleaseCandidateBuild(build);
                     }
 
                     break;
                 case ModpackBuildStep step:
-                    await hub.Clients.Group(id).ReceiveBuildStep(step);
+                    await _hub.Clients.Group(id).ReceiveBuildStep(step);
                     break;
             }
         }

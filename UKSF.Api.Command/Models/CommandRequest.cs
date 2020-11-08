@@ -26,17 +26,17 @@ namespace UKSF.Api.Command.Models {
     }
 
     public class CommandRequest : DatabaseObject {
-        public DateTime dateCreated;
-        public string displayFrom;
-        public string displayRecipient;
-        public string displayRequester;
-        public string displayValue;
-        public string reason, type;
-        [BsonRepresentation(BsonType.ObjectId)] public string recipient;
-        [BsonRepresentation(BsonType.ObjectId)] public string requester;
-        public Dictionary<string, ReviewState> reviews = new Dictionary<string, ReviewState>();
-        public string secondaryValue;
-        public string value;
-        public CommandRequest() => dateCreated = DateTime.Now;
+        public DateTime DateCreated;
+        public string DisplayFrom;
+        public string DisplayRecipient;
+        public string DisplayRequester;
+        public string DisplayValue;
+        public string Reason, Type;
+        [BsonRepresentation(BsonType.ObjectId)] public string Recipient;
+        [BsonRepresentation(BsonType.ObjectId)] public string Requester;
+        public Dictionary<string, ReviewState> Reviews = new Dictionary<string, ReviewState>();
+        public string SecondaryValue;
+        public string Value;
+        public CommandRequest() => DateCreated = DateTime.Now;
     }
 }

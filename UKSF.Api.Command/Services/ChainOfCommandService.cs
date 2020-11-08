@@ -14,18 +14,18 @@ namespace UKSF.Api.Command.Services {
     }
 
     public class ChainOfCommandService : IChainOfCommandService {
-        private readonly string commanderRoleName;
+        private readonly string _commanderRoleName;
 
-        private readonly IUnitsService unitsService;
-        private readonly IHttpContextService httpContextService;
-        private readonly IAccountService accountService;
+        private readonly IUnitsService _unitsService;
+        private readonly IHttpContextService _httpContextService;
+        private readonly IAccountService _accountService;
 
         public ChainOfCommandService(IUnitsService unitsService, IRolesService rolesService, IHttpContextService httpContextService, IAccountService accountService) {
-            this.unitsService = unitsService;
-            this.httpContextService = httpContextService;
-            this.accountService = accountService;
+            _unitsService = unitsService;
+            _httpContextService = httpContextService;
+            _accountService = accountService;
 
-            commanderRoleName = rolesService.GetUnitRoleByOrder(0).name;
+            _commanderRoleName = rolesService.GetUnitRoleByOrder(0).name;
         }
 
         public HashSet<string> ResolveChain(ChainOfCommandMode mode, string recipient, Unit start, Unit target) {
@@ -40,13 +40,13 @@ namespace UKSF.Api.Command.Services {
 
             // If no chain, get root unit commander
             if (chain.Count == 0) {
-                chain.Add(GetCommander(unitsService.GetRoot()));
+                chain.Add(GetCommander(_unitsService.GetRoot()));
                 chain.CleanHashset();
             }
 
             // If no chain, get root unit child commanders
             if (chain.Count == 0) {
-                foreach (Unit unit in unitsService.Data.Get(x => x.parent == unitsService.GetRoot().id).Where(unit => UnitHasCommander(unit) && GetCommander(unit) != recipient)) {
+                foreach (Unit unit in _unitsService.Data.Get(x => x.parent == _unitsService.GetRoot().id).Where(unit => UnitHasCommander(unit) && GetCommander(unit) != recipient)) {
                     chain.Add(GetCommander(unit));
                 }
                 chain.CleanHashset();
@@ -62,10 +62,10 @@ namespace UKSF.Api.Command.Services {
         }
 
         public bool InContextChainOfCommand(string id) {
-            Account contextAccount = accountService.GetUserAccount();
+            Account contextAccount = _accountService.GetUserAccount();
             if (id == contextAccount.id) return true;
-            Unit unit = unitsService.Data.GetSingle(x => x.name == contextAccount.unitAssignment);
-            return unitsService.RolesHasMember(unit, contextAccount.id) && (unit.members.Contains(id) || unitsService.GetAllChildren(unit, true).Any(unitChild => unitChild.members.Contains(id)));
+            Unit unit = _unitsService.Data.GetSingle(x => x.name == contextAccount.unitAssignment);
+            return _unitsService.RolesHasMember(unit, contextAccount.id) && (unit.members.Contains(id) || _unitsService.GetAllChildren(unit, true).Any(unitChild => unitChild.members.Contains(id)));
         }
 
         private IEnumerable<string> ResolveMode(ChainOfCommandMode mode, Unit start, Unit target) {
@@ -89,7 +89,7 @@ namespace UKSF.Api.Command.Services {
                     chain.Add(GetCommander(unit));
                 }
 
-                unit = unitsService.GetParent(unit);
+                unit = _unitsService.GetParent(unit);
             }
 
             return chain;
@@ -106,7 +106,7 @@ namespace UKSF.Api.Command.Services {
                     chain.Add(GetCommander(unit));
                 }
 
-                Unit parentUnit = unitsService.GetParent(unit);
+                Unit parentUnit = _unitsService.GetParent(unit);
                 if (parentUnit != null && UnitHasCommander(parentUnit)) {
                     chain.Add(GetCommander(parentUnit));
                 }
@@ -125,7 +125,7 @@ namespace UKSF.Api.Command.Services {
             return chain;
         }
 
-        private IEnumerable<string> GetPersonnel() => unitsService.Data.GetSingle(x => x.shortname == "SR7").members.ToHashSet();
+        private IEnumerable<string> GetPersonnel() => _unitsService.Data.GetSingle(x => x.shortname == "SR7").members.ToHashSet();
 
         private IEnumerable<string> GetCommanderAndTargetCommander(Unit unit, Unit targetUnit) => new HashSet<string> {GetNextUnitCommander(unit), GetNextUnitCommander(targetUnit)};
 
@@ -135,7 +135,7 @@ namespace UKSF.Api.Command.Services {
                     return GetCommander(unit);
                 }
 
-                unit = unitsService.GetParent(unit);
+                unit = _unitsService.GetParent(unit);
             }
 
             return string.Empty;
@@ -145,17 +145,17 @@ namespace UKSF.Api.Command.Services {
             while (unit != null) {
                 if (UnitHasCommander(unit)) {
                     string commander = GetCommander(unit);
-                    if (commander != httpContextService.GetUserId()) return commander;
+                    if (commander != _httpContextService.GetUserId()) return commander;
                 }
 
-                unit = unitsService.GetParent(unit);
+                unit = _unitsService.GetParent(unit);
             }
 
             return string.Empty;
         }
 
-        private bool UnitHasCommander(Unit unit) => unitsService.HasRole(unit, commanderRoleName);
+        private bool UnitHasCommander(Unit unit) => _unitsService.HasRole(unit, _commanderRoleName);
 
-        private string GetCommander(Unit unit) => unit.roles.GetValueOrDefault(commanderRoleName, string.Empty);
+        private string GetCommander(Unit unit) => unit.roles.GetValueOrDefault(_commanderRoleName, string.Empty);
     }
 }

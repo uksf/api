@@ -15,11 +15,14 @@ namespace UKSF.Api.Command {
         private static IServiceCollection AddContexts(this IServiceCollection services) =>
             services.AddSingleton<ICommandRequestArchiveDataService, CommandRequestArchiveDataService>()
                     .AddSingleton<ICommandRequestDataService, CommandRequestDataService>()
+                    .AddSingleton<IDischargeDataService, DischargeDataService>()
+                    .AddSingleton<ILoaDataService, LoaDataService>()
                     .AddSingleton<IOperationOrderDataService, OperationOrderDataService>()
                     .AddSingleton<IOperationReportDataService, OperationReportDataService>();
 
         private static IServiceCollection AddEventBuses(this IServiceCollection services) =>
             services.AddSingleton<IDataEventBus<CommandRequest>, DataEventBus<CommandRequest>>()
+                    .AddSingleton<IDataEventBus<DischargeCollection>, DataEventBus<DischargeCollection>>()
                     .AddSingleton<IDataEventBus<Opord>, DataEventBus<Opord>>()
                     .AddSingleton<IDataEventBus<Oprep>, DataEventBus<Oprep>>();
 
@@ -29,6 +32,8 @@ namespace UKSF.Api.Command {
             services.AddSingleton<IChainOfCommandService, ChainOfCommandService>()
                     .AddTransient<ICommandRequestCompletionService, CommandRequestCompletionService>()
                     .AddTransient<ICommandRequestService, CommandRequestService>()
+                    .AddTransient<IDischargeService, DischargeService>()
+                    .AddTransient<ILoaService, LoaService>()
                     .AddTransient<IOperationOrderService, OperationOrderService>()
                     .AddTransient<IOperationReportService, OperationReportService>();
 

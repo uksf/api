@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using AvsAnLib;
 using MongoDB.Driver;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Services.Data;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Personnel.Models;
@@ -24,16 +24,16 @@ namespace UKSF.Api.Command.Services {
     }
 
     public class CommandRequestService : DataBackedService<ICommandRequestDataService>, ICommandRequestService {
-        private readonly IAccountService accountService;
-        private readonly IChainOfCommandService chainOfCommandService;
-        private readonly ICommandRequestDataService data;
-        private readonly ICommandRequestArchiveDataService dataArchive;
-        private readonly IDisplayNameService displayNameService;
-        private readonly INotificationsService notificationsService;
-        private readonly IRanksService ranksService;
-        private readonly ILogger logger;
+        private readonly IAccountService _accountService;
+        private readonly IChainOfCommandService _chainOfCommandService;
+        private readonly ICommandRequestDataService _data;
+        private readonly ICommandRequestArchiveDataService _dataArchive;
+        private readonly IDisplayNameService _displayNameService;
+        private readonly INotificationsService _notificationsService;
+        private readonly IRanksService _ranksService;
+        private readonly ILogger _logger;
 
-        private readonly IUnitsService unitsService;
+        private readonly IUnitsService _unitsService;
 
         public CommandRequestService(
             ICommandRequestDataService data,
@@ -46,70 +46,70 @@ namespace UKSF.Api.Command.Services {
             IRanksService ranksService,
             ILogger logger
         ) : base(data) {
-            this.data = data;
-            this.dataArchive = dataArchive;
-            this.notificationsService = notificationsService;
+            _data = data;
+            _dataArchive = dataArchive;
+            _notificationsService = notificationsService;
 
-            this.displayNameService = displayNameService;
-            this.accountService = accountService;
-            this.chainOfCommandService = chainOfCommandService;
-            this.unitsService = unitsService;
-            this.ranksService = ranksService;
-            this.logger = logger;
+            _displayNameService = displayNameService;
+            _accountService = accountService;
+            _chainOfCommandService = chainOfCommandService;
+            _unitsService = unitsService;
+            _ranksService = ranksService;
+            _logger = logger;
         }
 
         public async Task Add(CommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE) {
-            Account requesterAccount = accountService.GetUserAccount();
-            Account recipientAccount = accountService.Data.GetSingle(request.recipient);
-            request.displayRequester = displayNameService.GetDisplayName(requesterAccount);
-            request.displayRecipient = displayNameService.GetDisplayName(recipientAccount);
-            HashSet<string> ids = chainOfCommandService.ResolveChain(mode, recipientAccount.id, unitsService.Data.GetSingle(x => x.name == recipientAccount.unitAssignment), unitsService.Data.GetSingle(request.value));
-            if (ids.Count == 0) throw new Exception($"Failed to get any commanders for review for {request.type.ToLower()} request for {request.displayRecipient}.\nContact an admin");
+            Account requesterAccount = _accountService.GetUserAccount();
+            Account recipientAccount = _accountService.Data.GetSingle(request.Recipient);
+            request.DisplayRequester = _displayNameService.GetDisplayName(requesterAccount);
+            request.DisplayRecipient = _displayNameService.GetDisplayName(recipientAccount);
+            HashSet<string> ids = _chainOfCommandService.ResolveChain(mode, recipientAccount.id, _unitsService.Data.GetSingle(x => x.name == recipientAccount.unitAssignment), _unitsService.Data.GetSingle(request.Value));
+            if (ids.Count == 0) throw new Exception($"Failed to get any commanders for review for {request.Type.ToLower()} request for {request.DisplayRecipient}.\nContact an admin");
 
-            List<Account> accounts = ids.Select(x => accountService.Data.GetSingle(x)).OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname).ToList();
+            List<Account> accounts = ids.Select(x => _accountService.Data.GetSingle(x)).OrderBy(x => x.rank, new RankComparer(_ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname).ToList();
             foreach (Account account in accounts) {
-                request.reviews.Add(account.id, ReviewState.PENDING);
+                request.Reviews.Add(account.id, ReviewState.PENDING);
             }
 
-            await data.Add(request);
-            logger.LogAudit($"{request.type} request created for {request.displayRecipient} from {request.displayFrom} to {request.displayValue} because '{request.reason}'");
-            bool selfRequest = request.displayRequester == request.displayRecipient;
-            string notificationMessage = $"{request.displayRequester} requires your review on {(selfRequest ? "their" : AvsAn.Query(request.type).Article)} {request.type.ToLower()} request{(selfRequest ? "" : $" for {request.displayRecipient}")}";
+            await _data.Add(request);
+            _logger.LogAudit($"{request.Type} request created for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+            bool selfRequest = request.DisplayRequester == request.DisplayRecipient;
+            string notificationMessage = $"{request.DisplayRequester} requires your review on {(selfRequest ? "their" : AvsAn.Query(request.Type).Article)} {request.Type.ToLower()} request{(selfRequest ? "" : $" for {request.DisplayRecipient}")}";
             foreach (Account account in accounts.Where(x => x.id != requesterAccount.id)) {
-                notificationsService.Add(new Notification {owner = account.id, icon = NotificationIcons.REQUEST, message = notificationMessage, link = "/command/requests"});
+                _notificationsService.Add(new Notification {owner = account.id, icon = NotificationIcons.REQUEST, message = notificationMessage, link = "/command/requests"});
             }
         }
 
         public async Task ArchiveRequest(string id) {
-            CommandRequest request = data.GetSingle(id);
-            await dataArchive.Add(request);
-            await data.Delete(id);
+            CommandRequest request = _data.GetSingle(id);
+            await _dataArchive.Add(request);
+            await _data.Delete(id);
         }
 
         public async Task SetRequestReviewState(CommandRequest request, string reviewerId, ReviewState newState) {
-            await data.Update(request.id, Builders<CommandRequest>.Update.Set($"reviews.{reviewerId}", newState));
+            await _data.Update(request.id, Builders<CommandRequest>.Update.Set($"reviews.{reviewerId}", newState));
         }
 
         public async Task SetRequestAllReviewStates(CommandRequest request, ReviewState newState) {
-            List<string> keys = new List<string>(request.reviews.Keys);
+            List<string> keys = new List<string>(request.Reviews.Keys);
             foreach (string key in keys) {
-                request.reviews[key] = newState;
+                request.Reviews[key] = newState;
             }
 
-            await data.Update(request.id, Builders<CommandRequest>.Update.Set("reviews", request.reviews));
+            await _data.Update(request.id, Builders<CommandRequest>.Update.Set("reviews", request.Reviews));
         }
 
         public ReviewState GetReviewState(string id, string reviewer) {
-            CommandRequest request = data.GetSingle(id);
-            return request == null ? ReviewState.ERROR : !request.reviews.ContainsKey(reviewer) ? ReviewState.ERROR : request.reviews[reviewer];
+            CommandRequest request = _data.GetSingle(id);
+            return request == null ? ReviewState.ERROR : !request.Reviews.ContainsKey(reviewer) ? ReviewState.ERROR : request.Reviews[reviewer];
         }
 
-        public bool IsRequestApproved(string id) => data.GetSingle(id).reviews.All(x => x.Value == ReviewState.APPROVED);
+        public bool IsRequestApproved(string id) => _data.GetSingle(id).Reviews.All(x => x.Value == ReviewState.APPROVED);
 
-        public bool IsRequestRejected(string id) => data.GetSingle(id).reviews.Any(x => x.Value == ReviewState.REJECTED);
+        public bool IsRequestRejected(string id) => _data.GetSingle(id).Reviews.Any(x => x.Value == ReviewState.REJECTED);
 
         public bool DoesEquivalentRequestExist(CommandRequest request) {
-            return data.Get().Any(x => x.recipient == request.recipient && x.type == request.type && x.displayValue == request.displayValue && x.displayFrom == request.displayFrom);
+            return _data.Get().Any(x => x.Recipient == request.Recipient && x.Type == request.Type && x.DisplayValue == request.DisplayValue && x.DisplayFrom == request.DisplayFrom);
         }
     }
 }

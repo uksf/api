@@ -70,7 +70,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
         internal async Task CopyFiles(FileSystemInfo source, FileSystemInfo target, List<FileInfo> files, bool flatten = false) {
             Directory.CreateDirectory(target.FullName);
             if (files.Count == 0) {
-                Logger.Log("No files to copy");
+                StepLogger.Log("No files to copy");
                 return;
             }
 
@@ -85,7 +85,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
         internal async Task DeleteDirectoryContents(string path) {
             DirectoryInfo directory = new DirectoryInfo(path);
             if (!directory.Exists) {
-                Logger.Log("Directory does not exist");
+                StepLogger.Log("Directory does not exist");
                 return;
             }
 
@@ -95,20 +95,20 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
 
         internal void DeleteDirectories(List<DirectoryInfo> directories) {
             if (directories.Count == 0) {
-                Logger.Log("No directories to delete");
+                StepLogger.Log("No directories to delete");
                 return;
             }
 
             foreach (DirectoryInfo directory in directories) {
                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
-                Logger.Log($"Deleting directory: {directory}");
+                StepLogger.Log($"Deleting directory: {directory}");
                 directory.Delete(true);
             }
         }
 
         internal async Task DeleteFiles(List<FileInfo> files) {
             if (files.Count == 0) {
-                Logger.Log("No files to delete");
+                StepLogger.Log("No files to delete");
                 return;
             }
 
@@ -123,7 +123,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
             foreach (DirectoryInfo subDirectory in directory.GetDirectories()) {
                 await DeleteEmptyDirectories(subDirectory);
                 if (subDirectory.GetFiles().Length == 0 && subDirectory.GetDirectories().Length == 0) {
-                    Logger.Log($"Deleting directory: {subDirectory}");
+                    StepLogger.Log($"Deleting directory: {subDirectory}");
                     subDirectory.Delete(false);
                 }
             }
@@ -142,7 +142,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
                                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
                                 await process(file);
-                                Logger.LogInline(getLog());
+                                StepLogger.LogInline(getLog());
                             } catch (OperationCanceledException) {
                                 throw;
                             } catch (Exception exception) {
@@ -156,12 +156,12 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
                 }
             );
 
-            Logger.Log(getLog());
+            StepLogger.Log(getLog());
             await Task.WhenAll(tasks);
         }
 
         internal async Task BatchProcessFiles(IEnumerable<FileInfo> files, int batchSize, Func<FileInfo, Task> process, Func<string> getLog, string error) {
-            Logger.Log(getLog());
+            StepLogger.Log(getLog());
             IEnumerable<IEnumerable<FileInfo>> fileBatches = files.Batch(batchSize);
             foreach (IEnumerable<FileInfo> fileBatch in fileBatches) {
                 List<FileInfo> fileList = fileBatch.ToList();
@@ -178,7 +178,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
                     }
                 );
                 await Task.WhenAll(tasks);
-                Logger.LogInline(getLog());
+                StepLogger.LogInline(getLog());
             }
         }
 
@@ -186,7 +186,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
             foreach (FileInfo file in files) {
                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
                 string targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
-                Logger.Log($"Copying '{file}' to '{target.FullName}'");
+                StepLogger.Log($"Copying '{file}' to '{target.FullName}'");
                 Directory.CreateDirectory(Path.GetDirectoryName(targetFile));
                 file.CopyTo(targetFile, true);
             }
@@ -213,7 +213,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
         private void SimpleDeleteFiles(IEnumerable<FileInfo> files) {
             foreach (FileInfo file in files) {
                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
-                Logger.Log($"Deleting file: {file}");
+                StepLogger.Log($"Deleting file: {file}");
                 file.Delete();
             }
         }

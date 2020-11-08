@@ -2,12 +2,12 @@
 
 namespace UKSF.Api.Modpack.Models {
     public class ModpackBuildStepLogItem {
-        public string text;
-        public string colour;
+        public string Text;
+        public string Colour;
     }
 
     public class ModpackBuildStepLogItemUpdate {
-        public bool inline;
-        public List<ModpackBuildStepLogItem> logs;
+        public bool Inline;
+        public List<ModpackBuildStepLogItem> Logs;
     }
 }

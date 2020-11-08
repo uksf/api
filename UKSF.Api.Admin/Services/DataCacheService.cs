@@ -1,6 +1,6 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
-using UKSF.Api.Base.Services.Data;
+using UKSF.Api.Base.Context;
 
 namespace UKSF.Api.Admin.Services {
     public interface IDataCacheService {

@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Base;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Models.Logging;
-using UKSF.Api.Base.Services.Data;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]

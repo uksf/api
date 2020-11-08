@@ -10,13 +10,13 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             string sourcePath = Path.Join(GetBuildSourcesPath(), "modpack", "@intercept");
             string targetPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@intercept");
 
-            Logger.LogSurround("\nCleaning intercept directory...");
+            StepLogger.LogSurround("\nCleaning intercept directory...");
             await DeleteDirectoryContents(targetPath);
-            Logger.LogSurround("Cleaned intercept directory");
+            StepLogger.LogSurround("Cleaned intercept directory");
 
-            Logger.LogSurround("\nCopying intercept to build...");
+            StepLogger.LogSurround("\nCopying intercept to build...");
             await CopyDirectory(sourcePath, targetPath);
-            Logger.LogSurround("Copied intercept to build");
+            StepLogger.LogSurround("Copied intercept to build");
         }
     }
 }

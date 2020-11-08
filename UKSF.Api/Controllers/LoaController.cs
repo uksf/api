@@ -95,11 +95,11 @@ namespace UKSF.Api.Controllers {
         [HttpDelete("{id}"), Authorize]
         public async Task<IActionResult> DeleteLoa(string id) {
             Loa loa = loaService.Data.GetSingle(id);
-            CommandRequest request = commandRequestService.Data.GetSingle(x => x.value == id);
+            CommandRequest request = commandRequestService.Data.GetSingle(x => x.Value == id);
             if (request != null) {
                 await commandRequestService.Data.Delete(request);
-                foreach (string reviewerId in request.reviews.Keys.Where(x => x != request.requester)) {
-                    notificationsService.Add(new Notification {owner = reviewerId, icon = NotificationIcons.REQUEST, message = $"Your review for {request.displayRequester}'s LOA is no longer required as they deleted their LOA", link = "/command/requests"});
+                foreach (string reviewerId in request.Reviews.Keys.Where(x => x != request.Requester)) {
+                    notificationsService.Add(new Notification {owner = reviewerId, icon = NotificationIcons.REQUEST, message = $"Your review for {request.DisplayRequester}'s LOA is no longer required as they deleted their LOA", link = "/command/requests"});
                 }
 
                 logger.LogAudit($"Loa request deleted for '{displayNameService.GetDisplayName(accountService.Data.GetSingle(loa.recipient))}' from '{loa.start}' to '{loa.end}'");

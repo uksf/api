@@ -15,25 +15,25 @@ using UKSF.Api.Personnel.Services;
 namespace UKSF.Api.Modpack.Controllers {
     [Route("[controller]"), Permissions(Permissions.MEMBER)]
     public class IssueController : Controller {
-        private readonly IDisplayNameService displayNameService;
-        private readonly IEmailService emailService;
-        private readonly IHttpContextService httpContextService;
-        private readonly string githubToken;
+        private readonly IDisplayNameService _displayNameService;
+        private readonly IEmailService _emailService;
+        private readonly IHttpContextService _httpContextService;
+        private readonly string _githubToken;
 
 
         public IssueController(IDisplayNameService displayNameService, IEmailService emailService, IConfiguration configuration, IHttpContextService httpContextService) {
 
-            this.displayNameService = displayNameService;
-            this.emailService = emailService;
-            this.httpContextService = httpContextService;
-            githubToken = configuration.GetSection("Github")["token"];
+            _displayNameService = displayNameService;
+            _emailService = emailService;
+            _httpContextService = httpContextService;
+            _githubToken = configuration.GetSection("Github")["token"];
         }
 
         [HttpPut, Authorize]
         public async Task<IActionResult> CreateIssue([FromQuery] int type, [FromBody] JObject data) {
             string title = data["title"].ToString();
             string body = data["body"].ToString();
-            string user = displayNameService.GetDisplayName(httpContextService.GetUserId());
+            string user = _displayNameService.GetDisplayName(_httpContextService.GetUserId());
             body += $"\n\n---\n_**Submitted by:** {user}_";
 
             string issueUrl;
@@ -41,12 +41,12 @@ namespace UKSF.Api.Modpack.Controllers {
                 using HttpClient client = new HttpClient();
                 StringContent content = new StringContent(JsonConvert.SerializeObject(new {title, body}), Encoding.UTF8, "application/vnd.github.v3.full+json");
                 string url = type == 0 ? "https://api.github.com/repos/uksf/website-issues/issues" : "https://api.github.com/repos/uksf/modpack/issues";
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", githubToken);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", _githubToken);
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(user);
                 HttpResponseMessage response = await client.PostAsync(url, content);
                 string result = await response.Content.ReadAsStringAsync();
                 issueUrl = JObject.Parse(result)["html_url"].ToString();
-                emailService.SendEmail("contact.tim.here@gmail.com", "New Issue Created", $"New {(type == 0 ? "website" : "modpack")} issue reported by {user}\n\n{issueUrl}");
+                _emailService.SendEmail("contact.tim.here@gmail.com", "New Issue Created", $"New {(type == 0 ? "website" : "modpack")} issue reported by {user}\n\n{issueUrl}");
             } catch (Exception) {
                 return BadRequest();
             }

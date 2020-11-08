@@ -15,35 +15,35 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
     }
 
     public class BuildProcessorService : IBuildProcessorService {
-        private readonly IBuildsService buildsService;
-        private readonly IBuildStepService buildStepService;
-        private readonly IVariablesService variablesService;
-        private readonly ILogger logger;
+        private readonly IBuildsService _buildsService;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IBuildStepService _buildStepService;
+        private readonly ILogger _logger;
 
-        public BuildProcessorService(IBuildStepService buildStepService, IBuildsService buildsService, IVariablesService variablesService, ILogger logger) {
-            this.buildStepService = buildStepService;
-            this.buildsService = buildsService;
-            this.variablesService = variablesService;
-            this.logger = logger;
+        public BuildProcessorService(IServiceProvider serviceProvider, IBuildStepService buildStepService, IBuildsService buildsService, ILogger logger) {
+            _serviceProvider = serviceProvider;
+            _buildStepService = buildStepService;
+            _buildsService = buildsService;
+            _logger = logger;
         }
 
         public async Task ProcessBuild(ModpackBuild build, CancellationTokenSource cancellationTokenSource) {
-            await buildsService.SetBuildRunning(build);
+            await _buildsService.SetBuildRunning(build);
 
-            foreach (ModpackBuildStep buildStep in build.steps) {
-                IBuildStep step = buildStepService.ResolveBuildStep(buildStep.name);
+            foreach (ModpackBuildStep buildStep in build.Steps) {
+                IBuildStep step = _buildStepService.ResolveBuildStep(buildStep.Name);
                 step.Init(
+                    _serviceProvider,
                     build,
                     buildStep,
-                    async updateDefinition => await buildsService.UpdateBuild(build, updateDefinition),
-                    async () => await buildsService.UpdateBuildStep(build, buildStep),
-                    cancellationTokenSource,
-                    variablesService
+                    async updateDefinition => await _buildsService.UpdateBuild(build, updateDefinition),
+                    async () => await _buildsService.UpdateBuildStep(build, buildStep),
+                    cancellationTokenSource
                 );
 
                 if (cancellationTokenSource.IsCancellationRequested) {
                     await step.Cancel();
-                    await buildsService.CancelBuild(build);
+                    await _buildsService.CancelBuild(build);
                     return;
                 }
 
@@ -60,43 +60,43 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
                 } catch (OperationCanceledException) {
                     await step.Cancel();
                     await ProcessRestore(step, build);
-                    await buildsService.CancelBuild(build);
+                    await _buildsService.CancelBuild(build);
                     return;
                 } catch (Exception exception) {
                     await step.Fail(exception);
                     await ProcessRestore(step, build);
-                    await buildsService.FailBuild(build);
+                    await _buildsService.FailBuild(build);
                     return;
                 }
             }
 
-            await buildsService.SucceedBuild(build);
+            await _buildsService.SucceedBuild(build);
         }
 
         private async Task ProcessRestore(IBuildStep runningStep, ModpackBuild build) {
-            logger.LogInfo($"Attempting to restore repo prior to {build.version}");
-            if (build.environment != GameEnvironment.RELEASE || runningStep is BuildStepClean || runningStep is BuildStepBackup) {
+            _logger.LogInfo($"Attempting to restore repo prior to {build.Version}");
+            if (build.Environment != GameEnvironment.RELEASE || runningStep is BuildStepClean || runningStep is BuildStepBackup) {
                 return;
             }
 
-            ModpackBuildStep restoreStep = buildStepService.GetRestoreStepForRelease();
+            ModpackBuildStep restoreStep = _buildStepService.GetRestoreStepForRelease();
             if (restoreStep == null) {
-                logger.LogError("Restore step expected but not found. Won't restore");
+                _logger.LogError("Restore step expected but not found. Won't restore");
                 return;
             }
 
-            restoreStep.index = build.steps.Count;
-            IBuildStep step = buildStepService.ResolveBuildStep(restoreStep.name);
+            restoreStep.Index = build.Steps.Count;
+            IBuildStep step = _buildStepService.ResolveBuildStep(restoreStep.Name);
             step.Init(
+                _serviceProvider,
                 build,
                 restoreStep,
-                async updateDefinition => await buildsService.UpdateBuild(build, updateDefinition),
-                async () => await buildsService.UpdateBuildStep(build, restoreStep),
-                new CancellationTokenSource(),
-                variablesService
+                async updateDefinition => await _buildsService.UpdateBuild(build, updateDefinition),
+                async () => await _buildsService.UpdateBuildStep(build, restoreStep),
+                new CancellationTokenSource()
             );
-            build.steps.Add(restoreStep);
-            await buildsService.UpdateBuildStep(build, restoreStep);
+            build.Steps.Add(restoreStep);
+            await _buildsService.UpdateBuildStep(build, restoreStep);
 
             try {
                 await step.Start();

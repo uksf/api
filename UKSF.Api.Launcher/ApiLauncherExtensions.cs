@@ -9,7 +9,7 @@ using UKSF.Api.Personnel.ScheduledActions;
 namespace UKSF.Api.Launcher {
     public static class ApiLauncherExtensions {
         public static IServiceCollection AddUksfLauncher(this IServiceCollection services) =>
-            services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddTransient<IDeleteExpiredConfirmationCodeAction, DeleteExpiredConfirmationCodeAction>();
+            services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddTransient<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services.AddSingleton<ILauncherFileDataService, LauncherFileDataService>();
 

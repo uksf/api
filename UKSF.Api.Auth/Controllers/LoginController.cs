@@ -9,8 +9,8 @@ using UKSF.Api.Base.Services;
 namespace UKSF.Api.Auth.Controllers {
     [Route("[controller]")]
     public class LoginController : Controller {
-        private readonly ILoginService loginService;
         private readonly IHttpContextService httpContextService;
+        private readonly ILoginService loginService;
 
         public LoginController(ILoginService loginService, IHttpContextService httpContextService) {
             this.loginService = loginService;

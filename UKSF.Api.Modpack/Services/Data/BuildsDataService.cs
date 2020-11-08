@@ -2,10 +2,9 @@
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
-using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
-using UKSF.Api.Base.Services.Data;
 using UKSF.Api.Modpack.Models;
 
 namespace UKSF.Api.Modpack.Services.Data {
@@ -19,12 +18,12 @@ namespace UKSF.Api.Modpack.Services.Data {
 
         protected override void SetCache(IEnumerable<ModpackBuild> newCollection) {
             lock (LockObject) {
-                Cache = newCollection?.OrderByDescending(x => x.buildNumber).ToList();
+                Cache = newCollection?.OrderByDescending(x => x.BuildNumber).ToList();
             }
         }
 
         public async Task Update(ModpackBuild build, ModpackBuildStep buildStep) {
-            UpdateDefinition<ModpackBuild> updateDefinition = Builders<ModpackBuild>.Update.Set(x => x.steps[buildStep.index], buildStep);
+            UpdateDefinition<ModpackBuild> updateDefinition = Builders<ModpackBuild>.Update.Set(x => x.Steps[buildStep.Index], buildStep);
             await base.Update(build.id, updateDefinition);
             DataEvent(EventModelFactory.CreateDataEvent<ModpackBuild>(DataEventType.UPDATE, build.id, buildStep));
         }

@@ -158,6 +158,7 @@ namespace UKSF.Api.Personnel.Controllers {
             return accountObjects;
         }
 
+        // TODO: This should be a teamspeak endpoint
         [HttpGet("online")]
         public IActionResult GetOnlineAccounts() {
             IEnumerable<TeamspeakClient> teamnspeakClients = teamspeakService.GetOnlineTeamspeakClients();
@@ -201,6 +202,7 @@ namespace UKSF.Api.Personnel.Controllers {
             return Ok(accountService.Data.Get().Any(x => string.Equals(x.email, check, StringComparison.InvariantCultureIgnoreCase)) ? new { exists = true } : new { exists = false });
         }
 
+        // TODO: Could use an account data update event handler
         [HttpPut("name"), Authorize]
         public async Task<IActionResult> ChangeName([FromBody] JObject changeNameRequest) {
             Account account = accountService.GetUserAccount();

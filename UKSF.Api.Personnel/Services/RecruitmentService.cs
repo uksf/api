@@ -29,14 +29,12 @@ namespace UKSF.Api.Personnel.Services {
         private readonly IHttpContextService httpContextService;
         private readonly IDiscordService discordService;
         private readonly IDisplayNameService displayNameService;
-        private readonly ITeamspeakMetricsService metricsService;
         private readonly IRanksService ranksService;
         private readonly ITeamspeakService teamspeakService;
         private readonly IUnitsService unitsService;
         private readonly IVariablesService variablesService;
 
         public RecruitmentService(
-            ITeamspeakMetricsService metricsService,
             IAccountService accountService,
             IHttpContextService httpContextService,
             IDisplayNameService displayNameService,
@@ -48,8 +46,6 @@ namespace UKSF.Api.Personnel.Services {
         ) {
             this.accountService = accountService;
             this.httpContextService = httpContextService;
-
-            this.metricsService = metricsService;
             this.displayNameService = displayNameService;
             this.ranksService = ranksService;
             this.teamspeakService = teamspeakService;
@@ -109,7 +105,6 @@ namespace UKSF.Api.Personnel.Services {
                     daysProcessed = Math.Ceiling((account.application.dateAccepted - account.application.dateCreated).TotalDays),
                     nextCandidateOp = GetNextCandidateOp(),
                     averageProcessingTime = GetAverageProcessingTime(),
-                    teamspeakParticipation = metricsService.GetWeeklyParticipationTrend(account.teamspeakIdentities) + "%",
                     steamprofile = "http://steamcommunity.com/profiles/" + account.steamname,
                     recruiter = displayNameService.GetDisplayName(recruiterAccount),
                     recruiterId = recruiterAccount.id
@@ -190,6 +185,7 @@ namespace UKSF.Api.Personnel.Services {
             );
         }
 
+        // TODO: Should probably be individual endpoints in relevant components
         private (bool tsOnline, string tsNickname, bool discordOnline, string discordNickname) GetOnlineUserDetails(Account account) {
             (bool tsOnline, string tsNickname) = teamspeakService.GetOnlineUserDetails(account);
             (bool discordOnline, string discordNickname) = discordService.GetOnlineUserDetails(account);

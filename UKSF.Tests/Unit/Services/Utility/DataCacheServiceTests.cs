@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using UKSF.Api.Admin.Services;
-using UKSF.Api.Personnel.Services.Data;
+using UKSF.Api.Personnel.Context;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility {

@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using UKSF.Api.Base.Services.Data;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Personnel.Services;
@@ -10,20 +10,20 @@ namespace UKSF.Api.Command.Services {
     }
 
     public class OperationReportService : DataBackedService<IOperationReportDataService>, IOperationReportService {
-        private readonly IAttendanceService attendanceService;
+        private readonly IAttendanceService _attendanceService;
 
-        public OperationReportService(IOperationReportDataService data, IAttendanceService attendanceService) : base(data) => this.attendanceService = attendanceService;
+        public OperationReportService(IOperationReportDataService data, IAttendanceService attendanceService) : base(data) => _attendanceService = attendanceService;
 
         public async Task Create(CreateOperationReportRequest request) {
             Oprep operation = new Oprep {
-                name = request.name,
-                map = request.map,
-                start = request.start.AddHours((double) request.starttime / 100),
-                end = request.end.AddHours((double) request.endtime / 100),
-                type = request.type,
-                result = request.result
+                Name = request.Name,
+                Map = request.Map,
+                Start = request.Start.AddHours((double) request.Starttime / 100),
+                End = request.End.AddHours((double) request.Endtime / 100),
+                Type = request.Type,
+                Result = request.Result
             };
-            operation.attendanceReport = await attendanceService.GenerateAttendanceReport(operation.start, operation.end);
+            operation.AttendanceReport = await _attendanceService.GenerateAttendanceReport(operation.Start, operation.End);
             await Data.Add(operation);
         }
     }

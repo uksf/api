@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
+using UKSF.Api.Personnel.Services;
 
 namespace UKSF.Api.Personnel.Controllers {
     [Route("[controller]")]

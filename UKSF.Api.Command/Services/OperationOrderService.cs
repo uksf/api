@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using UKSF.Api.Base.Services.Data;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 
@@ -13,11 +13,11 @@ namespace UKSF.Api.Command.Services {
 
         public async Task Add(CreateOperationOrderRequest request) {
             Opord operation = new Opord {
-                name = request.name,
-                map = request.map,
-                start = request.start.AddHours((double) request.starttime / 100),
-                end = request.end.AddHours((double) request.endtime / 100),
-                type = request.type
+                Name = request.Name,
+                Map = request.Map,
+                Start = request.Start.AddHours((double) request.Starttime / 100),
+                End = request.End.AddHours((double) request.Endtime / 100),
+                Type = request.Type
             };
             await Data.Add(operation);
         }
