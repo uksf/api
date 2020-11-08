@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp5.0</TargetFramework>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="Controllers" />
+      <Folder Include="DataContext" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\UKSF.Api.Personnel\UKSF.Api.Personnel.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -27,8 +27,12 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\UKSF.Api.Command\UKSF.Api.Command.csproj" />
       <ProjectReference Include="..\UKSF.Api.Data\UKSF.Api.Data.csproj" />
+      <ProjectReference Include="..\UKSF.Api.Integrations.Teamspeak\UKSF.Api.Integrations.Teamspeak.csproj" />
+      <ProjectReference Include="..\UKSF.Api.Launcher\UKSF.Api.Launcher.csproj" />
       <ProjectReference Include="..\UKSF.Api.Models\UKSF.Api.Models.csproj" />
+      <ProjectReference Include="..\UKSF.Api.Modpack\UKSF.Api.Modpack.csproj" />
       <ProjectReference Include="..\UKSF.Api.Services\UKSF.Api.Services.csproj" />
       <ProjectReference Include="..\UKSF.Api\UKSF.Api.csproj" />
       <ProjectReference Include="..\UKSF.Common\UKSF.Common.csproj" />

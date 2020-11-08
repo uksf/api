@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Reactive;
 using System.Threading.Tasks;
+using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Models.Logging;
 
 namespace UKSF.Api.Utility.ScheduledActions {
     public interface IPruneDataAction : IScheduledAction { }
@@ -15,9 +18,9 @@ namespace UKSF.Api.Utility.ScheduledActions {
 
         public void Run(params object[] parameters) {
             DateTime now = DateTime.Now;
-            Task logsTask = dataCollectionFactory.CreateDataCollection<BasicLogMessage>("logs").DeleteManyAsync(x => x.timestamp < now.AddDays(-7));
-            Task errorLogsTask = dataCollectionFactory.CreateDataCollection<WebLogMessage>("errorLogs").DeleteManyAsync(x => x.timestamp < now.AddDays(-7));
-            Task auditLogsTask = dataCollectionFactory.CreateDataCollection<AuditLogMessage>("auditLogs").DeleteManyAsync(x => x.timestamp < now.AddMonths(-3));
+            Task logsTask = dataCollectionFactory.CreateDataCollection<BasicLog>("logs").DeleteManyAsync(x => x.timestamp < now.AddDays(-7));
+            Task errorLogsTask = dataCollectionFactory.CreateDataCollection<HttpErrorLog>("errorLogs").DeleteManyAsync(x => x.timestamp < now.AddDays(-7));
+            Task auditLogsTask = dataCollectionFactory.CreateDataCollection<AuditLog>("auditLogs").DeleteManyAsync(x => x.timestamp < now.AddMonths(-3));
             Task notificationsTask = dataCollectionFactory.CreateDataCollection<Notification>("notifications").DeleteManyAsync(x => x.timestamp < now.AddMonths(-1));
 
             IDataCollection<ModpackBuild> buildsData = dataCollectionFactory.CreateDataCollection<ModpackBuild>("modpackBuilds");

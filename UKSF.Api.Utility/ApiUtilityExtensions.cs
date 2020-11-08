@@ -1,28 +1,20 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Utility.Models;
-using UKSF.Api.Utility.ScheduledActions;
 using UKSF.Api.Utility.Services;
 using UKSF.Api.Utility.Services.Data;
 
 namespace UKSF.Api.Utility {
     public static class ApiUtilityExtensions {
+        public static IServiceCollection AddUksfUtility(this IServiceCollection services) => services.AddContexts().AddEventBuses().AddEventHandlers().AddServices();
 
-        public static IServiceCollection AddUksfUtility(this IServiceCollection services, IConfiguration configuration) {
+        private static IServiceCollection AddContexts(this IServiceCollection services) => services.AddSingleton<ISchedulerDataService, SchedulerDataService>();
 
-            services.AddTransient<ISchedulerDataService, SchedulerDataService>();
-            services.AddTransient<ISchedulerService, SchedulerService>();
-            services.AddSingleton<IScheduledActionService, ScheduledActionService>();
+        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services.AddSingleton<IDataEventBus<ScheduledJob>, DataEventBus<ScheduledJob>>();
 
-            services.AddSingleton<IDataEventBus<ScheduledJob>, DataEventBus<ScheduledJob>>();
+        private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
 
-            services.AddTransient<IInstagramImagesAction, InstagramImagesAction>();
-            services.AddTransient<IInstagramTokenAction, InstagramTokenAction>();
-            services.AddTransient<IPruneDataAction, PruneDataAction>();
-            services.AddTransient<ITeamspeakSnapshotAction, TeamspeakSnapshotAction>();
-
-            return services;
-        }
+        private static IServiceCollection AddServices(this IServiceCollection services) =>
+            services.AddSingleton<IScheduledActionService, ScheduledActionService>().AddTransient<ISchedulerService, SchedulerService>();
     }
 }

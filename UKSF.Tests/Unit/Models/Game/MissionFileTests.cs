@@ -1,6 +1,6 @@
 ﻿using System.IO;
 using FluentAssertions;
-using UKSF.Api.Models.Game;
+using UKSF.Api.ArmaServer.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Models.Game {

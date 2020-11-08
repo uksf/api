@@ -3,51 +3,31 @@ using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Moq;
-using UKSF.Api.Interfaces.Data.Cached;
-using UKSF.Api.Interfaces.Personnel;
-using UKSF.Api.Interfaces.Utility;
+using UKSF.Api.Base;
+using UKSF.Api.Base.Services;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Services.Utility;
+using UKSF.Api.Personnel.Services.Data;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility {
     public class SessionServiceTests {
-        private readonly Mock<IHttpContextAccessor> mockHttpContextAccessor;
-        private readonly Mock<IAccountDataService> mockAccountDataService;
-        private readonly Mock<IAccountService> mockAccountService;
+        private readonly HttpContextService httpContextService;
         private DefaultHttpContext httpContext;
 
         public SessionServiceTests() {
-            mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
-            mockAccountDataService = new Mock<IAccountDataService>();
-            mockAccountService = new Mock<IAccountService>();
+            Mock<IHttpContextAccessor> mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
 
             mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(() => httpContext);
-            mockAccountService.Setup(x => x.Data).Returns(mockAccountDataService.Object);
-        }
 
-        [Fact]
-        public void ShouldGetContextId() {
-            Account account = new Account();
-            List<Claim> claims = new List<Claim> {new Claim(ClaimTypes.Sid, account.id, ClaimValueTypes.String)};
-            ClaimsPrincipal contextUser = new ClaimsPrincipal(new ClaimsIdentity(claims));
-            httpContext = new DefaultHttpContext {User = contextUser};
-
-            sessionService = new SessionService(mockHttpContextAccessor.Object, mockAccountService.Object);
-
-            string subject = httpContextService.GetUserId();
-
-            subject.Should().Be(account.id);
+            httpContextService = new HttpContextService(mockHttpContextAccessor.Object);
         }
 
         [Fact]
         public void ShouldGetContextEmail() {
-            Account account = new Account {email = "contact.tim.here@gmail.com"};
-            List<Claim> claims = new List<Claim> {new Claim(ClaimTypes.Email, account.email)};
+            Account account = new Account { email = "contact.tim.here@gmail.com" };
+            List<Claim> claims = new List<Claim> { new Claim(ClaimTypes.Email, account.email) };
             ClaimsPrincipal contextUser = new ClaimsPrincipal(new ClaimsIdentity(claims));
-            httpContext = new DefaultHttpContext {User = contextUser};
-
-            sessionService = new SessionService(mockHttpContextAccessor.Object, mockAccountService.Object);
+            httpContext = new DefaultHttpContext { User = contextUser };
 
             string subject = httpContextService.GetUserEmail();
 
@@ -55,47 +35,37 @@ namespace UKSF.Tests.Unit.Services.Utility {
         }
 
         [Fact]
-        public void ShouldGetCorrectAccount() {
-            Account account1 = new Account();
-            Account account2 = new Account();
-            List<Claim> claims = new List<Claim> {new Claim(ClaimTypes.Sid, account2.id)};
+        public void ShouldGetContextId() {
+            Account account = new Account();
+            List<Claim> claims = new List<Claim> { new Claim(ClaimTypes.Sid, account.id, ClaimValueTypes.String) };
             ClaimsPrincipal contextUser = new ClaimsPrincipal(new ClaimsIdentity(claims));
-            httpContext = new DefaultHttpContext {User = contextUser};
+            httpContext = new DefaultHttpContext { User = contextUser };
 
-            mockAccountDataService.Setup(x => x.GetSingle(account1.id)).Returns(account1);
-            mockAccountDataService.Setup(x => x.GetSingle(account2.id)).Returns(account2);
+            string subject = httpContextService.GetUserId();
 
-            sessionService = new SessionService(mockHttpContextAccessor.Object, mockAccountService.Object);
-
-            Account subject = accountService.GetUserAccount();
-
-            subject.Should().Be(account2);
-        }
-
-        [Fact]
-        public void ShouldReturnTrueForValidRole() {
-            List<Claim> claims = new List<Claim> {new Claim(ClaimTypes.Role, Permissions.ADMIN)};
-            ClaimsPrincipal contextUser = new ClaimsPrincipal(new ClaimsIdentity(claims));
-            httpContext = new DefaultHttpContext {User = contextUser};
-
-            sessionService = new SessionService(mockHttpContextAccessor.Object, mockAccountService.Object);
-
-            bool subject = sessionService.ContextHasRole(Permissions.ADMIN);
-
-            subject.Should().BeTrue();
+            subject.Should().Be(account.id);
         }
 
         [Fact]
         public void ShouldReturnFalseForInvalidRole() {
-            List<Claim> claims = new List<Claim> {new Claim(ClaimTypes.Role, Permissions.ADMIN)};
+            List<Claim> claims = new List<Claim> { new Claim(ClaimTypes.Role, Permissions.ADMIN) };
             ClaimsPrincipal contextUser = new ClaimsPrincipal(new ClaimsIdentity(claims));
-            httpContext = new DefaultHttpContext {User = contextUser};
+            httpContext = new DefaultHttpContext { User = contextUser };
 
-            sessionService = new SessionService(mockHttpContextAccessor.Object, mockAccountService.Object);
-
-            bool subject = sessionService.ContextHasRole(Permissions.COMMAND);
+            bool subject = httpContextService.UserHasPermission(Permissions.COMMAND);
 
             subject.Should().BeFalse();
+        }
+
+        [Fact]
+        public void ShouldReturnTrueForValidRole() {
+            List<Claim> claims = new List<Claim> { new Claim(ClaimTypes.Role, Permissions.ADMIN) };
+            ClaimsPrincipal contextUser = new ClaimsPrincipal(new ClaimsIdentity(claims));
+            httpContext = new DefaultHttpContext { User = contextUser };
+
+            bool subject = httpContextService.UserHasPermission(Permissions.ADMIN);
+
+            subject.Should().BeTrue();
         }
     }
 }

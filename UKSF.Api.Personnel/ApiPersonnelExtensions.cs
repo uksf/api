@@ -8,47 +8,46 @@ using UKSF.Api.Personnel.Services.Data;
 
 namespace UKSF.Api.Personnel {
     public static class ApiPersonnelExtensions {
-        public static IServiceCollection AddUksfPersonnel(this IServiceCollection services) {
-            services.AddSingleton<IAccountDataService, AccountDataService>();
-            services.AddSingleton<ICommentThreadDataService, CommentThreadDataService>();
-            services.AddSingleton<IDischargeDataService, DischargeDataService>();
-            services.AddSingleton<ILoaDataService, LoaDataService>();
-            services.AddSingleton<INotificationsDataService, NotificationsDataService>();
-            services.AddSingleton<IRanksDataService, RanksDataService>();
-            services.AddSingleton<IRolesDataService, RolesDataService>();
-            services.AddSingleton<IUnitsDataService, UnitsDataService>();
+        public static IServiceCollection AddUksfPersonnel(this IServiceCollection services) =>
+            services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddTransient<IDeleteExpiredConfirmationCodeAction, DeleteExpiredConfirmationCodeAction>();
 
-            services.AddSingleton<IAccountService, AccountService>();
-            services.AddTransient<ICommentThreadService, CommentThreadService>();
-            services.AddTransient<IConfirmationCodeService, ConfirmationCodeService>();
-            services.AddTransient<IDischargeService, DischargeService>();
-            services.AddTransient<ILoaService, LoaService>();
-            services.AddTransient<INotificationsService, NotificationsService>();
-            services.AddTransient<IObjectIdConversionService, ObjectIdConversionService>();
-            services.AddTransient<IRanksService, RanksService>();
-            services.AddTransient<IRolesService, RolesService>();
-            services.AddTransient<IUnitsService, UnitsService>();
+        private static IServiceCollection AddContexts(this IServiceCollection services) =>
+            services.AddSingleton<IAccountDataService, AccountDataService>()
+                    .AddSingleton<ICommentThreadDataService, CommentThreadDataService>()
+                    .AddSingleton<IDischargeDataService, DischargeDataService>()
+                    .AddSingleton<ILoaDataService, LoaDataService>()
+                    .AddSingleton<INotificationsDataService, NotificationsDataService>()
+                    .AddSingleton<IRanksDataService, RanksDataService>()
+                    .AddSingleton<IRolesDataService, RolesDataService>()
+                    .AddSingleton<IUnitsDataService, UnitsDataService>();
 
-            services.AddSingleton<IDataEventBus<Account>, DataEventBus<Account>>();
-            services.AddSingleton<IDataEventBus<CommentThread>, DataEventBus<CommentThread>>();
-            services.AddSingleton<IDataEventBus<ConfirmationCode>, DataEventBus<ConfirmationCode>>();
-            services.AddSingleton<IDataEventBus<DischargeCollection>, DataEventBus<DischargeCollection>>();
-            services.AddSingleton<IDataEventBus<Loa>, DataEventBus<Loa>>();
-            services.AddSingleton<IDataEventBus<Notification>, DataEventBus<Notification>>();
-            services.AddSingleton<IDataEventBus<Rank>, DataEventBus<Rank>>();
-            services.AddSingleton<IDataEventBus<Role>, DataEventBus<Role>>();
-            services.AddSingleton<IDataEventBus<Unit>, DataEventBus<Unit>>();
+        private static IServiceCollection AddEventBuses(this IServiceCollection services) =>
+            services.AddSingleton<IDataEventBus<Account>, DataEventBus<Account>>()
+                    .AddSingleton<IDataEventBus<CommentThread>, DataEventBus<CommentThread>>()
+                    .AddSingleton<IDataEventBus<ConfirmationCode>, DataEventBus<ConfirmationCode>>()
+                    .AddSingleton<IDataEventBus<DischargeCollection>, DataEventBus<DischargeCollection>>()
+                    .AddSingleton<IDataEventBus<Loa>, DataEventBus<Loa>>()
+                    .AddSingleton<IDataEventBus<Notification>, DataEventBus<Notification>>()
+                    .AddSingleton<IDataEventBus<Rank>, DataEventBus<Rank>>()
+                    .AddSingleton<IDataEventBus<Role>, DataEventBus<Role>>()
+                    .AddSingleton<IDataEventBus<Unit>, DataEventBus<Unit>>();
 
-            services.AddSingleton<IAccountEventHandler, AccountEventHandler>();
-            services.AddSingleton<ICommentThreadEventHandler, CommentThreadEventHandler>();
-            services.AddSingleton<INotificationsEventHandler, NotificationsEventHandler>();
+        private static IServiceCollection AddEventHandlers(this IServiceCollection services) =>
+            services.AddSingleton<IAccountEventHandler, AccountEventHandler>()
+                    .AddSingleton<ICommentThreadEventHandler, CommentThreadEventHandler>()
+                    .AddSingleton<INotificationsEventHandler, NotificationsEventHandler>();
 
-            // services.AddTransient<IAttendanceService, AttendanceService>();
-            services.AddTransient<IRecruitmentService, RecruitmentService>();
-
-            services.AddTransient<IDeleteExpiredConfirmationCodeAction, DeleteExpiredConfirmationCodeAction>();
-
-            return services;
-        }
+        private static IServiceCollection AddServices(this IServiceCollection services) =>
+            services.AddSingleton<IAccountService, AccountService>()
+                    .AddTransient<ICommentThreadService, CommentThreadService>()
+                    .AddTransient<IConfirmationCodeService, ConfirmationCodeService>()
+                    .AddTransient<IDischargeService, DischargeService>()
+                    .AddTransient<ILoaService, LoaService>()
+                    .AddTransient<INotificationsService, NotificationsService>()
+                    .AddTransient<IObjectIdConversionService, ObjectIdConversionService>()
+                    .AddTransient<IRanksService, RanksService>()
+                    .AddTransient<IRecruitmentService, RecruitmentService>()
+                    .AddTransient<IRolesService, RolesService>()
+                    .AddTransient<IUnitsService, UnitsService>();
     }
 }

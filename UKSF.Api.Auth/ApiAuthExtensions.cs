@@ -20,9 +20,18 @@ namespace UKSF.Api.Auth {
         public static IServiceCollection AddUksfAuth(this IServiceCollection services, IConfiguration configuration) {
             SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Secrets")["tokenKey"]));
 
-            services.AddTransient<ILoginService, LoginService>();
-            services.AddTransient<IPermissionsService, PermissionsService>();
+            return services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddAuthentication();
+        }
 
+        private static IServiceCollection AddContexts(this IServiceCollection services) => services;
+
+        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services;
+
+        private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
+
+        private static IServiceCollection AddServices(this IServiceCollection services) => services.AddSingleton<ILoginService, LoginService>().AddSingleton<IPermissionsService, PermissionsService>();
+
+        private static IServiceCollection AddAuthentication(this IServiceCollection services) {
             services.AddAuthentication(
                         options => {
                             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

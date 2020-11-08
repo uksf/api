@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using FluentAssertions;
+﻿using FluentAssertions;
 using Newtonsoft.Json.Linq;
-using UKSF.Common;
-using UKSF.Tests.Common;
+using UKSF.Api.Base.Extensions;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Common {

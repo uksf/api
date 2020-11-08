@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace UKSF.Api.Base.Services {
     public interface IHttpContextService {
+        bool IsUserAuthenticated();
         public string GetUserId();
         public string GetUserEmail();
         bool UserHasPermission(string permission);
@@ -13,6 +14,8 @@ namespace UKSF.Api.Base.Services {
         private readonly IHttpContextAccessor httpContextAccessor;
 
         public HttpContextService(IHttpContextAccessor httpContextAccessor) => this.httpContextAccessor = httpContextAccessor;
+
+        public bool IsUserAuthenticated() => httpContextAccessor.HttpContext?.User.Identity != null && httpContextAccessor.HttpContext.User.Identity.IsAuthenticated;
 
         public string GetUserId() => httpContextAccessor.HttpContext?.User.Claims.Single(x => x.Type == ClaimTypes.Sid).Value;
 

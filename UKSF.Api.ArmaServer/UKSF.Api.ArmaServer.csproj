@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp5.0</TargetFramework>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\UKSF.Api.Admin\UKSF.Api.Admin.csproj" />
+      <ProjectReference Include="..\UKSF.Api.ArmaMissions\UKSF.Api.ArmaMissions.csproj" />
+      <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -4,8 +4,8 @@ using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Extensions;
 using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Personnel.SignalrHubs.Clients;
-using UKSF.Api.Personnel.SignalrHubs.Hubs;
+using UKSF.Api.Personnel.Signalr.Clients;
+using UKSF.Api.Personnel.Signalr.Hubs;
 
 namespace UKSF.Api.Personnel.EventHandlers {
     public interface INotificationsEventHandler : IEventHandler { }

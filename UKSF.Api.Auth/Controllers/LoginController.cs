@@ -18,7 +18,7 @@ namespace UKSF.Api.Auth.Controllers {
         }
 
         [HttpGet]
-        public bool IsUserAuthenticated() => HttpContext.User.Identity != null && HttpContext.User.Identity.IsAuthenticated;
+        public bool IsUserAuthenticated() => httpContextService.IsUserAuthenticated();
 
         [HttpGet("refresh"), Authorize]
         public IActionResult RefreshToken() {

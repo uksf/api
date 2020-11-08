@@ -4,23 +4,20 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Events.Handlers;
-using UKSF.Api.Events.SignalrServer;
-using UKSF.Api.Interfaces.Data.Cached;
-using UKSF.Api.Interfaces.Events;
-using UKSF.Api.Interfaces.Integrations.Teamspeak;
-using UKSF.Api.Interfaces.Message;
-using UKSF.Api.Interfaces.Personnel;
-using UKSF.Api.Models.Events;
-using UKSF.Api.Models.Events.Types;
-using UKSF.Api.Models.Integrations;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Services;
+using UKSF.Api.Personnel.Services.Data;
+using UKSF.Api.Teamspeak.EventHandlers;
+using UKSF.Api.Teamspeak.Models;
+using UKSF.Api.Teamspeak.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {
     public class TeamspeakEventHandlerTests {
         private readonly Mock<IAccountService> mockAccountService;
-        private readonly Mock<ILoggingService> mockLoggingService;
+        private readonly Mock<ILogger> mockLoggingService;
         private readonly Mock<ITeamspeakGroupService> mockTeamspeakGroupService;
         private readonly Mock<ITeamspeakService> mockTeamspeakService;
         private readonly ISignalrEventBus signalrEventBus;
@@ -31,7 +28,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
             mockTeamspeakService = new Mock<ITeamspeakService>();
             mockAccountService = new Mock<IAccountService>();
             mockTeamspeakGroupService = new Mock<ITeamspeakGroupService>();
-            mockLoggingService = new Mock<ILoggingService>();
+            mockLoggingService = new Mock<ILogger>();
 
             teamspeakEventHandler = new TeamspeakEventHandler(signalrEventBus, mockTeamspeakService.Object, mockAccountService.Object, mockTeamspeakGroupService.Object, mockLoggingService.Object);
         }
@@ -56,13 +53,13 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
         [Fact]
         public void LogOnException() {
-            mockLoggingService.Setup(x => x.Log(It.IsAny<Exception>()));
+            mockLoggingService.Setup(x => x.LogError(It.IsAny<Exception>()));
 
             teamspeakEventHandler.Init();
 
             signalrEventBus.Send(new SignalrEventModel { procedure = (TeamspeakEventType) 9 });
 
-            mockLoggingService.Verify(x => x.Log(It.IsAny<Exception>()), Times.Once);
+            mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Once);
         }
 
         [Fact]

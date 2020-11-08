@@ -4,13 +4,12 @@ using System.Linq;
 using System.Linq.Expressions;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Utility.ScheduledActions;
-using UKSF.Api.Models.Game;
-using UKSF.Api.Models.Message.Logging;
-using UKSF.Api.Models.Modpack;
+using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Models.Logging;
+using UKSF.Api.Modpack.Models;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Services.Utility.ScheduledActions;
+using UKSF.Api.Utility.ScheduledActions;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
@@ -22,18 +21,18 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
 
         [Fact]
         public void ShouldRemoveOldLogsAndNotifications() {
-            List<BasicLogMessage> mockBasicLogMessageCollection = new List<BasicLogMessage> {
-                new BasicLogMessage("test1"), new BasicLogMessage("test2") { timestamp = DateTime.Now.AddDays(-10) }, new BasicLogMessage("test3") { timestamp = DateTime.Now.AddDays(-6) }
+            List<BasicLog> mockBasicLogMessageCollection = new List<BasicLog> {
+                new BasicLog("test1"), new BasicLog("test2") { timestamp = DateTime.Now.AddDays(-10) }, new BasicLog("test3") { timestamp = DateTime.Now.AddDays(-6) }
             };
-            List<WebLogMessage> mockWebLogMessageCollection = new List<WebLogMessage> {
-                new WebLogMessage(new Exception("error1")),
-                new WebLogMessage(new Exception("error2")) { timestamp = DateTime.Now.AddDays(-10) },
-                new WebLogMessage(new Exception("error3")) { timestamp = DateTime.Now.AddDays(-6) }
+            List<HttpErrorLog> mockWebLogMessageCollection = new List<HttpErrorLog> {
+                new HttpErrorLog(new Exception("error1")),
+                new HttpErrorLog(new Exception("error2")) { timestamp = DateTime.Now.AddDays(-10) },
+                new HttpErrorLog(new Exception("error3")) { timestamp = DateTime.Now.AddDays(-6) }
             };
-            List<AuditLogMessage> mockAuditLogMessageCollection = new List<AuditLogMessage> {
-                new AuditLogMessage { message = "audit1" },
-                new AuditLogMessage { message = "audit2", timestamp = DateTime.Now.AddDays(-100) },
-                new AuditLogMessage { message = "audit3", timestamp = DateTime.Now.AddMonths(-2) }
+            List<AuditLog> mockAuditLogMessageCollection = new List<AuditLog> {
+                new AuditLog("server", "audit1"),
+                new AuditLog("server", "audit2") { timestamp = DateTime.Now.AddDays(-100) },
+                new AuditLog("server", "audit3") { timestamp = DateTime.Now.AddMonths(-2) }
             };
             List<Notification> mockNotificationCollection = new List<Notification> {
                 new Notification { message = "notification1" },
@@ -47,28 +46,28 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
                 new ModpackBuild { environment = GameEnvironment.DEV, buildNumber = 150, version = "5.19.0" }
             };
 
-            Mock<IDataCollection<BasicLogMessage>> mockBasicLogMessageDataColection = new Mock<IDataCollection<BasicLogMessage>>();
-            Mock<IDataCollection<WebLogMessage>> mockWebLogMessageDataColection = new Mock<IDataCollection<WebLogMessage>>();
-            Mock<IDataCollection<AuditLogMessage>> mockAuditLogMessageDataColection = new Mock<IDataCollection<AuditLogMessage>>();
+            Mock<IDataCollection<BasicLog>> mockBasicLogMessageDataColection = new Mock<IDataCollection<BasicLog>>();
+            Mock<IDataCollection<HttpErrorLog>> mockWebLogMessageDataColection = new Mock<IDataCollection<HttpErrorLog>>();
+            Mock<IDataCollection<AuditLog>> mockAuditLogMessageDataColection = new Mock<IDataCollection<AuditLog>>();
             Mock<IDataCollection<Notification>> mockNotificationDataColection = new Mock<IDataCollection<Notification>>();
             Mock<IDataCollection<ModpackBuild>> mockModpackBuildDataColection = new Mock<IDataCollection<ModpackBuild>>();
 
             mockModpackBuildDataColection.Setup(x => x.Get(It.IsAny<Func<ModpackBuild, bool>>())).Returns<Func<ModpackBuild, bool>>(x => mockModpackBuildCollection.Where(x));
 
-            mockBasicLogMessageDataColection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<BasicLogMessage, bool>>>()))
-                                            .Callback<Expression<Func<BasicLogMessage, bool>>>(x => mockBasicLogMessageCollection.RemoveAll(y => x.Compile()(y)));
-            mockWebLogMessageDataColection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<WebLogMessage, bool>>>()))
-                                          .Callback<Expression<Func<WebLogMessage, bool>>>(x => mockWebLogMessageCollection.RemoveAll(y => x.Compile()(y)));
-            mockAuditLogMessageDataColection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<AuditLogMessage, bool>>>()))
-                                            .Callback<Expression<Func<AuditLogMessage, bool>>>(x => mockAuditLogMessageCollection.RemoveAll(y => x.Compile()(y)));
+            mockBasicLogMessageDataColection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<BasicLog, bool>>>()))
+                                            .Callback<Expression<Func<BasicLog, bool>>>(x => mockBasicLogMessageCollection.RemoveAll(y => x.Compile()(y)));
+            mockWebLogMessageDataColection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<HttpErrorLog, bool>>>()))
+                                          .Callback<Expression<Func<HttpErrorLog, bool>>>(x => mockWebLogMessageCollection.RemoveAll(y => x.Compile()(y)));
+            mockAuditLogMessageDataColection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<AuditLog, bool>>>()))
+                                            .Callback<Expression<Func<AuditLog, bool>>>(x => mockAuditLogMessageCollection.RemoveAll(y => x.Compile()(y)));
             mockNotificationDataColection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<Notification, bool>>>()))
                                          .Callback<Expression<Func<Notification, bool>>>(x => mockNotificationCollection.RemoveAll(y => x.Compile()(y)));
             mockModpackBuildDataColection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<ModpackBuild, bool>>>()))
                                          .Callback<Expression<Func<ModpackBuild, bool>>>(x => mockModpackBuildCollection.RemoveAll(y => x.Compile()(y)));
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<BasicLogMessage>("logs")).Returns(mockBasicLogMessageDataColection.Object);
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<WebLogMessage>("errorLogs")).Returns(mockWebLogMessageDataColection.Object);
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<AuditLogMessage>("auditLogs")).Returns(mockAuditLogMessageDataColection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<BasicLog>("logs")).Returns(mockBasicLogMessageDataColection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<HttpErrorLog>("errorLogs")).Returns(mockWebLogMessageDataColection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<AuditLog>("auditLogs")).Returns(mockAuditLogMessageDataColection.Object);
             mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Notification>("notifications")).Returns(mockNotificationDataColection.Object);
             mockDataCollectionFactory.Setup(x => x.CreateDataCollection<ModpackBuild>("modpackBuilds")).Returns(mockModpackBuildDataColection.Object);
 

@@ -5,22 +5,21 @@ using UKSF.Api.Admin.EventHandlers;
 using UKSF.Api.Admin.Models;
 using UKSF.Api.Admin.Services;
 using UKSF.Api.Admin.Services.Data;
-using UKSF.Api.Admin.SignalrHubs.Hubs;
+using UKSF.Api.Admin.Signalr.Hubs;
 using UKSF.Api.Base.Events;
 
 namespace UKSF.Api.Admin {
     public static class ApiAdminExtensions {
-        public static IServiceCollection AddUksfAdmin(this IServiceCollection services) {
-            services.AddSingleton<IDataCacheService, DataCacheService>();
-            services.AddSingleton<IVariablesDataService, VariablesDataService>();
-            services.AddTransient<IVariablesService, VariablesService>();
+        public static IServiceCollection AddUksfAdmin(this IServiceCollection services) => services.AddContexts().AddEventBuses().AddEventHandlers().AddServices();
 
-            services.AddSingleton<IDataEventBus<VariableItem>, DataEventBus<VariableItem>>();
+        private static IServiceCollection AddContexts(this IServiceCollection services) => services;
 
-            services.AddSingleton<ILogDataEventHandler, LogDataEventHandler>();
+        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services.AddSingleton<IDataEventBus<VariableItem>, DataEventBus<VariableItem>>();
 
-            return services;
-        }
+        private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services.AddSingleton<ILogDataEventHandler, LogDataEventHandler>();
+
+        private static IServiceCollection AddServices(this IServiceCollection services) =>
+            services.AddSingleton<IDataCacheService, DataCacheService>().AddTransient<IVariablesDataService, VariablesDataService>().AddTransient<IVariablesService, VariablesService>();
 
         public static void AddUksfAdminSignalr(this IEndpointRouteBuilder builder) {
             builder.MapHub<AdminHub>($"/hub/{AdminHub.END_POINT}");

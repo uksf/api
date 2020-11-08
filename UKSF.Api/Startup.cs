@@ -1,34 +1,19 @@
 ﻿using System;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using AspNet.Security.OpenId;
 using AutoMapper;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Primitives;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using UKSF.Api.Admin;
 using UKSF.Api.AppStart;
-using UKSF.Api.AppStart.Services;
-using UKSF.Api.Interfaces.Integrations.Teamspeak;
-using UKSF.Api.Interfaces.Modpack.BuildProcess;
-using UKSF.Api.Personnel.SignalrHubs;
-using UKSF.Api.Personnel.SignalrHubs.Hubs;
-using UKSF.Api.Services;
-using UKSF.Api.Signalr.Hubs.Command;
-using UKSF.Api.Signalr.Hubs.Game;
-using UKSF.Api.Signalr.Hubs.Integrations;
-using UKSF.Api.Signalr.Hubs.Modpack;
-using UKSF.Api.Signalr.Hubs.Utility;
+using UKSF.Api.Modpack.Services.BuildProcess;
+using UKSF.Api.Personnel.Signalr.Hubs;
+using UKSF.Api.Teamspeak.Services;
 
 namespace UKSF.Api {
     public class Startup {
@@ -43,7 +28,7 @@ namespace UKSF.Api {
         }
 
         public void ConfigureServices(IServiceCollection services) {
-            services.RegisterServices(configuration, currentEnvironment);
+            services.AddUksf(configuration, currentEnvironment);
 
             services.AddCors(
                 options => options.AddPolicy(

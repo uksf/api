@@ -5,13 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Base;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Services;
-using UKSF.Api.Interfaces.Command;
-using UKSF.Api.Interfaces.Message;
-using UKSF.Api.Interfaces.Personnel;
-using UKSF.Api.Interfaces.Units;
-using UKSF.Api.Interfaces.Utility;
-using UKSF.Api.Models.Command;
+using UKSF.Api.Command.Models;
+using UKSF.Api.Command.Services;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 
@@ -25,6 +22,7 @@ namespace UKSF.Api.Controllers {
         private readonly ILoaService loaService;
         private readonly IHttpContextService httpContextService;
         private readonly INotificationsService notificationsService;
+        private readonly ILogger logger;
 
         private readonly IUnitsService unitsService;
 
@@ -36,17 +34,18 @@ namespace UKSF.Api.Controllers {
             IUnitsService unitsService,
             IChainOfCommandService chainOfCommandService,
             ICommandRequestService commandRequestService,
-            INotificationsService notificationsService
+            INotificationsService notificationsService,
+            ILogger logger
         ) {
             this.loaService = loaService;
             this.httpContextService = httpContextService;
-
             this.displayNameService = displayNameService;
             this.accountService = accountService;
             this.unitsService = unitsService;
             this.chainOfCommandService = chainOfCommandService;
             this.commandRequestService = commandRequestService;
             this.notificationsService = notificationsService;
+            this.logger = logger;
         }
 
         [HttpGet, Authorize]

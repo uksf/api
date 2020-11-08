@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Data.Modpack;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Events;
-using UKSF.Api.Models.Modpack;
+using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Modpack.Models;
+using UKSF.Api.Modpack.Services.Data;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Modpack {

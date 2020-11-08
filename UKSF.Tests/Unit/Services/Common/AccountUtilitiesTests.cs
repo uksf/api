@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using MongoDB.Bson;
+using UKSF.Api.Personnel.Extensions;
 using UKSF.Api.Personnel.Models;
 using Xunit;
 

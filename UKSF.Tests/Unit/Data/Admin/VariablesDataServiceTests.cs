@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Driver;
 using Moq;
-using UKSF.Api.Data.Admin;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Events;
-using UKSF.Api.Models.Admin;
+using UKSF.Api.Admin.Models;
+using UKSF.Api.Admin.Services.Data;
+using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Events;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Admin {

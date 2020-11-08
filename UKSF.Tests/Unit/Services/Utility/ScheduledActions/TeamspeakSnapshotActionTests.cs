@@ -1,8 +1,7 @@
 ﻿using FluentAssertions;
 using Moq;
-using UKSF.Api.Interfaces.Integrations.Teamspeak;
-using UKSF.Api.Interfaces.Utility.ScheduledActions;
-using UKSF.Api.Services.Utility.ScheduledActions;
+using UKSF.Api.Teamspeak.ScheduledActions;
+using UKSF.Api.Teamspeak.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
