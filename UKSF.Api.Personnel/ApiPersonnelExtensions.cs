@@ -1,10 +1,13 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.EventHandlers;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.ScheduledActions;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Personnel.Services.Data;
+using UKSF.Api.Personnel.Signalr.Hubs;
 
 namespace UKSF.Api.Personnel {
     public static class ApiPersonnelExtensions {
@@ -49,5 +52,11 @@ namespace UKSF.Api.Personnel {
                     .AddTransient<IRecruitmentService, RecruitmentService>()
                     .AddTransient<IRolesService, RolesService>()
                     .AddTransient<IUnitsService, UnitsService>();
+
+        public static void AddUksfPersonnelSignalr(this IEndpointRouteBuilder builder) {
+            builder.MapHub<AccountHub>($"/hub/{AccountHub.END_POINT}");
+            builder.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.END_POINT}");
+            builder.MapHub<NotificationHub>($"/hub/{NotificationHub.END_POINT}");
+        }
     }
 }

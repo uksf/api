@@ -11,8 +11,12 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using UKSF.Api.Admin;
 using UKSF.Api.AppStart;
+using UKSF.Api.ArmaServer;
+using UKSF.Api.Command;
+using UKSF.Api.Modpack;
 using UKSF.Api.Modpack.Services.BuildProcess;
-using UKSF.Api.Personnel.Signalr.Hubs;
+using UKSF.Api.Personnel;
+using UKSF.Api.Teamspeak;
 using UKSF.Api.Teamspeak.Services;
 
 namespace UKSF.Api {
@@ -43,7 +47,6 @@ namespace UKSF.Api {
             );
             services.AddSignalR().AddNewtonsoftJsonProtocol();
 
-
             services.AddAutoMapper(typeof(AutoMapperConfigurationProfile));
             services.AddControllers();
             services.AddSwaggerGen(options => { options.SwaggerDoc("v1", new OpenApiInfo { Title = "UKSF API", Version = "v1" }); });
@@ -56,7 +59,12 @@ namespace UKSF.Api {
             app.UseStaticFiles();
             app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMode.Lax });
             app.UseSwagger();
-            app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF API v1"); options.DocExpansion(DocExpansion.None); });
+            app.UseSwaggerUI(
+                options => {
+                    options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF API v1");
+                    options.DocExpansion(DocExpansion.None);
+                }
+            );
             app.UseRouting();
             app.UseCors("CorsPolicy");
             app.UseCorsMiddleware();
@@ -67,16 +75,12 @@ namespace UKSF.Api {
             app.UseEndpoints(
                 endpoints => {
                     endpoints.MapControllers().RequireCors("CorsPolicy");
-                    endpoints.MapHub<AccountHub>($"/hub/{AccountHub.END_POINT}");
-                    endpoints.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.END_POINT}");
-                    endpoints.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.END_POINT}");
-                    endpoints.MapHub<LauncherHub>($"/hub/{LauncherHub.END_POINT}");
-                    endpoints.MapHub<BuildsHub>($"/hub/{BuildsHub.END_POINT}");
-                    endpoints.MapHub<NotificationHub>($"/hub/{NotificationHub.END_POINT}");
-                    endpoints.MapHub<ServersHub>($"/hub/{ServersHub.END_POINT}");
-                    endpoints.MapHub<TeamspeakHub>($"/hub/{TeamspeakHub.END_POINT}").RequireHost("localhost");
-                    endpoints.MapHub<TeamspeakClientsHub>($"/hub/{TeamspeakClientsHub.END_POINT}");
                     endpoints.AddUksfAdminSignalr();
+                    endpoints.AddUksfArmaServerSignalr();
+                    endpoints.AddUksfCommandSignalr();
+                    endpoints.AddUksfIntegrationTeamspeakSignalr();
+                    endpoints.AddUksfModpackSignalr();
+                    endpoints.AddUksfPersonnelSignalr();
                 }
             );
 

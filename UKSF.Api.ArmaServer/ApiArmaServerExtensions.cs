@@ -1,7 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Base.Events;
 
 namespace UKSF.Api.ArmaServer {
@@ -15,5 +18,9 @@ namespace UKSF.Api.ArmaServer {
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
 
         private static IServiceCollection AddServices(this IServiceCollection services) => services.AddSingleton<IGameServersService, GameServersService>();
+
+        public static void AddUksfArmaServerSignalr(this IEndpointRouteBuilder builder) {
+            builder.MapHub<ServersHub>($"/hub/{ServersHub.END_POINT}");
+        }
     }
 }

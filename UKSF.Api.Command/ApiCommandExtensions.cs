@@ -1,9 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.EventHandlers;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Services;
+using UKSF.Api.Command.Signalr.Hubs;
 
 namespace UKSF.Api.Command {
     public static class ApiCommandExtensions {
@@ -28,5 +31,9 @@ namespace UKSF.Api.Command {
                     .AddTransient<ICommandRequestService, CommandRequestService>()
                     .AddTransient<IOperationOrderService, OperationOrderService>()
                     .AddTransient<IOperationReportService, OperationReportService>();
+
+        public static void AddUksfCommandSignalr(this IEndpointRouteBuilder builder) {
+            builder.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.END_POINT}");
+        }
     }
 }
