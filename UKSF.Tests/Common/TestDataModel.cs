@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using UKSF.Api.Models;
+using UKSF.Api.Base.Models;
 
 namespace UKSF.Tests.Common {
     public class TestDataModel : DatabaseObject {

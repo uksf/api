@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +8,7 @@ using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Base;
 using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Extensions;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 

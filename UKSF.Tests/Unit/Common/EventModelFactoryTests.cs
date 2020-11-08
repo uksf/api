@@ -1,7 +1,7 @@
 ﻿using FluentAssertions;
 using MongoDB.Bson;
-using UKSF.Api.Data;
-using UKSF.Api.Models.Events;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Tests.Common;
 using Xunit;
 

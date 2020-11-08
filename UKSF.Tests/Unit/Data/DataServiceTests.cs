@@ -7,9 +7,9 @@ using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Events;
-using UKSF.Api.Models.Events;
+using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Tests.Common;
 using Xunit;
 

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
 using UKSF.Api.Base.Services.Data;
 using UKSF.Api.Utility.Models;
@@ -21,11 +22,13 @@ namespace UKSF.Api.Utility.Services {
     public class SchedulerService : DataBackedService<ISchedulerDataService>, ISchedulerService {
         private static readonly ConcurrentDictionary<string, CancellationTokenSource> ACTIVE_TASKS = new ConcurrentDictionary<string, CancellationTokenSource>();
         private readonly IHostEnvironment currentEnvironment;
+        private readonly ILogger logger;
         private readonly IScheduledActionService scheduledActionService;
 
-        public SchedulerService(ISchedulerDataService data, IScheduledActionService scheduledActionService, IHostEnvironment currentEnvironment) : base(data) {
+        public SchedulerService(ISchedulerDataService data, IScheduledActionService scheduledActionService, IHostEnvironment currentEnvironment, ILogger logger) : base(data) {
             this.scheduledActionService = scheduledActionService;
             this.currentEnvironment = currentEnvironment;
+            this.logger = logger;
         }
 
         public async void Load() {
@@ -102,6 +105,7 @@ namespace UKSF.Api.Utility.Services {
             ACTIVE_TASKS[job.id] = token;
         }
 
+        // TODO: Move out of this bit
         private async Task AddUnique() {
             if (Data.GetSingle(x => x.action == InstagramImagesAction.ACTION_NAME) == null) {
                 await Create(DateTime.Today, TimeSpan.FromMinutes(15), InstagramImagesAction.ACTION_NAME);

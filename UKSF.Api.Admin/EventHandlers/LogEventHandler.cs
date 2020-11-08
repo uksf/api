@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
-using UKSF.Api.Admin.SignalrHubs.Clients;
-using UKSF.Api.Admin.SignalrHubs.Hubs;
+using UKSF.Api.Admin.Signalr.Clients;
+using UKSF.Api.Admin.Signalr.Hubs;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Extensions;
 using UKSF.Api.Base.Models;

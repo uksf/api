@@ -2,49 +2,50 @@
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Events;
-using UKSF.Api.Models.Message.Logging;
+using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models.Logging;
+using UKSF.Api.Base.Services.Data;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Message {
     public class LogDataServiceTests {
         private readonly LogDataService logDataService;
-        private readonly List<AuditLogMessage> mockAuditCollection;
-        private readonly List<BasicLogMessage> mockBasicCollection;
-        private readonly List<WebLogMessage> mockErrorCollection;
-        private readonly List<LauncherLogMessage> mockLauncherCollection;
+        private readonly List<AuditLog> mockAuditCollection;
+        private readonly List<BasicLog> mockBasicCollection;
+        private readonly List<HttpErrorLog> mockErrorCollection;
+        private readonly List<LauncherLog> mockLauncherCollection;
 
         public LogDataServiceTests() {
-            Mock<IDataEventBus<BasicLogMessage>> mockDataEventBus = new Mock<IDataEventBus<BasicLogMessage>>();
+            Mock<IDataEventBus<BasicLog>> mockDataEventBus = new Mock<IDataEventBus<BasicLog>>();
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
 
-            Mock<IDataCollection<BasicLogMessage>> mockBasicDataCollection = new Mock<IDataCollection<BasicLogMessage>>();
-            Mock<IDataCollection<AuditLogMessage>> mockAuditDataCollection = new Mock<IDataCollection<AuditLogMessage>>();
-            Mock<IDataCollection<LauncherLogMessage>> mockLauncherDataCollection = new Mock<IDataCollection<LauncherLogMessage>>();
-            Mock<IDataCollection<WebLogMessage>> mockErrorDataCollection = new Mock<IDataCollection<WebLogMessage>>();
+            Mock<IDataCollection<BasicLog>> mockBasicDataCollection = new Mock<IDataCollection<BasicLog>>();
+            Mock<IDataCollection<AuditLog>> mockAuditDataCollection = new Mock<IDataCollection<AuditLog>>();
+            Mock<IDataCollection<LauncherLog>> mockLauncherDataCollection = new Mock<IDataCollection<LauncherLog>>();
+            Mock<IDataCollection<HttpErrorLog>> mockErrorDataCollection = new Mock<IDataCollection<HttpErrorLog>>();
 
-            mockBasicCollection = new List<BasicLogMessage>();
-            mockAuditCollection = new List<AuditLogMessage>();
-            mockLauncherCollection = new List<LauncherLogMessage>();
-            mockErrorCollection = new List<WebLogMessage>();
+            mockBasicCollection = new List<BasicLog>();
+            mockAuditCollection = new List<AuditLog>();
+            mockLauncherCollection = new List<LauncherLog>();
+            mockErrorCollection = new List<HttpErrorLog>();
 
-            mockBasicDataCollection.Setup(x => x.AddAsync(It.IsAny<BasicLogMessage>())).Returns(Task.CompletedTask).Callback<BasicLogMessage>(x => mockBasicCollection.Add(x));
-            mockAuditDataCollection.Setup(x => x.AddAsync(It.IsAny<AuditLogMessage>())).Returns(Task.CompletedTask).Callback<AuditLogMessage>(x => mockAuditCollection.Add(x));
-            mockLauncherDataCollection.Setup(x => x.AddAsync(It.IsAny<LauncherLogMessage>())).Returns(Task.CompletedTask).Callback<LauncherLogMessage>(x => mockLauncherCollection.Add(x));
-            mockErrorDataCollection.Setup(x => x.AddAsync(It.IsAny<WebLogMessage>())).Returns(Task.CompletedTask).Callback<WebLogMessage>(x => mockErrorCollection.Add(x));
+            mockBasicDataCollection.Setup(x => x.AddAsync(It.IsAny<BasicLog>())).Returns(Task.CompletedTask).Callback<BasicLog>(x => mockBasicCollection.Add(x));
+            mockAuditDataCollection.Setup(x => x.AddAsync(It.IsAny<AuditLog>())).Returns(Task.CompletedTask).Callback<AuditLog>(x => mockAuditCollection.Add(x));
+            mockLauncherDataCollection.Setup(x => x.AddAsync(It.IsAny<LauncherLog>())).Returns(Task.CompletedTask).Callback<LauncherLog>(x => mockLauncherCollection.Add(x));
+            mockErrorDataCollection.Setup(x => x.AddAsync(It.IsAny<HttpErrorLog>())).Returns(Task.CompletedTask).Callback<HttpErrorLog>(x => mockErrorCollection.Add(x));
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<BasicLogMessage>("logs")).Returns(mockBasicDataCollection.Object);
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<AuditLogMessage>("auditLogs")).Returns(mockAuditDataCollection.Object);
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<LauncherLogMessage>("launcherLogs")).Returns(mockLauncherDataCollection.Object);
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<WebLogMessage>("errorLogs")).Returns(mockErrorDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<BasicLog>("logs")).Returns(mockBasicDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<AuditLog>("auditLogs")).Returns(mockAuditDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<LauncherLog>("launcherLogs")).Returns(mockLauncherDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<HttpErrorLog>("errorLogs")).Returns(mockErrorDataCollection.Object);
 
             logDataService = new LogDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
 
         [Fact]
         public async Task ShouldUseAuditLogCollection() {
-            AuditLogMessage logMessage = new AuditLogMessage();
+            AuditLog logMessage = new AuditLog("server", "test");
 
             await logDataService.Add(logMessage);
 
@@ -56,10 +57,10 @@ namespace UKSF.Tests.Unit.Data.Message {
 
         [Fact]
         public async Task ShouldUseCorrectCollection() {
-            BasicLogMessage basicLogMessage = new BasicLogMessage("test");
-            AuditLogMessage auditLogMessage = new AuditLogMessage();
-            LauncherLogMessage launcherLogMessage = new LauncherLogMessage("1", "test");
-            WebLogMessage webLogMessage = new WebLogMessage();
+            BasicLog basicLogMessage = new BasicLog("test");
+            AuditLog auditLogMessage = new AuditLog("server", "test");
+            LauncherLog launcherLogMessage = new LauncherLog("1", "test");
+            HttpErrorLog webLogMessage = new HttpErrorLog();
 
             await logDataService.Add(basicLogMessage);
             await logDataService.Add(auditLogMessage);
@@ -74,7 +75,7 @@ namespace UKSF.Tests.Unit.Data.Message {
 
         [Fact]
         public async Task ShouldUseErrorLogCollection() {
-            WebLogMessage logMessage = new WebLogMessage();
+            HttpErrorLog logMessage = new HttpErrorLog();
 
             await logDataService.Add(logMessage);
 
@@ -86,7 +87,7 @@ namespace UKSF.Tests.Unit.Data.Message {
 
         [Fact]
         public async Task ShouldUseLauncherLogCollection() {
-            LauncherLogMessage logMessage = new LauncherLogMessage("1", "test");
+            LauncherLog logMessage = new LauncherLog("1", "test");
 
             await logDataService.Add(logMessage);
 
@@ -98,7 +99,7 @@ namespace UKSF.Tests.Unit.Data.Message {
 
         [Fact]
         public async Task ShouldUseLogCollection() {
-            BasicLogMessage logMessage = new BasicLogMessage("test");
+            BasicLog logMessage = new BasicLog("test");
 
             await logDataService.Add(logMessage);
 

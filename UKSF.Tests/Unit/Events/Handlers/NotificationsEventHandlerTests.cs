@@ -2,28 +2,25 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
-using UKSF.Api.Events.Data;
-using UKSF.Api.Events.Handlers;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Hubs;
-using UKSF.Api.Interfaces.Message;
-using UKSF.Api.Models.Events;
+using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.EventHandlers;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Personnel.SignalrHubs.Clients;
-using UKSF.Api.Personnel.SignalrHubs.Hubs;
+using UKSF.Api.Personnel.Signalr.Clients;
+using UKSF.Api.Personnel.Signalr.Hubs;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {
     public class NotificationsEventHandlerTests {
         private readonly DataEventBus<Notification> dataEventBus;
         private readonly Mock<IHubContext<NotificationHub, INotificationsClient>> mockHub;
-        private readonly Mock<ILoggingService> mockLoggingService;
+        private readonly Mock<ILogger> mockLoggingService;
         private readonly NotificationsEventHandler notificationsEventHandler;
 
         public NotificationsEventHandlerTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            mockLoggingService = new Mock<ILoggingService>();
+            mockLoggingService = new Mock<ILogger>();
             mockHub = new Mock<IHubContext<NotificationHub, INotificationsClient>>();
 
             dataEventBus = new DataEventBus<Notification>();
@@ -41,13 +38,13 @@ namespace UKSF.Tests.Unit.Events.Handlers {
             mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
             mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockClient.Object);
             mockClient.Setup(x => x.ReceiveNotification(It.IsAny<Notification>())).Throws(new Exception());
-            mockLoggingService.Setup(x => x.Log(It.IsAny<Exception>()));
+            mockLoggingService.Setup(x => x.LogError(It.IsAny<Exception>()));
 
             notificationsEventHandler.Init();
 
             dataEventBus.Send(new DataEventModel<Notification> { type = DataEventType.ADD });
 
-            mockLoggingService.Verify(x => x.Log(It.IsAny<Exception>()), Times.Once);
+            mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Once);
         }
 
         [Fact]

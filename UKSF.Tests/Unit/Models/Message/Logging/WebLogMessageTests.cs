@@ -1,13 +1,13 @@
 ﻿using System;
 using FluentAssertions;
-using UKSF.Api.Models.Message.Logging;
+using UKSF.Api.Base.Models.Logging;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Models.Message.Logging {
     public class WebLogMessageTests {
         [Fact]
         public void ShouldCreateFromException() {
-            WebLogMessage subject = new WebLogMessage(new Exception("test"));
+            HttpErrorLog subject = new HttpErrorLog(new Exception("test"));
 
             subject.message.Should().Be("test");
             subject.exception.Should().Be("System.Exception: test");

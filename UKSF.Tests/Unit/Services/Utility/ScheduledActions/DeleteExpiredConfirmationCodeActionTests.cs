@@ -2,10 +2,9 @@
 using FluentAssertions;
 using MongoDB.Bson;
 using Moq;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Utility;
-using UKSF.Api.Interfaces.Utility.ScheduledActions;
-using UKSF.Api.Services.Utility.ScheduledActions;
+using UKSF.Api.Personnel.ScheduledActions;
+using UKSF.Api.Personnel.Services;
+using UKSF.Api.Personnel.Services.Data;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {

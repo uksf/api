@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Data.Cached;
-using UKSF.Api.Services.Utility;
+using UKSF.Api.Admin.Services;
+using UKSF.Api.Personnel.Services.Data;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility {
@@ -17,9 +17,12 @@ namespace UKSF.Tests.Unit.Services.Utility {
             mockRanksDataService.Setup(x => x.Refresh());
             mockRolesDataService.Setup(x => x.Refresh());
 
-            DataCacheService dataCacheService = new DataCacheService();
+            IServiceProvider serviceProvider = new ServiceCollection().AddTransient(_ => mockAccountDataService.Object)
+                                                                      .AddTransient(_ => mockRanksDataService.Object)
+                                                                      .AddTransient(_ => mockRolesDataService.Object)
+                                                                      .BuildServiceProvider();
+            DataCacheService dataCacheService = new DataCacheService(serviceProvider);
 
-            dataCacheService.RegisterCachedDataServices(new HashSet<ICachedDataService> {mockAccountDataService.Object, mockRanksDataService.Object, mockRolesDataService.Object});
             dataCacheService.InvalidateCachedData();
 
             mockAccountDataService.Verify(x => x.Refresh(), Times.Once);

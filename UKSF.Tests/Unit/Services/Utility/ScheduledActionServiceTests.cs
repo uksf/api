@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Interfaces.Utility;
-using UKSF.Api.Interfaces.Utility.ScheduledActions;
-using UKSF.Api.Services.Utility;
+using UKSF.Api.Personnel.ScheduledActions;
+using UKSF.Api.Utility.ScheduledActions;
+using UKSF.Api.Utility.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility {

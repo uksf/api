@@ -1,8 +1,7 @@
 ﻿using FluentAssertions;
 using MongoDB.Driver;
 using Moq;
-using UKSF.Api.Data;
-using UKSF.Api.Interfaces.Data;
+using UKSF.Api.Base.Database;
 using UKSF.Tests.Common;
 using Xunit;
 

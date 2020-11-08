@@ -1,6 +1,6 @@
 ﻿using System;
 using FluentAssertions;
-using UKSF.Api.Models.Mission;
+using UKSF.Api.ArmaMissions.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Models.Mission {

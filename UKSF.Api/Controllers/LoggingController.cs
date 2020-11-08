@@ -1,36 +1,56 @@
 ﻿using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Driver;
-using UKSF.Api.Models.Message.Logging;
+using UKSF.Api.Base;
+using UKSF.Api.Base.Models.Logging;
+using UKSF.Api.Base.Services.Data;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]
     public class LoggingController : Controller {
-        private readonly IMongoDatabase database;
+        private readonly IAuditLogDataService auditLogDataService;
+        private readonly IHttpErrorLogDataService httpErrorLogDataService;
+        private readonly ILauncherLogDataService launcherLogDataService;
+        private readonly ILogDataService logDataService;
 
-        public LoggingController(IMongoDatabase database) => this.database = database;
+        public LoggingController(
+            ILogDataService logDataService,
+            IAuditLogDataService auditLogDataService,
+            IHttpErrorLogDataService httpErrorLogDataService,
+            ILauncherLogDataService launcherLogDataService
+        ) {
+            this.logDataService = logDataService;
+            this.auditLogDataService = auditLogDataService;
+            this.httpErrorLogDataService = httpErrorLogDataService;
+            this.launcherLogDataService = launcherLogDataService;
+        }
 
-        [HttpGet, Authorize]
-        public IActionResult GetLogs([FromQuery] string type = "logs") {
-            switch (type) {
-                case "error":
-                    List<WebLogMessage> errorLogs = database.GetCollection<WebLogMessage>("errorLogs").AsQueryable().ToList();
-                    errorLogs.Reverse();
-                    return Ok(errorLogs);
-                case "audit":
-                    List<AuditLogMessage> auditLogs = database.GetCollection<AuditLogMessage>("auditLogs").AsQueryable().ToList();
-                    auditLogs.Reverse();
-                    return Ok(auditLogs);
-                case "launcher":
-                    List<LauncherLogMessage> launcherLogs = database.GetCollection<LauncherLogMessage>("launcherLogs").AsQueryable().ToList();
-                    launcherLogs.Reverse();
-                    return Ok(launcherLogs);
-                default:
-                    List<BasicLogMessage> logs = database.GetCollection<BasicLogMessage>("logs").AsQueryable().ToList();
-                    logs.Reverse();
-                    return Ok(logs);
-            }
+        [HttpGet("basic"), Authorize]
+        public List<BasicLog> GetBasicLogs() {
+            List<BasicLog> logs = new List<BasicLog>(logDataService.Get());
+            logs.Reverse();
+            return logs;
+        }
+
+        [HttpGet("httpError"), Authorize]
+        public List<HttpErrorLog> GetHttpErrorLogs() {
+            List<HttpErrorLog> errorLogs = new List<HttpErrorLog>(httpErrorLogDataService.Get());
+            errorLogs.Reverse();
+            return errorLogs;
+        }
+
+        [HttpGet("audit"), Authorize]
+        public List<AuditLog> GetAuditLogs() {
+            List<AuditLog> auditLogs = new List<AuditLog>(auditLogDataService.Get());
+            auditLogs.Reverse();
+            return auditLogs;
+        }
+
+        [HttpGet("launcher"), Authorize]
+        public List<LauncherLog> GetLauncherLogs() {
+            List<LauncherLog> launcherLogs = new List<LauncherLog>(launcherLogDataService.Get());
+            launcherLogs.Reverse();
+            return launcherLogs;
         }
     }
 }

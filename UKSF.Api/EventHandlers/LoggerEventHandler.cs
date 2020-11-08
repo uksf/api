@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models.Logging;
+using UKSF.Api.Base.Services.Data;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Services;
-using UKSF.Api.Services.Data;
 
 namespace UKSF.Api.EventHandlers {
     public interface ILoggerEventHandler : IEventHandler { }

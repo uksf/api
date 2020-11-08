@@ -1,17 +1,13 @@
 ﻿using System;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
-using UKSF.Api.Events.Data;
-using UKSF.Api.Events.Handlers;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Hubs;
-using UKSF.Api.Interfaces.Message;
-using UKSF.Api.Models.Events;
+using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.EventHandlers;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Personnel.SignalrHubs;
-using UKSF.Api.Personnel.SignalrHubs.Clients;
-using UKSF.Api.Personnel.SignalrHubs.Hubs;
+using UKSF.Api.Personnel.Signalr.Clients;
+using UKSF.Api.Personnel.Signalr.Hubs;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {
@@ -19,12 +15,12 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         private readonly DataEventBus<Account> accountDataEventBus;
         private readonly AccountEventHandler accountEventHandler;
         private readonly Mock<IHubContext<AccountHub, IAccountClient>> mockAccountHub;
-        private readonly Mock<ILoggingService> mockLoggingService;
+        private readonly Mock<ILogger> mockLoggingService;
         private readonly DataEventBus<Api.Personnel.Models.Unit> unitsDataEventBus;
 
         public AccountEventHandlerTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            mockLoggingService = new Mock<ILoggingService>();
+            mockLoggingService = new Mock<ILogger>();
             mockAccountHub = new Mock<IHubContext<AccountHub, IAccountClient>>();
 
             accountDataEventBus = new DataEventBus<Account>();
@@ -44,14 +40,14 @@ namespace UKSF.Tests.Unit.Events.Handlers {
             mockAccountHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
             mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockAccountClient.Object);
             mockAccountClient.Setup(x => x.ReceiveAccountUpdate()).Throws(new Exception());
-            mockLoggingService.Setup(x => x.Log(It.IsAny<Exception>()));
+            mockLoggingService.Setup(x => x.LogError(It.IsAny<Exception>()));
 
             accountEventHandler.Init();
 
             accountDataEventBus.Send(new DataEventModel<Account> { type = DataEventType.UPDATE });
             unitsDataEventBus.Send(new DataEventModel<Api.Personnel.Models.Unit> { type = DataEventType.UPDATE });
 
-            mockLoggingService.Verify(x => x.Log(It.IsAny<Exception>()), Times.Exactly(2));
+            mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Exactly(2));
         }
 
         [Fact]

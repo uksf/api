@@ -1,7 +1,7 @@
 ﻿using System;
 using FluentAssertions;
-using UKSF.Api.Events;
-using UKSF.Api.Models.Events;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Tests.Common;
 using Xunit;
 

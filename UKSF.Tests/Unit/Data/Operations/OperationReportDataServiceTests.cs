@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Data.Operations;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Events;
-using UKSF.Api.Models.Operations;
+using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Command.Context;
+using UKSF.Api.Command.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Operations {

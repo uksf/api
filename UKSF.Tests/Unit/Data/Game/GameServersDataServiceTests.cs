@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Data.Game;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Events;
-using UKSF.Api.Models.Game;
+using UKSF.Api.ArmaServer.DataContext;
+using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Events;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Game {

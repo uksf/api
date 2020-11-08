@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using UKSF.Common;
+using UKSF.Api.Base.Extensions;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Common {

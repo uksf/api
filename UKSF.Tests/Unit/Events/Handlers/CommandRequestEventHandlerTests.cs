@@ -1,14 +1,13 @@
 ﻿using System;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
-using UKSF.Api.Events.Data;
-using UKSF.Api.Events.Handlers;
-using UKSF.Api.Interfaces.Data;
-using UKSF.Api.Interfaces.Hubs;
-using UKSF.Api.Interfaces.Message;
-using UKSF.Api.Models.Command;
-using UKSF.Api.Models.Events;
-using UKSF.Api.Signalr.Hubs.Command;
+using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
+using UKSF.Api.Command.EventHandlers;
+using UKSF.Api.Command.Models;
+using UKSF.Api.Command.Signalr.Clients;
+using UKSF.Api.Command.Signalr.Hubs;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {
@@ -16,11 +15,11 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         private readonly CommandRequestEventHandler commandRequestEventHandler;
         private readonly DataEventBus<CommandRequest> dataEventBus;
         private readonly Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>> mockHub;
-        private readonly Mock<ILoggingService> mockLoggingService;
+        private readonly Mock<ILogger> mockLoggingService;
 
         public CommandRequestEventHandlerTests() {
             Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            mockLoggingService = new Mock<ILoggingService>();
+            mockLoggingService = new Mock<ILogger>();
             mockHub = new Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>>();
 
             dataEventBus = new DataEventBus<CommandRequest>();
@@ -32,13 +31,13 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
         [Fact]
         public void ShouldLogOnException() {
-            mockLoggingService.Setup(x => x.Log(It.IsAny<Exception>()));
+            mockLoggingService.Setup(x => x.LogError(It.IsAny<Exception>()));
 
             commandRequestEventHandler.Init();
 
             dataEventBus.Send(new DataEventModel<CommandRequest> { type = (DataEventType) 5 });
 
-            mockLoggingService.Verify(x => x.Log(It.IsAny<Exception>()), Times.Once);
+            mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Once);
         }
 
         [Fact]
