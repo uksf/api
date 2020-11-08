@@ -89,6 +89,7 @@ namespace UKSF.Api.Personnel.Controllers {
             return Ok();
         }
 
+        // TODO: Should be part of teamspeak component
         private async Task<IActionResult> ReceiveTeamspeakCode(string id, string code, string checkId) {
             Account account = accountService.Data.GetSingle(id);
             string teamspeakId = await confirmationCodeService.GetConfirmationCode(code);

@@ -1,20 +1,21 @@
 ﻿using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps {
     [BuildStep(NAME)]
     public class BuildStepPublish : BuildStep {
         public const string NAME = "Publish";
-        private IReleaseService releaseService;
+        private IReleaseService _releaseService;
 
         protected override Task SetupExecute() {
-            releaseService = ServiceWrapper.Provider.GetService<IReleaseService>();
-            Logger.Log("Retrieved services");
+            _releaseService = ServiceProvider.GetService<IReleaseService>();
+            StepLogger.Log("Retrieved services");
             return Task.CompletedTask;
         }
 
         protected override async Task ProcessExecute() {
-            await releaseService.PublishRelease(Build.version);
-            Logger.Log("Release published");
+            await _releaseService.PublishRelease(Build.Version);
+            StepLogger.Log("Release published");
         }
     }
 }

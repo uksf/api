@@ -39,16 +39,16 @@ namespace UKSF.Api.Modpack.Services {
         private static readonly string[] LABELS_REMOVED = { "type/mod deletion" };
         private static readonly string[] LABELS_EXCLUDE = { "type/cleanup", "type/by design", "fault/bi", "fault/other mod" };
 
-        private readonly IConfiguration configuration;
-        private readonly ILogger logger;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger _logger;
 
         public GithubService(IConfiguration configuration, ILogger logger) {
-            this.configuration = configuration;
-            this.logger = logger;
+            _configuration = configuration;
+            _logger = logger;
         }
 
         public bool VerifySignature(string signature, string body) {
-            string secret = configuration.GetSection("Github")["webhookSecret"];
+            string secret = _configuration.GetSection("Github")["webhookSecret"];
             byte[] data = Encoding.UTF8.GetBytes(body);
             byte[] secretData = Encoding.UTF8.GetBytes(secret);
             using HMACSHA1 hmac = new HMACSHA1(secretData);
@@ -82,7 +82,7 @@ namespace UKSF.Api.Modpack.Services {
             GitHubClient client = await GetAuthenticatedClient();
             GitHubCommit commit = await client.Repository.Commit.Get(REPO_ORG, REPO_NAME, reference);
             string branch = Regex.Match(reference, @"^[a-fA-F0-9]{40}$").Success ? "None" : reference;
-            return new GithubCommit { branch = branch, before = commit.Parents.FirstOrDefault()?.Sha, after = commit.Sha, message = commit.Commit.Message, author = commit.Commit.Author.Email };
+            return new GithubCommit { Branch = branch, Before = commit.Parents.FirstOrDefault()?.Sha, After = commit.Sha, Message = commit.Commit.Message, Author = commit.Commit.Author.Email };
         }
 
         public async Task<GithubCommit> GetPushEvent(PushWebhookPayload payload, string latestCommit = "") {
@@ -93,7 +93,7 @@ namespace UKSF.Api.Modpack.Services {
             GitHubClient client = await GetAuthenticatedClient();
             CompareResult result = await client.Repository.Commit.Compare(REPO_ORG, REPO_NAME, latestCommit, payload.After);
             string message = result.Commits.Count > 0 ? CombineCommitMessages(result.Commits) : result.BaseCommit.Commit.Message;
-            return new GithubCommit { branch = payload.Ref, baseBranch = payload.BaseRef, before = payload.Before, after = payload.After, message = message, author = payload.HeadCommit.Author.Email };
+            return new GithubCommit { Branch = payload.Ref, BaseBranch = payload.BaseRef, Before = payload.Before, After = payload.After, Message = message, Author = payload.HeadCommit.Author.Email };
         }
 
         public async Task<string> GenerateChangelog(string version) {
@@ -133,15 +133,15 @@ namespace UKSF.Api.Modpack.Services {
                 await client.Repository.Release.Create(
                     REPO_ORG,
                     REPO_NAME,
-                    new NewRelease(release.version) { Name = $"Modpack Version {release.version}", Body = $"{release.description}\n\n## Changelog\n{release.changelog.Replace("<br>", "\n")}" }
+                    new NewRelease(release.Version) { Name = $"Modpack Version {release.Version}", Body = $"{release.Description}\n\n## Changelog\n{release.Changelog.Replace("<br>", "\n")}" }
                 );
 
-                Milestone milestone = await GetOpenMilestone(release.version);
+                Milestone milestone = await GetOpenMilestone(release.Version);
                 if (milestone != null) {
                     await client.Issue.Milestone.Update(REPO_ORG, REPO_NAME, milestone.Number, new MilestoneUpdate { State = ItemState.Closed });
                 }
             } catch (Exception exception) {
-                logger.LogError(exception);
+                _logger.LogError(exception);
             }
         }
 
@@ -176,7 +176,7 @@ namespace UKSF.Api.Modpack.Services {
             GitHubClient client = await GetAuthenticatedClient();
 
             IReadOnlyList<Release> releases = await client.Repository.Release.GetAll(REPO_ORG, "modpack");
-            return releases.Select(x => new ModpackRelease { version = x.Name.Split(" ")[^1], timestamp = x.CreatedAt.DateTime, changelog = FormatChangelog(x.Body) }).ToList();
+            return releases.Select(x => new ModpackRelease { Version = x.Name.Split(" ")[^1], Timestamp = x.CreatedAt.DateTime, Changelog = FormatChangelog(x.Body) }).ToList();
         }
 
         private static string CombineCommitMessages(IReadOnlyCollection<GitHubCommit> commits) {
@@ -189,7 +189,7 @@ namespace UKSF.Api.Modpack.Services {
             IReadOnlyList<Milestone> milestones = await client.Issue.Milestone.GetAllForRepository(REPO_ORG, REPO_NAME, new MilestoneRequest { State = ItemStateFilter.Open });
             Milestone milestone = milestones.FirstOrDefault(x => x.Title == version);
             if (milestone == null) {
-                logger.LogWarning($"Could not find open milestone for version {version}");
+                _logger.LogWarning($"Could not find open milestone for version {version}");
             }
 
             return milestone;
@@ -251,7 +251,7 @@ namespace UKSF.Api.Modpack.Services {
         }
 
         private string GetJwtToken() {
-            string privateKey = configuration.GetSection("Github")["appPrivateKey"].Replace("\n", Environment.NewLine, StringComparison.Ordinal);
+            string privateKey = _configuration.GetSection("Github")["appPrivateKey"].Replace("\n", Environment.NewLine, StringComparison.Ordinal);
             GitHubJwtFactory generator = new GitHubJwtFactory(new StringPrivateKeySource(privateKey), new GitHubJwtFactoryOptions { AppIntegrationId = APP_ID, ExpirationSeconds = 540 });
             return generator.CreateEncodedJwtToken();
         }

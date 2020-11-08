@@ -9,10 +9,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common {
 
         protected override Task ProcessExecute() {
             string repoName = GetEnvironmentRepoName();
-            Logger.Log($"Building {repoName} repo");
+            StepLogger.Log($"Building {repoName} repo");
 
             string arma3SyncPath = VariablesService.GetVariable("BUILD_PATH_ARMA3SYNC").AsString();
-            BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource);
+            BuildProcessHelper processHelper = new BuildProcessHelper(StepLogger, CancellationTokenSource);
             processHelper.Run(arma3SyncPath, "Java", $"-jar .\\ArmA3Sync.jar -BUILD {repoName}", (int) TimeSpan.FromMinutes(5).TotalMilliseconds);
 
             return Task.CompletedTask;

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Modpack.EventHandlers;
 using UKSF.Api.Modpack.Models;
+using UKSF.Api.Modpack.ScheduledActions;
 using UKSF.Api.Modpack.Services;
 using UKSF.Api.Modpack.Services.BuildProcess;
 using UKSF.Api.Modpack.Services.Data;
@@ -12,7 +13,7 @@ using UKSF.Api.Modpack.Signalr.Hubs;
 namespace UKSF.Api.Modpack {
     public static class ApiModpackExtensions {
         public static IServiceCollection AddUksfModpack(this IServiceCollection services) =>
-            services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddTransient<IBuildsEventHandler, BuildsEventHandler>();
+            services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddActions().AddTransient<IBuildsEventHandler, BuildsEventHandler>();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) =>
             services.AddSingleton<IBuildsDataService, BuildsDataService>().AddSingleton<IReleasesDataService, ReleasesDataService>();
@@ -29,6 +30,9 @@ namespace UKSF.Api.Modpack {
                     .AddTransient<IReleaseService, ReleaseService>()
                     .AddTransient<IBuildStepService, BuildStepService>()
                     .AddTransient<IBuildQueueService, BuildQueueService>();
+
+        private static IServiceCollection AddActions(this IServiceCollection services) =>
+            services.AddSingleton<IActionPruneBuilds, ActionPruneBuilds>();
 
         public static void AddUksfModpackSignalr(this IEndpointRouteBuilder builder) {
             builder.MapHub<BuildsHub>($"/hub/{BuildsHub.END_POINT}");

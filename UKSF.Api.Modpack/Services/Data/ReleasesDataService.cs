@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Services.Data;
 using UKSF.Api.Modpack.Models;
 
 namespace UKSF.Api.Modpack.Services.Data {
@@ -15,7 +14,7 @@ namespace UKSF.Api.Modpack.Services.Data {
             lock (LockObject) {
                 Cache = newCollection?.Select(
                                          x => {
-                                             int[] parts = x.version.Split('.').Select(int.Parse).ToArray();
+                                             int[] parts = x.Version.Split('.').Select(int.Parse).ToArray();
                                              return new { release = x, major = parts[0], minor = parts[1], patch = parts[2] };
                                          }
                                      )

@@ -25,6 +25,7 @@ namespace UKSF.Api.Personnel.Controllers {
             this.logger = logger;
         }
 
+        // TODO: Could use an account data update event handler
         [HttpPost("{discordId}"), Authorize]
         public async Task<IActionResult> DiscordConnect(string discordId, [FromBody] JObject body) {
             string value = await confirmationCodeService.GetConfirmationCode(body["code"].ToString());

@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using UKSF.Api.Base.Services.Data;
+using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Services;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.ScheduledActions;
-using UKSF.Api.Personnel.Services.Data;
-using UKSF.Api.Utility.Services;
 
 namespace UKSF.Api.Personnel.Services {
     public interface IConfirmationCodeService : IDataBackedService<IConfirmationCodeDataService> {
@@ -24,7 +24,7 @@ namespace UKSF.Api.Personnel.Services {
             if (string.IsNullOrEmpty(value)) throw new ArgumentNullException(nameof(value), "Value for confirmation code cannot be null or empty");
             ConfirmationCode code = new ConfirmationCode { value = value };
             await Data.Add(code);
-            await schedulerService.CreateAndSchedule(DateTime.Now.AddMinutes(30), TimeSpan.Zero, DeleteExpiredConfirmationCodeAction.ACTION_NAME, code.id);
+            await schedulerService.CreateAndScheduleJob(DateTime.Now.AddMinutes(30), TimeSpan.Zero, ActionDeleteExpiredConfirmationCode.ACTION_NAME, code.id);
             return code.id;
         }
 

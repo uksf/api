@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Moq;
+using UKSF.Api.Command.Context;
+using UKSF.Api.Command.Services;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
-using UKSF.Api.Personnel.Services.Data;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Personnel {

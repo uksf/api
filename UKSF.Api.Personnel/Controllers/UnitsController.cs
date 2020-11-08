@@ -118,6 +118,7 @@ namespace UKSF.Api.Personnel.Controllers {
             return Ok();
         }
 
+        // TODO: Could use an account data update event handler
         [HttpPut("{id}"), Authorize]
         public async Task<IActionResult> EditUnit([FromRoute] string id, [FromBody] Unit unit) {
             Unit oldUnit = unitsService.Data.GetSingle(x => x.id == id);

@@ -1,6 +1,6 @@
+using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Models;
-using UKSF.Api.Admin.Services.Data;
-using UKSF.Api.Base.Services.Data;
+using UKSF.Api.Base.Context;
 
 namespace UKSF.Api.Admin.Services {
     public interface IVariablesService : IDataBackedService<IVariablesDataService> {

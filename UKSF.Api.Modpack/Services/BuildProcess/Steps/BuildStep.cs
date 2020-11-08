@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using UKSF.Api.Admin.Extensions;
@@ -11,12 +12,12 @@ using UKSF.Api.Modpack.Models;
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
     public interface IBuildStep {
         void Init(
+            IServiceProvider serviceProvider,
             ModpackBuild modpackBuild,
             ModpackBuildStep modpackBuildStep,
             Func<UpdateDefinition<ModpackBuild>, Task> buildUpdateCallback,
             Func<Task> stepUpdateCallback,
-            CancellationTokenSource cancellationTokenSource,
-            IVariablesService variablesService
+            CancellationTokenSource cancellationTokenSource
         );
 
         Task Start();
@@ -32,40 +33,42 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
 
     public class BuildStep : IBuildStep {
         private const string COLOUR_BLUE = "#0c78ff";
-        private readonly TimeSpan updateInterval = TimeSpan.FromSeconds(2);
-        private readonly CancellationTokenSource updatePusherCancellationTokenSource = new CancellationTokenSource();
-        private readonly SemaphoreSlim updateSemaphore = new SemaphoreSlim(1);
+        private readonly TimeSpan _updateInterval = TimeSpan.FromSeconds(2);
+        private readonly CancellationTokenSource _updatePusherCancellationTokenSource = new CancellationTokenSource();
+        private readonly SemaphoreSlim _updateSemaphore = new SemaphoreSlim(1);
+        private ModpackBuildStep _buildStep;
+        private Func<UpdateDefinition<ModpackBuild>, Task> _updateBuildCallback;
+        private Func<Task> _updateStepCallback;
         protected ModpackBuild Build;
-        private ModpackBuildStep buildStep;
         protected CancellationTokenSource CancellationTokenSource;
-        protected IStepLogger Logger;
-        private Func<UpdateDefinition<ModpackBuild>, Task> updateBuildCallback;
-        private Func<Task> updateStepCallback;
+        protected IServiceProvider ServiceProvider;
+        protected IStepLogger StepLogger;
         protected IVariablesService VariablesService;
 
         public void Init(
+            IServiceProvider newServiceProvider,
             ModpackBuild modpackBuild,
             ModpackBuildStep modpackBuildStep,
             Func<UpdateDefinition<ModpackBuild>, Task> buildUpdateCallback,
             Func<Task> stepUpdateCallback,
-            CancellationTokenSource newCancellationTokenSource,
-            IVariablesService newVariablesService
+            CancellationTokenSource newCancellationTokenSource
         ) {
-            VariablesService = newVariablesService;
+            ServiceProvider = newServiceProvider;
+            VariablesService = ServiceProvider.GetService<IVariablesService>();
             Build = modpackBuild;
-            buildStep = modpackBuildStep;
-            updateBuildCallback = buildUpdateCallback;
-            updateStepCallback = stepUpdateCallback;
+            _buildStep = modpackBuildStep;
+            _updateBuildCallback = buildUpdateCallback;
+            _updateStepCallback = stepUpdateCallback;
             CancellationTokenSource = newCancellationTokenSource;
-            Logger = new StepLogger(buildStep);
+            StepLogger = new StepLogger(_buildStep);
         }
 
         public async Task Start() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
             StartUpdatePusher();
-            buildStep.running = true;
-            buildStep.startTime = DateTime.Now;
-            Logger.LogStart();
+            _buildStep.Running = true;
+            _buildStep.StartTime = DateTime.Now;
+            StepLogger.LogStart();
             await Update();
         }
 
@@ -73,101 +76,101 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
 
         public async Task Setup() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
-            Logger.Log("\nSetup", COLOUR_BLUE);
+            StepLogger.Log("\nSetup", COLOUR_BLUE);
             await SetupExecute();
             await Update();
         }
 
         public async Task Process() {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
-            Logger.Log("\nProcess", COLOUR_BLUE);
+            StepLogger.Log("\nProcess", COLOUR_BLUE);
             await ProcessExecute();
             await Update();
         }
 
         public async Task Succeed() {
-            Logger.LogSuccess();
-            if (buildStep.buildResult != ModpackBuildResult.WARNING) {
-                buildStep.buildResult = ModpackBuildResult.SUCCESS;
+            StepLogger.LogSuccess();
+            if (_buildStep.BuildResult != ModpackBuildResult.WARNING) {
+                _buildStep.BuildResult = ModpackBuildResult.SUCCESS;
             }
 
             await Stop();
         }
 
         public async Task Fail(Exception exception) {
-            Logger.LogError(exception);
-            buildStep.buildResult = ModpackBuildResult.FAILED;
+            StepLogger.LogError(exception);
+            _buildStep.BuildResult = ModpackBuildResult.FAILED;
             await Stop();
         }
 
         public async Task Cancel() {
-            Logger.LogCancelled();
-            buildStep.buildResult = ModpackBuildResult.CANCELLED;
+            StepLogger.LogCancelled();
+            _buildStep.BuildResult = ModpackBuildResult.CANCELLED;
             await Stop();
         }
 
         public void Warning(string message) {
-            Logger.LogWarning(message);
-            buildStep.buildResult = ModpackBuildResult.WARNING;
+            StepLogger.LogWarning(message);
+            _buildStep.BuildResult = ModpackBuildResult.WARNING;
         }
 
         public async Task Skip() {
-            Logger.LogSkipped();
-            buildStep.buildResult = ModpackBuildResult.SKIPPED;
+            StepLogger.LogSkipped();
+            _buildStep.BuildResult = ModpackBuildResult.SKIPPED;
             await Stop();
         }
 
         protected virtual Task SetupExecute() {
-            Logger.Log("---");
+            StepLogger.Log("---");
             return Task.CompletedTask;
         }
 
         protected virtual Task ProcessExecute() {
-            Logger.Log("---");
+            StepLogger.Log("---");
             return Task.CompletedTask;
         }
 
-        internal string GetBuildEnvironmentPath() => GetEnvironmentPath(Build.environment);
+        internal string GetBuildEnvironmentPath() => GetEnvironmentPath(Build.Environment);
 
         internal string GetEnvironmentPath(GameEnvironment environment) =>
             environment switch {
                 GameEnvironment.RELEASE => VariablesService.GetVariable("MODPACK_PATH_RELEASE").AsString(),
-                GameEnvironment.RC => VariablesService.GetVariable("MODPACK_PATH_RC").AsString(),
-                GameEnvironment.DEV => VariablesService.GetVariable("MODPACK_PATH_DEV").AsString(),
-                _ => throw new ArgumentException("Invalid build environment")
+                GameEnvironment.RC      => VariablesService.GetVariable("MODPACK_PATH_RC").AsString(),
+                GameEnvironment.DEV     => VariablesService.GetVariable("MODPACK_PATH_DEV").AsString(),
+                _                       => throw new ArgumentException("Invalid build environment")
             };
 
         internal string GetServerEnvironmentPath(GameEnvironment environment) =>
             environment switch {
                 GameEnvironment.RELEASE => VariablesService.GetVariable("SERVER_PATH_RELEASE").AsString(),
-                GameEnvironment.RC => VariablesService.GetVariable("SERVER_PATH_RC").AsString(),
-                GameEnvironment.DEV => VariablesService.GetVariable("SERVER_PATH_DEV").AsString(),
-                _ => throw new ArgumentException("Invalid build environment")
+                GameEnvironment.RC      => VariablesService.GetVariable("SERVER_PATH_RC").AsString(),
+                GameEnvironment.DEV     => VariablesService.GetVariable("SERVER_PATH_DEV").AsString(),
+                _                       => throw new ArgumentException("Invalid build environment")
             };
 
         internal string GetEnvironmentRepoName() =>
-            Build.environment switch {
+            Build.Environment switch {
                 GameEnvironment.RELEASE => "UKSF",
-                GameEnvironment.RC => "UKSF-Rc",
-                GameEnvironment.DEV => "UKSF-Dev",
-                _ => throw new ArgumentException("Invalid build environment")
+                GameEnvironment.RC      => "UKSF-Rc",
+                GameEnvironment.DEV     => "UKSF-Dev",
+                _                       => throw new ArgumentException("Invalid build environment")
             };
 
         internal string GetBuildSourcesPath() => VariablesService.GetVariable("BUILD_PATH_SOURCES").AsString();
 
         internal void SetEnvironmentVariable(string key, object value) {
-            if (Build.environmentVariables.ContainsKey(key)) {
-                Build.environmentVariables[key] = value;
+            if (Build.EnvironmentVariables.ContainsKey(key)) {
+                Build.EnvironmentVariables[key] = value;
             } else {
-                Build.environmentVariables.Add(key, value);
+                Build.EnvironmentVariables.Add(key, value);
             }
 
-            updateBuildCallback(Builders<ModpackBuild>.Update.Set(x => x.environmentVariables, Build.environmentVariables));
+            _updateBuildCallback(Builders<ModpackBuild>.Update.Set(x => x.EnvironmentVariables, Build.EnvironmentVariables));
         }
 
         internal T GetEnvironmentVariable<T>(string key) {
-            if (Build.environmentVariables.ContainsKey(key)) {
-                object value = Build.environmentVariables[key];
+            if (Build.EnvironmentVariables.ContainsKey(key)) {
+                object value = Build.EnvironmentVariables[key];
                 return (T) value;
             }
 
@@ -178,19 +181,19 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
             try {
                 _ = Task.Run(
                     async () => {
-                        string previousBuildStepState = JsonConvert.SerializeObject(buildStep);
+                        string previousBuildStepState = JsonConvert.SerializeObject(_buildStep);
 
                         do {
-                            await Task.Delay(updateInterval, updatePusherCancellationTokenSource.Token);
+                            await Task.Delay(_updateInterval, _updatePusherCancellationTokenSource.Token);
 
-                            string newBuildStepState = JsonConvert.SerializeObject(buildStep);
+                            string newBuildStepState = JsonConvert.SerializeObject(_buildStep);
                             if (newBuildStepState != previousBuildStepState) {
                                 await Update();
                                 previousBuildStepState = newBuildStepState;
                             }
-                        } while (!updatePusherCancellationTokenSource.IsCancellationRequested);
+                        } while (!_updatePusherCancellationTokenSource.IsCancellationRequested);
                     },
-                    updatePusherCancellationTokenSource.Token
+                    _updatePusherCancellationTokenSource.Token
                 );
             } catch (OperationCanceledException) {
                 Console.Out.WriteLine("cancelled");
@@ -200,19 +203,19 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
         }
 
         private void StopUpdatePusher() {
-            updatePusherCancellationTokenSource.Cancel();
+            _updatePusherCancellationTokenSource.Cancel();
         }
 
         private async Task Update() {
-            await updateSemaphore.WaitAsync();
-            await updateStepCallback();
-            updateSemaphore.Release();
+            await _updateSemaphore.WaitAsync();
+            await _updateStepCallback();
+            _updateSemaphore.Release();
         }
 
         private async Task Stop() {
-            buildStep.running = false;
-            buildStep.finished = true;
-            buildStep.endTime = DateTime.Now;
+            _buildStep.Running = false;
+            _buildStep.Finished = true;
+            _buildStep.EndTime = DateTime.Now;
             StopUpdatePusher();
             await Update();
         }

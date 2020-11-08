@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Services.Data;
 using UKSF.Api.Command.Models;
 
 namespace UKSF.Api.Command.Context {
@@ -13,7 +12,7 @@ namespace UKSF.Api.Command.Context {
 
         protected override void SetCache(IEnumerable<Opord> newCollection) {
             lock (LockObject) {
-                Cache = newCollection?.OrderBy(x => x.start).ToList();
+                Cache = newCollection?.OrderBy(x => x.Start).ToList();
             }
         }
     }

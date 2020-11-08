@@ -8,7 +8,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Admin.Extensions;
+using UKSF.Api.Admin.Services;
 using UKSF.Api.Base.Events;
+using UKSF.Api.Personnel.Services;
 
 namespace UKSF.Api.Personnel.Controllers {
     [Route("[controller]")]

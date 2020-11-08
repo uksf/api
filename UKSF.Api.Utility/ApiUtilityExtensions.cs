@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Utility.Models;
-using UKSF.Api.Utility.Services;
-using UKSF.Api.Utility.Services.Data;
+using UKSF.Api.Base.Models;
+using UKSF.Api.Base.Services;
 
 namespace UKSF.Api.Utility {
     public static class ApiUtilityExtensions {

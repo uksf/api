@@ -8,25 +8,25 @@ using UKSF.Api.Command.Services;
 namespace UKSF.Api.Command.Controllers {
     [Route("[controller]"), Permissions(Permissions.MEMBER)]
     public class OperationOrderController : Controller {
-        private readonly IOperationOrderService operationOrderService;
+        private readonly IOperationOrderService _operationOrderService;
 
-        public OperationOrderController(IOperationOrderService operationOrderService) => this.operationOrderService = operationOrderService;
+        public OperationOrderController(IOperationOrderService operationOrderService) => _operationOrderService = operationOrderService;
 
         [HttpGet, Authorize]
-        public IActionResult Get() => Ok(operationOrderService.Data.Get());
+        public IActionResult Get() => Ok(_operationOrderService.Data.Get());
 
         [HttpGet("{id}"), Authorize]
-        public IActionResult Get(string id) => Ok(new {result = operationOrderService.Data.GetSingle(id)});
+        public IActionResult Get(string id) => Ok(new {result = _operationOrderService.Data.GetSingle(id)});
 
         [HttpPost, Authorize]
         public async Task<IActionResult> Post([FromBody] CreateOperationOrderRequest request) {
-            await operationOrderService.Add(request);
+            await _operationOrderService.Add(request);
             return Ok();
         }
 
         [HttpPut, Authorize]
         public async Task<IActionResult> Put([FromBody] Opord request) {
-            await operationOrderService.Data.Replace(request);
+            await _operationOrderService.Data.Replace(request);
             return Ok();
         }
     }

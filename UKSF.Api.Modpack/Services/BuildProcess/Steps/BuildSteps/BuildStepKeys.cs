@@ -8,14 +8,14 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
         public const string NAME = "Keys";
 
         protected override async Task SetupExecute() {
-            Logger.LogSurround("\nWiping server keys folder");
+            StepLogger.LogSurround("\nWiping server keys folder");
             string keysPath = Path.Join(GetBuildEnvironmentPath(), "Keys");
             await DeleteDirectoryContents(keysPath);
-            Logger.LogSurround("Server keys folder wiped");
+            StepLogger.LogSurround("Server keys folder wiped");
         }
 
         protected override async Task ProcessExecute() {
-            Logger.Log("Updating keys");
+            StepLogger.Log("Updating keys");
 
             string sourceBasePath = Path.Join(GetBuildEnvironmentPath(), "BaseKeys");
             string sourceRepoPath = Path.Join(GetBuildEnvironmentPath(), "Repo");
@@ -24,17 +24,17 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             DirectoryInfo sourceRepo = new DirectoryInfo(sourceRepoPath);
             DirectoryInfo target = new DirectoryInfo(targetPath);
 
-            Logger.LogSurround("\nCopying base keys...");
+            StepLogger.LogSurround("\nCopying base keys...");
             List<FileInfo> baseKeys = GetDirectoryContents(sourceBase, "*.bikey");
-            Logger.Log($"Found {baseKeys.Count} keys in base keys");
+            StepLogger.Log($"Found {baseKeys.Count} keys in base keys");
             await CopyFiles(sourceBase, target, baseKeys, true);
-            Logger.LogSurround("Copied base keys");
+            StepLogger.LogSurround("Copied base keys");
 
-            Logger.LogSurround("\nCopying repo keys...");
+            StepLogger.LogSurround("\nCopying repo keys...");
             List<FileInfo> repoKeys = GetDirectoryContents(sourceRepo, "*.bikey");
-            Logger.Log($"Found {repoKeys.Count} keys in repo");
+            StepLogger.Log($"Found {repoKeys.Count} keys in repo");
             await CopyFiles(sourceRepo, target, repoKeys, true);
-            Logger.LogSurround("Copied repo keys");
+            StepLogger.LogSurround("Copied repo keys");
         }
     }
 }

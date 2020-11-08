@@ -8,7 +8,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
         public const string NAME = "Sources";
 
         protected override async Task ProcessExecute() {
-            Logger.Log("Checking out latest sources");
+            StepLogger.Log("Checking out latest sources");
 
             await CheckoutStaticSource("ACE", "ace", "@ace", "@uksf_ace", "uksfcustom");
             await CheckoutStaticSource("ACRE", "acre", "@acre2", "@acre2", "customrelease");
@@ -17,12 +17,12 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
         }
 
         private Task CheckoutStaticSource(string displayName, string modName, string releaseName, string repoName, string branchName) {
-            Logger.LogSurround($"\nChecking out latest {displayName}...");
+            StepLogger.LogSurround($"\nChecking out latest {displayName}...");
 
             bool forceBuild = GetEnvironmentVariable<bool>($"{modName}_updated");
             bool updated;
             if (forceBuild) {
-                Logger.Log("Force build");
+                StepLogger.Log("Force build");
                 updated = true;
             } else {
                 string path = Path.Join(GetBuildSourcesPath(), modName);
@@ -44,36 +44,36 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
                 string after = GitCommand(path, "git rev-parse HEAD");
 
                 if (release.Exists && repo.Exists) {
-                    Logger.Log($"{before?.Substring(0, 7)} vs {after?.Substring(0, 7)}");
+                    StepLogger.Log($"{before?.Substring(0, 7)} vs {after?.Substring(0, 7)}");
                     updated = !string.Equals(before, after);
                 } else {
-                    Logger.Log("No release or repo directory, will build");
+                    StepLogger.Log("No release or repo directory, will build");
                     updated = true;
                 }
             }
 
             SetEnvironmentVariable($"{modName}_updated", updated);
-            Logger.LogSurround($"Checked out latest {displayName}{(updated ? "" : " (No Changes)")}");
+            StepLogger.LogSurround($"Checked out latest {displayName}{(updated ? "" : " (No Changes)")}");
 
             return Task.CompletedTask;
         }
 
         private Task CheckoutModpack() {
-            string reference = string.Equals(Build.commit.branch, "None") ? Build.commit.after : Build.commit.branch.Replace("refs/heads/", "");
-            string referenceName = string.Equals(Build.commit.branch, "None") ? reference : $"latest {reference}";
-            Logger.LogSurround("\nChecking out modpack...");
+            string reference = string.Equals(Build.Commit.Branch, "None") ? Build.Commit.After : Build.Commit.Branch.Replace("refs/heads/", "");
+            string referenceName = string.Equals(Build.Commit.Branch, "None") ? reference : $"latest {reference}";
+            StepLogger.LogSurround("\nChecking out modpack...");
             string modpackPath = Path.Join(GetBuildSourcesPath(), "modpack");
             DirectoryInfo modpack = new DirectoryInfo(modpackPath);
             if (!modpack.Exists) {
                 throw new Exception("Modpack source directory does not exist. Modpack should be cloned before running a build.");
             }
 
-            Logger.Log($"Checking out {referenceName}");
+            StepLogger.Log($"Checking out {referenceName}");
             GitCommand(modpackPath, "git reset --hard HEAD && git clean -d -f && git fetch");
             GitCommand(modpackPath, $"git checkout -t origin/{reference}");
             GitCommand(modpackPath, $"git checkout {reference}");
             GitCommand(modpackPath, "git pull");
-            Logger.LogSurround("Checked out modpack");
+            StepLogger.LogSurround("Checked out modpack");
 
             return Task.CompletedTask;
         }

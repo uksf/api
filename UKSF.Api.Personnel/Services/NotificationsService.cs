@@ -3,10 +3,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Services;
-using UKSF.Api.Base.Services.Data;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Personnel.Services.Data;
 using UKSF.Api.Personnel.Signalr.Clients;
 using UKSF.Api.Personnel.Signalr.Hubs;
 
@@ -29,6 +29,7 @@ namespace UKSF.Api.Personnel.Services {
 
         private readonly ITeamspeakService teamspeakService;
 
+        // TODO: Need to use an event bus to place notifications on, which individual components can then retrieve and handle. Notif events should be typed for identity
         public NotificationsService(INotificationsDataService data, ITeamspeakService teamspeakService, IAccountService accountService, IEmailService emailService, IHubContext<NotificationHub, INotificationsClient> notificationsHub, IHttpContextService httpContextService, IObjectIdConversionService objectIdConversionService) : base(data) {
             this.teamspeakService = teamspeakService;
             this.accountService = accountService;

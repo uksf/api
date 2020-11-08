@@ -20,7 +20,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps {
                 GitCommand(modpackPath, "git pull");
                 GitCommand(modpackPath, "git merge release");
                 GitCommand(modpackPath, "git push -u origin master");
-                Logger.Log("Release branch merge to master complete");
+                StepLogger.Log("Release branch merge to master complete");
             } catch (Exception exception) {
                 Warning($"Release branch merge to master failed:\n{exception}");
             }

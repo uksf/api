@@ -9,7 +9,7 @@ using UKSF.Api.Teamspeak.Signalr.Hubs;
 namespace UKSF.Api.Teamspeak {
     public static class ApiIntegrationTeamspeakExtensions {
         public static IServiceCollection AddUksfIntegrationTeamspeak(this IServiceCollection services) =>
-            services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddTransient<ITeamspeakSnapshotAction, TeamspeakSnapshotAction>();
+            services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddTransient<IActionTeamspeakSnapshot, ActionTeamspeakSnapshot>();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services;
 

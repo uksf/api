@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using UKSF.Api.Base.Services.Data;
+using UKSF.Api.Base.Context;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Personnel.Services.Data;
 
 namespace UKSF.Api.Personnel.Services {
     public interface IRanksService : IDataBackedService<IRanksDataService> {

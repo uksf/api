@@ -8,7 +8,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
     public class BuildStepBuildAcre : ModBuildStep {
         public const string NAME = "Build ACRE";
         private const string MOD_NAME = "acre";
-        private readonly List<string> errorExclusions = new List<string> {
+        private readonly List<string> _errorExclusions = new List<string> {
             "Found DirectX",
             "Linking statically",
             "Visual Studio 16",
@@ -17,28 +17,28 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
         };
 
         protected override async Task ProcessExecute() {
-            Logger.Log("Running build for ACRE");
+            StepLogger.Log("Running build for ACRE");
 
             string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
             string releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@acre2");
             string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@acre2");
 
             if (IsBuildNeeded(MOD_NAME)) {
-                Logger.LogSurround("\nRunning make.py...");
+                StepLogger.LogSurround("\nRunning make.py...");
                 BuildProcessHelper processHelper = new BuildProcessHelper(
-                    Logger,
+                    StepLogger,
                     CancellationTokenSource,
-                    errorExclusions: errorExclusions,
+                    errorExclusions: _errorExclusions,
                     ignoreErrorGateClose: "File written to",
                     ignoreErrorGateOpen: "MakePbo Version"
                 );
                 processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect compile"), (int) TimeSpan.FromMinutes(10).TotalMilliseconds);
-                Logger.LogSurround("Make.py complete");
+                StepLogger.LogSurround("Make.py complete");
             }
 
-            Logger.LogSurround("\nMoving ACRE release to build...");
+            StepLogger.LogSurround("\nMoving ACRE release to build...");
             await CopyDirectory(releasePath, buildPath);
-            Logger.LogSurround("Moved ACRE release to build");
+            StepLogger.LogSurround("Moved ACRE release to build");
         }
     }
 }

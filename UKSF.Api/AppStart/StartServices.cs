@@ -4,13 +4,13 @@ using Microsoft.Extensions.Hosting;
 using MoreLinq;
 using UKSF.Api.Admin.Services;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Interfaces.Integrations;
-using UKSF.Api.Interfaces.Integrations.Teamspeak;
-using UKSF.Api.Interfaces.Modpack;
-using UKSF.Api.Interfaces.Modpack.BuildProcess;
+using UKSF.Api.Base.ScheduledActions;
+using UKSF.Api.Base.Services;
+using UKSF.Api.Discord.Services;
+using UKSF.Api.Modpack.Services;
+using UKSF.Api.Modpack.Services.BuildProcess;
 using UKSF.Api.Services;
-using UKSF.Api.Utility.ScheduledActions;
-using UKSF.Api.Utility.Services;
+using UKSF.Api.Teamspeak.Services;
 
 namespace UKSF.Api.AppStart {
     public static class StartServices {
@@ -26,8 +26,9 @@ namespace UKSF.Api.AppStart {
             // Warm cached data services
             serviceProvider.GetService<IDataCacheService>()?.InvalidateCachedData();
 
-            // Register scheduled actions
-            serviceProvider.GetService<IScheduledActionService>()?.RegisterScheduledActions(serviceProvider.GetServices<IScheduledAction>());
+            // Register scheduled actions & run self-creating scheduled actions
+            serviceProvider.GetService<IScheduledActionFactory>()?.RegisterScheduledActions(serviceProvider.GetServices<IScheduledAction>());
+            serviceProvider.GetServices<ISelfCreatingScheduledAction>().ForEach(x => x.CreateSelf());
 
             // Register build steps
             serviceProvider.GetService<IBuildStepService>()?.RegisterBuildSteps();

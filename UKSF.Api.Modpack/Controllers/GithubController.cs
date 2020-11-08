@@ -18,14 +18,14 @@ namespace UKSF.Api.Modpack.Controllers {
         private const string MASTER = "refs/heads/master";
         private const string RELEASE = "refs/heads/release";
 
-        private readonly IGithubService githubService;
-        private readonly IModpackService modpackService;
-        private readonly IReleaseService releaseService;
+        private readonly IGithubService _githubService;
+        private readonly IModpackService _modpackService;
+        private readonly IReleaseService _releaseService;
 
         public GithubController(IModpackService modpackService, IGithubService githubService, IReleaseService releaseService) {
-            this.modpackService = modpackService;
-            this.githubService = githubService;
-            this.releaseService = releaseService;
+            _modpackService = modpackService;
+            _githubService = githubService;
+            _releaseService = releaseService;
         }
 
         [HttpPost]
@@ -34,7 +34,7 @@ namespace UKSF.Api.Modpack.Controllers {
             [FromHeader(Name = "x-github-event")] string githubEvent,
             [FromBody] JObject body
         ) {
-            if (!githubService.VerifySignature(githubSignature, body.ToString(Formatting.None))) {
+            if (!_githubService.VerifySignature(githubSignature, body.ToString(Formatting.None))) {
                 return Unauthorized();
             }
 
@@ -45,23 +45,23 @@ namespace UKSF.Api.Modpack.Controllers {
 
             switch (payload.Ref) {
                 case MASTER when payload.BaseRef != RELEASE: {
-                    await modpackService.CreateDevBuildFromPush(payload);
+                    await _modpackService.CreateDevBuildFromPush(payload);
                     return Ok();
                 }
                 case RELEASE:
-                    await modpackService.CreateRcBuildFromPush(payload);
+                    await _modpackService.CreateRcBuildFromPush(payload);
                     return Ok();
                 default: return Ok();
             }
         }
 
         [HttpGet("branches"), Authorize, Permissions(Permissions.TESTER)]
-        public async Task<IActionResult> GetBranches() => Ok(await githubService.GetBranches());
+        public async Task<IActionResult> GetBranches() => Ok(await _githubService.GetBranches());
 
         [HttpGet("populatereleases"), Authorize, Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> Release() {
-            List<ModpackRelease> releases = await githubService.GetHistoricReleases();
-            await releaseService.AddHistoricReleases(releases);
+            List<ModpackRelease> releases = await _githubService.GetHistoricReleases();
+            await _releaseService.AddHistoricReleases(releases);
             return Ok();
         }
     }

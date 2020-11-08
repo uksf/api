@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
@@ -25,9 +25,9 @@ namespace UKSF.Tests.Unit.Data.Operations {
 
         [Fact]
         public void Should_get_collection_in_order() {
-            Oprep item1 = new Oprep { start = DateTime.Now.AddDays(-1) };
-            Oprep item2 = new Oprep { start = DateTime.Now.AddDays(-2) };
-            Oprep item3 = new Oprep { start = DateTime.Now.AddDays(-3) };
+            Oprep item1 = new Oprep { Start = DateTime.Now.AddDays(-1) };
+            Oprep item2 = new Oprep { Start = DateTime.Now.AddDays(-2) };
+            Oprep item3 = new Oprep { Start = DateTime.Now.AddDays(-3) };
 
             mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> { item1, item2, item3 });
 
@@ -38,13 +38,13 @@ namespace UKSF.Tests.Unit.Data.Operations {
 
         [Fact]
         public void ShouldGetOrderedCollectionByPredicate() {
-            Oprep item1 = new Oprep { description = "1", start = DateTime.Now.AddDays(-1) };
-            Oprep item2 = new Oprep { description = "2", start = DateTime.Now.AddDays(-2) };
-            Oprep item3 = new Oprep { description = "1", start = DateTime.Now.AddDays(-3) };
+            Oprep item1 = new Oprep { Description = "1", Start = DateTime.Now.AddDays(-1) };
+            Oprep item2 = new Oprep { Description = "2", Start = DateTime.Now.AddDays(-2) };
+            Oprep item3 = new Oprep { Description = "1", Start = DateTime.Now.AddDays(-3) };
 
             mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> { item1, item2, item3 });
 
-            IEnumerable<Oprep> subject = operationReportDataService.Get(x => x.description == "1");
+            IEnumerable<Oprep> subject = operationReportDataService.Get(x => x.Description == "1");
 
             subject.Should().ContainInOrder(item3, item1);
         }

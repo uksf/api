@@ -4,26 +4,26 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UKSF.Api.ArmaMissions.Models;
+using UKSF.Api.Base.Extensions;
 
 namespace UKSF.Api.ArmaMissions.Services {
     public class MissionService {
         private const string UNBIN = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\DeRapDos.exe";
 
-        private readonly MissionPatchDataService missionPatchDataService;
-        private readonly IGameServerHelpers gameServerHelpers;
+        private readonly MissionPatchDataService _missionPatchDataService;
+        private int _armaServerDefaultMaxCurators;
+        private string _armaServerModsPath;
+        private Mission _mission;
+        private List<MissionPatchingReport> _reports;
 
-        private Mission mission;
-        private List<MissionPatchingReport> reports;
+        public MissionService(MissionPatchDataService missionPatchDataService) => _missionPatchDataService = missionPatchDataService;
 
-        public MissionService(MissionPatchDataService missionPatchDataService, IGameServerHelpers gameServerHelpers) {
-            this.missionPatchDataService = missionPatchDataService;
-            this.gameServerHelpers = gameServerHelpers;
-        }
-
-        public List<MissionPatchingReport> ProcessMission(Mission tempMission) {
-            mission = tempMission;
-            reports = new List<MissionPatchingReport>();
-            if (!AssertRequiredFiles()) return reports;
+        public List<MissionPatchingReport> ProcessMission(Mission tempMission, string armaServerModsPath, int armaServerDefaultMaxCurators) {
+            _armaServerDefaultMaxCurators = armaServerDefaultMaxCurators;
+            _armaServerModsPath = armaServerModsPath;
+            _mission = tempMission;
+            _reports = new List<MissionPatchingReport>();
+            if (!AssertRequiredFiles()) return _reports;
 
             if (CheckBinned()) {
                 UnBin();
@@ -32,7 +32,7 @@ namespace UKSF.Api.ArmaMissions.Services {
             Read();
 
             if (CheckIgnoreKey("missionPatchingIgnore")) {
-                reports.Add(
+                _reports.Add(
                     new MissionPatchingReport(
                         "Mission Patching Ignored",
                         "Mission patching for this mission was ignored.\nThis means no changes to the mission.sqm were made." +
@@ -45,19 +45,19 @@ namespace UKSF.Api.ArmaMissions.Services {
                     )
                 );
                 PatchDescription();
-                return reports;
+                return _reports;
             }
 
-            missionPatchDataService.UpdatePatchData();
+            _missionPatchDataService.UpdatePatchData();
             Patch();
             Write();
             PatchDescription();
-            return reports;
+            return _reports;
         }
 
         private bool AssertRequiredFiles() {
-            if (!File.Exists(mission.descriptionPath)) {
-                reports.Add(
+            if (!File.Exists(_mission.descriptionPath)) {
+                _reports.Add(
                     new MissionPatchingReport(
                         "Missing file: description.ext",
                         "The mission is missing a required file:\ndescription.ext\n\n" +
@@ -68,8 +68,8 @@ namespace UKSF.Api.ArmaMissions.Services {
                 return false;
             }
 
-            if (!File.Exists(Path.Combine(mission.path, "cba_settings.sqf"))) {
-                reports.Add(
+            if (!File.Exists(Path.Combine(_mission.path, "cba_settings.sqf"))) {
+                _reports.Add(
                     new MissionPatchingReport(
                         "Missing file: cba_settings.sqf",
                         "The mission is missing a required file:\ncba_settings.sqf\n\n" +
@@ -81,78 +81,78 @@ namespace UKSF.Api.ArmaMissions.Services {
                 return false;
             }
 
-            if (File.Exists(Path.Combine(mission.path, "README.txt"))) {
-                File.Delete(Path.Combine(mission.path, "README.txt"));
+            if (File.Exists(Path.Combine(_mission.path, "README.txt"))) {
+                File.Delete(Path.Combine(_mission.path, "README.txt"));
             }
 
             return true;
         }
 
         private bool CheckIgnoreKey(string key) {
-            mission.descriptionLines = File.ReadAllLines(mission.descriptionPath).ToList();
-            return mission.descriptionLines.Any(x => x.ContainsIgnoreCase(key));
+            _mission.descriptionLines = File.ReadAllLines(_mission.descriptionPath).ToList();
+            return _mission.descriptionLines.Any(x => x.ContainsIgnoreCase(key));
         }
 
         private bool CheckBinned() {
-            Process process = new Process { StartInfo = { FileName = UNBIN, Arguments = $"-p -q \"{mission.sqmPath}\"", UseShellExecute = false, CreateNoWindow = true } };
+            Process process = new Process { StartInfo = { FileName = UNBIN, Arguments = $"-p -q \"{_mission.sqmPath}\"", UseShellExecute = false, CreateNoWindow = true } };
             process.Start();
             process.WaitForExit();
             return process.ExitCode == 0;
         }
 
         private void UnBin() {
-            Process process = new Process { StartInfo = { FileName = UNBIN, Arguments = $"-p \"{mission.sqmPath}\"", UseShellExecute = false, CreateNoWindow = true } };
+            Process process = new Process { StartInfo = { FileName = UNBIN, Arguments = $"-p \"{_mission.sqmPath}\"", UseShellExecute = false, CreateNoWindow = true } };
             process.Start();
             process.WaitForExit();
 
-            if (File.Exists($"{mission.sqmPath}.txt")) {
-                File.Delete(mission.sqmPath);
-                File.Move($"{mission.sqmPath}.txt", mission.sqmPath);
+            if (File.Exists($"{_mission.sqmPath}.txt")) {
+                File.Delete(_mission.sqmPath);
+                File.Move($"{_mission.sqmPath}.txt", _mission.sqmPath);
             } else {
                 throw new FileNotFoundException();
             }
         }
 
         private void Read() {
-            mission.sqmLines = File.ReadAllLines(mission.sqmPath).Select(x => x.Trim()).ToList();
-            mission.sqmLines.RemoveAll(string.IsNullOrEmpty);
+            _mission.sqmLines = File.ReadAllLines(_mission.sqmPath).Select(x => x.Trim()).ToList();
+            _mission.sqmLines.RemoveAll(string.IsNullOrEmpty);
             RemoveUnbinText();
             ReadAllData();
             ReadSettings();
         }
 
         private void RemoveUnbinText() {
-            if (mission.sqmLines.First() != "////////////////////////////////////////////////////////////////////") return;
+            if (_mission.sqmLines.First() != "////////////////////////////////////////////////////////////////////") return;
 
-            mission.sqmLines = mission.sqmLines.Skip(7).ToList();
+            _mission.sqmLines = _mission.sqmLines.Skip(7).ToList();
             // mission.sqmLines = mission.sqmLines.Take(mission.sqmLines.Count - 1).ToList();
         }
 
         private void ReadAllData() {
-            Mission.nextId = Convert.ToInt32(MissionUtilities.ReadSingleDataByKey(MissionUtilities.ReadDataByKey(mission.sqmLines, "ItemIDProvider"), "nextID"));
-            mission.rawEntities = MissionUtilities.ReadDataByKey(mission.sqmLines, "Entities");
-            mission.missionEntity = MissionEntityHelper.CreateFromItems(mission.rawEntities);
+            Mission.nextId = Convert.ToInt32(MissionUtilities.ReadSingleDataByKey(MissionUtilities.ReadDataByKey(_mission.sqmLines, "ItemIDProvider"), "nextID"));
+            _mission.rawEntities = MissionUtilities.ReadDataByKey(_mission.sqmLines, "Entities");
+            _mission.missionEntity = MissionEntityHelper.CreateFromItems(_mission.rawEntities);
         }
 
         private void ReadSettings() {
-            mission.maxCurators = 5;
-            string curatorsMaxLine = File.ReadAllLines(Path.Combine(mission.path, "cba_settings.sqf")).FirstOrDefault(x => x.Contains("uksf_curator_curatorsMax"));
+            _mission.maxCurators = 5;
+            string curatorsMaxLine = File.ReadAllLines(Path.Combine(_mission.path, "cba_settings.sqf")).FirstOrDefault(x => x.Contains("uksf_curator_curatorsMax"));
             if (string.IsNullOrEmpty(curatorsMaxLine)) {
-                mission.maxCurators = gameServerHelpers.GetMaxCuratorCountFromSettings();
-                reports.Add(
+                _mission.maxCurators = _armaServerDefaultMaxCurators;
+                _reports.Add(
                     new MissionPatchingReport(
                         "Using server setting 'uksf_curator_curatorsMax'",
                         "Could not find setting 'uksf_curator_curatorsMax' in cba_settings.sqf" +
                         "This is required to add the correct nubmer of pre-defined curator objects." +
-                        $"The server setting value ({mission.maxCurators}) for this will be used instead."
+                        $"The server setting value ({_mission.maxCurators}) for this will be used instead."
                     )
                 );
                 return;
             }
 
             string curatorsMaxString = curatorsMaxLine.Split("=")[1].RemoveSpaces().Replace(";", "");
-            if (!int.TryParse(curatorsMaxString, out mission.maxCurators)) {
-                reports.Add(
+            if (!int.TryParse(curatorsMaxString, out _mission.maxCurators)) {
+                _reports.Add(
                     new MissionPatchingReport(
                         "Using hardcoded setting 'uksf_curator_curatorsMax'",
                         $"Could not read malformed setting: '{curatorsMaxLine}' in cba_settings.sqf" +
@@ -164,14 +164,14 @@ namespace UKSF.Api.ArmaMissions.Services {
         }
 
         private void Patch() {
-            mission.missionEntity.Patch(mission.maxCurators);
+            _mission.missionEntity.Patch(_mission.maxCurators);
 
             if (!CheckIgnoreKey("missionImageIgnore")) {
-                string imagePath = Path.Combine(mission.path, "uksf.paa");
-                string modpackImagePath = Path.Combine(gameServerHelpers.GetGameServerModsPaths(GameEnvironment.RELEASE), "@uksf", "UKSFTemplate.VR", "uksf.paa");
+                string imagePath = Path.Combine(_mission.path, "uksf.paa");
+                string modpackImagePath = Path.Combine(_armaServerModsPath, "@uksf", "UKSFTemplate.VR", "uksf.paa");
                 if (File.Exists(modpackImagePath)) {
                     if (File.Exists(imagePath) && new FileInfo(imagePath).Length != new FileInfo(modpackImagePath).Length) {
-                        reports.Add(
+                        _reports.Add(
                             new MissionPatchingReport(
                                 "Loading image was different",
                                 "The mission loading image `uksf.paa` was found to be different from the default." +
@@ -187,27 +187,27 @@ namespace UKSF.Api.ArmaMissions.Services {
         }
 
         private void Write() {
-            int start = MissionUtilities.GetIndexByKey(mission.sqmLines, "Entities");
-            int count = mission.rawEntities.Count;
-            mission.sqmLines.RemoveRange(start, count);
-            IEnumerable<string> newEntities = mission.missionEntity.Serialize();
-            mission.sqmLines.InsertRange(start, newEntities);
-            mission.sqmLines = mission.sqmLines.Select(x => x.RemoveNewLines().RemoveEmbeddedQuotes()).ToList();
-            File.WriteAllLines(mission.sqmPath, mission.sqmLines);
+            int start = MissionUtilities.GetIndexByKey(_mission.sqmLines, "Entities");
+            int count = _mission.rawEntities.Count;
+            _mission.sqmLines.RemoveRange(start, count);
+            IEnumerable<string> newEntities = _mission.missionEntity.Serialize();
+            _mission.sqmLines.InsertRange(start, newEntities);
+            _mission.sqmLines = _mission.sqmLines.Select(x => x.RemoveNewLines().RemoveEmbeddedQuotes()).ToList();
+            File.WriteAllLines(_mission.sqmPath, _mission.sqmLines);
         }
 
         private void PatchDescription() {
-            int playable = mission.sqmLines.Select(x => x.RemoveSpaces()).Count(x => x.ContainsIgnoreCase("isPlayable=1") || x.ContainsIgnoreCase("isPlayer=1"));
-            mission.playerCount = playable;
+            int playable = _mission.sqmLines.Select(x => x.RemoveSpaces()).Count(x => x.ContainsIgnoreCase("isPlayable=1") || x.ContainsIgnoreCase("isPlayer=1"));
+            _mission.playerCount = playable;
 
-            mission.descriptionLines = File.ReadAllLines(mission.descriptionPath).ToList();
-            mission.descriptionLines[mission.descriptionLines.FindIndex(x => x.ContainsIgnoreCase("maxPlayers"))] = $"    maxPlayers = {playable};";
+            _mission.descriptionLines = File.ReadAllLines(_mission.descriptionPath).ToList();
+            _mission.descriptionLines[_mission.descriptionLines.FindIndex(x => x.ContainsIgnoreCase("maxPlayers"))] = $"    maxPlayers = {playable};";
             CheckRequiredDescriptionItems();
             CheckConfigurableDescriptionItems();
 
-            mission.descriptionLines = mission.descriptionLines.Where(x => !x.Contains("__EXEC")).ToList();
+            _mission.descriptionLines = _mission.descriptionLines.Where(x => !x.Contains("__EXEC")).ToList();
 
-            File.WriteAllLines(mission.descriptionPath, mission.descriptionLines);
+            File.WriteAllLines(_mission.descriptionPath, _mission.descriptionLines);
         }
 
         private void CheckConfigurableDescriptionItems() {
@@ -232,20 +232,20 @@ namespace UKSF.Api.ArmaMissions.Services {
         }
 
         private void CheckDescriptionItem(string key, string defaultValue, bool required = true) {
-            int index = mission.descriptionLines.FindIndex(x => x.Contains($"{key} = ") || x.Contains($"{key}=") || x.Contains($"{key}= ") || x.Contains($"{key} ="));
+            int index = _mission.descriptionLines.FindIndex(x => x.Contains($"{key} = ") || x.Contains($"{key}=") || x.Contains($"{key}= ") || x.Contains($"{key} ="));
             if (index != -1) {
-                string itemValue = mission.descriptionLines[index].Split("=")[1].Trim();
+                string itemValue = _mission.descriptionLines[index].Split("=")[1].Trim();
                 itemValue = itemValue.Remove(itemValue.Length - 1);
                 bool equal = string.Equals(itemValue, defaultValue, StringComparison.InvariantCultureIgnoreCase);
                 if (!equal && required) {
-                    reports.Add(
+                    _reports.Add(
                         new MissionPatchingReport(
                             $"Required description.ext item <i>{key}</i>  value is not default",
                             $"<i>{key}</i>  in description.ext is '{itemValue}'\nThe default value is '{defaultValue}'\n\nYou should only change this if you know what you're doing"
                         )
                     );
                 } else if (equal && !required) {
-                    reports.Add(
+                    _reports.Add(
                         new MissionPatchingReport(
                             $"Configurable description.ext item <i>{key}</i>  value is default",
                             $"<i>{key}</i>  in description.ext is the same as the default value '{itemValue}'\n\nThis should be changed based on your mission"
@@ -257,9 +257,9 @@ namespace UKSF.Api.ArmaMissions.Services {
             }
 
             if (required) {
-                mission.descriptionLines.Add($"{key} = {defaultValue};");
+                _mission.descriptionLines.Add($"{key} = {defaultValue};");
             } else {
-                reports.Add(
+                _reports.Add(
                     new MissionPatchingReport(
                         $"Configurable description.ext item <i>{key}</i>  is missing",
                         $"<i>{key}</i>  in description.ext is missing\nThis is required for the mission\n\n" +

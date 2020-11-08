@@ -39,6 +39,7 @@
     <ProjectReference Include="..\UKSF.Api.Command\UKSF.Api.Command.csproj" />
     <ProjectReference Include="..\UKSF.Api.Data\UKSF.Api.Data.csproj" />
     <ProjectReference Include="..\UKSF.Api.Events\UKSF.Api.Events.csproj" />
+    <ProjectReference Include="..\UKSF.Api.Integrations.Discord\UKSF.Api.Integrations.Discord.csproj" />
     <ProjectReference Include="..\UKSF.Api.Integrations.Teamspeak\UKSF.Api.Integrations.Teamspeak.csproj" />
     <ProjectReference Include="..\UKSF.Api.Interfaces\UKSF.Api.Interfaces.csproj" />
     <ProjectReference Include="..\UKSF.Api.Models\UKSF.Api.Models.csproj" />

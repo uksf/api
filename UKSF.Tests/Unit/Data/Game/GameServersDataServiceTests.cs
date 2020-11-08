@@ -3,7 +3,7 @@ using FluentAssertions;
 using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using Xunit;
 

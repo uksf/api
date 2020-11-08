@@ -6,7 +6,7 @@ using FluentAssertions;
 using Mongo2Go;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Tests.Common;
 using Xunit;

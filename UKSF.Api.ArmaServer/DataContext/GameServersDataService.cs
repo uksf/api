@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Services.Data;
 
 namespace UKSF.Api.ArmaServer.DataContext {
     public interface IGameServersDataService : IDataService<GameServer>, ICachedDataService { }

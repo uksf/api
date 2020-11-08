@@ -8,21 +8,21 @@ using UKSF.Api.Base.Extensions;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess {
     public class BuildProcessHelper {
-        private readonly CancellationTokenSource cancellationTokenSource;
-        private readonly CancellationTokenSource errorCancellationTokenSource = new CancellationTokenSource();
-        private readonly List<string> errorExclusions;
-        private readonly bool errorSilently;
-        private readonly AutoResetEvent errorWaitHandle = new AutoResetEvent(false);
-        private readonly string ignoreErrorGateClose;
-        private readonly string ignoreErrorGateOpen;
-        private readonly IStepLogger logger;
-        private readonly AutoResetEvent outputWaitHandle = new AutoResetEvent(false);
-        private readonly bool raiseErrors;
-        private readonly List<string> results = new List<string>();
-        private readonly bool suppressOutput;
-        private Exception capturedException;
-        private bool ignoreErrors;
-        private Process process;
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly CancellationTokenSource _errorCancellationTokenSource = new CancellationTokenSource();
+        private readonly List<string> _errorExclusions;
+        private readonly bool _errorSilently;
+        private readonly AutoResetEvent _errorWaitHandle = new AutoResetEvent(false);
+        private readonly string _ignoreErrorGateClose;
+        private readonly string _ignoreErrorGateOpen;
+        private readonly IStepLogger _logger;
+        private readonly AutoResetEvent _outputWaitHandle = new AutoResetEvent(false);
+        private readonly bool _raiseErrors;
+        private readonly List<string> _results = new List<string>();
+        private readonly bool _suppressOutput;
+        private Exception _capturedException;
+        private bool _ignoreErrors;
+        private Process _process;
 
         public BuildProcessHelper(
             IStepLogger logger,
@@ -34,18 +34,18 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             string ignoreErrorGateClose = "",
             string ignoreErrorGateOpen = ""
         ) {
-            this.logger = logger;
-            this.cancellationTokenSource = cancellationTokenSource;
-            this.suppressOutput = suppressOutput;
-            this.raiseErrors = raiseErrors;
-            this.errorSilently = errorSilently;
-            this.errorExclusions = errorExclusions;
-            this.ignoreErrorGateClose = ignoreErrorGateClose;
-            this.ignoreErrorGateOpen = ignoreErrorGateOpen;
+            _logger = logger;
+            _cancellationTokenSource = cancellationTokenSource;
+            _suppressOutput = suppressOutput;
+            _raiseErrors = raiseErrors;
+            _errorSilently = errorSilently;
+            _errorExclusions = errorExclusions;
+            _ignoreErrorGateClose = ignoreErrorGateClose;
+            _ignoreErrorGateOpen = ignoreErrorGateOpen;
         }
 
         public List<string> Run(string workingDirectory, string executable, string args, int timeout) {
-            process = new Process {
+            _process = new Process {
                 StartInfo = {
                     FileName = executable,
                     WorkingDirectory = workingDirectory,
@@ -58,34 +58,34 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
                 EnableRaisingEvents = false
             };
 
-            process.OutputDataReceived += OnOutputDataReceived;
-            process.ErrorDataReceived += OnErrorDataReceived;
+            _process.OutputDataReceived += OnOutputDataReceived;
+            _process.ErrorDataReceived += OnErrorDataReceived;
 
-            using CancellationTokenRegistration unused = cancellationTokenSource.Token.Register(process.Kill);
-            using CancellationTokenRegistration _ = errorCancellationTokenSource.Token.Register(process.Kill);
+            using CancellationTokenRegistration unused = _cancellationTokenSource.Token.Register(_process.Kill);
+            using CancellationTokenRegistration _ = _errorCancellationTokenSource.Token.Register(_process.Kill);
 
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
+            _process.Start();
+            _process.BeginOutputReadLine();
+            _process.BeginErrorReadLine();
 
-            if (process.WaitForExit(timeout) && outputWaitHandle.WaitOne(timeout) && errorWaitHandle.WaitOne(timeout)) {
-                if (cancellationTokenSource.IsCancellationRequested) {
-                    return results;
+            if (_process.WaitForExit(timeout) && _outputWaitHandle.WaitOne(timeout) && _errorWaitHandle.WaitOne(timeout)) {
+                if (_cancellationTokenSource.IsCancellationRequested) {
+                    return _results;
                 }
 
-                if (capturedException != null) {
-                    if (raiseErrors) {
-                        throw capturedException;
+                if (_capturedException != null) {
+                    if (_raiseErrors) {
+                        throw _capturedException;
                     }
 
-                    if (!errorSilently) {
-                        logger.LogError(capturedException);
+                    if (!_errorSilently) {
+                        _logger.LogError(_capturedException);
                     }
                 }
 
-                if (raiseErrors && process.ExitCode != 0) {
+                if (_raiseErrors && _process.ExitCode != 0) {
                     string json = "";
-                    List<Tuple<string, string>> messages = ExtractMessages(results.Last(), ref json);
+                    List<Tuple<string, string>> messages = ExtractMessages(_results.Last(), ref json);
                     if (messages.Any()) {
                         throw new Exception(messages.First().Item1);
                     }
@@ -94,71 +94,71 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
                 }
             } else {
                 // Timeout or cancelled
-                if (!cancellationTokenSource.IsCancellationRequested) {
-                    Exception exception = new Exception($"Process exited with non-zero code ({process.ExitCode})");
-                    if (raiseErrors) {
+                if (!_cancellationTokenSource.IsCancellationRequested) {
+                    Exception exception = new Exception($"Process exited with non-zero code ({_process.ExitCode})");
+                    if (_raiseErrors) {
                         throw exception;
                     }
 
-                    if (!errorSilently) {
-                        logger.LogError(exception);
+                    if (!_errorSilently) {
+                        _logger.LogError(exception);
                     }
                 }
             }
 
-            return results;
+            return _results;
         }
 
         private void OnOutputDataReceived(object sender, DataReceivedEventArgs receivedEventArgs) {
             if (receivedEventArgs.Data == null) {
-                outputWaitHandle.Set();
+                _outputWaitHandle.Set();
                 return;
             }
 
             string message = receivedEventArgs.Data;
             if (!string.IsNullOrEmpty(message)) {
-                results.Add(message);
+                _results.Add(message);
             }
 
-            if (!suppressOutput) {
+            if (!_suppressOutput) {
                 string json = "";
                 try {
                     List<Tuple<string, string>> messages = ExtractMessages(message, ref json);
                     foreach ((string text, string colour) in messages) {
-                        logger.Log(text, colour);
+                        _logger.Log(text, colour);
                     }
                 } catch (Exception exception) {
-                    capturedException = new Exception($"Json failed: {json}\n\n{exception}");
-                    errorCancellationTokenSource.Cancel();
+                    _capturedException = new Exception($"Json failed: {json}\n\n{exception}");
+                    _errorCancellationTokenSource.Cancel();
                 }
             }
         }
 
         private void OnErrorDataReceived(object sender, DataReceivedEventArgs receivedEventArgs) {
             if (receivedEventArgs.Data == null) {
-                errorWaitHandle.Set();
+                _errorWaitHandle.Set();
                 return;
             }
 
             string message = receivedEventArgs.Data;
             if (string.IsNullOrEmpty(message) || CheckIgnoreErrorGates(message)) return;
 
-            if (errorExclusions != null && errorExclusions.Any(x => message.ContainsIgnoreCase(x))) return;
+            if (_errorExclusions != null && _errorExclusions.Any(x => message.ContainsIgnoreCase(x))) return;
 
-            capturedException = new Exception(message);
-            errorCancellationTokenSource.Cancel();
+            _capturedException = new Exception(message);
+            _errorCancellationTokenSource.Cancel();
         }
 
         private bool CheckIgnoreErrorGates(string message) {
-            if (message.ContainsIgnoreCase(ignoreErrorGateClose)) {
-                ignoreErrors = false;
+            if (message.ContainsIgnoreCase(_ignoreErrorGateClose)) {
+                _ignoreErrors = false;
                 return true;
             }
 
-            if (ignoreErrors) return true;
+            if (_ignoreErrors) return true;
 
-            if (message.ContainsIgnoreCase(ignoreErrorGateOpen)) {
-                ignoreErrors = true;
+            if (message.ContainsIgnoreCase(_ignoreErrorGateOpen)) {
+                _ignoreErrors = true;
                 return true;
             }
 

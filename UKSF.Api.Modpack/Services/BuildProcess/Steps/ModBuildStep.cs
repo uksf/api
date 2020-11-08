@@ -7,13 +7,13 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
 
         protected override Task SetupExecute() {
             PythonPath = VariablesService.GetVariable("BUILD_PATH_PYTHON").AsString();
-            Logger.Log("Retrieved python path");
+            StepLogger.Log("Retrieved python path");
             return Task.CompletedTask;
         }
 
         internal bool IsBuildNeeded(string key) {
             if (!GetEnvironmentVariable<bool>($"{key}_updated")) {
-                Logger.Log("\nBuild is not needed");
+                StepLogger.Log("\nBuild is not needed");
                 return false;
             }
 

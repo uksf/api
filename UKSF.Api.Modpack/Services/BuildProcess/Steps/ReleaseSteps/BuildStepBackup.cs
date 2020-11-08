@@ -7,7 +7,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps {
         public const string NAME = "Backup";
 
         protected override async Task ProcessExecute() {
-            Logger.Log("Backing up current release");
+            StepLogger.Log("Backing up current release");
 
             string environmentPath = GetBuildEnvironmentPath();
             string repoPath = Path.Join(environmentPath, "Repo");
@@ -15,15 +15,15 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps {
             string repoBackupPath = Path.Join(environmentPath, "Backup", "Repo");
             string keysBackupPath = Path.Join(environmentPath, "Backup", "Keys");
 
-            Logger.LogSurround("\nBacking up repo...");
+            StepLogger.LogSurround("\nBacking up repo...");
             await AddFiles(repoPath, repoBackupPath);
             await UpdateFiles(repoPath, repoBackupPath);
             await DeleteFiles(repoPath, repoBackupPath);
-            Logger.LogSurround("Backed up repo");
+            StepLogger.LogSurround("Backed up repo");
 
-            Logger.LogSurround("\nBacking up keys...");
+            StepLogger.LogSurround("\nBacking up keys...");
             await CopyDirectory(keysPath, keysBackupPath);
-            Logger.LogSurround("Backed up keys");
+            StepLogger.LogSurround("Backed up keys");
         }
     }
 }

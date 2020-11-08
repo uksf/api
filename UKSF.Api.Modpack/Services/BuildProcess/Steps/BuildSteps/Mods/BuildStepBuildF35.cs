@@ -10,7 +10,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
         private const string MOD_NAME = "f35";
 
         protected override async Task ProcessExecute() {
-            Logger.Log("Running build for F-35");
+            StepLogger.Log("Running build for F-35");
 
             string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
             string releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@uksf_f35", "addons");
@@ -19,16 +19,16 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
             DirectoryInfo dependencies = new DirectoryInfo(dependenciesPath);
 
             if (IsBuildNeeded(MOD_NAME)) {
-                Logger.LogSurround("\nRunning make.py...");
-                BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource);
+                StepLogger.LogSurround("\nRunning make.py...");
+                BuildProcessHelper processHelper = new BuildProcessHelper(StepLogger, CancellationTokenSource);
                 processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int) TimeSpan.FromMinutes(1).TotalMilliseconds);
-                Logger.LogSurround("Make.py complete");
+                StepLogger.LogSurround("Make.py complete");
             }
 
-            Logger.LogSurround("\nMoving F-35 pbos to uksf dependencies...");
+            StepLogger.LogSurround("\nMoving F-35 pbos to uksf dependencies...");
             List<FileInfo> files = GetDirectoryContents(release, "*.pbo");
             await CopyFiles(release, dependencies, files);
-            Logger.LogSurround("Moved F-35 pbos to uksf dependencies");
+            StepLogger.LogSurround("Moved F-35 pbos to uksf dependencies");
         }
     }
 }

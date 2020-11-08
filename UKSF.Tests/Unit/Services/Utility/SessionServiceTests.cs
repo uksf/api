@@ -6,7 +6,6 @@ using Moq;
 using UKSF.Api.Base;
 using UKSF.Api.Base.Services;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Personnel.Services.Data;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility {

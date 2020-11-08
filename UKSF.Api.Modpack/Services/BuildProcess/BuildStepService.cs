@@ -18,13 +18,18 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
     }
 
     public class BuildStepService : IBuildStepService {
-        private Dictionary<string, Type> buildStepDictionary = new Dictionary<string, Type>();
+        private readonly IServiceProvider _serviceProvider;
+        private Dictionary<string, Type> _buildStepDictionary = new Dictionary<string, Type>();
+
+        public BuildStepService(IServiceProvider serviceProvider) {
+            _serviceProvider = serviceProvider;
+        }
 
         public void RegisterBuildSteps() {
-            buildStepDictionary = AppDomain.CurrentDomain.GetAssemblies()
+            _buildStepDictionary = AppDomain.CurrentDomain.GetAssemblies()
                                            .SelectMany(x => x.GetTypes(), (_, type) => new { type })
                                            .Select(x => new { x.type, attributes = x.type.GetCustomAttributes(typeof(BuildStepAttribute), true) })
-                                           .Where(x => x.attributes != null && x.attributes.Length > 0)
+                                           .Where(x => x.attributes.Length > 0)
                                            .Select(x => new { Key = x.attributes.Cast<BuildStepAttribute>().First().Name, Value = x.type })
                                            .ToDictionary(x => x.Key, x => x.Value);
         }
@@ -43,11 +48,11 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
         public ModpackBuildStep GetRestoreStepForRelease() => new ModpackBuildStep(BuildStepRestore.NAME);
 
         public IBuildStep ResolveBuildStep(string buildStepName) {
-            if (!buildStepDictionary.ContainsKey(buildStepName)) {
+            if (!_buildStepDictionary.ContainsKey(buildStepName)) {
                 throw new NullReferenceException($"Build step '{buildStepName}' does not exist in build step dictionary");
             }
 
-            Type type = buildStepDictionary[buildStepName];
+            Type type = _buildStepDictionary[buildStepName];
             IBuildStep step = Activator.CreateInstance(type) as IBuildStep;
             return step;
         }
@@ -104,7 +109,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
 
         private static void ResolveIndices(IReadOnlyList<ModpackBuildStep> steps) {
             for (int i = 0; i < steps.Count; i++) {
-                steps[i].index = i;
+                steps[i].Index = i;
             }
         }
     }

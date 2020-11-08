@@ -16,31 +16,31 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
     }
 
     public class BuildQueueService : IBuildQueueService {
-        private readonly IBuildProcessorService buildProcessorService;
-        private readonly ConcurrentDictionary<string, Task> buildTasks = new ConcurrentDictionary<string, Task>();
-        private readonly ConcurrentDictionary<string, CancellationTokenSource> cancellationTokenSources = new ConcurrentDictionary<string, CancellationTokenSource>();
-        private readonly IGameServersService gameServersService;
-        private readonly ILogger logger;
-        private ConcurrentQueue<ModpackBuild> queue = new ConcurrentQueue<ModpackBuild>();
-        private bool processing;
+        private readonly IBuildProcessorService _buildProcessorService;
+        private readonly ConcurrentDictionary<string, Task> _buildTasks = new ConcurrentDictionary<string, Task>();
+        private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokenSources = new ConcurrentDictionary<string, CancellationTokenSource>();
+        private readonly IGameServersService _gameServersService;
+        private readonly ILogger _logger;
+        private ConcurrentQueue<ModpackBuild> _queue = new ConcurrentQueue<ModpackBuild>();
+        private bool _processing;
 
         public BuildQueueService(IBuildProcessorService buildProcessorService, IGameServersService gameServersService, ILogger logger) {
-            this.buildProcessorService = buildProcessorService;
-            this.gameServersService = gameServersService;
-            this.logger = logger;
+            _buildProcessorService = buildProcessorService;
+            _gameServersService = gameServersService;
+            _logger = logger;
         }
 
         public void QueueBuild(ModpackBuild build) {
-            queue.Enqueue(build);
-            if (!processing) {
+            _queue.Enqueue(build);
+            if (!_processing) {
                 // Processor not running, process as separate task
                 _ = ProcessQueue();
             }
         }
 
         public bool CancelQueued(string id) {
-            if (queue.Any(x => x.id == id)) {
-                queue = new ConcurrentQueue<ModpackBuild>(queue.Where(x => x.id != id));
+            if (_queue.Any(x => x.id == id)) {
+                _queue = new ConcurrentQueue<ModpackBuild>(_queue.Where(x => x.id != id));
                 return true;
             }
 
@@ -48,23 +48,23 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
         }
 
         public void Cancel(string id) {
-            if (cancellationTokenSources.ContainsKey(id)) {
-                CancellationTokenSource cancellationTokenSource = cancellationTokenSources[id];
+            if (_cancellationTokenSources.ContainsKey(id)) {
+                CancellationTokenSource cancellationTokenSource = _cancellationTokenSources[id];
                 cancellationTokenSource.Cancel();
-                cancellationTokenSources.TryRemove(id, out CancellationTokenSource _);
+                _cancellationTokenSources.TryRemove(id, out CancellationTokenSource _);
             }
 
-            if (buildTasks.ContainsKey(id)) {
+            if (_buildTasks.ContainsKey(id)) {
                 _ = Task.Run(
                     async () => {
                         await Task.Delay(TimeSpan.FromMinutes(1));
-                        if (buildTasks.ContainsKey(id)) {
-                            Task buildTask = buildTasks[id];
+                        if (_buildTasks.ContainsKey(id)) {
+                            Task buildTask = _buildTasks[id];
 
                             if (buildTask.IsCompleted) {
-                                buildTasks.TryRemove(id, out Task _);
+                                _buildTasks.TryRemove(id, out Task _);
                             } else {
-                                logger.LogWarning($"Build {id} was cancelled but has not completed within 1 minute of cancelling");
+                                _logger.LogWarning($"Build {id} was cancelled but has not completed within 1 minute of cancelling");
                             }
                         }
                     }
@@ -73,35 +73,35 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
         }
 
         public void CancelAll() {
-            queue.Clear();
+            _queue.Clear();
 
-            foreach ((string _, CancellationTokenSource cancellationTokenSource) in cancellationTokenSources) {
+            foreach ((string _, CancellationTokenSource cancellationTokenSource) in _cancellationTokenSources) {
                 cancellationTokenSource.Cancel();
             }
 
-            cancellationTokenSources.Clear();
+            _cancellationTokenSources.Clear();
         }
 
         private async Task ProcessQueue() {
-            processing = true;
-            while (queue.TryDequeue(out ModpackBuild build)) {
+            _processing = true;
+            while (_queue.TryDequeue(out ModpackBuild build)) {
                 // TODO: Expand this to check if a server is running using the repo for this build. If no servers are running but there are processes, don't build at all.
                 // Will require better game <-> api interaction to communicate with servers and headless clients properly
-                if (gameServersService.GetGameInstanceCount() > 0) {
-                    queue.Enqueue(build);
+                if (_gameServersService.GetGameInstanceCount() > 0) {
+                    _queue.Enqueue(build);
                     await Task.Delay(TimeSpan.FromMinutes(5));
                     continue;
                 }
 
                 CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSources.TryAdd(build.id, cancellationTokenSource);
-                Task buildTask = buildProcessorService.ProcessBuild(build, cancellationTokenSource);
-                buildTasks.TryAdd(build.id, buildTask);
+                _cancellationTokenSources.TryAdd(build.id, cancellationTokenSource);
+                Task buildTask = _buildProcessorService.ProcessBuild(build, cancellationTokenSource);
+                _buildTasks.TryAdd(build.id, buildTask);
                 await buildTask;
-                cancellationTokenSources.TryRemove(build.id, out CancellationTokenSource _);
+                _cancellationTokenSources.TryRemove(build.id, out CancellationTokenSource _);
             }
 
-            processing = false;
+            _processing = false;
         }
     }
 }

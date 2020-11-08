@@ -8,6 +8,7 @@
     <ItemGroup>
       <ProjectReference Include="..\UKSF.Api.ArmaServer\UKSF.Api.ArmaServer.csproj" />
       <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj" />
+      <ProjectReference Include="..\UKSF.Api.Integrations.Discord\UKSF.Api.Integrations.Discord.csproj" />
       <ProjectReference Include="..\UKSF.Api.Personnel\UKSF.Api.Personnel.csproj" />
     </ItemGroup>
 

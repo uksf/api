@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Base.Database;
+using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services.Data;
@@ -24,9 +24,9 @@ namespace UKSF.Tests.Unit.Data.Modpack {
 
         [Fact]
         public void Should_get_collection_in_order() {
-            ModpackRelease item1 = new ModpackRelease { version = "4.19.11" };
-            ModpackRelease item2 = new ModpackRelease { version = "5.19.6" };
-            ModpackRelease item3 = new ModpackRelease { version = "5.18.8" };
+            ModpackRelease item1 = new ModpackRelease { Version = "4.19.11" };
+            ModpackRelease item2 = new ModpackRelease { Version = "5.19.6" };
+            ModpackRelease item3 = new ModpackRelease { Version = "5.18.8" };
 
             mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackRelease> { item1, item2, item3 });
 
