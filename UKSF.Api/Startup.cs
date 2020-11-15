@@ -21,18 +21,18 @@ using UKSF.Api.Teamspeak.Services;
 
 namespace UKSF.Api {
     public class Startup {
-        private readonly IConfiguration configuration;
-        private readonly IHostEnvironment currentEnvironment;
+        private readonly IConfiguration _configuration;
+        private readonly IHostEnvironment _currentEnvironment;
 
         public Startup(IHostEnvironment currentEnvironment, IConfiguration configuration) {
-            this.configuration = configuration;
-            this.currentEnvironment = currentEnvironment;
+            _configuration = configuration;
+            _currentEnvironment = currentEnvironment;
             IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(currentEnvironment.ContentRootPath).AddEnvironmentVariables();
             builder.Build();
         }
 
         public void ConfigureServices(IServiceCollection services) {
-            services.AddUksf(configuration, currentEnvironment);
+            services.AddUksf(_configuration, _currentEnvironment);
 
             services.AddCors(
                 options => options.AddPolicy(
@@ -53,9 +53,9 @@ namespace UKSF.Api {
             services.AddMvc(options => { options.Filters.Add<ExceptionHandler>(); }).AddNewtonsoftJson();
         }
 
-        // ReSharper disable once UnusedMember.Global
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime hostApplicationLifetime, IServiceProvider serviceProvider) {
             hostApplicationLifetime.ApplicationStopping.Register(() => OnShutdown(serviceProvider));
+
             app.UseStaticFiles();
             app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMode.Lax });
             app.UseSwagger();
@@ -87,7 +87,6 @@ namespace UKSF.Api {
             serviceProvider.StartUksfServices();
         }
 
-        // TODO: Check this works
         private static void OnShutdown(IServiceProvider serviceProvider) {
             // Cancel any running builds
             serviceProvider.GetService<IBuildQueueService>()?.CancelAll();
@@ -97,25 +96,22 @@ namespace UKSF.Api {
         }
     }
 
-    // ReSharper disable once ClassNeverInstantiated.Global
     public class CorsMiddleware {
-        private readonly RequestDelegate next;
+        private readonly RequestDelegate _next;
 
-        public CorsMiddleware(RequestDelegate next) => this.next = next;
+        public CorsMiddleware(RequestDelegate next) => _next = next;
 
-        // ReSharper disable once UnusedMember.Global
         public Task Invoke(HttpContext httpContext) {
-            if (httpContext.Request.Path.Value.Contains("hub")) {
+            if (httpContext.Request.Path.Value != null && httpContext.Request.Path.Value.Contains("hub")) {
                 httpContext.Response.Headers["Access-Control-Allow-Origin"] = httpContext.Request.Headers["Origin"];
                 httpContext.Response.Headers["Access-Control-Allow-Credentials"] = "true";
             }
 
-            return next(httpContext);
+            return _next(httpContext);
         }
     }
 
     public static class CorsMiddlewareExtensions {
-        // ReSharper disable once UnusedMethodReturnValue.Global
-        public static IApplicationBuilder UseCorsMiddleware(this IApplicationBuilder builder) => builder.UseMiddleware<CorsMiddleware>();
+        public static void UseCorsMiddleware(this IApplicationBuilder builder) => builder.UseMiddleware<CorsMiddleware>();
     }
 }

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UKSF.Api.Base;
+using UKSF.Api.Shared;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Authorize, Permissions(Permissions.CONFIRMED, Permissions.MEMBER)]

@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Modpack.Models;
+using UKSF.Api.Shared.Context;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Modpack.Services.Data {
     public interface IReleasesDataService : IDataService<ModpackRelease>, ICachedDataService  { }

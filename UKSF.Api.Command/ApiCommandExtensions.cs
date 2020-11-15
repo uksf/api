@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.EventHandlers;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Services;
 using UKSF.Api.Command.Signalr.Hubs;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Command {
     public static class ApiCommandExtensions {

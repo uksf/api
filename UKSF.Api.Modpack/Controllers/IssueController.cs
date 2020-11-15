@@ -8,9 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using UKSF.Api.Base;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared;
+using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Modpack.Controllers {
     [Route("[controller]"), Permissions(Permissions.MEMBER)]

@@ -30,7 +30,7 @@ namespace UKSF.Api.Admin.Controllers {
         public IActionResult InvalidateData() {
             if (!currentEnvironment.IsDevelopment()) return Ok();
 
-            dataCacheService.InvalidateCachedData();
+            dataCacheService.RefreshCachedData();
             return Ok();
         }
     }

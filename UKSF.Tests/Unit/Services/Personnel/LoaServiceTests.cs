@@ -6,7 +6,6 @@ using Moq;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Services;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Personnel.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Personnel {

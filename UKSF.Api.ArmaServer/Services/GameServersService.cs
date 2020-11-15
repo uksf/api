@@ -13,7 +13,7 @@ using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Extensions;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.ArmaServer.Services {
     public interface IGameServersService : IDataBackedService<IGameServersDataService> {

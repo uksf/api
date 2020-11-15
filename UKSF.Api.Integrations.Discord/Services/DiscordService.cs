@@ -7,9 +7,9 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Discord.Services {
     public interface IDiscordService {

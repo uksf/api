@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Admin.Services;
-using UKSF.Api.Base;
+using UKSF.Api.Shared;
 
 namespace UKSF.Api.Admin.Controllers {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]
@@ -12,7 +12,7 @@ namespace UKSF.Api.Admin.Controllers {
 
         [HttpGet("invalidate"), Authorize]
         public IActionResult Invalidate() {
-            dataCacheService.InvalidateCachedData();
+            dataCacheService.RefreshCachedData();
             return Ok();
         }
     }

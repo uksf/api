@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Command.Models;
+using UKSF.Api.Shared.Context;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Command.Context {
     public interface IDischargeDataService : IDataService<DischargeCollection>, ICachedDataService { }

@@ -2,17 +2,17 @@
 
 namespace UKSF.Api.Personnel.Models {
     public class ServiceRecordEntry : IEquatable<ServiceRecordEntry> {
-        public string notes;
-        public string occurence;
-        public DateTime timestamp;
+        public string Notes { get; init; }
+        public string Occurence { get; init; }
+        public DateTime Timestamp { get; init; }
 
         public bool Equals(ServiceRecordEntry other) {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return notes == other.notes && occurence == other.occurence && timestamp.Equals(other.timestamp);
+            return Notes == other.Notes && Occurence == other.Occurence && Timestamp.Equals(other.Timestamp);
         }
 
-        public override string ToString() => $"{timestamp:dd/MM/yyyy}: {occurence}{(string.IsNullOrEmpty(notes) ? "" : $"({notes})")}";
+        public override string ToString() => $"{Timestamp:dd/MM/yyyy}: {Occurence}{(string.IsNullOrEmpty(Notes) ? "" : $"({Notes})")}";
 
         public override bool Equals(object obj) {
             if (ReferenceEquals(null, obj)) return false;
@@ -20,6 +20,6 @@ namespace UKSF.Api.Personnel.Models {
             return obj.GetType() == GetType() && Equals((ServiceRecordEntry) obj);
         }
 
-        public override int GetHashCode() => HashCode.Combine(notes, occurence, timestamp);
+        public override int GetHashCode() => HashCode.Combine(Notes, Occurence, Timestamp);
     }
 }

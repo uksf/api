@@ -22,14 +22,13 @@ namespace UKSF.Api.Launcher.Services {
     }
 
     public class LauncherFileService : DataBackedService<ILauncherFileDataService>, ILauncherFileService {
-        private readonly IVariablesService variablesService;
-        public LauncherFileService(ILauncherFileDataService data, IVariablesService variablesService) : base(data) {
-            this.variablesService = variablesService;
-        }
+        private readonly IVariablesService _variablesService;
+
+        public LauncherFileService(ILauncherFileDataService data, IVariablesService variablesService) : base(data) => _variablesService = variablesService;
 
         public async Task UpdateAllVersions() {
             List<LauncherFile> storedVersions = Data.Get().ToList();
-            string launcherDirectory = Path.Combine(variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), "Launcher");
+            string launcherDirectory = Path.Combine(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), "Launcher");
             List<string> fileNames = new List<string>();
             foreach (string filePath in Directory.EnumerateFiles(launcherDirectory)) {
                 string fileName = Path.GetFileName(filePath);
@@ -37,7 +36,7 @@ namespace UKSF.Api.Launcher.Services {
                 fileNames.Add(fileName);
                 LauncherFile storedFile = storedVersions.FirstOrDefault(x => x.fileName == fileName);
                 if (storedFile == null) {
-                    await Data.Add(new LauncherFile {fileName = fileName, version = version});
+                    await Data.Add(new LauncherFile { fileName = fileName, version = version });
                     continue;
                 }
 
@@ -52,14 +51,14 @@ namespace UKSF.Api.Launcher.Services {
         }
 
         public FileStreamResult GetLauncherFile(params string[] file) {
-            string[] paths = file.Prepend(variablesService.GetVariable("LAUNCHER_LOCATION").AsString()).ToArray();
+            string[] paths = file.Prepend(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString()).ToArray();
             string path = Path.Combine(paths);
             FileStreamResult fileStreamResult = new FileStreamResult(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read), MimeUtility.GetMimeMapping(path));
             return fileStreamResult;
         }
 
         public async Task<Stream> GetUpdatedFiles(IEnumerable<LauncherFile> files) {
-            string launcherDirectory = Path.Combine(variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), "Launcher");
+            string launcherDirectory = Path.Combine(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), "Launcher");
             List<LauncherFile> storedVersions = Data.Get().ToList();
             List<string> updatedFiles = new List<string>();
             List<string> deletedFiles = new List<string>();
@@ -76,7 +75,7 @@ namespace UKSF.Api.Launcher.Services {
             }
 
             string updateFolderName = Guid.NewGuid().ToString("N");
-            string updateFolder = Path.Combine(variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), updateFolderName);
+            string updateFolder = Path.Combine(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), updateFolderName);
             Directory.CreateDirectory(updateFolder);
 
             string deletedFilesPath = Path.Combine(updateFolder, "deleted");
@@ -86,7 +85,7 @@ namespace UKSF.Api.Launcher.Services {
                 File.Copy(Path.Combine(launcherDirectory, file), Path.Combine(updateFolder, file), true);
             }
 
-            string updateZipPath = Path.Combine(variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), $"{updateFolderName}.zip");
+            string updateZipPath = Path.Combine(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), $"{updateFolderName}.zip");
             ZipFile.CreateFromDirectory(updateFolder, updateZipPath);
             MemoryStream stream = new MemoryStream();
             await using (FileStream fileStream = new FileStream(updateZipPath, FileMode.Open, FileAccess.Read, FileShare.None)) {

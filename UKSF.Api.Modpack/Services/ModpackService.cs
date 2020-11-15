@@ -4,10 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Octokit;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services.BuildProcess;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Modpack.Services {
     public interface IModpackService {

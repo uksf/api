@@ -1,5 +1,5 @@
-using UKSF.Api.Base.Extensions;
 using UKSF.Api.Personnel.Models;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Personnel.Extensions {
     public static class AccountExtensions {

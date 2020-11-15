@@ -7,6 +7,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj" />
+      <ProjectReference Include="..\UKSF.Api.Shared\UKSF.Api.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>

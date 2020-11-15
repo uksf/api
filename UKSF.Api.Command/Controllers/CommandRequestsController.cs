@@ -9,31 +9,27 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Extensions;
-using UKSF.Api.Admin.Services;
-using UKSF.Api.Base;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Services;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Command.Controllers {
     [Route("[controller]"), Permissions(Permissions.COMMAND)]
     public class CommandRequestsController : Controller {
-        public const string SUPER_ADMIN = "59e38f10594c603b78aa9dbd";
-
+        private const string SUPER_ADMIN = "59e38f10594c603b78aa9dbd";
+        private readonly IAccountService _accountService;
         private readonly ICommandRequestCompletionService _commandRequestCompletionService;
-        private readonly IHttpContextService _httpContextService;
         private readonly ICommandRequestService _commandRequestService;
         private readonly IDisplayNameService _displayNameService;
+        private readonly IHttpContextService _httpContextService;
+        private readonly ILogger _logger;
         private readonly INotificationsService _notificationsService;
-
         private readonly IUnitsService _unitsService;
         private readonly IVariablesDataService _variablesDataService;
-        private readonly IVariablesService _variablesService;
-        private readonly IAccountService _accountService;
-        private readonly ILogger _logger;
 
         public CommandRequestsController(
             ICommandRequestService commandRequestService,
@@ -43,19 +39,16 @@ namespace UKSF.Api.Command.Controllers {
             IDisplayNameService displayNameService,
             INotificationsService notificationsService,
             IVariablesDataService variablesDataService,
-            IVariablesService variablesService,
             IAccountService accountService,
             ILogger logger
         ) {
             _commandRequestService = commandRequestService;
             _commandRequestCompletionService = commandRequestCompletionService;
             _httpContextService = httpContextService;
-
             _unitsService = unitsService;
             _displayNameService = displayNameService;
             _notificationsService = notificationsService;
             _variablesDataService = variablesDataService;
-            _variablesService = variablesService;
             _accountService = accountService;
             _logger = logger;
         }

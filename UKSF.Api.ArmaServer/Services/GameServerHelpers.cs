@@ -6,8 +6,8 @@ using System.Linq;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Extensions;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.ArmaServer.Services {
     public interface IGameServerHelpers {

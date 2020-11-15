@@ -3,13 +3,13 @@ using System.Threading.Tasks;
 using AvsAnLib;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Signalr.Clients;
 using UKSF.Api.Command.Signalr.Hubs;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Command.Services {
     public interface ICommandRequestCompletionService {

@@ -11,7 +11,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\UKSF.Api.Admin\UKSF.Api.Admin.csproj" />
-      <ProjectReference Include="..\UKSF.Api.Utility\UKSF.Api.Utility.csproj" />
     </ItemGroup>
 
 </Project>

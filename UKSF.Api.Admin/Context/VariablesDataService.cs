@@ -3,8 +3,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using UKSF.Api.Admin.Models;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Extensions;
+using UKSF.Api.Shared.Context;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Admin.Context {
     public interface IVariablesDataService : IDataService<VariableItem>, ICachedDataService {

@@ -6,9 +6,9 @@ using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
-using UKSF.Api.Base.Extensions;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Personnel.Models;
+using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Personnel.Services {
     public interface IRecruitmentService {
@@ -27,10 +27,8 @@ namespace UKSF.Api.Personnel.Services {
     public class RecruitmentService : IRecruitmentService {
         private readonly IAccountService accountService;
         private readonly IHttpContextService httpContextService;
-        private readonly IDiscordService discordService;
         private readonly IDisplayNameService displayNameService;
         private readonly IRanksService ranksService;
-        private readonly ITeamspeakService teamspeakService;
         private readonly IUnitsService unitsService;
         private readonly IVariablesService variablesService;
 
@@ -38,9 +36,7 @@ namespace UKSF.Api.Personnel.Services {
             IAccountService accountService,
             IHttpContextService httpContextService,
             IDisplayNameService displayNameService,
-            IDiscordService discordService,
             IRanksService ranksService,
-            ITeamspeakService teamspeakService,
             IUnitsService unitsService,
             IVariablesService variablesService
         ) {
@@ -48,10 +44,8 @@ namespace UKSF.Api.Personnel.Services {
             this.httpContextService = httpContextService;
             this.displayNameService = displayNameService;
             this.ranksService = ranksService;
-            this.teamspeakService = teamspeakService;
             this.unitsService = unitsService;
             this.variablesService = variablesService;
-            this.discordService = discordService;
         }
 
         public bool IsRecruiter(Account account) => GetRecruiters(true).Any(x => x.id == account.id);
@@ -91,16 +85,15 @@ namespace UKSF.Api.Personnel.Services {
             return new {waiting, allWaiting, complete, recruiters};
         }
 
+        // TODO: Make sure frontend calls get online user details for ts and discord
         public JObject GetApplication(Account account) {
             Account recruiterAccount = accountService.Data.GetSingle(account.application.recruiter);
-            (bool tsOnline, string tsNickname, bool discordOnline, string discordNickname) = GetOnlineUserDetails(account);
             (int years, int months) = account.dob.ToAge();
             return JObject.FromObject(
                 new {
                     account,
                     displayName = displayNameService.GetDisplayName(account),
                     age = new {years, months},
-                    communications = new {tsOnline, tsNickname = tsOnline ? tsNickname : "", discordOnline, discordNickname},
                     daysProcessing = Math.Ceiling((DateTime.Now - account.application.dateCreated).TotalDays),
                     daysProcessed = Math.Ceiling((account.application.dateAccepted - account.application.dateCreated).TotalDays),
                     nextCandidateOp = GetNextCandidateOp(),
@@ -168,29 +161,20 @@ namespace UKSF.Api.Personnel.Services {
                 new {account, displayName = displayNameService.GetDisplayNameWithoutRank(account), daysProcessed = Math.Ceiling((account.application.dateAccepted - account.application.dateCreated).TotalDays), recruiter = displayNameService.GetDisplayName(account.application.recruiter)}
             );
 
+        // TODO: Make sure frontend calls get online user details for ts and discord
         private JObject GetWaitingApplication(Account account) {
-            (bool tsOnline, string tsNickname, bool discordOnline, string discordNickname) = GetOnlineUserDetails(account);
             double averageProcessingTime = GetAverageProcessingTime();
             double daysProcessing = Math.Ceiling((DateTime.Now - account.application.dateCreated).TotalDays);
             double processingDifference = daysProcessing - averageProcessingTime;
             return JObject.FromObject(
                 new {
                     account,
-                    communications = new {tsOnline, tsNickname = tsOnline ? tsNickname : "", discordOnline, discordNickname},
                     steamprofile = "http://steamcommunity.com/profiles/" + account.steamname,
                     daysProcessing,
                     processingDifference,
                     recruiter = displayNameService.GetDisplayName(account.application.recruiter)
                 }
             );
-        }
-
-        // TODO: Should probably be individual endpoints in relevant components
-        private (bool tsOnline, string tsNickname, bool discordOnline, string discordNickname) GetOnlineUserDetails(Account account) {
-            (bool tsOnline, string tsNickname) = teamspeakService.GetOnlineUserDetails(account);
-            (bool discordOnline, string discordNickname) = discordService.GetOnlineUserDetails(account);
-
-            return (tsOnline, tsNickname, discordOnline, discordNickname);
         }
 
         private static string GetNextCandidateOp() {

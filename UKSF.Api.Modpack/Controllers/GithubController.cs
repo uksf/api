@@ -6,9 +6,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Octokit;
 using Octokit.Internal;
-using UKSF.Api.Base;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services;
+using UKSF.Api.Shared;
 
 namespace UKSF.Api.Modpack.Controllers {
     [Route("[controller]")]

@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
 using UKSF.Api.ArmaMissions.Models;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Extensions;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.ArmaMissions.Services {
     public interface IMissionPatchingService {

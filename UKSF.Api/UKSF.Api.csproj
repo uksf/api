@@ -1,54 +1,58 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-  <PropertyGroup>
-    <TargetFramework>netcoreapp5.0</TargetFramework>
-    <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
-    <RootNamespace>UKSF.Api</RootNamespace>
-    <OutputType>Exe</OutputType>
-    <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
-    <LangVersion>default</LangVersion>
-    <Nullable>disable</Nullable>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <NoWarn>1701;1702;1705;1591</NoWarn>
-    <DebugType>full</DebugType>
-    <DebugSymbols>true</DebugSymbols>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="AspNet.Security.OpenId.Steam" Version="3.1.0" />
-    <PackageReference Include="AutoMapper" Version="10.0.0" />
-    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.0.1" />
-    <PackageReference Include="BCrypt.Net-Next" Version="4.0.0" />
-    <PackageReference Include="Discord.OAuth2" Version="2.0.0" />
-    <PackageReference Include="Markdig" Version="0.21.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.0-rc.1.20451.17" />
-    <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="5.0.0-rc.1.20451.17" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.0-rc.1.20451.17" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="5.0.0-rc.2.20475.17" />
-    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.7.2-preview-10803222715" />
-    <PackageReference Include="MongoDB.Driver" Version="2.11.2" />
-    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
-    <PackageReference Include="System.Net.Http" Version="4.4.0-preview1-25218-03" />
-    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-  </ItemGroup>
-  <ItemGroup>
-    <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="1.0.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\UKSF.Api.Admin\UKSF.Api.Admin.csproj" />
-    <ProjectReference Include="..\UKSF.Api.Command\UKSF.Api.Command.csproj" />
-    <ProjectReference Include="..\UKSF.Api.Data\UKSF.Api.Data.csproj" />
-    <ProjectReference Include="..\UKSF.Api.Events\UKSF.Api.Events.csproj" />
-    <ProjectReference Include="..\UKSF.Api.Integrations.Discord\UKSF.Api.Integrations.Discord.csproj" />
-    <ProjectReference Include="..\UKSF.Api.Integrations.Teamspeak\UKSF.Api.Integrations.Teamspeak.csproj" />
-    <ProjectReference Include="..\UKSF.Api.Interfaces\UKSF.Api.Interfaces.csproj" />
-    <ProjectReference Include="..\UKSF.Api.Models\UKSF.Api.Models.csproj" />
-    <ProjectReference Include="..\UKSF.Api.Modpack\UKSF.Api.Modpack.csproj" />
-    <ProjectReference Include="..\UKSF.Api.Personnel\UKSF.Api.Personnel.csproj" />
-    <ProjectReference Include="..\UKSF.Api.Services\UKSF.Api.Services.csproj" />
-    <ProjectReference Include="..\UKSF.Api.Utility\UKSF.Api.Utility.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="AppStart\Services" />
-  </ItemGroup>
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp5.0</TargetFramework>
+        <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
+        <RootNamespace>UKSF.Api</RootNamespace>
+        <OutputType>Exe</OutputType>
+        <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
+        <LangVersion>default</LangVersion>
+        <Nullable>disable</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <NoWarn>1701;1702;1705;1591</NoWarn>
+        <DebugType>full</DebugType>
+        <DebugSymbols>true</DebugSymbols>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AspNet.Security.OpenId.Steam" Version="3.1.0" />
+        <PackageReference Include="AutoMapper" Version="10.0.0" />
+        <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.0.1" />
+        <PackageReference Include="BCrypt.Net-Next" Version="4.0.0" />
+        <PackageReference Include="Discord.OAuth2" Version="2.0.0" />
+        <PackageReference Include="Markdig" Version="0.21.1" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.0-rc.1.20451.17" />
+        <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="5.0.0-rc.1.20451.17" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.0-rc.1.20451.17" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="5.0.0-rc.2.20475.17" />
+        <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.7.2-preview-10803222715" />
+        <PackageReference Include="MongoDB.Driver" Version="2.11.2" />
+        <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
+        <PackageReference Include="System.Net.Http" Version="4.4.0-preview1-25218-03" />
+        <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="1.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\UKSF.Api.Admin\UKSF.Api.Admin.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Auth\UKSF.Api.Auth.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Command\UKSF.Api.Command.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Integration.Instagram\UKSF.Api.Integration.Instagram.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Integrations.Discord\UKSF.Api.Integrations.Discord.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Integrations.Teamspeak\UKSF.Api.Integrations.Teamspeak.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Launcher\UKSF.Api.Launcher.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Modpack\UKSF.Api.Modpack.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Personnel\UKSF.Api.Personnel.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="AppStart\Services" />
+    </ItemGroup>
+
 </Project>

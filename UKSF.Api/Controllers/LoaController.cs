@@ -4,13 +4,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UKSF.Api.Base;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Services;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Permissions(Permissions.MEMBER)]

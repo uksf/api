@@ -7,7 +7,7 @@ using UKSF.Api.Admin.Models;
 using UKSF.Api.Admin.ScheduledActions;
 using UKSF.Api.Admin.Services;
 using UKSF.Api.Admin.Signalr.Hubs;
-using UKSF.Api.Base.Events;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Admin {
     public static class ApiAdminExtensions {

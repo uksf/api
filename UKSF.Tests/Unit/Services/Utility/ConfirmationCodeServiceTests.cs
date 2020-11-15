@@ -6,11 +6,11 @@ using FluentAssertions;
 using MongoDB.Bson;
 using Moq;
 using Newtonsoft.Json;
-using UKSF.Api.Base.Models;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared.Models;
+using UKSF.Api.Shared.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility {

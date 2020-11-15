@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Models.Logging;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Models;
+using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api {
     public class ExceptionHandler : IExceptionFilter {

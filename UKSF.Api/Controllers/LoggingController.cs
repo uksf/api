@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UKSF.Api.Base;
-using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Models.Logging;
+using UKSF.Api.Shared;
+using UKSF.Api.Shared.Context;
+using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]

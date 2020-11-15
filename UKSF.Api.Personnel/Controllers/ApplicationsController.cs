@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
-using UKSF.Api.Base;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Extensions;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Personnel.Controllers {
     [Route("[controller]")]

@@ -1,39 +1,37 @@
 ﻿using FluentAssertions;
+using Microsoft.Extensions.Hosting;
 using Moq;
-using UKSF.Api.Base.Services;
+using UKSF.Api.Shared.Services;
 using UKSF.Api.Teamspeak.ScheduledActions;
 using UKSF.Api.Teamspeak.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
     public class TeamspeakSnapshotActionTests {
-        private readonly Mock<IClock> _mockClock;
-        private readonly Mock<ISchedulerService> _mockSchedulerService;
-        private readonly Mock<ITeamspeakService> mockTeamspeakService;
-        private IActionTeamspeakSnapshot actionTeamspeakSnapshot;
+        private readonly IActionTeamspeakSnapshot _actionTeamspeakSnapshot;
+        private readonly Mock<ITeamspeakService> _mockTeamspeakService;
 
         public TeamspeakSnapshotActionTests() {
-            mockTeamspeakService = new Mock<ITeamspeakService>();
-            _mockClock = new Mock<IClock>();
-            _mockSchedulerService = new Mock<ISchedulerService>();
+            _mockTeamspeakService = new Mock<ITeamspeakService>();
+            Mock<IClock> mockClock = new Mock<IClock>();
+            Mock<ISchedulerService> mockSchedulerService = new Mock<ISchedulerService>();
+            Mock<IHostEnvironment> mockHostEnvironment = new Mock<IHostEnvironment>();
+
+            _actionTeamspeakSnapshot = new ActionTeamspeakSnapshot(_mockTeamspeakService.Object, mockSchedulerService.Object, mockHostEnvironment.Object, mockClock.Object);
         }
 
         [Fact]
-        public void ShouldReturnActionName() {
-            actionTeamspeakSnapshot = new ActionTeamspeakSnapshot(mockTeamspeakService.Object, _mockSchedulerService.Object, _mockClock.Object);
+        public void When_getting_action_name() {
+            string subject = _actionTeamspeakSnapshot.Name;
 
-            string subject = actionTeamspeakSnapshot.Name;
-
-            subject.Should().Be("TeamspeakSnapshotAction");
+            subject.Should().Be("ActionTeamspeakSnapshot");
         }
 
         [Fact]
-        public void ShouldRunSnapshot() {
-            actionTeamspeakSnapshot = new ActionTeamspeakSnapshot(mockTeamspeakService.Object, _mockSchedulerService.Object, _mockClock.Object);
+        public void When_running_snapshot() {
+            _actionTeamspeakSnapshot.Run();
 
-            actionTeamspeakSnapshot.Run();
-
-            mockTeamspeakService.Verify(x => x.StoreTeamspeakServerSnapshot(), Times.Once);
+            _mockTeamspeakService.Verify(x => x.StoreTeamspeakServerSnapshot(), Times.Once);
         }
     }
 }

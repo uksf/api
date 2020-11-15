@@ -5,11 +5,12 @@ using MoreLinq;
 using UKSF.Api.Admin.Services;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.ScheduledActions;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Discord.Services;
 using UKSF.Api.Modpack.Services;
 using UKSF.Api.Modpack.Services.BuildProcess;
 using UKSF.Api.Services;
+using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Shared.Services;
 using UKSF.Api.Teamspeak.Services;
 
 namespace UKSF.Api.AppStart {
@@ -24,17 +25,17 @@ namespace UKSF.Api.AppStart {
             serviceProvider.GetService<MigrationUtility>()?.Migrate();
 
             // Warm cached data services
-            serviceProvider.GetService<IDataCacheService>()?.InvalidateCachedData();
+            serviceProvider.GetService<IDataCacheService>()?.RefreshCachedData();
 
             // Register scheduled actions & run self-creating scheduled actions
-            serviceProvider.GetService<IScheduledActionFactory>()?.RegisterScheduledActions(serviceProvider.GetServices<IScheduledAction>());
-            serviceProvider.GetServices<ISelfCreatingScheduledAction>().ForEach(x => x.CreateSelf());
+            serviceProvider.GetService<IScheduledActionFactory>()?.RegisterScheduledActions(serviceProvider.GetInterfaceServices<IScheduledAction>());
+            serviceProvider.GetInterfaceServices<ISelfCreatingScheduledAction>().ForEach(x => x.CreateSelf());
 
             // Register build steps
             serviceProvider.GetService<IBuildStepService>()?.RegisterBuildSteps();
 
             // Add event handlers
-            serviceProvider.GetServices<IEventHandler>().ForEach(x => x.Init());
+            serviceProvider.GetInterfaceServices<IEventHandler>().ForEach(x => x.Init());
 
             // Start teamspeak manager
             serviceProvider.GetService<ITeamspeakManagerService>()?.Start();

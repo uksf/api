@@ -1,65 +1,83 @@
 ﻿using System;
 using System.Reactive.Subjects;
-using Microsoft.AspNetCore.SignalR;
 using Moq;
-using UKSF.Api.Admin.Signalr.Clients;
-using UKSF.Api.Admin.Signalr.Hubs;
-using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Models;
-using UKSF.Api.Base.Models.Logging;
 using UKSF.Api.EventHandlers;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared.Context;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {
     public class LogEventHandlerTests {
-        private readonly LoggerEventHandler logEventHandler;
-        private readonly Mock<ILogDataService> mockLogDataService;
-        private readonly Mock<ILogger> mockLogger;
-        private readonly Subject<BasicLog> loggerSubject = new Subject<BasicLog>();
+        private readonly Subject<BasicLog> _loggerSubject = new Subject<BasicLog>();
+        private readonly Mock<IAuditLogDataService> _mockAuditLogDataService;
+        private readonly Mock<IHttpErrorLogDataService> _mockHttpErrorLogDataService;
+        private readonly Mock<ILauncherLogDataService> _mockLauncherLogDataService;
+        private readonly Mock<ILogDataService> _mockLogDataService;
+        private readonly Mock<IObjectIdConversionService> _mockObjectIdConversionService;
 
         public LogEventHandlerTests() {
-            mockLogDataService = new Mock<ILogDataService>();
-            mockLogger = new Mock<ILogger>();
-            Mock<IObjectIdConversionService> mockObjectIdConversionService = new Mock<IObjectIdConversionService>();
+            _mockLogDataService = new Mock<ILogDataService>();
+            _mockAuditLogDataService = new Mock<IAuditLogDataService>();
+            _mockHttpErrorLogDataService = new Mock<IHttpErrorLogDataService>();
+            _mockLauncherLogDataService = new Mock<ILauncherLogDataService>();
+            _mockObjectIdConversionService = new Mock<IObjectIdConversionService>();
 
-            mockLogger.Setup(x => x.AsObservable()).Returns(loggerSubject);
-            mockObjectIdConversionService.Setup(x => x.ConvertObjectIds(It.IsAny<string>())).Returns<string>(x => x);
+            Mock<ILogger> mockLogger = new Mock<ILogger>();
+            mockLogger.Setup(x => x.AsObservable()).Returns(_loggerSubject);
+            _mockObjectIdConversionService.Setup(x => x.ConvertObjectIds(It.IsAny<string>())).Returns<string>(x => x);
 
-            logEventHandler = new LoggerEventHandler(mockLogDataService.Object, mockLogger.Object, mockObjectIdConversionService.Object);
+            LoggerEventHandler logEventHandler = new LoggerEventHandler(
+                _mockLogDataService.Object,
+                _mockAuditLogDataService.Object,
+                _mockHttpErrorLogDataService.Object,
+                _mockLauncherLogDataService.Object,
+                mockLogger.Object,
+                _mockObjectIdConversionService.Object
+            );
             logEventHandler.Init();
         }
 
         [Fact]
-        public void ShouldLogOnException() {
-            mockLogger.Setup(x => x.LogError(It.IsAny<Exception>()));
+        public void When_handling_a_basic_log() {
+            BasicLog basicLog = new BasicLog("test");
 
-            loggerSubject.OnNext(new HttpErrorLog(new Exception()));
+            _loggerSubject.OnNext(basicLog);
 
-            mockLogDataService.Verify(x => x.Add(It.IsAny<HttpErrorLog>()), Times.Once);
+            _mockObjectIdConversionService.Verify(x => x.ConvertObjectIds("test"), Times.Once);
+            _mockLogDataService.Verify(x => x.Add(basicLog), Times.Once);
         }
 
         [Fact]
-        public void ShouldRunAddedOnAddWithCorrectType() {
-            Mock<IHubClients<IAdminClient>> mockHubClients = new Mock<IHubClients<IAdminClient>>();
-            Mock<IAdminClient> mockClient = new Mock<IAdminClient>();
+        public void When_handling_a_launcher_log() {
+            LauncherLog launcherLog = new LauncherLog("1.0.0", "test");
 
-            mockHubClients.Setup(x => x.All).Returns(mockClient.Object);
-            mockClient.Setup(x => x.ReceiveAuditLog(It.IsAny<AuditLog>()));
-            mockClient.Setup(x => x.ReceiveLauncherLog(It.IsAny<LauncherLog>()));
-            mockClient.Setup(x => x.ReceiveErrorLog(It.IsAny<HttpErrorLog>()));
-            mockClient.Setup(x => x.ReceiveLog(It.IsAny<BasicLog>()));
+            _loggerSubject.OnNext(launcherLog);
 
-            loggerSubject.OnNext(new AuditLog("server", "test"));
-            loggerSubject.OnNext(new LauncherLog("1.0.0", "test"));
-            loggerSubject.OnNext(new HttpErrorLog(new Exception("test")));
-            loggerSubject.OnNext(new BasicLog("test"));
+            _mockObjectIdConversionService.Verify(x => x.ConvertObjectIds("test"), Times.Once);
+            _mockLauncherLogDataService.Verify(x => x.Add(launcherLog), Times.Once);
+        }
 
-            mockClient.Verify(x => x.ReceiveAuditLog(It.IsAny<AuditLog>()), Times.Once);
-            mockClient.Verify(x => x.ReceiveLauncherLog(It.IsAny<LauncherLog>()), Times.Once);
-            mockClient.Verify(x => x.ReceiveErrorLog(It.IsAny<HttpErrorLog>()), Times.Once);
-            mockClient.Verify(x => x.ReceiveLog(It.IsAny<BasicLog>()), Times.Once);
+        [Fact]
+        public void When_handling_an_audit_log() {
+            AuditLog basicLog = new AuditLog("server", "test");
+
+            _loggerSubject.OnNext(basicLog);
+
+            _mockObjectIdConversionService.Verify(x => x.ConvertObjectId("server"), Times.Once);
+            _mockObjectIdConversionService.Verify(x => x.ConvertObjectIds("test"), Times.Once);
+            _mockAuditLogDataService.Verify(x => x.Add(basicLog), Times.Once);
+        }
+
+        [Fact]
+        public void When_handling_an_http_error_log() {
+            HttpErrorLog httpErrorLog = new HttpErrorLog(new Exception());
+
+            _loggerSubject.OnNext(httpErrorLog);
+
+            _mockObjectIdConversionService.Verify(x => x.ConvertObjectIds("Exception of type 'System.Exception' was thrown."), Times.Once);
+            _mockHttpErrorLogDataService.Verify(x => x.Add(httpErrorLog), Times.Once);
         }
     }
 }

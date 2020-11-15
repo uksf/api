@@ -2,12 +2,12 @@
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Models;
 using UKSF.Api.Command.EventHandlers;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Signalr.Clients;
 using UKSF.Api.Command.Signalr.Hubs;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {

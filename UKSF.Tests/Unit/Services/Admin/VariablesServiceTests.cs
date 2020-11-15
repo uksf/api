@@ -4,7 +4,7 @@ using System.Linq;
 using FluentAssertions;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Models;
-using UKSF.Api.Base.Extensions;
+using UKSF.Api.Shared.Extensions;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Admin {

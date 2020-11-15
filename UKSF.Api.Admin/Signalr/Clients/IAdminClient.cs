@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using UKSF.Api.Base.Models.Logging;
+using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Admin.Signalr.Clients {
     public interface IAdminClient {

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using UKSF.Api.Base.Extensions;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Command.Services {
     public interface IChainOfCommandService {

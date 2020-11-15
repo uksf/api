@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
-using UKSF.Api.Base;
+using UKSF.Api.Shared;
 using UKSF.Api.Teamspeak.Models;
 
 namespace UKSF.Api.Teamspeak.Controllers {

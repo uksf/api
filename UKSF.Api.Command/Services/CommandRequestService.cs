@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 using AvsAnLib;
 using MongoDB.Driver;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Command.Services {
     public interface ICommandRequestService : IDataBackedService<ICommandRequestDataService> {

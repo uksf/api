@@ -1,4 +1,5 @@
-﻿using UKSF.Api.Base.Extensions;
+﻿using UKSF.Api.Personnel.Models;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Personnel.Services {
     public interface IObjectIdConversionService {
@@ -7,21 +8,24 @@ namespace UKSF.Api.Personnel.Services {
     }
 
     public class ObjectIdConversionService : IObjectIdConversionService {
-        private readonly IDisplayNameService displayNameService;
-        private readonly IUnitsService unitsService;
+        private readonly IDisplayNameService _displayNameService;
+        private readonly IUnitsService _unitsService;
 
         public ObjectIdConversionService(IDisplayNameService displayNameService, IUnitsService unitsService) {
-            this.displayNameService = displayNameService;
-            this.unitsService = unitsService;
+            _displayNameService = displayNameService;
+            _unitsService = unitsService;
         }
 
         public string ConvertObjectIds(string text) {
             if (string.IsNullOrEmpty(text)) return text;
 
             foreach (string objectId in text.ExtractObjectIds()) {
-                string displayString = displayNameService.GetDisplayName(objectId);
+                string displayString = _displayNameService.GetDisplayName(objectId);
                 if (displayString == objectId) {
-                    displayString = unitsService.Data.GetSingle(x => x.id == objectId)?.name;
+                    Unit unit = _unitsService.Data.GetSingle(x => x.id == objectId);
+                    if (unit != null) {
+                        displayString = unit.name;
+                    }
                 }
 
                 text = text.Replace(objectId, displayString);
@@ -30,6 +34,6 @@ namespace UKSF.Api.Personnel.Services {
             return text;
         }
 
-        public string ConvertObjectId(string id) => string.IsNullOrEmpty(id) ? id : displayNameService.GetDisplayName(id);
+        public string ConvertObjectId(string id) => string.IsNullOrEmpty(id) ? id : _displayNameService.GetDisplayName(id);
     }
 }
