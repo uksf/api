@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services.BuildProcess;
 using UKSF.Api.Modpack.Services.Data;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Modpack.Services {
     public interface IBuildsService : IDataBackedService<IBuildsDataService> {

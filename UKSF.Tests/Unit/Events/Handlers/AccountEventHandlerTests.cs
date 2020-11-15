@@ -2,18 +2,18 @@
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.EventHandlers;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Signalr.Clients;
 using UKSF.Api.Personnel.Signalr.Hubs;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {
     public class AccountEventHandlerTests {
         private readonly DataEventBus<Account> accountDataEventBus;
-        private readonly AccountEventHandler accountEventHandler;
+        private readonly AccountDataEventHandler _accountDataEventHandler;
         private readonly Mock<IHubContext<AccountHub, IAccountClient>> mockAccountHub;
         private readonly Mock<ILogger> mockLoggingService;
         private readonly DataEventBus<Api.Personnel.Models.Unit> unitsDataEventBus;
@@ -29,7 +29,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
             mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Account>(It.IsAny<string>()));
             mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Api.Personnel.Models.Unit>(It.IsAny<string>()));
 
-            accountEventHandler = new AccountEventHandler(accountDataEventBus, unitsDataEventBus, mockAccountHub.Object, mockLoggingService.Object);
+            _accountDataEventHandler = new AccountDataEventHandler(accountDataEventBus, unitsDataEventBus, mockAccountHub.Object, mockLoggingService.Object);
         }
 
         [Fact]
@@ -42,7 +42,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
             mockAccountClient.Setup(x => x.ReceiveAccountUpdate()).Throws(new Exception());
             mockLoggingService.Setup(x => x.LogError(It.IsAny<Exception>()));
 
-            accountEventHandler.Init();
+            _accountDataEventHandler.Init();
 
             accountDataEventBus.Send(new DataEventModel<Account> { type = DataEventType.UPDATE });
             unitsDataEventBus.Send(new DataEventModel<Api.Personnel.Models.Unit> { type = DataEventType.UPDATE });
@@ -59,7 +59,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
             mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockAccountClient.Object);
             mockAccountClient.Setup(x => x.ReceiveAccountUpdate());
 
-            accountEventHandler.Init();
+            _accountDataEventHandler.Init();
 
             accountDataEventBus.Send(new DataEventModel<Account> { type = DataEventType.DELETE });
             unitsDataEventBus.Send(new DataEventModel<Api.Personnel.Models.Unit> { type = DataEventType.ADD });
@@ -76,7 +76,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
             mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockAccountClient.Object);
             mockAccountClient.Setup(x => x.ReceiveAccountUpdate());
 
-            accountEventHandler.Init();
+            _accountDataEventHandler.Init();
 
             accountDataEventBus.Send(new DataEventModel<Account> { type = DataEventType.UPDATE });
             unitsDataEventBus.Send(new DataEventModel<Api.Personnel.Models.Unit> { type = DataEventType.UPDATE });

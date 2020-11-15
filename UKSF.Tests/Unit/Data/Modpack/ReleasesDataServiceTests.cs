@@ -2,9 +2,9 @@
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services.Data;
+using UKSF.Api.Shared.Events;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Modpack {

@@ -1,5 +1,5 @@
 ﻿using FluentAssertions;
-using UKSF.Api.Base.Models.Logging;
+using UKSF.Api.Shared.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Models.Message.Logging {

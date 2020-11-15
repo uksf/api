@@ -2,9 +2,9 @@
 using System.Linq;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
-using UKSF.Api.Base;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared;
 
 namespace UKSF.Api.Auth.Services {
     public interface IPermissionsService {

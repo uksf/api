@@ -1,11 +1,12 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Extensions;
-using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Signalr.Clients;
 using UKSF.Api.Personnel.Signalr.Hubs;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Personnel.EventHandlers {
     public interface INotificationsEventHandler : IEventHandler { }

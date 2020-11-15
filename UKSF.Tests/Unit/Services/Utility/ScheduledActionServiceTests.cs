@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Base.ScheduledActions;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Personnel.ScheduledActions;
+using UKSF.Api.Shared.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility {

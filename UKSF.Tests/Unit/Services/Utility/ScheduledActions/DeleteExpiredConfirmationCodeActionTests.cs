@@ -9,44 +9,44 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
     public class DeleteExpiredConfirmationCodeActionTests {
-        private readonly Mock<IConfirmationCodeDataService> mockConfirmationCodeDataService;
-        private readonly Mock<IConfirmationCodeService> mockConfirmationCodeService;
-        private IActionDeleteExpiredConfirmationCode actionDeleteExpiredConfirmationCode;
+        private readonly Mock<IConfirmationCodeDataService> _mockConfirmationCodeDataService;
+        private readonly Mock<IConfirmationCodeService> _mockConfirmationCodeService;
+        private IActionDeleteExpiredConfirmationCode _actionDeleteExpiredConfirmationCode;
 
         public DeleteExpiredConfirmationCodeActionTests() {
-            mockConfirmationCodeDataService = new Mock<IConfirmationCodeDataService>();
-            mockConfirmationCodeService = new Mock<IConfirmationCodeService>();
+            _mockConfirmationCodeDataService = new Mock<IConfirmationCodeDataService>();
+            _mockConfirmationCodeService = new Mock<IConfirmationCodeService>();
 
-            mockConfirmationCodeService.Setup(x => x.Data).Returns(mockConfirmationCodeDataService.Object);
+            _mockConfirmationCodeService.Setup(x => x.Data).Returns(_mockConfirmationCodeDataService.Object);
         }
 
         [Fact]
-        public void ShouldDeleteCorrectId() {
+        public void When_deleting_confirmation_code() {
             string id = ObjectId.GenerateNewId().ToString();
 
-            actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(mockConfirmationCodeService.Object);
+            _actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(_mockConfirmationCodeService.Object);
 
-            actionDeleteExpiredConfirmationCode.Run(id);
+            _actionDeleteExpiredConfirmationCode.Run(id);
 
-            mockConfirmationCodeDataService.Verify(x => x.Delete(id), Times.Once);
+            _mockConfirmationCodeDataService.Verify(x => x.Delete(id), Times.Once);
         }
 
         [Fact]
-        public void ShouldReturnActionName() {
-            actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(mockConfirmationCodeService.Object);
+        public void When_deleting_confirmation_code_with_no_id() {
+            _actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(_mockConfirmationCodeService.Object);
 
-            string subject = actionDeleteExpiredConfirmationCode.Name;
-
-            subject.Should().Be("DeleteExpiredConfirmationCodeAction");
-        }
-
-        [Fact]
-        public void ShouldThrowForNoId() {
-            actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(mockConfirmationCodeService.Object);
-
-            Action act = () => actionDeleteExpiredConfirmationCode.Run();
+            Action act = () => _actionDeleteExpiredConfirmationCode.Run();
 
             act.Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
+        public void When_getting_action_name() {
+            _actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(_mockConfirmationCodeService.Object);
+
+            string subject = _actionDeleteExpiredConfirmationCode.Name;
+
+            subject.Should().Be("ActionDeleteExpiredConfirmationCode");
         }
     }
 }

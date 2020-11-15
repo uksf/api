@@ -9,25 +9,28 @@ using Newtonsoft.Json.Linq;
 using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
-using UKSF.Api.Base;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Launcher.Models;
 using UKSF.Api.Launcher.Services;
 using UKSF.Api.Launcher.Signalr.Clients;
 using UKSF.Api.Launcher.Signalr.Hubs;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared;
+using UKSF.Api.Shared.Services;
+
+// ReSharper disable UnusedVariable
+// ReSharper disable UnusedParameter.Global
+// ReSharper disable NotAccessedField.Local
 
 namespace UKSF.Api.Launcher.Controllers {
     [Route("[controller]"), Authorize, Permissions(Permissions.CONFIRMED, Permissions.MEMBER)]
     public class LauncherController : Controller {
-        private readonly IDisplayNameService displayNameService;
-        private readonly ILauncherFileService launcherFileService;
-        private readonly IHttpContextService httpContextService;
-        private readonly IHubContext<LauncherHub, ILauncherClient> launcherHub;
-        private readonly ILauncherService launcherService;
-
-        private readonly IVariablesDataService variablesDataService;
-        private readonly IVariablesService variablesService;
+        private readonly IDisplayNameService _displayNameService;
+        private readonly IHttpContextService _httpContextService;
+        private readonly ILauncherFileService _launcherFileService;
+        private readonly IHubContext<LauncherHub, ILauncherClient> _launcherHub;
+        private readonly ILauncherService _launcherService;
+        private readonly IVariablesDataService _variablesDataService;
+        private readonly IVariablesService _variablesService;
 
         public LauncherController(
             IVariablesDataService variablesDataService,
@@ -38,41 +41,40 @@ namespace UKSF.Api.Launcher.Controllers {
             IDisplayNameService displayNameService,
             IVariablesService variablesService
         ) {
-            this.variablesDataService = variablesDataService;
-            this.launcherHub = launcherHub;
-            this.launcherService = launcherService;
-            this.launcherFileService = launcherFileService;
-            this.httpContextService = httpContextService;
-
-            this.displayNameService = displayNameService;
-            this.variablesService = variablesService;
+            _variablesDataService = variablesDataService;
+            _launcherHub = launcherHub;
+            _launcherService = launcherService;
+            _launcherFileService = launcherFileService;
+            _httpContextService = httpContextService;
+            _displayNameService = displayNameService;
+            _variablesService = variablesService;
         }
 
         [HttpGet("update/{platform}/{version}")]
         public IActionResult GetUpdate(string platform, string version) => Ok();
 
         [HttpGet("version")]
-        public IActionResult GetVersion() => Ok(variablesDataService.GetSingle("LAUNCHER_VERSION").AsString());
+        public IActionResult GetVersion() => Ok(_variablesDataService.GetSingle("LAUNCHER_VERSION").AsString());
 
         [HttpPost("version"), Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> UpdateVersion([FromBody] JObject body) {
             string version = body["version"].ToString();
-            await variablesDataService.Update("LAUNCHER_VERSION", version);
-            await launcherFileService.UpdateAllVersions();
-            await launcherHub.Clients.All.ReceiveLauncherVersion(version);
+            await _variablesDataService.Update("LAUNCHER_VERSION", version);
+            await _launcherFileService.UpdateAllVersions();
+            await _launcherHub.Clients.All.ReceiveLauncherVersion(version);
             return Ok();
         }
 
         [HttpGet("download/setup")]
-        public IActionResult GetLauncher() => launcherFileService.GetLauncherFile("UKSF Launcher Setup.msi");
+        public IActionResult GetLauncher() => _launcherFileService.GetLauncherFile("UKSF Launcher Setup.msi");
 
         [HttpGet("download/updater")]
-        public IActionResult GetUpdater() => launcherFileService.GetLauncherFile("Updater", "UKSF.Launcher.Updater.exe");
+        public IActionResult GetUpdater() => _launcherFileService.GetLauncherFile("Updater", "UKSF.Launcher.Updater.exe");
 
         [HttpPost("download/update")]
         public async Task<IActionResult> GetUpdatedFiles([FromBody] JObject body) {
             List<LauncherFile> files = JsonConvert.DeserializeObject<List<LauncherFile>>(body["files"].ToString());
-            Stream updatedFiles = await launcherFileService.GetUpdatedFiles(files);
+            Stream updatedFiles = await _launcherFileService.GetUpdatedFiles(files);
             FileStreamResult stream = new FileStreamResult(updatedFiles, "application/octet-stream");
             return stream;
         }

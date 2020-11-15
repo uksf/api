@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Newtonsoft.Json.Linq;
-using UKSF.Api.Base.Extensions;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess {
     public class BuildProcessHelper {

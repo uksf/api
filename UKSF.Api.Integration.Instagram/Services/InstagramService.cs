@@ -7,8 +7,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Integration.Instagram.Models;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Integration.Instagram.Services {
     public interface IInstagramService {

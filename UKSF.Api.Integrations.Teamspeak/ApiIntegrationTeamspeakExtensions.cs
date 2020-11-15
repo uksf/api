@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Shared.Models;
 using UKSF.Api.Teamspeak.EventHandlers;
 using UKSF.Api.Teamspeak.ScheduledActions;
 using UKSF.Api.Teamspeak.Services;
@@ -13,9 +15,12 @@ namespace UKSF.Api.Teamspeak {
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services;
 
-        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services;
+        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services.AddSingleton<IEventBus<TeamspeakMessageEventModel>>();
 
-        private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services.AddSingleton<ITeamspeakEventHandler, TeamspeakEventHandler>();
+        private static IServiceCollection AddEventHandlers(this IServiceCollection services) =>
+            services.AddSingleton<ITeamspeakEventHandler, TeamspeakEventHandler>()
+                    .AddSingleton<ITeamspeakAccountEventHandler, TeamspeakAccountEventHandler>()
+                    .AddSingleton<ITeamspeakMessageEventHandler, TeamspeakMessageEventHandler>();
 
         private static IServiceCollection AddServices(this IServiceCollection services) =>
             services.AddSingleton<ITeamspeakService, TeamspeakService>()

@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using MongoDB.Bson;
-using UKSF.Api.Base.Extensions;
 using UKSF.Api.Personnel.Models;
+using UKSF.Api.Shared.Extensions;
 using UKSF.Tests.Common;
 using Xunit;
 
@@ -101,9 +101,9 @@ namespace UKSF.Tests.Unit.Common {
         [Fact]
         public void Should_detect_changes_for_object_list() {
             string id = ObjectId.GenerateNewId().ToString();
-            Account original = new Account { id = id, serviceRecord = new List<ServiceRecordEntry> { new ServiceRecordEntry { occurence = "Event" } } };
+            Account original = new Account { id = id, serviceRecord = new List<ServiceRecordEntry> { new ServiceRecordEntry { Occurence = "Event" } } };
             Account updated = new Account {
-                id = id, serviceRecord = new List<ServiceRecordEntry> { new ServiceRecordEntry { occurence = "Event" }, new ServiceRecordEntry { occurence = "Another Event" } }
+                id = id, serviceRecord = new List<ServiceRecordEntry> { new ServiceRecordEntry { Occurence = "Event" }, new ServiceRecordEntry { Occurence = "Another Event" } }
             };
 
             string subject = original.Changes(updated);

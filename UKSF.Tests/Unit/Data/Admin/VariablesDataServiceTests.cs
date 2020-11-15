@@ -8,7 +8,7 @@ using Moq;
 using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Models;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
+using UKSF.Api.Shared.Events;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Admin {

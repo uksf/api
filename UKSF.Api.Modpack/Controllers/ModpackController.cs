@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UKSF.Api.Base;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services;
+using UKSF.Api.Shared;
 
 namespace UKSF.Api.Modpack.Controllers {
     [Route("[controller]")]

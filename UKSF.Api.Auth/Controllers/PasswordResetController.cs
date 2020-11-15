@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Auth.Services;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Auth.Controllers {
     [Route("[controller]")]

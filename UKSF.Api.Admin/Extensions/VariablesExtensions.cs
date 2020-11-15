@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UKSF.Api.Admin.Models;
-using UKSF.Api.Base.Extensions;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Admin.Extensions {
     public static class VariablesExtensions {

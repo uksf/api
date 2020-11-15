@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
-using UKSF.Api.Base.Extensions;
+using UKSF.Api.Shared.Extensions;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Common {

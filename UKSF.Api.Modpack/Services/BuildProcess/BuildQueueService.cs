@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.Services;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Modpack.Models;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess {
     public interface IBuildQueueService {

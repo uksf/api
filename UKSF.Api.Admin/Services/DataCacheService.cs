@@ -1,19 +1,19 @@
 using System;
-using Microsoft.Extensions.DependencyInjection;
-using UKSF.Api.Base.Context;
+using UKSF.Api.Shared.Context;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Admin.Services {
     public interface IDataCacheService {
-        void InvalidateCachedData();
+        void RefreshCachedData();
     }
 
     public class DataCacheService : IDataCacheService {
-        private readonly IServiceProvider serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
 
-        public DataCacheService(IServiceProvider serviceProvider) => this.serviceProvider = serviceProvider;
+        public DataCacheService(IServiceProvider serviceProvider) => _serviceProvider = serviceProvider;
 
-        public void InvalidateCachedData() {
-            foreach (ICachedDataService cachedDataService in serviceProvider.GetServices<ICachedDataService>()) {
+        public void RefreshCachedData() {
+            foreach (ICachedDataService cachedDataService in _serviceProvider.GetInterfaceServices<ICachedDataService>()) {
                 cachedDataService.Refresh();
             }
         }

@@ -5,10 +5,10 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Models;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services.Data;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Modpack {

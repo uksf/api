@@ -38,6 +38,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Launcher", "UKSF.A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Integration.Instagram", "UKSF.Api.Integration.Instagram\UKSF.Api.Integration.Instagram.csproj", "{B248CB10-298A-4B40-A999-FAAEFDDDD3E4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Shared", "UKSF.Api.Shared\UKSF.Api.Shared.csproj", "{5CADD496-CF3E-4176-9AF3-F6300329827E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -166,6 +168,14 @@ Global
 		{B248CB10-298A-4B40-A999-FAAEFDDDD3E4}.Release|x64.Build.0 = Release|Any CPU
 		{B248CB10-298A-4B40-A999-FAAEFDDDD3E4}.Release|x86.ActiveCfg = Release|Any CPU
 		{B248CB10-298A-4B40-A999-FAAEFDDDD3E4}.Release|x86.Build.0 = Release|Any CPU
+		{5CADD496-CF3E-4176-9AF3-F6300329827E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5CADD496-CF3E-4176-9AF3-F6300329827E}.Debug|x64.Build.0 = Debug|Any CPU
+		{5CADD496-CF3E-4176-9AF3-F6300329827E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5CADD496-CF3E-4176-9AF3-F6300329827E}.Debug|x86.Build.0 = Debug|Any CPU
+		{5CADD496-CF3E-4176-9AF3-F6300329827E}.Release|x64.ActiveCfg = Release|Any CPU
+		{5CADD496-CF3E-4176-9AF3-F6300329827E}.Release|x64.Build.0 = Release|Any CPU
+		{5CADD496-CF3E-4176-9AF3-F6300329827E}.Release|x86.ActiveCfg = Release|Any CPU
+		{5CADD496-CF3E-4176-9AF3-F6300329827E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

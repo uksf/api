@@ -1,7 +1,7 @@
 ﻿using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
+using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Personnel.Services {
     public interface IAccountService : IDataBackedService<IAccountDataService> {

@@ -18,28 +18,23 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
     }
 
     public class BuildStepService : IBuildStepService {
-        private readonly IServiceProvider _serviceProvider;
         private Dictionary<string, Type> _buildStepDictionary = new Dictionary<string, Type>();
-
-        public BuildStepService(IServiceProvider serviceProvider) {
-            _serviceProvider = serviceProvider;
-        }
 
         public void RegisterBuildSteps() {
             _buildStepDictionary = AppDomain.CurrentDomain.GetAssemblies()
-                                           .SelectMany(x => x.GetTypes(), (_, type) => new { type })
-                                           .Select(x => new { x.type, attributes = x.type.GetCustomAttributes(typeof(BuildStepAttribute), true) })
-                                           .Where(x => x.attributes.Length > 0)
-                                           .Select(x => new { Key = x.attributes.Cast<BuildStepAttribute>().First().Name, Value = x.type })
-                                           .ToDictionary(x => x.Key, x => x.Value);
+                                            .SelectMany(x => x.GetTypes(), (_, type) => new { type })
+                                            .Select(x => new { x.type, attributes = x.type.GetCustomAttributes(typeof(BuildStepAttribute), true) })
+                                            .Where(x => x.attributes.Length > 0)
+                                            .Select(x => new { Key = x.attributes.Cast<BuildStepAttribute>().First().Name, Value = x.type })
+                                            .ToDictionary(x => x.Key, x => x.Value);
         }
 
         public List<ModpackBuildStep> GetSteps(GameEnvironment environment) {
             List<ModpackBuildStep> steps = environment switch {
                 GameEnvironment.RELEASE => GetStepsForRelease(),
-                GameEnvironment.RC => GetStepsForRc(),
-                GameEnvironment.DEV => GetStepsForBuild(),
-                _ => throw new ArgumentException("Invalid build environment")
+                GameEnvironment.RC      => GetStepsForRc(),
+                GameEnvironment.DEV     => GetStepsForBuild(),
+                _                       => throw new ArgumentException("Invalid build environment")
             };
             ResolveIndices(steps);
             return steps;

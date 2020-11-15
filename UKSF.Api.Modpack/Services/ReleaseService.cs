@@ -4,10 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services.Data;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Modpack.Services {
     public interface IReleaseService : IDataBackedService<IReleasesDataService> {

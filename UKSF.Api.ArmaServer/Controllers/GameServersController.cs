@@ -16,9 +16,9 @@ using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.ArmaServer.Signalr.Clients;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
-using UKSF.Api.Base;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Extensions;
+using UKSF.Api.Shared;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.ArmaServer.Controllers {
     [Route("[controller]"), Permissions(Permissions.NCO, Permissions.SERVERS, Permissions.COMMAND)]

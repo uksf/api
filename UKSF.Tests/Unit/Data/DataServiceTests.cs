@@ -8,8 +8,8 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Models;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Models;
 using UKSF.Tests.Common;
 using Xunit;
 
@@ -244,7 +244,7 @@ namespace UKSF.Tests.Unit.Data {
 
             mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                               .Returns(Task.CompletedTask)
-                              .Callback((string x, UpdateDefinition<TestDataModel> y) => subject = y);
+                              .Callback((string _, UpdateDefinition<TestDataModel> y) => subject = y);
 
             await testDataService.Update(item1.id, "Name", "2");
 
@@ -260,7 +260,7 @@ namespace UKSF.Tests.Unit.Data {
 
             mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                               .Returns(Task.CompletedTask)
-                              .Callback((string x, UpdateDefinition<TestDataModel> y) => subject = y);
+                              .Callback((string _, UpdateDefinition<TestDataModel> y) => subject = y);
 
             await testDataService.Update(item1.id, "Name", null);
 

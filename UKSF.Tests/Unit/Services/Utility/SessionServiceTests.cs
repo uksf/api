@@ -3,9 +3,9 @@ using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Moq;
-using UKSF.Api.Base;
-using UKSF.Api.Base.Services;
 using UKSF.Api.Personnel.Models;
+using UKSF.Api.Shared;
+using UKSF.Api.Shared.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility {

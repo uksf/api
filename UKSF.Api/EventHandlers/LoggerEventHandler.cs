@@ -1,27 +1,40 @@
 ﻿using System;
 using System.Threading.Tasks;
-using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Models.Logging;
 using UKSF.Api.Personnel.Services;
-using UKSF.Api.Services;
+using UKSF.Api.Shared.Context;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.EventHandlers {
     public interface ILoggerEventHandler : IEventHandler { }
 
     public class LoggerEventHandler : ILoggerEventHandler {
-        private readonly IObjectIdConversionService objectIdConversionService;
-        private readonly ILogDataService data;
-        private readonly ILogger logger;
+        private readonly IAuditLogDataService _auditLogDataService;
+        private readonly IHttpErrorLogDataService _httpErrorLogDataService;
+        private readonly ILauncherLogDataService _launcherLogDataService;
+        private readonly ILogDataService _logDataService;
+        private readonly ILogger _logger;
+        private readonly IObjectIdConversionService _objectIdConversionService;
 
-        public LoggerEventHandler(ILogDataService data, ILogger logger, IObjectIdConversionService objectIdConversionService) {
-            this.data = data;
-            this.logger = logger;
-            this.objectIdConversionService = objectIdConversionService;
+        public LoggerEventHandler(
+            ILogDataService logDataService,
+            IAuditLogDataService auditLogDataService,
+            IHttpErrorLogDataService httpErrorLogDataService,
+            ILauncherLogDataService launcherLogDataService,
+            ILogger logger,
+            IObjectIdConversionService objectIdConversionService
+        ) {
+            _logDataService = logDataService;
+            _auditLogDataService = auditLogDataService;
+            _httpErrorLogDataService = httpErrorLogDataService;
+            _launcherLogDataService = launcherLogDataService;
+            _logger = logger;
+            _objectIdConversionService = objectIdConversionService;
         }
 
         public void Init() {
-            logger.AsObservable().Subscribe(HandleLog, logger.LogError);
+            _logger.AsObservable().Subscribe(HandleLog, _logger.LogError);
         }
 
         private void HandleLog(BasicLog log) {
@@ -30,20 +43,20 @@ namespace UKSF.Api.EventHandlers {
 
         private async Task HandleLogAsync(BasicLog log) {
             if (log is AuditLog auditLog) {
-                auditLog.who = objectIdConversionService.ConvertObjectId(auditLog.who);
+                auditLog.who = _objectIdConversionService.ConvertObjectId(auditLog.who);
                 log = auditLog;
             }
 
-            log.message = objectIdConversionService.ConvertObjectIds(log.message);
+            log.message = _objectIdConversionService.ConvertObjectIds(log.message);
             await LogToStorageAsync(log);
         }
 
         private Task LogToStorageAsync(BasicLog log) {
             return log switch {
-                AuditLog auditLog         => data.Add(auditLog),
-                LauncherLog launcherLog   => data.Add(launcherLog),
-                HttpErrorLog httpErrorLog => data.Add(httpErrorLog),
-                _                         => data.Add(log)
+                AuditLog auditLog         => _auditLogDataService.Add(auditLog),
+                LauncherLog launcherLog   => _launcherLogDataService.Add(launcherLog),
+                HttpErrorLog httpErrorLog => _httpErrorLogDataService.Add(httpErrorLog),
+                _                         => _logDataService.Add(log)
             };
         }
     }

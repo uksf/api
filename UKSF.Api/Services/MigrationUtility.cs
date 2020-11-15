@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
-using UKSF.Api.Base.Events;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Services {
     public class MigrationUtility {

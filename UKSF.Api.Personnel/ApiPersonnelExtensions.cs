@@ -8,6 +8,7 @@ using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.ScheduledActions;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Personnel.Signalr.Hubs;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Personnel {
     public static class ApiPersonnelExtensions {
@@ -30,10 +31,11 @@ namespace UKSF.Api.Personnel {
                     .AddSingleton<IDataEventBus<Notification>, DataEventBus<Notification>>()
                     .AddSingleton<IDataEventBus<Rank>, DataEventBus<Rank>>()
                     .AddSingleton<IDataEventBus<Role>, DataEventBus<Role>>()
-                    .AddSingleton<IDataEventBus<Unit>, DataEventBus<Unit>>();
+                    .AddSingleton<IDataEventBus<Unit>, DataEventBus<Unit>>()
+                    .AddSingleton<IEventBus<Account>, EventBus<Account>>();
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) =>
-            services.AddSingleton<IAccountEventHandler, AccountEventHandler>()
+            services.AddSingleton<IAccountDataEventHandler, AccountDataEventHandler>()
                     .AddSingleton<ICommentThreadEventHandler, CommentThreadEventHandler>()
                     .AddSingleton<INotificationsEventHandler, NotificationsEventHandler>();
 

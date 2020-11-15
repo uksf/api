@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 using GitHubJwt;
 using Microsoft.Extensions.Configuration;
 using Octokit;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Modpack.Models;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Modpack.Services {
     public interface IGithubService {

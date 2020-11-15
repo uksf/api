@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
-using UKSF.Api.Base.Extensions;
 using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
+using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Teamspeak.Models;
 
 namespace UKSF.Api.Teamspeak.Services {

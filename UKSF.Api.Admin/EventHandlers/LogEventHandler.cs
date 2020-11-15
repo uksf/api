@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Admin.Signalr.Clients;
 using UKSF.Api.Admin.Signalr.Hubs;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Extensions;
-using UKSF.Api.Base.Models;
-using UKSF.Api.Base.Models.Logging;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Admin.EventHandlers {
     public interface ILogDataEventHandler : IEventHandler { }

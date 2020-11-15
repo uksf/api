@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Models;
-using UKSF.Api.Base;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Extensions;
+using UKSF.Api.Shared;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Admin.Controllers {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]

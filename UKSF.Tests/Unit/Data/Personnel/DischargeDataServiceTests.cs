@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
-using UKSF.Api.Personnel.Models;
+using UKSF.Api.Shared.Events;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Personnel {

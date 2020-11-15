@@ -7,10 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Models" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj" />
       <ProjectReference Include="..\UKSF.Api.Personnel\UKSF.Api.Personnel.csproj" />
     </ItemGroup>
