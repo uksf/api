@@ -19,10 +19,10 @@ namespace UKSF.Api.ArmaMissions.Services {
     public class MissionPatchingService : IMissionPatchingService {
         private const string EXTRACT_PBO = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\ExtractPboDos.exe";
         private const string MAKE_PBO = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\MakePbo.exe";
+        private readonly ILogger _logger;
 
         private readonly MissionService _missionService;
         private readonly IVariablesService _variablesService;
-        private readonly ILogger _logger;
         private string _filePath;
         private string _folderPath;
         private string _parentFolderPath;
@@ -38,20 +38,20 @@ namespace UKSF.Api.ArmaMissions.Services {
                 async () => {
                     _filePath = path;
                     _parentFolderPath = Path.GetDirectoryName(_filePath);
-                    MissionPatchingResult result = new MissionPatchingResult();
+                    MissionPatchingResult result = new();
                     try {
                         CreateBackup();
                         UnpackPbo();
-                        Mission mission = new Mission(_folderPath);
-                        result.reports = _missionService.ProcessMission(mission, armaServerModsPath, armaServerDefaultMaxCurators);
+                        Mission mission = new(_folderPath);
+                        result.Reports = _missionService.ProcessMission(mission, armaServerModsPath, armaServerDefaultMaxCurators);
 
                         await PackPbo();
-                        result.playerCount = mission.playerCount;
-                        result.success = result.reports.All(x => !x.error);
+                        result.PlayerCount = mission.PlayerCount;
+                        result.Success = result.Reports.All(x => !x.Error);
                     } catch (Exception exception) {
                         _logger.LogError(exception);
-                        result.reports = new List<MissionPatchingReport> { new MissionPatchingReport(exception) };
-                        result.success = false;
+                        result.Reports = new List<MissionPatchingReport> { new(exception) };
+                        result.Success = false;
                     } finally {
                         Cleanup();
                     }
@@ -81,7 +81,7 @@ namespace UKSF.Api.ArmaMissions.Services {
                 Directory.Delete(_folderPath, true);
             }
 
-            Process process = new Process { StartInfo = { FileName = EXTRACT_PBO, Arguments = $"-D -P \"{_filePath}\"", UseShellExecute = false, CreateNoWindow = true } };
+            Process process = new() { StartInfo = { FileName = EXTRACT_PBO, Arguments = $"-D -P \"{_filePath}\"", UseShellExecute = false, CreateNoWindow = true } };
             process.Start();
             process.WaitForExit();
 
@@ -95,7 +95,7 @@ namespace UKSF.Api.ArmaMissions.Services {
                 _filePath += ".pbo";
             }
 
-            Process process = new Process {
+            Process process = new() {
                 StartInfo = {
                     FileName = MAKE_PBO,
                     WorkingDirectory = _variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),

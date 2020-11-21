@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
@@ -13,7 +14,7 @@ using UKSF.Api.Teamspeak.Services;
 namespace UKSF.Api.Teamspeak.Controllers {
     [Route("[controller]")]
     public class TeamspeakController : Controller {
-        private readonly IAccountService _accountService;
+        private readonly IAccountContext _accountContext;
         private readonly IDisplayNameService _displayNameService;
         private readonly IRanksService _ranksService;
         private readonly IRecruitmentService _recruitmentService;
@@ -21,15 +22,15 @@ namespace UKSF.Api.Teamspeak.Controllers {
         private readonly IUnitsService _unitsService;
 
         public TeamspeakController(
+            IAccountContext accountContext,
             ITeamspeakService teamspeakService,
-            IAccountService accountService,
             IRanksService ranksService,
             IUnitsService unitsService,
             IRecruitmentService recruitmentService,
             IDisplayNameService displayNameService
         ) {
+            _accountContext = accountContext;
             _teamspeakService = teamspeakService;
-            _accountService = accountService;
             _ranksService = ranksService;
             _unitsService = unitsService;
             _recruitmentService = recruitmentService;
@@ -50,26 +51,26 @@ namespace UKSF.Api.Teamspeak.Controllers {
         [HttpGet("onlineAccounts")]
         public IActionResult GetOnlineAccounts() {
             IEnumerable<TeamspeakClient> teamnspeakClients = _teamspeakService.GetOnlineTeamspeakClients();
-            IEnumerable<Account> allAccounts = _accountService.Data.Get();
+            IEnumerable<Account> allAccounts = _accountContext.Get();
             var clients = teamnspeakClients.Where(x => x != null)
                                            .Select(
                                                x => new {
-                                                   account = allAccounts.FirstOrDefault(y => y.teamspeakIdentities != null && y.teamspeakIdentities.Any(z => z.Equals(x.clientDbId))), client = x
+                                                   account = allAccounts.FirstOrDefault(y => y.TeamspeakIdentities != null && y.TeamspeakIdentities.Any(z => z.Equals(x.ClientDbId))), client = x
                                                }
                                            )
                                            .ToList();
-            var clientAccounts = clients.Where(x => x.account != null && x.account.membershipState == MembershipState.MEMBER)
-                                        .OrderBy(x => x.account.rank, new RankComparer(_ranksService))
-                                        .ThenBy(x => x.account.lastname)
-                                        .ThenBy(x => x.account.firstname);
-            List<string> commandAccounts = _unitsService.GetAuxilliaryRoot().members;
+            var clientAccounts = clients.Where(x => x.account != null && x.account.MembershipState == MembershipState.MEMBER)
+                                        .OrderBy(x => x.account.Rank, new RankComparer(_ranksService))
+                                        .ThenBy(x => x.account.Lastname)
+                                        .ThenBy(x => x.account.Firstname);
+            List<string> commandAccounts = _unitsService.GetAuxilliaryRoot().Members;
 
-            List<object> commanders = new List<object>();
-            List<object> recruiters = new List<object>();
-            List<object> members = new List<object>();
-            List<object> guests = new List<object>();
+            List<object> commanders = new();
+            List<object> recruiters = new();
+            List<object> members = new();
+            List<object> guests = new();
             foreach (var onlineClient in clientAccounts) {
-                if (commandAccounts.Contains(onlineClient.account.id)) {
+                if (commandAccounts.Contains(onlineClient.account.Id)) {
                     commanders.Add(new { displayName = _displayNameService.GetDisplayName(onlineClient.account) });
                 } else if (_recruitmentService.IsRecruiter(onlineClient.account)) {
                     recruiters.Add(new { displayName = _displayNameService.GetDisplayName(onlineClient.account) });
@@ -78,8 +79,8 @@ namespace UKSF.Api.Teamspeak.Controllers {
                 }
             }
 
-            foreach (var client in clients.Where(x => x.account == null || x.account.membershipState != MembershipState.MEMBER)) {
-                guests.Add(new { displayName = client.client.clientName });
+            foreach (var client in clients.Where(x => x.account == null || x.account.MembershipState != MembershipState.MEMBER)) {
+                guests.Add(new { displayName = client.client.ClientName });
             }
 
             return Ok(new { commanders, recruiters, members, guests });

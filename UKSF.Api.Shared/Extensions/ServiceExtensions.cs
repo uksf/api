@@ -10,7 +10,7 @@ namespace UKSF.Api.Shared.Extensions {
     public static class ServiceExtensions {
         public static IEnumerable<T> GetInterfaceServices<T>(this IServiceProvider provider) {
             if (provider is ServiceProvider serviceProvider) {
-                List<ServiceDescriptor> services = new List<ServiceDescriptor>();
+                List<ServiceDescriptor> services = new();
 
                 object engine = serviceProvider.GetFieldValue("_engine");
                 object callSiteFactory = engine.GetPropertyValue("CallSiteFactory");

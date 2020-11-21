@@ -8,9 +8,9 @@ namespace UKSF.Api.Shared.Models {
     }
 
     // ReSharper disable once UnusedTypeParameter
-    public class DataEventModel<T> where T : DatabaseObject {
-        public object data;
-        public string id;
-        public DataEventType type;
+    public class DataEventModel<T> where T : MongoObject {
+        public object Data;
+        public string Id;
+        public DataEventType Type;
     }
 }

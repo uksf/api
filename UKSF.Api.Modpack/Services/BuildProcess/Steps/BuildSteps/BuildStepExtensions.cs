@@ -14,8 +14,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
         protected override async Task ProcessExecute() {
             string uksfPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf", "intercept");
             string interceptPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@intercept");
-            DirectoryInfo uksf = new DirectoryInfo(uksfPath);
-            DirectoryInfo intercept = new DirectoryInfo(interceptPath);
+            DirectoryInfo uksf = new(uksfPath);
+            DirectoryInfo intercept = new(interceptPath);
 
             StepLogger.LogSurround("\nSigning extensions...");
             List<FileInfo> files = GetDirectoryContents(uksf, "*.dll").Concat(GetDirectoryContents(intercept, "*.dll")).ToList();
@@ -32,7 +32,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
                 files,
                 2,
                 file => {
-                    BuildProcessHelper processHelper = new BuildProcessHelper(StepLogger, CancellationTokenSource, true, false, true);
+                    BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource, true, false, true);
                     processHelper.Run(file.DirectoryName, signTool, $"sign /f \"{certPath}\" \"{file.FullName}\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
                     Interlocked.Increment(ref signed);
                     return Task.CompletedTask;

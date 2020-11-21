@@ -7,10 +7,10 @@ using Newtonsoft.Json.Linq;
 
 namespace UKSF.Api.Shared.Extensions {
     public static class ChangeUtilities {
-        public static string Changes<T>(this T original, T updated) => DeepEquals(original, updated) ? "No changes" : FormatChanges(GetChanges(original, updated));
+        public static string Changes<T>(this T original, T updated) => DeepEquals(original, updated) ? "\tNo changes" : FormatChanges(GetChanges(original, updated));
 
         private static List<Change> GetChanges<T>(this T original, T updated) {
-            List<Change> changes = new List<Change>();
+            List<Change> changes = new();
             Type type = original.GetType();
             foreach (FieldInfo fieldInfo in type.GetFields()) {
                 string name = fieldInfo.Name;
@@ -58,7 +58,7 @@ namespace UKSF.Api.Shared.Extensions {
         }
 
         private static string FormatChanges(IReadOnlyCollection<Change> changes, string indentation = "") {
-            if (!changes.Any()) return "No changes";
+            if (!changes.Any()) return "\tNo changes";
 
             return changes.OrderBy(x => x.Type)
                           .ThenBy(x => x.Name)
@@ -92,7 +92,7 @@ namespace UKSF.Api.Shared.Extensions {
     }
 
     public class Change {
-        public List<Change> InnerChanges = new List<Change>();
+        public List<Change> InnerChanges = new();
         public string Name;
         public string Original;
         public ChangeType Type;

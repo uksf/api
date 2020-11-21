@@ -8,14 +8,14 @@ using UKSF.Api.Shared.Extensions;
 namespace UKSF.Api.Admin.Extensions {
     public static class VariablesExtensions {
         public static VariableItem AssertHasItem(this VariableItem variableItem) {
-            if (variableItem.item == null) {
-                throw new Exception($"Variable {variableItem.key} has no item");
+            if (variableItem.Item == null) {
+                throw new Exception($"Variable {variableItem.Key} has no item");
             }
 
             return variableItem;
         }
 
-        public static string AsString(this VariableItem variable) => variable.AssertHasItem().item.ToString();
+        public static string AsString(this VariableItem variable) => variable.AssertHasItem().Item.ToString();
 
         public static double AsDouble(this VariableItem variable) {
             string item = variable.AsString();

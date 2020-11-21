@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Services;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
@@ -14,16 +15,18 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Command.Controllers {
     [Route("CommandRequests/Create")]
     public class CommandRequestsCreationController : Controller {
-        private readonly IAccountService _accountService;
+        private readonly IAccountContext _accountContext;
         private readonly ICommandRequestService _commandRequestService;
         private readonly IDisplayNameService _displayNameService;
         private readonly IHttpContextService _httpContextService;
         private readonly ILoaService _loaService;
         private readonly IRanksService _ranksService;
+        private readonly IUnitsContext _unitsContext;
         private readonly IUnitsService _unitsService;
 
         public CommandRequestsCreationController(
-            IAccountService accountService,
+            IAccountContext accountContext,
+            IUnitsContext unitsContext,
             ICommandRequestService commandRequestService,
             IRanksService ranksService,
             ILoaService loaService,
@@ -31,7 +34,8 @@ namespace UKSF.Api.Command.Controllers {
             IDisplayNameService displayNameService,
             IHttpContextService httpContextService
         ) {
-            _accountService = accountService;
+            _accountContext = accountContext;
+            _unitsContext = unitsContext;
             _commandRequestService = commandRequestService;
             _ranksService = ranksService;
             _loaService = loaService;
@@ -44,7 +48,7 @@ namespace UKSF.Api.Command.Controllers {
         public async Task<IActionResult> CreateRequestRank([FromBody] CommandRequest request) {
             request.Requester = _httpContextService.GetUserId();
             request.DisplayValue = request.Value;
-            request.DisplayFrom = _accountService.Data.GetSingle(request.Recipient).rank;
+            request.DisplayFrom = _accountContext.GetSingle(request.Recipient).Rank;
             if (request.DisplayValue == request.DisplayFrom) return BadRequest("Ranks are equal");
             bool direction = _ranksService.IsSuperior(request.DisplayValue, request.DisplayFrom);
             request.Type = string.IsNullOrEmpty(request.DisplayFrom) ? CommandRequestType.PROMOTION : direction ? CommandRequestType.PROMOTION : CommandRequestType.DEMOTION;
@@ -94,7 +98,7 @@ namespace UKSF.Api.Command.Controllers {
         public async Task<IActionResult> CreateRequestIndividualRole([FromBody] CommandRequest request) {
             request.Requester = _httpContextService.GetUserId();
             request.DisplayValue = request.Value;
-            request.DisplayFrom = _accountService.Data.GetSingle(request.Recipient).roleAssignment;
+            request.DisplayFrom = _accountContext.GetSingle(request.Recipient).RoleAssignment;
             request.Type = CommandRequestType.INDIVIDUAL_ROLE;
             if (_commandRequestService.DoesEquivalentRequestExist(request)) return BadRequest("An equivalent request already exists");
             await _commandRequestService.Add(request, ChainOfCommandMode.NEXT_COMMANDER);
@@ -103,21 +107,21 @@ namespace UKSF.Api.Command.Controllers {
 
         [HttpPut("unitrole"), Authorize, Permissions(Permissions.COMMAND)]
         public async Task<IActionResult> CreateRequestUnitRole([FromBody] CommandRequest request) {
-            Unit unit = _unitsService.Data.GetSingle(request.Value);
+            Unit unit = _unitsContext.GetSingle(request.Value);
             bool recipientHasUnitRole = _unitsService.RolesHasMember(unit, request.Recipient);
             if (!recipientHasUnitRole && request.SecondaryValue == "None") {
                 return BadRequest(
-                    $"{_displayNameService.GetDisplayName(request.Recipient)} has no unit role in {unit.name}. If you are trying to remove them from the unit, use a Unit Removal request"
+                    $"{_displayNameService.GetDisplayName(request.Recipient)} has no unit role in {unit.Name}. If you are trying to remove them from the unit, use a Unit Removal request"
                 );
             }
 
             request.Requester = _httpContextService.GetUserId();
-            request.DisplayValue = request.SecondaryValue == "None" ? $"Remove role from {unit.name}" : $"{request.SecondaryValue} of {unit.name}";
+            request.DisplayValue = request.SecondaryValue == "None" ? $"Remove role from {unit.Name}" : $"{request.SecondaryValue} of {unit.Name}";
             if (recipientHasUnitRole) {
-                string role = unit.roles.FirstOrDefault(x => x.Value == request.Recipient).Key;
-                request.DisplayFrom = $"{role} of {unit.name}";
+                string role = unit.Roles.FirstOrDefault(x => x.Value == request.Recipient).Key;
+                request.DisplayFrom = $"{role} of {unit.Name}";
             } else {
-                request.DisplayFrom = $"Member of {unit.name}";
+                request.DisplayFrom = $"Member of {unit.Name}";
             }
 
             request.Type = CommandRequestType.UNIT_ROLE;
@@ -128,14 +132,14 @@ namespace UKSF.Api.Command.Controllers {
 
         [HttpPut("unitremoval"), Authorize, Permissions(Permissions.COMMAND)]
         public async Task<IActionResult> CreateRequestUnitRemoval([FromBody] CommandRequest request) {
-            Unit removeUnit = _unitsService.Data.GetSingle(request.Value);
-            if (removeUnit.branch == UnitBranch.COMBAT) {
+            Unit removeUnit = _unitsContext.GetSingle(request.Value);
+            if (removeUnit.Branch == UnitBranch.COMBAT) {
                 return BadRequest("To remove from a combat unit, use a Transfer request");
             }
 
             request.Requester = _httpContextService.GetUserId();
             request.DisplayValue = "N/A";
-            request.DisplayFrom = removeUnit.name;
+            request.DisplayFrom = removeUnit.Name;
             request.Type = CommandRequestType.UNIT_REMOVAL;
             if (_commandRequestService.DoesEquivalentRequestExist(request)) return BadRequest("An equivalent request already exists");
             await _commandRequestService.Add(request, ChainOfCommandMode.TARGET_COMMANDER);
@@ -144,16 +148,16 @@ namespace UKSF.Api.Command.Controllers {
 
         [HttpPut("transfer"), Authorize, Permissions(Permissions.COMMAND)]
         public async Task<IActionResult> CreateRequestTransfer([FromBody] CommandRequest request) {
-            Unit toUnit = _unitsService.Data.GetSingle(request.Value);
+            Unit toUnit = _unitsContext.GetSingle(request.Value);
             request.Requester = _httpContextService.GetUserId();
-            request.DisplayValue = toUnit.name;
-            if (toUnit.branch == UnitBranch.AUXILIARY) {
+            request.DisplayValue = toUnit.Name;
+            if (toUnit.Branch == UnitBranch.AUXILIARY) {
                 request.DisplayFrom = "N/A";
                 request.Type = CommandRequestType.AUXILIARY_TRANSFER;
                 if (_commandRequestService.DoesEquivalentRequestExist(request)) return BadRequest("An equivalent request already exists");
                 await _commandRequestService.Add(request, ChainOfCommandMode.TARGET_COMMANDER);
             } else {
-                request.DisplayFrom = _accountService.Data.GetSingle(request.Recipient).unitAssignment;
+                request.DisplayFrom = _accountContext.GetSingle(request.Recipient).UnitAssignment;
                 request.Type = CommandRequestType.TRANSFER;
                 if (_commandRequestService.DoesEquivalentRequestExist(request)) return BadRequest("An equivalent request already exists");
                 await _commandRequestService.Add(request, ChainOfCommandMode.COMMANDER_AND_TARGET_COMMANDER);

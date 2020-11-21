@@ -7,86 +7,81 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Personnel {
     public class DisplayNameServiceTests {
-        private readonly Mock<IRanksDataService> mockRanksDataService;
-        private readonly Mock<IAccountDataService> mockAccountDataService;
-        private readonly DisplayNameService displayNameService;
+        private readonly DisplayNameService _displayNameService;
+        private readonly Mock<IAccountContext> _mockAccountContext;
+        private readonly Mock<IRanksContext> _mockRanksContext;
 
         public DisplayNameServiceTests() {
-            mockRanksDataService = new Mock<IRanksDataService>();
-            mockAccountDataService = new Mock<IAccountDataService>();
-            Mock<IRanksService> mockRanksService = new Mock<IRanksService>();
-            Mock<IAccountService> mockAccountService = new Mock<IAccountService>();
+            _mockRanksContext = new Mock<IRanksContext>();
+            _mockAccountContext = new Mock<IAccountContext>();
 
-            mockRanksService.Setup(x => x.Data).Returns(mockRanksDataService.Object);
-            mockAccountService.Setup(x => x.Data).Returns(mockAccountDataService.Object);
-
-            displayNameService = new DisplayNameService(mockRanksService.Object, mockAccountService.Object);
+            _displayNameService = new DisplayNameService(_mockAccountContext.Object, _mockRanksContext.Object);
         }
 
         [Fact]
-        public void ShouldGetDisplayNameById() {
-            Account account = new Account {lastname = "Beswick", firstname = "Tim"};
+        public void ShouldGetDisplayNameByAccount() {
+            Account account = new() { Lastname = "Beswick", Firstname = "Tim" };
 
-            mockAccountDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(account);
-
-            string subject = displayNameService.GetDisplayName(account.id);
+            string subject = _displayNameService.GetDisplayName(account);
 
             subject.Should().Be("Beswick.T");
         }
 
         [Fact]
-        public void ShouldGetNoDisplayNameWhenAccountNotFound() {
-            mockAccountDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<Account>(null);
+        public void ShouldGetDisplayNameById() {
+            Account account = new() { Lastname = "Beswick", Firstname = "Tim" };
 
-            string subject = displayNameService.GetDisplayName("5e39336e1b92ee2d14b7fe08");
+            _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(account);
 
-            subject.Should().Be("5e39336e1b92ee2d14b7fe08");
+            string subject = _displayNameService.GetDisplayName(account.Id);
+
+            subject.Should().Be("Beswick.T");
         }
 
         [Fact]
-        public void ShouldGetDisplayNameByAccount() {
-            Account account = new Account {lastname = "Beswick", firstname = "Tim"};
+        public void ShouldGetDisplayNameWithoutRank() {
+            Account account = new() { Lastname = "Beswick", Firstname = "Tim" };
 
-            string subject = displayNameService.GetDisplayName(account);
+            string subject = _displayNameService.GetDisplayNameWithoutRank(account);
 
             subject.Should().Be("Beswick.T");
         }
 
         [Fact]
         public void ShouldGetDisplayNameWithRank() {
-            Account account = new Account {lastname = "Beswick", firstname = "Tim", rank = "Squadron Leader"};
-            Rank rank = new Rank {abbreviation = "SqnLdr"};
+            Account account = new() { Lastname = "Beswick", Firstname = "Tim", Rank = "Squadron Leader" };
+            Rank rank = new() { Abbreviation = "SqnLdr" };
 
-            mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(rank);
+            _mockRanksContext.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(rank);
 
-            string subject = displayNameService.GetDisplayName(account);
+            string subject = _displayNameService.GetDisplayName(account);
 
             subject.Should().Be("SqnLdr.Beswick.T");
         }
 
         [Fact]
-        public void ShouldGetDisplayNameWithoutRank() {
-            Account account = new Account {lastname = "Beswick", firstname = "Tim"};
-
-            string subject = displayNameService.GetDisplayNameWithoutRank(account);
-
-            subject.Should().Be("Beswick.T");
-        }
-
-        [Fact]
         public void ShouldGetGuestWhenAccountHasNoName() {
-            Account account = new Account();
+            Account account = new();
 
-            string subject = displayNameService.GetDisplayNameWithoutRank(account);
+            string subject = _displayNameService.GetDisplayNameWithoutRank(account);
 
             subject.Should().Be("Guest");
         }
 
         [Fact]
         public void ShouldGetGuestWhenAccountIsNull() {
-            string subject = displayNameService.GetDisplayNameWithoutRank(null);
+            string subject = _displayNameService.GetDisplayNameWithoutRank(null);
 
             subject.Should().Be("Guest");
+        }
+
+        [Fact]
+        public void ShouldGetNoDisplayNameWhenAccountNotFound() {
+            _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<Account>(null);
+
+            string subject = _displayNameService.GetDisplayName("5e39336e1b92ee2d14b7fe08");
+
+            subject.Should().Be("5e39336e1b92ee2d14b7fe08");
         }
     }
 }

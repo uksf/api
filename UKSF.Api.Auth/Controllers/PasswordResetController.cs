@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Auth.Services;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared.Events;
@@ -11,22 +12,22 @@ using UKSF.Api.Shared.Events;
 namespace UKSF.Api.Auth.Controllers {
     [Route("[controller]")]
     public class PasswordResetController : ConfirmationCodeReceiver {
-        private readonly IEmailService emailService;
-        private readonly ILogger logger;
+        private readonly IEmailService _emailService;
+        private readonly ILogger _logger;
 
-        public PasswordResetController(IConfirmationCodeService confirmationCodeService, ILoginService loginService, IEmailService emailService, IAccountService accountService, ILogger logger) : base(
+        public PasswordResetController(IConfirmationCodeService confirmationCodeService, ILoginService loginService, IEmailService emailService, IAccountContext accountContext, ILogger logger) : base(
             confirmationCodeService,
             loginService,
-            accountService
+            accountContext
         ) {
-            this.emailService = emailService;
-            this.logger = logger;
+            _emailService = emailService;
+            _logger = logger;
         }
 
         protected override async Task<IActionResult> ApplyValidatedPayload(string codePayload, Account account) {
-            await AccountService.Data.Update(account.id, "password", BCrypt.Net.BCrypt.HashPassword(codePayload));
-            logger.LogAudit($"Password changed for {account.id}", account.id);
-            return Ok(LoginService.RegenerateBearerToken(account.id));
+            await AccountContext.Update(account.Id, "password", BCrypt.Net.BCrypt.HashPassword(codePayload));
+            _logger.LogAudit($"Password changed for {account.Id}", account.Id);
+            return Ok(LoginService.RegenerateBearerToken(account.Id));
         }
 
         [HttpPost]
@@ -34,17 +35,17 @@ namespace UKSF.Api.Auth.Controllers {
 
         [HttpPut]
         public async Task<IActionResult> ResetPassword([FromBody] JObject body) {
-            Account account = AccountService.Data.GetSingle(x => string.Equals(x.email, body["email"]?.ToString(), StringComparison.InvariantCultureIgnoreCase));
+            Account account = AccountContext.GetSingle(x => string.Equals(x.Email, body["email"]?.ToString(), StringComparison.InvariantCultureIgnoreCase));
             if (account == null) {
                 return BadRequest();
             }
 
-            string code = await ConfirmationCodeService.CreateConfirmationCode(account.id);
+            string code = await ConfirmationCodeService.CreateConfirmationCode(account.Id);
             string url = $"https://uk-sf.co.uk/login?validatecode={code}&validatetype={WebUtility.UrlEncode("password reset")}&validateurl={WebUtility.UrlEncode("passwordreset")}";
             string html = $"<h1>UKSF Password Reset</h1><br/>Please reset your password by clicking <strong><a href='{url}'>here</a></strong>." +
                           "<br/><br/><p>If this request was not made by you seek assistance from UKSF staff.</p>";
-            emailService.SendEmail(account.email, "UKSF Password Reset", html);
-            logger.LogAudit($"Password reset request made for {account.id}", account.id);
+            _emailService.SendEmail(account.Email, "UKSF Password Reset", html);
+            _logger.LogAudit($"Password reset request made for {account.Id}", account.Id);
             return Ok(LoginToken);
         }
     }

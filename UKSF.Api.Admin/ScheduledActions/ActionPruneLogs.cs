@@ -11,25 +11,28 @@ namespace UKSF.Api.Admin.ScheduledActions {
     public class ActionPruneLogs : IActionPruneLogs {
         private const string ACTION_NAME = nameof(ActionPruneLogs);
 
-        private readonly IAuditLogDataService _auditLogDataService;
+        private readonly IAuditLogContext _auditLogContext;
         private readonly IClock _clock;
         private readonly IHostEnvironment _currentEnvironment;
-        private readonly IHttpErrorLogDataService _httpErrorLogDataService;
-        private readonly ILogDataService _logDataService;
+        private readonly IHttpErrorLogContext _httpErrorLogContext;
+        private readonly ILogContext _logContext;
+        private readonly ISchedulerContext _schedulerContext;
         private readonly ISchedulerService _schedulerService;
 
         public ActionPruneLogs(
-            ILogDataService logDataService,
-            IAuditLogDataService auditLogDataService,
-            IHttpErrorLogDataService httpErrorLogDataService,
+            ILogContext logContext,
+            IAuditLogContext auditLogContext,
+            IHttpErrorLogContext httpErrorLogContext,
             ISchedulerService schedulerService,
+            ISchedulerContext schedulerContext,
             IHostEnvironment currentEnvironment,
             IClock clock
         ) {
-            _logDataService = logDataService;
-            _auditLogDataService = auditLogDataService;
-            _httpErrorLogDataService = httpErrorLogDataService;
+            _logContext = logContext;
+            _auditLogContext = auditLogContext;
+            _httpErrorLogContext = httpErrorLogContext;
             _schedulerService = schedulerService;
+            _schedulerContext = schedulerContext;
             _currentEnvironment = currentEnvironment;
             _clock = clock;
         }
@@ -38,9 +41,9 @@ namespace UKSF.Api.Admin.ScheduledActions {
 
         public void Run(params object[] parameters) {
             DateTime now = _clock.UtcNow();
-            Task logsTask = _logDataService.DeleteMany(x => x.timestamp < now.AddDays(-7));
-            Task auditLogsTask = _auditLogDataService.DeleteMany(x => x.timestamp < now.AddMonths(-3));
-            Task errorLogsTask = _httpErrorLogDataService.DeleteMany(x => x.timestamp < now.AddDays(-7));
+            Task logsTask = _logContext.DeleteMany(x => x.Timestamp < now.AddDays(-7));
+            Task auditLogsTask = _auditLogContext.DeleteMany(x => x.Timestamp < now.AddMonths(-3));
+            Task errorLogsTask = _httpErrorLogContext.DeleteMany(x => x.Timestamp < now.AddDays(-7));
 
             Task.WaitAll(logsTask, errorLogsTask, auditLogsTask);
         }
@@ -48,7 +51,7 @@ namespace UKSF.Api.Admin.ScheduledActions {
         public async Task CreateSelf() {
             if (_currentEnvironment.IsDevelopment()) return;
 
-            if (_schedulerService.Data.GetSingle(x => x.action == ACTION_NAME) == null) {
+            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null) {
                 await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(1), TimeSpan.FromDays(1), ACTION_NAME);
             }
         }

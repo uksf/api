@@ -3,40 +3,40 @@ using System.Collections.Generic;
 using UKSF.Api.Base.Models;
 
 namespace UKSF.Api.Personnel.Models {
-    public class Account : DatabaseObject {
-        public Application application;
-        public string armaExperience;
-        public string background;
-        public string discordId;
-        public DateTime dob;
-        public string email;
-        public string firstname;
-        public string lastname;
-        public MembershipState membershipState = MembershipState.UNCONFIRMED;
-        public bool militaryExperience;
-        public string nation;
-        public string password;
-        public string rank;
-        public string reference;
-        public string roleAssignment;
-        public List<string> rolePreferences = new List<string>();
-        public List<ServiceRecordEntry> serviceRecord = new List<ServiceRecordEntry>();
-        public AccountSettings settings = new AccountSettings();
-        public string steamname;
-        public HashSet<double> teamspeakIdentities;
-        public string unitAssignment;
-        public string unitsExperience;
+    public record Account : MongoObject {
+        public Application Application;
+        public string ArmaExperience;
+        public string Background;
+        public string DiscordId;
+        public DateTime Dob;
+        public string Email;
+        public string Firstname;
+        public string Lastname;
+        public MembershipState MembershipState = MembershipState.UNCONFIRMED;
+        public bool MilitaryExperience;
+        public string Nation;
+        public string Password;
+        public string Rank;
+        public string Reference;
+        public string RoleAssignment;
+        public List<string> RolePreferences = new();
+        public List<ServiceRecordEntry> ServiceRecord = new();
+        public AccountSettings Settings = new();
+        public string Steamname;
+        public HashSet<double> TeamspeakIdentities;
+        public string UnitAssignment;
+        public string UnitsExperience;
     }
 
-    public class RosterAccount : DatabaseObject {
-        public string name;
-        public string rank;
-        public string roleAssignment;
-        public string unitAssignment;
-        public string nation;
+    public record RosterAccount : MongoObject {
+        public string Name;
+        public string Nation;
+        public string Rank;
+        public string RoleAssignment;
+        public string UnitAssignment;
     }
 
-    public class PublicAccount : Account {
-        public string displayName;
+    public record PublicAccount : Account {
+        public string DisplayName;
     }
 }

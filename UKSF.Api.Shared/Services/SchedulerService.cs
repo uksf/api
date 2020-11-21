@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Models;
 using UKSF.Api.Base.ScheduledActions;
 using UKSF.Api.Shared.Context;
@@ -12,25 +11,27 @@ using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Shared.Services {
-    public interface ISchedulerService : IDataBackedService<ISchedulerDataService> {
+    public interface ISchedulerService {
         void Load();
         Task CreateAndScheduleJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters);
         Task<ScheduledJob> CreateScheduledJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters);
         Task Cancel(Func<ScheduledJob, bool> predicate);
     }
 
-    public class SchedulerService : DataBackedService<ISchedulerDataService>, ISchedulerService {
-        private static readonly ConcurrentDictionary<string, CancellationTokenSource> ACTIVE_TASKS = new ConcurrentDictionary<string, CancellationTokenSource>();
+    public class SchedulerService : ISchedulerService {
+        private static readonly ConcurrentDictionary<string, CancellationTokenSource> ACTIVE_TASKS = new();
+        private readonly ISchedulerContext _context;
         private readonly ILogger _logger;
         private readonly IScheduledActionFactory _scheduledActionFactory;
 
-        public SchedulerService(ISchedulerDataService data, IScheduledActionFactory scheduledActionFactory, ILogger logger) : base(data) {
+        public SchedulerService(ISchedulerContext context, IScheduledActionFactory scheduledActionFactory, ILogger logger) {
+            _context = context;
             _scheduledActionFactory = scheduledActionFactory;
             _logger = logger;
         }
 
         public void Load() {
-            Data.Get().ToList().ForEach(Schedule);
+            _context.Get().ToList().ForEach(Schedule);
         }
 
         public async Task CreateAndScheduleJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters) {
@@ -39,45 +40,45 @@ namespace UKSF.Api.Shared.Services {
         }
 
         public async Task Cancel(Func<ScheduledJob, bool> predicate) {
-            ScheduledJob job = Data.GetSingle(predicate);
+            ScheduledJob job = _context.GetSingle(predicate);
             if (job == null) return;
-            if (ACTIVE_TASKS.TryGetValue(job.id, out CancellationTokenSource token)) {
+            if (ACTIVE_TASKS.TryGetValue(job.Id, out CancellationTokenSource token)) {
                 token.Cancel();
-                ACTIVE_TASKS.TryRemove(job.id, out CancellationTokenSource _);
+                ACTIVE_TASKS.TryRemove(job.Id, out CancellationTokenSource _);
             }
 
-            await Data.Delete(job);
+            await _context.Delete(job);
         }
 
         public async Task<ScheduledJob> CreateScheduledJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters) {
-            ScheduledJob job = new ScheduledJob { next = next, action = action };
+            ScheduledJob job = new() { Next = next, Action = action };
             if (actionParameters.Length > 0) {
-                job.actionParameters = JsonConvert.SerializeObject(actionParameters);
+                job.ActionParameters = JsonConvert.SerializeObject(actionParameters);
             }
 
             if (interval != TimeSpan.Zero) {
-                job.interval = interval;
-                job.repeat = true;
+                job.Interval = interval;
+                job.Repeat = true;
             }
 
-            await Data.Add(job);
+            await _context.Add(job);
             return job;
         }
 
         private void Schedule(ScheduledJob job) {
-            CancellationTokenSource token = new CancellationTokenSource();
+            CancellationTokenSource token = new();
             Task unused = Task.Run(
                 async () => {
                     DateTime now = DateTime.Now;
-                    if (now < job.next) {
-                        TimeSpan delay = job.next - now;
+                    if (now < job.Next) {
+                        TimeSpan delay = job.Next - now;
                         await Task.Delay(delay, token.Token);
                         if (IsCancelled(job, token)) return;
                     } else {
-                        if (job.repeat) {
-                            DateTime nowLessInterval = now - job.interval;
-                            while (job.next < nowLessInterval) {
-                                job.next += job.interval;
+                        if (job.Repeat) {
+                            DateTime nowLessInterval = now - job.Interval;
+                            while (job.Next < nowLessInterval) {
+                                job.Next += job.Interval;
                             }
                         }
                     }
@@ -88,32 +89,32 @@ namespace UKSF.Api.Shared.Services {
                         _logger.LogError(exception);
                     }
 
-                    if (job.repeat) {
-                        job.next += job.interval;
+                    if (job.Repeat) {
+                        job.Next += job.Interval;
                         await SetNext(job);
                         Schedule(job);
                     } else {
-                        await Data.Delete(job);
-                        ACTIVE_TASKS.TryRemove(job.id, out CancellationTokenSource _);
+                        await _context.Delete(job);
+                        ACTIVE_TASKS.TryRemove(job.Id, out CancellationTokenSource _);
                     }
                 },
                 token.Token
             );
-            ACTIVE_TASKS[job.id] = token;
+            ACTIVE_TASKS[job.Id] = token;
         }
 
         private async Task SetNext(ScheduledJob job) {
-            await Data.Update(job.id, "next", job.next);
+            await _context.Update(job.Id, "next", job.Next);
         }
 
-        private bool IsCancelled(DatabaseObject job, CancellationTokenSource token) {
+        private bool IsCancelled(MongoObject job, CancellationTokenSource token) {
             if (token.IsCancellationRequested) return true;
-            return Data.GetSingle(job.id) == null;
+            return _context.GetSingle(job.Id) == null;
         }
 
         private void ExecuteAction(ScheduledJob job) {
-            IScheduledAction action = _scheduledActionFactory.GetScheduledAction(job.action);
-            object[] parameters = job.actionParameters == null ? null : JsonConvert.DeserializeObject<object[]>(job.actionParameters);
+            IScheduledAction action = _scheduledActionFactory.GetScheduledAction(job.Action);
+            object[] parameters = job.ActionParameters == null ? null : JsonConvert.DeserializeObject<object[]>(job.ActionParameters);
             action.Run(parameters);
         }
     }

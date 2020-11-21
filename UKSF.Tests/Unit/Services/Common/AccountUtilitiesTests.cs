@@ -12,38 +12,38 @@ namespace UKSF.Tests.Unit.Services.Common {
         public void ShouldCopyAccountCorrectly() {
             string id = ObjectId.GenerateNewId().ToString();
             DateTime timestamp = DateTime.Now.AddDays(-1);
-            Account account = new Account {
-                id = id,
-                firstname = "Bob",
-                lastname = "McTest",
-                membershipState = MembershipState.MEMBER,
-                teamspeakIdentities = new HashSet<double> {4, 4},
-                serviceRecord = new List<ServiceRecordEntry> {new ServiceRecordEntry {Occurence = "Test", Timestamp = timestamp}},
-                rolePreferences = new List<string> {"Aviation"},
-                militaryExperience = false
+            Account account = new() {
+                Id = id,
+                Firstname = "Bob",
+                Lastname = "McTest",
+                MembershipState = MembershipState.MEMBER,
+                TeamspeakIdentities = new HashSet<double> { 4, 4 },
+                ServiceRecord = new List<ServiceRecordEntry> { new() { Occurence = "Test", Timestamp = timestamp } },
+                RolePreferences = new List<string> { "Aviation" },
+                MilitaryExperience = false
             };
 
             PublicAccount subject = account.ToPublicAccount();
 
-            subject.id.Should().Be(id);
-            subject.firstname.Should().Be("Bob");
-            subject.lastname.Should().Be("McTest");
-            subject.membershipState.Should().Be(MembershipState.MEMBER);
-            subject.teamspeakIdentities.Should().NotBeEmpty().And.HaveCount(1).And.ContainInOrder(new[] {4});
-            subject.serviceRecord.Should().NotBeEmpty().And.HaveCount(1).And.OnlyContain(x => x.Occurence == "Test" && x.Timestamp == timestamp);
-            subject.rolePreferences.Should().Contain("Aviation");
-            subject.militaryExperience.Should().BeFalse();
+            subject.Id.Should().Be(id);
+            subject.Firstname.Should().Be("Bob");
+            subject.Lastname.Should().Be("McTest");
+            subject.MembershipState.Should().Be(MembershipState.MEMBER);
+            subject.TeamspeakIdentities.Should().NotBeEmpty().And.HaveCount(1).And.ContainInOrder(new[] { 4 });
+            subject.ServiceRecord.Should().NotBeEmpty().And.HaveCount(1).And.OnlyContain(x => x.Occurence == "Test" && x.Timestamp == timestamp);
+            subject.RolePreferences.Should().Contain("Aviation");
+            subject.MilitaryExperience.Should().BeFalse();
         }
 
         [Fact]
         public void ShouldNotCopyPassword() {
             string id = ObjectId.GenerateNewId().ToString();
-            Account account = new Account {id = id, password = "thiswontappear"};
+            Account account = new() { Id = id, Password = "thiswontappear" };
 
             PublicAccount subject = account.ToPublicAccount();
 
-            subject.id.Should().Be(id);
-            subject.password.Should().BeNull();
+            subject.Id.Should().Be(id);
+            subject.Password.Should().BeNull();
         }
     }
 }

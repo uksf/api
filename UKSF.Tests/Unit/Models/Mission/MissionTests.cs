@@ -5,11 +5,11 @@ namespace UKSF.Tests.Unit.Models.Mission {
     public class MissionTests {
         [Fact]
         public void ShouldSetFields() {
-            Api.ArmaMissions.Models.Mission subject = new Api.ArmaMissions.Models.Mission("testdata/testmission.Altis");
+            Api.ArmaMissions.Models.Mission subject = new("testdata/testmission.Altis");
 
-            subject.path.Should().Be("testdata/testmission.Altis");
-            subject.descriptionPath.Should().Be("testdata/testmission.Altis/description.ext");
-            subject.sqmPath.Should().Be("testdata/testmission.Altis/mission.sqm");
+            subject.Path.Should().Be("testdata/testmission.Altis");
+            subject.DescriptionPath.Should().Be("testdata/testmission.Altis/description.ext");
+            subject.SqmPath.Should().Be("testdata/testmission.Altis/mission.sqm");
         }
     }
 }

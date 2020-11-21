@@ -57,7 +57,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
         }
 
         public void LogInline(string log) {
-            PushLogUpdate(new List<ModpackBuildStepLogItem> { new ModpackBuildStepLogItem { Text = log } }, true);
+            PushLogUpdate(new List<ModpackBuildStepLogItem> { new() { Text = log } }, true);
         }
 
         private void LogLines(string log, string colour = "") {

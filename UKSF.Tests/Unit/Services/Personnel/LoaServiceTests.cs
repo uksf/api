@@ -10,27 +10,27 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Personnel {
     public class LoaServiceTests {
-        private readonly ILoaService loaService;
-        private readonly Mock<ILoaDataService> mockLoaDataService;
+        private readonly ILoaService _loaService;
+        private readonly Mock<ILoaContext> _mockLoaDataService;
 
         public LoaServiceTests() {
-            mockLoaDataService = new Mock<ILoaDataService>();
+            _mockLoaDataService = new Mock<ILoaContext>();
 
-            loaService = new LoaService(mockLoaDataService.Object);
+            _loaService = new LoaService(_mockLoaDataService.Object);
         }
 
         [Fact]
         public void ShouldGetCorrectLoas() {
-            Loa loa1 = new Loa { recipient = "5ed524b04f5b532a5437bba1", end = DateTime.Now.AddDays(-5) };
-            Loa loa2 = new Loa { recipient = "5ed524b04f5b532a5437bba1", end = DateTime.Now.AddDays(-35) };
-            Loa loa3 = new Loa { recipient = "5ed524b04f5b532a5437bba2", end = DateTime.Now.AddDays(-45) };
-            Loa loa4 = new Loa { recipient = "5ed524b04f5b532a5437bba2", end = DateTime.Now.AddDays(-30).AddSeconds(1) };
-            Loa loa5 = new Loa { recipient = "5ed524b04f5b532a5437bba3", end = DateTime.Now.AddDays(-5) };
-            List<Loa> mockCollection = new List<Loa> { loa1, loa2, loa3, loa4, loa5 };
+            Loa loa1 = new() { Recipient = "5ed524b04f5b532a5437bba1", End = DateTime.Now.AddDays(-5) };
+            Loa loa2 = new() { Recipient = "5ed524b04f5b532a5437bba1", End = DateTime.Now.AddDays(-35) };
+            Loa loa3 = new() { Recipient = "5ed524b04f5b532a5437bba2", End = DateTime.Now.AddDays(-45) };
+            Loa loa4 = new() { Recipient = "5ed524b04f5b532a5437bba2", End = DateTime.Now.AddDays(-30).AddSeconds(1) };
+            Loa loa5 = new() { Recipient = "5ed524b04f5b532a5437bba3", End = DateTime.Now.AddDays(-5) };
+            List<Loa> mockCollection = new() { loa1, loa2, loa3, loa4, loa5 };
 
-            mockLoaDataService.Setup(x => x.Get(It.IsAny<Func<Loa, bool>>())).Returns<Func<Loa, bool>>(x => mockCollection.Where(x).ToList());
+            _mockLoaDataService.Setup(x => x.Get(It.IsAny<Func<Loa, bool>>())).Returns<Func<Loa, bool>>(x => mockCollection.Where(x).ToList());
 
-            IEnumerable<Loa> subject = loaService.Get(new List<string> { "5ed524b04f5b532a5437bba1", "5ed524b04f5b532a5437bba2" });
+            IEnumerable<Loa> subject = _loaService.Get(new List<string> { "5ed524b04f5b532a5437bba1", "5ed524b04f5b532a5437bba2" });
 
             subject.Should().Contain(new List<Loa> { loa1, loa4 });
         }

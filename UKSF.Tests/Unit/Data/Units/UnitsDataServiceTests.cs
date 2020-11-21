@@ -12,41 +12,41 @@ namespace UKSF.Tests.Unit.Data.Units {
     public class UnitsDataServiceTests {
         [Fact]
         public void Should_get_collection_in_order() {
-            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            Mock<IDataEventBus<UksfUnit>> mockDataEventBus = new Mock<IDataEventBus<UksfUnit>>();
-            Mock<IDataCollection<UksfUnit>> mockDataCollection = new Mock<IDataCollection<UksfUnit>>();
+            Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
+            Mock<IDataEventBus<UksfUnit>> mockDataEventBus = new();
+            Mock<IMongoCollection<UksfUnit>> mockDataCollection = new();
 
-            UksfUnit rank1 = new UksfUnit { name = "Air Troop", order = 2 };
-            UksfUnit rank2 = new UksfUnit { name = "UKSF", order = 0 };
-            UksfUnit rank3 = new UksfUnit { name = "SAS", order = 1 };
+            UksfUnit rank1 = new() { Name = "Air Troop", Order = 2 };
+            UksfUnit rank2 = new() { Name = "UKSF", Order = 0 };
+            UksfUnit rank3 = new() { Name = "SAS", Order = 1 };
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<UksfUnit>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<UksfUnit>(It.IsAny<string>())).Returns(mockDataCollection.Object);
             mockDataCollection.Setup(x => x.Get()).Returns(new List<UksfUnit> { rank1, rank2, rank3 });
 
-            UnitsDataService unitsDataService = new UnitsDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            UnitsContext unitsContext = new(mockDataCollectionFactory.Object, mockDataEventBus.Object);
 
-            IEnumerable<UksfUnit> subject = unitsDataService.Get();
+            IEnumerable<UksfUnit> subject = unitsContext.Get();
 
             subject.Should().ContainInOrder(rank2, rank3, rank1);
         }
 
         [Fact]
         public void ShouldGetOrderedCollectionFromPredicate() {
-            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            Mock<IDataEventBus<UksfUnit>> mockDataEventBus = new Mock<IDataEventBus<UksfUnit>>();
-            Mock<IDataCollection<UksfUnit>> mockDataCollection = new Mock<IDataCollection<UksfUnit>>();
+            Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
+            Mock<IDataEventBus<UksfUnit>> mockDataEventBus = new();
+            Mock<IMongoCollection<UksfUnit>> mockDataCollection = new();
 
-            UksfUnit rank1 = new UksfUnit { name = "Air Troop", order = 3, branch = UnitBranch.COMBAT };
-            UksfUnit rank2 = new UksfUnit { name = "Boat Troop", order = 2, branch = UnitBranch.COMBAT  };
-            UksfUnit rank3 = new UksfUnit { name = "UKSF", order = 0, branch = UnitBranch.AUXILIARY  };
-            UksfUnit rank4 = new UksfUnit { name = "SAS", order = 1, branch = UnitBranch.AUXILIARY  };
+            UksfUnit rank1 = new() { Name = "Air Troop", Order = 3, Branch = UnitBranch.COMBAT };
+            UksfUnit rank2 = new() { Name = "Boat Troop", Order = 2, Branch = UnitBranch.COMBAT };
+            UksfUnit rank3 = new() { Name = "UKSF", Order = 0, Branch = UnitBranch.AUXILIARY };
+            UksfUnit rank4 = new() { Name = "SAS", Order = 1, Branch = UnitBranch.AUXILIARY };
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<UksfUnit>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<UksfUnit>(It.IsAny<string>())).Returns(mockDataCollection.Object);
             mockDataCollection.Setup(x => x.Get()).Returns(new List<UksfUnit> { rank1, rank2, rank3, rank4 });
 
-            UnitsDataService unitsDataService = new UnitsDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            UnitsContext unitsContext = new(mockDataCollectionFactory.Object, mockDataEventBus.Object);
 
-            IEnumerable<UksfUnit> subject = unitsDataService.Get(x => x.branch == UnitBranch.COMBAT);
+            IEnumerable<UksfUnit> subject = unitsContext.Get(x => x.Branch == UnitBranch.COMBAT);
 
             subject.Should().ContainInOrder(rank2, rank1);
         }

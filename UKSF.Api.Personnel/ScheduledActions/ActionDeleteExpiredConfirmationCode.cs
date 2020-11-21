@@ -1,6 +1,6 @@
 ﻿using System;
 using UKSF.Api.Base.ScheduledActions;
-using UKSF.Api.Personnel.Services;
+using UKSF.Api.Personnel.Context;
 
 namespace UKSF.Api.Personnel.ScheduledActions {
     public interface IActionDeleteExpiredConfirmationCode : IScheduledAction { }
@@ -8,16 +8,16 @@ namespace UKSF.Api.Personnel.ScheduledActions {
     public class ActionDeleteExpiredConfirmationCode : IActionDeleteExpiredConfirmationCode {
         public const string ACTION_NAME = nameof(ActionDeleteExpiredConfirmationCode);
 
-        private readonly IConfirmationCodeService confirmationCodeService;
+        private readonly IConfirmationCodeContext _confirmationCodeContext;
 
-        public ActionDeleteExpiredConfirmationCode(IConfirmationCodeService confirmationCodeService) => this.confirmationCodeService = confirmationCodeService;
+        public ActionDeleteExpiredConfirmationCode(IConfirmationCodeContext confirmationCodeContext) => _confirmationCodeContext = confirmationCodeContext;
 
         public string Name => ACTION_NAME;
 
         public void Run(params object[] parameters) {
             if (parameters.Length == 0) throw new ArgumentException("ActionDeleteExpiredConfirmationCode requires an id to be passed as a parameter, but no paramters were passed");
             string id = parameters[0].ToString();
-            confirmationCodeService.Data.Delete(id);
+            _confirmationCodeContext.Delete(id);
         }
     }
 }

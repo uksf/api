@@ -4,7 +4,7 @@ using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Base.Models;
 
 namespace UKSF.Api.Modpack.Models {
-    public class ModpackRelease : DatabaseObject {
+    public record ModpackRelease : MongoObject {
         public string Changelog;
         [BsonRepresentation(BsonType.ObjectId)] public string CreatorId;
         public string Description;

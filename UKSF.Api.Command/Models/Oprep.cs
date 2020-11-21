@@ -3,7 +3,7 @@ using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.Models;
 
 namespace UKSF.Api.Command.Models {
-    public class Oprep : DatabaseObject {
+    public record Oprep : MongoObject {
         public AttendanceReport AttendanceReport;
         public string Description;
         public DateTime End;

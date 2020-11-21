@@ -39,7 +39,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common {
 
         private string GetBuildMessage() => $"New release candidate available for {Build.Version} on the rc repository";
 
-        private string GetBuildLink() => $"https://uk-sf.co.uk/modpack/builds-rc?version={Build.Version}&build={Build.id}";
+        private string GetBuildLink() => $"https://uk-sf.co.uk/modpack/builds-rc?version={Build.Version}&build={Build.Id}";
 
         private string GetDiscordMessage(ModpackRelease release = null) =>
             release == null

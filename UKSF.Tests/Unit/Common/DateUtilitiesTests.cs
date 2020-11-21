@@ -17,7 +17,7 @@ namespace UKSF.Tests.Unit.Common {
 
         [Fact]
         public void ShouldGiveCorrectMonthsForDay() {
-            DateTime dob = new DateTime(2019, 1, 20);
+            DateTime dob = new(2019, 1, 20);
 
             (int _, int subjectMonths) = dob.ToAge(new DateTime(2020, 1, 16));
 

@@ -11,7 +11,7 @@ namespace UKSF.Api.ArmaServer {
     public static class ApiArmaServerExtensions {
         public static IServiceCollection AddUksfArmaServer(this IServiceCollection services) => services.AddContexts().AddEventBuses().AddEventHandlers().AddServices();
 
-        private static IServiceCollection AddContexts(this IServiceCollection services) => services.AddSingleton<IGameServersDataService, GameServersDataService>();
+        private static IServiceCollection AddContexts(this IServiceCollection services) => services.AddSingleton<IGameServersContext, GameServersContext>();
 
         private static IServiceCollection AddEventBuses(this IServiceCollection services) => services.AddSingleton<IDataEventBus<GameServer>, DataEventBus<GameServer>>();
 

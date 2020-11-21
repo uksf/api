@@ -13,7 +13,7 @@ namespace UKSF.Api.Admin.Services {
         public DataCacheService(IServiceProvider serviceProvider) => _serviceProvider = serviceProvider;
 
         public void RefreshCachedData() {
-            foreach (ICachedDataService cachedDataService in _serviceProvider.GetInterfaceServices<ICachedDataService>()) {
+            foreach (ICachedMongoContext cachedDataService in _serviceProvider.GetInterfaceServices<ICachedMongoContext>()) {
                 cachedDataService.Refresh();
             }
         }

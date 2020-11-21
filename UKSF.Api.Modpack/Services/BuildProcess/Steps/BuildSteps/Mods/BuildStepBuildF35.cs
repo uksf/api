@@ -15,12 +15,12 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
             string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
             string releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@uksf_f35", "addons");
             string dependenciesPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "addons");
-            DirectoryInfo release = new DirectoryInfo(releasePath);
-            DirectoryInfo dependencies = new DirectoryInfo(dependenciesPath);
+            DirectoryInfo release = new(releasePath);
+            DirectoryInfo dependencies = new(dependenciesPath);
 
             if (IsBuildNeeded(MOD_NAME)) {
                 StepLogger.LogSurround("\nRunning make.py...");
-                BuildProcessHelper processHelper = new BuildProcessHelper(StepLogger, CancellationTokenSource);
+                BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource);
                 processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int) TimeSpan.FromMinutes(1).TotalMilliseconds);
                 StepLogger.LogSurround("Make.py complete");
             }

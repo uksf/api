@@ -3,13 +3,13 @@ using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.Models;
 
 namespace UKSF.Api.Teamspeak.Models {
-    public class Operation : DatabaseObject {
-        public AttendanceReport attendanceReport;
-        public DateTime end;
-        public string map;
-        public string name;
-        public string result;
-        public DateTime start;
-        public string type;
+    public record Operation : MongoObject {
+        public AttendanceReport AttendanceReport;
+        public DateTime End;
+        public string Map;
+        public string Name;
+        public string Result;
+        public DateTime Start;
+        public string Type;
     }
 }

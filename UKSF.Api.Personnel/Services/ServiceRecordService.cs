@@ -1,5 +1,6 @@
 ﻿using System;
 using MongoDB.Driver;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 
 namespace UKSF.Api.Personnel.Services {
@@ -8,12 +9,12 @@ namespace UKSF.Api.Personnel.Services {
     }
 
     public class ServiceRecordService : IServiceRecordService {
-        private readonly IAccountService accountService;
+        private readonly IAccountContext _accountContext;
 
-        public ServiceRecordService(IAccountService accountService) => this.accountService = accountService;
+        public ServiceRecordService(IAccountContext accountContext) => _accountContext = accountContext;
 
         public void AddServiceRecord(string id, string occurence, string notes) {
-            accountService.Data.Update(id, Builders<Account>.Update.Push("serviceRecord", new ServiceRecordEntry {Timestamp = DateTime.Now, Occurence = occurence, Notes = notes}));
+            _accountContext.Update(id, Builders<Account>.Update.Push("serviceRecord", new ServiceRecordEntry { Timestamp = DateTime.Now, Occurence = occurence, Notes = notes }));
         }
     }
 }

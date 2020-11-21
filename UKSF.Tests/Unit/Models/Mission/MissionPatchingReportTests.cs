@@ -7,29 +7,29 @@ namespace UKSF.Tests.Unit.Models.Mission {
     public class MissionPatchingReportTests {
         [Fact]
         public void ShouldSetFieldsAsError() {
-            MissionPatchingReport subject = new MissionPatchingReport("Test Title", "Test details, like what went wrong, what needs to be done to fix it", true);
+            MissionPatchingReport subject = new("Test Title", "Test details, like what went wrong, what needs to be done to fix it", true);
 
-            subject.title.Should().Be("Error: Test Title");
-            subject.detail.Should().Be("Test details, like what went wrong, what needs to be done to fix it");
-            subject.error.Should().BeTrue();
+            subject.Title.Should().Be("Error: Test Title");
+            subject.Detail.Should().Be("Test details, like what went wrong, what needs to be done to fix it");
+            subject.Error.Should().BeTrue();
         }
 
         [Fact]
         public void ShouldSetFieldsAsWarning() {
-            MissionPatchingReport subject = new MissionPatchingReport("Test Title", "Test details, like what went wrong, what needs to be done to fix it");
+            MissionPatchingReport subject = new("Test Title", "Test details, like what went wrong, what needs to be done to fix it");
 
-            subject.title.Should().Be("Warning: Test Title");
-            subject.detail.Should().Be("Test details, like what went wrong, what needs to be done to fix it");
-            subject.error.Should().BeFalse();
+            subject.Title.Should().Be("Warning: Test Title");
+            subject.Detail.Should().Be("Test details, like what went wrong, what needs to be done to fix it");
+            subject.Error.Should().BeFalse();
         }
 
         [Fact]
         public void ShouldSetFieldsFromException() {
-            MissionPatchingReport subject = new MissionPatchingReport(new Exception("An error occured"));
+            MissionPatchingReport subject = new(new Exception("An error occured"));
 
-            subject.title.Should().Be("An error occured");
-            subject.detail.Should().Be("System.Exception: An error occured");
-            subject.error.Should().BeTrue();
+            subject.Title.Should().Be("An error occured");
+            subject.Detail.Should().Be("System.Exception: An error occured");
+            subject.Error.Should().BeTrue();
         }
     }
 }

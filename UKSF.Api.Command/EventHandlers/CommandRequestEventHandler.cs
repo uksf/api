@@ -28,7 +28,7 @@ namespace UKSF.Api.Command.EventHandlers {
         }
 
         private async Task HandleEvent(DataEventModel<CommandRequest> dataEventModel) {
-            switch (dataEventModel.type) {
+            switch (dataEventModel.Type) {
                 case DataEventType.ADD:
                 case DataEventType.UPDATE:
                     await UpdatedEvent();

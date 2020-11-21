@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
-using UKSF.Api.Base.Context;
+using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
-using UKSF.Api.Modpack.Services.Data;
-using UKSF.Api.Personnel.Services;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Modpack.Services {
-    public interface IReleaseService : IDataBackedService<IReleasesDataService> {
+    public interface IReleaseService {
         Task MakeDraftRelease(string version, GithubCommit commit);
         Task UpdateDraft(ModpackRelease release);
         Task PublishRelease(string version);
@@ -18,29 +17,31 @@ namespace UKSF.Api.Modpack.Services {
         Task AddHistoricReleases(IEnumerable<ModpackRelease> releases);
     }
 
-    public class ReleaseService : DataBackedService<IReleasesDataService>, IReleaseService {
-        private readonly IAccountService _accountService;
-        private readonly ILogger _logger;
+    public class ReleaseService : IReleaseService {
+        private readonly IAccountContext _accountContext;
         private readonly IGithubService _githubService;
+        private readonly ILogger _logger;
+        private readonly IReleasesContext _releasesContext;
 
-        public ReleaseService(IReleasesDataService data, IGithubService githubService, IAccountService accountService, ILogger logger) : base(data) {
+        public ReleaseService(IReleasesContext releasesContext, IAccountContext accountContext, IGithubService githubService, ILogger logger) {
+            _releasesContext = releasesContext;
+            _accountContext = accountContext;
             _githubService = githubService;
-            _accountService = accountService;
             _logger = logger;
         }
 
         public ModpackRelease GetRelease(string version) {
-            return Data.GetSingle(x => x.Version == version);
+            return _releasesContext.GetSingle(x => x.Version == version);
         }
 
         public async Task MakeDraftRelease(string version, GithubCommit commit) {
             string changelog = await _githubService.GenerateChangelog(version);
-            string creatorId = _accountService.Data.GetSingle(x => x.email == commit.Author)?.id;
-            await Data.Add(new ModpackRelease { Timestamp = DateTime.Now, Version = version, Changelog = changelog, IsDraft = true, CreatorId = creatorId });
+            string creatorId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
+            await _releasesContext.Add(new ModpackRelease { Timestamp = DateTime.Now, Version = version, Changelog = changelog, IsDraft = true, CreatorId = creatorId });
         }
 
         public async Task UpdateDraft(ModpackRelease release) {
-            await Data.Update(release.id, Builders<ModpackRelease>.Update.Set(x => x.Description, release.Description).Set(x => x.Changelog, release.Changelog));
+            await _releasesContext.Update(release.Id, Builders<ModpackRelease>.Update.Set(x => x.Description, release.Description).Set(x => x.Changelog, release.Changelog));
         }
 
         public async Task PublishRelease(string version) {
@@ -56,14 +57,14 @@ namespace UKSF.Api.Modpack.Services {
             release.Changelog += release.Changelog.EndsWith("\n\n") ? "<br>" : "\n\n<br>";
             release.Changelog += "SR3 - Development Team<br>[Report and track issues here](https://github.com/uksf/modpack/issues)";
 
-            await Data.Update(release.id, Builders<ModpackRelease>.Update.Set(x => x.Timestamp, DateTime.Now).Set(x => x.IsDraft, false).Set(x => x.Changelog, release.Changelog));
+            await _releasesContext.Update(release.Id, Builders<ModpackRelease>.Update.Set(x => x.Timestamp, DateTime.Now).Set(x => x.IsDraft, false).Set(x => x.Changelog, release.Changelog));
             await _githubService.PublishRelease(release);
         }
 
         public async Task AddHistoricReleases(IEnumerable<ModpackRelease> releases) {
-            IEnumerable<ModpackRelease> existingReleases = Data.Get();
+            IEnumerable<ModpackRelease> existingReleases = _releasesContext.Get();
             foreach (ModpackRelease release in releases.Where(x => existingReleases.All(y => y.Version != x.Version))) {
-                await Data.Add(release);
+                await _releasesContext.Add(release);
             }
         }
     }

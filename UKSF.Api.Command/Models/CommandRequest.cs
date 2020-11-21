@@ -25,7 +25,7 @@ namespace UKSF.Api.Command.Models {
         public const string UNIT_ROLE = "Unit Role";
     }
 
-    public class CommandRequest : DatabaseObject {
+    public record CommandRequest : MongoObject {
         public DateTime DateCreated;
         public string DisplayFrom;
         public string DisplayRecipient;
@@ -34,7 +34,7 @@ namespace UKSF.Api.Command.Models {
         public string Reason, Type;
         [BsonRepresentation(BsonType.ObjectId)] public string Recipient;
         [BsonRepresentation(BsonType.ObjectId)] public string Requester;
-        public Dictionary<string, ReviewState> Reviews = new Dictionary<string, ReviewState>();
+        public Dictionary<string, ReviewState> Reviews = new();
         public string SecondaryValue;
         public string Value;
         public CommandRequest() => DateCreated = DateTime.Now;

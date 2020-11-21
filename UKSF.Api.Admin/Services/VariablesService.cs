@@ -1,15 +1,16 @@
 using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Models;
-using UKSF.Api.Base.Context;
 
 namespace UKSF.Api.Admin.Services {
-    public interface IVariablesService : IDataBackedService<IVariablesDataService> {
+    public interface IVariablesService {
         VariableItem GetVariable(string key);
     }
 
-    public class VariablesService : DataBackedService<IVariablesDataService>, IVariablesService {
-        public VariablesService(IVariablesDataService data) : base(data) { }
+    public class VariablesService : IVariablesService {
+        private readonly IVariablesContext _context;
 
-        public VariableItem GetVariable(string key) => Data.GetSingle(key);
+        public VariablesService(IVariablesContext context) => _context = context;
+
+        public VariableItem GetVariable(string key) => _context.GetSingle(key);
     }
 }

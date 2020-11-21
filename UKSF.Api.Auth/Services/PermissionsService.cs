@@ -2,6 +2,7 @@
 using System.Linq;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
@@ -12,60 +13,62 @@ namespace UKSF.Api.Auth.Services {
     }
 
     public class PermissionsService : IPermissionsService {
-        private readonly string[] admins = { "59e38f10594c603b78aa9dbd", "5a1e894463d0f71710089106", "5a1ae0f0b9bcb113a44edada" }; // TODO: Make this an account flag
-        private readonly IRanksService ranksService;
-        private readonly IRecruitmentService recruitmentService;
-        private readonly IUnitsService unitsService;
-        private readonly IVariablesService variablesService;
+        private readonly string[] _admins = { "59e38f10594c603b78aa9dbd", "5a1e894463d0f71710089106", "5a1ae0f0b9bcb113a44edada" }; // TODO: Make this an account flag
+        private readonly IRanksService _ranksService;
+        private readonly IRecruitmentService _recruitmentService;
+        private readonly IUnitsContext _unitsContext;
+        private readonly IUnitsService _unitsService;
+        private readonly IVariablesService _variablesService;
 
-        public PermissionsService(IRanksService ranksService, IUnitsService unitsService, IRecruitmentService recruitmentService, IVariablesService variablesService) {
-            this.ranksService = ranksService;
-            this.unitsService = unitsService;
-            this.recruitmentService = recruitmentService;
-            this.variablesService = variablesService;
+        public PermissionsService(IRanksService ranksService, IUnitsContext unitsContext, IUnitsService unitsService, IRecruitmentService recruitmentService, IVariablesService variablesService) {
+            _ranksService = ranksService;
+            _unitsContext = unitsContext;
+            _unitsService = unitsService;
+            _recruitmentService = recruitmentService;
+            _variablesService = variablesService;
         }
 
         public IEnumerable<string> GrantPermissions(Account account) {
-            HashSet<string> permissions = new HashSet<string>();
+            HashSet<string> permissions = new();
 
-            switch (account.membershipState) {
+            switch (account.MembershipState) {
                 case MembershipState.MEMBER: {
                     permissions.Add(Permissions.MEMBER);
-                    bool admin = admins.Contains(account.id);
+                    bool admin = _admins.Contains(account.Id);
                     if (admin) {
                         permissions.UnionWith(Permissions.ALL);
                         break;
                     }
 
-                    if (unitsService.MemberHasAnyRole(account.id)) {
+                    if (_unitsService.MemberHasAnyRole(account.Id)) {
                         permissions.Add(Permissions.COMMAND);
                     }
 
-                    // TODO: Remove hardcoded value
-                    if (account.rank != null && ranksService.IsSuperiorOrEqual(account.rank, "Senior Aircraftman")) {
+                    // TODO: Remove hardcoded rank
+                    if (account.Rank != null && _ranksService.IsSuperiorOrEqual(account.Rank, "Senior Aircraftman")) {
                         permissions.Add(Permissions.NCO);
                     }
 
-                    if (recruitmentService.IsRecruiterLead(account)) {
+                    if (_recruitmentService.IsRecruiterLead(account)) {
                         permissions.Add(Permissions.RECRUITER_LEAD);
                     }
 
-                    if (recruitmentService.IsRecruiter(account)) {
+                    if (_recruitmentService.IsRecruiter(account)) {
                         permissions.Add(Permissions.RECRUITER);
                     }
 
-                    string personnelId = variablesService.GetVariable("UNIT_ID_PERSONNEL").AsString();
-                    if (unitsService.Data.GetSingle(personnelId).members.Contains(account.id)) {
+                    string personnelId = _variablesService.GetVariable("UNIT_ID_PERSONNEL").AsString();
+                    if (_unitsContext.GetSingle(personnelId).Members.Contains(account.Id)) {
                         permissions.Add(Permissions.PERSONNEL);
                     }
 
-                    string[] missionsId = variablesService.GetVariable("UNIT_ID_MISSIONS").AsArray();
-                    if (unitsService.Data.GetSingle(x => missionsId.Contains(x.id)).members.Contains(account.id)) {
+                    string[] missionsId = _variablesService.GetVariable("UNIT_ID_MISSIONS").AsArray();
+                    if (_unitsContext.GetSingle(x => missionsId.Contains(x.Id)).Members.Contains(account.Id)) {
                         permissions.Add(Permissions.SERVERS);
                     }
 
-                    string testersId = variablesService.GetVariable("UNIT_ID_TESTERS").AsString();
-                    if (unitsService.Data.GetSingle(testersId).members.Contains(account.id)) {
+                    string testersId = _variablesService.GetVariable("UNIT_ID_TESTERS").AsString();
+                    if (_unitsContext.GetSingle(testersId).Members.Contains(account.Id)) {
                         permissions.Add(Permissions.TESTER);
                     }
 

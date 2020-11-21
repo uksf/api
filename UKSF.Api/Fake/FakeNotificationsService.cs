@@ -2,7 +2,7 @@
 // using System.Threading.Tasks;
 //
 // namespace UKSF.Api.Fake {
-//     public class FakeNotificationsService : DataBackedService<INotificationsDataService>, INotificationsService {
+//     public class FakeNotificationsService : INotificationsService {
 //         public FakeNotificationsService(INotificationsDataService data) : base(data) { }
 //
 //         public Task SendTeamspeakNotification(Account account, string rawMessage) => Task.CompletedTask;
@@ -18,3 +18,5 @@
 //         public Task Delete(List<string> ids) => Task.CompletedTask;
 //     }
 // }
+
+

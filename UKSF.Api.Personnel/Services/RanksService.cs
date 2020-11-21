@@ -1,10 +1,9 @@
 using System.Collections.Generic;
-using UKSF.Api.Base.Context;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 
 namespace UKSF.Api.Personnel.Services {
-    public interface IRanksService : IDataBackedService<IRanksDataService> {
+    public interface IRanksService {
         int GetRankOrder(string rankName);
         int Sort(string nameA, string nameB);
         bool IsEqual(string nameA, string nameB);
@@ -12,33 +11,34 @@ namespace UKSF.Api.Personnel.Services {
         bool IsSuperiorOrEqual(string nameA, string nameB);
     }
 
-    public class RanksService : DataBackedService<IRanksDataService>, IRanksService {
+    public class RanksService : IRanksService {
+        private readonly IRanksContext _ranksContext;
 
-        public RanksService(IRanksDataService data) : base(data) { }
+        public RanksService(IRanksContext ranksContext) => _ranksContext = ranksContext;
 
-        public int GetRankOrder(string rankName) => Data.GetSingle(rankName)?.order ?? -1;
+        public int GetRankOrder(string rankName) => _ranksContext.GetSingle(rankName)?.Order ?? -1;
 
         public int Sort(string nameA, string nameB) {
-            Rank rankA = Data.GetSingle(nameA);
-            Rank rankB = Data.GetSingle(nameB);
-            int rankOrderA = rankA?.order ?? int.MaxValue;
-            int rankOrderB = rankB?.order ?? int.MaxValue;
+            Rank rankA = _ranksContext.GetSingle(nameA);
+            Rank rankB = _ranksContext.GetSingle(nameB);
+            int rankOrderA = rankA?.Order ?? int.MaxValue;
+            int rankOrderB = rankB?.Order ?? int.MaxValue;
             return rankOrderA < rankOrderB ? -1 : rankOrderA > rankOrderB ? 1 : 0;
         }
 
         public bool IsSuperior(string nameA, string nameB) {
-            Rank rankA = Data.GetSingle(nameA);
-            Rank rankB = Data.GetSingle(nameB);
-            int rankOrderA = rankA?.order ?? int.MaxValue;
-            int rankOrderB = rankB?.order ?? int.MaxValue;
+            Rank rankA = _ranksContext.GetSingle(nameA);
+            Rank rankB = _ranksContext.GetSingle(nameB);
+            int rankOrderA = rankA?.Order ?? int.MaxValue;
+            int rankOrderB = rankB?.Order ?? int.MaxValue;
             return rankOrderA < rankOrderB;
         }
 
         public bool IsEqual(string nameA, string nameB) {
-            Rank rankA = Data.GetSingle(nameA);
-            Rank rankB = Data.GetSingle(nameB);
-            int rankOrderA = rankA?.order ?? int.MinValue;
-            int rankOrderB = rankB?.order ?? int.MinValue;
+            Rank rankA = _ranksContext.GetSingle(nameA);
+            Rank rankB = _ranksContext.GetSingle(nameB);
+            int rankOrderA = rankA?.Order ?? int.MinValue;
+            int rankOrderB = rankB?.Order ?? int.MinValue;
             return rankOrderA == rankOrderB;
         }
 
@@ -46,9 +46,9 @@ namespace UKSF.Api.Personnel.Services {
     }
 
     public class RankComparer : IComparer<string> {
-        private readonly IRanksService ranksService;
-        public RankComparer(IRanksService ranksService) => this.ranksService = ranksService;
+        private readonly IRanksService _ranksService;
+        public RankComparer(IRanksService ranksService) => _ranksService = ranksService;
 
-        public int Compare(string rankA, string rankB) => ranksService.Sort(rankA, rankB);
+        public int Compare(string rankA, string rankB) => _ranksService.Sort(rankA, rankB);
     }
 }

@@ -13,8 +13,8 @@ namespace UKSF.Api.Shared.Extensions {
 
         public static int LaunchManagedProcess(string executable, string arguments = null) {
             int processId = default;
-            using ManagementClass managementClass = new ManagementClass("Win32_Process");
-            ManagementClass processInfo = new ManagementClass("Win32_ProcessStartup");
+            using ManagementClass managementClass = new("Win32_Process");
+            ManagementClass processInfo = new("Win32_ProcessStartup");
             processInfo.Properties["CreateFlags"].Value = 0x00000008;
 
             ManagementBaseObject inParameters = managementClass.GetMethodParameters("Create");

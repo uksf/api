@@ -9,52 +9,52 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Personnel {
     public class RolesDataServiceTests {
-        private readonly Mock<IDataCollection<Role>> mockDataCollection;
-        private readonly RolesDataService rolesDataService;
+        private readonly Mock<IMongoCollection<Role>> _mockDataCollection;
+        private readonly RolesContext _rolesContext;
 
         public RolesDataServiceTests() {
-            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            Mock<IDataEventBus<Role>> mockDataEventBus = new Mock<IDataEventBus<Role>>();
-            mockDataCollection = new Mock<IDataCollection<Role>>();
+            Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
+            Mock<IDataEventBus<Role>> mockDataEventBus = new();
+            _mockDataCollection = new Mock<IMongoCollection<Role>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Role>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<Role>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            rolesDataService = new RolesDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            _rolesContext = new RolesContext(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
 
         [Theory, InlineData(""), InlineData(null)]
         public void ShouldGetNothingWhenNoName(string name) {
-            mockDataCollection.Setup(x => x.Get()).Returns(new List<Role>());
+            _mockDataCollection.Setup(x => x.Get()).Returns(new List<Role>());
 
-            Role subject = rolesDataService.GetSingle(name);
+            Role subject = _rolesContext.GetSingle(name);
 
             subject.Should().Be(null);
         }
 
         [Fact]
-        public void ShouldGetSingleByName() {
-            Role role1 = new Role { name = "Rifleman" };
-            Role role2 = new Role { name = "Trainee" };
-            Role role3 = new Role { name = "Marksman" };
+        public void Should_get_collection_in_order() {
+            Role role1 = new() { Name = "Rifleman" };
+            Role role2 = new() { Name = "Trainee" };
+            Role role3 = new() { Name = "Marksman" };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(new List<Role> { role1, role2, role3 });
+            _mockDataCollection.Setup(x => x.Get()).Returns(new List<Role> { role1, role2, role3 });
 
-            Role subject = rolesDataService.GetSingle("Trainee");
+            IEnumerable<Role> subject = _rolesContext.Get();
 
-            subject.Should().Be(role2);
+            subject.Should().ContainInOrder(role3, role1, role2);
         }
 
         [Fact]
-        public void Should_get_collection_in_order() {
-            Role role1 = new Role { name = "Rifleman" };
-            Role role2 = new Role { name = "Trainee" };
-            Role role3 = new Role { name = "Marksman" };
+        public void ShouldGetSingleByName() {
+            Role role1 = new() { Name = "Rifleman" };
+            Role role2 = new() { Name = "Trainee" };
+            Role role3 = new() { Name = "Marksman" };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(new List<Role> { role1, role2, role3 });
+            _mockDataCollection.Setup(x => x.Get()).Returns(new List<Role> { role1, role2, role3 });
 
-            IEnumerable<Role> subject = rolesDataService.Get();
+            Role subject = _rolesContext.GetSingle("Trainee");
 
-            subject.Should().ContainInOrder(role3, role1, role2);
+            subject.Should().Be(role2);
         }
     }
 }

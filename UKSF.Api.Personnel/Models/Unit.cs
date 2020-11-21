@@ -4,21 +4,21 @@ using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Base.Models;
 
 namespace UKSF.Api.Personnel.Models {
-    public class Unit : DatabaseObject {
-        public UnitBranch branch = UnitBranch.COMBAT;
-        public string callsign;
-        public string discordRoleId;
-        public string icon;
-        [BsonRepresentation(BsonType.ObjectId)] public List<string> members = new List<string>();
-        public string name;
-        public int order;
-        [BsonRepresentation(BsonType.ObjectId)] public string parent;
-        public bool preferShortname;
-        [BsonRepresentation(BsonType.ObjectId)] public Dictionary<string, string> roles = new Dictionary<string, string>();
-        public string shortname;
-        public string teamspeakGroup;
+    public record Unit : MongoObject {
+        public UnitBranch Branch = UnitBranch.COMBAT;
+        public string Callsign;
+        public string DiscordRoleId;
+        public string Icon;
+        [BsonRepresentation(BsonType.ObjectId)] public List<string> Members = new();
+        public string Name;
+        public int Order;
+        [BsonRepresentation(BsonType.ObjectId)] public string Parent;
+        public bool PreferShortname;
+        [BsonRepresentation(BsonType.ObjectId)] public Dictionary<string, string> Roles = new();
+        public string Shortname;
+        public string TeamspeakGroup;
 
-        public override string ToString() => $"{name}, {shortname}, {callsign}, {branch}, {teamspeakGroup}, {discordRoleId}";
+        public override string ToString() => $"{Name}, {Shortname}, {Callsign}, {Branch}, {TeamspeakGroup}, {DiscordRoleId}";
     }
 
     public enum UnitBranch {
@@ -27,43 +27,43 @@ namespace UKSF.Api.Personnel.Models {
     }
 
     // TODO: Cleaner way of doing this? Inside controllers?
-    public class ResponseUnit : Unit {
-        public string code;
-        public string parentName;
-        public IEnumerable<ResponseUnitMember> unitMembers;
+    public record ResponseUnit : Unit {
+        public string Code;
+        public string ParentName;
+        public IEnumerable<ResponseUnitMember> UnitMembers;
     }
 
     public class ResponseUnitMember {
-        public string name;
-        public string role;
-        public string unitRole;
+        public string Name;
+        public string Role;
+        public string UnitRole;
     }
 
     public class ResponseUnitTree {
-        public IEnumerable<ResponseUnitTree> children;
-        public string id;
-        public string name;
+        public IEnumerable<ResponseUnitTree> Children;
+        public string Id;
+        public string Name;
     }
 
     public class ResponseUnitTreeDataSet {
-        public IEnumerable<ResponseUnitTree> auxiliaryNodes;
-        public IEnumerable<ResponseUnitTree> combatNodes;
+        public IEnumerable<ResponseUnitTree> AuxiliaryNodes;
+        public IEnumerable<ResponseUnitTree> CombatNodes;
     }
 
     public class ResponseUnitChartNode {
-        public IEnumerable<ResponseUnitChartNode> children;
-        public string id;
-        public IEnumerable<ResponseUnitMember> members;
-        public string name;
-        public bool preferShortname;
+        public IEnumerable<ResponseUnitChartNode> Children;
+        public string Id;
+        public IEnumerable<ResponseUnitMember> Members;
+        public string Name;
+        public bool PreferShortname;
     }
 
     public class RequestUnitUpdateParent {
-        public int index;
-        public string parentId;
+        public int Index;
+        public string ParentId;
     }
 
     public class RequestUnitUpdateOrder {
-        public int index;
+        public int Index;
     }
 }

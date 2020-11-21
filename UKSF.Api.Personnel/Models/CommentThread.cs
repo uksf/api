@@ -11,9 +11,9 @@ namespace UKSF.Api.Personnel.Models {
         RANKSUPERIOROREQUAL
     }
 
-    public class CommentThread : DatabaseObject {
-        [BsonRepresentation(BsonType.ObjectId)] public string[] authors;
-        public Comment[] comments = { };
-        public ThreadMode mode;
+    public record CommentThread : MongoObject {
+        [BsonRepresentation(BsonType.ObjectId)] public string[] Authors;
+        public Comment[] Comments = { };
+        public ThreadMode Mode;
     }
 }

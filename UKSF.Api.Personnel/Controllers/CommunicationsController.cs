@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Base.Events;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared.Events;
@@ -15,13 +16,22 @@ namespace UKSF.Api.Personnel.Controllers {
     // TODO: Needs to be renamed and singled out. Won't be any other communication connections to add
     [Route("[controller]")]
     public class CommunicationsController : Controller {
+        private readonly IAccountContext _accountContext;
+        private readonly IEventBus<Account> _accountEventBus;
         private readonly IAccountService _accountService;
         private readonly IConfirmationCodeService _confirmationCodeService;
         private readonly ILogger _logger;
-        private readonly IEventBus<Account> _accountEventBus;
         private readonly INotificationsService _notificationsService;
 
-        public CommunicationsController(IConfirmationCodeService confirmationCodeService, IAccountService accountService, INotificationsService notificationsService, ILogger logger, IEventBus<Account> accountEventBus) {
+        public CommunicationsController(
+            IAccountContext accountContext,
+            IConfirmationCodeService confirmationCodeService,
+            IAccountService accountService,
+            INotificationsService notificationsService,
+            ILogger logger,
+            IEventBus<Account> accountEventBus
+        ) {
+            _accountContext = accountContext;
             _confirmationCodeService = confirmationCodeService;
             _accountService = accountService;
             _notificationsService = notificationsService;
@@ -30,7 +40,7 @@ namespace UKSF.Api.Personnel.Controllers {
         }
 
         [HttpGet, Authorize]
-        public IActionResult GetTeamspeakStatus() => Ok(new { isConnected = _accountService.GetUserAccount().teamspeakIdentities?.Count > 0 });
+        public IActionResult GetTeamspeakStatus() => Ok(new { isConnected = _accountService.GetUserAccount().TeamspeakIdentities?.Count > 0 });
 
         [HttpPost("send"), Authorize]
         public async Task<IActionResult> SendCode([FromBody] JObject body) {
@@ -84,22 +94,22 @@ namespace UKSF.Api.Personnel.Controllers {
         }
 
         private async Task<IActionResult> ReceiveTeamspeakCode(string id, string code, string checkId) {
-            Account account = _accountService.Data.GetSingle(id);
+            Account account = _accountContext.GetSingle(id);
             string teamspeakId = await _confirmationCodeService.GetConfirmationCode(code);
             if (string.IsNullOrWhiteSpace(teamspeakId) || teamspeakId != checkId) {
                 return BadRequest(new { error = "The confirmation code has expired or is invalid. Please try again" });
             }
 
-            account.teamspeakIdentities ??= new HashSet<double>();
-            account.teamspeakIdentities.Add(double.Parse(teamspeakId));
-            await _accountService.Data.Update(account.id, Builders<Account>.Update.Set("teamspeakIdentities", account.teamspeakIdentities));
-            account = _accountService.Data.GetSingle(account.id);
+            account.TeamspeakIdentities ??= new HashSet<double>();
+            account.TeamspeakIdentities.Add(double.Parse(teamspeakId));
+            await _accountContext.Update(account.Id, Builders<Account>.Update.Set("teamspeakIdentities", account.TeamspeakIdentities));
+            account = _accountContext.GetSingle(account.Id);
             _accountEventBus.Send(account);
             _notificationsService.SendTeamspeakNotification(
                 new HashSet<double> { teamspeakId.ToDouble() },
-                $"This teamspeak identity has been linked to the account with email '{account.email}'\nIf this was not done by you, please contact an admin"
+                $"This teamspeak identity has been linked to the account with email '{account.Email}'\nIf this was not done by you, please contact an admin"
             );
-            _logger.LogAudit($"Teamspeak ID {teamspeakId} added for {account.id}");
+            _logger.LogAudit($"Teamspeak ID {teamspeakId} added for {account.Id}");
             return Ok();
         }
     }

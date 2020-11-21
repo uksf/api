@@ -10,29 +10,32 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {
     public class LogEventHandlerTests {
-        private readonly Subject<BasicLog> _loggerSubject = new Subject<BasicLog>();
-        private readonly Mock<IAuditLogDataService> _mockAuditLogDataService;
-        private readonly Mock<IHttpErrorLogDataService> _mockHttpErrorLogDataService;
-        private readonly Mock<ILauncherLogDataService> _mockLauncherLogDataService;
-        private readonly Mock<ILogDataService> _mockLogDataService;
+        private readonly Subject<BasicLog> _loggerSubject = new();
+        private readonly Mock<IAuditLogContext> _mockAuditLogDataService;
+        private readonly Mock<IDiscordLogContext> _mockDiscordLogDataService;
+        private readonly Mock<IHttpErrorLogContext> _mockHttpErrorLogDataService;
+        private readonly Mock<ILauncherLogContext> _mockLauncherLogDataService;
+        private readonly Mock<ILogContext> _mockLogDataService;
         private readonly Mock<IObjectIdConversionService> _mockObjectIdConversionService;
 
         public LogEventHandlerTests() {
-            _mockLogDataService = new Mock<ILogDataService>();
-            _mockAuditLogDataService = new Mock<IAuditLogDataService>();
-            _mockHttpErrorLogDataService = new Mock<IHttpErrorLogDataService>();
-            _mockLauncherLogDataService = new Mock<ILauncherLogDataService>();
+            _mockLogDataService = new Mock<ILogContext>();
+            _mockAuditLogDataService = new Mock<IAuditLogContext>();
+            _mockHttpErrorLogDataService = new Mock<IHttpErrorLogContext>();
+            _mockLauncherLogDataService = new Mock<ILauncherLogContext>();
+            _mockDiscordLogDataService = new Mock<IDiscordLogContext>();
             _mockObjectIdConversionService = new Mock<IObjectIdConversionService>();
 
-            Mock<ILogger> mockLogger = new Mock<ILogger>();
+            Mock<ILogger> mockLogger = new();
             mockLogger.Setup(x => x.AsObservable()).Returns(_loggerSubject);
             _mockObjectIdConversionService.Setup(x => x.ConvertObjectIds(It.IsAny<string>())).Returns<string>(x => x);
 
-            LoggerEventHandler logEventHandler = new LoggerEventHandler(
+            LoggerEventHandler logEventHandler = new(
                 _mockLogDataService.Object,
                 _mockAuditLogDataService.Object,
                 _mockHttpErrorLogDataService.Object,
                 _mockLauncherLogDataService.Object,
+                _mockDiscordLogDataService.Object,
                 mockLogger.Object,
                 _mockObjectIdConversionService.Object
             );
@@ -41,7 +44,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
         [Fact]
         public void When_handling_a_basic_log() {
-            BasicLog basicLog = new BasicLog("test");
+            BasicLog basicLog = new("test");
 
             _loggerSubject.OnNext(basicLog);
 
@@ -50,8 +53,17 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         }
 
         [Fact]
+        public void When_handling_a_discord_log() {
+            DiscordLog discordLog = new(DiscordUserEventType.JOINED, "SqnLdr.Beswick.T", "12345", "SqnLdr.Beswick.T joined");
+
+            _loggerSubject.OnNext(discordLog);
+
+            _mockDiscordLogDataService.Verify(x => x.Add(discordLog), Times.Once);
+        }
+
+        [Fact]
         public void When_handling_a_launcher_log() {
-            LauncherLog launcherLog = new LauncherLog("1.0.0", "test");
+            LauncherLog launcherLog = new("1.0.0", "test");
 
             _loggerSubject.OnNext(launcherLog);
 
@@ -61,7 +73,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
         [Fact]
         public void When_handling_an_audit_log() {
-            AuditLog basicLog = new AuditLog("server", "test");
+            AuditLog basicLog = new("server", "test");
 
             _loggerSubject.OnNext(basicLog);
 
@@ -72,7 +84,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
         [Fact]
         public void When_handling_an_http_error_log() {
-            HttpErrorLog httpErrorLog = new HttpErrorLog(new Exception());
+            HttpErrorLog httpErrorLog = new(new Exception());
 
             _loggerSubject.OnNext(httpErrorLog);
 

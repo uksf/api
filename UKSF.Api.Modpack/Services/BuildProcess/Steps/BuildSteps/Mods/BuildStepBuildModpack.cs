@@ -16,7 +16,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
             string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
 
             StepLogger.LogSurround("\nRunning make.py...");
-            BuildProcessHelper processHelper = new BuildProcessHelper(StepLogger, CancellationTokenSource);
+            BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource);
             processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int) TimeSpan.FromMinutes(5).TotalMilliseconds);
             StepLogger.LogSurround("Make.py complete");
 

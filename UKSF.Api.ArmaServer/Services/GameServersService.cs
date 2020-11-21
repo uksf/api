@@ -12,11 +12,10 @@ using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.Base.Context;
 using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.ArmaServer.Services {
-    public interface IGameServersService : IDataBackedService<IGameServersDataService> {
+    public interface IGameServersService {
         int GetGameInstanceCount();
         Task UploadMissionFile(IFormFile file);
         List<MissionFile> GetMissionFiles();
@@ -32,13 +31,15 @@ namespace UKSF.Api.ArmaServer.Services {
         List<GameServerMod> GetEnvironmentMods(GameEnvironment environment);
     }
 
-    public class GameServersService : DataBackedService<IGameServersDataService>, IGameServersService {
+    public class GameServersService : IGameServersService {
         private readonly IGameServerHelpers _gameServerHelpers;
+        private readonly IGameServersContext _gameServersContext;
         private readonly IMissionPatchingService _missionPatchingService;
 
-        public GameServersService(IGameServersDataService data, IMissionPatchingService missionPatchingService, IGameServerHelpers gameServerHelpers) : base(data) {
-            this._missionPatchingService = missionPatchingService;
-            this._gameServerHelpers = gameServerHelpers;
+        public GameServersService(IGameServersContext gameServersContext, IMissionPatchingService missionPatchingService, IGameServerHelpers gameServerHelpers) {
+            _gameServersContext = gameServersContext;
+            _missionPatchingService = missionPatchingService;
+            _gameServerHelpers = gameServerHelpers;
         }
 
         public int GetGameInstanceCount() => _gameServerHelpers.GetArmaProcesses().Count();
@@ -46,44 +47,44 @@ namespace UKSF.Api.ArmaServer.Services {
         public async Task UploadMissionFile(IFormFile file) {
             string fileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
             string filePath = Path.Combine(_gameServerHelpers.GetGameServerMissionsPath(), fileName);
-            await using FileStream stream = new FileStream(filePath, FileMode.Create);
+            await using FileStream stream = new(filePath, FileMode.Create);
             await file.CopyToAsync(stream);
         }
 
         public List<MissionFile> GetMissionFiles() {
             IEnumerable<FileInfo> files = new DirectoryInfo(_gameServerHelpers.GetGameServerMissionsPath()).EnumerateFiles("*.pbo", SearchOption.TopDirectoryOnly);
-            return files.Select(fileInfo => new MissionFile(fileInfo)).OrderBy(x => x.map).ThenBy(x => x.name).ToList();
+            return files.Select(fileInfo => new MissionFile(fileInfo)).OrderBy(x => x.Map).ThenBy(x => x.Name).ToList();
         }
 
         public async Task GetGameServerStatus(GameServer gameServer) {
-            if (gameServer.processId != 0) {
-                gameServer.status.started = Process.GetProcesses().Any(x => x.Id == gameServer.processId);
-                if (!gameServer.status.started) {
-                    gameServer.processId = 0;
+            if (gameServer.ProcessId != 0) {
+                gameServer.Status.Started = Process.GetProcesses().Any(x => x.Id == gameServer.ProcessId);
+                if (!gameServer.Status.Started) {
+                    gameServer.ProcessId = 0;
                 }
             }
 
-            using HttpClient client = new HttpClient();
+            using HttpClient client = new();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             try {
-                HttpResponseMessage response = await client.GetAsync($"http://localhost:{gameServer.apiPort}/server");
+                HttpResponseMessage response = await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server");
                 if (!response.IsSuccessStatusCode) {
-                    gameServer.status.running = false;
+                    gameServer.Status.Running = false;
                 }
 
                 string content = await response.Content.ReadAsStringAsync();
-                gameServer.status = JsonConvert.DeserializeObject<GameServerStatus>(content);
-                gameServer.status.parsedUptime = _gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(gameServer.status.uptime)).ToString();
-                gameServer.status.maxPlayers = _gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
-                gameServer.status.running = true;
-                gameServer.status.started = false;
+                gameServer.Status = JsonConvert.DeserializeObject<GameServerStatus>(content);
+                gameServer.Status.ParsedUptime = _gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(gameServer.Status.Uptime)).ToString();
+                gameServer.Status.MaxPlayers = _gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
+                gameServer.Status.Running = true;
+                gameServer.Status.Started = false;
             } catch (Exception) {
-                gameServer.status.running = false;
+                gameServer.Status.Running = false;
             }
         }
 
         public async Task<List<GameServer>> GetAllGameServerStatuses() {
-            List<GameServer> gameServers = Data.Get().ToList();
+            List<GameServer> gameServers = _gameServersContext.Get().ToList();
             await Task.WhenAll(gameServers.Select(GetGameServerStatus));
             return gameServers;
         }
@@ -110,15 +111,15 @@ namespace UKSF.Api.ArmaServer.Services {
 
         public async Task LaunchGameServer(GameServer gameServer) {
             string launchArguments = _gameServerHelpers.FormatGameServerLaunchArguments(gameServer);
-            gameServer.processId = ProcessUtilities.LaunchManagedProcess(_gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments);
+            gameServer.ProcessId = ProcessUtilities.LaunchManagedProcess(_gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments);
 
             await Task.Delay(TimeSpan.FromSeconds(1));
 
             // launch headless clients
-            if (gameServer.numberHeadlessClients > 0) {
-                for (int index = 0; index < gameServer.numberHeadlessClients; index++) {
+            if (gameServer.NumberHeadlessClients > 0) {
+                for (int index = 0; index < gameServer.NumberHeadlessClients; index++) {
                     launchArguments = _gameServerHelpers.FormatHeadlessClientLaunchArguments(gameServer, index);
-                    gameServer.headlessClientProcessIds.Add(ProcessUtilities.LaunchManagedProcess(_gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments));
+                    gameServer.HeadlessClientProcessIds.Add(ProcessUtilities.LaunchManagedProcess(_gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments));
 
                     await Task.Delay(TimeSpan.FromSeconds(1));
                 }
@@ -127,19 +128,19 @@ namespace UKSF.Api.ArmaServer.Services {
 
         public async Task StopGameServer(GameServer gameServer) {
             try {
-                using HttpClient client = new HttpClient();
+                using HttpClient client = new();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                await client.GetAsync($"http://localhost:{gameServer.apiPort}/server/stop");
+                await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server/stop");
             } catch (Exception) {
                 // ignored
             }
 
-            if (gameServer.numberHeadlessClients > 0) {
-                for (int index = 0; index < gameServer.numberHeadlessClients; index++) {
+            if (gameServer.NumberHeadlessClients > 0) {
+                for (int index = 0; index < gameServer.NumberHeadlessClients; index++) {
                     try {
-                        using HttpClient client = new HttpClient();
+                        using HttpClient client = new();
                         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                        await client.GetAsync($"http://localhost:{gameServer.apiPort + index + 1}/server/stop");
+                        await client.GetAsync($"http://localhost:{gameServer.ApiPort + index + 1}/server/stop");
                     } catch (Exception) {
                         // ignored
                     }
@@ -148,18 +149,18 @@ namespace UKSF.Api.ArmaServer.Services {
         }
 
         public void KillGameServer(GameServer gameServer) {
-            if (!gameServer.processId.HasValue) {
+            if (!gameServer.ProcessId.HasValue) {
                 throw new NullReferenceException();
             }
 
-            Process process = Process.GetProcesses().FirstOrDefault(x => x.Id == gameServer.processId.Value);
+            Process process = Process.GetProcesses().FirstOrDefault(x => x.Id == gameServer.ProcessId.Value);
             if (process != null && !process.HasExited) {
                 process.Kill();
             }
 
-            gameServer.processId = null;
+            gameServer.ProcessId = null;
 
-            gameServer.headlessClientProcessIds.ForEach(
+            gameServer.HeadlessClientProcessIds.ForEach(
                 x => {
                     process = Process.GetProcesses().FirstOrDefault(y => y.Id == x);
                     if (process != null && !process.HasExited) {
@@ -167,7 +168,7 @@ namespace UKSF.Api.ArmaServer.Services {
                     }
                 }
             );
-            gameServer.headlessClientProcessIds.Clear();
+            gameServer.HeadlessClientProcessIds.Clear();
         }
 
         public int KillAllArmaProcesses() {
@@ -176,36 +177,36 @@ namespace UKSF.Api.ArmaServer.Services {
                 process.Kill();
             }
 
-            Data.Get()
-                .ToList()
-                .ForEach(
-                    x => {
-                        x.processId = null;
-                        x.headlessClientProcessIds.Clear();
-                    }
-                );
+            _gameServersContext.Get()
+                               .ToList()
+                               .ForEach(
+                                   x => {
+                                       x.ProcessId = null;
+                                       x.HeadlessClientProcessIds.Clear();
+                                   }
+                               );
             return processes.Count;
         }
 
         public List<GameServerMod> GetAvailableMods(string id) {
-            GameServer gameServer = Data.GetSingle(id);
-            Uri serverExecutable = new Uri(_gameServerHelpers.GetGameServerExecutablePath(gameServer));
-            List<GameServerMod> mods = new List<GameServerMod>();
-            IEnumerable<string> availableModsFolders = new[] { _gameServerHelpers.GetGameServerModsPaths(gameServer.environment) };
+            GameServer gameServer = _gameServersContext.GetSingle(id);
+            Uri serverExecutable = new(_gameServerHelpers.GetGameServerExecutablePath(gameServer));
+            List<GameServerMod> mods = new();
+            IEnumerable<string> availableModsFolders = new[] { _gameServerHelpers.GetGameServerModsPaths(gameServer.Environment) };
             IEnumerable<string> extraModsFolders = _gameServerHelpers.GetGameServerExtraModsPaths();
             availableModsFolders = availableModsFolders.Concat(extraModsFolders);
             foreach (string modsPath in availableModsFolders) {
                 IEnumerable<DirectoryInfo> modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("@*", SearchOption.TopDirectoryOnly);
                 foreach (DirectoryInfo modFolder in modFolders) {
-                    if (mods.Any(x => x.path == modFolder.FullName)) continue;
+                    if (mods.Any(x => x.Path == modFolder.FullName)) continue;
 
                     IEnumerable<FileInfo> modFiles = new DirectoryInfo(modFolder.FullName).EnumerateFiles("*.pbo", SearchOption.AllDirectories);
                     if (!modFiles.Any()) continue;
 
-                    GameServerMod mod = new GameServerMod { name = modFolder.Name, path = modFolder.FullName };
-                    Uri modFolderUri = new Uri(mod.path);
+                    GameServerMod mod = new() { Name = modFolder.Name, Path = modFolder.FullName };
+                    Uri modFolderUri = new(mod.Path);
                     if (serverExecutable.IsBaseOf(modFolderUri)) {
-                        mod.pathRelativeToServerExecutable = Uri.UnescapeDataString(serverExecutable.MakeRelativeUri(modFolderUri).ToString());
+                        mod.PathRelativeToServerExecutable = Uri.UnescapeDataString(serverExecutable.MakeRelativeUri(modFolderUri).ToString());
                     }
 
                     mods.Add(mod);
@@ -213,12 +214,12 @@ namespace UKSF.Api.ArmaServer.Services {
             }
 
             foreach (GameServerMod mod in mods) {
-                if (mods.Any(x => x.name == mod.name && x.path != mod.path)) {
-                    mod.isDuplicate = true;
+                if (mods.Any(x => x.Name == mod.Name && x.Path != mod.Path)) {
+                    mod.IsDuplicate = true;
                 }
 
-                foreach (GameServerMod duplicate in mods.Where(x => x.name == mod.name && x.path != mod.path)) {
-                    duplicate.isDuplicate = true;
+                foreach (GameServerMod duplicate in mods.Where(x => x.Name == mod.Name && x.Path != mod.Path)) {
+                    duplicate.IsDuplicate = true;
                 }
             }
 
@@ -230,7 +231,7 @@ namespace UKSF.Api.ArmaServer.Services {
             IEnumerable<DirectoryInfo> modFolders = new DirectoryInfo(repoModsFolder).EnumerateDirectories("@*", SearchOption.TopDirectoryOnly);
             return modFolders.Select(modFolder => new { modFolder, modFiles = new DirectoryInfo(modFolder.FullName).EnumerateFiles("*.pbo", SearchOption.AllDirectories) })
                              .Where(x => x.modFiles.Any())
-                             .Select(x => new GameServerMod { name = x.modFolder.Name, path = x.modFolder.FullName })
+                             .Select(x => new GameServerMod { Name = x.modFolder.Name, Path = x.modFolder.FullName })
                              .ToList();
         }
     }

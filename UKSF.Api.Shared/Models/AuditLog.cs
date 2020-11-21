@@ -1,10 +1,10 @@
 ﻿namespace UKSF.Api.Shared.Models {
-    public class AuditLog : BasicLog {
-        public string who;
+    public record AuditLog : BasicLog {
+        public string Who;
 
         public AuditLog(string who, string message) : base(message) {
-            this.who = who;
-            level = LogLevel.INFO;
+            Who = who;
+            Level = LogLevel.INFO;
         }
     }
 }

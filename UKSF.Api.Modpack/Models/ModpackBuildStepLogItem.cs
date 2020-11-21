@@ -2,8 +2,8 @@
 
 namespace UKSF.Api.Modpack.Models {
     public class ModpackBuildStepLogItem {
-        public string Text;
         public string Colour;
+        public string Text;
     }
 
     public class ModpackBuildStepLogItemUpdate {

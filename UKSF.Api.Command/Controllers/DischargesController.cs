@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Extensions;
+using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Services;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
@@ -16,44 +18,44 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Command.Controllers {
     [Route("[controller]"), Permissions(Permissions.PERSONNEL, Permissions.NCO, Permissions.RECRUITER)]
     public class DischargesController : Controller {
-        private readonly IAccountService _accountService;
+        private readonly IAccountContext _accountContext;
         private readonly IAssignmentService _assignmentService;
         private readonly ICommandRequestService _commandRequestService;
-        private readonly IDischargeService _dischargeService;
+        private readonly IDischargeContext _dischargeContext;
         private readonly IHttpContextService _httpContextService;
         private readonly ILogger _logger;
         private readonly INotificationsService _notificationsService;
-        private readonly IUnitsService _unitsService;
-        private readonly IVariablesDataService _variablesDataService;
+        private readonly IUnitsContext _unitsContext;
+        private readonly IVariablesContext _variablesContext;
 
         public DischargesController(
-            IAccountService accountService,
+            IDischargeContext dischargeContext,
+            IAccountContext accountContext,
+            IUnitsContext unitsContext,
             IAssignmentService assignmentService,
             ICommandRequestService commandRequestService,
-            IDischargeService dischargeService,
             INotificationsService notificationsService,
             IHttpContextService httpContextService,
-            IUnitsService unitsService,
-            IVariablesDataService variablesDataService,
+            IVariablesContext variablesContext,
             ILogger logger
         ) {
-            _accountService = accountService;
+            _dischargeContext = dischargeContext;
+            _accountContext = accountContext;
+            _unitsContext = unitsContext;
             _assignmentService = assignmentService;
             _commandRequestService = commandRequestService;
-            _dischargeService = dischargeService;
             _notificationsService = notificationsService;
             _httpContextService = httpContextService;
-            _unitsService = unitsService;
-            _variablesDataService = variablesDataService;
+            _variablesContext = variablesContext;
             _logger = logger;
         }
 
         [HttpGet]
         public IActionResult Get() {
-            IEnumerable<DischargeCollection> discharges = _dischargeService.Data.Get();
+            IEnumerable<DischargeCollection> discharges = _dischargeContext.Get();
             foreach (DischargeCollection discharge in discharges) {
-                discharge.requestExists = _commandRequestService.DoesEquivalentRequestExist(
-                    new CommandRequest { Recipient = discharge.accountId, Type = CommandRequestType.REINSTATE_MEMBER, DisplayValue = "Member", DisplayFrom = "Discharged" }
+                discharge.RequestExists = _commandRequestService.DoesEquivalentRequestExist(
+                    new CommandRequest { Recipient = discharge.AccountId, Type = CommandRequestType.REINSTATE_MEMBER, DisplayValue = "Member", DisplayFrom = "Discharged" }
                 );
             }
 
@@ -62,11 +64,11 @@ namespace UKSF.Api.Command.Controllers {
 
         [HttpGet("reinstate/{id}")]
         public async Task<IActionResult> Reinstate(string id) {
-            DischargeCollection dischargeCollection = _dischargeService.Data.GetSingle(id);
-            await _dischargeService.Data.Update(dischargeCollection.id, Builders<DischargeCollection>.Update.Set(x => x.reinstated, true));
-            await _accountService.Data.Update(dischargeCollection.accountId, "membershipState", MembershipState.MEMBER);
+            DischargeCollection dischargeCollection = _dischargeContext.GetSingle(id);
+            await _dischargeContext.Update(dischargeCollection.Id, Builders<DischargeCollection>.Update.Set(x => x.Reinstated, true));
+            await _accountContext.Update(dischargeCollection.AccountId, x => x.MembershipState, MembershipState.MEMBER);
             Notification notification = await _assignmentService.UpdateUnitRankAndRole(
-                dischargeCollection.accountId,
+                dischargeCollection.AccountId,
                 "Basic Training Unit",
                 "Trainee",
                 "Recruit",
@@ -76,15 +78,15 @@ namespace UKSF.Api.Command.Controllers {
             );
             _notificationsService.Add(notification);
 
-            _logger.LogAudit($"{_httpContextService.GetUserId()} reinstated {dischargeCollection.name}'s membership", _httpContextService.GetUserId());
-            string personnelId = _variablesDataService.GetSingle("UNIT_ID_PERSONNEL").AsString();
-            foreach (string member in _unitsService.Data.GetSingle(personnelId).members.Where(x => x != _httpContextService.GetUserId())) {
+            _logger.LogAudit($"{_httpContextService.GetUserId()} reinstated {dischargeCollection.Name}'s membership", _httpContextService.GetUserId());
+            string personnelId = _variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
+            foreach (string member in _unitsContext.GetSingle(personnelId).Members.Where(x => x != _httpContextService.GetUserId())) {
                 _notificationsService.Add(
-                    new Notification { owner = member, icon = NotificationIcons.PROMOTION, message = $"{dischargeCollection.name}'s membership was reinstated by {_httpContextService.GetUserId()}" }
+                    new Notification { Owner = member, Icon = NotificationIcons.PROMOTION, Message = $"{dischargeCollection.Name}'s membership was reinstated by {_httpContextService.GetUserId()}" }
                 );
             }
 
-            return Ok(_dischargeService.Data.Get());
+            return Ok(_dischargeContext.Get());
         }
     }
 }

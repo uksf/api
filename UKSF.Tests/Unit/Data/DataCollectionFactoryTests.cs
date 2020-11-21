@@ -2,18 +2,18 @@
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Base.Context;
-using UKSF.Tests.Common;
+using UKSF.Api.Tests.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data {
     public class DataCollectionFactoryTests {
         [Fact]
         public void ShouldCreateDataCollection() {
-            Mock<IMongoDatabase> mockMongoDatabase = new Mock<IMongoDatabase>();
+            Mock<IMongoDatabase> mockMongoDatabase = new();
 
-            DataCollectionFactory dataCollectionFactory = new DataCollectionFactory(mockMongoDatabase.Object);
+            MongoCollectionFactory mongoCollectionFactory = new(mockMongoDatabase.Object);
 
-            IDataCollection<TestDataModel> subject = dataCollectionFactory.CreateDataCollection<TestDataModel>("test");
+            Api.Base.Context.IMongoCollection<TestDataModel> subject = mongoCollectionFactory.CreateMongoCollection<TestDataModel>("test");
 
             subject.Should().NotBeNull();
         }

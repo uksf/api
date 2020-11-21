@@ -51,7 +51,7 @@ namespace UKSF.Api.Modpack.Services {
             string secret = _configuration.GetSection("Github")["webhookSecret"];
             byte[] data = Encoding.UTF8.GetBytes(body);
             byte[] secretData = Encoding.UTF8.GetBytes(secret);
-            using HMACSHA1 hmac = new HMACSHA1(secretData);
+            using HMACSHA1 hmac = new(secretData);
             byte[] hash = hmac.ComputeHash(data);
             string sha1 = $"sha1={BitConverter.ToString(hash).ToLower().Replace("-", "")}";
             return string.Equals(sha1, signature);
@@ -148,7 +148,7 @@ namespace UKSF.Api.Modpack.Services {
         public async Task<List<string>> GetBranches() {
             GitHubClient client = await GetAuthenticatedClient();
             IReadOnlyList<Branch> branches = await client.Repository.Branch.GetAll(REPO_ORG, REPO_NAME);
-            ConcurrentBag<string> validBranchesBag = new ConcurrentBag<string>();
+            ConcurrentBag<string> validBranchesBag = new();
             IEnumerable<Task> task = branches.Select(
                 async branch => {
                     if (await IsReferenceValid(branch.Name)) {
@@ -244,15 +244,15 @@ namespace UKSF.Api.Modpack.Services {
         }
 
         private async Task<GitHubClient> GetAuthenticatedClient() {
-            GitHubClient client = new GitHubClient(new ProductHeaderValue(APP_NAME)) { Credentials = new Credentials(GetJwtToken(), AuthenticationType.Bearer) };
+            GitHubClient client = new(new ProductHeaderValue(APP_NAME)) { Credentials = new Credentials(GetJwtToken(), AuthenticationType.Bearer) };
             AccessToken response = await client.GitHubApps.CreateInstallationToken(APP_INSTALLATION);
-            GitHubClient installationClient = new GitHubClient(new ProductHeaderValue(APP_NAME)) { Credentials = new Credentials(response.Token) };
+            GitHubClient installationClient = new(new ProductHeaderValue(APP_NAME)) { Credentials = new Credentials(response.Token) };
             return installationClient;
         }
 
         private string GetJwtToken() {
             string privateKey = _configuration.GetSection("Github")["appPrivateKey"].Replace("\n", Environment.NewLine, StringComparison.Ordinal);
-            GitHubJwtFactory generator = new GitHubJwtFactory(new StringPrivateKeySource(privateKey), new GitHubJwtFactoryOptions { AppIntegrationId = APP_ID, ExpirationSeconds = 540 });
+            GitHubJwtFactory generator = new(new StringPrivateKeySource(privateKey), new GitHubJwtFactoryOptions { AppIntegrationId = APP_ID, ExpirationSeconds = 540 });
             return generator.CreateEncodedJwtToken();
         }
     }

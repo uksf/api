@@ -16,55 +16,61 @@ using UKSF.Api.Shared.Events;
 namespace UKSF.Api.Personnel.Controllers {
     [Route("[controller]")]
     public class DiscordConnectionController : Controller {
-        private readonly string botToken;
-        private readonly string clientId;
-        private readonly string clientSecret;
+        private readonly string _botToken;
+        private readonly string _clientId;
+        private readonly string _clientSecret;
 
-        private readonly IConfirmationCodeService confirmationCodeService;
-        private readonly IVariablesService variablesService;
-        private readonly ILogger logger;
-        private readonly string url;
-        private readonly string urlReturn;
+        private readonly IConfirmationCodeService _confirmationCodeService;
+        private readonly ILogger _logger;
+        private readonly string _url;
+        private readonly string _urlReturn;
+        private readonly IVariablesService _variablesService;
 
-        public DiscordConnectionController(IConfirmationCodeService confirmationCodeService, IConfiguration configuration, IHostEnvironment currentEnvironment, IVariablesService variablesService, ILogger logger) {
-            this.confirmationCodeService = confirmationCodeService;
-            this.variablesService = variablesService;
-            this.logger = logger;
-            clientId = configuration.GetSection("Discord")["clientId"];
-            clientSecret = configuration.GetSection("Discord")["clientSecret"];
-            botToken = configuration.GetSection("Discord")["botToken"];
+        public DiscordConnectionController(
+            IConfirmationCodeService confirmationCodeService,
+            IConfiguration configuration,
+            IHostEnvironment currentEnvironment,
+            IVariablesService variablesService,
+            ILogger logger
+        ) {
+            _confirmationCodeService = confirmationCodeService;
+            _variablesService = variablesService;
+            _logger = logger;
+            _clientId = configuration.GetSection("Discord")["clientId"];
+            _clientSecret = configuration.GetSection("Discord")["clientSecret"];
+            _botToken = configuration.GetSection("Discord")["botToken"];
 
-            url = currentEnvironment.IsDevelopment() ? "http://localhost:5000" : "https://api.uk-sf.co.uk";
-            urlReturn = currentEnvironment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
+            _url = currentEnvironment.IsDevelopment() ? "http://localhost:5000" : "https://api.uk-sf.co.uk";
+            _urlReturn = currentEnvironment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
         }
 
         [HttpGet]
         public IActionResult Get() =>
             Redirect(
-                $"https://discord.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={HttpUtility.UrlEncode($"{url}/discordconnection/success")}&response_type=code&scope=identify%20guilds.join"
+                $"https://discord.com/api/oauth2/authorize?client_id={_clientId}&redirect_uri={HttpUtility.UrlEncode($"{_url}/discordconnection/success")}&response_type=code&scope=identify%20guilds.join"
             );
 
         [HttpGet("application")]
         public IActionResult GetFromApplication() =>
             Redirect(
-                $"https://discord.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={HttpUtility.UrlEncode($"{url}/discordconnection/success/application")}&response_type=code&scope=identify%20guilds.join"
+                $"https://discord.com/api/oauth2/authorize?client_id={_clientId}&redirect_uri={HttpUtility.UrlEncode($"{_url}/discordconnection/success/application")}&response_type=code&scope=identify%20guilds.join"
             );
 
         [HttpGet("success")]
-        public async Task<IActionResult> Success([FromQuery] string code) => Redirect($"{urlReturn}/profile?{await GetUrlParameters(code, $"{url}/discordconnection/success")}");
+        public async Task<IActionResult> Success([FromQuery] string code) => Redirect($"{_urlReturn}/profile?{await GetUrlParameters(code, $"{_url}/discordconnection/success")}");
 
         [HttpGet("success/application")]
         public async Task<IActionResult> SuccessFromApplication([FromQuery] string code) =>
-            Redirect($"{urlReturn}/application?{await GetUrlParameters(code, $"{url}/discordconnection/success/application")}");
+            Redirect($"{_urlReturn}/application?{await GetUrlParameters(code, $"{_url}/discordconnection/success/application")}");
 
         private async Task<string> GetUrlParameters(string code, string redirectUrl) {
-            using HttpClient client = new HttpClient();
+            using HttpClient client = new();
             HttpResponseMessage response = await client.PostAsync(
                 "https://discord.com/api/oauth2/token",
                 new FormUrlEncodedContent(
                     new Dictionary<string, string> {
-                        { "client_id", clientId },
-                        { "client_secret", clientSecret },
+                        { "client_id", _clientId },
+                        { "client_secret", _clientSecret },
                         { "grant_type", "authorization_code" },
                         { "code", code },
                         { "redirect_uri", redirectUrl },
@@ -74,13 +80,13 @@ namespace UKSF.Api.Personnel.Controllers {
             );
             string result = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode) {
-                logger.LogWarning($"A discord connection request was denied by the user, or an error occurred: {result}");
+                _logger.LogWarning($"A discord connection request was denied by the user, or an error occurred: {result}");
                 return "discordid=fail";
             }
 
             string token = JObject.Parse(result)["access_token"]?.ToString();
             if (string.IsNullOrEmpty(token)) {
-                logger.LogWarning("A discord connection request failed. Could not get access token");
+                _logger.LogWarning("A discord connection request failed. Could not get access token");
                 return "discordid=fail";
             }
 
@@ -90,22 +96,22 @@ namespace UKSF.Api.Personnel.Controllers {
             string id = JObject.Parse(result)["id"]?.ToString();
             string username = JObject.Parse(result)["username"]?.ToString();
             if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(username)) {
-                logger.LogWarning($"A discord connection request failed. Could not get username ({username}) or id ({id}) or an error occurred: {result}");
+                _logger.LogWarning($"A discord connection request failed. Could not get username ({username}) or id ({id}) or an error occurred: {result}");
                 return "discordid=fail";
             }
 
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", botToken);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", _botToken);
             response = await client.PutAsync(
-                $"https://discord.com/api/guilds/{variablesService.GetVariable("DID_SERVER").AsUlong()}/members/{id}",
+                $"https://discord.com/api/guilds/{_variablesService.GetVariable("DID_SERVER").AsUlong()}/members/{id}",
                 new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json")
             );
             string added = "true";
             if (!response.IsSuccessStatusCode) {
-                logger.LogWarning($"Failed to add '{username}' to guild: {response.StatusCode}, {response.Content.ReadAsStringAsync().Result}");
+                _logger.LogWarning($"Failed to add '{username}' to guild: {response.StatusCode}, {response.Content.ReadAsStringAsync().Result}");
                 added = "false";
             }
 
-            string confirmationCode = await confirmationCodeService.CreateConfirmationCode(id);
+            string confirmationCode = await _confirmationCodeService.CreateConfirmationCode(id);
             return $"validation={confirmationCode}&discordid={id}&added={added}";
         }
     }

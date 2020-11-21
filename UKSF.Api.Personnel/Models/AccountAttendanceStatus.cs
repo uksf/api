@@ -3,12 +3,12 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Personnel.Models {
     public class AccountAttendanceStatus {
-        [BsonRepresentation(BsonType.ObjectId)] public string accountId;
-        public float attendancePercent;
-        public AttendanceState attendanceState;
-        public string displayName;
-        [BsonRepresentation(BsonType.ObjectId)] public string groupId;
-        public string groupName;
+        [BsonRepresentation(BsonType.ObjectId)] public string AccountId;
+        public float AttendancePercent;
+        public AttendanceState AttendanceState;
+        public string DisplayName;
+        [BsonRepresentation(BsonType.ObjectId)] public string GroupId;
+        public string GroupName;
     }
 
     public enum AttendanceState {

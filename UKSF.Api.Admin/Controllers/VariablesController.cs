@@ -10,53 +10,53 @@ using UKSF.Api.Shared.Extensions;
 namespace UKSF.Api.Admin.Controllers {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]
     public class VariablesController : Controller {
-        private readonly IVariablesDataService variablesDataService;
-        private readonly ILogger logger;
+        private readonly ILogger _logger;
+        private readonly IVariablesContext _variablesContext;
 
-        public VariablesController(IVariablesDataService variablesDataService, ILogger logger) {
-            this.variablesDataService = variablesDataService;
-            this.logger = logger;
+        public VariablesController(IVariablesContext variablesContext, ILogger logger) {
+            _variablesContext = variablesContext;
+            _logger = logger;
         }
 
         [HttpGet, Authorize]
-        public IActionResult GetAll() => Ok(variablesDataService.Get());
+        public IActionResult GetAll() => Ok(_variablesContext.Get());
 
         [HttpGet("{key}"), Authorize]
-        public IActionResult GetVariableItems(string key) => Ok(variablesDataService.GetSingle(key));
+        public IActionResult GetVariableItems(string key) => Ok(_variablesContext.GetSingle(key));
 
         [HttpPost("{key}"), Authorize]
         public IActionResult CheckVariableItem(string key, [FromBody] VariableItem variableItem = null) {
             if (string.IsNullOrEmpty(key)) return Ok();
             if (variableItem != null) {
                 VariableItem safeVariableItem = variableItem;
-                return Ok(variablesDataService.GetSingle(x => x.id != safeVariableItem.id && x.key == key.Keyify()));
+                return Ok(_variablesContext.GetSingle(x => x.Id != safeVariableItem.Id && x.Key == key.Keyify()));
             }
 
-            return Ok(variablesDataService.GetSingle(x => x.key == key.Keyify()));
+            return Ok(_variablesContext.GetSingle(x => x.Key == key.Keyify()));
         }
 
         [HttpPut, Authorize]
         public async Task<IActionResult> AddVariableItem([FromBody] VariableItem variableItem) {
-            variableItem.key = variableItem.key.Keyify();
-            await variablesDataService.Add(variableItem);
-            logger.LogAudit($"VariableItem added '{variableItem.key}, {variableItem.item}'");
+            variableItem.Key = variableItem.Key.Keyify();
+            await _variablesContext.Add(variableItem);
+            _logger.LogAudit($"VariableItem added '{variableItem.Key}, {variableItem.Item}'");
             return Ok();
         }
 
         [HttpPatch, Authorize]
         public async Task<IActionResult> EditVariableItem([FromBody] VariableItem variableItem) {
-            VariableItem oldVariableItem = variablesDataService.GetSingle(variableItem.key);
-            logger.LogAudit($"VariableItem '{oldVariableItem.key}' updated from '{oldVariableItem.item}' to '{variableItem.item}'");
-            await variablesDataService.Update(variableItem.key, variableItem.item);
-            return Ok(variablesDataService.Get());
+            VariableItem oldVariableItem = _variablesContext.GetSingle(variableItem.Key);
+            _logger.LogAudit($"VariableItem '{oldVariableItem.Key}' updated from '{oldVariableItem.Item}' to '{variableItem.Item}'");
+            await _variablesContext.Update(variableItem.Key, variableItem.Item);
+            return Ok(_variablesContext.Get());
         }
 
         [HttpDelete("{key}"), Authorize]
         public async Task<IActionResult> DeleteVariableItem(string key) {
-            VariableItem variableItem = variablesDataService.GetSingle(key);
-            logger.LogAudit($"VariableItem deleted '{variableItem.key}, {variableItem.item}'");
-            await variablesDataService.Delete(key);
-            return Ok(variablesDataService.Get());
+            VariableItem variableItem = _variablesContext.GetSingle(key);
+            _logger.LogAudit($"VariableItem deleted '{variableItem.Key}, {variableItem.Item}'");
+            await _variablesContext.Delete(key);
+            return Ok(_variablesContext.Get());
         }
     }
 }

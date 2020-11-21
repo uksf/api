@@ -9,23 +9,26 @@ namespace UKSF.Api.Shared.Models {
         WARNING
     }
 
-    public class BasicLog : DatabaseObject {
-        public LogLevel level = LogLevel.INFO;
-        public string message;
-        public DateTime timestamp = DateTime.UtcNow;
+    public record BasicLog : MongoObject {
+        protected BasicLog() {
+            Level = LogLevel.INFO;
+            Timestamp = DateTime.UtcNow;
+        }
 
-        protected BasicLog() { }
-
-        public BasicLog(string text) : this() => message = text;
+        public BasicLog(string text) : this() => Message = text;
 
         public BasicLog(string text, LogLevel logLevel) : this() {
-            message = text;
-            level = logLevel;
+            Message = text;
+            Level = logLevel;
         }
 
         public BasicLog(Exception exception) : this() {
-            message = exception.GetBaseException().ToString();
-            level = LogLevel.ERROR;
+            Message = exception.GetBaseException().ToString();
+            Level = LogLevel.ERROR;
         }
+
+        public LogLevel Level { get; protected init; }
+        public string Message { get; set; }
+        public DateTime Timestamp { get; init; }
     }
 }

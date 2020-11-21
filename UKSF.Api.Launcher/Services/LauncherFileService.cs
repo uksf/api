@@ -10,67 +10,70 @@ using MimeMapping;
 using MongoDB.Driver;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
-using UKSF.Api.Base.Context;
 using UKSF.Api.Launcher.Context;
 using UKSF.Api.Launcher.Models;
 
 namespace UKSF.Api.Launcher.Services {
-    public interface ILauncherFileService : IDataBackedService<ILauncherFileDataService> {
+    public interface ILauncherFileService {
         Task UpdateAllVersions();
         FileStreamResult GetLauncherFile(params string[] file);
         Task<Stream> GetUpdatedFiles(IEnumerable<LauncherFile> files);
     }
 
-    public class LauncherFileService : DataBackedService<ILauncherFileDataService>, ILauncherFileService {
+    public class LauncherFileService : ILauncherFileService {
+        private readonly ILauncherFileContext _launcherFileContext;
         private readonly IVariablesService _variablesService;
 
-        public LauncherFileService(ILauncherFileDataService data, IVariablesService variablesService) : base(data) => _variablesService = variablesService;
+        public LauncherFileService(ILauncherFileContext launcherFileContext, IVariablesService variablesService) {
+            _launcherFileContext = launcherFileContext;
+            _variablesService = variablesService;
+        }
 
         public async Task UpdateAllVersions() {
-            List<LauncherFile> storedVersions = Data.Get().ToList();
+            List<LauncherFile> storedVersions = _launcherFileContext.Get().ToList();
             string launcherDirectory = Path.Combine(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), "Launcher");
-            List<string> fileNames = new List<string>();
+            List<string> fileNames = new();
             foreach (string filePath in Directory.EnumerateFiles(launcherDirectory)) {
                 string fileName = Path.GetFileName(filePath);
                 string version = FileVersionInfo.GetVersionInfo(filePath).FileVersion;
                 fileNames.Add(fileName);
-                LauncherFile storedFile = storedVersions.FirstOrDefault(x => x.fileName == fileName);
+                LauncherFile storedFile = storedVersions.FirstOrDefault(x => x.FileName == fileName);
                 if (storedFile == null) {
-                    await Data.Add(new LauncherFile { fileName = fileName, version = version });
+                    await _launcherFileContext.Add(new LauncherFile { FileName = fileName, Version = version });
                     continue;
                 }
 
-                if (storedFile.version != version) {
-                    await Data.Update(storedFile.id, Builders<LauncherFile>.Update.Set(x => x.version, version));
+                if (storedFile.Version != version) {
+                    await _launcherFileContext.Update(storedFile.Id, Builders<LauncherFile>.Update.Set(x => x.Version, version));
                 }
             }
 
-            foreach (LauncherFile storedVersion in storedVersions.Where(storedVersion => fileNames.All(x => x != storedVersion.fileName))) {
-                await Data.Delete(storedVersion);
+            foreach (LauncherFile storedVersion in storedVersions.Where(storedVersion => fileNames.All(x => x != storedVersion.FileName))) {
+                await _launcherFileContext.Delete(storedVersion);
             }
         }
 
         public FileStreamResult GetLauncherFile(params string[] file) {
             string[] paths = file.Prepend(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString()).ToArray();
             string path = Path.Combine(paths);
-            FileStreamResult fileStreamResult = new FileStreamResult(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read), MimeUtility.GetMimeMapping(path));
+            FileStreamResult fileStreamResult = new(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read), MimeUtility.GetMimeMapping(path));
             return fileStreamResult;
         }
 
         public async Task<Stream> GetUpdatedFiles(IEnumerable<LauncherFile> files) {
             string launcherDirectory = Path.Combine(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), "Launcher");
-            List<LauncherFile> storedVersions = Data.Get().ToList();
-            List<string> updatedFiles = new List<string>();
-            List<string> deletedFiles = new List<string>();
+            List<LauncherFile> storedVersions = _launcherFileContext.Get().ToList();
+            List<string> updatedFiles = new();
+            List<string> deletedFiles = new();
             foreach (LauncherFile launcherFile in files) {
-                LauncherFile storedFile = storedVersions.FirstOrDefault(x => x.fileName == launcherFile.fileName);
+                LauncherFile storedFile = storedVersions.FirstOrDefault(x => x.FileName == launcherFile.FileName);
                 if (storedFile == null) {
-                    deletedFiles.Add(launcherFile.fileName);
+                    deletedFiles.Add(launcherFile.FileName);
                     continue;
                 }
 
-                if (storedFile.version != launcherFile.version || new Random().Next(0, 100) > 80) { //TODO: remove before release
-                    updatedFiles.Add(launcherFile.fileName);
+                if (storedFile.Version != launcherFile.Version || new Random().Next(0, 100) > 80) { //TODO: remove before release
+                    updatedFiles.Add(launcherFile.FileName);
                 }
             }
 
@@ -87,8 +90,8 @@ namespace UKSF.Api.Launcher.Services {
 
             string updateZipPath = Path.Combine(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), $"{updateFolderName}.zip");
             ZipFile.CreateFromDirectory(updateFolder, updateZipPath);
-            MemoryStream stream = new MemoryStream();
-            await using (FileStream fileStream = new FileStream(updateZipPath, FileMode.Open, FileAccess.Read, FileShare.None)) {
+            MemoryStream stream = new();
+            await using (FileStream fileStream = new(updateZipPath, FileMode.Open, FileAccess.Read, FileShare.None)) {
                 await fileStream.CopyToAsync(stream);
             }
 

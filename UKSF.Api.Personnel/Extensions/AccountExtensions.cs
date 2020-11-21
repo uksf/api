@@ -6,7 +6,7 @@ namespace UKSF.Api.Personnel.Extensions {
         // TODO: Use automapper
         public static PublicAccount ToPublicAccount(this Account account) {
             PublicAccount publicAccount = account.Copy<PublicAccount>();
-            publicAccount.password = null;
+            publicAccount.Password = null;
             return publicAccount;
         }
     }

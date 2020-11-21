@@ -9,20 +9,20 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Auth.Controllers {
     [Route("[controller]")]
     public class LoginController : Controller {
-        private readonly IHttpContextService httpContextService;
-        private readonly ILoginService loginService;
+        private readonly IHttpContextService _httpContextService;
+        private readonly ILoginService _loginService;
 
         public LoginController(ILoginService loginService, IHttpContextService httpContextService) {
-            this.loginService = loginService;
-            this.httpContextService = httpContextService;
+            _loginService = loginService;
+            _httpContextService = httpContextService;
         }
 
         [HttpGet]
-        public bool IsUserAuthenticated() => httpContextService.IsUserAuthenticated();
+        public bool IsUserAuthenticated() => _httpContextService.IsUserAuthenticated();
 
         [HttpGet("refresh"), Authorize]
         public IActionResult RefreshToken() {
-            string loginToken = loginService.RegenerateBearerToken(httpContextService.GetUserId());
+            string loginToken = _loginService.RegenerateBearerToken(_httpContextService.GetUserId());
             return loginToken != null ? (IActionResult) Ok(loginToken) : BadRequest();
         }
 
@@ -39,7 +39,7 @@ namespace UKSF.Api.Auth.Controllers {
             }
 
             try {
-                return Ok(loginService.Login(email, password));
+                return Ok(_loginService.Login(email, password));
             } catch (LoginFailedException e) {
                 return BadRequest(new { message = e.Message });
             }

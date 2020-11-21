@@ -9,7 +9,7 @@ namespace UKSF.Api.Base.Events {
     }
 
     public class EventBus<T> : IEventBus<T> {
-        protected readonly Subject<object> Subject = new Subject<object>();
+        protected readonly Subject<object> Subject = new();
 
         public void Send(T message) {
             Subject.OnNext(message);

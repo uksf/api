@@ -20,9 +20,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             string sourceBasePath = Path.Join(GetBuildEnvironmentPath(), "BaseKeys");
             string sourceRepoPath = Path.Join(GetBuildEnvironmentPath(), "Repo");
             string targetPath = Path.Join(GetBuildEnvironmentPath(), "Keys");
-            DirectoryInfo sourceBase = new DirectoryInfo(sourceBasePath);
-            DirectoryInfo sourceRepo = new DirectoryInfo(sourceRepoPath);
-            DirectoryInfo target = new DirectoryInfo(targetPath);
+            DirectoryInfo sourceBase = new(sourceBasePath);
+            DirectoryInfo sourceRepo = new(sourceRepoPath);
+            DirectoryInfo target = new(targetPath);
 
             StepLogger.LogSurround("\nCopying base keys...");
             List<FileInfo> baseKeys = GetDirectoryContents(sourceBase, "*.bikey");

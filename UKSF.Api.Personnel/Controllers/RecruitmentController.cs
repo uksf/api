@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
@@ -15,77 +16,92 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Personnel.Controllers {
     [Route("[controller]")]
     public class RecruitmentController : Controller {
-        private readonly IAccountService accountService;
-        private readonly IAssignmentService assignmentService;
-        private readonly IDisplayNameService displayNameService;
-        private readonly INotificationsService notificationsService;
-        private readonly IHttpContextService httpContextService;
-        private readonly ILogger logger;
-        private readonly IRecruitmentService recruitmentService;
+        private readonly IAccountContext _accountContext;
+        private readonly IAccountService _accountService;
+        private readonly IAssignmentService _assignmentService;
+        private readonly IDisplayNameService _displayNameService;
+        private readonly IHttpContextService _httpContextService;
+        private readonly ILogger _logger;
+        private readonly INotificationsService _notificationsService;
+        private readonly IRecruitmentService _recruitmentService;
 
-
-        public RecruitmentController(IAccountService accountService, IRecruitmentService recruitmentService, IAssignmentService assignmentService, IDisplayNameService displayNameService, INotificationsService notificationsService, IHttpContextService httpContextService, ILogger logger) {
-            this.accountService = accountService;
-            this.recruitmentService = recruitmentService;
-            this.assignmentService = assignmentService;
-
-            this.displayNameService = displayNameService;
-            this.notificationsService = notificationsService;
-            this.httpContextService = httpContextService;
-            this.logger = logger;
+        public RecruitmentController(
+            IAccountContext accountContext,
+            IAccountService accountService,
+            IRecruitmentService recruitmentService,
+            IAssignmentService assignmentService,
+            IDisplayNameService displayNameService,
+            INotificationsService notificationsService,
+            IHttpContextService httpContextService,
+            ILogger logger
+        ) {
+            _accountContext = accountContext;
+            _accountService = accountService;
+            _recruitmentService = recruitmentService;
+            _assignmentService = assignmentService;
+            _displayNameService = displayNameService;
+            _notificationsService = notificationsService;
+            _httpContextService = httpContextService;
+            _logger = logger;
         }
 
         [HttpGet, Authorize, Permissions(Permissions.RECRUITER)]
-        public IActionResult GetAll() => Ok(recruitmentService.GetAllApplications());
+        public IActionResult GetAll() => Ok(_recruitmentService.GetAllApplications());
 
         [HttpGet("{id}"), Authorize]
         public IActionResult GetSingle(string id) {
-            Account account = accountService.Data.GetSingle(id);
-            return Ok(recruitmentService.GetApplication(account));
+            Account account = _accountContext.GetSingle(id);
+            return Ok(_recruitmentService.GetApplication(account));
         }
 
         [HttpGet("isrecruiter"), Authorize, Permissions(Permissions.RECRUITER)]
-        public IActionResult GetIsRecruiter() => Ok(new {recruiter = recruitmentService.IsRecruiter(accountService.GetUserAccount())});
+        public IActionResult GetIsRecruiter() => Ok(new { recruiter = _recruitmentService.IsRecruiter(_accountService.GetUserAccount()) });
 
         [HttpGet("stats"), Authorize, Permissions(Permissions.RECRUITER)]
         public IActionResult GetRecruitmentStats() {
-            string account = httpContextService.GetUserId();
-            List<object> activity = new List<object>();
-            foreach (Account recruiterAccount in recruitmentService.GetRecruiters()) {
-                List<Account> recruiterApplications = accountService.Data.Get(x => x.application != null && x.application.recruiter == recruiterAccount.id).ToList();
+            string account = _httpContextService.GetUserId();
+            List<object> activity = new();
+            foreach (Account recruiterAccount in _recruitmentService.GetRecruiters()) {
+                List<Account> recruiterApplications = _accountContext.Get(x => x.Application != null && x.Application.Recruiter == recruiterAccount.Id).ToList();
                 activity.Add(
                     new {
-                        account = new {recruiterAccount.id, recruiterAccount.settings},
-                        name = displayNameService.GetDisplayName(recruiterAccount),
-                        active = recruiterApplications.Count(x => x.application.state == ApplicationState.WAITING),
-                        accepted = recruiterApplications.Count(x => x.application.state == ApplicationState.ACCEPTED),
-                        rejected = recruiterApplications.Count(x => x.application.state == ApplicationState.REJECTED)
+                        account = new { id = recruiterAccount.Id, settings = recruiterAccount.Settings },
+                        name = _displayNameService.GetDisplayName(recruiterAccount),
+                        active = recruiterApplications.Count(x => x.Application.State == ApplicationState.WAITING),
+                        accepted = recruiterApplications.Count(x => x.Application.State == ApplicationState.ACCEPTED),
+                        rejected = recruiterApplications.Count(x => x.Application.State == ApplicationState.REJECTED)
                     }
                 );
             }
 
-            return Ok(new {activity, yourStats = new {lastMonth = recruitmentService.GetStats(account, true), overall = recruitmentService.GetStats(account, false)}, sr1Stats = new {lastMonth = recruitmentService.GetStats("", true), overall = recruitmentService.GetStats("", false)}});
+            return Ok(
+                new {
+                    activity,
+                    yourStats = new { lastMonth = _recruitmentService.GetStats(account, true), overall = _recruitmentService.GetStats(account, false) },
+                    sr1Stats = new { lastMonth = _recruitmentService.GetStats("", true), overall = _recruitmentService.GetStats("", false) }
+                }
+            );
         }
 
         [HttpPost("{id}"), Authorize, Permissions(Permissions.RECRUITER)]
         public async Task<IActionResult> UpdateState([FromBody] dynamic body, string id) {
             ApplicationState updatedState = body.updatedState;
-            Account account = accountService.Data.GetSingle(id);
-            if (updatedState == account.application.state) return Ok();
-            string sessionId = httpContextService.GetUserId();
-            await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.state, updatedState));
-            logger.LogAudit($"Application state changed for {id} from {account.application.state} to {updatedState}");
+            Account account = _accountContext.GetSingle(id);
+            if (updatedState == account.Application.State) return Ok();
+            string sessionId = _httpContextService.GetUserId();
+            await _accountContext.Update(id, Builders<Account>.Update.Set(x => x.Application.State, updatedState));
+            _logger.LogAudit($"Application state changed for {id} from {account.Application.State} to {updatedState}");
 
             switch (updatedState) {
                 case ApplicationState.ACCEPTED: {
-                    await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now).Set(x => x.membershipState, MembershipState.MEMBER));
-                    Notification notification = await assignmentService.UpdateUnitRankAndRole(id, "Basic Training Unit", "Trainee", "Recruit", reason: "your application was accepted");
-                    notificationsService.Add(notification);
+                    await _accountContext.Update(id, Builders<Account>.Update.Set(x => x.Application.DateAccepted, DateTime.Now).Set(x => x.MembershipState, MembershipState.MEMBER));
+                    Notification notification = await _assignmentService.UpdateUnitRankAndRole(id, "Basic Training Unit", "Trainee", "Recruit", reason: "your application was accepted");
+                    _notificationsService.Add(notification);
                     break;
                 }
                 case ApplicationState.REJECTED: {
-                    await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.dateAccepted, DateTime.Now).Set(x => x.membershipState, MembershipState.CONFIRMED));
-                    Notification notification = await assignmentService.UpdateUnitRankAndRole(
+                    await _accountContext.Update(id, Builders<Account>.Update.Set(x => x.Application.DateAccepted, DateTime.Now).Set(x => x.MembershipState, MembershipState.CONFIRMED));
+                    Notification notification = await _assignmentService.UpdateUnitRankAndRole(
                         id,
                         AssignmentService.REMOVE_FLAG,
                         AssignmentService.REMOVE_FLAG,
@@ -93,17 +109,20 @@ namespace UKSF.Api.Personnel.Controllers {
                         "",
                         $"Unfortunately you have not been accepted into our unit, however we thank you for your interest and hope you find a suitable alternative. You can view any comments on your application here: [url]https://uk-sf.co.uk/recruitment/{id}[/url]"
                     );
-                    notificationsService.Add(notification);
+                    _notificationsService.Add(notification);
                     break;
                 }
                 case ApplicationState.WAITING: {
-                    await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.dateCreated, DateTime.Now).Unset(x => x.application.dateAccepted).Set(x => x.membershipState, MembershipState.CONFIRMED));
-                    Notification notification = await assignmentService.UpdateUnitRankAndRole(id, AssignmentService.REMOVE_FLAG, "Applicant", "Candidate", reason: "your application was reactivated");
-                    notificationsService.Add(notification);
-                    if (recruitmentService.GetRecruiters().All(x => x.id != account.application.recruiter)) {
-                        string newRecruiterId = recruitmentService.GetRecruiter();
-                        logger.LogAudit($"Application recruiter for {id} is no longer SR1, reassigning from {account.application.recruiter} to {newRecruiterId}");
-                        await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.recruiter, newRecruiterId));
+                    await _accountContext.Update(
+                        id,
+                        Builders<Account>.Update.Set(x => x.Application.DateCreated, DateTime.Now).Unset(x => x.Application.DateAccepted).Set(x => x.MembershipState, MembershipState.CONFIRMED)
+                    );
+                    Notification notification = await _assignmentService.UpdateUnitRankAndRole(id, AssignmentService.REMOVE_FLAG, "Applicant", "Candidate", reason: "your application was reactivated");
+                    _notificationsService.Add(notification);
+                    if (_recruitmentService.GetRecruiters().All(x => x.Id != account.Application.Recruiter)) {
+                        string newRecruiterId = _recruitmentService.GetRecruiter();
+                        _logger.LogAudit($"Application recruiter for {id} is no longer SR1, reassigning from {account.Application.Recruiter} to {newRecruiterId}");
+                        await _accountContext.Update(id, Builders<Account>.Update.Set(x => x.Application.Recruiter, newRecruiterId));
                     }
 
                     break;
@@ -111,16 +130,28 @@ namespace UKSF.Api.Personnel.Controllers {
                 default: throw new ArgumentOutOfRangeException();
             }
 
-            account = accountService.Data.GetSingle(id);
+            account = _accountContext.GetSingle(id);
             string message = updatedState == ApplicationState.WAITING ? "was reactivated" : $"was {updatedState}";
-            if (sessionId != account.application.recruiter) {
-                notificationsService.Add(
-                    new Notification {owner = account.application.recruiter, icon = NotificationIcons.APPLICATION, message = $"{account.firstname} {account.lastname}'s application {message} by {displayNameService.GetDisplayName(accountService.GetUserAccount())}", link = $"/recruitment/{id}"}
+            if (sessionId != account.Application.Recruiter) {
+                _notificationsService.Add(
+                    new Notification {
+                        Owner = account.Application.Recruiter,
+                        Icon = NotificationIcons.APPLICATION,
+                        Message = $"{account.Firstname} {account.Lastname}'s application {message} by {_displayNameService.GetDisplayName(_accountService.GetUserAccount())}",
+                        Link = $"/recruitment/{id}"
+                    }
                 );
             }
 
-            foreach (string value in recruitmentService.GetRecruiterLeads().Values.Where(value => sessionId != value && account.application.recruiter != value)) {
-                notificationsService.Add(new Notification {owner = value, icon = NotificationIcons.APPLICATION, message = $"{account.firstname} {account.lastname}'s application {message} by {displayNameService.GetDisplayName(accountService.GetUserAccount())}", link = $"/recruitment/{id}"});
+            foreach (string value in _recruitmentService.GetRecruiterLeads().Values.Where(value => sessionId != value && account.Application.Recruiter != value)) {
+                _notificationsService.Add(
+                    new Notification {
+                        Owner = value,
+                        Icon = NotificationIcons.APPLICATION,
+                        Message = $"{account.Firstname} {account.Lastname}'s application {message} by {_displayNameService.GetDisplayName(_accountService.GetUserAccount())}",
+                        Link = $"/recruitment/{id}"
+                    }
+                );
             }
 
             return Ok();
@@ -128,21 +159,31 @@ namespace UKSF.Api.Personnel.Controllers {
 
         [HttpPost("recruiter/{id}"), Authorize, Permissions(Permissions.RECRUITER_LEAD)]
         public async Task<IActionResult> PostReassignment([FromBody] JObject newRecruiter, string id) {
-            if (!httpContextService.UserHasPermission(Permissions.ADMIN) && !recruitmentService.IsRecruiterLead()) throw new Exception($"attempted to assign recruiter to {newRecruiter}. Context is not recruitment lead.");
-            string recruiter = newRecruiter["newRecruiter"].ToString();
-            await recruitmentService.SetRecruiter(id, recruiter);
-            Account account = accountService.Data.GetSingle(id);
-            if (account.application.state == ApplicationState.WAITING) {
-                notificationsService.Add(new Notification {owner = recruiter, icon = NotificationIcons.APPLICATION, message = $"{account.firstname} {account.lastname}'s application has been transferred to you", link = $"/recruitment/{account.id}"});
+            if (!_httpContextService.UserHasPermission(Permissions.ADMIN) && !_recruitmentService.IsRecruiterLead()) {
+                throw new Exception($"attempted to assign recruiter to {newRecruiter}. Context is not recruitment lead.");
             }
 
-            logger.LogAudit($"Application recruiter changed for {id} to {newRecruiter["newRecruiter"]}");
+            string recruiter = newRecruiter["newRecruiter"].ToString();
+            await _recruitmentService.SetRecruiter(id, recruiter);
+            Account account = _accountContext.GetSingle(id);
+            if (account.Application.State == ApplicationState.WAITING) {
+                _notificationsService.Add(
+                    new Notification {
+                        Owner = recruiter,
+                        Icon = NotificationIcons.APPLICATION,
+                        Message = $"{account.Firstname} {account.Lastname}'s application has been transferred to you",
+                        Link = $"/recruitment/{account.Id}"
+                    }
+                );
+            }
+
+            _logger.LogAudit($"Application recruiter changed for {id} to {newRecruiter["newRecruiter"]}");
             return Ok();
         }
 
         [HttpPost("ratings/{id}"), Authorize, Permissions(Permissions.RECRUITER)]
         public async Task<Dictionary<string, uint>> Ratings([FromBody] KeyValuePair<string, uint> value, string id) {
-            Dictionary<string, uint> ratings = accountService.Data.GetSingle(id).application.ratings;
+            Dictionary<string, uint> ratings = _accountContext.GetSingle(id).Application.Ratings;
 
             (string key, uint rating) = value;
             if (ratings.ContainsKey(key)) {
@@ -151,11 +192,11 @@ namespace UKSF.Api.Personnel.Controllers {
                 ratings.Add(key, rating);
             }
 
-            await accountService.Data.Update(id, Builders<Account>.Update.Set(x => x.application.ratings, ratings));
+            await _accountContext.Update(id, Builders<Account>.Update.Set(x => x.Application.Ratings, ratings));
             return ratings;
         }
 
         [HttpGet("recruiters"), Authorize, Permissions(Permissions.RECRUITER_LEAD)]
-        public IActionResult GetRecruiters() => Ok(recruitmentService.GetActiveRecruiters());
+        public IActionResult GetRecruiters() => Ok(_recruitmentService.GetActiveRecruiters());
     }
 }

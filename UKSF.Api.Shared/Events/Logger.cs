@@ -12,12 +12,13 @@ namespace UKSF.Api.Shared.Events {
         void LogHttpError(Exception exception);
         void LogHttpError(HttpErrorLog log);
         void LogAudit(string message, string userId = "");
+        void LogDiscordEvent(DiscordUserEventType discordUserEventType, string name, string userId, string message);
     }
 
     public class Logger : EventBus<BasicLog>, ILogger {
-        private readonly IHttpContextService httpContextService;
+        private readonly IHttpContextService _httpContextService;
 
-        public Logger(IHttpContextService httpContextService) => this.httpContextService = httpContextService;
+        public Logger(IHttpContextService httpContextService) => _httpContextService = httpContextService;
 
         public void LogInfo(string message) {
             Log(new BasicLog(message, LogLevel.INFO));
@@ -44,8 +45,12 @@ namespace UKSF.Api.Shared.Events {
         }
 
         public void LogAudit(string message, string userId = "") {
-            userId = string.IsNullOrEmpty(userId) ? httpContextService.GetUserId() ?? "Server" : userId;
+            userId = string.IsNullOrEmpty(userId) ? _httpContextService.GetUserId() ?? "Server" : userId;
             Log(new AuditLog(userId, message));
+        }
+
+        public void LogDiscordEvent(DiscordUserEventType discordUserEventType, string name, string userId, string message) {
+            Log(new DiscordLog(discordUserEventType, name, userId, message));
         }
 
         private void Log(BasicLog log) {

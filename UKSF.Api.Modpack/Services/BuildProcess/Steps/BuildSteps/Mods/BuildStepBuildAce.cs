@@ -8,7 +8,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
     public class BuildStepBuildAce : ModBuildStep {
         public const string NAME = "Build ACE";
         private const string MOD_NAME = "ace";
-        private readonly List<string> _allowedOptionals = new List<string> { "ace_compat_rksl_pm_ii", "ace_nouniformrestrictions" };
+        private readonly List<string> _allowedOptionals = new() { "ace_compat_rksl_pm_ii", "ace_nouniformrestrictions" };
 
         protected override async Task ProcessExecute() {
             StepLogger.Log("Running build for ACE");
@@ -19,7 +19,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
 
             if (IsBuildNeeded(MOD_NAME)) {
                 StepLogger.LogSurround("\nRunning make.py...");
-                BuildProcessHelper processHelper = new BuildProcessHelper(StepLogger, CancellationTokenSource, ignoreErrorGateClose: "File written to", ignoreErrorGateOpen: "MakePbo Version");
+                BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource, ignoreErrorGateClose: "File written to", ignoreErrorGateOpen: "MakePbo Version");
                 processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int) TimeSpan.FromMinutes(10).TotalMilliseconds);
                 StepLogger.LogSurround("Make.py complete");
             }
@@ -36,9 +36,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
         private async Task MoveOptionals(string buildPath) {
             string optionalsPath = Path.Join(buildPath, "optionals");
             string addonsPath = Path.Join(buildPath, "addons");
-            DirectoryInfo addons = new DirectoryInfo(addonsPath);
+            DirectoryInfo addons = new(addonsPath);
             foreach (string optionalName in _allowedOptionals) {
-                DirectoryInfo optional = new DirectoryInfo(Path.Join(optionalsPath, $"@{optionalName}", "addons"));
+                DirectoryInfo optional = new(Path.Join(optionalsPath, $"@{optionalName}", "addons"));
                 List<FileInfo> files = GetDirectoryContents(optional);
                 await CopyFiles(optional, addons, files);
             }

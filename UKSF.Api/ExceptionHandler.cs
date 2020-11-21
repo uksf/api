@@ -11,14 +11,14 @@ using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api {
     public class ExceptionHandler : IExceptionFilter {
-        private readonly IDisplayNameService displayNameService;
-        private readonly IHttpContextService httpContextService;
-        private readonly ILogger logger;
+        private readonly IDisplayNameService _displayNameService;
+        private readonly IHttpContextService _httpContextService;
+        private readonly ILogger _logger;
 
         public ExceptionHandler(IDisplayNameService displayNameService, IHttpContextService httpContextService, ILogger logger) {
-            this.displayNameService = displayNameService;
-            this.httpContextService = httpContextService;
-            this.logger = logger;
+            _displayNameService = displayNameService;
+            _httpContextService = httpContextService;
+            _logger = logger;
         }
 
         public void OnException(ExceptionContext filterContext) {
@@ -38,15 +38,16 @@ namespace UKSF.Api {
         }
 
         private void LogError(HttpContext context, Exception exception) {
-            bool authenticated = httpContextService.IsUserAuthenticated();
-            string userId = httpContextService.GetUserId();
-            HttpErrorLog log = new HttpErrorLog(exception) {
-                httpMethod = context?.Request.Method ?? string.Empty,
-                url = context?.Request.GetDisplayUrl(),
-                userId = authenticated ? userId : "Guest",
-                name = authenticated ? displayNameService.GetDisplayName(userId) : "Guest"
-            };
-            logger.LogHttpError(log);
+            bool authenticated = _httpContextService.IsUserAuthenticated();
+            string userId = _httpContextService.GetUserId();
+            HttpErrorLog log = new(
+                exception,
+                authenticated ? _displayNameService.GetDisplayName(userId) : "Guest",
+                authenticated ? userId : "Guest",
+                context?.Request.Method ?? string.Empty,
+                context?.Request.GetDisplayUrl()
+            );
+            _logger.LogHttpError(log);
         }
     }
 }

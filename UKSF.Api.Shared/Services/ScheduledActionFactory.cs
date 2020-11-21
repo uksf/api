@@ -9,16 +9,16 @@ namespace UKSF.Api.Shared.Services {
     }
 
     public class ScheduledActionFactory : IScheduledActionFactory {
-        private readonly Dictionary<string, IScheduledAction> scheduledActions = new Dictionary<string, IScheduledAction>();
+        private readonly Dictionary<string, IScheduledAction> _scheduledActions = new();
 
         public void RegisterScheduledActions(IEnumerable<IScheduledAction> newScheduledActions) {
             foreach (IScheduledAction scheduledAction in newScheduledActions) {
-                scheduledActions[scheduledAction.Name] = scheduledAction;
+                _scheduledActions[scheduledAction.Name] = scheduledAction;
             }
         }
 
         public IScheduledAction GetScheduledAction(string actionName) {
-            if (scheduledActions.TryGetValue(actionName, out IScheduledAction action)) {
+            if (_scheduledActions.TryGetValue(actionName, out IScheduledAction action)) {
                 return action;
             }
 

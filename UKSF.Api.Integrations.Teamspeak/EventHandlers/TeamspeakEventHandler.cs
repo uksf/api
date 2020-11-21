@@ -6,8 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Base.Events;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Models;
@@ -18,17 +18,17 @@ namespace UKSF.Api.Teamspeak.EventHandlers {
     public interface ITeamspeakEventHandler : IEventHandler { }
 
     public class TeamspeakEventHandler : ITeamspeakEventHandler {
-        private readonly IAccountService _accountService;
+        private readonly IAccountContext _accountContext;
         private readonly ISignalrEventBus _eventBus;
         private readonly ILogger _logger;
-        private readonly ConcurrentDictionary<double, TeamspeakServerGroupUpdate> _serverGroupUpdates = new ConcurrentDictionary<double, TeamspeakServerGroupUpdate>();
+        private readonly ConcurrentDictionary<double, TeamspeakServerGroupUpdate> _serverGroupUpdates = new();
         private readonly ITeamspeakGroupService _teamspeakGroupService;
         private readonly ITeamspeakService _teamspeakService;
 
-        public TeamspeakEventHandler(ISignalrEventBus eventBus, ITeamspeakService teamspeakService, IAccountService accountService, ITeamspeakGroupService teamspeakGroupService, ILogger logger) {
+        public TeamspeakEventHandler(IAccountContext accountContext, ISignalrEventBus eventBus, ITeamspeakService teamspeakService, ITeamspeakGroupService teamspeakGroupService, ILogger logger) {
+            _accountContext = accountContext;
             _eventBus = eventBus;
             _teamspeakService = teamspeakService;
-            _accountService = accountService;
             _teamspeakGroupService = teamspeakGroupService;
             _logger = logger;
         }
@@ -38,15 +38,15 @@ namespace UKSF.Api.Teamspeak.EventHandlers {
         }
 
         private async Task HandleEvent(SignalrEventModel signalrEventModel) {
-            switch (signalrEventModel.procedure) {
+            switch (signalrEventModel.Procedure) {
                 case TeamspeakEventType.CLIENTS:
-                    await UpdateClients(signalrEventModel.args.ToString());
+                    await UpdateClients(signalrEventModel.Args.ToString());
                     break;
                 case TeamspeakEventType.CLIENT_SERVER_GROUPS:
-                    await UpdateClientServerGroups(signalrEventModel.args.ToString());
+                    await UpdateClientServerGroups(signalrEventModel.Args.ToString());
                     break;
                 case TeamspeakEventType.EMPTY: break;
-                default:                       throw new ArgumentException($"Invalid teamspeak event type");
+                default:                       throw new ArgumentException("Invalid teamspeak event type");
             }
         }
 
@@ -67,22 +67,22 @@ namespace UKSF.Api.Teamspeak.EventHandlers {
             await Console.Out.WriteLineAsync($"Server group for {clientDbid}: {serverGroupId}");
 
             TeamspeakServerGroupUpdate update = _serverGroupUpdates.GetOrAdd(clientDbid, _ => new TeamspeakServerGroupUpdate());
-            update.serverGroups.Add(serverGroupId);
-            update.cancellationTokenSource?.Cancel();
-            update.cancellationTokenSource = new CancellationTokenSource();
+            update.ServerGroups.Add(serverGroupId);
+            update.CancellationTokenSource?.Cancel();
+            update.CancellationTokenSource = new CancellationTokenSource();
             Task unused = TaskUtilities.DelayWithCallback(
                 TimeSpan.FromMilliseconds(500),
-                update.cancellationTokenSource.Token,
+                update.CancellationTokenSource.Token,
                 async () => {
-                    update.cancellationTokenSource.Cancel();
-                    await ProcessAccountData(clientDbid, update.serverGroups);
+                    update.CancellationTokenSource.Cancel();
+                    await ProcessAccountData(clientDbid, update.ServerGroups);
                 }
             );
         }
 
         private async Task ProcessAccountData(double clientDbId, ICollection<double> serverGroups) {
             await Console.Out.WriteLineAsync($"Processing server groups for {clientDbId}");
-            Account account = _accountService.Data.GetSingle(x => x.teamspeakIdentities != null && x.teamspeakIdentities.Any(y => y.Equals(clientDbId)));
+            Account account = _accountContext.GetSingle(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
             Task unused = _teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
 
             _serverGroupUpdates.TryRemove(clientDbId, out TeamspeakServerGroupUpdate _);

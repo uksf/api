@@ -10,25 +10,28 @@ namespace UKSF.Api.EventHandlers {
     public interface ILoggerEventHandler : IEventHandler { }
 
     public class LoggerEventHandler : ILoggerEventHandler {
-        private readonly IAuditLogDataService _auditLogDataService;
-        private readonly IHttpErrorLogDataService _httpErrorLogDataService;
-        private readonly ILauncherLogDataService _launcherLogDataService;
-        private readonly ILogDataService _logDataService;
+        private readonly IAuditLogContext _auditLogContext;
+        private readonly IDiscordLogContext _discordLogContext;
+        private readonly IHttpErrorLogContext _httpErrorLogContext;
+        private readonly ILauncherLogContext _launcherLogContext;
+        private readonly ILogContext _logContext;
         private readonly ILogger _logger;
         private readonly IObjectIdConversionService _objectIdConversionService;
 
         public LoggerEventHandler(
-            ILogDataService logDataService,
-            IAuditLogDataService auditLogDataService,
-            IHttpErrorLogDataService httpErrorLogDataService,
-            ILauncherLogDataService launcherLogDataService,
+            ILogContext logContext,
+            IAuditLogContext auditLogContext,
+            IHttpErrorLogContext httpErrorLogContext,
+            ILauncherLogContext launcherLogContext,
+            IDiscordLogContext discordLogContext,
             ILogger logger,
             IObjectIdConversionService objectIdConversionService
         ) {
-            _logDataService = logDataService;
-            _auditLogDataService = auditLogDataService;
-            _httpErrorLogDataService = httpErrorLogDataService;
-            _launcherLogDataService = launcherLogDataService;
+            _logContext = logContext;
+            _auditLogContext = auditLogContext;
+            _httpErrorLogContext = httpErrorLogContext;
+            _launcherLogContext = launcherLogContext;
+            _discordLogContext = discordLogContext;
             _logger = logger;
             _objectIdConversionService = objectIdConversionService;
         }
@@ -43,20 +46,21 @@ namespace UKSF.Api.EventHandlers {
 
         private async Task HandleLogAsync(BasicLog log) {
             if (log is AuditLog auditLog) {
-                auditLog.who = _objectIdConversionService.ConvertObjectId(auditLog.who);
+                auditLog.Who = _objectIdConversionService.ConvertObjectId(auditLog.Who);
                 log = auditLog;
             }
 
-            log.message = _objectIdConversionService.ConvertObjectIds(log.message);
+            log.Message = _objectIdConversionService.ConvertObjectIds(log.Message);
             await LogToStorageAsync(log);
         }
 
         private Task LogToStorageAsync(BasicLog log) {
             return log switch {
-                AuditLog auditLog         => _auditLogDataService.Add(auditLog),
-                LauncherLog launcherLog   => _launcherLogDataService.Add(launcherLog),
-                HttpErrorLog httpErrorLog => _httpErrorLogDataService.Add(httpErrorLog),
-                _                         => _logDataService.Add(log)
+                AuditLog auditLog         => _auditLogContext.Add(auditLog),
+                LauncherLog launcherLog   => _launcherLogContext.Add(launcherLog),
+                HttpErrorLog httpErrorLog => _httpErrorLogContext.Add(httpErrorLog),
+                DiscordLog discordLog     => _discordLogContext.Add(discordLog),
+                _                         => _logContext.Add(log)
             };
         }
     }

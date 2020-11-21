@@ -15,10 +15,10 @@ namespace UKSF.Api.Personnel.EventHandlers {
     public interface ICommentThreadEventHandler : IEventHandler { }
 
     public class CommentThreadEventHandler : ICommentThreadEventHandler {
-        private readonly IDataEventBus<CommentThread> commentThreadDataEventBus;
-        private readonly ICommentThreadService commentThreadService;
-        private readonly IHubContext<CommentThreadHub, ICommentThreadClient> hub;
-        private readonly ILogger logger;
+        private readonly IDataEventBus<CommentThread> _commentThreadDataEventBus;
+        private readonly ICommentThreadService _commentThreadService;
+        private readonly IHubContext<CommentThreadHub, ICommentThreadClient> _hub;
+        private readonly ILogger _logger;
 
         public CommentThreadEventHandler(
             IDataEventBus<CommentThread> commentThreadDataEventBus,
@@ -26,31 +26,31 @@ namespace UKSF.Api.Personnel.EventHandlers {
             ICommentThreadService commentThreadService,
             ILogger logger
         ) {
-            this.commentThreadDataEventBus = commentThreadDataEventBus;
-            this.hub = hub;
-            this.commentThreadService = commentThreadService;
-            this.logger = logger;
+            _commentThreadDataEventBus = commentThreadDataEventBus;
+            _hub = hub;
+            _commentThreadService = commentThreadService;
+            _logger = logger;
         }
 
         public void Init() {
-            commentThreadDataEventBus.AsObservable().SubscribeWithAsyncNext(HandleEvent, exception => logger.LogError(exception));
+            _commentThreadDataEventBus.AsObservable().SubscribeWithAsyncNext(HandleEvent, exception => _logger.LogError(exception));
         }
 
         private async Task HandleEvent(DataEventModel<CommentThread> dataEventModel) {
-            switch (dataEventModel.type) {
+            switch (dataEventModel.Type) {
                 case DataEventType.ADD:
-                    await AddedEvent(dataEventModel.id, dataEventModel.data as Comment);
+                    await AddedEvent(dataEventModel.Id, dataEventModel.Data as Comment);
                     break;
                 case DataEventType.DELETE:
-                    await DeletedEvent(dataEventModel.id, dataEventModel.data as Comment);
+                    await DeletedEvent(dataEventModel.Id, dataEventModel.Data as Comment);
                     break;
                 case DataEventType.UPDATE: break;
                 default:                   throw new ArgumentOutOfRangeException(nameof(dataEventModel));
             }
         }
 
-        private Task AddedEvent(string id, Comment comment) => hub.Clients.Group(id).ReceiveComment(commentThreadService.FormatComment(comment));
+        private Task AddedEvent(string id, Comment comment) => _hub.Clients.Group(id).ReceiveComment(_commentThreadService.FormatComment(comment));
 
-        private Task DeletedEvent(string id, DatabaseObject comment) => hub.Clients.Group(id).DeleteComment(comment.id);
+        private Task DeletedEvent(string id, MongoObject comment) => _hub.Clients.Group(id).DeleteComment(comment.Id);
     }
 }

@@ -30,14 +30,14 @@ namespace UKSF.Api.Personnel.EventHandlers {
         }
 
         private async Task HandleAccountsEvent(DataEventModel<Account> dataEventModel) {
-            if (dataEventModel.type == DataEventType.UPDATE) {
-                await UpdatedEvent(dataEventModel.id);
+            if (dataEventModel.Type == DataEventType.UPDATE) {
+                await UpdatedEvent(dataEventModel.Id);
             }
         }
 
         private async Task HandleUnitsEvent(DataEventModel<Unit> dataEventModel) {
-            if (dataEventModel.type == DataEventType.UPDATE) {
-                await UpdatedEvent(dataEventModel.id);
+            if (dataEventModel.Type == DataEventType.UPDATE) {
+                await UpdatedEvent(dataEventModel.Id);
             }
         }
 

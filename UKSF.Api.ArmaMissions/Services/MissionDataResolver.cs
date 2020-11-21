@@ -9,7 +9,7 @@ namespace UKSF.Api.ArmaMissions.Services {
         public static string ResolveObjectClass(MissionPlayer player) {
             if (IsMedic(player)) return "UKSF_B_Medic"; // Team Medic
 
-            return player.unit.sourceUnit.id switch {
+            return player.Unit.SourceUnit.Id switch {
                 "5a435eea905d47336442c75a" => "UKSF_B_Pilot", // "Joint Special Forces Aviation Wing"
                 "5a848590eab14d12cc7fa618" => "UKSF_B_Pilot", // "RAF Cranwell"
                 "5c98d7b396dba31f24cdb19c" => "UKSF_B_Pilot", // "51 Squadron"
@@ -25,19 +25,19 @@ namespace UKSF.Api.ArmaMissions.Services {
         }
 
         private static int ResolvePlayerUnitRole(MissionPlayer player) {
-            if (player.unit.roles.ContainsKey("1iC") && player.unit.roles["1iC"] == player) return 3;
-            if (player.unit.roles.ContainsKey("2iC") && player.unit.roles["2iC"] == player) return 2;
-            if (player.unit.roles.ContainsKey("3iC") && player.unit.roles["3iC"] == player) return 1;
-            if (player.unit.roles.ContainsKey("NCOiC") && player.unit.roles["NCOiC"] == player) return 0;
+            if (player.Unit.Roles.ContainsKey("1iC") && player.Unit.Roles["1iC"] == player) return 3;
+            if (player.Unit.Roles.ContainsKey("2iC") && player.Unit.Roles["2iC"] == player) return 2;
+            if (player.Unit.Roles.ContainsKey("3iC") && player.Unit.Roles["3iC"] == player) return 1;
+            if (player.Unit.Roles.ContainsKey("NCOiC") && player.Unit.Roles["NCOiC"] == player) return 0;
             return -1;
         }
 
-        private static bool IsMedic(MissionPlayer player) => MissionPatchData.instance.medicIds.Contains(player.account?.id);
+        private static bool IsMedic(MissionPlayer player) => MissionPatchData.Instance.MedicIds.Contains(player.Account?.Id);
 
-        public static bool IsEngineer(MissionPlayer player) => MissionPatchData.instance.engineerIds.Contains(player.account?.id);
+        public static bool IsEngineer(MissionPlayer player) => MissionPatchData.Instance.EngineerIds.Contains(player.Account?.Id);
 
         public static string ResolveCallsign(MissionUnit unit, string defaultCallsign) {
-            return unit.sourceUnit.id switch {
+            return unit.SourceUnit.Id switch {
                 "5a42835b55d6109bf0b081bd" => "JSFAW", // "UKSF"
                 "5a435eea905d47336442c75a" => "JSFAW", // "Joint Special Forces Aviation Wing"
                 "5a441619730e9d162834500b" => "JSFAW", // "7 Squadron"
@@ -50,9 +50,9 @@ namespace UKSF.Api.ArmaMissions.Services {
         }
 
         public static void ResolveSpecialUnits(ref List<MissionUnit> orderedUnits) {
-            List<MissionUnit> newOrderedUnits = new List<MissionUnit>();
+            List<MissionUnit> newOrderedUnits = new();
             foreach (MissionUnit unit in orderedUnits) {
-                switch (unit.sourceUnit.id) {
+                switch (unit.SourceUnit.Id) {
                     case "5a42835b55d6109bf0b081bd": // "UKSF"
                     case "5a441619730e9d162834500b": // "7 Squadron"
                     case "5a441602730e9d162834500a": // "656 Squadron"
@@ -70,26 +70,26 @@ namespace UKSF.Api.ArmaMissions.Services {
         }
 
         public static List<MissionPlayer> ResolveUnitSlots(MissionUnit unit) {
-            List<MissionPlayer> slots = new List<MissionPlayer>();
+            List<MissionPlayer> slots = new();
             int max = 8;
             int fillerCount;
-            switch (unit.sourceUnit.id) {
+            switch (unit.SourceUnit.Id) {
                 case "5a435eea905d47336442c75a": // "Joint Special Forces Aviation Wing"
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a42835b55d6109bf0b081bd")?.members ?? new List<MissionPlayer>());
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a435eea905d47336442c75a")?.members ?? new List<MissionPlayer>());
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a441619730e9d162834500b")?.members ?? new List<MissionPlayer>());
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a441602730e9d162834500a")?.members ?? new List<MissionPlayer>());
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a4415d8730e9d1628345007")?.members ?? new List<MissionPlayer>());
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5a848590eab14d12cc7fa618")?.members ?? new List<MissionPlayer>());
-                    slots.AddRange(MissionPatchData.instance.units.Find(x => x.sourceUnit.id == "5c98d7b396dba31f24cdb19c")?.members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a42835b55d6109bf0b081bd")?.Members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a435eea905d47336442c75a")?.Members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a441619730e9d162834500b")?.Members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a441602730e9d162834500a")?.Members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a4415d8730e9d1628345007")?.Members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a848590eab14d12cc7fa618")?.Members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5c98d7b396dba31f24cdb19c")?.Members ?? new List<MissionPlayer>());
                     break;
                 case "5a68b28e196530164c9b4fed": // "Sniper Platoon"
                     max = 3;
-                    slots.AddRange(unit.members);
+                    slots.AddRange(unit.Members);
                     fillerCount = max - slots.Count;
                     for (int i = 0; i < fillerCount; i++) {
-                        MissionPlayer player = new MissionPlayer { name = "Sniper", unit = unit, rank = MissionPatchData.instance.ranks.Find(x => x.name == "Private") };
-                        player.objectClass = ResolveObjectClass(player);
+                        MissionPlayer player = new() { Name = "Sniper", Unit = unit, Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Private") };
+                        player.ObjectClass = ResolveObjectClass(player);
                         slots.Add(player);
                     }
 
@@ -97,25 +97,25 @@ namespace UKSF.Api.ArmaMissions.Services {
                 case "5bbbb9645eb3a4170c488b36": // "Guardian 1-1"
                 case "5bbbbdab5eb3a4170c488f2e": // "Guardian 1-2"
                 case "5bbbbe365eb3a4170c488f30": // "Guardian 1-3"
-                    slots.AddRange(unit.members);
+                    slots.AddRange(unit.Members);
                     fillerCount = max - slots.Count;
                     for (int i = 0; i < fillerCount; i++) {
-                        MissionPlayer player = new MissionPlayer { name = "Reserve", unit = unit, rank = MissionPatchData.instance.ranks.Find(x => x.name == "Recruit") };
-                        player.objectClass = ResolveObjectClass(player);
+                        MissionPlayer player = new() { Name = "Reserve", Unit = unit, Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Recruit") };
+                        player.ObjectClass = ResolveObjectClass(player);
                         slots.Add(player);
                     }
 
                     break;
                 case "5ad748e0de5d414f4c4055e0": // "Guardian 1-R"
                     for (int i = 0; i < 6; i++) {
-                        MissionPlayer player = new MissionPlayer { name = "Reserve", unit = unit, rank = MissionPatchData.instance.ranks.Find(x => x.name == "Recruit") };
-                        player.objectClass = ResolveObjectClass(player);
+                        MissionPlayer player = new() { Name = "Reserve", Unit = unit, Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Recruit") };
+                        player.ObjectClass = ResolveObjectClass(player);
                         slots.Add(player);
                     }
 
                     break;
                 default:
-                    slots = unit.members;
+                    slots = unit.Members;
                     break;
             }
 
@@ -123,16 +123,16 @@ namespace UKSF.Api.ArmaMissions.Services {
                 (a, b) => {
                     int roleA = ResolvePlayerUnitRole(a);
                     int roleB = ResolvePlayerUnitRole(b);
-                    int rankA = MissionPatchData.instance.ranks.IndexOf(a.rank);
-                    int rankB = MissionPatchData.instance.ranks.IndexOf(b.rank);
-                    return roleA < roleB ? 1 : roleA > roleB ? -1 : rankA < rankB ? -1 : rankA > rankB ? 1 : string.CompareOrdinal(a.name, b.name);
+                    int rankA = MissionPatchData.Instance.Ranks.IndexOf(a.Rank);
+                    int rankB = MissionPatchData.Instance.Ranks.IndexOf(b.Rank);
+                    return roleA < roleB ? 1 : roleA > roleB ? -1 : rankA < rankB ? -1 : rankA > rankB ? 1 : string.CompareOrdinal(a.Name, b.Name);
                 }
             );
             return slots;
         }
 
         public static bool IsUnitPermanent(MissionUnit unit) {
-            return unit.sourceUnit.id switch {
+            return unit.SourceUnit.Id switch {
                 "5bbbb9645eb3a4170c488b36" => true, // "Guardian 1-1"
                 "5bbbbdab5eb3a4170c488f2e" => true, // "Guardian 1-2"
                 "5bbbbe365eb3a4170c488f30" => true, // "Guardian 1-3"

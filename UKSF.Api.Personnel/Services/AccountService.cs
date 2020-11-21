@@ -1,18 +1,21 @@
-﻿using UKSF.Api.Base.Context;
-using UKSF.Api.Personnel.Context;
+﻿using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Personnel.Services {
-    public interface IAccountService : IDataBackedService<IAccountDataService> {
+    public interface IAccountService {
         Account GetUserAccount();
     }
 
-    public class AccountService : DataBackedService<IAccountDataService>, IAccountService {
-        private readonly IHttpContextService httpContextService;
+    public class AccountService : IAccountService {
+        private readonly IAccountContext _accountContext;
+        private readonly IHttpContextService _httpContextService;
 
-        public AccountService(IAccountDataService data, IHttpContextService httpContextService) : base(data) => this.httpContextService = httpContextService;
+        public AccountService(IAccountContext accountContext, IHttpContextService httpContextService) {
+            _accountContext = accountContext;
+            _httpContextService = httpContextService;
+        }
 
-        public Account GetUserAccount() => Data.GetSingle(httpContextService.GetUserId());
+        public Account GetUserAccount() => _accountContext.GetSingle(_httpContextService.GetUserId());
     }
 }

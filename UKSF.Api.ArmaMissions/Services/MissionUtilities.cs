@@ -4,10 +4,10 @@ using System.Linq;
 namespace UKSF.Api.ArmaMissions.Services {
     public static class MissionUtilities {
         public static List<string> ReadDataFromIndex(List<string> source, ref int index) {
-            List<string> data = new List<string> {source[index]};
+            List<string> data = new() { source[index] };
             index += 1;
             string opening = source[index];
-            Stack<string> stack = new Stack<string>();
+            Stack<string> stack = new();
             stack.Push(opening);
             data.Add(opening);
             index += 1;

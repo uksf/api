@@ -9,8 +9,10 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Extensions;
+using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Services;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
@@ -23,22 +25,26 @@ namespace UKSF.Api.Command.Controllers {
         private const string SUPER_ADMIN = "59e38f10594c603b78aa9dbd";
         private readonly IAccountService _accountService;
         private readonly ICommandRequestCompletionService _commandRequestCompletionService;
+        private readonly ICommandRequestContext _commandRequestContext;
         private readonly ICommandRequestService _commandRequestService;
         private readonly IDisplayNameService _displayNameService;
         private readonly IHttpContextService _httpContextService;
         private readonly ILogger _logger;
         private readonly INotificationsService _notificationsService;
+        private readonly IUnitsContext _unitsContext;
         private readonly IUnitsService _unitsService;
-        private readonly IVariablesDataService _variablesDataService;
+        private readonly IVariablesContext _variablesContext;
 
         public CommandRequestsController(
             ICommandRequestService commandRequestService,
             ICommandRequestCompletionService commandRequestCompletionService,
             IHttpContextService httpContextService,
             IUnitsService unitsService,
+            IUnitsContext unitsContext,
+            ICommandRequestContext commandRequestContext,
             IDisplayNameService displayNameService,
             INotificationsService notificationsService,
-            IVariablesDataService variablesDataService,
+            IVariablesContext variablesContext,
             IAccountService accountService,
             ILogger logger
         ) {
@@ -46,21 +52,23 @@ namespace UKSF.Api.Command.Controllers {
             _commandRequestCompletionService = commandRequestCompletionService;
             _httpContextService = httpContextService;
             _unitsService = unitsService;
+            _unitsContext = unitsContext;
+            _commandRequestContext = commandRequestContext;
             _displayNameService = displayNameService;
             _notificationsService = notificationsService;
-            _variablesDataService = variablesDataService;
+            _variablesContext = variablesContext;
             _accountService = accountService;
             _logger = logger;
         }
 
         [HttpGet, Authorize]
         public IActionResult Get() {
-            IEnumerable<CommandRequest> allRequests = _commandRequestService.Data.Get();
-            List<CommandRequest> myRequests = new List<CommandRequest>();
-            List<CommandRequest> otherRequests = new List<CommandRequest>();
+            IEnumerable<CommandRequest> allRequests = _commandRequestContext.Get();
+            List<CommandRequest> myRequests = new();
+            List<CommandRequest> otherRequests = new();
             string contextId = _httpContextService.GetUserId();
-            string id = _variablesDataService.GetSingle("UNIT_ID_PERSONNEL").AsString();
-            bool canOverride = _unitsService.Data.GetSingle(id).members.Any(x => x == contextId);
+            string id = _variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
+            bool canOverride = _unitsContext.GetSingle(id).Members.Any(x => x == contextId);
             bool superAdmin = contextId == SUPER_ADMIN;
             DateTime now = DateTime.Now;
             foreach (CommandRequest commandRequest in allRequests) {
@@ -108,7 +116,7 @@ namespace UKSF.Api.Command.Controllers {
             bool overriden = bool.Parse(body["overriden"].ToString());
             ReviewState state = Enum.Parse<ReviewState>(body["reviewState"].ToString());
             Account sessionAccount = _accountService.GetUserAccount();
-            CommandRequest request = _commandRequestService.Data.GetSingle(id);
+            CommandRequest request = _commandRequestContext.GetSingle(id);
             if (request == null) {
                 throw new NullReferenceException($"Failed to get request with id {id}, does not exist");
             }
@@ -117,35 +125,35 @@ namespace UKSF.Api.Command.Controllers {
                 _logger.LogAudit($"Review state of {request.Type.ToLower()} request for {request.DisplayRecipient} overriden to {state}");
                 await _commandRequestService.SetRequestAllReviewStates(request, state);
 
-                foreach (string reviewerId in request.Reviews.Select(x => x.Key).Where(x => x != sessionAccount.id)) {
+                foreach (string reviewerId in request.Reviews.Select(x => x.Key).Where(x => x != sessionAccount.Id)) {
                     _notificationsService.Add(
                         new Notification {
-                            owner = reviewerId,
-                            icon = NotificationIcons.REQUEST,
-                            message = $"Your review on {AvsAn.Query(request.Type).Article} {request.Type.ToLower()} request for {request.DisplayRecipient} was overriden by {sessionAccount.id}"
+                            Owner = reviewerId,
+                            Icon = NotificationIcons.REQUEST,
+                            Message = $"Your review on {AvsAn.Query(request.Type).Article} {request.Type.ToLower()} request for {request.DisplayRecipient} was overriden by {sessionAccount.Id}"
                         }
                     );
                 }
             } else {
-                ReviewState currentState = _commandRequestService.GetReviewState(request.id, sessionAccount.id);
+                ReviewState currentState = _commandRequestService.GetReviewState(request.Id, sessionAccount.Id);
                 if (currentState == ReviewState.ERROR) {
                     throw new ArgumentOutOfRangeException(
-                        $"Getting review state for {sessionAccount} from {request.id} failed. Reviews: \n{request.Reviews.Select(x => $"{x.Key}: {x.Value}").Aggregate((x, y) => $"{x}\n{y}")}"
+                        $"Getting review state for {sessionAccount} from {request.Id} failed. Reviews: \n{request.Reviews.Select(x => $"{x.Key}: {x.Value}").Aggregate((x, y) => $"{x}\n{y}")}"
                     );
                 }
 
                 if (currentState == state) return Ok();
                 _logger.LogAudit($"Review state of {_displayNameService.GetDisplayName(sessionAccount)} for {request.Type.ToLower()} request for {request.DisplayRecipient} updated to {state}");
-                await _commandRequestService.SetRequestReviewState(request, sessionAccount.id, state);
+                await _commandRequestService.SetRequestReviewState(request, sessionAccount.Id, state);
             }
 
             try {
-                await _commandRequestCompletionService.Resolve(request.id);
+                await _commandRequestCompletionService.Resolve(request.Id);
             } catch (Exception) {
                 if (overriden) {
                     await _commandRequestService.SetRequestAllReviewStates(request, ReviewState.PENDING);
                 } else {
-                    await _commandRequestService.SetRequestReviewState(request, sessionAccount.id, ReviewState.PENDING);
+                    await _commandRequestService.SetRequestReviewState(request, sessionAccount.Id, ReviewState.PENDING);
                 }
 
                 throw;

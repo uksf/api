@@ -12,20 +12,25 @@ namespace UKSF.Api.Shared {
                     .AddEventBuses()
                     .AddEventHandlers()
                     .AddServices()
-                    .AddTransient<IDataCollectionFactory, DataCollectionFactory>()
                     .AddTransient<IHttpContextService, HttpContextService>()
                     .AddSingleton<ILogger, Logger>()
                     .AddSingleton<IClock, Clock>();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) =>
-            services.AddSingleton<ILogDataService, LogDataService>()
-                    .AddSingleton<IAuditLogDataService, AuditLogDataService>()
-                    .AddSingleton<IHttpErrorLogDataService, HttpErrorLogDataService>()
-                    .AddSingleton<ILauncherLogDataService, LauncherLogDataService>()
-                    .AddSingleton<ISchedulerDataService, SchedulerDataService>();
+            services.AddSingleton<ILogContext, LogContext>()
+                    .AddSingleton<IAuditLogContext, AuditLogContext>()
+                    .AddSingleton<IHttpErrorLogContext, HttpErrorLogContext>()
+                    .AddSingleton<ILauncherLogContext, LauncherLogContext>()
+                    .AddSingleton<IDiscordLogContext, DiscordLogContext>()
+                    .AddSingleton<ISchedulerContext, SchedulerContext>();
 
         private static IServiceCollection AddEventBuses(this IServiceCollection services) =>
-            services.AddSingleton<IDataEventBus<BasicLog>, DataEventBus<BasicLog>>().AddSingleton<IDataEventBus<ScheduledJob>, DataEventBus<ScheduledJob>>();
+            services.AddSingleton<IDataEventBus<BasicLog>, DataEventBus<BasicLog>>()
+                    .AddSingleton<IDataEventBus<AuditLog>, DataEventBus<AuditLog>>()
+                    .AddSingleton<IDataEventBus<HttpErrorLog>, DataEventBus<HttpErrorLog>>()
+                    .AddSingleton<IDataEventBus<LauncherLog>, DataEventBus<LauncherLog>>()
+                    .AddSingleton<IDataEventBus<DiscordLog>, DataEventBus<DiscordLog>>()
+                    .AddSingleton<IDataEventBus<ScheduledJob>, DataEventBus<ScheduledJob>>();
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
 
