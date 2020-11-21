@@ -9,28 +9,28 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Game {
     public class GameServersDataServiceTests {
-        private readonly GameServersDataService gameServersDataService;
-        private readonly Mock<IDataCollection<GameServer>> mockDataCollection;
+        private readonly GameServersContext _gameServersContext;
+        private readonly Mock<IMongoCollection<GameServer>> _mockDataCollection;
 
         public GameServersDataServiceTests() {
-            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            Mock<IDataEventBus<GameServer>> mockDataEventBus = new Mock<IDataEventBus<GameServer>>();
-            mockDataCollection = new Mock<IDataCollection<GameServer>>();
+            Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
+            Mock<IDataEventBus<GameServer>> mockDataEventBus = new();
+            _mockDataCollection = new Mock<IMongoCollection<GameServer>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<GameServer>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<GameServer>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            gameServersDataService = new GameServersDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            _gameServersContext = new GameServersContext(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
 
         [Fact]
         public void Should_get_collection_in_order() {
-            GameServer rank1 = new GameServer { order = 2 };
-            GameServer rank2 = new GameServer { order = 0 };
-            GameServer rank3 = new GameServer { order = 1 };
+            GameServer rank1 = new() { Order = 2 };
+            GameServer rank2 = new() { Order = 0 };
+            GameServer rank3 = new() { Order = 1 };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(new List<GameServer> { rank1, rank2, rank3 });
+            _mockDataCollection.Setup(x => x.Get()).Returns(new List<GameServer> { rank1, rank2, rank3 });
 
-            IEnumerable<GameServer> subject = gameServersDataService.Get();
+            IEnumerable<GameServer> subject = _gameServersContext.Get();
 
             subject.Should().ContainInOrder(rank2, rank3, rank1);
         }

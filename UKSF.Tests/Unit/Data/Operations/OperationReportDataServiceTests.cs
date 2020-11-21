@@ -10,41 +10,41 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Operations {
     public class OperationReportDataServiceTests {
-        private readonly Mock<IDataCollection<Oprep>> mockDataCollection;
-        private readonly OperationReportDataService operationReportDataService;
+        private readonly Mock<IMongoCollection<Oprep>> _mockDataCollection;
+        private readonly OperationReportContext _operationReportContext;
 
         public OperationReportDataServiceTests() {
-            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            Mock<IDataEventBus<Oprep>> mockDataEventBus = new Mock<IDataEventBus<Oprep>>();
-            mockDataCollection = new Mock<IDataCollection<Oprep>>();
+            Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
+            Mock<IDataEventBus<Oprep>> mockDataEventBus = new();
+            _mockDataCollection = new Mock<IMongoCollection<Oprep>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Oprep>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<Oprep>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            operationReportDataService = new OperationReportDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            _operationReportContext = new OperationReportContext(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
 
         [Fact]
         public void Should_get_collection_in_order() {
-            Oprep item1 = new Oprep { Start = DateTime.Now.AddDays(-1) };
-            Oprep item2 = new Oprep { Start = DateTime.Now.AddDays(-2) };
-            Oprep item3 = new Oprep { Start = DateTime.Now.AddDays(-3) };
+            Oprep item1 = new() { Start = DateTime.Now.AddDays(-1) };
+            Oprep item2 = new() { Start = DateTime.Now.AddDays(-2) };
+            Oprep item3 = new() { Start = DateTime.Now.AddDays(-3) };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> { item1, item2, item3 });
+            _mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> { item1, item2, item3 });
 
-            IEnumerable<Oprep> subject = operationReportDataService.Get();
+            IEnumerable<Oprep> subject = _operationReportContext.Get();
 
             subject.Should().ContainInOrder(item3, item2, item1);
         }
 
         [Fact]
         public void ShouldGetOrderedCollectionByPredicate() {
-            Oprep item1 = new Oprep { Description = "1", Start = DateTime.Now.AddDays(-1) };
-            Oprep item2 = new Oprep { Description = "2", Start = DateTime.Now.AddDays(-2) };
-            Oprep item3 = new Oprep { Description = "1", Start = DateTime.Now.AddDays(-3) };
+            Oprep item1 = new() { Description = "1", Start = DateTime.Now.AddDays(-1) };
+            Oprep item2 = new() { Description = "2", Start = DateTime.Now.AddDays(-2) };
+            Oprep item3 = new() { Description = "1", Start = DateTime.Now.AddDays(-3) };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> { item1, item2, item3 });
+            _mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> { item1, item2, item3 });
 
-            IEnumerable<Oprep> subject = operationReportDataService.Get(x => x.Description == "1");
+            IEnumerable<Oprep> subject = _operationReportContext.Get(x => x.Description == "1");
 
             subject.Should().ContainInOrder(item3, item1);
         }

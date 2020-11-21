@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using UKSF.Api.Base.ScheduledActions;
+using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Services;
 using UKSF.Api.Teamspeak.Services;
 
@@ -13,10 +14,12 @@ namespace UKSF.Api.Teamspeak.ScheduledActions {
 
         private readonly IClock _clock;
         private readonly IHostEnvironment _currentEnvironment;
+        private readonly ISchedulerContext _schedulerContext;
         private readonly ISchedulerService _schedulerService;
         private readonly ITeamspeakService _teamspeakService;
 
-        public ActionTeamspeakSnapshot(ITeamspeakService teamspeakService, ISchedulerService schedulerService, IHostEnvironment currentEnvironment, IClock clock) {
+        public ActionTeamspeakSnapshot(ISchedulerContext schedulerContext, ITeamspeakService teamspeakService, ISchedulerService schedulerService, IHostEnvironment currentEnvironment, IClock clock) {
+            _schedulerContext = schedulerContext;
             _teamspeakService = teamspeakService;
             _schedulerService = schedulerService;
             _currentEnvironment = currentEnvironment;
@@ -32,7 +35,7 @@ namespace UKSF.Api.Teamspeak.ScheduledActions {
         public async Task CreateSelf() {
             if (_currentEnvironment.IsDevelopment()) return;
 
-            if (_schedulerService.Data.GetSingle(x => x.action == ACTION_NAME) == null) {
+            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null) {
                 await _schedulerService.CreateScheduledJob(_clock.Today().AddMinutes(5), TimeSpan.FromMinutes(5), ACTION_NAME);
             }
         }

@@ -6,9 +6,9 @@ namespace UKSF.Api.Personnel.Models {
         UNIT
     }
 
-    public class Role : DatabaseObject {
-        public string name;
-        public int order = 0;
-        public RoleType roleType = RoleType.INDIVIDUAL;
+    public record Role : MongoObject {
+        public string Name;
+        public int Order = 0;
+        public RoleType RoleType = RoleType.INDIVIDUAL;
     }
 }

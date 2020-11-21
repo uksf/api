@@ -10,7 +10,7 @@ using UKSF.Api.Base;
 using UKSF.Api.Command;
 using UKSF.Api.Discord;
 using UKSF.Api.EventHandlers;
-using UKSF.Api.Integration.Instagram;
+using UKSF.Api.Integrations.Instagram;
 using UKSF.Api.Launcher;
 using UKSF.Api.Modpack;
 using UKSF.Api.Personnel;

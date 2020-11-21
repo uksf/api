@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.Hosting;
 using Moq;
+using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Services;
 using UKSF.Api.Teamspeak.ScheduledActions;
 using UKSF.Api.Teamspeak.Services;
@@ -13,11 +14,18 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
 
         public TeamspeakSnapshotActionTests() {
             _mockTeamspeakService = new Mock<ITeamspeakService>();
-            Mock<IClock> mockClock = new Mock<IClock>();
-            Mock<ISchedulerService> mockSchedulerService = new Mock<ISchedulerService>();
-            Mock<IHostEnvironment> mockHostEnvironment = new Mock<IHostEnvironment>();
+            Mock<IClock> mockClock = new();
+            Mock<ISchedulerService> mockSchedulerService = new();
+            Mock<IHostEnvironment> mockHostEnvironment = new();
+            Mock<ISchedulerContext> mockSchedulerContext = new();
 
-            _actionTeamspeakSnapshot = new ActionTeamspeakSnapshot(_mockTeamspeakService.Object, mockSchedulerService.Object, mockHostEnvironment.Object, mockClock.Object);
+            _actionTeamspeakSnapshot = new ActionTeamspeakSnapshot(
+                mockSchedulerContext.Object,
+                _mockTeamspeakService.Object,
+                mockSchedulerService.Object,
+                mockHostEnvironment.Object,
+                mockClock.Object
+            );
         }
 
         [Fact]

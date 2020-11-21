@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using UKSF.Api.Base.ScheduledActions;
 using UKSF.Api.Personnel.Context;
+using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Personnel.ScheduledActions {
@@ -12,12 +13,20 @@ namespace UKSF.Api.Personnel.ScheduledActions {
         private const string ACTION_NAME = nameof(ActionPruneNotifications);
 
         private readonly IClock _clock;
-        private readonly INotificationsDataService _notificationsDataService;
-        private readonly ISchedulerService _schedulerService;
         private readonly IHostEnvironment _currentEnvironment;
+        private readonly INotificationsContext _notificationsContext;
+        private readonly ISchedulerContext _schedulerContext;
+        private readonly ISchedulerService _schedulerService;
 
-        public ActionPruneNotifications(INotificationsDataService notificationsDataService, ISchedulerService schedulerService, IHostEnvironment currentEnvironment, IClock clock) {
-            _notificationsDataService = notificationsDataService;
+        public ActionPruneNotifications(
+            ISchedulerContext schedulerContext,
+            INotificationsContext notificationsContext,
+            ISchedulerService schedulerService,
+            IHostEnvironment currentEnvironment,
+            IClock clock
+        ) {
+            _schedulerContext = schedulerContext;
+            _notificationsContext = notificationsContext;
             _schedulerService = schedulerService;
             _currentEnvironment = currentEnvironment;
             _clock = clock;
@@ -27,7 +36,7 @@ namespace UKSF.Api.Personnel.ScheduledActions {
 
         public void Run(params object[] parameters) {
             DateTime now = _clock.UtcNow();
-            Task notificationsTask = _notificationsDataService.DeleteMany(x => x.timestamp < now.AddMonths(-1));
+            Task notificationsTask = _notificationsContext.DeleteMany(x => x.Timestamp < now.AddMonths(-1));
 
             Task.WaitAll(notificationsTask);
         }
@@ -35,7 +44,7 @@ namespace UKSF.Api.Personnel.ScheduledActions {
         public async Task CreateSelf() {
             if (_currentEnvironment.IsDevelopment()) return;
 
-            if (_schedulerService.Data.GetSingle(x => x.action == ACTION_NAME) == null) {
+            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null) {
                 await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(1), TimeSpan.FromDays(1), ACTION_NAME);
             }
         }

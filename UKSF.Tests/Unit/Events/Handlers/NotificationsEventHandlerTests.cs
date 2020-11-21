@@ -13,86 +13,86 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {
     public class NotificationsEventHandlerTests {
-        private readonly DataEventBus<Notification> dataEventBus;
-        private readonly Mock<IHubContext<NotificationHub, INotificationsClient>> mockHub;
-        private readonly Mock<ILogger> mockLoggingService;
-        private readonly NotificationsEventHandler notificationsEventHandler;
+        private readonly DataEventBus<Notification> _dataEventBus;
+        private readonly Mock<IHubContext<NotificationHub, INotificationsClient>> _mockHub;
+        private readonly Mock<ILogger> _mockLoggingService;
+        private readonly NotificationsEventHandler _notificationsEventHandler;
 
         public NotificationsEventHandlerTests() {
-            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            mockLoggingService = new Mock<ILogger>();
-            mockHub = new Mock<IHubContext<NotificationHub, INotificationsClient>>();
+            Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
+            _mockLoggingService = new Mock<ILogger>();
+            _mockHub = new Mock<IHubContext<NotificationHub, INotificationsClient>>();
 
-            dataEventBus = new DataEventBus<Notification>();
+            _dataEventBus = new DataEventBus<Notification>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<Notification>(It.IsAny<string>()));
+            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<Notification>(It.IsAny<string>()));
 
-            notificationsEventHandler = new NotificationsEventHandler(dataEventBus, mockHub.Object, mockLoggingService.Object);
+            _notificationsEventHandler = new NotificationsEventHandler(_dataEventBus, _mockHub.Object, _mockLoggingService.Object);
         }
 
         [Fact]
         public void ShouldLogOnException() {
-            Mock<IHubClients<INotificationsClient>> mockHubClients = new Mock<IHubClients<INotificationsClient>>();
-            Mock<INotificationsClient> mockClient = new Mock<INotificationsClient>();
+            Mock<IHubClients<INotificationsClient>> mockHubClients = new();
+            Mock<INotificationsClient> mockClient = new();
 
-            mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
+            _mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
             mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockClient.Object);
             mockClient.Setup(x => x.ReceiveNotification(It.IsAny<Notification>())).Throws(new Exception());
-            mockLoggingService.Setup(x => x.LogError(It.IsAny<Exception>()));
+            _mockLoggingService.Setup(x => x.LogError(It.IsAny<Exception>()));
 
-            notificationsEventHandler.Init();
+            _notificationsEventHandler.Init();
 
-            dataEventBus.Send(new DataEventModel<Notification> { type = DataEventType.ADD });
+            _dataEventBus.Send(new DataEventModel<Notification> { Type = DataEventType.ADD });
 
-            mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Once);
+            _mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Once);
         }
 
         [Fact]
         public void ShouldNotRunEventOnUpdateOrDelete() {
-            Mock<IHubClients<INotificationsClient>> mockHubClients = new Mock<IHubClients<INotificationsClient>>();
-            Mock<INotificationsClient> mockClient = new Mock<INotificationsClient>();
+            Mock<IHubClients<INotificationsClient>> mockHubClients = new();
+            Mock<INotificationsClient> mockClient = new();
 
-            mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
+            _mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
             mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockClient.Object);
             mockClient.Setup(x => x.ReceiveNotification(It.IsAny<Notification>()));
 
-            notificationsEventHandler.Init();
+            _notificationsEventHandler.Init();
 
-            dataEventBus.Send(new DataEventModel<Notification> { type = DataEventType.UPDATE });
-            dataEventBus.Send(new DataEventModel<Notification> { type = DataEventType.DELETE });
+            _dataEventBus.Send(new DataEventModel<Notification> { Type = DataEventType.UPDATE });
+            _dataEventBus.Send(new DataEventModel<Notification> { Type = DataEventType.DELETE });
 
             mockClient.Verify(x => x.ReceiveNotification(It.IsAny<Notification>()), Times.Never);
         }
 
         [Fact]
         public void ShouldRunAddedOnAdd() {
-            Mock<IHubClients<INotificationsClient>> mockHubClients = new Mock<IHubClients<INotificationsClient>>();
-            Mock<INotificationsClient> mockClient = new Mock<INotificationsClient>();
+            Mock<IHubClients<INotificationsClient>> mockHubClients = new();
+            Mock<INotificationsClient> mockClient = new();
 
-            mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
+            _mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
             mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockClient.Object);
             mockClient.Setup(x => x.ReceiveNotification(It.IsAny<Notification>()));
 
-            notificationsEventHandler.Init();
+            _notificationsEventHandler.Init();
 
-            dataEventBus.Send(new DataEventModel<Notification> { type = DataEventType.ADD, data = new Notification() });
+            _dataEventBus.Send(new DataEventModel<Notification> { Type = DataEventType.ADD, Data = new Notification() });
 
             mockClient.Verify(x => x.ReceiveNotification(It.IsAny<Notification>()), Times.Once);
         }
 
         [Fact]
         public void ShouldUseOwnerAsIdInAdded() {
-            Mock<IHubClients<INotificationsClient>> mockHubClients = new Mock<IHubClients<INotificationsClient>>();
-            Mock<INotificationsClient> mockClient = new Mock<INotificationsClient>();
+            Mock<IHubClients<INotificationsClient>> mockHubClients = new();
+            Mock<INotificationsClient> mockClient = new();
 
             string subject = "";
-            mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
+            _mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
             mockHubClients.Setup(x => x.Group("1")).Returns(mockClient.Object).Callback((string x) => subject = x);
             mockClient.Setup(x => x.ReceiveNotification(It.IsAny<Notification>()));
 
-            notificationsEventHandler.Init();
+            _notificationsEventHandler.Init();
 
-            dataEventBus.Send(new DataEventModel<Notification> { type = DataEventType.ADD, data = new Notification { owner = "1" } });
+            _dataEventBus.Send(new DataEventModel<Notification> { Type = DataEventType.ADD, Data = new Notification { Owner = "1" } });
 
             subject.Should().Be("1");
         }

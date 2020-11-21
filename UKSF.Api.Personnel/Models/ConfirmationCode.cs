@@ -1,7 +1,7 @@
 ﻿using UKSF.Api.Base.Models;
 
 namespace UKSF.Api.Personnel.Models {
-    public class ConfirmationCode : DatabaseObject {
-        public string value;
+    public record ConfirmationCode : MongoObject {
+        public string Value;
     }
 }

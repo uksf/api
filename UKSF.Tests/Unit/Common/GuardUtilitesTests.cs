@@ -31,7 +31,8 @@ namespace UKSF.Tests.Unit.Common {
             subject.Should().Be(valid);
         }
 
-        [Theory, InlineData(new[] { "" }, false, false), InlineData(new[] { "", "2" }, true, false), InlineData(new[] { "5ed43018bea2f1945440f37d", "2" }, true, false), InlineData(new[] { "5ed43018bea2f1945440f37d", "5ed43018bea2f1945440f37e" }, true, true)]
+        [Theory, InlineData(new[] { "" }, false, false), InlineData(new[] { "", "2" }, true, false), InlineData(new[] { "5ed43018bea2f1945440f37d", "2" }, true, false),
+         InlineData(new[] { "5ed43018bea2f1945440f37d", "5ed43018bea2f1945440f37e" }, true, true)]
         public void ShouldValidateIdArrayCorrectly(string[] array, bool valid, bool idValid) {
             bool subject = true;
             bool subjectId = true;

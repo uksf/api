@@ -7,11 +7,11 @@ namespace UKSF.Tests.Unit.Models.Message.Logging {
     public class WebLogMessageTests {
         [Fact]
         public void ShouldCreateFromException() {
-            HttpErrorLog subject = new HttpErrorLog(new Exception("test"));
+            HttpErrorLog subject = new(new Exception("test"));
 
-            subject.message.Should().Be("test");
-            subject.exception.Should().Be("System.Exception: test");
-            subject.level.Should().Be(LogLevel.ERROR);
+            subject.Message.Should().Be("test");
+            subject.Exception.Should().Be("System.Exception: test");
+            subject.Level.Should().Be(LogLevel.ERROR);
         }
     }
 }

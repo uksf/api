@@ -5,9 +5,9 @@ using UKSF.Api.Base.Models;
 using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Shared.Events {
-    public interface IDataEventBus<T> : IEventBus<DataEventModel<T>> where T : DatabaseObject { }
+    public interface IDataEventBus<T> : IEventBus<DataEventModel<T>> where T : MongoObject { }
 
-    public class DataEventBus<T> : EventBus<DataEventModel<T>>, IDataEventBus<T> where T : DatabaseObject {
+    public class DataEventBus<T> : EventBus<DataEventModel<T>>, IDataEventBus<T> where T : MongoObject {
         public override IObservable<DataEventModel<T>> AsObservable() => Subject.OfType<DataEventModel<T>>();
     }
 }

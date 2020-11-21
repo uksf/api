@@ -12,13 +12,13 @@ namespace UKSF.Api.Teamspeak.Signalr.Hubs {
 
     public class TeamspeakHub : Hub<ITeamspeakClient> {
         public const string END_POINT = "teamspeak";
-        private readonly ISignalrEventBus eventBus;
+        private readonly ISignalrEventBus _eventBus;
 
-        public TeamspeakHub(ISignalrEventBus eventBus) => this.eventBus = eventBus;
+        public TeamspeakHub(ISignalrEventBus eventBus) => _eventBus = eventBus;
 
         // ReSharper disable once UnusedMember.Global
         public void Invoke(int procedure, object args) {
-            eventBus.Send(new SignalrEventModel {procedure = (TeamspeakEventType) procedure, args = args});
+            _eventBus.Send(new SignalrEventModel { Procedure = (TeamspeakEventType) procedure, Args = args });
         }
 
         public override Task OnConnectedAsync() {

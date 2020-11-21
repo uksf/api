@@ -33,7 +33,7 @@ namespace UKSF.Api.Personnel.Services {
     //                                                             displayName = displayNameService.GetDisplayName(x),
     //                                                             attendancePercent = GetAttendancePercent(x.teamspeakIdentities),
     //                                                             attendanceState = loaService.IsLoaCovered(x.id, start) ? AttendanceState.LOA : GetAttendanceState(GetAttendancePercent(x.teamspeakIdentities)),
-    //                                                             groupId = unitsService.Data.GetSingle(y => y.name == x.unitAssignment).id,
+    //                                                             groupId = _unitsContext.GetSingle(y => y.name == x.unitAssignment).id,
     //                                                             groupName = x.unitAssignment
     //                                                         }
     //                                                     )
@@ -42,7 +42,7 @@ namespace UKSF.Api.Personnel.Services {
     //     }
     //
     //     private void GetAccounts() {
-    //         accounts = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER);
+    //         accounts = _accountContext.Get(x => x.membershipState == MembershipState.MEMBER);
     //     }
     //
     //     private async Task GetRecords(DateTime start, DateTime end) {

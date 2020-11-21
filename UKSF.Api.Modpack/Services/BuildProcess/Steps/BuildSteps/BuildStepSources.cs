@@ -26,15 +26,15 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
                 updated = true;
             } else {
                 string path = Path.Join(GetBuildSourcesPath(), modName);
-                DirectoryInfo directory = new DirectoryInfo(path);
+                DirectoryInfo directory = new(path);
                 if (!directory.Exists) {
                     throw new Exception($"{displayName} source directory does not exist. {displayName} should be cloned before running a build.");
                 }
 
                 string releasePath = Path.Join(GetBuildSourcesPath(), modName, "release", releaseName);
                 string repoPath = Path.Join(GetBuildEnvironmentPath(), "Repo", repoName);
-                DirectoryInfo release = new DirectoryInfo(releasePath);
-                DirectoryInfo repo = new DirectoryInfo(repoPath);
+                DirectoryInfo release = new(releasePath);
+                DirectoryInfo repo = new(repoPath);
 
                 GitCommand(path, "git reset --hard HEAD && git clean -d -f && git fetch");
                 GitCommand(path, $"git checkout -t origin/{branchName}");
@@ -63,7 +63,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             string referenceName = string.Equals(Build.Commit.Branch, "None") ? reference : $"latest {reference}";
             StepLogger.LogSurround("\nChecking out modpack...");
             string modpackPath = Path.Join(GetBuildSourcesPath(), "modpack");
-            DirectoryInfo modpack = new DirectoryInfo(modpackPath);
+            DirectoryInfo modpack = new(modpackPath);
             if (!modpack.Exists) {
                 throw new Exception("Modpack source directory does not exist. Modpack should be cloned before running a build.");
             }

@@ -1,17 +1,7 @@
-﻿using System;
-using System.Reflection;
-
-namespace UKSF.Api.Personnel.Models {
+﻿namespace UKSF.Api.Personnel.Models {
     public class AccountSettings {
-        public bool errorEmails = false;
-        public bool notificationsEmail = true;
-        public bool notificationsTeamspeak = true;
-        public bool sr1Enabled = true;
-
-        public T GetAttribute<T>(string name) {
-            FieldInfo setting = typeof(AccountSettings).GetField(name);
-            if (setting == null) throw new ArgumentException($"Could not find setting with name '{name}'");
-            return (T) setting.GetValue(this);
-        }
+        public bool NotificationsEmail { get; set; } = true;
+        public bool NotificationsTeamspeak { get; set; } = true;
+        public bool Sr1Enabled { get; set; } = true;
     }
 }

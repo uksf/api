@@ -50,5 +50,13 @@ namespace UKSF.Api.AppStart {
             serviceProvider.GetService<IBuildsService>()?.CancelInterruptedBuilds();
             serviceProvider.GetService<IModpackService>()?.RunQueuedBuilds();
         }
+
+        public static void StopUksfSerices(this IServiceProvider serviceProvider) {
+            // Cancel any running builds
+            serviceProvider.GetService<IBuildQueueService>()?.CancelAll();
+
+            // Stop teamspeak
+            serviceProvider.GetService<ITeamspeakManagerService>()?.Stop();
+        }
     }
 }

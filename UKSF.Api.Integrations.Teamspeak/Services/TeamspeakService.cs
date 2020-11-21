@@ -25,14 +25,19 @@ namespace UKSF.Api.Teamspeak.Services {
     }
 
     public class TeamspeakService : ITeamspeakService {
-        private readonly SemaphoreSlim _clientsSemaphore = new SemaphoreSlim(1);
+        private readonly SemaphoreSlim _clientsSemaphore = new(1);
         private readonly IMongoDatabase _database;
+        private readonly IHostEnvironment _environment;
         private readonly IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> _teamspeakClientsHub;
         private readonly ITeamspeakManagerService _teamspeakManagerService;
-        private readonly IHostEnvironment _environment;
-        private HashSet<TeamspeakClient> _clients = new HashSet<TeamspeakClient>();
+        private HashSet<TeamspeakClient> _clients = new();
 
-        public TeamspeakService(IMongoDatabase database, IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub, ITeamspeakManagerService teamspeakManagerService, IHostEnvironment environment) {
+        public TeamspeakService(
+            IMongoDatabase database,
+            IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub,
+            ITeamspeakManagerService teamspeakManagerService,
+            IHostEnvironment environment
+        ) {
             _database = database;
             _teamspeakClientsHub = teamspeakClientsHub;
             _teamspeakManagerService = teamspeakManagerService;
@@ -49,20 +54,20 @@ namespace UKSF.Api.Teamspeak.Services {
         }
 
         public async Task UpdateAccountTeamspeakGroups(Account account) {
-            if (account?.teamspeakIdentities == null) return;
-            foreach (double clientDbId in account.teamspeakIdentities) {
-                await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.GROUPS, new {clientDbId});
+            if (account?.TeamspeakIdentities == null) return;
+            foreach (double clientDbId in account.TeamspeakIdentities) {
+                await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.GROUPS, new { clientDbId });
             }
         }
 
         public async Task SendTeamspeakMessageToClient(Account account, string message) {
-            await SendTeamspeakMessageToClient(account.teamspeakIdentities, message);
+            await SendTeamspeakMessageToClient(account.TeamspeakIdentities, message);
         }
 
         public async Task SendTeamspeakMessageToClient(IEnumerable<double> clientDbIds, string message) {
             message = FormatTeamspeakMessage(message);
             foreach (double clientDbId in clientDbIds) {
-                await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.MESSAGE, new {clientDbId, message});
+                await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.MESSAGE, new { clientDbId, message });
             }
         }
 
@@ -72,26 +77,26 @@ namespace UKSF.Api.Teamspeak.Services {
                 return;
             }
 
-            TeamspeakServerSnapshot teamspeakServerSnapshot = new TeamspeakServerSnapshot {timestamp = DateTime.UtcNow, users = _clients};
+            TeamspeakServerSnapshot teamspeakServerSnapshot = new() { Timestamp = DateTime.UtcNow, Users = _clients };
             await _database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots").InsertOneAsync(teamspeakServerSnapshot);
         }
 
         public async Task Shutdown() {
-            await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.SHUTDOWN, new {});
+            await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.SHUTDOWN, new { });
         }
 
         public IEnumerable<object> GetFormattedClients() {
-            if (_environment.IsDevelopment()) return new List<object> {new {name = "SqnLdr.Beswick.T", clientDbId = (double) 2}};
-            return _clients.Where(x => x != null).Select(x => new {name = $"{x.clientName}", x.clientDbId});
+            if (_environment.IsDevelopment()) return new List<object> { new { name = "SqnLdr.Beswick.T", clientDbId = (double) 2 } };
+            return _clients.Where(x => x != null).Select(x => new { name = $"{x.ClientName}", clientDbId = x.ClientDbId });
         }
 
         public (bool online, string nickname) GetOnlineUserDetails(Account account) {
-            if (account.teamspeakIdentities == null) return (false, "");
+            if (account.TeamspeakIdentities == null) return (false, "");
             if (_clients.Count == 0) return (false, "");
 
             foreach (TeamspeakClient client in _clients.Where(x => x != null)) {
-                if (account.teamspeakIdentities.Any(y => y.Equals(client.clientDbId))) {
-                    return (true, client.clientName);
+                if (account.TeamspeakIdentities.Any(y => y.Equals(client.ClientDbId))) {
+                    return (true, client.ClientName);
                 }
             }
 

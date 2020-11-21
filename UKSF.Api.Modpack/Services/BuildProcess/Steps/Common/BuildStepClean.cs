@@ -20,7 +20,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common {
             } else {
                 string path = Path.Join(environmentPath, "Build");
                 string repoPath = Path.Join(environmentPath, "Repo");
-                DirectoryInfo repo = new DirectoryInfo(repoPath);
+                DirectoryInfo repo = new(repoPath);
 
                 StepLogger.LogSurround("\nCleaning build folder...");
                 await DeleteDirectoryContents(path);

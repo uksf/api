@@ -12,32 +12,32 @@ namespace UKSF.Api.Admin.EventHandlers {
     public interface ILogDataEventHandler : IEventHandler { }
 
     public class LogDataEventHandler : ILogDataEventHandler {
-        private readonly IDataEventBus<BasicLog> logDataEventBus;
-        private readonly IHubContext<AdminHub, IAdminClient> hub;
-        private readonly ILogger logger;
+        private readonly IHubContext<AdminHub, IAdminClient> _hub;
+        private readonly IDataEventBus<BasicLog> _logDataEventBus;
+        private readonly ILogger _logger;
 
         public LogDataEventHandler(IDataEventBus<BasicLog> logDataEventBus, IHubContext<AdminHub, IAdminClient> hub, ILogger logger) {
-            this.logDataEventBus = logDataEventBus;
-            this.hub = hub;
-            this.logger = logger;
+            _logDataEventBus = logDataEventBus;
+            _hub = hub;
+            _logger = logger;
         }
 
         public void Init() {
-            logDataEventBus.AsObservable().SubscribeWithAsyncNext(HandleEvent, exception => logger.LogError(exception));
+            _logDataEventBus.AsObservable().SubscribeWithAsyncNext(HandleEvent, exception => _logger.LogError(exception));
         }
 
         private async Task HandleEvent(DataEventModel<BasicLog> dataEventModel) {
-            if (dataEventModel.type == DataEventType.ADD) {
-                await AddedEvent(dataEventModel.data);
+            if (dataEventModel.Type == DataEventType.ADD) {
+                await AddedEvent(dataEventModel.Data);
             }
         }
 
         private Task AddedEvent(object log) {
             return log switch {
-                AuditLog message     => hub.Clients.All.ReceiveAuditLog(message),
-                LauncherLog message  => hub.Clients.All.ReceiveLauncherLog(message),
-                HttpErrorLog message => hub.Clients.All.ReceiveErrorLog(message),
-                BasicLog message     => hub.Clients.All.ReceiveLog(message),
+                AuditLog message     => _hub.Clients.All.ReceiveAuditLog(message),
+                LauncherLog message  => _hub.Clients.All.ReceiveLauncherLog(message),
+                HttpErrorLog message => _hub.Clients.All.ReceiveErrorLog(message),
+                BasicLog message     => _hub.Clients.All.ReceiveLog(message),
                 _                    => throw new ArgumentOutOfRangeException(nameof(log), "Log type is not valid")
             };
         }

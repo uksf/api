@@ -14,9 +14,9 @@ namespace UKSF.Api.Modpack.EventHandlers {
     public interface IBuildsEventHandler : IEventHandler { }
 
     public class BuildsEventHandler : IBuildsEventHandler {
-        private readonly IDataEventBus<ModpackBuild> _modpackBuildEventBus;
         private readonly IHubContext<BuildsHub, IModpackClient> _hub;
         private readonly ILogger _logger;
+        private readonly IDataEventBus<ModpackBuild> _modpackBuildEventBus;
 
         public BuildsEventHandler(IDataEventBus<ModpackBuild> modpackBuildEventBus, IHubContext<BuildsHub, IModpackClient> hub, ILogger logger) {
             _modpackBuildEventBus = modpackBuildEventBus;
@@ -29,17 +29,17 @@ namespace UKSF.Api.Modpack.EventHandlers {
         }
 
         private async Task HandleBuildEvent(DataEventModel<ModpackBuild> dataEventModel) {
-            if (dataEventModel.data == null) return;
+            if (dataEventModel.Data == null) return;
 
-            switch (dataEventModel.type) {
+            switch (dataEventModel.Type) {
                 case DataEventType.ADD:
-                    await AddedEvent(dataEventModel.data as ModpackBuild);
+                    await AddedEvent(dataEventModel.Data as ModpackBuild);
                     break;
                 case DataEventType.UPDATE:
-                    await UpdatedEvent(dataEventModel.id, dataEventModel.data);
+                    await UpdatedEvent(dataEventModel.Id, dataEventModel.Data);
                     break;
                 case DataEventType.DELETE: break;
-                default: throw new ArgumentOutOfRangeException(nameof(dataEventModel));
+                default:                   throw new ArgumentOutOfRangeException(nameof(dataEventModel));
             }
         }
 

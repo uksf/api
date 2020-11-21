@@ -20,7 +20,7 @@ namespace UKSF.Api.Admin {
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services.AddSingleton<ILogDataEventHandler, LogDataEventHandler>();
 
         private static IServiceCollection AddServices(this IServiceCollection services) =>
-            services.AddSingleton<IDataCacheService, DataCacheService>().AddTransient<IVariablesDataService, VariablesDataService>().AddTransient<IVariablesService, VariablesService>();
+            services.AddSingleton<IDataCacheService, DataCacheService>().AddTransient<IVariablesContext, VariablesContext>().AddTransient<IVariablesService, VariablesService>();
 
         private static IServiceCollection AddActions(this IServiceCollection services) => services.AddSingleton<IActionPruneLogs, ActionPruneLogs>();
 

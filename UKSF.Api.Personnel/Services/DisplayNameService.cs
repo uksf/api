@@ -1,4 +1,5 @@
-﻿using UKSF.Api.Personnel.Models;
+﻿using UKSF.Api.Personnel.Context;
+using UKSF.Api.Personnel.Models;
 
 namespace UKSF.Api.Personnel.Services {
     public interface IDisplayNameService {
@@ -8,24 +9,24 @@ namespace UKSF.Api.Personnel.Services {
     }
 
     public class DisplayNameService : IDisplayNameService {
-        private readonly IAccountService accountService;
-        private readonly IRanksService ranksService;
+        private readonly IAccountContext _accountContext;
+        private readonly IRanksContext _ranksContext;
 
-        public DisplayNameService(IRanksService ranksService, IAccountService accountService) {
-            this.ranksService = ranksService;
-            this.accountService = accountService;
+        public DisplayNameService(IAccountContext accountContext, IRanksContext ranksContext) {
+            _accountContext = accountContext;
+            _ranksContext = ranksContext;
         }
 
         public string GetDisplayName(Account account) {
-            Rank rank = account.rank != null ? ranksService.Data.GetSingle(account.rank) : null;
-            return rank == null ? $"{account.lastname}.{account.firstname[0]}" : $"{rank.abbreviation}.{account.lastname}.{account.firstname[0]}";
+            Rank rank = account.Rank != null ? _ranksContext.GetSingle(account.Rank) : null;
+            return rank == null ? $"{account.Lastname}.{account.Firstname[0]}" : $"{rank.Abbreviation}.{account.Lastname}.{account.Firstname[0]}";
         }
 
         public string GetDisplayName(string id) {
-            Account account = accountService.Data.GetSingle(id);
+            Account account = _accountContext.GetSingle(id);
             return account != null ? GetDisplayName(account) : id;
         }
 
-        public string GetDisplayNameWithoutRank(Account account) => string.IsNullOrEmpty(account?.lastname) ? "Guest" : $"{account.lastname}.{account.firstname[0]}";
+        public string GetDisplayNameWithoutRank(Account account) => string.IsNullOrEmpty(account?.Lastname) ? "Guest" : $"{account.Lastname}.{account.Firstname[0]}";
     }
 }

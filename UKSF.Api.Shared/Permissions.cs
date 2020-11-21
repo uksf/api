@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace UKSF.Api.Shared {
     public static class Permissions {
+        public static readonly HashSet<string> ALL = new() { MEMBER, ADMIN, COMMAND, NCO, RECRUITER, RECRUITER_LEAD, PERSONNEL, SERVERS, TESTER };
+
         #region MemberStates
 
         public const string CONFIRMED = "CONFIRMED";
@@ -25,18 +27,6 @@ namespace UKSF.Api.Shared {
         public const string TESTER = "TESTER";
 
         #endregion
-
-        public static readonly HashSet<string> ALL = new HashSet<string> {
-            MEMBER,
-            ADMIN,
-            COMMAND,
-            NCO,
-            RECRUITER,
-            RECRUITER_LEAD,
-            PERSONNEL,
-            SERVERS,
-            TESTER
-        };
     }
 
     public class PermissionsAttribute : AuthorizeAttribute {

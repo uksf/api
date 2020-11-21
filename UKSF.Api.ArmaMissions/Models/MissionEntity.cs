@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace UKSF.Api.ArmaMissions.Models {
     public class MissionEntity {
-        public readonly List<MissionEntityItem> missionEntityItems = new List<MissionEntityItem>();
-        public int itemsCount;
+        public readonly List<MissionEntityItem> MissionEntityItems = new();
+        public int ItemsCount;
     }
 }

@@ -5,32 +5,19 @@ using UKSF.Api.Admin.Services;
 namespace UKSF.Api.Admin.Controllers {
     [Route("[controller]")]
     public class DebugController : Controller {
-        private readonly IHostEnvironment currentEnvironment;
-        private readonly DataCacheService dataCacheService;
+        private readonly IHostEnvironment _currentEnvironment;
+        private readonly DataCacheService _dataCacheService;
 
         public DebugController(IHostEnvironment currentEnvironment, DataCacheService dataCacheService) {
-            this.currentEnvironment = currentEnvironment;
-            this.dataCacheService = dataCacheService;
+            _currentEnvironment = currentEnvironment;
+            _dataCacheService = dataCacheService;
         }
-
-        // TODO: Should be in notifcation controller
-        // [HttpGet("notifications-test"), Authorize]
-        // public IActionResult NotificationsTest() {
-        //     if (!currentEnvironment.IsDevelopment()) return Ok();
-        //
-        //     notificationsService.Add(
-        //         new Notification {
-        //             owner = httpContextService.GetContextId(), message = $"This is a test notification. The time is {DateTime.Now:HH:mm:ss}", timestamp = DateTime.Now, icon = NotificationIcons.REQUEST
-        //         }
-        //     );
-        //     return Ok();
-        // }
 
         [HttpGet("invalidate-data")]
         public IActionResult InvalidateData() {
-            if (!currentEnvironment.IsDevelopment()) return Ok();
+            if (!_currentEnvironment.IsDevelopment()) return Ok();
 
-            dataCacheService.RefreshCachedData();
+            _dataCacheService.RefreshCachedData();
             return Ok();
         }
     }

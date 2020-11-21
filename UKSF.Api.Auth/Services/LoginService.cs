@@ -5,8 +5,8 @@ using System.Linq;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Personnel.Services;
 
 namespace UKSF.Api.Auth.Services {
     public interface ILoginService {
@@ -16,12 +16,12 @@ namespace UKSF.Api.Auth.Services {
     }
 
     public class LoginService : ILoginService {
-        private readonly IAccountService accountService;
-        private readonly IPermissionsService permissionsService;
+        private readonly IAccountContext _accountContext;
+        private readonly IPermissionsService _permissionsService;
 
-        public LoginService(IAccountService accountService, IPermissionsService permissionsService) {
-            this.accountService = accountService;
-            this.permissionsService = permissionsService;
+        public LoginService(IAccountContext accountContext, IPermissionsService permissionsService) {
+            _accountContext = accountContext;
+            _permissionsService = permissionsService;
         }
 
         public string Login(string email, string password) {
@@ -34,11 +34,11 @@ namespace UKSF.Api.Auth.Services {
             return GenerateBearerToken(account);
         }
 
-        public string RegenerateBearerToken(string accountId) => GenerateBearerToken(accountService.Data.GetSingle(accountId));
+        public string RegenerateBearerToken(string accountId) => GenerateBearerToken(_accountContext.GetSingle(accountId));
 
         private Account AuthenticateAccount(string email, string password, bool passwordReset = false) {
-            Account account = accountService.Data.GetSingle(x => string.Equals(x.email, email, StringComparison.InvariantCultureIgnoreCase));
-            if (account != null && (passwordReset || BCrypt.Net.BCrypt.Verify(password, account.password))) {
+            Account account = _accountContext.GetSingle(x => string.Equals(x.Email, email, StringComparison.InvariantCultureIgnoreCase));
+            if (account != null && (passwordReset || BCrypt.Net.BCrypt.Verify(password, account.Password))) {
                 return account;
             }
 
@@ -46,8 +46,8 @@ namespace UKSF.Api.Auth.Services {
         }
 
         private string GenerateBearerToken(Account account) {
-            List<Claim> claims = new List<Claim> { new Claim(ClaimTypes.Email, account.email, ClaimValueTypes.String), new Claim(ClaimTypes.Sid, account.id, ClaimValueTypes.String) };
-            claims.AddRange(permissionsService.GrantPermissions(account).Select(x => new Claim(ClaimTypes.Role, x)));
+            List<Claim> claims = new() { new Claim(ClaimTypes.Email, account.Email, ClaimValueTypes.String), new Claim(ClaimTypes.Sid, account.Id, ClaimValueTypes.String) };
+            claims.AddRange(_permissionsService.GrantPermissions(account).Select(x => new Claim(ClaimTypes.Role, x)));
 
             return JsonConvert.ToString(
                 new JwtSecurityTokenHandler().WriteToken(

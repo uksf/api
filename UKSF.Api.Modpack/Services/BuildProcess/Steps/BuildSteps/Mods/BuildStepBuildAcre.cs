@@ -8,13 +8,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
     public class BuildStepBuildAcre : ModBuildStep {
         public const string NAME = "Build ACRE";
         private const string MOD_NAME = "acre";
-        private readonly List<string> _errorExclusions = new List<string> {
-            "Found DirectX",
-            "Linking statically",
-            "Visual Studio 16",
-            "INFO: Building",
-            "Build Type"
-        };
+
+        private readonly List<string> _errorExclusions = new() { "Found DirectX", "Linking statically", "Visual Studio 16", "INFO: Building", "Build Type" };
 
         protected override async Task ProcessExecute() {
             StepLogger.Log("Running build for ACRE");
@@ -25,7 +20,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
 
             if (IsBuildNeeded(MOD_NAME)) {
                 StepLogger.LogSurround("\nRunning make.py...");
-                BuildProcessHelper processHelper = new BuildProcessHelper(
+                BuildProcessHelper processHelper = new(
                     StepLogger,
                     CancellationTokenSource,
                     errorExclusions: _errorExclusions,

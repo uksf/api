@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Octokit;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services.BuildProcess;
 using UKSF.Api.Shared.Events;
@@ -29,14 +30,26 @@ namespace UKSF.Api.Modpack.Services {
 
     public class ModpackService : IModpackService {
         private readonly IBuildQueueService _buildQueueService;
+        private readonly IBuildsContext _buildsContext;
         private readonly IBuildsService _buildsService;
         private readonly IGithubService _githubService;
         private readonly IHttpContextService _httpContextService;
         private readonly ILogger _logger;
+        private readonly IReleasesContext _releasesContext;
         private readonly IReleaseService _releaseService;
 
-
-        public ModpackService(IReleaseService releaseService, IBuildsService buildsService, IBuildQueueService buildQueueService, IGithubService githubService, IHttpContextService httpContextService, ILogger logger) {
+        public ModpackService(
+            IReleasesContext releasesContext,
+            IBuildsContext buildsContext,
+            IReleaseService releaseService,
+            IBuildsService buildsService,
+            IBuildQueueService buildQueueService,
+            IGithubService githubService,
+            IHttpContextService httpContextService,
+            ILogger logger
+        ) {
+            _releasesContext = releasesContext;
+            _buildsContext = buildsContext;
             _releaseService = releaseService;
             _buildsService = buildsService;
             _buildQueueService = buildQueueService;
@@ -45,7 +58,7 @@ namespace UKSF.Api.Modpack.Services {
             _logger = logger;
         }
 
-        public IEnumerable<ModpackRelease> GetReleases() => _releaseService.Data.Get();
+        public IEnumerable<ModpackRelease> GetReleases() => _releasesContext.Get();
 
         public IEnumerable<ModpackBuild> GetRcBuilds() => _buildsService.GetRcBuilds();
 
@@ -53,7 +66,7 @@ namespace UKSF.Api.Modpack.Services {
 
         public ModpackRelease GetRelease(string version) => _releaseService.GetRelease(version);
 
-        public ModpackBuild GetBuild(string id) => _buildsService.Data.GetSingle(x => x.id == id);
+        public ModpackBuild GetBuild(string id) => _buildsContext.GetSingle(x => x.Id == id);
 
         public async Task NewBuild(NewBuild newBuild) {
             GithubCommit commit = await _githubService.GetLatestReferenceCommit(newBuild.Reference);
@@ -77,10 +90,10 @@ namespace UKSF.Api.Modpack.Services {
         public async Task CancelBuild(ModpackBuild build) {
             _logger.LogAudit($"Build {GetBuildName(build)} cancelled");
 
-            if (_buildQueueService.CancelQueued(build.id)) {
+            if (_buildQueueService.CancelQueued(build.Id)) {
                 await _buildsService.CancelBuild(build);
             } else {
-                _buildQueueService.Cancel(build.id);
+                _buildQueueService.Cancel(build.Id);
             }
         }
 
@@ -143,9 +156,9 @@ namespace UKSF.Api.Modpack.Services {
         private static string GetBuildName(ModpackBuild build) =>
             build.Environment switch {
                 GameEnvironment.RELEASE => $"release {build.Version}",
-                GameEnvironment.RC => $"{build.Version} RC# {build.BuildNumber}",
-                GameEnvironment.DEV => $"#{build.BuildNumber}",
-                _ => throw new ArgumentException("Invalid build environment")
+                GameEnvironment.RC      => $"{build.Version} RC# {build.BuildNumber}",
+                GameEnvironment.DEV     => $"#{build.BuildNumber}",
+                _                       => throw new ArgumentException("Invalid build environment")
             };
     }
 }

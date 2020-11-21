@@ -15,24 +15,24 @@ namespace UKSF.Tests.Unit.Data {
     public class SimpleDataServiceTests {
         [Fact]
         public void Should_create_collections() {
-            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
+            Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
 
-            AccountDataService unused1 = new AccountDataService(mockDataCollectionFactory.Object, new Mock<IDataEventBus<Account>>().Object);
-            CommandRequestDataService unused2 = new CommandRequestDataService(mockDataCollectionFactory.Object, new Mock<IDataEventBus<CommandRequest>>().Object);
-            CommandRequestArchiveDataService unused3 = new CommandRequestArchiveDataService(mockDataCollectionFactory.Object, new Mock<IDataEventBus<CommandRequest>>().Object);
-            ConfirmationCodeDataService unused4 = new ConfirmationCodeDataService(mockDataCollectionFactory.Object, new Mock<IDataEventBus<ConfirmationCode>>().Object);
-            LauncherFileDataService unused5 = new LauncherFileDataService(mockDataCollectionFactory.Object, new Mock<IDataEventBus<LauncherFile>>().Object);
-            LoaDataService unused6 = new LoaDataService(mockDataCollectionFactory.Object, new Mock<IDataEventBus<Loa>>().Object);
-            NotificationsDataService unused7 = new NotificationsDataService(mockDataCollectionFactory.Object, new Mock<IDataEventBus<Notification>>().Object);
-            SchedulerDataService unused8 = new SchedulerDataService(mockDataCollectionFactory.Object, new Mock<IDataEventBus<ScheduledJob>>().Object);
+            AccountContext unused1 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<Account>>().Object);
+            CommandRequestContext unused2 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<CommandRequest>>().Object);
+            CommandRequestArchiveContext unused3 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<CommandRequest>>().Object);
+            ConfirmationCodeContext unused4 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<ConfirmationCode>>().Object);
+            LauncherFileContext unused5 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<LauncherFile>>().Object);
+            LoaContext unused6 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<Loa>>().Object);
+            NotificationsContext unused7 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<Notification>>().Object);
+            SchedulerContext unused8 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<ScheduledJob>>().Object);
 
-            mockDataCollectionFactory.Verify(x => x.CreateDataCollection<Account>(It.IsAny<string>()), Times.Once);
-            mockDataCollectionFactory.Verify(x => x.CreateDataCollection<CommandRequest>(It.IsAny<string>()), Times.Exactly(2));
-            mockDataCollectionFactory.Verify(x => x.CreateDataCollection<ConfirmationCode>(It.IsAny<string>()), Times.Once);
-            mockDataCollectionFactory.Verify(x => x.CreateDataCollection<LauncherFile>(It.IsAny<string>()), Times.Once);
-            mockDataCollectionFactory.Verify(x => x.CreateDataCollection<Loa>(It.IsAny<string>()), Times.Once);
-            mockDataCollectionFactory.Verify(x => x.CreateDataCollection<Notification>(It.IsAny<string>()), Times.Once);
-            mockDataCollectionFactory.Verify(x => x.CreateDataCollection<ScheduledJob>(It.IsAny<string>()), Times.Once);
+            mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<Account>(It.IsAny<string>()), Times.Once);
+            mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<CommandRequest>(It.IsAny<string>()), Times.Exactly(2));
+            mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<ConfirmationCode>(It.IsAny<string>()), Times.Once);
+            mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<LauncherFile>(It.IsAny<string>()), Times.Once);
+            mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<Loa>(It.IsAny<string>()), Times.Once);
+            mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<Notification>(It.IsAny<string>()), Times.Once);
+            mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<ScheduledJob>(It.IsAny<string>()), Times.Once);
         }
     }
 }

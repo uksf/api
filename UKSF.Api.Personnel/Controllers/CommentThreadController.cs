@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
@@ -13,38 +14,50 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Personnel.Controllers {
     [Route("commentthread"), Permissions(Permissions.CONFIRMED, Permissions.MEMBER, Permissions.DISCHARGED)]
     public class CommentThreadController : Controller {
-        private readonly IAccountService accountService;
-        private readonly ICommentThreadService commentThreadService;
-        private readonly IDisplayNameService displayNameService;
-        private readonly INotificationsService notificationsService;
-        private readonly IHttpContextService httpContextService;
-        private readonly IRanksService ranksService;
-        private readonly IRecruitmentService recruitmentService;
+        private readonly IAccountContext _accountContext;
+        private readonly IAccountService _accountService;
+        private readonly ICommentThreadContext _commentThreadContext;
+        private readonly ICommentThreadService _commentThreadService;
+        private readonly IDisplayNameService _displayNameService;
+        private readonly IHttpContextService _httpContextService;
+        private readonly INotificationsService _notificationsService;
+        private readonly IRanksService _ranksService;
+        private readonly IRecruitmentService _recruitmentService;
 
-
-        public CommentThreadController(ICommentThreadService commentThreadService, IRanksService ranksService, IAccountService accountService, IDisplayNameService displayNameService, IRecruitmentService recruitmentService, INotificationsService notificationsService, IHttpContextService httpContextService) {
-            this.commentThreadService = commentThreadService;
-
-            this.ranksService = ranksService;
-            this.accountService = accountService;
-            this.displayNameService = displayNameService;
-            this.recruitmentService = recruitmentService;
-            this.notificationsService = notificationsService;
-            this.httpContextService = httpContextService;
+        public CommentThreadController(
+            IAccountContext accountContext,
+            ICommentThreadContext commentThreadContext,
+            ICommentThreadService commentThreadService,
+            IRanksService ranksService,
+            IAccountService accountService,
+            IDisplayNameService displayNameService,
+            IRecruitmentService recruitmentService,
+            INotificationsService notificationsService,
+            IHttpContextService httpContextService
+        ) {
+            _accountContext = accountContext;
+            _commentThreadContext = commentThreadContext;
+            _commentThreadService = commentThreadService;
+            _ranksService = ranksService;
+            _accountService = accountService;
+            _displayNameService = displayNameService;
+            _recruitmentService = recruitmentService;
+            _notificationsService = notificationsService;
+            _httpContextService = httpContextService;
         }
 
         [HttpGet("{id}"), Authorize]
         public IActionResult Get(string id) {
-            IEnumerable<Comment> comments = commentThreadService.GetCommentThreadComments(id);
+            IEnumerable<Comment> comments = _commentThreadService.GetCommentThreadComments(id);
             return Ok(
                 new {
                     comments = comments.Select(
                         comment => new {
-                            Id = comment.id.ToString(),
-                            Author = comment.author.ToString(),
-                            DisplayName = displayNameService.GetDisplayName(accountService.Data.GetSingle(comment.author)),
-                            Content = comment.content,
-                            Timestamp = comment.timestamp
+                            Id = comment.Id.ToString(),
+                            Author = comment.Author.ToString(),
+                            DisplayName = _displayNameService.GetDisplayName(_accountContext.GetSingle(comment.Author)),
+                            comment.Content,
+                            comment.Timestamp
                         }
                     )
                 }
@@ -53,35 +66,35 @@ namespace UKSF.Api.Personnel.Controllers {
 
         [HttpGet("canpost/{id}"), Authorize]
         public IActionResult GetCanPostComment(string id) {
-            CommentThread commentThread = commentThreadService.Data.GetSingle(id);
-            Account account = accountService.GetUserAccount();
-            bool admin = httpContextService.UserHasPermission(Permissions.ADMIN);
-            bool canPost = commentThread.mode switch {
-                ThreadMode.RECRUITER => commentThread.authors.Any(x => x == httpContextService.GetUserId()) || admin || recruitmentService.IsRecruiter(accountService.GetUserAccount()),
-                ThreadMode.RANKSUPERIOR => commentThread.authors.Any(x => admin || ranksService.IsSuperior(account.rank, accountService.Data.GetSingle(x).rank)),
-                ThreadMode.RANKEQUAL => commentThread.authors.Any(x => admin || ranksService.IsEqual(account.rank, accountService.Data.GetSingle(x).rank)),
-                ThreadMode.RANKSUPERIOROREQUAL => commentThread.authors.Any(x => admin || ranksService.IsSuperiorOrEqual(account.rank, accountService.Data.GetSingle(x).rank)),
-                _ => true
+            CommentThread commentThread = _commentThreadContext.GetSingle(id);
+            Account account = _accountService.GetUserAccount();
+            bool admin = _httpContextService.UserHasPermission(Permissions.ADMIN);
+            bool canPost = commentThread.Mode switch {
+                ThreadMode.RECRUITER           => commentThread.Authors.Any(x => x == _httpContextService.GetUserId()) || admin || _recruitmentService.IsRecruiter(_accountService.GetUserAccount()),
+                ThreadMode.RANKSUPERIOR        => commentThread.Authors.Any(x => admin || _ranksService.IsSuperior(account.Rank, _accountContext.GetSingle(x).Rank)),
+                ThreadMode.RANKEQUAL           => commentThread.Authors.Any(x => admin || _ranksService.IsEqual(account.Rank, _accountContext.GetSingle(x).Rank)),
+                ThreadMode.RANKSUPERIOROREQUAL => commentThread.Authors.Any(x => admin || _ranksService.IsSuperiorOrEqual(account.Rank, _accountContext.GetSingle(x).Rank)),
+                _                              => true
             };
 
-            return Ok(new {canPost});
+            return Ok(new { canPost });
         }
 
         [HttpPut("{id}"), Authorize]
         public async Task<IActionResult> AddComment(string id, [FromBody] Comment comment) {
-            comment.id = ObjectId.GenerateNewId().ToString();
-            comment.timestamp = DateTime.Now;
-            comment.author = httpContextService.GetUserId();
-            await commentThreadService.InsertComment(id, comment);
-            CommentThread thread = commentThreadService.Data.GetSingle(id);
-            IEnumerable<string> participants = commentThreadService.GetCommentThreadParticipants(thread.id);
-            foreach (string objectId in participants.Where(x => x != comment.author)) {
-                notificationsService.Add( // TODO: Set correct link when comment thread is between /application and /recruitment/id
+            comment.Id = ObjectId.GenerateNewId().ToString();
+            comment.Timestamp = DateTime.Now;
+            comment.Author = _httpContextService.GetUserId();
+            await _commentThreadService.InsertComment(id, comment);
+            CommentThread thread = _commentThreadContext.GetSingle(id);
+            IEnumerable<string> participants = _commentThreadService.GetCommentThreadParticipants(thread.Id);
+            foreach (string objectId in participants.Where(x => x != comment.Author)) {
+                _notificationsService.Add( // TODO: Set correct link when comment thread is between /application and /recruitment/id
                     new Notification {
-                        owner = objectId,
-                        icon = NotificationIcons.COMMENT,
-                        message = $"{displayNameService.GetDisplayName(comment.author)} replied to a comment:\n\"{comment.content}\"",
-                        link = HttpContext.Request.Headers["Referer"].ToString().Replace("http://localhost:4200", "").Replace("https://www.uk-sf.co.uk", "").Replace("https://uk-sf.co.uk", "")
+                        Owner = objectId,
+                        Icon = NotificationIcons.COMMENT,
+                        Message = $"{_displayNameService.GetDisplayName(comment.Author)} replied to a comment:\n\"{comment.Content}\"",
+                        Link = HttpContext.Request.Headers["Referer"].ToString().Replace("http://localhost:4200", "").Replace("https://www.uk-sf.co.uk", "").Replace("https://uk-sf.co.uk", "")
                     }
                 );
             }
@@ -91,9 +104,9 @@ namespace UKSF.Api.Personnel.Controllers {
 
         [HttpPost("{id}/{commentId}"), Authorize]
         public async Task<IActionResult> DeleteComment(string id, string commentId) {
-            List<Comment> comments = commentThreadService.GetCommentThreadComments(id).ToList();
-            Comment comment = comments.FirstOrDefault(x => x.id == commentId);
-            await commentThreadService.RemoveComment(id, comment);
+            List<Comment> comments = _commentThreadService.GetCommentThreadComments(id).ToList();
+            Comment comment = comments.FirstOrDefault(x => x.Id == commentId);
+            await _commentThreadService.RemoveComment(id, comment);
             return Ok();
         }
     }

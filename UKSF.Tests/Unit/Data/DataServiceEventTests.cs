@@ -10,93 +10,93 @@ using Moq;
 using UKSF.Api.Base.Context;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
-using UKSF.Tests.Common;
+using UKSF.Api.Tests.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data {
     public class DataServiceEventTests {
-        private readonly string id1;
-        private readonly string id2;
-        private readonly string id3;
-        private readonly TestDataModel item1;
-        private readonly Mock<IDataCollection<TestDataModel>> mockDataCollection;
-        private readonly Mock<IDataEventBus<TestDataModel>> mockDataEventBus;
-        private readonly TestDataService testDataService;
+        private readonly string _id1;
+        private readonly string _id2;
+        private readonly string _id3;
+        private readonly TestDataModel _item1;
+        private readonly Mock<Api.Base.Context.IMongoCollection<TestDataModel>> _mockDataCollection;
+        private readonly Mock<IDataEventBus<TestDataModel>> _mockDataEventBus;
+        private readonly TestContext _testContext;
 
         public DataServiceEventTests() {
-            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            mockDataEventBus = new Mock<IDataEventBus<TestDataModel>>();
-            mockDataCollection = new Mock<IDataCollection<TestDataModel>>();
-            id1 = ObjectId.GenerateNewId().ToString();
-            id2 = ObjectId.GenerateNewId().ToString();
-            id3 = ObjectId.GenerateNewId().ToString();
-            item1 = new TestDataModel { id = id1, Name = "1" };
-            TestDataModel item2 = new TestDataModel { id = id2, Name = "1" };
-            TestDataModel item3 = new TestDataModel { id = id3, Name = "3" };
-            List<TestDataModel> mockCollection = new List<TestDataModel> { item1, item2, item3 };
+            Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
+            _mockDataEventBus = new Mock<IDataEventBus<TestDataModel>>();
+            _mockDataCollection = new Mock<Api.Base.Context.IMongoCollection<TestDataModel>>();
+            _id1 = ObjectId.GenerateNewId().ToString();
+            _id2 = ObjectId.GenerateNewId().ToString();
+            _id3 = ObjectId.GenerateNewId().ToString();
+            _item1 = new TestDataModel { Id = _id1, Name = "1" };
+            TestDataModel item2 = new() { Id = _id2, Name = "1" };
+            TestDataModel item3 = new() { Id = _id3, Name = "3" };
+            List<TestDataModel> mockCollection = new() { _item1, item2, item3 };
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<TestDataModel>(It.IsAny<string>())).Returns(mockDataCollection.Object);
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
-            mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(predicate => mockCollection.Where(predicate));
-            mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(predicate => mockCollection.FirstOrDefault(predicate));
-            mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(id => mockCollection.FirstOrDefault(x => x.id == id));
+            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
+            _mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
+            _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(predicate => mockCollection.Where(predicate));
+            _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(predicate => mockCollection.FirstOrDefault(predicate));
+            _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(id => mockCollection.FirstOrDefault(x => x.Id == id));
 
-            testDataService = new TestDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
+            _testContext = new TestContext(mockDataCollectionFactory.Object, _mockDataEventBus.Object, "test");
         }
 
         [Fact]
         public async Task Should_create_correct_add_event_for_add() {
             DataEventModel<TestDataModel> subject = null;
 
-            mockDataCollection.Setup(x => x.AddAsync(It.IsAny<TestDataModel>())).Returns(Task.CompletedTask);
-            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subject = dataEventModel);
+            _mockDataCollection.Setup(x => x.AddAsync(It.IsAny<TestDataModel>())).Returns(Task.CompletedTask);
+            _mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subject = dataEventModel);
 
-            await testDataService.Add(item1);
+            await _testContext.Add(_item1);
 
-            mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Once);
-            subject.Should().BeEquivalentTo(new DataEventModel<TestDataModel> { id = id1, type = DataEventType.ADD, data = item1 });
+            _mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Once);
+            subject.Should().BeEquivalentTo(new DataEventModel<TestDataModel> { Id = _id1, Type = DataEventType.ADD, Data = _item1 });
         }
 
         [Fact]
         public async Task Should_create_correct_delete_event_for_delete() {
             DataEventModel<TestDataModel> subject = null;
 
-            mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
-            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subject = dataEventModel);
+            _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subject = dataEventModel);
 
-            await testDataService.Delete(new TestDataModel { id = id1 });
+            await _testContext.Delete(new TestDataModel { Id = _id1 });
 
-            mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Once);
-            subject.Should().BeEquivalentTo(new DataEventModel<TestDataModel> { id = id1, type = DataEventType.DELETE, data = null });
+            _mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Once);
+            subject.Should().BeEquivalentTo(new DataEventModel<TestDataModel> { Id = _id1, Type = DataEventType.DELETE, Data = null });
         }
 
         [Fact]
         public async Task Should_create_correct_delete_event_for_delete_by_id() {
             DataEventModel<TestDataModel> subject = null;
 
-            mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
-            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subject = dataEventModel);
+            _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subject = dataEventModel);
 
-            await testDataService.Delete(id1);
+            await _testContext.Delete(_id1);
 
-            mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Once);
-            subject.Should().BeEquivalentTo(new DataEventModel<TestDataModel> { id = id1, type = DataEventType.DELETE, data = null });
+            _mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Once);
+            subject.Should().BeEquivalentTo(new DataEventModel<TestDataModel> { Id = _id1, Type = DataEventType.DELETE, Data = null });
         }
 
         [Fact]
         public async Task Should_create_correct_delete_events_for_delete_many() {
-            List<DataEventModel<TestDataModel>> subjects = new List<DataEventModel<TestDataModel>>();
+            List<DataEventModel<TestDataModel>> subjects = new();
 
-            mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>())).Returns(Task.CompletedTask);
-            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subjects.Add(dataEventModel));
+            _mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>())).Returns(Task.CompletedTask);
+            _mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subjects.Add(dataEventModel));
 
-            await testDataService.DeleteMany(x => x.Name == "1");
+            await _testContext.DeleteMany(x => x.Name == "1");
 
-            mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Exactly(2));
+            _mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Exactly(2));
             subjects.Should()
                     .BeEquivalentTo(
-                        new DataEventModel<TestDataModel> { id = id1, type = DataEventType.DELETE, data = null },
-                        new DataEventModel<TestDataModel> { id = id2, type = DataEventType.DELETE, data = null }
+                        new DataEventModel<TestDataModel> { Id = _id1, Type = DataEventType.DELETE, Data = null },
+                        new DataEventModel<TestDataModel> { Id = _id2, Type = DataEventType.DELETE, Data = null }
                     );
         }
 
@@ -104,50 +104,50 @@ namespace UKSF.Tests.Unit.Data {
         public async Task Should_create_correct_update_event_for_replace() {
             DataEventModel<TestDataModel> subject = null;
 
-            mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<TestDataModel>())).Returns(Task.CompletedTask);
-            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subject = dataEventModel);
+            _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<TestDataModel>())).Returns(Task.CompletedTask);
+            _mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subject = dataEventModel);
 
-            await testDataService.Replace(item1);
+            await _testContext.Replace(_item1);
 
-            mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Once);
-            subject.Should().BeEquivalentTo(new DataEventModel<TestDataModel> { id = id1, type = DataEventType.UPDATE, data = null });
+            _mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Once);
+            subject.Should().BeEquivalentTo(new DataEventModel<TestDataModel> { Id = _id1, Type = DataEventType.UPDATE, Data = null });
         }
 
         [Fact]
         public async Task Should_create_correct_update_events_for_update_many() {
-            List<DataEventModel<TestDataModel>> subjects = new List<DataEventModel<TestDataModel>>();
+            List<DataEventModel<TestDataModel>> subjects = new();
 
-            mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);
-            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subjects.Add(dataEventModel));
+            _mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);
+            _mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subjects.Add(dataEventModel));
 
-            await testDataService.UpdateMany(x => x.Name == "1", Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
+            await _testContext.UpdateMany(x => x.Name == "1", Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
 
-            mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Exactly(2));
+            _mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Exactly(2));
             subjects.Should()
                     .BeEquivalentTo(
-                        new DataEventModel<TestDataModel> { id = id1, type = DataEventType.UPDATE, data = null },
-                        new DataEventModel<TestDataModel> { id = id2, type = DataEventType.UPDATE, data = null }
+                        new DataEventModel<TestDataModel> { Id = _id1, Type = DataEventType.UPDATE, Data = null },
+                        new DataEventModel<TestDataModel> { Id = _id2, Type = DataEventType.UPDATE, Data = null }
                     );
         }
 
         [Fact]
         public async Task Should_create_correct_update_events_for_updates() {
-            List<DataEventModel<TestDataModel>> subjects = new List<DataEventModel<TestDataModel>>();
+            List<DataEventModel<TestDataModel>> subjects = new();
 
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<TestDataModel>>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);
-            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subjects.Add(dataEventModel));
+            _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);
+            _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<TestDataModel>>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);
+            _mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>())).Callback<DataEventModel<TestDataModel>>(dataEventModel => subjects.Add(dataEventModel));
 
-            await testDataService.Update(id1, "Name", "1");
-            await testDataService.Update(id2, Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
-            await testDataService.Update(x => x.id == id3, Builders<TestDataModel>.Update.Set(x => x.Name, "3"));
+            await _testContext.Update(_id1, "Name", "1");
+            await _testContext.Update(_id2, Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
+            await _testContext.Update(x => x.Id == _id3, Builders<TestDataModel>.Update.Set(x => x.Name, "3"));
 
-            mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Exactly(3));
+            _mockDataEventBus.Verify(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()), Times.Exactly(3));
             subjects.Should()
                     .BeEquivalentTo(
-                        new DataEventModel<TestDataModel> { id = id1, type = DataEventType.UPDATE, data = null },
-                        new DataEventModel<TestDataModel> { id = id2, type = DataEventType.UPDATE, data = null },
-                        new DataEventModel<TestDataModel> { id = id3, type = DataEventType.UPDATE, data = null }
+                        new DataEventModel<TestDataModel> { Id = _id1, Type = DataEventType.UPDATE, Data = null },
+                        new DataEventModel<TestDataModel> { Id = _id2, Type = DataEventType.UPDATE, Data = null },
+                        new DataEventModel<TestDataModel> { Id = _id3, Type = DataEventType.UPDATE, Data = null }
                     );
         }
     }

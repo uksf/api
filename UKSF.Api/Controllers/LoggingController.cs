@@ -8,49 +8,61 @@ using UKSF.Api.Shared.Models;
 namespace UKSF.Api.Controllers {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]
     public class LoggingController : Controller {
-        private readonly IAuditLogDataService auditLogDataService;
-        private readonly IHttpErrorLogDataService httpErrorLogDataService;
-        private readonly ILauncherLogDataService launcherLogDataService;
-        private readonly ILogDataService logDataService;
+        private readonly IAuditLogContext _auditLogContext;
+        private readonly IDiscordLogContext _discordLogContext;
+        private readonly IHttpErrorLogContext _httpErrorLogContext;
+        private readonly ILauncherLogContext _launcherLogContext;
+        private readonly ILogContext _logContext;
 
         public LoggingController(
-            ILogDataService logDataService,
-            IAuditLogDataService auditLogDataService,
-            IHttpErrorLogDataService httpErrorLogDataService,
-            ILauncherLogDataService launcherLogDataService
+            ILogContext logContext,
+            IAuditLogContext auditLogContext,
+            IHttpErrorLogContext httpErrorLogContext,
+            ILauncherLogContext launcherLogContext,
+            IDiscordLogContext discordLogContext
         ) {
-            this.logDataService = logDataService;
-            this.auditLogDataService = auditLogDataService;
-            this.httpErrorLogDataService = httpErrorLogDataService;
-            this.launcherLogDataService = launcherLogDataService;
+            _logContext = logContext;
+            _auditLogContext = auditLogContext;
+            _httpErrorLogContext = httpErrorLogContext;
+            _launcherLogContext = launcherLogContext;
+            _discordLogContext = discordLogContext;
         }
+
+        // TODO: Pagination
 
         [HttpGet("basic"), Authorize]
         public List<BasicLog> GetBasicLogs() {
-            List<BasicLog> logs = new List<BasicLog>(logDataService.Get());
+            List<BasicLog> logs = new(_logContext.Get());
             logs.Reverse();
             return logs;
         }
 
         [HttpGet("httpError"), Authorize]
         public List<HttpErrorLog> GetHttpErrorLogs() {
-            List<HttpErrorLog> errorLogs = new List<HttpErrorLog>(httpErrorLogDataService.Get());
-            errorLogs.Reverse();
-            return errorLogs;
+            List<HttpErrorLog> logs = new(_httpErrorLogContext.Get());
+            logs.Reverse();
+            return logs;
         }
 
         [HttpGet("audit"), Authorize]
         public List<AuditLog> GetAuditLogs() {
-            List<AuditLog> auditLogs = new List<AuditLog>(auditLogDataService.Get());
-            auditLogs.Reverse();
-            return auditLogs;
+            List<AuditLog> logs = new(_auditLogContext.Get());
+            logs.Reverse();
+            return logs;
         }
 
         [HttpGet("launcher"), Authorize]
         public List<LauncherLog> GetLauncherLogs() {
-            List<LauncherLog> launcherLogs = new List<LauncherLog>(launcherLogDataService.Get());
-            launcherLogs.Reverse();
-            return launcherLogs;
+            List<LauncherLog> logs = new(_launcherLogContext.Get());
+            logs.Reverse();
+            return logs;
+        }
+
+        [HttpGet("discord"), Authorize]
+        public List<DiscordLog> GetDiscordLogs() {
+            List<DiscordLog> logs = new(_discordLogContext.Get());
+            logs.Reverse();
+            return logs;
         }
     }
 }

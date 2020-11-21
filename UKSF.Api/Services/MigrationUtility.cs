@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.Extensions.Hosting;
+using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
 using UKSF.Api.Shared.Events;
@@ -7,20 +8,22 @@ using UKSF.Api.Shared.Events;
 namespace UKSF.Api.Services {
     public class MigrationUtility {
         private const string KEY = "MIGRATED";
-        private readonly IHostEnvironment currentEnvironment;
-        private readonly ILogger logger;
-        private readonly IVariablesService variablesService;
+        private readonly IHostEnvironment _currentEnvironment;
+        private readonly ILogger _logger;
+        private readonly IVariablesContext _variablesContext;
+        private readonly IVariablesService _variablesService;
 
-        public MigrationUtility(IHostEnvironment currentEnvironment, IVariablesService variablesService, ILogger logger) {
-            this.currentEnvironment = currentEnvironment;
-            this.variablesService = variablesService;
-            this.logger = logger;
+        public MigrationUtility(IHostEnvironment currentEnvironment, IVariablesService variablesService, IVariablesContext variablesContext, ILogger logger) {
+            _currentEnvironment = currentEnvironment;
+            _variablesService = variablesService;
+            _variablesContext = variablesContext;
+            _logger = logger;
         }
 
         public void Migrate() {
             bool migrated = true;
-            if (!currentEnvironment.IsDevelopment()) {
-                string migratedString = variablesService.GetVariable(KEY).AsString();
+            if (!_currentEnvironment.IsDevelopment()) {
+                string migratedString = _variablesService.GetVariable(KEY).AsString();
                 migrated = bool.Parse(migratedString);
             }
 
@@ -28,11 +31,11 @@ namespace UKSF.Api.Services {
             if (!migrated) {
                 try {
                     ExecuteMigration();
-                    logger.LogAudit("Migration utility successfully ran");
+                    _logger.LogAudit("Migration utility successfully ran");
                 } catch (Exception e) {
-                    logger.LogError(e);
+                    _logger.LogError(e);
                 } finally {
-                    variablesService.Data.Update(KEY, "true");
+                    _variablesContext.Update(KEY, "true");
                 }
             }
         }

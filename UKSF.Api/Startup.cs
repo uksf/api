@@ -14,10 +14,8 @@ using UKSF.Api.AppStart;
 using UKSF.Api.ArmaServer;
 using UKSF.Api.Command;
 using UKSF.Api.Modpack;
-using UKSF.Api.Modpack.Services.BuildProcess;
 using UKSF.Api.Personnel;
 using UKSF.Api.Teamspeak;
-using UKSF.Api.Teamspeak.Services;
 
 namespace UKSF.Api {
     public class Startup {
@@ -46,7 +44,6 @@ namespace UKSF.Api {
                 )
             );
             services.AddSignalR().AddNewtonsoftJsonProtocol();
-
             services.AddAutoMapper(typeof(AutoMapperConfigurationProfile));
             services.AddControllers();
             services.AddSwaggerGen(options => { options.SwaggerDoc("v1", new OpenApiInfo { Title = "UKSF API", Version = "v1" }); });
@@ -88,11 +85,7 @@ namespace UKSF.Api {
         }
 
         private static void OnShutdown(IServiceProvider serviceProvider) {
-            // Cancel any running builds
-            serviceProvider.GetService<IBuildQueueService>()?.CancelAll();
-
-            // Stop teamspeak
-            serviceProvider.GetService<ITeamspeakManagerService>()?.Stop();
+            serviceProvider.StopUksfSerices();
         }
     }
 

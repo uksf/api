@@ -2,7 +2,7 @@
 using MongoDB.Bson;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
-using UKSF.Tests.Common;
+using UKSF.Api.Tests.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Common {
@@ -15,9 +15,9 @@ namespace UKSF.Tests.Unit.Common {
             DataEventModel<TestDataModel> subject = EventModelFactory.CreateDataEvent<TestDataModel>(DataEventType.ADD, id, data);
 
             subject.Should().NotBeNull();
-            subject.type.Should().Be(DataEventType.ADD);
-            subject.id.Should().Be(id);
-            subject.data.Should().Be(data);
+            subject.Type.Should().Be(DataEventType.ADD);
+            subject.Id.Should().Be(id);
+            subject.Data.Should().Be(data);
         }
     }
 }

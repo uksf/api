@@ -29,11 +29,11 @@ namespace UKSF.Api.Launcher.Controllers {
         private readonly ILauncherFileService _launcherFileService;
         private readonly IHubContext<LauncherHub, ILauncherClient> _launcherHub;
         private readonly ILauncherService _launcherService;
-        private readonly IVariablesDataService _variablesDataService;
+        private readonly IVariablesContext _variablesContext;
         private readonly IVariablesService _variablesService;
 
         public LauncherController(
-            IVariablesDataService variablesDataService,
+            IVariablesContext variablesContext,
             IHubContext<LauncherHub, ILauncherClient> launcherHub,
             ILauncherService launcherService,
             ILauncherFileService launcherFileService,
@@ -41,7 +41,7 @@ namespace UKSF.Api.Launcher.Controllers {
             IDisplayNameService displayNameService,
             IVariablesService variablesService
         ) {
-            _variablesDataService = variablesDataService;
+            _variablesContext = variablesContext;
             _launcherHub = launcherHub;
             _launcherService = launcherService;
             _launcherFileService = launcherFileService;
@@ -54,12 +54,12 @@ namespace UKSF.Api.Launcher.Controllers {
         public IActionResult GetUpdate(string platform, string version) => Ok();
 
         [HttpGet("version")]
-        public IActionResult GetVersion() => Ok(_variablesDataService.GetSingle("LAUNCHER_VERSION").AsString());
+        public IActionResult GetVersion() => Ok(_variablesContext.GetSingle("LAUNCHER_VERSION").AsString());
 
         [HttpPost("version"), Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> UpdateVersion([FromBody] JObject body) {
             string version = body["version"].ToString();
-            await _variablesDataService.Update("LAUNCHER_VERSION", version);
+            await _variablesContext.Update("LAUNCHER_VERSION", version);
             await _launcherFileService.UpdateAllVersions();
             await _launcherHub.Clients.All.ReceiveLauncherVersion(version);
             return Ok();
@@ -75,7 +75,7 @@ namespace UKSF.Api.Launcher.Controllers {
         public async Task<IActionResult> GetUpdatedFiles([FromBody] JObject body) {
             List<LauncherFile> files = JsonConvert.DeserializeObject<List<LauncherFile>>(body["files"].ToString());
             Stream updatedFiles = await _launcherFileService.GetUpdatedFiles(files);
-            FileStreamResult stream = new FileStreamResult(updatedFiles, "application/octet-stream");
+            FileStreamResult stream = new(updatedFiles, "application/octet-stream");
             return stream;
         }
 

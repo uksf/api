@@ -12,28 +12,28 @@ namespace UKSF.Api.Personnel.EventHandlers {
     public interface INotificationsEventHandler : IEventHandler { }
 
     public class NotificationsEventHandler : INotificationsEventHandler {
-        private readonly IHubContext<NotificationHub, INotificationsClient> hub;
-        private readonly ILogger logger;
-        private readonly IDataEventBus<Notification> notificationDataEventBus;
+        private readonly IHubContext<NotificationHub, INotificationsClient> _hub;
+        private readonly ILogger _logger;
+        private readonly IDataEventBus<Notification> _notificationDataEventBus;
 
         public NotificationsEventHandler(IDataEventBus<Notification> notificationDataEventBus, IHubContext<NotificationHub, INotificationsClient> hub, ILogger logger) {
-            this.notificationDataEventBus = notificationDataEventBus;
-            this.hub = hub;
-            this.logger = logger;
+            _notificationDataEventBus = notificationDataEventBus;
+            _hub = hub;
+            _logger = logger;
         }
 
         public void Init() {
-            notificationDataEventBus.AsObservable().SubscribeWithAsyncNext(HandleEvent, exception => logger.LogError(exception));
+            _notificationDataEventBus.AsObservable().SubscribeWithAsyncNext(HandleEvent, exception => _logger.LogError(exception));
         }
 
         private async Task HandleEvent(DataEventModel<Notification> dataEventModel) {
-            if (dataEventModel.type == DataEventType.ADD) {
-                await AddedEvent(dataEventModel.data as Notification);
+            if (dataEventModel.Type == DataEventType.ADD) {
+                await AddedEvent(dataEventModel.Data as Notification);
             }
         }
 
         private async Task AddedEvent(Notification notification) {
-            await hub.Clients.Group(notification.owner).ReceiveNotification(notification);
+            await _hub.Clients.Group(notification.Owner).ReceiveNotification(notification);
         }
     }
 }

@@ -1,25 +1,25 @@
-﻿using UKSF.Api.Base.Context;
-using UKSF.Api.Personnel.Context;
+﻿using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 
 namespace UKSF.Api.Personnel.Services {
-    public interface IRolesService : IDataBackedService<IRolesDataService> {
+    public interface IRolesService {
         int Sort(string nameA, string nameB);
         Role GetUnitRoleByOrder(int order);
     }
 
-    public class RolesService : DataBackedService<IRolesDataService>, IRolesService {
+    public class RolesService : IRolesService {
+        private readonly IRolesContext _rolesContext;
 
-        public RolesService(IRolesDataService data) : base(data) { }
+        public RolesService(IRolesContext rolesContext) => _rolesContext = rolesContext;
 
         public int Sort(string nameA, string nameB) {
-            Role roleA = Data.GetSingle(nameA);
-            Role roleB = Data.GetSingle(nameB);
-            int roleOrderA = roleA?.order ?? 0;
-            int roleOrderB = roleB?.order ?? 0;
+            Role roleA = _rolesContext.GetSingle(nameA);
+            Role roleB = _rolesContext.GetSingle(nameB);
+            int roleOrderA = roleA?.Order ?? 0;
+            int roleOrderB = roleB?.Order ?? 0;
             return roleOrderA < roleOrderB ? -1 : roleOrderA > roleOrderB ? 1 : 0;
         }
 
-        public Role GetUnitRoleByOrder(int order) => Data.GetSingle(x => x.roleType == RoleType.UNIT && x.order == order);
+        public Role GetUnitRoleByOrder(int order) => _rolesContext.GetSingle(x => x.RoleType == RoleType.UNIT && x.Order == order);
     }
 }

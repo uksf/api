@@ -2,10 +2,10 @@
 
 namespace UKSF.Api.ArmaMissions.Models {
     public class MissionPlayer {
-        public Account account;
-        public string name;
-        public string objectClass;
-        public Rank rank;
-        public MissionUnit unit;
+        public Account Account;
+        public string Name;
+        public string ObjectClass;
+        public Rank Rank;
+        public MissionUnit Unit;
     }
 }

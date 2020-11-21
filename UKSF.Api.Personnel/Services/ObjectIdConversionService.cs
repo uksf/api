@@ -1,4 +1,5 @@
-﻿using UKSF.Api.Personnel.Models;
+﻿using UKSF.Api.Personnel.Context;
+using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Personnel.Services {
@@ -9,11 +10,11 @@ namespace UKSF.Api.Personnel.Services {
 
     public class ObjectIdConversionService : IObjectIdConversionService {
         private readonly IDisplayNameService _displayNameService;
-        private readonly IUnitsService _unitsService;
+        private readonly IUnitsContext _unitsContext;
 
-        public ObjectIdConversionService(IDisplayNameService displayNameService, IUnitsService unitsService) {
+        public ObjectIdConversionService(IUnitsContext unitsContext, IDisplayNameService displayNameService) {
+            _unitsContext = unitsContext;
             _displayNameService = displayNameService;
-            _unitsService = unitsService;
         }
 
         public string ConvertObjectIds(string text) {
@@ -22,9 +23,9 @@ namespace UKSF.Api.Personnel.Services {
             foreach (string objectId in text.ExtractObjectIds()) {
                 string displayString = _displayNameService.GetDisplayName(objectId);
                 if (displayString == objectId) {
-                    Unit unit = _unitsService.Data.GetSingle(x => x.id == objectId);
+                    Unit unit = _unitsContext.GetSingle(x => x.Id == objectId);
                     if (unit != null) {
-                        displayString = unit.name;
+                        displayString = unit.Name;
                     }
                 }
 

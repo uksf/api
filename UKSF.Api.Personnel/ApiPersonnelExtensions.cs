@@ -16,12 +16,12 @@ namespace UKSF.Api.Personnel {
             services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddActions().AddTransient<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) =>
-            services.AddSingleton<IAccountDataService, AccountDataService>()
-                    .AddSingleton<ICommentThreadDataService, CommentThreadDataService>()
-                    .AddSingleton<INotificationsDataService, NotificationsDataService>()
-                    .AddSingleton<IRanksDataService, RanksDataService>()
-                    .AddSingleton<IRolesDataService, RolesDataService>()
-                    .AddSingleton<IUnitsDataService, UnitsDataService>();
+            services.AddSingleton<IAccountContext, AccountContext>()
+                    .AddSingleton<ICommentThreadContext, CommentThreadContext>()
+                    .AddSingleton<INotificationsContext, NotificationsContext>()
+                    .AddSingleton<IRanksContext, RanksContext>()
+                    .AddSingleton<IRolesContext, RolesContext>()
+                    .AddSingleton<IUnitsContext, UnitsContext>();
 
         private static IServiceCollection AddEventBuses(this IServiceCollection services) =>
             services.AddSingleton<IDataEventBus<Account>, DataEventBus<Account>>()

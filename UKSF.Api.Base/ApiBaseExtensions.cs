@@ -10,7 +10,7 @@ namespace UKSF.Api.Base {
                     .AddEventHandlers()
                     .AddServices()
                     .AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")))
-                    .AddTransient<IDataCollectionFactory, DataCollectionFactory>();
+                    .AddTransient<IMongoCollectionFactory, MongoCollectionFactory>();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services;
 

@@ -2,7 +2,7 @@
 using UKSF.Api.Base.Models;
 
 namespace UKSF.Api.Command.Models {
-    public class Opord : DatabaseObject {
+    public record Opord : MongoObject {
         public string Description;
         public DateTime End;
         public string Map;

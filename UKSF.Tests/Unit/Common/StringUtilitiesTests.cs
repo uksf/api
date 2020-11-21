@@ -7,7 +7,8 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Common {
     public class StringUtilitiesTests {
-        [Theory, InlineData("", "", false), InlineData("", "hello", false), InlineData("hello world hello world", "hello", true), InlineData("hello", "HELLO", true), InlineData("hello world", "HELLOWORLD", false)]
+        [Theory, InlineData("", "", false), InlineData("", "hello", false), InlineData("hello world hello world", "hello", true), InlineData("hello", "HELLO", true),
+         InlineData("hello world", "HELLOWORLD", false)]
         public void ShouldIgnoreCase(string text, string searchElement, bool expected) {
             bool subject = text.ContainsIgnoreCase(searchElement);
 
@@ -21,7 +22,8 @@ namespace UKSF.Tests.Unit.Common {
             act.Should().NotThrow();
         }
 
-        [Theory, InlineData("", 0), InlineData("2", 2), InlineData("1.79769313486232E+307", 1.79769313486232E+307d), InlineData("-1.79769313486232E+307", -1.79769313486232E+307d)] // E+307 is one less than double max/min
+        [Theory, InlineData("", 0), InlineData("2", 2), InlineData("1.79769313486232E+307", 1.79769313486232E+307d),
+         InlineData("-1.79769313486232E+307", -1.79769313486232E+307d)] // E+307 is one less than double max/min
         public void ShouldParseDoubleCorrectly(string text, double expected) {
             double subject = text.ToDouble();
 
@@ -63,7 +65,8 @@ namespace UKSF.Tests.Unit.Common {
             subject.Should().Be(expected);
         }
 
-        [Theory, InlineData("", ""), InlineData("\"hello \"\"test\"\" world\"", "\"hello 'test' world\""), InlineData("\"hello \" \"test\"\" world\"", "\"hello test' world\""), InlineData("\"\"\"\"", "''")]
+        [Theory, InlineData("", ""), InlineData("\"hello \"\"test\"\" world\"", "\"hello 'test' world\""), InlineData("\"hello \" \"test\"\" world\"", "\"hello test' world\""),
+         InlineData("\"\"\"\"", "''")]
         public void ShouldRemoveEmbeddedQuotes(string text, string expected) {
             string subject = text.RemoveEmbeddedQuotes();
 

@@ -15,9 +15,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
 
     public class BuildProcessorService : IBuildProcessorService {
         private readonly IBuildsService _buildsService;
-        private readonly IServiceProvider _serviceProvider;
         private readonly IBuildStepService _buildStepService;
         private readonly ILogger _logger;
+        private readonly IServiceProvider _serviceProvider;
 
         public BuildProcessorService(IServiceProvider serviceProvider, IBuildStepService buildStepService, IBuildsService buildsService, ILogger logger) {
             _serviceProvider = serviceProvider;

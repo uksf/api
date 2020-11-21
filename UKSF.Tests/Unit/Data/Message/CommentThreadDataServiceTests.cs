@@ -9,58 +9,58 @@ using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
-using UKSF.Tests.Common;
+using UKSF.Api.Tests.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Message {
     public class CommentThreadDataServiceTests {
-        private readonly CommentThreadDataService commentThreadDataService;
-        private readonly Mock<IDataCollection<CommentThread>> mockDataCollection;
-        private List<CommentThread> mockCollection;
+        private readonly CommentThreadContext _commentThreadContext;
+        private readonly Mock<Api.Base.Context.IMongoCollection<CommentThread>> _mockDataCollection;
+        private List<CommentThread> _mockCollection;
 
         public CommentThreadDataServiceTests() {
-            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            Mock<IDataEventBus<CommentThread>> mockDataEventBus = new Mock<IDataEventBus<CommentThread>>();
-            mockDataCollection = new Mock<IDataCollection<CommentThread>>();
+            Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
+            Mock<IDataEventBus<CommentThread>> mockDataEventBus = new();
+            _mockDataCollection = new Mock<Api.Base.Context.IMongoCollection<CommentThread>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<CommentThread>(It.IsAny<string>())).Returns(mockDataCollection.Object);
-            mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
+            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommentThread>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
+            _mockDataCollection.Setup(x => x.Get()).Returns(() => _mockCollection);
 
-            commentThreadDataService = new CommentThreadDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            _commentThreadContext = new CommentThreadContext(mockDataCollectionFactory.Object, mockDataEventBus.Object);
         }
 
         [Fact]
         public async Task ShouldCreateCorrectUdpateDefinitionForAdd() {
-            CommentThread commentThread = new CommentThread();
-            mockCollection = new List<CommentThread> { commentThread };
+            CommentThread commentThread = new();
+            _mockCollection = new List<CommentThread> { commentThread };
 
-            Comment comment = new Comment { author = ObjectId.GenerateNewId().ToString(), content = "Hello there" };
-            BsonValue expected = TestUtilities.RenderUpdate(Builders<CommentThread>.Update.Push(x => x.comments, comment));
+            Comment comment = new() { Author = ObjectId.GenerateNewId().ToString(), Content = "Hello there" };
+            BsonValue expected = TestUtilities.RenderUpdate(Builders<CommentThread>.Update.Push(x => x.Comments, comment));
             UpdateDefinition<CommentThread> subject = null;
 
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<CommentThread>>()))
-                              .Returns(Task.CompletedTask)
-                              .Callback<string, UpdateDefinition<CommentThread>>((_, update) => subject = update);
+            _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<CommentThread>>()))
+                               .Returns(Task.CompletedTask)
+                               .Callback<string, UpdateDefinition<CommentThread>>((_, update) => subject = update);
 
-            await commentThreadDataService.Update(commentThread.id, comment, DataEventType.ADD);
+            await _commentThreadContext.Update(commentThread.Id, comment, DataEventType.ADD);
 
             TestUtilities.RenderUpdate(subject).Should().BeEquivalentTo(expected);
         }
 
         [Fact]
         public async Task ShouldCreateCorrectUdpateDefinitionForDelete() {
-            CommentThread commentThread = new CommentThread();
-            mockCollection = new List<CommentThread> { commentThread };
+            CommentThread commentThread = new();
+            _mockCollection = new List<CommentThread> { commentThread };
 
-            Comment comment = new Comment { author = ObjectId.GenerateNewId().ToString(), content = "Hello there" };
-            BsonValue expected = TestUtilities.RenderUpdate(Builders<CommentThread>.Update.Pull(x => x.comments, comment));
+            Comment comment = new() { Author = ObjectId.GenerateNewId().ToString(), Content = "Hello there" };
+            BsonValue expected = TestUtilities.RenderUpdate(Builders<CommentThread>.Update.Pull(x => x.Comments, comment));
             UpdateDefinition<CommentThread> subject = null;
 
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<CommentThread>>()))
-                              .Returns(Task.CompletedTask)
-                              .Callback<string, UpdateDefinition<CommentThread>>((_, update) => subject = update);
+            _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<CommentThread>>()))
+                               .Returns(Task.CompletedTask)
+                               .Callback<string, UpdateDefinition<CommentThread>>((_, update) => subject = update);
 
-            await commentThreadDataService.Update(commentThread.id, comment, DataEventType.DELETE);
+            await _commentThreadContext.Update(commentThread.Id, comment, DataEventType.DELETE);
 
             TestUtilities.RenderUpdate(subject).Should().BeEquivalentTo(expected);
         }

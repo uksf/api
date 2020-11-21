@@ -3,12 +3,12 @@ using UKSF.Api.Personnel.Models;
 
 namespace UKSF.Api.ArmaMissions.Models {
     public class MissionPatchData {
-        public static MissionPatchData instance;
-        public List<MissionUnit> orderedUnits;
-        public List<MissionPlayer> players;
-        public List<Rank> ranks;
-        public List<MissionUnit> units;
-        public IEnumerable<string> medicIds;
-        public IEnumerable<string> engineerIds;
+        public static MissionPatchData Instance;
+        public IEnumerable<string> EngineerIds;
+        public IEnumerable<string> MedicIds;
+        public List<MissionUnit> OrderedUnits;
+        public List<MissionPlayer> Players;
+        public List<Rank> Ranks;
+        public List<MissionUnit> Units;
     }
 }

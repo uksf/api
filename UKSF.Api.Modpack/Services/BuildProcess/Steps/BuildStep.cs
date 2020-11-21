@@ -34,8 +34,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
     public class BuildStep : IBuildStep {
         private const string COLOUR_BLUE = "#0c78ff";
         private readonly TimeSpan _updateInterval = TimeSpan.FromSeconds(2);
-        private readonly CancellationTokenSource _updatePusherCancellationTokenSource = new CancellationTokenSource();
-        private readonly SemaphoreSlim _updateSemaphore = new SemaphoreSlim(1);
+        private readonly CancellationTokenSource _updatePusherCancellationTokenSource = new();
+        private readonly SemaphoreSlim _updateSemaphore = new(1);
         private ModpackBuildStep _buildStep;
         private Func<UpdateDefinition<ModpackBuild>, Task> _updateBuildCallback;
         private Func<Task> _updateStepCallback;

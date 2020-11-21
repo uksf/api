@@ -6,13 +6,13 @@ using UKSF.Api.Shared;
 namespace UKSF.Api.Admin.Controllers {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]
     public class DataController : Controller {
-        private readonly DataCacheService dataCacheService;
+        private readonly DataCacheService _dataCacheService;
 
-        public DataController(DataCacheService dataCacheService) => this.dataCacheService = dataCacheService;
+        public DataController(DataCacheService dataCacheService) => _dataCacheService = dataCacheService;
 
         [HttpGet("invalidate"), Authorize]
         public IActionResult Invalidate() {
-            dataCacheService.RefreshCachedData();
+            _dataCacheService.RefreshCachedData();
             return Ok();
         }
     }

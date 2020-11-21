@@ -7,35 +7,35 @@ using UKSF.Api.Personnel.Services;
 namespace UKSF.Api.Personnel.Controllers {
     [Route("[controller]")]
     public class SteamConnectionController : Controller {
-        private readonly IConfirmationCodeService confirmationCodeService;
-        private readonly string url;
-        private readonly string urlReturn;
+        private readonly IConfirmationCodeService _confirmationCodeService;
+        private readonly string _url;
+        private readonly string _urlReturn;
 
         public SteamConnectionController(IConfirmationCodeService confirmationCodeService, IHostEnvironment currentEnvironment) {
-            this.confirmationCodeService = confirmationCodeService;
+            _confirmationCodeService = confirmationCodeService;
 
-            url = currentEnvironment.IsDevelopment() ? "http://localhost:5000" : "https://api.uk-sf.co.uk";
-            urlReturn = currentEnvironment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
+            _url = currentEnvironment.IsDevelopment() ? "http://localhost:5000" : "https://api.uk-sf.co.uk";
+            _urlReturn = currentEnvironment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
         }
 
         [HttpGet]
-        public IActionResult Get() => Challenge(new AuthenticationProperties { RedirectUri = $"{url}/steamconnection/success" }, "Steam");
+        public IActionResult Get() => Challenge(new AuthenticationProperties { RedirectUri = $"{_url}/steamconnection/success" }, "Steam");
 
         [HttpGet("application")]
-        public IActionResult GetFromApplication() => Challenge(new AuthenticationProperties { RedirectUri = $"{url}/steamconnection/success/application" }, "Steam");
+        public IActionResult GetFromApplication() => Challenge(new AuthenticationProperties { RedirectUri = $"{_url}/steamconnection/success/application" }, "Steam");
 
         [HttpGet("success")]
-        public async Task<IActionResult> Success([FromQuery] string id) => Redirect($"{urlReturn}/profile?{await GetUrlParameters(id)}");
+        public async Task<IActionResult> Success([FromQuery] string id) => Redirect($"{_urlReturn}/profile?{await GetUrlParameters(id)}");
 
         [HttpGet("success/application")]
-        public async Task<IActionResult> SuccessFromApplication([FromQuery] string id) => Redirect($"{urlReturn}/application?{await GetUrlParameters(id)}");
+        public async Task<IActionResult> SuccessFromApplication([FromQuery] string id) => Redirect($"{_urlReturn}/application?{await GetUrlParameters(id)}");
 
         private async Task<string> GetUrlParameters(string id) {
             if (string.IsNullOrEmpty(id)) {
                 return "steamid=fail";
             }
 
-            string code = await confirmationCodeService.CreateConfirmationCode(id);
+            string code = await _confirmationCodeService.CreateConfirmationCode(id);
             return $"validation={code}&steamid={id}";
         }
     }

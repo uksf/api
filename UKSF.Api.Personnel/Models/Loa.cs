@@ -10,14 +10,14 @@ namespace UKSF.Api.Personnel.Models {
         REJECTED
     }
 
-    public class Loa : DatabaseObject {
-        public bool emergency;
-        public DateTime end;
-        public bool late;
-        public string reason;
-        [BsonRepresentation(BsonType.ObjectId)] public string recipient;
-        public DateTime start;
-        public LoaReviewState state;
-        public DateTime submitted;
+    public record Loa : MongoObject {
+        public bool Emergency;
+        public DateTime End;
+        public bool Late;
+        public string Reason;
+        [BsonRepresentation(BsonType.ObjectId)] public string Recipient;
+        public DateTime Start;
+        public LoaReviewState State;
+        public DateTime Submitted;
     }
 }

@@ -9,19 +9,19 @@ using UKSF.Api.Personnel.Services;
 namespace UKSF.Api.Personnel.Controllers {
     [Route("[controller]")]
     public class NotificationsController : Controller {
-        private readonly INotificationsService notificationsService;
+        private readonly INotificationsService _notificationsService;
 
-        public NotificationsController(INotificationsService notificationsService) => this.notificationsService = notificationsService;
+        public NotificationsController(INotificationsService notificationsService) => _notificationsService = notificationsService;
 
         [HttpGet, Authorize]
         public IActionResult Get() {
-            return Ok(notificationsService.GetNotificationsForContext().OrderByDescending(x => x.timestamp));
+            return Ok(_notificationsService.GetNotificationsForContext().OrderByDescending(x => x.Timestamp));
         }
 
         [HttpPost("read"), Authorize]
         public async Task<IActionResult> MarkAsRead([FromBody] JObject jObject) {
             List<string> ids = JArray.Parse(jObject["notifications"].ToString()).Select(notification => notification["id"].ToString()).ToList();
-            await notificationsService.MarkNotificationsAsRead(ids);
+            await _notificationsService.MarkNotificationsAsRead(ids);
             return Ok();
         }
 
@@ -29,7 +29,7 @@ namespace UKSF.Api.Personnel.Controllers {
         public async Task<IActionResult> Clear([FromBody] JObject jObject) {
             JArray clear = JArray.Parse(jObject["clear"].ToString());
             List<string> ids = clear.Select(notification => notification["id"].ToString()).ToList();
-            await notificationsService.Delete(ids);
+            await _notificationsService.Delete(ids);
             return Ok();
         }
     }

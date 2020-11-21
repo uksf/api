@@ -21,7 +21,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common {
                 targetUserconfigPath = Path.Join(GetServerEnvironmentPath(Build.Environment), "userconfig");
             }
 
-            FileInfo cbaSettingsFile = new FileInfo(Path.Join(sourceUserconfigPath, "cba_settings.sqf"));
+            FileInfo cbaSettingsFile = new(Path.Join(sourceUserconfigPath, "cba_settings.sqf"));
 
             StepLogger.LogSurround("\nCopying cba_settings.sqf...");
             await CopyFiles(new DirectoryInfo(sourceUserconfigPath), new DirectoryInfo(targetUserconfigPath), new List<FileInfo> { cbaSettingsFile });

@@ -17,12 +17,10 @@ namespace UKSF.Api.Modpack.Controllers {
     public class IssueController : Controller {
         private readonly IDisplayNameService _displayNameService;
         private readonly IEmailService _emailService;
-        private readonly IHttpContextService _httpContextService;
         private readonly string _githubToken;
-
+        private readonly IHttpContextService _httpContextService;
 
         public IssueController(IDisplayNameService displayNameService, IEmailService emailService, IConfiguration configuration, IHttpContextService httpContextService) {
-
             _displayNameService = displayNameService;
             _emailService = emailService;
             _httpContextService = httpContextService;
@@ -38,8 +36,8 @@ namespace UKSF.Api.Modpack.Controllers {
 
             string issueUrl;
             try {
-                using HttpClient client = new HttpClient();
-                StringContent content = new StringContent(JsonConvert.SerializeObject(new {title, body}), Encoding.UTF8, "application/vnd.github.v3.full+json");
+                using HttpClient client = new();
+                StringContent content = new(JsonConvert.SerializeObject(new { title, body }), Encoding.UTF8, "application/vnd.github.v3.full+json");
                 string url = type == 0 ? "https://api.github.com/repos/uksf/website-issues/issues" : "https://api.github.com/repos/uksf/modpack/issues";
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("token", _githubToken);
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(user);
@@ -51,7 +49,7 @@ namespace UKSF.Api.Modpack.Controllers {
                 return BadRequest();
             }
 
-            return Ok(new {issueUrl});
+            return Ok(new { issueUrl });
         }
     }
 }

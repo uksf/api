@@ -31,13 +31,7 @@ namespace UKSF.Api {
         }
 
         private static IWebHost BuildDebugWebHost(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                   .UseStartup<Startup>()
-                   .UseKestrel()
-                   .UseContentRoot(Directory.GetCurrentDirectory())
-                   .UseUrls("http://*:5000")
-                   .UseIISIntegration()
-                   .Build();
+            WebHost.CreateDefaultBuilder(args).UseStartup<Startup>().UseKestrel().UseContentRoot(Directory.GetCurrentDirectory()).UseUrls("http://*:5000").UseIISIntegration().Build();
 
         private static IWebHost BuildProductionWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
@@ -45,7 +39,11 @@ namespace UKSF.Api {
                    .UseKestrel(
                        options => {
                            options.Listen(IPAddress.Loopback, 5000);
-                           options.Listen(IPAddress.Loopback, 5001, listenOptions => { listenOptions.UseHttps("C:\\ProgramData\\win-acme\\acme-v02.api.letsencrypt.org\\Certificates\\uk-sf.co.uk.pfx"); });
+                           options.Listen(
+                               IPAddress.Loopback,
+                               5001,
+                               listenOptions => { listenOptions.UseHttps("C:\\ProgramData\\win-acme\\acme-v02.api.letsencrypt.org\\Certificates\\uk-sf.co.uk.pfx"); }
+                           );
                        }
                    )
                    .UseContentRoot(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName))
@@ -67,8 +65,8 @@ namespace UKSF.Api {
                 Console.Out.WriteLine($"Log file not created: {logFile}. {e.Message}");
             }
 
-            FileStream fileStream = new FileStream(logFile, FileMode.Create);
-            StreamWriter streamWriter = new StreamWriter(fileStream) {AutoFlush = true};
+            FileStream fileStream = new(logFile, FileMode.Create);
+            StreamWriter streamWriter = new(fileStream) { AutoFlush = true };
             Console.SetOut(streamWriter);
             Console.SetError(streamWriter);
         }

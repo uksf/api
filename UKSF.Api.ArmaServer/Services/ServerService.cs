@@ -35,7 +35,7 @@
 //             return;
 //             Task.Run(
 //                 () => {
-//                     IEnumerable<Account> accounts = accountService.Data.Get(x => x.membershipState == MembershipState.MEMBER && x.rank != null);
+//                     IEnumerable<Account> accounts = _accountContext.Get(x => x.membershipState == MembershipState.MEMBER && x.rank != null);
 //                     accounts = accounts.OrderBy(x => x.rank, new RankComparer(ranksService)).ThenBy(x => x.lastname).ThenBy(x => x.firstname);
 //
 //                     StringBuilder stringBuilder = new StringBuilder();
@@ -45,7 +45,7 @@
 //
 //                     foreach (Account account in accounts.Where(x => ranksService.IsSuperiorOrEqual(x.rank, "Private"))) {
 //                         StringBuilder accountStringBuilder = new StringBuilder();
-//                         Unit unit = unitsService.Data.GetSingle(x => x.name == account.unitAssignment);
+//                         Unit unit = _unitsContext.GetSingle(x => x.name == account.unitAssignment);
 //                         string unitRole = unit.roles.FirstOrDefault(x => x.Value == account.id).Key;
 //                         accountStringBuilder.AppendLine($"\t<member id=\"{account.steamname}\" nick=\"{displayNameService.GetDisplayName(account)}\">");
 //                         accountStringBuilder.AppendLine($"\t\t<name>{unit.callsign}</name>");
@@ -76,3 +76,5 @@
 //         }
 //     }
 // }
+
+

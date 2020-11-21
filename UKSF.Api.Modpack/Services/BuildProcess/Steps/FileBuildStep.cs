@@ -16,8 +16,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
         internal static List<FileInfo> GetDirectoryContents(DirectoryInfo source, string searchPattern = "*") => source.GetFiles(searchPattern, SearchOption.AllDirectories).ToList();
 
         internal async Task AddFiles(string sourcePath, string targetPath) {
-            DirectoryInfo source = new DirectoryInfo(sourcePath);
-            DirectoryInfo target = new DirectoryInfo(targetPath);
+            DirectoryInfo source = new(sourcePath);
+            DirectoryInfo target = new(targetPath);
             IEnumerable<FileInfo> sourceFiles = GetDirectoryContents(source);
             List<FileInfo> addedFiles = sourceFiles.Select(sourceFile => new { sourceFile, targetFile = new FileInfo(sourceFile.FullName.Replace(source.FullName, target.FullName)) })
                                                    .Where(x => !x.targetFile.Exists)
@@ -27,8 +27,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
         }
 
         internal async Task UpdateFiles(string sourcePath, string targetPath) {
-            DirectoryInfo source = new DirectoryInfo(sourcePath);
-            DirectoryInfo target = new DirectoryInfo(targetPath);
+            DirectoryInfo source = new(sourcePath);
+            DirectoryInfo target = new(targetPath);
             IEnumerable<FileInfo> sourceFiles = GetDirectoryContents(source);
             List<FileInfo> updatedFiles = sourceFiles.Select(sourceFile => new { sourceFile, targetFile = new FileInfo(sourceFile.FullName.Replace(source.FullName, target.FullName)) })
                                                      .Where(x => x.targetFile.Exists && (x.targetFile.Length != x.sourceFile.Length || x.targetFile.LastWriteTime < x.sourceFile.LastWriteTime))
@@ -38,8 +38,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
         }
 
         internal async Task DeleteFiles(string sourcePath, string targetPath, bool matchSubdirectories = false) {
-            DirectoryInfo source = new DirectoryInfo(sourcePath);
-            DirectoryInfo target = new DirectoryInfo(targetPath);
+            DirectoryInfo source = new(sourcePath);
+            DirectoryInfo target = new(targetPath);
             IEnumerable<FileInfo> targetFiles = GetDirectoryContents(target);
             List<FileInfo> deletedFiles = targetFiles.Select(targetFile => new { targetFile, sourceFile = new FileInfo(targetFile.FullName.Replace(target.FullName, source.FullName)) })
                                                      .Where(
@@ -50,7 +50,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
                                                              string sourceSubdirectoryPath = x.sourceFile.FullName.Replace(sourcePath, "")
                                                                                               .Split(new[] { Path.DirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries)
                                                                                               .First();
-                                                             DirectoryInfo sourceSubdirectory = new DirectoryInfo(Path.Join(sourcePath, sourceSubdirectoryPath));
+                                                             DirectoryInfo sourceSubdirectory = new(Path.Join(sourcePath, sourceSubdirectoryPath));
                                                              return sourceSubdirectory.Exists;
                                                          }
                                                      )
@@ -61,8 +61,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
         }
 
         internal async Task CopyDirectory(string sourceDirectory, string targetDirectory) {
-            DirectoryInfo source = new DirectoryInfo(sourceDirectory);
-            DirectoryInfo target = new DirectoryInfo(targetDirectory);
+            DirectoryInfo source = new(sourceDirectory);
+            DirectoryInfo target = new(targetDirectory);
             List<FileInfo> files = GetDirectoryContents(source);
             await CopyFiles(source, target, files);
         }
@@ -83,7 +83,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
         }
 
         internal async Task DeleteDirectoryContents(string path) {
-            DirectoryInfo directory = new DirectoryInfo(path);
+            DirectoryInfo directory = new(path);
             if (!directory.Exists) {
                 StepLogger.Log("Directory does not exist");
                 return;
@@ -130,7 +130,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
         }
 
         internal async Task ParallelProcessFiles(IEnumerable<FileInfo> files, int taskLimit, Func<FileInfo, Task> process, Func<string> getLog, string error) {
-            SemaphoreSlim taskLimiter = new SemaphoreSlim(taskLimit);
+            SemaphoreSlim taskLimiter = new(taskLimit);
             IEnumerable<Task> tasks = files.Select(
                 file => {
                     return Task.Run(

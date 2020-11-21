@@ -18,7 +18,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
     }
 
     public class BuildStepService : IBuildStepService {
-        private Dictionary<string, Type> _buildStepDictionary = new Dictionary<string, Type>();
+        private Dictionary<string, Type> _buildStepDictionary = new();
 
         public void RegisterBuildSteps() {
             _buildStepDictionary = AppDomain.CurrentDomain.GetAssemblies()
@@ -40,7 +40,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             return steps;
         }
 
-        public ModpackBuildStep GetRestoreStepForRelease() => new ModpackBuildStep(BuildStepRestore.NAME);
+        public ModpackBuildStep GetRestoreStepForRelease() => new(BuildStepRestore.NAME);
 
         public IBuildStep ResolveBuildStep(string buildStepName) {
             if (!_buildStepDictionary.ContainsKey(buildStepName)) {
@@ -53,7 +53,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
         }
 
         private static List<ModpackBuildStep> GetStepsForBuild() =>
-            new List<ModpackBuildStep> {
+            new() {
                 new ModpackBuildStep(BuildStepPrep.NAME),
                 new ModpackBuildStep(BuildStepClean.NAME),
                 new ModpackBuildStep(BuildStepSources.NAME),
@@ -71,7 +71,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             };
 
         private static List<ModpackBuildStep> GetStepsForRc() =>
-            new List<ModpackBuildStep> {
+            new() {
                 new ModpackBuildStep(BuildStepPrep.NAME),
                 new ModpackBuildStep(BuildStepClean.NAME),
                 new ModpackBuildStep(BuildStepSources.NAME),
@@ -90,7 +90,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             };
 
         private static List<ModpackBuildStep> GetStepsForRelease() =>
-            new List<ModpackBuildStep> {
+            new() {
                 new ModpackBuildStep(BuildStepClean.NAME),
                 new ModpackBuildStep(BuildStepBackup.NAME),
                 new ModpackBuildStep(BuildStepDeploy.NAME),

@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
-using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
@@ -13,7 +12,7 @@ using UKSF.Api.Shared.Models;
 using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Personnel.Services {
-    public interface INotificationsService : IDataBackedService<INotificationsDataService> {
+    public interface INotificationsService {
         void Add(Notification notification);
         void SendTeamspeakNotification(Account account, string rawMessage);
         void SendTeamspeakNotification(IEnumerable<double> clientDbIds, string rawMessage);
@@ -22,24 +21,26 @@ namespace UKSF.Api.Personnel.Services {
         Task Delete(List<string> ids);
     }
 
-    public class NotificationsService : DataBackedService<INotificationsDataService>, INotificationsService {
-        private readonly IAccountService _accountService;
+    public class NotificationsService : INotificationsService {
+        private readonly IAccountContext _accountContext;
         private readonly IEmailService _emailService;
         private readonly IHttpContextService _httpContextService;
+        private readonly INotificationsContext _notificationsContext;
         private readonly IHubContext<NotificationHub, INotificationsClient> _notificationsHub;
         private readonly IObjectIdConversionService _objectIdConversionService;
         private readonly IEventBus<TeamspeakMessageEventModel> _teamspeakMessageEventBus;
 
         public NotificationsService(
-            INotificationsDataService data,
-            IAccountService accountService,
+            IAccountContext accountContext,
+            INotificationsContext notificationsContext,
             IEmailService emailService,
             IHubContext<NotificationHub, INotificationsClient> notificationsHub,
             IHttpContextService httpContextService,
             IObjectIdConversionService objectIdConversionService,
             IEventBus<TeamspeakMessageEventModel> teamspeakMessageEventBus
-        ) : base(data) {
-            _accountService = accountService;
+        ) {
+            _accountContext = accountContext;
+            _notificationsContext = notificationsContext;
             _emailService = emailService;
             _notificationsHub = notificationsHub;
             _httpContextService = httpContextService;
@@ -48,10 +49,10 @@ namespace UKSF.Api.Personnel.Services {
         }
 
         public void SendTeamspeakNotification(Account account, string rawMessage) {
-            if (account.teamspeakIdentities == null) return;
-            if (account.teamspeakIdentities.Count == 0) return;
+            if (account.TeamspeakIdentities == null) return;
+            if (account.TeamspeakIdentities.Count == 0) return;
 
-            SendTeamspeakNotification(account.teamspeakIdentities, rawMessage);
+            SendTeamspeakNotification(account.TeamspeakIdentities, rawMessage);
         }
 
         public void SendTeamspeakNotification(IEnumerable<double> clientDbIds, string rawMessage) {
@@ -61,7 +62,7 @@ namespace UKSF.Api.Personnel.Services {
 
         public IEnumerable<Notification> GetNotificationsForContext() {
             string contextId = _httpContextService.GetUserId();
-            return Data.Get(x => x.owner == contextId);
+            return _notificationsContext.Get(x => x.Owner == contextId);
         }
 
         public void Add(Notification notification) {
@@ -71,30 +72,30 @@ namespace UKSF.Api.Personnel.Services {
 
         public async Task MarkNotificationsAsRead(List<string> ids) {
             string contextId = _httpContextService.GetUserId();
-            await Data.UpdateMany(x => x.owner == contextId && ids.Contains(x.id), Builders<Notification>.Update.Set(x => x.read, true));
+            await _notificationsContext.UpdateMany(x => x.Owner == contextId && ids.Contains(x.Id), Builders<Notification>.Update.Set(x => x.Read, true));
             await _notificationsHub.Clients.Group(contextId).ReceiveRead(ids);
         }
 
         public async Task Delete(List<string> ids) {
             ids = ids.ToList();
             string contextId = _httpContextService.GetUserId();
-            await Data.DeleteMany(x => x.owner == contextId && ids.Contains(x.id));
+            await _notificationsContext.DeleteMany(x => x.Owner == contextId && ids.Contains(x.Id));
             await _notificationsHub.Clients.Group(contextId).ReceiveClear(ids);
         }
 
         private async Task AddNotificationAsync(Notification notification) {
-            notification.message = _objectIdConversionService.ConvertObjectIds(notification.message);
-            await Data.Add(notification);
-            Account account = _accountService.Data.GetSingle(notification.owner);
-            if (account.settings.notificationsEmail) {
+            notification.Message = _objectIdConversionService.ConvertObjectIds(notification.Message);
+            await _notificationsContext.Add(notification);
+            Account account = _accountContext.GetSingle(notification.Owner);
+            if (account.Settings.NotificationsEmail) {
                 SendEmailNotification(
-                    account.email,
-                    $"{notification.message}{(notification.link != null ? $"<br><a href='https://uk-sf.co.uk{notification.link}'>https://uk-sf.co.uk{notification.link}</a>" : "")}"
+                    account.Email,
+                    $"{notification.Message}{(notification.Link != null ? $"<br><a href='https://uk-sf.co.uk{notification.Link}'>https://uk-sf.co.uk{notification.Link}</a>" : "")}"
                 );
             }
 
-            if (account.settings.notificationsTeamspeak) {
-                SendTeamspeakNotification(account, $"{notification.message}{(notification.link != null ? $"\n[url]https://uk-sf.co.uk{notification.link}[/url]" : "")}");
+            if (account.Settings.NotificationsTeamspeak) {
+                SendTeamspeakNotification(account, $"{notification.Message}{(notification.Link != null ? $"\n[url]https://uk-sf.co.uk{notification.Link}[/url]" : "")}");
             }
         }
 

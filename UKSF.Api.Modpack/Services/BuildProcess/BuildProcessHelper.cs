@@ -9,16 +9,16 @@ using UKSF.Api.Shared.Extensions;
 namespace UKSF.Api.Modpack.Services.BuildProcess {
     public class BuildProcessHelper {
         private readonly CancellationTokenSource _cancellationTokenSource;
-        private readonly CancellationTokenSource _errorCancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource _errorCancellationTokenSource = new();
         private readonly List<string> _errorExclusions;
         private readonly bool _errorSilently;
-        private readonly AutoResetEvent _errorWaitHandle = new AutoResetEvent(false);
+        private readonly AutoResetEvent _errorWaitHandle = new(false);
         private readonly string _ignoreErrorGateClose;
         private readonly string _ignoreErrorGateOpen;
         private readonly IStepLogger _logger;
-        private readonly AutoResetEvent _outputWaitHandle = new AutoResetEvent(false);
+        private readonly AutoResetEvent _outputWaitHandle = new(false);
         private readonly bool _raiseErrors;
-        private readonly List<string> _results = new List<string>();
+        private readonly List<string> _results = new();
         private readonly bool _suppressOutput;
         private Exception _capturedException;
         private bool _ignoreErrors;
@@ -95,7 +95,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             } else {
                 // Timeout or cancelled
                 if (!_cancellationTokenSource.IsCancellationRequested) {
-                    Exception exception = new Exception($"Process exited with non-zero code ({_process.ExitCode})");
+                    Exception exception = new($"Process exited with non-zero code ({_process.ExitCode})");
                     if (_raiseErrors) {
                         throw exception;
                     }
@@ -166,7 +166,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
         }
 
         private static List<Tuple<string, string>> ExtractMessages(string message, ref string json) {
-            List<Tuple<string, string>> messages = new List<Tuple<string, string>>();
+            List<Tuple<string, string>> messages = new();
             if (message.Length > 5 && message.Substring(0, 4) == "JSON") {
                 string[] parts = message.Split('{', '}'); // covers cases where buffer gets extra data flushed to it after the closing brace
                 json = $"{{{parts[1].Escape().Replace("\\\\n", "\\n")}}}";

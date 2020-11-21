@@ -13,12 +13,12 @@ namespace UKSF.Api.Command {
         public static IServiceCollection AddUksfCommand(this IServiceCollection services) => services.AddContexts().AddEventBuses().AddEventHandlers().AddServices();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) =>
-            services.AddSingleton<ICommandRequestArchiveDataService, CommandRequestArchiveDataService>()
-                    .AddSingleton<ICommandRequestDataService, CommandRequestDataService>()
-                    .AddSingleton<IDischargeDataService, DischargeDataService>()
-                    .AddSingleton<ILoaDataService, LoaDataService>()
-                    .AddSingleton<IOperationOrderDataService, OperationOrderDataService>()
-                    .AddSingleton<IOperationReportDataService, OperationReportDataService>();
+            services.AddSingleton<ICommandRequestArchiveContext, CommandRequestArchiveContext>()
+                    .AddSingleton<ICommandRequestContext, CommandRequestContext>()
+                    .AddSingleton<IDischargeContext, DischargeContext>()
+                    .AddSingleton<ILoaContext, LoaContext>()
+                    .AddSingleton<IOperationOrderContext, OperationOrderContext>()
+                    .AddSingleton<IOperationReportContext, OperationReportContext>();
 
         private static IServiceCollection AddEventBuses(this IServiceCollection services) =>
             services.AddSingleton<IDataEventBus<CommandRequest>, DataEventBus<CommandRequest>>()
@@ -32,7 +32,6 @@ namespace UKSF.Api.Command {
             services.AddSingleton<IChainOfCommandService, ChainOfCommandService>()
                     .AddTransient<ICommandRequestCompletionService, CommandRequestCompletionService>()
                     .AddTransient<ICommandRequestService, CommandRequestService>()
-                    .AddTransient<IDischargeService, DischargeService>()
                     .AddTransient<ILoaService, LoaService>()
                     .AddTransient<IOperationOrderService, OperationOrderService>()
                     .AddTransient<IOperationReportService, OperationReportService>();

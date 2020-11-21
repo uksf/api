@@ -17,12 +17,12 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
 
     public class BuildQueueService : IBuildQueueService {
         private readonly IBuildProcessorService _buildProcessorService;
-        private readonly ConcurrentDictionary<string, Task> _buildTasks = new ConcurrentDictionary<string, Task>();
-        private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokenSources = new ConcurrentDictionary<string, CancellationTokenSource>();
+        private readonly ConcurrentDictionary<string, Task> _buildTasks = new();
+        private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokenSources = new();
         private readonly IGameServersService _gameServersService;
         private readonly ILogger _logger;
-        private ConcurrentQueue<ModpackBuild> _queue = new ConcurrentQueue<ModpackBuild>();
         private bool _processing;
+        private ConcurrentQueue<ModpackBuild> _queue = new();
 
         public BuildQueueService(IBuildProcessorService buildProcessorService, IGameServersService gameServersService, ILogger logger) {
             _buildProcessorService = buildProcessorService;
@@ -39,8 +39,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
         }
 
         public bool CancelQueued(string id) {
-            if (_queue.Any(x => x.id == id)) {
-                _queue = new ConcurrentQueue<ModpackBuild>(_queue.Where(x => x.id != id));
+            if (_queue.Any(x => x.Id == id)) {
+                _queue = new ConcurrentQueue<ModpackBuild>(_queue.Where(x => x.Id != id));
                 return true;
             }
 
@@ -93,12 +93,12 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
                     continue;
                 }
 
-                CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-                _cancellationTokenSources.TryAdd(build.id, cancellationTokenSource);
+                CancellationTokenSource cancellationTokenSource = new();
+                _cancellationTokenSources.TryAdd(build.Id, cancellationTokenSource);
                 Task buildTask = _buildProcessorService.ProcessBuild(build, cancellationTokenSource);
-                _buildTasks.TryAdd(build.id, buildTask);
+                _buildTasks.TryAdd(build.Id, buildTask);
                 await buildTask;
-                _cancellationTokenSources.TryRemove(build.id, out CancellationTokenSource _);
+                _cancellationTokenSources.TryRemove(build.Id, out CancellationTokenSource _);
             }
 
             _processing = false;

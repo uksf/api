@@ -2,14 +2,14 @@
 using FluentAssertions;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Shared.Models;
-using UKSF.Tests.Common;
+using UKSF.Api.Tests.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events {
     public class EventBusTests {
         [Fact]
         public void Should_return_observable() {
-            EventBus<DataEventModel<TestDataModel>> eventBus = new EventBus<DataEventModel<TestDataModel>>();
+            EventBus<DataEventModel<TestDataModel>> eventBus = new();
 
             IObservable<DataEventModel<TestDataModel>> subject = eventBus.AsObservable();
 

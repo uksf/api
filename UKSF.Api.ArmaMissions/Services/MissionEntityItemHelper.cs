@@ -5,25 +5,25 @@ using UKSF.Api.ArmaMissions.Models;
 namespace UKSF.Api.ArmaMissions.Services {
     public static class MissionEntityItemHelper {
         public static MissionEntityItem CreateFromList(List<string> rawItem) {
-            MissionEntityItem missionEntityItem = new MissionEntityItem {rawMissionEntityItem = rawItem};
-            missionEntityItem.dataType = MissionUtilities.ReadSingleDataByKey(missionEntityItem.rawMissionEntityItem, "dataType").ToString();
-            if (missionEntityItem.dataType.Equals("Group")) {
-                missionEntityItem.rawMissionEntities = MissionUtilities.ReadDataByKey(missionEntityItem.rawMissionEntityItem, "Entities");
-                if (missionEntityItem.rawMissionEntities.Count > 0) {
-                    missionEntityItem.missionEntity = MissionEntityHelper.CreateFromItems(missionEntityItem.rawMissionEntities);
+            MissionEntityItem missionEntityItem = new() { RawMissionEntityItem = rawItem };
+            missionEntityItem.DataType = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "dataType").ToString();
+            if (missionEntityItem.DataType.Equals("Group")) {
+                missionEntityItem.RawMissionEntities = MissionUtilities.ReadDataByKey(missionEntityItem.RawMissionEntityItem, "Entities");
+                if (missionEntityItem.RawMissionEntities.Count > 0) {
+                    missionEntityItem.MissionEntity = MissionEntityHelper.CreateFromItems(missionEntityItem.RawMissionEntities);
                 }
-            } else if (missionEntityItem.dataType.Equals("Object")) {
-                string isPlayable = MissionUtilities.ReadSingleDataByKey(missionEntityItem.rawMissionEntityItem, "isPlayable").ToString();
-                string isPlayer = MissionUtilities.ReadSingleDataByKey(missionEntityItem.rawMissionEntityItem, "isPlayer").ToString();
+            } else if (missionEntityItem.DataType.Equals("Object")) {
+                string isPlayable = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "isPlayable").ToString();
+                string isPlayer = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "isPlayer").ToString();
                 if (!string.IsNullOrEmpty(isPlayable)) {
-                    missionEntityItem.isPlayable = isPlayable == "1";
+                    missionEntityItem.IsPlayable = isPlayable == "1";
                 } else if (!string.IsNullOrEmpty(isPlayer)) {
-                    missionEntityItem.isPlayable = isPlayer == "1";
+                    missionEntityItem.IsPlayable = isPlayer == "1";
                 }
-            } else if (missionEntityItem.dataType.Equals("Logic")) {
-                string type = MissionUtilities.ReadSingleDataByKey(missionEntityItem.rawMissionEntityItem, "type").ToString();
+            } else if (missionEntityItem.DataType.Equals("Logic")) {
+                string type = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "type").ToString();
                 if (!string.IsNullOrEmpty(type)) {
-                    missionEntityItem.type = type;
+                    missionEntityItem.Type = type;
                 }
             }
 
@@ -31,103 +31,103 @@ namespace UKSF.Api.ArmaMissions.Services {
         }
 
         public static MissionEntityItem CreateFromPlayer(MissionPlayer missionPlayer, int index) {
-            MissionEntityItem missionEntityItem = new MissionEntityItem();
-            missionEntityItem.rawMissionEntityItem.Add($"class Item{index}");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("dataType=\"Object\";");
-            missionEntityItem.rawMissionEntityItem.Add($"flags={(index == 0 ? "7" : "5")};");
-            missionEntityItem.rawMissionEntityItem.Add($"id={Mission.nextId++};");
-            missionEntityItem.rawMissionEntityItem.Add("class PositionInfo");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("position[]={" + $"{MissionEntityItem.position++}" + ",0,0};");
-            missionEntityItem.rawMissionEntityItem.Add("};");
-            missionEntityItem.rawMissionEntityItem.Add("side=\"West\";");
-            missionEntityItem.rawMissionEntityItem.Add($"type=\"{missionPlayer.objectClass}\";");
-            missionEntityItem.rawMissionEntityItem.Add("class Attributes");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("isPlayable=1;");
-            missionEntityItem.rawMissionEntityItem.Add(
-                $"description=\"{missionPlayer.name}{(string.IsNullOrEmpty(missionPlayer.account?.roleAssignment) ? "" : $" - {missionPlayer.account?.roleAssignment}")}@{MissionDataResolver.ResolveCallsign(missionPlayer.unit, missionPlayer.unit.sourceUnit?.callsign)}\";"
+            MissionEntityItem missionEntityItem = new();
+            missionEntityItem.RawMissionEntityItem.Add($"class Item{index}");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("dataType=\"Object\";");
+            missionEntityItem.RawMissionEntityItem.Add($"flags={(index == 0 ? "7" : "5")};");
+            missionEntityItem.RawMissionEntityItem.Add($"id={Mission.NextId++};");
+            missionEntityItem.RawMissionEntityItem.Add("class PositionInfo");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("position[]={" + $"{MissionEntityItem.Position++}" + ",0,0};");
+            missionEntityItem.RawMissionEntityItem.Add("};");
+            missionEntityItem.RawMissionEntityItem.Add("side=\"West\";");
+            missionEntityItem.RawMissionEntityItem.Add($"type=\"{missionPlayer.ObjectClass}\";");
+            missionEntityItem.RawMissionEntityItem.Add("class Attributes");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("isPlayable=1;");
+            missionEntityItem.RawMissionEntityItem.Add(
+                $"description=\"{missionPlayer.Name}{(string.IsNullOrEmpty(missionPlayer.Account?.RoleAssignment) ? "" : $" - {missionPlayer.Account?.RoleAssignment}")}@{MissionDataResolver.ResolveCallsign(missionPlayer.Unit, missionPlayer.Unit.SourceUnit?.Callsign)}\";"
             );
-            missionEntityItem.rawMissionEntityItem.Add("};");
-            if (MissionDataResolver.IsEngineer(missionPlayer)) missionEntityItem.rawMissionEntityItem.AddEngineerTrait();
-            missionEntityItem.rawMissionEntityItem.Add("};");
+            missionEntityItem.RawMissionEntityItem.Add("};");
+            if (MissionDataResolver.IsEngineer(missionPlayer)) missionEntityItem.RawMissionEntityItem.AddEngineerTrait();
+            missionEntityItem.RawMissionEntityItem.Add("};");
             return missionEntityItem;
         }
 
         public static MissionEntityItem CreateFromMissionEntity(MissionEntity entities, string callsign) {
-            MissionEntityItem missionEntityItem = new MissionEntityItem {missionEntity = entities};
-            missionEntityItem.rawMissionEntityItem.Add("class Item");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("dataType=\"Group\";");
-            missionEntityItem.rawMissionEntityItem.Add("side=\"West\";");
-            missionEntityItem.rawMissionEntityItem.Add($"id={Mission.nextId++};");
-            missionEntityItem.rawMissionEntityItem.Add("class Entities");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("};");
-            missionEntityItem.rawMissionEntityItem.Add("class Attributes");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("};");
-            missionEntityItem.rawMissionEntityItem.Add("class CustomAttributes");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("class Attribute0");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("property=\"groupID\";");
-            missionEntityItem.rawMissionEntityItem.Add("expression=\"[_this, _value] call CBA_fnc_setCallsign\";");
-            missionEntityItem.rawMissionEntityItem.Add("class Value");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("class data");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("class type");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("type[]={\"STRING\"};");
-            missionEntityItem.rawMissionEntityItem.Add("};");
-            missionEntityItem.rawMissionEntityItem.Add($"value=\"{callsign}\";");
-            missionEntityItem.rawMissionEntityItem.Add("};");
-            missionEntityItem.rawMissionEntityItem.Add("};");
-            missionEntityItem.rawMissionEntityItem.Add("};");
-            missionEntityItem.rawMissionEntityItem.Add("nAttributes=1;");
-            missionEntityItem.rawMissionEntityItem.Add("};");
-            missionEntityItem.rawMissionEntityItem.Add("};");
-            missionEntityItem.rawMissionEntities = MissionUtilities.ReadDataByKey(missionEntityItem.rawMissionEntityItem, "Entities");
+            MissionEntityItem missionEntityItem = new() { MissionEntity = entities };
+            missionEntityItem.RawMissionEntityItem.Add("class Item");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("dataType=\"Group\";");
+            missionEntityItem.RawMissionEntityItem.Add("side=\"West\";");
+            missionEntityItem.RawMissionEntityItem.Add($"id={Mission.NextId++};");
+            missionEntityItem.RawMissionEntityItem.Add("class Entities");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("};");
+            missionEntityItem.RawMissionEntityItem.Add("class Attributes");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("};");
+            missionEntityItem.RawMissionEntityItem.Add("class CustomAttributes");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("class Attribute0");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("property=\"groupID\";");
+            missionEntityItem.RawMissionEntityItem.Add("expression=\"[_this, _value] call CBA_fnc_setCallsign\";");
+            missionEntityItem.RawMissionEntityItem.Add("class Value");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("class data");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("class type");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("type[]={\"STRING\"};");
+            missionEntityItem.RawMissionEntityItem.Add("};");
+            missionEntityItem.RawMissionEntityItem.Add($"value=\"{callsign}\";");
+            missionEntityItem.RawMissionEntityItem.Add("};");
+            missionEntityItem.RawMissionEntityItem.Add("};");
+            missionEntityItem.RawMissionEntityItem.Add("};");
+            missionEntityItem.RawMissionEntityItem.Add("nAttributes=1;");
+            missionEntityItem.RawMissionEntityItem.Add("};");
+            missionEntityItem.RawMissionEntityItem.Add("};");
+            missionEntityItem.RawMissionEntities = MissionUtilities.ReadDataByKey(missionEntityItem.RawMissionEntityItem, "Entities");
             return missionEntityItem;
         }
 
         public static MissionEntityItem CreateCuratorEntity() {
-            MissionEntityItem missionEntityItem = new MissionEntityItem();
-            missionEntityItem.rawMissionEntityItem.Add("class Item");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("dataType=\"Logic\";");
-            missionEntityItem.rawMissionEntityItem.Add($"id={Mission.nextId++};");
-            missionEntityItem.rawMissionEntityItem.Add("class PositionInfo");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("position[]={" + $"{MissionEntityItem.curatorPosition++}" + ",0,0.25};");
-            missionEntityItem.rawMissionEntityItem.Add("};");
-            missionEntityItem.rawMissionEntityItem.Add("type=\"ModuleCurator_F\";");
-            missionEntityItem.rawMissionEntityItem.Add("class CustomAttributes");
-            missionEntityItem.rawMissionEntityItem.Add("{");
-            missionEntityItem.rawMissionEntityItem.Add("};");
-            missionEntityItem.rawMissionEntityItem.Add("};");
+            MissionEntityItem missionEntityItem = new();
+            missionEntityItem.RawMissionEntityItem.Add("class Item");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("dataType=\"Logic\";");
+            missionEntityItem.RawMissionEntityItem.Add($"id={Mission.NextId++};");
+            missionEntityItem.RawMissionEntityItem.Add("class PositionInfo");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("position[]={" + $"{MissionEntityItem.CuratorPosition++}" + ",0,0.25};");
+            missionEntityItem.RawMissionEntityItem.Add("};");
+            missionEntityItem.RawMissionEntityItem.Add("type=\"ModuleCurator_F\";");
+            missionEntityItem.RawMissionEntityItem.Add("class CustomAttributes");
+            missionEntityItem.RawMissionEntityItem.Add("{");
+            missionEntityItem.RawMissionEntityItem.Add("};");
+            missionEntityItem.RawMissionEntityItem.Add("};");
             return missionEntityItem;
         }
 
         public static bool Ignored(this MissionEntityItem missionEntityItem) {
-            return missionEntityItem.rawMissionEntityItem.Any(x => x.ToLower().Contains("@ignore"));
+            return missionEntityItem.RawMissionEntityItem.Any(x => x.ToLower().Contains("@ignore"));
         }
 
         public static void Patch(this MissionEntityItem missionEntityItem, int index) {
-            missionEntityItem.rawMissionEntityItem[0] = $"class Item{index}";
+            missionEntityItem.RawMissionEntityItem[0] = $"class Item{index}";
         }
 
         public static IEnumerable<string> Serialize(this MissionEntityItem missionEntityItem) {
-            if (missionEntityItem.rawMissionEntities.Count > 0) {
-                int start = MissionUtilities.GetIndexByKey(missionEntityItem.rawMissionEntityItem, "Entities");
-                int count = missionEntityItem.rawMissionEntities.Count;
-                missionEntityItem.rawMissionEntityItem.RemoveRange(start, count);
-                missionEntityItem.rawMissionEntityItem.InsertRange(start, missionEntityItem.missionEntity.Serialize());
+            if (missionEntityItem.RawMissionEntities.Count > 0) {
+                int start = MissionUtilities.GetIndexByKey(missionEntityItem.RawMissionEntityItem, "Entities");
+                int count = missionEntityItem.RawMissionEntities.Count;
+                missionEntityItem.RawMissionEntityItem.RemoveRange(start, count);
+                missionEntityItem.RawMissionEntityItem.InsertRange(start, missionEntityItem.MissionEntity.Serialize());
             }
 
-            return missionEntityItem.rawMissionEntityItem.ToList();
+            return missionEntityItem.RawMissionEntityItem.ToList();
         }
 
         private static void AddEngineerTrait(this ICollection<string> entity) {

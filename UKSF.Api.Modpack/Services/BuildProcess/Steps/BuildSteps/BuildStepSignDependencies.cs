@@ -21,8 +21,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
 
             string keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
             string keysPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "keys");
-            DirectoryInfo keygen = new DirectoryInfo(keygenPath);
-            DirectoryInfo keys = new DirectoryInfo(keysPath);
+            DirectoryInfo keygen = new(keygenPath);
+            DirectoryInfo keys = new(keysPath);
             keygen.Create();
             keys.Create();
 
@@ -32,10 +32,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             StepLogger.LogSurround("Cleared keys directories");
 
             StepLogger.LogSurround("\nCreating key...");
-            BuildProcessHelper processHelper = new BuildProcessHelper(StepLogger, CancellationTokenSource, true);
+            BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource, true);
             processHelper.Run(keygenPath, _dsCreateKey, _keyName, (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
             StepLogger.Log($"Created {_keyName}");
-            await CopyFiles(keygen, keys, new List<FileInfo> { new FileInfo(Path.Join(keygenPath, $"{_keyName}.bikey")) });
+            await CopyFiles(keygen, keys, new List<FileInfo> { new(Path.Join(keygenPath, $"{_keyName}.bikey")) });
             StepLogger.LogSurround("Created key");
         }
 
@@ -43,8 +43,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             string addonsPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "addons");
             string interceptPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@intercept", "addons");
             string keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
-            DirectoryInfo addons = new DirectoryInfo(addonsPath);
-            DirectoryInfo intercept = new DirectoryInfo(interceptPath);
+            DirectoryInfo addons = new(addonsPath);
+            DirectoryInfo intercept = new(interceptPath);
 
             StepLogger.LogSurround("\nDeleting dependencies signatures...");
             await DeleteFiles(GetDirectoryContents(addons, "*.bisign*"));
@@ -79,7 +79,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
                 files,
                 10,
                 file => {
-                    BuildProcessHelper processHelper = new BuildProcessHelper(StepLogger, CancellationTokenSource, true);
+                    BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource, true);
                     processHelper.Run(addonsPath, _dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
                     Interlocked.Increment(ref signed);
                     return Task.CompletedTask;

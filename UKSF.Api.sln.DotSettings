@@ -24,7 +24,7 @@
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=EnforceLockStatementBraces/@EntryIndexedValue">WARNING</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=EnforceUsingStatementBraces/@EntryIndexedValue">WARNING</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=EnforceWhileStatementBraces/@EntryIndexedValue">WARNING</s:String>
-	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=InconsistentNaming/@EntryIndexedValue">SUGGESTION</s:String>
+	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=InconsistentNaming/@EntryIndexedValue">WARNING</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=InheritdocConsiderUsage/@EntryIndexedValue">DO_NOT_SHOW</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=InvertIf/@EntryIndexedValue">DO_NOT_SHOW</s:String>
 	<s:String x:Key="/Default/CodeInspection/Highlighting/InspectionSeverities/=LocalizableElement/@EntryIndexedValue">DO_NOT_SHOW</s:String>
@@ -415,18 +415,18 @@
 	<s:Int64 x:Key="/Default/ControllerUi/PositionSettingsY/@EntryValue">198</s:Int64>
 	<s:String x:Key="/Default/CustomTools/CustomToolsData/@EntryValue"></s:String>
 	<s:String x:Key="/Default/Environment/Hierarchy/PsiConfigurationSettingsKey/CustomLocation/@EntryValue">C:\Users\Tim\AppData\Local\JetBrains\Transient\ReSharperPlatformVs15\v11_4a79c293\SolutionCaches</s:String>
-	<s:Boolean x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=3D2C9B4D5581A44A80E33E1D337DA8C5/@KeyIndexDefined">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=3D2C9B4D5581A44A80E33E1D337DA8C5/AbsolutePath/@EntryValue">C:\Storage\UKSF\Website\UKSF.Api.Backend\UKSF.Api.Models\UKSF.Api.Models.csproj.DotSettings</s:String>
-	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=3D2C9B4D5581A44A80E33E1D337DA8C5/RelativePath/@EntryValue">..\UKSF.Api.Models\UKSF.Api.Models.csproj.DotSettings</s:String>
+	
+	
+	
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=9BAB922B5BA29443A4455CD928E43031/@KeyIndexDefined">True</s:Boolean>
 	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=9BAB922B5BA29443A4455CD928E43031/AbsolutePath/@EntryValue">E:\Workspace\UKSF\api\UKSF.Tests\UKSF.Tests.csproj.DotSettings</s:String>
 	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=9BAB922B5BA29443A4455CD928E43031/RelativePath/@EntryValue">..\UKSF.Tests\UKSF.Tests.csproj.DotSettings</s:String>
 	
 	
 	
-	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File3D2C9B4D5581A44A80E33E1D337DA8C5/@KeyIndexDefined">True</s:Boolean>
 	
-	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File3D2C9B4D5581A44A80E33E1D337DA8C5/RelativePriority/@EntryValue">0.5</s:Double>
+	
+	
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File9BAB922B5BA29443A4455CD928E43031/@KeyIndexDefined">True</s:Boolean>
 	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File9BAB922B5BA29443A4455CD928E43031/RelativePriority/@EntryValue">1.5</s:Double>
 	

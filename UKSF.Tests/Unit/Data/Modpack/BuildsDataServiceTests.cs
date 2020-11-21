@@ -5,37 +5,37 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
-using UKSF.Api.Modpack.Services.Data;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Modpack {
     public class BuildsDataServiceTests {
-        private readonly BuildsDataService buildsDataService;
-        private readonly Mock<IDataCollection<ModpackBuild>> mockDataCollection;
-        private readonly Mock<IDataEventBus<ModpackBuild>> mockDataEventBus;
+        private readonly BuildsContext _buildsContext;
+        private readonly Mock<Api.Base.Context.IMongoCollection<ModpackBuild>> _mockDataCollection;
+        private readonly Mock<IDataEventBus<ModpackBuild>> _mockDataEventBus;
 
         public BuildsDataServiceTests() {
-            Mock<IDataCollectionFactory> mockDataCollectionFactory = new Mock<IDataCollectionFactory>();
-            mockDataEventBus = new Mock<IDataEventBus<ModpackBuild>>();
-            mockDataCollection = new Mock<IDataCollection<ModpackBuild>>();
+            Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
+            _mockDataEventBus = new Mock<IDataEventBus<ModpackBuild>>();
+            _mockDataCollection = new Mock<Api.Base.Context.IMongoCollection<ModpackBuild>>();
 
-            mockDataCollectionFactory.Setup(x => x.CreateDataCollection<ModpackBuild>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<ModpackBuild>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            buildsDataService = new BuildsDataService(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            _buildsContext = new BuildsContext(mockDataCollectionFactory.Object, _mockDataEventBus.Object);
         }
 
         [Fact]
         public void Should_get_collection_in_order() {
-            ModpackBuild item1 = new ModpackBuild { BuildNumber = 4 };
-            ModpackBuild item2 = new ModpackBuild { BuildNumber = 10 };
-            ModpackBuild item3 = new ModpackBuild { BuildNumber = 9 };
+            ModpackBuild item1 = new() { BuildNumber = 4 };
+            ModpackBuild item2 = new() { BuildNumber = 10 };
+            ModpackBuild item3 = new() { BuildNumber = 9 };
 
-            mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackBuild> { item1, item2, item3 });
+            _mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackBuild> { item1, item2, item3 });
 
-            IEnumerable<ModpackBuild> subject = buildsDataService.Get();
+            IEnumerable<ModpackBuild> subject = _buildsContext.Get();
 
             subject.Should().ContainInOrder(item2, item3, item1);
         }
@@ -43,20 +43,19 @@ namespace UKSF.Tests.Unit.Data.Modpack {
         [Fact]
         public void Should_update_build_step_with_event() {
             string id = ObjectId.GenerateNewId().ToString();
-            ModpackBuildStep modpackBuildStep = new ModpackBuildStep("step") { Index = 0, Running = false };
-            ModpackBuild modpackBuild = new ModpackBuild { id = id, BuildNumber = 1, Steps = new List<ModpackBuildStep> { modpackBuildStep } };
+            ModpackBuildStep modpackBuildStep = new("step") { Index = 0, Running = false };
+            ModpackBuild modpackBuild = new() { Id = id, BuildNumber = 1, Steps = new List<ModpackBuildStep> { modpackBuildStep } };
             DataEventModel<ModpackBuild> subject = null;
 
-            mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackBuild>());
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<ModpackBuild>>()))
-                              .Callback(() => { modpackBuild.Steps.First().Running = true; });
-            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<ModpackBuild>>())).Callback<DataEventModel<ModpackBuild>>(x => subject = x);
+            _mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackBuild>());
+            _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<ModpackBuild>>())).Callback(() => { modpackBuild.Steps.First().Running = true; });
+            _mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<ModpackBuild>>())).Callback<DataEventModel<ModpackBuild>>(x => subject = x);
 
-            buildsDataService.Update(modpackBuild, modpackBuildStep);
+            _buildsContext.Update(modpackBuild, modpackBuildStep);
 
             modpackBuildStep.Running.Should().BeTrue();
-            subject.data.Should().NotBeNull();
-            subject.data.Should().Be(modpackBuildStep);
+            subject.Data.Should().NotBeNull();
+            subject.Data.Should().Be(modpackBuildStep);
         }
 
         [Fact]
@@ -64,15 +63,15 @@ namespace UKSF.Tests.Unit.Data.Modpack {
             string id = ObjectId.GenerateNewId().ToString();
             DataEventModel<ModpackBuild> subject = null;
 
-            mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackBuild>());
-            mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<ModpackBuild>>()));
-            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<ModpackBuild>>())).Callback<DataEventModel<ModpackBuild>>(x => subject = x);
+            _mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackBuild>());
+            _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<ModpackBuild>>()));
+            _mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<ModpackBuild>>())).Callback<DataEventModel<ModpackBuild>>(x => subject = x);
 
-            ModpackBuild modpackBuild = new ModpackBuild { id = id, BuildNumber = 1 };
-            buildsDataService.Update(modpackBuild, Builders<ModpackBuild>.Update.Set(x => x.Running, true));
+            ModpackBuild modpackBuild = new() { Id = id, BuildNumber = 1 };
+            _buildsContext.Update(modpackBuild, Builders<ModpackBuild>.Update.Set(x => x.Running, true));
 
-            subject.data.Should().NotBeNull();
-            subject.data.Should().Be(modpackBuild);
+            subject.Data.Should().NotBeNull();
+            subject.Data.Should().Be(modpackBuild);
         }
     }
 }
