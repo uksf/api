@@ -17,7 +17,7 @@ namespace UKSF.Api.ArmaServer {
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
 
-        private static IServiceCollection AddServices(this IServiceCollection services) => services.AddSingleton<IGameServersService, GameServersService>();
+        private static IServiceCollection AddServices(this IServiceCollection services) => services.AddSingleton<IGameServersService, GameServersService>().AddSingleton<IGameServerHelpers, GameServerHelpers>();
 
         public static void AddUksfArmaServerSignalr(this IEndpointRouteBuilder builder) {
             builder.MapHub<ServersHub>($"/hub/{ServersHub.END_POINT}");

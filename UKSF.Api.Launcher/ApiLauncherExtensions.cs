@@ -2,9 +2,11 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Launcher.Context;
+using UKSF.Api.Launcher.Models;
 using UKSF.Api.Launcher.Services;
 using UKSF.Api.Launcher.Signalr.Hubs;
 using UKSF.Api.Personnel.ScheduledActions;
+using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Launcher {
     public static class ApiLauncherExtensions {
@@ -13,7 +15,7 @@ namespace UKSF.Api.Launcher {
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services.AddSingleton<ILauncherFileContext, LauncherFileContext>();
 
-        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services;
+        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services.AddSingleton<IDataEventBus<LauncherFile>, DataEventBus<LauncherFile>>();
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
 

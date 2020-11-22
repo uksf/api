@@ -15,7 +15,7 @@ namespace UKSF.Api.Teamspeak {
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services;
 
-        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services.AddSingleton<IEventBus<TeamspeakMessageEventModel>>();
+        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services.AddSingleton<IEventBus<SignalrEventModel>, EventBus<SignalrEventModel>>();
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) =>
             services.AddSingleton<ITeamspeakEventHandler, TeamspeakEventHandler>()

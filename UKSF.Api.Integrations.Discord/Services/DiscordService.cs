@@ -33,7 +33,6 @@ namespace UKSF.Api.Discord.Services {
         private readonly IDisplayNameService _displayNameService;
         private readonly ILogger _logger;
         private readonly IRanksContext _ranksContext;
-        private readonly ulong _specialUser;
         private readonly IUnitsContext _unitsContext;
         private readonly IUnitsService _unitsService;
         private readonly IVariablesService _variablesService;
@@ -60,7 +59,6 @@ namespace UKSF.Api.Discord.Services {
             _displayNameService = displayNameService;
             _variablesService = variablesService;
             _logger = logger;
-            _specialUser = variablesService.GetVariable("DID_U_OWNER").AsUlong();
         }
 
         public async Task ConnectDiscord() {
@@ -222,7 +220,7 @@ namespace UKSF.Api.Discord.Services {
         private async Task ClientOnMessageReceived(SocketMessage incomingMessage) {
             if (incomingMessage.Content.Contains("bot", StringComparison.InvariantCultureIgnoreCase) || incomingMessage.MentionedUsers.Any(x => x.IsBot)) {
                 if (TRIGGERS.Any(x => incomingMessage.Content.Contains(x, StringComparison.InvariantCultureIgnoreCase))) {
-                    bool owner = incomingMessage.Author.Id == _specialUser;
+                    bool owner = incomingMessage.Author.Id == _variablesService.GetVariable("DID_U_OWNER").AsUlong();
                     string message = owner ? OWNER_REPLIES[new Random().Next(0, OWNER_REPLIES.Length)] : REPLIES[new Random().Next(0, REPLIES.Length)];
                     string[] parts = _guild.GetUser(incomingMessage.Author.Id).Nickname.Split('.');
                     string nickname = owner ? "Daddy" : parts.Length > 1 ? parts[1] : parts[0];

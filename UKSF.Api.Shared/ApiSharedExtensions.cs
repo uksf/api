@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
@@ -8,7 +9,8 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Shared {
     public static class ApiSharedExtensions {
         public static IServiceCollection AddUksfShared(this IServiceCollection services) =>
-            services.AddContexts()
+            services
+                .AddContexts()
                     .AddEventBuses()
                     .AddEventHandlers()
                     .AddServices()
@@ -30,7 +32,8 @@ namespace UKSF.Api.Shared {
                     .AddSingleton<IDataEventBus<HttpErrorLog>, DataEventBus<HttpErrorLog>>()
                     .AddSingleton<IDataEventBus<LauncherLog>, DataEventBus<LauncherLog>>()
                     .AddSingleton<IDataEventBus<DiscordLog>, DataEventBus<DiscordLog>>()
-                    .AddSingleton<IDataEventBus<ScheduledJob>, DataEventBus<ScheduledJob>>();
+                    .AddSingleton<IDataEventBus<ScheduledJob>, DataEventBus<ScheduledJob>>()
+                    .AddSingleton<IEventBus<TeamspeakMessageEventModel>, EventBus<TeamspeakMessageEventModel>>();
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
 

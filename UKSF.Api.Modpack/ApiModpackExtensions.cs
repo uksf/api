@@ -28,6 +28,7 @@ namespace UKSF.Api.Modpack {
                     .AddTransient<IModpackService, ModpackService>()
                     .AddTransient<IReleaseService, ReleaseService>()
                     .AddTransient<IBuildStepService, BuildStepService>()
+                    .AddSingleton<IBuildProcessorService, BuildProcessorService>()
                     .AddTransient<IBuildQueueService, BuildQueueService>();
 
         private static IServiceCollection AddActions(this IServiceCollection services) => services.AddSingleton<IActionPruneBuilds, ActionPruneBuilds>();

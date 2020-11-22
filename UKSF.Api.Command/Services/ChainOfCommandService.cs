@@ -16,18 +16,17 @@ namespace UKSF.Api.Command.Services {
 
     public class ChainOfCommandService : IChainOfCommandService {
         private readonly IAccountService _accountService;
-        private readonly string _commanderRoleName;
         private readonly IHttpContextService _httpContextService;
+        private readonly IRolesService _rolesService;
         private readonly IUnitsContext _unitsContext;
         private readonly IUnitsService _unitsService;
 
         public ChainOfCommandService(IUnitsContext unitsContext, IUnitsService unitsService, IRolesService rolesService, IHttpContextService httpContextService, IAccountService accountService) {
             _unitsContext = unitsContext;
             _unitsService = unitsService;
+            _rolesService = rolesService;
             _httpContextService = httpContextService;
             _accountService = accountService;
-
-            _commanderRoleName = rolesService.GetUnitRoleByOrder(0).Name;
         }
 
         public HashSet<string> ResolveChain(ChainOfCommandMode mode, string recipient, Unit start, Unit target) {
@@ -157,8 +156,8 @@ namespace UKSF.Api.Command.Services {
             return string.Empty;
         }
 
-        private bool UnitHasCommander(Unit unit) => _unitsService.HasRole(unit, _commanderRoleName);
+        private bool UnitHasCommander(Unit unit) => _unitsService.HasRole(unit, _rolesService.GetCommanderRoleName());
 
-        private string GetCommander(Unit unit) => unit.Roles.GetValueOrDefault(_commanderRoleName, string.Empty);
+        private string GetCommander(Unit unit) => unit.Roles.GetValueOrDefault(_rolesService.GetCommanderRoleName(), string.Empty);
     }
 }

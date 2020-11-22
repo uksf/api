@@ -1,16 +1,24 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using UKSF.Api.Base.Context;
 
 namespace UKSF.Api.Base {
     public static class ApiBaseExtensions {
-        public static IServiceCollection AddUksfBase(this IServiceCollection services, IConfiguration configuration) =>
+        public static IServiceCollection AddUksfBase(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment) {
             services.AddContexts()
                     .AddEventBuses()
                     .AddEventHandlers()
                     .AddServices()
+                    .AddSingleton(configuration)
+                    .AddSingleton(currentEnvironment)
+                    .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
                     .AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")))
                     .AddTransient<IMongoCollectionFactory, MongoCollectionFactory>();
+            services.AddSignalR().AddNewtonsoftJsonProtocol();
+            return services;
+        }
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services;
 
