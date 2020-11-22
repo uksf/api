@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Events;
@@ -19,11 +20,11 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         private readonly Mock<ILogger> _mockLoggingService;
         private readonly Mock<ITeamspeakGroupService> _mockTeamspeakGroupService;
         private readonly Mock<ITeamspeakService> _mockTeamspeakService;
-        private readonly ISignalrEventBus _signalrEventBus;
+        private readonly IEventBus<SignalrEventModel> _signalrEventBus;
         private readonly TeamspeakEventHandler _teamspeakEventHandler;
 
         public TeamspeakEventHandlerTests() {
-            _signalrEventBus = new SignalrEventBus();
+            _signalrEventBus = new EventBus<SignalrEventModel>();
             _mockAccountContext = new Mock<IAccountContext>();
             _mockTeamspeakService = new Mock<ITeamspeakService>();
             _mockTeamspeakGroupService = new Mock<ITeamspeakGroupService>();

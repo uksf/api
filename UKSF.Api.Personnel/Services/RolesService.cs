@@ -5,6 +5,7 @@ namespace UKSF.Api.Personnel.Services {
     public interface IRolesService {
         int Sort(string nameA, string nameB);
         Role GetUnitRoleByOrder(int order);
+        string GetCommanderRoleName();
     }
 
     public class RolesService : IRolesService {
@@ -21,5 +22,7 @@ namespace UKSF.Api.Personnel.Services {
         }
 
         public Role GetUnitRoleByOrder(int order) => _rolesContext.GetSingle(x => x.RoleType == RoleType.UNIT && x.Order == order);
+
+        public string GetCommanderRoleName() => GetUnitRoleByOrder(0).Name;
     }
 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using UKSF.Api.Admin;
@@ -20,17 +19,8 @@ using UKSF.Api.Teamspeak;
 
 namespace UKSF.Api.AppStart {
     public static class ServiceExtensions {
-        public static IServiceCollection AddUksf(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment) =>
-            services.AddContexts()
-                    .AddEventBuses()
-                    .AddEventHandlers()
-                    .AddServices()
-                    .AddSingleton(configuration)
-                    .AddSingleton(currentEnvironment)
-                    .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
-                    .AddSingleton<ExceptionHandler>()
-                    .AddSingleton<MigrationUtility>()
-                    .AddComponents(configuration);
+        public static void AddUksf(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment) =>
+            services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddSingleton<ExceptionHandler>().AddSingleton<MigrationUtility>().AddComponents(configuration, currentEnvironment);
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services;
 
@@ -40,8 +30,8 @@ namespace UKSF.Api.AppStart {
 
         private static IServiceCollection AddServices(this IServiceCollection services) => services;
 
-        private static IServiceCollection AddComponents(this IServiceCollection services, IConfiguration configuration) =>
-            services.AddUksfBase(configuration)
+        private static void AddComponents(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment) =>
+            services.AddUksfBase(configuration, currentEnvironment)
                     .AddUksfShared()
                     .AddUksfAuth(configuration)
                     .AddUksfAdmin()

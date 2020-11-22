@@ -52,8 +52,4 @@
         <ProjectReference Include="..\UKSF.Api.Personnel\UKSF.Api.Personnel.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-        <Folder Include="AppStart\Services" />
-    </ItemGroup>
-
 </Project>

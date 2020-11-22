@@ -11,6 +11,7 @@ namespace UKSF.Api.ArmaMissions {
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
 
-        private static IServiceCollection AddServices(this IServiceCollection services) => services.AddSingleton<MissionService>();
+        private static IServiceCollection AddServices(this IServiceCollection services) =>
+            services.AddSingleton<MissionService>().AddSingleton<MissionPatchDataService>().AddSingleton<IMissionPatchingService, MissionPatchingService>();
     }
 }

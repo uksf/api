@@ -60,7 +60,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Integrations.Insta
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Integrations.Discord.Tests", "Tests\UKSF.Api.Integrations.Discord.Tests\UKSF.Api.Integrations.Discord.Tests.csproj", "{31AF7726-44C5-49C3-AD39-F9660B9138B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Integrations.Teamspeak", "Tests\UKSF.Api.Integrations.Teamspeak\UKSF.Api.Integrations.Teamspeak.csproj", "{22611568-B956-4086-AA66-803C0040EBBC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Integrations.Teamspeak.Tests", "Tests\UKSF.Api.Integrations.Teamspeak.Tests\UKSF.Api.Integrations.Teamspeak.Tests.csproj", "{22611568-B956-4086-AA66-803C0040EBBC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Launcher.Tests", "Tests\UKSF.Api.Launcher.Tests\UKSF.Api.Launcher.Tests.csproj", "{B63BA910-2192-4C26-AFF9-59A995941F83}"
 EndProject

@@ -32,14 +32,12 @@ namespace UKSF.Api.Command.Controllers {
         private readonly ILogger _logger;
         private readonly INotificationsService _notificationsService;
         private readonly IUnitsContext _unitsContext;
-        private readonly IUnitsService _unitsService;
         private readonly IVariablesContext _variablesContext;
 
         public CommandRequestsController(
             ICommandRequestService commandRequestService,
             ICommandRequestCompletionService commandRequestCompletionService,
             IHttpContextService httpContextService,
-            IUnitsService unitsService,
             IUnitsContext unitsContext,
             ICommandRequestContext commandRequestContext,
             IDisplayNameService displayNameService,
@@ -51,7 +49,6 @@ namespace UKSF.Api.Command.Controllers {
             _commandRequestService = commandRequestService;
             _commandRequestCompletionService = commandRequestCompletionService;
             _httpContextService = httpContextService;
-            _unitsService = unitsService;
             _unitsContext = unitsContext;
             _commandRequestContext = commandRequestContext;
             _displayNameService = displayNameService;

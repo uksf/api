@@ -19,13 +19,13 @@ namespace UKSF.Api.Teamspeak.EventHandlers {
 
     public class TeamspeakEventHandler : ITeamspeakEventHandler {
         private readonly IAccountContext _accountContext;
-        private readonly ISignalrEventBus _eventBus;
+        private readonly IEventBus<SignalrEventModel> _eventBus;
         private readonly ILogger _logger;
         private readonly ConcurrentDictionary<double, TeamspeakServerGroupUpdate> _serverGroupUpdates = new();
         private readonly ITeamspeakGroupService _teamspeakGroupService;
         private readonly ITeamspeakService _teamspeakService;
 
-        public TeamspeakEventHandler(IAccountContext accountContext, ISignalrEventBus eventBus, ITeamspeakService teamspeakService, ITeamspeakGroupService teamspeakGroupService, ILogger logger) {
+        public TeamspeakEventHandler(IAccountContext accountContext, IEventBus<SignalrEventModel> eventBus, ITeamspeakService teamspeakService, ITeamspeakGroupService teamspeakGroupService, ILogger logger) {
             _accountContext = accountContext;
             _eventBus = eventBus;
             _teamspeakService = teamspeakService;

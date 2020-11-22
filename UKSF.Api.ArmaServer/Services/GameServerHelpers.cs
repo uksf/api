@@ -72,7 +72,6 @@ namespace UKSF.Api.ArmaServer.Services {
         };
 
         private readonly ILogger _logger;
-
         private readonly IVariablesService _variablesService;
 
         public GameServerHelpers(IVariablesService variablesService, ILogger logger) {
