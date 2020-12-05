@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.EventHandlers;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
@@ -14,33 +16,20 @@ using Xunit;
 namespace UKSF.Tests.Unit.Events.Handlers {
     public class CommentThreadEventHandlerTests {
         private readonly CommentThreadEventHandler _commentThreadEventHandler;
-        private readonly DataEventBus<CommentThread> _dataEventBus;
+        private readonly IEventBus _eventBus;
         private readonly Mock<IHubContext<CommentThreadHub, ICommentThreadClient>> _mockHub;
-        private readonly Mock<ILogger> _mockLoggingService;
 
         public CommentThreadEventHandlerTests() {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
             Mock<ICommentThreadService> mockCommentThreadService = new();
-            _mockLoggingService = new Mock<ILogger>();
+            Mock<ILogger> mockLoggingService = new();
             _mockHub = new Mock<IHubContext<CommentThreadHub, ICommentThreadClient>>();
-
-            _dataEventBus = new DataEventBus<CommentThread>();
+            _eventBus = new EventBus();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommentThread>(It.IsAny<string>()));
             mockCommentThreadService.Setup(x => x.FormatComment(It.IsAny<Comment>())).Returns(null);
 
-            _commentThreadEventHandler = new CommentThreadEventHandler(_dataEventBus, _mockHub.Object, mockCommentThreadService.Object, _mockLoggingService.Object);
-        }
-
-        [Fact]
-        public void ShouldLogOnException() {
-            _mockLoggingService.Setup(x => x.LogError(It.IsAny<Exception>()));
-
-            _commentThreadEventHandler.Init();
-
-            _dataEventBus.Send(new DataEventModel<CommentThread> { Type = (DataEventType) 5 });
-
-            _mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Once);
+            _commentThreadEventHandler = new CommentThreadEventHandler(_eventBus, _mockHub.Object, mockCommentThreadService.Object, mockLoggingService.Object);
         }
 
         [Fact]
@@ -55,7 +44,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _commentThreadEventHandler.Init();
 
-            _dataEventBus.Send(new DataEventModel<CommentThread> { Type = DataEventType.UPDATE, Data = new Comment() });
+            _eventBus.Send(new EventModel(EventType.UPDATE, new CommentThreadEventData(string.Empty, new Comment())));
 
             mockClient.Verify(x => x.ReceiveComment(It.IsAny<object>()), Times.Never);
             mockClient.Verify(x => x.DeleteComment(It.IsAny<string>()), Times.Never);
@@ -73,7 +62,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _commentThreadEventHandler.Init();
 
-            _dataEventBus.Send(new DataEventModel<CommentThread> { Type = DataEventType.ADD, Data = new Comment() });
+            _eventBus.Send(new EventModel(EventType.ADD, new CommentThreadEventData(string.Empty, new Comment())));
 
             mockClient.Verify(x => x.ReceiveComment(It.IsAny<object>()), Times.Once);
             mockClient.Verify(x => x.DeleteComment(It.IsAny<string>()), Times.Never);
@@ -91,7 +80,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _commentThreadEventHandler.Init();
 
-            _dataEventBus.Send(new DataEventModel<CommentThread> { Type = DataEventType.DELETE, Data = new Comment() });
+            _eventBus.Send(new EventModel(EventType.DELETE, new CommentThreadEventData(string.Empty, new Comment())));
 
             mockClient.Verify(x => x.ReceiveComment(It.IsAny<object>()), Times.Never);
             mockClient.Verify(x => x.DeleteComment(It.IsAny<string>()), Times.Once);

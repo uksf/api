@@ -4,14 +4,14 @@ using System.Globalization;
 
 namespace UKSF.Api.Modpack.Models {
     public class ModpackBuildStep {
-        public ModpackBuildResult BuildResult = ModpackBuildResult.NONE;
-        public DateTime EndTime = DateTime.ParseExact("20000101", "yyyyMMdd", CultureInfo.InvariantCulture);
-        public bool Finished;
-        public int Index;
-        public List<ModpackBuildStepLogItem> Logs = new();
-        public string Name;
-        public bool Running;
-        public DateTime StartTime = DateTime.ParseExact("20000101", "yyyyMMdd", CultureInfo.InvariantCulture);
+        public ModpackBuildResult BuildResult { get; set; } = ModpackBuildResult.NONE;
+        public DateTime EndTime { get; set; } = DateTime.ParseExact("20000101", "yyyyMMdd", CultureInfo.InvariantCulture);
+        public bool Finished { get; set; }
+        public int Index { get; set; }
+        public List<ModpackBuildStepLogItem> Logs { get; set; } = new();
+        public string Name { get; set; }
+        public bool Running { get; set; }
+        public DateTime StartTime { get; set; } = DateTime.ParseExact("20000101", "yyyyMMdd", CultureInfo.InvariantCulture);
 
         public ModpackBuildStep(string name) => Name = name;
     }

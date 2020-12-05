@@ -26,17 +26,18 @@ namespace UKSF.Api.Command.Models {
     }
 
     public record CommandRequest : MongoObject {
-        public DateTime DateCreated;
-        public string DisplayFrom;
-        public string DisplayRecipient;
-        public string DisplayRequester;
-        public string DisplayValue;
-        public string Reason, Type;
-        [BsonRepresentation(BsonType.ObjectId)] public string Recipient;
-        [BsonRepresentation(BsonType.ObjectId)] public string Requester;
-        public Dictionary<string, ReviewState> Reviews = new();
-        public string SecondaryValue;
-        public string Value;
+        public DateTime DateCreated { get; set; }
+        public string DisplayFrom { get; set; }
+        public string DisplayRecipient { get; set; }
+        public string DisplayRequester { get; set; }
+        public string DisplayValue { get; set; }
+        public string Reason { get; set; }
+        public string Type { get; set; }
+        [BsonRepresentation(BsonType.ObjectId)] public string Recipient { get; set; }
+        [BsonRepresentation(BsonType.ObjectId)] public string Requester { get; set; }
+        public Dictionary<string, ReviewState> Reviews { get; set; } = new();
+        public string SecondaryValue { get; set; }
+        public string Value { get; set; }
         public CommandRequest() => DateCreated = DateTime.Now;
     }
 }

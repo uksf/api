@@ -3,8 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using UKSF.Api.Admin.Models;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Admin.Context {
@@ -13,7 +13,7 @@ namespace UKSF.Api.Admin.Context {
     }
 
     public class VariablesContext : CachedMongoContext<VariableItem>, IVariablesContext {
-        public VariablesContext(IMongoCollectionFactory mongoCollectionFactory, IDataEventBus<VariableItem> dataEventBus) : base(mongoCollectionFactory, dataEventBus, "variables") { }
+        public VariablesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "variables") { }
 
         public override VariableItem GetSingle(string key) {
             return base.GetSingle(x => x.Key == key.Keyify());

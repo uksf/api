@@ -14,7 +14,7 @@ namespace UKSF.Api.Personnel.Controllers {
     [Route("[controller]")]
     public class DiscordCodeController : Controller {
         private readonly IAccountContext _accountContext;
-        private readonly IEventBus<Account> _accountEventBus;
+        private readonly IEventBus _eventBus;
         private readonly IConfirmationCodeService _confirmationCodeService;
         private readonly IHttpContextService _httpContextService;
         private readonly ILogger _logger;
@@ -23,13 +23,13 @@ namespace UKSF.Api.Personnel.Controllers {
             IAccountContext accountContext,
             IConfirmationCodeService confirmationCodeService,
             IHttpContextService httpContextService,
-            IEventBus<Account> accountEventBus,
+            IEventBus eventBus,
             ILogger logger
         ) {
             _accountContext = accountContext;
             _confirmationCodeService = confirmationCodeService;
             _httpContextService = httpContextService;
-            _accountEventBus = accountEventBus;
+            _eventBus = eventBus;
             _logger = logger;
         }
 
@@ -43,7 +43,7 @@ namespace UKSF.Api.Personnel.Controllers {
             string id = _httpContextService.GetUserId();
             await _accountContext.Update(id, Builders<Account>.Update.Set(x => x.DiscordId, discordId));
             Account account = _accountContext.GetSingle(id);
-            _accountEventBus.Send(account);
+            _eventBus.Send(account);
             _logger.LogAudit($"DiscordID updated for {account.Id} to {discordId}");
             return Ok();
         }

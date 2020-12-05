@@ -18,7 +18,7 @@ namespace UKSF.Api.Personnel.Controllers {
     [Route("[controller]")]
     public class UnitsController : Controller {
         private readonly IAccountContext _accountContext;
-        private readonly IEventBus<Account> _accountEventBus;
+        private readonly IEventBus _eventBus;
         private readonly IAssignmentService _assignmentService;
         private readonly IDisplayNameService _displayNameService;
         private readonly ILogger _logger;
@@ -38,7 +38,7 @@ namespace UKSF.Api.Personnel.Controllers {
             IRolesService rolesService,
             IAssignmentService assignmentService,
             INotificationsService notificationsService,
-            IEventBus<Account> accountEventBus,
+            IEventBus eventBus,
             IMapper mapper,
             ILogger logger
         ) {
@@ -50,7 +50,7 @@ namespace UKSF.Api.Personnel.Controllers {
             _rolesService = rolesService;
             _assignmentService = assignmentService;
             _notificationsService = notificationsService;
-            _accountEventBus = accountEventBus;
+            _eventBus = eventBus;
             _mapper = mapper;
             _logger = logger;
         }
@@ -131,19 +131,19 @@ namespace UKSF.Api.Personnel.Controllers {
             if (unit.Name != oldUnit.Name) {
                 foreach (Account account in _accountContext.Get(x => x.UnitAssignment == oldUnit.Name)) {
                     await _accountContext.Update(account.Id, "unitAssignment", unit.Name);
-                    _accountEventBus.Send(account);
+                    _eventBus.Send(account);
                 }
             }
 
             if (unit.TeamspeakGroup != oldUnit.TeamspeakGroup) {
                 foreach (Account account in unit.Members.Select(x => _accountContext.GetSingle(x))) {
-                    _accountEventBus.Send(account);
+                    _eventBus.Send(account);
                 }
             }
 
             if (unit.DiscordRoleId != oldUnit.DiscordRoleId) {
                 foreach (Account account in unit.Members.Select(x => _accountContext.GetSingle(x))) {
-                    _accountEventBus.Send(account);
+                    _eventBus.Send(account);
                 }
             }
 

@@ -8,6 +8,7 @@ using Moq;
 using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Models;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Shared.Events;
 using Xunit;
 
@@ -19,13 +20,13 @@ namespace UKSF.Tests.Unit.Data.Admin {
 
         public VariablesDataServiceTests() {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-            Mock<IDataEventBus<VariableItem>> mockDataEventBus = new();
+            Mock<IEventBus> mockEventBus = new();
             _mockDataCollection = new Mock<Api.Base.Context.IMongoCollection<VariableItem>>();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<VariableItem>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
             _mockDataCollection.Setup(x => x.Get()).Returns(() => _mockCollection);
 
-            _variablesContext = new VariablesContext(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            _variablesContext = new VariablesContext(mockDataCollectionFactory.Object, mockEventBus.Object);
         }
 
         [Theory, InlineData(""), InlineData("game path")]

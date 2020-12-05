@@ -13,12 +13,9 @@ using UKSF.Api.Shared.Events;
 namespace UKSF.Api.Modpack {
     public static class ApiModpackExtensions {
         public static IServiceCollection AddUksfModpack(this IServiceCollection services) =>
-            services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddActions().AddTransient<IBuildsEventHandler, BuildsEventHandler>();
+            services.AddContexts().AddEventHandlers().AddServices().AddActions().AddTransient<IBuildsEventHandler, BuildsEventHandler>();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services.AddSingleton<IBuildsContext, BuildsContext>().AddSingleton<IReleasesContext, ReleasesContext>();
-
-        private static IServiceCollection AddEventBuses(this IServiceCollection services) =>
-            services.AddSingleton<IDataEventBus<ModpackBuild>, DataEventBus<ModpackBuild>>().AddSingleton<IDataEventBus<ModpackRelease>, DataEventBus<ModpackRelease>>();
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services.AddSingleton<IBuildsEventHandler, BuildsEventHandler>();
 

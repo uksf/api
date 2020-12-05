@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.EventHandlers {
@@ -14,11 +16,13 @@ namespace UKSF.Api.EventHandlers {
         private readonly IDiscordLogContext _discordLogContext;
         private readonly IHttpErrorLogContext _httpErrorLogContext;
         private readonly ILauncherLogContext _launcherLogContext;
+        private readonly IEventBus _eventBus;
         private readonly ILogContext _logContext;
         private readonly ILogger _logger;
         private readonly IObjectIdConversionService _objectIdConversionService;
 
         public LoggerEventHandler(
+            IEventBus eventBus,
             ILogContext logContext,
             IAuditLogContext auditLogContext,
             IHttpErrorLogContext httpErrorLogContext,
@@ -27,6 +31,7 @@ namespace UKSF.Api.EventHandlers {
             ILogger logger,
             IObjectIdConversionService objectIdConversionService
         ) {
+            _eventBus = eventBus;
             _logContext = logContext;
             _auditLogContext = auditLogContext;
             _httpErrorLogContext = httpErrorLogContext;
@@ -37,11 +42,12 @@ namespace UKSF.Api.EventHandlers {
         }
 
         public void Init() {
-            _logger.AsObservable().Subscribe(HandleLog, _logger.LogError);
+            _eventBus.AsObservable().SubscribeWithAsyncNext<BasicLog>(HandleLog, _logger.LogError);
         }
 
-        private void HandleLog(BasicLog log) {
+        private Task HandleLog(EventModel eventModel, BasicLog log) {
             Task _ = HandleLogAsync(log);
+            return Task.CompletedTask;
         }
 
         private async Task HandleLogAsync(BasicLog log) {

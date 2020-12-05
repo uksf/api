@@ -65,11 +65,11 @@ namespace UKSF.Api.Personnel.Controllers {
             );
             await _ranksContext.Update(
                 rank.Id,
-                Builders<Rank>.Update.Set("name", rank.Name).Set("abbreviation", rank.Abbreviation).Set("teamspeakGroup", rank.TeamspeakGroup).Set("discordRoleId", rank.DiscordRoleId)
+                Builders<Rank>.Update.Set(x => x.Name, rank.Name).Set(x => x.Abbreviation, rank.Abbreviation).Set(x => x.TeamspeakGroup, rank.TeamspeakGroup).Set(x => x.DiscordRoleId, rank.DiscordRoleId)
             );
             foreach (Account account in _accountContext.Get(x => x.Rank == oldRank.Name)) {
                 // TODO: Notify user to update name in TS if rank abbreviate changed
-                await _accountContext.Update(account.Id, "rank", rank.Name);
+                await _accountContext.Update(account.Id, x => x.Rank, rank.Name);
             }
 
             return Ok(_ranksContext.Get());
@@ -93,7 +93,7 @@ namespace UKSF.Api.Personnel.Controllers {
             for (int index = 0; index < newRankOrder.Count; index++) {
                 Rank rank = newRankOrder[index];
                 if (_ranksContext.GetSingle(rank.Name).Order != index) {
-                    await _ranksContext.Update(rank.Id, "order", index);
+                    await _ranksContext.Update(rank.Id, x => x.Order, index);
                 }
             }
 

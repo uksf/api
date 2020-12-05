@@ -49,24 +49,16 @@ namespace UKSF.Api.ArmaMissions.Services {
             };
         }
 
-        public static void ResolveSpecialUnits(ref List<MissionUnit> orderedUnits) {
-            List<MissionUnit> newOrderedUnits = new();
-            foreach (MissionUnit unit in orderedUnits) {
-                switch (unit.SourceUnit.Id) {
-                    case "5a42835b55d6109bf0b081bd": // "UKSF"
-                    case "5a441619730e9d162834500b": // "7 Squadron"
-                    case "5a441602730e9d162834500a": // "656 Squadron"
-                    case "5a4415d8730e9d1628345007": // "617 Squadron"
-                    case "5a848590eab14d12cc7fa618": // "RAF Cranwell"
-                    case "5c98d7b396dba31f24cdb19c": // "51 Squadron"
-                        continue;
-                    default:
-                        newOrderedUnits.Add(unit);
-                        break;
-                }
-            }
-
-            orderedUnits = newOrderedUnits;
+        public static void ResolveSpecialUnits(List<MissionUnit> orderedUnits) {
+            List<string> ids = new() {
+                "5a42835b55d6109bf0b081bd", // "UKSF"
+                "5a441619730e9d162834500b", // "7 Squadron"
+                "5a441602730e9d162834500a", // "656 Squadron"
+                "5a4415d8730e9d1628345007", // "617 Squadron"
+                "5a848590eab14d12cc7fa618", // "RAF Cranwell"
+                "5c98d7b396dba31f24cdb19c" // "51 Squadron"
+            };
+            orderedUnits.RemoveAll(x => ids.Contains(x.SourceUnit.Id));
         }
 
         public static List<MissionPlayer> ResolveUnitSlots(MissionUnit unit) {

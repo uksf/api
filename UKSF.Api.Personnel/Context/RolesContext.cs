@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Events;
@@ -12,7 +13,7 @@ namespace UKSF.Api.Personnel.Context {
     }
 
     public class RolesContext : CachedMongoContext<Role>, IRolesContext {
-        public RolesContext(IMongoCollectionFactory mongoCollectionFactory, IDataEventBus<Role> dataEventBus) : base(mongoCollectionFactory, dataEventBus, "roles") { }
+        public RolesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "roles") { }
 
         public override Role GetSingle(string name) => GetSingle(x => x.Name == name);
 

@@ -3,8 +3,8 @@ using UKSF.Api.Base.Models;
 
 namespace UKSF.Api.Tests.Common {
     public record TestDataModel : MongoObject {
-        public Dictionary<string, object> Dictionary = new();
-        public string Name;
-        public List<object> Stuff;
+        public Dictionary<string, object> Dictionary { get; set; } = new();
+        public string Name { get; set; }
+        public List<object> Stuff { get; set; }
     }
 }

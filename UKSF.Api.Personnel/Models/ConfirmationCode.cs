@@ -2,6 +2,6 @@
 
 namespace UKSF.Api.Personnel.Models {
     public record ConfirmationCode : MongoObject {
-        public string Value;
+        public string Value { get; set; }
     }
 }

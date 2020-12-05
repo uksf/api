@@ -6,15 +6,13 @@ namespace UKSF.Api.Integrations.Instagram {
     public static class ApiIntegrationInstagramExtensions {
         public static IServiceCollection AddUksfIntegrationInstagram(this IServiceCollection services) =>
             services.AddContexts()
-                    .AddEventBuses()
+
                     .AddEventHandlers()
                     .AddServices()
                     .AddTransient<IActionInstagramImages, ActionInstagramImages>()
                     .AddTransient<IActionInstagramToken, ActionInstagramToken>();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services;
-
-        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services;
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
 

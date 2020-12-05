@@ -2,6 +2,7 @@
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Events;
@@ -14,12 +15,12 @@ namespace UKSF.Tests.Unit.Data.Personnel {
 
         public RanksDataServiceTests() {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-            Mock<IDataEventBus<Rank>> mockDataEventBus = new();
+            Mock<IEventBus> mockEventBus = new();
             _mockDataCollection = new Mock<IMongoCollection<Rank>>();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<Rank>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            _ranksContext = new RanksContext(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            _ranksContext = new RanksContext(mockDataCollectionFactory.Object, mockEventBus.Object);
         }
 
         [Theory, InlineData(""), InlineData(null)]

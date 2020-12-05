@@ -2,9 +2,9 @@ using System.IO;
 
 namespace UKSF.Api.ArmaServer.Models {
     public class MissionFile {
-        public string Map;
-        public string Name;
-        public string Path;
+        public string Map { get; set; }
+        public string Name { get; set; }
+        public string Path { get; set; }
 
         public MissionFile(FileSystemInfo fileInfo) {
             string[] fileNameParts = fileInfo.Name.Split(".");

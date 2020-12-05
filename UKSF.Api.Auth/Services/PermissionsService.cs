@@ -13,7 +13,6 @@ namespace UKSF.Api.Auth.Services {
     }
 
     public class PermissionsService : IPermissionsService {
-        private readonly string[] _admins = { "59e38f10594c603b78aa9dbd", "5a1e894463d0f71710089106", "5a1ae0f0b9bcb113a44edada" }; // TODO: Make this an account flag
         private readonly IRanksService _ranksService;
         private readonly IRecruitmentService _recruitmentService;
         private readonly IUnitsContext _unitsContext;
@@ -34,7 +33,7 @@ namespace UKSF.Api.Auth.Services {
             switch (account.MembershipState) {
                 case MembershipState.MEMBER: {
                     permissions.Add(Permissions.MEMBER);
-                    bool admin = _admins.Contains(account.Id);
+                    bool admin = account.Admin;
                     if (admin) {
                         permissions.UnionWith(Permissions.ALL);
                         break;
@@ -44,8 +43,8 @@ namespace UKSF.Api.Auth.Services {
                         permissions.Add(Permissions.COMMAND);
                     }
 
-                    // TODO: Remove hardcoded rank
-                    if (account.Rank != null && _ranksService.IsSuperiorOrEqual(account.Rank, "Senior Aircraftman")) {
+                    string ncoRank = _variablesService.GetVariable("PERMISSIONS_NCO_RANK").AsString();
+                    if (account.Rank != null && _ranksService.IsSuperiorOrEqual(account.Rank, ncoRank)) {
                         permissions.Add(Permissions.NCO);
                     }
 

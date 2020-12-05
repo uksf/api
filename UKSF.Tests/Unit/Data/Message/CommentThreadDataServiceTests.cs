@@ -5,10 +5,9 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
@@ -20,13 +19,13 @@ namespace UKSF.Tests.Unit.Data.Message {
 
         public CommentThreadDataServiceTests() {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-            Mock<IDataEventBus<CommentThread>> mockDataEventBus = new();
+            Mock<IEventBus> mockEventBus = new();
             _mockDataCollection = new Mock<Api.Base.Context.IMongoCollection<CommentThread>>();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommentThread>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
             _mockDataCollection.Setup(x => x.Get()).Returns(() => _mockCollection);
 
-            _commentThreadContext = new CommentThreadContext(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            _commentThreadContext = new CommentThreadContext(mockDataCollectionFactory.Object, mockEventBus.Object);
         }
 
         [Fact]
@@ -42,7 +41,7 @@ namespace UKSF.Tests.Unit.Data.Message {
                                .Returns(Task.CompletedTask)
                                .Callback<string, UpdateDefinition<CommentThread>>((_, update) => subject = update);
 
-            await _commentThreadContext.Update(commentThread.Id, comment, DataEventType.ADD);
+            await _commentThreadContext.AddCommentToThread(commentThread.Id, comment);
 
             TestUtilities.RenderUpdate(subject).Should().BeEquivalentTo(expected);
         }
@@ -60,7 +59,7 @@ namespace UKSF.Tests.Unit.Data.Message {
                                .Returns(Task.CompletedTask)
                                .Callback<string, UpdateDefinition<CommentThread>>((_, update) => subject = update);
 
-            await _commentThreadContext.Update(commentThread.Id, comment, DataEventType.DELETE);
+            await _commentThreadContext.RemoveCommentFromThread(commentThread.Id, comment);
 
             TestUtilities.RenderUpdate(subject).Should().BeEquivalentTo(expected);
         }

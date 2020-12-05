@@ -12,8 +12,8 @@ namespace UKSF.Api.Personnel.Models {
     }
 
     public record CommentThread : MongoObject {
-        [BsonRepresentation(BsonType.ObjectId)] public string[] Authors;
-        public Comment[] Comments = { };
-        public ThreadMode Mode;
+        [BsonRepresentation(BsonType.ObjectId)] public string[] Authors { get; set; }
+        public Comment[] Comments { get; set; } = System.Array.Empty<Comment>();
+        public ThreadMode Mode { get; set; }
     }
 }

@@ -8,6 +8,8 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
 using UKSF.Api.Tests.Common;
@@ -21,13 +23,12 @@ namespace UKSF.Tests.Unit.Data {
 
         public DataServiceTests() {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-            Mock<IDataEventBus<TestDataModel>> mockDataEventBus = new();
+            Mock<IEventBus> mockEventBus = new();
             _mockDataCollection = new Mock<Api.Base.Context.IMongoCollection<TestDataModel>>();
 
-            mockDataEventBus.Setup(x => x.Send(It.IsAny<DataEventModel<TestDataModel>>()));
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            _testContext = new TestContext(mockDataCollectionFactory.Object, mockDataEventBus.Object, "test");
+            _testContext = new TestContext(mockDataCollectionFactory.Object, mockEventBus.Object, "test");
         }
 
         [Theory, InlineData(""), InlineData("1"), InlineData(null)]

@@ -10,7 +10,7 @@ using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Command {
     public static class ApiCommandExtensions {
-        public static IServiceCollection AddUksfCommand(this IServiceCollection services) => services.AddContexts().AddEventBuses().AddEventHandlers().AddServices();
+        public static IServiceCollection AddUksfCommand(this IServiceCollection services) => services.AddContexts().AddEventHandlers().AddServices();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) =>
             services.AddSingleton<ICommandRequestArchiveContext, CommandRequestArchiveContext>()
@@ -19,12 +19,6 @@ namespace UKSF.Api.Command {
                     .AddSingleton<ILoaContext, LoaContext>()
                     .AddSingleton<IOperationOrderContext, OperationOrderContext>()
                     .AddSingleton<IOperationReportContext, OperationReportContext>();
-
-        private static IServiceCollection AddEventBuses(this IServiceCollection services) =>
-            services.AddSingleton<IDataEventBus<CommandRequest>, DataEventBus<CommandRequest>>()
-                    .AddSingleton<IDataEventBus<DischargeCollection>, DataEventBus<DischargeCollection>>()
-                    .AddSingleton<IDataEventBus<Opord>, DataEventBus<Opord>>()
-                    .AddSingleton<IDataEventBus<Oprep>, DataEventBus<Oprep>>();
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services.AddSingleton<ICommandRequestEventHandler, CommandRequestEventHandler>();
 

@@ -11,11 +11,9 @@ using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Admin {
     public static class ApiAdminExtensions {
-        public static IServiceCollection AddUksfAdmin(this IServiceCollection services) => services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddActions();
+        public static IServiceCollection AddUksfAdmin(this IServiceCollection services) => services.AddContexts().AddEventHandlers().AddServices().AddActions();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services;
-
-        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services.AddSingleton<IDataEventBus<VariableItem>, DataEventBus<VariableItem>>();
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services.AddSingleton<ILogDataEventHandler, LogDataEventHandler>();
 

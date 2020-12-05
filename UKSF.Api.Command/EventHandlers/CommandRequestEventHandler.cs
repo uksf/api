@@ -1,7 +1,7 @@
-using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Signalr.Clients;
 using UKSF.Api.Command.Signalr.Hubs;
@@ -13,28 +13,27 @@ namespace UKSF.Api.Command.EventHandlers {
     public interface ICommandRequestEventHandler : IEventHandler { }
 
     public class CommandRequestEventHandler : ICommandRequestEventHandler {
-        private readonly IDataEventBus<CommandRequest> _commandRequestDataEventBus;
+        private readonly IEventBus _eventBus;
         private readonly IHubContext<CommandRequestsHub, ICommandRequestsClient> _hub;
         private readonly ILogger _logger;
 
-        public CommandRequestEventHandler(IDataEventBus<CommandRequest> commandRequestDataEventBus, IHubContext<CommandRequestsHub, ICommandRequestsClient> hub, ILogger logger) {
-            _commandRequestDataEventBus = commandRequestDataEventBus;
+        public CommandRequestEventHandler(IEventBus eventBus, IHubContext<CommandRequestsHub, ICommandRequestsClient> hub, ILogger logger) {
+            _eventBus = eventBus;
             _hub = hub;
             _logger = logger;
         }
 
         public void Init() {
-            _commandRequestDataEventBus.AsObservable().SubscribeWithAsyncNext(HandleEvent, exception => _logger.LogError(exception));
+            _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<CommandRequest>>(HandleEvent, _logger.LogError);
         }
 
-        private async Task HandleEvent(DataEventModel<CommandRequest> dataEventModel) {
-            switch (dataEventModel.Type) {
-                case DataEventType.ADD:
-                case DataEventType.UPDATE:
+        private async Task HandleEvent(EventModel eventModel, ContextEventData<CommandRequest> _) {
+            switch (eventModel.EventType) {
+                case EventType.ADD:
+                case EventType.UPDATE:
                     await UpdatedEvent();
                     break;
-                case DataEventType.DELETE: break;
-                default:                   throw new ArgumentOutOfRangeException(nameof(dataEventModel));
+                case EventType.DELETE: break;
             }
         }
 

@@ -1,4 +1,5 @@
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
 
@@ -14,22 +15,22 @@ namespace UKSF.Api.Shared.Context {
     public interface IDiscordLogContext : IMongoContext<DiscordLog> { }
 
     public class LogContext : MongoContext<BasicLog>, ILogContext {
-        public LogContext(IMongoCollectionFactory mongoCollectionFactory, IDataEventBus<BasicLog> dataEventBus) : base(mongoCollectionFactory, dataEventBus, "logs") { }
+        public LogContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "logs") { }
     }
 
     public class AuditLogContext : MongoContext<AuditLog>, IAuditLogContext {
-        public AuditLogContext(IMongoCollectionFactory mongoCollectionFactory, IDataEventBus<AuditLog> dataEventBus) : base(mongoCollectionFactory, dataEventBus, "auditLogs") { }
+        public AuditLogContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "auditLogs") { }
     }
 
     public class HttpErrorLogContext : MongoContext<HttpErrorLog>, IHttpErrorLogContext {
-        public HttpErrorLogContext(IMongoCollectionFactory mongoCollectionFactory, IDataEventBus<HttpErrorLog> dataEventBus) : base(mongoCollectionFactory, dataEventBus, "errorLogs") { }
+        public HttpErrorLogContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "errorLogs") { }
     }
 
     public class LauncherLogContext : MongoContext<LauncherLog>, ILauncherLogContext {
-        public LauncherLogContext(IMongoCollectionFactory mongoCollectionFactory, IDataEventBus<LauncherLog> dataEventBus) : base(mongoCollectionFactory, dataEventBus, "launcherLogs") { }
+        public LauncherLogContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "launcherLogs") { }
     }
 
     public class DiscordLogContext : MongoContext<DiscordLog>, IDiscordLogContext {
-        public DiscordLogContext(IMongoCollectionFactory mongoCollectionFactory, IDataEventBus<DiscordLog> dataEventBus) : base(mongoCollectionFactory, dataEventBus, "discordLogs") { }
+        public DiscordLogContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "discordLogs") { }
     }
 }

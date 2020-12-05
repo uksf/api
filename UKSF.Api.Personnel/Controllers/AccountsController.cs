@@ -21,7 +21,7 @@ namespace UKSF.Api.Personnel.Controllers {
     [Route("[controller]")]
     public class AccountsController : Controller {
         private readonly IAccountContext _accountContext;
-        private readonly IEventBus<Account> _accountEventBus;
+        private readonly IEventBus _eventBus;
         private readonly IAccountService _accountService;
         private readonly IConfirmationCodeService _confirmationCodeService;
         private readonly IDisplayNameService _displayNameService;
@@ -38,7 +38,7 @@ namespace UKSF.Api.Personnel.Controllers {
             IDisplayNameService displayNameService,
             IHttpContextService httpContextService,
             IEmailService emailService,
-            IEventBus<Account> accountEventBus,
+            IEventBus eventBus,
             ILogger logger
         ) {
             _accountContext = accountContext;
@@ -48,7 +48,7 @@ namespace UKSF.Api.Personnel.Controllers {
             _displayNameService = displayNameService;
             _httpContextService = httpContextService;
             _emailService = emailService;
-            _accountEventBus = accountEventBus;
+            _eventBus = eventBus;
             _logger = logger;
         }
 
@@ -175,7 +175,7 @@ namespace UKSF.Api.Personnel.Controllers {
                 Builders<Account>.Update.Set(x => x.Firstname, changeNameRequest["firstname"].ToString()).Set(x => x.Lastname, changeNameRequest["lastname"].ToString())
             );
             _logger.LogAudit($"{account.Lastname}, {account.Firstname} changed their name to {changeNameRequest["lastname"]}, {changeNameRequest["firstname"]}");
-            _accountEventBus.Send(_accountContext.GetSingle(account.Id));
+            _eventBus.Send(_accountContext.GetSingle(account.Id));
             return Ok();
         }
 

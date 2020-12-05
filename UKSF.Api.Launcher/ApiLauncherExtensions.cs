@@ -11,11 +11,9 @@ using UKSF.Api.Shared.Events;
 namespace UKSF.Api.Launcher {
     public static class ApiLauncherExtensions {
         public static IServiceCollection AddUksfLauncher(this IServiceCollection services) =>
-            services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddTransient<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>();
+            services.AddContexts().AddEventHandlers().AddServices().AddTransient<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services.AddSingleton<ILauncherFileContext, LauncherFileContext>();
-
-        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services.AddSingleton<IDataEventBus<LauncherFile>, DataEventBus<LauncherFile>>();
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
 

@@ -1,4 +1,6 @@
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Events;
@@ -8,12 +10,12 @@ namespace UKSF.Api.Command.Context {
     public interface ICommandRequestArchiveContext : IMongoContext<CommandRequest> { }
 
     public class CommandRequestArchiveContext : MongoContext<CommandRequest>, ICommandRequestArchiveContext {
-        public CommandRequestArchiveContext(IMongoCollectionFactory mongoCollectionFactory, IDataEventBus<CommandRequest> dataEventBus) : base(
+        public CommandRequestArchiveContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(
             mongoCollectionFactory,
-            dataEventBus,
+            eventBus,
             "commandRequestsArchive"
         ) { }
 
-        protected override void DataEvent(DataEventModel<CommandRequest> dataEvent) { }
+        protected override void DataEvent(EventModel eventModel) { }
     }
 }

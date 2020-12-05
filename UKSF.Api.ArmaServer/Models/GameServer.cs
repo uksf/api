@@ -10,35 +10,35 @@ namespace UKSF.Api.ArmaServer.Models {
     }
 
     public record GameServer : MongoObject {
-        [BsonIgnore] public readonly List<int> HeadlessClientProcessIds = new();
-        public string AdminPassword;
-        public int ApiPort;
-        [BsonIgnore] public bool CanLaunch;
-        public GameEnvironment Environment;
-        public string HostName;
-        public List<GameServerMod> Mods = new();
-        public string Name;
-        public int NumberHeadlessClients;
-        public int Order = 0;
-        public string Password;
-        public int Port;
-        [BsonIgnore] public int? ProcessId;
-        public string ProfileName;
-        public List<GameServerMod> ServerMods = new();
-        public GameServerOption ServerOption;
-        [BsonIgnore] public GameServerStatus Status = new();
+        [BsonIgnore] public List<int> HeadlessClientProcessIds { get; set; } = new();
+        public string AdminPassword { get; set; }
+        public int ApiPort { get; set; }
+        [BsonIgnore] public bool CanLaunch { get; set; }
+        public GameEnvironment Environment { get; set; }
+        public string HostName { get; set; }
+        public List<GameServerMod> Mods { get; set; } = new();
+        public string Name { get; set; }
+        public int NumberHeadlessClients { get; set; }
+        public int Order { get; set; } = 0;
+        public string Password { get; set; }
+        public int Port { get; set; }
+        [BsonIgnore] public int? ProcessId { get; set; }
+        public string ProfileName { get; set; }
+        public List<GameServerMod> ServerMods { get; set; } = new();
+        public GameServerOption ServerOption { get; set; }
+        [BsonIgnore] public GameServerStatus Status { get; set; }= new();
 
         public override string ToString() => $"{Name}, {Port}, {ApiPort}, {NumberHeadlessClients}, {ProfileName}, {HostName}, {Password}, {AdminPassword}, {Environment}, {ServerOption}";
     }
 
     public class GameServerStatus {
-        public string Map;
-        public string MaxPlayers;
-        public string Mission;
-        public string ParsedUptime;
-        public int Players;
-        public bool Running;
-        public bool Started;
-        public float Uptime;
+        public string Map { get; set; }
+        public string MaxPlayers { get; set; }
+        public string Mission { get; set; }
+        public string ParsedUptime { get; set; }
+        public int Players { get; set; }
+        public bool Running { get; set; }
+        public bool Started { get; set; }
+        public float Uptime { get; set; }
     }
 }

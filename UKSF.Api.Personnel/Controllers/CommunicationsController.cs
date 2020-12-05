@@ -17,7 +17,7 @@ namespace UKSF.Api.Personnel.Controllers {
     [Route("[controller]")]
     public class CommunicationsController : Controller {
         private readonly IAccountContext _accountContext;
-        private readonly IEventBus<Account> _accountEventBus;
+        private readonly IEventBus _eventBus;
         private readonly IAccountService _accountService;
         private readonly IConfirmationCodeService _confirmationCodeService;
         private readonly ILogger _logger;
@@ -29,14 +29,14 @@ namespace UKSF.Api.Personnel.Controllers {
             IAccountService accountService,
             INotificationsService notificationsService,
             ILogger logger,
-            IEventBus<Account> accountEventBus
+            IEventBus eventBus
         ) {
             _accountContext = accountContext;
             _confirmationCodeService = confirmationCodeService;
             _accountService = accountService;
             _notificationsService = notificationsService;
             _logger = logger;
-            _accountEventBus = accountEventBus;
+            _eventBus = eventBus;
         }
 
         [HttpGet, Authorize]
@@ -104,7 +104,7 @@ namespace UKSF.Api.Personnel.Controllers {
             account.TeamspeakIdentities.Add(double.Parse(teamspeakId));
             await _accountContext.Update(account.Id, Builders<Account>.Update.Set("teamspeakIdentities", account.TeamspeakIdentities));
             account = _accountContext.GetSingle(account.Id);
-            _accountEventBus.Send(account);
+            _eventBus.Send(account);
             _notificationsService.SendTeamspeakNotification(
                 new HashSet<double> { teamspeakId.ToDouble() },
                 $"This teamspeak identity has been linked to the account with email '{account.Email}'\nIf this was not done by you, please contact an admin"
