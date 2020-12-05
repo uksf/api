@@ -20,12 +20,10 @@ namespace UKSF.Api.Auth {
         public static IServiceCollection AddUksfAuth(this IServiceCollection services, IConfiguration configuration) {
             SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Secrets")["tokenKey"]));
 
-            return services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddAuthentication();
+            return services.AddContexts().AddEventHandlers().AddServices().AddAuthentication();
         }
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services;
-
-        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services;
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
 

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 
 namespace UKSF.Api.Shared.Models {
-    public class TeamspeakMessageEventModel {
-        public TeamspeakMessageEventModel(IEnumerable<double> clientDbIds, string message) {
+    public class TeamspeakMessageEventData {
+        public TeamspeakMessageEventData(IEnumerable<double> clientDbIds, string message) {
             ClientDbIds = clientDbIds;
             Message = message;
         }

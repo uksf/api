@@ -2,10 +2,10 @@
 
 namespace UKSF.Api.Personnel.Models {
     public record Rank : MongoObject {
-        public string Abbreviation;
-        public string DiscordRoleId;
-        public string Name;
-        public int Order;
-        public string TeamspeakGroup;
+        public string Abbreviation { get; set; }
+        public string DiscordRoleId { get; set; }
+        public string Name { get; set; }
+        public int Order { get; set; }
+        public string TeamspeakGroup { get; set; }
     }
 }

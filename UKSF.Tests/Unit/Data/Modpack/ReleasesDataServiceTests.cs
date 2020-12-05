@@ -2,6 +2,7 @@
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Shared.Events;
@@ -14,12 +15,12 @@ namespace UKSF.Tests.Unit.Data.Modpack {
 
         public ReleasesDataServiceTests() {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-            Mock<IDataEventBus<ModpackRelease>> mockDataEventBus = new();
+            Mock<IEventBus> mockEventBus = new();
             _mockDataCollection = new Mock<IMongoCollection<ModpackRelease>>();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<ModpackRelease>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            _releasesContext = new ReleasesContext(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            _releasesContext = new ReleasesContext(mockDataCollectionFactory.Object, mockEventBus.Object);
         }
 
         [Fact]

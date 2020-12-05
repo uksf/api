@@ -11,12 +11,12 @@ namespace UKSF.Api.Personnel.Models {
     }
 
     public class Application {
-        [BsonRepresentation(BsonType.ObjectId)] public string ApplicationCommentThread;
-        public DateTime DateAccepted;
-        public DateTime DateCreated;
-        public Dictionary<string, uint> Ratings = new();
-        [BsonRepresentation(BsonType.ObjectId)] public string Recruiter;
-        [BsonRepresentation(BsonType.ObjectId)] public string RecruiterCommentThread;
-        public ApplicationState State = ApplicationState.WAITING;
+        [BsonRepresentation(BsonType.ObjectId)] public string ApplicationCommentThread { get; set; }
+        public DateTime DateAccepted { get; set; }
+        public DateTime DateCreated { get; set; }
+        public Dictionary<string, uint> Ratings { get; set; } = new();
+        [BsonRepresentation(BsonType.ObjectId)] public string Recruiter { get; set; }
+        [BsonRepresentation(BsonType.ObjectId)] public string RecruiterCommentThread { get; set; }
+        public ApplicationState State { get; set; } = ApplicationState.WAITING;
     }
 }

@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Base.Events;
@@ -9,43 +8,36 @@ using UKSF.Api.Personnel.Signalr.Clients;
 using UKSF.Api.Personnel.Signalr.Hubs;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Personnel.EventHandlers {
     public interface ICommentThreadEventHandler : IEventHandler { }
 
     public class CommentThreadEventHandler : ICommentThreadEventHandler {
-        private readonly IDataEventBus<CommentThread> _commentThreadDataEventBus;
         private readonly ICommentThreadService _commentThreadService;
+        private readonly IEventBus _eventBus;
         private readonly IHubContext<CommentThreadHub, ICommentThreadClient> _hub;
         private readonly ILogger _logger;
 
-        public CommentThreadEventHandler(
-            IDataEventBus<CommentThread> commentThreadDataEventBus,
-            IHubContext<CommentThreadHub, ICommentThreadClient> hub,
-            ICommentThreadService commentThreadService,
-            ILogger logger
-        ) {
-            _commentThreadDataEventBus = commentThreadDataEventBus;
+        public CommentThreadEventHandler(IEventBus eventBus, IHubContext<CommentThreadHub, ICommentThreadClient> hub, ICommentThreadService commentThreadService, ILogger logger) {
+            _eventBus = eventBus;
             _hub = hub;
             _commentThreadService = commentThreadService;
             _logger = logger;
         }
 
         public void Init() {
-            _commentThreadDataEventBus.AsObservable().SubscribeWithAsyncNext(HandleEvent, exception => _logger.LogError(exception));
+            _eventBus.AsObservable().SubscribeWithAsyncNext<CommentThreadEventData>(HandleEvent, _logger.LogError);
         }
 
-        private async Task HandleEvent(DataEventModel<CommentThread> dataEventModel) {
-            switch (dataEventModel.Type) {
-                case DataEventType.ADD:
-                    await AddedEvent(dataEventModel.Id, dataEventModel.Data as Comment);
+        private async Task HandleEvent(EventModel eventModel, CommentThreadEventData commentThreadEventData) {
+            switch (eventModel.EventType) {
+                case EventType.ADD:
+                    await AddedEvent(commentThreadEventData.CommentThreadId, commentThreadEventData.Comment);
                     break;
-                case DataEventType.DELETE:
-                    await DeletedEvent(dataEventModel.Id, dataEventModel.Data as Comment);
+                case EventType.DELETE:
+                    await DeletedEvent(commentThreadEventData.CommentThreadId, commentThreadEventData.Comment);
                     break;
-                case DataEventType.UPDATE: break;
-                default:                   throw new ArgumentOutOfRangeException(nameof(dataEventModel));
+                case EventType.UPDATE: break;
             }
         }
 

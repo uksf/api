@@ -80,13 +80,13 @@ namespace UKSF.Api.Personnel.Controllers {
             return Ok(new { canPost });
         }
 
-        [HttpPut("{id}"), Authorize]
-        public async Task<IActionResult> AddComment(string id, [FromBody] Comment comment) {
+        [HttpPut("{commentThreadId}"), Authorize]
+        public async Task<IActionResult> AddComment(string commentThreadId, [FromBody] Comment comment) {
             comment.Id = ObjectId.GenerateNewId().ToString();
             comment.Timestamp = DateTime.Now;
             comment.Author = _httpContextService.GetUserId();
-            await _commentThreadService.InsertComment(id, comment);
-            CommentThread thread = _commentThreadContext.GetSingle(id);
+            await _commentThreadService.InsertComment(commentThreadId, comment);
+            CommentThread thread = _commentThreadContext.GetSingle(commentThreadId);
             IEnumerable<string> participants = _commentThreadService.GetCommentThreadParticipants(thread.Id);
             foreach (string objectId in participants.Where(x => x != comment.Author)) {
                 _notificationsService.Add( // TODO: Set correct link when comment thread is between /application and /recruitment/id

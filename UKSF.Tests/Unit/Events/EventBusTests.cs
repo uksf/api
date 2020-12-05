@@ -1,6 +1,7 @@
 ﻿using System;
 using FluentAssertions;
 using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Shared.Models;
 using UKSF.Api.Tests.Common;
 using Xunit;
@@ -8,13 +9,13 @@ using Xunit;
 namespace UKSF.Tests.Unit.Events {
     public class EventBusTests {
         [Fact]
-        public void Should_return_observable() {
-            EventBus<DataEventModel<TestDataModel>> eventBus = new();
+        public void When_getting_event_bus_observable() {
+            EventBus eventBus = new();
 
-            IObservable<DataEventModel<TestDataModel>> subject = eventBus.AsObservable();
+            IObservable<EventModel> subject = eventBus.AsObservable();
 
             subject.Should().NotBeNull();
-            subject.Should().BeAssignableTo<IObservable<DataEventModel<TestDataModel>>>();
+            subject.Should().BeAssignableTo<IObservable<EventModel>>();
         }
     }
 }

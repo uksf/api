@@ -4,7 +4,7 @@ using UKSF.Api.Shared.Models;
 using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Shared.Events {
-    public interface ILogger : IEventBus<BasicLog> {
+    public interface ILogger {
         void LogInfo(string message);
         void LogWarning(string message);
         void LogError(string message);
@@ -15,10 +15,14 @@ namespace UKSF.Api.Shared.Events {
         void LogDiscordEvent(DiscordUserEventType discordUserEventType, string name, string userId, string message);
     }
 
-    public class Logger : EventBus<BasicLog>, ILogger {
+    public class Logger : ILogger {
         private readonly IHttpContextService _httpContextService;
+        private readonly IEventBus _eventBus;
 
-        public Logger(IHttpContextService httpContextService) => _httpContextService = httpContextService;
+        public Logger(IHttpContextService httpContextService, IEventBus eventBus) {
+            _httpContextService = httpContextService;
+            _eventBus = eventBus;
+        }
 
         public void LogInfo(string message) {
             Log(new BasicLog(message, LogLevel.INFO));
@@ -54,7 +58,7 @@ namespace UKSF.Api.Shared.Events {
         }
 
         private void Log(BasicLog log) {
-            Send(log);
+            _eventBus.Send(log);
         }
     }
 }

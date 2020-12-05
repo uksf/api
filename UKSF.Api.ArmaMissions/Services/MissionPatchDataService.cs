@@ -68,7 +68,7 @@ namespace UKSF.Api.ArmaMissions.Services {
             MissionPatchData.Instance.OrderedUnits.Add(parent);
             InsertUnitChildren(MissionPatchData.Instance.OrderedUnits, parent);
             MissionPatchData.Instance.OrderedUnits.RemoveAll(x => !MissionDataResolver.IsUnitPermanent(x) && x.Members.Count == 0 || string.IsNullOrEmpty(x.Callsign));
-            MissionDataResolver.ResolveSpecialUnits(ref MissionPatchData.Instance.OrderedUnits);
+            MissionDataResolver.ResolveSpecialUnits(MissionPatchData.Instance.OrderedUnits);
         }
 
         private static void InsertUnitChildren(List<MissionUnit> newUnits, MissionUnit parent) {

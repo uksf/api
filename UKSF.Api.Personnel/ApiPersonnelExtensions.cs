@@ -16,7 +16,7 @@ namespace UKSF.Api.Personnel {
     public static class ApiPersonnelExtensions {
         public static IServiceCollection AddUksfPersonnel(this IServiceCollection services) =>
             services.AddContexts()
-                    .AddEventBuses()
+
                     .AddEventHandlers()
                     .AddServices()
                     .AddActions()
@@ -31,17 +31,6 @@ namespace UKSF.Api.Personnel {
                     .AddSingleton<IRanksContext, RanksContext>()
                     .AddSingleton<IRolesContext, RolesContext>()
                     .AddSingleton<IUnitsContext, UnitsContext>();
-
-        private static IServiceCollection AddEventBuses(this IServiceCollection services) =>
-            services.AddSingleton<IDataEventBus<Account>, DataEventBus<Account>>()
-                    .AddSingleton<IDataEventBus<CommentThread>, DataEventBus<CommentThread>>()
-                    .AddSingleton<IDataEventBus<ConfirmationCode>, DataEventBus<ConfirmationCode>>()
-                    .AddSingleton<IDataEventBus<Loa>, DataEventBus<Loa>>()
-                    .AddSingleton<IDataEventBus<Notification>, DataEventBus<Notification>>()
-                    .AddSingleton<IDataEventBus<Rank>, DataEventBus<Rank>>()
-                    .AddSingleton<IDataEventBus<Role>, DataEventBus<Role>>()
-                    .AddSingleton<IDataEventBus<Unit>, DataEventBus<Unit>>()
-                    .AddSingleton<IEventBus<Account>, EventBus<Account>>();
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) =>
             services.AddSingleton<IAccountDataEventHandler, AccountDataEventHandler>()

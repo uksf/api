@@ -151,7 +151,7 @@ namespace UKSF.Api.ArmaMissions.Services {
             }
 
             string curatorsMaxString = curatorsMaxLine.Split("=")[1].RemoveSpaces().Replace(";", "");
-            if (!int.TryParse(curatorsMaxString, out _mission.MaxCurators)) {
+            if (!int.TryParse(curatorsMaxString, out int maxCurators)) {
                 _reports.Add(
                     new MissionPatchingReport(
                         "Using hardcoded setting 'uksf_curator_curatorsMax'",
@@ -160,6 +160,8 @@ namespace UKSF.Api.ArmaMissions.Services {
                         "The hardcoded value (5) will be used instead."
                     )
                 );
+            } else {
+                _mission.MaxCurators = maxCurators;
             }
         }
 

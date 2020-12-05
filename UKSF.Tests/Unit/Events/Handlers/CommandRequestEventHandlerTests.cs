@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Command.EventHandlers;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Signalr.Clients;
@@ -13,7 +15,7 @@ using Xunit;
 namespace UKSF.Tests.Unit.Events.Handlers {
     public class CommandRequestEventHandlerTests {
         private readonly CommandRequestEventHandler _commandRequestEventHandler;
-        private readonly DataEventBus<CommandRequest> _dataEventBus;
+        private readonly IEventBus _eventBus;
         private readonly Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>> _mockHub;
         private readonly Mock<ILogger> _mockLoggingService;
 
@@ -22,22 +24,11 @@ namespace UKSF.Tests.Unit.Events.Handlers {
             _mockLoggingService = new Mock<ILogger>();
             _mockHub = new Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>>();
 
-            _dataEventBus = new DataEventBus<CommandRequest>();
+            _eventBus = new EventBus();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommandRequest>(It.IsAny<string>()));
 
-            _commandRequestEventHandler = new CommandRequestEventHandler(_dataEventBus, _mockHub.Object, _mockLoggingService.Object);
-        }
-
-        [Fact]
-        public void ShouldLogOnException() {
-            _mockLoggingService.Setup(x => x.LogError(It.IsAny<Exception>()));
-
-            _commandRequestEventHandler.Init();
-
-            _dataEventBus.Send(new DataEventModel<CommandRequest> { Type = (DataEventType) 5 });
-
-            _mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Once);
+            _commandRequestEventHandler = new CommandRequestEventHandler(_eventBus, _mockHub.Object, _mockLoggingService.Object);
         }
 
         [Fact]
@@ -51,7 +42,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _commandRequestEventHandler.Init();
 
-            _dataEventBus.Send(new DataEventModel<CommandRequest> { Type = DataEventType.DELETE });
+            _eventBus.Send(new EventModel(EventType.DELETE, null));
 
             mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Never);
         }
@@ -67,8 +58,8 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _commandRequestEventHandler.Init();
 
-            _dataEventBus.Send(new DataEventModel<CommandRequest> { Type = DataEventType.ADD });
-            _dataEventBus.Send(new DataEventModel<CommandRequest> { Type = DataEventType.UPDATE });
+            _eventBus.Send(new EventModel(EventType.ADD, null));
+            _eventBus.Send(new EventModel(EventType.UPDATE, null));
 
             mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Exactly(2));
         }

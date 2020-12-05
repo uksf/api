@@ -11,7 +11,7 @@ namespace UKSF.Api.Shared {
         public static IServiceCollection AddUksfShared(this IServiceCollection services) =>
             services
                 .AddContexts()
-                    .AddEventBuses()
+
                     .AddEventHandlers()
                     .AddServices()
                     .AddTransient<IHttpContextService, HttpContextService>()
@@ -25,15 +25,6 @@ namespace UKSF.Api.Shared {
                     .AddSingleton<ILauncherLogContext, LauncherLogContext>()
                     .AddSingleton<IDiscordLogContext, DiscordLogContext>()
                     .AddSingleton<ISchedulerContext, SchedulerContext>();
-
-        private static IServiceCollection AddEventBuses(this IServiceCollection services) =>
-            services.AddSingleton<IDataEventBus<BasicLog>, DataEventBus<BasicLog>>()
-                    .AddSingleton<IDataEventBus<AuditLog>, DataEventBus<AuditLog>>()
-                    .AddSingleton<IDataEventBus<HttpErrorLog>, DataEventBus<HttpErrorLog>>()
-                    .AddSingleton<IDataEventBus<LauncherLog>, DataEventBus<LauncherLog>>()
-                    .AddSingleton<IDataEventBus<DiscordLog>, DataEventBus<DiscordLog>>()
-                    .AddSingleton<IDataEventBus<ScheduledJob>, DataEventBus<ScheduledJob>>()
-                    .AddSingleton<IEventBus<TeamspeakMessageEventModel>, EventBus<TeamspeakMessageEventModel>>();
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
 

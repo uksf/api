@@ -1,5 +1,6 @@
 ﻿using Moq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Launcher.Context;
@@ -17,14 +18,14 @@ namespace UKSF.Tests.Unit.Data {
         public void Should_create_collections() {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
 
-            AccountContext unused1 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<Account>>().Object);
-            CommandRequestContext unused2 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<CommandRequest>>().Object);
-            CommandRequestArchiveContext unused3 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<CommandRequest>>().Object);
-            ConfirmationCodeContext unused4 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<ConfirmationCode>>().Object);
-            LauncherFileContext unused5 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<LauncherFile>>().Object);
-            LoaContext unused6 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<Loa>>().Object);
-            NotificationsContext unused7 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<Notification>>().Object);
-            SchedulerContext unused8 = new(mockDataCollectionFactory.Object, new Mock<IDataEventBus<ScheduledJob>>().Object);
+            AccountContext unused1 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
+            CommandRequestContext unused2 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
+            CommandRequestArchiveContext unused3 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
+            ConfirmationCodeContext unused4 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
+            LauncherFileContext unused5 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
+            LoaContext unused6 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
+            NotificationsContext unused7 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
+            SchedulerContext unused8 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
 
             mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<Account>(It.IsAny<string>()), Times.Once);
             mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<CommandRequest>(It.IsAny<string>()), Times.Exactly(2));

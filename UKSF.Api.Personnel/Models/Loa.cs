@@ -11,13 +11,13 @@ namespace UKSF.Api.Personnel.Models {
     }
 
     public record Loa : MongoObject {
-        public bool Emergency;
-        public DateTime End;
-        public bool Late;
-        public string Reason;
-        [BsonRepresentation(BsonType.ObjectId)] public string Recipient;
-        public DateTime Start;
-        public LoaReviewState State;
-        public DateTime Submitted;
+        public bool Emergency { get; set; }
+        public DateTime End { get; set; }
+        public bool Late { get; set; }
+        public string Reason { get; set; }
+        [BsonRepresentation(BsonType.ObjectId)] public string Recipient { get; set; }
+        public DateTime Start { get; set; }
+        public LoaReviewState State { get; set; }
+        public DateTime Submitted { get; set; }
     }
 }

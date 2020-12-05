@@ -12,17 +12,17 @@ namespace UKSF.Api.Shared.Extensions {
         private static List<Change> GetChanges<T>(this T original, T updated) {
             List<Change> changes = new();
             Type type = original.GetType();
-            foreach (FieldInfo fieldInfo in type.GetFields()) {
-                string name = fieldInfo.Name;
-                object originalValue = fieldInfo.GetValue(original);
-                object updatedValue = fieldInfo.GetValue(updated);
+            foreach (PropertyInfo propertyInfo in type.GetProperties()) {
+                string name = propertyInfo.Name;
+                object originalValue = propertyInfo.GetValue(original);
+                object updatedValue = propertyInfo.GetValue(updated);
                 if (originalValue == null && updatedValue == null) continue;
                 if (DeepEquals(originalValue, updatedValue)) continue;
 
-                if (fieldInfo.FieldType.IsClass && !fieldInfo.FieldType.IsSerializable) {
+                if (propertyInfo.PropertyType.IsClass && !propertyInfo.PropertyType.IsSerializable) {
                     // Class, recurse
                     changes.Add(new Change { Type = ChangeType.CLASS, Name = name, InnerChanges = GetChanges(originalValue, updatedValue) });
-                } else if (fieldInfo.FieldType != typeof(string) && updatedValue is IEnumerable originalListValue && originalValue is IEnumerable updatedListValue) {
+                } else if (propertyInfo.PropertyType != typeof(string) && updatedValue is IEnumerable originalListValue && originalValue is IEnumerable updatedListValue) {
                     // List, get list changes
                     changes.Add(new Change { Type = ChangeType.LIST, Name = name, InnerChanges = GetListChanges(originalListValue, updatedListValue) });
                 } else {

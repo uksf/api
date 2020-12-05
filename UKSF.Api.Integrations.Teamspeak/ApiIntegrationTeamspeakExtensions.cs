@@ -11,16 +11,13 @@ using UKSF.Api.Teamspeak.Signalr.Hubs;
 namespace UKSF.Api.Teamspeak {
     public static class ApiIntegrationTeamspeakExtensions {
         public static IServiceCollection AddUksfIntegrationTeamspeak(this IServiceCollection services) =>
-            services.AddContexts().AddEventBuses().AddEventHandlers().AddServices().AddTransient<IActionTeamspeakSnapshot, ActionTeamspeakSnapshot>();
+            services.AddContexts().AddEventHandlers().AddServices().AddTransient<IActionTeamspeakSnapshot, ActionTeamspeakSnapshot>();
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services;
 
-        private static IServiceCollection AddEventBuses(this IServiceCollection services) => services.AddSingleton<IEventBus<SignalrEventModel>, EventBus<SignalrEventModel>>();
-
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) =>
             services.AddSingleton<ITeamspeakEventHandler, TeamspeakEventHandler>()
-                    .AddSingleton<ITeamspeakAccountEventHandler, TeamspeakAccountEventHandler>()
-                    .AddSingleton<ITeamspeakMessageEventHandler, TeamspeakMessageEventHandler>();
+                    .AddSingleton<ITeamspeakServerEventHandler, TeamspeakServerEventHandler>();
 
         private static IServiceCollection AddServices(this IServiceCollection services) =>
             services.AddSingleton<ITeamspeakService, TeamspeakService>()

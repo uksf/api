@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Events;
@@ -9,7 +10,7 @@ namespace UKSF.Api.Modpack.Context {
     public interface IReleasesContext : IMongoContext<ModpackRelease>, ICachedMongoContext { }
 
     public class ReleasesContext : CachedMongoContext<ModpackRelease>, IReleasesContext {
-        public ReleasesContext(IMongoCollectionFactory mongoCollectionFactory, IDataEventBus<ModpackRelease> dataEventBus) : base(mongoCollectionFactory, dataEventBus, "modpackReleases") { }
+        public ReleasesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "modpackReleases") { }
 
         protected override void SetCache(IEnumerable<ModpackRelease> newCollection) {
             lock (LockObject) {

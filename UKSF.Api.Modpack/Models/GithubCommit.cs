@@ -1,10 +1,10 @@
 ﻿namespace UKSF.Api.Modpack.Models {
     public class GithubCommit {
-        public string After;
-        public string Author;
-        public string BaseBranch;
-        public string Before;
-        public string Branch;
-        public string Message;
+        public string After { get; set; }
+        public string Author { get; set; }
+        public string BaseBranch { get; set; }
+        public string Before { get; set; }
+        public string Branch { get; set; }
+        public string Message { get; set; }
     }
 }

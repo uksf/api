@@ -29,14 +29,12 @@ namespace UKSF.Api.Integrations.Teamspeak.Tests {
 
         [Fact]
         public void When_resolving_event_handlers() {
-            Services.AddTransient<TeamspeakAccountEventHandler>();
             Services.AddTransient<TeamspeakEventHandler>();
-            Services.AddTransient<TeamspeakMessageEventHandler>();
+            Services.AddTransient<TeamspeakServerEventHandler>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();
 
-            serviceProvider.GetRequiredService<TeamspeakAccountEventHandler>().Should().NotBeNull();
             serviceProvider.GetRequiredService<TeamspeakEventHandler>().Should().NotBeNull();
-            serviceProvider.GetRequiredService<TeamspeakMessageEventHandler>().Should().NotBeNull();
+            serviceProvider.GetRequiredService<TeamspeakServerEventHandler>().Should().NotBeNull();
         }
 
         [Fact]

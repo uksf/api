@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Discord.Services;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Events;
@@ -9,21 +10,21 @@ namespace UKSF.Api.Discord.EventHandlers {
     public interface IDiscordAccountEventHandler : IEventHandler { }
 
     public class DiscordAccountEventHandler : IDiscordAccountEventHandler {
-        private readonly IEventBus<Account> _accountEventBus;
         private readonly IDiscordService _discordService;
+        private readonly IEventBus _eventBus;
         private readonly ILogger _logger;
 
-        public DiscordAccountEventHandler(IEventBus<Account> accountEventBus, ILogger logger, IDiscordService discordService) {
-            _accountEventBus = accountEventBus;
+        public DiscordAccountEventHandler(IEventBus eventBus, ILogger logger, IDiscordService discordService) {
+            _eventBus = eventBus;
             _logger = logger;
             _discordService = discordService;
         }
 
         public void Init() {
-            _accountEventBus.AsObservable().SubscribeWithAsyncNext(HandleAccountEvent, exception => _logger.LogError(exception));
+            _eventBus.AsObservable().SubscribeWithAsyncNext<Account>(HandleAccountEvent, _logger.LogError);
         }
 
-        private async Task HandleAccountEvent(Account account) {
+        private async Task HandleAccountEvent(EventModel _, Account account) {
             await _discordService.UpdateAccount(account);
         }
     }

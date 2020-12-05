@@ -3,6 +3,8 @@ using FluentAssertions;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.EventHandlers;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Signalr.Clients;
@@ -13,7 +15,7 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {
     public class NotificationsEventHandlerTests {
-        private readonly DataEventBus<Notification> _dataEventBus;
+        private readonly IEventBus _eventBus;
         private readonly Mock<IHubContext<NotificationHub, INotificationsClient>> _mockHub;
         private readonly Mock<ILogger> _mockLoggingService;
         private readonly NotificationsEventHandler _notificationsEventHandler;
@@ -23,11 +25,11 @@ namespace UKSF.Tests.Unit.Events.Handlers {
             _mockLoggingService = new Mock<ILogger>();
             _mockHub = new Mock<IHubContext<NotificationHub, INotificationsClient>>();
 
-            _dataEventBus = new DataEventBus<Notification>();
+            _eventBus = new EventBus();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<Notification>(It.IsAny<string>()));
 
-            _notificationsEventHandler = new NotificationsEventHandler(_dataEventBus, _mockHub.Object, _mockLoggingService.Object);
+            _notificationsEventHandler = new NotificationsEventHandler(_eventBus, _mockHub.Object, _mockLoggingService.Object);
         }
 
         [Fact]
@@ -42,7 +44,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _notificationsEventHandler.Init();
 
-            _dataEventBus.Send(new DataEventModel<Notification> { Type = DataEventType.ADD });
+            _eventBus.Send(new EventModel(EventType.ADD, new ContextEventData<Notification>(string.Empty, null)));
 
             _mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Once);
         }
@@ -58,8 +60,8 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _notificationsEventHandler.Init();
 
-            _dataEventBus.Send(new DataEventModel<Notification> { Type = DataEventType.UPDATE });
-            _dataEventBus.Send(new DataEventModel<Notification> { Type = DataEventType.DELETE });
+            _eventBus.Send(new EventModel(EventType.UPDATE, new ContextEventData<Notification>(string.Empty, null)));
+            _eventBus.Send(new EventModel(EventType.DELETE, new ContextEventData<Notification>(string.Empty, null)));
 
             mockClient.Verify(x => x.ReceiveNotification(It.IsAny<Notification>()), Times.Never);
         }
@@ -75,7 +77,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _notificationsEventHandler.Init();
 
-            _dataEventBus.Send(new DataEventModel<Notification> { Type = DataEventType.ADD, Data = new Notification() });
+            _eventBus.Send(new EventModel(EventType.ADD, new ContextEventData<Notification>(string.Empty, new Notification())));
 
             mockClient.Verify(x => x.ReceiveNotification(It.IsAny<Notification>()), Times.Once);
         }
@@ -92,7 +94,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _notificationsEventHandler.Init();
 
-            _dataEventBus.Send(new DataEventModel<Notification> { Type = DataEventType.ADD, Data = new Notification { Owner = "1" } });
+            _eventBus.Send(new EventModel(EventType.ADD, new ContextEventData<Notification>(string.Empty, new Notification() { Owner = "1" })));
 
             subject.Should().Be("1");
         }

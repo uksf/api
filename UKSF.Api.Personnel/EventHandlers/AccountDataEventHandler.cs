@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Signalr.Clients;
 using UKSF.Api.Personnel.Signalr.Hubs;
@@ -12,32 +13,30 @@ namespace UKSF.Api.Personnel.EventHandlers {
     public interface IAccountDataEventHandler : IEventHandler { }
 
     public class AccountDataEventHandler : IAccountDataEventHandler {
-        private readonly IDataEventBus<Account> _accountDataEventBus;
+        private readonly IEventBus _eventBus;
         private readonly IHubContext<AccountHub, IAccountClient> _hub;
         private readonly ILogger _logger;
-        private readonly IDataEventBus<Unit> _unitDataEventBus;
 
-        public AccountDataEventHandler(IDataEventBus<Account> accountDataEventBus, IDataEventBus<Unit> unitDataEventBus, IHubContext<AccountHub, IAccountClient> hub, ILogger logger) {
-            _accountDataEventBus = accountDataEventBus;
-            _unitDataEventBus = unitDataEventBus;
+        public AccountDataEventHandler(IEventBus eventBus, IHubContext<AccountHub, IAccountClient> hub, ILogger logger) {
+            _eventBus = eventBus;
             _hub = hub;
             _logger = logger;
         }
 
         public void Init() {
-            _accountDataEventBus.AsObservable().SubscribeWithAsyncNext(HandleAccountsEvent, exception => _logger.LogError(exception));
-            _unitDataEventBus.AsObservable().SubscribeWithAsyncNext(HandleUnitsEvent, exception => _logger.LogError(exception));
+            _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<Account>>(HandleAccountEvent, _logger.LogError);
+            _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<Unit>>(HandleUnitEvent, _logger.LogError);
         }
 
-        private async Task HandleAccountsEvent(DataEventModel<Account> dataEventModel) {
-            if (dataEventModel.Type == DataEventType.UPDATE) {
-                await UpdatedEvent(dataEventModel.Id);
+        private async Task HandleAccountEvent(EventModel eventModel, ContextEventData<Account> contextEventData) {
+            if (eventModel.EventType == EventType.UPDATE) {
+                await UpdatedEvent(contextEventData.Id);
             }
         }
 
-        private async Task HandleUnitsEvent(DataEventModel<Unit> dataEventModel) {
-            if (dataEventModel.Type == DataEventType.UPDATE) {
-                await UpdatedEvent(dataEventModel.Id);
+        private async Task HandleUnitEvent(EventModel eventModel, ContextEventData<Unit> contextEventData) {
+            if (eventModel.EventType == EventType.UPDATE) {
+                await UpdatedEvent(contextEventData.Id);
             }
         }
 

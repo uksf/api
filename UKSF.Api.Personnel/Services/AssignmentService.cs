@@ -24,7 +24,7 @@ namespace UKSF.Api.Personnel.Services {
     public class AssignmentService : IAssignmentService {
         public const string REMOVE_FLAG = "REMOVE";
         private readonly IAccountContext _accountContext;
-        private readonly IEventBus<Account> _accountEventBus;
+        private readonly IEventBus _eventBus;
         private readonly IHubContext<AccountHub, IAccountClient> _accountHub;
         private readonly IDisplayNameService _displayNameService;
         private readonly IRanksService _ranksService;
@@ -40,7 +40,7 @@ namespace UKSF.Api.Personnel.Services {
             IUnitsService unitsService,
             IDisplayNameService displayNameService,
             IHubContext<AccountHub, IAccountClient> accountHub,
-            IEventBus<Account> accountEventBus
+            IEventBus eventBus
         ) {
             _accountContext = accountContext;
             _unitsContext = unitsContext;
@@ -49,7 +49,7 @@ namespace UKSF.Api.Personnel.Services {
             _unitsService = unitsService;
             _displayNameService = displayNameService;
             _accountHub = accountHub;
-            _accountEventBus = accountEventBus;
+            _eventBus = eventBus;
         }
 
         public async Task<Notification> UpdateUnitRankAndRole(string id, string unitString = "", string role = "", string rankString = "", string notes = "", string message = "", string reason = "") {
@@ -123,7 +123,7 @@ namespace UKSF.Api.Personnel.Services {
         // TODO: teamspeak and discord should probably be updated for account update events, or a separate assignment event bus could be used
         public async Task UpdateGroupsAndRoles(string id) {
             Account account = _accountContext.GetSingle(id);
-            _accountEventBus.Send(account);
+            _eventBus.Send(account);
             await _accountHub.Clients.Group(id).ReceiveAccountUpdate();
         }
 

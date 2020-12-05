@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using MongoDB.Driver;
 using MoreLinq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
-using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Shared.Context {
@@ -16,11 +16,10 @@ namespace UKSF.Api.Shared.Context {
     }
 
     public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICachedMongoContext where T : MongoObject {
-        private readonly IDataEventBus<T> _dataEventBus;
+        private readonly IEventBus _eventBus;
         protected readonly object LockObject = new();
 
-        protected CachedMongoContext(IMongoCollectionFactory mongoCollectionFactory, IDataEventBus<T> dataEventBus, string collectionName) : base(mongoCollectionFactory, collectionName) =>
-            _dataEventBus = dataEventBus;
+        protected CachedMongoContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, string collectionName) : base(mongoCollectionFactory, collectionName) => _eventBus = eventBus;
 
         public List<T> Cache { get; protected set; }
 
@@ -57,7 +56,7 @@ namespace UKSF.Api.Shared.Context {
             if (Cache == null) Get();
             await base.Add(item);
             SetCache(Cache.Concat(new[] { item }));
-            DataAddEvent(item.Id, item);
+            DataAddEvent(item);
         }
 
         public override async Task Update(string id, Expression<Func<T, object>> fieldSelector, object value) {
@@ -125,20 +124,20 @@ namespace UKSF.Api.Shared.Context {
             }
         }
 
-        private void DataAddEvent(string id, T item) {
-            DataEvent(EventModelFactory.CreateDataEvent<T>(DataEventType.ADD, id, item));
+        private void DataAddEvent(T item) {
+            DataEvent(new EventModel(EventType.ADD, new ContextEventData<T>(string.Empty, item)));
         }
 
         private void DataUpdateEvent(string id) {
-            DataEvent(EventModelFactory.CreateDataEvent<T>(DataEventType.UPDATE, id));
+            DataEvent(new EventModel(EventType.UPDATE, new ContextEventData<T>(id, null)));
         }
 
         private void DataDeleteEvent(string id) {
-            DataEvent(EventModelFactory.CreateDataEvent<T>(DataEventType.DELETE, id));
+            DataEvent(new EventModel(EventType.DELETE, new ContextEventData<T>(id, null)));
         }
 
-        protected virtual void DataEvent(DataEventModel<T> dataEvent) {
-            _dataEventBus.Send(dataEvent);
+        protected virtual void DataEvent(EventModel eventModel) {
+            _eventBus.Send(eventModel);
         }
     }
 }

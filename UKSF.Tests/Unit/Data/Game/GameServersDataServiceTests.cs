@@ -4,6 +4,7 @@ using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Shared.Events;
 using Xunit;
 
@@ -14,12 +15,12 @@ namespace UKSF.Tests.Unit.Data.Game {
 
         public GameServersDataServiceTests() {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-            Mock<IDataEventBus<GameServer>> mockDataEventBus = new();
+            Mock<IEventBus> mockEventBus = new();
             _mockDataCollection = new Mock<IMongoCollection<GameServer>>();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<GameServer>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            _gameServersContext = new GameServersContext(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            _gameServersContext = new GameServersContext(mockDataCollectionFactory.Object, mockEventBus.Object);
         }
 
         [Fact]

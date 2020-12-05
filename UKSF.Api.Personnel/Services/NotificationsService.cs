@@ -28,7 +28,7 @@ namespace UKSF.Api.Personnel.Services {
         private readonly INotificationsContext _notificationsContext;
         private readonly IHubContext<NotificationHub, INotificationsClient> _notificationsHub;
         private readonly IObjectIdConversionService _objectIdConversionService;
-        private readonly IEventBus<TeamspeakMessageEventModel> _teamspeakMessageEventBus;
+        private readonly IEventBus _eventBus;
 
         public NotificationsService(
             IAccountContext accountContext,
@@ -37,7 +37,7 @@ namespace UKSF.Api.Personnel.Services {
             IHubContext<NotificationHub, INotificationsClient> notificationsHub,
             IHttpContextService httpContextService,
             IObjectIdConversionService objectIdConversionService,
-            IEventBus<TeamspeakMessageEventModel> teamspeakMessageEventBus
+            IEventBus eventBus
         ) {
             _accountContext = accountContext;
             _notificationsContext = notificationsContext;
@@ -45,7 +45,7 @@ namespace UKSF.Api.Personnel.Services {
             _notificationsHub = notificationsHub;
             _httpContextService = httpContextService;
             _objectIdConversionService = objectIdConversionService;
-            _teamspeakMessageEventBus = teamspeakMessageEventBus;
+            _eventBus = eventBus;
         }
 
         public void SendTeamspeakNotification(Account account, string rawMessage) {
@@ -57,7 +57,7 @@ namespace UKSF.Api.Personnel.Services {
 
         public void SendTeamspeakNotification(IEnumerable<double> clientDbIds, string rawMessage) {
             rawMessage = rawMessage.Replace("<a href='", "[url]").Replace("'>", "[/url]");
-            _teamspeakMessageEventBus.Send(new TeamspeakMessageEventModel(clientDbIds, rawMessage));
+            _eventBus.Send(new TeamspeakMessageEventData(clientDbIds, rawMessage));
         }
 
         public IEnumerable<Notification> GetNotificationsForContext() {

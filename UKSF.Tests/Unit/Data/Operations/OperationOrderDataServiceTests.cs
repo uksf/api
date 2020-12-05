@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Shared.Events;
@@ -15,12 +16,12 @@ namespace UKSF.Tests.Unit.Data.Operations {
 
         public OperationOrderDataServiceTests() {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-            Mock<IDataEventBus<Opord>> mockDataEventBus = new();
+            Mock<IEventBus> mockEventBus = new();
             _mockDataCollection = new Mock<IMongoCollection<Opord>>();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<Opord>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            _operationOrderContext = new OperationOrderContext(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            _operationOrderContext = new OperationOrderContext(mockDataCollectionFactory.Object, mockEventBus.Object);
         }
 
         [Fact]

@@ -2,6 +2,7 @@
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Base.Context;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Events;
@@ -13,7 +14,7 @@ namespace UKSF.Tests.Unit.Data.Units {
         [Fact]
         public void Should_get_collection_in_order() {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-            Mock<IDataEventBus<UksfUnit>> mockDataEventBus = new();
+            Mock<IEventBus> mockEventBus = new();
             Mock<IMongoCollection<UksfUnit>> mockDataCollection = new();
 
             UksfUnit rank1 = new() { Name = "Air Troop", Order = 2 };
@@ -23,7 +24,7 @@ namespace UKSF.Tests.Unit.Data.Units {
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<UksfUnit>(It.IsAny<string>())).Returns(mockDataCollection.Object);
             mockDataCollection.Setup(x => x.Get()).Returns(new List<UksfUnit> { rank1, rank2, rank3 });
 
-            UnitsContext unitsContext = new(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            UnitsContext unitsContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
 
             IEnumerable<UksfUnit> subject = unitsContext.Get();
 
@@ -33,7 +34,7 @@ namespace UKSF.Tests.Unit.Data.Units {
         [Fact]
         public void ShouldGetOrderedCollectionFromPredicate() {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-            Mock<IDataEventBus<UksfUnit>> mockDataEventBus = new();
+            Mock<IEventBus> mockEventBus = new();
             Mock<IMongoCollection<UksfUnit>> mockDataCollection = new();
 
             UksfUnit rank1 = new() { Name = "Air Troop", Order = 3, Branch = UnitBranch.COMBAT };
@@ -44,7 +45,7 @@ namespace UKSF.Tests.Unit.Data.Units {
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<UksfUnit>(It.IsAny<string>())).Returns(mockDataCollection.Object);
             mockDataCollection.Setup(x => x.Get()).Returns(new List<UksfUnit> { rank1, rank2, rank3, rank4 });
 
-            UnitsContext unitsContext = new(mockDataCollectionFactory.Object, mockDataEventBus.Object);
+            UnitsContext unitsContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
 
             IEnumerable<UksfUnit> subject = unitsContext.Get(x => x.Branch == UnitBranch.COMBAT);
 

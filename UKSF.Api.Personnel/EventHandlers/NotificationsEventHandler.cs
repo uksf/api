@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Base.Events;
+using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Signalr.Clients;
 using UKSF.Api.Personnel.Signalr.Hubs;
@@ -14,21 +15,21 @@ namespace UKSF.Api.Personnel.EventHandlers {
     public class NotificationsEventHandler : INotificationsEventHandler {
         private readonly IHubContext<NotificationHub, INotificationsClient> _hub;
         private readonly ILogger _logger;
-        private readonly IDataEventBus<Notification> _notificationDataEventBus;
+        private readonly IEventBus _eventBus;
 
-        public NotificationsEventHandler(IDataEventBus<Notification> notificationDataEventBus, IHubContext<NotificationHub, INotificationsClient> hub, ILogger logger) {
-            _notificationDataEventBus = notificationDataEventBus;
+        public NotificationsEventHandler(IEventBus eventBus, IHubContext<NotificationHub, INotificationsClient> hub, ILogger logger) {
+            _eventBus = eventBus;
             _hub = hub;
             _logger = logger;
         }
 
         public void Init() {
-            _notificationDataEventBus.AsObservable().SubscribeWithAsyncNext(HandleEvent, exception => _logger.LogError(exception));
+            _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<Notification>>(HandleEvent, _logger.LogError);
         }
 
-        private async Task HandleEvent(DataEventModel<Notification> dataEventModel) {
-            if (dataEventModel.Type == DataEventType.ADD) {
-                await AddedEvent(dataEventModel.Data as Notification);
+        private async Task HandleEvent(EventModel eventModel, ContextEventData<Notification> contextEventData) {
+            if (eventModel.EventType == EventType.ADD) {
+                await AddedEvent(contextEventData.Data);
             }
         }
 
