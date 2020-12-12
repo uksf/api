@@ -3,12 +3,10 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.EventHandlers;
-using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.ScheduledActions;
 using UKSF.Api.Modpack.Services;
 using UKSF.Api.Modpack.Services.BuildProcess;
 using UKSF.Api.Modpack.Signalr.Hubs;
-using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Modpack {
     public static class ApiModpackExtensions {

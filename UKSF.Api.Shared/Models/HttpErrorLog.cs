@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace UKSF.Api.Shared.Models {
-    public record HttpErrorLog : BasicLog {
+    public class HttpErrorLog : BasicLog {
         public HttpErrorLog(Exception exception) {
             Exception = exception.ToString();
             Message = exception.GetBaseException().Message;
@@ -15,10 +15,10 @@ namespace UKSF.Api.Shared.Models {
             Url = url;
         }
 
-        public string Exception { get; }
-        public string HttpMethod { get; }
-        public string Name { get; }
-        public string Url { get; }
-        public string UserId { get; }
+        public string Exception;
+        public string HttpMethod;
+        public string Name;
+        public string Url;
+        public string UserId;
     }
 }

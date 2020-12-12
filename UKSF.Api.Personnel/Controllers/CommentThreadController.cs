@@ -55,7 +55,7 @@ namespace UKSF.Api.Personnel.Controllers {
                         comment => new {
                             Id = comment.Id.ToString(),
                             Author = comment.Author.ToString(),
-                            DisplayName = _displayNameService.GetDisplayName(_accountContext.GetSingle(comment.Author)),
+                            DisplayName = _displayNameService.GetDisplayName(comment.Author),
                             comment.Content,
                             comment.Timestamp
                         }
@@ -89,7 +89,8 @@ namespace UKSF.Api.Personnel.Controllers {
             CommentThread thread = _commentThreadContext.GetSingle(commentThreadId);
             IEnumerable<string> participants = _commentThreadService.GetCommentThreadParticipants(thread.Id);
             foreach (string objectId in participants.Where(x => x != comment.Author)) {
-                _notificationsService.Add( // TODO: Set correct link when comment thread is between /application and /recruitment/id
+                // TODO: Set correct link when comment thread is between /application and /recruitment/id
+                _notificationsService.Add(
                     new Notification {
                         Owner = objectId,
                         Icon = NotificationIcons.COMMENT,

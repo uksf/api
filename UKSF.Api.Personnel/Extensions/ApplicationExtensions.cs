@@ -1,8 +1,9 @@
 ﻿using System;
+using UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.Shared.Extensions {
-    public static class DateExtensions {
-        public static (int years, int months) ToAge(this DateTime dob, DateTime? date = null) {
+namespace UKSF.Api.Personnel.Extensions {
+    public static class ApplicationExtensions {
+        public static ApplicationAge ToAge(this DateTime dob, DateTime? date = null) {
             DateTime today = date ?? DateTime.Today;
             int months = today.Month - dob.Month;
             int years = today.Year - dob.Year;
@@ -16,7 +17,7 @@ namespace UKSF.Api.Shared.Extensions {
                 months += 12;
             }
 
-            return (years, months);
+            return new ApplicationAge { Years = years, Months = months };
         }
     }
 }

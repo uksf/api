@@ -2,16 +2,16 @@ using System.Collections.Generic;
 
 namespace UKSF.Api.ArmaMissions.Models {
     public class Mission {
-        public static int NextId { get; set; }
-        public string DescriptionPath { get; set; }
-        public string Path { get; set; }
-        public string SqmPath { get; set; }
-        public List<string> DescriptionLines { get; set; }
-        public int MaxCurators { get; set; }
-        public MissionEntity MissionEntity { get; set; }
-        public int PlayerCount { get; set; }
-        public List<string> RawEntities { get; set; }
-        public List<string> SqmLines { get; set; }
+        public static int NextId;
+        public string DescriptionPath;
+        public string Path;
+        public string SqmPath;
+        public List<string> DescriptionLines;
+        public int MaxCurators;
+        public MissionEntity MissionEntity;
+        public int PlayerCount;
+        public List<string> RawEntities;
+        public List<string> SqmLines;
 
         public Mission(string path) {
             Path = path;

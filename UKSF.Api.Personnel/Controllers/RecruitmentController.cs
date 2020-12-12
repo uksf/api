@@ -107,8 +107,9 @@ namespace UKSF.Api.Personnel.Controllers {
                         AssignmentService.REMOVE_FLAG,
                         AssignmentService.REMOVE_FLAG,
                         "",
-                        $"Unfortunately you have not been accepted into our unit, however we thank you for your interest and hope you find a suitable alternative. You can view any comments on your application here: [url]https://uk-sf.co.uk/recruitment/{id}[/url]"
+                        "Unfortunately you have not been accepted into our unit, however we thank you for your interest and hope you find a suitable alternative."
                     );
+                    notification.Link = "/application";
                     _notificationsService.Add(notification);
                     break;
                 }
@@ -197,6 +198,6 @@ namespace UKSF.Api.Personnel.Controllers {
         }
 
         [HttpGet("recruiters"), Authorize, Permissions(Permissions.RECRUITER_LEAD)]
-        public IActionResult GetRecruiters() => Ok(_recruitmentService.GetActiveRecruiters());
+        public IEnumerable<Recruiter> GetRecruiters() => _recruitmentService.GetActiveRecruiters();
     }
 }

@@ -8,16 +8,17 @@ using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
 using UKSF.Api.Shared.Models;
+using SortDirection = UKSF.Api.Base.Models.SortDirection;
 
 namespace UKSF.Api.Shared.Context {
-    public interface IMongoContext<T> {
+    public interface IMongoContext<T> where T : MongoObject {
         IEnumerable<T> Get();
         IEnumerable<T> Get(Func<T, bool> predicate);
+        PagedResult<T> GetPaged(int page, int pageSize, SortDirection sortDirection, string sortField, IEnumerable<Expression<Func<T, object>>> filterPropertSelectors, string filter);
         T GetSingle(string id);
         T GetSingle(Func<T, bool> predicate);
         Task Add(T item);
         Task Update(string id, Expression<Func<T, object>> fieldSelector, object value);
-        Task Update(string id, string fieldName, object value);
         Task Update(string id, UpdateDefinition<T> update);
         Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update);
         Task UpdateMany(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update);
@@ -39,12 +40,6 @@ namespace UKSF.Api.Shared.Context {
 
         public override async Task Update(string id, Expression<Func<T, object>> fieldSelector, object value) {
             await base.Update(id, fieldSelector, value);
-            DataUpdateEvent(id);
-        }
-
-        // TODO: Deprecate
-        public override async Task Update(string id, string fieldName, object value) {
-            await base.Update(id, fieldName, value);
             DataUpdateEvent(id);
         }
 

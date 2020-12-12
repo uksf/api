@@ -4,7 +4,6 @@ using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Command.Context {
     public interface IOperationReportContext : IMongoContext<Oprep>, ICachedMongoContext { }

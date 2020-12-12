@@ -5,7 +5,6 @@ using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
-using UKSF.Api.Shared.Events;
 using Xunit;
 using UksfUnit = UKSF.Api.Personnel.Models.Unit;
 

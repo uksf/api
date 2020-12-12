@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using UKSF.Api.Admin.Services;
 using UKSF.Api.Personnel.Context;
@@ -13,11 +12,10 @@ namespace UKSF.Tests.Unit.Services.Utility {
             Mock<IRanksContext> mockRanksDataService = new();
             Mock<IRolesContext> mockRolesDataService = new();
 
-            IServiceProvider serviceProvider = new ServiceCollection().AddSingleton(_ => mockAccountDataService.Object)
-                                                                      .AddSingleton(_ => mockRanksDataService.Object)
-                                                                      .AddSingleton(_ => mockRolesDataService.Object)
-                                                                      .BuildServiceProvider();
-            DataCacheService dataCacheService = new(serviceProvider);
+            IServiceCollection serviceCollection = new ServiceCollection().AddSingleton(_ => mockAccountDataService.Object)
+                                                                        .AddSingleton(_ => mockRanksDataService.Object)
+                                                                        .AddSingleton(_ => mockRolesDataService.Object);
+            DataCacheService dataCacheService = new(serviceCollection);
 
             dataCacheService.RefreshCachedData();
 

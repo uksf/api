@@ -11,7 +11,7 @@ namespace UKSF.Api.Shared.Extensions {
             return fieldInfo.GetValue(obj);
         }
 
-        private static FieldInfo GetFieldInfo(Type type, string fieldName) {
+        public static FieldInfo GetFieldInfo(this Type type, string fieldName) {
             FieldInfo fieldInfo;
             do {
                 fieldInfo = type.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -29,7 +29,7 @@ namespace UKSF.Api.Shared.Extensions {
             return propertyInfo.GetValue(obj, null);
         }
 
-        private static PropertyInfo GetPropertyInfo(Type type, string propertyName) {
+        public static PropertyInfo GetPropertyInfo(this Type type, string propertyName) {
             PropertyInfo propertyInfo;
             do {
                 propertyInfo = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);

@@ -65,12 +65,6 @@ namespace UKSF.Api.Shared.Context {
             DataUpdateEvent(id);
         }
 
-        public override async Task Update(string id, string fieldName, object value) {
-            await base.Update(id, fieldName, value);
-            Refresh(); // TODO: intelligent refresh
-            DataUpdateEvent(id);
-        }
-
         public override async Task Update(string id, UpdateDefinition<T> update) {
             await base.Update(id, update);
             Refresh(); // TODO: intelligent refresh

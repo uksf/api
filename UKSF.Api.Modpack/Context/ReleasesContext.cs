@@ -4,7 +4,6 @@ using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Modpack.Context {
     public interface IReleasesContext : IMongoContext<ModpackRelease>, ICachedMongoContext { }

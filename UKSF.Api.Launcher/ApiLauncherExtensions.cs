@@ -2,11 +2,9 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Launcher.Context;
-using UKSF.Api.Launcher.Models;
 using UKSF.Api.Launcher.Services;
 using UKSF.Api.Launcher.Signalr.Hubs;
 using UKSF.Api.Personnel.ScheduledActions;
-using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Launcher {
     public static class ApiLauncherExtensions {

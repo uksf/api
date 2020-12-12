@@ -130,7 +130,7 @@ namespace UKSF.Api.Personnel.Controllers {
             unit = _unitsContext.GetSingle(unit.Id);
             if (unit.Name != oldUnit.Name) {
                 foreach (Account account in _accountContext.Get(x => x.UnitAssignment == oldUnit.Name)) {
-                    await _accountContext.Update(account.Id, "unitAssignment", unit.Name);
+                    await _accountContext.Update(account.Id, x => x.UnitAssignment, unit.Name);
                     _eventBus.Send(account);
                 }
             }
@@ -169,16 +169,16 @@ namespace UKSF.Api.Personnel.Controllers {
             Unit parentUnit = _unitsContext.GetSingle(unitUpdate.ParentId);
             if (unit.Parent == parentUnit.Id) return Ok();
 
-            await _unitsContext.Update(id, "parent", parentUnit.Id);
+            await _unitsContext.Update(id, x => x.Parent, parentUnit.Id);
             if (unit.Branch != parentUnit.Branch) {
-                await _unitsContext.Update(id, "branch", parentUnit.Branch);
+                await _unitsContext.Update(id, x => x.Branch, parentUnit.Branch);
             }
 
             List<Unit> parentChildren = _unitsContext.Get(x => x.Parent == parentUnit.Id).ToList();
             parentChildren.Remove(parentChildren.FirstOrDefault(x => x.Id == unit.Id));
             parentChildren.Insert(unitUpdate.Index, unit);
             foreach (Unit child in parentChildren) {
-                await _unitsContext.Update(child.Id, "order", parentChildren.IndexOf(child));
+                await _unitsContext.Update(child.Id, x => x.Order, parentChildren.IndexOf(child));
             }
 
             unit = _unitsContext.GetSingle(unit.Id);
@@ -199,7 +199,7 @@ namespace UKSF.Api.Personnel.Controllers {
             parentChildren.Remove(parentChildren.FirstOrDefault(x => x.Id == unit.Id));
             parentChildren.Insert(unitUpdate.Index, unit);
             foreach (Unit child in parentChildren) {
-                _unitsContext.Update(child.Id, "order", parentChildren.IndexOf(child));
+                _unitsContext.Update(child.Id, x => x.Order, parentChildren.IndexOf(child));
             }
 
             return Ok();

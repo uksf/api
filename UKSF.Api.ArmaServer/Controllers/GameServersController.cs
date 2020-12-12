@@ -122,7 +122,7 @@ namespace UKSF.Api.ArmaServer.Controllers {
             for (int index = 0; index < newServerOrder.Count; index++) {
                 GameServer gameServer = newServerOrder[index];
                 if (_gameServersContext.GetSingle(gameServer.Id).Order != index) {
-                    await _gameServersContext.Update(gameServer.Id, "order", index);
+                    await _gameServersContext.Update(gameServer.Id, x => x.Order, index);
                 }
             }
 

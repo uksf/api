@@ -35,6 +35,15 @@ namespace UKSF.Api.Admin.Extensions {
             return output;
         }
 
+        public static bool AsBoolWithDefault(this VariableItem variable, bool defaultState) {
+            if (variable?.Item == null) {
+                return false;
+            }
+
+            string item = variable.Item.ToString();
+            return !bool.TryParse(item, out bool output) ? defaultState : output;
+        }
+
         public static ulong AsUlong(this VariableItem variable) {
             string item = variable.AsString();
             if (!ulong.TryParse(item, out ulong output)) {

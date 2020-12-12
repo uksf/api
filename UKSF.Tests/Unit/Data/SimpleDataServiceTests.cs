@@ -8,7 +8,6 @@ using UKSF.Api.Launcher.Models;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
 using Xunit;
 

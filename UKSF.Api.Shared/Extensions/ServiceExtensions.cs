@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 
 // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
@@ -9,24 +10,32 @@ using Microsoft.Extensions.DependencyInjection;
 namespace UKSF.Api.Shared.Extensions {
     public static class ServiceExtensions {
         public static IEnumerable<T> GetInterfaceServices<T>(this IServiceProvider provider) {
-            if (provider is ServiceProvider serviceProvider) {
-                List<ServiceDescriptor> services = new();
+            List<ServiceDescriptor> services = new();
 
-                object engine = serviceProvider.GetFieldValue("_engine");
-                object callSiteFactory = engine.GetPropertyValue("CallSiteFactory");
-                object descriptorLookup = callSiteFactory.GetFieldValue("_descriptorLookup");
-                if (descriptorLookup is IDictionary dictionary) {
-                    foreach (DictionaryEntry entry in dictionary) {
-                        if (typeof(T).IsAssignableFrom((Type) entry.Key)) {
-                            services.Add((ServiceDescriptor) entry.Value.GetPropertyValue("Last"));
-                        }
-                    }
+            object engine;
+            FieldInfo fieldInfo = provider.GetType().GetFieldInfo("_engine");
+            if (fieldInfo == null) {
+                PropertyInfo propertyInfo = provider.GetType().GetPropertyInfo("Engine");
+                if (propertyInfo == null) {
+                    throw new Exception($"Could not find Field '_engine' or Property 'Engine' on {provider.GetType()}");
                 }
 
-                return services.Select(x => (T) provider.GetService(x.ServiceType));
+                engine = propertyInfo.GetValue(provider);
+            } else {
+                engine = fieldInfo.GetValue(provider);
             }
 
-            throw new Exception();
+            object callSiteFactory = engine.GetPropertyValue("CallSiteFactory");
+            object descriptorLookup = callSiteFactory.GetFieldValue("_descriptorLookup");
+            if (descriptorLookup is IDictionary dictionary) {
+                foreach (DictionaryEntry entry in dictionary) {
+                    if (typeof(T).IsAssignableFrom((Type) entry.Key)) {
+                        services.Add((ServiceDescriptor) entry.Value.GetPropertyValue("Last"));
+                    }
+                }
+            }
+
+            return services.Select(x => (T) provider.GetService(x.ServiceType));
         }
     }
 }

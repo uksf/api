@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Admin.Signalr.Clients;
@@ -24,23 +23,11 @@ namespace UKSF.Api.Admin.EventHandlers {
         }
 
         public void Init() {
-            _eventBus.AsObservable().SubscribeWithAsyncNext<BasicLog>(HandleEvent, _logger.LogError);
+            _eventBus.AsObservable().SubscribeWithAsyncNext<LoggerEventData>(HandleEvent, _logger.LogError);
         }
 
-        private async Task HandleEvent(EventModel eventModel, BasicLog log) {
-            if (eventModel.EventType == EventType.ADD) {
-                await AddedEvent(log);
-            }
-        }
-
-        private Task AddedEvent(BasicLog log) {
-            return log switch {
-                AuditLog message     => _hub.Clients.All.ReceiveAuditLog(message),
-                LauncherLog message  => _hub.Clients.All.ReceiveLauncherLog(message),
-                HttpErrorLog message => _hub.Clients.All.ReceiveErrorLog(message),
-                { } message          => _hub.Clients.All.ReceiveLog(message),
-                _                    => throw new ArgumentOutOfRangeException(nameof(log), "Log type is not valid")
-            };
+        private async Task HandleEvent(EventModel eventModel, LoggerEventData logData) {
+            await _hub.Clients.All.ReceiveLog();
         }
     }
 }

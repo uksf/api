@@ -3,11 +3,9 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.EventHandlers;
-using UKSF.Api.Admin.Models;
 using UKSF.Api.Admin.ScheduledActions;
 using UKSF.Api.Admin.Services;
 using UKSF.Api.Admin.Signalr.Hubs;
-using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Admin {
     public static class ApiAdminExtensions {

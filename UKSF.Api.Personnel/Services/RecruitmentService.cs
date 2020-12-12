@@ -7,15 +7,16 @@ using Newtonsoft.Json.Linq;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
 using UKSF.Api.Personnel.Context;
+using UKSF.Api.Personnel.Extensions;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Personnel.Services {
     public interface IRecruitmentService {
-        object GetAllApplications();
-        JObject GetApplication(Account account);
-        object GetActiveRecruiters();
+        ApplicationsOverview GetAllApplications();
+        DetailedApplication GetApplication(Account account);
+        IEnumerable<Recruiter> GetActiveRecruiters();
         IEnumerable<Account> GetRecruiters(bool skipSort = false);
         Dictionary<string, string> GetRecruiterLeads();
         object GetStats(string account, bool monthly);
@@ -60,11 +61,12 @@ namespace UKSF.Api.Personnel.Services {
             return accounts.OrderBy(x => x.Rank, new RankComparer(_ranksService)).ThenBy(x => x.Lastname);
         }
 
-        public object GetAllApplications() {
-            JArray waiting = new();
-            JArray allWaiting = new();
-            JArray complete = new();
-            JArray recruiters = new();
+        public ApplicationsOverview GetAllApplications() {
+            List<WaitingApplication> waiting = new();
+            List<WaitingApplication> allWaiting = new();
+            List<CompletedApplication> complete = new();
+            List<string> recruiters = GetRecruiters(true).Select(account => _displayNameService.GetDisplayName(account)).ToList();
+
             string me = _httpContextService.GetUserId();
             IEnumerable<Account> accounts = _accountContext.Get(x => x.Application != null);
             foreach (Account account in accounts) {
@@ -79,35 +81,28 @@ namespace UKSF.Api.Personnel.Services {
                 }
             }
 
-            foreach (Account account in GetRecruiters(true)) {
-                recruiters.Add(_displayNameService.GetDisplayName(account));
-            }
-
-            return new { waiting, allWaiting, complete, recruiters };
+            return new ApplicationsOverview { Waiting = waiting, AllWaiting = allWaiting, Complete = complete, Recruiters = recruiters };
         }
 
-        // TODO: Make sure frontend calls get online user details for ts and discord
-        public JObject GetApplication(Account account) {
+        public DetailedApplication GetApplication(Account account) {
             Account recruiterAccount = _accountContext.GetSingle(account.Application.Recruiter);
-            (int years, int months) = account.Dob.ToAge();
-            return JObject.FromObject(
-                new {
-                    account,
-                    displayName = _displayNameService.GetDisplayName(account),
-                    age = new { years, months },
-                    daysProcessing = Math.Ceiling((DateTime.Now - account.Application.DateCreated).TotalDays),
-                    daysProcessed = Math.Ceiling((account.Application.DateAccepted - account.Application.DateCreated).TotalDays),
-                    nextCandidateOp = GetNextCandidateOp(),
-                    averageProcessingTime = GetAverageProcessingTime(),
-                    steamprofile = "http://steamcommunity.com/profiles/" + account.Steamname,
-                    recruiter = _displayNameService.GetDisplayName(recruiterAccount),
-                    recruiterId = recruiterAccount.Id
-                }
-            );
+            ApplicationAge age = account.Dob.ToAge();
+            return new DetailedApplication {
+                    Account = account,
+                    DisplayName = _displayNameService.GetDisplayName(account),
+                    Age = age,
+                    DaysProcessing = Math.Ceiling((DateTime.Now - account.Application.DateCreated).TotalDays),
+                    DaysProcessed = Math.Ceiling((account.Application.DateAccepted - account.Application.DateCreated).TotalDays),
+                    NextCandidateOp = GetNextCandidateOp(),
+                    AverageProcessingTime = GetAverageProcessingTime(),
+                    SteamProfile = "http://steamcommunity.com/profiles/" + account.Steamname,
+                    Recruiter = _displayNameService.GetDisplayName(recruiterAccount),
+                    RecruiterId = recruiterAccount.Id
+                };
         }
 
-        public object GetActiveRecruiters() =>
-            GetRecruiters().Where(x => x.Settings.Sr1Enabled).Select(x => JObject.FromObject(new { value = x.Id, viewValue = _displayNameService.GetDisplayName(x) }));
+        public IEnumerable<Recruiter> GetActiveRecruiters() =>
+            GetRecruiters().Where(x => x.Settings.Sr1Enabled).Select(x => new Recruiter { Id = x.Id, Name = _displayNameService.GetDisplayName(x) });
 
         public bool IsRecruiterLead(Account account = null) =>
             account != null ? GetRecruiterUnit().Roles.ContainsValue(account.Id) : GetRecruiterUnit().Roles.ContainsValue(_httpContextService.GetUserId());
@@ -159,30 +154,25 @@ namespace UKSF.Api.Personnel.Services {
             return _unitsContext.GetSingle(id);
         }
 
-        private JObject GetCompletedApplication(Account account) =>
-            JObject.FromObject(
-                new {
-                    account,
-                    displayName = _displayNameService.GetDisplayNameWithoutRank(account),
-                    daysProcessed = Math.Ceiling((account.Application.DateAccepted - account.Application.DateCreated).TotalDays),
-                    recruiter = _displayNameService.GetDisplayName(account.Application.Recruiter)
-                }
-            );
+        private CompletedApplication GetCompletedApplication(Account account) =>
+            new() {
+                    Account = account,
+                    DisplayName = _displayNameService.GetDisplayNameWithoutRank(account),
+                    DaysProcessed = Math.Ceiling((account.Application.DateAccepted - account.Application.DateCreated).TotalDays),
+                    Recruiter = _displayNameService.GetDisplayName(account.Application.Recruiter)
+                };
 
-        // TODO: Make sure frontend calls get online user details for ts and discord
-        private JObject GetWaitingApplication(Account account) {
+        private WaitingApplication GetWaitingApplication(Account account) {
             double averageProcessingTime = GetAverageProcessingTime();
             double daysProcessing = Math.Ceiling((DateTime.Now - account.Application.DateCreated).TotalDays);
             double processingDifference = daysProcessing - averageProcessingTime;
-            return JObject.FromObject(
-                new {
-                    account,
-                    steamprofile = "http://steamcommunity.com/profiles/" + account.Steamname,
-                    daysProcessing,
-                    processingDifference,
-                    recruiter = _displayNameService.GetDisplayName(account.Application.Recruiter)
-                }
-            );
+            return new WaitingApplication {
+                    Account = account,
+                    SteamProfile = "http://steamcommunity.com/profiles/" + account.Steamname,
+                    DaysProcessing = daysProcessing,
+                    ProcessingDifference = processingDifference,
+                    Recruiter = _displayNameService.GetDisplayName(account.Application.Recruiter)
+                };
         }
 
         private static string GetNextCandidateOp() {

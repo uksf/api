@@ -1,6 +1,5 @@
 using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Shared.Context {

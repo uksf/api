@@ -2,8 +2,6 @@
 using FluentAssertions;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Tests.Common;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events {

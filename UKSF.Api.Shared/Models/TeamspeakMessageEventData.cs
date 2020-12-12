@@ -7,7 +7,7 @@ namespace UKSF.Api.Shared.Models {
             Message = message;
         }
 
-        public IEnumerable<double> ClientDbIds { get; }
-        public string Message { get; }
+        public IEnumerable<double> ClientDbIds;
+        public string Message;
     }
 }

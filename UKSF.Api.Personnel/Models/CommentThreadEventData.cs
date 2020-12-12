@@ -5,7 +5,7 @@
             Comment = comment;
         }
 
-        public string CommentThreadId { get; }
-        public Comment Comment { get; }
+        public string CommentThreadId;
+        public Comment Comment;
     }
 }

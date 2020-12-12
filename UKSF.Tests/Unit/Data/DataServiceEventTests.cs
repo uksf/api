@@ -139,7 +139,7 @@ namespace UKSF.Tests.Unit.Data {
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<TestDataModel>>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);
             _mockEventBus.Setup(x => x.Send(It.IsAny<EventModel>())).Callback<EventModel>(dataEventModel => subjects.Add(dataEventModel));
 
-            await _testContext.Update(_id1, "Name", "1");
+            await _testContext.Update(_id1, x => x.Name, "1");
             await _testContext.Update(_id2, Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
             await _testContext.Update(x => x.Id == _id3, Builders<TestDataModel>.Update.Set(x => x.Name, "3"));
 

@@ -2,15 +2,12 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.EventHandlers;
 using UKSF.Api.Personnel.Mappers;
-using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.ScheduledActions;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Personnel.Signalr.Hubs;
-using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Personnel {
     public static class ApiPersonnelExtensions {
@@ -35,6 +32,7 @@ namespace UKSF.Api.Personnel {
         private static IServiceCollection AddEventHandlers(this IServiceCollection services) =>
             services.AddSingleton<IAccountDataEventHandler, AccountDataEventHandler>()
                     .AddSingleton<ICommentThreadEventHandler, CommentThreadEventHandler>()
+                    .AddSingleton<IDiscordEventhandler, DiscordEventhandler>()
                     .AddSingleton<INotificationsEventHandler, NotificationsEventHandler>();
 
         private static IServiceCollection AddServices(this IServiceCollection services) =>

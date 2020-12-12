@@ -12,7 +12,7 @@ namespace UKSF.Api.Shared.Events {
         void LogHttpError(Exception exception);
         void LogHttpError(HttpErrorLog log);
         void LogAudit(string message, string userId = "");
-        void LogDiscordEvent(DiscordUserEventType discordUserEventType, string name, string userId, string message);
+        void LogDiscordEvent(DiscordUserEventType discordUserEventType, string instigatorId, string instigatorName, string channelName, string name, string message);
     }
 
     public class Logger : ILogger {
@@ -53,12 +53,12 @@ namespace UKSF.Api.Shared.Events {
             Log(new AuditLog(userId, message));
         }
 
-        public void LogDiscordEvent(DiscordUserEventType discordUserEventType, string name, string userId, string message) {
-            Log(new DiscordLog(discordUserEventType, name, userId, message));
+        public void LogDiscordEvent(DiscordUserEventType discordUserEventType, string instigatorId, string instigatorName, string channelName, string name, string message) {
+            Log(new DiscordLog(discordUserEventType, instigatorId, instigatorName, channelName, name, message));
         }
 
         private void Log(BasicLog log) {
-            _eventBus.Send(log);
+            _eventBus.Send(new LoggerEventData(log));
         }
     }
 }

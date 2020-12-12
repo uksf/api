@@ -25,7 +25,7 @@ namespace UKSF.Api.Auth.Controllers {
         }
 
         protected override async Task<IActionResult> ApplyValidatedPayload(string codePayload, Account account) {
-            await AccountContext.Update(account.Id, "password", BCrypt.Net.BCrypt.HashPassword(codePayload));
+            await AccountContext.Update(account.Id, x => x.Password, BCrypt.Net.BCrypt.HashPassword(codePayload));
             _logger.LogAudit($"Password changed for {account.Id}", account.Id);
             return Ok(LoginService.RegenerateBearerToken(account.Id));
         }

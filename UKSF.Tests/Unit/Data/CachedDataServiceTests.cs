@@ -8,9 +8,6 @@ using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Models;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
@@ -220,7 +217,7 @@ namespace UKSF.Tests.Unit.Data {
 
             _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
-            await _testCachedContext.Update(item1.Id, "Name", "2");
+            await _testCachedContext.Update(item1.Id, x => x.Name, "2");
 
             _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
             _testCachedContext.Cache.First().Name.Should().Be("2");

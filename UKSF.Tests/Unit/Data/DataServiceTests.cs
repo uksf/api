@@ -9,9 +9,6 @@ using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Models;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
@@ -47,7 +44,7 @@ namespace UKSF.Tests.Unit.Data {
 
         [Theory, InlineData(""), InlineData("1"), InlineData(null)]
         public async Task Should_throw_for_update_by_id_when_key_is_invalid(string id) {
-            Func<Task> act = async () => await _testContext.Update(id, "Name", null);
+            Func<Task> act = async () => await _testContext.Update(id, x => x.Name, null);
 
             await act.Should().ThrowAsync<KeyNotFoundException>();
         }
@@ -217,7 +214,7 @@ namespace UKSF.Tests.Unit.Data {
                                .Returns(Task.CompletedTask)
                                .Callback((string id, UpdateDefinition<TestDataModel> _) => _mockCollection.First(x => x.Id == id).Name = "2");
 
-            await _testContext.Update(item1.Id, "Name", "2");
+            await _testContext.Update(item1.Id, x => x.Name, "2");
 
             item1.Name.Should().Be("2");
         }
@@ -247,7 +244,7 @@ namespace UKSF.Tests.Unit.Data {
                                .Returns(Task.CompletedTask)
                                .Callback((string _, UpdateDefinition<TestDataModel> y) => subject = y);
 
-            await _testContext.Update(item1.Id, "Name", "2");
+            await _testContext.Update(item1.Id, x => x.Name, "2");
 
             TestUtilities.RenderUpdate(subject).Should().BeEquivalentTo(expected);
         }
@@ -263,7 +260,7 @@ namespace UKSF.Tests.Unit.Data {
                                .Returns(Task.CompletedTask)
                                .Callback((string _, UpdateDefinition<TestDataModel> y) => subject = y);
 
-            await _testContext.Update(item1.Id, "Name", null);
+            await _testContext.Update(item1.Id, x => x.Name, null);
 
             TestUtilities.RenderUpdate(subject).Should().BeEquivalentTo(expected);
         }

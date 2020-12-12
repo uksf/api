@@ -4,16 +4,21 @@ using System.Threading.Tasks;
 using Discord.WebSocket;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Base.Events;
 using UKSF.Api.Discord.Services;
-using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared;
+using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Discord.Controllers {
     [Route("[controller]")]
     public class DiscordController : Controller {
         private readonly IDiscordService _discordService;
+        private readonly IEventBus _eventBus;
 
-        public DiscordController(IDiscordService discordService) => _discordService = discordService;
+        public DiscordController(IDiscordService discordService, IEventBus eventBus) {
+            _discordService = discordService;
+            _eventBus = eventBus;
+        }
 
         [HttpGet("roles"), Authorize, Permissions(Permissions.ADMIN)]
         public async Task<IActionResult> GetRoles() {
@@ -27,8 +32,7 @@ namespace UKSF.Api.Discord.Controllers {
             return Ok();
         }
 
-        // TODO: Use in frontend. Check return type. Check permissions
-        [HttpGet("onlineUserDetails"), Authorize]
-        public (bool discordOnline, string discordNickname) GetOnlineUserDetails(Account account) => _discordService.GetOnlineUserDetails(account);
+        [HttpGet("{accountId}/onlineUserDetails"), Authorize, Permissions(Permissions.RECRUITER)]
+        public OnlineState GetOnlineUserDetails([FromRoute] string accountId) => _discordService.GetOnlineUserDetails(accountId);
     }
 }

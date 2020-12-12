@@ -1,4 +1,6 @@
 ﻿using System;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Base.Models;
 
 namespace UKSF.Api.Shared.Models {
@@ -9,7 +11,7 @@ namespace UKSF.Api.Shared.Models {
         WARNING
     }
 
-    public record BasicLog : MongoObject {
+    public class BasicLog : MongoObject {
         protected BasicLog() {
             Level = LogLevel.INFO;
             Timestamp = DateTime.UtcNow;
@@ -27,8 +29,9 @@ namespace UKSF.Api.Shared.Models {
             Level = LogLevel.ERROR;
         }
 
-        public LogLevel Level { get; protected init; }
-        public string Message { get; set; }
-        public DateTime Timestamp { get; init; }
+        [BsonRepresentation(BsonType.String)]
+        public LogLevel Level;
+        public string Message;
+        public DateTime Timestamp;
     }
 }
