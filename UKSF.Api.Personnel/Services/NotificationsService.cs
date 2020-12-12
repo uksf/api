@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
+using UKSF.Api.Admin.Services;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
@@ -29,6 +30,7 @@ namespace UKSF.Api.Personnel.Services {
         private readonly IHubContext<NotificationHub, INotificationsClient> _notificationsHub;
         private readonly IObjectIdConversionService _objectIdConversionService;
         private readonly IEventBus _eventBus;
+        private readonly IVariablesService _variablesService;
 
         public NotificationsService(
             IAccountContext accountContext,
@@ -37,7 +39,8 @@ namespace UKSF.Api.Personnel.Services {
             IHubContext<NotificationHub, INotificationsClient> notificationsHub,
             IHttpContextService httpContextService,
             IObjectIdConversionService objectIdConversionService,
-            IEventBus eventBus
+            IEventBus eventBus,
+            IVariablesService variablesService
         ) {
             _accountContext = accountContext;
             _notificationsContext = notificationsContext;
@@ -46,9 +49,12 @@ namespace UKSF.Api.Personnel.Services {
             _httpContextService = httpContextService;
             _objectIdConversionService = objectIdConversionService;
             _eventBus = eventBus;
+            _variablesService = variablesService;
         }
 
         public void SendTeamspeakNotification(Account account, string rawMessage) {
+            if (NotificationsDisabled()) return;
+
             if (account.TeamspeakIdentities == null) return;
             if (account.TeamspeakIdentities.Count == 0) return;
 
@@ -56,6 +62,8 @@ namespace UKSF.Api.Personnel.Services {
         }
 
         public void SendTeamspeakNotification(IEnumerable<double> clientDbIds, string rawMessage) {
+            if (NotificationsDisabled()) return;
+
             rawMessage = rawMessage.Replace("<a href='", "[url]").Replace("'>", "[/url]");
             _eventBus.Send(new TeamspeakMessageEventData(clientDbIds, rawMessage));
         }
@@ -85,8 +93,12 @@ namespace UKSF.Api.Personnel.Services {
 
         private async Task AddNotificationAsync(Notification notification) {
             notification.Message = _objectIdConversionService.ConvertObjectIds(notification.Message);
-            await _notificationsContext.Add(notification);
             Account account = _accountContext.GetSingle(notification.Owner);
+            if (account.MembershipState == MembershipState.DISCHARGED) {
+                return;
+            }
+
+            await _notificationsContext.Add(notification);
             if (account.Settings.NotificationsEmail) {
                 SendEmailNotification(
                     account.Email,
@@ -100,8 +112,12 @@ namespace UKSF.Api.Personnel.Services {
         }
 
         private void SendEmailNotification(string email, string message) {
+            if (NotificationsDisabled()) return;
+
             message += "<br><br><sub>You can opt-out of these emails by unchecking 'Email notifications' in your <a href='https://uk-sf.co.uk/profile'>Profile</a></sub>";
             _emailService.SendEmail(email, "UKSF Notification", message);
         }
+
+        private bool NotificationsDisabled() => !_variablesService.GetFeatureState("NOTIFICATIONS");
     }
 }

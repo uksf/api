@@ -68,8 +68,8 @@ namespace UKSF.Api.Personnel.Controllers {
                 Builders<Rank>.Update.Set(x => x.Name, rank.Name).Set(x => x.Abbreviation, rank.Abbreviation).Set(x => x.TeamspeakGroup, rank.TeamspeakGroup).Set(x => x.DiscordRoleId, rank.DiscordRoleId)
             );
             foreach (Account account in _accountContext.Get(x => x.Rank == oldRank.Name)) {
-                // TODO: Notify user to update name in TS if rank abbreviate changed
-                await _accountContext.Update(account.Id, x => x.Rank, rank.Name);
+                Notification notification = await _assignmentService.UpdateUnitRankAndRole(account.Id, rankString: rank.Name, reason: $"the '{rank.Name}' rank was updated");
+                _notificationsService.Add(notification);
             }
 
             return Ok(_ranksContext.Get());

@@ -134,7 +134,7 @@ namespace UKSF.Api.Personnel.Services {
             if (unit != null) {
                 if (unit.Branch == UnitBranch.COMBAT) {
                     await _unitsService.RemoveMember(id, _accountContext.GetSingle(id).UnitAssignment);
-                    await _accountContext.Update(id, "unitAssignment", unit.Name);
+                    await _accountContext.Update(id, x => x.UnitAssignment, unit.Name);
                 }
 
                 await _unitsService.AddMember(id, unit.Id);
@@ -145,7 +145,7 @@ namespace UKSF.Api.Personnel.Services {
                 if (string.IsNullOrEmpty(currentUnit)) return new Tuple<bool, bool>(false, false);
                 unit = _unitsContext.GetSingle(x => x.Name == currentUnit);
                 await _unitsService.RemoveMember(id, currentUnit);
-                await _accountContext.Update(id, "unitAssignment", null);
+                await _accountContext.Update(id, x => x.UnitAssignment, null);
                 notificationMessage.Append($"You have been removed from {_unitsService.GetChainString(unit)}");
                 unitUpdate = true;
                 positive = false;
@@ -158,12 +158,12 @@ namespace UKSF.Api.Personnel.Services {
             bool roleUpdate = false;
             bool positive = true;
             if (!string.IsNullOrEmpty(role) && role != REMOVE_FLAG) {
-                await _accountContext.Update(id, "roleAssignment", role);
+                await _accountContext.Update(id, x => x.RoleAssignment, role);
                 notificationMessage.Append($"{(unitUpdate ? $" as {AvsAn.Query(role).Article} {role}" : $"You have been assigned as {AvsAn.Query(role).Article} {role}")}");
                 roleUpdate = true;
             } else if (role == REMOVE_FLAG) {
                 string currentRole = _accountContext.GetSingle(id).RoleAssignment;
-                await _accountContext.Update(id, "roleAssignment", null);
+                await _accountContext.Update(id, x => x.RoleAssignment, null);
                 notificationMessage.Append(
                     string.IsNullOrEmpty(currentRole)
                         ? $"{(unitUpdate ? " and unassigned from your role" : "You have been unassigned from your role")}"
@@ -183,14 +183,14 @@ namespace UKSF.Api.Personnel.Services {
             string currentRank = _accountContext.GetSingle(id).Rank;
             if (!string.IsNullOrEmpty(rank) && rank != REMOVE_FLAG) {
                 if (currentRank == rank) return new Tuple<bool, bool>(false, true);
-                await _accountContext.Update(id, "rank", rank);
+                await _accountContext.Update(id, x => x.Rank, rank);
                 bool promotion = string.IsNullOrEmpty(currentRank) || _ranksService.IsSuperior(rank, currentRank);
                 notificationMessage.Append(
                     $"{(unitUpdate || roleUpdate ? $" and {(promotion ? "promoted" : "demoted")} to {rank}" : $"You have been {(promotion ? "promoted" : "demoted")} to {rank}")}"
                 );
                 rankUpdate = true;
             } else if (rank == REMOVE_FLAG) {
-                await _accountContext.Update(id, "rank", null);
+                await _accountContext.Update(id, x => x.Rank, null);
                 notificationMessage.Append($"{(unitUpdate || roleUpdate ? $" and demoted from {currentRank}" : $"You have been demoted from {currentRank}")}");
                 rankUpdate = true;
                 positive = false;

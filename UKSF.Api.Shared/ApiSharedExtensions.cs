@@ -1,9 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using UKSF.Api.Base.Context;
-using UKSF.Api.Base.Events;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
 using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Shared {

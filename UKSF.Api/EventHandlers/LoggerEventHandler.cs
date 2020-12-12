@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.Services;
@@ -42,11 +41,11 @@ namespace UKSF.Api.EventHandlers {
         }
 
         public void Init() {
-            _eventBus.AsObservable().SubscribeWithAsyncNext<BasicLog>(HandleLog, _logger.LogError);
+            _eventBus.AsObservable().SubscribeWithAsyncNext<LoggerEventData>(HandleLog, _logger.LogError);
         }
 
-        private Task HandleLog(EventModel eventModel, BasicLog log) {
-            Task _ = HandleLogAsync(log);
+        private Task HandleLog(EventModel eventModel, LoggerEventData logData) {
+            Task _ = HandleLogAsync(logData.Log);
             return Task.CompletedTask;
         }
 

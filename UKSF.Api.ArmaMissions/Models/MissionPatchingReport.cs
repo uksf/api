@@ -2,9 +2,9 @@ using System;
 
 namespace UKSF.Api.ArmaMissions.Models {
     public class MissionPatchingReport {
-        public string Detail { get; set; }
-        public bool Error { get; set; }
-        public string Title { get; set; }
+        public string Detail;
+        public bool Error;
+        public string Title;
 
         public MissionPatchingReport(Exception exception) {
             Title = exception.GetBaseException().Message;

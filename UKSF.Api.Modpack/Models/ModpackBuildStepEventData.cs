@@ -5,7 +5,7 @@
             BuildStep = buildStep;
         }
 
-        public string BuildId { get; }
-        public ModpackBuildStep BuildStep { get; }
+        public string BuildId;
+        public ModpackBuildStep BuildStep;
     }
 }

@@ -5,7 +5,6 @@ using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Shared.Events;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Game {

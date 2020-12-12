@@ -10,7 +10,6 @@ using Moq;
 using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
-using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
 using UKSF.Api.Tests.Common;
 using Xunit;
@@ -127,7 +126,7 @@ namespace UKSF.Tests.Unit.Data {
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<TestDataModel>>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);
             _mockEventBus.Setup(x => x.Send(It.IsAny<EventModel>())).Callback<EventModel>(dataEventModel => subjects.Add(dataEventModel));
 
-            await _testCachedContext.Update(_id1, "Name", "1");
+            await _testCachedContext.Update(_id1, x => x.Name, "1");
             await _testCachedContext.Update(_id2, Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
             await _testCachedContext.Update(x => x.Id == _id3, Builders<TestDataModel>.Update.Set(x => x.Name, "3"));
 

@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Base.Events;
-using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
 using UKSF.Api.Teamspeak.Signalr.Clients;
 

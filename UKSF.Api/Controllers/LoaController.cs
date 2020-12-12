@@ -28,7 +28,6 @@ namespace UKSF.Api.Controllers {
         private readonly ILogger _logger;
         private readonly INotificationsService _notificationsService;
         private readonly IUnitsContext _unitsContext;
-
         private readonly IUnitsService _unitsService;
 
         public LoaController(

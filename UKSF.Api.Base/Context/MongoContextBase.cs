@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Base.Models;
+using SortDirection = UKSF.Api.Base.Models.SortDirection;
 
 namespace UKSF.Api.Base.Context {
     public abstract class MongoContextBase<T> where T : MongoObject {
@@ -15,6 +18,14 @@ namespace UKSF.Api.Base.Context {
         public virtual IEnumerable<T> Get() => _mongoCollection.Get();
 
         public virtual IEnumerable<T> Get(Func<T, bool> predicate) => _mongoCollection.Get(predicate);
+
+        public virtual PagedResult<T> GetPaged(int page, int pageSize, SortDirection sortDirection, string sortField, IEnumerable<Expression<Func<T, object>>> filterPropertSelectors, string filter) {
+            SortDefinition<T> sortDefinition = sortDirection == SortDirection.ASCENDING ? Builders<T>.Sort.Ascending(sortField) : Builders<T>.Sort.Descending(sortField);
+            FilterDefinition<T> filterDefinition = string.IsNullOrEmpty(filter)
+                ? Builders<T>.Filter.Empty
+                : Builders<T>.Filter.Or(filterPropertSelectors.Select(x => Builders<T>.Filter.Regex(x, new BsonRegularExpression(new Regex(filter, RegexOptions.IgnoreCase)))));
+            return _mongoCollection.GetPaged(page, pageSize, sortDefinition, filterDefinition);
+        }
 
         public virtual T GetSingle(string id) {
             ValidateId(id);
@@ -31,12 +42,6 @@ namespace UKSF.Api.Base.Context {
         public virtual async Task Update(string id, Expression<Func<T, object>> fieldSelector, object value) {
             ValidateId(id);
             UpdateDefinition<T> update = value == null ? Builders<T>.Update.Unset(fieldSelector) : Builders<T>.Update.Set(fieldSelector, value);
-            await _mongoCollection.UpdateAsync(id, update);
-        }
-
-        public virtual async Task Update(string id, string fieldName, object value) {
-            ValidateId(id);
-            UpdateDefinition<T> update = value == null ? Builders<T>.Update.Unset(fieldName) : Builders<T>.Update.Set(fieldName, value);
             await _mongoCollection.UpdateAsync(id, update);
         }
 

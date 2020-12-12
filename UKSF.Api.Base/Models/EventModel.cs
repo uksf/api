@@ -12,7 +12,7 @@
             Data = data;
         }
 
-        public object Data { get; }
-        public EventType EventType { get; }
+        public object Data;
+        public EventType EventType;
     }
 }

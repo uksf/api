@@ -31,7 +31,7 @@ namespace UKSF.Api.Personnel.Controllers {
             }
 
             string id = _httpContextService.GetUserId();
-            await _accountContext.Update(id, "steamname", steamId);
+            await _accountContext.Update(id, x => x.Steamname, steamId);
             Account account = _accountContext.GetSingle(id);
             _logger.LogAudit($"SteamID updated for {account.Id} to {steamId}");
             return Ok();

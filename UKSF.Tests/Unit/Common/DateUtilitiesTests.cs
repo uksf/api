@@ -1,5 +1,7 @@
 using System;
 using FluentAssertions;
+using UKSF.Api.Personnel.Extensions;
+using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Extensions;
 using Xunit;
 
@@ -9,19 +11,19 @@ namespace UKSF.Tests.Unit.Common {
         public void ShouldGiveCorrectAge(int years, int months, int expectedYears, int expectedMonths) {
             DateTime dob = DateTime.Today.AddYears(-years).AddMonths(-months);
 
-            (int subjectYears, int subjectMonths) = dob.ToAge();
+            ApplicationAge age = dob.ToAge();
 
-            subjectYears.Should().Be(expectedYears);
-            subjectMonths.Should().Be(expectedMonths);
+            age.Years.Should().Be(expectedYears);
+            age.Months.Should().Be(expectedMonths);
         }
 
         [Fact]
         public void ShouldGiveCorrectMonthsForDay() {
             DateTime dob = new(2019, 1, 20);
 
-            (int _, int subjectMonths) = dob.ToAge(new DateTime(2020, 1, 16));
+            ApplicationAge age = dob.ToAge(new DateTime(2020, 1, 16));
 
-            subjectMonths.Should().Be(11);
+            age.Months.Should().Be(11);
         }
     }
 }

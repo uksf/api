@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json.Serialization;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using UKSF.Api.Admin;
 using UKSF.Api.AppStart;
@@ -44,7 +45,8 @@ namespace UKSF.Api {
             );
             services.AddControllers();
             services.AddSwaggerGen(options => { options.SwaggerDoc("v1", new OpenApiInfo { Title = "UKSF API", Version = "v1" }); });
-            services.AddMvc(options => { options.Filters.Add<ExceptionHandler>(); }).AddNewtonsoftJson();
+            services.AddMvc(options => { options.Filters.Add<ExceptionHandler>(); })
+                    .AddNewtonsoftJson(options => { options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver(); });
         }
 
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime hostApplicationLifetime, IServiceProvider serviceProvider) {
@@ -82,7 +84,7 @@ namespace UKSF.Api {
         }
 
         private static void OnShutdown(IServiceProvider serviceProvider) {
-            serviceProvider.StopUksfSerices();
+            serviceProvider.StopUksfServices();
         }
     }
 

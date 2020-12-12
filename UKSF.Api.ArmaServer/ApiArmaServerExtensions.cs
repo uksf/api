@@ -2,10 +2,8 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.ArmaServer.DataContext;
-using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
-using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.ArmaServer {
     public static class ApiArmaServerExtensions {

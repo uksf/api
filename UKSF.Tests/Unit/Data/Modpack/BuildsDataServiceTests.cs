@@ -9,8 +9,6 @@ using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Modpack {

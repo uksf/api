@@ -77,9 +77,9 @@ namespace UKSF.Api.Personnel.Controllers {
         public async Task<IActionResult> EditRole([FromBody] Role role) {
             Role oldRole = _rolesContext.GetSingle(x => x.Id == role.Id);
             _logger.LogAudit($"Role updated from '{oldRole.Name}' to '{role.Name}'");
-            await _rolesContext.Update(role.Id, "name", role.Name);
+            await _rolesContext.Update(role.Id, x => x.Name, role.Name);
             foreach (Account account in _accountContext.Get(x => x.RoleAssignment == oldRole.Name)) {
-                await _accountContext.Update(account.Id, "roleAssignment", role.Name);
+                await _accountContext.Update(account.Id, x => x.RoleAssignment, role.Name);
             }
 
             await _unitsService.RenameRole(oldRole.Name, role.Name);
@@ -105,7 +105,7 @@ namespace UKSF.Api.Personnel.Controllers {
             for (int index = 0; index < newRoleOrder.Count; index++) {
                 Role role = newRoleOrder[index];
                 if (_rolesContext.GetSingle(role.Name).Order != index) {
-                    await _rolesContext.Update(role.Id, "order", index);
+                    await _rolesContext.Update(role.Id, x => x.Order, index);
                 }
             }
 

@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Shared.Models;
 using UKSF.Api.Teamspeak.EventHandlers;
 using UKSF.Api.Teamspeak.ScheduledActions;
 using UKSF.Api.Teamspeak.Services;

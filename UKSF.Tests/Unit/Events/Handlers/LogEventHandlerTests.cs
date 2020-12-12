@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reactive.Subjects;
 using Moq;
 using UKSF.Api.Base.Events;
 using UKSF.Api.EventHandlers;
@@ -26,7 +25,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
             _mockLauncherLogDataService = new Mock<ILauncherLogContext>();
             _mockDiscordLogDataService = new Mock<IDiscordLogContext>();
             _mockObjectIdConversionService = new Mock<IObjectIdConversionService>();
-            Mock<ILogger> mockLogger = new Mock<ILogger>();
+            Mock<ILogger> mockLogger = new();
             _eventBus = new EventBus();
 
             _mockObjectIdConversionService.Setup(x => x.ConvertObjectIds(It.IsAny<string>())).Returns<string>(x => x);
@@ -56,7 +55,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
         [Fact]
         public void When_handling_a_discord_log() {
-            DiscordLog discordLog = new(DiscordUserEventType.JOINED, "SqnLdr.Beswick.T", "12345", "SqnLdr.Beswick.T joined");
+            DiscordLog discordLog = new(DiscordUserEventType.JOINED, "12345", "SqnLdr.Beswick.T", "", "", "SqnLdr.Beswick.T joined");
 
             _eventBus.Send(discordLog);
 

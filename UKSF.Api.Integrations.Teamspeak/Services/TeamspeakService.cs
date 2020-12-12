@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
+using UKSF.Api.Shared.Models;
 using UKSF.Api.Teamspeak.Models;
 using UKSF.Api.Teamspeak.Signalr.Clients;
 using UKSF.Api.Teamspeak.Signalr.Hubs;
@@ -14,7 +16,7 @@ using UKSF.Api.Teamspeak.Signalr.Hubs;
 namespace UKSF.Api.Teamspeak.Services {
     public interface ITeamspeakService {
         IEnumerable<TeamspeakClient> GetOnlineTeamspeakClients();
-        (bool online, string nickname) GetOnlineUserDetails(Account account);
+        OnlineState GetOnlineUserDetails(string accountId);
         IEnumerable<object> GetFormattedClients();
         Task UpdateClients(HashSet<TeamspeakClient> newClients);
         Task UpdateAccountTeamspeakGroups(Account account);
@@ -25,6 +27,7 @@ namespace UKSF.Api.Teamspeak.Services {
     }
 
     public class TeamspeakService : ITeamspeakService {
+        private readonly IAccountContext _accountContext;
         private readonly SemaphoreSlim _clientsSemaphore = new(1);
         private readonly IMongoDatabase _database;
         private readonly IHostEnvironment _environment;
@@ -33,11 +36,13 @@ namespace UKSF.Api.Teamspeak.Services {
         private HashSet<TeamspeakClient> _clients = new();
 
         public TeamspeakService(
+            IAccountContext accountContext,
             IMongoDatabase database,
             IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub,
             ITeamspeakManagerService teamspeakManagerService,
             IHostEnvironment environment
         ) {
+            _accountContext = accountContext;
             _database = database;
             _teamspeakClientsHub = teamspeakClientsHub;
             _teamspeakManagerService = teamspeakManagerService;
@@ -77,6 +82,7 @@ namespace UKSF.Api.Teamspeak.Services {
                 return;
             }
 
+            // TODO: Remove direct db call
             TeamspeakServerSnapshot teamspeakServerSnapshot = new() { Timestamp = DateTime.UtcNow, Users = _clients };
             await _database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots").InsertOneAsync(teamspeakServerSnapshot);
         }
@@ -87,20 +93,28 @@ namespace UKSF.Api.Teamspeak.Services {
 
         public IEnumerable<object> GetFormattedClients() {
             if (_environment.IsDevelopment()) return new List<object> { new { name = "SqnLdr.Beswick.T", clientDbId = (double) 2 } };
+
             return _clients.Where(x => x != null).Select(x => new { name = $"{x.ClientName}", clientDbId = x.ClientDbId });
         }
 
-        public (bool online, string nickname) GetOnlineUserDetails(Account account) {
-            if (account.TeamspeakIdentities == null) return (false, "");
-            if (_clients.Count == 0) return (false, "");
-
-            foreach (TeamspeakClient client in _clients.Where(x => x != null)) {
-                if (account.TeamspeakIdentities.Any(y => y.Equals(client.ClientDbId))) {
-                    return (true, client.ClientName);
-                }
+        // TODO: Change to use signalr (or hook into existing _teamspeakClientsHub)
+        public OnlineState GetOnlineUserDetails(string accountId) {
+            if (_environment.IsDevelopment()) {
+                _clients = new HashSet<TeamspeakClient> { new() { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 } };
             }
 
-            return (false, "");
+            if (_clients.Count == 0) return null;
+
+            Account account = _accountContext.GetSingle(accountId);
+            if (account?.TeamspeakIdentities == null) return null;
+
+            if (_environment.IsDevelopment()) {
+                _clients.First().ClientDbId = account.TeamspeakIdentities.First();
+            }
+
+            return _clients.Where(client => client != null && account.TeamspeakIdentities.Any(clientDbId => clientDbId.Equals(client.ClientDbId)))
+                           .Select(client => new OnlineState { Online = true, Nickname = client.ClientName })
+                           .FirstOrDefault();
         }
 
         private static string FormatTeamspeakMessage(string message) => $"\n========== UKSF Server Message ==========\n{message}\n==================================";

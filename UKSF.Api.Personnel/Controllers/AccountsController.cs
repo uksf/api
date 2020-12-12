@@ -105,7 +105,7 @@ namespace UKSF.Api.Personnel.Controllers {
 
             string value = await _confirmationCodeService.GetConfirmationCode(code);
             if (value == email) {
-                await _accountContext.Update(account.Id, "membershipState", MembershipState.CONFIRMED);
+                await _accountContext.Update(account.Id, x => x.MembershipState, MembershipState.CONFIRMED);
                 _logger.LogAudit($"Email address confirmed for {account.Id}");
                 return Ok();
             }
@@ -182,7 +182,7 @@ namespace UKSF.Api.Personnel.Controllers {
         [HttpPut("password"), Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] JObject changePasswordRequest) {
             string contextId = _httpContextService.GetUserId();
-            await _accountContext.Update(contextId, "password", BCrypt.Net.BCrypt.HashPassword(changePasswordRequest["password"].ToString()));
+            await _accountContext.Update(contextId, x => x.Password, BCrypt.Net.BCrypt.HashPassword(changePasswordRequest["password"].ToString()));
             _logger.LogAudit($"Password changed for {contextId}");
             return Ok();
         }

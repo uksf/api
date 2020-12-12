@@ -1,4 +1,5 @@
 using System;
+using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Extensions;
 
@@ -10,7 +11,7 @@ namespace UKSF.Api.Admin.Services {
     public class DataCacheService : IDataCacheService {
         private readonly IServiceProvider _serviceProvider;
 
-        public DataCacheService(IServiceProvider serviceProvider) => _serviceProvider = serviceProvider;
+        public DataCacheService(IServiceCollection serviceCollection) => _serviceProvider = serviceCollection.BuildServiceProvider();
 
         public void RefreshCachedData() {
             foreach (ICachedMongoContext cachedDataService in _serviceProvider.GetInterfaceServices<ICachedMongoContext>()) {

@@ -20,7 +20,7 @@ using UKSF.Api.Teamspeak;
 namespace UKSF.Api.AppStart {
     public static class ServiceExtensions {
         public static void AddUksf(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment) =>
-            services.AddContexts().AddEventHandlers().AddServices().AddSingleton<ExceptionHandler>().AddSingleton<MigrationUtility>().AddComponents(configuration, currentEnvironment);
+            services.AddSingleton(services).AddContexts().AddEventHandlers().AddServices().AddSingleton<ExceptionHandler>().AddSingleton<MigrationUtility>().AddComponents(configuration, currentEnvironment);
 
         private static IServiceCollection AddContexts(this IServiceCollection services) => services;
 

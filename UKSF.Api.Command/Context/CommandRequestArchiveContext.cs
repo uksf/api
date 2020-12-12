@@ -3,8 +3,6 @@ using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Command.Context {
     public interface ICommandRequestArchiveContext : IMongoContext<CommandRequest> { }

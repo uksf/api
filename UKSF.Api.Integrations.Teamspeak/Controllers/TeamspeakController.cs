@@ -8,6 +8,7 @@ using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
+using UKSF.Api.Shared.Models;
 using UKSF.Api.Teamspeak.Models;
 using UKSF.Api.Teamspeak.Services;
 
@@ -47,7 +48,6 @@ namespace UKSF.Api.Teamspeak.Controllers {
             return Ok();
         }
 
-        // TODO: Frontend needs reference updating
         [HttpGet("onlineAccounts")]
         public IActionResult GetOnlineAccounts() {
             IEnumerable<TeamspeakClient> teamnspeakClients = _teamspeakService.GetOnlineTeamspeakClients();
@@ -86,8 +86,7 @@ namespace UKSF.Api.Teamspeak.Controllers {
             return Ok(new { commanders, recruiters, members, guests });
         }
 
-        // TODO: Use in frontend. Check return type. Check permissions
-        [HttpGet("onlineUserDetails"), Authorize]
-        public (bool tsOnline, string tsNickname) GetOnlineUserDetails(Account account) => _teamspeakService.GetOnlineUserDetails(account);
+        [HttpGet("{accountId}/onlineUserDetails"), Authorize, Permissions(Permissions.RECRUITER)]
+        public OnlineState GetOnlineUserDetails([FromRoute] string accountId) => _teamspeakService.GetOnlineUserDetails(accountId);
     }
 }

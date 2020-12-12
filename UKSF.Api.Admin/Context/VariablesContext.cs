@@ -22,7 +22,7 @@ namespace UKSF.Api.Admin.Context {
         public async Task Update(string key, object value) {
             VariableItem variableItem = GetSingle(key);
             if (variableItem == null) throw new KeyNotFoundException($"Variable Item with key '{key}' does not exist");
-            await base.Update(variableItem.Id, nameof(variableItem.Item), value);
+            await base.Update(variableItem.Id, x => x.Item, value);
         }
 
         public override async Task Delete(string key) {

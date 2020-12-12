@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
@@ -9,7 +8,6 @@ using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Signalr.Clients;
 using UKSF.Api.Command.Signalr.Hubs;
 using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {
@@ -17,18 +15,16 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         private readonly CommandRequestEventHandler _commandRequestEventHandler;
         private readonly IEventBus _eventBus;
         private readonly Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>> _mockHub;
-        private readonly Mock<ILogger> _mockLoggingService;
 
         public CommandRequestEventHandlerTests() {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-            _mockLoggingService = new Mock<ILogger>();
+            Mock<ILogger> mockLoggingService = new();
             _mockHub = new Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>>();
-
             _eventBus = new EventBus();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommandRequest>(It.IsAny<string>()));
 
-            _commandRequestEventHandler = new CommandRequestEventHandler(_eventBus, _mockHub.Object, _mockLoggingService.Object);
+            _commandRequestEventHandler = new CommandRequestEventHandler(_eventBus, _mockHub.Object, mockLoggingService.Object);
         }
 
         [Fact]

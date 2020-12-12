@@ -104,7 +104,7 @@ namespace UKSF.Api.Shared.Services {
         }
 
         private async Task SetNext(ScheduledJob job) {
-            await _context.Update(job.Id, "next", job.Next);
+            await _context.Update(job.Id, x => x.Next, job.Next);
         }
 
         private bool IsCancelled(MongoObject job, CancellationTokenSource token) {
