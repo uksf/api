@@ -255,9 +255,11 @@ namespace UKSF.Api.Discord.Services {
         }
 
         private static async Task HandleWeeklyEventsMessageReacts(IMessage incomingMessage) {
-            List<string> reactionCodes = new() { ":Tuesday:", ":Thursday:", ":Friday:", ":Sunday:" };
-            foreach (string reactionCode in reactionCodes) {
-                await incomingMessage.AddReactionAsync(new Emoji(reactionCode));
+            List<Emote> emotes = new() {
+                Emote.Parse("<:Tuesday:732349730809708564>"), Emote.Parse("<:Thursday:732349755816149062>"), Emote.Parse("<:Friday:732349765060395029>"), Emote.Parse("<:Sunday:732349782541991957>")
+            };
+            foreach (Emote emote in emotes) {
+                await incomingMessage.AddReactionAsync(emote);
             }
         }
 
@@ -342,14 +344,7 @@ namespace UKSF.Api.Discord.Services {
                 IEnumerable<IGrouping<string, DiscordDeletedMessageResult>> groupedMessages = messages.GroupBy(x => x.Name);
                 foreach (IGrouping<string, DiscordDeletedMessageResult> groupedMessage in groupedMessages) {
                     foreach (DiscordDeletedMessageResult result in groupedMessage) {
-                        _logger.LogDiscordEvent(
-                            DiscordUserEventType.MESSAGE_DELETED,
-                            result.InstigatorId.ToString(),
-                            result.InstigatorName,
-                            channel.Name,
-                            result.Name,
-                            result.Message
-                        );
+                        _logger.LogDiscordEvent(DiscordUserEventType.MESSAGE_DELETED, result.InstigatorId.ToString(), result.InstigatorName, channel.Name, result.Name, result.Message);
                     }
                 }
             };
@@ -362,14 +357,7 @@ namespace UKSF.Api.Discord.Services {
                         _logger.LogDiscordEvent(DiscordUserEventType.MESSAGE_DELETED, "0", "NO INSTIGATOR", channel.Name, string.Empty, $"Irretrievable message {cacheable.Id} deleted");
                         return;
                     default:
-                        _logger.LogDiscordEvent(
-                            DiscordUserEventType.MESSAGE_DELETED,
-                            result.InstigatorId.ToString(),
-                            result.InstigatorName,
-                            channel.Name,
-                            result.Name,
-                            result.Message
-                        );
+                        _logger.LogDiscordEvent(DiscordUserEventType.MESSAGE_DELETED, result.InstigatorId.ToString(), result.InstigatorName, channel.Name, result.Name, result.Message);
                         break;
                 }
             };
@@ -418,14 +406,11 @@ namespace UKSF.Api.Discord.Services {
         }
 
         private async Task<ulong> GetBannedAuditLogInstigator(ulong userId) {
-            IAsyncEnumerator<IReadOnlyCollection<RestAuditLogEntry>> auditLogsEnumerator =
-                _guild.GetAuditLogsAsync(10, RequestOptions.Default, null, null, ActionType.Ban).GetAsyncEnumerator();
+            IAsyncEnumerator<IReadOnlyCollection<RestAuditLogEntry>> auditLogsEnumerator = _guild.GetAuditLogsAsync(10, RequestOptions.Default, null, null, ActionType.Ban).GetAsyncEnumerator();
             try {
                 while (await auditLogsEnumerator.MoveNextAsync()) {
                     IReadOnlyCollection<RestAuditLogEntry> auditLogs = auditLogsEnumerator.Current;
-                    var auditUser = auditLogs.Where(x => x.Data is BanAuditLogData)
-                                             .Select(x => new { Data = x.Data as BanAuditLogData, x.User })
-                                             .FirstOrDefault(x => x.Data.Target.Id == userId);
+                    var auditUser = auditLogs.Where(x => x.Data is BanAuditLogData).Select(x => new { Data = x.Data as BanAuditLogData, x.User }).FirstOrDefault(x => x.Data.Target.Id == userId);
                     if (auditUser != null) return auditUser.User.Id;
                 }
             } finally {
@@ -436,14 +421,11 @@ namespace UKSF.Api.Discord.Services {
         }
 
         private async Task<ulong> GetUnbannedAuditLogInstigator(ulong userId) {
-            IAsyncEnumerator<IReadOnlyCollection<RestAuditLogEntry>> auditLogsEnumerator =
-                _guild.GetAuditLogsAsync(10, RequestOptions.Default, null, null, ActionType.Unban).GetAsyncEnumerator();
+            IAsyncEnumerator<IReadOnlyCollection<RestAuditLogEntry>> auditLogsEnumerator = _guild.GetAuditLogsAsync(10, RequestOptions.Default, null, null, ActionType.Unban).GetAsyncEnumerator();
             try {
                 while (await auditLogsEnumerator.MoveNextAsync()) {
                     IReadOnlyCollection<RestAuditLogEntry> auditLogs = auditLogsEnumerator.Current;
-                    var auditUser = auditLogs.Where(x => x.Data is UnbanAuditLogData)
-                                             .Select(x => new { Data = x.Data as UnbanAuditLogData, x.User })
-                                             .FirstOrDefault(x => x.Data.Target.Id == userId);
+                    var auditUser = auditLogs.Where(x => x.Data is UnbanAuditLogData).Select(x => new { Data = x.Data as UnbanAuditLogData, x.User }).FirstOrDefault(x => x.Data.Target.Id == userId);
                     if (auditUser != null) return auditUser.User.Id;
                 }
             } finally {
