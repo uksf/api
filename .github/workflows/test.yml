@@ -14,13 +14,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1.4.0
+      uses: actions/setup-dotnet@v1.7.2
       with:
-        dotnet-version: 5.0.100-rc.1.20452.10
+        dotnet-version: 5.x
     - name: Build with dotnet
       run: dotnet build -c Release
     - name: Run tests with coverage
-      run: dotnet test ./UKSF.Api.sln -c Release --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Exclude="[UKSF.Api.Signalr]*%2c[UKSF.PostMessage]*"
+      run: dotnet test ./UKSF.Api.sln -c Release --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=lcov /p:CoverletOutput=../coverage/lcov.info /p:Exclude="[UKSF.PostMessage]*"
     - name: Coveralls
       uses: coverallsapp/github-action@master
       with:
