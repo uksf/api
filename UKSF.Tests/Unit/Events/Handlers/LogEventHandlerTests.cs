@@ -47,7 +47,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         public void When_handling_a_basic_log() {
             BasicLog basicLog = new("test");
 
-            _eventBus.Send(basicLog);
+            _eventBus.Send(new LoggerEventData(basicLog));
 
             _mockObjectIdConversionService.Verify(x => x.ConvertObjectIds("test"), Times.Once);
             _mockLogDataService.Verify(x => x.Add(basicLog), Times.Once);
@@ -57,7 +57,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         public void When_handling_a_discord_log() {
             DiscordLog discordLog = new(DiscordUserEventType.JOINED, "12345", "SqnLdr.Beswick.T", "", "", "SqnLdr.Beswick.T joined");
 
-            _eventBus.Send(discordLog);
+            _eventBus.Send(new LoggerEventData(discordLog));
 
             _mockDiscordLogDataService.Verify(x => x.Add(discordLog), Times.Once);
         }
@@ -66,7 +66,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         public void When_handling_a_launcher_log() {
             LauncherLog launcherLog = new("1.0.0", "test");
 
-            _eventBus.Send(launcherLog);
+            _eventBus.Send(new LoggerEventData(launcherLog));
 
             _mockObjectIdConversionService.Verify(x => x.ConvertObjectIds("test"), Times.Once);
             _mockLauncherLogDataService.Verify(x => x.Add(launcherLog), Times.Once);
@@ -76,7 +76,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         public void When_handling_an_audit_log() {
             AuditLog basicLog = new("server", "test");
 
-            _eventBus.Send(basicLog);
+            _eventBus.Send(new LoggerEventData(basicLog));
 
             _mockObjectIdConversionService.Verify(x => x.ConvertObjectId("server"), Times.Once);
             _mockObjectIdConversionService.Verify(x => x.ConvertObjectIds("test"), Times.Once);
@@ -87,7 +87,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         public void When_handling_an_http_error_log() {
             HttpErrorLog httpErrorLog = new(new Exception());
 
-            _eventBus.Send(httpErrorLog);
+            _eventBus.Send(new LoggerEventData(httpErrorLog));
 
             _mockObjectIdConversionService.Verify(x => x.ConvertObjectIds("Exception of type 'System.Exception' was thrown."), Times.Once);
             _mockHttpErrorLogDataService.Verify(x => x.Add(httpErrorLog), Times.Once);

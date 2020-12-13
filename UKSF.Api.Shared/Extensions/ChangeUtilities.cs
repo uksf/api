@@ -12,17 +12,17 @@ namespace UKSF.Api.Shared.Extensions {
         private static List<Change> GetChanges<T>(this T original, T updated) {
             List<Change> changes = new();
             Type type = original.GetType();
-            foreach (PropertyInfo propertyInfo in type.GetProperties()) {
-                string name = propertyInfo.Name;
-                object originalValue = propertyInfo.GetValue(original);
-                object updatedValue = propertyInfo.GetValue(updated);
+            foreach (FieldInfo fieldInfo in type.GetFields()) {
+                string name = fieldInfo.Name;
+                object originalValue = fieldInfo.GetValue(original);
+                object updatedValue = fieldInfo.GetValue(updated);
                 if (originalValue == null && updatedValue == null) continue;
                 if (DeepEquals(originalValue, updatedValue)) continue;
 
-                if (propertyInfo.PropertyType.IsClass && !propertyInfo.PropertyType.IsSerializable) {
+                if (fieldInfo.FieldType.IsClass && !fieldInfo.FieldType.IsSerializable) {
                     // Class, recurse
                     changes.Add(new Change { Type = ChangeType.CLASS, Name = name, InnerChanges = GetChanges(originalValue, updatedValue) });
-                } else if (propertyInfo.PropertyType != typeof(string) && updatedValue is IEnumerable originalListValue && originalValue is IEnumerable updatedListValue) {
+                } else if (fieldInfo.FieldType != typeof(string) && updatedValue is IEnumerable originalListValue && originalValue is IEnumerable updatedListValue) {
                     // List, get list changes
                     changes.Add(new Change { Type = ChangeType.LIST, Name = name, InnerChanges = GetListChanges(originalListValue, updatedListValue) });
                 } else {
@@ -43,8 +43,8 @@ namespace UKSF.Api.Shared.Extensions {
         private static List<Change> GetListChanges(this IEnumerable original, IEnumerable updated) {
             List<object> originalObjects = original == null ? new List<object>() : original.Cast<object>().ToList();
             List<object> updatedObjects = updated == null ? new List<object>() : updated.Cast<object>().ToList();
-            List<Change> changes = originalObjects.Where(x => !updatedObjects.Contains(x)).Select(x => new Change { Type = ChangeType.ADDITION, Updated = x.ToString() }).ToList();
-            changes.AddRange(updatedObjects.Where(x => !originalObjects.Contains(x)).Select(x => new Change { Type = ChangeType.REMOVAL, Original = x.ToString() }));
+            List<Change> changes = originalObjects.Where(originalObject => !updatedObjects.Any(updatedObject => DeepEquals(originalObject, updatedObject))).Select(x => new Change { Type = ChangeType.ADDITION, Updated = x.ToString() }).ToList();
+            changes.AddRange(updatedObjects.Where(updatedObject => !originalObjects.Any(originalObject => DeepEquals(originalObject, updatedObject))).Select(x => new Change { Type = ChangeType.REMOVAL, Original = x.ToString() }));
             return changes;
         }
 

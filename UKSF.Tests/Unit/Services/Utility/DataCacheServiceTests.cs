@@ -12,10 +12,11 @@ namespace UKSF.Tests.Unit.Services.Utility {
             Mock<IRanksContext> mockRanksDataService = new();
             Mock<IRolesContext> mockRolesDataService = new();
 
-            IServiceCollection serviceCollection = new ServiceCollection().AddSingleton(_ => mockAccountDataService.Object)
-                                                                        .AddSingleton(_ => mockRanksDataService.Object)
-                                                                        .AddSingleton(_ => mockRolesDataService.Object);
-            DataCacheService dataCacheService = new(serviceCollection);
+            ServiceProvider serviceProvider = new ServiceCollection().AddSingleton(_ => mockAccountDataService.Object)
+                                                                       .AddSingleton(_ => mockRanksDataService.Object)
+                                                                       .AddSingleton(_ => mockRolesDataService.Object)
+                                                                       .BuildServiceProvider();
+            DataCacheService dataCacheService = new(serviceProvider);
 
             dataCacheService.RefreshCachedData();
 

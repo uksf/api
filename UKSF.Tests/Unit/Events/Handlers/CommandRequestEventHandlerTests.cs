@@ -8,6 +8,7 @@ using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Signalr.Clients;
 using UKSF.Api.Command.Signalr.Hubs;
 using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers {
@@ -38,7 +39,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _commandRequestEventHandler.Init();
 
-            _eventBus.Send(new EventModel(EventType.DELETE, null));
+            _eventBus.Send(new EventModel(EventType.DELETE, new ContextEventData<CommandRequest>(null, null)));
 
             mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Never);
         }
@@ -54,8 +55,8 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _commandRequestEventHandler.Init();
 
-            _eventBus.Send(new EventModel(EventType.ADD, null));
-            _eventBus.Send(new EventModel(EventType.UPDATE, null));
+            _eventBus.Send(new EventModel(EventType.ADD, new ContextEventData<CommandRequest>(null, null)));
+            _eventBus.Send(new EventModel(EventType.UPDATE, new ContextEventData<CommandRequest>(null, null)));
 
             mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Exactly(2));
         }
