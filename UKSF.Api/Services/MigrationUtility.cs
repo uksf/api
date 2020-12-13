@@ -11,25 +11,16 @@ using UKSF.Api.Shared.Models;
 namespace UKSF.Api.Services {
     public class MigrationUtility {
         private const string KEY = "MIGRATED";
-        private readonly IAuditLogContext _auditLogContext;
         private readonly IHostEnvironment _currentEnvironment;
-        private readonly IHttpErrorLogContext _httpErrorLogContext;
-        private readonly ILauncherLogContext _launcherLogContext;
-        private readonly ILogContext _logContext;
         private readonly ILogger _logger;
+        private readonly ILogContext _logContext;
+        private readonly IHttpErrorLogContext _httpErrorLogContext;
+        private readonly IAuditLogContext _auditLogContext;
+        private readonly ILauncherLogContext _launcherLogContext;
         private readonly IVariablesContext _variablesContext;
         private readonly IVariablesService _variablesService;
 
-        public MigrationUtility(
-            IHostEnvironment currentEnvironment,
-            IVariablesService variablesService,
-            IVariablesContext variablesContext,
-            ILogger logger,
-            ILogContext logContext,
-            IHttpErrorLogContext httpErrorLogContext,
-            IAuditLogContext auditLogContext,
-            ILauncherLogContext launcherLogContext
-        ) {
+        public MigrationUtility(IHostEnvironment currentEnvironment, IVariablesService variablesService, IVariablesContext variablesContext, ILogger logger, ILogContext logContext, IHttpErrorLogContext httpErrorLogContext, IAuditLogContext auditLogContext, ILauncherLogContext launcherLogContext) {
             _currentEnvironment = currentEnvironment;
             _variablesService = variablesService;
             _variablesContext = variablesContext;

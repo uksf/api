@@ -38,9 +38,6 @@ namespace UKSF.Tests.Unit.Data {
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
             _mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
-            _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(predicate => mockCollection.Where(predicate));
-            _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(predicate => mockCollection.FirstOrDefault(predicate));
-            _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(id => mockCollection.FirstOrDefault(x => x.Id == id));
 
             _testCachedContext = new TestCachedContext(mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
         }

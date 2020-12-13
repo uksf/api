@@ -8,7 +8,6 @@ namespace UKSF.Api.Shared {
         public static IServiceCollection AddUksfShared(this IServiceCollection services) =>
             services
                 .AddContexts()
-
                     .AddEventHandlers()
                     .AddServices()
                     .AddTransient<IHttpContextService, HttpContextService>()

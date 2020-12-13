@@ -11,7 +11,7 @@ namespace UKSF.Api.Admin.Services {
     public class DataCacheService : IDataCacheService {
         private readonly IServiceProvider _serviceProvider;
 
-        public DataCacheService(IServiceCollection serviceCollection) => _serviceProvider = serviceCollection.BuildServiceProvider();
+        public DataCacheService(IServiceProvider serviceProvider) => _serviceProvider = serviceProvider;
 
         public void RefreshCachedData() {
             foreach (ICachedMongoContext cachedDataService in _serviceProvider.GetInterfaceServices<ICachedMongoContext>()) {

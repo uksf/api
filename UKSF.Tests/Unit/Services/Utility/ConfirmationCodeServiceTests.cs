@@ -84,7 +84,6 @@ namespace UKSF.Tests.Unit.Services.Utility {
             List<ConfirmationCode> confirmationCodeData = new() { confirmationCode1, confirmationCode2 };
 
             _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => confirmationCodeData.FirstOrDefault(y => y.Id == x));
-            _mockConfirmationCodeDataService.Setup(x => x.Delete(It.IsAny<string>())).Returns(Task.CompletedTask).Callback<string>(x => confirmationCodeData.RemoveAll(y => y.Id == x));
             _mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<ScheduledJob, bool>>())).Returns<Func<ScheduledJob, bool>>(x => Task.FromResult(new List<ScheduledJob>().FirstOrDefault(x)));
 
             string subject = await _confirmationCodeService.GetConfirmationCode(confirmationCode2.Id);
@@ -98,7 +97,6 @@ namespace UKSF.Tests.Unit.Services.Utility {
             List<ConfirmationCode> confirmationCodeData = new() { confirmationCode };
 
             _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => confirmationCodeData.FirstOrDefault(y => y.Id == x));
-            _mockConfirmationCodeDataService.Setup(x => x.Delete(It.IsAny<string>())).Returns(Task.CompletedTask).Callback<string>(x => confirmationCodeData.RemoveAll(y => y.Id == x));
             _mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<ScheduledJob, bool>>())).Returns<Func<ScheduledJob, bool>>(x => Task.FromResult(new List<ScheduledJob>().FirstOrDefault(x)));
 
             string subject = await _confirmationCodeService.GetConfirmationCode(confirmationCode.Id);

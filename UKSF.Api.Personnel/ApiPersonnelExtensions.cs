@@ -13,7 +13,6 @@ namespace UKSF.Api.Personnel {
     public static class ApiPersonnelExtensions {
         public static IServiceCollection AddUksfPersonnel(this IServiceCollection services) =>
             services.AddContexts()
-
                     .AddEventHandlers()
                     .AddServices()
                     .AddActions()
