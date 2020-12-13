@@ -32,13 +32,11 @@ namespace UKSF.Api.Services {
         }
 
         public void Migrate() {
-            bool migrated = false;
+            bool migrated = true;
             if (!_currentEnvironment.IsDevelopment()) {
-                string migratedString = _variablesService.GetVariable(KEY).AsString();
-                migrated = bool.Parse(migratedString);
+                migrated = _variablesService.GetVariable(KEY).AsBool();
             }
 
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             if (!migrated) {
                 try {
                     ExecuteMigration();
