@@ -254,6 +254,7 @@ namespace UKSF.Api.Discord.Services {
             }
         }
 
+        // TODO: Remove reacts once 1 person has reacted for that day
         private static async Task HandleWeeklyEventsMessageReacts(IMessage incomingMessage) {
             List<Emote> emotes = new() {
                 Emote.Parse("<:Tuesday:732349730809708564>"), Emote.Parse("<:Thursday:732349755816149062>"), Emote.Parse("<:Friday:732349765060395029>"), Emote.Parse("<:Sunday:732349782541991957>")
