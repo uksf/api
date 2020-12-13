@@ -90,8 +90,8 @@ namespace UKSF.Api.Base.Context {
         }
 
         public async Task DeleteManyAsync(Expression<Func<T, bool>> predicate) {
-            IEnumerable<string> ids = Get(predicate.Compile())
-                .Select(x => x.Id); // This is necessary for filtering items by a default model value (e.g Role order default 0, may not be stored in document)
+            // This is necessary for filtering items by a default model value (e.g Role order default 0, may not be stored in document)
+            IEnumerable<string> ids = Get(predicate.Compile()).Select(x => x.Id);
             await GetCollection().DeleteManyAsync(Builders<T>.Filter.In(x => x.Id, ids));
         }
 
