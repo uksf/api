@@ -83,9 +83,6 @@ namespace UKSF.Api.Discord.Services {
 
             await _client.LoginAsync(TokenType.Bot, _configuration.GetConnectionString("discord"));
             await _client.StartAsync();
-
-            await Task.Delay(TimeSpan.FromSeconds(5));
-            await _guild.GetTextChannel(522851104128499712).SendMessageAsync(Guid.NewGuid().ToString());
         }
 
         public async Task SendMessage(ulong channelId, string message) {
