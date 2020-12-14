@@ -76,10 +76,7 @@ namespace UKSF.Api.Discord.Services {
             _client = new DiscordSocketClient(new DiscordSocketConfig { AlwaysDownloadUsers = true, MessageCacheSize = 1000 });
             _client.Ready += OnClientOnReady;
             _client.Disconnected += ClientOnDisconnected;
-            _client.MessageReceived += ClientOnMessageReceived;
-            _client.UserJoined += ClientOnUserJoined;
-            _client.GuildMemberUpdated += ClientOnGuildMemberUpdated;
-            AddUserEventLogs();
+            AddEventhandlers();
 
             await _client.LoginAsync(TokenType.Bot, _configuration.GetConnectionString("discord"));
             await _client.StartAsync();
@@ -225,55 +222,6 @@ namespace UKSF.Api.Discord.Services {
             }
         }
 
-        private async Task ClientOnGuildMemberUpdated(SocketGuildUser oldUser, SocketGuildUser user) {
-            if (IsDiscordDisabled()) return;
-
-            string oldRoles = oldUser.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}").Aggregate((x, y) => $"{x},{y}");
-            string newRoles = user.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}").Aggregate((x, y) => $"{x},{y}");
-            if (oldRoles != newRoles || oldUser.Nickname != user.Nickname) {
-                await UpdateAccount(null, user.Id);
-            }
-        }
-
-        private async Task ClientOnUserJoined(SocketGuildUser user) {
-            if (IsDiscordDisabled()) return;
-
-            await UpdateAccount(null, user.Id);
-        }
-
-        private async Task ClientOnMessageReceived(SocketMessage incomingMessage) {
-            if (IsDiscordDisabled()) return;
-
-            if (incomingMessage.Content.Contains(_variablesService.GetVariable("DISCORD_FILTER_WEEKLY_EVENTS").AsString(), StringComparison.InvariantCultureIgnoreCase)) {
-                await HandleWeeklyEventsMessageReacts(incomingMessage);
-                return;
-            }
-
-            if (incomingMessage.Content.Contains("bot", StringComparison.InvariantCultureIgnoreCase) || incomingMessage.MentionedUsers.Any(x => x.IsBot)) {
-                await HandleBotMessageResponse(incomingMessage);
-            }
-        }
-
-        // TODO: Remove reacts once 1 person has reacted for that day
-        private static async Task HandleWeeklyEventsMessageReacts(IMessage incomingMessage) {
-            List<Emote> emotes = new() {
-                Emote.Parse("<:Tuesday:732349730809708564>"), Emote.Parse("<:Thursday:732349755816149062>"), Emote.Parse("<:Friday:732349765060395029>"), Emote.Parse("<:Sunday:732349782541991957>")
-            };
-            foreach (Emote emote in emotes) {
-                await incomingMessage.AddReactionAsync(emote);
-            }
-        }
-
-        private async Task HandleBotMessageResponse(SocketMessage incomingMessage) {
-            if (TRIGGERS.Any(x => incomingMessage.Content.Contains(x, StringComparison.InvariantCultureIgnoreCase))) {
-                bool owner = incomingMessage.Author.Id == _variablesService.GetVariable("DID_U_OWNER").AsUlong();
-                string message = owner ? OWNER_REPLIES[new Random().Next(0, OWNER_REPLIES.Length)] : REPLIES[new Random().Next(0, REPLIES.Length)];
-                string[] parts = _guild.GetUser(incomingMessage.Author.Id).Nickname.Split('.');
-                string nickname = owner ? "Daddy" : parts.Length > 1 ? parts[1] : parts[0];
-                await SendMessage(incomingMessage.Channel.Id, string.Format(message, nickname));
-            }
-        }
-
         private Task OnClientOnReady() {
             _guild = _client.GetGuild(_variablesService.GetVariable("DID_SERVER").AsUlong());
             _roles = _guild.Roles;
@@ -289,11 +237,18 @@ namespace UKSF.Api.Discord.Services {
             return Task.CompletedTask;
         }
 
-        private void AddUserEventLogs() {
+        private void AddEventhandlers() {
+            _client.MessageReceived += ClientOnMessageReceived;
+            _client.UserJoined += ClientOnUserJoined;
+            _client.GuildMemberUpdated += ClientOnGuildMemberUpdated;
+            _client.ReactionAdded += ClientOnReactionAdded;
+            _client.ReactionRemoved += ClientOnReactionRemoved;
+
             _client.UserJoined += user => {
                 string name = GetUserNickname(user);
                 string associatedAccountMessage = GetAssociatedAccountMessage(user.Id);
                 _logger.LogDiscordEvent(DiscordUserEventType.JOINED, user.Id.ToString(), name, string.Empty, name, $"Joined, {associatedAccountMessage}");
+
                 return Task.CompletedTask;
             };
 
@@ -363,6 +318,91 @@ namespace UKSF.Api.Discord.Services {
                 }
             };
         }
+
+        private async Task ClientOnGuildMemberUpdated(SocketGuildUser oldUser, SocketGuildUser user) {
+            if (IsDiscordDisabled()) return;
+
+            string oldRoles = oldUser.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}").Aggregate((x, y) => $"{x},{y}");
+            string newRoles = user.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}").Aggregate((x, y) => $"{x},{y}");
+            if (oldRoles != newRoles || oldUser.Nickname != user.Nickname) {
+                await UpdateAccount(null, user.Id);
+            }
+        }
+
+        private async Task ClientOnUserJoined(SocketGuildUser user) {
+            if (IsDiscordDisabled()) return;
+
+            await UpdateAccount(null, user.Id);
+        }
+
+        private async Task ClientOnMessageReceived(SocketMessage message) {
+            if (IsDiscordDisabled()) return;
+
+            if (MessageIsWeeklyEventsMessage(message)) {
+                await HandleWeeklyEventsMessageReacts(message);
+                return;
+            }
+
+            if (message.Content.Contains("bot", StringComparison.InvariantCultureIgnoreCase) || message.MentionedUsers.Any(x => x.IsBot)) {
+                await HandleBotMessageResponse(message);
+            }
+        }
+
+        private static async Task HandleWeeklyEventsMessageReacts(IMessage incomingMessage) {
+            List<Emote> emotes = new() {
+                Emote.Parse("<:Tuesday:732349730809708564>"), Emote.Parse("<:Thursday:732349755816149062>"), Emote.Parse("<:Friday:732349765060395029>"), Emote.Parse("<:Sunday:732349782541991957>")
+            };
+
+            foreach (Emote emote in emotes) {
+                await incomingMessage.AddReactionAsync(emote);
+            }
+        }
+
+        private async Task HandleBotMessageResponse(SocketMessage incomingMessage) {
+            if (TRIGGERS.Any(x => incomingMessage.Content.Contains(x, StringComparison.InvariantCultureIgnoreCase))) {
+                bool owner = incomingMessage.Author.Id == _variablesService.GetVariable("DID_U_OWNER").AsUlong();
+                string message = owner ? OWNER_REPLIES[new Random().Next(0, OWNER_REPLIES.Length)] : REPLIES[new Random().Next(0, REPLIES.Length)];
+                string[] parts = _guild.GetUser(incomingMessage.Author.Id).Nickname.Split('.');
+                string nickname = owner ? "Daddy" : parts.Length > 1 ? parts[1] : parts[0];
+                await SendMessage(incomingMessage.Channel.Id, string.Format(message, nickname));
+            }
+        }
+
+        private async Task ClientOnReactionAdded(Cacheable<IUserMessage, ulong> cacheable, ISocketMessageChannel channel, SocketReaction reaction) {
+            if (IsDiscordDisabled()) return;
+
+            IUserMessage message = await cacheable.GetOrDownloadAsync();
+            if (!MessageIsWeeklyEventsMessage(message)) {
+                return;
+            }
+
+            if (!message.Reactions.TryGetValue(reaction.Emote, out ReactionMetadata metadata)) {
+                return;
+            }
+
+            if (!metadata.IsMe) {
+                return;
+            }
+
+            if (metadata.ReactionCount > 1) {
+                await message.RemoveReactionAsync(reaction.Emote, _client.CurrentUser);
+            }
+        }
+
+        private async Task ClientOnReactionRemoved(Cacheable<IUserMessage, ulong> cacheable, ISocketMessageChannel channel, SocketReaction reaction) {
+            if (IsDiscordDisabled()) return;
+            
+            IUserMessage message = await cacheable.GetOrDownloadAsync();
+            if (!MessageIsWeeklyEventsMessage(message)) {
+                return;
+            }
+
+            if (!message.Reactions.TryGetValue(reaction.Emote, out ReactionMetadata _)) {
+                await message.AddReactionAsync(reaction.Emote);
+            }
+        }
+
+        private bool MessageIsWeeklyEventsMessage(IMessage message) => message != null && message.Content.Contains(_variablesService.GetVariable("DISCORD_FILTER_WEEKLY_EVENTS").AsString(), StringComparison.InvariantCultureIgnoreCase);
 
         private string GetAssociatedAccountMessage(ulong userId) {
             Account account = _accountContext.GetSingle(x => x.DiscordId == userId.ToString());
