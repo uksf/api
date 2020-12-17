@@ -110,7 +110,7 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void Should_detect_changes_for_simple_list() {
+        public void Should_detect_changes_for_simple_object_with_list() {
             string id = ObjectId.GenerateNewId().ToString();
             Account original = new() { Id = id, RolePreferences = new List<string> { "Aviatin", "NCO" } };
             Account updated = new() { Id = id, RolePreferences = new List<string> { "Aviation", "NCO", "Officer" } };
@@ -158,6 +158,16 @@ namespace UKSF.Tests.Unit.Common {
             string subject = original.Changes(updated);
 
             subject.Should().Be("\tNo changes");
+        }
+
+        [Fact]
+        public void Should_detect_changes_for_simple_list() {
+            List<string> original = new() { "Aviatin", "NCO" };
+            List<string> updated = new() { "Aviation", "NCO", "Officer" };
+
+            string subject = original.Changes(updated);
+
+            subject.Should().Be("\n\t'List' changed:" + "\n\t\tadded: 'Aviation'" + "\n\t\tadded: 'Officer'" + "\n\t\tremoved: 'Aviatin'");
         }
     }
 }

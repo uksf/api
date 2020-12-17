@@ -391,7 +391,7 @@ namespace UKSF.Api.Discord.Services {
 
         private async Task ClientOnReactionRemoved(Cacheable<IUserMessage, ulong> cacheable, ISocketMessageChannel channel, SocketReaction reaction) {
             if (IsDiscordDisabled()) return;
-            
+
             IUserMessage message = await cacheable.GetOrDownloadAsync();
             if (!MessageIsWeeklyEventsMessage(message)) {
                 return;

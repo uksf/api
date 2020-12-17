@@ -92,18 +92,18 @@ namespace UKSF.Api.ArmaServer.Controllers {
 
             await _gameServersContext.Update(
                 gameServer.Id,
-                Builders<GameServer>.Update.Set("name", gameServer.Name)
-                                    .Set("port", gameServer.Port)
-                                    .Set("apiPort", gameServer.ApiPort)
-                                    .Set("numberHeadlessClients", gameServer.NumberHeadlessClients)
-                                    .Set("profileName", gameServer.ProfileName)
-                                    .Set("hostName", gameServer.HostName)
-                                    .Set("password", gameServer.Password)
-                                    .Set("adminPassword", gameServer.AdminPassword)
-                                    .Set("environment", gameServer.Environment)
-                                    .Set("serverOption", gameServer.ServerOption)
-                                    .Set("mods", gameServer.Mods)
-                                    .Set("serverMods", gameServer.ServerMods)
+                Builders<GameServer>.Update.Set(x => x.Name, gameServer.Name)
+                                    .Set(x => x.Port, gameServer.Port)
+                                    .Set(x => x.ApiPort, gameServer.ApiPort)
+                                    .Set(x => x.NumberHeadlessClients, gameServer.NumberHeadlessClients)
+                                    .Set(x => x.ProfileName, gameServer.ProfileName)
+                                    .Set(x => x.HostName, gameServer.HostName)
+                                    .Set(x => x.Password, gameServer.Password)
+                                    .Set(x => x.AdminPassword, gameServer.AdminPassword)
+                                    .Set(x => x.Environment, gameServer.Environment)
+                                    .Set(x => x.ServerOption, gameServer.ServerOption)
+                                    .Set(x => x.Mods, gameServer.Mods)
+                                    .Set(x => x.ServerMods, gameServer.ServerMods)
             );
             return Ok(new { environmentChanged });
         }
@@ -169,7 +169,6 @@ namespace UKSF.Api.ArmaServer.Controllers {
                 return BadRequest("Server cannot be launched while another server with the same port is running");
             }
 
-            // Patch mission
             string missionSelection = data["missionName"].ToString();
             MissionPatchingResult patchingResult = await _gameServersService.PatchMissionFile(missionSelection);
             if (!patchingResult.Success) {
@@ -183,11 +182,9 @@ namespace UKSF.Api.ArmaServer.Controllers {
                 );
             }
 
-            // Write config
             _gameServersService.WriteServerConfig(gameServer, patchingResult.PlayerCount, missionSelection);
             gameServer.Status.Mission = missionSelection;
 
-            // Execute launch
             await _gameServersService.LaunchGameServer(gameServer);
 
             _logger.LogAudit($"Game server launched '{missionSelection}' on '{gameServer.Name}'");
