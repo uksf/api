@@ -12,7 +12,14 @@ namespace UKSF.Api.Shared.Extensions {
         private static List<Change> GetChanges<T>(this T original, T updated) {
             List<Change> changes = new();
             Type type = original.GetType();
-            foreach (FieldInfo fieldInfo in type.GetFields()) {
+            IEnumerable<FieldInfo> fields = type.GetFields();
+
+            if (!fields.Any()) {
+                changes.Add(GetChange(type, type.Name.Split('`')[0], original, updated));
+                return changes;
+            }
+
+            foreach (FieldInfo fieldInfo in fields) {
                 string name = fieldInfo.Name;
                 object originalValue = fieldInfo.GetValue(original);
                 object updatedValue = fieldInfo.GetValue(updated);
@@ -20,24 +27,29 @@ namespace UKSF.Api.Shared.Extensions {
                 if (DeepEquals(originalValue, updatedValue)) continue;
 
                 if (fieldInfo.FieldType.IsClass && !fieldInfo.FieldType.IsSerializable) {
-                    // Class, recurse
                     changes.Add(new Change { Type = ChangeType.CLASS, Name = name, InnerChanges = GetChanges(originalValue, updatedValue) });
-                } else if (fieldInfo.FieldType != typeof(string) && updatedValue is IEnumerable originalListValue && originalValue is IEnumerable updatedListValue) {
-                    // List, get list changes
-                    changes.Add(new Change { Type = ChangeType.LIST, Name = name, InnerChanges = GetListChanges(originalListValue, updatedListValue) });
                 } else {
-                    // Assume otherwise normal field
-                    if (originalValue == null) {
-                        changes.Add(new Change { Type = ChangeType.ADDITION, Name = name, Updated = updatedValue.ToString() });
-                    } else if (updatedValue == null) {
-                        changes.Add(new Change { Type = ChangeType.REMOVAL, Name = name, Original = originalValue.ToString() });
-                    } else {
-                        changes.Add(new Change { Type = ChangeType.CHANGE, Name = name, Original = originalValue.ToString(), Updated = updatedValue.ToString() });
-                    }
+                    changes.Add(GetChange(fieldInfo.FieldType, name, originalValue, updatedValue));
                 }
             }
 
             return changes;
+        }
+
+        private static Change GetChange(Type type, string name, object original, object updated) {
+            if (type != typeof(string) && updated is IEnumerable originalListValue && original is IEnumerable updatedListValue) {
+                return new Change { Type = ChangeType.LIST, Name = name == string.Empty ? "List" : name, InnerChanges = GetListChanges(originalListValue, updatedListValue) };
+            }
+
+            if (original == null) {
+                return new Change { Type = ChangeType.ADDITION, Name = name, Updated = updated.ToString() };
+            }
+
+            if (updated == null) {
+                return new Change { Type = ChangeType.REMOVAL, Name = name, Original = original.ToString() };
+            }
+
+            return new Change { Type = ChangeType.CHANGE, Name = name, Original = original.ToString(), Updated = updated.ToString() };
         }
 
         private static List<Change> GetListChanges(this IEnumerable original, IEnumerable updated) {

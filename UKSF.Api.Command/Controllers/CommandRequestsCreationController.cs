@@ -49,10 +49,16 @@ namespace UKSF.Api.Command.Controllers {
             request.Requester = _httpContextService.GetUserId();
             request.DisplayValue = request.Value;
             request.DisplayFrom = _accountContext.GetSingle(request.Recipient).Rank;
-            if (request.DisplayValue == request.DisplayFrom) return BadRequest("Ranks are equal");
+            if (request.DisplayValue == request.DisplayFrom) {
+                return BadRequest("Ranks are equal");
+            }
+
             bool direction = _ranksService.IsSuperior(request.DisplayValue, request.DisplayFrom);
             request.Type = string.IsNullOrEmpty(request.DisplayFrom) ? CommandRequestType.PROMOTION : direction ? CommandRequestType.PROMOTION : CommandRequestType.DEMOTION;
-            if (_commandRequestService.DoesEquivalentRequestExist(request)) return BadRequest("An equivalent request already exists");
+            if (_commandRequestService.DoesEquivalentRequestExist(request)) {
+                return BadRequest("An equivalent request already exists");
+            }
+
             await _commandRequestService.Add(request);
             return Ok();
         }
