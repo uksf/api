@@ -81,7 +81,7 @@ namespace UKSF.Api.ArmaServer.Controllers {
 
         [HttpPatch, Authorize]
         public async Task<IActionResult> EditGameServer([FromBody] GameServer gameServer) {
-            GameServer oldGameServer = _gameServersContext.GetSingle(x => x.Id == gameServer.Id);
+            GameServer oldGameServer = _gameServersContext.GetSingle(gameServer.Id);
             _logger.LogAudit($"Game server '{gameServer.Name}' updated:{oldGameServer.Changes(gameServer)}");
             bool environmentChanged = false;
             if (oldGameServer.Environment != gameServer.Environment) {
@@ -110,7 +110,7 @@ namespace UKSF.Api.ArmaServer.Controllers {
 
         [HttpDelete("{id}"), Authorize]
         public async Task<IActionResult> DeleteGameServer(string id) {
-            GameServer gameServer = _gameServersContext.GetSingle(x => x.Id == id);
+            GameServer gameServer = _gameServersContext.GetSingle(id);
             _logger.LogAudit($"Game server deleted '{gameServer.Name}'");
             await _gameServersContext.Delete(id);
 
@@ -229,14 +229,11 @@ namespace UKSF.Api.ArmaServer.Controllers {
         public IActionResult GetAvailableMods(string id) => Ok(_gameServersService.GetAvailableMods(id));
 
         [HttpPost("{id}/mods"), Authorize]
-        public async Task<IActionResult> SetGameServerMods(string id, [FromBody] JObject body) {
-            List<GameServerMod> mods = JsonConvert.DeserializeObject<List<GameServerMod>>(body.GetValueFromBody("mods"));
-            List<GameServerMod> serverMods = JsonConvert.DeserializeObject<List<GameServerMod>>(body.GetValueFromBody("serverMods"));
-            GameServer gameServer = _gameServersContext.GetSingle(id);
-            _logger.LogAudit($"Game server '{gameServer.Name}' mods updated:{gameServer.Mods.Select(x => x.Name).Changes(mods.Select(x => x.Name))}");
-            _logger.LogAudit($"Game server '{gameServer.Name}' serverMods updated:{gameServer.ServerMods.Select(x => x.Name).Changes(serverMods.Select(x => x.Name))}");
+        public async Task<IActionResult> SetGameServerMods(string id, [FromBody] GameServer gameServer) {
+            GameServer oldGameServer = _gameServersContext.GetSingle(id);
             await _gameServersContext.Update(id, Builders<GameServer>.Update.Unset(x => x.Mods).Unset(x => x.ServerMods));
-            await _gameServersContext.Update(id, Builders<GameServer>.Update.Set(x => x.Mods, mods).Set(x => x.ServerMods, serverMods));
+            await _gameServersContext.Update(id, Builders<GameServer>.Update.Set(x => x.Mods, gameServer.Mods).Set(x => x.ServerMods, gameServer.ServerMods));
+            _logger.LogAudit($"Game server '{gameServer.Name}' updated:{oldGameServer.Changes(gameServer)}");
             return Ok(_gameServersService.GetAvailableMods(id));
         }
 
