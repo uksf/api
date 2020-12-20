@@ -8,6 +8,7 @@ using UKSF.Api.Auth;
 using UKSF.Api.Base;
 using UKSF.Api.Command;
 using UKSF.Api.Discord;
+using UKSF.Api.Documents;
 using UKSF.Api.EventHandlers;
 using UKSF.Api.Integrations.Instagram;
 using UKSF.Api.Launcher;
@@ -41,6 +42,7 @@ namespace UKSF.Api.AppStart {
                     .AddUksfLauncher()
                     .AddUksfIntegrationDiscord()
                     .AddUksfIntegrationInstagram()
-                    .AddUksfIntegrationTeamspeak();
+                    .AddUksfIntegrationTeamspeak()
+                    .AddUksfDocuments();
     }
 }
