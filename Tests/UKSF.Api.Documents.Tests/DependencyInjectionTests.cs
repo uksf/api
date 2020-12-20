@@ -1,13 +1,17 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using UKSF.Api.Admin;
 using UKSF.Api.Documents.Controllers;
+using UKSF.Api.Personnel;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
 namespace UKSF.Api.Documents.Tests {
     public class DependencyInjectionTests : DependencyInjectionTestsBase {
         public DependencyInjectionTests() {
-
+            Services.AddUksfAdmin();
+            Services.AddUksfPersonnel();
+            Services.AddUksfDocuments();
         }
 
         [Fact]
