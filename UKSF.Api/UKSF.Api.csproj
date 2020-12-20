@@ -44,6 +44,7 @@
         <ProjectReference Include="..\UKSF.Api.Admin\UKSF.Api.Admin.csproj" />
         <ProjectReference Include="..\UKSF.Api.Auth\UKSF.Api.Auth.csproj" />
         <ProjectReference Include="..\UKSF.Api.Command\UKSF.Api.Command.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Documents\UKSF.Api.Documents.csproj" />
         <ProjectReference Include="..\UKSF.Api.Integrations.Instagram\UKSF.Api.Integrations.Instagram.csproj" />
         <ProjectReference Include="..\UKSF.Api.Integrations.Discord\UKSF.Api.Integrations.Discord.csproj" />
         <ProjectReference Include="..\UKSF.Api.Integrations.Teamspeak\UKSF.Api.Integrations.Teamspeak.csproj" />
