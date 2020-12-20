@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using UKSF.Api.Base.Events;
@@ -45,10 +46,11 @@ namespace UKSF.Api.Personnel.EventHandlers {
 
         private async Task LeftEvent(string accountId) {
             Account account = _accountContext.GetSingle(accountId);
-            // if (account.MembershipState == MembershipState.CONFIRMED) {
-                string name = _displayNameService.GetDisplayName(account);
-                await _commentThreadService.InsertComment(account.Application.RecruiterCommentThread, new Comment { Author = ObjectId.Empty.ToString(), Content = $"{name} left the Discord" });
-            // }
+            string name = _displayNameService.GetDisplayName(account);
+            await _commentThreadService.InsertComment(
+                account.Application.RecruiterCommentThread,
+                new Comment { Author = ObjectId.Empty.ToString(), Content = $"{name} left the Discord", Timestamp = DateTime.Now }
+            );
         }
     }
 }
