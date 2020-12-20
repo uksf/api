@@ -21,7 +21,9 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\UKSF.Api.Admin\UKSF.Api.Admin.csproj" />
         <ProjectReference Include="..\..\UKSF.Api.Documents\UKSF.Api.Documents.csproj" />
+        <ProjectReference Include="..\..\UKSF.Api.Personnel\UKSF.Api.Personnel.csproj" />
         <ProjectReference Include="..\UKSF.Api.Tests.Common\UKSF.Api.Tests.Common.csproj" />
     </ItemGroup>
 
