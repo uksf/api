@@ -61,6 +61,19 @@ namespace UKSF.Api.Documents.Tests.Commands {
             Should_throw_invalid_exception_with_message(Act, "Invalid query block operators. Every odd query block should be a condition or block (CONDITION/BLOCK)");
         }
 
+        [Fact]
+        public void When_validating_document_permissions_with_unrecognized_oprator() {
+            void Act() => _subject.Execute(new(new(), new() { QueryBlocks = new() { new() {
+                Operator = DocumentPermissionsOperators.CONDITION
+            }, new() {
+                Operator = "random crap"
+            }, new() {
+                Operator = DocumentPermissionsOperators.CONDITION
+            } } }));
+
+            Should_throw_invalid_exception_with_message(Act, "Unrecognized query block operator. 'random crap' is not a valid operator (CONDITION/AND/OR/BLOCK)");
+        }
+
         private static void Should_throw_invalid_exception_with_message(Action act, string message) {
             act.Should().Throw<UksfInvalidDocumentPermissionsException>().WithMessage(message).And.StatusCode.Should().Be(400);
         }

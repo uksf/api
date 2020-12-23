@@ -36,6 +36,8 @@ namespace UKSF.Api.Documents.Models {
         public const string AND = nameof(AND);
         public const string OR = nameof(OR);
         public const string BLOCK = nameof(BLOCK);
+
+        public static List<string> ValidOperators = new() { CONDITION, AND, OR, BLOCK };
     }
 
     public static class DocumentPermissionsParameters {

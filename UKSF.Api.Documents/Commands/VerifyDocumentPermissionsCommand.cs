@@ -31,6 +31,15 @@ namespace UKSF.Api.Documents.Commands {
                 throw new UksfInvalidDocumentPermissionsException("Invalid query block operators. Every even query block should be an operator (AND/OR)");
             }
 
+            if (args.Permissions.QueryBlocks.Where((x, i) => i % 2 != 0).Any(x => x.Operator != DocumentPermissionsOperators.CONDITION || x.Operator != DocumentPermissionsOperators.BLOCK)) {
+                throw new UksfInvalidDocumentPermissionsException("Invalid query block operators. Every even query block should be an operator (AND/OR)");
+            }
+
+            DocumentPermissionsQueryBlock invalidOperator = args.Permissions.QueryBlocks.FirstOrDefault(x => !DocumentPermissionsOperators.ValidOperators.Contains(x.Operator));
+            if (invalidOperator != null) {
+                throw new UksfInvalidDocumentPermissionsException($"Unrecognized query block operator. '{invalidOperator.Operator}' is not a valid operator (CONDITION/AND/OR/BLOCK)");
+            }
+
             throw new UksfInvalidDocumentPermissionsException();
         }
     }
