@@ -22,9 +22,9 @@ namespace UKSF.Api.Modpack {
                     .AddTransient<IGithubService, GithubService>()
                     .AddTransient<IModpackService, ModpackService>()
                     .AddTransient<IReleaseService, ReleaseService>()
-                    .AddTransient<IBuildStepService, BuildStepService>()
+                    .AddSingleton<IBuildStepService, BuildStepService>()
                     .AddSingleton<IBuildProcessorService, BuildProcessorService>()
-                    .AddTransient<IBuildQueueService, BuildQueueService>();
+                    .AddSingleton<IBuildQueueService, BuildQueueService>();
 
         private static IServiceCollection AddActions(this IServiceCollection services) => services.AddSingleton<IActionPruneBuilds, ActionPruneBuilds>();
 
