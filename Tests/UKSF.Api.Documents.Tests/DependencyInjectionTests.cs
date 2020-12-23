@@ -17,9 +17,11 @@ namespace UKSF.Api.Documents.Tests {
         [Fact]
         public void When_resolving_controllers() {
             Services.AddTransient<DocumentsController>();
+            Services.AddTransient<ArchivedDocumentsController>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<DocumentsController>().Should().NotBeNull();
+            serviceProvider.GetRequiredService<ArchivedDocumentsController>().Should().NotBeNull();
         }
 
         [Fact]
