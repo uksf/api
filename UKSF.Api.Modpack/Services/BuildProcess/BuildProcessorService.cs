@@ -10,7 +10,7 @@ using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess {
     public interface IBuildProcessorService {
-        Task ProcessBuild(ModpackBuild build, CancellationTokenSource cancellationTokenSource);
+        Task ProcessBuildWithErrorHandling(ModpackBuild build, CancellationTokenSource cancellationTokenSource);
     }
 
     public class BuildProcessorService : IBuildProcessorService {
@@ -26,7 +26,16 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             _logger = logger;
         }
 
-        public async Task ProcessBuild(ModpackBuild build, CancellationTokenSource cancellationTokenSource) {
+        public async Task ProcessBuildWithErrorHandling(ModpackBuild build, CancellationTokenSource cancellationTokenSource) {
+            try {
+                await ProcessBuild(build, cancellationTokenSource);
+            } catch (Exception exception) {
+                _logger.LogError(exception);
+                await _buildsService.FailBuild(build);
+            }
+        }
+
+        private async Task ProcessBuild(ModpackBuild build, CancellationTokenSource cancellationTokenSource) {
             await _buildsService.SetBuildRunning(build);
 
             foreach (ModpackBuildStep buildStep in build.Steps) {
@@ -92,7 +101,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
                 restoreStep,
                 async updateDefinition => await _buildsService.UpdateBuild(build, updateDefinition),
                 async () => await _buildsService.UpdateBuildStep(build, restoreStep),
-                new CancellationTokenSource()
+                new()
             );
             build.Steps.Add(restoreStep);
             await _buildsService.UpdateBuildStep(build, restoreStep);

@@ -95,7 +95,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
 
                 CancellationTokenSource cancellationTokenSource = new();
                 _cancellationTokenSources.TryAdd(build.Id, cancellationTokenSource);
-                Task buildTask = _buildProcessorService.ProcessBuild(build, cancellationTokenSource);
+                Task buildTask = _buildProcessorService.ProcessBuildWithErrorHandling(build, cancellationTokenSource);
                 _buildTasks.TryAdd(build.Id, buildTask);
                 await buildTask;
                 _cancellationTokenSources.TryRemove(build.Id, out CancellationTokenSource _);

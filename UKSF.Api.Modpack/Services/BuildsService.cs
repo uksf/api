@@ -174,7 +174,7 @@ namespace UKSF.Api.Modpack.Services {
                         runningStep.Finished = true;
                         runningStep.EndTime = DateTime.Now;
                         runningStep.BuildResult = ModpackBuildResult.CANCELLED;
-                        runningStep.Logs.Add(new ModpackBuildStepLogItem { Text = "\nBuild was interrupted", Colour = "goldenrod" });
+                        runningStep.Logs.Add(new() { Text = "\nBuild was interrupted", Colour = "goldenrod" });
                         await _buildsContext.Update(build, runningStep);
                     }
 

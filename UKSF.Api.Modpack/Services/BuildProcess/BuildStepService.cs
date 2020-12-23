@@ -54,52 +54,52 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
 
         private static List<ModpackBuildStep> GetStepsForBuild() =>
             new() {
-                new ModpackBuildStep(BuildStepPrep.NAME),
-                new ModpackBuildStep(BuildStepClean.NAME),
-                new ModpackBuildStep(BuildStepSources.NAME),
-                new ModpackBuildStep(BuildStepBuildAce.NAME),
-                new ModpackBuildStep(BuildStepBuildAcre.NAME),
-                new ModpackBuildStep(BuildStepBuildF35.NAME),
-                new ModpackBuildStep(BuildStepBuildModpack.NAME),
-                new ModpackBuildStep(BuildStepIntercept.NAME),
-                new ModpackBuildStep(BuildStepExtensions.NAME),
-                new ModpackBuildStep(BuildStepSignDependencies.NAME),
-                new ModpackBuildStep(BuildStepDeploy.NAME),
-                new ModpackBuildStep(BuildStepKeys.NAME),
-                new ModpackBuildStep(BuildStepCbaSettings.NAME),
-                new ModpackBuildStep(BuildStepBuildRepo.NAME)
+                new(BuildStepPrep.NAME),
+                new(BuildStepClean.NAME),
+                new(BuildStepSources.NAME),
+                new(BuildStepBuildAce.NAME),
+                new(BuildStepBuildAcre.NAME),
+                new(BuildStepBuildF35.NAME),
+                new(BuildStepBuildModpack.NAME),
+                new(BuildStepIntercept.NAME),
+                new(BuildStepExtensions.NAME),
+                new(BuildStepSignDependencies.NAME),
+                new(BuildStepDeploy.NAME),
+                new(BuildStepKeys.NAME),
+                new(BuildStepCbaSettings.NAME),
+                new(BuildStepBuildRepo.NAME)
             };
 
         private static List<ModpackBuildStep> GetStepsForRc() =>
             new() {
-                new ModpackBuildStep(BuildStepPrep.NAME),
-                new ModpackBuildStep(BuildStepClean.NAME),
-                new ModpackBuildStep(BuildStepSources.NAME),
-                new ModpackBuildStep(BuildStepBuildAce.NAME),
-                new ModpackBuildStep(BuildStepBuildAcre.NAME),
-                new ModpackBuildStep(BuildStepBuildF35.NAME),
-                new ModpackBuildStep(BuildStepBuildModpack.NAME),
-                new ModpackBuildStep(BuildStepIntercept.NAME),
-                new ModpackBuildStep(BuildStepExtensions.NAME),
-                new ModpackBuildStep(BuildStepSignDependencies.NAME),
-                new ModpackBuildStep(BuildStepDeploy.NAME),
-                new ModpackBuildStep(BuildStepKeys.NAME),
-                new ModpackBuildStep(BuildStepCbaSettings.NAME),
-                new ModpackBuildStep(BuildStepBuildRepo.NAME),
-                new ModpackBuildStep(BuildStepNotify.NAME)
+                new(BuildStepPrep.NAME),
+                new(BuildStepClean.NAME),
+                new(BuildStepSources.NAME),
+                new(BuildStepBuildAce.NAME),
+                new(BuildStepBuildAcre.NAME),
+                new(BuildStepBuildF35.NAME),
+                new(BuildStepBuildModpack.NAME),
+                new(BuildStepIntercept.NAME),
+                new(BuildStepExtensions.NAME),
+                new(BuildStepSignDependencies.NAME),
+                new(BuildStepDeploy.NAME),
+                new(BuildStepKeys.NAME),
+                new(BuildStepCbaSettings.NAME),
+                new(BuildStepBuildRepo.NAME),
+                new(BuildStepNotify.NAME)
             };
 
         private static List<ModpackBuildStep> GetStepsForRelease() =>
             new() {
-                new ModpackBuildStep(BuildStepClean.NAME),
-                new ModpackBuildStep(BuildStepBackup.NAME),
-                new ModpackBuildStep(BuildStepDeploy.NAME),
-                new ModpackBuildStep(BuildStepReleaseKeys.NAME),
-                new ModpackBuildStep(BuildStepCbaSettings.NAME),
-                new ModpackBuildStep(BuildStepBuildRepo.NAME),
-                new ModpackBuildStep(BuildStepPublish.NAME),
-                new ModpackBuildStep(BuildStepNotify.NAME),
-                new ModpackBuildStep(BuildStepMerge.NAME)
+                new(BuildStepClean.NAME),
+                new(BuildStepBackup.NAME),
+                new(BuildStepDeploy.NAME),
+                new(BuildStepReleaseKeys.NAME),
+                new(BuildStepCbaSettings.NAME),
+                new(BuildStepBuildRepo.NAME),
+                new(BuildStepPublish.NAME),
+                new(BuildStepNotify.NAME),
+                new(BuildStepMerge.NAME)
             };
 
         private static void ResolveIndices(IReadOnlyList<ModpackBuildStep> steps) {
