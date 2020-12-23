@@ -46,6 +46,10 @@ namespace UKSF.Api.Personnel.EventHandlers {
 
         private async Task LeftEvent(string accountId) {
             Account account = _accountContext.GetSingle(accountId);
+            if (account.MembershipState == MembershipState.DISCHARGED || account.MembershipState == MembershipState.UNCONFIRMED) {
+                return;
+            }
+            
             string name = _displayNameService.GetDisplayName(account);
             await _commentThreadService.InsertComment(
                 account.Application.RecruiterCommentThread,
