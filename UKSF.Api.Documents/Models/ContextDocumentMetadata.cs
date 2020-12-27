@@ -36,8 +36,6 @@ namespace UKSF.Api.Documents.Models {
         public const string AND = nameof(AND);
         public const string OR = nameof(OR);
         public const string BLOCK = nameof(BLOCK);
-
-        public static List<string> ValidOperators = new() { CONDITION, AND, OR, BLOCK };
     }
 
     public static class DocumentPermissionsParameters {
@@ -55,5 +53,31 @@ namespace UKSF.Api.Documents.Models {
         public const string GE = nameof(GE);
         public const string LT = nameof(LT);
         public const string LE = nameof(LE);
+    }
+
+    public static class DocumentPermissionsRules {
+        public static readonly List<string> VALID_EVEN_OPERATORS =
+            new() { DocumentPermissionsOperators.AND, DocumentPermissionsOperators.OR };
+        public static readonly List<string> VALID_ODD_OPERATORS =
+            new() { DocumentPermissionsOperators.CONDITION, DocumentPermissionsOperators.BLOCK };
+
+        public static readonly List<string> VALID_PARAMETERS =
+            new() { DocumentPermissionsParameters.ID, DocumentPermissionsParameters.UNIT, DocumentPermissionsParameters.RANK, DocumentPermissionsParameters.COMMANDER };
+
+        public static readonly Dictionary<string, List<string>> VALID_CONDITION_OPERATORS_FOR_PARAMETERS = new() {
+            { DocumentPermissionsParameters.ID, new() { DocumentPermissionsConditionOperators.IN } },
+            { DocumentPermissionsParameters.UNIT, new() { DocumentPermissionsConditionOperators.IN } }, {
+                DocumentPermissionsParameters.RANK,
+                new() {
+                    DocumentPermissionsConditionOperators.EQ,
+                    DocumentPermissionsConditionOperators.NE,
+                    DocumentPermissionsConditionOperators.GT,
+                    DocumentPermissionsConditionOperators.GE,
+                    DocumentPermissionsConditionOperators.LT,
+                    DocumentPermissionsConditionOperators.LE
+                }
+            },
+            { DocumentPermissionsParameters.COMMANDER, new() { "NONE" } }
+        };
     }
 }

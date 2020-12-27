@@ -12,20 +12,63 @@ namespace UKSF.Api.Documents.Tests.Commands {
         public VerifyDocumentPermissionsCommandTests() => _subject = new VerifyDocumentPermissionsCommand();
 
         [Fact]
-        public void When_validating_document_permissions_fails() {
-            void Act() => _subject.Execute(new(new(), new()));
+        public void When_validating_document_permissions_with_any_odd_query_block_not_a_condition_or_block() {
+            void Act() =>
+                _subject.Execute(
+                    new(
+                        new(),
+                        new() {
+                            QueryBlocks = new() {
+                                new() { Operator = DocumentPermissionsOperators.AND }, new() { Operator = DocumentPermissionsOperators.OR }, new() { Operator = DocumentPermissionsOperators.OR }
+                            }
+                        }
+                    )
+                );
 
-            Should_throw_invalid_exception_with_message(Act, "Invalid document permissions object");
+            Should_throw_invalid_exception_with_message(Act, "Invalid query block operators. Valid odd operators are 'CONDITION/BLOCK'");
         }
 
         [Fact]
-        public void When_validating_document_permissions_with_null_query_blocks() {
-            _subject.Execute(new(new(), new()));
+        public void When_validating_document_permissions_with_any_second_query_block_not_an_operator() {
+            void Act() =>
+                _subject.Execute(
+                    new(
+                        new(),
+                        new() {
+                            QueryBlocks = new() {
+                                new() { Operator = DocumentPermissionsOperators.CONDITION },
+                                new() { Operator = DocumentPermissionsOperators.CONDITION },
+                                new() { Operator = DocumentPermissionsOperators.BLOCK }
+                            }
+                        }
+                    )
+                );
+
+            Should_throw_invalid_exception_with_message(Act, "Invalid query block operators. Valid even operators are 'AND/OR'");
         }
 
         [Fact]
         public void When_validating_document_permissions_with_empty_query_blocks() {
             _subject.Execute(new(new(), new() { QueryBlocks = new() }));
+        }
+
+        [Fact]
+        public void When_validating_document_permissions_with_invalid_nested_operators() {
+            void Act() =>
+                _subject.Execute(
+                    new(
+                        new(),
+                        new() {
+                            QueryBlocks = new() {
+                                new() { Operator = DocumentPermissionsOperators.CONDITION },
+                                new() { Operator = DocumentPermissionsOperators.AND },
+                                new() { Operator = DocumentPermissionsOperators.BLOCK, QueryBlocks = new() { new() { Operator = DocumentPermissionsOperators.AND } } }
+                            }
+                        }
+                    )
+                );
+
+            Should_throw_invalid_exception_with_message(Act, "Invalid query block operators. Valid odd operators are 'CONDITION/BLOCK'");
         }
 
         [Fact]
@@ -36,42 +79,126 @@ namespace UKSF.Api.Documents.Tests.Commands {
         }
 
         [Fact]
-        public void When_validating_document_permissions_with_any_second_query_block_not_an_operator() {
-            void Act() => _subject.Execute(new(new(), new() { QueryBlocks = new() { new() {
-                Operator = DocumentPermissionsOperators.CONDITION
-            }, new() {
-                Operator = DocumentPermissionsOperators.CONDITION
-            }, new() {
-                Operator = DocumentPermissionsOperators.BLOCK
-            } } }));
+        public void When_validating_document_permissions_with_invalid_operator_for_commander_parameter() {
+            void Act() =>
+                _subject.Execute(
+                    new(
+                        new(),
+                        new() {
+                            QueryBlocks = new() {
+                                new() {
+                                    Operator = DocumentPermissionsOperators.CONDITION, Parameter = DocumentPermissionsParameters.COMMANDER, ConditionOperator = DocumentPermissionsConditionOperators.EQ
+                                }
+                            }
+                        }
+                    )
+                );
 
-            Should_throw_invalid_exception_with_message(Act, "Invalid query block operators. Every even query block should be an operator (AND/OR)");
+            Should_throw_invalid_exception_with_message(
+                Act,
+                "Invalid query block condition operator for parameter 'COMMANDER'. 'EQ' is not a valid condition parameter. Valid condition parameters are 'NONE'"
+            );
         }
 
         [Fact]
-        public void When_validating_document_permissions_with_any_odd_query_block_not_a_condition_or_block() {
-            void Act() => _subject.Execute(new(new(), new() { QueryBlocks = new() { new() {
-                Operator = DocumentPermissionsOperators.AND
-            }, new() {
-                Operator = DocumentPermissionsOperators.OR
-            }, new() {
-                Operator = DocumentPermissionsOperators.OR
-            } } }));
+        public void When_validating_document_permissions_with_invalid_operator_for_id_parameter() {
+            void Act() =>
+                _subject.Execute(
+                    new(
+                        new(),
+                        new() {
+                            QueryBlocks = new() {
+                                new() { Operator = DocumentPermissionsOperators.CONDITION, Parameter = DocumentPermissionsParameters.ID, ConditionOperator = DocumentPermissionsConditionOperators.EQ }
+                            }
+                        }
+                    )
+                );
 
-            Should_throw_invalid_exception_with_message(Act, "Invalid query block operators. Every odd query block should be a condition or block (CONDITION/BLOCK)");
+            Should_throw_invalid_exception_with_message(Act, "Invalid query block condition operator for parameter 'ID'. 'EQ' is not a valid condition parameter. Valid condition parameters are 'IN'");
         }
 
         [Fact]
-        public void When_validating_document_permissions_with_unrecognized_oprator() {
-            void Act() => _subject.Execute(new(new(), new() { QueryBlocks = new() { new() {
-                Operator = DocumentPermissionsOperators.CONDITION
-            }, new() {
-                Operator = "random crap"
-            }, new() {
-                Operator = DocumentPermissionsOperators.CONDITION
-            } } }));
+        public void When_validating_document_permissions_with_invalid_operator_for_nested_parameter() {
+            void Act() =>
+                _subject.Execute(
+                    new(
+                        new(),
+                        new() {
+                            QueryBlocks = new() {
+                                new() { Operator = DocumentPermissionsOperators.CONDITION, Parameter = DocumentPermissionsParameters.ID, ConditionOperator = DocumentPermissionsConditionOperators.IN },
+                                new() { Operator = DocumentPermissionsOperators.AND },
+                                new() {
+                                    Operator = DocumentPermissionsOperators.BLOCK,
+                                    QueryBlocks = new() {
+                                        new() {
+                                            Operator = DocumentPermissionsOperators.CONDITION,
+                                            Parameter = DocumentPermissionsParameters.ID,
+                                            ConditionOperator = DocumentPermissionsConditionOperators.EQ
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    )
+                );
 
-            Should_throw_invalid_exception_with_message(Act, "Unrecognized query block operator. 'random crap' is not a valid operator (CONDITION/AND/OR/BLOCK)");
+            Should_throw_invalid_exception_with_message(Act, "Invalid query block condition operator for parameter 'ID'. 'EQ' is not a valid condition parameter. Valid condition parameters are 'IN'");
+        }
+
+        [Fact]
+        public void When_validating_document_permissions_with_invalid_operator_for_rank_parameter() {
+            void Act() =>
+                _subject.Execute(
+                    new(
+                        new(),
+                        new() {
+                            QueryBlocks = new() {
+                                new() {
+                                    Operator = DocumentPermissionsOperators.CONDITION, Parameter = DocumentPermissionsParameters.RANK, ConditionOperator = DocumentPermissionsConditionOperators.IN
+                                }
+                            }
+                        }
+                    )
+                );
+
+            Should_throw_invalid_exception_with_message(
+                Act,
+                "Invalid query block condition operator for parameter 'RANK'. 'IN' is not a valid condition parameter. Valid condition parameters are 'EQ/NE/GT/GE/LT/LE'"
+            );
+        }
+
+        [Fact]
+        public void When_validating_document_permissions_with_invalid_operator_for_unit_parameter() {
+            void Act() =>
+                _subject.Execute(
+                    new(
+                        new(),
+                        new() {
+                            QueryBlocks = new() {
+                                new() {
+                                    Operator = DocumentPermissionsOperators.CONDITION, Parameter = DocumentPermissionsParameters.UNIT, ConditionOperator = DocumentPermissionsConditionOperators.EQ
+                                }
+                            }
+                        }
+                    )
+                );
+
+            Should_throw_invalid_exception_with_message(
+                Act,
+                "Invalid query block condition operator for parameter 'UNIT'. 'EQ' is not a valid condition parameter. Valid condition parameters are 'IN'"
+            );
+        }
+
+        [Fact]
+        public void When_validating_document_permissions_with_invalid_parameter() {
+            void Act() => _subject.Execute(new(new(), new() { QueryBlocks = new() { new() { Operator = DocumentPermissionsOperators.CONDITION, Parameter = "random crap" } } }));
+
+            Should_throw_invalid_exception_with_message(Act, "Invalid query block parameters. 'random crap' is not a valid parameter. Valid parameters are 'ID/UNIT/RANK/COMMANDER'");
+        }
+
+        [Fact]
+        public void When_validating_document_permissions_with_null_query_blocks() {
+            _subject.Execute(new(new(), new()));
         }
 
         private static void Should_throw_invalid_exception_with_message(Action act, string message) {
