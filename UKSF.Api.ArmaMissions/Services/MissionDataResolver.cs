@@ -11,11 +11,8 @@ namespace UKSF.Api.ArmaMissions.Services {
 
             return player.Unit.SourceUnit.Id switch {
                 "5a435eea905d47336442c75a" => "UKSF_B_Pilot", // "Joint Special Forces Aviation Wing"
+                "5fe39de7815f5f03801134f7" => "UKSF_B_Pilot", // "Combat Ready"
                 "5a848590eab14d12cc7fa618" => "UKSF_B_Pilot", // "RAF Cranwell"
-                "5c98d7b396dba31f24cdb19c" => "UKSF_B_Pilot", // "51 Squadron"
-                "5a441619730e9d162834500b" => "UKSF_B_Pilot_7", // "7 Squadron"
-                "5a441602730e9d162834500a" => "UKSF_B_Pilot_656", // "656 Squadron"
-                "5a4415d8730e9d1628345007" => "UKSF_B_Pilot_617", // "617 Squadron"
                 "5a68b28e196530164c9b4fed" => "UKSF_B_Sniper", // "Sniper Platoon"
                 "5b9123ca7a6c1f0e9875601c" => "UKSF_B_Medic", // "3 Medical Regiment"
                 // "5a42835b55d6109bf0b081bd" => ResolvePlayerUnitRole(player) == 3 ? "UKSF_B_Officer" : "UKSF_B_Rifleman", // "UKSF"
@@ -40,11 +37,8 @@ namespace UKSF.Api.ArmaMissions.Services {
             return unit.SourceUnit.Id switch {
                 "5a42835b55d6109bf0b081bd" => "JSFAW", // "UKSF"
                 "5a435eea905d47336442c75a" => "JSFAW", // "Joint Special Forces Aviation Wing"
-                "5a441619730e9d162834500b" => "JSFAW", // "7 Squadron"
-                "5a441602730e9d162834500a" => "JSFAW", // "656 Squadron"
-                "5a4415d8730e9d1628345007" => "JSFAW", // "617 Squadron"
+                "5fe39de7815f5f03801134f7" => "JSFAW", // "Combat Ready"
                 "5a848590eab14d12cc7fa618" => "JSFAW", // "RAF Cranwell"
-                "5c98d7b396dba31f24cdb19c" => "JSFAW", // "51 Squadron"
                 _                          => defaultCallsign
             };
         }
@@ -52,11 +46,8 @@ namespace UKSF.Api.ArmaMissions.Services {
         public static void ResolveSpecialUnits(List<MissionUnit> orderedUnits) {
             List<string> ids = new() {
                 "5a42835b55d6109bf0b081bd", // "UKSF"
-                "5a441619730e9d162834500b", // "7 Squadron"
-                "5a441602730e9d162834500a", // "656 Squadron"
-                "5a4415d8730e9d1628345007", // "617 Squadron"
-                "5a848590eab14d12cc7fa618", // "RAF Cranwell"
-                "5c98d7b396dba31f24cdb19c" // "51 Squadron"
+                "5fe39de7815f5f03801134f7", // "Combat Ready"
+                "5a848590eab14d12cc7fa618" // "RAF Cranwell"
             };
             orderedUnits.RemoveAll(x => ids.Contains(x.SourceUnit.Id));
         }
@@ -69,11 +60,8 @@ namespace UKSF.Api.ArmaMissions.Services {
                 case "5a435eea905d47336442c75a": // "Joint Special Forces Aviation Wing"
                     slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a42835b55d6109bf0b081bd")?.Members ?? new List<MissionPlayer>());
                     slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a435eea905d47336442c75a")?.Members ?? new List<MissionPlayer>());
-                    slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a441619730e9d162834500b")?.Members ?? new List<MissionPlayer>());
-                    slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a441602730e9d162834500a")?.Members ?? new List<MissionPlayer>());
-                    slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a4415d8730e9d1628345007")?.Members ?? new List<MissionPlayer>());
+                    slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5fe39de7815f5f03801134f7")?.Members ?? new List<MissionPlayer>());
                     slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a848590eab14d12cc7fa618")?.Members ?? new List<MissionPlayer>());
-                    slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5c98d7b396dba31f24cdb19c")?.Members ?? new List<MissionPlayer>());
                     break;
                 case "5a68b28e196530164c9b4fed": // "Sniper Platoon"
                     max = 3;
