@@ -25,16 +25,16 @@ namespace UKSF.Api.Integrations.Instagram.ScheduledActions {
 
         public string Name => ACTION_NAME;
 
-        public void Run(params object[] parameters) {
-            Task unused = _instagramService.CacheInstagramImages();
-        }
+        public Task Run(params object[] parameters) => _instagramService.CacheInstagramImages();
 
         public async Task CreateSelf() {
             if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null) {
                 await _schedulerService.CreateScheduledJob(_clock.Today(), TimeSpan.FromMinutes(15), ACTION_NAME);
             }
 
-            Run();
+            await Run();
         }
+
+        public Task Reset() => Task.CompletedTask;
     }
 }

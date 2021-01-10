@@ -30,11 +30,12 @@ namespace UKSF.Api.Modpack.ScheduledActions {
 
         public string Name => ACTION_NAME;
 
-        public void Run(params object[] parameters) {
+        public Task Run(params object[] parameters) {
             int threshold = _buildsContext.Get(x => x.Environment == GameEnvironment.DEV).Select(x => x.BuildNumber).OrderByDescending(x => x).First() - 100;
             Task modpackBuildsTask = _buildsContext.DeleteMany(x => x.Environment == GameEnvironment.DEV && x.BuildNumber < threshold);
 
             Task.WaitAll(modpackBuildsTask);
+            return Task.CompletedTask;
         }
 
         public async Task CreateSelf() {
@@ -44,5 +45,7 @@ namespace UKSF.Api.Modpack.ScheduledActions {
                 await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(1), TimeSpan.FromDays(1), ACTION_NAME);
             }
         }
+
+        public Task Reset() => Task.CompletedTask;
     }
 }

@@ -1,6 +1,8 @@
-﻿namespace UKSF.Api.Base.ScheduledActions {
+﻿using System.Threading.Tasks;
+
+namespace UKSF.Api.Base.ScheduledActions {
     public interface IScheduledAction {
         string Name { get; }
-        void Run(params object[] parameters);
+        Task Run(params object[] parameters);
     }
 }

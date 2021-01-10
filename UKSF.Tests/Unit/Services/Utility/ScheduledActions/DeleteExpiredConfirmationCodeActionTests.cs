@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
 using Moq;
@@ -12,23 +13,23 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
         private IActionDeleteExpiredConfirmationCode _actionDeleteExpiredConfirmationCode;
 
         [Fact]
-        public void When_deleting_confirmation_code() {
+        public async Task When_deleting_confirmation_code() {
             string id = ObjectId.GenerateNewId().ToString();
 
             _actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(_mockConfirmationCodeContext.Object);
 
-            _actionDeleteExpiredConfirmationCode.Run(id);
+            await _actionDeleteExpiredConfirmationCode.Run(id);
 
             _mockConfirmationCodeContext.Verify(x => x.Delete(id), Times.Once);
         }
 
         [Fact]
-        public void When_deleting_confirmation_code_with_no_id() {
+        public async Task When_deleting_confirmation_code_with_no_id() {
             _actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(_mockConfirmationCodeContext.Object);
 
-            Action act = () => _actionDeleteExpiredConfirmationCode.Run();
+            Func<Task> act = async () => await _actionDeleteExpiredConfirmationCode.Run();
 
-            act.Should().Throw<ArgumentException>();
+            await act.Should().ThrowAsync<ArgumentException>();
         }
 
         [Fact]

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using UKSF.Api.Base.ScheduledActions;
 using UKSF.Api.Personnel.Context;
 
@@ -14,10 +15,15 @@ namespace UKSF.Api.Personnel.ScheduledActions {
 
         public string Name => ACTION_NAME;
 
-        public void Run(params object[] parameters) {
-            if (parameters.Length == 0) throw new ArgumentException("ActionDeleteExpiredConfirmationCode requires an id to be passed as a parameter, but no paramters were passed");
+        public Task Run(params object[] parameters) {
+            if (parameters.Length == 0) {
+                throw new ArgumentException("ActionDeleteExpiredConfirmationCode requires an id to be passed as a parameter, but no paramters were passed");
+            }
+
             string id = parameters[0].ToString();
             _confirmationCodeContext.Delete(id);
+
+            return Task.CompletedTask;
         }
     }
 }
