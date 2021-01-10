@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Threading.Tasks;
+using FluentAssertions;
 using Microsoft.Extensions.Hosting;
 using Moq;
 using UKSF.Api.Shared.Context;
@@ -36,8 +37,8 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
         }
 
         [Fact]
-        public void When_running_snapshot() {
-            _actionTeamspeakSnapshot.Run();
+        public async Task When_running_snapshot() {
+            await _actionTeamspeakSnapshot.Run();
 
             _mockTeamspeakService.Verify(x => x.StoreTeamspeakServerSnapshot(), Times.Once);
         }

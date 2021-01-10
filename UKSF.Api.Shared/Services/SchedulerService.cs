@@ -115,7 +115,7 @@ namespace UKSF.Api.Shared.Services {
         private void ExecuteAction(ScheduledJob job) {
             IScheduledAction action = _scheduledActionFactory.GetScheduledAction(job.Action);
             object[] parameters = job.ActionParameters == null ? null : JsonConvert.DeserializeObject<object[]>(job.ActionParameters);
-            action.Run(parameters);
+            Task unused = action.Run(parameters);
         }
     }
 }

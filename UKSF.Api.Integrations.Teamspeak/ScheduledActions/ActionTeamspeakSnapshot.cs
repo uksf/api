@@ -28,9 +28,7 @@ namespace UKSF.Api.Teamspeak.ScheduledActions {
 
         public string Name => ACTION_NAME;
 
-        public void Run(params object[] parameters) {
-            _teamspeakService.StoreTeamspeakServerSnapshot();
-        }
+        public Task Run(params object[] parameters) => _teamspeakService.StoreTeamspeakServerSnapshot();
 
         public async Task CreateSelf() {
             if (_currentEnvironment.IsDevelopment()) return;
@@ -39,5 +37,7 @@ namespace UKSF.Api.Teamspeak.ScheduledActions {
                 await _schedulerService.CreateScheduledJob(_clock.Today().AddMinutes(5), TimeSpan.FromMinutes(5), ACTION_NAME);
             }
         }
+
+        public Task Reset() => Task.CompletedTask;
     }
 }

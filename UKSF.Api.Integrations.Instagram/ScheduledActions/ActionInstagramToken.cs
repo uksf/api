@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using UKSF.Api.Base.ScheduledActions;
 using UKSF.Api.Integrations.Instagram.Services;
 using UKSF.Api.Shared.Context;
+using UKSF.Api.Shared.Models;
 using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Integrations.Instagram.ScheduledActions {
@@ -25,14 +26,20 @@ namespace UKSF.Api.Integrations.Instagram.ScheduledActions {
 
         public string Name => ACTION_NAME;
 
-        public void Run(params object[] parameters) {
-            Task unused = _instagramService.RefreshAccessToken();
-        }
+        public Task Run(params object[] parameters) => _instagramService.RefreshAccessToken();
 
         public async Task CreateSelf() {
             if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null) {
                 await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(45), TimeSpan.FromDays(45), ACTION_NAME);
             }
+        }
+
+        public async Task Reset() {
+            ScheduledJob job = _schedulerContext.GetSingle(x => x.Action == ACTION_NAME);
+            await _schedulerContext.Delete(job.Id);
+
+            await CreateSelf();
+            await Run();
         }
     }
 }

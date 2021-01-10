@@ -34,11 +34,12 @@ namespace UKSF.Api.Personnel.ScheduledActions {
 
         public string Name => ACTION_NAME;
 
-        public void Run(params object[] parameters) {
+        public Task Run(params object[] parameters) {
             DateTime now = _clock.UtcNow();
             Task notificationsTask = _notificationsContext.DeleteMany(x => x.Timestamp < now.AddMonths(-1));
 
             Task.WaitAll(notificationsTask);
+            return Task.CompletedTask;
         }
 
         public async Task CreateSelf() {
@@ -48,5 +49,7 @@ namespace UKSF.Api.Personnel.ScheduledActions {
                 await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(1), TimeSpan.FromDays(1), ACTION_NAME);
             }
         }
+
+        public Task Reset() => Task.CompletedTask;
     }
 }

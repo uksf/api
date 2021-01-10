@@ -25,7 +25,7 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
             Mock<IHostEnvironment> mockHostEnvironment = new();
             Mock<ISchedulerService> mockSchedulerService = new();
 
-            _now = new DateTime(2020, 11, 14);
+            _now = new(2020, 11, 14);
             mockClock.Setup(x => x.UtcNow()).Returns(_now);
 
             _actionPruneLogs = new ActionPruneLogs(
@@ -47,11 +47,11 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
         }
 
         [Fact]
-        public void When_pruning_logs() {
-            List<BasicLog> basicLogs = new() { new BasicLog("test1") { Timestamp = _now.AddDays(-8) }, new BasicLog("test2") { Timestamp = _now.AddDays(-6) } };
-            List<AuditLog> auditLogs = new() { new AuditLog("server", "audit1") { Timestamp = _now.AddMonths(-4) }, new AuditLog("server", "audit2") { Timestamp = _now.AddMonths(-2) } };
+        public async Task When_pruning_logs() {
+            List<BasicLog> basicLogs = new() { new("test1") { Timestamp = _now.AddDays(-8) }, new("test2") { Timestamp = _now.AddDays(-6) } };
+            List<AuditLog> auditLogs = new() { new("server", "audit1") { Timestamp = _now.AddMonths(-4) }, new("server", "audit2") { Timestamp = _now.AddMonths(-2) } };
             List<HttpErrorLog> httpErrorLogs = new() {
-                new HttpErrorLog(new Exception("error1")) { Timestamp = _now.AddDays(-8) }, new HttpErrorLog(new Exception("error2")) { Timestamp = _now.AddDays(-6) }
+                new(new("error1")) { Timestamp = _now.AddDays(-8) }, new(new("error2")) { Timestamp = _now.AddDays(-6) }
             };
 
             _mockLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<BasicLog, bool>>>()))
@@ -64,7 +64,7 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
                                     .Returns(Task.CompletedTask)
                                     .Callback<Expression<Func<HttpErrorLog, bool>>>(x => httpErrorLogs.RemoveAll(y => x.Compile()(y)));
 
-            _actionPruneLogs.Run();
+            await _actionPruneLogs.Run();
 
             basicLogs.Should().NotContain(x => x.Message == "test1");
             auditLogs.Should().NotContain(x => x.Message == "audit1");
