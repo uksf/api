@@ -46,14 +46,15 @@ namespace UKSF.Api.Personnel.EventHandlers {
 
         private async Task LeftEvent(string accountId) {
             Account account = _accountContext.GetSingle(accountId);
+            _logger.LogInfo($"Handling Discord user left event. Account ID: {account.Id}, State: {account.MembershipState.ToString()}");
             if (account.MembershipState == MembershipState.DISCHARGED || account.MembershipState == MembershipState.UNCONFIRMED) {
                 return;
             }
-            
+
             string name = _displayNameService.GetDisplayName(account);
             await _commentThreadService.InsertComment(
                 account.Application.RecruiterCommentThread,
-                new Comment { Author = ObjectId.Empty.ToString(), Content = $"{name} left the Discord", Timestamp = DateTime.Now }
+                new() { Author = ObjectId.Empty.ToString(), Content = $"{name} left Discord", Timestamp = DateTime.Now }
             );
         }
     }

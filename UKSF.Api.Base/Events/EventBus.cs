@@ -18,7 +18,7 @@ namespace UKSF.Api.Base.Events {
         }
 
         public void Send(object data) {
-            Send(new EventModel(EventType.NONE, data));
+            Send(new(EventType.NONE, data));
         }
 
         public virtual IObservable<EventModel> AsObservable() => Subject.OfType<EventModel>();
