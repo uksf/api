@@ -73,7 +73,7 @@ namespace UKSF.Api.Discord.Services {
                 _client = null;
             }
 
-            _client = new DiscordSocketClient(new DiscordSocketConfig { AlwaysDownloadUsers = true, MessageCacheSize = 1000 });
+            _client = new(new() { AlwaysDownloadUsers = true, MessageCacheSize = 1000 });
             _client.Ready += OnClientOnReady;
             _client.Disconnected += ClientOnDisconnected;
             AddEventhandlers();
@@ -146,23 +146,29 @@ namespace UKSF.Api.Discord.Services {
             bool online = IsAccountOnline(discordId);
             string nickname = GetAccountNickname(discordId);
 
-            return new OnlineState { Online = online, Nickname = nickname };
+            return new() { Online = online, Nickname = nickname };
         }
 
         public void Dispose() {
             _client?.StopAsync().Wait(TimeSpan.FromSeconds(5));
         }
 
-        private bool IsDiscordDisabled() => !_variablesService.GetFeatureState("DISCORD");
+        private bool IsDiscordDisabled() {
+            return !_variablesService.GetFeatureState("DISCORD");
+        }
 
-        private bool IsAccountOnline(ulong discordId) => _guild.GetUser(discordId)?.Status == UserStatus.Online;
+        private bool IsAccountOnline(ulong discordId) {
+            return _guild.GetUser(discordId)?.Status == UserStatus.Online;
+        }
 
         private string GetAccountNickname(ulong discordId) {
             SocketGuildUser user = _guild.GetUser(discordId);
             return GetUserNickname(user);
         }
 
-        private static string GetUserNickname(IGuildUser user) => user == null ? "" : string.IsNullOrEmpty(user.Nickname) ? user.Username : user.Nickname;
+        private static string GetUserNickname(IGuildUser user) {
+            return user == null ? "" : string.IsNullOrEmpty(user.Nickname) ? user.Username : user.Nickname;
+        }
 
         private async Task UpdateAccountRoles(SocketGuildUser user, Account account) {
             IReadOnlyCollection<SocketRole> userRoles = user.Roles;
@@ -246,7 +252,7 @@ namespace UKSF.Api.Discord.Services {
 
             _client.UserJoined += user => {
                 string name = GetUserNickname(user);
-                string associatedAccountMessage = GetAssociatedAccountMessage(user.Id);
+                string associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
                 _logger.LogDiscordEvent(DiscordUserEventType.JOINED, user.Id.ToString(), name, string.Empty, name, $"Joined, {associatedAccountMessage}");
 
                 return Task.CompletedTask;
@@ -254,9 +260,10 @@ namespace UKSF.Api.Discord.Services {
 
             _client.UserLeft += user => {
                 string name = GetUserNickname(user);
-                string associatedAccountMessage = GetAssociatedAccountMessage(user.Id);
-                _logger.LogDiscordEvent(DiscordUserEventType.LEFT, user.Id.ToString(), name, string.Empty, name, $"Left, {associatedAccountMessage}");
                 Account account = _accountContext.GetSingle(x => x.DiscordId == user.Id.ToString());
+                string associatedAccountMessage = GetAssociatedAccountMessage(account);
+                _logger.LogDiscordEvent(DiscordUserEventType.LEFT, user.Id.ToString(), name, string.Empty, name, $"Left, {associatedAccountMessage}");
+                _logger.LogInfo($"Discord user {name} ({user.Id}) left. Found account: {(account == null ? "No account" : _displayNameService.GetDisplayName(account))}");
                 if (account != null) {
                     _eventBus.Send(new DiscordEventData(DiscordUserEventType.LEFT, account.Id));
                 }
@@ -265,14 +272,14 @@ namespace UKSF.Api.Discord.Services {
             };
 
             _client.UserBanned += async (user, _) => {
-                string associatedAccountMessage = GetAssociatedAccountMessage(user.Id);
+                string associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
                 ulong instigatorId = await GetBannedAuditLogInstigator(user.Id);
                 string instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
                 _logger.LogDiscordEvent(DiscordUserEventType.BANNED, instigatorId.ToString(), instigatorName, string.Empty, user.Username, $"Banned, {associatedAccountMessage}");
             };
 
             _client.UserUnbanned += async (user, _) => {
-                string associatedAccountMessage = GetAssociatedAccountMessage(user.Id);
+                string associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
                 ulong instigatorId = await GetUnbannedAuditLogInstigator(user.Id);
                 string instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
                 _logger.LogDiscordEvent(DiscordUserEventType.UNBANNED, instigatorId.ToString(), instigatorName, string.Empty, user.Username, $"Unbanned, {associatedAccountMessage}");
@@ -295,7 +302,9 @@ namespace UKSF.Api.Discord.Services {
                     }
                 }
 
-                _logger.LogDiscordEvent(DiscordUserEventType.MESSAGE_DELETED, "0", "NO INSTIGATOR", channel.Name, string.Empty, $"{irretrievableMessageCount} irretrievable messages deleted");
+                if (irretrievableMessageCount > 0) {
+                    _logger.LogDiscordEvent(DiscordUserEventType.MESSAGE_DELETED, "0", "NO INSTIGATOR", channel.Name, string.Empty, $"{irretrievableMessageCount} irretrievable messages deleted");
+                }
 
                 IEnumerable<IGrouping<string, DiscordDeletedMessageResult>> groupedMessages = messages.GroupBy(x => x.Name);
                 foreach (IGrouping<string, DiscordDeletedMessageResult> groupedMessage in groupedMessages) {
@@ -402,30 +411,36 @@ namespace UKSF.Api.Discord.Services {
             }
         }
 
-        private bool MessageIsWeeklyEventsMessage(IMessage message) => message != null && message.Content.Contains(_variablesService.GetVariable("DISCORD_FILTER_WEEKLY_EVENTS").AsString(), StringComparison.InvariantCultureIgnoreCase);
+        private bool MessageIsWeeklyEventsMessage(IMessage message) {
+            return message != null && message.Content.Contains(_variablesService.GetVariable("DISCORD_FILTER_WEEKLY_EVENTS").AsString(), StringComparison.InvariantCultureIgnoreCase);
+        }
 
-        private string GetAssociatedAccountMessage(ulong userId) {
+        private string GetAssociatedAccountMessageFromUserId(ulong userId) {
             Account account = _accountContext.GetSingle(x => x.DiscordId == userId.ToString());
+            return GetAssociatedAccountMessage(account);
+        }
+
+        private string GetAssociatedAccountMessage(Account account) {
             return account == null ? "with no associated account" : $"with associated account ({account.Id}, {_displayNameService.GetDisplayName(account)})";
         }
 
         private async Task<DiscordDeletedMessageResult> GetDeletedMessageDetails(Cacheable<IMessage, ulong> cacheable, ISocketMessageChannel channel) {
             IMessage message = await cacheable.GetOrDownloadAsync();
             if (message == null) {
-                return new DiscordDeletedMessageResult(0, null, null, null);
+                return new(0, null, null, null);
             }
 
             ulong userId = message.Author.Id;
             ulong instigatorId = await GetMessageDeletedAuditLogInstigator(channel.Id, userId);
             if (instigatorId == 0 || instigatorId == userId) {
-                return new DiscordDeletedMessageResult(ulong.MaxValue, null, null, null);
+                return new(ulong.MaxValue, null, null, null);
             }
 
             string name = message.Author is SocketGuildUser user ? GetUserNickname(user) : GetUserNickname(_guild.GetUser(userId));
             string instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
             string messageString = message.Content;
 
-            return new DiscordDeletedMessageResult(instigatorId, instigatorName, name, messageString);
+            return new(instigatorId, instigatorName, name, messageString);
         }
 
         private async Task<ulong> GetMessageDeletedAuditLogInstigator(ulong channelId, ulong authorId) {
@@ -437,7 +452,9 @@ namespace UKSF.Api.Discord.Services {
                     var auditUser = auditLogs.Where(x => x.Data is MessageDeleteAuditLogData)
                                              .Select(x => new { Data = x.Data as MessageDeleteAuditLogData, x.User })
                                              .FirstOrDefault(x => x.Data.ChannelId == channelId && x.Data.AuthorId == authorId);
-                    if (auditUser != null) return auditUser.User.Id;
+                    if (auditUser != null) {
+                        return auditUser.User.Id;
+                    }
                 }
             } finally {
                 await auditLogsEnumerator.DisposeAsync();
