@@ -19,37 +19,35 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
         private Task CheckoutStaticSource(string displayName, string modName, string releaseName, string repoName, string branchName) {
             StepLogger.LogSurround($"\nChecking out latest {displayName}...");
 
+            string path = Path.Join(GetBuildSourcesPath(), modName);
+            DirectoryInfo directory = new(path);
+            if (!directory.Exists) {
+                throw new($"{displayName} source directory does not exist. {displayName} should be cloned before running a build.");
+            }
+
+            string releasePath = Path.Join(GetBuildSourcesPath(), modName, "release", releaseName);
+            string repoPath = Path.Join(GetBuildEnvironmentPath(), "Repo", repoName);
+            DirectoryInfo release = new(releasePath);
+            DirectoryInfo repo = new(repoPath);
+
+            GitCommand(path, "git reset --hard HEAD && git clean -d -f && git fetch");
+            GitCommand(path, $"git checkout -t origin/{branchName}");
+            GitCommand(path, $"git checkout {branchName}");
+            string before = GitCommand(path, "git rev-parse HEAD");
+            GitCommand(path, "git pull");
+            string after = GitCommand(path, "git rev-parse HEAD");
+
             bool forceBuild = GetEnvironmentVariable<bool>($"{modName}_updated");
             bool updated;
-            if (forceBuild) {
+            if (!release.Exists || !repo.Exists) {
+                StepLogger.Log("No release or repo directory, will build");
+                updated = true;
+            } else if (forceBuild) {
                 StepLogger.Log("Force build");
                 updated = true;
             } else {
-                string path = Path.Join(GetBuildSourcesPath(), modName);
-                DirectoryInfo directory = new(path);
-                if (!directory.Exists) {
-                    throw new Exception($"{displayName} source directory does not exist. {displayName} should be cloned before running a build.");
-                }
-
-                string releasePath = Path.Join(GetBuildSourcesPath(), modName, "release", releaseName);
-                string repoPath = Path.Join(GetBuildEnvironmentPath(), "Repo", repoName);
-                DirectoryInfo release = new(releasePath);
-                DirectoryInfo repo = new(repoPath);
-
-                GitCommand(path, "git reset --hard HEAD && git clean -d -f && git fetch");
-                GitCommand(path, $"git checkout -t origin/{branchName}");
-                GitCommand(path, $"git checkout {branchName}");
-                string before = GitCommand(path, "git rev-parse HEAD");
-                GitCommand(path, "git pull");
-                string after = GitCommand(path, "git rev-parse HEAD");
-
-                if (release.Exists && repo.Exists) {
-                    StepLogger.Log($"{before?.Substring(0, 7)} vs {after?.Substring(0, 7)}");
-                    updated = !string.Equals(before, after);
-                } else {
-                    StepLogger.Log("No release or repo directory, will build");
-                    updated = true;
-                }
+                StepLogger.Log($"{before[..7]} vs {after[..7]}");
+                updated = !string.Equals(before, after);
             }
 
             SetEnvironmentVariable($"{modName}_updated", updated);
@@ -65,7 +63,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             string modpackPath = Path.Join(GetBuildSourcesPath(), "modpack");
             DirectoryInfo modpack = new(modpackPath);
             if (!modpack.Exists) {
-                throw new Exception("Modpack source directory does not exist. Modpack should be cloned before running a build.");
+                throw new("Modpack source directory does not exist. Modpack should be cloned before running a build.");
             }
 
             StepLogger.Log($"Checking out {referenceName}");
