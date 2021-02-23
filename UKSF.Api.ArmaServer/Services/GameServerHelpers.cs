@@ -52,7 +52,7 @@ namespace UKSF.Api.ArmaServer.Services {
             "onUnsignedData = \"kick (_this select 0)\";",
             "onHackedData = \"kick (_this select 0)\";",
             "onDifferentData = \"kick (_this select 0)\";",
-            "regularCheck = \"{{}}\";",
+            "regularCheck = \"\";",
             "briefingTimeOut = -1;",
             "roleTimeOut = -1;",
             "votingTimeOut = -1;",
@@ -68,6 +68,9 @@ namespace UKSF.Api.ArmaServer.Services {
             "        template = \"{4}\";",
             "        difficulty = \"Custom\";",
             "    }};",
+            "}};",
+            "class AdvancedOptions {{",
+            "    LogObjectNotFound = false;",
             "}};"
         };
 
@@ -89,11 +92,17 @@ namespace UKSF.Api.ArmaServer.Services {
             return Path.Join(_variablesService.GetVariable(variableKey).AsString(), "arma3server_x64.exe");
         }
 
-        public string GetGameServerSettingsPath() => Path.Join(_variablesService.GetVariable("SERVER_PATH_RELEASE").AsString(), "userconfig", "cba_settings.sqf");
+        public string GetGameServerSettingsPath() {
+            return Path.Join(_variablesService.GetVariable("SERVER_PATH_RELEASE").AsString(), "userconfig", "cba_settings.sqf");
+        }
 
-        public string GetGameServerMissionsPath() => _variablesService.GetVariable("MISSIONS_PATH").AsString();
+        public string GetGameServerMissionsPath() {
+            return _variablesService.GetVariable("MISSIONS_PATH").AsString();
+        }
 
-        public string GetGameServerConfigPath(GameServer gameServer) => Path.Combine(_variablesService.GetVariable("SERVER_PATH_CONFIGS").AsString(), $"{gameServer.ProfileName}.cfg");
+        public string GetGameServerConfigPath(GameServer gameServer) {
+            return Path.Combine(_variablesService.GetVariable("SERVER_PATH_CONFIGS").AsString(), $"{gameServer.ProfileName}.cfg");
+        }
 
         public string GetGameServerModsPaths(GameEnvironment environment) {
             string variableKey = environment switch {
@@ -105,30 +114,35 @@ namespace UKSF.Api.ArmaServer.Services {
             return Path.Join(_variablesService.GetVariable(variableKey).AsString(), "Repo");
         }
 
-        public IEnumerable<string> GetGameServerExtraModsPaths() => _variablesService.GetVariable("SERVER_PATH_MODS").AsArray(x => x.RemoveQuotes());
+        public IEnumerable<string> GetGameServerExtraModsPaths() {
+            return _variablesService.GetVariable("SERVER_PATH_MODS").AsArray(x => x.RemoveQuotes());
+        }
 
-        public string FormatGameServerConfig(GameServer gameServer, int playerCount, string missionSelection) =>
-            string.Format(string.Join("\n", BASE_CONFIG), gameServer.HostName, gameServer.Password, gameServer.AdminPassword, playerCount, missionSelection.Replace(".pbo", ""));
+        public string FormatGameServerConfig(GameServer gameServer, int playerCount, string missionSelection) {
+            return string.Format(string.Join("\n", BASE_CONFIG), gameServer.HostName, gameServer.Password, gameServer.AdminPassword, playerCount, missionSelection.Replace(".pbo", ""));
+        }
 
-        public string FormatGameServerLaunchArguments(GameServer gameServer) =>
-            $"-config={GetGameServerConfigPath(gameServer)}" +
-            $" -profiles={GetGameServerProfilesPath()}" +
-            $" -cfg={GetGameServerPerfConfigPath()}" +
-            $" -name={gameServer.Name}" +
-            $" -port={gameServer.Port}" +
-            $" -apiport=\"{gameServer.ApiPort}\"" +
-            $" {(string.IsNullOrEmpty(FormatGameServerServerMods(gameServer)) ? "" : $"\"-serverMod={FormatGameServerServerMods(gameServer)}\"")}" +
-            $" {(string.IsNullOrEmpty(FormatGameServerMods(gameServer)) ? "" : $"\"-mod={FormatGameServerMods(gameServer)}\"")}" +
-            " -bandwidthAlg=2 -hugepages -loadMissionToMemory -filePatching -limitFPS=200";
+        public string FormatGameServerLaunchArguments(GameServer gameServer) {
+            return $"-config={GetGameServerConfigPath(gameServer)}" +
+                   $" -profiles={GetGameServerProfilesPath()}" +
+                   $" -cfg={GetGameServerPerfConfigPath()}" +
+                   $" -name={gameServer.Name}" +
+                   $" -port={gameServer.Port}" +
+                   $" -apiport=\"{gameServer.ApiPort}\"" +
+                   $" {(string.IsNullOrEmpty(FormatGameServerServerMods(gameServer)) ? "" : $"\"-serverMod={FormatGameServerServerMods(gameServer)}\"")}" +
+                   $" {(string.IsNullOrEmpty(FormatGameServerMods(gameServer)) ? "" : $"\"-mod={FormatGameServerMods(gameServer)}\"")}" +
+                   " -bandwidthAlg=2 -hugepages -loadMissionToMemory -filePatching -limitFPS=200";
+        }
 
-        public string FormatHeadlessClientLaunchArguments(GameServer gameServer, int index) =>
-            $"-profiles={GetGameServerProfilesPath()}" +
-            $" -name={GetHeadlessClientName(index)}" +
-            $" -port={gameServer.Port}" +
-            $" -apiport=\"{gameServer.ApiPort + index + 1}\"" +
-            $" {(string.IsNullOrEmpty(FormatGameServerMods(gameServer)) ? "" : $"\"-mod={FormatGameServerMods(gameServer)}\"")}" +
-            $" -password={gameServer.Password}" +
-            " -localhost=127.0.0.1 -connect=localhost -client -hugepages -filePatching -limitFPS=200";
+        public string FormatHeadlessClientLaunchArguments(GameServer gameServer, int index) {
+            return $"-profiles={GetGameServerProfilesPath()}" +
+                   $" -name={GetHeadlessClientName(index)}" +
+                   $" -port={gameServer.Port}" +
+                   $" -apiport=\"{gameServer.ApiPort + index + 1}\"" +
+                   $" {(string.IsNullOrEmpty(FormatGameServerMods(gameServer)) ? "" : $"\"-mod={FormatGameServerMods(gameServer)}\"")}" +
+                   $" -password={gameServer.Password}" +
+                   " -localhost=127.0.0.1 -connect=localhost -client -hugepages -filePatching -limitFPS=200";
+        }
 
         public string GetMaxPlayerCountFromConfig(GameServer gameServer) {
             string maxPlayers = File.ReadAllLines(GetGameServerConfigPath(gameServer)).First(x => x.Contains("maxPlayers"));
@@ -148,24 +162,37 @@ namespace UKSF.Api.ArmaServer.Services {
             return int.Parse(curatorsMaxString);
         }
 
-        public TimeSpan StripMilliseconds(TimeSpan time) => new(time.Hours, time.Minutes, time.Seconds);
+        public TimeSpan StripMilliseconds(TimeSpan time) {
+            return new(time.Hours, time.Minutes, time.Seconds);
+        }
 
-        public IEnumerable<Process> GetArmaProcesses() => Process.GetProcesses().Where(x => x.ProcessName.StartsWith("arma3"));
+        public IEnumerable<Process> GetArmaProcesses() {
+            return Process.GetProcesses().Where(x => x.ProcessName.StartsWith("arma3"));
+        }
 
         public bool IsMainOpTime() {
             DateTime now = DateTime.UtcNow;
             return now.DayOfWeek == DayOfWeek.Saturday && now.Hour >= 19 && now.Minute >= 30;
         }
 
-        private string FormatGameServerMods(GameServer gameServer) =>
-            gameServer.Mods.Count > 0 ? $"{string.Join(";", gameServer.Mods.Select(x => x.PathRelativeToServerExecutable ?? x.Path))};" : string.Empty;
+        private string FormatGameServerMods(GameServer gameServer) {
+            return gameServer.Mods.Count > 0 ? $"{string.Join(";", gameServer.Mods.Select(x => x.PathRelativeToServerExecutable ?? x.Path))};" : string.Empty;
+        }
 
-        private string FormatGameServerServerMods(GameServer gameServer) => gameServer.ServerMods.Count > 0 ? $"{string.Join(";", gameServer.ServerMods.Select(x => x.Name))};" : string.Empty;
+        private string FormatGameServerServerMods(GameServer gameServer) {
+            return gameServer.ServerMods.Count > 0 ? $"{string.Join(";", gameServer.ServerMods.Select(x => x.Name))};" : string.Empty;
+        }
 
-        private string GetGameServerProfilesPath() => _variablesService.GetVariable("SERVER_PATH_PROFILES").AsString();
+        private string GetGameServerProfilesPath() {
+            return _variablesService.GetVariable("SERVER_PATH_PROFILES").AsString();
+        }
 
-        private string GetGameServerPerfConfigPath() => _variablesService.GetVariable("SERVER_PATH_PERF").AsString();
+        private string GetGameServerPerfConfigPath() {
+            return _variablesService.GetVariable("SERVER_PATH_PERF").AsString();
+        }
 
-        private string GetHeadlessClientName(int index) => _variablesService.GetVariable("SERVER_HEADLESS_NAMES").AsArray()[index];
+        private string GetHeadlessClientName(int index) {
+            return _variablesService.GetVariable("SERVER_HEADLESS_NAMES").AsArray()[index];
+        }
     }
 }
