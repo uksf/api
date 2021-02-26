@@ -52,7 +52,7 @@ namespace UKSF.Api.ArmaServer.Services {
             "onUnsignedData = \"kick (_this select 0)\";",
             "onHackedData = \"kick (_this select 0)\";",
             "onDifferentData = \"kick (_this select 0)\";",
-            "regularCheck = \"\";",
+            "regularCheck = \"{{}}\";",
             "briefingTimeOut = -1;",
             "roleTimeOut = -1;",
             "votingTimeOut = -1;",
