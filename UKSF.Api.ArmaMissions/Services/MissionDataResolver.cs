@@ -54,7 +54,7 @@ namespace UKSF.Api.ArmaMissions.Services {
 
         public static List<MissionPlayer> ResolveUnitSlots(MissionUnit unit) {
             List<MissionPlayer> slots = new();
-            int max = 8;
+            int max = 12;
             int fillerCount;
             switch (unit.SourceUnit.Id) {
                 case "5a435eea905d47336442c75a": // "Joint Special Forces Aviation Wing"
