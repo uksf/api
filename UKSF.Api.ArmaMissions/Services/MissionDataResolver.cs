@@ -87,7 +87,7 @@ namespace UKSF.Api.ArmaMissions.Services {
 
                     break;
                 case "5ad748e0de5d414f4c4055e0": // "Guardian 1-R"
-                    for (int i = 0; i < 6; i++) {
+                    for (int i = 0; i < 10; i++) {
                         MissionPlayer player = new() { Name = "Reserve", Unit = unit, Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Recruit") };
                         player.ObjectClass = ResolveObjectClass(player);
                         slots.Add(player);
