@@ -14,7 +14,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
 
             string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
             string releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@uksf_air");
-            string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
+            string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_air");
 
             if (IsBuildNeeded(MOD_NAME)) {
                 StepLogger.LogSurround("\nRunning make.py...");
