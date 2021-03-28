@@ -196,7 +196,7 @@ namespace UKSF.Api.Modpack.Services {
         private static void SetEnvironmentVariables(ModpackBuild build, ModpackBuild previousBuild, NewBuild newBuild = null) {
             CheckEnvironmentVariable(build, previousBuild, "ace_updated", "Build ACE", newBuild?.Ace ?? false);
             CheckEnvironmentVariable(build, previousBuild, "acre_updated", "Build ACRE", newBuild?.Acre ?? false);
-            CheckEnvironmentVariable(build, previousBuild, "f35_updated", "Build F-35", newBuild?.F35 ?? false);
+            CheckEnvironmentVariable(build, previousBuild, "air_updated", "Build Air", newBuild?.Air ?? false);
         }
 
         private static void CheckEnvironmentVariable(ModpackBuild build, ModpackBuild previousBuild, string key, string stepName, bool force) {
