@@ -12,7 +12,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
 
             await CheckoutStaticSource("ACE", "ace", "@ace", "@uksf_ace", "uksfcustom");
             await CheckoutStaticSource("ACRE", "acre", "@acre2", "@acre2", "customrelease");
-            await CheckoutStaticSource("UKSF Air", "uksf_air", "@uksf_air", "@uksf", "main");
+            await CheckoutStaticSource("UKSF Air", "uksf_air", "@uksf_air", "@uksf_air", "main");
             await CheckoutModpack();
         }
 
