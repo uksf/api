@@ -13,10 +13,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
             StepLogger.Log("Running build for Air");
 
             string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
-            string releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@uksf_air", "addons");
-            string dependenciesPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "addons");
-            DirectoryInfo release = new(releasePath);
-            DirectoryInfo dependencies = new(dependenciesPath);
+            string releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@uksf_air");
+            string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
 
             if (IsBuildNeeded(MOD_NAME)) {
                 StepLogger.LogSurround("\nRunning make.py...");
@@ -25,10 +23,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
                 StepLogger.LogSurround("Make.py complete");
             }
 
-            StepLogger.LogSurround("\nMoving Air pbos to uksf dependencies...");
-            List<FileInfo> files = GetDirectoryContents(release, "*.pbo");
-            await CopyFiles(release, dependencies, files);
-            StepLogger.LogSurround("Moved Air pbos to uksf dependencies");
+            StepLogger.LogSurround("\nMoving Air release to build...");
+            await CopyDirectory(releasePath, buildPath);
+            StepLogger.LogSurround("Moved Air release to build");
         }
     }
 }
