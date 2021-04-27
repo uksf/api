@@ -22,7 +22,7 @@ namespace UKSF.Api.ArmaMissions.Services {
             _armaServerDefaultMaxCurators = armaServerDefaultMaxCurators;
             _armaServerModsPath = armaServerModsPath;
             _mission = tempMission;
-            _reports = new List<MissionPatchingReport>();
+            _reports = new();
             if (!AssertRequiredFiles()) return _reports;
 
             if (CheckBinned()) {
@@ -33,16 +33,13 @@ namespace UKSF.Api.ArmaMissions.Services {
 
             if (CheckIgnoreKey("missionPatchingIgnore")) {
                 _reports.Add(
-                    new MissionPatchingReport(
-                        "Mission Patching Ignored",
-                        "Mission patching for this mission was ignored.\nThis means no changes to the mission.sqm were made." +
-                        "This is not an error, however errors may occur in the mission as a result of this.\n" +
-                        "Ensure ALL the steps below have been done to the mission.sqm before reporting any errors:\n\n\n" +
-                        "1: Remove raw newline characters. Any newline characters (\\n) in code will result in compile errors and that code will NOT run.\n" +
-                        "For example, a line: init = \"myTestVariable = 10; \\n myOtherTestVariable = 20;\" should be replaced with: init = \"myTestVariable = 10; myOtherTestVariable = 20;\"\n\n" +
-                        "2: Replace embedded quotes. Any embedded quotes (\"\") in code will result in compile errors and that code will NOT run. They should be replaced with a single quote character (').\n" +
-                        "For example, a line: init = \"myTestVariable = \"\"hello\"\";\" should be replaced with: init = \"myTestVariable = 'hello';\""
-                    )
+                    new("Mission Patching Ignored", "Mission patching for this mission was ignored.\nThis means no changes to the mission.sqm were made." +
+                                                    "This is not an error, however errors may occur in the mission as a result of this.\n" +
+                                                    "Ensure ALL the steps below have been done to the mission.sqm before reporting any errors:\n\n\n" +
+                                                    "1: Remove raw newline characters. Any newline characters (\\n) in code will result in compile errors and that code will NOT run.\n" +
+                                                    "For example, a line: init = \"myTestVariable = 10; \\n myOtherTestVariable = 20;\" should be replaced with: init = \"myTestVariable = 10; myOtherTestVariable = 20;\"\n\n" +
+                                                    "2: Replace embedded quotes. Any embedded quotes (\"\") in code will result in compile errors and that code will NOT run. They should be replaced with a single quote character (').\n" +
+                                                    "For example, a line: init = \"myTestVariable = \"\"hello\"\";\" should be replaced with: init = \"myTestVariable = 'hello';\"")
                 );
                 PatchDescription();
                 return _reports;
@@ -58,25 +55,17 @@ namespace UKSF.Api.ArmaMissions.Services {
         private bool AssertRequiredFiles() {
             if (!File.Exists(_mission.DescriptionPath)) {
                 _reports.Add(
-                    new MissionPatchingReport(
-                        "Missing file: description.ext",
-                        "The mission is missing a required file:\ndescription.ext\n\n" +
-                        "It is advised to copy this file directly from the template mission to your mission\nUKSFTemplate.VR is located in the modpack files",
-                        true
-                    )
+                    new("Missing file: description.ext", "The mission is missing a required file:\ndescription.ext\n\n" +
+                                                         "It is advised to copy this file directly from the template mission to your mission\nUKSFTemplate.VR is located in the modpack files", true)
                 );
                 return false;
             }
 
             if (!File.Exists(Path.Combine(_mission.Path, "cba_settings.sqf"))) {
                 _reports.Add(
-                    new MissionPatchingReport(
-                        "Missing file: cba_settings.sqf",
-                        "The mission is missing a required file:\ncba_settings.sqf\n\n" +
-                        "It is advised to copy this file directly from the template mission to your mission\n" +
-                        "UKSFTemplate.VR is located in the modpack files and make changes according to the needs of the mission",
-                        true
-                    )
+                    new("Missing file: cba_settings.sqf", "The mission is missing a required file:\ncba_settings.sqf\n\n" +
+                                                          "It is advised to copy this file directly from the template mission to your mission\n" +
+                                                          "UKSFTemplate.VR is located in the modpack files and make changes according to the needs of the mission", true)
                 );
                 return false;
             }
@@ -140,12 +129,9 @@ namespace UKSF.Api.ArmaMissions.Services {
             if (string.IsNullOrEmpty(curatorsMaxLine)) {
                 _mission.MaxCurators = _armaServerDefaultMaxCurators;
                 _reports.Add(
-                    new MissionPatchingReport(
-                        "Using server setting 'uksf_curator_curatorsMax'",
-                        "Could not find setting 'uksf_curator_curatorsMax' in cba_settings.sqf" +
-                        "This is required to add the correct nubmer of pre-defined curator objects." +
-                        $"The server setting value ({_mission.MaxCurators}) for this will be used instead."
-                    )
+                    new("Using server setting 'uksf_curator_curatorsMax'", "Could not find setting 'uksf_curator_curatorsMax' in cba_settings.sqf" +
+                                                                           "This is required to add the correct nubmer of pre-defined curator objects." +
+                                                                           $"The server setting value ({_mission.MaxCurators}) for this will be used instead.")
                 );
                 return;
             }
@@ -153,12 +139,9 @@ namespace UKSF.Api.ArmaMissions.Services {
             string curatorsMaxString = curatorsMaxLine.Split("=")[1].RemoveSpaces().Replace(";", "");
             if (!int.TryParse(curatorsMaxString, out int maxCurators)) {
                 _reports.Add(
-                    new MissionPatchingReport(
-                        "Using hardcoded setting 'uksf_curator_curatorsMax'",
-                        $"Could not read malformed setting: '{curatorsMaxLine}' in cba_settings.sqf" +
-                        "This is required to add the correct nubmer of pre-defined curator objects." +
-                        "The hardcoded value (5) will be used instead."
-                    )
+                    new("Using hardcoded setting 'uksf_curator_curatorsMax'", $"Could not read malformed setting: '{curatorsMaxLine}' in cba_settings.sqf" +
+                                                                              "This is required to add the correct nubmer of pre-defined curator objects." +
+                                                                              "The hardcoded value (5) will be used instead.")
                 );
             } else {
                 _mission.MaxCurators = maxCurators;
@@ -174,12 +157,9 @@ namespace UKSF.Api.ArmaMissions.Services {
                 if (File.Exists(modpackImagePath)) {
                     if (File.Exists(imagePath) && new FileInfo(imagePath).Length != new FileInfo(modpackImagePath).Length) {
                         _reports.Add(
-                            new MissionPatchingReport(
-                                "Loading image was different",
-                                "The mission loading image `uksf.paa` was found to be different from the default." +
-                                "It has been replaced with the default UKSF image.\n\n" +
-                                "If you wish this to be a custom image, see <a target=\"_blank\" href=https://github.com/uksf/modpack/wiki/SR5:-Mission-Patching#ignoring-custom-loading-image>this page</a> for details on how to configure this"
-                            )
+                            new("Loading image was different", "The mission loading image `uksf.paa` was found to be different from the default." +
+                                                               "It has been replaced with the default UKSF image.\n\n" +
+                                                               "If you wish this to be a custom image, see <a target=\"_blank\" href=https://github.com/uksf/modpack/wiki/SR5:-Mission-Patching#ignoring-custom-loading-image>this page</a> for details on how to configure this")
                         );
                     }
 
@@ -231,6 +211,7 @@ namespace UKSF.Api.ArmaMissions.Services {
             CheckDescriptionItem("aiKills", "0");
             CheckDescriptionItem("disableChannels[]", "{ 0,2,6 }");
             CheckDescriptionItem("cba_settings_hasSettingsFile", "1");
+            CheckDescriptionItem("allowProfileGlasses", "0");
         }
 
         private void CheckDescriptionItem(string key, string defaultValue, bool required = true) {
@@ -241,17 +222,13 @@ namespace UKSF.Api.ArmaMissions.Services {
                 bool equal = string.Equals(itemValue, defaultValue, StringComparison.InvariantCultureIgnoreCase);
                 if (!equal && required) {
                     _reports.Add(
-                        new MissionPatchingReport(
-                            $"Required description.ext item <i>{key}</i>  value is not default",
-                            $"<i>{key}</i>  in description.ext is '{itemValue}'\nThe default value is '{defaultValue}'\n\nYou should only change this if you know what you're doing"
-                        )
+                        new($"Required description.ext item <i>{key}</i>  value is not default",
+                            $"<i>{key}</i>  in description.ext is '{itemValue}'\nThe default value is '{defaultValue}'\n\nYou should only change this if you know what you're doing")
                     );
                 } else if (equal && !required) {
                     _reports.Add(
-                        new MissionPatchingReport(
-                            $"Configurable description.ext item <i>{key}</i>  value is default",
-                            $"<i>{key}</i>  in description.ext is the same as the default value '{itemValue}'\n\nThis should be changed based on your mission"
-                        )
+                        new($"Configurable description.ext item <i>{key}</i>  value is default",
+                            $"<i>{key}</i>  in description.ext is the same as the default value '{itemValue}'\n\nThis should be changed based on your mission")
                     );
                 }
 
@@ -262,12 +239,9 @@ namespace UKSF.Api.ArmaMissions.Services {
                 _mission.DescriptionLines.Add($"{key} = {defaultValue};");
             } else {
                 _reports.Add(
-                    new MissionPatchingReport(
-                        $"Configurable description.ext item <i>{key}</i>  is missing",
-                        $"<i>{key}</i>  in description.ext is missing\nThis is required for the mission\n\n" +
-                        "It is advised to copy the description.ext file directly from the template mission to your mission\nUKSFTemplate.VR is located in the modpack files",
-                        true
-                    )
+                    new($"Configurable description.ext item <i>{key}</i>  is missing", $"<i>{key}</i>  in description.ext is missing\nThis is required for the mission\n\n" +
+                                                                                       "It is advised to copy the description.ext file directly from the template mission to your mission\nUKSFTemplate.VR is located in the modpack files"
+                        , true)
                 );
             }
         }
