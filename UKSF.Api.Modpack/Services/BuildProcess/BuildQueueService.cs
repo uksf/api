@@ -40,7 +40,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
 
         public bool CancelQueued(string id) {
             if (_queue.Any(x => x.Id == id)) {
-                _queue = new ConcurrentQueue<ModpackBuild>(_queue.Where(x => x.Id != id));
+                _queue = new(_queue.Where(x => x.Id != id));
                 return true;
             }
 
@@ -87,11 +87,11 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             while (_queue.TryDequeue(out ModpackBuild build)) {
                 // TODO: Expand this to check if a server is running using the repo for this build. If no servers are running but there are processes, don't build at all.
                 // Will require better game <-> api interaction to communicate with servers and headless clients properly
-                if (_gameServersService.GetGameInstanceCount() > 0) {
-                    _queue.Enqueue(build);
-                    await Task.Delay(TimeSpan.FromMinutes(5));
-                    continue;
-                }
+                // if (_gameServersService.GetGameInstanceCount() > 0) {
+                //     _queue.Enqueue(build);
+                //     await Task.Delay(TimeSpan.FromMinutes(5));
+                //     continue;
+                // }
 
                 CancellationTokenSource cancellationTokenSource = new();
                 _cancellationTokenSources.TryAdd(build.Id, cancellationTokenSource);
