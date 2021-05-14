@@ -42,7 +42,9 @@ namespace UKSF.Api.ArmaServer.Services {
             _gameServerHelpers = gameServerHelpers;
         }
 
-        public int GetGameInstanceCount() => _gameServerHelpers.GetArmaProcesses().Count();
+        public int GetGameInstanceCount() {
+            return _gameServerHelpers.GetArmaProcesses().Count();
+        }
 
         public async Task UploadMissionFile(IFormFile file) {
             string fileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
@@ -65,7 +67,7 @@ namespace UKSF.Api.ArmaServer.Services {
             }
 
             using HttpClient client = new();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Accept.Add(new("application/json"));
             try {
                 HttpResponseMessage response = await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server");
                 if (!response.IsSuccessStatusCode) {
@@ -106,8 +108,9 @@ namespace UKSF.Api.ArmaServer.Services {
             return result;
         }
 
-        public void WriteServerConfig(GameServer gameServer, int playerCount, string missionSelection) =>
+        public void WriteServerConfig(GameServer gameServer, int playerCount, string missionSelection) {
             File.WriteAllText(_gameServerHelpers.GetGameServerConfigPath(gameServer), _gameServerHelpers.FormatGameServerConfig(gameServer, playerCount, missionSelection));
+        }
 
         public async Task LaunchGameServer(GameServer gameServer) {
             string launchArguments = _gameServerHelpers.FormatGameServerLaunchArguments(gameServer);
@@ -129,7 +132,7 @@ namespace UKSF.Api.ArmaServer.Services {
         public async Task StopGameServer(GameServer gameServer) {
             try {
                 using HttpClient client = new();
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                client.DefaultRequestHeaders.Accept.Add(new("application/json"));
                 await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server/stop");
             } catch (Exception) {
                 // ignored
@@ -139,7 +142,7 @@ namespace UKSF.Api.ArmaServer.Services {
                 for (int index = 0; index < gameServer.NumberHeadlessClients; index++) {
                     try {
                         using HttpClient client = new();
-                        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                        client.DefaultRequestHeaders.Accept.Add(new("application/json"));
                         await client.GetAsync($"http://localhost:{gameServer.ApiPort + index + 1}/server/stop");
                     } catch (Exception) {
                         // ignored
@@ -191,12 +194,13 @@ namespace UKSF.Api.ArmaServer.Services {
         public List<GameServerMod> GetAvailableMods(string id) {
             GameServer gameServer = _gameServersContext.GetSingle(id);
             Uri serverExecutable = new(_gameServerHelpers.GetGameServerExecutablePath(gameServer));
-            List<GameServerMod> mods = new();
+
             IEnumerable<string> availableModsFolders = new[] { _gameServerHelpers.GetGameServerModsPaths(gameServer.Environment) };
-            IEnumerable<string> extraModsFolders = _gameServerHelpers.GetGameServerExtraModsPaths();
-            availableModsFolders = availableModsFolders.Concat(extraModsFolders);
+            availableModsFolders = availableModsFolders.Concat(_gameServerHelpers.GetGameServerExtraModsPaths());
+
+            List<GameServerMod> mods = new();
             foreach (string modsPath in availableModsFolders) {
-                IEnumerable<DirectoryInfo> modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("@*", SearchOption.TopDirectoryOnly);
+                IEnumerable<DirectoryInfo> modFolders = GetModFolders(modsPath);
                 foreach (DirectoryInfo modFolder in modFolders) {
                     if (mods.Any(x => x.Path == modFolder.FullName)) continue;
 
@@ -233,6 +237,22 @@ namespace UKSF.Api.ArmaServer.Services {
                              .Where(x => x.modFiles.Any())
                              .Select(x => new GameServerMod { Name = x.modFolder.Name, Path = x.modFolder.FullName })
                              .ToList();
+        }
+
+        private static IEnumerable<DirectoryInfo> GetModFolders(string modsPath) {
+            List<DirectoryInfo> modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("@*", SearchOption.TopDirectoryOnly).ToList();
+
+            DirectoryInfo vnPath = new(Path.Join(modsPath, "vn"));
+            if (vnPath.Exists) {
+                modFolders.Add(vnPath);
+            }
+
+            DirectoryInfo gmPath = new(Path.Join(modsPath, "gm"));
+            if (gmPath.Exists) {
+                modFolders.Add(gmPath);
+            }
+
+            return modFolders;
         }
     }
 }
