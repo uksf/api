@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
@@ -200,12 +201,14 @@ namespace UKSF.Api.ArmaServer.Services {
 
             List<GameServerMod> mods = new();
             foreach (string modsPath in availableModsFolders) {
-                IEnumerable<DirectoryInfo> modFolders = GetModFolders(modsPath);
+                Regex allowedPaths = new("@.*|(?<!.)(vn)(?!.)|(?<!.)(gm)(?!.)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                IEnumerable<DirectoryInfo> modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("*.*", SearchOption.TopDirectoryOnly).Where(x => allowedPaths.IsMatch(x.Name));
                 foreach (DirectoryInfo modFolder in modFolders) {
                     if (mods.Any(x => x.Path == modFolder.FullName)) continue;
 
-                    IEnumerable<FileInfo> modFiles = new DirectoryInfo(modFolder.FullName).EnumerateFiles("*.pbo", SearchOption.AllDirectories);
-                    if (!modFiles.Any()) continue;
+                    Regex allowedExtensions = new("[ep]bo", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                    bool hasModFiles = new DirectoryInfo(modFolder.FullName).EnumerateFiles("*.*", SearchOption.AllDirectories).Any(x => allowedExtensions.IsMatch(x.Extension));
+                    if (!hasModFiles) continue;
 
                     GameServerMod mod = new() { Name = modFolder.Name, Path = modFolder.FullName };
                     Uri modFolderUri = new(mod.Path);
@@ -237,22 +240,6 @@ namespace UKSF.Api.ArmaServer.Services {
                              .Where(x => x.modFiles.Any())
                              .Select(x => new GameServerMod { Name = x.modFolder.Name, Path = x.modFolder.FullName })
                              .ToList();
-        }
-
-        private static IEnumerable<DirectoryInfo> GetModFolders(string modsPath) {
-            List<DirectoryInfo> modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("@*", SearchOption.TopDirectoryOnly).ToList();
-
-            DirectoryInfo vnPath = new(Path.Join(modsPath, "vn"));
-            if (vnPath.Exists) {
-                modFolders.Add(vnPath);
-            }
-
-            DirectoryInfo gmPath = new(Path.Join(modsPath, "gm"));
-            if (gmPath.Exists) {
-                modFolders.Add(gmPath);
-            }
-
-            return modFolders;
         }
     }
 }
