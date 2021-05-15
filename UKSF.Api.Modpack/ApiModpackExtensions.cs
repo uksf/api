@@ -8,27 +8,43 @@ using UKSF.Api.Modpack.Services;
 using UKSF.Api.Modpack.Services.BuildProcess;
 using UKSF.Api.Modpack.Signalr.Hubs;
 
-namespace UKSF.Api.Modpack {
-    public static class ApiModpackExtensions {
-        public static IServiceCollection AddUksfModpack(this IServiceCollection services) =>
-            services.AddContexts().AddEventHandlers().AddServices().AddActions().AddTransient<IBuildsEventHandler, BuildsEventHandler>();
+namespace UKSF.Api.Modpack
+{
+    public static class ApiModpackExtensions
+    {
+        public static IServiceCollection AddUksfModpack(this IServiceCollection services)
+        {
+            return services.AddContexts().AddEventHandlers().AddServices().AddActions().AddTransient<IBuildsEventHandler, BuildsEventHandler>();
+        }
 
-        private static IServiceCollection AddContexts(this IServiceCollection services) => services.AddSingleton<IBuildsContext, BuildsContext>().AddSingleton<IReleasesContext, ReleasesContext>();
+        private static IServiceCollection AddContexts(this IServiceCollection services)
+        {
+            return services.AddSingleton<IBuildsContext, BuildsContext>().AddSingleton<IReleasesContext, ReleasesContext>();
+        }
 
-        private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services.AddSingleton<IBuildsEventHandler, BuildsEventHandler>();
+        private static IServiceCollection AddEventHandlers(this IServiceCollection services)
+        {
+            return services.AddSingleton<IBuildsEventHandler, BuildsEventHandler>();
+        }
 
-        private static IServiceCollection AddServices(this IServiceCollection services) =>
-            services.AddSingleton<IBuildsService, BuildsService>()
-                    .AddTransient<IGithubService, GithubService>()
-                    .AddTransient<IModpackService, ModpackService>()
-                    .AddTransient<IReleaseService, ReleaseService>()
-                    .AddSingleton<IBuildStepService, BuildStepService>()
-                    .AddSingleton<IBuildProcessorService, BuildProcessorService>()
-                    .AddSingleton<IBuildQueueService, BuildQueueService>();
+        private static IServiceCollection AddServices(this IServiceCollection services)
+        {
+            return services.AddSingleton<IBuildsService, BuildsService>()
+                           .AddTransient<IGithubService, GithubService>()
+                           .AddTransient<IModpackService, ModpackService>()
+                           .AddTransient<IReleaseService, ReleaseService>()
+                           .AddSingleton<IBuildStepService, BuildStepService>()
+                           .AddSingleton<IBuildProcessorService, BuildProcessorService>()
+                           .AddSingleton<IBuildQueueService, BuildQueueService>();
+        }
 
-        private static IServiceCollection AddActions(this IServiceCollection services) => services.AddSingleton<IActionPruneBuilds, ActionPruneBuilds>();
+        private static IServiceCollection AddActions(this IServiceCollection services)
+        {
+            return services.AddSingleton<IActionPruneBuilds, ActionPruneBuilds>();
+        }
 
-        public static void AddUksfModpackSignalr(this IEndpointRouteBuilder builder) {
+        public static void AddUksfModpackSignalr(this IEndpointRouteBuilder builder)
+        {
             builder.MapHub<BuildsHub>($"/hub/{BuildsHub.END_POINT}");
         }
     }

@@ -4,12 +4,17 @@ using UKSF.Api.Launcher.Signalr.Hubs;
 
 // ReSharper disable NotAccessedField.Local
 
-namespace UKSF.Api.Launcher.Services {
+namespace UKSF.Api.Launcher.Services
+{
     public interface ILauncherService { }
 
-    public class LauncherService : ILauncherService {
+    public class LauncherService : ILauncherService
+    {
         private readonly IHubContext<LauncherHub, ILauncherClient> _launcherHub;
 
-        public LauncherService(IHubContext<LauncherHub, ILauncherClient> launcherHub) => _launcherHub = launcherHub;
+        public LauncherService(IHubContext<LauncherHub, ILauncherClient> launcherHub)
+        {
+            _launcherHub = launcherHub;
+        }
     }
 }

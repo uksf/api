@@ -6,8 +6,10 @@ using System.Threading;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Shared.Extensions;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess {
-    public class BuildProcessHelper {
+namespace UKSF.Api.Modpack.Services.BuildProcess
+{
+    public class BuildProcessHelper
+    {
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly CancellationTokenSource _errorCancellationTokenSource = new();
         private readonly List<string> _errorExclusions;
@@ -33,7 +35,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             List<string> errorExclusions = null,
             string ignoreErrorGateClose = "",
             string ignoreErrorGateOpen = ""
-        ) {
+        )
+        {
             _logger = logger;
             _cancellationTokenSource = cancellationTokenSource;
             _suppressOutput = suppressOutput;
@@ -44,9 +47,12 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             _ignoreErrorGateOpen = ignoreErrorGateOpen;
         }
 
-        public List<string> Run(string workingDirectory, string executable, string args, int timeout) {
-            _process = new Process {
-                StartInfo = {
+        public List<string> Run(string workingDirectory, string executable, string args, int timeout)
+        {
+            _process = new()
+            {
+                StartInfo =
+                {
                     FileName = executable,
                     WorkingDirectory = workingDirectory,
                     Arguments = args,
@@ -68,39 +74,51 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
 
-            if (_process.WaitForExit(timeout) && _outputWaitHandle.WaitOne(timeout) && _errorWaitHandle.WaitOne(timeout)) {
-                if (_cancellationTokenSource.IsCancellationRequested) {
+            if (_process.WaitForExit(timeout) && _outputWaitHandle.WaitOne(timeout) && _errorWaitHandle.WaitOne(timeout))
+            {
+                if (_cancellationTokenSource.IsCancellationRequested)
+                {
                     return _results;
                 }
 
-                if (_capturedException != null) {
-                    if (_raiseErrors) {
+                if (_capturedException != null)
+                {
+                    if (_raiseErrors)
+                    {
                         throw _capturedException;
                     }
 
-                    if (!_errorSilently) {
+                    if (!_errorSilently)
+                    {
                         _logger.LogError(_capturedException);
                     }
                 }
 
-                if (_raiseErrors && _process.ExitCode != 0) {
+                if (_raiseErrors && _process.ExitCode != 0)
+                {
                     string json = "";
                     List<Tuple<string, string>> messages = ExtractMessages(_results.Last(), ref json);
-                    if (messages.Any()) {
-                        throw new Exception(messages.First().Item1);
+                    if (messages.Any())
+                    {
+                        throw new(messages.First().Item1);
                     }
 
-                    throw new Exception();
+                    throw new();
                 }
-            } else {
+            }
+            else
+            {
                 // Timeout or cancelled
-                if (!_cancellationTokenSource.IsCancellationRequested) {
+                if (!_cancellationTokenSource.IsCancellationRequested)
+                {
                     Exception exception = new($"Process exited with non-zero code ({_process.ExitCode})");
-                    if (_raiseErrors) {
+                    if (_raiseErrors)
+                    {
                         throw exception;
                     }
 
-                    if (!_errorSilently) {
+                    if (!_errorSilently)
+                    {
                         _logger.LogError(exception);
                     }
                 }
@@ -109,55 +127,77 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             return _results;
         }
 
-        private void OnOutputDataReceived(object sender, DataReceivedEventArgs receivedEventArgs) {
-            if (receivedEventArgs.Data == null) {
+        private void OnOutputDataReceived(object sender, DataReceivedEventArgs receivedEventArgs)
+        {
+            if (receivedEventArgs.Data == null)
+            {
                 _outputWaitHandle.Set();
                 return;
             }
 
             string message = receivedEventArgs.Data;
-            if (!string.IsNullOrEmpty(message)) {
+            if (!string.IsNullOrEmpty(message))
+            {
                 _results.Add(message);
             }
 
-            if (!_suppressOutput) {
+            if (!_suppressOutput)
+            {
                 string json = "";
-                try {
+                try
+                {
                     List<Tuple<string, string>> messages = ExtractMessages(message, ref json);
-                    foreach ((string text, string colour) in messages) {
+                    foreach ((string text, string colour) in messages)
+                    {
                         _logger.Log(text, colour);
                     }
-                } catch (Exception exception) {
-                    _capturedException = new Exception($"Json failed: {json}\n\n{exception}");
+                }
+                catch (Exception exception)
+                {
+                    _capturedException = new($"Json failed: {json}\n\n{exception}");
                     _errorCancellationTokenSource.Cancel();
                 }
             }
         }
 
-        private void OnErrorDataReceived(object sender, DataReceivedEventArgs receivedEventArgs) {
-            if (receivedEventArgs.Data == null) {
+        private void OnErrorDataReceived(object sender, DataReceivedEventArgs receivedEventArgs)
+        {
+            if (receivedEventArgs.Data == null)
+            {
                 _errorWaitHandle.Set();
                 return;
             }
 
             string message = receivedEventArgs.Data;
-            if (string.IsNullOrEmpty(message) || CheckIgnoreErrorGates(message)) return;
+            if (string.IsNullOrEmpty(message) || CheckIgnoreErrorGates(message))
+            {
+                return;
+            }
 
-            if (_errorExclusions != null && _errorExclusions.Any(x => message.ContainsIgnoreCase(x))) return;
+            if (_errorExclusions != null && _errorExclusions.Any(x => message.ContainsIgnoreCase(x)))
+            {
+                return;
+            }
 
-            _capturedException = new Exception(message);
+            _capturedException = new(message);
             _errorCancellationTokenSource.Cancel();
         }
 
-        private bool CheckIgnoreErrorGates(string message) {
-            if (message.ContainsIgnoreCase(_ignoreErrorGateClose)) {
+        private bool CheckIgnoreErrorGates(string message)
+        {
+            if (message.ContainsIgnoreCase(_ignoreErrorGateClose))
+            {
                 _ignoreErrors = false;
                 return true;
             }
 
-            if (_ignoreErrors) return true;
+            if (_ignoreErrors)
+            {
+                return true;
+            }
 
-            if (message.ContainsIgnoreCase(_ignoreErrorGateOpen)) {
+            if (message.ContainsIgnoreCase(_ignoreErrorGateOpen))
+            {
                 _ignoreErrors = true;
                 return true;
             }
@@ -165,16 +205,20 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             return false;
         }
 
-        private static List<Tuple<string, string>> ExtractMessages(string message, ref string json) {
+        private static List<Tuple<string, string>> ExtractMessages(string message, ref string json)
+        {
             List<Tuple<string, string>> messages = new();
-            if (message.Length > 5 && message.Substring(0, 4) == "JSON") {
+            if (message.Length > 5 && message.Substring(0, 4) == "JSON")
+            {
                 string[] parts = message.Split('{', '}'); // covers cases where buffer gets extra data flushed to it after the closing brace
                 json = $"{{{parts[1].Escape().Replace("\\\\n", "\\n")}}}";
                 JObject jsonObject = JObject.Parse(json);
-                messages.Add(new Tuple<string, string>(jsonObject.GetValueFromBody("message"), jsonObject.GetValueFromBody("colour")));
+                messages.Add(new(jsonObject.GetValueFromBody("message"), jsonObject.GetValueFromBody("colour")));
                 messages.AddRange(parts.Skip(2).Where(x => !string.IsNullOrEmpty(x)).Select(extra => new Tuple<string, string>(extra, "")));
-            } else {
-                messages.Add(new Tuple<string, string>(message, ""));
+            }
+            else
+            {
+                messages.Add(new(message, ""));
             }
 
             return messages;

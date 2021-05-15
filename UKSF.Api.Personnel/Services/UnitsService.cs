@@ -7,8 +7,10 @@ using MongoDB.Driver;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.Personnel.Services {
-    public interface IUnitsService {
+namespace UKSF.Api.Personnel.Services
+{
+    public interface IUnitsService
+    {
         IEnumerable<Unit> GetSortedUnits(Func<Unit, bool> predicate = null);
         Task AddMember(string id, string unitId);
         Task RemoveMember(string id, string unitName);
@@ -38,16 +40,19 @@ namespace UKSF.Api.Personnel.Services {
         string GetChainString(Unit unit);
     }
 
-    public class UnitsService : IUnitsService {
+    public class UnitsService : IUnitsService
+    {
         private readonly IRolesContext _rolesContext;
         private readonly IUnitsContext _unitsContext;
 
-        public UnitsService(IUnitsContext unitsContext, IRolesContext rolesContext) {
+        public UnitsService(IUnitsContext unitsContext, IRolesContext rolesContext)
+        {
             _unitsContext = unitsContext;
             _rolesContext = rolesContext;
         }
 
-        public IEnumerable<Unit> GetSortedUnits(Func<Unit, bool> predicate = null) {
+        public IEnumerable<Unit> GetSortedUnits(Func<Unit, bool> predicate = null)
+        {
             List<Unit> sortedUnits = new();
             Unit combatRoot = _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.COMBAT);
             Unit auxiliaryRoot = _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY);
@@ -59,112 +64,172 @@ namespace UKSF.Api.Personnel.Services {
             return predicate != null ? sortedUnits.Where(predicate) : sortedUnits;
         }
 
-        public async Task AddMember(string id, string unitId) {
-            if (_unitsContext.GetSingle(x => x.Id == unitId && x.Members.Contains(id)) != null) return;
+        public async Task AddMember(string id, string unitId)
+        {
+            if (_unitsContext.GetSingle(x => x.Id == unitId && x.Members.Contains(id)) != null)
+            {
+                return;
+            }
+
             await _unitsContext.Update(unitId, Builders<Unit>.Update.Push(x => x.Members, id));
         }
 
-        public async Task RemoveMember(string id, string unitName) {
+        public async Task RemoveMember(string id, string unitName)
+        {
             Unit unit = _unitsContext.GetSingle(x => x.Name == unitName);
-            if (unit == null) return;
+            if (unit == null)
+            {
+                return;
+            }
 
             await RemoveMember(id, unit);
         }
 
-        public async Task RemoveMember(string id, Unit unit) {
-            if (unit.Members.Contains(id)) {
+        public async Task RemoveMember(string id, Unit unit)
+        {
+            if (unit.Members.Contains(id))
+            {
                 await _unitsContext.Update(unit.Id, Builders<Unit>.Update.Pull(x => x.Members, id));
             }
 
             await RemoveMemberRoles(id, unit);
         }
 
-        public async Task SetMemberRole(string id, string unitId, string role = "") {
+        public async Task SetMemberRole(string id, string unitId, string role = "")
+        {
             Unit unit = _unitsContext.GetSingle(x => x.Id == unitId);
-            if (unit == null) return;
+            if (unit == null)
+            {
+                return;
+            }
 
             await SetMemberRole(id, unit, role);
         }
 
-        public async Task SetMemberRole(string id, Unit unit, string role = "") {
+        public async Task SetMemberRole(string id, Unit unit, string role = "")
+        {
             await RemoveMemberRoles(id, unit);
-            if (!string.IsNullOrEmpty(role)) {
+            if (!string.IsNullOrEmpty(role))
+            {
                 await _unitsContext.Update(unit.Id, Builders<Unit>.Update.Set($"roles.{role}", id));
             }
         }
 
-        public async Task RenameRole(string oldName, string newName) {
-            foreach (Unit unit in _unitsContext.Get(x => x.Roles.ContainsKey(oldName))) {
+        public async Task RenameRole(string oldName, string newName)
+        {
+            foreach (Unit unit in _unitsContext.Get(x => x.Roles.ContainsKey(oldName)))
+            {
                 string id = unit.Roles[oldName];
                 await _unitsContext.Update(unit.Id, Builders<Unit>.Update.Unset($"roles.{oldName}"));
                 await _unitsContext.Update(unit.Id, Builders<Unit>.Update.Set($"roles.{newName}", id));
             }
         }
 
-        public async Task DeleteRole(string role) {
-            foreach (Unit unit in from unit in _unitsContext.Get(x => x.Roles.ContainsKey(role)) let id = unit.Roles[role] select unit) {
+        public async Task DeleteRole(string role)
+        {
+            foreach (Unit unit in from unit in _unitsContext.Get(x => x.Roles.ContainsKey(role)) let id = unit.Roles[role] select unit)
+            {
                 await _unitsContext.Update(unit.Id, Builders<Unit>.Update.Unset($"roles.{role}"));
             }
         }
 
-        public bool HasRole(string unitId, string role) {
+        public bool HasRole(string unitId, string role)
+        {
             Unit unit = _unitsContext.GetSingle(x => x.Id == unitId);
             return HasRole(unit, role);
         }
 
-        public bool HasRole(Unit unit, string role) => unit.Roles.ContainsKey(role);
+        public bool HasRole(Unit unit, string role)
+        {
+            return unit.Roles.ContainsKey(role);
+        }
 
-        public bool RolesHasMember(string unitId, string id) {
+        public bool RolesHasMember(string unitId, string id)
+        {
             Unit unit = _unitsContext.GetSingle(x => x.Id == unitId);
             return RolesHasMember(unit, id);
         }
 
-        public bool RolesHasMember(Unit unit, string id) => unit.Roles.ContainsValue(id);
+        public bool RolesHasMember(Unit unit, string id)
+        {
+            return unit.Roles.ContainsValue(id);
+        }
 
-        public bool MemberHasRole(string id, string unitId, string role) {
+        public bool MemberHasRole(string id, string unitId, string role)
+        {
             Unit unit = _unitsContext.GetSingle(x => x.Id == unitId);
             return MemberHasRole(id, unit, role);
         }
 
-        public bool MemberHasRole(string id, Unit unit, string role) => unit.Roles.GetValueOrDefault(role, string.Empty) == id;
+        public bool MemberHasRole(string id, Unit unit, string role)
+        {
+            return unit.Roles.GetValueOrDefault(role, string.Empty) == id;
+        }
 
-        public bool MemberHasAnyRole(string id) => _unitsContext.Get().Any(x => RolesHasMember(x, id));
+        public bool MemberHasAnyRole(string id)
+        {
+            return _unitsContext.Get().Any(x => RolesHasMember(x, id));
+        }
 
-        public int GetMemberRoleOrder(Account account, Unit unit) {
-            if (RolesHasMember(unit, account.Id)) {
+        public int GetMemberRoleOrder(Account account, Unit unit)
+        {
+            if (RolesHasMember(unit, account.Id))
+            {
                 return int.MaxValue - _rolesContext.GetSingle(x => x.Name == unit.Roles.FirstOrDefault(y => y.Value == account.Id).Key).Order;
             }
 
             return -1;
         }
 
-        public Unit GetRoot() => _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.COMBAT);
+        public Unit GetRoot()
+        {
+            return _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.COMBAT);
+        }
 
-        public Unit GetAuxilliaryRoot() => _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY);
+        public Unit GetAuxilliaryRoot()
+        {
+            return _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY);
+        }
 
-        public Unit GetParent(Unit unit) {
+        public Unit GetParent(Unit unit)
+        {
             return unit.Parent != string.Empty ? _unitsContext.GetSingle(x => x.Id == unit.Parent) : null;
         }
 
         // TODO: Change this to not add the child unit to the return
-        public IEnumerable<Unit> GetParents(Unit unit) {
-            if (unit == null) return new List<Unit>();
+        public IEnumerable<Unit> GetParents(Unit unit)
+        {
+            if (unit == null)
+            {
+                return new List<Unit>();
+            }
+
             List<Unit> parentUnits = new();
-            do {
+            do
+            {
                 parentUnits.Add(unit);
                 Unit child = unit;
                 unit = !string.IsNullOrEmpty(unit.Parent) ? _unitsContext.GetSingle(x => x.Id == child.Parent) : null;
-                if (unit == child) break;
-            } while (unit != null);
+                if (unit == child)
+                {
+                    break;
+                }
+            }
+            while (unit != null);
 
             return parentUnits;
         }
 
-        public IEnumerable<Unit> GetChildren(Unit parent) => _unitsContext.Get(x => x.Parent == parent.Id).ToList();
+        public IEnumerable<Unit> GetChildren(Unit parent)
+        {
+            return _unitsContext.Get(x => x.Parent == parent.Id).ToList();
+        }
 
-        public IEnumerable<Unit> GetAllChildren(Unit parent, bool includeParent = false) {
-            List<Unit> children = includeParent ? new List<Unit> { parent } : new List<Unit>();
-            foreach (Unit unit in _unitsContext.Get(x => x.Parent == parent.Id)) {
+        public IEnumerable<Unit> GetAllChildren(Unit parent, bool includeParent = false)
+        {
+            List<Unit> children = includeParent ? new() { parent } : new List<Unit>();
+            foreach (Unit unit in _unitsContext.Get(x => x.Parent == parent.Id))
+            {
                 children.Add(unit);
                 children.AddRange(GetAllChildren(unit));
             }
@@ -172,14 +237,17 @@ namespace UKSF.Api.Personnel.Services {
             return children;
         }
 
-        public int GetUnitDepth(Unit unit) {
-            if (unit.Parent == ObjectId.Empty.ToString()) {
+        public int GetUnitDepth(Unit unit)
+        {
+            if (unit.Parent == ObjectId.Empty.ToString())
+            {
                 return 0;
             }
 
             int depth = 0;
             Unit parent = _unitsContext.GetSingle(unit.Parent);
-            while (parent != null) {
+            while (parent != null)
+            {
                 depth++;
                 parent = _unitsContext.GetSingle(parent.Parent);
             }
@@ -187,21 +255,25 @@ namespace UKSF.Api.Personnel.Services {
             return depth;
         }
 
-        public string GetChainString(Unit unit) {
+        public string GetChainString(Unit unit)
+        {
             List<Unit> parentUnits = GetParents(unit).Skip(1).ToList();
             string unitNames = unit.Name;
             parentUnits.ForEach(x => unitNames += $", {x.Name}");
             return unitNames;
         }
 
-        private async Task RemoveMemberRoles(string id, Unit unit) {
+        private async Task RemoveMemberRoles(string id, Unit unit)
+        {
             Dictionary<string, string> roles = unit.Roles;
             int originalCount = unit.Roles.Count;
-            foreach ((string key, string _) in roles.Where(x => x.Value == id).ToList()) {
+            foreach ((string key, string _) in roles.Where(x => x.Value == id).ToList())
+            {
                 roles.Remove(key);
             }
 
-            if (roles.Count != originalCount) {
+            if (roles.Count != originalCount)
+            {
                 await _unitsContext.Update(unit.Id, Builders<Unit>.Update.Set(x => x.Roles, roles));
             }
         }

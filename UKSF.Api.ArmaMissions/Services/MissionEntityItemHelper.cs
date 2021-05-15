@@ -2,27 +2,40 @@ using System.Collections.Generic;
 using System.Linq;
 using UKSF.Api.ArmaMissions.Models;
 
-namespace UKSF.Api.ArmaMissions.Services {
-    public static class MissionEntityItemHelper {
-        public static MissionEntityItem CreateFromList(List<string> rawItem) {
+namespace UKSF.Api.ArmaMissions.Services
+{
+    public static class MissionEntityItemHelper
+    {
+        public static MissionEntityItem CreateFromList(List<string> rawItem)
+        {
             MissionEntityItem missionEntityItem = new() { RawMissionEntityItem = rawItem };
             missionEntityItem.DataType = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "dataType").ToString();
-            if (missionEntityItem.DataType.Equals("Group")) {
+            if (missionEntityItem.DataType.Equals("Group"))
+            {
                 missionEntityItem.RawMissionEntities = MissionUtilities.ReadDataByKey(missionEntityItem.RawMissionEntityItem, "Entities");
-                if (missionEntityItem.RawMissionEntities.Count > 0) {
+                if (missionEntityItem.RawMissionEntities.Count > 0)
+                {
                     missionEntityItem.MissionEntity = MissionEntityHelper.CreateFromItems(missionEntityItem.RawMissionEntities);
                 }
-            } else if (missionEntityItem.DataType.Equals("Object")) {
+            }
+            else if (missionEntityItem.DataType.Equals("Object"))
+            {
                 string isPlayable = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "isPlayable").ToString();
                 string isPlayer = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "isPlayer").ToString();
-                if (!string.IsNullOrEmpty(isPlayable)) {
+                if (!string.IsNullOrEmpty(isPlayable))
+                {
                     missionEntityItem.IsPlayable = isPlayable == "1";
-                } else if (!string.IsNullOrEmpty(isPlayer)) {
+                }
+                else if (!string.IsNullOrEmpty(isPlayer))
+                {
                     missionEntityItem.IsPlayable = isPlayer == "1";
                 }
-            } else if (missionEntityItem.DataType.Equals("Logic")) {
+            }
+            else if (missionEntityItem.DataType.Equals("Logic"))
+            {
                 string type = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "type").ToString();
-                if (!string.IsNullOrEmpty(type)) {
+                if (!string.IsNullOrEmpty(type))
+                {
                     missionEntityItem.Type = type;
                 }
             }
@@ -30,7 +43,8 @@ namespace UKSF.Api.ArmaMissions.Services {
             return missionEntityItem;
         }
 
-        public static MissionEntityItem CreateFromPlayer(MissionPlayer missionPlayer, int index) {
+        public static MissionEntityItem CreateFromPlayer(MissionPlayer missionPlayer, int index)
+        {
             MissionEntityItem missionEntityItem = new();
             missionEntityItem.RawMissionEntityItem.Add($"class Item{index}");
             missionEntityItem.RawMissionEntityItem.Add("{");
@@ -50,12 +64,17 @@ namespace UKSF.Api.ArmaMissions.Services {
                 $"description=\"{missionPlayer.Name}{(string.IsNullOrEmpty(missionPlayer.Account?.RoleAssignment) ? "" : $" - {missionPlayer.Account?.RoleAssignment}")}@{MissionDataResolver.ResolveCallsign(missionPlayer.Unit, missionPlayer.Unit.SourceUnit?.Callsign)}\";"
             );
             missionEntityItem.RawMissionEntityItem.Add("};");
-            if (MissionDataResolver.IsEngineer(missionPlayer)) missionEntityItem.RawMissionEntityItem.AddEngineerTrait();
+            if (MissionDataResolver.IsEngineer(missionPlayer))
+            {
+                missionEntityItem.RawMissionEntityItem.AddEngineerTrait();
+            }
+
             missionEntityItem.RawMissionEntityItem.Add("};");
             return missionEntityItem;
         }
 
-        public static MissionEntityItem CreateFromMissionEntity(MissionEntity entities, string callsign) {
+        public static MissionEntityItem CreateFromMissionEntity(MissionEntity entities, string callsign)
+        {
             MissionEntityItem missionEntityItem = new() { MissionEntity = entities };
             missionEntityItem.RawMissionEntityItem.Add("class Item");
             missionEntityItem.RawMissionEntityItem.Add("{");
@@ -93,7 +112,8 @@ namespace UKSF.Api.ArmaMissions.Services {
             return missionEntityItem;
         }
 
-        public static MissionEntityItem CreateCuratorEntity() {
+        public static MissionEntityItem CreateCuratorEntity()
+        {
             MissionEntityItem missionEntityItem = new();
             missionEntityItem.RawMissionEntityItem.Add("class Item");
             missionEntityItem.RawMissionEntityItem.Add("{");
@@ -111,16 +131,20 @@ namespace UKSF.Api.ArmaMissions.Services {
             return missionEntityItem;
         }
 
-        public static bool Ignored(this MissionEntityItem missionEntityItem) {
+        public static bool Ignored(this MissionEntityItem missionEntityItem)
+        {
             return missionEntityItem.RawMissionEntityItem.Any(x => x.ToLower().Contains("@ignore"));
         }
 
-        public static void Patch(this MissionEntityItem missionEntityItem, int index) {
+        public static void Patch(this MissionEntityItem missionEntityItem, int index)
+        {
             missionEntityItem.RawMissionEntityItem[0] = $"class Item{index}";
         }
 
-        public static IEnumerable<string> Serialize(this MissionEntityItem missionEntityItem) {
-            if (missionEntityItem.RawMissionEntities.Count > 0) {
+        public static IEnumerable<string> Serialize(this MissionEntityItem missionEntityItem)
+        {
+            if (missionEntityItem.RawMissionEntities.Count > 0)
+            {
                 int start = MissionUtilities.GetIndexByKey(missionEntityItem.RawMissionEntityItem, "Entities");
                 int count = missionEntityItem.RawMissionEntities.Count;
                 missionEntityItem.RawMissionEntityItem.RemoveRange(start, count);
@@ -130,7 +154,8 @@ namespace UKSF.Api.ArmaMissions.Services {
             return missionEntityItem.RawMissionEntityItem.ToList();
         }
 
-        private static void AddEngineerTrait(this ICollection<string> entity) {
+        private static void AddEngineerTrait(this ICollection<string> entity)
+        {
             entity.Add("class CustomAttributes");
             entity.Add("{");
             entity.Add("class Attribute0");

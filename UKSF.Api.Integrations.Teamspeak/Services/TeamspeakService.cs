@@ -13,8 +13,10 @@ using UKSF.Api.Teamspeak.Models;
 using UKSF.Api.Teamspeak.Signalr.Clients;
 using UKSF.Api.Teamspeak.Signalr.Hubs;
 
-namespace UKSF.Api.Teamspeak.Services {
-    public interface ITeamspeakService {
+namespace UKSF.Api.Teamspeak.Services
+{
+    public interface ITeamspeakService
+    {
         IEnumerable<TeamspeakClient> GetOnlineTeamspeakClients();
         OnlineState GetOnlineUserDetails(string accountId);
         IEnumerable<object> GetFormattedClients();
@@ -26,7 +28,8 @@ namespace UKSF.Api.Teamspeak.Services {
         Task StoreTeamspeakServerSnapshot();
     }
 
-    public class TeamspeakService : ITeamspeakService {
+    public class TeamspeakService : ITeamspeakService
+    {
         private readonly IAccountContext _accountContext;
         private readonly SemaphoreSlim _clientsSemaphore = new(1);
         private readonly IMongoDatabase _database;
@@ -41,7 +44,8 @@ namespace UKSF.Api.Teamspeak.Services {
             IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub,
             ITeamspeakManagerService teamspeakManagerService,
             IHostEnvironment environment
-        ) {
+        )
+        {
             _accountContext = accountContext;
             _database = database;
             _teamspeakClientsHub = teamspeakClientsHub;
@@ -49,35 +53,50 @@ namespace UKSF.Api.Teamspeak.Services {
             _environment = environment;
         }
 
-        public IEnumerable<TeamspeakClient> GetOnlineTeamspeakClients() => _clients;
+        public IEnumerable<TeamspeakClient> GetOnlineTeamspeakClients()
+        {
+            return _clients;
+        }
 
-        public async Task UpdateClients(HashSet<TeamspeakClient> newClients) {
+        public async Task UpdateClients(HashSet<TeamspeakClient> newClients)
+        {
             await _clientsSemaphore.WaitAsync();
             _clients = newClients;
             _clientsSemaphore.Release();
             await _teamspeakClientsHub.Clients.All.ReceiveClients(GetFormattedClients());
         }
 
-        public async Task UpdateAccountTeamspeakGroups(Account account) {
-            if (account?.TeamspeakIdentities == null) return;
-            foreach (double clientDbId in account.TeamspeakIdentities) {
+        public async Task UpdateAccountTeamspeakGroups(Account account)
+        {
+            if (account?.TeamspeakIdentities == null)
+            {
+                return;
+            }
+
+            foreach (double clientDbId in account.TeamspeakIdentities)
+            {
                 await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.GROUPS, new { clientDbId });
             }
         }
 
-        public async Task SendTeamspeakMessageToClient(Account account, string message) {
+        public async Task SendTeamspeakMessageToClient(Account account, string message)
+        {
             await SendTeamspeakMessageToClient(account.TeamspeakIdentities, message);
         }
 
-        public async Task SendTeamspeakMessageToClient(IEnumerable<double> clientDbIds, string message) {
+        public async Task SendTeamspeakMessageToClient(IEnumerable<double> clientDbIds, string message)
+        {
             message = FormatTeamspeakMessage(message);
-            foreach (double clientDbId in clientDbIds) {
+            foreach (double clientDbId in clientDbIds)
+            {
                 await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.MESSAGE, new { clientDbId, message });
             }
         }
 
-        public async Task StoreTeamspeakServerSnapshot() {
-            if (_clients.Count == 0) {
+        public async Task StoreTeamspeakServerSnapshot()
+        {
+            if (_clients.Count == 0)
+            {
                 await Console.Out.WriteLineAsync("No client data for snapshot");
                 return;
             }
@@ -87,28 +106,42 @@ namespace UKSF.Api.Teamspeak.Services {
             await _database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots").InsertOneAsync(teamspeakServerSnapshot);
         }
 
-        public async Task Shutdown() {
+        public async Task Shutdown()
+        {
             await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.SHUTDOWN, new { });
         }
 
-        public IEnumerable<object> GetFormattedClients() {
-            if (_environment.IsDevelopment()) return new List<object> { new { name = "SqnLdr.Beswick.T", clientDbId = (double) 2 } };
+        public IEnumerable<object> GetFormattedClients()
+        {
+            if (_environment.IsDevelopment())
+            {
+                return new List<object> { new { name = "SqnLdr.Beswick.T", clientDbId = (double) 2 } };
+            }
 
             return _clients.Where(x => x != null).Select(x => new { name = $"{x.ClientName}", clientDbId = x.ClientDbId });
         }
 
         // TODO: Change to use signalr (or hook into existing _teamspeakClientsHub)
-        public OnlineState GetOnlineUserDetails(string accountId) {
-            if (_environment.IsDevelopment()) {
-                _clients = new HashSet<TeamspeakClient> { new() { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 } };
+        public OnlineState GetOnlineUserDetails(string accountId)
+        {
+            if (_environment.IsDevelopment())
+            {
+                _clients = new() { new() { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 } };
             }
 
-            if (_clients.Count == 0) return null;
+            if (_clients.Count == 0)
+            {
+                return null;
+            }
 
             Account account = _accountContext.GetSingle(accountId);
-            if (account?.TeamspeakIdentities == null) return null;
+            if (account?.TeamspeakIdentities == null)
+            {
+                return null;
+            }
 
-            if (_environment.IsDevelopment()) {
+            if (_environment.IsDevelopment())
+            {
                 _clients.First().ClientDbId = account.TeamspeakIdentities.First();
             }
 
@@ -117,6 +150,9 @@ namespace UKSF.Api.Teamspeak.Services {
                            .FirstOrDefault();
         }
 
-        private static string FormatTeamspeakMessage(string message) => $"\n========== UKSF Server Message ==========\n{message}\n==================================";
+        private static string FormatTeamspeakMessage(string message)
+        {
+            return $"\n========== UKSF Server Message ==========\n{message}\n==================================";
+        }
     }
 }

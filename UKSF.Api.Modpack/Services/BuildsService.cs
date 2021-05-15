@@ -11,8 +11,10 @@ using UKSF.Api.Personnel.Context;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Modpack.Services {
-    public interface IBuildsService {
+namespace UKSF.Api.Modpack.Services
+{
+    public interface IBuildsService
+    {
         IEnumerable<ModpackBuild> GetDevBuilds();
         IEnumerable<ModpackBuild> GetRcBuilds();
         ModpackBuild GetLatestDevBuild();
@@ -30,14 +32,16 @@ namespace UKSF.Api.Modpack.Services {
         void CancelInterruptedBuilds();
     }
 
-    public class BuildsService : IBuildsService {
+    public class BuildsService : IBuildsService
+    {
         private readonly IAccountContext _accountContext;
         private readonly IBuildsContext _buildsContext;
         private readonly IBuildStepService _buildStepService;
         private readonly IHttpContextService _httpContextService;
         private readonly ILogger _logger;
 
-        public BuildsService(IBuildsContext buildsContext, IBuildStepService buildStepService, IAccountContext accountContext, IHttpContextService httpContextService, ILogger logger) {
+        public BuildsService(IBuildsContext buildsContext, IBuildStepService buildStepService, IAccountContext accountContext, IHttpContextService httpContextService, ILogger logger)
+        {
             _buildsContext = buildsContext;
             _buildStepService = buildStepService;
             _accountContext = accountContext;
@@ -45,26 +49,42 @@ namespace UKSF.Api.Modpack.Services {
             _logger = logger;
         }
 
-        public async Task UpdateBuild(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition) {
+        public async Task UpdateBuild(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition)
+        {
             await _buildsContext.Update(build, updateDefinition);
         }
 
-        public async Task UpdateBuildStep(ModpackBuild build, ModpackBuildStep buildStep) {
+        public async Task UpdateBuildStep(ModpackBuild build, ModpackBuildStep buildStep)
+        {
             await _buildsContext.Update(build, buildStep);
         }
 
-        public IEnumerable<ModpackBuild> GetDevBuilds() => _buildsContext.Get(x => x.Environment == GameEnvironment.DEV);
+        public IEnumerable<ModpackBuild> GetDevBuilds()
+        {
+            return _buildsContext.Get(x => x.Environment == GameEnvironment.DEV);
+        }
 
-        public IEnumerable<ModpackBuild> GetRcBuilds() => _buildsContext.Get(x => x.Environment != GameEnvironment.DEV);
+        public IEnumerable<ModpackBuild> GetRcBuilds()
+        {
+            return _buildsContext.Get(x => x.Environment != GameEnvironment.DEV);
+        }
 
-        public ModpackBuild GetLatestDevBuild() => GetDevBuilds().FirstOrDefault();
+        public ModpackBuild GetLatestDevBuild()
+        {
+            return GetDevBuilds().FirstOrDefault();
+        }
 
-        public ModpackBuild GetLatestRcBuild(string version) => GetRcBuilds().FirstOrDefault(x => x.Version == version);
+        public ModpackBuild GetLatestRcBuild(string version)
+        {
+            return GetRcBuilds().FirstOrDefault(x => x.Version == version);
+        }
 
-        public async Task<ModpackBuild> CreateDevBuild(string version, GithubCommit commit, NewBuild newBuild = null) {
+        public async Task<ModpackBuild> CreateDevBuild(string version, GithubCommit commit, NewBuild newBuild = null)
+        {
             ModpackBuild previousBuild = GetLatestDevBuild();
             string builderId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
-            ModpackBuild build = new() {
+            ModpackBuild build = new()
+            {
                 Version = version,
                 BuildNumber = previousBuild?.BuildNumber + 1 ?? 1,
                 Environment = GameEnvironment.DEV,
@@ -73,7 +93,8 @@ namespace UKSF.Api.Modpack.Services {
                 Steps = _buildStepService.GetSteps(GameEnvironment.DEV)
             };
 
-            if (previousBuild != null) {
+            if (previousBuild != null)
+            {
                 SetEnvironmentVariables(build, previousBuild, newBuild);
             }
 
@@ -81,10 +102,12 @@ namespace UKSF.Api.Modpack.Services {
             return build;
         }
 
-        public async Task<ModpackBuild> CreateRcBuild(string version, GithubCommit commit) {
+        public async Task<ModpackBuild> CreateRcBuild(string version, GithubCommit commit)
+        {
             ModpackBuild previousBuild = GetLatestRcBuild(version);
             string builderId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
-            ModpackBuild build = new() {
+            ModpackBuild build = new()
+            {
                 Version = version,
                 BuildNumber = previousBuild?.BuildNumber + 1 ?? 1,
                 Environment = GameEnvironment.RC,
@@ -93,7 +116,8 @@ namespace UKSF.Api.Modpack.Services {
                 Steps = _buildStepService.GetSteps(GameEnvironment.RC)
             };
 
-            if (previousBuild != null) {
+            if (previousBuild != null)
+            {
                 SetEnvironmentVariables(build, previousBuild);
             }
 
@@ -101,14 +125,17 @@ namespace UKSF.Api.Modpack.Services {
             return build;
         }
 
-        public async Task<ModpackBuild> CreateReleaseBuild(string version) {
+        public async Task<ModpackBuild> CreateReleaseBuild(string version)
+        {
             // There must be at least one RC build to release
             ModpackBuild previousBuild = GetRcBuilds().FirstOrDefault(x => x.Version == version);
-            if (previousBuild == null) {
+            if (previousBuild == null)
+            {
                 throw new InvalidOperationException("Release build requires at leaste one RC build");
             }
 
-            ModpackBuild build = new() {
+            ModpackBuild build = new()
+            {
                 Version = version,
                 BuildNumber = previousBuild.BuildNumber + 1,
                 Environment = GameEnvironment.RELEASE,
@@ -121,9 +148,11 @@ namespace UKSF.Api.Modpack.Services {
             return build;
         }
 
-        public async Task<ModpackBuild> CreateRebuild(ModpackBuild build, string newSha = "") {
+        public async Task<ModpackBuild> CreateRebuild(ModpackBuild build, string newSha = "")
+        {
             ModpackBuild latestBuild = build.Environment == GameEnvironment.DEV ? GetLatestDevBuild() : GetLatestRcBuild(build.Version);
-            ModpackBuild rebuild = new() {
+            ModpackBuild rebuild = new()
+            {
                 Version = latestBuild.Environment == GameEnvironment.DEV ? null : latestBuild.Version,
                 BuildNumber = latestBuild.BuildNumber + 1,
                 IsRebuild = true,
@@ -133,7 +162,8 @@ namespace UKSF.Api.Modpack.Services {
                 BuilderId = _httpContextService.GetUserId(),
                 EnvironmentVariables = latestBuild.EnvironmentVariables
             };
-            if (!string.IsNullOrEmpty(newSha)) {
+            if (!string.IsNullOrEmpty(newSha))
+            {
                 rebuild.Commit.After = newSha;
             }
 
@@ -144,32 +174,42 @@ namespace UKSF.Api.Modpack.Services {
             return rebuild;
         }
 
-        public async Task SetBuildRunning(ModpackBuild build) {
+        public async Task SetBuildRunning(ModpackBuild build)
+        {
             build.Running = true;
             build.StartTime = DateTime.Now;
             await _buildsContext.Update(build, Builders<ModpackBuild>.Update.Set(x => x.Running, true).Set(x => x.StartTime, DateTime.Now));
         }
 
-        public async Task SucceedBuild(ModpackBuild build) {
+        public async Task SucceedBuild(ModpackBuild build)
+        {
             await FinishBuild(build, build.Steps.Any(x => x.BuildResult == ModpackBuildResult.WARNING) ? ModpackBuildResult.WARNING : ModpackBuildResult.SUCCESS);
         }
 
-        public async Task FailBuild(ModpackBuild build) {
+        public async Task FailBuild(ModpackBuild build)
+        {
             await FinishBuild(build, ModpackBuildResult.FAILED);
         }
 
-        public async Task CancelBuild(ModpackBuild build) {
+        public async Task CancelBuild(ModpackBuild build)
+        {
             await FinishBuild(build, build.Steps.Any(x => x.BuildResult == ModpackBuildResult.WARNING) ? ModpackBuildResult.WARNING : ModpackBuildResult.CANCELLED);
         }
 
-        public void CancelInterruptedBuilds() {
+        public void CancelInterruptedBuilds()
+        {
             List<ModpackBuild> builds = _buildsContext.Get(x => x.Running || x.Steps.Any(y => y.Running)).ToList();
-            if (!builds.Any()) return;
+            if (!builds.Any())
+            {
+                return;
+            }
 
             IEnumerable<Task> tasks = builds.Select(
-                async build => {
+                async build =>
+                {
                     ModpackBuildStep runningStep = build.Steps.FirstOrDefault(x => x.Running);
-                    if (runningStep != null) {
+                    if (runningStep != null)
+                    {
                         runningStep.Running = false;
                         runningStep.Finished = true;
                         runningStep.EndTime = DateTime.Now;
@@ -185,7 +225,8 @@ namespace UKSF.Api.Modpack.Services {
             _logger.LogAudit($"Marked {builds.Count} interrupted builds as cancelled", "SERVER");
         }
 
-        private async Task FinishBuild(ModpackBuild build, ModpackBuildResult result) {
+        private async Task FinishBuild(ModpackBuild build, ModpackBuildResult result)
+        {
             build.Running = false;
             build.Finished = true;
             build.BuildResult = result;
@@ -193,23 +234,29 @@ namespace UKSF.Api.Modpack.Services {
             await _buildsContext.Update(build, Builders<ModpackBuild>.Update.Set(x => x.Running, false).Set(x => x.Finished, true).Set(x => x.BuildResult, result).Set(x => x.EndTime, DateTime.Now));
         }
 
-        private static void SetEnvironmentVariables(ModpackBuild build, ModpackBuild previousBuild, NewBuild newBuild = null) {
+        private static void SetEnvironmentVariables(ModpackBuild build, ModpackBuild previousBuild, NewBuild newBuild = null)
+        {
             CheckEnvironmentVariable(build, previousBuild, "ace_updated", "Build ACE", newBuild?.Ace ?? false);
             CheckEnvironmentVariable(build, previousBuild, "acre_updated", "Build ACRE", newBuild?.Acre ?? false);
             CheckEnvironmentVariable(build, previousBuild, "air_updated", "Build Air", newBuild?.Air ?? false);
         }
 
-        private static void CheckEnvironmentVariable(ModpackBuild build, ModpackBuild previousBuild, string key, string stepName, bool force) {
-            if (force) {
+        private static void CheckEnvironmentVariable(ModpackBuild build, ModpackBuild previousBuild, string key, string stepName, bool force)
+        {
+            if (force)
+            {
                 build.EnvironmentVariables[key] = true;
                 return;
             }
 
-            if (previousBuild.EnvironmentVariables.ContainsKey(key)) {
+            if (previousBuild.EnvironmentVariables.ContainsKey(key))
+            {
                 bool updated = (bool) previousBuild.EnvironmentVariables[key];
-                if (updated) {
+                if (updated)
+                {
                     ModpackBuildStep step = previousBuild.Steps.FirstOrDefault(x => x.Name == stepName);
-                    if (step != null && (!step.Finished || step.BuildResult == ModpackBuildResult.FAILED || step.BuildResult == ModpackBuildResult.CANCELLED)) {
+                    if (step != null && (!step.Finished || step.BuildResult == ModpackBuildResult.FAILED || step.BuildResult == ModpackBuildResult.CANCELLED))
+                    {
                         build.EnvironmentVariables[key] = true;
                     }
                 }

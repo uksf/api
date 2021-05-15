@@ -8,9 +8,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.WindowsServices;
 using Microsoft.Extensions.Hosting;
 
-namespace UKSF.Api {
-    public static class Program {
-        public static void Main(string[] args) {
+namespace UKSF.Api
+{
+    public static class Program
+    {
+        public static void Main(string[] args)
+        {
             AppDomain.CurrentDomain.GetAssemblies()
                      .ToList()
                      .SelectMany(x => x.GetReferencedAssemblies())
@@ -22,46 +25,59 @@ namespace UKSF.Api {
             string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             bool isDevelopment = environment == Environments.Development;
 
-            if (isDevelopment) {
+            if (isDevelopment)
+            {
                 BuildDebugWebHost(args).Run();
-            } else {
+            }
+            else
+            {
                 InitLogging();
                 BuildProductionWebHost(args).RunAsService();
             }
         }
 
-        private static IWebHost BuildDebugWebHost(string[] args) =>
-            WebHost.CreateDefaultBuilder(args).UseStartup<Startup>().UseKestrel().UseContentRoot(Directory.GetCurrentDirectory()).UseUrls("http://*:5000").UseIISIntegration().Build();
+        private static IWebHost BuildDebugWebHost(string[] args)
+        {
+            return WebHost.CreateDefaultBuilder(args).UseStartup<Startup>().UseKestrel().UseContentRoot(Directory.GetCurrentDirectory()).UseUrls("http://*:5000").UseIISIntegration().Build();
+        }
 
-        private static IWebHost BuildProductionWebHost(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                   .UseStartup<Startup>()
-                   .UseKestrel(
-                       options => {
-                           options.Listen(IPAddress.Loopback, 5000);
-                           options.Listen(
-                               IPAddress.Loopback,
-                               5001,
-                               listenOptions => { listenOptions.UseHttps("C:\\ProgramData\\win-acme\\acme-v02.api.letsencrypt.org\\Certificates\\uk-sf.co.uk.pfx"); }
-                           );
-                       }
-                   )
-                   .UseContentRoot(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName))
-                   .UseIISIntegration()
-                   .Build();
+        private static IWebHost BuildProductionWebHost(string[] args)
+        {
+            return WebHost.CreateDefaultBuilder(args)
+                          .UseStartup<Startup>()
+                          .UseKestrel(
+                              options =>
+                              {
+                                  options.Listen(IPAddress.Loopback, 5000);
+                                  options.Listen(
+                                      IPAddress.Loopback,
+                                      5001,
+                                      listenOptions => { listenOptions.UseHttps("C:\\ProgramData\\win-acme\\acme-v02.api.letsencrypt.org\\Certificates\\uk-sf.co.uk.pfx"); }
+                                  );
+                              }
+                          )
+                          .UseContentRoot(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName))
+                          .UseIISIntegration()
+                          .Build();
+        }
 
-        private static void InitLogging() {
+        private static void InitLogging()
+        {
             string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "UKSF.Api");
             Directory.CreateDirectory(appData);
             string[] logFiles = new DirectoryInfo(appData).EnumerateFiles("*.log").OrderByDescending(file => file.LastWriteTime).Select(file => file.Name).ToArray();
-            if (logFiles.Length > 9) {
+            if (logFiles.Length > 9)
+            {
                 File.Delete(Path.Combine(appData, logFiles.Last()));
             }
 
             string logFile = Path.Combine(appData, $"LOG__{DateTime.Now:yyyy-MM-dd__HH-mm}.log");
-            try {
+            try
+            {
                 File.Create(logFile).Close();
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 Console.Out.WriteLine($"Log file not created: {logFile}. {e.Message}");
             }
 

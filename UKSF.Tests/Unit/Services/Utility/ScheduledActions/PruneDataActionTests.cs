@@ -11,16 +11,19 @@ using UKSF.Api.Shared.Models;
 using UKSF.Api.Shared.Services;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
-    public class PruneDataActionTests {
+namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions
+{
+    public class PruneDataActionTests
+    {
         private readonly IActionPruneLogs _actionPruneLogs;
         private readonly Mock<IAuditLogContext> _mockAuditLogContext = new();
-        private readonly Mock<IHttpErrorLogContext> _mockHttpErrorLogContext = new();
+        private readonly Mock<IErrorLogContext> _mockHttpErrorLogContext = new();
         private readonly Mock<ILogContext> _mockLogContext = new();
         private readonly Mock<ISchedulerContext> _mockSchedulerContext = new();
         private readonly DateTime _now;
 
-        public PruneDataActionTests() {
+        public PruneDataActionTests()
+        {
             Mock<IClock> mockClock = new();
             Mock<IHostEnvironment> mockHostEnvironment = new();
             Mock<ISchedulerService> mockSchedulerService = new();
@@ -40,19 +43,19 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
         }
 
         [Fact]
-        public void When_getting_action_name() {
+        public void When_getting_action_name()
+        {
             string subject = _actionPruneLogs.Name;
 
             subject.Should().Be("ActionPruneLogs");
         }
 
         [Fact]
-        public async Task When_pruning_logs() {
+        public async Task When_pruning_logs()
+        {
             List<BasicLog> basicLogs = new() { new("test1") { Timestamp = _now.AddDays(-8) }, new("test2") { Timestamp = _now.AddDays(-6) } };
             List<AuditLog> auditLogs = new() { new("server", "audit1") { Timestamp = _now.AddMonths(-4) }, new("server", "audit2") { Timestamp = _now.AddMonths(-2) } };
-            List<HttpErrorLog> httpErrorLogs = new() {
-                new(new("error1")) { Timestamp = _now.AddDays(-8) }, new(new("error2")) { Timestamp = _now.AddDays(-6) }
-            };
+            List<ErrorLog> errorLogs = new() { new(new("error1")) { Timestamp = _now.AddDays(-8) }, new(new("error2")) { Timestamp = _now.AddDays(-6) } };
 
             _mockLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<BasicLog, bool>>>()))
                            .Returns(Task.CompletedTask)
@@ -60,15 +63,15 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions {
             _mockAuditLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<AuditLog, bool>>>()))
                                 .Returns(Task.CompletedTask)
                                 .Callback<Expression<Func<AuditLog, bool>>>(x => auditLogs.RemoveAll(y => x.Compile()(y)));
-            _mockHttpErrorLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<HttpErrorLog, bool>>>()))
+            _mockHttpErrorLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<ErrorLog, bool>>>()))
                                     .Returns(Task.CompletedTask)
-                                    .Callback<Expression<Func<HttpErrorLog, bool>>>(x => httpErrorLogs.RemoveAll(y => x.Compile()(y)));
+                                    .Callback<Expression<Func<ErrorLog, bool>>>(x => errorLogs.RemoveAll(y => x.Compile()(y)));
 
             await _actionPruneLogs.Run();
 
             basicLogs.Should().NotContain(x => x.Message == "test1");
             auditLogs.Should().NotContain(x => x.Message == "audit1");
-            httpErrorLogs.Should().NotContain(x => x.Message == "error1");
+            errorLogs.Should().NotContain(x => x.Message == "error1");
         }
     }
 }

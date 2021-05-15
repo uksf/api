@@ -9,9 +9,11 @@ using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared.Events;
 
-namespace UKSF.Api.Auth.Controllers {
+namespace UKSF.Api.Auth.Controllers
+{
     [Route("[controller]")]
-    public class PasswordResetController : ConfirmationCodeReceiver {
+    public class PasswordResetController : ConfirmationCodeReceiver
+    {
         private readonly IEmailService _emailService;
         private readonly ILogger _logger;
 
@@ -19,24 +21,31 @@ namespace UKSF.Api.Auth.Controllers {
             confirmationCodeService,
             loginService,
             accountContext
-        ) {
+        )
+        {
             _emailService = emailService;
             _logger = logger;
         }
 
-        protected override async Task<IActionResult> ApplyValidatedPayload(string codePayload, Account account) {
+        protected override async Task<IActionResult> ApplyValidatedPayload(string codePayload, Account account)
+        {
             await AccountContext.Update(account.Id, x => x.Password, BCrypt.Net.BCrypt.HashPassword(codePayload));
             _logger.LogAudit($"Password changed for {account.Id}", account.Id);
             return Ok(LoginService.RegenerateBearerToken(account.Id));
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] JObject loginForm) => await AttemptLoginValidatedAction(loginForm, "passwordreset");
+        public async Task<IActionResult> Post([FromBody] JObject loginForm)
+        {
+            return await AttemptLoginValidatedAction(loginForm, "passwordreset");
+        }
 
         [HttpPut]
-        public async Task<IActionResult> ResetPassword([FromBody] JObject body) {
+        public async Task<IActionResult> ResetPassword([FromBody] JObject body)
+        {
             Account account = AccountContext.GetSingle(x => string.Equals(x.Email, body["email"]?.ToString(), StringComparison.InvariantCultureIgnoreCase));
-            if (account == null) {
+            if (account == null)
+            {
                 return BadRequest();
             }
 

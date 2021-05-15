@@ -21,9 +21,11 @@ using UKSF.Api.Shared.Services;
 // ReSharper disable UnusedParameter.Global
 // ReSharper disable NotAccessedField.Local
 
-namespace UKSF.Api.Launcher.Controllers {
+namespace UKSF.Api.Launcher.Controllers
+{
     [Route("[controller]"), Authorize, Permissions(Permissions.CONFIRMED, Permissions.MEMBER)]
-    public class LauncherController : Controller {
+    public class LauncherController : Controller
+    {
         private readonly IDisplayNameService _displayNameService;
         private readonly IHttpContextService _httpContextService;
         private readonly ILauncherFileService _launcherFileService;
@@ -40,7 +42,8 @@ namespace UKSF.Api.Launcher.Controllers {
             IHttpContextService httpContextService,
             IDisplayNameService displayNameService,
             IVariablesService variablesService
-        ) {
+        )
+        {
             _variablesContext = variablesContext;
             _launcherHub = launcherHub;
             _launcherService = launcherService;
@@ -51,13 +54,20 @@ namespace UKSF.Api.Launcher.Controllers {
         }
 
         [HttpGet("update/{platform}/{version}")]
-        public IActionResult GetUpdate(string platform, string version) => Ok();
+        public IActionResult GetUpdate(string platform, string version)
+        {
+            return Ok();
+        }
 
         [HttpGet("version")]
-        public IActionResult GetVersion() => Ok(_variablesContext.GetSingle("LAUNCHER_VERSION").AsString());
+        public IActionResult GetVersion()
+        {
+            return Ok(_variablesContext.GetSingle("LAUNCHER_VERSION").AsString());
+        }
 
         [HttpPost("version"), Permissions(Permissions.ADMIN)]
-        public async Task<IActionResult> UpdateVersion([FromBody] JObject body) {
+        public async Task<IActionResult> UpdateVersion([FromBody] JObject body)
+        {
             string version = body["version"].ToString();
             await _variablesContext.Update("LAUNCHER_VERSION", version);
             await _launcherFileService.UpdateAllVersions();
@@ -66,13 +76,20 @@ namespace UKSF.Api.Launcher.Controllers {
         }
 
         [HttpGet("download/setup")]
-        public IActionResult GetLauncher() => _launcherFileService.GetLauncherFile("UKSF Launcher Setup.msi");
+        public IActionResult GetLauncher()
+        {
+            return _launcherFileService.GetLauncherFile("UKSF Launcher Setup.msi");
+        }
 
         [HttpGet("download/updater")]
-        public IActionResult GetUpdater() => _launcherFileService.GetLauncherFile("Updater", "UKSF.Launcher.Updater.exe");
+        public IActionResult GetUpdater()
+        {
+            return _launcherFileService.GetLauncherFile("Updater", "UKSF.Launcher.Updater.exe");
+        }
 
         [HttpPost("download/update")]
-        public async Task<IActionResult> GetUpdatedFiles([FromBody] JObject body) {
+        public async Task<IActionResult> GetUpdatedFiles([FromBody] JObject body)
+        {
             List<LauncherFile> files = JsonConvert.DeserializeObject<List<LauncherFile>>(body["files"].ToString());
             Stream updatedFiles = await _launcherFileService.GetUpdatedFiles(files);
             FileStreamResult stream = new(updatedFiles, "application/octet-stream");
@@ -80,7 +97,8 @@ namespace UKSF.Api.Launcher.Controllers {
         }
 
         [HttpPost("error")]
-        public IActionResult ReportError([FromBody] JObject body) {
+        public IActionResult ReportError([FromBody] JObject body)
+        {
             string version = body["version"].ToString();
             string message = body["message"].ToString();
             // logger.Log(new LauncherLog(version, message) { userId = httpContextService.GetUserId(), name = displayNameService.GetDisplayName(accountService.GetUserAccount()) });

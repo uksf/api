@@ -1,5 +1,4 @@
-﻿using System;
-using Moq;
+﻿using Moq;
 using UKSF.Api.Base.Events;
 using UKSF.Api.EventHandlers;
 using UKSF.Api.Personnel.Services;
@@ -8,43 +7,40 @@ using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Events.Handlers {
-    public class LogEventHandlerTests {
+namespace UKSF.Tests.Unit.Events.Handlers
+{
+    public class LogEventHandlerTests
+    {
         private readonly IEventBus _eventBus;
         private readonly Mock<IAuditLogContext> _mockAuditLogDataService;
         private readonly Mock<IDiscordLogContext> _mockDiscordLogDataService;
-        private readonly Mock<IHttpErrorLogContext> _mockHttpErrorLogDataService;
+        private readonly Mock<IErrorLogContext> _mockHttpErrorLogDataService;
         private readonly Mock<ILauncherLogContext> _mockLauncherLogDataService;
         private readonly Mock<ILogContext> _mockLogDataService;
         private readonly Mock<IObjectIdConversionService> _mockObjectIdConversionService;
 
-        public LogEventHandlerTests() {
-            _mockLogDataService = new Mock<ILogContext>();
-            _mockAuditLogDataService = new Mock<IAuditLogContext>();
-            _mockHttpErrorLogDataService = new Mock<IHttpErrorLogContext>();
-            _mockLauncherLogDataService = new Mock<ILauncherLogContext>();
-            _mockDiscordLogDataService = new Mock<IDiscordLogContext>();
-            _mockObjectIdConversionService = new Mock<IObjectIdConversionService>();
+        public LogEventHandlerTests()
+        {
+            _mockLogDataService = new();
+            _mockAuditLogDataService = new();
+            _mockHttpErrorLogDataService = new();
+            _mockLauncherLogDataService = new();
+            _mockDiscordLogDataService = new();
+            _mockObjectIdConversionService = new();
             Mock<ILogger> mockLogger = new();
             _eventBus = new EventBus();
 
             _mockObjectIdConversionService.Setup(x => x.ConvertObjectIds(It.IsAny<string>())).Returns<string>(x => x);
 
-            LoggerEventHandler logEventHandler = new(
-                _eventBus,
-                _mockLogDataService.Object,
-                _mockAuditLogDataService.Object,
-                _mockHttpErrorLogDataService.Object,
-                _mockLauncherLogDataService.Object,
-                _mockDiscordLogDataService.Object,
-                mockLogger.Object,
-                _mockObjectIdConversionService.Object
-            );
+            LoggerEventHandler logEventHandler =
+                new(_eventBus, _mockLogDataService.Object, _mockAuditLogDataService.Object, _mockHttpErrorLogDataService.Object, _mockLauncherLogDataService.Object, _mockDiscordLogDataService.Object,
+                    mockLogger.Object, _mockObjectIdConversionService.Object);
             logEventHandler.Init();
         }
 
         [Fact]
-        public void When_handling_a_basic_log() {
+        public void When_handling_a_basic_log()
+        {
             BasicLog basicLog = new("test");
 
             _eventBus.Send(new LoggerEventData(basicLog));
@@ -54,7 +50,8 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         }
 
         [Fact]
-        public void When_handling_a_discord_log() {
+        public void When_handling_a_discord_log()
+        {
             DiscordLog discordLog = new(DiscordUserEventType.JOINED, "12345", "SqnLdr.Beswick.T", "", "", "SqnLdr.Beswick.T joined");
 
             _eventBus.Send(new LoggerEventData(discordLog));
@@ -63,7 +60,8 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         }
 
         [Fact]
-        public void When_handling_a_launcher_log() {
+        public void When_handling_a_launcher_log()
+        {
             LauncherLog launcherLog = new("1.0.0", "test");
 
             _eventBus.Send(new LoggerEventData(launcherLog));
@@ -73,7 +71,8 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         }
 
         [Fact]
-        public void When_handling_an_audit_log() {
+        public void When_handling_an_audit_log()
+        {
             AuditLog basicLog = new("server", "test");
 
             _eventBus.Send(new LoggerEventData(basicLog));
@@ -84,13 +83,14 @@ namespace UKSF.Tests.Unit.Events.Handlers {
         }
 
         [Fact]
-        public void When_handling_an_http_error_log() {
-            HttpErrorLog httpErrorLog = new(new Exception());
+        public void When_handling_an_error_log()
+        {
+            ErrorLog errorLog = new(new(), "url", "method", "endpoint", 500, "userId", "userName");
 
-            _eventBus.Send(new LoggerEventData(httpErrorLog));
+            _eventBus.Send(new LoggerEventData(errorLog));
 
             _mockObjectIdConversionService.Verify(x => x.ConvertObjectIds("Exception of type 'System.Exception' was thrown."), Times.Once);
-            _mockHttpErrorLogDataService.Verify(x => x.Add(httpErrorLog), Times.Once);
+            _mockHttpErrorLogDataService.Verify(x => x.Add(errorLog), Times.Once);
         }
     }
 }
