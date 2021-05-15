@@ -7,15 +7,21 @@ using System.Threading.Tasks;
 using Humanizer;
 using MoreLinq;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
-    public class FileBuildStep : BuildStep {
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
+{
+    public class FileBuildStep : BuildStep
+    {
         private const double FILE_COPY_TASK_SIZE_THRESHOLD = 5_000_000_000;
         private const double FILE_COPY_TASK_COUNT_THRESHOLD = 50;
         private const double FILE_DELETE_TASK_COUNT_THRESHOLD = 50;
 
-        internal static List<FileInfo> GetDirectoryContents(DirectoryInfo source, string searchPattern = "*") => source.GetFiles(searchPattern, SearchOption.AllDirectories).ToList();
+        internal static List<FileInfo> GetDirectoryContents(DirectoryInfo source, string searchPattern = "*")
+        {
+            return source.GetFiles(searchPattern, SearchOption.AllDirectories).ToList();
+        }
 
-        internal async Task AddFiles(string sourcePath, string targetPath) {
+        internal async Task AddFiles(string sourcePath, string targetPath)
+        {
             DirectoryInfo source = new(sourcePath);
             DirectoryInfo target = new(targetPath);
             IEnumerable<FileInfo> sourceFiles = GetDirectoryContents(source);
@@ -26,7 +32,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
             await CopyFiles(source, target, addedFiles);
         }
 
-        internal async Task UpdateFiles(string sourcePath, string targetPath) {
+        internal async Task UpdateFiles(string sourcePath, string targetPath)
+        {
             DirectoryInfo source = new(sourcePath);
             DirectoryInfo target = new(targetPath);
             IEnumerable<FileInfo> sourceFiles = GetDirectoryContents(source);
@@ -37,15 +44,24 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
             await CopyFiles(source, target, updatedFiles);
         }
 
-        internal async Task DeleteFiles(string sourcePath, string targetPath, bool matchSubdirectories = false) {
+        internal async Task DeleteFiles(string sourcePath, string targetPath, bool matchSubdirectories = false)
+        {
             DirectoryInfo source = new(sourcePath);
             DirectoryInfo target = new(targetPath);
             IEnumerable<FileInfo> targetFiles = GetDirectoryContents(target);
             List<FileInfo> deletedFiles = targetFiles.Select(targetFile => new { targetFile, sourceFile = new FileInfo(targetFile.FullName.Replace(target.FullName, source.FullName)) })
                                                      .Where(
-                                                         x => {
-                                                             if (x.sourceFile.Exists) return false;
-                                                             if (!matchSubdirectories) return true;
+                                                         x =>
+                                                         {
+                                                             if (x.sourceFile.Exists)
+                                                             {
+                                                                 return false;
+                                                             }
+
+                                                             if (!matchSubdirectories)
+                                                             {
+                                                                 return true;
+                                                             }
 
                                                              string sourceSubdirectoryPath = x.sourceFile.FullName.Replace(sourcePath, "")
                                                                                               .Split(new[] { Path.DirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries)
@@ -60,31 +76,39 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
             await DeleteEmptyDirectories(target);
         }
 
-        internal async Task CopyDirectory(string sourceDirectory, string targetDirectory) {
+        internal async Task CopyDirectory(string sourceDirectory, string targetDirectory)
+        {
             DirectoryInfo source = new(sourceDirectory);
             DirectoryInfo target = new(targetDirectory);
             List<FileInfo> files = GetDirectoryContents(source);
             await CopyFiles(source, target, files);
         }
 
-        internal async Task CopyFiles(FileSystemInfo source, FileSystemInfo target, List<FileInfo> files, bool flatten = false) {
+        internal async Task CopyFiles(FileSystemInfo source, FileSystemInfo target, List<FileInfo> files, bool flatten = false)
+        {
             Directory.CreateDirectory(target.FullName);
-            if (files.Count == 0) {
+            if (files.Count == 0)
+            {
                 StepLogger.Log("No files to copy");
                 return;
             }
 
             long totalSize = files.Select(x => x.Length).Sum();
-            if (files.Count > FILE_COPY_TASK_COUNT_THRESHOLD || totalSize > FILE_COPY_TASK_SIZE_THRESHOLD) {
+            if (files.Count > FILE_COPY_TASK_COUNT_THRESHOLD || totalSize > FILE_COPY_TASK_SIZE_THRESHOLD)
+            {
                 await ParallelCopyFiles(source, target, files, totalSize, flatten);
-            } else {
+            }
+            else
+            {
                 SimpleCopyFiles(source, target, files, flatten);
             }
         }
 
-        internal async Task DeleteDirectoryContents(string path) {
+        internal async Task DeleteDirectoryContents(string path)
+        {
             DirectoryInfo directory = new(path);
-            if (!directory.Exists) {
+            if (!directory.Exists)
+            {
                 StepLogger.Log("Directory does not exist");
                 return;
             }
@@ -93,61 +117,82 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
             await DeleteFiles(directory.GetFiles("*", SearchOption.AllDirectories).ToList());
         }
 
-        internal void DeleteDirectories(List<DirectoryInfo> directories) {
-            if (directories.Count == 0) {
+        internal void DeleteDirectories(List<DirectoryInfo> directories)
+        {
+            if (directories.Count == 0)
+            {
                 StepLogger.Log("No directories to delete");
                 return;
             }
 
-            foreach (DirectoryInfo directory in directories) {
+            foreach (DirectoryInfo directory in directories)
+            {
                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
                 StepLogger.Log($"Deleting directory: {directory}");
                 directory.Delete(true);
             }
         }
 
-        internal async Task DeleteFiles(List<FileInfo> files) {
-            if (files.Count == 0) {
+        internal async Task DeleteFiles(List<FileInfo> files)
+        {
+            if (files.Count == 0)
+            {
                 StepLogger.Log("No files to delete");
                 return;
             }
 
-            if (files.Count > FILE_DELETE_TASK_COUNT_THRESHOLD) {
+            if (files.Count > FILE_DELETE_TASK_COUNT_THRESHOLD)
+            {
                 await ParallelDeleteFiles(files);
-            } else {
+            }
+            else
+            {
                 SimpleDeleteFiles(files);
             }
         }
 
-        internal async Task DeleteEmptyDirectories(DirectoryInfo directory) {
-            foreach (DirectoryInfo subDirectory in directory.GetDirectories()) {
+        internal async Task DeleteEmptyDirectories(DirectoryInfo directory)
+        {
+            foreach (DirectoryInfo subDirectory in directory.GetDirectories())
+            {
                 await DeleteEmptyDirectories(subDirectory);
-                if (subDirectory.GetFiles().Length == 0 && subDirectory.GetDirectories().Length == 0) {
+                if (subDirectory.GetFiles().Length == 0 && subDirectory.GetDirectories().Length == 0)
+                {
                     StepLogger.Log($"Deleting directory: {subDirectory}");
                     subDirectory.Delete(false);
                 }
             }
         }
 
-        internal async Task ParallelProcessFiles(IEnumerable<FileInfo> files, int taskLimit, Func<FileInfo, Task> process, Func<string> getLog, string error) {
+        internal async Task ParallelProcessFiles(IEnumerable<FileInfo> files, int taskLimit, Func<FileInfo, Task> process, Func<string> getLog, string error)
+        {
             SemaphoreSlim taskLimiter = new(taskLimit);
             IEnumerable<Task> tasks = files.Select(
-                file => {
+                file =>
+                {
                     return Task.Run(
-                        async () => {
+                        async () =>
+                        {
                             CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
-                            try {
+                            try
+                            {
                                 await taskLimiter.WaitAsync(CancellationTokenSource.Token);
                                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
                                 await process(file);
                                 StepLogger.LogInline(getLog());
-                            } catch (OperationCanceledException) {
+                            }
+                            catch (OperationCanceledException)
+                            {
                                 throw;
-                            } catch (Exception exception) {
+                            }
+                            catch (Exception exception)
+                            {
                                 throw new Exception($"{error} '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}", exception);
-                            } finally {
+                            }
+                            finally
+                            {
                                 taskLimiter.Release();
                             }
                         },
@@ -160,20 +205,28 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
             await Task.WhenAll(tasks);
         }
 
-        internal async Task BatchProcessFiles(IEnumerable<FileInfo> files, int batchSize, Func<FileInfo, Task> process, Func<string> getLog, string error) {
+        internal async Task BatchProcessFiles(IEnumerable<FileInfo> files, int batchSize, Func<FileInfo, Task> process, Func<string> getLog, string error)
+        {
             StepLogger.Log(getLog());
             IEnumerable<IEnumerable<FileInfo>> fileBatches = files.Batch(batchSize);
-            foreach (IEnumerable<FileInfo> fileBatch in fileBatches) {
+            foreach (IEnumerable<FileInfo> fileBatch in fileBatches)
+            {
                 List<FileInfo> fileList = fileBatch.ToList();
                 IEnumerable<Task> tasks = fileList.Select(
-                    async file => {
-                        try {
+                    async file =>
+                    {
+                        try
+                        {
                             CancellationTokenSource.Token.ThrowIfCancellationRequested();
                             await process(file);
-                        } catch (OperationCanceledException) {
+                        }
+                        catch (OperationCanceledException)
+                        {
                             throw;
-                        } catch (Exception exception) {
-                            throw new Exception($"{error} '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}", exception);
+                        }
+                        catch (Exception exception)
+                        {
+                            throw new($"{error} '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}", exception);
                         }
                     }
                 );
@@ -182,8 +235,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
             }
         }
 
-        private void SimpleCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, bool flatten = false) {
-            foreach (FileInfo file in files) {
+        private void SimpleCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, bool flatten = false)
+        {
+            foreach (FileInfo file in files)
+            {
                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
                 string targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
                 StepLogger.Log($"Copying '{file}' to '{target.FullName}'");
@@ -192,13 +247,15 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
             }
         }
 
-        private async Task ParallelCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, long totalSize, bool flatten = false) {
+        private async Task ParallelCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, long totalSize, bool flatten = false)
+        {
             long copiedSize = 0;
             string totalSizeString = totalSize.Bytes().ToString("#.#");
             await BatchProcessFiles(
                 files,
                 10,
-                file => {
+                file =>
+                {
                     string targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
                     Directory.CreateDirectory(Path.GetDirectoryName(targetFile));
                     file.CopyTo(targetFile, true);
@@ -210,21 +267,25 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
             );
         }
 
-        private void SimpleDeleteFiles(IEnumerable<FileInfo> files) {
-            foreach (FileInfo file in files) {
+        private void SimpleDeleteFiles(IEnumerable<FileInfo> files)
+        {
+            foreach (FileInfo file in files)
+            {
                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
                 StepLogger.Log($"Deleting file: {file}");
                 file.Delete();
             }
         }
 
-        private async Task ParallelDeleteFiles(IReadOnlyCollection<FileInfo> files) {
+        private async Task ParallelDeleteFiles(IReadOnlyCollection<FileInfo> files)
+        {
             int deleted = 0;
             int total = files.Count;
             await BatchProcessFiles(
                 files,
                 10,
-                file => {
+                file =>
+                {
                     file.Delete();
                     Interlocked.Increment(ref deleted);
                     return Task.CompletedTask;

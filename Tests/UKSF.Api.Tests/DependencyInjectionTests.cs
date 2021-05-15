@@ -1,19 +1,23 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using UKSF.Api.AppStart;
 using UKSF.Api.Controllers;
 using UKSF.Api.EventHandlers;
+using UKSF.Api.Middleware;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Api.Tests {
-    public class DependencyInjectionTests : DependencyInjectionTestsBase {
-        public DependencyInjectionTests() {
+namespace UKSF.Api.Tests
+{
+    public class DependencyInjectionTests : DependencyInjectionTestsBase
+    {
+        public DependencyInjectionTests()
+        {
             Services.AddUksf(Configuration, HostEnvironment);
         }
 
         [Fact]
-        public void When_resolving_controllers() {
+        public void When_resolving_controllers()
+        {
             Services.AddTransient<LoaController>();
             Services.AddTransient<LoggingController>();
             Services.AddTransient<ModsController>();
@@ -25,7 +29,8 @@ namespace UKSF.Api.Tests {
         }
 
         [Fact]
-        public void When_resolving_event_handlers() {
+        public void When_resolving_event_handlers()
+        {
             Services.AddTransient<LoggerEventHandler>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();
 
@@ -33,7 +38,8 @@ namespace UKSF.Api.Tests {
         }
 
         [Fact]
-        public void When_resolving_filters() {
+        public void When_resolving_filters()
+        {
             Services.AddTransient<ExceptionHandler>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();
 

@@ -5,10 +5,12 @@ using UKSF.Api.Integrations.Instagram.Services;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Integrations.Instagram.ScheduledActions {
+namespace UKSF.Api.Integrations.Instagram.ScheduledActions
+{
     public interface IActionInstagramImages : ISelfCreatingScheduledAction { }
 
-    public class ActionInstagramImages : IActionInstagramImages {
+    public class ActionInstagramImages : IActionInstagramImages
+    {
         private const string ACTION_NAME = nameof(ActionInstagramImages);
 
         private readonly IClock _clock;
@@ -16,7 +18,8 @@ namespace UKSF.Api.Integrations.Instagram.ScheduledActions {
         private readonly ISchedulerContext _schedulerContext;
         private readonly ISchedulerService _schedulerService;
 
-        public ActionInstagramImages(ISchedulerContext schedulerContext, IInstagramService instagramService, ISchedulerService schedulerService, IClock clock) {
+        public ActionInstagramImages(ISchedulerContext schedulerContext, IInstagramService instagramService, ISchedulerService schedulerService, IClock clock)
+        {
             _schedulerContext = schedulerContext;
             _instagramService = instagramService;
             _schedulerService = schedulerService;
@@ -25,16 +28,24 @@ namespace UKSF.Api.Integrations.Instagram.ScheduledActions {
 
         public string Name => ACTION_NAME;
 
-        public Task Run(params object[] parameters) => _instagramService.CacheInstagramImages();
+        public Task Run(params object[] parameters)
+        {
+            return _instagramService.CacheInstagramImages();
+        }
 
-        public async Task CreateSelf() {
-            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null) {
+        public async Task CreateSelf()
+        {
+            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null)
+            {
                 await _schedulerService.CreateScheduledJob(_clock.Today(), TimeSpan.FromMinutes(15), ACTION_NAME);
             }
 
             await Run();
         }
 
-        public Task Reset() => Task.CompletedTask;
+        public Task Reset()
+        {
+            return Task.CompletedTask;
+        }
     }
 }

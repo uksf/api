@@ -9,18 +9,22 @@ using UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods;
 using UKSF.Api.Modpack.Services.BuildProcess.Steps.Common;
 using UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess {
-    public interface IBuildStepService {
+namespace UKSF.Api.Modpack.Services.BuildProcess
+{
+    public interface IBuildStepService
+    {
         void RegisterBuildSteps();
         List<ModpackBuildStep> GetSteps(GameEnvironment environment);
         ModpackBuildStep GetRestoreStepForRelease();
         IBuildStep ResolveBuildStep(string buildStepName);
     }
 
-    public class BuildStepService : IBuildStepService {
+    public class BuildStepService : IBuildStepService
+    {
         private Dictionary<string, Type> _buildStepDictionary = new();
 
-        public void RegisterBuildSteps() {
+        public void RegisterBuildSteps()
+        {
             _buildStepDictionary = AppDomain.CurrentDomain.GetAssemblies()
                                             .SelectMany(x => x.GetTypes(), (_, type) => new { type })
                                             .Select(x => new { x.type, attributes = x.type.GetCustomAttributes(typeof(BuildStepAttribute), true) })
@@ -29,8 +33,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
                                             .ToDictionary(x => x.Key, x => x.Value);
         }
 
-        public List<ModpackBuildStep> GetSteps(GameEnvironment environment) {
-            List<ModpackBuildStep> steps = environment switch {
+        public List<ModpackBuildStep> GetSteps(GameEnvironment environment)
+        {
+            List<ModpackBuildStep> steps = environment switch
+            {
                 GameEnvironment.RELEASE => GetStepsForRelease(),
                 GameEnvironment.RC      => GetStepsForRc(),
                 GameEnvironment.DEV     => GetStepsForBuild(),
@@ -40,10 +46,15 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             return steps;
         }
 
-        public ModpackBuildStep GetRestoreStepForRelease() => new(BuildStepRestore.NAME);
+        public ModpackBuildStep GetRestoreStepForRelease()
+        {
+            return new(BuildStepRestore.NAME);
+        }
 
-        public IBuildStep ResolveBuildStep(string buildStepName) {
-            if (!_buildStepDictionary.ContainsKey(buildStepName)) {
+        public IBuildStep ResolveBuildStep(string buildStepName)
+        {
+            if (!_buildStepDictionary.ContainsKey(buildStepName))
+            {
                 throw new NullReferenceException($"Build step '{buildStepName}' does not exist in build step dictionary");
             }
 
@@ -52,8 +63,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
             return step;
         }
 
-        private static List<ModpackBuildStep> GetStepsForBuild() =>
-            new() {
+        private static List<ModpackBuildStep> GetStepsForBuild()
+        {
+            return new()
+            {
                 new(BuildStepPrep.NAME),
                 new(BuildStepClean.NAME),
                 new(BuildStepSources.NAME),
@@ -69,9 +82,12 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
                 new(BuildStepCbaSettings.NAME),
                 new(BuildStepBuildRepo.NAME)
             };
+        }
 
-        private static List<ModpackBuildStep> GetStepsForRc() =>
-            new() {
+        private static List<ModpackBuildStep> GetStepsForRc()
+        {
+            return new()
+            {
                 new(BuildStepPrep.NAME),
                 new(BuildStepClean.NAME),
                 new(BuildStepSources.NAME),
@@ -88,9 +104,12 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
                 new(BuildStepBuildRepo.NAME),
                 new(BuildStepNotify.NAME)
             };
+        }
 
-        private static List<ModpackBuildStep> GetStepsForRelease() =>
-            new() {
+        private static List<ModpackBuildStep> GetStepsForRelease()
+        {
+            return new()
+            {
                 new(BuildStepClean.NAME),
                 new(BuildStepBackup.NAME),
                 new(BuildStepDeploy.NAME),
@@ -101,9 +120,12 @@ namespace UKSF.Api.Modpack.Services.BuildProcess {
                 new(BuildStepNotify.NAME),
                 new(BuildStepMerge.NAME)
             };
+        }
 
-        private static void ResolveIndices(IReadOnlyList<ModpackBuildStep> steps) {
-            for (int i = 0; i < steps.Count; i++) {
+        private static void ResolveIndices(IReadOnlyList<ModpackBuildStep> steps)
+        {
+            for (int i = 0; i < steps.Count; i++)
+            {
                 steps[i].Index = i;
             }
         }

@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Services;
+using UKSF.Api.Exceptions;
+using UKSF.Api.Models;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
@@ -14,9 +16,11 @@ using UKSF.Api.Shared;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Controllers {
+namespace UKSF.Api.Controllers
+{
     [Route("[controller]"), Permissions(Permissions.MEMBER)]
-    public class LoaController : Controller {
+    public class LoaController : Controller
+    {
         private readonly IAccountContext _accountContext;
         private readonly IAccountService _accountService;
         private readonly IChainOfCommandService _chainOfCommandService;
@@ -43,7 +47,8 @@ namespace UKSF.Api.Controllers {
             IChainOfCommandService chainOfCommandService,
             INotificationsService notificationsService,
             ILogger logger
-        ) {
+        )
+        {
             _loaContext = loaContext;
             _accountContext = accountContext;
             _commandRequestContext = commandRequestContext;
@@ -59,9 +64,11 @@ namespace UKSF.Api.Controllers {
         }
 
         [HttpGet, Authorize]
-        public IActionResult Get([FromQuery] string scope = "you") {
+        public LoaReportDataset Get([FromQuery] string scope = "you")
+        {
             List<string> objectIds;
-            switch (scope) {
+            switch (scope)
+            {
                 case "all":
                     objectIds = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER).Select(x => x.Id).ToList();
                     break;
@@ -72,45 +79,49 @@ namespace UKSF.Api.Controllers {
                     objectIds = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER && members.Contains(x.Id)).Select(x => x.Id).ToList();
                     break;
                 case "you":
-                    objectIds = new List<string> { _httpContextService.GetUserId() };
+                    objectIds = new() { _httpContextService.GetUserId() };
                     break;
-                default: return BadRequest();
+                default: throw new InvalidLoaScopeException(scope);
             }
 
-            IEnumerable<dynamic> loaReports = _loaService.Get(objectIds)
-                                                         .Select(
-                                                             x => new {
-                                                                 id = x.Id,
-                                                                 start = x.Start,
-                                                                 end = x.End,
-                                                                 state = x.State,
-                                                                 emergency = x.Emergency,
-                                                                 late = x.Late,
-                                                                 reason = x.Reason,
-                                                                 name = _displayNameService.GetDisplayName(_accountContext.GetSingle(x.Recipient)),
-                                                                 inChainOfCommand = _chainOfCommandService.InContextChainOfCommand(x.Recipient),
-                                                                 longTerm = (x.End - x.Start).Days > 21
-                                                             }
-                                                         )
-                                                         .ToList();
-            return Ok(
-                new {
-                    activeLoas = loaReports.Where(x => x.start <= DateTime.Now && x.end > DateTime.Now).OrderBy(x => x.end).ThenBy(x => x.start),
-                    upcomingLoas = loaReports.Where(x => x.start >= DateTime.Now).OrderBy(x => x.start).ThenBy(x => x.end),
-                    pastLoas = loaReports.Where(x => x.end < DateTime.Now).OrderByDescending(x => x.end).ThenByDescending(x => x.start)
-                }
-            );
+            IEnumerable<LoaReport> loaReports = _loaService.Get(objectIds)
+                                                           .Select(
+                                                               x => new LoaReport
+                                                               {
+                                                                   Id = x.Id,
+                                                                   Start = x.Start,
+                                                                   End = x.End,
+                                                                   State = x.State.ToString(),
+                                                                   Emergency = x.Emergency,
+                                                                   Late = x.Late,
+                                                                   Reason = x.Reason,
+                                                                   Name = _displayNameService.GetDisplayName(_accountContext.GetSingle(x.Recipient)),
+                                                                   InChainOfCommand = _chainOfCommandService.InContextChainOfCommand(x.Recipient),
+                                                                   LongTerm = (x.End - x.Start).Days > 21
+                                                               }
+                                                           )
+                                                           .ToList();
+            return new()
+            {
+                ActiveLoas = loaReports.Where(x => x.Start <= DateTime.Now && x.End > DateTime.Now).OrderBy(x => x.End).ThenBy(x => x.Start).ToList(),
+                UpcomingLoas = loaReports.Where(x => x.Start >= DateTime.Now).OrderBy(x => x.Start).ThenBy(x => x.End).ToList(),
+                PastLoas = loaReports.Where(x => x.End < DateTime.Now).OrderByDescending(x => x.End).ThenByDescending(x => x.Start).ToList()
+            };
         }
 
         [HttpDelete("{id}"), Authorize]
-        public async Task<IActionResult> DeleteLoa(string id) {
+        public async Task DeleteLoa(string id)
+        {
             Loa loa = _loaContext.GetSingle(id);
             CommandRequest request = _commandRequestContext.GetSingle(x => x.Value == id);
-            if (request != null) {
+            if (request != null)
+            {
                 await _commandRequestContext.Delete(request);
-                foreach (string reviewerId in request.Reviews.Keys.Where(x => x != request.Requester)) {
+                foreach (string reviewerId in request.Reviews.Keys.Where(x => x != request.Requester))
+                {
                     _notificationsService.Add(
-                        new Notification {
+                        new()
+                        {
                             Owner = reviewerId,
                             Icon = NotificationIcons.REQUEST,
                             Message = $"Your review for {request.DisplayRequester}'s LOA is no longer required as they deleted their LOA",
@@ -124,8 +135,6 @@ namespace UKSF.Api.Controllers {
 
             _logger.LogAudit($"Loa deleted for '{_displayNameService.GetDisplayName(_accountContext.GetSingle(loa.Recipient))}' from '{loa.Start}' to '{loa.End}'");
             await _loaContext.Delete(loa);
-
-            return Ok();
         }
     }
 }

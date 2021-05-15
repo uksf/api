@@ -19,9 +19,11 @@ using UKSF.Api.Shared;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Command.Controllers {
+namespace UKSF.Api.Command.Controllers
+{
     [Route("[controller]"), Permissions(Permissions.COMMAND)]
-    public class CommandRequestsController : Controller {
+    public class CommandRequestsController : Controller
+    {
         private const string SUPER_ADMIN = "59e38f10594c603b78aa9dbd";
         private readonly IAccountService _accountService;
         private readonly ICommandRequestCompletionService _commandRequestCompletionService;
@@ -45,7 +47,8 @@ namespace UKSF.Api.Command.Controllers {
             IVariablesContext variablesContext,
             IAccountService accountService,
             ILogger logger
-        ) {
+        )
+        {
             _commandRequestService = commandRequestService;
             _commandRequestCompletionService = commandRequestCompletionService;
             _httpContextService = httpContextService;
@@ -59,7 +62,8 @@ namespace UKSF.Api.Command.Controllers {
         }
 
         [HttpGet, Authorize]
-        public IActionResult Get() {
+        public IActionResult Get()
+        {
             IEnumerable<CommandRequest> allRequests = _commandRequestContext.Get();
             List<CommandRequest> myRequests = new();
             List<CommandRequest> otherRequests = new();
@@ -68,11 +72,15 @@ namespace UKSF.Api.Command.Controllers {
             bool canOverride = _unitsContext.GetSingle(id).Members.Any(x => x == contextId);
             bool superAdmin = contextId == SUPER_ADMIN;
             DateTime now = DateTime.Now;
-            foreach (CommandRequest commandRequest in allRequests) {
+            foreach (CommandRequest commandRequest in allRequests)
+            {
                 Dictionary<string, ReviewState>.KeyCollection reviewers = commandRequest.Reviews.Keys;
-                if (reviewers.Any(k => k == contextId)) {
+                if (reviewers.Any(k => k == contextId))
+                {
                     myRequests.Add(commandRequest);
-                } else {
+                }
+                else
+                {
                     otherRequests.Add(commandRequest);
                 }
             }
@@ -80,26 +88,41 @@ namespace UKSF.Api.Command.Controllers {
             return Ok(new { myRequests = GetMyRequests(myRequests, contextId, canOverride, superAdmin, now), otherRequests = GetOtherRequests(otherRequests, canOverride, superAdmin, now) });
         }
 
-        private object GetMyRequests(IEnumerable<CommandRequest> myRequests, string contextId, bool canOverride, bool superAdmin, DateTime now) {
+        private object GetMyRequests(IEnumerable<CommandRequest> myRequests, string contextId, bool canOverride, bool superAdmin, DateTime now)
+        {
             return myRequests.Select(
-                x => {
-                    if (string.IsNullOrEmpty(x.Reason)) x.Reason = "None given";
+                x =>
+                {
+                    if (string.IsNullOrEmpty(x.Reason))
+                    {
+                        x.Reason = "None given";
+                    }
+
                     x.Type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.Type.ToLower());
-                    return new {
+                    return new
+                    {
                         data = x,
-                        canOverride = superAdmin || canOverride && x.Reviews.Count > 1 && x.DateCreated.AddDays(1) < now && x.Reviews.Any(y => y.Value == ReviewState.PENDING && y.Key != contextId),
+                        canOverride =
+                            superAdmin || canOverride && x.Reviews.Count > 1 && x.DateCreated.AddDays(1) < now && x.Reviews.Any(y => y.Value == ReviewState.PENDING && y.Key != contextId),
                         reviews = x.Reviews.Select(y => new { id = y.Key, name = _displayNameService.GetDisplayName(y.Key), state = y.Value })
                     };
                 }
             );
         }
 
-        private object GetOtherRequests(IEnumerable<CommandRequest> otherRequests, bool canOverride, bool superAdmin, DateTime now) {
+        private object GetOtherRequests(IEnumerable<CommandRequest> otherRequests, bool canOverride, bool superAdmin, DateTime now)
+        {
             return otherRequests.Select(
-                x => {
-                    if (string.IsNullOrEmpty(x.Reason)) x.Reason = "None given";
+                x =>
+                {
+                    if (string.IsNullOrEmpty(x.Reason))
+                    {
+                        x.Reason = "None given";
+                    }
+
                     x.Type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.Type.ToLower());
-                    return new {
+                    return new
+                    {
                         data = x,
                         canOverride = superAdmin || canOverride && x.DateCreated.AddDays(1) < now,
                         reviews = x.Reviews.Select(y => new { name = _displayNameService.GetDisplayName(y.Key), state = y.Value })
@@ -109,47 +132,65 @@ namespace UKSF.Api.Command.Controllers {
         }
 
         [HttpPatch("{id}"), Authorize]
-        public async Task<IActionResult> UpdateRequestReview(string id, [FromBody] JObject body) {
+        public async Task<IActionResult> UpdateRequestReview(string id, [FromBody] JObject body)
+        {
             bool overriden = bool.Parse(body["overriden"].ToString());
             ReviewState state = Enum.Parse<ReviewState>(body["reviewState"].ToString());
             Account sessionAccount = _accountService.GetUserAccount();
             CommandRequest request = _commandRequestContext.GetSingle(id);
-            if (request == null) {
+            if (request == null)
+            {
                 throw new NullReferenceException($"Failed to get request with id {id}, does not exist");
             }
 
-            if (overriden) {
+            if (overriden)
+            {
                 _logger.LogAudit($"Review state of {request.Type.ToLower()} request for {request.DisplayRecipient} overriden to {state}");
                 await _commandRequestService.SetRequestAllReviewStates(request, state);
 
-                foreach (string reviewerId in request.Reviews.Select(x => x.Key).Where(x => x != sessionAccount.Id)) {
+                foreach (string reviewerId in request.Reviews.Select(x => x.Key).Where(x => x != sessionAccount.Id))
+                {
                     _notificationsService.Add(
-                        new Notification {
+                        new()
+                        {
                             Owner = reviewerId,
                             Icon = NotificationIcons.REQUEST,
                             Message = $"Your review on {AvsAn.Query(request.Type).Article} {request.Type.ToLower()} request for {request.DisplayRecipient} was overriden by {sessionAccount.Id}"
                         }
                     );
                 }
-            } else {
+            }
+            else
+            {
                 ReviewState currentState = _commandRequestService.GetReviewState(request.Id, sessionAccount.Id);
-                if (currentState == ReviewState.ERROR) {
+                if (currentState == ReviewState.ERROR)
+                {
                     throw new ArgumentOutOfRangeException(
                         $"Getting review state for {sessionAccount} from {request.Id} failed. Reviews: \n{request.Reviews.Select(x => $"{x.Key}: {x.Value}").Aggregate((x, y) => $"{x}\n{y}")}"
                     );
                 }
 
-                if (currentState == state) return Ok();
+                if (currentState == state)
+                {
+                    return Ok();
+                }
+
                 _logger.LogAudit($"Review state of {_displayNameService.GetDisplayName(sessionAccount)} for {request.Type.ToLower()} request for {request.DisplayRecipient} updated to {state}");
                 await _commandRequestService.SetRequestReviewState(request, sessionAccount.Id, state);
             }
 
-            try {
+            try
+            {
                 await _commandRequestCompletionService.Resolve(request.Id);
-            } catch (Exception) {
-                if (overriden) {
+            }
+            catch (Exception)
+            {
+                if (overriden)
+                {
                     await _commandRequestService.SetRequestAllReviewStates(request, ReviewState.PENDING);
-                } else {
+                }
+                else
+                {
                     await _commandRequestService.SetRequestReviewState(request, sessionAccount.Id, ReviewState.PENDING);
                 }
 
@@ -160,6 +201,9 @@ namespace UKSF.Api.Command.Controllers {
         }
 
         [HttpPost("exists"), Authorize]
-        public IActionResult RequestExists([FromBody] CommandRequest request) => Ok(_commandRequestService.DoesEquivalentRequestExist(request));
+        public IActionResult RequestExists([FromBody] CommandRequest request)
+        {
+            return Ok(_commandRequestService.DoesEquivalentRequestExist(request));
+        }
     }
 }

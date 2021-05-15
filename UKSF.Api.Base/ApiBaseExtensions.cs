@@ -5,9 +5,12 @@ using Microsoft.Extensions.Hosting;
 using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 
-namespace UKSF.Api.Base {
-    public static class ApiBaseExtensions {
-        public static IServiceCollection AddUksfBase(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment) {
+namespace UKSF.Api.Base
+{
+    public static class ApiBaseExtensions
+    {
+        public static IServiceCollection AddUksfBase(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment)
+        {
             services.AddContexts()
                     .AddEventHandlers()
                     .AddServices()
@@ -21,10 +24,19 @@ namespace UKSF.Api.Base {
             return services;
         }
 
-        private static IServiceCollection AddContexts(this IServiceCollection services) => services;
+        private static IServiceCollection AddContexts(this IServiceCollection services)
+        {
+            return services;
+        }
 
-        private static IServiceCollection AddEventHandlers(this IServiceCollection services) => services;
+        private static IServiceCollection AddEventHandlers(this IServiceCollection services)
+        {
+            return services;
+        }
 
-        private static IServiceCollection AddServices(this IServiceCollection services) => services;
+        private static IServiceCollection AddServices(this IServiceCollection services)
+        {
+            return services;
+        }
     }
 }

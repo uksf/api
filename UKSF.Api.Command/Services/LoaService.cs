@@ -7,25 +7,34 @@ using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.Command.Services {
-    public interface ILoaService {
+namespace UKSF.Api.Command.Services
+{
+    public interface ILoaService
+    {
         IEnumerable<Loa> Get(List<string> ids);
         Task<string> Add(CommandRequestLoa requestBase);
         Task SetLoaState(string id, LoaReviewState state);
         bool IsLoaCovered(string id, DateTime eventStart);
     }
 
-    public class LoaService : ILoaService {
+    public class LoaService : ILoaService
+    {
         private readonly ILoaContext _loaContext;
 
-        public LoaService(ILoaContext loaContext) => _loaContext = loaContext;
+        public LoaService(ILoaContext loaContext)
+        {
+            _loaContext = loaContext;
+        }
 
-        public IEnumerable<Loa> Get(List<string> ids) {
+        public IEnumerable<Loa> Get(List<string> ids)
+        {
             return _loaContext.Get(x => ids.Contains(x.Recipient) && x.End > DateTime.Now.AddDays(-30));
         }
 
-        public async Task<string> Add(CommandRequestLoa requestBase) {
-            Loa loa = new() {
+        public async Task<string> Add(CommandRequestLoa requestBase)
+        {
+            Loa loa = new()
+            {
                 Submitted = DateTime.Now,
                 Recipient = requestBase.Recipient,
                 Start = requestBase.Start,
@@ -38,11 +47,13 @@ namespace UKSF.Api.Command.Services {
             return loa.Id;
         }
 
-        public async Task SetLoaState(string id, LoaReviewState state) {
+        public async Task SetLoaState(string id, LoaReviewState state)
+        {
             await _loaContext.Update(id, Builders<Loa>.Update.Set(x => x.State, state));
         }
 
-        public bool IsLoaCovered(string id, DateTime eventStart) {
+        public bool IsLoaCovered(string id, DateTime eventStart)
+        {
             return _loaContext.Get(loa => loa.Recipient == id && loa.Start < eventStart && loa.End > eventStart).Any();
         }
     }

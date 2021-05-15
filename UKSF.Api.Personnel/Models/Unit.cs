@@ -3,8 +3,10 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Personnel.Models {
-    public class Unit : MongoObject {
+namespace UKSF.Api.Personnel.Models
+{
+    public class Unit : MongoObject
+    {
         public UnitBranch Branch = UnitBranch.COMBAT;
         public string Callsign;
         public string DiscordRoleId;
@@ -18,39 +20,48 @@ namespace UKSF.Api.Personnel.Models {
         public string Shortname;
         public string TeamspeakGroup;
 
-        public override string ToString() => $"{Name}, {Shortname}, {Callsign}, {Branch}, {TeamspeakGroup}, {DiscordRoleId}";
+        public override string ToString()
+        {
+            return $"{Name}, {Shortname}, {Callsign}, {Branch}, {TeamspeakGroup}, {DiscordRoleId}";
+        }
     }
 
-    public enum UnitBranch {
+    public enum UnitBranch
+    {
         COMBAT,
         AUXILIARY
     }
 
     // TODO: Cleaner way of doing this? Inside controllers?
-    public class ResponseUnit : Unit {
+    public class ResponseUnit : Unit
+    {
         public string Code;
         public string ParentName;
         public IEnumerable<ResponseUnitMember> UnitMembers;
     }
 
-    public class ResponseUnitMember {
+    public class ResponseUnitMember
+    {
         public string Name;
         public string Role;
         public string UnitRole;
     }
 
-    public class ResponseUnitTree {
+    public class ResponseUnitTree
+    {
         public IEnumerable<ResponseUnitTree> Children;
         public string Id;
         public string Name;
     }
 
-    public class ResponseUnitTreeDataSet {
+    public class ResponseUnitTreeDataSet
+    {
         public IEnumerable<ResponseUnitTree> AuxiliaryNodes;
         public IEnumerable<ResponseUnitTree> CombatNodes;
     }
 
-    public class ResponseUnitChartNode {
+    public class ResponseUnitChartNode
+    {
         public IEnumerable<ResponseUnitChartNode> Children;
         public string Id;
         public IEnumerable<ResponseUnitMember> Members;
@@ -58,12 +69,14 @@ namespace UKSF.Api.Personnel.Models {
         public bool PreferShortname;
     }
 
-    public class RequestUnitUpdateParent {
+    public class RequestUnitUpdateParent
+    {
         public int Index;
         public string ParentId;
     }
 
-    public class RequestUnitUpdateOrder {
+    public class RequestUnitUpdateOrder
+    {
         public int Index;
     }
 }

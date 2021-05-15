@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace UKSF.Api.Modpack.Models {
-    public class ModpackBuildStep {
+namespace UKSF.Api.Modpack.Models
+{
+    public class ModpackBuildStep
+    {
         public ModpackBuildResult BuildResult = ModpackBuildResult.NONE;
         public DateTime EndTime = DateTime.ParseExact("20000101", "yyyyMMdd", CultureInfo.InvariantCulture);
         public bool Finished;
@@ -13,6 +15,9 @@ namespace UKSF.Api.Modpack.Models {
         public bool Running;
         public DateTime StartTime = DateTime.ParseExact("20000101", "yyyyMMdd", CultureInfo.InvariantCulture);
 
-        public ModpackBuildStep(string name) => Name = name;
+        public ModpackBuildStep(string name)
+        {
+            Name = name;
+        }
     }
 }

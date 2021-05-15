@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 
-namespace UKSF.Api.Shared {
-    public static class Permissions {
+namespace UKSF.Api.Shared
+{
+    public static class Permissions
+    {
         public static readonly HashSet<string> ALL = new() { MEMBER, ADMIN, COMMAND, NCO, RECRUITER, RECRUITER_LEAD, PERSONNEL, SERVERS, TESTER };
 
         #region MemberStates
@@ -29,7 +31,11 @@ namespace UKSF.Api.Shared {
         #endregion
     }
 
-    public class PermissionsAttribute : AuthorizeAttribute {
-        public PermissionsAttribute(params string[] roles) => Roles = string.Join(",", roles.Distinct());
+    public class PermissionsAttribute : AuthorizeAttribute
+    {
+        public PermissionsAttribute(params string[] roles)
+        {
+            Roles = string.Join(",", roles.Distinct());
+        }
     }
 }

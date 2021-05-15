@@ -2,20 +2,27 @@
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Personnel.Services {
-    public interface IAccountService {
+namespace UKSF.Api.Personnel.Services
+{
+    public interface IAccountService
+    {
         Account GetUserAccount();
     }
 
-    public class AccountService : IAccountService {
+    public class AccountService : IAccountService
+    {
         private readonly IAccountContext _accountContext;
         private readonly IHttpContextService _httpContextService;
 
-        public AccountService(IAccountContext accountContext, IHttpContextService httpContextService) {
+        public AccountService(IAccountContext accountContext, IHttpContextService httpContextService)
+        {
             _accountContext = accountContext;
             _httpContextService = httpContextService;
         }
 
-        public Account GetUserAccount() => _accountContext.GetSingle(_httpContextService.GetUserId());
+        public Account GetUserAccount()
+        {
+            return _accountContext.GetSingle(_httpContextService.GetUserId());
+        }
     }
 }

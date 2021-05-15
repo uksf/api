@@ -2,18 +2,26 @@
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 
-namespace UKSF.Api.Command.Services {
-    public interface IOperationReportService {
+namespace UKSF.Api.Command.Services
+{
+    public interface IOperationReportService
+    {
         Task Create(CreateOperationReportRequest request);
     }
 
-    public class OperationReportService : IOperationReportService {
+    public class OperationReportService : IOperationReportService
+    {
         private readonly IOperationReportContext _operationReportContext;
 
-        public OperationReportService(IOperationReportContext operationReportContext) => _operationReportContext = operationReportContext;
+        public OperationReportService(IOperationReportContext operationReportContext)
+        {
+            _operationReportContext = operationReportContext;
+        }
 
-        public async Task Create(CreateOperationReportRequest request) {
-            Oprep operation = new() {
+        public async Task Create(CreateOperationReportRequest request)
+        {
+            Oprep operation = new()
+            {
                 Name = request.Name,
                 Map = request.Map,
                 Start = request.Start.AddHours((double) request.Starttime / 100),

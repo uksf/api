@@ -9,28 +9,34 @@ using UKSF.Api.Personnel.Signalr.Hubs;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Extensions;
 
-namespace UKSF.Api.Personnel.EventHandlers {
+namespace UKSF.Api.Personnel.EventHandlers
+{
     public interface ICommentThreadEventHandler : IEventHandler { }
 
-    public class CommentThreadEventHandler : ICommentThreadEventHandler {
+    public class CommentThreadEventHandler : ICommentThreadEventHandler
+    {
         private readonly ICommentThreadService _commentThreadService;
         private readonly IEventBus _eventBus;
         private readonly IHubContext<CommentThreadHub, ICommentThreadClient> _hub;
         private readonly ILogger _logger;
 
-        public CommentThreadEventHandler(IEventBus eventBus, IHubContext<CommentThreadHub, ICommentThreadClient> hub, ICommentThreadService commentThreadService, ILogger logger) {
+        public CommentThreadEventHandler(IEventBus eventBus, IHubContext<CommentThreadHub, ICommentThreadClient> hub, ICommentThreadService commentThreadService, ILogger logger)
+        {
             _eventBus = eventBus;
             _hub = hub;
             _commentThreadService = commentThreadService;
             _logger = logger;
         }
 
-        public void Init() {
+        public void Init()
+        {
             _eventBus.AsObservable().SubscribeWithAsyncNext<CommentThreadEventData>(HandleEvent, _logger.LogError);
         }
 
-        private async Task HandleEvent(EventModel eventModel, CommentThreadEventData commentThreadEventData) {
-            switch (eventModel.EventType) {
+        private async Task HandleEvent(EventModel eventModel, CommentThreadEventData commentThreadEventData)
+        {
+            switch (eventModel.EventType)
+            {
                 case EventType.ADD:
                     await AddedEvent(commentThreadEventData.CommentThreadId, commentThreadEventData.Comment);
                     break;
@@ -41,8 +47,14 @@ namespace UKSF.Api.Personnel.EventHandlers {
             }
         }
 
-        private Task AddedEvent(string id, Comment comment) => _hub.Clients.Group(id).ReceiveComment(_commentThreadService.FormatComment(comment));
+        private Task AddedEvent(string id, Comment comment)
+        {
+            return _hub.Clients.Group(id).ReceiveComment(_commentThreadService.FormatComment(comment));
+        }
 
-        private Task DeletedEvent(string id, MongoObject comment) => _hub.Clients.Group(id).DeleteComment(comment.Id);
+        private Task DeletedEvent(string id, MongoObject comment)
+        {
+            return _hub.Clients.Group(id).DeleteComment(comment.Id);
+        }
     }
 }

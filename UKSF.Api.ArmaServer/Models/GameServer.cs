@@ -2,19 +2,22 @@ using System.Collections.Generic;
 using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.ArmaServer.Models {
-    public enum GameServerOption {
+namespace UKSF.Api.ArmaServer.Models
+{
+    public enum GameServerOption
+    {
         NONE,
         SINGLETON,
         DCG
     }
 
-    public class GameServer : MongoObject {
-        [BsonIgnore] public List<int> HeadlessClientProcessIds = new();
+    public class GameServer : MongoObject
+    {
         public string AdminPassword;
         public int ApiPort;
         [BsonIgnore] public bool CanLaunch;
         public GameEnvironment Environment;
+        [BsonIgnore] public List<int> HeadlessClientProcessIds = new();
         public string HostName;
         public List<GameServerMod> Mods = new();
         public string Name;
@@ -28,10 +31,14 @@ namespace UKSF.Api.ArmaServer.Models {
         public GameServerOption ServerOption;
         [BsonIgnore] public GameServerStatus Status = new();
 
-        public override string ToString() => $"{Name}, {Port}, {ApiPort}, {NumberHeadlessClients}, {ProfileName}, {HostName}, {Password}, {AdminPassword}, {Environment}, {ServerOption}";
+        public override string ToString()
+        {
+            return $"{Name}, {Port}, {ApiPort}, {NumberHeadlessClients}, {ProfileName}, {HostName}, {Password}, {AdminPassword}, {Environment}, {ServerOption}";
+        }
     }
 
-    public class GameServerStatus {
+    public class GameServerStatus
+    {
         public string Map;
         public string MaxPlayers;
         public string Mission;

@@ -7,8 +7,10 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Base.Context {
-    public interface IMongoCollection<T> where T : MongoObject {
+namespace UKSF.Api.Base.Context
+{
+    public interface IMongoCollection<T> where T : MongoObject
+    {
         IEnumerable<T> Get();
         IEnumerable<T> Get(Func<T, bool> predicate);
         PagedResult<T> GetPaged(int page, int pageSize, SortDefinition<T> sortDefinition, FilterDefinition<T> filterDefinition);
@@ -23,20 +25,29 @@ namespace UKSF.Api.Base.Context {
         Task DeleteManyAsync(Expression<Func<T, bool>> predicate);
     }
 
-    public class MongoCollection<T> : IMongoCollection<T> where T : MongoObject {
+    public class MongoCollection<T> : IMongoCollection<T> where T : MongoObject
+    {
         private readonly string _collectionName;
         private readonly IMongoDatabase _database;
 
-        public MongoCollection(IMongoDatabase database, string collectionName) {
+        public MongoCollection(IMongoDatabase database, string collectionName)
+        {
             _database = database;
             _collectionName = collectionName;
         }
 
-        public IEnumerable<T> Get() => GetCollection().AsQueryable();
+        public IEnumerable<T> Get()
+        {
+            return GetCollection().AsQueryable();
+        }
 
-        public IEnumerable<T> Get(Func<T, bool> predicate) => GetCollection().AsQueryable().Where(predicate);
+        public IEnumerable<T> Get(Func<T, bool> predicate)
+        {
+            return GetCollection().AsQueryable().Where(predicate);
+        }
 
-        public PagedResult<T> GetPaged(int page, int pageSize, SortDefinition<T> sortDefinition, FilterDefinition<T> filterDefinition) {
+        public PagedResult<T> GetPaged(int page, int pageSize, SortDefinition<T> sortDefinition, FilterDefinition<T> filterDefinition)
+        {
             AggregateFacet<T, AggregateCountResult> countFacet = AggregateFacet.Create(
                 "count",
                 PipelineDefinition<T, AggregateCountResult>.Create(new[] { PipelineStageDefinitionBuilder.Count<T>() })
@@ -55,54 +66,75 @@ namespace UKSF.Api.Base.Context {
 
             IReadOnlyList<T> data = aggregation.First().Facets.First(x => x.Name == "data").Output<T>();
 
-            return new PagedResult<T>(count, data);
+            return new(count, data);
         }
 
-        public T GetSingle(string id) => GetCollection().FindSync(Builders<T>.Filter.Eq(x => x.Id, id)).FirstOrDefault();
+        public T GetSingle(string id)
+        {
+            return GetCollection().FindSync(Builders<T>.Filter.Eq(x => x.Id, id)).FirstOrDefault();
+        }
 
-        public T GetSingle(Func<T, bool> predicate) => GetCollection().AsQueryable().FirstOrDefault(predicate);
+        public T GetSingle(Func<T, bool> predicate)
+        {
+            return GetCollection().AsQueryable().FirstOrDefault(predicate);
+        }
 
-        public async Task AddAsync(T data) {
+        public async Task AddAsync(T data)
+        {
             await GetCollection().InsertOneAsync(data);
         }
 
-        public async Task UpdateAsync(string id, UpdateDefinition<T> update) {
+        public async Task UpdateAsync(string id, UpdateDefinition<T> update)
+        {
             await GetCollection().UpdateOneAsync(Builders<T>.Filter.Eq(x => x.Id, id), update);
         }
 
-        public async Task UpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update) {
+        public async Task UpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update)
+        {
             await GetCollection().UpdateOneAsync(filter, update);
         }
 
-        public async Task UpdateManyAsync(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update) {
+        public async Task UpdateManyAsync(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update)
+        {
             // Getting ids by the filter predicate is necessary to cover filtering items by a default model value
             // (e.g Role order default 0, may not be stored in document, and is thus not filterable)
             IEnumerable<string> ids = Get(predicate.Compile()).Select(x => x.Id);
             await GetCollection().UpdateManyAsync(Builders<T>.Filter.In(x => x.Id, ids), update);
         }
 
-        public async Task ReplaceAsync(string id, T value) {
+        public async Task ReplaceAsync(string id, T value)
+        {
             await GetCollection().ReplaceOneAsync(Builders<T>.Filter.Eq(x => x.Id, id), value);
         }
 
-        public async Task DeleteAsync(string id) {
+        public async Task DeleteAsync(string id)
+        {
             await GetCollection().DeleteOneAsync(Builders<T>.Filter.Eq(x => x.Id, id));
         }
 
-        public async Task DeleteManyAsync(Expression<Func<T, bool>> predicate) {
+        public async Task DeleteManyAsync(Expression<Func<T, bool>> predicate)
+        {
             // This is necessary for filtering items by a default model value (e.g Role order default 0, may not be stored in document)
             IEnumerable<string> ids = Get(predicate.Compile()).Select(x => x.Id);
             await GetCollection().DeleteManyAsync(Builders<T>.Filter.In(x => x.Id, ids));
         }
 
-        public async Task AssertCollectionExistsAsync() {
-            if (!await CollectionExistsAsync()) {
+        public async Task AssertCollectionExistsAsync()
+        {
+            if (!await CollectionExistsAsync())
+            {
                 await _database.CreateCollectionAsync(_collectionName);
             }
         }
 
-        private MongoDB.Driver.IMongoCollection<T> GetCollection() => _database.GetCollection<T>(_collectionName);
+        private MongoDB.Driver.IMongoCollection<T> GetCollection()
+        {
+            return _database.GetCollection<T>(_collectionName);
+        }
 
-        private async Task<bool> CollectionExistsAsync() => await (await _database.ListCollectionsAsync(new ListCollectionsOptions { Filter = new BsonDocument("name", _collectionName) })).AnyAsync();
+        private async Task<bool> CollectionExistsAsync()
+        {
+            return await (await _database.ListCollectionsAsync(new ListCollectionsOptions { Filter = new BsonDocument("name", _collectionName) })).AnyAsync();
+        }
     }
 }

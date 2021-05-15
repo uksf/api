@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -14,8 +13,10 @@ using UKSF.Api.Shared.Models;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Data {
-    public class CachedDataServiceEventTests {
+namespace UKSF.Tests.Unit.Data
+{
+    public class CachedDataServiceEventTests
+    {
         private readonly string _id1;
         private readonly string _id2;
         private readonly string _id3;
@@ -24,14 +25,15 @@ namespace UKSF.Tests.Unit.Data {
         private readonly Mock<IEventBus> _mockEventBus;
         private readonly TestCachedContext _testCachedContext;
 
-        public CachedDataServiceEventTests() {
+        public CachedDataServiceEventTests()
+        {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-            _mockEventBus = new Mock<IEventBus>();
-            _mockDataCollection = new Mock<Api.Base.Context.IMongoCollection<TestDataModel>>();
+            _mockEventBus = new();
+            _mockDataCollection = new();
             _id1 = ObjectId.GenerateNewId().ToString();
             _id2 = ObjectId.GenerateNewId().ToString();
             _id3 = ObjectId.GenerateNewId().ToString();
-            _item1 = new TestDataModel { Id = _id1, Name = "1" };
+            _item1 = new() { Id = _id1, Name = "1" };
             TestDataModel item2 = new() { Id = _id2, Name = "1" };
             TestDataModel item3 = new() { Id = _id3, Name = "3" };
             List<TestDataModel> mockCollection = new() { _item1, item2, item3 };
@@ -39,11 +41,12 @@ namespace UKSF.Tests.Unit.Data {
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
             _mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
 
-            _testCachedContext = new TestCachedContext(mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
         }
 
         [Fact]
-        public async Task Should_create_correct_add_event_for_add() {
+        public async Task Should_create_correct_add_event_for_add()
+        {
             EventModel subject = null;
 
             _mockDataCollection.Setup(x => x.AddAsync(It.IsAny<TestDataModel>())).Returns(Task.CompletedTask);
@@ -56,7 +59,8 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_create_correct_delete_event_for_delete() {
+        public async Task Should_create_correct_delete_event_for_delete()
+        {
             EventModel subject = null;
 
             _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
@@ -69,7 +73,8 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_create_correct_delete_events_for_delete_many() {
+        public async Task Should_create_correct_delete_events_for_delete_many()
+        {
             List<EventModel> subjects = new();
 
             _mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>())).Returns(Task.CompletedTask);
@@ -86,7 +91,8 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_create_correct_update_event_for_replace() {
+        public async Task Should_create_correct_update_event_for_replace()
+        {
             EventModel subject = null;
 
             _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<TestDataModel>())).Returns(Task.CompletedTask);
@@ -99,7 +105,8 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_create_correct_update_events_for_update_many() {
+        public async Task Should_create_correct_update_events_for_update_many()
+        {
             List<EventModel> subjects = new();
 
             _mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);
@@ -116,7 +123,8 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_create_correct_update_events_for_updates() {
+        public async Task Should_create_correct_update_events_for_updates()
+        {
             List<EventModel> subjects = new();
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);

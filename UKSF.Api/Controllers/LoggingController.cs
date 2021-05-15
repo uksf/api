@@ -8,49 +8,49 @@ using UKSF.Api.Shared;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Models;
 
-namespace UKSF.Api.Controllers {
+namespace UKSF.Api.Controllers
+{
     [Route("[controller]"), Permissions(Permissions.ADMIN)]
-    public class LoggingController : Controller {
+    public class LoggingController : Controller
+    {
         private readonly IAuditLogContext _auditLogContext;
         private readonly IDiscordLogContext _discordLogContext;
-        private readonly IHttpErrorLogContext _httpErrorLogContext;
+        private readonly IErrorLogContext _errorLogContext;
         private readonly ILauncherLogContext _launcherLogContext;
         private readonly ILogContext _logContext;
 
         public LoggingController(
             ILogContext logContext,
             IAuditLogContext auditLogContext,
-            IHttpErrorLogContext httpErrorLogContext,
+            IErrorLogContext errorLogContext,
             ILauncherLogContext launcherLogContext,
             IDiscordLogContext discordLogContext
-        ) {
+        )
+        {
             _logContext = logContext;
             _auditLogContext = auditLogContext;
-            _httpErrorLogContext = httpErrorLogContext;
+            _errorLogContext = errorLogContext;
             _launcherLogContext = launcherLogContext;
             _discordLogContext = discordLogContext;
         }
 
         [HttpGet("basic"), Authorize]
-        public PagedResult<BasicLog> GetBasicLogs([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] SortDirection sortDirection, [FromQuery] string sortField, [FromQuery] string filter) {
+        public PagedResult<BasicLog> GetBasicLogs([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] SortDirection sortDirection, [FromQuery] string sortField, [FromQuery] string filter)
+        {
             IEnumerable<Expression<Func<BasicLog, object>>> filterProperties = GetBasicLogFilterProperties();
             return _logContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
         }
 
         [HttpGet("httpError"), Authorize]
-        public PagedResult<HttpErrorLog> GetHttpErrorLogs(
-            [FromQuery] int page,
-            [FromQuery] int pageSize,
-            [FromQuery] SortDirection sortDirection,
-            [FromQuery] string sortField,
-            [FromQuery] string filter
-        ) {
-            IEnumerable<Expression<Func<HttpErrorLog, object>>> filterProperties = GetHttpErrorLogFilterProperties();
-            return _httpErrorLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
+        public PagedResult<ErrorLog> GetHttpErrorLogs([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] SortDirection sortDirection, [FromQuery] string sortField, [FromQuery] string filter)
+        {
+            IEnumerable<Expression<Func<ErrorLog, object>>> filterProperties = GetErrorLogFilterProperties();
+            return _errorLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
         }
 
         [HttpGet("audit"), Authorize]
-        public PagedResult<AuditLog> GetAuditLogs([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] SortDirection sortDirection, [FromQuery] string sortField, [FromQuery] string filter) {
+        public PagedResult<AuditLog> GetAuditLogs([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] SortDirection sortDirection, [FromQuery] string sortField, [FromQuery] string filter)
+        {
             IEnumerable<Expression<Func<AuditLog, object>>> filterProperties = GetAuditLogFilterProperties();
             return _auditLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
         }
@@ -62,44 +62,42 @@ namespace UKSF.Api.Controllers {
             [FromQuery] SortDirection sortDirection,
             [FromQuery] string sortField,
             [FromQuery] string filter
-        ) {
+        )
+        {
             IEnumerable<Expression<Func<LauncherLog, object>>> filterProperties = GetLauncherLogFilterProperties();
             return _launcherLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
         }
 
         [HttpGet("discord"), Authorize]
-        public PagedResult<DiscordLog> GetDiscordLogs(
-            [FromQuery] int page,
-            [FromQuery] int pageSize,
-            [FromQuery] SortDirection sortDirection,
-            [FromQuery] string sortField,
-            [FromQuery] string filter
-        ) {
-            var logs = _discordLogContext.Get();
+        public PagedResult<DiscordLog> GetDiscordLogs([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] SortDirection sortDirection, [FromQuery] string sortField, [FromQuery] string filter)
+        {
             IEnumerable<Expression<Func<DiscordLog, object>>> filterProperties = GetDiscordLogFilterProperties();
             return _discordLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
         }
 
-        private static IEnumerable<Expression<Func<BasicLog, object>>> GetBasicLogFilterProperties() {
+        private static IEnumerable<Expression<Func<BasicLog, object>>> GetBasicLogFilterProperties()
+        {
             return new List<Expression<Func<BasicLog, object>>> { x => x.Message, x => x.Level };
         }
 
-        private static IEnumerable<Expression<Func<HttpErrorLog, object>>> GetHttpErrorLogFilterProperties() {
-            return new List<Expression<Func<HttpErrorLog, object>>> { x => x.Message, x => x.Url, x => x.Name, x => x.Exception, x => x.UserId, x => x.HttpMethod };
+        private static IEnumerable<Expression<Func<ErrorLog, object>>> GetErrorLogFilterProperties()
+        {
+            return new List<Expression<Func<ErrorLog, object>>> { x => x.Message, x => x.StatusCode, x => x.Url, x => x.Name, x => x.Exception, x => x.UserId, x => x.Method, x => x.EndpointName };
         }
 
-        private static IEnumerable<Expression<Func<AuditLog, object>>> GetAuditLogFilterProperties() {
+        private static IEnumerable<Expression<Func<AuditLog, object>>> GetAuditLogFilterProperties()
+        {
             return new List<Expression<Func<AuditLog, object>>> { x => x.Message, x => x.Who };
         }
 
-        private static IEnumerable<Expression<Func<LauncherLog, object>>> GetLauncherLogFilterProperties() {
+        private static IEnumerable<Expression<Func<LauncherLog, object>>> GetLauncherLogFilterProperties()
+        {
             return new List<Expression<Func<LauncherLog, object>>> { x => x.Message };
         }
 
-        private static IEnumerable<Expression<Func<DiscordLog, object>>> GetDiscordLogFilterProperties() {
-            return new List<Expression<Func<DiscordLog, object>>> {
-                x => x.Message, x => x.DiscordUserEventType, x => x.InstigatorId, x => x.InstigatorName, x => x.ChannelName, x => x.Name
-            };
+        private static IEnumerable<Expression<Func<DiscordLog, object>>> GetDiscordLogFilterProperties()
+        {
+            return new List<Expression<Func<DiscordLog, object>>> { x => x.Message, x => x.DiscordUserEventType, x => x.InstigatorId, x => x.InstigatorName, x => x.ChannelName, x => x.Name };
         }
     }
 }

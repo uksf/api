@@ -12,9 +12,11 @@ using UKSF.Api.Shared.Models;
 using UKSF.Api.Teamspeak.Models;
 using UKSF.Api.Teamspeak.Services;
 
-namespace UKSF.Api.Teamspeak.Controllers {
+namespace UKSF.Api.Teamspeak.Controllers
+{
     [Route("[controller]")]
-    public class TeamspeakController : Controller {
+    public class TeamspeakController : Controller
+    {
         private readonly IAccountContext _accountContext;
         private readonly IDisplayNameService _displayNameService;
         private readonly IRanksService _ranksService;
@@ -29,7 +31,8 @@ namespace UKSF.Api.Teamspeak.Controllers {
             IUnitsService unitsService,
             IRecruitmentService recruitmentService,
             IDisplayNameService displayNameService
-        ) {
+        )
+        {
             _accountContext = accountContext;
             _teamspeakService = teamspeakService;
             _ranksService = ranksService;
@@ -39,22 +42,28 @@ namespace UKSF.Api.Teamspeak.Controllers {
         }
 
         [HttpGet("online"), Authorize, Permissions(Permissions.CONFIRMED, Permissions.MEMBER, Permissions.DISCHARGED)]
-        public IEnumerable<object> GetOnlineClients() => _teamspeakService.GetFormattedClients();
+        public IEnumerable<object> GetOnlineClients()
+        {
+            return _teamspeakService.GetFormattedClients();
+        }
 
         [HttpGet("shutdown"), Authorize, Permissions(Permissions.ADMIN)]
-        public async Task<IActionResult> Shutdown() {
+        public async Task<IActionResult> Shutdown()
+        {
             await _teamspeakService.Shutdown();
             await Task.Delay(TimeSpan.FromSeconds(3));
             return Ok();
         }
 
         [HttpGet("onlineAccounts")]
-        public IActionResult GetOnlineAccounts() {
+        public IActionResult GetOnlineAccounts()
+        {
             IEnumerable<TeamspeakClient> teamnspeakClients = _teamspeakService.GetOnlineTeamspeakClients();
             IEnumerable<Account> allAccounts = _accountContext.Get();
             var clients = teamnspeakClients.Where(x => x != null)
                                            .Select(
-                                               x => new {
+                                               x => new
+                                               {
                                                    account = allAccounts.FirstOrDefault(y => y.TeamspeakIdentities != null && y.TeamspeakIdentities.Any(z => z.Equals(x.ClientDbId))), client = x
                                                }
                                            )
@@ -69,17 +78,24 @@ namespace UKSF.Api.Teamspeak.Controllers {
             List<object> recruiters = new();
             List<object> members = new();
             List<object> guests = new();
-            foreach (var onlineClient in clientAccounts) {
-                if (commandAccounts.Contains(onlineClient.account.Id)) {
+            foreach (var onlineClient in clientAccounts)
+            {
+                if (commandAccounts.Contains(onlineClient.account.Id))
+                {
                     commanders.Add(new { displayName = _displayNameService.GetDisplayName(onlineClient.account) });
-                } else if (_recruitmentService.IsRecruiter(onlineClient.account)) {
+                }
+                else if (_recruitmentService.IsRecruiter(onlineClient.account))
+                {
                     recruiters.Add(new { displayName = _displayNameService.GetDisplayName(onlineClient.account) });
-                } else {
+                }
+                else
+                {
                     members.Add(new { displayName = _displayNameService.GetDisplayName(onlineClient.account) });
                 }
             }
 
-            foreach (var client in clients.Where(x => x.account == null || x.account.MembershipState != MembershipState.MEMBER)) {
+            foreach (var client in clients.Where(x => x.account == null || x.account.MembershipState != MembershipState.MEMBER))
+            {
                 guests.Add(new { displayName = client.client.ClientName });
             }
 
@@ -87,6 +103,9 @@ namespace UKSF.Api.Teamspeak.Controllers {
         }
 
         [HttpGet("{accountId}/onlineUserDetails"), Authorize, Permissions(Permissions.RECRUITER)]
-        public OnlineState GetOnlineUserDetails([FromRoute] string accountId) => _teamspeakService.GetOnlineUserDetails(accountId);
+        public OnlineState GetOnlineUserDetails([FromRoute] string accountId)
+        {
+            return _teamspeakService.GetOnlineUserDetails(accountId);
+        }
     }
 }

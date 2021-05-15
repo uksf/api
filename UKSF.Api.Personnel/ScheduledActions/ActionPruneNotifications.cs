@@ -6,10 +6,12 @@ using UKSF.Api.Personnel.Context;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Personnel.ScheduledActions {
+namespace UKSF.Api.Personnel.ScheduledActions
+{
     public interface IActionPruneNotifications : ISelfCreatingScheduledAction { }
 
-    public class ActionPruneNotifications : IActionPruneNotifications {
+    public class ActionPruneNotifications : IActionPruneNotifications
+    {
         private const string ACTION_NAME = nameof(ActionPruneNotifications);
 
         private readonly IClock _clock;
@@ -24,7 +26,8 @@ namespace UKSF.Api.Personnel.ScheduledActions {
             ISchedulerService schedulerService,
             IHostEnvironment currentEnvironment,
             IClock clock
-        ) {
+        )
+        {
             _schedulerContext = schedulerContext;
             _notificationsContext = notificationsContext;
             _schedulerService = schedulerService;
@@ -34,7 +37,8 @@ namespace UKSF.Api.Personnel.ScheduledActions {
 
         public string Name => ACTION_NAME;
 
-        public Task Run(params object[] parameters) {
+        public Task Run(params object[] parameters)
+        {
             DateTime now = _clock.UtcNow();
             Task notificationsTask = _notificationsContext.DeleteMany(x => x.Timestamp < now.AddMonths(-1));
 
@@ -42,14 +46,22 @@ namespace UKSF.Api.Personnel.ScheduledActions {
             return Task.CompletedTask;
         }
 
-        public async Task CreateSelf() {
-            if (_currentEnvironment.IsDevelopment()) return;
+        public async Task CreateSelf()
+        {
+            if (_currentEnvironment.IsDevelopment())
+            {
+                return;
+            }
 
-            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null) {
+            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null)
+            {
                 await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(1), TimeSpan.FromDays(1), ACTION_NAME);
             }
         }
 
-        public Task Reset() => Task.CompletedTask;
+        public Task Reset()
+        {
+            return Task.CompletedTask;
+        }
     }
 }

@@ -1,18 +1,23 @@
 ﻿using System.Threading.Tasks;
 using UKSF.Api.Admin.Extensions;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
-    public class ModBuildStep : FileBuildStep {
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
+{
+    public class ModBuildStep : FileBuildStep
+    {
         protected string PythonPath;
 
-        protected override Task SetupExecute() {
+        protected override Task SetupExecute()
+        {
             PythonPath = VariablesService.GetVariable("BUILD_PATH_PYTHON").AsString();
             StepLogger.Log("Retrieved python path");
             return Task.CompletedTask;
         }
 
-        internal bool IsBuildNeeded(string key) {
-            if (!GetEnvironmentVariable<bool>($"{key}_updated")) {
+        internal bool IsBuildNeeded(string key)
+        {
+            if (!GetEnvironmentVariable<bool>($"{key}_updated"))
+            {
                 StepLogger.Log("\nBuild is not needed");
                 return false;
             }
@@ -20,6 +25,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps {
             return true;
         }
 
-        internal static string MakeCommand(string arguments = "") => $"make.py {arguments}";
+        internal static string MakeCommand(string arguments = "")
+        {
+            return $"make.py {arguments}";
+        }
     }
 }

@@ -2,18 +2,26 @@
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 
-namespace UKSF.Api.Command.Services {
-    public interface IOperationOrderService {
+namespace UKSF.Api.Command.Services
+{
+    public interface IOperationOrderService
+    {
         Task Add(CreateOperationOrderRequest request);
     }
 
-    public class OperationOrderService : IOperationOrderService {
+    public class OperationOrderService : IOperationOrderService
+    {
         private readonly IOperationOrderContext _operationOrderContext;
 
-        public OperationOrderService(IOperationOrderContext operationOrderContext) => _operationOrderContext = operationOrderContext;
+        public OperationOrderService(IOperationOrderContext operationOrderContext)
+        {
+            _operationOrderContext = operationOrderContext;
+        }
 
-        public async Task Add(CreateOperationOrderRequest request) {
-            Opord operation = new() {
+        public async Task Add(CreateOperationOrderRequest request)
+        {
+            Opord operation = new()
+            {
                 Name = request.Name,
                 Map = request.Map,
                 Start = request.Start.AddHours((double) request.Starttime / 100),

@@ -11,35 +11,47 @@ using UKSF.Api.Teamspeak.Models;
 using UKSF.Api.Teamspeak.Signalr.Clients;
 using UKSF.Api.Teamspeak.Signalr.Hubs;
 
-namespace UKSF.Api.Teamspeak.Services {
-    public interface ITeamspeakManagerService {
+namespace UKSF.Api.Teamspeak.Services
+{
+    public interface ITeamspeakManagerService
+    {
         void Start();
         void Stop();
         Task SendGroupProcedure(TeamspeakProcedureType procedure, TeamspeakGroupProcedure groupProcedure);
         Task SendProcedure(TeamspeakProcedureType procedure, object args);
     }
 
-    public class TeamspeakManagerService : ITeamspeakManagerService {
+    public class TeamspeakManagerService : ITeamspeakManagerService
+    {
         private readonly IHubContext<TeamspeakHub, ITeamspeakClient> _hub;
         private readonly IVariablesService _variablesService;
         private bool _runTeamspeak;
         private CancellationTokenSource _token;
 
-        public TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient> hub, IVariablesService variablesService) {
+        public TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient> hub, IVariablesService variablesService)
+        {
             _hub = hub;
             _variablesService = variablesService;
         }
 
-        public void Start() {
-            if (IsTeamspeakDisabled()) return;
+        public void Start()
+        {
+            if (IsTeamspeakDisabled())
+            {
+                return;
+            }
 
             _runTeamspeak = true;
-            _token = new CancellationTokenSource();
+            _token = new();
             Task.Run(KeepOnline);
         }
 
-        public void Stop() {
-            if (IsTeamspeakDisabled()) return;
+        public void Stop()
+        {
+            if (IsTeamspeakDisabled())
+            {
+                return;
+            }
 
             _runTeamspeak = false;
             _token.Cancel();
@@ -47,30 +59,46 @@ namespace UKSF.Api.Teamspeak.Services {
             ShutTeamspeak().Wait();
         }
 
-        public async Task SendGroupProcedure(TeamspeakProcedureType procedure, TeamspeakGroupProcedure groupProcedure) {
-            if (IsTeamspeakDisabled()) return;
+        public async Task SendGroupProcedure(TeamspeakProcedureType procedure, TeamspeakGroupProcedure groupProcedure)
+        {
+            if (IsTeamspeakDisabled())
+            {
+                return;
+            }
 
             await _hub.Clients.All.Receive(procedure, groupProcedure);
         }
 
-        public async Task SendProcedure(TeamspeakProcedureType procedure, object args) {
-            if (IsTeamspeakDisabled()) return;
+        public async Task SendProcedure(TeamspeakProcedureType procedure, object args)
+        {
+            if (IsTeamspeakDisabled())
+            {
+                return;
+            }
 
             await _hub.Clients.All.Receive(procedure, args);
         }
 
-        private async void KeepOnline() {
+        private async void KeepOnline()
+        {
             await TaskUtilities.Delay(TimeSpan.FromSeconds(5), _token.Token);
-            while (_runTeamspeak) {
-                if (Process.GetProcessesByName("ts3server").Length == 0) {
+            while (_runTeamspeak)
+            {
+                if (Process.GetProcessesByName("ts3server").Length == 0)
+                {
                     await LaunchTeamspeakServer();
                 }
 
-                if (_variablesService.GetVariable("TEAMSPEAK_RUN").AsBool()) {
-                    if (!TeamspeakHubState.Connected) {
-                        if (Process.GetProcessesByName("ts3client_win64").Length == 0) {
+                if (_variablesService.GetVariable("TEAMSPEAK_RUN").AsBool())
+                {
+                    if (!TeamspeakHubState.Connected)
+                    {
+                        if (Process.GetProcessesByName("ts3client_win64").Length == 0)
+                        {
                             await LaunchTeamspeak();
-                        } else {
+                        }
+                        else
+                        {
                             await ShutTeamspeak();
                             continue;
                         }
@@ -81,28 +109,38 @@ namespace UKSF.Api.Teamspeak.Services {
             }
         }
 
-        private async Task LaunchTeamspeakServer() {
+        private async Task LaunchTeamspeakServer()
+        {
             await ProcessUtilities.LaunchExternalProcess("TeamspeakServer", $"start \"\" \"{_variablesService.GetVariable("TEAMSPEAK_SERVER_PATH").AsString()}\"");
         }
 
-        private async Task LaunchTeamspeak() {
+        private async Task LaunchTeamspeak()
+        {
             await ProcessUtilities.LaunchExternalProcess("Teamspeak", $"start \"\" \"{_variablesService.GetVariable("TEAMSPEAK_PATH").AsString()}\"");
         }
 
-        private async Task ShutTeamspeak() {
+        private async Task ShutTeamspeak()
+        {
             Process process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == "ts3client_win64");
-            if (process == null) return;
+            if (process == null)
+            {
+                return;
+            }
 
             await process.CloseProcessGracefully();
             process.Refresh();
             process.WaitForExit(5000);
             process.Refresh();
-            if (!process.HasExited) {
+            if (!process.HasExited)
+            {
                 process.Kill();
                 await TaskUtilities.Delay(TimeSpan.FromMilliseconds(100), _token.Token);
             }
         }
 
-        private bool IsTeamspeakDisabled() => !_variablesService.GetFeatureState("TEAMSPEAK");
+        private bool IsTeamspeakDisabled()
+        {
+            return !_variablesService.GetFeatureState("TEAMSPEAK");
+        }
     }
 }

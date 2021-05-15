@@ -8,10 +8,12 @@ using UKSF.Api.Modpack.Context;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Modpack.ScheduledActions {
+namespace UKSF.Api.Modpack.ScheduledActions
+{
     public interface IActionPruneBuilds : ISelfCreatingScheduledAction { }
 
-    public class ActionPruneBuilds : IActionPruneBuilds {
+    public class ActionPruneBuilds : IActionPruneBuilds
+    {
         private const string ACTION_NAME = nameof(ActionPruneBuilds);
         private readonly IBuildsContext _buildsContext;
 
@@ -20,7 +22,8 @@ namespace UKSF.Api.Modpack.ScheduledActions {
         private readonly ISchedulerContext _schedulerContext;
         private readonly ISchedulerService _schedulerService;
 
-        public ActionPruneBuilds(IBuildsContext buildsContext, ISchedulerContext schedulerContext, ISchedulerService schedulerService, IHostEnvironment currentEnvironment, IClock clock) {
+        public ActionPruneBuilds(IBuildsContext buildsContext, ISchedulerContext schedulerContext, ISchedulerService schedulerService, IHostEnvironment currentEnvironment, IClock clock)
+        {
             _buildsContext = buildsContext;
             _schedulerContext = schedulerContext;
             _schedulerService = schedulerService;
@@ -30,7 +33,8 @@ namespace UKSF.Api.Modpack.ScheduledActions {
 
         public string Name => ACTION_NAME;
 
-        public Task Run(params object[] parameters) {
+        public Task Run(params object[] parameters)
+        {
             int threshold = _buildsContext.Get(x => x.Environment == GameEnvironment.DEV).Select(x => x.BuildNumber).OrderByDescending(x => x).First() - 100;
             Task modpackBuildsTask = _buildsContext.DeleteMany(x => x.Environment == GameEnvironment.DEV && x.BuildNumber < threshold);
 
@@ -38,14 +42,22 @@ namespace UKSF.Api.Modpack.ScheduledActions {
             return Task.CompletedTask;
         }
 
-        public async Task CreateSelf() {
-            if (_currentEnvironment.IsDevelopment()) return;
+        public async Task CreateSelf()
+        {
+            if (_currentEnvironment.IsDevelopment())
+            {
+                return;
+            }
 
-            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null) {
+            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null)
+            {
                 await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(1), TimeSpan.FromDays(1), ACTION_NAME);
             }
         }
 
-        public Task Reset() => Task.CompletedTask;
+        public Task Reset()
+        {
+            return Task.CompletedTask;
+        }
     }
 }

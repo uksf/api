@@ -8,20 +8,24 @@ using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Command.Services {
-    public interface IChainOfCommandService {
+namespace UKSF.Api.Command.Services
+{
+    public interface IChainOfCommandService
+    {
         HashSet<string> ResolveChain(ChainOfCommandMode mode, string recipient, Unit start, Unit target);
         bool InContextChainOfCommand(string id);
     }
 
-    public class ChainOfCommandService : IChainOfCommandService {
+    public class ChainOfCommandService : IChainOfCommandService
+    {
         private readonly IAccountService _accountService;
         private readonly IHttpContextService _httpContextService;
         private readonly IRolesService _rolesService;
         private readonly IUnitsContext _unitsContext;
         private readonly IUnitsService _unitsService;
 
-        public ChainOfCommandService(IUnitsContext unitsContext, IUnitsService unitsService, IRolesService rolesService, IHttpContextService httpContextService, IAccountService accountService) {
+        public ChainOfCommandService(IUnitsContext unitsContext, IUnitsService unitsService, IRolesService rolesService, IHttpContextService httpContextService, IAccountService accountService)
+        {
             _unitsContext = unitsContext;
             _unitsService = unitsService;
             _rolesService = rolesService;
@@ -29,25 +33,30 @@ namespace UKSF.Api.Command.Services {
             _accountService = accountService;
         }
 
-        public HashSet<string> ResolveChain(ChainOfCommandMode mode, string recipient, Unit start, Unit target) {
+        public HashSet<string> ResolveChain(ChainOfCommandMode mode, string recipient, Unit start, Unit target)
+        {
             HashSet<string> chain = ResolveMode(mode, start, target).Where(x => x != recipient).ToHashSet();
             chain.CleanHashset();
 
             // If no chain, and mode is not next commander, get next commander
-            if (chain.Count == 0 && mode != ChainOfCommandMode.NEXT_COMMANDER && mode != ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF) {
+            if (chain.Count == 0 && mode != ChainOfCommandMode.NEXT_COMMANDER && mode != ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF)
+            {
                 chain = GetNextCommander(start).Where(x => x != recipient).ToHashSet();
                 chain.CleanHashset();
             }
 
             // If no chain, get root unit commander
-            if (chain.Count == 0) {
+            if (chain.Count == 0)
+            {
                 chain.Add(GetCommander(_unitsService.GetRoot()));
                 chain.CleanHashset();
             }
 
             // If no chain, get root unit child commanders
-            if (chain.Count == 0) {
-                foreach (Unit unit in _unitsContext.Get(x => x.Parent == _unitsService.GetRoot().Id).Where(unit => UnitHasCommander(unit) && GetCommander(unit) != recipient)) {
+            if (chain.Count == 0)
+            {
+                foreach (Unit unit in _unitsContext.Get(x => x.Parent == _unitsService.GetRoot().Id).Where(unit => UnitHasCommander(unit) && GetCommander(unit) != recipient))
+                {
                     chain.Add(GetCommander(unit));
                 }
 
@@ -55,7 +64,8 @@ namespace UKSF.Api.Command.Services {
             }
 
             // If no chain, get personnel
-            if (chain.Count == 0) {
+            if (chain.Count == 0)
+            {
                 chain.UnionWith(GetPersonnel());
                 chain.CleanHashset();
             }
@@ -63,15 +73,22 @@ namespace UKSF.Api.Command.Services {
             return chain;
         }
 
-        public bool InContextChainOfCommand(string id) {
+        public bool InContextChainOfCommand(string id)
+        {
             Account contextAccount = _accountService.GetUserAccount();
-            if (id == contextAccount.Id) return true;
+            if (id == contextAccount.Id)
+            {
+                return true;
+            }
+
             Unit unit = _unitsContext.GetSingle(x => x.Name == contextAccount.UnitAssignment);
             return _unitsService.RolesHasMember(unit, contextAccount.Id) && (unit.Members.Contains(id) || _unitsService.GetAllChildren(unit, true).Any(unitChild => unitChild.Members.Contains(id)));
         }
 
-        private IEnumerable<string> ResolveMode(ChainOfCommandMode mode, Unit start, Unit target) {
-            return mode switch {
+        private IEnumerable<string> ResolveMode(ChainOfCommandMode mode, Unit start, Unit target)
+        {
+            return mode switch
+            {
                 ChainOfCommandMode.FULL                           => Full(start),
                 ChainOfCommandMode.NEXT_COMMANDER                 => GetNextCommander(start),
                 ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF    => GetNextCommanderExcludeSelf(start),
@@ -84,10 +101,13 @@ namespace UKSF.Api.Command.Services {
             };
         }
 
-        private IEnumerable<string> Full(Unit unit) {
+        private IEnumerable<string> Full(Unit unit)
+        {
             HashSet<string> chain = new();
-            while (unit != null) {
-                if (UnitHasCommander(unit)) {
+            while (unit != null)
+            {
+                if (UnitHasCommander(unit))
+                {
                     chain.Add(GetCommander(unit));
                 }
 
@@ -97,19 +117,29 @@ namespace UKSF.Api.Command.Services {
             return chain;
         }
 
-        private IEnumerable<string> GetNextCommander(Unit unit) => new HashSet<string> { GetNextUnitCommander(unit) };
+        private IEnumerable<string> GetNextCommander(Unit unit)
+        {
+            return new HashSet<string> { GetNextUnitCommander(unit) };
+        }
 
-        private IEnumerable<string> GetNextCommanderExcludeSelf(Unit unit) => new HashSet<string> { GetNextUnitCommanderExcludeSelf(unit) };
+        private IEnumerable<string> GetNextCommanderExcludeSelf(Unit unit)
+        {
+            return new HashSet<string> { GetNextUnitCommanderExcludeSelf(unit) };
+        }
 
-        private IEnumerable<string> CommanderAndOneAbove(Unit unit) {
+        private IEnumerable<string> CommanderAndOneAbove(Unit unit)
+        {
             HashSet<string> chain = new();
-            if (unit != null) {
-                if (UnitHasCommander(unit)) {
+            if (unit != null)
+            {
+                if (UnitHasCommander(unit))
+                {
                     chain.Add(GetCommander(unit));
                 }
 
                 Unit parentUnit = _unitsService.GetParent(unit);
-                if (parentUnit != null && UnitHasCommander(parentUnit)) {
+                if (parentUnit != null && UnitHasCommander(parentUnit))
+                {
                     chain.Add(GetCommander(parentUnit));
                 }
             }
@@ -117,9 +147,11 @@ namespace UKSF.Api.Command.Services {
             return chain;
         }
 
-        private IEnumerable<string> GetCommanderAndPersonnel(Unit unit) {
+        private IEnumerable<string> GetCommanderAndPersonnel(Unit unit)
+        {
             HashSet<string> chain = new();
-            if (UnitHasCommander(unit)) {
+            if (UnitHasCommander(unit))
+            {
                 chain.Add(GetCommander(unit));
             }
 
@@ -127,13 +159,22 @@ namespace UKSF.Api.Command.Services {
             return chain;
         }
 
-        private IEnumerable<string> GetPersonnel() => _unitsContext.GetSingle(x => x.Shortname == "SR7").Members.ToHashSet();
+        private IEnumerable<string> GetPersonnel()
+        {
+            return _unitsContext.GetSingle(x => x.Shortname == "SR7").Members.ToHashSet();
+        }
 
-        private IEnumerable<string> GetCommanderAndTargetCommander(Unit unit, Unit targetUnit) => new HashSet<string> { GetNextUnitCommander(unit), GetNextUnitCommander(targetUnit) };
+        private IEnumerable<string> GetCommanderAndTargetCommander(Unit unit, Unit targetUnit)
+        {
+            return new HashSet<string> { GetNextUnitCommander(unit), GetNextUnitCommander(targetUnit) };
+        }
 
-        private string GetNextUnitCommander(Unit unit) {
-            while (unit != null) {
-                if (UnitHasCommander(unit)) {
+        private string GetNextUnitCommander(Unit unit)
+        {
+            while (unit != null)
+            {
+                if (UnitHasCommander(unit))
+                {
                     return GetCommander(unit);
                 }
 
@@ -143,11 +184,17 @@ namespace UKSF.Api.Command.Services {
             return string.Empty;
         }
 
-        private string GetNextUnitCommanderExcludeSelf(Unit unit) {
-            while (unit != null) {
-                if (UnitHasCommander(unit)) {
+        private string GetNextUnitCommanderExcludeSelf(Unit unit)
+        {
+            while (unit != null)
+            {
+                if (UnitHasCommander(unit))
+                {
                     string commander = GetCommander(unit);
-                    if (commander != _httpContextService.GetUserId()) return commander;
+                    if (commander != _httpContextService.GetUserId())
+                    {
+                        return commander;
+                    }
                 }
 
                 unit = _unitsService.GetParent(unit);
@@ -156,8 +203,14 @@ namespace UKSF.Api.Command.Services {
             return string.Empty;
         }
 
-        private bool UnitHasCommander(Unit unit) => _unitsService.HasRole(unit, _rolesService.GetCommanderRoleName());
+        private bool UnitHasCommander(Unit unit)
+        {
+            return _unitsService.HasRole(unit, _rolesService.GetCommanderRoleName());
+        }
 
-        private string GetCommander(Unit unit) => unit.Roles.GetValueOrDefault(_rolesService.GetCommanderRoleName(), string.Empty);
+        private string GetCommander(Unit unit)
+        {
+            return unit.Roles.GetValueOrDefault(_rolesService.GetCommanderRoleName(), string.Empty);
+        }
     }
 }
