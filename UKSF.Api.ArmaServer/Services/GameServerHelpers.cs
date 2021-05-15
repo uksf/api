@@ -41,7 +41,7 @@ namespace UKSF.Api.ArmaServer.Services
             "motd[] = {{\"\"}};",
             "motdInterval = 999999;",
             "maxPlayers = {3};",
-            "kickDuplicate = 0;",
+            "kickDuplicate = 1;",
             "verifySignatures = 2;",
             "allowedFilePatching = 1;",
             "unsafeCVL = 1;",
