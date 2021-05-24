@@ -1,0 +1,76 @@
+trigger:
+  branches:
+    include:
+      - master
+
+pool: Server
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+
+jobs:
+  - job: BuildTest
+    displayName: Build & Test
+    steps:
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Restore'
+        inputs:
+          command: 'restore'
+          projects: '$(solution)'
+          feedsToUse: 'select'
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Build'
+        inputs:
+          command: 'build'
+          projects: '$(solution)'
+          arguments: '/p:DeployOnBuild=false /p:WebPublishMethod=Package /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.stagingDirectory)" /p:configuration="Release" --no-restore'
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Test'
+        inputs:
+          command: 'test'
+          projects: '**/*.Tests*.csproj'
+          arguments: '--configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=opencover --no-build'
+
+  - job: PublishArtifacts
+    displayName: Publish Artifacts
+    dependsOn: BuildTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    steps:
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Restore'
+        inputs:
+          command: 'restore'
+          projects: '$(solution)'
+          feedsToUse: 'select'
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Publish API (without zipping)'
+        inputs:
+          command: publish
+          publishWebProjects: false
+          projects: '**/UKSF.Api.csproj'
+          arguments: '-c Release --output $(Build.BinariesDirectory)/UKSF.Api'
+          zipAfterPublish: false
+          modifyOutputPath: false
+
+      - task: ArchiveFiles@2
+        displayName: 'Zip API Artifact'
+        inputs:
+          rootFolderOrFile: '$(Build.BinariesDirectory)/UKSF.Api'
+          includeRootFolder: false
+          archiveType: 'zip'
+          archiveFile: '$(Build.ArtifactStagingDirectory)/UKSF.Api.zip'
+          replaceExistingArchive: true
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Artifact'
+        inputs:
+          PathtoPublish: '$(build.artifactstagingdirectory)/UKSF.Api.zip'
+          ArtifactName: 'UKSF.Api'
+          publishLocation: 'Container'
