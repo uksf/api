@@ -11,25 +11,29 @@ using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Events.Handlers {
-    public class CommandRequestEventHandlerTests {
+namespace UKSF.Tests.Unit.Events.Handlers
+{
+    public class CommandRequestEventHandlerTests
+    {
         private readonly CommandRequestEventHandler _commandRequestEventHandler;
         private readonly IEventBus _eventBus;
         private readonly Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>> _mockHub;
 
-        public CommandRequestEventHandlerTests() {
+        public CommandRequestEventHandlerTests()
+        {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
             Mock<ILogger> mockLoggingService = new();
-            _mockHub = new Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>>();
+            _mockHub = new();
             _eventBus = new EventBus();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommandRequest>(It.IsAny<string>()));
 
-            _commandRequestEventHandler = new CommandRequestEventHandler(_eventBus, _mockHub.Object, mockLoggingService.Object);
+            _commandRequestEventHandler = new(_eventBus, _mockHub.Object, mockLoggingService.Object);
         }
 
         [Fact]
-        public void ShouldNotRunEventOnDelete() {
+        public void ShouldNotRunEventOnDelete()
+        {
             Mock<IHubClients<ICommandRequestsClient>> mockHubClients = new();
             Mock<ICommandRequestsClient> mockClient = new();
 
@@ -39,13 +43,14 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _commandRequestEventHandler.Init();
 
-            _eventBus.Send(new EventModel(EventType.DELETE, new ContextEventData<CommandRequest>(null, null)));
+            _eventBus.Send(new(EventType.DELETE, new ContextEventData<CommandRequest>(null, null)));
 
             mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Never);
         }
 
         [Fact]
-        public void ShouldRunEventOnUpdateAndAdd() {
+        public void ShouldRunEventOnUpdateAndAdd()
+        {
             Mock<IHubClients<ICommandRequestsClient>> mockHubClients = new();
             Mock<ICommandRequestsClient> mockClient = new();
 
@@ -55,8 +60,8 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _commandRequestEventHandler.Init();
 
-            _eventBus.Send(new EventModel(EventType.ADD, new ContextEventData<CommandRequest>(null, null)));
-            _eventBus.Send(new EventModel(EventType.UPDATE, new ContextEventData<CommandRequest>(null, null)));
+            _eventBus.Send(new(EventType.ADD, new ContextEventData<CommandRequest>(null, null)));
+            _eventBus.Send(new(EventType.UPDATE, new ContextEventData<CommandRequest>(null, null)));
 
             mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Exactly(2));
         }

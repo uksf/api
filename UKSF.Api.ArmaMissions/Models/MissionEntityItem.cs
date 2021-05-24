@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 
-namespace UKSF.Api.ArmaMissions.Models {
-    public class MissionEntityItem {
+namespace UKSF.Api.ArmaMissions.Models
+{
+    public class MissionEntityItem
+    {
         public static double Position = 10;
         public static double CuratorPosition = 0.5;
         public string DataType;

@@ -11,59 +11,33 @@ using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Data.Admin {
-    public class VariablesDataServiceTests {
+namespace UKSF.Tests.Unit.Data.Admin
+{
+    public class VariablesDataServiceTests
+    {
         private readonly Mock<Api.Base.Context.IMongoCollection<VariableItem>> _mockDataCollection;
         private readonly VariablesContext _variablesContext;
         private List<VariableItem> _mockCollection;
 
-        public VariablesDataServiceTests() {
+        public VariablesDataServiceTests()
+        {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
             Mock<IEventBus> mockEventBus = new();
-            _mockDataCollection = new Mock<Api.Base.Context.IMongoCollection<VariableItem>>();
+            _mockDataCollection = new();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<VariableItem>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
             _mockDataCollection.Setup(x => x.Get()).Returns(() => _mockCollection);
 
-            _variablesContext = new VariablesContext(mockDataCollectionFactory.Object, mockEventBus.Object);
-        }
-
-        [Theory, InlineData(""), InlineData("game path")]
-        public void ShouldGetNothingWhenNoKeyOrNotFound(string key) {
-            VariableItem item1 = new() { Key = "MISSIONS_PATH" };
-            VariableItem item2 = new() { Key = "SERVER_PATH" };
-            VariableItem item3 = new() { Key = "DISCORD_IDS" };
-            _mockCollection = new List<VariableItem> { item1, item2, item3 };
-
-            VariableItem subject = _variablesContext.GetSingle(key);
-
-            subject.Should().Be(null);
-        }
-
-        [Theory, InlineData(""), InlineData(null)]
-        public async Task ShouldThrowForUpdateWhenNoKeyOrNull(string key) {
-            _mockCollection = new List<VariableItem>();
-
-            Func<Task> act = async () => await _variablesContext.Update(key, "75");
-
-            await act.Should().ThrowAsync<KeyNotFoundException>();
-        }
-
-        [Theory, InlineData(""), InlineData(null)]
-        public async Task ShouldThrowForDeleteWhenNoKeyOrNull(string key) {
-            _mockCollection = new List<VariableItem>();
-
-            Func<Task> act = async () => await _variablesContext.Delete(key);
-
-            await act.Should().ThrowAsync<KeyNotFoundException>();
+            _variablesContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
         }
 
         [Fact]
-        public void Should_get_collection_in_order() {
+        public void Should_get_collection_in_order()
+        {
             VariableItem item1 = new() { Key = "MISSIONS_PATH" };
             VariableItem item2 = new() { Key = "SERVER_PATH" };
             VariableItem item3 = new() { Key = "DISCORD_IDS" };
-            _mockCollection = new List<VariableItem> { item1, item2, item3 };
+            _mockCollection = new() { item1, item2, item3 };
 
             IEnumerable<VariableItem> subject = _variablesContext.Get();
 
@@ -71,9 +45,10 @@ namespace UKSF.Tests.Unit.Data.Admin {
         }
 
         [Fact]
-        public async Task ShouldDeleteItem() {
+        public async Task ShouldDeleteItem()
+        {
             VariableItem item1 = new() { Key = "DISCORD_ID", Item = "50" };
-            _mockCollection = new List<VariableItem> { item1 };
+            _mockCollection = new() { item1 };
 
             _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask).Callback((string id) => _mockCollection.RemoveAll(x => x.Id == id));
 
@@ -83,11 +58,12 @@ namespace UKSF.Tests.Unit.Data.Admin {
         }
 
         [Fact]
-        public void ShouldGetItemByKey() {
+        public void ShouldGetItemByKey()
+        {
             VariableItem item1 = new() { Key = "MISSIONS_PATH" };
             VariableItem item2 = new() { Key = "SERVER_PATH" };
             VariableItem item3 = new() { Key = "DISCORD_IDS" };
-            _mockCollection = new List<VariableItem> { item1, item2, item3 };
+            _mockCollection = new() { item1, item2, item3 };
 
             VariableItem subject = _variablesContext.GetSingle("server path");
 
@@ -95,9 +71,10 @@ namespace UKSF.Tests.Unit.Data.Admin {
         }
 
         [Fact]
-        public async Task ShouldUpdateItemValue() {
+        public async Task ShouldUpdateItemValue()
+        {
             VariableItem subject = new() { Key = "DISCORD_ID", Item = "50" };
-            _mockCollection = new List<VariableItem> { subject };
+            _mockCollection = new() { subject };
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<VariableItem>>()))
                                .Returns(Task.CompletedTask)
@@ -106,6 +83,39 @@ namespace UKSF.Tests.Unit.Data.Admin {
             await _variablesContext.Update("discord id", "75");
 
             subject.Item.Should().Be("75");
+        }
+
+        [Theory, InlineData(""), InlineData("game path")]
+        public void ShouldGetNothingWhenNoKeyOrNotFound(string key)
+        {
+            VariableItem item1 = new() { Key = "MISSIONS_PATH" };
+            VariableItem item2 = new() { Key = "SERVER_PATH" };
+            VariableItem item3 = new() { Key = "DISCORD_IDS" };
+            _mockCollection = new() { item1, item2, item3 };
+
+            VariableItem subject = _variablesContext.GetSingle(key);
+
+            subject.Should().Be(null);
+        }
+
+        [Theory, InlineData(""), InlineData(null)]
+        public async Task ShouldThrowForUpdateWhenNoKeyOrNull(string key)
+        {
+            _mockCollection = new();
+
+            Func<Task> act = async () => await _variablesContext.Update(key, "75");
+
+            await act.Should().ThrowAsync<KeyNotFoundException>();
+        }
+
+        [Theory, InlineData(""), InlineData(null)]
+        public async Task ShouldThrowForDeleteWhenNoKeyOrNull(string key)
+        {
+            _mockCollection = new();
+
+            Func<Task> act = async () => await _variablesContext.Delete(key);
+
+            await act.Should().ThrowAsync<KeyNotFoundException>();
         }
     }
 }

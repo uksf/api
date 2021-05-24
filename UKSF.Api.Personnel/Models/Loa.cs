@@ -3,14 +3,17 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Personnel.Models {
-    public enum LoaReviewState {
+namespace UKSF.Api.Personnel.Models
+{
+    public enum LoaReviewState
+    {
         PENDING,
         APPROVED,
         REJECTED
     }
 
-    public class Loa : MongoObject {
+    public class Loa : MongoObject
+    {
         public bool Emergency;
         public DateTime End;
         public bool Late;

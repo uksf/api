@@ -3,11 +3,12 @@ using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Context;
 
-namespace UKSF.Api.Personnel.Context {
+namespace UKSF.Api.Personnel.Context
+{
     public interface IConfirmationCodeContext : IMongoContext<ConfirmationCode> { }
 
-    public class ConfirmationCodeContext : MongoContext<ConfirmationCode>, IConfirmationCodeContext {
-        public ConfirmationCodeContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) :
-            base(mongoCollectionFactory, eventBus, "confirmationCodes") { }
+    public class ConfirmationCodeContext : MongoContext<ConfirmationCode>, IConfirmationCodeContext
+    {
+        public ConfirmationCodeContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "confirmationCodes") { }
     }
 }

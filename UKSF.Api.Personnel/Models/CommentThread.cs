@@ -1,9 +1,12 @@
-﻿using MongoDB.Bson;
+﻿using System;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Personnel.Models {
-    public enum ThreadMode {
+namespace UKSF.Api.Personnel.Models
+{
+    public enum ThreadMode
+    {
         ALL,
         RECRUITER,
         RANKSUPERIOR,
@@ -11,9 +14,10 @@ namespace UKSF.Api.Personnel.Models {
         RANKSUPERIOROREQUAL
     }
 
-    public class CommentThread : MongoObject {
+    public class CommentThread : MongoObject
+    {
         [BsonRepresentation(BsonType.ObjectId)] public string[] Authors;
-        public Comment[] Comments = System.Array.Empty<Comment>();
+        public Comment[] Comments = Array.Empty<Comment>();
         public ThreadMode Mode;
     }
 }

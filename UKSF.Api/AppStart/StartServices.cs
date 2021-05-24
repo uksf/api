@@ -13,10 +13,14 @@ using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Services;
 using UKSF.Api.Teamspeak.Services;
 
-namespace UKSF.Api.AppStart {
-    public static class StartServices {
-        public static void StartUksfServices(this IServiceProvider serviceProvider) {
-            if (serviceProvider.GetService<IHostEnvironment>().IsDevelopment()) {
+namespace UKSF.Api.AppStart
+{
+    public static class StartServices
+    {
+        public static void StartUksfServices(this IServiceProvider serviceProvider)
+        {
+            if (serviceProvider.GetService<IHostEnvironment>().IsDevelopment())
+            {
                 // Do any test data setup
                 // TestDataSetup.Run(serviceProvider);
             }
@@ -51,7 +55,8 @@ namespace UKSF.Api.AppStart {
             serviceProvider.GetService<IModpackService>()?.RunQueuedBuilds();
         }
 
-        public static void StopUksfServices(this IServiceProvider serviceProvider) {
+        public static void StopUksfServices(this IServiceProvider serviceProvider)
+        {
             // Cancel any running builds
             serviceProvider.GetService<IBuildQueueService>()?.CancelAll();
 

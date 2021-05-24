@@ -11,28 +11,32 @@ using UKSF.Api.Base.Events;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Data {
-    public class CachedDataServiceTests {
+namespace UKSF.Tests.Unit.Data
+{
+    public class CachedDataServiceTests
+    {
         private readonly Mock<Api.Base.Context.IMongoCollection<TestDataModel>> _mockDataCollection;
         private readonly Mock<IMongoCollectionFactory> _mockDataCollectionFactory;
         private readonly Mock<IEventBus> _mockEventBus;
         private List<TestDataModel> _mockCollection;
         private TestCachedContext _testCachedContext;
 
-        public CachedDataServiceTests() {
-            _mockDataCollectionFactory = new Mock<IMongoCollectionFactory>();
-            _mockEventBus = new Mock<IEventBus>();
-            _mockDataCollection = new Mock<Api.Base.Context.IMongoCollection<TestDataModel>>();
+        public CachedDataServiceTests()
+        {
+            _mockDataCollectionFactory = new();
+            _mockEventBus = new();
+            _mockDataCollection = new();
 
             _mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
             _mockDataCollection.Setup(x => x.Get()).Returns(() => new List<TestDataModel>(_mockCollection));
         }
 
         [Fact]
-        public void Should_cache_collection_when_null_for_get() {
-            _mockCollection = new List<TestDataModel>();
+        public void Should_cache_collection_when_null_for_get()
+        {
+            _mockCollection = new();
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             _testCachedContext.Cache.Should().BeNull();
 
@@ -43,12 +47,13 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public void Should_cache_collection_when_null_for_get_single_by_id() {
+        public void Should_cache_collection_when_null_for_get_single_by_id()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "2" };
-            _mockCollection = new List<TestDataModel> { item1, item2 };
+            _mockCollection = new() { item1, item2 };
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             TestDataModel subject = _testCachedContext.GetSingle(item2.Id);
 
@@ -58,12 +63,13 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public void Should_cache_collection_when_null_for_get_single_by_predicate() {
+        public void Should_cache_collection_when_null_for_get_single_by_predicate()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "2" };
-            _mockCollection = new List<TestDataModel> { item1, item2 };
+            _mockCollection = new() { item1, item2 };
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             TestDataModel subject = _testCachedContext.GetSingle(x => x.Name == "2");
 
@@ -73,12 +79,13 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public void Should_cache_collection_when_null_for_get_with_predicate() {
+        public void Should_cache_collection_when_null_for_get_with_predicate()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "2" };
-            _mockCollection = new List<TestDataModel> { item1, item2 };
+            _mockCollection = new() { item1, item2 };
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             IEnumerable<TestDataModel> subject = _testCachedContext.Get(x => x.Name == "1");
 
@@ -87,10 +94,11 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public void Should_cache_collection_when_null_for_refresh() {
-            _mockCollection = new List<TestDataModel>();
+        public void Should_cache_collection_when_null_for_refresh()
+        {
+            _mockCollection = new();
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             _testCachedContext.Cache.Should().BeNull();
 
@@ -101,10 +109,11 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public void Should_return_cached_collection_for_get() {
-            _mockCollection = new List<TestDataModel>();
+        public void Should_return_cached_collection_for_get()
+        {
+            _mockCollection = new();
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             _testCachedContext.Cache.Should().BeNull();
 
@@ -120,13 +129,14 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_update_cache_for_add() {
+        public async Task Should_update_cache_for_add()
+        {
             TestDataModel item1 = new() { Name = "1" };
-            _mockCollection = new List<TestDataModel>();
+            _mockCollection = new();
 
             _mockDataCollection.Setup(x => x.AddAsync(It.IsAny<TestDataModel>())).Callback<TestDataModel>(x => _mockCollection.Add(x));
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             _testCachedContext.Cache.Should().BeNull();
 
@@ -137,14 +147,15 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_update_cache_for_delete() {
+        public async Task Should_update_cache_for_delete()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "2" };
-            _mockCollection = new List<TestDataModel> { item1, item2 };
+            _mockCollection = new() { item1, item2 };
 
             _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => _mockCollection.RemoveAll(x => x.Id == id));
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             await _testCachedContext.Delete(item1);
 
@@ -153,14 +164,15 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_update_cache_for_delete_by_id() {
+        public async Task Should_update_cache_for_delete_by_id()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "2" };
-            _mockCollection = new List<TestDataModel> { item1, item2 };
+            _mockCollection = new() { item1, item2 };
 
             _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => _mockCollection.RemoveAll(x => x.Id == id));
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             await _testCachedContext.Delete(item1.Id);
 
@@ -169,17 +181,18 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_update_cache_for_delete_many() {
+        public async Task Should_update_cache_for_delete_many()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "1" };
             TestDataModel item3 = new() { Name = "3" };
-            _mockCollection = new List<TestDataModel> { item1, item2, item3 };
+            _mockCollection = new() { item1, item2, item3 };
 
             _mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>()))
                                .Returns(Task.CompletedTask)
                                .Callback((Expression<Func<TestDataModel, bool>> expression) => _mockCollection.RemoveAll(x => _mockCollection.Where(expression.Compile()).Contains(x)));
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             await _testCachedContext.DeleteMany(x => x.Name == "1");
 
@@ -189,16 +202,17 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task ShouldRefreshCollectionForReplace() {
+        public async Task ShouldRefreshCollectionForReplace()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Id = item1.Id, Name = "2" };
-            _mockCollection = new List<TestDataModel> { item1 };
+            _mockCollection = new() { item1 };
 
             _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<TestDataModel>()))
                                .Returns(Task.CompletedTask)
                                .Callback((string id, TestDataModel value) => _mockCollection[_mockCollection.FindIndex(x => x.Id == id)] = value);
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             await _testCachedContext.Replace(item2);
 
@@ -207,15 +221,16 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task ShouldRefreshCollectionForUpdate() {
+        public async Task ShouldRefreshCollectionForUpdate()
+        {
             TestDataModel item1 = new() { Name = "1" };
-            _mockCollection = new List<TestDataModel> { item1 };
+            _mockCollection = new() { item1 };
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                                .Returns(Task.CompletedTask)
                                .Callback((string id, UpdateDefinition<TestDataModel> _) => _mockCollection.First(x => x.Id == id).Name = "2");
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             await _testCachedContext.Update(item1.Id, x => x.Name, "2");
 
@@ -224,15 +239,16 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task ShouldRefreshCollectionForUpdateByUpdateDefinition() {
+        public async Task ShouldRefreshCollectionForUpdateByUpdateDefinition()
+        {
             TestDataModel item1 = new() { Name = "1" };
-            _mockCollection = new List<TestDataModel> { item1 };
+            _mockCollection = new() { item1 };
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                                .Returns(Task.CompletedTask)
                                .Callback((string id, UpdateDefinition<TestDataModel> _) => _mockCollection.First(x => x.Id == id).Name = "2");
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             await _testCachedContext.Update(item1.Id, Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
 
@@ -241,11 +257,12 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task ShouldRefreshCollectionForUpdateMany() {
+        public async Task ShouldRefreshCollectionForUpdateMany()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "1" };
             TestDataModel item3 = new() { Name = "3" };
-            _mockCollection = new List<TestDataModel> { item1, item2, item3 };
+            _mockCollection = new() { item1, item2, item3 };
 
             _mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                                .Returns(Task.CompletedTask)
@@ -254,7 +271,7 @@ namespace UKSF.Tests.Unit.Data {
                                        _mockCollection.Where(expression.Compile()).ToList().ForEach(x => x.Name = "3")
                                );
 
-            _testCachedContext = new TestCachedContext(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+            _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
             await _testCachedContext.UpdateMany(x => x.Name == "1", Builders<TestDataModel>.Update.Set(x => x.Name, "3"));
 

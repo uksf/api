@@ -2,13 +2,16 @@
 using System.IO;
 using System.Threading.Tasks;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods {
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
+{
     [BuildStep(NAME)]
-    public class BuildStepBuildModpack : ModBuildStep {
+    public class BuildStepBuildModpack : ModBuildStep
+    {
         public const string NAME = "Build UKSF";
         private const string MOD_NAME = "modpack";
 
-        protected override async Task ProcessExecute() {
+        protected override async Task ProcessExecute()
+        {
             StepLogger.Log("Running build for UKSF");
 
             string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");

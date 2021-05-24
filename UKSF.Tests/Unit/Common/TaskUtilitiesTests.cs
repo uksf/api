@@ -5,17 +5,22 @@ using FluentAssertions;
 using UKSF.Api.Shared.Extensions;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Common {
-    public class TaskUtilitiesTests {
+namespace UKSF.Tests.Unit.Common
+{
+    public class TaskUtilitiesTests
+    {
         [Fact]
-        public async Task ShouldCallbackAfterDelay() {
+        public async Task ShouldCallbackAfterDelay()
+        {
             bool subject = false;
-            Func<Task> act = async () => {
+            Func<Task> act = async () =>
+            {
                 CancellationTokenSource token = new();
                 await TaskUtilities.DelayWithCallback(
                     TimeSpan.FromMilliseconds(10),
                     token.Token,
-                    () => {
+                    () =>
+                    {
                         subject = true;
                         return Task.CompletedTask;
                     }
@@ -28,7 +33,8 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void ShouldDelay() {
+        public void ShouldDelay()
+        {
             CancellationTokenSource token = new();
             Action act = async () => await TaskUtilities.Delay(TimeSpan.FromMilliseconds(10), token.Token);
 
@@ -36,7 +42,8 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void ShouldNotCallbackForCancellation() {
+        public void ShouldNotCallbackForCancellation()
+        {
             CancellationTokenSource token = new();
             Func<Task> act = async () => { await TaskUtilities.DelayWithCallback(TimeSpan.FromMilliseconds(10), token.Token, null); };
 
@@ -46,8 +53,10 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void ShouldNotThrowExceptionForDelay() {
-            Action act = () => {
+        public void ShouldNotThrowExceptionForDelay()
+        {
+            Action act = () =>
+            {
                 CancellationTokenSource token = new();
                 Task unused = TaskUtilities.Delay(TimeSpan.FromMilliseconds(50), token.Token);
                 token.Cancel();

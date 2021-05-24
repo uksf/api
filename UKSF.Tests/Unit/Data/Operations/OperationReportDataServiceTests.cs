@@ -8,23 +8,27 @@ using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Data.Operations {
-    public class OperationReportDataServiceTests {
+namespace UKSF.Tests.Unit.Data.Operations
+{
+    public class OperationReportDataServiceTests
+    {
         private readonly Mock<IMongoCollection<Oprep>> _mockDataCollection;
         private readonly OperationReportContext _operationReportContext;
 
-        public OperationReportDataServiceTests() {
+        public OperationReportDataServiceTests()
+        {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
             Mock<IEventBus> mockEventBus = new();
-            _mockDataCollection = new Mock<IMongoCollection<Oprep>>();
+            _mockDataCollection = new();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<Oprep>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            _operationReportContext = new OperationReportContext(mockDataCollectionFactory.Object, mockEventBus.Object);
+            _operationReportContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
         }
 
         [Fact]
-        public void Should_get_collection_in_order() {
+        public void Should_get_collection_in_order()
+        {
             Oprep item1 = new() { Start = DateTime.Now.AddDays(-1) };
             Oprep item2 = new() { Start = DateTime.Now.AddDays(-2) };
             Oprep item3 = new() { Start = DateTime.Now.AddDays(-3) };
@@ -37,7 +41,8 @@ namespace UKSF.Tests.Unit.Data.Operations {
         }
 
         [Fact]
-        public void ShouldGetOrderedCollectionByPredicate() {
+        public void ShouldGetOrderedCollectionByPredicate()
+        {
             Oprep item1 = new() { Description = "1", Start = DateTime.Now.AddDays(-1) };
             Oprep item2 = new() { Description = "2", Start = DateTime.Now.AddDays(-2) };
             Oprep item3 = new() { Description = "1", Start = DateTime.Now.AddDays(-3) };

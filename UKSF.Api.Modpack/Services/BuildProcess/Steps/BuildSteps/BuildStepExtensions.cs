@@ -6,12 +6,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using UKSF.Api.Admin.Extensions;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
+{
     [BuildStep(NAME)]
-    public class BuildStepExtensions : FileBuildStep {
+    public class BuildStepExtensions : FileBuildStep
+    {
         public const string NAME = "Extensions";
 
-        protected override async Task ProcessExecute() {
+        protected override async Task ProcessExecute()
+        {
             string uksfPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf", "intercept");
             string interceptPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@intercept");
             DirectoryInfo uksf = new(uksfPath);
@@ -23,7 +26,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             StepLogger.LogSurround("Signed extensions");
         }
 
-        private async Task SignExtensions(IReadOnlyCollection<FileInfo> files) {
+        private async Task SignExtensions(IReadOnlyCollection<FileInfo> files)
+        {
             string certPath = Path.Join(VariablesService.GetVariable("BUILD_PATH_CERTS").AsString(), "UKSFCert.pfx");
             string signTool = VariablesService.GetVariable("BUILD_PATH_SIGNTOOL").AsString();
             int signed = 0;
@@ -31,7 +35,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             await BatchProcessFiles(
                 files,
                 2,
-                file => {
+                file =>
+                {
                     BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource, true, false, true);
                     processHelper.Run(file.DirectoryName, signTool, $"sign /f \"{certPath}\" \"{file.FullName}\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
                     Interlocked.Increment(ref signed);

@@ -7,29 +7,39 @@ using Microsoft.Extensions.DependencyInjection;
 
 // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
 
-namespace UKSF.Api.Shared.Extensions {
-    public static class ServiceExtensions {
-        public static IEnumerable<T> GetInterfaceServices<T>(this IServiceProvider provider) {
+namespace UKSF.Api.Shared.Extensions
+{
+    public static class ServiceExtensions
+    {
+        public static IEnumerable<T> GetInterfaceServices<T>(this IServiceProvider provider)
+        {
             List<ServiceDescriptor> services = new();
 
             object engine;
             FieldInfo fieldInfo = provider.GetType().GetFieldInfo("_engine");
-            if (fieldInfo == null) {
+            if (fieldInfo == null)
+            {
                 PropertyInfo propertyInfo = provider.GetType().GetPropertyInfo("Engine");
-                if (propertyInfo == null) {
-                    throw new Exception($"Could not find Field '_engine' or Property 'Engine' on {provider.GetType()}");
+                if (propertyInfo == null)
+                {
+                    throw new($"Could not find Field '_engine' or Property 'Engine' on {provider.GetType()}");
                 }
 
                 engine = propertyInfo.GetValue(provider);
-            } else {
+            }
+            else
+            {
                 engine = fieldInfo.GetValue(provider);
             }
 
             object callSiteFactory = engine.GetPropertyValue("CallSiteFactory");
             object descriptorLookup = callSiteFactory.GetFieldValue("_descriptorLookup");
-            if (descriptorLookup is IDictionary dictionary) {
-                foreach (DictionaryEntry entry in dictionary) {
-                    if (typeof(T).IsAssignableFrom((Type) entry.Key)) {
+            if (descriptorLookup is IDictionary dictionary)
+            {
+                foreach (DictionaryEntry entry in dictionary)
+                {
+                    if (typeof(T).IsAssignableFrom((Type) entry.Key))
+                    {
                         services.Add((ServiceDescriptor) entry.Value.GetPropertyValue("Last"));
                     }
                 }

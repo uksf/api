@@ -3,10 +3,13 @@ using FluentAssertions;
 using UKSF.Api.ArmaServer.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Models.Game {
-    public class MissionFileTests {
+namespace UKSF.Tests.Unit.Models.Game
+{
+    public class MissionFileTests
+    {
         [Fact]
-        public void ShouldSetFields() {
+        public void ShouldSetFields()
+        {
             MissionFile subject = new(new FileInfo("../../../testdata/testmission.Altis.pbo"));
 
             subject.Path.Should().Be("testmission.Altis.pbo");

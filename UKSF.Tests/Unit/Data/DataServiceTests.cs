@@ -12,54 +12,30 @@ using UKSF.Api.Base.Events;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Data {
-    public class DataServiceTests {
+namespace UKSF.Tests.Unit.Data
+{
+    public class DataServiceTests
+    {
         private readonly Mock<Api.Base.Context.IMongoCollection<TestDataModel>> _mockDataCollection;
         private readonly TestContext _testContext;
         private List<TestDataModel> _mockCollection;
 
-        public DataServiceTests() {
+        public DataServiceTests()
+        {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
             Mock<IEventBus> mockEventBus = new();
-            _mockDataCollection = new Mock<Api.Base.Context.IMongoCollection<TestDataModel>>();
+            _mockDataCollection = new();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            _testContext = new TestContext(mockDataCollectionFactory.Object, mockEventBus.Object, "test");
-        }
-
-        [Theory, InlineData(""), InlineData("1"), InlineData(null)]
-        public async Task Should_throw_for_delete_single_item_when_key_is_invalid(string id) {
-            Func<Task> act = async () => await _testContext.Delete(id);
-
-            await act.Should().ThrowAsync<KeyNotFoundException>();
-        }
-
-        [Theory, InlineData(""), InlineData("1"), InlineData(null)]
-        public void Should_throw_for_get_single_item_when_key_is_invalid(string id) {
-            Action act = () => _testContext.GetSingle(id);
-
-            act.Should().Throw<KeyNotFoundException>();
-        }
-
-        [Theory, InlineData(""), InlineData("1"), InlineData(null)]
-        public async Task Should_throw_for_update_by_id_when_key_is_invalid(string id) {
-            Func<Task> act = async () => await _testContext.Update(id, x => x.Name, null);
-
-            await act.Should().ThrowAsync<KeyNotFoundException>();
-        }
-
-        [Theory, InlineData(""), InlineData("1"), InlineData(null)]
-        public async Task Should_throw_for_update_by_update_definition_when_key_is_invalid(string id) {
-            Func<Task> act = async () => await _testContext.Update(id, Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
-
-            await act.Should().ThrowAsync<KeyNotFoundException>();
+            _testContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, "test");
         }
 
         [Fact]
-        public async Task Should_add_single_item() {
+        public async Task Should_add_single_item()
+        {
             TestDataModel item1 = new() { Name = "1" };
-            _mockCollection = new List<TestDataModel>();
+            _mockCollection = new();
 
             _mockDataCollection.Setup(x => x.AddAsync(It.IsAny<TestDataModel>())).Callback<TestDataModel>(x => _mockCollection.Add(x));
 
@@ -69,10 +45,11 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_delete_many_items() {
+        public async Task Should_delete_many_items()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "1" };
-            _mockCollection = new List<TestDataModel> { item1, item2 };
+            _mockCollection = new() { item1, item2 };
 
             _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns(() => _mockCollection);
             _mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>()))
@@ -85,10 +62,11 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_delete_single_item() {
+        public async Task Should_delete_single_item()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "2" };
-            _mockCollection = new List<TestDataModel> { item1, item2 };
+            _mockCollection = new() { item1, item2 };
 
             _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => _mockCollection.RemoveAll(x => x.Id == id));
 
@@ -98,10 +76,11 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_delete_single_item_by_id() {
+        public async Task Should_delete_single_item_by_id()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "2" };
-            _mockCollection = new List<TestDataModel> { item1, item2 };
+            _mockCollection = new() { item1, item2 };
 
             _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => _mockCollection.RemoveAll(x => x.Id == id));
 
@@ -111,7 +90,8 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public void Should_get_all_items() {
+        public void Should_get_all_items()
+        {
             _mockDataCollection.Setup(x => x.Get()).Returns(() => _mockCollection);
 
             IEnumerable<TestDataModel> subject = _testContext.Get();
@@ -120,10 +100,11 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public void Should_get_items_matching_predicate() {
+        public void Should_get_items_matching_predicate()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "2" };
-            _mockCollection = new List<TestDataModel> { item1, item2 };
+            _mockCollection = new() { item1, item2 };
 
             _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(x => _mockCollection.Where(x).ToList());
 
@@ -133,7 +114,8 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public void Should_get_single_item_by_id() {
+        public void Should_get_single_item_by_id()
+        {
             TestDataModel item1 = new() { Name = "1" };
 
             _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(item1);
@@ -144,10 +126,11 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public void Should_get_single_item_matching_predicate() {
+        public void Should_get_single_item_matching_predicate()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "2" };
-            _mockCollection = new List<TestDataModel> { item1, item2 };
+            _mockCollection = new() { item1, item2 };
 
             _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(x => _mockCollection.First(x));
 
@@ -157,10 +140,11 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_replace_item() {
+        public async Task Should_replace_item()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Id = item1.Id, Name = "2" };
-            _mockCollection = new List<TestDataModel> { item1 };
+            _mockCollection = new() { item1 };
 
             _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(item1);
             _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<TestDataModel>()))
@@ -174,18 +158,20 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_throw_for_add_when_item_is_null() {
+        public async Task Should_throw_for_add_when_item_is_null()
+        {
             Func<Task> act = async () => await _testContext.Add(null);
 
             await act.Should().ThrowAsync<ArgumentNullException>();
         }
 
         [Fact]
-        public async Task Should_update_item_by_filter_and_update_definition() {
+        public async Task Should_update_item_by_filter_and_update_definition()
+        {
             TestDataModel item1 = new() { Id = "1", Name = "1" };
-            _mockCollection = new List<TestDataModel> { item1 };
-            BsonValue expectedFilter = TestUtilities.RenderFilter(Builders<TestDataModel>.Filter.Where(x => x.Name == "1"));
-            BsonValue expectedUpdate = TestUtilities.RenderUpdate(Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
+            _mockCollection = new() { item1 };
+            BsonValue expectedFilter = Builders<TestDataModel>.Filter.Where(x => x.Name == "1").RenderFilter();
+            BsonValue expectedUpdate = Builders<TestDataModel>.Update.Set(x => x.Name, "2").RenderUpdate();
             FilterDefinition<TestDataModel> subjectFilter = null;
             UpdateDefinition<TestDataModel> subjectUpdate = null;
 
@@ -193,7 +179,8 @@ namespace UKSF.Tests.Unit.Data {
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<TestDataModel>>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                                .Returns(Task.CompletedTask)
                                .Callback(
-                                   (FilterDefinition<TestDataModel> filter, UpdateDefinition<TestDataModel> update) => {
+                                   (FilterDefinition<TestDataModel> filter, UpdateDefinition<TestDataModel> update) =>
+                                   {
                                        subjectFilter = filter;
                                        subjectUpdate = update;
                                    }
@@ -201,14 +188,15 @@ namespace UKSF.Tests.Unit.Data {
 
             await _testContext.Update(x => x.Name == "1", Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
 
-            TestUtilities.RenderFilter(subjectFilter).Should().BeEquivalentTo(expectedFilter);
-            TestUtilities.RenderUpdate(subjectUpdate).Should().BeEquivalentTo(expectedUpdate);
+            subjectFilter.RenderFilter().Should().BeEquivalentTo(expectedFilter);
+            subjectUpdate.RenderUpdate().Should().BeEquivalentTo(expectedUpdate);
         }
 
         [Fact]
-        public async Task Should_update_item_by_id() {
+        public async Task Should_update_item_by_id()
+        {
             TestDataModel item1 = new() { Name = "1" };
-            _mockCollection = new List<TestDataModel> { item1 };
+            _mockCollection = new() { item1 };
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                                .Returns(Task.CompletedTask)
@@ -220,9 +208,10 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_update_item_by_update_definition() {
+        public async Task Should_update_item_by_update_definition()
+        {
             TestDataModel item1 = new() { Name = "1" };
-            _mockCollection = new List<TestDataModel> { item1 };
+            _mockCollection = new() { item1 };
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                                .Returns(Task.CompletedTask)
@@ -234,10 +223,11 @@ namespace UKSF.Tests.Unit.Data {
         }
 
         [Fact]
-        public async Task Should_update_item_with_set() {
+        public async Task Should_update_item_with_set()
+        {
             TestDataModel item1 = new() { Name = "1" };
-            _mockCollection = new List<TestDataModel> { item1 };
-            BsonValue expected = TestUtilities.RenderUpdate(Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
+            _mockCollection = new() { item1 };
+            BsonValue expected = Builders<TestDataModel>.Update.Set(x => x.Name, "2").RenderUpdate();
             UpdateDefinition<TestDataModel> subject = null;
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
@@ -246,14 +236,15 @@ namespace UKSF.Tests.Unit.Data {
 
             await _testContext.Update(item1.Id, x => x.Name, "2");
 
-            TestUtilities.RenderUpdate(subject).Should().BeEquivalentTo(expected);
+            subject.RenderUpdate().Should().BeEquivalentTo(expected);
         }
 
         [Fact]
-        public async Task Should_update_item_with_unset() {
+        public async Task Should_update_item_with_unset()
+        {
             TestDataModel item1 = new() { Name = "1" };
-            _mockCollection = new List<TestDataModel> { item1 };
-            BsonValue expected = TestUtilities.RenderUpdate(Builders<TestDataModel>.Update.Unset(x => x.Name));
+            _mockCollection = new() { item1 };
+            BsonValue expected = Builders<TestDataModel>.Update.Unset(x => x.Name).RenderUpdate();
             UpdateDefinition<TestDataModel> subject = null;
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
@@ -262,14 +253,15 @@ namespace UKSF.Tests.Unit.Data {
 
             await _testContext.Update(item1.Id, x => x.Name, null);
 
-            TestUtilities.RenderUpdate(subject).Should().BeEquivalentTo(expected);
+            subject.RenderUpdate().Should().BeEquivalentTo(expected);
         }
 
         [Fact]
-        public async Task Should_update_many_items() {
+        public async Task Should_update_many_items()
+        {
             TestDataModel item1 = new() { Name = "1" };
             TestDataModel item2 = new() { Name = "1" };
-            _mockCollection = new List<TestDataModel> { item1, item2 };
+            _mockCollection = new() { item1, item2 };
 
             _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns(() => _mockCollection);
             _mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>(), It.IsAny<UpdateDefinition<TestDataModel>>()))

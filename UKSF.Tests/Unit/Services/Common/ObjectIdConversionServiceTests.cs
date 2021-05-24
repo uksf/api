@@ -7,34 +7,25 @@ using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Services;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Services.Common {
-    public class ObjectIdConversionServiceTests {
+namespace UKSF.Tests.Unit.Services.Common
+{
+    public class ObjectIdConversionServiceTests
+    {
         private readonly Mock<IDisplayNameService> _mockDisplayNameService;
         private readonly Mock<IUnitsContext> _mockUnitsContext;
         private readonly ObjectIdConversionService _objectIdConversionService;
 
-        public ObjectIdConversionServiceTests() {
-            _mockDisplayNameService = new Mock<IDisplayNameService>();
-            _mockUnitsContext = new Mock<IUnitsContext>();
+        public ObjectIdConversionServiceTests()
+        {
+            _mockDisplayNameService = new();
+            _mockUnitsContext = new();
 
-            _objectIdConversionService = new ObjectIdConversionService(_mockUnitsContext.Object, _mockDisplayNameService.Object);
-        }
-
-        [Theory, InlineData("5e39336e1b92ee2d14b7fe08", "Maj.Bridgford.A"), InlineData("5e39336e1b92ee2d14b7fe08, 5e3935db1b92ee2d14b7fe09", "Maj.Bridgford.A, Cpl.Carr.C"),
-         InlineData("5e39336e1b92ee2d14b7fe085e3935db1b92ee2d14b7fe09", "Maj.Bridgford.ACpl.Carr.C"),
-         InlineData("5e39336e1b92ee2d14b7fe08 has requested all the things for 5e3935db1b92ee2d14b7fe09", "Maj.Bridgford.A has requested all the things for Cpl.Carr.C")]
-        public void ShouldConvertNameObjectIds(string input, string expected) {
-            _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<Api.Personnel.Models.Unit, bool>>())).Returns<Api.Personnel.Models.Unit>(null);
-            _mockDisplayNameService.Setup(x => x.GetDisplayName("5e39336e1b92ee2d14b7fe08")).Returns("Maj.Bridgford.A");
-            _mockDisplayNameService.Setup(x => x.GetDisplayName("5e3935db1b92ee2d14b7fe09")).Returns("Cpl.Carr.C");
-
-            string subject = _objectIdConversionService.ConvertObjectIds(input);
-
-            subject.Should().Be(expected);
+            _objectIdConversionService = new(_mockUnitsContext.Object, _mockDisplayNameService.Object);
         }
 
         [Fact]
-        public void ShouldConvertCorrectUnitWithPredicate() {
+        public void ShouldConvertCorrectUnitWithPredicate()
+        {
             Api.Personnel.Models.Unit unit1 = new() { Name = "7 Squadron" };
             Api.Personnel.Models.Unit unit2 = new() { Name = "656 Squadron" };
             List<Api.Personnel.Models.Unit> collection = new() { unit1, unit2 };
@@ -48,7 +39,8 @@ namespace UKSF.Tests.Unit.Services.Common {
         }
 
         [Fact]
-        public void ShouldConvertUnitObjectIds() {
+        public void ShouldConvertUnitObjectIds()
+        {
             const string INPUT = "5e39336e1b92ee2d14b7fe08";
             const string EXPECTED = "7 Squadron";
             Api.Personnel.Models.Unit unit = new() { Name = EXPECTED, Id = INPUT };
@@ -62,7 +54,8 @@ namespace UKSF.Tests.Unit.Services.Common {
         }
 
         [Fact]
-        public void ShouldDoNothingToTextWhenNameOrUnitNotFound() {
+        public void ShouldDoNothingToTextWhenNameOrUnitNotFound()
+        {
             const string INPUT = "5e39336e1b92ee2d14b7fe08";
             const string EXPECTED = "5e39336e1b92ee2d14b7fe08";
 
@@ -75,10 +68,25 @@ namespace UKSF.Tests.Unit.Services.Common {
         }
 
         [Fact]
-        public void ShouldReturnEmpty() {
+        public void ShouldReturnEmpty()
+        {
             string subject = _objectIdConversionService.ConvertObjectIds("");
 
             subject.Should().Be(string.Empty);
+        }
+
+        [Theory, InlineData("5e39336e1b92ee2d14b7fe08", "Maj.Bridgford.A"), InlineData("5e39336e1b92ee2d14b7fe08, 5e3935db1b92ee2d14b7fe09", "Maj.Bridgford.A, Cpl.Carr.C"),
+         InlineData("5e39336e1b92ee2d14b7fe085e3935db1b92ee2d14b7fe09", "Maj.Bridgford.ACpl.Carr.C"),
+         InlineData("5e39336e1b92ee2d14b7fe08 has requested all the things for 5e3935db1b92ee2d14b7fe09", "Maj.Bridgford.A has requested all the things for Cpl.Carr.C")]
+        public void ShouldConvertNameObjectIds(string input, string expected)
+        {
+            _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<Api.Personnel.Models.Unit, bool>>())).Returns<Api.Personnel.Models.Unit>(null);
+            _mockDisplayNameService.Setup(x => x.GetDisplayName("5e39336e1b92ee2d14b7fe08")).Returns("Maj.Bridgford.A");
+            _mockDisplayNameService.Setup(x => x.GetDisplayName("5e3935db1b92ee2d14b7fe09")).Returns("Cpl.Carr.C");
+
+            string subject = _objectIdConversionService.ConvertObjectIds(input);
+
+            subject.Should().Be(expected);
         }
     }
 }

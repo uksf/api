@@ -7,17 +7,20 @@ using Moq;
 using UKSF.Api.Base;
 using UKSF.Api.Shared;
 
-namespace UKSF.Api.Tests.Common {
-    public class DependencyInjectionTestsBase {
-        protected readonly ServiceCollection Services;
+namespace UKSF.Api.Tests.Common
+{
+    public class DependencyInjectionTestsBase
+    {
         protected readonly IConfigurationRoot Configuration;
         protected readonly IHostEnvironment HostEnvironment;
+        protected readonly ServiceCollection Services;
 
-        protected DependencyInjectionTestsBase() {
+        protected DependencyInjectionTestsBase()
+        {
             Mock<IHostEnvironment> mockHostEnvironment = new();
             mockHostEnvironment.Setup(x => x.EnvironmentName).Returns(Environments.Development);
 
-            Services = new ServiceCollection();
+            Services = new();
             Configuration = TestConfigurationProvider.GetTestConfiguration();
             HostEnvironment = mockHostEnvironment.Object;
 

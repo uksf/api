@@ -1,22 +1,27 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.Models;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common {
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
+{
     [BuildStep(NAME)]
-    public class BuildStepCbaSettings : FileBuildStep {
+    public class BuildStepCbaSettings : FileBuildStep
+    {
         public const string NAME = "CBA Settings";
 
-        protected override async Task ProcessExecute() {
+        protected override async Task ProcessExecute()
+        {
             StepLogger.Log("Updating CBA settings");
 
             string sourceUserconfigPath;
             string targetUserconfigPath;
-            if (Build.Environment == GameEnvironment.RELEASE) {
+            if (Build.Environment == GameEnvironment.RELEASE)
+            {
                 sourceUserconfigPath = Path.Join(GetServerEnvironmentPath(GameEnvironment.RC), "userconfig");
                 targetUserconfigPath = Path.Join(GetServerEnvironmentPath(GameEnvironment.RELEASE), "userconfig");
-            } else {
+            }
+            else
+            {
                 sourceUserconfigPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf");
                 targetUserconfigPath = Path.Join(GetServerEnvironmentPath(Build.Environment), "userconfig");
             }
@@ -24,7 +29,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common {
             FileInfo cbaSettingsFile = new(Path.Join(sourceUserconfigPath, "cba_settings.sqf"));
 
             StepLogger.LogSurround("\nCopying cba_settings.sqf...");
-            await CopyFiles(new DirectoryInfo(sourceUserconfigPath), new DirectoryInfo(targetUserconfigPath), new List<FileInfo> { cbaSettingsFile });
+            await CopyFiles(new DirectoryInfo(sourceUserconfigPath), new DirectoryInfo(targetUserconfigPath), new() { cbaSettingsFile });
             StepLogger.LogSurround("Copied cba_settings.sqf");
         }
     }

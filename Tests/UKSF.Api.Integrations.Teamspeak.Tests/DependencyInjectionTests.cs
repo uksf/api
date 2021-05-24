@@ -9,16 +9,20 @@ using UKSF.Api.Teamspeak.ScheduledActions;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Api.Integrations.Teamspeak.Tests {
-    public class DependencyInjectionTests : DependencyInjectionTestsBase {
-        public DependencyInjectionTests() {
+namespace UKSF.Api.Integrations.Teamspeak.Tests
+{
+    public class DependencyInjectionTests : DependencyInjectionTestsBase
+    {
+        public DependencyInjectionTests()
+        {
             Services.AddUksfAdmin();
             Services.AddUksfPersonnel();
             Services.AddUksfIntegrationTeamspeak();
         }
 
         [Fact]
-        public void When_resolving_controllers() {
+        public void When_resolving_controllers()
+        {
             Services.AddTransient<OperationsController>();
             Services.AddTransient<TeamspeakController>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();
@@ -28,7 +32,8 @@ namespace UKSF.Api.Integrations.Teamspeak.Tests {
         }
 
         [Fact]
-        public void When_resolving_event_handlers() {
+        public void When_resolving_event_handlers()
+        {
             Services.AddTransient<TeamspeakEventHandler>();
             Services.AddTransient<TeamspeakServerEventHandler>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();
@@ -38,7 +43,8 @@ namespace UKSF.Api.Integrations.Teamspeak.Tests {
         }
 
         [Fact]
-        public void When_resolving_scheduled_actions() {
+        public void When_resolving_scheduled_actions()
+        {
             Services.AddTransient<ActionTeamspeakSnapshot>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();
 

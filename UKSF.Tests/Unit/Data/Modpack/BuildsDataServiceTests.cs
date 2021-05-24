@@ -11,24 +11,28 @@ using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Data.Modpack {
-    public class BuildsDataServiceTests {
+namespace UKSF.Tests.Unit.Data.Modpack
+{
+    public class BuildsDataServiceTests
+    {
         private readonly BuildsContext _buildsContext;
         private readonly Mock<Api.Base.Context.IMongoCollection<ModpackBuild>> _mockDataCollection;
         private readonly Mock<IEventBus> _mockEventBus;
 
-        public BuildsDataServiceTests() {
+        public BuildsDataServiceTests()
+        {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-            _mockEventBus = new Mock<IEventBus>();
-            _mockDataCollection = new Mock<Api.Base.Context.IMongoCollection<ModpackBuild>>();
+            _mockEventBus = new();
+            _mockDataCollection = new();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<ModpackBuild>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            _buildsContext = new BuildsContext(mockDataCollectionFactory.Object, _mockEventBus.Object);
+            _buildsContext = new(mockDataCollectionFactory.Object, _mockEventBus.Object);
         }
 
         [Fact]
-        public void Should_get_collection_in_order() {
+        public void Should_get_collection_in_order()
+        {
             ModpackBuild item1 = new() { BuildNumber = 4 };
             ModpackBuild item2 = new() { BuildNumber = 10 };
             ModpackBuild item3 = new() { BuildNumber = 9 };
@@ -41,10 +45,11 @@ namespace UKSF.Tests.Unit.Data.Modpack {
         }
 
         [Fact]
-        public void Should_update_build_step_with_event() {
+        public void Should_update_build_step_with_event()
+        {
             string id = ObjectId.GenerateNewId().ToString();
             ModpackBuildStep modpackBuildStep = new("step") { Index = 0, Running = false };
-            ModpackBuild modpackBuild = new() { Id = id, BuildNumber = 1, Steps = new List<ModpackBuildStep> { modpackBuildStep } };
+            ModpackBuild modpackBuild = new() { Id = id, BuildNumber = 1, Steps = new() { modpackBuildStep } };
             EventModel subject = null;
 
             _mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackBuild>());
@@ -59,7 +64,8 @@ namespace UKSF.Tests.Unit.Data.Modpack {
         }
 
         [Fact]
-        public void Should_update_build_with_event_data() {
+        public void Should_update_build_with_event_data()
+        {
             string id = ObjectId.GenerateNewId().ToString();
             EventModel subject = null;
 

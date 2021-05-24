@@ -1,5 +1,7 @@
-namespace UKSF.Api.Command.Models {
-    public enum ChainOfCommandMode {
+namespace UKSF.Api.Command.Models
+{
+    public enum ChainOfCommandMode
+    {
         FULL,
         NEXT_COMMANDER,
         NEXT_COMMANDER_EXCLUDE_SELF,

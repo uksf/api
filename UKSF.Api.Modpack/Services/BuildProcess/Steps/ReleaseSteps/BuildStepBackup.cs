@@ -1,12 +1,15 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps {
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps
+{
     [BuildStep(NAME)]
-    public class BuildStepBackup : FileBuildStep {
+    public class BuildStepBackup : FileBuildStep
+    {
         public const string NAME = "Backup";
 
-        protected override async Task ProcessExecute() {
+        protected override async Task ProcessExecute()
+        {
             StepLogger.Log("Backing up current release");
 
             string environmentPath = GetBuildEnvironmentPath();

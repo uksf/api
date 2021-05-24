@@ -1,12 +1,15 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps {
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps
+{
     [BuildStep(NAME)]
-    public class BuildStepRestore : FileBuildStep {
+    public class BuildStepRestore : FileBuildStep
+    {
         public const string NAME = "Restore";
 
-        protected override async Task ProcessExecute() {
+        protected override async Task ProcessExecute()
+        {
             StepLogger.Log("Restoring previous release");
             string environmentPath = GetBuildEnvironmentPath();
             string repoPath = Path.Join(environmentPath, "Repo");

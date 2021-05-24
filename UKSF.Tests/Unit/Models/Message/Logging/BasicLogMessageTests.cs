@@ -3,17 +3,21 @@ using FluentAssertions;
 using UKSF.Api.Shared.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Models.Message.Logging {
-    public class BasicLogMessageTests {
+namespace UKSF.Tests.Unit.Models.Message.Logging
+{
+    public class BasicLogMessageTests
+    {
         [Fact]
-        public void ShouldSetText() {
+        public void ShouldSetText()
+        {
             BasicLog subject = new("test");
 
             subject.Message.Should().Be("test");
         }
 
         [Fact]
-        public void ShouldSetTextAndLogLevel() {
+        public void ShouldSetTextAndLogLevel()
+        {
             BasicLog subject = new("test", LogLevel.DEBUG);
 
             subject.Message.Should().Be("test");
@@ -21,7 +25,8 @@ namespace UKSF.Tests.Unit.Models.Message.Logging {
         }
 
         [Fact]
-        public void ShouldSetTextAndLogLevelFromException() {
+        public void ShouldSetTextAndLogLevelFromException()
+        {
             BasicLog subject = new(new Exception("test"));
 
             subject.Message.Should().Be("System.Exception: test");

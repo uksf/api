@@ -1,5 +1,7 @@
-namespace UKSF.Api.Teamspeak.Models {
-    public enum TeamspeakProcedureType {
+namespace UKSF.Api.Teamspeak.Models
+{
+    public enum TeamspeakProcedureType
+    {
         EMPTY,
         ASSIGN,
         UNASSIGN,

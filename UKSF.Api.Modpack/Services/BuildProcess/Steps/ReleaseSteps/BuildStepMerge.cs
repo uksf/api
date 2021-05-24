@@ -2,13 +2,17 @@
 using System.IO;
 using System.Threading.Tasks;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps {
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps
+{
     [BuildStep(NAME)]
-    public class BuildStepMerge : GitBuildStep {
+    public class BuildStepMerge : GitBuildStep
+    {
         public const string NAME = "Merge";
 
-        protected override Task ProcessExecute() {
-            try {
+        protected override Task ProcessExecute()
+        {
+            try
+            {
                 // Necessary to get around branch protection rules for master. Runs locally on server using user stored login as credentials
                 string modpackPath = Path.Join(GetBuildSourcesPath(), "modpack");
                 GitCommand(modpackPath, "git fetch");
@@ -21,7 +25,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps {
                 GitCommand(modpackPath, "git merge release");
                 GitCommand(modpackPath, "git push -u origin master");
                 StepLogger.Log("Release branch merge to master complete");
-            } catch (Exception exception) {
+            }
+            catch (Exception exception)
+            {
                 Warning($"Release branch merge to master failed:\n{exception}");
             }
 

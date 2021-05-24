@@ -7,23 +7,27 @@ using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Data.Modpack {
-    public class ReleasesDataServiceTests {
+namespace UKSF.Tests.Unit.Data.Modpack
+{
+    public class ReleasesDataServiceTests
+    {
         private readonly Mock<IMongoCollection<ModpackRelease>> _mockDataCollection;
         private readonly ReleasesContext _releasesContext;
 
-        public ReleasesDataServiceTests() {
+        public ReleasesDataServiceTests()
+        {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
             Mock<IEventBus> mockEventBus = new();
-            _mockDataCollection = new Mock<IMongoCollection<ModpackRelease>>();
+            _mockDataCollection = new();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<ModpackRelease>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-            _releasesContext = new ReleasesContext(mockDataCollectionFactory.Object, mockEventBus.Object);
+            _releasesContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
         }
 
         [Fact]
-        public void Should_get_collection_in_order() {
+        public void Should_get_collection_in_order()
+        {
             ModpackRelease item1 = new() { Version = "4.19.11" };
             ModpackRelease item2 = new() { Version = "5.19.6" };
             ModpackRelease item3 = new() { Version = "5.18.8" };

@@ -1,11 +1,14 @@
-﻿namespace UKSF.Api.Discord.Models {
-    public class DiscordDeletedMessageResult {
+﻿namespace UKSF.Api.Discord.Models
+{
+    public class DiscordDeletedMessageResult
+    {
         public readonly ulong InstigatorId;
         public readonly string InstigatorName;
-        public readonly string Name;
         public readonly string Message;
+        public readonly string Name;
 
-        public DiscordDeletedMessageResult(ulong instigatorId, string instigatorName, string name, string message) {
+        public DiscordDeletedMessageResult(ulong instigatorId, string instigatorName, string name, string message)
+        {
             InstigatorId = instigatorId;
             InstigatorName = instigatorName;
             Name = name;

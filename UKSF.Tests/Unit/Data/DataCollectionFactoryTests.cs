@@ -5,10 +5,13 @@ using UKSF.Api.Base.Context;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Data {
-    public class DataCollectionFactoryTests {
+namespace UKSF.Tests.Unit.Data
+{
+    public class DataCollectionFactoryTests
+    {
         [Fact]
-        public void ShouldCreateDataCollection() {
+        public void ShouldCreateDataCollection()
+        {
             Mock<IMongoDatabase> mockMongoDatabase = new();
 
             MongoCollectionFactory mongoCollectionFactory = new(mockMongoDatabase.Object);

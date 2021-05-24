@@ -1,10 +1,13 @@
 ﻿using FluentAssertions;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Models.Mission {
-    public class MissionTests {
+namespace UKSF.Tests.Unit.Models.Mission
+{
+    public class MissionTests
+    {
         [Fact]
-        public void ShouldSetFields() {
+        public void ShouldSetFields()
+        {
             Api.ArmaMissions.Models.Mission subject = new("testdata/testmission.Altis");
 
             subject.Path.Should().Be("testdata/testmission.Altis");

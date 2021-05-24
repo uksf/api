@@ -1,5 +1,7 @@
-namespace UKSF.Api.Personnel.Models {
-    public static class NotificationIcons {
+namespace UKSF.Api.Personnel.Models
+{
+    public static class NotificationIcons
+    {
         public const string APPLICATION = "group_add";
         public const string BUILD = "build";
         public const string COMMENT = "comment";

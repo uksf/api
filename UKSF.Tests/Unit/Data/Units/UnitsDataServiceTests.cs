@@ -8,10 +8,13 @@ using UKSF.Api.Personnel.Models;
 using Xunit;
 using UksfUnit = UKSF.Api.Personnel.Models.Unit;
 
-namespace UKSF.Tests.Unit.Data.Units {
-    public class UnitsDataServiceTests {
+namespace UKSF.Tests.Unit.Data.Units
+{
+    public class UnitsDataServiceTests
+    {
         [Fact]
-        public void Should_get_collection_in_order() {
+        public void Should_get_collection_in_order()
+        {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
             Mock<IEventBus> mockEventBus = new();
             Mock<IMongoCollection<UksfUnit>> mockDataCollection = new();
@@ -31,7 +34,8 @@ namespace UKSF.Tests.Unit.Data.Units {
         }
 
         [Fact]
-        public void ShouldGetOrderedCollectionFromPredicate() {
+        public void ShouldGetOrderedCollectionFromPredicate()
+        {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
             Mock<IEventBus> mockEventBus = new();
             Mock<IMongoCollection<UksfUnit>> mockDataCollection = new();

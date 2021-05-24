@@ -1,7 +1,9 @@
 ﻿using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Personnel.Models {
-    public class Rank : MongoObject {
+namespace UKSF.Api.Personnel.Models
+{
+    public class Rank : MongoObject
+    {
         public string Abbreviation;
         public string DiscordRoleId;
         public string Name;

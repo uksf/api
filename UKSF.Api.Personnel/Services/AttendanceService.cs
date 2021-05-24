@@ -2,8 +2,10 @@
 using System.Threading.Tasks;
 using UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.Personnel.Services {
-    public interface IAttendanceService {
+namespace UKSF.Api.Personnel.Services
+{
+    public interface IAttendanceService
+    {
         Task<AttendanceReport> GenerateAttendanceReport(DateTime start, DateTime end);
     }
 

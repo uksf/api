@@ -1,5 +1,7 @@
-﻿namespace UKSF.Api.Personnel.Models {
-    public enum MembershipState {
+﻿namespace UKSF.Api.Personnel.Models
+{
+    public enum MembershipState
+    {
         UNCONFIRMED,
         CONFIRMED,
         MEMBER,

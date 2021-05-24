@@ -11,9 +11,12 @@ using UKSF.Api.Personnel;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Api.Modpack.Tests {
-    public class DependencyInjectionTests : DependencyInjectionTestsBase {
-        public DependencyInjectionTests() {
+namespace UKSF.Api.Modpack.Tests
+{
+    public class DependencyInjectionTests : DependencyInjectionTestsBase
+    {
+        public DependencyInjectionTests()
+        {
             Services.AddUksfAdmin();
             Services.AddUksfPersonnel();
             Services.AddUksfArmaMissions();
@@ -23,7 +26,8 @@ namespace UKSF.Api.Modpack.Tests {
         }
 
         [Fact]
-        public void When_resolving_controllers() {
+        public void When_resolving_controllers()
+        {
             Services.AddTransient<GithubController>();
             Services.AddTransient<IssueController>();
             Services.AddTransient<ModpackController>();
@@ -35,7 +39,8 @@ namespace UKSF.Api.Modpack.Tests {
         }
 
         [Fact]
-        public void When_resolving_event_handlers() {
+        public void When_resolving_event_handlers()
+        {
             Services.AddTransient<BuildsEventHandler>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();
 
@@ -43,7 +48,8 @@ namespace UKSF.Api.Modpack.Tests {
         }
 
         [Fact]
-        public void When_resolving_scheduled_actions() {
+        public void When_resolving_scheduled_actions()
+        {
             Services.AddTransient<ActionPruneBuilds>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();
 

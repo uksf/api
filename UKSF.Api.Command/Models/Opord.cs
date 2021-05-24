@@ -1,8 +1,10 @@
 ﻿using System;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Command.Models {
-    public class Opord : MongoObject {
+namespace UKSF.Api.Command.Models
+{
+    public class Opord : MongoObject
+    {
         public string Description;
         public DateTime End;
         public string Map;

@@ -1,7 +1,9 @@
 ﻿using System;
 
-namespace UKSF.Api.Command.Models {
-    public class CreateOperationReportRequest {
+namespace UKSF.Api.Command.Models
+{
+    public class CreateOperationReportRequest
+    {
         public DateTime End;
         public int Endtime;
         public string Map;
