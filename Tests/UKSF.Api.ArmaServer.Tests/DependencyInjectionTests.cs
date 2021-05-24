@@ -7,9 +7,12 @@ using UKSF.Api.Personnel;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Api.ArmaServer.Tests {
-    public class DependencyInjectionTests : DependencyInjectionTestsBase {
-        public DependencyInjectionTests() {
+namespace UKSF.Api.ArmaServer.Tests
+{
+    public class DependencyInjectionTests : DependencyInjectionTestsBase
+    {
+        public DependencyInjectionTests()
+        {
             Services.AddUksfAdmin();
             Services.AddUksfPersonnel();
             Services.AddUksfArmaMissions();
@@ -17,7 +20,8 @@ namespace UKSF.Api.ArmaServer.Tests {
         }
 
         [Fact]
-        public void When_resolving_controllers() {
+        public void When_resolving_controllers()
+        {
             Services.AddTransient<GameServersController>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();
 

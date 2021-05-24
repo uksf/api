@@ -75,14 +75,15 @@ namespace UKSF.Api.Command.Services
 
         public bool InContextChainOfCommand(string id)
         {
-            Account contextAccount = _accountService.GetUserAccount();
-            if (id == contextAccount.Id)
+            DomainAccount contextDomainAccount = _accountService.GetUserAccount();
+            if (id == contextDomainAccount.Id)
             {
                 return true;
             }
 
-            Unit unit = _unitsContext.GetSingle(x => x.Name == contextAccount.UnitAssignment);
-            return _unitsService.RolesHasMember(unit, contextAccount.Id) && (unit.Members.Contains(id) || _unitsService.GetAllChildren(unit, true).Any(unitChild => unitChild.Members.Contains(id)));
+            Unit unit = _unitsContext.GetSingle(x => x.Name == contextDomainAccount.UnitAssignment);
+            return _unitsService.RolesHasMember(unit, contextDomainAccount.Id) &&
+                   (unit.Members.Contains(id) || _unitsService.GetAllChildren(unit, true).Any(unitChild => unitChild.Members.Contains(id)));
         }
 
         private IEnumerable<string> ResolveMode(ChainOfCommandMode mode, Unit start, Unit target)

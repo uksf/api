@@ -13,9 +13,11 @@ using UKSF.Api.Shared;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Extensions;
 
-namespace UKSF.Api.Personnel.Controllers {
+namespace UKSF.Api.Personnel.Controllers
+{
     [Route("[controller]")]
-    public class ApplicationsController : Controller {
+    public class ApplicationsController : Controller
+    {
         private readonly IAccountContext _accountContext;
         private readonly IAccountService _accountService;
         private readonly IAssignmentService _assignmentService;
@@ -34,7 +36,8 @@ namespace UKSF.Api.Personnel.Controllers {
             INotificationsService notificationsService,
             IDisplayNameService displayNameService,
             ILogger logger
-        ) {
+        )
+        {
             _accountContext = accountContext;
             _commentThreadContext = commentThreadContext;
             _assignmentService = assignmentService;
@@ -46,73 +49,79 @@ namespace UKSF.Api.Personnel.Controllers {
         }
 
         [HttpPost, Authorize, Permissions(Permissions.CONFIRMED)]
-        public async Task<IActionResult> Post([FromBody] JObject body) {
-            Account account = _accountService.GetUserAccount();
-            await Update(body, account);
+        public async Task Post([FromBody] JObject body)
+        {
+            DomainAccount domainAccount = _accountService.GetUserAccount();
+            await Update(body, domainAccount);
             CommentThread recruiterCommentThread = new() { Authors = _recruitmentService.GetRecruiterLeads().Values.ToArray(), Mode = ThreadMode.RECRUITER };
-            CommentThread applicationCommentThread = new() { Authors = new[] { account.Id }, Mode = ThreadMode.RECRUITER };
+            CommentThread applicationCommentThread = new() { Authors = new[] { domainAccount.Id }, Mode = ThreadMode.RECRUITER };
             await _commentThreadContext.Add(recruiterCommentThread);
             await _commentThreadContext.Add(applicationCommentThread);
-            Application application = new() {
+            Application application = new()
+            {
                 DateCreated = DateTime.Now,
                 State = ApplicationState.WAITING,
                 Recruiter = _recruitmentService.GetRecruiter(),
                 RecruiterCommentThread = recruiterCommentThread.Id,
                 ApplicationCommentThread = applicationCommentThread.Id
             };
-            await _accountContext.Update(account.Id, Builders<Account>.Update.Set(x => x.Application, application));
-            account = _accountContext.GetSingle(account.Id);
-            Notification notification = await _assignmentService.UpdateUnitRankAndRole(account.Id, "", "Applicant", "Candidate", reason: "you were entered into the recruitment process");
+            await _accountContext.Update(domainAccount.Id, Builders<DomainAccount>.Update.Set(x => x.Application, application));
+            domainAccount = _accountContext.GetSingle(domainAccount.Id);
+            Notification notification = await _assignmentService.UpdateUnitRankAndRole(domainAccount.Id, "", "Applicant", "Candidate", reason: "you were entered into the recruitment process");
             _notificationsService.Add(notification);
             _notificationsService.Add(
-                new Notification {
+                new()
+                {
                     Owner = application.Recruiter,
                     Icon = NotificationIcons.APPLICATION,
-                    Message = $"You have been assigned {account.Firstname} {account.Lastname}'s application",
-                    Link = $"/recruitment/{account.Id}"
+                    Message = $"You have been assigned {domainAccount.Firstname} {domainAccount.Lastname}'s application",
+                    Link = $"/recruitment/{domainAccount.Id}"
                 }
             );
-            foreach (string id in _recruitmentService.GetRecruiterLeads().Values.Where(x => account.Application.Recruiter != x)) {
+            foreach (string id in _recruitmentService.GetRecruiterLeads().Values.Where(x => domainAccount.Application.Recruiter != x))
+            {
                 _notificationsService.Add(
-                    new Notification {
+                    new()
+                    {
                         Owner = id,
                         Icon = NotificationIcons.APPLICATION,
-                        Message = $"{_displayNameService.GetDisplayName(account.Application.Recruiter)} has been assigned {account.Firstname} {account.Lastname}'s application",
-                        Link = $"/recruitment/{account.Id}"
+                        Message = $"{_displayNameService.GetDisplayName(domainAccount.Application.Recruiter)} has been assigned {domainAccount.Firstname} {domainAccount.Lastname}'s application",
+                        Link = $"/recruitment/{domainAccount.Id}"
                     }
                 );
             }
 
-            _logger.LogAudit($"Application submitted for {account.Id}. Assigned to {_displayNameService.GetDisplayName(account.Application.Recruiter)}");
-            return Ok();
+            _logger.LogAudit($"Application submitted for {domainAccount.Id}. Assigned to {_displayNameService.GetDisplayName(domainAccount.Application.Recruiter)}");
         }
 
         [HttpPost("update"), Authorize, Permissions(Permissions.CONFIRMED)]
-        public async Task<IActionResult> PostUpdate([FromBody] JObject body) {
-            Account account = _accountService.GetUserAccount();
-            await Update(body, account);
+        public async Task PostUpdate([FromBody] JObject body)
+        {
+            DomainAccount domainAccount = _accountService.GetUserAccount();
+            await Update(body, domainAccount);
             _notificationsService.Add(
-                new Notification {
-                    Owner = account.Application.Recruiter,
+                new()
+                {
+                    Owner = domainAccount.Application.Recruiter,
                     Icon = NotificationIcons.APPLICATION,
-                    Message = $"{account.Firstname} {account.Lastname} updated their application",
-                    Link = $"/recruitment/{account.Id}"
+                    Message = $"{domainAccount.Firstname} {domainAccount.Lastname} updated their application",
+                    Link = $"/recruitment/{domainAccount.Id}"
                 }
             );
-            string difference = account.Changes(_accountContext.GetSingle(account.Id));
-            _logger.LogAudit($"Application updated for {account.Id}: {difference}");
-            return Ok();
+            string difference = domainAccount.Changes(_accountContext.GetSingle(domainAccount.Id));
+            _logger.LogAudit($"Application updated for {domainAccount.Id}: {difference}");
         }
 
-        private async Task Update(JObject body, Account account) {
+        private async Task Update(JObject body, DomainAccount domainAccount)
+        {
             await _accountContext.Update(
-                account.Id,
-                Builders<Account>.Update.Set(x => x.ArmaExperience, body["armaExperience"].ToString())
-                                 .Set(x => x.UnitsExperience, body["unitsExperience"].ToString())
-                                 .Set(x => x.Background, body["background"].ToString())
-                                 .Set(x => x.MilitaryExperience, string.Equals(body["militaryExperience"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
-                                 .Set(x => x.RolePreferences, body["rolePreferences"].ToObject<List<string>>())
-                                 .Set(x => x.Reference, body["reference"].ToString())
+                domainAccount.Id,
+                Builders<DomainAccount>.Update.Set(x => x.ArmaExperience, body["armaExperience"].ToString())
+                                       .Set(x => x.UnitsExperience, body["unitsExperience"].ToString())
+                                       .Set(x => x.Background, body["background"].ToString())
+                                       .Set(x => x.MilitaryExperience, string.Equals(body["militaryExperience"].ToString(), "true", StringComparison.InvariantCultureIgnoreCase))
+                                       .Set(x => x.RolePreferences, body["rolePreferences"].ToObject<List<string>>())
+                                       .Set(x => x.Reference, body["reference"].ToString())
             );
         }
     }

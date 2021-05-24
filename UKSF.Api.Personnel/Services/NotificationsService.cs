@@ -9,7 +9,10 @@ using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Signalr.Clients;
 using UKSF.Api.Personnel.Signalr.Hubs;
+using UKSF.Api.Shared.Commands;
+using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Models;
+using UKSF.Api.Shared.Queries;
 using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Personnel.Services
@@ -17,8 +20,7 @@ namespace UKSF.Api.Personnel.Services
     public interface INotificationsService
     {
         void Add(Notification notification);
-        void SendTeamspeakNotification(Account account, string rawMessage);
-        void SendTeamspeakNotification(IEnumerable<double> clientDbIds, string rawMessage);
+        void SendTeamspeakNotification(IEnumerable<int> clientDbIds, string rawMessage);
         IEnumerable<Notification> GetNotificationsForContext();
         Task MarkNotificationsAsRead(List<string> ids);
         Task Delete(List<string> ids);
@@ -27,18 +29,18 @@ namespace UKSF.Api.Personnel.Services
     public class NotificationsService : INotificationsService
     {
         private readonly IAccountContext _accountContext;
-        private readonly IEmailService _emailService;
         private readonly IEventBus _eventBus;
         private readonly IHttpContextService _httpContextService;
         private readonly INotificationsContext _notificationsContext;
         private readonly IHubContext<NotificationHub, INotificationsClient> _notificationsHub;
         private readonly IObjectIdConversionService _objectIdConversionService;
+        private readonly ISendTemplatedEmailCommand _sendTemplatedEmailCommand;
         private readonly IVariablesService _variablesService;
 
         public NotificationsService(
             IAccountContext accountContext,
             INotificationsContext notificationsContext,
-            IEmailService emailService,
+            ISendTemplatedEmailCommand sendTemplatedEmailCommand,
             IHubContext<NotificationHub, INotificationsClient> notificationsHub,
             IHttpContextService httpContextService,
             IObjectIdConversionService objectIdConversionService,
@@ -48,7 +50,7 @@ namespace UKSF.Api.Personnel.Services
         {
             _accountContext = accountContext;
             _notificationsContext = notificationsContext;
-            _emailService = emailService;
+            _sendTemplatedEmailCommand = sendTemplatedEmailCommand;
             _notificationsHub = notificationsHub;
             _httpContextService = httpContextService;
             _objectIdConversionService = objectIdConversionService;
@@ -56,29 +58,9 @@ namespace UKSF.Api.Personnel.Services
             _variablesService = variablesService;
         }
 
-        public void SendTeamspeakNotification(Account account, string rawMessage)
+        public void SendTeamspeakNotification(IEnumerable<int> clientDbIds, string rawMessage)
         {
-            if (NotificationsDisabled())
-            {
-                return;
-            }
-
-            if (account.TeamspeakIdentities == null)
-            {
-                return;
-            }
-
-            if (account.TeamspeakIdentities.Count == 0)
-            {
-                return;
-            }
-
-            SendTeamspeakNotification(account.TeamspeakIdentities, rawMessage);
-        }
-
-        public void SendTeamspeakNotification(IEnumerable<double> clientDbIds, string rawMessage)
-        {
-            if (NotificationsDisabled())
+            if (NotificationsGloballyDisabled())
             {
                 return;
             }
@@ -121,41 +103,44 @@ namespace UKSF.Api.Personnel.Services
         private async Task AddNotificationAsync(Notification notification)
         {
             notification.Message = _objectIdConversionService.ConvertObjectIds(notification.Message);
-            Account account = _accountContext.GetSingle(notification.Owner);
-            if (account.MembershipState == MembershipState.DISCHARGED)
+            DomainAccount domainAccount = _accountContext.GetSingle(notification.Owner);
+            if (domainAccount.MembershipState == MembershipState.DISCHARGED)
             {
                 return;
             }
 
             await _notificationsContext.Add(notification);
-            if (account.Settings.NotificationsEmail)
-            {
-                SendEmailNotification(
-                    account.Email,
-                    $"{notification.Message}{(notification.Link != null ? $"<br><a href='https://uk-sf.co.uk{notification.Link}'>https://uk-sf.co.uk{notification.Link}</a>" : "")}"
-                );
-            }
+            await SendEmailNotification(
+                domainAccount,
+                $"{notification.Message}{(notification.Link != null ? $"<br><a href='https://uk-sf.co.uk{notification.Link}'>https://uk-sf.co.uk{notification.Link}</a>" : "")}"
+            );
 
-            if (account.Settings.NotificationsTeamspeak)
-            {
-                SendTeamspeakNotification(account, $"{notification.Message}{(notification.Link != null ? $"\n[url]https://uk-sf.co.uk{notification.Link}[/url]" : "")}");
-            }
+            SendTeamspeakNotification(domainAccount, $"{notification.Message}{(notification.Link != null ? $"\n[url]https://uk-sf.co.uk{notification.Link}[/url]" : "")}");
         }
 
-        private void SendEmailNotification(string email, string message)
+        private async Task SendEmailNotification(DomainAccount domainAccount, string message)
         {
-            if (NotificationsDisabled())
+            if (NotificationsGloballyDisabled() || !domainAccount.Settings.NotificationsEmail)
             {
                 return;
             }
 
-            message += "<br><br><sub>You can opt-out of these emails by unchecking 'Email notifications' in your <a href='https://uk-sf.co.uk/profile'>Profile</a></sub>";
-            _emailService.SendEmail(email, "UKSF Notification", message);
+            await _sendTemplatedEmailCommand.ExecuteAsync(new(domainAccount.Email, "UKSF Notification", TemplatedEmailNames.NotificationTemplate, new() { { "message", message } }));
         }
 
-        private bool NotificationsDisabled()
+        private void SendTeamspeakNotification(DomainAccount domainAccount, string rawMessage)
         {
-            return !_variablesService.GetFeatureState("NOTIFICATIONS");
+            if (NotificationsGloballyDisabled() || !domainAccount.Settings.NotificationsTeamspeak || domainAccount.TeamspeakIdentities.IsNullOrEmpty())
+            {
+                return;
+            }
+
+            SendTeamspeakNotification(domainAccount.TeamspeakIdentities, rawMessage);
+        }
+
+        private bool NotificationsGloballyDisabled()
+        {
+            return _variablesService.GetFeatureState("NOTIFICATIONS");
         }
     }
 }

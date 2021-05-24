@@ -27,7 +27,7 @@ namespace UKSF.Api.Personnel.Services
         bool MemberHasRole(string id, string unitId, string role);
         bool MemberHasRole(string id, Unit unit, string role);
         bool MemberHasAnyRole(string id);
-        int GetMemberRoleOrder(Account account, Unit unit);
+        int GetMemberRoleOrder(DomainAccount domainAccount, Unit unit);
 
         Unit GetRoot();
         Unit GetAuxilliaryRoot();
@@ -171,11 +171,11 @@ namespace UKSF.Api.Personnel.Services
             return _unitsContext.Get().Any(x => RolesHasMember(x, id));
         }
 
-        public int GetMemberRoleOrder(Account account, Unit unit)
+        public int GetMemberRoleOrder(DomainAccount domainAccount, Unit unit)
         {
-            if (RolesHasMember(unit, account.Id))
+            if (RolesHasMember(unit, domainAccount.Id))
             {
-                return int.MaxValue - _rolesContext.GetSingle(x => x.Name == unit.Roles.FirstOrDefault(y => y.Value == account.Id).Key).Order;
+                return int.MaxValue - _rolesContext.GetSingle(x => x.Name == unit.Roles.FirstOrDefault(y => y.Value == domainAccount.Id).Key).Order;
             }
 
             return -1;

@@ -7,19 +7,23 @@ using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
 
-namespace UKSF.Api.Auth.Services {
-    public interface IPermissionsService {
-        IEnumerable<string> GrantPermissions(Account account);
+namespace UKSF.Api.Auth.Services
+{
+    public interface IPermissionsService
+    {
+        IEnumerable<string> GrantPermissions(DomainAccount domainAccount);
     }
 
-    public class PermissionsService : IPermissionsService {
+    public class PermissionsService : IPermissionsService
+    {
         private readonly IRanksService _ranksService;
         private readonly IRecruitmentService _recruitmentService;
         private readonly IUnitsContext _unitsContext;
         private readonly IUnitsService _unitsService;
         private readonly IVariablesService _variablesService;
 
-        public PermissionsService(IRanksService ranksService, IUnitsContext unitsContext, IUnitsService unitsService, IRecruitmentService recruitmentService, IVariablesService variablesService) {
+        public PermissionsService(IRanksService ranksService, IUnitsContext unitsContext, IUnitsService unitsService, IRecruitmentService recruitmentService, IVariablesService variablesService)
+        {
             _ranksService = ranksService;
             _unitsContext = unitsContext;
             _unitsService = unitsService;
@@ -27,47 +31,58 @@ namespace UKSF.Api.Auth.Services {
             _variablesService = variablesService;
         }
 
-        public IEnumerable<string> GrantPermissions(Account account) {
+        public IEnumerable<string> GrantPermissions(DomainAccount domainAccount)
+        {
             HashSet<string> permissions = new();
 
-            switch (account.MembershipState) {
-                case MembershipState.MEMBER: {
+            switch (domainAccount.MembershipState)
+            {
+                case MembershipState.MEMBER:
+                {
                     permissions.Add(Permissions.MEMBER);
-                    bool admin = account.Admin;
-                    if (admin) {
+                    bool admin = domainAccount.Admin;
+                    if (admin)
+                    {
                         permissions.UnionWith(Permissions.ALL);
                         break;
                     }
 
-                    if (_unitsService.MemberHasAnyRole(account.Id)) {
+                    if (_unitsService.MemberHasAnyRole(domainAccount.Id))
+                    {
                         permissions.Add(Permissions.COMMAND);
                     }
 
                     string ncoRank = _variablesService.GetVariable("PERMISSIONS_NCO_RANK").AsString();
-                    if (account.Rank != null && _ranksService.IsSuperiorOrEqual(account.Rank, ncoRank)) {
+                    if (domainAccount.Rank != null && _ranksService.IsSuperiorOrEqual(domainAccount.Rank, ncoRank))
+                    {
                         permissions.Add(Permissions.NCO);
                     }
 
-                    if (_recruitmentService.IsRecruiterLead(account)) {
+                    if (_recruitmentService.IsRecruiterLead(domainAccount))
+                    {
                         permissions.Add(Permissions.RECRUITER_LEAD);
                     }
 
-                    if (_recruitmentService.IsRecruiter(account)) {
+                    if (_recruitmentService.IsRecruiter(domainAccount))
+                    {
                         permissions.Add(Permissions.RECRUITER);
                     }
 
                     string personnelId = _variablesService.GetVariable("UNIT_ID_PERSONNEL").AsString();
-                    if (_unitsContext.GetSingle(personnelId).Members.Contains(account.Id)) {
+                    if (_unitsContext.GetSingle(personnelId).Members.Contains(domainAccount.Id))
+                    {
                         permissions.Add(Permissions.PERSONNEL);
                     }
 
                     string[] missionsId = _variablesService.GetVariable("UNIT_ID_MISSIONS").AsArray();
-                    if (_unitsContext.GetSingle(x => missionsId.Contains(x.Id)).Members.Contains(account.Id)) {
+                    if (_unitsContext.GetSingle(x => missionsId.Contains(x.Id)).Members.Contains(domainAccount.Id))
+                    {
                         permissions.Add(Permissions.SERVERS);
                     }
 
                     string testersId = _variablesService.GetVariable("UNIT_ID_TESTERS").AsString();
-                    if (_unitsContext.GetSingle(testersId).Members.Contains(account.Id)) {
+                    if (_unitsContext.GetSingle(testersId).Members.Contains(domainAccount.Id))
+                    {
                         permissions.Add(Permissions.TESTER);
                     }
 

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using UKSF.Api.Auth.Exceptions;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 
@@ -30,36 +31,52 @@ namespace UKSF.Api.Auth.Services
 
         public string Login(string email, string password)
         {
-            Account account = AuthenticateAccount(email, password);
-            return GenerateBearerToken(account);
+            DomainAccount domainAccount = AuthenticateAccount(email, password);
+            return GenerateBearerToken(domainAccount);
         }
 
         public string LoginForPasswordReset(string email)
         {
-            Account account = AuthenticateAccount(email, "", true);
-            return GenerateBearerToken(account);
+            DomainAccount domainAccount = AuthenticateAccount(email, "", true);
+            return GenerateBearerToken(domainAccount);
         }
 
         public string RegenerateBearerToken(string accountId)
         {
-            return GenerateBearerToken(_accountContext.GetSingle(accountId));
-        }
-
-        private Account AuthenticateAccount(string email, string password, bool passwordReset = false)
-        {
-            Account account = _accountContext.GetSingle(x => string.Equals(x.Email, email, StringComparison.InvariantCultureIgnoreCase));
-            if (account != null && (passwordReset || BCrypt.Net.BCrypt.Verify(password, account.Password)))
+            DomainAccount domainAccount = _accountContext.GetSingle(accountId);
+            if (domainAccount == null)
             {
-                return account;
+                throw new LoginFailedException("Login failed. No user found with that email");
             }
 
-            throw new LoginFailedException();
+            return GenerateBearerToken(domainAccount);
         }
 
-        private string GenerateBearerToken(Account account)
+        private DomainAccount AuthenticateAccount(string email, string password, bool passwordReset = false)
         {
-            List<Claim> claims = new() { new(ClaimTypes.Email, account.Email, ClaimValueTypes.String), new(ClaimTypes.Sid, account.Id, ClaimValueTypes.String) };
-            claims.AddRange(_permissionsService.GrantPermissions(account).Select(x => new Claim(ClaimTypes.Role, x)));
+            DomainAccount domainAccount = _accountContext.GetSingle(x => string.Equals(x.Email, email, StringComparison.InvariantCultureIgnoreCase));
+            if (domainAccount == null)
+            {
+                throw new LoginFailedException("Login failed. No user found with that email");
+            }
+
+            if (passwordReset)
+            {
+                return domainAccount;
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(password, domainAccount.Password))
+            {
+                throw new LoginFailedException("Login failed. Incorrect password");
+            }
+
+            return domainAccount;
+        }
+
+        private string GenerateBearerToken(DomainAccount domainAccount)
+        {
+            List<Claim> claims = new() { new(ClaimTypes.Email, domainAccount.Email, ClaimValueTypes.String), new(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String) };
+            claims.AddRange(_permissionsService.GrantPermissions(domainAccount).Select(x => new Claim(ClaimTypes.Role, x)));
 
             return JsonConvert.ToString(
                 new JwtSecurityTokenHandler().WriteToken(
@@ -75,6 +92,4 @@ namespace UKSF.Api.Auth.Services
             );
         }
     }
-
-    public class LoginFailedException : Exception { }
 }

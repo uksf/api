@@ -15,9 +15,11 @@ using UKSF.Api.Shared;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Command.Controllers {
+namespace UKSF.Api.Command.Controllers
+{
     [Route("[controller]"), Permissions(Permissions.PERSONNEL, Permissions.NCO, Permissions.RECRUITER)]
-    public class DischargesController : Controller {
+    public class DischargesController : Controller
+    {
         private readonly IAccountContext _accountContext;
         private readonly IAssignmentService _assignmentService;
         private readonly ICommandRequestService _commandRequestService;
@@ -38,7 +40,8 @@ namespace UKSF.Api.Command.Controllers {
             IHttpContextService httpContextService,
             IVariablesContext variablesContext,
             ILogger logger
-        ) {
+        )
+        {
             _dischargeContext = dischargeContext;
             _accountContext = accountContext;
             _unitsContext = unitsContext;
@@ -51,19 +54,22 @@ namespace UKSF.Api.Command.Controllers {
         }
 
         [HttpGet]
-        public IActionResult Get() {
-            IEnumerable<DischargeCollection> discharges = _dischargeContext.Get();
-            foreach (DischargeCollection discharge in discharges) {
+        public IEnumerable<DischargeCollection> Get()
+        {
+            IEnumerable<DischargeCollection> discharges = _dischargeContext.Get().ToList();
+            foreach (DischargeCollection discharge in discharges)
+            {
                 discharge.RequestExists = _commandRequestService.DoesEquivalentRequestExist(
-                    new CommandRequest { Recipient = discharge.AccountId, Type = CommandRequestType.REINSTATE_MEMBER, DisplayValue = "Member", DisplayFrom = "Discharged" }
+                    new() { Recipient = discharge.AccountId, Type = CommandRequestType.REINSTATE_MEMBER, DisplayValue = "Member", DisplayFrom = "Discharged" }
                 );
             }
 
-            return Ok(discharges);
+            return discharges;
         }
 
         [HttpGet("reinstate/{id}")]
-        public async Task<IActionResult> Reinstate(string id) {
+        public async Task<IEnumerable<DischargeCollection>> Reinstate(string id)
+        {
             DischargeCollection dischargeCollection = _dischargeContext.GetSingle(id);
             await _dischargeContext.Update(dischargeCollection.Id, Builders<DischargeCollection>.Update.Set(x => x.Reinstated, true));
             await _accountContext.Update(dischargeCollection.AccountId, x => x.MembershipState, MembershipState.MEMBER);
@@ -80,13 +86,14 @@ namespace UKSF.Api.Command.Controllers {
 
             _logger.LogAudit($"{_httpContextService.GetUserId()} reinstated {dischargeCollection.Name}'s membership", _httpContextService.GetUserId());
             string personnelId = _variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
-            foreach (string member in _unitsContext.GetSingle(personnelId).Members.Where(x => x != _httpContextService.GetUserId())) {
+            foreach (string member in _unitsContext.GetSingle(personnelId).Members.Where(x => x != _httpContextService.GetUserId()))
+            {
                 _notificationsService.Add(
-                    new Notification { Owner = member, Icon = NotificationIcons.PROMOTION, Message = $"{dischargeCollection.Name}'s membership was reinstated by {_httpContextService.GetUserId()}" }
+                    new() { Owner = member, Icon = NotificationIcons.PROMOTION, Message = $"{dischargeCollection.Name}'s membership was reinstated by {_httpContextService.GetUserId()}" }
                 );
             }
 
-            return Ok(_dischargeContext.Get());
+            return _dischargeContext.Get();
         }
     }
 }

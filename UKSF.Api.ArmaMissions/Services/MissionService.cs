@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.ArmaMissions.Services
 {
@@ -16,14 +17,14 @@ namespace UKSF.Api.ArmaMissions.Services
         private int _armaServerDefaultMaxCurators;
         private string _armaServerModsPath;
         private Mission _mission;
-        private List<MissionPatchingReport> _reports;
+        private List<ValidationReport> _reports;
 
         public MissionService(MissionPatchDataService missionPatchDataService)
         {
             _missionPatchDataService = missionPatchDataService;
         }
 
-        public List<MissionPatchingReport> ProcessMission(Mission tempMission, string armaServerModsPath, int armaServerDefaultMaxCurators)
+        public List<ValidationReport> ProcessMission(Mission tempMission, string armaServerModsPath, int armaServerDefaultMaxCurators)
         {
             _armaServerDefaultMaxCurators = armaServerDefaultMaxCurators;
             _armaServerModsPath = armaServerModsPath;

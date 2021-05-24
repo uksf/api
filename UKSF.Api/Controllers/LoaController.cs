@@ -73,8 +73,8 @@ namespace UKSF.Api.Controllers
                     objectIds = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER).Select(x => x.Id).ToList();
                     break;
                 case "unit":
-                    Account account = _accountService.GetUserAccount();
-                    IEnumerable<Unit> groups = _unitsService.GetAllChildren(_unitsContext.GetSingle(x => x.Name == account.UnitAssignment), true);
+                    DomainAccount domainAccount = _accountService.GetUserAccount();
+                    IEnumerable<Unit> groups = _unitsService.GetAllChildren(_unitsContext.GetSingle(x => x.Name == domainAccount.UnitAssignment), true);
                     List<string> members = groups.SelectMany(x => x.Members.ToList()).ToList();
                     objectIds = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER && members.Contains(x.Id)).Select(x => x.Id).ToList();
                     break;
@@ -91,7 +91,7 @@ namespace UKSF.Api.Controllers
                                                                    Id = x.Id,
                                                                    Start = x.Start,
                                                                    End = x.End,
-                                                                   State = x.State.ToString(),
+                                                                   State = x.State,
                                                                    Emergency = x.Emergency,
                                                                    Late = x.Late,
                                                                    Reason = x.Reason,

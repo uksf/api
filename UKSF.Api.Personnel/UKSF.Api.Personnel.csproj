@@ -16,6 +16,7 @@
         <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1"/>
       <PackageReference Include="AvsAn" Version="3.2.0" />
       <PackageReference Include="BCrypt.Net-Next" Version="4.0.2" />
+        <PackageReference Include="NameCase" Version="1.0.0"/>
     </ItemGroup>
 
 </Project>

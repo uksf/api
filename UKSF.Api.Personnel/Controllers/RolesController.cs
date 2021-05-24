@@ -41,7 +41,7 @@ namespace UKSF.Api.Personnel.Controllers
         }
 
         [HttpGet, Authorize]
-        public IActionResult GetRoles([FromQuery] string id = "", [FromQuery] string unitId = "")
+        public RolesDataset GetRoles([FromQuery] string id = "", [FromQuery] string unitId = "")
         {
             if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(unitId))
             {
@@ -49,76 +49,76 @@ namespace UKSF.Api.Personnel.Controllers
                 IOrderedEnumerable<Role> unitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order);
                 IEnumerable<KeyValuePair<string, string>> existingPairs = unit.Roles.Where(x => x.Value == id);
                 IEnumerable<Role> filteredRoles = unitRoles.Where(x => existingPairs.All(y => y.Key != x.Name));
-                return Ok(filteredRoles);
+                return new() { UnitRoles = filteredRoles };
             }
 
             if (!string.IsNullOrEmpty(id))
             {
-                Account account = _accountContext.GetSingle(id);
-                return Ok(_rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL && x.Name != account.RoleAssignment).OrderBy(x => x.Order));
+                DomainAccount domainAccount = _accountContext.GetSingle(id);
+                return new() { IndividualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL && x.Name != domainAccount.RoleAssignment).OrderBy(x => x.Order) };
             }
 
-            return Ok(new { individualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL), unitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order) });
+            return new() { IndividualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL), UnitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order) };
         }
 
         [HttpPost("{roleType}/{check}"), Authorize]
-        public IActionResult CheckRole(RoleType roleType, string check, [FromBody] Role role = null)
+        public Role CheckRole(RoleType roleType, string check, [FromBody] Role role = null)
         {
             if (string.IsNullOrEmpty(check))
             {
-                return Ok();
+                return null;
             }
 
             if (role != null)
             {
                 Role safeRole = role;
-                return Ok(_rolesContext.GetSingle(x => x.Id != safeRole.Id && x.RoleType == roleType && x.Name == check));
+                return _rolesContext.GetSingle(x => x.Id != safeRole.Id && x.RoleType == roleType && x.Name == check);
             }
 
-            return Ok(_rolesContext.GetSingle(x => x.RoleType == roleType && x.Name == check));
+            return _rolesContext.GetSingle(x => x.RoleType == roleType && x.Name == check);
         }
 
         [HttpPut, Authorize]
-        public async Task<IActionResult> AddRole([FromBody] Role role)
+        public async Task<RolesDataset> AddRole([FromBody] Role role)
         {
             await _rolesContext.Add(role);
             _logger.LogAudit($"Role added '{role.Name}'");
-            return Ok(new { individualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL), unitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order) });
+            return new() { IndividualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL), UnitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order) };
         }
 
         [HttpPatch, Authorize]
-        public async Task<IActionResult> EditRole([FromBody] Role role)
+        public async Task<RolesDataset> EditRole([FromBody] Role role)
         {
             Role oldRole = _rolesContext.GetSingle(x => x.Id == role.Id);
             _logger.LogAudit($"Role updated from '{oldRole.Name}' to '{role.Name}'");
             await _rolesContext.Update(role.Id, x => x.Name, role.Name);
-            foreach (Account account in _accountContext.Get(x => x.RoleAssignment == oldRole.Name))
+            foreach (DomainAccount account in _accountContext.Get(x => x.RoleAssignment == oldRole.Name))
             {
                 await _accountContext.Update(account.Id, x => x.RoleAssignment, role.Name);
             }
 
             await _unitsService.RenameRole(oldRole.Name, role.Name);
-            return Ok(new { individualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL), unitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order) });
+            return new() { IndividualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL), UnitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order) };
         }
 
         [HttpDelete("{id}"), Authorize]
-        public async Task<IActionResult> DeleteRole(string id)
+        public async Task<RolesDataset> DeleteRole(string id)
         {
             Role role = _rolesContext.GetSingle(x => x.Id == id);
             _logger.LogAudit($"Role deleted '{role.Name}'");
             await _rolesContext.Delete(id);
-            foreach (Account account in _accountContext.Get(x => x.RoleAssignment == role.Name))
+            foreach (DomainAccount account in _accountContext.Get(x => x.RoleAssignment == role.Name))
             {
                 Notification notification = await _assignmentService.UpdateUnitRankAndRole(account.Id, role: AssignmentService.REMOVE_FLAG, reason: $"the '{role.Name}' role was deleted");
                 _notificationsService.Add(notification);
             }
 
             await _unitsService.DeleteRole(role.Name);
-            return Ok(new { individualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL), unitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order) });
+            return new() { IndividualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL), UnitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order) };
         }
 
         [HttpPost("order"), Authorize]
-        public async Task<IActionResult> UpdateOrder([FromBody] List<Role> newRoleOrder)
+        public async Task<IOrderedEnumerable<Role>> UpdateOrder([FromBody] List<Role> newRoleOrder)
         {
             for (int index = 0; index < newRoleOrder.Count; index++)
             {
@@ -129,7 +129,7 @@ namespace UKSF.Api.Personnel.Controllers
                 }
             }
 
-            return Ok(_rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order));
+            return _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order);
         }
     }
 }

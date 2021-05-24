@@ -39,7 +39,7 @@ namespace UKSF.Api.Middleware
             }
 
             context.Response.ContentType = "application/json";
-            return SerializeToStream(context.Response.BodyWriter, new(context.Response.StatusCode, exception?.Message));
+            return SerializeToStream(context.Response.BodyWriter, new(context.Response.StatusCode, 0, exception?.Message, null));
         }
 
         private static ValueTask<FlushResult> HandleUksfException(UksfException uksfException, HttpContext context)
@@ -47,7 +47,7 @@ namespace UKSF.Api.Middleware
             context.Response.StatusCode = uksfException.StatusCode;
             context.Response.ContentType = "application/json";
 
-            return SerializeToStream(context.Response.BodyWriter, new(uksfException.StatusCode, uksfException.Message));
+            return SerializeToStream(context.Response.BodyWriter, new(uksfException.StatusCode, uksfException.DetailCode, uksfException.Message, uksfException.Validation));
         }
 
         private static ValueTask<FlushResult> SerializeToStream(PipeWriter output, UksfErrorMessage error)

@@ -1,13 +1,15 @@
-﻿using System;
-using FluentAssertions;
-using UKSF.Api.ArmaMissions.Models;
+﻿using FluentAssertions;
+using UKSF.Api.Shared.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Models.Mission {
-    public class MissionPatchingReportTests {
+namespace UKSF.Tests.Unit.Models.Mission
+{
+    public class MissionPatchingReportTests
+    {
         [Fact]
-        public void ShouldSetFieldsAsError() {
-            MissionPatchingReport subject = new("Test Title", "Test details, like what went wrong, what needs to be done to fix it", true);
+        public void ShouldSetFieldsAsError()
+        {
+            ValidationReport subject = new("Test Title", "Test details, like what went wrong, what needs to be done to fix it", true);
 
             subject.Title.Should().Be("Error: Test Title");
             subject.Detail.Should().Be("Test details, like what went wrong, what needs to be done to fix it");
@@ -15,8 +17,9 @@ namespace UKSF.Tests.Unit.Models.Mission {
         }
 
         [Fact]
-        public void ShouldSetFieldsAsWarning() {
-            MissionPatchingReport subject = new("Test Title", "Test details, like what went wrong, what needs to be done to fix it");
+        public void ShouldSetFieldsAsWarning()
+        {
+            ValidationReport subject = new("Test Title", "Test details, like what went wrong, what needs to be done to fix it");
 
             subject.Title.Should().Be("Warning: Test Title");
             subject.Detail.Should().Be("Test details, like what went wrong, what needs to be done to fix it");
@@ -24,8 +27,9 @@ namespace UKSF.Tests.Unit.Models.Mission {
         }
 
         [Fact]
-        public void ShouldSetFieldsFromException() {
-            MissionPatchingReport subject = new(new Exception("An error occured"));
+        public void ShouldSetFieldsFromException()
+        {
+            ValidationReport subject = new(new("An error occured"));
 
             subject.Title.Should().Be("An error occured");
             subject.Detail.Should().Be("System.Exception: An error occured");

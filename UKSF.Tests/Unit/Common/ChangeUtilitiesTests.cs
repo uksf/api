@@ -7,30 +7,36 @@ using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Common {
-    public class ChangeUtilitiesTests {
+namespace UKSF.Tests.Unit.Common
+{
+    public class ChangeUtilitiesTests
+    {
         [Fact]
-        public void Should_detect_changes_for_complex_object() {
+        public void Should_detect_changes_for_complex_object()
+        {
             string id = ObjectId.GenerateNewId().ToString();
-            Account original = new() {
+            DomainAccount original = new()
+            {
                 Id = id,
                 Firstname = "Tim",
                 Background = "I like trains",
                 Dob = DateTime.Parse("2018-08-09T05:00:00.307"),
                 Rank = "Private",
-                Application = new Application { State = ApplicationState.WAITING, Recruiter = "Bob", ApplicationCommentThread = "thread1", DateCreated = DateTime.Parse("2020-05-02T10:34:39.786") },
-                RolePreferences = new List<string> { "Aviatin", "NCO" }
+                Application = new() { State = ApplicationState.WAITING, Recruiter = "Bob", ApplicationCommentThread = "thread1", DateCreated = DateTime.Parse("2020-05-02T10:34:39.786") },
+                RolePreferences = new() { "Aviatin", "NCO" }
             };
-            Account updated = new() {
+            DomainAccount updated = new()
+            {
                 Id = id,
                 Firstname = "Timmy",
                 Lastname = "Bob",
                 Background = "I like planes",
                 Dob = DateTime.Parse("2020-10-03T05:00:34.307"),
-                Application = new Application {
+                Application = new()
+                {
                     State = ApplicationState.ACCEPTED, Recruiter = "Bob", DateCreated = DateTime.Parse("2020-05-02T10:34:39.786"), DateAccepted = DateTime.Parse("2020-07-02T10:34:39.786")
                 },
-                RolePreferences = new List<string> { "Aviation", "Officer" }
+                RolePreferences = new() { "Aviation", "Officer" }
             };
 
             string subject = original.Changes(updated);
@@ -55,10 +61,11 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void Should_detect_changes_for_date() {
+        public void Should_detect_changes_for_date()
+        {
             string id = ObjectId.GenerateNewId().ToString();
-            Account original = new() { Id = id, Dob = DateTime.Parse("2020-10-03T05:00:34.307") };
-            Account updated = new() { Id = id, Dob = DateTime.Parse("2020-11-03T00:00:00.000") };
+            DomainAccount original = new() { Id = id, Dob = DateTime.Parse("2020-10-03T05:00:34.307") };
+            DomainAccount updated = new() { Id = id, Dob = DateTime.Parse("2020-11-03T00:00:00.000") };
 
             string subject = original.Changes(updated);
 
@@ -66,10 +73,11 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void Should_detect_changes_for_dictionary() {
+        public void Should_detect_changes_for_dictionary()
+        {
             string id = ObjectId.GenerateNewId().ToString();
-            TestDataModel original = new() { Id = id, Dictionary = new Dictionary<string, object> { { "0", "variable0" }, { "1", "variable0" } } };
-            TestDataModel updated = new() { Id = id, Dictionary = new Dictionary<string, object> { { "0", "variable0" }, { "1", "variable1" }, { "2", "variable2" } } };
+            TestDataModel original = new() { Id = id, Dictionary = new() { { "0", "variable0" }, { "1", "variable0" } } };
+            TestDataModel updated = new() { Id = id, Dictionary = new() { { "0", "variable0" }, { "1", "variable1" }, { "2", "variable2" } } };
 
             string subject = original.Changes(updated);
 
@@ -77,10 +85,11 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void Should_detect_changes_for_enum() {
+        public void Should_detect_changes_for_enum()
+        {
             string id = ObjectId.GenerateNewId().ToString();
-            Account original = new() { Id = id, MembershipState = MembershipState.UNCONFIRMED };
-            Account updated = new() { Id = id, MembershipState = MembershipState.MEMBER };
+            DomainAccount original = new() { Id = id, MembershipState = MembershipState.UNCONFIRMED };
+            DomainAccount updated = new() { Id = id, MembershipState = MembershipState.MEMBER };
 
             string subject = original.Changes(updated);
 
@@ -88,10 +97,11 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void Should_detect_changes_for_hashset() {
+        public void Should_detect_changes_for_hashset()
+        {
             string id = ObjectId.GenerateNewId().ToString();
-            Account original = new() { Id = id, TeamspeakIdentities = new HashSet<double> { 0 } };
-            Account updated = new() { Id = id, TeamspeakIdentities = new HashSet<double> { 0, 1, 2, 2 } };
+            DomainAccount original = new() { Id = id, TeamspeakIdentities = new() { 0 } };
+            DomainAccount updated = new() { Id = id, TeamspeakIdentities = new() { 0, 1, 2, 2 } };
 
             string subject = original.Changes(updated);
 
@@ -99,10 +109,11 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void Should_detect_changes_for_object_list() {
+        public void Should_detect_changes_for_object_list()
+        {
             string id = ObjectId.GenerateNewId().ToString();
-            Account original = new() { Id = id, ServiceRecord = new List<ServiceRecordEntry> { new() { Occurence = "Event" } } };
-            Account updated = new() { Id = id, ServiceRecord = new List<ServiceRecordEntry> { new() { Occurence = "Event" }, new() { Occurence = "Another Event" } } };
+            DomainAccount original = new() { Id = id, ServiceRecord = new() { new() { Occurence = "Event" } } };
+            DomainAccount updated = new() { Id = id, ServiceRecord = new() { new() { Occurence = "Event" }, new() { Occurence = "Another Event" } } };
 
             string subject = original.Changes(updated);
 
@@ -110,18 +121,19 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void Should_detect_changes_for_simple_object_with_list() {
-            string id = ObjectId.GenerateNewId().ToString();
-            Account original = new() { Id = id, RolePreferences = new List<string> { "Aviatin", "NCO" } };
-            Account updated = new() { Id = id, RolePreferences = new List<string> { "Aviation", "NCO", "Officer" } };
+        public void Should_detect_changes_for_simple_list()
+        {
+            List<string> original = new() { "Aviatin", "NCO" };
+            List<string> updated = new() { "Aviation", "NCO", "Officer" };
 
             string subject = original.Changes(updated);
 
-            subject.Should().Be("\n\t'RolePreferences' changed:" + "\n\t\tadded: 'Aviation'" + "\n\t\tadded: 'Officer'" + "\n\t\tremoved: 'Aviatin'");
+            subject.Should().Be("\n\t'List' changed:" + "\n\t\tadded: 'Aviation'" + "\n\t\tadded: 'Officer'" + "\n\t\tremoved: 'Aviatin'");
         }
 
         [Fact]
-        public void Should_detect_changes_for_simple_object() {
+        public void Should_detect_changes_for_simple_object()
+        {
             string id = ObjectId.GenerateNewId().ToString();
             Rank original = new() { Id = id, Abbreviation = "Pte", Name = "Privte", Order = 1 };
             Rank updated = new() { Id = id, Name = "Private", Order = 5, TeamspeakGroup = "4" };
@@ -132,7 +144,20 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void Should_do_nothing_when_field_is_null() {
+        public void Should_detect_changes_for_simple_object_with_list()
+        {
+            string id = ObjectId.GenerateNewId().ToString();
+            DomainAccount original = new() { Id = id, RolePreferences = new() { "Aviatin", "NCO" } };
+            DomainAccount updated = new() { Id = id, RolePreferences = new() { "Aviation", "NCO", "Officer" } };
+
+            string subject = original.Changes(updated);
+
+            subject.Should().Be("\n\t'RolePreferences' changed:" + "\n\t\tadded: 'Aviation'" + "\n\t\tadded: 'Officer'" + "\n\t\tremoved: 'Aviatin'");
+        }
+
+        [Fact]
+        public void Should_do_nothing_when_field_is_null()
+        {
             string id = ObjectId.GenerateNewId().ToString();
             Rank original = new() { Id = id, Abbreviation = null };
             Rank updated = new() { Id = id, Abbreviation = null };
@@ -143,14 +168,16 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void Should_do_nothing_when_null() {
+        public void Should_do_nothing_when_null()
+        {
             string subject = ((Rank) null).Changes(null);
 
             subject.Should().Be("\tNo changes");
         }
 
         [Fact]
-        public void Should_do_nothing_when_objects_are_equal() {
+        public void Should_do_nothing_when_objects_are_equal()
+        {
             string id = ObjectId.GenerateNewId().ToString();
             Rank original = new() { Id = id, Abbreviation = "Pte" };
             Rank updated = new() { Id = id, Abbreviation = "Pte" };
@@ -158,16 +185,6 @@ namespace UKSF.Tests.Unit.Common {
             string subject = original.Changes(updated);
 
             subject.Should().Be("\tNo changes");
-        }
-
-        [Fact]
-        public void Should_detect_changes_for_simple_list() {
-            List<string> original = new() { "Aviatin", "NCO" };
-            List<string> updated = new() { "Aviation", "NCO", "Officer" };
-
-            string subject = original.Changes(updated);
-
-            subject.Should().Be("\n\t'List' changed:" + "\n\t\tadded: 'Aviation'" + "\n\t\tadded: 'Officer'" + "\n\t\tremoved: 'Aviatin'");
         }
     }
 }

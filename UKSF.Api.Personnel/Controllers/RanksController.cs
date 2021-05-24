@@ -29,51 +29,50 @@ namespace UKSF.Api.Personnel.Controllers
         }
 
         [HttpGet, Authorize]
-        public IActionResult GetRanks()
+        public IEnumerable<Rank> GetRanks()
         {
-            return Ok(_ranksContext.Get());
+            return _ranksContext.Get();
         }
 
         [HttpGet("{id}"), Authorize]
-        public IActionResult GetRanks(string id)
+        public IEnumerable<Rank> GetRanks(string id)
         {
-            Account account = _accountContext.GetSingle(id);
-            return Ok(_ranksContext.Get(x => x.Name != account.Rank));
+            DomainAccount domainAccount = _accountContext.GetSingle(id);
+            return _ranksContext.Get(x => x.Name != domainAccount.Rank);
         }
 
         [HttpPost("{check}"), Authorize]
-        public IActionResult CheckRank(string check, [FromBody] Rank rank = null)
+        public Rank CheckRank(string check, [FromBody] Rank rank = null)
         {
             if (string.IsNullOrEmpty(check))
             {
-                return Ok();
+                return null;
             }
 
             if (rank != null)
             {
                 Rank safeRank = rank;
-                return Ok(_ranksContext.GetSingle(x => x.Id != safeRank.Id && (x.Name == check || x.TeamspeakGroup == check)));
+                return _ranksContext.GetSingle(x => x.Id != safeRank.Id && (x.Name == check || x.TeamspeakGroup == check));
             }
 
-            return Ok(_ranksContext.GetSingle(x => x.Name == check || x.TeamspeakGroup == check));
+            return _ranksContext.GetSingle(x => x.Name == check || x.TeamspeakGroup == check);
         }
 
         [HttpPost, Authorize]
-        public IActionResult CheckRank([FromBody] Rank rank)
+        public Rank CheckRank([FromBody] Rank rank)
         {
-            return rank != null ? Ok(_ranksContext.GetSingle(x => x.Id != rank.Id && (x.Name == rank.Name || x.TeamspeakGroup == rank.TeamspeakGroup))) : Ok();
+            return rank == null ? null : _ranksContext.GetSingle(x => x.Id != rank.Id && (x.Name == rank.Name || x.TeamspeakGroup == rank.TeamspeakGroup));
         }
 
         [HttpPut, Authorize]
-        public async Task<IActionResult> AddRank([FromBody] Rank rank)
+        public async Task AddRank([FromBody] Rank rank)
         {
             await _ranksContext.Add(rank);
             _logger.LogAudit($"Rank added '{rank.Name}, {rank.Abbreviation}, {rank.TeamspeakGroup}'");
-            return Ok();
         }
 
         [HttpPatch, Authorize]
-        public async Task<IActionResult> EditRank([FromBody] Rank rank)
+        public async Task<IEnumerable<Rank>> EditRank([FromBody] Rank rank)
         {
             Rank oldRank = _ranksContext.GetSingle(x => x.Id == rank.Id);
             _logger.LogAudit(
@@ -86,32 +85,32 @@ namespace UKSF.Api.Personnel.Controllers
                               .Set(x => x.TeamspeakGroup, rank.TeamspeakGroup)
                               .Set(x => x.DiscordRoleId, rank.DiscordRoleId)
             );
-            foreach (Account account in _accountContext.Get(x => x.Rank == oldRank.Name))
+            foreach (DomainAccount account in _accountContext.Get(x => x.Rank == oldRank.Name))
             {
                 Notification notification = await _assignmentService.UpdateUnitRankAndRole(account.Id, rankString: rank.Name, reason: $"the '{rank.Name}' rank was updated");
                 _notificationsService.Add(notification);
             }
 
-            return Ok(_ranksContext.Get());
+            return _ranksContext.Get();
         }
 
         [HttpDelete("{id}"), Authorize]
-        public async Task<IActionResult> DeleteRank(string id)
+        public async Task<IEnumerable<Rank>> DeleteRank(string id)
         {
             Rank rank = _ranksContext.GetSingle(x => x.Id == id);
             _logger.LogAudit($"Rank deleted '{rank.Name}'");
             await _ranksContext.Delete(id);
-            foreach (Account account in _accountContext.Get(x => x.Rank == rank.Name))
+            foreach (DomainAccount account in _accountContext.Get(x => x.Rank == rank.Name))
             {
                 Notification notification = await _assignmentService.UpdateUnitRankAndRole(account.Id, rankString: AssignmentService.REMOVE_FLAG, reason: $"the '{rank.Name}' rank was deleted");
                 _notificationsService.Add(notification);
             }
 
-            return Ok(_ranksContext.Get());
+            return _ranksContext.Get();
         }
 
         [HttpPost("order"), Authorize]
-        public async Task<IActionResult> UpdateOrder([FromBody] List<Rank> newRankOrder)
+        public async Task<IEnumerable<Rank>> UpdateOrder([FromBody] List<Rank> newRankOrder)
         {
             for (int index = 0; index < newRankOrder.Count; index++)
             {
@@ -122,7 +121,7 @@ namespace UKSF.Api.Personnel.Controllers
                 }
             }
 
-            return Ok(_ranksContext.Get());
+            return _ranksContext.Get();
         }
     }
 }

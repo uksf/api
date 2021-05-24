@@ -14,7 +14,7 @@ namespace UKSF.Api.Shared.Events
         void LogError(string message);
         void LogError(Exception exception);
         void LogError(Exception exception, HttpContext context, HttpResponse response, string userId, string userDisplayName);
-        void LogAudit(string message, string userId = "");
+        void LogAudit(string message, string userId = null);
         void LogDiscordEvent(DiscordUserEventType discordUserEventType, string instigatorId, string instigatorName, string channelName, string name, string message);
     }
 
@@ -49,7 +49,7 @@ namespace UKSF.Api.Shared.Events
             Log(new(exception));
         }
 
-        public void LogAudit(string message, string userId = "")
+        public void LogAudit(string message, string userId = null)
         {
             userId = string.IsNullOrEmpty(userId) ? _httpContextService.GetUserId() ?? "Server" : userId;
             Log(new AuditLog(userId, message));

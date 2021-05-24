@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
+using UKSF.Api.Auth.Commands;
 using UKSF.Api.Auth.Services;
 
 namespace UKSF.Api.Auth
@@ -22,7 +23,7 @@ namespace UKSF.Api.Auth
         {
             SecurityKey = new(Encoding.UTF8.GetBytes(configuration.GetSection("Secrets")["tokenKey"]));
 
-            return services.AddContexts().AddEventHandlers().AddServices().AddAuthentication();
+            return services.AddContexts().AddEventHandlers().AddServices().AddCommands().AddQueries().AddAuthentication();
         }
 
         private static IServiceCollection AddContexts(this IServiceCollection services)
@@ -38,6 +39,16 @@ namespace UKSF.Api.Auth
         private static IServiceCollection AddServices(this IServiceCollection services)
         {
             return services.AddSingleton<ILoginService, LoginService>().AddSingleton<IPermissionsService, PermissionsService>();
+        }
+
+        private static IServiceCollection AddCommands(this IServiceCollection services)
+        {
+            return services.AddSingleton<IRequestPasswordResetCommand, RequestPasswordResetCommand>().AddSingleton<IResetPasswordCommand, ResetPasswordCommand>();
+        }
+
+        private static IServiceCollection AddQueries(this IServiceCollection services)
+        {
+            return services;
         }
 
         private static IServiceCollection AddAuthentication(this IServiceCollection services)

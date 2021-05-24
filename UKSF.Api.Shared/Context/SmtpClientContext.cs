@@ -1,40 +1,37 @@
 ﻿using System.Net;
 using System.Net.Mail;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 
-namespace UKSF.Api.Personnel.Services
+namespace UKSF.Api.Shared.Context
 {
-    public interface IEmailService
+    public interface ISmtpClientContext
     {
-        void SendEmail(string targetEmail, string subject, string htmlEmail);
+        Task SendEmailAsync(MailMessage mailMessage);
     }
 
-    public class EmailService : IEmailService
+    public class SmtpClientContext : ISmtpClientContext
     {
         private readonly string _password;
         private readonly string _username;
 
-        public EmailService(IConfiguration configuration)
+        public SmtpClientContext(IConfiguration configuration)
         {
             _username = configuration.GetSection("EmailSettings")["username"];
             _password = configuration.GetSection("EmailSettings")["password"];
         }
 
-        public void SendEmail(string targetEmail, string subject, string htmlEmail)
+        public async Task SendEmailAsync(MailMessage mailMessage)
         {
             if (string.IsNullOrEmpty(_username) || string.IsNullOrEmpty(_password))
             {
                 return;
             }
 
-            using MailMessage mail = new() { From = new(_username, "UKSF") };
-            mail.To.Add(targetEmail);
-            mail.Subject = subject;
-            mail.Body = htmlEmail;
-            mail.IsBodyHtml = true;
+            mailMessage.From = new(_username, "UKSF");
 
             using SmtpClient smtp = new("smtp.gmail.com", 587) { Credentials = new NetworkCredential(_username, _password), EnableSsl = true };
-            smtp.Send(mail);
+            await smtp.SendMailAsync(mailMessage);
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using UKSF.Api.Shared.Commands;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Queries;
 using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Shared
@@ -9,7 +11,14 @@ namespace UKSF.Api.Shared
     {
         public static IServiceCollection AddUksfShared(this IServiceCollection services)
         {
-            return services.AddContexts().AddEventHandlers().AddServices().AddTransient<IHttpContextService, HttpContextService>().AddSingleton<ILogger, Logger>().AddSingleton<IClock, Clock>();
+            return services.AddContexts()
+                           .AddEventHandlers()
+                           .AddServices()
+                           .AddCommands()
+                           .AddQueries()
+                           .AddTransient<IHttpContextService, HttpContextService>()
+                           .AddSingleton<ILogger, Logger>()
+                           .AddSingleton<IClock, Clock>();
         }
 
         private static IServiceCollection AddContexts(this IServiceCollection services)
@@ -19,7 +28,9 @@ namespace UKSF.Api.Shared
                            .AddSingleton<IErrorLogContext, ErrorLogContext>()
                            .AddSingleton<ILauncherLogContext, LauncherLogContext>()
                            .AddSingleton<IDiscordLogContext, DiscordLogContext>()
-                           .AddSingleton<ISchedulerContext, SchedulerContext>();
+                           .AddSingleton<ISchedulerContext, SchedulerContext>()
+                           .AddSingleton<ISmtpClientContext, SmtpClientContext>()
+                           .AddSingleton<IFileContext, FileContext>();
         }
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services)
@@ -30,6 +41,16 @@ namespace UKSF.Api.Shared
         private static IServiceCollection AddServices(this IServiceCollection services)
         {
             return services.AddSingleton<IScheduledActionFactory, ScheduledActionFactory>().AddTransient<ISchedulerService, SchedulerService>();
+        }
+
+        private static IServiceCollection AddCommands(this IServiceCollection services)
+        {
+            return services.AddSingleton<ISendTemplatedEmailCommand, SendTemplatedEmailCommand>().AddSingleton<ISendBasicEmailCommand, SendBasicEmailCommand>();
+        }
+
+        private static IServiceCollection AddQueries(this IServiceCollection services)
+        {
+            return services.AddSingleton<IGetEmailTemplateQuery, GetEmailTemplateQuery>();
         }
     }
 }

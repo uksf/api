@@ -61,7 +61,7 @@ namespace UKSF.Api.ArmaMissions.Services
             missionEntityItem.RawMissionEntityItem.Add("{");
             missionEntityItem.RawMissionEntityItem.Add("isPlayable=1;");
             missionEntityItem.RawMissionEntityItem.Add(
-                $"description=\"{missionPlayer.Name}{(string.IsNullOrEmpty(missionPlayer.Account?.RoleAssignment) ? "" : $" - {missionPlayer.Account?.RoleAssignment}")}@{MissionDataResolver.ResolveCallsign(missionPlayer.Unit, missionPlayer.Unit.SourceUnit?.Callsign)}\";"
+                $"description=\"{missionPlayer.Name}{(string.IsNullOrEmpty(missionPlayer.DomainAccount?.RoleAssignment) ? "" : $" - {missionPlayer.DomainAccount?.RoleAssignment}")}@{MissionDataResolver.ResolveCallsign(missionPlayer.Unit, missionPlayer.Unit.SourceUnit?.Callsign)}\";"
             );
             missionEntityItem.RawMissionEntityItem.Add("};");
             if (MissionDataResolver.IsEngineer(missionPlayer))

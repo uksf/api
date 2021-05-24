@@ -41,8 +41,8 @@ namespace UKSF.Api.Controllers
             return _logContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
         }
 
-        [HttpGet("httpError"), Authorize]
-        public PagedResult<ErrorLog> GetHttpErrorLogs([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] SortDirection sortDirection, [FromQuery] string sortField, [FromQuery] string filter)
+        [HttpGet("error"), Authorize]
+        public PagedResult<ErrorLog> GetErrorLogs([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] SortDirection sortDirection, [FromQuery] string sortField, [FromQuery] string filter)
         {
             IEnumerable<Expression<Func<ErrorLog, object>>> filterProperties = GetErrorLogFilterProperties();
             return _errorLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);

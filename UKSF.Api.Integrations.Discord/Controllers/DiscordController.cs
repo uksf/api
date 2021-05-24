@@ -21,17 +21,16 @@ namespace UKSF.Api.Discord.Controllers
         }
 
         [HttpGet("roles"), Authorize, Permissions(Permissions.ADMIN)]
-        public async Task<IActionResult> GetRoles()
+        public async Task<string> GetRoles()
         {
             IReadOnlyCollection<SocketRole> roles = await _discordService.GetRoles();
-            return Ok(roles.OrderBy(x => x.Name).Select(x => $"{x.Name}: {x.Id}").Aggregate((x, y) => $"{x}\n{y}"));
+            return roles.OrderBy(x => x.Name).Select(x => $"{x.Name}: {x.Id}").Aggregate((x, y) => $"{x}\n{y}");
         }
 
         [HttpGet("updateuserroles"), Authorize, Permissions(Permissions.ADMIN)]
-        public async Task<IActionResult> UpdateUserRoles()
+        public async Task UpdateUserRoles()
         {
             await _discordService.UpdateAllUsers();
-            return Ok();
         }
 
         [HttpGet("{accountId}/onlineUserDetails"), Authorize, Permissions(Permissions.RECRUITER)]
