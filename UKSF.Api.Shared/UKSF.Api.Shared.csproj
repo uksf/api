@@ -9,7 +9,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="EmailHtmlTemplates\**">
+        <Content Include="EmailHtmlTemplates\Premailed\**">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
     </ItemGroup>

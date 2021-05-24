@@ -50,7 +50,7 @@ namespace UKSF.Api.Shared.Queries
 
         private async Task<string> GetTemplateContent(string templateName)
         {
-            string templatePath = _fileContext.AppDirectory + $"/EmailHtmlTemplates/{templateName}Template.html";
+            string templatePath = _fileContext.AppDirectory + $"/EmailHtmlTemplates/Premailed/{templateName}TemplatePremailed.html";
 
             if (!_fileContext.Exists(templatePath))
             {
