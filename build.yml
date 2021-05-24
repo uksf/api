@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-      - master
+      - main
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -40,7 +40,7 @@ jobs:
   - job: PublishArtifacts
     displayName: Publish Artifacts
     dependsOn: BuildTest
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     steps:
 
       - task: DotNetCoreCLI@2
