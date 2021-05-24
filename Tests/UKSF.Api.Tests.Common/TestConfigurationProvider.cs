@@ -6,7 +6,7 @@ namespace UKSF.Api.Tests.Common
     {
         public static IConfigurationRoot GetTestConfiguration()
         {
-            return new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+            return new ConfigurationBuilder().AddJsonFile("appsettings.Tests.json").Build();
         }
     }
 }
