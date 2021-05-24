@@ -11,7 +11,7 @@ using UKSF.Api.Shared;
 namespace UKSF.Api.Command.Controllers
 {
     [Route("[controller]"), Permissions(Permissions.MEMBER)]
-    public class OperationReportController : Controller
+    public class OperationReportController : ControllerBase
     {
         private readonly IOperationReportContext _operationReportContext;
         private readonly IOperationReportService _operationReportService;

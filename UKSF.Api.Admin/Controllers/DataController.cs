@@ -6,7 +6,7 @@ using UKSF.Api.Shared;
 namespace UKSF.Api.Admin.Controllers
 {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]
-    public class DataController : Controller
+    public class DataController : ControllerBase
     {
         private readonly IDataCacheService _dataCacheService;
 

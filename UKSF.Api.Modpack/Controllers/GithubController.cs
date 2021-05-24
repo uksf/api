@@ -14,7 +14,7 @@ using UKSF.Api.Shared.Exceptions;
 namespace UKSF.Api.Modpack.Controllers
 {
     [Route("[controller]")]
-    public class GithubController : Controller
+    public class GithubController : ControllerBase
     {
         private const string PUSH_EVENT = "push";
         private const string REPO_NAME = "modpack";

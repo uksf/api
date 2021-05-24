@@ -11,7 +11,7 @@ using UKSF.Api.Admin.Signalr.Hubs;
 namespace UKSF.Api.Admin.Controllers
 {
     [Route("[controller]")]
-    public class VersionController : Controller
+    public class VersionController : ControllerBase
     {
         private readonly IHubContext<UtilityHub, IUtilityClient> _utilityHub;
         private readonly IVariablesContext _variablesContext;

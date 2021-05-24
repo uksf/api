@@ -11,7 +11,7 @@ using UKSF.Api.Shared.Models;
 namespace UKSF.Api.Discord.Controllers
 {
     [Route("[controller]")]
-    public class DiscordController : Controller
+    public class DiscordController : ControllerBase
     {
         private readonly IDiscordService _discordService;
 

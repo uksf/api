@@ -11,7 +11,7 @@ using UKSF.Api.Shared.Events;
 namespace UKSF.Api.Personnel.Controllers
 {
     [Route("[controller]")]
-    public class RolesController : Controller
+    public class RolesController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
         private readonly IAssignmentService _assignmentService;

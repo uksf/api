@@ -10,7 +10,7 @@ using UKSF.Api.Shared.Exceptions;
 namespace UKSF.Api.Modpack.Controllers
 {
     [Route("[controller]")]
-    public class ModpackController : Controller
+    public class ModpackController : ControllerBase
     {
         private readonly IGithubService _githubService;
         private readonly IModpackService _modpackService;

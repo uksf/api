@@ -44,7 +44,7 @@ namespace UKSF.Api
 
         private static IWebHost BuildDebugWebHost(string[] args)
         {
-            return WebHost.CreateDefaultBuilder(args).UseStartup<Startup>().UseKestrel().UseContentRoot(Directory.GetCurrentDirectory()).UseUrls("http://*:5000").UseIISIntegration().Build();
+            return WebHost.CreateDefaultBuilder(args).UseStartup<Startup>().UseKestrel().UseContentRoot(Directory.GetCurrentDirectory()).UseUrls("http://*:5000").Build();
         }
 
         private static IWebHost BuildProductionWebHost(string[] args)
@@ -63,7 +63,6 @@ namespace UKSF.Api
                               }
                           )
                           .UseContentRoot(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName))
-                          .UseIISIntegration()
                           .Build();
         }
 

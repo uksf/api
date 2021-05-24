@@ -11,7 +11,7 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Auth.Controllers
 {
     [Route("auth")]
-    public class AuthController : Controller
+    public class AuthController : ControllerBase
     {
         private readonly IHttpContextService _httpContextService;
         private readonly ILoginService _loginService;

@@ -11,7 +11,7 @@ using UKSF.Api.Shared.Models;
 namespace UKSF.Api.Controllers
 {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]
-    public class LoggingController : Controller
+    public class LoggingController : ControllerBase
     {
         private readonly IAuditLogContext _auditLogContext;
         private readonly IDiscordLogContext _discordLogContext;

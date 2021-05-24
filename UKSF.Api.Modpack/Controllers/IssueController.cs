@@ -16,7 +16,7 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Modpack.Controllers
 {
     [Route("issue"), Permissions(Permissions.MEMBER)]
-    public class IssueController : Controller
+    public class IssueController : ControllerBase
     {
         private readonly IDisplayNameService _displayNameService;
         private readonly string _githubToken;

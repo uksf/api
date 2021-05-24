@@ -7,7 +7,7 @@ using UKSF.Api.Personnel.Services;
 namespace UKSF.Api.Personnel.Controllers
 {
     [Route("[controller]")]
-    public class SteamConnectionController : Controller
+    public class SteamConnectionController : ControllerBase
     {
         private readonly IConfirmationCodeService _confirmationCodeService;
         private readonly string _url;

@@ -15,7 +15,7 @@ using UKSF.Api.Shared.Events;
 namespace UKSF.Api.Personnel.Controllers
 {
     [Route("[controller]")]
-    public class DiscordConnectionController : Controller
+    public class DiscordConnectionController : ControllerBase
     {
         private readonly string _botToken;
         private readonly string _clientId;

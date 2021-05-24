@@ -18,7 +18,7 @@ using UKSF.Api.Shared.Extensions;
 namespace UKSF.Api.Personnel.Controllers
 {
     [Route("[controller]")]
-    public class UnitsController : Controller
+    public class UnitsController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
         private readonly IAssignmentService _assignmentService;

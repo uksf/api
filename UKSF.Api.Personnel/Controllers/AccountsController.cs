@@ -26,7 +26,7 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Personnel.Controllers
 {
     [Route("[controller]")]
-    public class AccountsController : Controller
+    public class AccountsController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
         private readonly IAccountMapper _accountMapper;
