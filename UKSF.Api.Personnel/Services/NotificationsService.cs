@@ -140,7 +140,7 @@ namespace UKSF.Api.Personnel.Services
 
         private bool NotificationsGloballyDisabled()
         {
-            return _variablesService.GetFeatureState("NOTIFICATIONS");
+            return !_variablesService.GetFeatureState("NOTIFICATIONS");
         }
     }
 }
