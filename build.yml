@@ -3,7 +3,8 @@ trigger:
     include:
       - master
 
-pool: Server
+pool:
+  vmImage: 'ubuntu-latest'
 
 variables:
   solution: '**/*.sln'
