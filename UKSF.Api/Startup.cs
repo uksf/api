@@ -1,5 +1,9 @@
 ﻿using System;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
@@ -35,19 +39,20 @@ namespace UKSF.Api
         {
             services.AddUksf(_configuration, _currentEnvironment);
 
-            services.AddControllers();
             services.AddCors(
-                        options => options.AddPolicy(
-                            "CorsPolicy",
-                            builder =>
-                            {
-                                builder.AllowAnyMethod()
-                                       .AllowAnyHeader()
-                                       .WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://uk-sf.co.uk")
-                                       .AllowCredentials();
-                            }
-                        )
-                    )
+                options => options.AddPolicy(
+                    "CorsPolicy",
+                    builder =>
+                    {
+                        builder.AllowAnyMethod()
+                               .AllowAnyHeader()
+                               .WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://uk-sf.co.uk")
+                               .AllowCredentials();
+                    }
+                )
+            );
+            services.AddControllers(options => { options.EnableEndpointRouting = true; });
+            services.AddRouting()
                     .AddSwaggerGen(options => { options.SwaggerDoc("v1", new() { Title = "UKSF API", Version = "v1" }); })
                     .AddMvc()
                     .AddNewtonsoftJson(options => { options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver(); });
@@ -59,6 +64,14 @@ namespace UKSF.Api
 
             app.UseStaticFiles()
                .UseCookiePolicy(new() { MinimumSameSitePolicy = SameSiteMode.Lax })
+               .UseSwagger()
+               .UseSwaggerUI(
+                   options =>
+                   {
+                       options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF API v1");
+                       options.DocExpansion(DocExpansion.None);
+                   }
+               )
                .UseRouting()
                .UseCors("CorsPolicy")
                .UseMiddleware<CorsMiddleware>()
@@ -77,14 +90,6 @@ namespace UKSF.Api
                        endpoints.AddUksfIntegrationTeamspeakSignalr();
                        endpoints.AddUksfModpackSignalr();
                        endpoints.AddUksfPersonnelSignalr();
-                   }
-               )
-               .UseSwagger()
-               .UseSwaggerUI(
-                   options =>
-                   {
-                       options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF API v1");
-                       options.DocExpansion(DocExpansion.None);
                    }
                );
 
