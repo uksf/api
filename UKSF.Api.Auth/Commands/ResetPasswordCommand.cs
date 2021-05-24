@@ -5,6 +5,7 @@ using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Exceptions;
 
 namespace UKSF.Api.Auth.Commands
 {
@@ -45,13 +46,13 @@ namespace UKSF.Api.Auth.Commands
             DomainAccount domainAccount = _accountContext.GetSingle(x => string.Equals(x.Email, args.Email, StringComparison.InvariantCultureIgnoreCase));
             if (domainAccount == null)
             {
-                throw new LoginFailedException("Password reset failed. No user found with that email");
+                throw new BadRequestException("No user found with that email");
             }
 
             string codeValue = await _confirmationCodeService.GetConfirmationCodeValue(args.Code);
             if (codeValue != domainAccount.Id)
             {
-                throw new LoginFailedException("Password reset failed. Invalid code");
+                throw new BadRequestException("Password reset failed (Invalid code)");
             }
 
             await _accountContext.Update(domainAccount.Id, x => x.Password, BCrypt.Net.BCrypt.HashPassword(args.Password));

@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using UKSF.Api.Auth.Exceptions;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
+using UKSF.Api.Shared.Exceptions;
 
 namespace UKSF.Api.Auth.Services
 {
@@ -46,7 +47,7 @@ namespace UKSF.Api.Auth.Services
             DomainAccount domainAccount = _accountContext.GetSingle(accountId);
             if (domainAccount == null)
             {
-                throw new LoginFailedException("Login failed. No user found with that email");
+                throw new BadRequestException("No user found with that email");
             }
 
             return GenerateBearerToken(domainAccount);
@@ -57,7 +58,7 @@ namespace UKSF.Api.Auth.Services
             DomainAccount domainAccount = _accountContext.GetSingle(x => string.Equals(x.Email, email, StringComparison.InvariantCultureIgnoreCase));
             if (domainAccount == null)
             {
-                throw new LoginFailedException("Login failed. No user found with that email");
+                throw new BadRequestException("No user found with that email");
             }
 
             if (passwordReset)
@@ -67,7 +68,7 @@ namespace UKSF.Api.Auth.Services
 
             if (!BCrypt.Net.BCrypt.Verify(password, domainAccount.Password))
             {
-                throw new LoginFailedException("Login failed. Incorrect password");
+                throw new BadRequestException("Incorrect password");
             }
 
             return domainAccount;
