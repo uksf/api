@@ -18,7 +18,7 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Command.Controllers
 {
     [Route("[controller]"), Permissions(Permissions.PERSONNEL, Permissions.NCO, Permissions.RECRUITER)]
-    public class DischargesController : Controller
+    public class DischargesController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
         private readonly IAssignmentService _assignmentService;

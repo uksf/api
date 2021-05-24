@@ -23,7 +23,7 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Command.Controllers
 {
     [Route("[controller]"), Permissions(Permissions.COMMAND)]
-    public class CommandRequestsController : Controller
+    public class CommandRequestsController : ControllerBase
     {
         private const string SUPER_ADMIN = "59e38f10594c603b78aa9dbd";
         private readonly IAccountService _accountService;

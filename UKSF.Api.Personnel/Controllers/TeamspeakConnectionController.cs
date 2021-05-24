@@ -9,7 +9,7 @@ using UKSF.Api.Personnel.Models.Parameters;
 namespace UKSF.Api.Personnel.Controllers
 {
     [Route("accounts/{accountId}")]
-    public class TeamspeakConnectionController : Controller
+    public class TeamspeakConnectionController : ControllerBase
     {
         private readonly IAccountMapper _accountMapper;
         private readonly IConnectTeamspeakIdToAccountCommand _connectTeamspeakIdToAccountCommand;

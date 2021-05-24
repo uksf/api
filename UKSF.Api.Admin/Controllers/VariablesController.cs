@@ -12,7 +12,7 @@ using UKSF.Api.Shared.Extensions;
 namespace UKSF.Api.Admin.Controllers
 {
     [Route("[controller]"), Permissions(Permissions.ADMIN)]
-    public class VariablesController : Controller
+    public class VariablesController : ControllerBase
     {
         private readonly ILogger _logger;
         private readonly IVariablesContext _variablesContext;

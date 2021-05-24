@@ -16,7 +16,7 @@ using UKSF.Api.Teamspeak.Services;
 namespace UKSF.Api.Teamspeak.Controllers
 {
     [Route("teamspeak")]
-    public class TeamspeakController : Controller
+    public class TeamspeakController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
         private readonly IConfirmationCodeService _confirmationCodeService;

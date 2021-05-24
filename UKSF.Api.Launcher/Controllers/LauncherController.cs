@@ -24,7 +24,7 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Launcher.Controllers
 {
     [Route("[controller]"), Authorize, Permissions(Permissions.CONFIRMED, Permissions.MEMBER)]
-    public class LauncherController : Controller
+    public class LauncherController : ControllerBase
     {
         private readonly IDisplayNameService _displayNameService;
         private readonly IHttpContextService _httpContextService;

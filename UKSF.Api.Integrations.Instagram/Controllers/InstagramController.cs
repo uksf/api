@@ -9,7 +9,7 @@ using UKSF.Api.Shared;
 namespace UKSF.Api.Integrations.Instagram.Controllers
 {
     [Route("[controller]")]
-    public class InstagramController : Controller
+    public class InstagramController : ControllerBase
     {
         private readonly IActionInstagramToken _actionInstagramToken;
         private readonly IInstagramService _instagramService;

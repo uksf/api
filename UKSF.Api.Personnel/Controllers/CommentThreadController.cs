@@ -14,7 +14,7 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Personnel.Controllers
 {
     [Route("commentthread"), Permissions(Permissions.CONFIRMED, Permissions.MEMBER, Permissions.DISCHARGED)]
-    public class CommentThreadController : Controller
+    public class CommentThreadController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
         private readonly IAccountService _accountService;

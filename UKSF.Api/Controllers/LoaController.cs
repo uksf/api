@@ -19,7 +19,7 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Controllers
 {
     [Route("[controller]"), Permissions(Permissions.MEMBER)]
-    public class LoaController : Controller
+    public class LoaController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
         private readonly IAccountService _accountService;

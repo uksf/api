@@ -16,7 +16,7 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Command.Controllers
 {
     [Route("CommandRequests/Create")]
-    public class CommandRequestsCreationController : Controller
+    public class CommandRequestsCreationController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
         private readonly ICommandRequestService _commandRequestService;

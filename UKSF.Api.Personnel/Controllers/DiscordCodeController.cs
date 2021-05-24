@@ -14,7 +14,7 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Personnel.Controllers
 {
     [Route("[controller]")]
-    public class DiscordCodeController : Controller
+    public class DiscordCodeController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
         private readonly IConfirmationCodeService _confirmationCodeService;

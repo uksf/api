@@ -10,7 +10,7 @@ using UKSF.Api.Shared;
 namespace UKSF.Api.Command.Controllers
 {
     [Route("[controller]"), Permissions(Permissions.MEMBER)]
-    public class OperationOrderController : Controller
+    public class OperationOrderController : ControllerBase
     {
         private readonly IOperationOrderContext _operationOrderContext;
         private readonly IOperationOrderService _operationOrderService;

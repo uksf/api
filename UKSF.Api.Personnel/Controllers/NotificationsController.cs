@@ -10,7 +10,7 @@ using UKSF.Api.Personnel.Services;
 namespace UKSF.Api.Personnel.Controllers
 {
     [Route("[controller]")]
-    public class NotificationsController : Controller
+    public class NotificationsController : ControllerBase
     {
         private readonly INotificationsService _notificationsService;
 

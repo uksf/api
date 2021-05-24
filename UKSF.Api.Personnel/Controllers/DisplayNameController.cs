@@ -4,7 +4,7 @@ using UKSF.Api.Personnel.Services;
 namespace UKSF.Api.Personnel.Controllers
 {
     [Route("[controller]")]
-    public class DisplayNameController : Controller
+    public class DisplayNameController : ControllerBase
     {
         private readonly IDisplayNameService _displayNameService;
 

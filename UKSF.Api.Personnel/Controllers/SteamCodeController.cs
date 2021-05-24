@@ -12,7 +12,7 @@ using UKSF.Api.Shared.Services;
 namespace UKSF.Api.Personnel.Controllers
 {
     [Route("[controller]")]
-    public class SteamCodeController : Controller
+    public class SteamCodeController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
         private readonly IConfirmationCodeService _confirmationCodeService;
