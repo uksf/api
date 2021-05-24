@@ -8,17 +8,20 @@ using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
+using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Models;
 using UKSF.Api.Teamspeak.Models;
 using UKSF.Api.Teamspeak.Services;
 
 namespace UKSF.Api.Teamspeak.Controllers
 {
-    [Route("[controller]")]
+    [Route("teamspeak")]
     public class TeamspeakController : Controller
     {
         private readonly IAccountContext _accountContext;
+        private readonly IConfirmationCodeService _confirmationCodeService;
         private readonly IDisplayNameService _displayNameService;
+        private readonly INotificationsService _notificationsService;
         private readonly IRanksService _ranksService;
         private readonly IRecruitmentService _recruitmentService;
         private readonly ITeamspeakService _teamspeakService;
@@ -30,7 +33,9 @@ namespace UKSF.Api.Teamspeak.Controllers
             IRanksService ranksService,
             IUnitsService unitsService,
             IRecruitmentService recruitmentService,
-            IDisplayNameService displayNameService
+            IDisplayNameService displayNameService,
+            IConfirmationCodeService confirmationCodeService,
+            INotificationsService notificationsService
         )
         {
             _accountContext = accountContext;
@@ -39,6 +44,18 @@ namespace UKSF.Api.Teamspeak.Controllers
             _unitsService = unitsService;
             _recruitmentService = recruitmentService;
             _displayNameService = displayNameService;
+            _confirmationCodeService = confirmationCodeService;
+            _notificationsService = notificationsService;
+        }
+
+        [HttpGet("{teamspeakId}"), Authorize]
+        public async Task RequestTeamspeakCode([FromRoute] string teamspeakId)
+        {
+            string code = await _confirmationCodeService.CreateConfirmationCode(teamspeakId);
+            _notificationsService.SendTeamspeakNotification(
+                new HashSet<int> { teamspeakId.ToInt() },
+                $"This Teamspeak ID was selected for connection to the website. Copy this code to your clipboard and return to the UKSF website application page to enter the code:\n{code}\nIf this request was not made by you, please contact an admin"
+            );
         }
 
         [HttpGet("online"), Authorize, Permissions(Permissions.CONFIRMED, Permissions.MEMBER, Permissions.DISCHARGED)]
@@ -48,18 +65,17 @@ namespace UKSF.Api.Teamspeak.Controllers
         }
 
         [HttpGet("shutdown"), Authorize, Permissions(Permissions.ADMIN)]
-        public async Task<IActionResult> Shutdown()
+        public async Task Shutdown()
         {
             await _teamspeakService.Shutdown();
             await Task.Delay(TimeSpan.FromSeconds(3));
-            return Ok();
         }
 
         [HttpGet("onlineAccounts")]
-        public IActionResult GetOnlineAccounts()
+        public TeamspeakAccountsDataset GetOnlineAccounts()
         {
             IEnumerable<TeamspeakClient> teamnspeakClients = _teamspeakService.GetOnlineTeamspeakClients();
-            IEnumerable<Account> allAccounts = _accountContext.Get();
+            IEnumerable<DomainAccount> allAccounts = _accountContext.Get();
             var clients = teamnspeakClients.Where(x => x != null)
                                            .Select(
                                                x => new
@@ -68,38 +84,36 @@ namespace UKSF.Api.Teamspeak.Controllers
                                                }
                                            )
                                            .ToList();
-            var clientAccounts = clients.Where(x => x.account != null && x.account.MembershipState == MembershipState.MEMBER)
+            var clientAccounts = clients.Where(x => x.account is { MembershipState: MembershipState.MEMBER })
                                         .OrderBy(x => x.account.Rank, new RankComparer(_ranksService))
                                         .ThenBy(x => x.account.Lastname)
                                         .ThenBy(x => x.account.Firstname);
             List<string> commandAccounts = _unitsService.GetAuxilliaryRoot().Members;
 
-            List<object> commanders = new();
-            List<object> recruiters = new();
-            List<object> members = new();
-            List<object> guests = new();
+            List<TeamspeakAccountDataset> commanders = new();
+            List<TeamspeakAccountDataset> recruiters = new();
+            List<TeamspeakAccountDataset> members = new();
             foreach (var onlineClient in clientAccounts)
             {
                 if (commandAccounts.Contains(onlineClient.account.Id))
                 {
-                    commanders.Add(new { displayName = _displayNameService.GetDisplayName(onlineClient.account) });
+                    commanders.Add(new() { DisplayName = _displayNameService.GetDisplayName(onlineClient.account) });
                 }
                 else if (_recruitmentService.IsRecruiter(onlineClient.account))
                 {
-                    recruiters.Add(new { displayName = _displayNameService.GetDisplayName(onlineClient.account) });
+                    recruiters.Add(new() { DisplayName = _displayNameService.GetDisplayName(onlineClient.account) });
                 }
                 else
                 {
-                    members.Add(new { displayName = _displayNameService.GetDisplayName(onlineClient.account) });
+                    members.Add(new() { DisplayName = _displayNameService.GetDisplayName(onlineClient.account) });
                 }
             }
 
-            foreach (var client in clients.Where(x => x.account == null || x.account.MembershipState != MembershipState.MEMBER))
-            {
-                guests.Add(new { displayName = client.client.ClientName });
-            }
+            List<TeamspeakAccountDataset> guests = clients.Where(x => x.account is not { MembershipState: MembershipState.MEMBER })
+                                                          .Select(client => (TeamspeakAccountDataset) new() { DisplayName = client.client.ClientName })
+                                                          .ToList();
 
-            return Ok(new { commanders, recruiters, members, guests });
+            return new() { Commanders = commanders, Recruiters = recruiters, Members = members, Guests = guests };
         }
 
         [HttpGet("{accountId}/onlineUserDetails"), Authorize, Permissions(Permissions.RECRUITER)]

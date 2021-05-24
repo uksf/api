@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using UKSF.Api.Personnel.Commands;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.EventHandlers;
 using UKSF.Api.Personnel.Mappers;
@@ -17,6 +18,8 @@ namespace UKSF.Api.Personnel
             return services.AddContexts()
                            .AddEventHandlers()
                            .AddServices()
+                           .AddCommands()
+                           .AddMappers()
                            .AddActions()
                            .AddTransient<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>()
                            .AddAutoMapper(typeof(AutoMapperUnitProfile));
@@ -48,7 +51,6 @@ namespace UKSF.Api.Personnel
                            .AddSingleton<ICommentThreadService, CommentThreadService>()
                            .AddSingleton<IConfirmationCodeService, ConfirmationCodeService>()
                            .AddSingleton<IDisplayNameService, DisplayNameService>()
-                           .AddSingleton<IEmailService, EmailService>()
                            .AddSingleton<INotificationsService, NotificationsService>()
                            .AddSingleton<IObjectIdConversionService, ObjectIdConversionService>()
                            .AddSingleton<IRanksService, RanksService>()
@@ -56,6 +58,16 @@ namespace UKSF.Api.Personnel
                            .AddSingleton<IRolesService, RolesService>()
                            .AddSingleton<IServiceRecordService, ServiceRecordService>()
                            .AddSingleton<IUnitsService, UnitsService>();
+        }
+
+        private static IServiceCollection AddCommands(this IServiceCollection services)
+        {
+            return services.AddSingleton<IConnectTeamspeakIdToAccountCommand, ConnectTeamspeakIdToAccountCommand>();
+        }
+
+        private static IServiceCollection AddMappers(this IServiceCollection services)
+        {
+            return services.AddSingleton<IAccountMapper, AccountMapper>();
         }
 
         private static IServiceCollection AddActions(this IServiceCollection services)

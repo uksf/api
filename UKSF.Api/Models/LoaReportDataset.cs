@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UKSF.Api.Personnel.Models;
 
 namespace UKSF.Api.Models
 {
@@ -22,6 +23,6 @@ namespace UKSF.Api.Models
         public string Name;
         public string Reason;
         public DateTime Start;
-        public string State;
+        public LoaReviewState State;
     }
 }

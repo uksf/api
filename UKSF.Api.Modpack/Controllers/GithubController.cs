@@ -9,6 +9,7 @@ using Octokit.Internal;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services;
 using UKSF.Api.Shared;
+using UKSF.Api.Shared.Exceptions;
 
 namespace UKSF.Api.Modpack.Controllers
 {
@@ -32,17 +33,17 @@ namespace UKSF.Api.Modpack.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> GithubWebhook([FromHeader(Name = "x-hub-signature")] string githubSignature, [FromHeader(Name = "x-github-event")] string githubEvent, [FromBody] JObject body)
+        public async Task GithubWebhook([FromHeader(Name = "x-hub-signature")] string githubSignature, [FromHeader(Name = "x-github-event")] string githubEvent, [FromBody] JObject body)
         {
             if (!_githubService.VerifySignature(githubSignature, body.ToString(Formatting.None)))
             {
-                return Unauthorized();
+                throw new UnauthorizedException();
             }
 
             PushWebhookPayload payload = new SimpleJsonSerializer().Deserialize<PushWebhookPayload>(body.ToString());
             if (payload.Repository.Name != REPO_NAME || githubEvent != PUSH_EVENT)
             {
-                return Ok();
+                return;
             }
 
             switch (payload.Ref)
@@ -50,27 +51,26 @@ namespace UKSF.Api.Modpack.Controllers
                 case MASTER when payload.BaseRef != RELEASE:
                 {
                     await _modpackService.CreateDevBuildFromPush(payload);
-                    return Ok();
+                    return;
                 }
                 case RELEASE:
                     await _modpackService.CreateRcBuildFromPush(payload);
-                    return Ok();
-                default: return Ok();
+                    return;
+                default: return;
             }
         }
 
         [HttpGet("branches"), Authorize, Permissions(Permissions.TESTER)]
-        public async Task<IActionResult> GetBranches()
+        public async Task<List<string>> GetBranches()
         {
-            return Ok(await _githubService.GetBranches());
+            return await _githubService.GetBranches();
         }
 
         [HttpGet("populatereleases"), Authorize, Permissions(Permissions.ADMIN)]
-        public async Task<IActionResult> Release()
+        public async Task Release()
         {
             List<ModpackRelease> releases = await _githubService.GetHistoricReleases();
             await _releaseService.AddHistoricReleases(releases);
-            return Ok();
         }
     }
 }

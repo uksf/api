@@ -54,41 +54,37 @@ namespace UKSF.Api.Launcher.Controllers
         }
 
         [HttpGet("update/{platform}/{version}")]
-        public IActionResult GetUpdate(string platform, string version)
-        {
-            return Ok();
-        }
+        public void GetUpdate(string platform, string version) { }
 
         [HttpGet("version")]
-        public IActionResult GetVersion()
+        public string GetVersion()
         {
-            return Ok(_variablesContext.GetSingle("LAUNCHER_VERSION").AsString());
+            return _variablesContext.GetSingle("LAUNCHER_VERSION").AsString();
         }
 
         [HttpPost("version"), Permissions(Permissions.ADMIN)]
-        public async Task<IActionResult> UpdateVersion([FromBody] JObject body)
+        public async Task UpdateVersion([FromBody] JObject body)
         {
             string version = body["version"].ToString();
             await _variablesContext.Update("LAUNCHER_VERSION", version);
             await _launcherFileService.UpdateAllVersions();
             await _launcherHub.Clients.All.ReceiveLauncherVersion(version);
-            return Ok();
         }
 
         [HttpGet("download/setup")]
-        public IActionResult GetLauncher()
+        public FileStreamResult GetLauncher()
         {
             return _launcherFileService.GetLauncherFile("UKSF Launcher Setup.msi");
         }
 
         [HttpGet("download/updater")]
-        public IActionResult GetUpdater()
+        public FileStreamResult GetUpdater()
         {
             return _launcherFileService.GetLauncherFile("Updater", "UKSF.Launcher.Updater.exe");
         }
 
         [HttpPost("download/update")]
-        public async Task<IActionResult> GetUpdatedFiles([FromBody] JObject body)
+        public async Task<FileStreamResult> GetUpdatedFiles([FromBody] JObject body)
         {
             List<LauncherFile> files = JsonConvert.DeserializeObject<List<LauncherFile>>(body["files"].ToString());
             Stream updatedFiles = await _launcherFileService.GetUpdatedFiles(files);
@@ -97,13 +93,11 @@ namespace UKSF.Api.Launcher.Controllers
         }
 
         [HttpPost("error")]
-        public IActionResult ReportError([FromBody] JObject body)
+        public void ReportError([FromBody] JObject body)
         {
             string version = body["version"].ToString();
             string message = body["message"].ToString();
             // logger.Log(new LauncherLog(version, message) { userId = httpContextService.GetUserId(), name = displayNameService.GetDisplayName(accountService.GetUserAccount()) });
-
-            return Ok();
         }
     }
 }

@@ -7,19 +7,23 @@ using UKSF.Api.Personnel.ScheduledActions;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Api.Personnel.Tests {
-    public class DependencyInjectionTests : DependencyInjectionTestsBase {
-        public DependencyInjectionTests() {
+namespace UKSF.Api.Personnel.Tests
+{
+    public class DependencyInjectionTests : DependencyInjectionTestsBase
+    {
+        public DependencyInjectionTests()
+        {
             Services.AddUksfAdmin();
             Services.AddUksfPersonnel();
         }
 
         [Fact]
-        public void When_resolving_controllers() {
+        public void When_resolving_controllers()
+        {
             Services.AddTransient<AccountsController>();
             Services.AddTransient<ApplicationsController>();
             Services.AddTransient<CommentThreadController>();
-            Services.AddTransient<CommunicationsController>();
+            Services.AddTransient<TeamspeakConnectionController>();
             Services.AddTransient<DiscordCodeController>();
             Services.AddTransient<DiscordConnectionController>();
             Services.AddTransient<DisplayNameController>();
@@ -36,7 +40,7 @@ namespace UKSF.Api.Personnel.Tests {
             serviceProvider.GetRequiredService<AccountsController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<ApplicationsController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<CommentThreadController>().Should().NotBeNull();
-            serviceProvider.GetRequiredService<CommunicationsController>().Should().NotBeNull();
+            serviceProvider.GetRequiredService<TeamspeakConnectionController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<DiscordCodeController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<DiscordConnectionController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<DisplayNameController>().Should().NotBeNull();
@@ -46,12 +50,13 @@ namespace UKSF.Api.Personnel.Tests {
             serviceProvider.GetRequiredService<RolesController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<ServiceRecordsController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<SteamCodeController>().Should().NotBeNull();
-            serviceProvider.GetRequiredService<CommunicationsController>().Should().NotBeNull();
-            serviceProvider.GetRequiredService<CommunicationsController>().Should().NotBeNull();
+            serviceProvider.GetRequiredService<TeamspeakConnectionController>().Should().NotBeNull();
+            serviceProvider.GetRequiredService<TeamspeakConnectionController>().Should().NotBeNull();
         }
 
         [Fact]
-        public void When_resolving_event_handlers() {
+        public void When_resolving_event_handlers()
+        {
             Services.AddTransient<AccountDataEventHandler>();
             Services.AddTransient<CommentThreadEventHandler>();
             Services.AddTransient<NotificationsEventHandler>();
@@ -63,7 +68,8 @@ namespace UKSF.Api.Personnel.Tests {
         }
 
         [Fact]
-        public void When_resolving_scheduled_actions() {
+        public void When_resolving_scheduled_actions()
+        {
             Services.AddTransient<ActionDeleteExpiredConfirmationCode>();
             Services.AddTransient<ActionPruneNotifications>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();

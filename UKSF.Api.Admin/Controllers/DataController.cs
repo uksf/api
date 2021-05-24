@@ -16,10 +16,9 @@ namespace UKSF.Api.Admin.Controllers
         }
 
         [HttpGet("invalidate"), Authorize]
-        public IActionResult Invalidate()
+        public void Invalidate()
         {
             _dataCacheService.RefreshCachedData();
-            return Ok();
         }
     }
 }

@@ -5,9 +5,9 @@ namespace UKSF.Api.Personnel.Services
 {
     public interface IDisplayNameService
     {
-        string GetDisplayName(Account account);
+        string GetDisplayName(DomainAccount domainAccount);
         string GetDisplayName(string id);
-        string GetDisplayNameWithoutRank(Account account);
+        string GetDisplayNameWithoutRank(DomainAccount domainAccount);
     }
 
     public class DisplayNameService : IDisplayNameService
@@ -21,21 +21,21 @@ namespace UKSF.Api.Personnel.Services
             _ranksContext = ranksContext;
         }
 
-        public string GetDisplayName(Account account)
+        public string GetDisplayName(DomainAccount domainAccount)
         {
-            Rank rank = account.Rank != null ? _ranksContext.GetSingle(account.Rank) : null;
-            return rank == null ? $"{account.Lastname}.{account.Firstname[0]}" : $"{rank.Abbreviation}.{account.Lastname}.{account.Firstname[0]}";
+            Rank rank = domainAccount.Rank != null ? _ranksContext.GetSingle(domainAccount.Rank) : null;
+            return rank == null ? $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}" : $"{rank.Abbreviation}.{domainAccount.Lastname}.{domainAccount.Firstname[0]}";
         }
 
         public string GetDisplayName(string id)
         {
-            Account account = _accountContext.GetSingle(id);
-            return account != null ? GetDisplayName(account) : id;
+            DomainAccount domainAccount = _accountContext.GetSingle(id);
+            return domainAccount != null ? GetDisplayName(domainAccount) : id;
         }
 
-        public string GetDisplayNameWithoutRank(Account account)
+        public string GetDisplayNameWithoutRank(DomainAccount domainAccount)
         {
-            return string.IsNullOrEmpty(account?.Lastname) ? "Guest" : $"{account.Lastname}.{account.Firstname[0]}";
+            return string.IsNullOrEmpty(domainAccount?.Lastname) ? "Guest" : $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}";
         }
     }
 }

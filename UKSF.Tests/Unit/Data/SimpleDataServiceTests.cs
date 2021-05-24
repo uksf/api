@@ -11,10 +11,13 @@ using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Data {
-    public class SimpleDataServiceTests {
+namespace UKSF.Tests.Unit.Data
+{
+    public class SimpleDataServiceTests
+    {
         [Fact]
-        public void Should_create_collections() {
+        public void Should_create_collections()
+        {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
 
             AccountContext unused1 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
@@ -26,7 +29,7 @@ namespace UKSF.Tests.Unit.Data {
             NotificationsContext unused7 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
             SchedulerContext unused8 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
 
-            mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<Account>(It.IsAny<string>()), Times.Once);
+            mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<DomainAccount>(It.IsAny<string>()), Times.Once);
             mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<CommandRequest>(It.IsAny<string>()), Times.Exactly(2));
             mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<ConfirmationCode>(It.IsAny<string>()), Times.Once);
             mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<LauncherFile>(It.IsAny<string>()), Times.Once);

@@ -18,6 +18,11 @@ namespace UKSF.Api.Shared.Extensions
             return double.TryParse(text, out double number) ? number : 0d;
         }
 
+        public static int ToInt(this string text)
+        {
+            return int.TryParse(text, out int number) ? number : 0;
+        }
+
         public static string ToTitleCase(this string text)
         {
             return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(text);

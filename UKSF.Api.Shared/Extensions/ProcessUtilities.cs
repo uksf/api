@@ -5,13 +5,21 @@ using System.Management;
 using Microsoft.Win32.TaskScheduler;
 using Task = System.Threading.Tasks.Task;
 
-namespace UKSF.Api.Shared.Extensions {
+namespace UKSF.Api.Shared.Extensions
+{
     [ExcludeFromCodeCoverage]
-    public static class ProcessUtilities {
+    public static class ProcessUtilities
+    {
         private const int SC_CLOSE = 0xF060;
         private const int WM_SYSCOMMAND = 0x0112;
 
-        public static int LaunchManagedProcess(string executable, string arguments = null) {
+        public static int LaunchManagedProcess(string executable, string arguments = null)
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                throw new InvalidOperationException("Not running on windows, stopping");
+            }
+
             int processId = default;
             using ManagementClass managementClass = new("Win32_Process");
             ManagementClass processInfo = new("Win32_ProcessStartup");
@@ -22,14 +30,16 @@ namespace UKSF.Api.Shared.Extensions {
             inParameters["ProcessStartupInformation"] = processInfo;
 
             ManagementBaseObject result = managementClass.InvokeMethod("Create", inParameters, null);
-            if (result != null && (uint) result.Properties["ReturnValue"].Value == 0) {
+            if (result != null && (uint) result.Properties["ReturnValue"].Value == 0)
+            {
                 processId = Convert.ToInt32(result.Properties["ProcessId"].Value.ToString());
             }
 
             return processId;
         }
 
-        public static async Task LaunchExternalProcess(string name, string command) {
+        public static async Task LaunchExternalProcess(string name, string command)
+        {
             TaskService.Instance.RootFolder.DeleteTask(name, false);
             using TaskDefinition taskDefinition = TaskService.Instance.NewTask();
             taskDefinition.Actions.Add(new ExecAction("cmd", $"/C {command}"));
@@ -38,7 +48,8 @@ namespace UKSF.Api.Shared.Extensions {
             await Task.Delay(TimeSpan.FromSeconds(1));
         }
 
-        public static async Task CloseProcessGracefully(this Process process) {
+        public static async Task CloseProcessGracefully(this Process process)
+        {
             // UKSF.PostMessage exe location should be set as a PATH variable
             await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WM_SYSCOMMAND} {SC_CLOSE} 0");
         }

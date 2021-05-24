@@ -14,7 +14,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
         private readonly IEventBus _eventBus;
         private readonly Mock<IAuditLogContext> _mockAuditLogDataService;
         private readonly Mock<IDiscordLogContext> _mockDiscordLogDataService;
-        private readonly Mock<IErrorLogContext> _mockHttpErrorLogDataService;
+        private readonly Mock<IErrorLogContext> _mockErrorLogDataService;
         private readonly Mock<ILauncherLogContext> _mockLauncherLogDataService;
         private readonly Mock<ILogContext> _mockLogDataService;
         private readonly Mock<IObjectIdConversionService> _mockObjectIdConversionService;
@@ -23,7 +23,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
         {
             _mockLogDataService = new();
             _mockAuditLogDataService = new();
-            _mockHttpErrorLogDataService = new();
+            _mockErrorLogDataService = new();
             _mockLauncherLogDataService = new();
             _mockDiscordLogDataService = new();
             _mockObjectIdConversionService = new();
@@ -33,7 +33,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
             _mockObjectIdConversionService.Setup(x => x.ConvertObjectIds(It.IsAny<string>())).Returns<string>(x => x);
 
             LoggerEventHandler logEventHandler =
-                new(_eventBus, _mockLogDataService.Object, _mockAuditLogDataService.Object, _mockHttpErrorLogDataService.Object, _mockLauncherLogDataService.Object, _mockDiscordLogDataService.Object,
+                new(_eventBus, _mockLogDataService.Object, _mockAuditLogDataService.Object, _mockErrorLogDataService.Object, _mockLauncherLogDataService.Object, _mockDiscordLogDataService.Object,
                     mockLogger.Object, _mockObjectIdConversionService.Object);
             logEventHandler.Init();
         }
@@ -90,7 +90,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
             _eventBus.Send(new LoggerEventData(errorLog));
 
             _mockObjectIdConversionService.Verify(x => x.ConvertObjectIds("Exception of type 'System.Exception' was thrown."), Times.Once);
-            _mockHttpErrorLogDataService.Verify(x => x.Add(errorLog), Times.Once);
+            _mockErrorLogDataService.Verify(x => x.Add(errorLog), Times.Once);
         }
     }
 }

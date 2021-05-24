@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,31 +22,29 @@ namespace UKSF.Api.Command.Controllers
             _operationReportContext = operationReportContext;
         }
 
+        [HttpGet, Authorize]
+        public IEnumerable<Oprep> Get()
+        {
+            return _operationReportContext.Get();
+        }
+
         [HttpGet("{id}"), Authorize]
-        public IActionResult Get(string id)
+        public OprepDataset Get(string id)
         {
             Oprep oprep = _operationReportContext.GetSingle(id);
-            return Ok(new { operationEntity = oprep, groupedAttendance = oprep.AttendanceReport.Users.GroupBy(x => x.GroupName) });
+            return new() { OperationEntity = oprep, GroupedAttendance = oprep.AttendanceReport.Users.GroupBy(x => x.GroupName) };
         }
 
         [HttpPost, Authorize]
-        public async Task<IActionResult> Post([FromBody] CreateOperationReportRequest request)
+        public async Task Post([FromBody] CreateOperationReportRequest request)
         {
             await _operationReportService.Create(request);
-            return Ok();
         }
 
         [HttpPut, Authorize]
-        public async Task<IActionResult> Put([FromBody] Oprep request)
+        public async Task Put([FromBody] Oprep request)
         {
             await _operationReportContext.Replace(request);
-            return Ok();
-        }
-
-        [HttpGet, Authorize]
-        public IActionResult Get()
-        {
-            return Ok(_operationReportContext.Get());
         }
     }
 }

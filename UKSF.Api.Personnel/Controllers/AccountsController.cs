@@ -6,29 +6,38 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
+using NameCase;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Personnel.Context;
-using UKSF.Api.Personnel.Extensions;
+using UKSF.Api.Personnel.Exceptions;
+using UKSF.Api.Personnel.Mappers;
 using UKSF.Api.Personnel.Models;
+using UKSF.Api.Personnel.Models.Parameters;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
+using UKSF.Api.Shared.Commands;
 using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Exceptions;
 using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Shared.Queries;
 using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Personnel.Controllers {
+namespace UKSF.Api.Personnel.Controllers
+{
     [Route("[controller]")]
-    public class AccountsController : Controller {
+    public class AccountsController : Controller
+    {
         private readonly IAccountContext _accountContext;
-        private readonly IEventBus _eventBus;
+        private readonly IAccountMapper _accountMapper;
         private readonly IAccountService _accountService;
         private readonly IConfirmationCodeService _confirmationCodeService;
         private readonly IDisplayNameService _displayNameService;
-        private readonly IEmailService _emailService;
+        private readonly IEventBus _eventBus;
         private readonly IHttpContextService _httpContextService;
         private readonly ILogger _logger;
         private readonly IRanksService _ranksService;
+        private readonly ISendTemplatedEmailCommand _sendTemplatedEmailCommand;
 
         public AccountsController(
             IAccountContext accountContext,
@@ -37,120 +46,142 @@ namespace UKSF.Api.Personnel.Controllers {
             IAccountService accountService,
             IDisplayNameService displayNameService,
             IHttpContextService httpContextService,
-            IEmailService emailService,
+            ISendTemplatedEmailCommand sendTemplatedEmailCommand,
             IEventBus eventBus,
-            ILogger logger
-        ) {
+            ILogger logger,
+            IAccountMapper accountMapper
+        )
+        {
             _accountContext = accountContext;
             _confirmationCodeService = confirmationCodeService;
             _ranksService = ranksService;
             _accountService = accountService;
             _displayNameService = displayNameService;
             _httpContextService = httpContextService;
-            _emailService = emailService;
+            _sendTemplatedEmailCommand = sendTemplatedEmailCommand;
             _eventBus = eventBus;
             _logger = logger;
+            _accountMapper = accountMapper;
         }
 
         [HttpGet, Authorize]
-        public IActionResult Get() {
-            Account account = _accountService.GetUserAccount();
-            return Ok(PubliciseAccount(account));
+        public Account Get()
+        {
+            DomainAccount domainAccount = _accountService.GetUserAccount();
+            return _accountMapper.MapToAccount(domainAccount);
         }
 
         [HttpGet("{id}"), Authorize]
-        public IActionResult GetById(string id) {
-            Account account = _accountContext.GetSingle(id);
-            return Ok(PubliciseAccount(account));
+        public Account GetById(string id)
+        {
+            DomainAccount domainAccount = _accountContext.GetSingle(id);
+            return _accountMapper.MapToAccount(domainAccount);
         }
 
         [HttpPut]
-        public async Task<IActionResult> Put([FromBody] JObject body) {
-            string email = body["email"].ToString();
-            if (_accountContext.Get(x => string.Equals(x.Email, email, StringComparison.InvariantCultureIgnoreCase)).Any()) {
-                return BadRequest(new { error = "an account with this email or username exists" });
+        public async Task<Account> Put([FromBody] CreateAccount createAccount)
+        {
+            if (_accountContext.Get(x => string.Equals(x.Email, createAccount.Email, StringComparison.InvariantCultureIgnoreCase)).Any())
+            {
+                throw new AccountAlreadyExistsException();
             }
 
-            Account account = new() {
-                Email = email,
-                Password = BCrypt.Net.BCrypt.HashPassword(body["password"].ToString()),
-                Firstname = body["firstname"].ToString().ToTitleCase(),
-                Lastname = body["lastname"].ToString().ToTitleCase(),
-                Dob = DateTime.ParseExact($"{body["dobGroup"]["year"]}-{body["dobGroup"]["month"]}-{body["dobGroup"]["day"]}", "yyyy-M-d", CultureInfo.InvariantCulture),
-                Nation = body["nation"].ToString(),
+            DomainAccount domainAccount = new()
+            {
+                Email = createAccount.Email,
+                Password = BCrypt.Net.BCrypt.HashPassword(createAccount.Password),
+                Firstname = createAccount.FirstName.Trim().ToTitleCase(),
+                Lastname = createAccount.LastName.Trim().ToNameCase(),
+                Dob = DateTime.ParseExact($"{createAccount.DobYear}-{createAccount.DobMonth}-{createAccount.DobDay}", "yyyy-M-d", CultureInfo.InvariantCulture),
+                Nation = createAccount.Nation,
                 MembershipState = MembershipState.UNCONFIRMED
             };
-            await _accountContext.Add(account);
-            await SendConfirmationCode(account);
-            _logger.LogAudit($"New account created: '{account.Firstname} {account.Lastname}, {account.Email}'", _accountContext.GetSingle(x => x.Email == account.Email).Id);
-            return Ok(new { email = account.Email });
+            await _accountContext.Add(domainAccount);
+            await SendConfirmationCode(domainAccount);
+
+            DomainAccount createdAccount = _accountContext.GetSingle(x => x.Email == domainAccount.Email);
+            _logger.LogAudit($"New account created: '{domainAccount.Firstname} {domainAccount.Lastname}, {domainAccount.Email}'", createdAccount.Id);
+
+            return _accountMapper.MapToAccount(createdAccount);
         }
 
         [HttpPost, Authorize]
-        public async Task<IActionResult> ApplyConfirmationCode([FromBody] JObject body) {
+        public async Task ApplyConfirmationCode([FromBody] JObject body)
+        {
             string email = body.GetValueFromBody("email");
             string code = body.GetValueFromBody("code");
 
-            try {
+            try
+            {
                 GuardUtilites.ValidateString(email, _ => throw new ArgumentException($"Email '{email}' is invalid. Please refresh the page."));
                 GuardUtilites.ValidateId(code, _ => throw new ArgumentException($"Code '{code}' is invalid. Please try again"));
-            } catch (ArgumentException exception) {
-                return BadRequest(new { error = exception.Message });
+            }
+            catch (ArgumentException exception)
+            {
+                throw new BadRequestException(exception.Message);
             }
 
-            Account account = _accountContext.GetSingle(x => x.Email == email);
-            if (account == null) {
-                return BadRequest(new { error = $"An account with the email '{email}' doesn't exist. This should be impossible so please contact an admin for help" });
+            DomainAccount domainAccount = _accountContext.GetSingle(x => x.Email == email);
+            if (domainAccount == null)
+            {
+                throw new BadRequestException($"An account with the email '{email}' doesn't exist. This should be impossible so please contact an admin for help");
             }
 
-            string value = await _confirmationCodeService.GetConfirmationCode(code);
-            if (value == email) {
-                await _accountContext.Update(account.Id, x => x.MembershipState, MembershipState.CONFIRMED);
-                _logger.LogAudit($"Email address confirmed for {account.Id}");
-                return Ok();
+            string value = await _confirmationCodeService.GetConfirmationCodeValue(code);
+            if (value == email)
+            {
+                await _accountContext.Update(domainAccount.Id, x => x.MembershipState, MembershipState.CONFIRMED);
+                _logger.LogAudit($"Email address confirmed for {domainAccount.Id}");
+                return;
             }
 
             await _confirmationCodeService.ClearConfirmationCodes(x => x.Value == email);
-            await SendConfirmationCode(account);
-            return BadRequest(new { error = $"The confirmation code was invalid or expired. A new code has been sent to '{account.Email}'" });
+            await SendConfirmationCode(domainAccount);
+            throw new BadRequestException($"The confirmation code was invalid or expired. A new code has been sent to '{domainAccount.Email}'");
         }
 
         [HttpPost("resend-email-code"), Authorize]
-        public async Task<IActionResult> ResendConfirmationCode() {
-            Account account = _accountService.GetUserAccount();
+        public async Task<Account> ResendConfirmationCode()
+        {
+            DomainAccount domainAccount = _accountService.GetUserAccount();
 
-            if (account.MembershipState != MembershipState.UNCONFIRMED) {
-                return BadRequest(new { error = "Account email has already been confirmed" });
+            if (domainAccount.MembershipState != MembershipState.UNCONFIRMED)
+            {
+                throw new AccountAlreadyConfirmedException();
             }
 
-            await _confirmationCodeService.ClearConfirmationCodes(x => x.Value == account.Email);
-            await SendConfirmationCode(account);
-            return Ok(PubliciseAccount(account));
+            await _confirmationCodeService.ClearConfirmationCodes(x => x.Value == domainAccount.Email);
+            await SendConfirmationCode(domainAccount);
+            return _accountMapper.MapToAccount(domainAccount);
         }
 
         [HttpGet("under"), Authorize(Roles = Permissions.COMMAND)]
-        public IActionResult GetAccountsUnder([FromQuery] bool reverse = false) {
+        public List<object> GetAccountsUnder([FromQuery] bool reverse = false)
+        {
             List<object> accounts = new();
 
-            List<Account> memberAccounts = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER).ToList();
+            List<DomainAccount> memberAccounts = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER).ToList();
             memberAccounts = memberAccounts.OrderBy(x => x.Rank, new RankComparer(_ranksService)).ThenBy(x => x.Lastname).ThenBy(x => x.Firstname).ToList();
-            if (reverse) {
+            if (reverse)
+            {
                 memberAccounts.Reverse();
             }
 
             accounts.AddRange(memberAccounts.Select(x => new { value = x.Id, displayValue = _displayNameService.GetDisplayName(x) }));
 
-            return Ok(accounts);
+            return accounts;
         }
 
         [HttpGet("roster"), Authorize]
-        public IEnumerable<RosterAccount> GetRosterAccounts() {
-            IEnumerable<Account> accounts = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER);
+        public IEnumerable<RosterAccount> GetRosterAccounts()
+        {
+            IEnumerable<DomainAccount> accounts = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER);
             IEnumerable<RosterAccount> accountObjects = accounts.OrderBy(x => x.Rank, new RankComparer(_ranksService))
                                                                 .ThenBy(x => x.Lastname)
                                                                 .ThenBy(x => x.Firstname)
                                                                 .Select(
-                                                                    x => new RosterAccount {
+                                                                    x => new RosterAccount
+                                                                    {
                                                                         Id = x.Id,
                                                                         Nation = x.Nation,
                                                                         Rank = x.Rank,
@@ -163,55 +194,50 @@ namespace UKSF.Api.Personnel.Controllers {
         }
 
         [HttpGet("exists")]
-        public IActionResult CheckUsernameOrEmailExists([FromQuery] string check) {
-            return Ok(_accountContext.Get().Any(x => string.Equals(x.Email, check, StringComparison.InvariantCultureIgnoreCase)) ? new { exists = true } : new { exists = false });
+        public bool CheckUsernameOrEmailExists([FromQuery] string check)
+        {
+            return _accountContext.Get().Any(x => string.Equals(x.Email, check, StringComparison.InvariantCultureIgnoreCase));
         }
 
         [HttpPut("name"), Authorize]
-        public async Task<IActionResult> ChangeName([FromBody] JObject changeNameRequest) {
-            Account account = _accountService.GetUserAccount();
-            await _accountContext.Update(
-                account.Id,
-                Builders<Account>.Update.Set(x => x.Firstname, changeNameRequest["firstname"].ToString()).Set(x => x.Lastname, changeNameRequest["lastname"].ToString())
-            );
-            _logger.LogAudit($"{account.Lastname}, {account.Firstname} changed their name to {changeNameRequest["lastname"]}, {changeNameRequest["firstname"]}");
-            _eventBus.Send(_accountContext.GetSingle(account.Id));
-            return Ok();
+        public async Task ChangeName([FromBody] ChangeName changeName)
+        {
+            DomainAccount domainAccount = _accountService.GetUserAccount();
+            string firstName = changeName.FirstName.Trim().ToTitleCase();
+            string lastName = changeName.LastName.Trim().ToNameCase();
+
+            await _accountContext.Update(domainAccount.Id, Builders<DomainAccount>.Update.Set(x => x.Firstname, firstName).Set(x => x.Lastname, lastName));
+            _logger.LogAudit($"{domainAccount.Lastname}, {domainAccount.Firstname} changed their name to {lastName}, {firstName}");
+            _eventBus.Send(_accountContext.GetSingle(domainAccount.Id));
         }
 
         [HttpPut("password"), Authorize]
-        public async Task<IActionResult> ChangePassword([FromBody] JObject changePasswordRequest) {
+        public async Task ChangePassword([FromBody] JObject changePasswordRequest)
+        {
             string contextId = _httpContextService.GetUserId();
             await _accountContext.Update(contextId, x => x.Password, BCrypt.Net.BCrypt.HashPassword(changePasswordRequest["password"].ToString()));
             _logger.LogAudit($"Password changed for {contextId}");
-            return Ok();
         }
 
         [HttpPost("updatesetting/{id}"), Authorize]
-        public async Task<IActionResult> UpdateSetting(string id, [FromBody] AccountSettings settings) {
-            Account account = string.IsNullOrEmpty(id) ? _accountService.GetUserAccount() : _accountContext.GetSingle(id);
-            await _accountContext.Update(account.Id, Builders<Account>.Update.Set(x => x.Settings, settings));
-            _logger.LogAudit($"Account settings updated: {account.Settings.Changes(settings)}");
-            return Ok();
+        public async Task UpdateSetting(string id, [FromBody] AccountSettings settings)
+        {
+            DomainAccount domainAccount = string.IsNullOrEmpty(id) ? _accountService.GetUserAccount() : _accountContext.GetSingle(id);
+            await _accountContext.Update(domainAccount.Id, Builders<DomainAccount>.Update.Set(x => x.Settings, settings));
+            _logger.LogAudit($"Account settings updated: {domainAccount.Settings.Changes(settings)}");
         }
 
         [HttpGet("test")]
-        public IActionResult Test() {
+        public string Test()
+        {
             _logger.LogInfo("This is a test");
-            return Ok(new { value = DateTime.Now.ToLongTimeString() });
+            return DateTime.Now.ToLongTimeString();
         }
 
-        private PublicAccount PubliciseAccount(Account account) {
-            PublicAccount publicAccount = account.ToPublicAccount();
-            publicAccount.DisplayName = _displayNameService.GetDisplayName(account);
-            return publicAccount;
-        }
-
-        private async Task SendConfirmationCode(Account account) {
-            string code = await _confirmationCodeService.CreateConfirmationCode(account.Email);
-            string htmlContent =
-                $"<strong>Your email was given for an application to join UKSF<br>Copy this code to your clipboard and return to the UKSF website application page to enter the code:<br><h3>{code}<h3></strong><br><p>If this request was not made by you, please contact an admin</p>";
-            _emailService.SendEmail(account.Email, "UKSF Email Confirmation", htmlContent);
+        private async Task SendConfirmationCode(DomainAccount domainAccount)
+        {
+            string code = await _confirmationCodeService.CreateConfirmationCode(domainAccount.Email);
+            await _sendTemplatedEmailCommand.ExecuteAsync(new(domainAccount.Email, "UKSF Account Confirmation", TemplatedEmailNames.AccountConfirmationTemplate, new() { { "code", code } }));
         }
     }
 }

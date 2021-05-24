@@ -23,7 +23,7 @@ namespace UKSF.Api.Teamspeak.EventHandlers
         private readonly IAccountContext _accountContext;
         private readonly IEventBus _eventBus;
         private readonly ILogger _logger;
-        private readonly ConcurrentDictionary<double, TeamspeakServerGroupUpdate> _serverGroupUpdates = new();
+        private readonly ConcurrentDictionary<int, TeamspeakServerGroupUpdate> _serverGroupUpdates = new();
         private readonly ITeamspeakGroupService _teamspeakGroupService;
         private readonly ITeamspeakService _teamspeakService;
 
@@ -73,8 +73,8 @@ namespace UKSF.Api.Teamspeak.EventHandlers
         private async Task UpdateClientServerGroups(string args)
         {
             JObject updateObject = JObject.Parse(args);
-            double clientDbid = double.Parse(updateObject["clientDbid"].ToString());
-            double serverGroupId = double.Parse(updateObject["serverGroupId"].ToString());
+            int clientDbid = int.Parse(updateObject["clientDbid"].ToString());
+            int serverGroupId = int.Parse(updateObject["serverGroupId"].ToString());
             await Console.Out.WriteLineAsync($"Server group for {clientDbid}: {serverGroupId}");
 
             TeamspeakServerGroupUpdate update = _serverGroupUpdates.GetOrAdd(clientDbid, _ => new());
@@ -92,11 +92,11 @@ namespace UKSF.Api.Teamspeak.EventHandlers
             );
         }
 
-        private async Task ProcessAccountData(double clientDbId, ICollection<double> serverGroups)
+        private async Task ProcessAccountData(int clientDbId, ICollection<int> serverGroups)
         {
             await Console.Out.WriteLineAsync($"Processing server groups for {clientDbId}");
-            Account account = _accountContext.GetSingle(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
-            Task unused = _teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
+            DomainAccount domainAccount = _accountContext.GetSingle(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
+            Task unused = _teamspeakGroupService.UpdateAccountGroups(domainAccount, serverGroups, clientDbId);
 
             _serverGroupUpdates.TryRemove(clientDbId, out TeamspeakServerGroupUpdate _);
         }

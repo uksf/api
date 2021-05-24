@@ -55,12 +55,12 @@ namespace UKSF.Api.ArmaMissions.Services
 
         private static bool IsMedic(MissionPlayer player)
         {
-            return MissionPatchData.Instance.MedicIds.Contains(player.Account?.Id);
+            return MissionPatchData.Instance.MedicIds.Contains(player.DomainAccount?.Id);
         }
 
         public static bool IsEngineer(MissionPlayer player)
         {
-            return MissionPatchData.Instance.EngineerIds.Contains(player.Account?.Id);
+            return MissionPatchData.Instance.EngineerIds.Contains(player.DomainAccount?.Id);
         }
 
         public static string ResolveCallsign(MissionUnit unit, string defaultCallsign)

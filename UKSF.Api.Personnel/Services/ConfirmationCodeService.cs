@@ -12,7 +12,7 @@ namespace UKSF.Api.Personnel.Services
     public interface IConfirmationCodeService
     {
         Task<string> CreateConfirmationCode(string value);
-        Task<string> GetConfirmationCode(string id);
+        Task<string> GetConfirmationCodeValue(string id);
         Task ClearConfirmationCodes(Func<ConfirmationCode, bool> predicate);
     }
 
@@ -40,7 +40,7 @@ namespace UKSF.Api.Personnel.Services
             return code.Id;
         }
 
-        public async Task<string> GetConfirmationCode(string id)
+        public async Task<string> GetConfirmationCodeValue(string id)
         {
             ConfirmationCode confirmationCode = _confirmationCodeContext.GetSingle(id);
             if (confirmationCode == null)
@@ -51,6 +51,7 @@ namespace UKSF.Api.Personnel.Services
             await _confirmationCodeContext.Delete(confirmationCode);
             string actionParameters = JsonConvert.SerializeObject(new object[] { confirmationCode.Id });
             await _schedulerService.Cancel(x => x.ActionParameters == actionParameters);
+
             return confirmationCode.Value;
         }
 

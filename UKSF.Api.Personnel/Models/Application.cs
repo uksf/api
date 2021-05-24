@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace UKSF.Api.Personnel.Models {
-    public enum ApplicationState {
+namespace UKSF.Api.Personnel.Models
+{
+    public enum ApplicationState
+    {
         ACCEPTED,
         REJECTED,
         WAITING
     }
 
-    public class Application {
+    public class Application
+    {
         [BsonRepresentation(BsonType.ObjectId)] public string ApplicationCommentThread;
         public DateTime DateAccepted;
         public DateTime DateCreated;
@@ -20,47 +23,53 @@ namespace UKSF.Api.Personnel.Models {
         public ApplicationState State = ApplicationState.WAITING;
     }
 
-    public class DetailedApplication {
+    public class DetailedApplication
+    {
         public Account Account;
-        public string DisplayName;
         public ApplicationAge Age;
-        public double DaysProcessing;
-        public double DaysProcessed;
-        public string NextCandidateOp;
         public double AverageProcessingTime;
-        public string SteamProfile;
+        public double DaysProcessed;
+        public double DaysProcessing;
+        public string DisplayName;
+        public string NextCandidateOp;
         public string Recruiter;
         public string RecruiterId;
-    }
-
-    public class ApplicationAge {
-        public int Years;
-        public int Months;
-    }
-
-    public class WaitingApplication {
-        public Account Account;
         public string SteamProfile;
+    }
+
+    public class ApplicationAge
+    {
+        public int Months;
+        public int Years;
+    }
+
+    public class WaitingApplication
+    {
+        public Account Account;
         public double DaysProcessing;
         public double ProcessingDifference;
         public string Recruiter;
+        public string SteamProfile;
     }
 
-    public class CompletedApplication {
+    public class CompletedApplication
+    {
         public Account Account;
-        public string DisplayName;
         public double DaysProcessed;
+        public string DisplayName;
         public string Recruiter;
     }
 
-    public class ApplicationsOverview {
-        public List<WaitingApplication> Waiting;
+    public class ApplicationsOverview
+    {
         public List<WaitingApplication> AllWaiting;
         public List<CompletedApplication> Complete;
         public List<string> Recruiters;
+        public List<WaitingApplication> Waiting;
     }
 
-    public class Recruiter {
+    public class Recruiter
+    {
         public string Id;
         public string Name;
     }

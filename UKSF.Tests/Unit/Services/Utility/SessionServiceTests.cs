@@ -8,48 +8,54 @@ using UKSF.Api.Shared;
 using UKSF.Api.Shared.Services;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Services.Utility {
-    public class SessionServiceTests {
+namespace UKSF.Tests.Unit.Services.Utility
+{
+    public class SessionServiceTests
+    {
         private readonly HttpContextService _httpContextService;
         private DefaultHttpContext _httpContext;
 
-        public SessionServiceTests() {
+        public SessionServiceTests()
+        {
             Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
 
             mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(() => _httpContext);
 
-            _httpContextService = new HttpContextService(mockHttpContextAccessor.Object);
+            _httpContextService = new(mockHttpContextAccessor.Object);
         }
 
         [Fact]
-        public void ShouldGetContextEmail() {
-            Account account = new() { Email = "contact.tim.here@gmail.com" };
-            List<Claim> claims = new() { new Claim(ClaimTypes.Email, account.Email) };
+        public void ShouldGetContextEmail()
+        {
+            DomainAccount domainAccount = new() { Email = "contact.tim.here@gmail.com" };
+            List<Claim> claims = new() { new(ClaimTypes.Email, domainAccount.Email) };
             ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
-            _httpContext = new DefaultHttpContext { User = contextUser };
+            _httpContext = new() { User = contextUser };
 
             string subject = _httpContextService.GetUserEmail();
 
-            subject.Should().Be(account.Email);
+            subject.Should().Be(domainAccount.Email);
         }
 
         [Fact]
-        public void ShouldGetContextId() {
-            Account account = new();
-            List<Claim> claims = new() { new Claim(ClaimTypes.Sid, account.Id, ClaimValueTypes.String) };
+        public void ShouldGetContextId()
+        {
+            DomainAccount domainAccount = new();
+            List<Claim> claims = new() { new(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String) };
             ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
-            _httpContext = new DefaultHttpContext { User = contextUser };
+            _httpContext = new() { User = contextUser };
 
             string subject = _httpContextService.GetUserId();
 
-            subject.Should().Be(account.Id);
+            subject.Should().Be(domainAccount.Id);
         }
 
         [Fact]
-        public void ShouldReturnFalseForInvalidRole() {
-            List<Claim> claims = new() { new Claim(ClaimTypes.Role, Permissions.ADMIN) };
+        public void ShouldReturnFalseForInvalidRole()
+        {
+            List<Claim> claims = new() { new(ClaimTypes.Role, Permissions.ADMIN) };
             ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
-            _httpContext = new DefaultHttpContext { User = contextUser };
+            _httpContext = new() { User = contextUser };
 
             bool subject = _httpContextService.UserHasPermission(Permissions.COMMAND);
 
@@ -57,10 +63,11 @@ namespace UKSF.Tests.Unit.Services.Utility {
         }
 
         [Fact]
-        public void ShouldReturnTrueForValidRole() {
-            List<Claim> claims = new() { new Claim(ClaimTypes.Role, Permissions.ADMIN) };
+        public void ShouldReturnTrueForValidRole()
+        {
+            List<Claim> claims = new() { new(ClaimTypes.Role, Permissions.ADMIN) };
             ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
-            _httpContext = new DefaultHttpContext { User = contextUser };
+            _httpContext = new() { User = contextUser };
 
             bool subject = _httpContextService.UserHasPermission(Permissions.ADMIN);
 

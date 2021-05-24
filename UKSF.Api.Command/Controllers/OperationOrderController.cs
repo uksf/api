@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Command.Context;
@@ -21,29 +22,27 @@ namespace UKSF.Api.Command.Controllers
         }
 
         [HttpGet, Authorize]
-        public IActionResult Get()
+        public IEnumerable<Opord> Get()
         {
-            return Ok(_operationOrderContext.Get());
+            return _operationOrderContext.Get();
         }
 
         [HttpGet("{id}"), Authorize]
-        public IActionResult Get(string id)
+        public Opord Get(string id)
         {
-            return Ok(new { result = _operationOrderContext.GetSingle(id) });
+            return _operationOrderContext.GetSingle(id);
         }
 
         [HttpPost, Authorize]
-        public async Task<IActionResult> Post([FromBody] CreateOperationOrderRequest request)
+        public async Task Post([FromBody] CreateOperationOrderRequest request)
         {
             await _operationOrderService.Add(request);
-            return Ok();
         }
 
         [HttpPut, Authorize]
-        public async Task<IActionResult> Put([FromBody] Opord request)
+        public async Task Put([FromBody] Opord request)
         {
             await _operationOrderContext.Replace(request);
-            return Ok();
         }
     }
 }

@@ -17,7 +17,7 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions
     {
         private readonly IActionPruneLogs _actionPruneLogs;
         private readonly Mock<IAuditLogContext> _mockAuditLogContext = new();
-        private readonly Mock<IErrorLogContext> _mockHttpErrorLogContext = new();
+        private readonly Mock<IErrorLogContext> _mockErrorLogContext = new();
         private readonly Mock<ILogContext> _mockLogContext = new();
         private readonly Mock<ISchedulerContext> _mockSchedulerContext = new();
         private readonly DateTime _now;
@@ -34,7 +34,7 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions
             _actionPruneLogs = new ActionPruneLogs(
                 _mockLogContext.Object,
                 _mockAuditLogContext.Object,
-                _mockHttpErrorLogContext.Object,
+                _mockErrorLogContext.Object,
                 mockSchedulerService.Object,
                 _mockSchedulerContext.Object,
                 mockHostEnvironment.Object,
@@ -63,9 +63,9 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions
             _mockAuditLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<AuditLog, bool>>>()))
                                 .Returns(Task.CompletedTask)
                                 .Callback<Expression<Func<AuditLog, bool>>>(x => auditLogs.RemoveAll(y => x.Compile()(y)));
-            _mockHttpErrorLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<ErrorLog, bool>>>()))
-                                    .Returns(Task.CompletedTask)
-                                    .Callback<Expression<Func<ErrorLog, bool>>>(x => errorLogs.RemoveAll(y => x.Compile()(y)));
+            _mockErrorLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<ErrorLog, bool>>>()))
+                                .Returns(Task.CompletedTask)
+                                .Callback<Expression<Func<ErrorLog, bool>>>(x => errorLogs.RemoveAll(y => x.Compile()(y)));
 
             await _actionPruneLogs.Run();
 

@@ -64,14 +64,14 @@ namespace UKSF.Api.Command.Services
 
         public async Task Add(CommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE)
         {
-            Account requesterAccount = _accountService.GetUserAccount();
-            Account recipientAccount = _accountContext.GetSingle(request.Recipient);
-            request.DisplayRequester = _displayNameService.GetDisplayName(requesterAccount);
-            request.DisplayRecipient = _displayNameService.GetDisplayName(recipientAccount);
+            DomainAccount requesterDomainAccount = _accountService.GetUserAccount();
+            DomainAccount recipientDomainAccount = _accountContext.GetSingle(request.Recipient);
+            request.DisplayRequester = _displayNameService.GetDisplayName(requesterDomainAccount);
+            request.DisplayRecipient = _displayNameService.GetDisplayName(recipientDomainAccount);
             HashSet<string> ids = _chainOfCommandService.ResolveChain(
                 mode,
-                recipientAccount.Id,
-                _unitsContext.GetSingle(x => x.Name == recipientAccount.UnitAssignment),
+                recipientDomainAccount.Id,
+                _unitsContext.GetSingle(x => x.Name == recipientDomainAccount.UnitAssignment),
                 _unitsContext.GetSingle(request.Value)
             );
             if (ids.Count == 0)
@@ -79,8 +79,12 @@ namespace UKSF.Api.Command.Services
                 throw new($"Failed to get any commanders for review for {request.Type.ToLower()} request for {request.DisplayRecipient}.\nContact an admin");
             }
 
-            List<Account> accounts = ids.Select(x => _accountContext.GetSingle(x)).OrderBy(x => x.Rank, new RankComparer(_ranksService)).ThenBy(x => x.Lastname).ThenBy(x => x.Firstname).ToList();
-            foreach (Account account in accounts)
+            List<DomainAccount> accounts = ids.Select(x => _accountContext.GetSingle(x))
+                                              .OrderBy(x => x.Rank, new RankComparer(_ranksService))
+                                              .ThenBy(x => x.Lastname)
+                                              .ThenBy(x => x.Firstname)
+                                              .ToList();
+            foreach (DomainAccount account in accounts)
             {
                 request.Reviews.Add(account.Id, ReviewState.PENDING);
             }
@@ -90,7 +94,7 @@ namespace UKSF.Api.Command.Services
             bool selfRequest = request.DisplayRequester == request.DisplayRecipient;
             string notificationMessage =
                 $"{request.DisplayRequester} requires your review on {(selfRequest ? "their" : AvsAn.Query(request.Type).Article)} {request.Type.ToLower()} request{(selfRequest ? "" : $" for {request.DisplayRecipient}")}";
-            foreach (Account account in accounts.Where(x => x.Id != requesterAccount.Id))
+            foreach (DomainAccount account in accounts.Where(x => x.Id != requesterDomainAccount.Id))
             {
                 _notificationsService.Add(new() { Owner = account.Id, Icon = NotificationIcons.REQUEST, Message = notificationMessage, Link = "/command/requests" });
             }

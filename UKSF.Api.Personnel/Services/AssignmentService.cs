@@ -146,8 +146,8 @@ namespace UKSF.Api.Personnel.Services
         // TODO: teamspeak and discord should probably be updated for account update events, or a separate assignment event bus could be used
         public async Task UpdateGroupsAndRoles(string id)
         {
-            Account account = _accountContext.GetSingle(id);
-            _eventBus.Send(account);
+            DomainAccount domainAccount = _accountContext.GetSingle(id);
+            _eventBus.Send(domainAccount);
             await _accountHub.Clients.Group(id).ReceiveAccountUpdate();
         }
 

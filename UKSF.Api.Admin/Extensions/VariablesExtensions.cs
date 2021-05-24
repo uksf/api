@@ -24,6 +24,17 @@ namespace UKSF.Api.Admin.Extensions
             return variable.AssertHasItem().Item.ToString();
         }
 
+        public static int AsInt(this VariableItem variable)
+        {
+            string item = variable.AsString();
+            if (!int.TryParse(item, out int output))
+            {
+                throw new InvalidCastException($"VariableItem {item} cannot be converted to an int");
+            }
+
+            return output;
+        }
+
         public static double AsDouble(this VariableItem variable)
         {
             string item = variable.AsString();
@@ -82,6 +93,14 @@ namespace UKSF.Api.Admin.Extensions
             itemString = Regex.Replace(itemString, "\\s*,\\s*", ",");
             IEnumerable<string> items = itemString.Split(",").AsEnumerable();
             return predicate != null ? items.Select(predicate) : items;
+        }
+
+        public static IEnumerable<int> AsIntArray(this VariableItem variable)
+        {
+            string itemString = variable.AsString();
+            itemString = Regex.Replace(itemString, "\\s*,\\s*", ",");
+            IEnumerable<int> items = itemString.Split(",").Select(x => x.ToInt());
+            return items;
         }
 
         public static IEnumerable<double> AsDoublesArray(this VariableItem variable)

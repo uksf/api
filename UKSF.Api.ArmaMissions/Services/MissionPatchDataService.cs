@@ -53,24 +53,24 @@ namespace UKSF.Api.ArmaMissions.Services
                 MissionPatchData.Instance.Units.Add(new() { SourceUnit = unit });
             }
 
-            foreach (Account account in _accountContext.Get().Where(x => !string.IsNullOrEmpty(x.Rank) && _ranksService.IsSuperiorOrEqual(x.Rank, "Recruit")))
+            foreach (DomainAccount account in _accountContext.Get().Where(x => !string.IsNullOrEmpty(x.Rank) && _ranksService.IsSuperiorOrEqual(x.Rank, "Recruit")))
             {
-                MissionPatchData.Instance.Players.Add(new() { Account = account, Rank = _ranksContext.GetSingle(account.Rank), Name = _displayNameService.GetDisplayName(account) });
+                MissionPatchData.Instance.Players.Add(new() { DomainAccount = account, Rank = _ranksContext.GetSingle(account.Rank), Name = _displayNameService.GetDisplayName(account) });
             }
 
             foreach (MissionUnit missionUnit in MissionPatchData.Instance.Units)
             {
                 missionUnit.Callsign = MissionDataResolver.ResolveCallsign(missionUnit, missionUnit.SourceUnit.Callsign);
-                missionUnit.Members = missionUnit.SourceUnit.Members.Select(x => MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == x)).ToList();
+                missionUnit.Members = missionUnit.SourceUnit.Members.Select(x => MissionPatchData.Instance.Players.FirstOrDefault(y => y.DomainAccount.Id == x)).ToList();
                 if (missionUnit.SourceUnit.Roles.Count > 0)
                 {
-                    missionUnit.Roles = missionUnit.SourceUnit.Roles.ToDictionary(pair => pair.Key, pair => MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == pair.Value));
+                    missionUnit.Roles = missionUnit.SourceUnit.Roles.ToDictionary(pair => pair.Key, pair => MissionPatchData.Instance.Players.FirstOrDefault(y => y.DomainAccount.Id == pair.Value));
                 }
             }
 
             foreach (MissionPlayer missionPlayer in MissionPatchData.Instance.Players)
             {
-                missionPlayer.Unit = MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Name == missionPlayer.Account.UnitAssignment);
+                missionPlayer.Unit = MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Name == missionPlayer.DomainAccount.UnitAssignment);
                 missionPlayer.ObjectClass = MissionDataResolver.ResolveObjectClass(missionPlayer);
             }
 

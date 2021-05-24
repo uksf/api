@@ -5,7 +5,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="EmailHtmlTemplates\**">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
 </Project>

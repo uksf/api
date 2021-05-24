@@ -26,7 +26,7 @@ namespace UKSF.Api.Discord.Services
         Task SendMessage(ulong channelId, string message);
         Task<IReadOnlyCollection<SocketRole>> GetRoles();
         Task UpdateAllUsers();
-        Task UpdateAccount(Account account, ulong discordId = 0);
+        Task UpdateAccount(DomainAccount domainAccount, ulong discordId = 0);
     }
 
     public class DiscordService : IDiscordService, IDisposable
@@ -136,7 +136,7 @@ namespace UKSF.Api.Discord.Services
             );
         }
 
-        public async Task UpdateAccount(Account account, ulong discordId = 0)
+        public async Task UpdateAccount(DomainAccount domainAccount, ulong discordId = 0)
         {
             if (IsDiscordDisabled())
             {
@@ -144,14 +144,14 @@ namespace UKSF.Api.Discord.Services
             }
 
             await AssertOnline();
-            if (discordId == 0 && account != null && !string.IsNullOrEmpty(account.DiscordId))
+            if (discordId == 0 && domainAccount != null && !string.IsNullOrEmpty(domainAccount.DiscordId))
             {
-                discordId = ulong.Parse(account.DiscordId);
+                discordId = ulong.Parse(domainAccount.DiscordId);
             }
 
-            if (discordId != 0 && account == null)
+            if (discordId != 0 && domainAccount == null)
             {
-                account = _accountContext.GetSingle(x => !string.IsNullOrEmpty(x.DiscordId) && x.DiscordId == discordId.ToString());
+                domainAccount = _accountContext.GetSingle(x => !string.IsNullOrEmpty(x.DiscordId) && x.DiscordId == discordId.ToString());
             }
 
             if (discordId == 0)
@@ -170,15 +170,15 @@ namespace UKSF.Api.Discord.Services
                 return;
             }
 
-            await UpdateAccountRoles(user, account);
-            await UpdateAccountNickname(user, account);
+            await UpdateAccountRoles(user, domainAccount);
+            await UpdateAccountNickname(user, domainAccount);
         }
 
         // TODO: Change to use signalr if events are available
         public OnlineState GetOnlineUserDetails(string accountId)
         {
-            Account account = _accountContext.GetSingle(accountId);
-            if (account?.DiscordId == null || !ulong.TryParse(account.DiscordId, out ulong discordId))
+            DomainAccount domainAccount = _accountContext.GetSingle(accountId);
+            if (domainAccount?.DiscordId == null || !ulong.TryParse(domainAccount.DiscordId, out ulong discordId))
             {
                 return null;
             }
@@ -216,15 +216,15 @@ namespace UKSF.Api.Discord.Services
                 string.IsNullOrEmpty(user.Nickname) ? user.Username : user.Nickname;
         }
 
-        private async Task UpdateAccountRoles(SocketGuildUser user, Account account)
+        private async Task UpdateAccountRoles(SocketGuildUser user, DomainAccount domainAccount)
         {
             IReadOnlyCollection<SocketRole> userRoles = user.Roles;
             HashSet<string> allowedRoles = new();
 
-            if (account != null)
+            if (domainAccount != null)
             {
-                UpdateAccountRanks(account, allowedRoles);
-                UpdateAccountUnits(account, allowedRoles);
+                UpdateAccountRanks(domainAccount, allowedRoles);
+                UpdateAccountUnits(domainAccount, allowedRoles);
             }
 
             string[] rolesBlacklist = _variablesService.GetVariable("DID_R_BLACKLIST").AsArray();
@@ -245,9 +245,9 @@ namespace UKSF.Api.Discord.Services
             }
         }
 
-        private async Task UpdateAccountNickname(IGuildUser user, Account account)
+        private async Task UpdateAccountNickname(IGuildUser user, DomainAccount domainAccount)
         {
-            string name = _displayNameService.GetDisplayName(account);
+            string name = _displayNameService.GetDisplayName(domainAccount);
             if (user.Nickname != name)
             {
                 try
@@ -261,19 +261,19 @@ namespace UKSF.Api.Discord.Services
             }
         }
 
-        private void UpdateAccountRanks(Account account, ISet<string> allowedRoles)
+        private void UpdateAccountRanks(DomainAccount domainAccount, ISet<string> allowedRoles)
         {
-            string rank = account.Rank;
+            string rank = domainAccount.Rank;
             foreach (Rank x in _ranksContext.Get().Where(x => rank == x.Name))
             {
                 allowedRoles.Add(x.DiscordRoleId);
             }
         }
 
-        private void UpdateAccountUnits(Account account, ISet<string> allowedRoles)
+        private void UpdateAccountUnits(DomainAccount domainAccount, ISet<string> allowedRoles)
         {
-            Unit accountUnit = _unitsContext.GetSingle(x => x.Name == account.UnitAssignment);
-            List<Unit> accountUnits = _unitsContext.Get(x => x.Members.Contains(account.Id)).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
+            Unit accountUnit = _unitsContext.GetSingle(x => x.Name == domainAccount.UnitAssignment);
+            List<Unit> accountUnits = _unitsContext.Get(x => x.Members.Contains(domainAccount.Id)).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
             List<Unit> accountUnitParents = _unitsService.GetParents(accountUnit).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
             accountUnits.ForEach(x => allowedRoles.Add(x.DiscordRoleId));
             accountUnitParents.ForEach(x => allowedRoles.Add(x.DiscordRoleId));
@@ -328,12 +328,12 @@ namespace UKSF.Api.Discord.Services
             _client.UserLeft += user =>
             {
                 string name = GetUserNickname(user);
-                Account account = _accountContext.GetSingle(x => x.DiscordId == user.Id.ToString());
-                string associatedAccountMessage = GetAssociatedAccountMessage(account);
+                DomainAccount domainAccount = _accountContext.GetSingle(x => x.DiscordId == user.Id.ToString());
+                string associatedAccountMessage = GetAssociatedAccountMessage(domainAccount);
                 _logger.LogDiscordEvent(DiscordUserEventType.LEFT, user.Id.ToString(), name, string.Empty, name, $"Left, {associatedAccountMessage}");
-                if (account != null)
+                if (domainAccount != null)
                 {
-                    _eventBus.Send(new DiscordEventData(DiscordUserEventType.LEFT, account.Id));
+                    _eventBus.Send(new DiscordEventData(DiscordUserEventType.LEFT, domainAccount.Id));
                 }
 
                 return Task.CompletedTask;
@@ -534,13 +534,15 @@ namespace UKSF.Api.Discord.Services
 
         private string GetAssociatedAccountMessageFromUserId(ulong userId)
         {
-            Account account = _accountContext.GetSingle(x => x.DiscordId == userId.ToString());
-            return GetAssociatedAccountMessage(account);
+            DomainAccount domainAccount = _accountContext.GetSingle(x => x.DiscordId == userId.ToString());
+            return GetAssociatedAccountMessage(domainAccount);
         }
 
-        private string GetAssociatedAccountMessage(Account account)
+        private string GetAssociatedAccountMessage(DomainAccount domainAccount)
         {
-            return account == null ? "with no associated account" : $"with associated account ({account.Id}, {_displayNameService.GetDisplayName(account)})";
+            return domainAccount == null
+                ? "with no associated account"
+                : $"with associated account ({domainAccount.Id}, {_displayNameService.GetDisplayName(domainAccount)}, {domainAccount.MembershipState.ToString()})";
         }
 
         private async Task<DiscordDeletedMessageResult> GetDeletedMessageDetails(Cacheable<IMessage, ulong> cacheable, ISocketMessageChannel channel)

@@ -44,7 +44,7 @@ namespace UKSF.Api
 
         private static IServiceCollection AddMiddlewares(this IServiceCollection services)
         {
-            return services.AddSingleton<ExceptionMiddleware>().AddSingleton<CorsMiddleware>().AddSingleton<ExceptionHandler>();
+            return services.AddSingleton<ExceptionMiddleware>().AddSingleton<CorsMiddleware>().AddSingleton<IExceptionHandler, ExceptionHandler>();
         }
 
         private static void AddComponents(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment)

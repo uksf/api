@@ -9,9 +9,9 @@ namespace UKSF.Api.Controllers
     {
         // TODO: Return size of modpack folder
         [HttpGet("size")]
-        public IActionResult Index()
+        public string Index()
         {
-            return Ok("37580963840");
+            return "37580963840";
         }
     }
 }

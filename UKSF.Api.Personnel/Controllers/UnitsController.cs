@@ -12,6 +12,7 @@ using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Exceptions;
 using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Personnel.Controllers
@@ -59,7 +60,7 @@ namespace UKSF.Api.Personnel.Controllers
         }
 
         [HttpGet, Authorize]
-        public IActionResult Get([FromQuery] string filter = "", [FromQuery] string accountId = "")
+        public IEnumerable<Unit> Get([FromQuery] string filter = "", [FromQuery] string accountId = "")
         {
             if (!string.IsNullOrEmpty(accountId))
             {
@@ -69,14 +70,14 @@ namespace UKSF.Api.Personnel.Controllers
                     "available" => _unitsService.GetSortedUnits(x => !x.Members.Contains(accountId)),
                     _           => _unitsService.GetSortedUnits(x => x.Members.Contains(accountId))
                 };
-                return Ok(response);
+                return response;
             }
 
-            return Ok(_unitsService.GetSortedUnits());
+            return _unitsService.GetSortedUnits();
         }
 
         [HttpGet("{id}"), Authorize]
-        public IActionResult GetSingle([FromRoute] string id)
+        public ResponseUnit GetSingle([FromRoute] string id)
         {
             Unit unit = _unitsContext.GetSingle(id);
             Unit parent = _unitsService.GetParent(unit);
@@ -85,15 +86,15 @@ namespace UKSF.Api.Personnel.Controllers
             response.Code = _unitsService.GetChainString(unit);
             response.ParentName = parent?.Name;
             response.UnitMembers = MapUnitMembers(unit);
-            return Ok(response);
+            return response;
         }
 
         [HttpGet("exists/{check}"), Authorize]
-        public IActionResult GetUnitExists([FromRoute] string check, [FromQuery] string id = "")
+        public bool GetUnitExists([FromRoute] string check, [FromQuery] string id = "")
         {
             if (string.IsNullOrEmpty(check))
             {
-                Ok(false);
+                return false;
             }
 
             bool exists = _unitsContext.GetSingle(
@@ -105,11 +106,11 @@ namespace UKSF.Api.Personnel.Controllers
                                     string.Equals(x.Callsign, check, StringComparison.InvariantCultureIgnoreCase))
                           ) !=
                           null;
-            return Ok(exists);
+            return exists;
         }
 
         [HttpGet("tree"), Authorize]
-        public IActionResult GetTree()
+        public ResponseUnitTreeDataSet GetTree()
         {
             Unit combatRoot = _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.COMBAT);
             Unit auxiliaryRoot = _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY);
@@ -118,7 +119,7 @@ namespace UKSF.Api.Personnel.Controllers
                 CombatNodes = new List<ResponseUnitTree> { new() { Id = combatRoot.Id, Name = combatRoot.Name, Children = GetUnitTreeChildren(combatRoot) } },
                 AuxiliaryNodes = new List<ResponseUnitTree> { new() { Id = auxiliaryRoot.Id, Name = auxiliaryRoot.Name, Children = GetUnitTreeChildren(auxiliaryRoot) } }
             };
-            return Ok(dataSet);
+            return dataSet;
         }
 
         // TODO: Use a mapper
@@ -128,15 +129,14 @@ namespace UKSF.Api.Personnel.Controllers
         }
 
         [HttpPost, Authorize]
-        public async Task<IActionResult> AddUnit([FromBody] Unit unit)
+        public async Task AddUnit([FromBody] Unit unit)
         {
             await _unitsContext.Add(unit);
             _logger.LogAudit($"New unit added: '{unit}'");
-            return Ok();
         }
 
         [HttpPut("{id}"), Authorize]
-        public async Task<IActionResult> EditUnit([FromRoute] string id, [FromBody] Unit unit)
+        public async Task EditUnit([FromRoute] string id, [FromBody] Unit unit)
         {
             Unit oldUnit = _unitsContext.GetSingle(x => x.Id == id);
             await _unitsContext.Replace(unit);
@@ -146,7 +146,7 @@ namespace UKSF.Api.Personnel.Controllers
             unit = _unitsContext.GetSingle(unit.Id);
             if (unit.Name != oldUnit.Name)
             {
-                foreach (Account account in _accountContext.Get(x => x.UnitAssignment == oldUnit.Name))
+                foreach (DomainAccount account in _accountContext.Get(x => x.UnitAssignment == oldUnit.Name))
                 {
                     await _accountContext.Update(account.Id, x => x.UnitAssignment, unit.Name);
                     _eventBus.Send(account);
@@ -155,7 +155,7 @@ namespace UKSF.Api.Personnel.Controllers
 
             if (unit.TeamspeakGroup != oldUnit.TeamspeakGroup)
             {
-                foreach (Account account in unit.Members.Select(x => _accountContext.GetSingle(x)))
+                foreach (DomainAccount account in unit.Members.Select(x => _accountContext.GetSingle(x)))
                 {
                     _eventBus.Send(account);
                 }
@@ -163,38 +163,35 @@ namespace UKSF.Api.Personnel.Controllers
 
             if (unit.DiscordRoleId != oldUnit.DiscordRoleId)
             {
-                foreach (Account account in unit.Members.Select(x => _accountContext.GetSingle(x)))
+                foreach (DomainAccount account in unit.Members.Select(x => _accountContext.GetSingle(x)))
                 {
                     _eventBus.Send(account);
                 }
             }
-
-            return Ok();
         }
 
         [HttpDelete("{id}"), Authorize]
-        public async Task<IActionResult> DeleteUnit([FromRoute] string id)
+        public async Task DeleteUnit([FromRoute] string id)
         {
             Unit unit = _unitsContext.GetSingle(id);
             _logger.LogAudit($"Unit deleted '{unit.Name}'");
-            foreach (Account account in _accountContext.Get(x => x.UnitAssignment == unit.Name))
+            foreach (DomainAccount account in _accountContext.Get(x => x.UnitAssignment == unit.Name))
             {
                 Notification notification = await _assignmentService.UpdateUnitRankAndRole(account.Id, "Reserves", reason: $"{unit.Name} was deleted");
                 _notificationsService.Add(notification);
             }
 
             await _unitsContext.Delete(id);
-            return Ok();
         }
 
         [HttpPatch("{id}/parent"), Authorize]
-        public async Task<IActionResult> UpdateParent([FromRoute] string id, [FromBody] RequestUnitUpdateParent unitUpdate)
+        public async Task UpdateParent([FromRoute] string id, [FromBody] RequestUnitUpdateParent unitUpdate)
         {
             Unit unit = _unitsContext.GetSingle(id);
             Unit parentUnit = _unitsContext.GetSingle(unitUpdate.ParentId);
             if (unit.Parent == parentUnit.Id)
             {
-                return Ok();
+                return;
             }
 
             await _unitsContext.Update(id, x => x.Parent, parentUnit.Id);
@@ -219,12 +216,10 @@ namespace UKSF.Api.Personnel.Controllers
                     await _assignmentService.UpdateGroupsAndRoles(accountId);
                 }
             }
-
-            return Ok();
         }
 
         [HttpPatch("{id}/order"), Authorize]
-        public IActionResult UpdateSortOrder([FromRoute] string id, [FromBody] RequestUnitUpdateOrder unitUpdate)
+        public void UpdateSortOrder([FromRoute] string id, [FromBody] RequestUnitUpdateOrder unitUpdate)
         {
             Unit unit = _unitsContext.GetSingle(id);
             Unit parentUnit = _unitsContext.GetSingle(x => x.Id == unit.Parent);
@@ -235,39 +230,33 @@ namespace UKSF.Api.Personnel.Controllers
             {
                 _unitsContext.Update(child.Id, x => x.Order, parentChildren.IndexOf(child));
             }
-
-            return Ok();
         }
 
         // TODO: Use mappers/factories
         [HttpGet("chart/{type}"), Authorize]
-        public IActionResult GetUnitsChart([FromRoute] string type)
+        public ResponseUnitChartNode GetUnitsChart([FromRoute] string type)
         {
             switch (type)
             {
                 case "combat":
                     Unit combatRoot = _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.COMBAT);
-                    return Ok(
-                        new ResponseUnitChartNode
-                        {
-                            Id = combatRoot.Id,
-                            Name = combatRoot.PreferShortname ? combatRoot.Shortname : combatRoot.Name,
-                            Members = MapUnitMembers(combatRoot),
-                            Children = GetUnitChartChildren(combatRoot.Id)
-                        }
-                    );
+                    return new()
+                    {
+                        Id = combatRoot.Id,
+                        Name = combatRoot.PreferShortname ? combatRoot.Shortname : combatRoot.Name,
+                        Members = MapUnitMembers(combatRoot),
+                        Children = GetUnitChartChildren(combatRoot.Id)
+                    };
                 case "auxiliary":
                     Unit auxiliaryRoot = _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY);
-                    return Ok(
-                        new ResponseUnitChartNode
-                        {
-                            Id = auxiliaryRoot.Id,
-                            Name = auxiliaryRoot.PreferShortname ? auxiliaryRoot.Shortname : auxiliaryRoot.Name,
-                            Members = MapUnitMembers(auxiliaryRoot),
-                            Children = GetUnitChartChildren(auxiliaryRoot.Id)
-                        }
-                    );
-                default: return Ok();
+                    return new()
+                    {
+                        Id = auxiliaryRoot.Id,
+                        Name = auxiliaryRoot.PreferShortname ? auxiliaryRoot.Shortname : auxiliaryRoot.Name,
+                        Members = MapUnitMembers(auxiliaryRoot),
+                        Children = GetUnitChartChildren(auxiliaryRoot.Id)
+                    };
+                default: throw new BadRequestException("Invalid chart type");
             }
         }
 
@@ -287,19 +276,19 @@ namespace UKSF.Api.Personnel.Controllers
             return SortMembers(unit.Members, unit).Select(x => MapUnitMember(x, unit));
         }
 
-        private ResponseUnitMember MapUnitMember(Account member, Unit unit)
+        private ResponseUnitMember MapUnitMember(DomainAccount member, Unit unit)
         {
             return new() { Name = _displayNameService.GetDisplayName(member), Role = member.RoleAssignment, UnitRole = GetRole(unit, member.Id) };
         }
 
         // TODO: Move somewhere else
-        private IEnumerable<Account> SortMembers(IEnumerable<string> members, Unit unit)
+        private IEnumerable<DomainAccount> SortMembers(IEnumerable<string> members, Unit unit)
         {
             return members.Select(
                               x =>
                               {
-                                  Account account = _accountContext.GetSingle(x);
-                                  return new { account, rankIndex = _ranksService.GetRankOrder(account.Rank), roleIndex = _unitsService.GetMemberRoleOrder(account, unit) };
+                                  DomainAccount domainAccount = _accountContext.GetSingle(x);
+                                  return new { account = domainAccount, rankIndex = _ranksService.GetRankOrder(domainAccount.Rank), roleIndex = _unitsService.GetMemberRoleOrder(domainAccount, unit) };
                               }
                           )
                           .OrderByDescending(x => x.roleIndex)

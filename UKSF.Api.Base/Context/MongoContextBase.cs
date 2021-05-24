@@ -4,7 +4,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Base.Models;
 using SortDirection = UKSF.Api.Base.Models.SortDirection;
@@ -41,7 +40,6 @@ namespace UKSF.Api.Base.Context
 
         public virtual T GetSingle(string id)
         {
-            ValidateId(id);
             return _mongoCollection.GetSingle(id);
         }
 
@@ -62,14 +60,12 @@ namespace UKSF.Api.Base.Context
 
         public virtual async Task Update(string id, Expression<Func<T, object>> fieldSelector, object value)
         {
-            ValidateId(id);
             UpdateDefinition<T> update = value == null ? Builders<T>.Update.Unset(fieldSelector) : Builders<T>.Update.Set(fieldSelector, value);
             await _mongoCollection.UpdateAsync(id, update);
         }
 
         public virtual async Task Update(string id, UpdateDefinition<T> update)
         {
-            ValidateId(id);
             await _mongoCollection.UpdateAsync(id, update);
         }
 
@@ -90,7 +86,6 @@ namespace UKSF.Api.Base.Context
 
         public virtual async Task Delete(string id)
         {
-            ValidateId(id);
             await _mongoCollection.DeleteAsync(id);
         }
 
@@ -102,19 +97,6 @@ namespace UKSF.Api.Base.Context
         public virtual async Task DeleteMany(Expression<Func<T, bool>> filterExpression)
         {
             await _mongoCollection.DeleteManyAsync(filterExpression);
-        }
-
-        private static void ValidateId(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new KeyNotFoundException("Id cannot be empty");
-            }
-
-            if (!ObjectId.TryParse(id, out ObjectId _))
-            {
-                throw new KeyNotFoundException("Id must be a valid ObjectId");
-            }
         }
     }
 }

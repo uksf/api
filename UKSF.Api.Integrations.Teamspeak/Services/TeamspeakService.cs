@@ -21,9 +21,9 @@ namespace UKSF.Api.Teamspeak.Services
         OnlineState GetOnlineUserDetails(string accountId);
         IEnumerable<object> GetFormattedClients();
         Task UpdateClients(HashSet<TeamspeakClient> newClients);
-        Task UpdateAccountTeamspeakGroups(Account account);
-        Task SendTeamspeakMessageToClient(Account account, string message);
-        Task SendTeamspeakMessageToClient(IEnumerable<double> clientDbIds, string message);
+        Task UpdateAccountTeamspeakGroups(DomainAccount domainAccount);
+        Task SendTeamspeakMessageToClient(DomainAccount domainAccount, string message);
+        Task SendTeamspeakMessageToClient(IEnumerable<int> clientDbIds, string message);
         Task Shutdown();
         Task StoreTeamspeakServerSnapshot();
     }
@@ -66,28 +66,28 @@ namespace UKSF.Api.Teamspeak.Services
             await _teamspeakClientsHub.Clients.All.ReceiveClients(GetFormattedClients());
         }
 
-        public async Task UpdateAccountTeamspeakGroups(Account account)
+        public async Task UpdateAccountTeamspeakGroups(DomainAccount domainAccount)
         {
-            if (account?.TeamspeakIdentities == null)
+            if (domainAccount?.TeamspeakIdentities == null)
             {
                 return;
             }
 
-            foreach (double clientDbId in account.TeamspeakIdentities)
+            foreach (int clientDbId in domainAccount.TeamspeakIdentities)
             {
                 await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.GROUPS, new { clientDbId });
             }
         }
 
-        public async Task SendTeamspeakMessageToClient(Account account, string message)
+        public async Task SendTeamspeakMessageToClient(DomainAccount domainAccount, string message)
         {
-            await SendTeamspeakMessageToClient(account.TeamspeakIdentities, message);
+            await SendTeamspeakMessageToClient(domainAccount.TeamspeakIdentities, message);
         }
 
-        public async Task SendTeamspeakMessageToClient(IEnumerable<double> clientDbIds, string message)
+        public async Task SendTeamspeakMessageToClient(IEnumerable<int> clientDbIds, string message)
         {
             message = FormatTeamspeakMessage(message);
-            foreach (double clientDbId in clientDbIds)
+            foreach (int clientDbId in clientDbIds)
             {
                 await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.MESSAGE, new { clientDbId, message });
             }
@@ -115,7 +115,7 @@ namespace UKSF.Api.Teamspeak.Services
         {
             if (_environment.IsDevelopment())
             {
-                return new List<object> { new { name = "SqnLdr.Beswick.T", clientDbId = (double) 2 } };
+                return new List<object> { new { name = "SqnLdr.Beswick.T", clientDbId = 2 } };
             }
 
             return _clients.Where(x => x != null).Select(x => new { name = $"{x.ClientName}", clientDbId = x.ClientDbId });
@@ -134,18 +134,18 @@ namespace UKSF.Api.Teamspeak.Services
                 return null;
             }
 
-            Account account = _accountContext.GetSingle(accountId);
-            if (account?.TeamspeakIdentities == null)
+            DomainAccount domainAccount = _accountContext.GetSingle(accountId);
+            if (domainAccount?.TeamspeakIdentities == null)
             {
                 return null;
             }
 
             if (_environment.IsDevelopment())
             {
-                _clients.First().ClientDbId = account.TeamspeakIdentities.First();
+                _clients.First().ClientDbId = domainAccount.TeamspeakIdentities.First();
             }
 
-            return _clients.Where(client => client != null && account.TeamspeakIdentities.Any(clientDbId => clientDbId.Equals(client.ClientDbId)))
+            return _clients.Where(client => client != null && domainAccount.TeamspeakIdentities.Any(clientDbId => clientDbId.Equals(client.ClientDbId)))
                            .Select(client => new OnlineState { Online = true, Nickname = client.ClientName })
                            .FirstOrDefault();
         }

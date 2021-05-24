@@ -71,6 +71,7 @@ namespace UKSF.Api.Base.Context
 
         public T GetSingle(string id)
         {
+            // TODO: Make all this async
             return GetCollection().FindSync(Builders<T>.Filter.Eq(x => x.Id, id)).FirstOrDefault();
         }
 

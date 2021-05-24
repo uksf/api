@@ -52,15 +52,15 @@ namespace UKSF.Api.Personnel.EventHandlers
 
         private async Task LeftEvent(string accountId)
         {
-            Account account = _accountContext.GetSingle(accountId);
-            if (account.MembershipState is MembershipState.DISCHARGED or MembershipState.UNCONFIRMED)
+            DomainAccount domainAccount = _accountContext.GetSingle(accountId);
+            if (domainAccount.MembershipState is MembershipState.DISCHARGED or MembershipState.UNCONFIRMED)
             {
                 return;
             }
 
-            string name = _displayNameService.GetDisplayName(account);
+            string name = _displayNameService.GetDisplayName(domainAccount);
             await _commentThreadService.InsertComment(
-                account.Application.RecruiterCommentThread,
+                domainAccount.Application.RecruiterCommentThread,
                 new() { Author = ObjectId.Empty.ToString(), Content = $"{name} left Discord", Timestamp = DateTime.Now }
             );
         }

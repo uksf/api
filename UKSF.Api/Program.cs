@@ -14,6 +14,12 @@ namespace UKSF.Api
     {
         public static void Main(string[] args)
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                Console.Out.WriteLine("Not running on windows, shutting down.");
+                return;
+            }
+
             AppDomain.CurrentDomain.GetAssemblies()
                      .ToList()
                      .SelectMany(x => x.GetReferencedAssemblies())

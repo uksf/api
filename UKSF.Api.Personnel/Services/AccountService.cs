@@ -6,7 +6,7 @@ namespace UKSF.Api.Personnel.Services
 {
     public interface IAccountService
     {
-        Account GetUserAccount();
+        DomainAccount GetUserAccount();
     }
 
     public class AccountService : IAccountService
@@ -20,7 +20,7 @@ namespace UKSF.Api.Personnel.Services
             _httpContextService = httpContextService;
         }
 
-        public Account GetUserAccount()
+        public DomainAccount GetUserAccount()
         {
             return _accountContext.GetSingle(_httpContextService.GetUserId());
         }

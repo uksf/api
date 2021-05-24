@@ -7,30 +7,36 @@ using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Models;
 using UKSF.Api.Teamspeak.Services;
 
-namespace UKSF.Api.Teamspeak.EventHandlers {
+namespace UKSF.Api.Teamspeak.EventHandlers
+{
     public interface ITeamspeakEventHandler : IEventHandler { }
 
-    public class TeamspeakEventHandler : ITeamspeakEventHandler {
+    public class TeamspeakEventHandler : ITeamspeakEventHandler
+    {
         private readonly IEventBus _eventBus;
         private readonly ILogger _logger;
         private readonly ITeamspeakService _teamspeakService;
 
-        public TeamspeakEventHandler(IEventBus eventBus, ILogger logger, ITeamspeakService teamspeakService) {
+        public TeamspeakEventHandler(IEventBus eventBus, ILogger logger, ITeamspeakService teamspeakService)
+        {
             _eventBus = eventBus;
             _logger = logger;
             _teamspeakService = teamspeakService;
         }
 
-        public void Init() {
-            _eventBus.AsObservable().SubscribeWithAsyncNext<Account>(HandleAccountEvent, _logger.LogError);
+        public void Init()
+        {
+            _eventBus.AsObservable().SubscribeWithAsyncNext<DomainAccount>(HandleAccountEvent, _logger.LogError);
             _eventBus.AsObservable().SubscribeWithAsyncNext<TeamspeakMessageEventData>(HandleTeamspeakMessageEvent, _logger.LogError);
         }
 
-        private async Task HandleAccountEvent(EventModel eventModel, Account account) {
-            await _teamspeakService.UpdateAccountTeamspeakGroups(account);
+        private async Task HandleAccountEvent(EventModel eventModel, DomainAccount domainAccount)
+        {
+            await _teamspeakService.UpdateAccountTeamspeakGroups(domainAccount);
         }
 
-        private async Task HandleTeamspeakMessageEvent(EventModel eventModel, TeamspeakMessageEventData messageEvent) {
+        private async Task HandleTeamspeakMessageEvent(EventModel eventModel, TeamspeakMessageEventData messageEvent)
+        {
             await _teamspeakService.SendTeamspeakMessageToClient(messageEvent.ClientDbIds, messageEvent.Message);
         }
     }

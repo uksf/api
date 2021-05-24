@@ -95,6 +95,7 @@ namespace UKSF.Api.Shared.Context
             DataUpdateEvent(id);
         }
 
+        // TODO: Should this return the updated object? Probably
         public override async Task Update(string id, UpdateDefinition<T> update)
         {
             await base.Update(id, update);

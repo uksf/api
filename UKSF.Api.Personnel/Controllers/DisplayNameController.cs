@@ -14,9 +14,9 @@ namespace UKSF.Api.Personnel.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetName(string id)
+        public string GetName(string id)
         {
-            return Ok(new { name = _displayNameService.GetDisplayName(id) });
+            return _displayNameService.GetDisplayName(id);
         }
     }
 }

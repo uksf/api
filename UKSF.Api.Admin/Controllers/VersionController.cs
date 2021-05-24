@@ -23,18 +23,17 @@ namespace UKSF.Api.Admin.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetFrontendVersion()
+        public string GetFrontendVersion()
         {
-            return Ok(_variablesContext.GetSingle("FRONTEND_VERSION").AsString());
+            return _variablesContext.GetSingle("FRONTEND_VERSION").AsString();
         }
 
         [HttpPost("update"), Authorize]
-        public async Task<IActionResult> UpdateFrontendVersion([FromBody] JObject body)
+        public async Task UpdateFrontendVersion([FromBody] JObject body)
         {
             string version = body["version"].ToString();
             await _variablesContext.Update("FRONTEND_VERSION", version);
             await _utilityHub.Clients.All.ReceiveFrontendUpdate(version);
-            return Ok();
         }
     }
 }
