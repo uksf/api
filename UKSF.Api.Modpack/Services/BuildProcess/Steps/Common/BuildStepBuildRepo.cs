@@ -2,12 +2,15 @@
 using System.Threading.Tasks;
 using UKSF.Api.Admin.Extensions;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common {
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
+{
     [BuildStep(NAME)]
-    public class BuildStepBuildRepo : BuildStep {
+    public class BuildStepBuildRepo : BuildStep
+    {
         public const string NAME = "Build Repo";
 
-        protected override Task ProcessExecute() {
+        protected override Task ProcessExecute()
+        {
             string repoName = GetEnvironmentRepoName();
             StepLogger.Log($"Building {repoName} repo");
 

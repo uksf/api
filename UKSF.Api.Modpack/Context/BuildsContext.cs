@@ -8,28 +8,35 @@ using UKSF.Api.Base.Models;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Shared.Context;
 
-namespace UKSF.Api.Modpack.Context {
-    public interface IBuildsContext : IMongoContext<ModpackBuild>, ICachedMongoContext {
+namespace UKSF.Api.Modpack.Context
+{
+    public interface IBuildsContext : IMongoContext<ModpackBuild>, ICachedMongoContext
+    {
         Task Update(ModpackBuild build, ModpackBuildStep buildStep);
         Task Update(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition);
     }
 
-    public class BuildsContext : CachedMongoContext<ModpackBuild>, IBuildsContext {
+    public class BuildsContext : CachedMongoContext<ModpackBuild>, IBuildsContext
+    {
         public BuildsContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "modpackBuilds") { }
 
-        public async Task Update(ModpackBuild build, ModpackBuildStep buildStep) {
+        public async Task Update(ModpackBuild build, ModpackBuildStep buildStep)
+        {
             UpdateDefinition<ModpackBuild> updateDefinition = Builders<ModpackBuild>.Update.Set(x => x.Steps[buildStep.Index], buildStep);
             await base.Update(build.Id, updateDefinition);
-            DataEvent(new EventModel(EventType.UPDATE, new ModpackBuildStepEventData(build.Id, buildStep)));
+            DataEvent(new(EventType.UPDATE, new ModpackBuildStepEventData(build.Id, buildStep)));
         }
 
-        public async Task Update(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition) {
+        public async Task Update(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition)
+        {
             await base.Update(build.Id, updateDefinition);
-            DataEvent(new EventModel(EventType.UPDATE, build));
+            DataEvent(new(EventType.UPDATE, build));
         }
 
-        protected override void SetCache(IEnumerable<ModpackBuild> newCollection) {
-            lock (LockObject) {
+        protected override void SetCache(IEnumerable<ModpackBuild> newCollection)
+        {
+            lock (LockObject)
+            {
                 Cache = newCollection?.OrderByDescending(x => x.BuildNumber).ToList();
             }
         }

@@ -11,27 +11,31 @@ using UKSF.Api.Personnel.Signalr.Hubs;
 using UKSF.Api.Shared.Events;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Events.Handlers {
-    public class CommentThreadEventHandlerTests {
+namespace UKSF.Tests.Unit.Events.Handlers
+{
+    public class CommentThreadEventHandlerTests
+    {
         private readonly CommentThreadEventHandler _commentThreadEventHandler;
         private readonly IEventBus _eventBus;
         private readonly Mock<IHubContext<CommentThreadHub, ICommentThreadClient>> _mockHub;
 
-        public CommentThreadEventHandlerTests() {
+        public CommentThreadEventHandlerTests()
+        {
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
             Mock<ICommentThreadService> mockCommentThreadService = new();
             Mock<ILogger> mockLoggingService = new();
-            _mockHub = new Mock<IHubContext<CommentThreadHub, ICommentThreadClient>>();
+            _mockHub = new();
             _eventBus = new EventBus();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommentThread>(It.IsAny<string>()));
             mockCommentThreadService.Setup(x => x.FormatComment(It.IsAny<Comment>())).Returns(null);
 
-            _commentThreadEventHandler = new CommentThreadEventHandler(_eventBus, _mockHub.Object, mockCommentThreadService.Object, mockLoggingService.Object);
+            _commentThreadEventHandler = new(_eventBus, _mockHub.Object, mockCommentThreadService.Object, mockLoggingService.Object);
         }
 
         [Fact]
-        public void ShouldNotRunEventOnUpdate() {
+        public void ShouldNotRunEventOnUpdate()
+        {
             Mock<IHubClients<ICommentThreadClient>> mockHubClients = new();
             Mock<ICommentThreadClient> mockClient = new();
 
@@ -42,14 +46,15 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _commentThreadEventHandler.Init();
 
-            _eventBus.Send(new EventModel(EventType.UPDATE, new CommentThreadEventData(string.Empty, new Comment())));
+            _eventBus.Send(new(EventType.UPDATE, new CommentThreadEventData(string.Empty, new())));
 
             mockClient.Verify(x => x.ReceiveComment(It.IsAny<object>()), Times.Never);
             mockClient.Verify(x => x.DeleteComment(It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
-        public void ShouldRunAddedOnAdd() {
+        public void ShouldRunAddedOnAdd()
+        {
             Mock<IHubClients<ICommentThreadClient>> mockHubClients = new();
             Mock<ICommentThreadClient> mockClient = new();
 
@@ -60,14 +65,15 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _commentThreadEventHandler.Init();
 
-            _eventBus.Send(new EventModel(EventType.ADD, new CommentThreadEventData(string.Empty, new Comment())));
+            _eventBus.Send(new(EventType.ADD, new CommentThreadEventData(string.Empty, new())));
 
             mockClient.Verify(x => x.ReceiveComment(It.IsAny<object>()), Times.Once);
             mockClient.Verify(x => x.DeleteComment(It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
-        public void ShouldRunDeletedOnDelete() {
+        public void ShouldRunDeletedOnDelete()
+        {
             Mock<IHubClients<ICommentThreadClient>> mockHubClients = new();
             Mock<ICommentThreadClient> mockClient = new();
 
@@ -78,7 +84,7 @@ namespace UKSF.Tests.Unit.Events.Handlers {
 
             _commentThreadEventHandler.Init();
 
-            _eventBus.Send(new EventModel(EventType.DELETE, new CommentThreadEventData(string.Empty, new Comment())));
+            _eventBus.Send(new(EventType.DELETE, new CommentThreadEventData(string.Empty, new())));
 
             mockClient.Verify(x => x.ReceiveComment(It.IsAny<object>()), Times.Never);
             mockClient.Verify(x => x.DeleteComment(It.IsAny<string>()), Times.Once);

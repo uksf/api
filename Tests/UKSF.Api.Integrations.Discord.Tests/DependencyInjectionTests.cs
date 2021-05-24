@@ -8,16 +8,20 @@ using UKSF.Api.Personnel;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Api.Integrations.Discord.Tests {
-    public class DependencyInjectionTests : DependencyInjectionTestsBase {
-        public DependencyInjectionTests() {
+namespace UKSF.Api.Integrations.Discord.Tests
+{
+    public class DependencyInjectionTests : DependencyInjectionTestsBase
+    {
+        public DependencyInjectionTests()
+        {
             Services.AddUksfAdmin();
             Services.AddUksfPersonnel();
             Services.AddUksfIntegrationDiscord();
         }
 
         [Fact]
-        public void When_resolving_controllers() {
+        public void When_resolving_controllers()
+        {
             Services.AddTransient<DiscordController>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();
 
@@ -25,7 +29,8 @@ namespace UKSF.Api.Integrations.Discord.Tests {
         }
 
         [Fact]
-        public void When_resolving_event_handlers() {
+        public void When_resolving_event_handlers()
+        {
             Services.AddTransient<DiscordAccountEventHandler>();
             ServiceProvider serviceProvider = Services.BuildServiceProvider();
 

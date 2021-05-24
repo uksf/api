@@ -3,8 +3,10 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Personnel.Models {
-    public class Notification : MongoObject {
+namespace UKSF.Api.Personnel.Models
+{
+    public class Notification : MongoObject
+    {
         public string Icon;
         public string Link;
         public string Message;

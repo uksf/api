@@ -13,66 +13,81 @@ using UKSF.Api.Admin.Services;
 using UKSF.Api.Launcher.Context;
 using UKSF.Api.Launcher.Models;
 
-namespace UKSF.Api.Launcher.Services {
-    public interface ILauncherFileService {
+namespace UKSF.Api.Launcher.Services
+{
+    public interface ILauncherFileService
+    {
         Task UpdateAllVersions();
         FileStreamResult GetLauncherFile(params string[] file);
         Task<Stream> GetUpdatedFiles(IEnumerable<LauncherFile> files);
     }
 
-    public class LauncherFileService : ILauncherFileService {
+    public class LauncherFileService : ILauncherFileService
+    {
         private readonly ILauncherFileContext _launcherFileContext;
         private readonly IVariablesService _variablesService;
 
-        public LauncherFileService(ILauncherFileContext launcherFileContext, IVariablesService variablesService) {
+        public LauncherFileService(ILauncherFileContext launcherFileContext, IVariablesService variablesService)
+        {
             _launcherFileContext = launcherFileContext;
             _variablesService = variablesService;
         }
 
-        public async Task UpdateAllVersions() {
+        public async Task UpdateAllVersions()
+        {
             List<LauncherFile> storedVersions = _launcherFileContext.Get().ToList();
             string launcherDirectory = Path.Combine(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), "Launcher");
             List<string> fileNames = new();
-            foreach (string filePath in Directory.EnumerateFiles(launcherDirectory)) {
+            foreach (string filePath in Directory.EnumerateFiles(launcherDirectory))
+            {
                 string fileName = Path.GetFileName(filePath);
                 string version = FileVersionInfo.GetVersionInfo(filePath).FileVersion;
                 fileNames.Add(fileName);
                 LauncherFile storedFile = storedVersions.FirstOrDefault(x => x.FileName == fileName);
-                if (storedFile == null) {
-                    await _launcherFileContext.Add(new LauncherFile { FileName = fileName, Version = version });
+                if (storedFile == null)
+                {
+                    await _launcherFileContext.Add(new() { FileName = fileName, Version = version });
                     continue;
                 }
 
-                if (storedFile.Version != version) {
+                if (storedFile.Version != version)
+                {
                     await _launcherFileContext.Update(storedFile.Id, Builders<LauncherFile>.Update.Set(x => x.Version, version));
                 }
             }
 
-            foreach (LauncherFile storedVersion in storedVersions.Where(storedVersion => fileNames.All(x => x != storedVersion.FileName))) {
+            foreach (LauncherFile storedVersion in storedVersions.Where(storedVersion => fileNames.All(x => x != storedVersion.FileName)))
+            {
                 await _launcherFileContext.Delete(storedVersion);
             }
         }
 
-        public FileStreamResult GetLauncherFile(params string[] file) {
+        public FileStreamResult GetLauncherFile(params string[] file)
+        {
             string[] paths = file.Prepend(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString()).ToArray();
             string path = Path.Combine(paths);
             FileStreamResult fileStreamResult = new(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read), MimeUtility.GetMimeMapping(path));
             return fileStreamResult;
         }
 
-        public async Task<Stream> GetUpdatedFiles(IEnumerable<LauncherFile> files) {
+        public async Task<Stream> GetUpdatedFiles(IEnumerable<LauncherFile> files)
+        {
             string launcherDirectory = Path.Combine(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), "Launcher");
             List<LauncherFile> storedVersions = _launcherFileContext.Get().ToList();
             List<string> updatedFiles = new();
             List<string> deletedFiles = new();
-            foreach (LauncherFile launcherFile in files) {
+            foreach (LauncherFile launcherFile in files)
+            {
                 LauncherFile storedFile = storedVersions.FirstOrDefault(x => x.FileName == launcherFile.FileName);
-                if (storedFile == null) {
+                if (storedFile == null)
+                {
                     deletedFiles.Add(launcherFile.FileName);
                     continue;
                 }
 
-                if (storedFile.Version != launcherFile.Version || new Random().Next(0, 100) > 80) { //TODO: remove before release
+                if (storedFile.Version != launcherFile.Version || new Random().Next(0, 100) > 80)
+                {
+                    //TODO: remove before release
                     updatedFiles.Add(launcherFile.FileName);
                 }
             }
@@ -84,14 +99,16 @@ namespace UKSF.Api.Launcher.Services {
             string deletedFilesPath = Path.Combine(updateFolder, "deleted");
             await File.WriteAllLinesAsync(deletedFilesPath, deletedFiles);
 
-            foreach (string file in updatedFiles) {
+            foreach (string file in updatedFiles)
+            {
                 File.Copy(Path.Combine(launcherDirectory, file), Path.Combine(updateFolder, file), true);
             }
 
             string updateZipPath = Path.Combine(_variablesService.GetVariable("LAUNCHER_LOCATION").AsString(), $"{updateFolderName}.zip");
             ZipFile.CreateFromDirectory(updateFolder, updateZipPath);
             MemoryStream stream = new();
-            await using (FileStream fileStream = new(updateZipPath, FileMode.Open, FileAccess.Read, FileShare.None)) {
+            await using (FileStream fileStream = new(updateZipPath, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
                 await fileStream.CopyToAsync(stream);
             }
 

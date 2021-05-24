@@ -4,16 +4,18 @@ using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Common {
-    public class JsonUtilitiesTests {
+namespace UKSF.Tests.Unit.Common
+{
+    public class JsonUtilitiesTests
+    {
         [Fact]
-        public void ShouldCopyComplexObject() {
+        public void ShouldCopyComplexObject()
+        {
             TestDataModel testDataModel1 = new() { Name = "1" };
             TestDataModel testDataModel2 = new() { Name = "2" };
             TestDataModel testDataModel3 = new() { Name = "3" };
-            TestComplexDataModel testComplexDataModel = new() {
-                Name = "Test", Data = testDataModel1, List = new List<string> { "a", "b", "c" }, DataList = new List<TestDataModel> { testDataModel1, testDataModel2, testDataModel3 }
-            };
+            TestComplexDataModel testComplexDataModel =
+                new() { Name = "Test", Data = testDataModel1, List = new() { "a", "b", "c" }, DataList = new() { testDataModel1, testDataModel2, testDataModel3 } };
 
             TestComplexDataModel subject = testComplexDataModel.Copy<TestComplexDataModel>();
 
@@ -25,7 +27,8 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void ShouldCopyObject() {
+        public void ShouldCopyObject()
+        {
             TestDataModel testDataModel = new() { Name = "Test" };
 
             TestDataModel subject = testDataModel.Copy<TestDataModel>();
@@ -35,7 +38,8 @@ namespace UKSF.Tests.Unit.Common {
         }
 
         [Fact]
-        public void ShouldEscapeJsonString() {
+        public void ShouldEscapeJsonString()
+        {
             const string UNESCAPED_JSON = "JSON:{\"message\": \"\\nMaking zeus \\ at 'C:\\test\\path'\", \"colour\": \"#20d18b\"}";
 
             string subject = UNESCAPED_JSON.Escape();

@@ -4,10 +4,13 @@ using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Events {
-    public class EventBusTests {
+namespace UKSF.Tests.Unit.Events
+{
+    public class EventBusTests
+    {
         [Fact]
-        public void When_getting_event_bus_observable() {
+        public void When_getting_event_bus_observable()
+        {
             EventBus eventBus = new();
 
             IObservable<EventModel> subject = eventBus.AsObservable();

@@ -1,5 +1,7 @@
-﻿namespace UKSF.Api.Modpack.Models {
-    public enum ModpackBuildResult {
+﻿namespace UKSF.Api.Modpack.Models
+{
+    public enum ModpackBuildResult
+    {
         NONE,
         SUCCESS,
         FAILED,

@@ -6,15 +6,18 @@ using System.Threading.Tasks;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.ArmaServer.Models;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
+{
     [BuildStep(NAME)]
-    public class BuildStepSignDependencies : FileBuildStep {
+    public class BuildStepSignDependencies : FileBuildStep
+    {
         public const string NAME = "Signatures";
         private string _dsCreateKey;
         private string _dsSignFile;
         private string _keyName;
 
-        protected override async Task SetupExecute() {
+        protected override async Task SetupExecute()
+        {
             _dsSignFile = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSSignFile.exe");
             _dsCreateKey = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSCreateKey.exe");
             _keyName = GetKeyname();
@@ -35,11 +38,12 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource, true);
             processHelper.Run(keygenPath, _dsCreateKey, _keyName, (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
             StepLogger.Log($"Created {_keyName}");
-            await CopyFiles(keygen, keys, new List<FileInfo> { new(Path.Join(keygenPath, $"{_keyName}.bikey")) });
+            await CopyFiles(keygen, keys, new() { new(Path.Join(keygenPath, $"{_keyName}.bikey")) });
             StepLogger.LogSurround("Created key");
         }
 
-        protected override async Task ProcessExecute() {
+        protected override async Task ProcessExecute()
+        {
             string addonsPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "addons");
             string interceptPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@intercept", "addons");
             string keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
@@ -61,8 +65,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             StepLogger.LogSurround("Signed intercept");
         }
 
-        private string GetKeyname() {
-            return Build.Environment switch {
+        private string GetKeyname()
+        {
+            return Build.Environment switch
+            {
                 GameEnvironment.RELEASE => $"uksf_dependencies_{Build.Version}",
                 GameEnvironment.RC      => $"uksf_dependencies_{Build.Version}_rc{Build.BuildNumber}",
                 GameEnvironment.DEV     => $"uksf_dependencies_dev_{Build.BuildNumber}",
@@ -70,7 +76,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             };
         }
 
-        private Task SignFiles(string keygenPath, string addonsPath, IReadOnlyCollection<FileInfo> files) {
+        private Task SignFiles(string keygenPath, string addonsPath, IReadOnlyCollection<FileInfo> files)
+        {
             string privateKey = Path.Join(keygenPath, $"{_keyName}.biprivatekey");
             int signed = 0;
             int total = files.Count;
@@ -78,7 +85,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps {
             return BatchProcessFiles(
                 files,
                 10,
-                file => {
+                file =>
+                {
                     BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource, true);
                     processHelper.Run(addonsPath, _dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
                     Interlocked.Increment(ref signed);

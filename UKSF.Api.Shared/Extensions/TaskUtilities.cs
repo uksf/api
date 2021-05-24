@@ -2,21 +2,31 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace UKSF.Api.Shared.Extensions {
-    public static class TaskUtilities {
-        public static async Task Delay(TimeSpan timeSpan, CancellationToken token) {
-            try {
+namespace UKSF.Api.Shared.Extensions
+{
+    public static class TaskUtilities
+    {
+        public static async Task Delay(TimeSpan timeSpan, CancellationToken token)
+        {
+            try
+            {
                 await Task.Delay(timeSpan, token);
-            } catch (Exception) {
+            }
+            catch (Exception)
+            {
                 // Ignored
             }
         }
 
-        public static async Task DelayWithCallback(TimeSpan timeSpan, CancellationToken token, Func<Task> callback) {
-            try {
+        public static async Task DelayWithCallback(TimeSpan timeSpan, CancellationToken token, Func<Task> callback)
+        {
+            try
+            {
                 await Task.Delay(timeSpan, token);
                 await callback();
-            } catch (Exception) {
+            }
+            catch (Exception)
+            {
                 // Ignored
             }
         }

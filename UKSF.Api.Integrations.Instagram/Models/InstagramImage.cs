@@ -1,8 +1,10 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace UKSF.Api.Integrations.Instagram.Models {
-    public class InstagramImage {
+namespace UKSF.Api.Integrations.Instagram.Models
+{
+    public class InstagramImage
+    {
         public string Base64;
         public string Id;
 

@@ -7,10 +7,13 @@ using UKSF.Api.Admin.Models;
 using UKSF.Api.Shared.Extensions;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Services.Admin {
-    public class VariablesServiceTests {
+namespace UKSF.Tests.Unit.Services.Admin
+{
+    public class VariablesServiceTests
+    {
         [Fact]
-        public void ShouldGetVariableAsArray() {
+        public void ShouldGetVariableAsArray()
+        {
             VariableItem variableItem = new() { Key = "Test", Item = "item1,item2, item3" };
 
             string[] subject = variableItem.AsArray();
@@ -20,7 +23,8 @@ namespace UKSF.Tests.Unit.Services.Admin {
         }
 
         [Fact]
-        public void ShouldGetVariableAsArrayWithPredicate() {
+        public void ShouldGetVariableAsArrayWithPredicate()
+        {
             VariableItem variableItem = new() { Key = "Test", Item = "\"item1\",item2" };
 
             string[] subject = variableItem.AsArray(x => x.RemoveQuotes());
@@ -30,7 +34,8 @@ namespace UKSF.Tests.Unit.Services.Admin {
         }
 
         [Fact]
-        public void ShouldGetVariableAsBool() {
+        public void ShouldGetVariableAsBool()
+        {
             const bool EXPECTED = true;
             VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
 
@@ -40,7 +45,8 @@ namespace UKSF.Tests.Unit.Services.Admin {
         }
 
         [Fact]
-        public void ShouldGetVariableAsDouble() {
+        public void ShouldGetVariableAsDouble()
+        {
             const double EXPECTED = 1.5;
             VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
 
@@ -50,7 +56,8 @@ namespace UKSF.Tests.Unit.Services.Admin {
         }
 
         [Fact]
-        public void ShouldGetVariableAsDoublesArray() {
+        public void ShouldGetVariableAsDoublesArray()
+        {
             VariableItem variableItem = new() { Key = "Test", Item = "1.5,1.67845567657, -0.000000456" };
 
             List<double> subject = variableItem.AsDoublesArray().ToList();
@@ -61,7 +68,8 @@ namespace UKSF.Tests.Unit.Services.Admin {
 
         // ReSharper disable PossibleMultipleEnumeration
         [Fact]
-        public void ShouldGetVariableAsEnumerable() {
+        public void ShouldGetVariableAsEnumerable()
+        {
             VariableItem variableItem = new() { Key = "Test", Item = "item1,item2, item3" };
 
             IEnumerable<string> subject = variableItem.AsEnumerable();
@@ -73,7 +81,8 @@ namespace UKSF.Tests.Unit.Services.Admin {
         // ReSharper restore PossibleMultipleEnumeration
 
         [Fact]
-        public void ShouldGetVariableAsString() {
+        public void ShouldGetVariableAsString()
+        {
             const string EXPECTED = "Value";
             VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
 
@@ -83,7 +92,8 @@ namespace UKSF.Tests.Unit.Services.Admin {
         }
 
         [Fact]
-        public void ShouldGetVariableAsUlong() {
+        public void ShouldGetVariableAsUlong()
+        {
             const ulong EXPECTED = ulong.MaxValue;
             VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
 
@@ -93,7 +103,8 @@ namespace UKSF.Tests.Unit.Services.Admin {
         }
 
         [Fact]
-        public void ShouldHaveItem() {
+        public void ShouldHaveItem()
+        {
             VariableItem variableItem = new() { Key = "Test", Item = "test" };
 
             Action act = () => variableItem.AssertHasItem();
@@ -102,7 +113,8 @@ namespace UKSF.Tests.Unit.Services.Admin {
         }
 
         [Fact]
-        public void ShouldThrowWithInvalidBool() {
+        public void ShouldThrowWithInvalidBool()
+        {
             VariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
 
             Action act = () => variableItem.AsBool();
@@ -111,7 +123,8 @@ namespace UKSF.Tests.Unit.Services.Admin {
         }
 
         [Fact]
-        public void ShouldThrowWithInvalidDouble() {
+        public void ShouldThrowWithInvalidDouble()
+        {
             VariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
 
             Action act = () => variableItem.AsDouble();
@@ -120,7 +133,8 @@ namespace UKSF.Tests.Unit.Services.Admin {
         }
 
         [Fact]
-        public void ShouldThrowWithInvalidUlong() {
+        public void ShouldThrowWithInvalidUlong()
+        {
             VariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
 
             Action act = () => variableItem.AsUlong();
@@ -129,7 +143,8 @@ namespace UKSF.Tests.Unit.Services.Admin {
         }
 
         [Fact]
-        public void ShouldThrowWithNoItem() {
+        public void ShouldThrowWithNoItem()
+        {
             VariableItem variableItem = new() { Key = "Test" };
 
             Action act = () => variableItem.AssertHasItem();

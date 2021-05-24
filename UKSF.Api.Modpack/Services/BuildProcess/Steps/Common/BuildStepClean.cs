@@ -4,20 +4,26 @@ using System.Linq;
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.Models;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common {
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
+{
     [BuildStep(NAME)]
-    public class BuildStepClean : FileBuildStep {
+    public class BuildStepClean : FileBuildStep
+    {
         public const string NAME = "Clean folders";
 
-        protected override async Task ProcessExecute() {
+        protected override async Task ProcessExecute()
+        {
             string environmentPath = GetBuildEnvironmentPath();
-            if (Build.Environment == GameEnvironment.RELEASE) {
+            if (Build.Environment == GameEnvironment.RELEASE)
+            {
                 string keysPath = Path.Join(environmentPath, "Backup", "Keys");
 
                 StepLogger.LogSurround("\nCleaning keys backup...");
                 await DeleteDirectoryContents(keysPath);
                 StepLogger.LogSurround("Cleaned keys backup");
-            } else {
+            }
+            else
+            {
                 string path = Path.Join(environmentPath, "Build");
                 string repoPath = Path.Join(environmentPath, "Repo");
                 DirectoryInfo repo = new(repoPath);

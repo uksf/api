@@ -1,18 +1,22 @@
-﻿namespace UKSF.Api.Base.Models {
-    public enum EventType {
+﻿namespace UKSF.Api.Base.Models
+{
+    public enum EventType
+    {
         NONE,
         ADD,
         UPDATE,
         DELETE
     }
 
-    public class EventModel {
-        public EventModel(EventType eventType, object data) {
+    public class EventModel
+    {
+        public object Data;
+        public EventType EventType;
+
+        public EventModel(EventType eventType, object data)
+        {
             EventType = eventType;
             Data = data;
         }
-
-        public object Data;
-        public EventType EventType;
     }
 }

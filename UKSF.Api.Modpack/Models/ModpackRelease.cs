@@ -3,8 +3,10 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Modpack.Models {
-    public class ModpackRelease : MongoObject {
+namespace UKSF.Api.Modpack.Models
+{
+    public class ModpackRelease : MongoObject
+    {
         public string Changelog;
         [BsonRepresentation(BsonType.ObjectId)] public string CreatorId;
         public string Description;

@@ -3,10 +3,13 @@ using FluentAssertions;
 using UKSF.Api.Shared.Extensions;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Common {
-    public class CollectionUtilitiesTests {
+namespace UKSF.Tests.Unit.Common
+{
+    public class CollectionUtilitiesTests
+    {
         [Fact]
-        public void Should_remove_empty_strings_from_hashset() {
+        public void Should_remove_empty_strings_from_hashset()
+        {
             HashSet<string> subject = new() { "1", "", null, "3" };
 
             subject.CleanHashset();

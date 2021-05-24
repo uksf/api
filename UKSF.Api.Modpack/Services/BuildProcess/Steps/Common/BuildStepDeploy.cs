@@ -2,19 +2,25 @@
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.Models;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common {
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
+{
     [BuildStep(NAME)]
-    public class BuildStepDeploy : FileBuildStep {
+    public class BuildStepDeploy : FileBuildStep
+    {
         public const string NAME = "Deploy";
 
-        protected override async Task ProcessExecute() {
+        protected override async Task ProcessExecute()
+        {
             string sourcePath;
             string targetPath;
-            if (Build.Environment == GameEnvironment.RELEASE) {
+            if (Build.Environment == GameEnvironment.RELEASE)
+            {
                 StepLogger.Log("Deploying files from RC to release");
                 sourcePath = Path.Join(GetEnvironmentPath(GameEnvironment.RC), "Repo");
                 targetPath = Path.Join(GetBuildEnvironmentPath(), "Repo");
-            } else {
+            }
+            else
+            {
                 StepLogger.Log("Deploying files from build to repo");
                 sourcePath = Path.Join(GetBuildEnvironmentPath(), "Build");
                 targetPath = Path.Join(GetBuildEnvironmentPath(), "Repo");

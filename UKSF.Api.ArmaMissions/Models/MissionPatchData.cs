@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.ArmaMissions.Models {
-    public class MissionPatchData {
+namespace UKSF.Api.ArmaMissions.Models
+{
+    public class MissionPatchData
+    {
         public static MissionPatchData Instance;
         public IEnumerable<string> EngineerIds;
         public IEnumerable<string> MedicIds;

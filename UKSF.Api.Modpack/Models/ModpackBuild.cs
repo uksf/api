@@ -5,8 +5,10 @@ using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Modpack.Models {
-    public class ModpackBuild : MongoObject {
+namespace UKSF.Api.Modpack.Models
+{
+    public class ModpackBuild : MongoObject
+    {
         [BsonRepresentation(BsonType.ObjectId)] public string BuilderId;
         public int BuildNumber;
         public ModpackBuildResult BuildResult = ModpackBuildResult.NONE;

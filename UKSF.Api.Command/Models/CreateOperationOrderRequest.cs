@@ -1,7 +1,9 @@
 ﻿using System;
 
-namespace UKSF.Api.Command.Models {
-    public class CreateOperationOrderRequest {
+namespace UKSF.Api.Command.Models
+{
+    public class CreateOperationOrderRequest
+    {
         public DateTime End;
         public int Endtime;
         public string Map;

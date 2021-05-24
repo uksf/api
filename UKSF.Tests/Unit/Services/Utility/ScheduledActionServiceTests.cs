@@ -7,10 +7,13 @@ using UKSF.Api.Personnel.ScheduledActions;
 using UKSF.Api.Shared.Services;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Services.Utility {
-    public class ScheduledActionServiceTests {
+namespace UKSF.Tests.Unit.Services.Utility
+{
+    public class ScheduledActionServiceTests
+    {
         [Fact]
-        public void ShouldOverwriteRegisteredActions() {
+        public void ShouldOverwriteRegisteredActions()
+        {
             Mock<IActionDeleteExpiredConfirmationCode> mockDeleteExpiredConfirmationCodeAction1 = new();
             Mock<IActionDeleteExpiredConfirmationCode> mockDeleteExpiredConfirmationCodeAction2 = new();
             mockDeleteExpiredConfirmationCodeAction1.Setup(x => x.Name).Returns("TestAction");
@@ -26,7 +29,8 @@ namespace UKSF.Tests.Unit.Services.Utility {
         }
 
         [Fact]
-        public void ShouldRegisterActions() {
+        public void ShouldRegisterActions()
+        {
             Mock<IActionDeleteExpiredConfirmationCode> mockDeleteExpiredConfirmationCodeAction = new();
             mockDeleteExpiredConfirmationCodeAction.Setup(x => x.Name).Returns("TestAction");
 
@@ -39,7 +43,8 @@ namespace UKSF.Tests.Unit.Services.Utility {
         }
 
         [Fact]
-        public void ShouldThrowWhenActionNotFound() {
+        public void ShouldThrowWhenActionNotFound()
+        {
             IScheduledActionFactory scheduledActionFactory = new ScheduledActionFactory();
 
             Action act = () => scheduledActionFactory.GetScheduledAction("TestAction");

@@ -8,25 +8,30 @@ using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Models;
 
-namespace UKSF.Api.Admin.EventHandlers {
+namespace UKSF.Api.Admin.EventHandlers
+{
     public interface ILogDataEventHandler : IEventHandler { }
 
-    public class LogDataEventHandler : ILogDataEventHandler {
+    public class LogDataEventHandler : ILogDataEventHandler
+    {
         private readonly IEventBus _eventBus;
         private readonly IHubContext<AdminHub, IAdminClient> _hub;
         private readonly ILogger _logger;
 
-        public LogDataEventHandler(IEventBus eventBus, IHubContext<AdminHub, IAdminClient> hub, ILogger logger) {
+        public LogDataEventHandler(IEventBus eventBus, IHubContext<AdminHub, IAdminClient> hub, ILogger logger)
+        {
             _eventBus = eventBus;
             _hub = hub;
             _logger = logger;
         }
 
-        public void Init() {
+        public void Init()
+        {
             _eventBus.AsObservable().SubscribeWithAsyncNext<LoggerEventData>(HandleEvent, _logger.LogError);
         }
 
-        private async Task HandleEvent(EventModel eventModel, LoggerEventData logData) {
+        private async Task HandleEvent(EventModel eventModel, LoggerEventData logData)
+        {
             await _hub.Clients.All.ReceiveLog();
         }
     }
