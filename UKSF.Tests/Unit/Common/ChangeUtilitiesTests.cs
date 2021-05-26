@@ -15,14 +15,17 @@ namespace UKSF.Tests.Unit.Common
         public void Should_detect_changes_for_complex_object()
         {
             string id = ObjectId.GenerateNewId().ToString();
+            DateTime dobBefore = new(2020, 10, 3, 5, 34, 0);
+            DateTime dobAfter = new(2020, 11, 3);
+            DateTime dateAccepted = new(2020, 7, 2, 10, 34, 39);
             DomainAccount original = new()
             {
                 Id = id,
                 Firstname = "Tim",
                 Background = "I like trains",
-                Dob = DateTime.Parse("2018-08-09T05:00:00.307"),
+                Dob = dobBefore,
                 Rank = "Private",
-                Application = new() { State = ApplicationState.WAITING, Recruiter = "Bob", ApplicationCommentThread = "thread1", DateCreated = DateTime.Parse("2020-05-02T10:34:39.786") },
+                Application = new() { State = ApplicationState.WAITING, Recruiter = "Bob", ApplicationCommentThread = "thread1", DateCreated = new(2020, 5, 2, 10, 34, 39) },
                 RolePreferences = new() { "Aviatin", "NCO" }
             };
             DomainAccount updated = new()
@@ -31,11 +34,8 @@ namespace UKSF.Tests.Unit.Common
                 Firstname = "Timmy",
                 Lastname = "Bob",
                 Background = "I like planes",
-                Dob = DateTime.Parse("2020-10-03T05:00:34.307"),
-                Application = new()
-                {
-                    State = ApplicationState.ACCEPTED, Recruiter = "Bob", DateCreated = DateTime.Parse("2020-05-02T10:34:39.786"), DateAccepted = DateTime.Parse("2020-07-02T10:34:39.786")
-                },
+                Dob = dobAfter,
+                Application = new() { State = ApplicationState.ACCEPTED, Recruiter = "Bob", DateCreated = new(2020, 5, 2, 10, 34, 39), DateAccepted = dateAccepted },
                 RolePreferences = new() { "Aviation", "Officer" }
             };
 
@@ -45,7 +45,7 @@ namespace UKSF.Tests.Unit.Common
                    .Be(
                        "\n\t'Lastname' added as 'Bob'" +
                        "\n\t'Background' changed from 'I like trains' to 'I like planes'" +
-                       "\n\t'Dob' changed from '09/08/2018 05:00:00' to '03/10/2020 05:00:34'" +
+                       $"\n\t'Dob' changed from '{dobBefore}' to '{dobAfter}'" +
                        "\n\t'Firstname' changed from 'Tim' to 'Timmy'" +
                        "\n\t'RolePreferences' changed:" +
                        "\n\t\tadded: 'Aviation'" +
@@ -54,7 +54,7 @@ namespace UKSF.Tests.Unit.Common
                        "\n\t\tremoved: 'NCO'" +
                        "\n\t'Rank' as 'Private' removed" +
                        "\n\t'Application' changed:" +
-                       "\n\t\t'DateAccepted' changed from '01/01/0001 00:00:00' to '02/07/2020 10:34:39'" +
+                       $"\n\t\t'DateAccepted' changed from '{new DateTime()}' to '{dateAccepted}'" +
                        "\n\t\t'State' changed from 'WAITING' to 'ACCEPTED'" +
                        "\n\t\t'ApplicationCommentThread' as 'thread1' removed"
                    );
@@ -64,12 +64,14 @@ namespace UKSF.Tests.Unit.Common
         public void Should_detect_changes_for_date()
         {
             string id = ObjectId.GenerateNewId().ToString();
-            DomainAccount original = new() { Id = id, Dob = DateTime.Parse("2020-10-03T05:00:34.307") };
-            DomainAccount updated = new() { Id = id, Dob = DateTime.Parse("2020-11-03T00:00:00.000") };
+            DateTime dobBefore = new(2020, 10, 3, 5, 34, 0);
+            DateTime dobAfter = new(2020, 11, 3);
+            DomainAccount original = new() { Id = id, Dob = dobBefore };
+            DomainAccount updated = new() { Id = id, Dob = dobAfter };
 
             string subject = original.Changes(updated);
 
-            subject.Should().Be("\n\t'Dob' changed from '03/10/2020 05:00:34' to '03/11/2020 00:00:00'");
+            subject.Should().Be($"\n\t'Dob' changed from '{dobBefore}' to '{dobAfter}'");
         }
 
         [Fact]
