@@ -6,12 +6,16 @@ using System.Net;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.WindowsServices;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 namespace UKSF.Api
 {
     public static class Program
     {
+        private static IConfigurationRoot _config;
+        private static string _environment = Environments.Development;
+
         public static void Main(string[] args)
         {
             if (!OperatingSystem.IsWindows())
@@ -28,10 +32,10 @@ namespace UKSF.Api
                      .ToList()
                      .ForEach(x => AppDomain.CurrentDomain.GetAssemblies().ToList().Add(AppDomain.CurrentDomain.Load(x)));
 
-            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-            bool isDevelopment = environment == Environments.Development;
+            _config = new ConfigurationBuilder().SetBasePath(Environment.CurrentDirectory).AddJsonFile("appsettings.json").Build();
+            _environment = _config.GetSection("appSettings")["environment"];
 
-            if (isDevelopment)
+            if (_environment == Environments.Development)
             {
                 BuildDebugWebHost(args).Run();
             }
@@ -44,22 +48,22 @@ namespace UKSF.Api
 
         private static IWebHost BuildDebugWebHost(string[] args)
         {
-            return WebHost.CreateDefaultBuilder(args).UseStartup<Startup>().UseKestrel().UseContentRoot(Directory.GetCurrentDirectory()).UseUrls("http://*:5000").Build();
+            string port = _config.GetSection("appSettings")["port"];
+            return WebHost.CreateDefaultBuilder(args).UseStartup<Startup>().UseKestrel().UseContentRoot(Directory.GetCurrentDirectory()).UseUrls($"http://*:{port}").Build();
         }
 
         private static IWebHost BuildProductionWebHost(string[] args)
         {
+            int port = int.Parse(_config.GetSection("appSettings")["port"]);
+            int portSsl = int.Parse(_config.GetSection("appSettings")["portSsl"]);
+            string certificatePath = _config.GetSection("appSettings")["certificatePath"];
             return WebHost.CreateDefaultBuilder(args)
                           .UseStartup<Startup>()
                           .UseKestrel(
                               options =>
                               {
-                                  options.Listen(IPAddress.Loopback, 5000);
-                                  options.Listen(
-                                      IPAddress.Loopback,
-                                      5001,
-                                      listenOptions => { listenOptions.UseHttps("C:\\ProgramData\\win-acme\\acme-v02.api.letsencrypt.org\\Certificates\\uk-sf.co.uk.pfx"); }
-                                  );
+                                  options.Listen(IPAddress.Loopback, port);
+                                  options.Listen(IPAddress.Loopback, portSsl, listenOptions => { listenOptions.UseHttps(certificatePath); });
                               }
                           )
                           .UseContentRoot(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName))
@@ -68,7 +72,8 @@ namespace UKSF.Api
 
         private static void InitLogging()
         {
-            string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "UKSF.Api");
+            string certificatePath = _config.GetSection("appSettings")["certificatePath"];
+            string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), certificatePath);
             Directory.CreateDirectory(appData);
             string[] logFiles = new DirectoryInfo(appData).EnumerateFiles("*.log").OrderByDescending(file => file.LastWriteTime).Select(file => file.Name).ToArray();
             if (logFiles.Length > 9)

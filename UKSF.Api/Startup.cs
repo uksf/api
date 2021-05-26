@@ -1,9 +1,5 @@
 ﻿using System;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
@@ -39,18 +35,7 @@ namespace UKSF.Api
         {
             services.AddUksf(_configuration, _currentEnvironment);
 
-            services.AddCors(
-                options => options.AddPolicy(
-                    "CorsPolicy",
-                    builder =>
-                    {
-                        builder.AllowAnyMethod()
-                               .AllowAnyHeader()
-                               .WithOrigins("http://localhost:4200", "http://localhost:4300", "https://uk-sf.co.uk", "https://api.uk-sf.co.uk", "https://uk-sf.co.uk")
-                               .AllowCredentials();
-                    }
-                )
-            );
+            services.AddCors(options => options.AddPolicy("CorsPolicy", builder => { builder.AllowAnyMethod().AllowAnyHeader().WithOrigins(GetCorsPaths()).AllowCredentials(); }));
             services.AddControllers(options => { options.EnableEndpointRouting = true; });
             services.AddRouting()
                     .AddSwaggerGen(options => { options.SwaggerDoc("v1", new() { Title = "UKSF API", Version = "v1" }); })
@@ -99,6 +84,17 @@ namespace UKSF.Api
         private static void OnShutdown(IServiceProvider serviceProvider)
         {
             serviceProvider.StopUksfServices();
+        }
+
+        private string[] GetCorsPaths()
+        {
+            string environment = _configuration.GetSection("appSettings")["environment"];
+            return environment switch
+            {
+                "Development" => new[] { "http://localhost:4200", "http://localhost:4300", "https://dev.uk-sf.co.uk", "https://api-dev.uk-sf.co.uk" },
+                "Production"  => new[] { "https://uk-sf.co.uk", "https://api.uk-sf.co.uk" },
+                _             => throw new ArgumentException($"Invalid environment {environment}", nameof(environment))
+            };
         }
     }
 }
