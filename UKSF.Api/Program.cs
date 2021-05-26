@@ -34,15 +34,16 @@ namespace UKSF.Api
 
             _config = new ConfigurationBuilder().SetBasePath(Environment.CurrentDirectory).AddJsonFile("appsettings.json").Build();
             _environment = _config.GetSection("appSettings")["environment"];
+            bool runAsService = bool.Parse(_config.GetSection("appSettings")["runAsService"]);
 
-            if (_environment == Environments.Development)
-            {
-                BuildDebugWebHost(args).Run();
-            }
-            else
+            if (runAsService)
             {
                 InitLogging();
                 BuildProductionWebHost(args).RunAsService();
+            }
+            else
+            {
+                BuildDebugWebHost(args).Run();
             }
         }
 
