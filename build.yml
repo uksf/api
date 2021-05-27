@@ -3,55 +3,26 @@ trigger:
     include:
       - main
 
-pool:
-  vmImage: 'ubuntu-latest'
-
-variables:
-  solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
-  buildConfiguration: 'Release'
+pool: Avengers
 
 jobs:
-  - job: BuildTest
-    displayName: Build & Test
+  - job: Test
+    displayName: Test
     steps:
-
-      - task: DotNetCoreCLI@2
-        displayName: 'Restore'
-        inputs:
-          command: 'restore'
-          projects: '$(solution)'
-          feedsToUse: 'select'
-
-      - task: DotNetCoreCLI@2
-        displayName: 'Build'
-        inputs:
-          command: 'build'
-          projects: '$(solution)'
-          arguments: '/p:DeployOnBuild=false /p:WebPublishMethod=Package /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.stagingDirectory)" /p:configuration="Release" --no-restore'
-
       - task: DotNetCoreCLI@2
         displayName: 'Test'
         inputs:
           command: 'test'
           projects: '**/*.Tests*.csproj'
-          arguments: '--configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=opencover --no-build'
+          arguments: '-c Release /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
 
-  - job: PublishArtifacts
-    displayName: Publish Artifacts
-    dependsOn: BuildTest
+  - job: Publish
+    displayName: Publish
+    dependsOn: Test
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     steps:
-
       - task: DotNetCoreCLI@2
-        displayName: 'Restore'
-        inputs:
-          command: 'restore'
-          projects: '$(solution)'
-          feedsToUse: 'select'
-
-      - task: DotNetCoreCLI@2
-        displayName: 'Publish API (without zipping)'
+        displayName: 'Publish API'
         inputs:
           command: publish
           publishWebProjects: false
