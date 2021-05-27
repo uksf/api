@@ -14,7 +14,8 @@ jobs:
         inputs:
           command: 'restore'
           projects: '**/*.sln'
-          feedsToUse: 'select'
+          feedsToUse: 'config'
+          nugetConfigPath: 'NuGet.config'
 
       - task: DotNetCoreCLI@2
         displayName: 'Build'
@@ -40,7 +41,8 @@ jobs:
         inputs:
           command: 'restore'
           projects: '**/UKSF.Api.csproj'
-          feedsToUse: 'select'
+          feedsToUse: 'config'
+          nugetConfigPath: 'NuGet.config'
         
       - task: DotNetCoreCLI@2
         displayName: 'Publish API'
