@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MoreLinq.Extensions;
 using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 
@@ -11,13 +13,16 @@ namespace UKSF.Api.Base
     {
         public static IServiceCollection AddUksfBase(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment)
         {
+            Console.Out.WriteLine(configuration.GetSection("ConnectionStrings").GetChildren().ToDelimitedString(","));
+            string connectionString = configuration.GetConnectionString("database");
+            Console.Out.WriteLine(connectionString);
             services.AddContexts()
                     .AddEventHandlers()
                     .AddServices()
                     .AddSingleton(configuration)
                     .AddSingleton(currentEnvironment)
                     .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
-                    .AddSingleton(MongoClientFactory.GetDatabase(configuration.GetConnectionString("database")))
+                    .AddSingleton(MongoClientFactory.GetDatabase(connectionString))
                     .AddSingleton<IEventBus, EventBus>()
                     .AddTransient<IMongoCollectionFactory, MongoCollectionFactory>();
             services.AddSignalR().AddNewtonsoftJsonProtocol();
