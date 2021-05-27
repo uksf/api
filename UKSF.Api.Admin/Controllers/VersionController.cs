@@ -2,7 +2,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using Newtonsoft.Json.Linq;
 using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Signalr.Clients;
@@ -10,7 +9,7 @@ using UKSF.Api.Admin.Signalr.Hubs;
 
 namespace UKSF.Api.Admin.Controllers
 {
-    [Route("[controller]")]
+    [Route("version")]
     public class VersionController : ControllerBase
     {
         private readonly IHubContext<UtilityHub, IUtilityClient> _utilityHub;
@@ -28,12 +27,14 @@ namespace UKSF.Api.Admin.Controllers
             return _variablesContext.GetSingle("FRONTEND_VERSION").AsString();
         }
 
-        [HttpPost("update"), Authorize]
-        public async Task UpdateFrontendVersion([FromBody] JObject body)
+        [HttpGet("update"), Authorize]
+        public async Task UpdateFrontendVersion()
         {
-            string version = body["version"].ToString();
-            await _variablesContext.Update("FRONTEND_VERSION", version);
-            await _utilityHub.Clients.All.ReceiveFrontendUpdate(version);
+            int version = _variablesContext.GetSingle("FRONTEND_VERSION").AsInt();
+            int newVersion = version + 1;
+
+            await _variablesContext.Update("FRONTEND_VERSION", newVersion);
+            await _utilityHub.Clients.All.ReceiveFrontendUpdate(newVersion.ToString());
         }
     }
 }
