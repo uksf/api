@@ -27,7 +27,7 @@ namespace UKSF.Api
         {
             _configuration = configuration;
             _currentEnvironment = currentEnvironment;
-            IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(currentEnvironment.ContentRootPath).AddEnvironmentVariables();
+            IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(currentEnvironment.ContentRootPath).AddJsonFile("appsettings.json").AddEnvironmentVariables();
             builder.Build();
         }
 
