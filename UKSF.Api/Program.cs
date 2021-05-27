@@ -30,9 +30,9 @@ namespace UKSF.Api
                      .ToList()
                      .ForEach(x => AppDomain.CurrentDomain.GetAssemblies().ToList().Add(AppDomain.CurrentDomain.Load(x)));
 
-            _config = new ConfigurationBuilder().SetBasePath(Environment.CurrentDirectory).AddJsonFile("appsettings.json").Build();
-            bool runAsService = bool.Parse(_config.GetSection("appSettings")["runAsService"]);
+            _config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
+            bool runAsService = bool.Parse(_config.GetSection("appSettings")["runAsService"]);
             if (runAsService)
             {
                 InitLogging();
