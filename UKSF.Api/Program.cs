@@ -73,7 +73,7 @@ namespace UKSF.Api
 
         private static void InitLogging()
         {
-            string certificatePath = _config.GetSection("appSettings")["certificatePath"];
+            string certificatePath = _config.GetSection("appSettings")["logsPath"];
             string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), certificatePath);
             Directory.CreateDirectory(appData);
             string[] logFiles = new DirectoryInfo(appData).EnumerateFiles("*.log").OrderByDescending(file => file.LastWriteTime).Select(file => file.Name).ToArray();
