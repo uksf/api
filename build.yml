@@ -10,11 +10,25 @@ jobs:
     displayName: Test
     steps:
       - task: DotNetCoreCLI@2
+        displayName: 'Restore'
+        inputs:
+          command: 'restore'
+          projects: '**/*.sln'
+          feedsToUse: 'select'
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Build'
+        inputs:
+          command: 'build'
+          projects: '**/*.sln'
+          arguments: '-c Release --no-restore'
+
+      - task: DotNetCoreCLI@2
         displayName: 'Test'
         inputs:
           command: 'test'
           projects: '**/*.Tests*.csproj'
-          arguments: '-c Release /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
+          arguments: '-c Release --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
 
   - job: Publish
     displayName: Publish
