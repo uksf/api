@@ -50,7 +50,7 @@ jobs:
           command: publish
           publishWebProjects: false
           projects: '**/UKSF.Api.csproj'
-          arguments: '-c Release --output $(Build.BinariesDirectory)/UKSF.Api'
+          arguments: '-c Release --output "$(Build.BinariesDirectory)/UKSF.Api"'
           zipAfterPublish: false
           modifyOutputPath: false
 
