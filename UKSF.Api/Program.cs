@@ -7,14 +7,12 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.WindowsServices;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 
 namespace UKSF.Api
 {
     public static class Program
     {
         private static IConfigurationRoot _config;
-        private static string _environment = Environments.Development;
 
         public static void Main(string[] args)
         {
@@ -33,7 +31,6 @@ namespace UKSF.Api
                      .ForEach(x => AppDomain.CurrentDomain.GetAssemblies().ToList().Add(AppDomain.CurrentDomain.Load(x)));
 
             _config = new ConfigurationBuilder().SetBasePath(Environment.CurrentDirectory).AddJsonFile("appsettings.json").Build();
-            _environment = _config.GetSection("appSettings")["environment"];
             bool runAsService = bool.Parse(_config.GetSection("appSettings")["runAsService"]);
 
             if (runAsService)
