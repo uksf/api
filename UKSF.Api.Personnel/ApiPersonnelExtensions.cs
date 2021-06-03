@@ -5,6 +5,7 @@ using UKSF.Api.Personnel.Commands;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.EventHandlers;
 using UKSF.Api.Personnel.Mappers;
+using UKSF.Api.Personnel.Queries;
 using UKSF.Api.Personnel.ScheduledActions;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Personnel.Signalr.Hubs;
@@ -19,6 +20,7 @@ namespace UKSF.Api.Personnel
                            .AddEventHandlers()
                            .AddServices()
                            .AddCommands()
+                           .AddQueries()
                            .AddMappers()
                            .AddActions()
                            .AddTransient<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>()
@@ -63,6 +65,11 @@ namespace UKSF.Api.Personnel
         private static IServiceCollection AddCommands(this IServiceCollection services)
         {
             return services.AddSingleton<IConnectTeamspeakIdToAccountCommand, ConnectTeamspeakIdToAccountCommand>();
+        }
+
+        private static IServiceCollection AddQueries(this IServiceCollection services)
+        {
+            return services.AddSingleton<IAllNationsByAccountQuery, AllNationsByAccountQuery>();
         }
 
         private static IServiceCollection AddMappers(this IServiceCollection services)
