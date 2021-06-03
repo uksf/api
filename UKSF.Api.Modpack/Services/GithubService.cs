@@ -292,7 +292,9 @@ namespace UKSF.Api.Modpack.Services
 
         private string GetJwtToken()
         {
-            string privateKey = _configuration.GetSection("Github")["appPrivateKey"].Replace("\n", Environment.NewLine, StringComparison.Ordinal);
+            string base64Key = _configuration.GetSection("Github")["appPrivateKey"];
+            byte[] base64Bytes = Convert.FromBase64String(base64Key);
+            string privateKey = Encoding.UTF8.GetString(base64Bytes).Replace("\n", Environment.NewLine, StringComparison.Ordinal);
             GitHubJwtFactory generator = new(new StringPrivateKeySource(privateKey), new() { AppIntegrationId = APP_ID, ExpirationSeconds = 540 });
             return generator.CreateEncodedJwtToken();
         }
