@@ -156,10 +156,8 @@ namespace UKSF.Api.Personnel.Controllers
         }
 
         [HttpGet("under"), Authorize(Roles = Permissions.COMMAND)]
-        public List<object> GetAccountsUnder([FromQuery] bool reverse = false)
+        public List<BasicAccount> GetAccountsUnder([FromQuery] bool reverse = false)
         {
-            List<object> accounts = new();
-
             List<DomainAccount> memberAccounts = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER).ToList();
             memberAccounts = memberAccounts.OrderBy(x => x.Rank, new RankComparer(_ranksService)).ThenBy(x => x.Lastname).ThenBy(x => x.Firstname).ToList();
             if (reverse)
@@ -167,9 +165,7 @@ namespace UKSF.Api.Personnel.Controllers
                 memberAccounts.Reverse();
             }
 
-            accounts.AddRange(memberAccounts.Select(x => new { value = x.Id, displayValue = _displayNameService.GetDisplayName(x) }));
-
-            return accounts;
+            return memberAccounts.Select(x => new BasicAccount { Id = x.Id, DisplayName = _displayNameService.GetDisplayName(x) }).ToList();
         }
 
         [HttpGet("roster"), Authorize]

@@ -67,4 +67,10 @@ namespace UKSF.Api.Personnel.Models
         public string UnitAssignment;
         public string UnitsExperience;
     }
+
+    public class BasicAccount
+    {
+        public string DisplayName;
+        public string Id;
+    }
 }
