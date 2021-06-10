@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using MongoDB.Bson;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
@@ -21,6 +22,7 @@ namespace UKSF.Api.Personnel.Controllers
         private readonly ICommentThreadContext _commentThreadContext;
         private readonly ICommentThreadService _commentThreadService;
         private readonly IDisplayNameService _displayNameService;
+        private readonly IHostEnvironment _environment;
         private readonly IHttpContextService _httpContextService;
         private readonly INotificationsService _notificationsService;
         private readonly IRanksService _ranksService;
@@ -35,7 +37,8 @@ namespace UKSF.Api.Personnel.Controllers
             IDisplayNameService displayNameService,
             IRecruitmentService recruitmentService,
             INotificationsService notificationsService,
-            IHttpContextService httpContextService
+            IHttpContextService httpContextService,
+            IHostEnvironment environment
         )
         {
             _accountContext = accountContext;
@@ -47,6 +50,7 @@ namespace UKSF.Api.Personnel.Controllers
             _recruitmentService = recruitmentService;
             _notificationsService = notificationsService;
             _httpContextService = httpContextService;
+            _environment = environment;
         }
 
         [HttpGet("{id}"), Authorize]
@@ -93,18 +97,22 @@ namespace UKSF.Api.Personnel.Controllers
             comment.Timestamp = DateTime.Now;
             comment.Author = _httpContextService.GetUserId();
             await _commentThreadService.InsertComment(commentThreadId, comment);
+
             CommentThread thread = _commentThreadContext.GetSingle(commentThreadId);
             IEnumerable<string> participants = _commentThreadService.GetCommentThreadParticipants(thread.Id);
-            foreach (string objectId in participants.Where(x => x != comment.Author))
+            DomainAccount applicationAccount = _accountContext.GetSingle(x => x.Application?.ApplicationCommentThread == commentThreadId || x.Application?.RecruiterCommentThread == commentThreadId);
+
+            foreach (string participant in participants.Where(x => x != comment.Author))
             {
-                // TODO: Set correct link when comment thread is between /application and /recruitment/id
+                string url = _environment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
+                string link = applicationAccount.Id != participant ? $"{url}/recruitment/{applicationAccount.Id}" : $"{url}/application";
                 _notificationsService.Add(
                     new()
                     {
-                        Owner = objectId,
+                        Owner = participant,
                         Icon = NotificationIcons.COMMENT,
                         Message = $"{_displayNameService.GetDisplayName(comment.Author)} replied to a comment:\n\"{comment.Content}\"",
-                        Link = HttpContext.Request.Headers["Referer"].ToString().Replace("http://localhost:4200", "").Replace("https://www.uk-sf.co.uk", "").Replace("https://uk-sf.co.uk", "")
+                        Link = link
                     }
                 );
             }

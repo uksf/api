@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Primitives;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Admin.Context;
@@ -85,8 +86,11 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpPut, Authorize]
         public async Task AddServer([FromBody] GameServer gameServer)
         {
+            gameServer.Order = _gameServersContext.Get().Count();
             await _gameServersContext.Add(gameServer);
+
             _logger.LogAudit($"Server added '{gameServer}'");
+            SendAnyUpdateIfNotCaller(true);
         }
 
         [HttpPatch, Authorize]
@@ -117,6 +121,8 @@ namespace UKSF.Api.ArmaServer.Controllers
                                     .Set(x => x.Mods, gameServer.Mods)
                                     .Set(x => x.ServerMods, gameServer.ServerMods)
             );
+
+            SendServerUpdateIfNotCaller(gameServer.Id);
             return environmentChanged;
         }
 
@@ -127,6 +133,7 @@ namespace UKSF.Api.ArmaServer.Controllers
             _logger.LogAudit($"Game server deleted '{gameServer.Name}'");
             await _gameServersContext.Delete(id);
 
+            SendAnyUpdateIfNotCaller(true);
             return _gameServersContext.Get();
         }
 
@@ -142,6 +149,7 @@ namespace UKSF.Api.ArmaServer.Controllers
                 }
             }
 
+            SendAnyUpdateIfNotCaller(true);
             return _gameServersContext.Get();
         }
 
@@ -166,7 +174,9 @@ namespace UKSF.Api.ArmaServer.Controllers
                 throw new BadRequestException(exception.Message); // TODO: Needs better error handling
             }
 
-            return new() { Missions = _gameServersService.GetMissionFiles(), MissionReports = missionReports };
+            List<MissionFile> missions = _gameServersService.GetMissionFiles();
+            SendMissionsUpdateIfNotCaller(missions);
+            return new() { Missions = missions, MissionReports = missionReports };
         }
 
         [HttpPost("launch/{id}"), Authorize]
@@ -216,6 +226,7 @@ namespace UKSF.Api.ArmaServer.Controllers
             await _gameServersService.LaunchGameServer(gameServer);
 
             _logger.LogAudit($"Game server launched '{missionSelection}' on '{gameServer.Name}'");
+            SendServerUpdateIfNotCaller(gameServer.Id);
             return patchingResult.Reports;
         }
 
@@ -230,6 +241,7 @@ namespace UKSF.Api.ArmaServer.Controllers
                 throw new BadRequestException("Server is not running. This shouldn't happen so please contact an admin");
             }
 
+            SendServerUpdateIfNotCaller(gameServer.Id);
             await _gameServersService.StopGameServer(gameServer);
             await _gameServersService.GetGameServerStatus(gameServer);
             return new() { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
@@ -256,6 +268,7 @@ namespace UKSF.Api.ArmaServer.Controllers
             }
 
             await _gameServersService.GetGameServerStatus(gameServer);
+            SendServerUpdateIfNotCaller(gameServer.Id);
             return new() { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
         }
 
@@ -264,6 +277,7 @@ namespace UKSF.Api.ArmaServer.Controllers
         {
             int killed = _gameServersService.KillAllArmaProcesses();
             _logger.LogAudit($"Killed {killed} Arma instances");
+            SendAnyUpdateIfNotCaller();
         }
 
         [HttpGet("{id}/mods"), Authorize]
@@ -301,6 +315,36 @@ namespace UKSF.Api.ArmaServer.Controllers
             bool state = bool.Parse(body["state"].ToString());
             await _variablesContext.Update("SERVER_CONTROL_DISABLED", state);
             await _serversHub.Clients.All.ReceiveDisabledState(state);
+        }
+
+        private void SendAnyUpdateIfNotCaller(bool skipRefresh = false)
+        {
+            if (!HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out StringValues connectionId))
+            {
+                return;
+            }
+
+            _ = _serversHub.Clients.All.ReceiveAnyUpdateIfNotCaller(connectionId, skipRefresh);
+        }
+
+        private void SendServerUpdateIfNotCaller(string serverId)
+        {
+            if (!HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out StringValues connectionId))
+            {
+                return;
+            }
+
+            _ = _serversHub.Clients.All.ReceiveServerUpdateIfNotCaller(connectionId, serverId);
+        }
+
+        private void SendMissionsUpdateIfNotCaller(List<MissionFile> missions)
+        {
+            if (!HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out StringValues connectionId))
+            {
+                return;
+            }
+
+            _ = _serversHub.Clients.All.ReceiveMissionsUpdateIfNotCaller(connectionId, missions);
         }
     }
 }
