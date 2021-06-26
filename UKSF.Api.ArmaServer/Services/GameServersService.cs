@@ -79,7 +79,6 @@ namespace UKSF.Api.ArmaServer.Services
 
             using HttpClient client = new();
             client.DefaultRequestHeaders.Accept.Add(new("application/json"));
-            client.Timeout = TimeSpan.FromSeconds(1);
             try
             {
                 HttpResponseMessage response = await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server");
