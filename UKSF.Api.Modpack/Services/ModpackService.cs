@@ -159,7 +159,7 @@ namespace UKSF.Api.Modpack.Services
         {
             string rcVersion = await _githubService.GetReferenceVersion(payload.Ref);
             ModpackRelease release = _releaseService.GetRelease(rcVersion);
-            if (release != null && !release.IsDraft)
+            if (release is { IsDraft: false })
             {
                 _logger.LogWarning($"An attempt to build a release candidate for version {rcVersion} failed because the version has already been released.");
                 return;

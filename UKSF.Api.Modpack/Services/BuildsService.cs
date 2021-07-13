@@ -116,11 +116,7 @@ namespace UKSF.Api.Modpack.Services
                 Steps = _buildStepService.GetSteps(GameEnvironment.RC)
             };
 
-            if (previousBuild != null)
-            {
-                SetEnvironmentVariables(build, previousBuild);
-            }
-
+            SetEnvironmentVariables(build, previousBuild);
             await _buildsContext.Add(build);
             return build;
         }
@@ -131,7 +127,7 @@ namespace UKSF.Api.Modpack.Services
             ModpackBuild previousBuild = GetRcBuilds().FirstOrDefault(x => x.Version == version);
             if (previousBuild == null)
             {
-                throw new InvalidOperationException("Release build requires at leaste one RC build");
+                throw new InvalidOperationException("Release build requires at least one RC build");
             }
 
             ModpackBuild build = new()
@@ -236,14 +232,16 @@ namespace UKSF.Api.Modpack.Services
 
         private static void SetEnvironmentVariables(ModpackBuild build, ModpackBuild previousBuild, NewBuild newBuild = null)
         {
-            CheckEnvironmentVariable(build, previousBuild, "ace_updated", "Build ACE", newBuild?.Ace ?? false);
-            CheckEnvironmentVariable(build, previousBuild, "acre_updated", "Build ACRE", newBuild?.Acre ?? false);
-            CheckEnvironmentVariable(build, previousBuild, "air_updated", "Build Air", newBuild?.Air ?? false);
+            bool forceIfRcBuild = build.Environment == GameEnvironment.RC && previousBuild == null;
+
+            SetEnvironmentVariable(build, previousBuild, "ace_updated", "Build ACE", newBuild?.Ace ?? forceIfRcBuild);
+            SetEnvironmentVariable(build, previousBuild, "acre_updated", "Build ACRE", newBuild?.Acre ?? forceIfRcBuild);
+            SetEnvironmentVariable(build, previousBuild, "air_updated", "Build Air", newBuild?.Air ?? forceIfRcBuild);
         }
 
-        private static void CheckEnvironmentVariable(ModpackBuild build, ModpackBuild previousBuild, string key, string stepName, bool force)
+        private static void SetEnvironmentVariable(ModpackBuild build, ModpackBuild previousBuild, string key, string stepName, bool force)
         {
-            if (force || build.Environment == GameEnvironment.RC && build.BuildNumber == 1)
+            if (force)
             {
                 build.EnvironmentVariables[key] = true;
                 return;
