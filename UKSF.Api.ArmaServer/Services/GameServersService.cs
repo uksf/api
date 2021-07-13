@@ -241,7 +241,7 @@ namespace UKSF.Api.ArmaServer.Services
             foreach (string modsPath in availableModsFolders)
             {
                 Regex allowedPaths = new("@.*|(?<!.)(vn)(?!.)|(?<!.)(gm)(?!.)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                IEnumerable<DirectoryInfo> modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("*.*", SearchOption.TopDirectoryOnly).Where(x => allowedPaths.IsMatch(x.Name));
+                IEnumerable<DirectoryInfo> modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("*.*", SearchOption.AllDirectories).Where(x => allowedPaths.IsMatch(x.Name));
                 foreach (DirectoryInfo modFolder in modFolders)
                 {
                     if (mods.Any(x => x.Path == modFolder.FullName))
