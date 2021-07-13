@@ -10,7 +10,6 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
     {
         public const string NAME = "Build ACRE";
         private const string MOD_NAME = "acre";
-        private readonly List<string> _allowedOptionals = new() { "acre_sys_gm", "acre_sys_sog" };
 
         private readonly List<string> _errorExclusions = new() { "Found DirectX", "Linking statically", "Visual Studio 16", "INFO: Building", "Build Type" };
 
@@ -34,23 +33,6 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
             StepLogger.LogSurround("\nMoving ACRE release to build...");
             await CopyDirectory(releasePath, buildPath);
             StepLogger.LogSurround("Moved ACRE release to build");
-
-            StepLogger.LogSurround("\nMoving optionals...");
-            await MoveOptionals(buildPath);
-            StepLogger.LogSurround("Moved optionals");
-        }
-
-        private async Task MoveOptionals(string buildPath)
-        {
-            string optionalsPath = Path.Join(buildPath, "optionals");
-            string addonsPath = Path.Join(buildPath, "addons");
-            DirectoryInfo addons = new(addonsPath);
-            foreach (string optionalName in _allowedOptionals)
-            {
-                DirectoryInfo optional = new(Path.Join(optionalsPath, $"@{optionalName}", "addons"));
-                List<FileInfo> files = GetDirectoryContents(optional);
-                await CopyFiles(optional, addons, files);
-            }
         }
     }
 }
