@@ -47,7 +47,7 @@ namespace UKSF.Api.Modpack.Tests
             result.Environment.Should().Be(GameEnvironment.RC);
             result.BuildNumber.Should().Be(1);
             result.BuilderId.Should().Be("accountId");
-            result.EnvironmentVariables.Should().BeEquivalentTo(new Dictionary<string, object> { { "ace_updated", true }, { "acre_updated", true }, { "air_updated", true } });
+            result.EnvironmentVariables.Should().BeEquivalentTo(new Dictionary<string, object> { { "ace_updated", true }, { "acre_updated", true }, { "uksf_air_updated", true } });
         }
     }
 }

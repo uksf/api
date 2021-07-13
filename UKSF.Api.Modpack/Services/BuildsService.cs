@@ -236,7 +236,7 @@ namespace UKSF.Api.Modpack.Services
 
             SetEnvironmentVariable(build, previousBuild, "ace_updated", "Build ACE", newBuild?.Ace ?? forceIfRcBuild);
             SetEnvironmentVariable(build, previousBuild, "acre_updated", "Build ACRE", newBuild?.Acre ?? forceIfRcBuild);
-            SetEnvironmentVariable(build, previousBuild, "air_updated", "Build Air", newBuild?.Air ?? forceIfRcBuild);
+            SetEnvironmentVariable(build, previousBuild, "uksf_air_updated", "Build Air", newBuild?.Air ?? forceIfRcBuild);
         }
 
         private static void SetEnvironmentVariable(ModpackBuild build, ModpackBuild previousBuild, string key, string stepName, bool force)
