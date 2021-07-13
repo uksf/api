@@ -243,7 +243,7 @@ namespace UKSF.Api.Modpack.Services
 
         private static void CheckEnvironmentVariable(ModpackBuild build, ModpackBuild previousBuild, string key, string stepName, bool force)
         {
-            if (force)
+            if (force || build.Environment == GameEnvironment.RC && build.BuildNumber == 1)
             {
                 build.EnvironmentVariables[key] = true;
                 return;
@@ -251,11 +251,11 @@ namespace UKSF.Api.Modpack.Services
 
             if (previousBuild.EnvironmentVariables.ContainsKey(key))
             {
-                bool updated = (bool) previousBuild.EnvironmentVariables[key];
+                bool updated = (bool)previousBuild.EnvironmentVariables[key];
                 if (updated)
                 {
                     ModpackBuildStep step = previousBuild.Steps.FirstOrDefault(x => x.Name == stepName);
-                    if (step != null && (!step.Finished || step.BuildResult == ModpackBuildResult.FAILED || step.BuildResult == ModpackBuildResult.CANCELLED))
+                    if (step != null && (!step.Finished || step.BuildResult is ModpackBuildResult.FAILED or ModpackBuildResult.CANCELLED))
                     {
                         build.EnvironmentVariables[key] = true;
                     }

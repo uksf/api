@@ -193,15 +193,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
 
         internal void SetEnvironmentVariable(string key, object value)
         {
-            if (Build.EnvironmentVariables.ContainsKey(key))
-            {
-                Build.EnvironmentVariables[key] = value;
-            }
-            else
-            {
-                Build.EnvironmentVariables.Add(key, value);
-            }
-
+            Build.EnvironmentVariables[key] = value;
             _updateBuildCallback(Builders<ModpackBuild>.Update.Set(x => x.EnvironmentVariables, Build.EnvironmentVariables));
         }
 
@@ -210,7 +202,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
             if (Build.EnvironmentVariables.ContainsKey(key))
             {
                 object value = Build.EnvironmentVariables[key];
-                return (T) value;
+                return (T)value;
             }
 
             return default;
