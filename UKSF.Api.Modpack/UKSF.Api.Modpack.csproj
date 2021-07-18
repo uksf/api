@@ -14,7 +14,7 @@
 
     <ItemGroup>
         <PackageReference Include="GitHubJwt" Version="0.0.4"/>
-        <PackageReference Include="Humanizer.Core" Version="2.10.1"/>
+        <PackageReference Include="Humanizer.Core" Version="2.11.10"/>
         <PackageReference Include="Octokit" Version="0.50.0"/>
     </ItemGroup>
 
