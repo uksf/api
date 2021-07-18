@@ -8,8 +8,8 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="5.0.6"/>
-        <PackageReference Include="MongoDB.Bson" Version="2.12.3"/>
-        <PackageReference Include="MongoDB.Driver" Version="2.12.3"/>
+        <PackageReference Include="MongoDB.Bson" Version="2.13.0"/>
+        <PackageReference Include="MongoDB.Driver" Version="2.13.0"/>
         <PackageReference Include="morelinq" Version="3.3.2"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1"/>
         <PackageReference Include="System.Management" Version="5.0.0"/>

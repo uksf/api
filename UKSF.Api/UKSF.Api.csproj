@@ -16,14 +16,14 @@
         <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1"/>
         <PackageReference Include="BCrypt.Net-Next" Version="4.0.2"/>
         <PackageReference Include="Discord.OAuth2" Version="2.0.0"/>
-        <PackageReference Include="Markdig" Version="0.24.0"/>
+        <PackageReference Include="Markdig" Version="0.25.0"/>
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.6"/>
         <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="5.0.6"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.6"/>
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="5.0.6"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1"/>
-        <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.11.0"/>
-        <PackageReference Include="MongoDB.Driver" Version="2.12.3"/>
+        <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.11.1"/>
+        <PackageReference Include="MongoDB.Driver" Version="2.13.0"/>
         <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.1.4"/>
         <PackageReference Include="System.Net.Http" Version="4.3.4"/>
