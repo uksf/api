@@ -10,6 +10,8 @@ using UKSF.Api.Personnel.Signalr.Clients;
 using UKSF.Api.Personnel.Signalr.Hubs;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
+using UKSF.Api.Shared.Signalr.Clients;
+using UKSF.Api.Shared.Signalr.Hubs;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers
@@ -19,6 +21,8 @@ namespace UKSF.Tests.Unit.Events.Handlers
         private readonly AccountDataEventHandler _accountDataEventHandler;
         private readonly IEventBus _eventBus;
         private readonly Mock<IHubContext<AccountHub, IAccountClient>> _mockAccountHub;
+        private readonly Mock<IHubContext<AccountGroupedHub, IAccountGroupedClient>> _mockGroupedHub;
+        private readonly Mock<IHubContext<AllHub, IAllClient>> _mockAllHub;
         private readonly Mock<ILogger> _mockLoggingService;
 
         public AccountEventHandlerTests()
@@ -26,12 +30,14 @@ namespace UKSF.Tests.Unit.Events.Handlers
             Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
             _mockLoggingService = new();
             _mockAccountHub = new();
+            _mockGroupedHub = new();
+            _mockAllHub = new();
             _eventBus = new EventBus();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainAccount>(It.IsAny<string>()));
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainUnit>(It.IsAny<string>()));
 
-            _accountDataEventHandler = new(_eventBus, _mockAccountHub.Object, _mockLoggingService.Object);
+            _accountDataEventHandler = new(_eventBus, _mockAccountHub.Object, _mockGroupedHub.Object, _mockAllHub.Object, _mockLoggingService.Object);
         }
 
         [Fact]
