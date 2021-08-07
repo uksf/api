@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using UKSF.Api.Command.Controllers;
 using UKSF.Api.Controllers;
 using UKSF.Api.EventHandlers;
 using UKSF.Api.Middleware;

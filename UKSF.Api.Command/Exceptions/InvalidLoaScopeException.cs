@@ -1,7 +1,7 @@
 ﻿using System;
 using UKSF.Api.Shared.Exceptions;
 
-namespace UKSF.Api.Exceptions
+namespace UKSF.Api.Command.Exceptions
 {
     [Serializable]
     public class InvalidLoaScopeException : UksfException

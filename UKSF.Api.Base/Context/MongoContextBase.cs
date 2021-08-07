@@ -29,13 +29,31 @@ namespace UKSF.Api.Base.Context
             return _mongoCollection.Get(predicate);
         }
 
-        public virtual PagedResult<T> GetPaged(int page, int pageSize, SortDirection sortDirection, string sortField, IEnumerable<Expression<Func<T, object>>> filterPropertSelectors, string filter)
+        public virtual PagedResult<T> GetPaged(
+            int page,
+            int pageSize,
+            SortDirection sortDirection,
+            string sortField,
+            IEnumerable<Expression<Func<T, object>>> filterPropertSelectors,
+            string filter
+        )
         {
-            SortDefinition<T> sortDefinition = sortDirection == SortDirection.ASCENDING ? Builders<T>.Sort.Ascending(sortField) : Builders<T>.Sort.Descending(sortField);
-            FilterDefinition<T> filterDefinition = string.IsNullOrEmpty(filter)
+            var sortDefinition = sortDirection == SortDirection.ASCENDING ? Builders<T>.Sort.Ascending(sortField) : Builders<T>.Sort.Descending(sortField);
+            var filterDefinition = string.IsNullOrEmpty(filter)
                 ? Builders<T>.Filter.Empty
                 : Builders<T>.Filter.Or(filterPropertSelectors.Select(x => Builders<T>.Filter.Regex(x, new(new Regex(filter, RegexOptions.IgnoreCase)))));
-            return _mongoCollection.GetPaged(page, pageSize, sortDefinition, filterDefinition);
+            return GetPaged(page, pageSize, collection => collection.Aggregate(), sortDefinition, filterDefinition);
+        }
+
+        public virtual PagedResult<TOut> GetPaged<TOut>(
+            int page,
+            int pageSize,
+            Func<MongoDB.Driver.IMongoCollection<T>, IAggregateFluent<TOut>> aggregator,
+            SortDefinition<TOut> sortDefinition,
+            FilterDefinition<TOut> filterDefinition
+        )
+        {
+            return _mongoCollection.GetPaged(page, pageSize, aggregator, sortDefinition, filterDefinition);
         }
 
         public virtual T GetSingle(string id)
@@ -60,7 +78,7 @@ namespace UKSF.Api.Base.Context
 
         public virtual async Task Update(string id, Expression<Func<T, object>> fieldSelector, object value)
         {
-            UpdateDefinition<T> update = value == null ? Builders<T>.Update.Unset(fieldSelector) : Builders<T>.Update.Set(fieldSelector, value);
+            var update = value == null ? Builders<T>.Update.Unset(fieldSelector) : Builders<T>.Update.Set(fieldSelector, value);
             await _mongoCollection.UpdateAsync(id, update);
         }
 
@@ -97,6 +115,21 @@ namespace UKSF.Api.Base.Context
         public virtual async Task DeleteMany(Expression<Func<T, bool>> filterExpression)
         {
             await _mongoCollection.DeleteManyAsync(filterExpression);
+        }
+
+        public FilterDefinition<TFilter> BuildPagedComplexQuery<TFilter>(string query, Func<string, FilterDefinition<TFilter>> filter)
+        {
+            if (string.IsNullOrWhiteSpace(query) || !query.Split(new[] { "&&", "||" }, StringSplitOptions.RemoveEmptyEntries).Any())
+            {
+                return Builders<TFilter>.Filter.Empty;
+            }
+
+            var andQueryParts = query.Split("&&", StringSplitOptions.RemoveEmptyEntries);
+            var andFilters = andQueryParts.Select(andQueryPart => andQueryPart.Split("||", StringSplitOptions.RemoveEmptyEntries))
+                                          .Select(orQueryParts => orQueryParts.Select(filter).ToList())
+                                          .Select(orFilters => Builders<TFilter>.Filter.Or(orFilters))
+                                          .ToList();
+            return Builders<TFilter>.Filter.And(andFilters);
         }
     }
 }

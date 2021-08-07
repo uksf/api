@@ -1,9 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Shared.Commands;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Queries;
 using UKSF.Api.Shared.Services;
+using UKSF.Api.Shared.Signalr.Hubs;
 
 namespace UKSF.Api.Shared
 {
@@ -51,6 +54,12 @@ namespace UKSF.Api.Shared
         private static IServiceCollection AddQueries(this IServiceCollection services)
         {
             return services.AddSingleton<IGetEmailTemplateQuery, GetEmailTemplateQuery>();
+        }
+
+        public static void AddUksfSignalr(this IEndpointRouteBuilder builder)
+        {
+            builder.MapHub<AllHub>($"/hub/{AllHub.END_POINT}");
+            builder.MapHub<AccountGroupedHub>($"/hub/{AccountGroupedHub.END_POINT}");
         }
     }
 }

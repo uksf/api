@@ -11,7 +11,7 @@ namespace UKSF.Tests.Unit.Data.Personnel
 {
     public class RanksDataServiceTests
     {
-        private readonly Mock<IMongoCollection<Rank>> _mockDataCollection;
+        private readonly Mock<IMongoCollection<DomainRank>> _mockDataCollection;
         private readonly RanksContext _ranksContext;
 
         public RanksDataServiceTests()
@@ -20,7 +20,7 @@ namespace UKSF.Tests.Unit.Data.Personnel
             Mock<IEventBus> mockEventBus = new();
             _mockDataCollection = new();
 
-            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<Rank>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
+            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainRank>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
             _ranksContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
         }
@@ -28,13 +28,13 @@ namespace UKSF.Tests.Unit.Data.Personnel
         [Fact]
         public void Should_return_collection_in_order()
         {
-            Rank rank1 = new() { Order = 2 };
-            Rank rank2 = new() { Order = 0 };
-            Rank rank3 = new() { Order = 1 };
+            DomainRank rank1 = new() { Order = 2 };
+            DomainRank rank2 = new() { Order = 0 };
+            DomainRank rank3 = new() { Order = 1 };
 
-            _mockDataCollection.Setup(x => x.Get()).Returns(new List<Rank> { rank1, rank2, rank3 });
+            _mockDataCollection.Setup(x => x.Get()).Returns(new List<DomainRank> { rank1, rank2, rank3 });
 
-            IEnumerable<Rank> subject = _ranksContext.Get();
+            var subject = _ranksContext.Get();
 
             subject.Should().ContainInOrder(rank2, rank3, rank1);
         }
@@ -42,13 +42,13 @@ namespace UKSF.Tests.Unit.Data.Personnel
         [Fact]
         public void Should_return_item_by_name()
         {
-            Rank rank1 = new() { Name = "Private", Order = 2 };
-            Rank rank2 = new() { Name = "Recruit", Order = 1 };
-            Rank rank3 = new() { Name = "Candidate", Order = 0 };
+            DomainRank rank1 = new() { Name = "Private", Order = 2 };
+            DomainRank rank2 = new() { Name = "Recruit", Order = 1 };
+            DomainRank rank3 = new() { Name = "Candidate", Order = 0 };
 
-            _mockDataCollection.Setup(x => x.Get()).Returns(new List<Rank> { rank1, rank2, rank3 });
+            _mockDataCollection.Setup(x => x.Get()).Returns(new List<DomainRank> { rank1, rank2, rank3 });
 
-            Rank subject = _ranksContext.GetSingle("Recruit");
+            var subject = _ranksContext.GetSingle("Recruit");
 
             subject.Should().Be(rank2);
         }
@@ -56,9 +56,9 @@ namespace UKSF.Tests.Unit.Data.Personnel
         [Theory, InlineData(""), InlineData(null)]
         public void Should_return_nothing_for_empty_or_null_name(string name)
         {
-            _mockDataCollection.Setup(x => x.Get()).Returns(new List<Rank>());
+            _mockDataCollection.Setup(x => x.Get()).Returns(new List<DomainRank>());
 
-            Rank subject = _ranksContext.GetSingle(name);
+            var subject = _ranksContext.GetSingle(name);
 
             subject.Should().Be(null);
         }

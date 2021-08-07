@@ -13,7 +13,15 @@ namespace UKSF.Api.Base.Context
     {
         IEnumerable<T> Get();
         IEnumerable<T> Get(Func<T, bool> predicate);
-        PagedResult<T> GetPaged(int page, int pageSize, SortDefinition<T> sortDefinition, FilterDefinition<T> filterDefinition);
+
+        PagedResult<TOut> GetPaged<TOut>(
+            int page,
+            int pageSize,
+            Func<MongoDB.Driver.IMongoCollection<T>, IAggregateFluent<TOut>> aggregator,
+            SortDefinition<TOut> sortDefinition,
+            FilterDefinition<TOut> filterDefinition
+        );
+
         T GetSingle(string id);
         T GetSingle(Func<T, bool> predicate);
         Task AddAsync(T data);
@@ -46,25 +54,36 @@ namespace UKSF.Api.Base.Context
             return GetCollection().AsQueryable().Where(predicate);
         }
 
-        public PagedResult<T> GetPaged(int page, int pageSize, SortDefinition<T> sortDefinition, FilterDefinition<T> filterDefinition)
+        public PagedResult<TOut> GetPaged<TOut>(
+            int page,
+            int pageSize,
+            Func<MongoDB.Driver.IMongoCollection<T>, IAggregateFluent<TOut>> aggregator,
+            SortDefinition<TOut> sortDefinition,
+            FilterDefinition<TOut> filterDefinition
+        )
         {
-            AggregateFacet<T, AggregateCountResult> countFacet = AggregateFacet.Create(
+            var countFacet = AggregateFacet.Create(
                 "count",
-                PipelineDefinition<T, AggregateCountResult>.Create(new[] { PipelineStageDefinitionBuilder.Count<T>() })
+                PipelineDefinition<TOut, AggregateCountResult>.Create(new[] { PipelineStageDefinitionBuilder.Count<TOut>() })
             );
 
-            AggregateFacet<T, T> dataFacet = AggregateFacet.Create(
+            var dataFacet = AggregateFacet.Create(
                 "data",
-                PipelineDefinition<T, T>.Create(
-                    new[] { PipelineStageDefinitionBuilder.Sort(sortDefinition), PipelineStageDefinitionBuilder.Skip<T>((page - 1) * pageSize), PipelineStageDefinitionBuilder.Limit<T>(pageSize) }
+                PipelineDefinition<TOut, TOut>.Create(
+                    new[]
+                    {
+                        PipelineStageDefinitionBuilder.Sort(sortDefinition),
+                        PipelineStageDefinitionBuilder.Skip<TOut>((page - 1) * pageSize),
+                        PipelineStageDefinitionBuilder.Limit<TOut>(pageSize)
+                    }
                 )
             );
 
-            IAggregateFluent<AggregateFacetResults> aggregation = GetCollection().Aggregate().Match(filterDefinition).Facet(countFacet, dataFacet);
-            IReadOnlyList<AggregateCountResult> aggregateCountResults = aggregation.First().Facets.First(x => x.Name == "count").Output<AggregateCountResult>();
-            int count = aggregateCountResults.Count == 0 ? 0 : (int) aggregateCountResults[0].Count;
+            var aggregation = aggregator(GetCollection()).Match(filterDefinition).Facet(countFacet, dataFacet);
+            var aggregateCountResults = aggregation.First().Facets.First(x => x.Name == "count").Output<AggregateCountResult>();
+            var count = (int)(aggregateCountResults.FirstOrDefault()?.Count ?? 0);
 
-            IReadOnlyList<T> data = aggregation.First().Facets.First(x => x.Name == "data").Output<T>();
+            var data = aggregation.First().Facets.First(x => x.Name == "data").Output<TOut>();
 
             return new(count, data);
         }
@@ -99,7 +118,7 @@ namespace UKSF.Api.Base.Context
         {
             // Getting ids by the filter predicate is necessary to cover filtering items by a default model value
             // (e.g Role order default 0, may not be stored in document, and is thus not filterable)
-            IEnumerable<string> ids = Get(predicate.Compile()).Select(x => x.Id);
+            var ids = Get(predicate.Compile()).Select(x => x.Id);
             await GetCollection().UpdateManyAsync(Builders<T>.Filter.In(x => x.Id, ids), update);
         }
 
@@ -116,7 +135,7 @@ namespace UKSF.Api.Base.Context
         public async Task DeleteManyAsync(Expression<Func<T, bool>> predicate)
         {
             // This is necessary for filtering items by a default model value (e.g Role order default 0, may not be stored in document)
-            IEnumerable<string> ids = Get(predicate.Compile()).Select(x => x.Id);
+            var ids = Get(predicate.Compile()).Select(x => x.Id);
             await GetCollection().DeleteManyAsync(Builders<T>.Filter.In(x => x.Id, ids));
         }
 

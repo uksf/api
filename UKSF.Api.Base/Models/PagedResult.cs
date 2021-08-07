@@ -2,7 +2,7 @@
 
 namespace UKSF.Api.Base.Models
 {
-    public class PagedResult<T> where T : MongoObject
+    public class PagedResult<T>
     {
         public IEnumerable<T> Data;
         public int TotalCount;

@@ -17,7 +17,17 @@ namespace UKSF.Api.Personnel.Services
         Task AssignUnitRole(string id, string unitId, string role);
         Task UnassignAllUnits(string id);
         Task UnassignAllUnitRoles(string id);
-        Task<Notification> UpdateUnitRankAndRole(string id, string unitString = "", string role = "", string rankString = "", string notes = "", string message = "", string reason = "");
+
+        Task<Notification> UpdateUnitRankAndRole(
+            string id,
+            string unitString = "",
+            string role = "",
+            string rankString = "",
+            string notes = "",
+            string message = "",
+            string reason = ""
+        );
+
         Task<string> UnassignUnitRole(string id, string unitId);
         Task UnassignUnit(string id, string unitId);
         Task UpdateGroupsAndRoles(string id);
@@ -56,7 +66,15 @@ namespace UKSF.Api.Personnel.Services
             _eventBus = eventBus;
         }
 
-        public async Task<Notification> UpdateUnitRankAndRole(string id, string unitString = "", string role = "", string rankString = "", string notes = "", string message = "", string reason = "")
+        public async Task<Notification> UpdateUnitRankAndRole(
+            string id,
+            string unitString = "",
+            string role = "",
+            string rankString = "",
+            string notes = "",
+            string message = "",
+            string reason = ""
+        )
         {
             StringBuilder notificationBuilder = new();
 
@@ -94,7 +112,9 @@ namespace UKSF.Api.Personnel.Services
 
             _serviceRecordService.AddServiceRecord(id, message, notes);
             await UpdateGroupsAndRoles(id);
-            return message != REMOVE_FLAG ? new Notification { Owner = id, Message = message, Icon = positive ? NotificationIcons.PROMOTION : NotificationIcons.DEMOTION } : null;
+            return message != REMOVE_FLAG
+                ? new Notification { Owner = id, Message = message, Icon = positive ? NotificationIcons.PROMOTION : NotificationIcons.DEMOTION }
+                : null;
         }
 
         public async Task AssignUnitRole(string id, string unitId, string role)
@@ -105,7 +125,7 @@ namespace UKSF.Api.Personnel.Services
 
         public async Task UnassignAllUnits(string id)
         {
-            foreach (Unit unit in _unitsContext.Get())
+            foreach (var unit in _unitsContext.Get())
             {
                 await _unitsService.RemoveMember(id, unit);
             }
@@ -115,7 +135,7 @@ namespace UKSF.Api.Personnel.Services
 
         public async Task UnassignAllUnitRoles(string id)
         {
-            foreach (Unit unit in _unitsContext.Get())
+            foreach (var unit in _unitsContext.Get())
             {
                 await _unitsService.SetMemberRole(id, unit);
             }
@@ -125,7 +145,7 @@ namespace UKSF.Api.Personnel.Services
 
         public async Task<string> UnassignUnitRole(string id, string unitId)
         {
-            Unit unit = _unitsContext.GetSingle(unitId);
+            var unit = _unitsContext.GetSingle(unitId);
             string role = unit.Roles.FirstOrDefault(x => x.Value == id).Key;
             if (_unitsService.RolesHasMember(unit, id))
             {
@@ -138,7 +158,7 @@ namespace UKSF.Api.Personnel.Services
 
         public async Task UnassignUnit(string id, string unitId)
         {
-            Unit unit = _unitsContext.GetSingle(unitId);
+            var unit = _unitsContext.GetSingle(unitId);
             await _unitsService.RemoveMember(id, unit);
             await UpdateGroupsAndRoles(unitId);
         }
@@ -155,7 +175,7 @@ namespace UKSF.Api.Personnel.Services
         {
             bool unitUpdate = false;
             bool positive = true;
-            Unit unit = _unitsContext.GetSingle(x => x.Name == unitString);
+            var unit = _unitsContext.GetSingle(x => x.Name == unitString);
             if (unit != null)
             {
                 if (unit.Branch == UnitBranch.COMBAT)
@@ -194,7 +214,9 @@ namespace UKSF.Api.Personnel.Services
             if (!string.IsNullOrEmpty(role) && role != REMOVE_FLAG)
             {
                 await _accountContext.Update(id, x => x.RoleAssignment, role);
-                notificationMessage.Append($"{(unitUpdate ? $" as {AvsAn.Query(role).Article} {role}" : $"You have been assigned as {AvsAn.Query(role).Article} {role}")}");
+                notificationMessage.Append(
+                    $"{(unitUpdate ? $" as {AvsAn.Query(role).Article} {role}" : $"You have been assigned as {AvsAn.Query(role).Article} {role}")}"
+                );
                 roleUpdate = true;
             }
             else if (role == REMOVE_FLAG)

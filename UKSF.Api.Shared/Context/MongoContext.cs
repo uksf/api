@@ -16,7 +16,24 @@ namespace UKSF.Api.Shared.Context
     {
         IEnumerable<T> Get();
         IEnumerable<T> Get(Func<T, bool> predicate);
-        PagedResult<T> GetPaged(int page, int pageSize, SortDirection sortDirection, string sortField, IEnumerable<Expression<Func<T, object>>> filterPropertSelectors, string filter);
+
+        PagedResult<T> GetPaged(
+            int page,
+            int pageSize,
+            SortDirection sortDirection,
+            string sortField,
+            IEnumerable<Expression<Func<T, object>>> filterPropertSelectors,
+            string filter
+        );
+
+        PagedResult<TOut> GetPaged<TOut>(
+            int page,
+            int pageSize,
+            Func<MongoDB.Driver.IMongoCollection<T>, IAggregateFluent<TOut>> aggregator,
+            SortDefinition<TOut> sortDefinition,
+            FilterDefinition<TOut> filterDefinition
+        );
+
         T GetSingle(string id);
         T GetSingle(Func<T, bool> predicate);
         Task Add(T item);
@@ -28,13 +45,17 @@ namespace UKSF.Api.Shared.Context
         Task Delete(string id);
         Task Delete(T item);
         Task DeleteMany(Expression<Func<T, bool>> filterExpression);
+        FilterDefinition<TFilter> BuildPagedComplexQuery<TFilter>(string query, Func<string, FilterDefinition<TFilter>> filter);
     }
 
     public class MongoContext<T> : MongoContextBase<T>, IMongoContext<T> where T : MongoObject
     {
         private readonly IEventBus _eventBus;
 
-        protected MongoContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, string collectionName) : base(mongoCollectionFactory, collectionName)
+        protected MongoContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, string collectionName) : base(
+            mongoCollectionFactory,
+            collectionName
+        )
         {
             _eventBus = eventBus;
         }
