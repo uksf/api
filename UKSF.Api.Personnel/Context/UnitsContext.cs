@@ -7,13 +7,13 @@ using UKSF.Api.Shared.Context;
 
 namespace UKSF.Api.Personnel.Context
 {
-    public interface IUnitsContext : IMongoContext<Unit>, ICachedMongoContext { }
+    public interface IUnitsContext : IMongoContext<DomainUnit>, ICachedMongoContext { }
 
-    public class UnitsContext : CachedMongoContext<Unit>, IUnitsContext
+    public class UnitsContext : CachedMongoContext<DomainUnit>, IUnitsContext
     {
         public UnitsContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "units") { }
 
-        protected override void SetCache(IEnumerable<Unit> newCollection)
+        protected override void SetCache(IEnumerable<DomainUnit> newCollection)
         {
             lock (LockObject)
             {

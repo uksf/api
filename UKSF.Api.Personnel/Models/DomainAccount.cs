@@ -57,14 +57,19 @@ namespace UKSF.Api.Personnel.Models
         public bool MilitaryExperience;
         public string Nation;
         public string Rank;
+
+        public Rank RankObject;
         public string Reference;
         public string RoleAssignment;
+        public Role RoleObject;
         public List<string> RolePreferences;
         public List<ServiceRecordEntry> ServiceRecord;
         public AccountSettings Settings;
         public string Steamname;
         public HashSet<int> TeamspeakIdentities;
         public string UnitAssignment;
+        public Unit UnitObject;
+        public List<Unit> UnitObjects;
         public string UnitsExperience;
     }
 

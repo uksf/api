@@ -135,7 +135,9 @@ namespace UKSF.Api.Personnel.Services
 
         public bool IsRecruiterLead(DomainAccount domainAccount = null)
         {
-            return domainAccount != null ? GetRecruiterUnit().Roles.ContainsValue(domainAccount.Id) : GetRecruiterUnit().Roles.ContainsValue(_httpContextService.GetUserId());
+            return domainAccount != null
+                ? GetRecruiterUnit().Roles.ContainsValue(domainAccount.Id)
+                : GetRecruiterUnit().Roles.ContainsValue(_httpContextService.GetUserId());
         }
 
         public async Task SetRecruiter(string id, string newRecruiter)
@@ -164,7 +166,7 @@ namespace UKSF.Api.Personnel.Services
             List<DomainAccount> processedApplications = accountsList.Where(x => x.Application.State != ApplicationState.WAITING).ToList();
             double totalProcessingTime = processedApplications.Sum(x => (x.Application.DateAccepted - x.Application.DateCreated).TotalDays);
             double averageProcessingTime = totalProcessingTime > 0 ? Math.Round(totalProcessingTime / processedApplications.Count, 1) : 0;
-            double enlistmentRate = acceptedApps != 0 || rejectedApps != 0 ? Math.Round((double) acceptedApps / (acceptedApps + rejectedApps) * 100, 1) : 0;
+            double enlistmentRate = acceptedApps != 0 || rejectedApps != 0 ? Math.Round((double)acceptedApps / (acceptedApps + rejectedApps) * 100, 1) : 0;
 
             return new RecruitmentStat[]
             {
@@ -181,12 +183,19 @@ namespace UKSF.Api.Personnel.Services
             IEnumerable<DomainAccount> recruiters = GetRecruiters().Where(x => x.Settings.Sr1Enabled);
             List<DomainAccount> waiting = _accountContext.Get(x => x.Application != null && x.Application.State == ApplicationState.WAITING).ToList();
             List<DomainAccount> complete = _accountContext.Get(x => x.Application != null && x.Application.State != ApplicationState.WAITING).ToList();
-            var unsorted = recruiters.Select(x => new { id = x.Id, complete = complete.Count(y => y.Application.Recruiter == x.Id), waiting = waiting.Count(y => y.Application.Recruiter == x.Id) });
+            var unsorted = recruiters.Select(
+                x => new
+                {
+                    id = x.Id,
+                    complete = complete.Count(y => y.Application.Recruiter == x.Id),
+                    waiting = waiting.Count(y => y.Application.Recruiter == x.Id)
+                }
+            );
             var sorted = unsorted.OrderBy(x => x.waiting).ThenBy(x => x.complete);
             return sorted.First().id;
         }
 
-        private Unit GetRecruiterUnit()
+        private DomainUnit GetRecruiterUnit()
         {
             string id = _variablesService.GetVariable("UNIT_ID_RECRUITMENT").AsString();
             return _unitsContext.GetSingle(id);
@@ -237,7 +246,8 @@ namespace UKSF.Api.Personnel.Services
 
         private double GetAverageProcessingTime()
         {
-            List<DomainAccount> waitingApplications = _accountContext.Get(x => x.Application != null && x.Application.State != ApplicationState.WAITING).ToList();
+            List<DomainAccount> waitingApplications =
+                _accountContext.Get(x => x.Application != null && x.Application.State != ApplicationState.WAITING).ToList();
             double days = waitingApplications.Sum(x => (x.Application.DateAccepted - x.Application.DateCreated).TotalDays);
             double time = Math.Round(days / waitingApplications.Count, 1);
             return time;

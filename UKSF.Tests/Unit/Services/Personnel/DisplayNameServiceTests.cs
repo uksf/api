@@ -57,7 +57,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
         public void ShouldGetDisplayNameWithRank()
         {
             DomainAccount domainAccount = new() { Lastname = "Beswick", Firstname = "Tim", Rank = "Squadron Leader" };
-            Rank rank = new() { Abbreviation = "SqnLdr" };
+            DomainRank rank = new() { Abbreviation = "SqnLdr" };
 
             _mockRanksContext.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(rank);
 

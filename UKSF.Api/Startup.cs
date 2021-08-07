@@ -14,6 +14,7 @@ using UKSF.Api.Command;
 using UKSF.Api.Middleware;
 using UKSF.Api.Modpack;
 using UKSF.Api.Personnel;
+using UKSF.Api.Shared;
 using UKSF.Api.Teamspeak;
 
 namespace UKSF.Api
@@ -27,7 +28,7 @@ namespace UKSF.Api
         {
             _configuration = configuration;
             _currentEnvironment = currentEnvironment;
-            IConfigurationBuilder builder = new ConfigurationBuilder().SetBasePath(currentEnvironment.ContentRootPath).AddEnvironmentVariables();
+            var builder = new ConfigurationBuilder().SetBasePath(currentEnvironment.ContentRootPath).AddEnvironmentVariables();
             builder.Build();
         }
 
@@ -35,7 +36,12 @@ namespace UKSF.Api
         {
             services.AddUksf(_configuration, _currentEnvironment);
 
-            services.AddCors(options => options.AddPolicy("CorsPolicy", builder => { builder.AllowAnyMethod().AllowAnyHeader().WithOrigins(GetCorsPaths()).AllowCredentials(); }));
+            services.AddCors(
+                options => options.AddPolicy(
+                    "CorsPolicy",
+                    builder => { builder.AllowAnyMethod().AllowAnyHeader().WithOrigins(GetCorsPaths()).AllowCredentials(); }
+                )
+            );
             services.AddControllers(options => { options.EnableEndpointRouting = true; });
             services.AddRouting()
                     .AddSwaggerGen(options => { options.SwaggerDoc("v1", new() { Title = "UKSF API", Version = "v1" }); })
@@ -69,6 +75,7 @@ namespace UKSF.Api
                    endpoints =>
                    {
                        endpoints.MapControllers().RequireCors("CorsPolicy");
+                       endpoints.AddUksfSignalr();
                        endpoints.AddUksfAdminSignalr();
                        endpoints.AddUksfArmaServerSignalr();
                        endpoints.AddUksfCommandSignalr();
@@ -88,7 +95,7 @@ namespace UKSF.Api
 
         private string[] GetCorsPaths()
         {
-            string environment = _configuration.GetSection("appSettings")["environment"];
+            var environment = _configuration.GetSection("appSettings")["environment"];
             return environment switch
             {
                 "Development" => new[] { "http://localhost:4200", "http://localhost:4300", "https://dev.uk-sf.co.uk", "https://api-dev.uk-sf.co.uk" },

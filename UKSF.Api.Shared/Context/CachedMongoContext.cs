@@ -22,7 +22,10 @@ namespace UKSF.Api.Shared.Context
         private readonly IEventBus _eventBus;
         protected readonly object LockObject = new();
 
-        protected CachedMongoContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, string collectionName) : base(mongoCollectionFactory, collectionName)
+        protected CachedMongoContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, string collectionName) : base(
+            mongoCollectionFactory,
+            collectionName
+        )
         {
             _eventBus = eventBus;
         }
@@ -119,8 +122,8 @@ namespace UKSF.Api.Shared.Context
 
         public override async Task Replace(T item)
         {
-            string id = item.Id;
-            T cacheItem = GetSingle(id);
+            var id = item.Id;
+            var cacheItem = GetSingle(id);
             await base.Replace(item);
             SetCache(Cache.Except(new[] { cacheItem }).Concat(new[] { item }));
             DataUpdateEvent(item.Id);
@@ -128,7 +131,7 @@ namespace UKSF.Api.Shared.Context
 
         public override async Task Delete(string id)
         {
-            T cacheItem = GetSingle(id);
+            var cacheItem = GetSingle(id);
             await base.Delete(id);
             SetCache(Cache.Except(new[] { cacheItem }));
             DataDeleteEvent(id);
@@ -148,7 +151,7 @@ namespace UKSF.Api.Shared.Context
 
         public override async Task DeleteMany(Expression<Func<T, bool>> filterExpression)
         {
-            List<T> ids = Get(filterExpression.Compile()).ToList();
+            var ids = Get(filterExpression.Compile()).ToList();
             await base.DeleteMany(filterExpression);
             SetCache(Cache.Except(ids));
             ids.ForEach(x => DataDeleteEvent(x.Id));

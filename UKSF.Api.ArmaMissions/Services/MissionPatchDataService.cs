@@ -48,23 +48,30 @@ namespace UKSF.Api.ArmaMissions.Services
                 EngineerIds = _variablesService.GetVariable("MISSIONS_ENGINEER_IDS").AsEnumerable()
             };
 
-            foreach (Unit unit in _unitContext.Get(x => x.Branch == UnitBranch.COMBAT).ToList())
+            foreach (var unit in _unitContext.Get(x => x.Branch == UnitBranch.COMBAT).ToList())
             {
                 MissionPatchData.Instance.Units.Add(new() { SourceUnit = unit });
             }
 
-            foreach (DomainAccount account in _accountContext.Get().Where(x => !string.IsNullOrEmpty(x.Rank) && _ranksService.IsSuperiorOrEqual(x.Rank, "Recruit")))
+            foreach (DomainAccount account in _accountContext.Get()
+                                                             .Where(x => !string.IsNullOrEmpty(x.Rank) && _ranksService.IsSuperiorOrEqual(x.Rank, "Recruit")))
             {
-                MissionPatchData.Instance.Players.Add(new() { DomainAccount = account, Rank = _ranksContext.GetSingle(account.Rank), Name = _displayNameService.GetDisplayName(account) });
+                MissionPatchData.Instance.Players.Add(
+                    new() { DomainAccount = account, Rank = _ranksContext.GetSingle(account.Rank), Name = _displayNameService.GetDisplayName(account) }
+                );
             }
 
             foreach (MissionUnit missionUnit in MissionPatchData.Instance.Units)
             {
                 missionUnit.Callsign = MissionDataResolver.ResolveCallsign(missionUnit, missionUnit.SourceUnit.Callsign);
-                missionUnit.Members = missionUnit.SourceUnit.Members.Select(x => MissionPatchData.Instance.Players.FirstOrDefault(y => y.DomainAccount.Id == x)).ToList();
+                missionUnit.Members = missionUnit.SourceUnit.Members.Select(x => MissionPatchData.Instance.Players.FirstOrDefault(y => y.DomainAccount.Id == x))
+                                                 .ToList();
                 if (missionUnit.SourceUnit.Roles.Count > 0)
                 {
-                    missionUnit.Roles = missionUnit.SourceUnit.Roles.ToDictionary(pair => pair.Key, pair => MissionPatchData.Instance.Players.FirstOrDefault(y => y.DomainAccount.Id == pair.Value));
+                    missionUnit.Roles = missionUnit.SourceUnit.Roles.ToDictionary(
+                        pair => pair.Key,
+                        pair => MissionPatchData.Instance.Players.FirstOrDefault(y => y.DomainAccount.Id == pair.Value)
+                    );
                 }
             }
 
@@ -77,13 +84,17 @@ namespace UKSF.Api.ArmaMissions.Services
             MissionUnit parent = MissionPatchData.Instance.Units.First(x => x.SourceUnit.Parent == ObjectId.Empty.ToString());
             MissionPatchData.Instance.OrderedUnits.Add(parent);
             InsertUnitChildren(MissionPatchData.Instance.OrderedUnits, parent);
-            MissionPatchData.Instance.OrderedUnits.RemoveAll(x => !MissionDataResolver.IsUnitPermanent(x) && x.Members.Count == 0 || string.IsNullOrEmpty(x.Callsign));
+            MissionPatchData.Instance.OrderedUnits.RemoveAll(
+                x => !MissionDataResolver.IsUnitPermanent(x) && x.Members.Count == 0 || string.IsNullOrEmpty(x.Callsign)
+            );
             MissionDataResolver.ResolveSpecialUnits(MissionPatchData.Instance.OrderedUnits);
         }
 
         private static void InsertUnitChildren(List<MissionUnit> newUnits, MissionUnit parent)
         {
-            List<MissionUnit> children = MissionPatchData.Instance.Units.Where(x => x.SourceUnit.Parent == parent.SourceUnit.Id).OrderBy(x => x.SourceUnit.Order).ToList();
+            List<MissionUnit> children = MissionPatchData.Instance.Units.Where(x => x.SourceUnit.Parent == parent.SourceUnit.Id)
+                                                         .OrderBy(x => x.SourceUnit.Order)
+                                                         .ToList();
             if (children.Count == 0)
             {
                 return;

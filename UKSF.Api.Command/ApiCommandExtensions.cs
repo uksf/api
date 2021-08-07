@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.EventHandlers;
+using UKSF.Api.Command.Mappers;
+using UKSF.Api.Command.Queries;
 using UKSF.Api.Command.Services;
 using UKSF.Api.Command.Signalr.Hubs;
 
@@ -12,7 +14,7 @@ namespace UKSF.Api.Command
     {
         public static IServiceCollection AddUksfCommand(this IServiceCollection services)
         {
-            return services.AddContexts().AddEventHandlers().AddServices();
+            return services.AddContexts().AddEventHandlers().AddServices().AddCommands().AddQueries().AddMappers();
         }
 
         private static IServiceCollection AddContexts(this IServiceCollection services)
@@ -38,6 +40,21 @@ namespace UKSF.Api.Command
                            .AddTransient<ILoaService, LoaService>()
                            .AddTransient<IOperationOrderService, OperationOrderService>()
                            .AddTransient<IOperationReportService, OperationReportService>();
+        }
+
+        private static IServiceCollection AddCommands(this IServiceCollection services)
+        {
+            return services;
+        }
+
+        private static IServiceCollection AddQueries(this IServiceCollection services)
+        {
+            return services.AddSingleton<IGetCommandMembersPagedQuery, GetCommandMembersPagedQuery>().AddSingleton<IGetPagedLoasQuery, GetPagedLoasQuery>();
+        }
+
+        private static IServiceCollection AddMappers(this IServiceCollection services)
+        {
+            return services.AddSingleton<ICommandMemberMapper, CommandMemberMapper>().AddSingleton<ILoaMapper, LoaMapper>();
         }
 
         public static void AddUksfCommandSignalr(this IEndpointRouteBuilder builder)

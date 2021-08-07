@@ -31,8 +31,16 @@ namespace UKSF.Api.Discord.Services
 
     public class DiscordService : IDiscordService, IDisposable
     {
-        private static readonly string[] OWNER_REPLIES = { "Why thank you {0} owo", "Thank you {0}, you're too kind", "Thank you so much {0} uwu", "Aw shucks {0} you're embarrassing me" };
-        private static readonly string[] REPLIES = { "Why thank you {0}", "Thank you {0}, you're too kind", "Thank you so much {0}", "Aw shucks {0} you're embarrassing me" };
+        private static readonly string[] OWNER_REPLIES =
+        {
+            "Why thank you {0} owo", "Thank you {0}, you're too kind", "Thank you so much {0} uwu", "Aw shucks {0} you're embarrassing me"
+        };
+
+        private static readonly string[] REPLIES =
+        {
+            "Why thank you {0}", "Thank you {0}, you're too kind", "Thank you so much {0}", "Aw shucks {0} you're embarrassing me"
+        };
+
         private static readonly string[] TRIGGERS = { "thank you", "thank", "best", "mvp", "love you", "appreciate you", "good" };
         private readonly IAccountContext _accountContext;
         private readonly IConfiguration _configuration;
@@ -256,7 +264,9 @@ namespace UKSF.Api.Discord.Services
                 }
                 catch (Exception)
                 {
-                    _logger.LogError($"Failed to update nickname for {(string.IsNullOrEmpty(user.Nickname) ? user.Username : user.Nickname)}. Must manually be changed to: {name}");
+                    _logger.LogError(
+                        $"Failed to update nickname for {(string.IsNullOrEmpty(user.Nickname) ? user.Username : user.Nickname)}. Must manually be changed to: {name}"
+                    );
                 }
             }
         }
@@ -264,7 +274,7 @@ namespace UKSF.Api.Discord.Services
         private void UpdateAccountRanks(DomainAccount domainAccount, ISet<string> allowedRoles)
         {
             string rank = domainAccount.Rank;
-            foreach (Rank x in _ranksContext.Get().Where(x => rank == x.Name))
+            foreach (var x in _ranksContext.Get().Where(x => rank == x.Name))
             {
                 allowedRoles.Add(x.DiscordRoleId);
             }
@@ -272,9 +282,9 @@ namespace UKSF.Api.Discord.Services
 
         private void UpdateAccountUnits(DomainAccount domainAccount, ISet<string> allowedRoles)
         {
-            Unit accountUnit = _unitsContext.GetSingle(x => x.Name == domainAccount.UnitAssignment);
-            List<Unit> accountUnits = _unitsContext.Get(x => x.Members.Contains(domainAccount.Id)).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
-            List<Unit> accountUnitParents = _unitsService.GetParents(accountUnit).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
+            var accountUnit = _unitsContext.GetSingle(x => x.Name == domainAccount.UnitAssignment);
+            var accountUnits = _unitsContext.Get(x => x.Members.Contains(domainAccount.Id)).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
+            var accountUnitParents = _unitsService.GetParents(accountUnit).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
             accountUnits.ForEach(x => allowedRoles.Add(x.DiscordRoleId));
             accountUnitParents.ForEach(x => allowedRoles.Add(x.DiscordRoleId));
         }
@@ -344,7 +354,14 @@ namespace UKSF.Api.Discord.Services
                 string associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
                 ulong instigatorId = await GetBannedAuditLogInstigator(user.Id);
                 string instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
-                _logger.LogDiscordEvent(DiscordUserEventType.BANNED, instigatorId.ToString(), instigatorName, string.Empty, user.Username, $"Banned, {associatedAccountMessage}");
+                _logger.LogDiscordEvent(
+                    DiscordUserEventType.BANNED,
+                    instigatorId.ToString(),
+                    instigatorName,
+                    string.Empty,
+                    user.Username,
+                    $"Banned, {associatedAccountMessage}"
+                );
             };
 
             _client.UserUnbanned += async (user, _) =>
@@ -352,7 +369,14 @@ namespace UKSF.Api.Discord.Services
                 string associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
                 ulong instigatorId = await GetUnbannedAuditLogInstigator(user.Id);
                 string instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
-                _logger.LogDiscordEvent(DiscordUserEventType.UNBANNED, instigatorId.ToString(), instigatorName, string.Empty, user.Username, $"Unbanned, {associatedAccountMessage}");
+                _logger.LogDiscordEvent(
+                    DiscordUserEventType.UNBANNED,
+                    instigatorId.ToString(),
+                    instigatorName,
+                    string.Empty,
+                    user.Username,
+                    $"Unbanned, {associatedAccountMessage}"
+                );
             };
 
             _client.MessagesBulkDeleted += async (cacheables, channel) =>
@@ -377,7 +401,14 @@ namespace UKSF.Api.Discord.Services
 
                 if (irretrievableMessageCount > 0)
                 {
-                    _logger.LogDiscordEvent(DiscordUserEventType.MESSAGE_DELETED, "0", "NO INSTIGATOR", channel.Name, string.Empty, $"{irretrievableMessageCount} irretrievable messages deleted");
+                    _logger.LogDiscordEvent(
+                        DiscordUserEventType.MESSAGE_DELETED,
+                        "0",
+                        "NO INSTIGATOR",
+                        channel.Name,
+                        string.Empty,
+                        $"{irretrievableMessageCount} irretrievable messages deleted"
+                    );
                 }
 
                 IEnumerable<IGrouping<string, DiscordDeletedMessageResult>> groupedMessages = messages.GroupBy(x => x.Name);
@@ -385,7 +416,14 @@ namespace UKSF.Api.Discord.Services
                 {
                     foreach (DiscordDeletedMessageResult result in groupedMessage)
                     {
-                        _logger.LogDiscordEvent(DiscordUserEventType.MESSAGE_DELETED, result.InstigatorId.ToString(), result.InstigatorName, channel.Name, result.Name, result.Message);
+                        _logger.LogDiscordEvent(
+                            DiscordUserEventType.MESSAGE_DELETED,
+                            result.InstigatorId.ToString(),
+                            result.InstigatorName,
+                            channel.Name,
+                            result.Name,
+                            result.Message
+                        );
                     }
                 }
             };
@@ -397,10 +435,24 @@ namespace UKSF.Api.Discord.Services
                 {
                     case ulong.MaxValue: return;
                     case 0:
-                        _logger.LogDiscordEvent(DiscordUserEventType.MESSAGE_DELETED, "0", "NO INSTIGATOR", channel.Name, string.Empty, $"Irretrievable message {cacheable.Id} deleted");
+                        _logger.LogDiscordEvent(
+                            DiscordUserEventType.MESSAGE_DELETED,
+                            "0",
+                            "NO INSTIGATOR",
+                            channel.Name,
+                            string.Empty,
+                            $"Irretrievable message {cacheable.Id} deleted"
+                        );
                         return;
                     default:
-                        _logger.LogDiscordEvent(DiscordUserEventType.MESSAGE_DELETED, result.InstigatorId.ToString(), result.InstigatorName, channel.Name, result.Name, result.Message);
+                        _logger.LogDiscordEvent(
+                            DiscordUserEventType.MESSAGE_DELETED,
+                            result.InstigatorId.ToString(),
+                            result.InstigatorName,
+                            channel.Name,
+                            result.Name,
+                            result.Message
+                        );
                         break;
                 }
             };
@@ -529,7 +581,11 @@ namespace UKSF.Api.Discord.Services
 
         private bool MessageIsWeeklyEventsMessage(IMessage message)
         {
-            return message != null && message.Content.Contains(_variablesService.GetVariable("DISCORD_FILTER_WEEKLY_EVENTS").AsString(), StringComparison.InvariantCultureIgnoreCase);
+            return message != null &&
+                   message.Content.Contains(
+                       _variablesService.GetVariable("DISCORD_FILTER_WEEKLY_EVENTS").AsString(),
+                       StringComparison.InvariantCultureIgnoreCase
+                   );
         }
 
         private string GetAssociatedAccountMessageFromUserId(ulong userId)
@@ -595,13 +651,16 @@ namespace UKSF.Api.Discord.Services
 
         private async Task<ulong> GetBannedAuditLogInstigator(ulong userId)
         {
-            IAsyncEnumerator<IReadOnlyCollection<RestAuditLogEntry>> auditLogsEnumerator = _guild.GetAuditLogsAsync(10, RequestOptions.Default, null, null, ActionType.Ban).GetAsyncEnumerator();
+            IAsyncEnumerator<IReadOnlyCollection<RestAuditLogEntry>> auditLogsEnumerator =
+                _guild.GetAuditLogsAsync(10, RequestOptions.Default, null, null, ActionType.Ban).GetAsyncEnumerator();
             try
             {
                 while (await auditLogsEnumerator.MoveNextAsync())
                 {
                     IReadOnlyCollection<RestAuditLogEntry> auditLogs = auditLogsEnumerator.Current;
-                    var auditUser = auditLogs.Where(x => x.Data is BanAuditLogData).Select(x => new { Data = x.Data as BanAuditLogData, x.User }).FirstOrDefault(x => x.Data.Target.Id == userId);
+                    var auditUser = auditLogs.Where(x => x.Data is BanAuditLogData)
+                                             .Select(x => new { Data = x.Data as BanAuditLogData, x.User })
+                                             .FirstOrDefault(x => x.Data.Target.Id == userId);
                     if (auditUser != null)
                     {
                         return auditUser.User.Id;
@@ -618,13 +677,16 @@ namespace UKSF.Api.Discord.Services
 
         private async Task<ulong> GetUnbannedAuditLogInstigator(ulong userId)
         {
-            IAsyncEnumerator<IReadOnlyCollection<RestAuditLogEntry>> auditLogsEnumerator = _guild.GetAuditLogsAsync(10, RequestOptions.Default, null, null, ActionType.Unban).GetAsyncEnumerator();
+            IAsyncEnumerator<IReadOnlyCollection<RestAuditLogEntry>> auditLogsEnumerator =
+                _guild.GetAuditLogsAsync(10, RequestOptions.Default, null, null, ActionType.Unban).GetAsyncEnumerator();
             try
             {
                 while (await auditLogsEnumerator.MoveNextAsync())
                 {
                     IReadOnlyCollection<RestAuditLogEntry> auditLogs = auditLogsEnumerator.Current;
-                    var auditUser = auditLogs.Where(x => x.Data is UnbanAuditLogData).Select(x => new { Data = x.Data as UnbanAuditLogData, x.User }).FirstOrDefault(x => x.Data.Target.Id == userId);
+                    var auditUser = auditLogs.Where(x => x.Data is UnbanAuditLogData)
+                                             .Select(x => new { Data = x.Data as UnbanAuditLogData, x.User })
+                                             .FirstOrDefault(x => x.Data.Target.Id == userId);
                     if (auditUser != null)
                     {
                         return auditUser.User.Id;

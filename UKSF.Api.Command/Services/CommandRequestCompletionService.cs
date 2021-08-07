@@ -110,10 +110,17 @@ namespace UKSF.Api.Command.Services
             if (_commandRequestService.IsRequestApproved(request.Id))
             {
                 string role = HandleRecruitToPrivate(request.Recipient, request.Value);
-                Notification notification = await _assignmentService.UpdateUnitRankAndRole(request.Recipient, rankString: request.Value, role: role, reason: request.Reason);
+                Notification notification = await _assignmentService.UpdateUnitRankAndRole(
+                    request.Recipient,
+                    rankString: request.Value,
+                    role: role,
+                    reason: request.Reason
+                );
                 _notificationsService.Add(notification);
                 await _commandRequestService.ArchiveRequest(request.Id);
-                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+                _logger.LogAudit(
+                    $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
+                );
             }
             else if (_commandRequestService.IsRequestRejected(request.Id))
             {
@@ -128,7 +135,9 @@ namespace UKSF.Api.Command.Services
             {
                 await _loaService.SetLoaState(request.Value, LoaReviewState.APPROVED);
                 await _commandRequestService.ArchiveRequest(request.Id);
-                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+                _logger.LogAudit(
+                    $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
+                );
             }
             else if (_commandRequestService.IsRequestRejected(request.Id))
             {
@@ -145,7 +154,11 @@ namespace UKSF.Api.Command.Services
                 DomainAccount domainAccount = _accountContext.GetSingle(request.Recipient);
                 Discharge discharge = new()
                 {
-                    Rank = domainAccount.Rank, Unit = domainAccount.UnitAssignment, Role = domainAccount.RoleAssignment, DischargedBy = request.DisplayRequester, Reason = request.Reason
+                    Rank = domainAccount.Rank,
+                    Unit = domainAccount.UnitAssignment,
+                    Role = domainAccount.RoleAssignment,
+                    DischargedBy = request.DisplayRequester,
+                    Reason = request.Reason
                 };
                 DischargeCollection dischargeCollection = _dischargeContext.GetSingle(x => x.AccountId == domainAccount.Id);
                 if (dischargeCollection == null)
@@ -179,7 +192,9 @@ namespace UKSF.Api.Command.Services
                 _notificationsService.Add(notification);
                 await _assignmentService.UnassignAllUnits(domainAccount.Id);
                 await _commandRequestService.ArchiveRequest(request.Id);
-                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+                _logger.LogAudit(
+                    $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
+                );
             }
             else if (_commandRequestService.IsRequestRejected(request.Id))
             {
@@ -199,7 +214,9 @@ namespace UKSF.Api.Command.Services
                 );
                 _notificationsService.Add(notification);
                 await _commandRequestService.ArchiveRequest(request.Id);
-                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+                _logger.LogAudit(
+                    $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
+                );
             }
             else if (_commandRequestService.IsRequestRejected(request.Id))
             {
@@ -217,7 +234,14 @@ namespace UKSF.Api.Command.Services
                     if (string.IsNullOrEmpty(request.Value))
                     {
                         await _assignmentService.UnassignAllUnitRoles(request.Recipient);
-                        _notificationsService.Add(new() { Owner = request.Recipient, Message = "You have been unassigned from all roles in all units", Icon = NotificationIcons.DEMOTION });
+                        _notificationsService.Add(
+                            new()
+                            {
+                                Owner = request.Recipient,
+                                Message = "You have been unassigned from all roles in all units",
+                                Icon = NotificationIcons.DEMOTION
+                            }
+                        );
                     }
                     else
                     {
@@ -226,7 +250,8 @@ namespace UKSF.Api.Command.Services
                             new()
                             {
                                 Owner = request.Recipient,
-                                Message = $"You have been unassigned as {AvsAn.Query(role).Article} {role} in {_unitsService.GetChainString(_unitsContext.GetSingle(request.Value))}",
+                                Message =
+                                    $"You have been unassigned as {AvsAn.Query(role).Article} {role} in {_unitsService.GetChainString(_unitsContext.GetSingle(request.Value))}",
                                 Icon = NotificationIcons.DEMOTION
                             }
                         );
@@ -247,7 +272,9 @@ namespace UKSF.Api.Command.Services
                 }
 
                 await _commandRequestService.ArchiveRequest(request.Id);
-                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} as {request.DisplayValue} in {request.Value} because '{request.Reason}'");
+                _logger.LogAudit(
+                    $"{request.Type} request approved for {request.DisplayRecipient} as {request.DisplayValue} in {request.Value} because '{request.Reason}'"
+                );
             }
             else if (_commandRequestService.IsRequestRejected(request.Id))
             {
@@ -260,9 +287,16 @@ namespace UKSF.Api.Command.Services
         {
             if (_commandRequestService.IsRequestApproved(request.Id))
             {
-                Unit unit = _unitsContext.GetSingle(request.Value);
+                var unit = _unitsContext.GetSingle(request.Value);
                 await _assignmentService.UnassignUnit(request.Recipient, unit.Id);
-                _notificationsService.Add(new() { Owner = request.Recipient, Message = $"You have been removed from {_unitsService.GetChainString(unit)}", Icon = NotificationIcons.DEMOTION });
+                _notificationsService.Add(
+                    new()
+                    {
+                        Owner = request.Recipient,
+                        Message = $"You have been removed from {_unitsService.GetChainString(unit)}",
+                        Icon = NotificationIcons.DEMOTION
+                    }
+                );
                 await _commandRequestService.ArchiveRequest(request.Id);
                 _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} because '{request.Reason}'");
             }
@@ -277,11 +311,13 @@ namespace UKSF.Api.Command.Services
         {
             if (_commandRequestService.IsRequestApproved(request.Id))
             {
-                Unit unit = _unitsContext.GetSingle(request.Value);
+                var unit = _unitsContext.GetSingle(request.Value);
                 Notification notification = await _assignmentService.UpdateUnitRankAndRole(request.Recipient, unit.Name, reason: request.Reason);
                 _notificationsService.Add(notification);
                 await _commandRequestService.ArchiveRequest(request.Id);
-                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+                _logger.LogAudit(
+                    $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
+                );
             }
             else if (_commandRequestService.IsRequestRejected(request.Id))
             {
@@ -310,7 +346,9 @@ namespace UKSF.Api.Command.Services
 
                 _logger.LogAudit($"{_httpContextService.GetUserId()} reinstated {dischargeCollection.Name}'s membership");
                 await _commandRequestService.ArchiveRequest(request.Id);
-                _logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+                _logger.LogAudit(
+                    $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
+                );
             }
             else if (_commandRequestService.IsRequestRejected(request.Id))
             {

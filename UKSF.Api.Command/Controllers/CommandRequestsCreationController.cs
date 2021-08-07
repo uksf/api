@@ -136,7 +136,7 @@ namespace UKSF.Api.Command.Controllers
         [HttpPut("unitrole"), Authorize, Permissions(Permissions.COMMAND)]
         public async Task CreateRequestUnitRole([FromBody] CommandRequest request)
         {
-            Unit unit = _unitsContext.GetSingle(request.Value);
+            var unit = _unitsContext.GetSingle(request.Value);
             bool recipientHasUnitRole = _unitsService.RolesHasMember(unit, request.Recipient);
             if (!recipientHasUnitRole && request.SecondaryValue == "None")
             {
@@ -169,7 +169,7 @@ namespace UKSF.Api.Command.Controllers
         [HttpPut("unitremoval"), Authorize, Permissions(Permissions.COMMAND)]
         public async Task CreateRequestUnitRemoval([FromBody] CommandRequest request)
         {
-            Unit removeUnit = _unitsContext.GetSingle(request.Value);
+            var removeUnit = _unitsContext.GetSingle(request.Value);
             if (removeUnit.Branch == UnitBranch.COMBAT)
             {
                 throw new BadRequestException("To remove from a combat unit, use a Transfer request");
@@ -190,7 +190,7 @@ namespace UKSF.Api.Command.Controllers
         [HttpPut("transfer"), Authorize, Permissions(Permissions.COMMAND)]
         public async Task CreateRequestTransfer([FromBody] CommandRequest request)
         {
-            Unit toUnit = _unitsContext.GetSingle(request.Value);
+            var toUnit = _unitsContext.GetSingle(request.Value);
             request.Requester = _httpContextService.GetUserId();
             request.DisplayValue = toUnit.Name;
             if (toUnit.Branch == UnitBranch.AUXILIARY)

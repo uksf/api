@@ -33,7 +33,7 @@ namespace UKSF.Tests.Unit.Data
             mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<CommandRequest>(It.IsAny<string>()), Times.Exactly(2));
             mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<ConfirmationCode>(It.IsAny<string>()), Times.Once);
             mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<LauncherFile>(It.IsAny<string>()), Times.Once);
-            mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<Loa>(It.IsAny<string>()), Times.Once);
+            mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<DomainLoa>(It.IsAny<string>()), Times.Once);
             mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<Notification>(It.IsAny<string>()), Times.Once);
             mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<ScheduledJob>(It.IsAny<string>()), Times.Once);
         }

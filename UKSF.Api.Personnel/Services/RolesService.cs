@@ -6,7 +6,7 @@ namespace UKSF.Api.Personnel.Services
     public interface IRolesService
     {
         int Sort(string nameA, string nameB);
-        Role GetUnitRoleByOrder(int order);
+        DomainRole GetUnitRoleByOrder(int order);
         string GetCommanderRoleName();
     }
 
@@ -21,15 +21,15 @@ namespace UKSF.Api.Personnel.Services
 
         public int Sort(string nameA, string nameB)
         {
-            Role roleA = _rolesContext.GetSingle(nameA);
-            Role roleB = _rolesContext.GetSingle(nameB);
+            var roleA = _rolesContext.GetSingle(nameA);
+            var roleB = _rolesContext.GetSingle(nameB);
             int roleOrderA = roleA?.Order ?? 0;
             int roleOrderB = roleB?.Order ?? 0;
             return roleOrderA < roleOrderB ? -1 :
                 roleOrderA > roleOrderB    ? 1 : 0;
         }
 
-        public Role GetUnitRoleByOrder(int order)
+        public DomainRole GetUnitRoleByOrder(int order)
         {
             return _rolesContext.GetSingle(x => x.RoleType == RoleType.UNIT && x.Order == order);
         }

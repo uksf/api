@@ -23,9 +23,9 @@ namespace UKSF.Tests.Unit.Services.Personnel
         [Fact]
         public void ShouldGetCorrectIndex()
         {
-            Rank rank1 = new() { Name = "Private" };
-            Rank rank2 = new() { Name = "Recruit" };
-            List<Rank> mockCollection = new() { rank1, rank2 };
+            DomainRank rank1 = new() { Name = "Private" };
+            DomainRank rank2 = new() { Name = "Recruit" };
+            List<DomainRank> mockCollection = new() { rank1, rank2 };
 
             _mockRanksDataService.Setup(x => x.Get()).Returns(mockCollection);
             _mockRanksDataService.Setup(x => x.GetSingle("Private")).Returns(rank1);
@@ -38,9 +38,9 @@ namespace UKSF.Tests.Unit.Services.Personnel
         [Fact]
         public void ShouldGetCorrectSortValueByName()
         {
-            Rank rank1 = new() { Name = "Private", Order = 0 };
-            Rank rank2 = new() { Name = "Recruit", Order = 1 };
-            List<Rank> mockCollection = new() { rank1, rank2 };
+            DomainRank rank1 = new() { Name = "Private", Order = 0 };
+            DomainRank rank2 = new() { Name = "Recruit", Order = 1 };
+            List<DomainRank> mockCollection = new() { rank1, rank2 };
 
             _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
@@ -62,10 +62,10 @@ namespace UKSF.Tests.Unit.Services.Personnel
         [Fact]
         public void ShouldReturnInvalidIndexGetIndexWhenRankNotFound()
         {
-            _mockRanksDataService.Setup(x => x.Get()).Returns(new List<Rank>());
+            _mockRanksDataService.Setup(x => x.Get()).Returns(new List<DomainRank>());
 
             int subject = _ranksService.GetRankOrder("Private");
-            _mockRanksDataService.Setup(x => x.GetSingle("Private")).Returns<Rank>(null);
+            _mockRanksDataService.Setup(x => x.GetSingle("Private")).Returns<DomainRank>(null);
 
             subject.Should().Be(-1);
         }
@@ -89,10 +89,10 @@ namespace UKSF.Tests.Unit.Services.Personnel
             DomainAccount account4 = new() { Rank = "Private" };
             List<DomainAccount> subject = new() { account1, account2, account3, account4 };
 
-            Rank rank1 = new() { Name = "Private", Order = 0 };
-            Rank rank2 = new() { Name = "Recruit", Order = 1 };
-            Rank rank3 = new() { Name = "Candidate", Order = 2 };
-            List<Rank> mockCollection = new() { rank1, rank2, rank3 };
+            DomainRank rank1 = new() { Name = "Private", Order = 0 };
+            DomainRank rank2 = new() { Name = "Recruit", Order = 1 };
+            DomainRank rank3 = new() { Name = "Candidate", Order = 2 };
+            List<DomainRank> mockCollection = new() { rank1, rank2, rank3 };
 
             _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
@@ -101,13 +101,14 @@ namespace UKSF.Tests.Unit.Services.Personnel
             subject.Should().ContainInOrder(account1, account4, account3, account2);
         }
 
-        [Theory, InlineData("Private", "Recruit", true), InlineData("Recruit", "Private", false), InlineData("Corporal", "Private", false), InlineData("Sergeant", "Corporal", false)]
+        [Theory, InlineData("Private", "Recruit", true), InlineData("Recruit", "Private", false), InlineData("Corporal", "Private", false),
+         InlineData("Sergeant", "Corporal", false)]
         public void ShouldResolveSuperior(string rankName1, string rankName2, bool expected)
         {
-            Rank rank1 = new() { Name = "Private", Order = 0 };
-            Rank rank2 = new() { Name = "Recruit", Order = 1 };
-            Rank rank3 = new() { Name = "Candidate", Order = 2 };
-            List<Rank> mockCollection = new() { rank1, rank2, rank3 };
+            DomainRank rank1 = new() { Name = "Private", Order = 0 };
+            DomainRank rank2 = new() { Name = "Recruit", Order = 1 };
+            DomainRank rank3 = new() { Name = "Candidate", Order = 2 };
+            List<DomainRank> mockCollection = new() { rank1, rank2, rank3 };
 
             _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
@@ -119,10 +120,10 @@ namespace UKSF.Tests.Unit.Services.Personnel
         [Theory, InlineData("Private", "Private", true), InlineData("Recruit", "Private", false), InlineData("Corporal", "Private", false)]
         public void ShouldResolveEqual(string rankName1, string rankName2, bool expected)
         {
-            Rank rank1 = new() { Name = "Private", Order = 0 };
-            Rank rank2 = new() { Name = "Recruit", Order = 1 };
-            Rank rank3 = new() { Name = "Candidate", Order = 2 };
-            List<Rank> mockCollection = new() { rank1, rank2, rank3 };
+            DomainRank rank1 = new() { Name = "Private", Order = 0 };
+            DomainRank rank2 = new() { Name = "Recruit", Order = 1 };
+            DomainRank rank3 = new() { Name = "Candidate", Order = 2 };
+            List<DomainRank> mockCollection = new() { rank1, rank2, rank3 };
 
             _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
@@ -131,13 +132,14 @@ namespace UKSF.Tests.Unit.Services.Personnel
             subject.Should().Be(expected);
         }
 
-        [Theory, InlineData("Private", "Private", true), InlineData("Private", "Recruit", true), InlineData("Recruit", "Private", false), InlineData("Corporal", "Private", false)]
+        [Theory, InlineData("Private", "Private", true), InlineData("Private", "Recruit", true), InlineData("Recruit", "Private", false),
+         InlineData("Corporal", "Private", false)]
         public void ShouldResolveSuperiorOrEqual(string rankName1, string rankName2, bool expected)
         {
-            Rank rank1 = new() { Name = "Private", Order = 0 };
-            Rank rank2 = new() { Name = "Recruit", Order = 1 };
-            Rank rank3 = new() { Name = "Candidate", Order = 2 };
-            List<Rank> mockCollection = new() { rank1, rank2, rank3 };
+            DomainRank rank1 = new() { Name = "Private", Order = 0 };
+            DomainRank rank2 = new() { Name = "Recruit", Order = 1 };
+            DomainRank rank3 = new() { Name = "Candidate", Order = 2 };
+            List<DomainRank> mockCollection = new() { rank1, rank2, rank3 };
 
             _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 

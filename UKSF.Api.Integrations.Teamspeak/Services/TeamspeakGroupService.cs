@@ -94,15 +94,17 @@ namespace UKSF.Api.Teamspeak.Services
 
         private void ResolveUnitGroup(DomainAccount domainAccount, ISet<int> memberGroups)
         {
-            Unit accountUnit = _unitsContext.GetSingle(x => x.Name == domainAccount.UnitAssignment);
-            Unit elcom = _unitsService.GetAuxilliaryRoot();
+            var accountUnit = _unitsContext.GetSingle(x => x.Name == domainAccount.UnitAssignment);
+            var elcom = _unitsService.GetAuxilliaryRoot();
 
             if (accountUnit.Parent == ObjectId.Empty.ToString())
             {
                 memberGroups.Add(accountUnit.TeamspeakGroup.ToInt());
             }
 
-            int group = elcom.Members.Contains(domainAccount.Id) ? _variablesService.GetVariable("TEAMSPEAK_GID_ELCOM").AsInt() : accountUnit.TeamspeakGroup.ToInt();
+            int group = elcom.Members.Contains(domainAccount.Id)
+                ? _variablesService.GetVariable("TEAMSPEAK_GID_ELCOM").AsInt()
+                : accountUnit.TeamspeakGroup.ToInt();
             if (group == 0)
             {
                 ResolveParentUnitGroup(domainAccount, memberGroups);
@@ -115,8 +117,10 @@ namespace UKSF.Api.Teamspeak.Services
 
         private void ResolveParentUnitGroup(DomainAccount domainAccount, ISet<int> memberGroups)
         {
-            Unit accountUnit = _unitsContext.GetSingle(x => x.Name == domainAccount.UnitAssignment);
-            Unit parentUnit = _unitsService.GetParents(accountUnit).Skip(1).FirstOrDefault(x => !string.IsNullOrEmpty(x.TeamspeakGroup) && !memberGroups.Contains(x.TeamspeakGroup.ToInt()));
+            var accountUnit = _unitsContext.GetSingle(x => x.Name == domainAccount.UnitAssignment);
+            var parentUnit = _unitsService.GetParents(accountUnit)
+                                          .Skip(1)
+                                          .FirstOrDefault(x => !string.IsNullOrEmpty(x.TeamspeakGroup) && !memberGroups.Contains(x.TeamspeakGroup.ToInt()));
             if (parentUnit != null && parentUnit.Parent != ObjectId.Empty.ToString())
             {
                 memberGroups.Add(parentUnit.TeamspeakGroup.ToInt());
@@ -129,9 +133,10 @@ namespace UKSF.Api.Teamspeak.Services
 
         private void ResolveAuxiliaryUnitGroups(MongoObject account, ISet<int> memberGroups)
         {
-            IEnumerable<Unit> accountUnits = _unitsContext.Get(x => x.Parent != ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY && x.Members.Contains(account.Id))
-                                                          .Where(x => !string.IsNullOrEmpty(x.TeamspeakGroup));
-            foreach (Unit unit in accountUnits)
+            var accountUnits = _unitsContext
+                               .Get(x => x.Parent != ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY && x.Members.Contains(account.Id))
+                               .Where(x => !string.IsNullOrEmpty(x.TeamspeakGroup));
+            foreach (var unit in accountUnits)
             {
                 memberGroups.Add(unit.TeamspeakGroup.ToInt());
             }

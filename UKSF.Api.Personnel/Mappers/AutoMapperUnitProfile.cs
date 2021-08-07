@@ -7,7 +7,7 @@ namespace UKSF.Api.Personnel.Mappers
     {
         public AutoMapperUnitProfile()
         {
-            CreateMap<Unit, ResponseUnit>();
+            CreateMap<DomainUnit, ResponseUnit>();
         }
     }
 }

@@ -10,7 +10,7 @@ namespace UKSF.Api.ArmaMissions.Models
         public IEnumerable<string> MedicIds;
         public List<MissionUnit> OrderedUnits;
         public List<MissionPlayer> Players;
-        public List<Rank> Ranks;
+        public List<DomainRank> Ranks;
         public List<MissionUnit> Units;
     }
 }

@@ -4,7 +4,7 @@ namespace UKSF.Api.Personnel.Models
 {
     public class RolesDataset
     {
-        public IEnumerable<Role> IndividualRoles;
-        public IEnumerable<Role> UnitRoles;
+        public IEnumerable<DomainRole> IndividualRoles;
+        public IEnumerable<DomainRole> UnitRoles;
     }
 }

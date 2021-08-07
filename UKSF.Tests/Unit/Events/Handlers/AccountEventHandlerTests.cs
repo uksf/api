@@ -29,7 +29,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
             _eventBus = new EventBus();
 
             mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainAccount>(It.IsAny<string>()));
-            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<Api.Personnel.Models.Unit>(It.IsAny<string>()));
+            mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainUnit>(It.IsAny<string>()));
 
             _accountDataEventHandler = new(_eventBus, _mockAccountHub.Object, _mockLoggingService.Object);
         }
@@ -48,7 +48,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
             _accountDataEventHandler.Init();
 
             _eventBus.Send(new(EventType.UPDATE, new ContextEventData<DomainAccount>(null, null)));
-            _eventBus.Send(new(EventType.UPDATE, new ContextEventData<Api.Personnel.Models.Unit>(null, null)));
+            _eventBus.Send(new(EventType.UPDATE, new ContextEventData<DomainUnit>(null, null)));
 
             _mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Exactly(2));
         }
@@ -67,8 +67,8 @@ namespace UKSF.Tests.Unit.Events.Handlers
 
             _eventBus.Send(new(EventType.ADD, new ContextEventData<DomainAccount>(null, null)));
             _eventBus.Send(new(EventType.DELETE, new ContextEventData<DomainAccount>(null, null)));
-            _eventBus.Send(new(EventType.ADD, new ContextEventData<Api.Personnel.Models.Unit>(null, null)));
-            _eventBus.Send(new(EventType.DELETE, new ContextEventData<Api.Personnel.Models.Unit>(null, null)));
+            _eventBus.Send(new(EventType.ADD, new ContextEventData<DomainUnit>(null, null)));
+            _eventBus.Send(new(EventType.DELETE, new ContextEventData<DomainUnit>(null, null)));
 
             mockAccountClient.Verify(x => x.ReceiveAccountUpdate(), Times.Never);
         }
@@ -86,7 +86,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
             _accountDataEventHandler.Init();
 
             _eventBus.Send(new(EventType.UPDATE, new ContextEventData<DomainAccount>("1", null)));
-            _eventBus.Send(new(EventType.UPDATE, new ContextEventData<Api.Personnel.Models.Unit>("2", null)));
+            _eventBus.Send(new(EventType.UPDATE, new ContextEventData<DomainUnit>("2", null)));
 
             mockAccountClient.Verify(x => x.ReceiveAccountUpdate(), Times.Exactly(2));
         }

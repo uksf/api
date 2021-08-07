@@ -8,6 +8,6 @@ namespace UKSF.Api.ArmaMissions.Models
         public string Callsign;
         public List<MissionPlayer> Members = new();
         public Dictionary<string, MissionPlayer> Roles = new();
-        public Unit SourceUnit;
+        public DomainUnit SourceUnit;
     }
 }

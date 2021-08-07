@@ -4,6 +4,7 @@
         <TargetFramework>net5.0</TargetFramework>
         <OutputType>Library</OutputType>
         <LangVersion>default</LangVersion>
+        <NoWarn>CA1826</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

@@ -5,13 +5,12 @@ using System.Threading.Tasks;
 using MongoDB.Driver;
 using UKSF.Api.Command.Context;
 using UKSF.Api.Command.Models;
-using UKSF.Api.Personnel.Models;
 
 namespace UKSF.Api.Command.Services
 {
     public interface ILoaService
     {
-        IEnumerable<Loa> Get(List<string> ids);
+        IEnumerable<DomainLoa> Get(List<string> ids);
         Task<string> Add(CommandRequestLoa requestBase);
         Task SetLoaState(string id, LoaReviewState state);
         bool IsLoaCovered(string id, DateTime eventStart);
@@ -26,14 +25,14 @@ namespace UKSF.Api.Command.Services
             _loaContext = loaContext;
         }
 
-        public IEnumerable<Loa> Get(List<string> ids)
+        public IEnumerable<DomainLoa> Get(List<string> ids)
         {
-            return _loaContext.Get(x => ids.Contains(x.Recipient) && x.End > DateTime.Now.AddDays(-30));
+            return _loaContext.Get(x => ids.Contains(x.Recipient));
         }
 
         public async Task<string> Add(CommandRequestLoa requestBase)
         {
-            Loa loa = new()
+            DomainLoa domainLoa = new()
             {
                 Submitted = DateTime.Now,
                 Recipient = requestBase.Recipient,
@@ -43,13 +42,13 @@ namespace UKSF.Api.Command.Services
                 Emergency = !string.IsNullOrEmpty(requestBase.Emergency) && bool.Parse(requestBase.Emergency),
                 Late = !string.IsNullOrEmpty(requestBase.Late) && bool.Parse(requestBase.Late)
             };
-            await _loaContext.Add(loa);
-            return loa.Id;
+            await _loaContext.Add(domainLoa);
+            return domainLoa.Id;
         }
 
         public async Task SetLoaState(string id, LoaReviewState state)
         {
-            await _loaContext.Update(id, Builders<Loa>.Update.Set(x => x.State, state));
+            await _loaContext.Update(id, Builders<DomainLoa>.Update.Set(x => x.State, state));
         }
 
         public bool IsLoaCovered(string id, DateTime eventStart)

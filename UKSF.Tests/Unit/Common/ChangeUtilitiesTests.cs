@@ -25,7 +25,10 @@ namespace UKSF.Tests.Unit.Common
                 Background = "I like trains",
                 Dob = dobBefore,
                 Rank = "Private",
-                Application = new() { State = ApplicationState.WAITING, Recruiter = "Bob", ApplicationCommentThread = "thread1", DateCreated = new(2020, 5, 2, 10, 34, 39) },
+                Application = new()
+                {
+                    State = ApplicationState.WAITING, Recruiter = "Bob", ApplicationCommentThread = "thread1", DateCreated = new(2020, 5, 2, 10, 34, 39)
+                },
                 RolePreferences = new() { "Aviatin", "NCO" }
             };
             DomainAccount updated = new()
@@ -35,7 +38,10 @@ namespace UKSF.Tests.Unit.Common
                 Lastname = "Bob",
                 Background = "I like planes",
                 Dob = dobAfter,
-                Application = new() { State = ApplicationState.ACCEPTED, Recruiter = "Bob", DateCreated = new(2020, 5, 2, 10, 34, 39), DateAccepted = dateAccepted },
+                Application = new()
+                {
+                    State = ApplicationState.ACCEPTED, Recruiter = "Bob", DateCreated = new(2020, 5, 2, 10, 34, 39), DateAccepted = dateAccepted
+                },
                 RolePreferences = new() { "Aviation", "Officer" }
             };
 
@@ -83,7 +89,8 @@ namespace UKSF.Tests.Unit.Common
 
             string subject = original.Changes(updated);
 
-            subject.Should().Be("\n\t'Dictionary' changed:" + "\n\t\tadded: '[1, variable1]'" + "\n\t\tadded: '[2, variable2]'" + "\n\t\tremoved: '[1, variable0]'");
+            subject.Should()
+                   .Be("\n\t'Dictionary' changed:" + "\n\t\tadded: '[1, variable1]'" + "\n\t\tadded: '[2, variable2]'" + "\n\t\tremoved: '[1, variable0]'");
         }
 
         [Fact]
@@ -137,12 +144,18 @@ namespace UKSF.Tests.Unit.Common
         public void Should_detect_changes_for_simple_object()
         {
             string id = ObjectId.GenerateNewId().ToString();
-            Rank original = new() { Id = id, Abbreviation = "Pte", Name = "Privte", Order = 1 };
-            Rank updated = new() { Id = id, Name = "Private", Order = 5, TeamspeakGroup = "4" };
+            DomainRank original = new() { Id = id, Abbreviation = "Pte", Name = "Privte", Order = 1 };
+            DomainRank updated = new() { Id = id, Name = "Private", Order = 5, TeamspeakGroup = "4" };
 
             string subject = original.Changes(updated);
 
-            subject.Should().Be("\n\t'TeamspeakGroup' added as '4'" + "\n\t'Name' changed from 'Privte' to 'Private'" + "\n\t'Order' changed from '1' to '5'" + "\n\t'Abbreviation' as 'Pte' removed");
+            subject.Should()
+                   .Be(
+                       "\n\t'TeamspeakGroup' added as '4'" +
+                       "\n\t'Name' changed from 'Privte' to 'Private'" +
+                       "\n\t'Order' changed from '1' to '5'" +
+                       "\n\t'Abbreviation' as 'Pte' removed"
+                   );
         }
 
         [Fact]
@@ -161,8 +174,8 @@ namespace UKSF.Tests.Unit.Common
         public void Should_do_nothing_when_field_is_null()
         {
             string id = ObjectId.GenerateNewId().ToString();
-            Rank original = new() { Id = id, Abbreviation = null };
-            Rank updated = new() { Id = id, Abbreviation = null };
+            DomainRank original = new() { Id = id, Abbreviation = null };
+            DomainRank updated = new() { Id = id, Abbreviation = null };
 
             string subject = original.Changes(updated);
 
@@ -172,7 +185,7 @@ namespace UKSF.Tests.Unit.Common
         [Fact]
         public void Should_do_nothing_when_null()
         {
-            string subject = ((Rank) null).Changes(null);
+            var subject = ((DomainRank)null).Changes(null);
 
             subject.Should().Be("\tNo changes");
         }
@@ -181,8 +194,8 @@ namespace UKSF.Tests.Unit.Common
         public void Should_do_nothing_when_objects_are_equal()
         {
             string id = ObjectId.GenerateNewId().ToString();
-            Rank original = new() { Id = id, Abbreviation = "Pte" };
-            Rank updated = new() { Id = id, Abbreviation = "Pte" };
+            DomainRank original = new() { Id = id, Abbreviation = "Pte" };
+            DomainRank updated = new() { Id = id, Abbreviation = "Pte" };
 
             string subject = original.Changes(updated);
 

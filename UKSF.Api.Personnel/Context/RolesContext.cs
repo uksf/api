@@ -7,22 +7,22 @@ using UKSF.Api.Shared.Context;
 
 namespace UKSF.Api.Personnel.Context
 {
-    public interface IRolesContext : IMongoContext<Role>, ICachedMongoContext
+    public interface IRolesContext : IMongoContext<DomainRole>, ICachedMongoContext
     {
-        new IEnumerable<Role> Get();
-        new Role GetSingle(string name);
+        new IEnumerable<DomainRole> Get();
+        new DomainRole GetSingle(string name);
     }
 
-    public class RolesContext : CachedMongoContext<Role>, IRolesContext
+    public class RolesContext : CachedMongoContext<DomainRole>, IRolesContext
     {
         public RolesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "roles") { }
 
-        public override Role GetSingle(string name)
+        public override DomainRole GetSingle(string name)
         {
             return GetSingle(x => x.Name == name);
         }
 
-        protected override void SetCache(IEnumerable<Role> newCollection)
+        protected override void SetCache(IEnumerable<DomainRole> newCollection)
         {
             lock (LockObject)
             {

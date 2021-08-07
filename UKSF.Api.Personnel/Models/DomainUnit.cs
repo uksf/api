@@ -5,10 +5,13 @@ using UKSF.Api.Base.Models;
 
 namespace UKSF.Api.Personnel.Models
 {
-    public class Unit : MongoObject
+    // TODO: Migrate object names to names with Id
+    public class DomainUnit : MongoObject
     {
         public UnitBranch Branch = UnitBranch.COMBAT;
         public string Callsign;
+
+        [BsonIgnore] public List<DomainUnit> Children;
         public string DiscordRoleId;
         public string Icon;
         [BsonRepresentation(BsonType.ObjectId)] public List<string> Members = new();
@@ -26,6 +29,19 @@ namespace UKSF.Api.Personnel.Models
         }
     }
 
+    public class Unit
+    {
+        public List<Unit> Children;
+        public string Id;
+        public List<string> MemberIds;
+        public string MemberRole;
+        public string Name;
+        public int Order;
+        public Unit ParentUnit;
+        public bool PreferShortname;
+        public string Shortname;
+    }
+
     public enum UnitBranch
     {
         COMBAT,
@@ -33,7 +49,7 @@ namespace UKSF.Api.Personnel.Models
     }
 
     // TODO: Cleaner way of doing this? Inside controllers?
-    public class ResponseUnit : Unit
+    public class ResponseUnit : DomainUnit
     {
         public string Code;
         public string ParentName;
@@ -47,17 +63,10 @@ namespace UKSF.Api.Personnel.Models
         public string UnitRole;
     }
 
-    public class ResponseUnitTree
+    public class UnitTreeDataSet
     {
-        public IEnumerable<ResponseUnitTree> Children;
-        public string Id;
-        public string Name;
-    }
-
-    public class ResponseUnitTreeDataSet
-    {
-        public IEnumerable<ResponseUnitTree> AuxiliaryNodes;
-        public IEnumerable<ResponseUnitTree> CombatNodes;
+        public IEnumerable<Unit> AuxiliaryNodes;
+        public IEnumerable<Unit> CombatNodes;
     }
 
     public class ResponseUnitChartNode

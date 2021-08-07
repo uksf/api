@@ -23,8 +23,10 @@ namespace UKSF.Api.Personnel.Services
 
         public string GetDisplayName(DomainAccount domainAccount)
         {
-            Rank rank = domainAccount.Rank != null ? _ranksContext.GetSingle(domainAccount.Rank) : null;
-            return rank == null ? $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}" : $"{rank.Abbreviation}.{domainAccount.Lastname}.{domainAccount.Firstname[0]}";
+            var rank = domainAccount.Rank != null ? _ranksContext.GetSingle(domainAccount.Rank) : null;
+            return rank == null
+                ? $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}"
+                : $"{rank.Abbreviation}.{domainAccount.Lastname}.{domainAccount.Firstname[0]}";
         }
 
         public string GetDisplayName(string id)

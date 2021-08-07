@@ -69,17 +69,18 @@ namespace UKSF.Api.Personnel
 
         private static IServiceCollection AddQueries(this IServiceCollection services)
         {
-            return services.AddSingleton<IAllNationsByAccountQuery, AllNationsByAccountQuery>();
+            return services.AddSingleton<IAllNationsByAccountQuery, AllNationsByAccountQuery>().AddSingleton<IGetUnitTreeQuery, GetUnitTreeQuery>();
         }
 
         private static IServiceCollection AddMappers(this IServiceCollection services)
         {
-            return services.AddSingleton<IAccountMapper, AccountMapper>();
+            return services.AddSingleton<IAccountMapper, AccountMapper>().AddSingleton<IUnitTreeMapper, UnitTreeMapper>();
         }
 
         private static IServiceCollection AddActions(this IServiceCollection services)
         {
-            return services.AddSingleton<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>().AddSingleton<IActionPruneNotifications, ActionPruneNotifications>();
+            return services.AddSingleton<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>()
+                           .AddSingleton<IActionPruneNotifications, ActionPruneNotifications>();
         }
 
         public static void AddUksfPersonnelSignalr(this IEndpointRouteBuilder builder)

@@ -7,7 +7,7 @@ namespace UKSF.Api.ArmaMissions.Models
         public DomainAccount DomainAccount;
         public string Name;
         public string ObjectClass;
-        public Rank Rank;
+        public DomainRank Rank;
         public MissionUnit Unit;
     }
 }

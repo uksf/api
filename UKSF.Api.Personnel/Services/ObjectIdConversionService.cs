@@ -1,5 +1,4 @@
 ﻿using UKSF.Api.Personnel.Context;
-using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Personnel.Services
@@ -33,7 +32,7 @@ namespace UKSF.Api.Personnel.Services
                 string displayString = _displayNameService.GetDisplayName(objectId);
                 if (displayString == objectId)
                 {
-                    Unit unit = _unitsContext.GetSingle(x => x.Id == objectId);
+                    var unit = _unitsContext.GetSingle(x => x.Id == objectId);
                     if (unit != null)
                     {
                         displayString = unit.Name;
