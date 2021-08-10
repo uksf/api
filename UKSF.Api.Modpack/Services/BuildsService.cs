@@ -116,7 +116,11 @@ namespace UKSF.Api.Modpack.Services
                 Steps = _buildStepService.GetSteps(GameEnvironment.RC)
             };
 
-            SetEnvironmentVariables(build, previousBuild);
+            if (previousBuild != null)
+            {
+                SetEnvironmentVariables(build, previousBuild);
+            }
+
             await _buildsContext.Add(build);
             return build;
         }
