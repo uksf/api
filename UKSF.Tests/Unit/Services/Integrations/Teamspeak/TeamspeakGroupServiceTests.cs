@@ -71,7 +71,7 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
         [Fact]
         public async Task Should_add_correct_groups_for_candidate()
         {
-            string id = ObjectId.GenerateNewId().ToString();
+            var id = ObjectId.GenerateNewId().ToString();
 
             _mockRanksContext.Setup(x => x.GetSingle("Candidate")).Returns(new DomainRank { Name = "Candidate", TeamspeakGroup = "5" });
 
@@ -81,7 +81,7 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
                 2
             );
 
-            _addedGroups.Should().BeEquivalentTo(5);
+            _addedGroups.Should().BeEquivalentTo(new List<int> { 5 });
             _removedGroups.Should().BeEmpty();
         }
 
@@ -90,16 +90,16 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
         {
             await _teamspeakGroupService.UpdateAccountGroups(new() { MembershipState = MembershipState.DISCHARGED }, new List<int>(), 2);
 
-            _addedGroups.Should().BeEquivalentTo(2);
+            _addedGroups.Should().BeEquivalentTo(new List<int> { 2 });
             _removedGroups.Should().BeEmpty();
         }
 
         [Fact]
         public async Task Should_add_correct_groups_for_elcom()
         {
-            string id = ObjectId.GenerateNewId().ToString();
-            string parentId = ObjectId.GenerateNewId().ToString();
-            string parentParentId = ObjectId.GenerateNewId().ToString();
+            var id = ObjectId.GenerateNewId().ToString();
+            var parentId = ObjectId.GenerateNewId().ToString();
+            var parentParentId = ObjectId.GenerateNewId().ToString();
             DomainUnit unit = new() { Name = "1 Section", TeamspeakGroup = "6", Members = new() { id }, Parent = parentId };
             DomainUnit unitParent = new() { Id = parentId, Name = "SFSG", TeamspeakGroup = "7", Parent = parentParentId };
             DomainUnit unitParentParent = new() { Id = parentParentId, Name = "UKSF", TeamspeakGroup = "8" };
@@ -122,15 +122,15 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
                 2
             );
 
-            _addedGroups.Should().BeEquivalentTo(3, 4, 5, 7, 9);
+            _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 4, 5, 7, 9 });
             _removedGroups.Should().BeEmpty();
         }
 
         [Fact]
         public async Task Should_add_correct_groups_for_first_root_child()
         {
-            string id = ObjectId.GenerateNewId().ToString();
-            string rootId = ObjectId.GenerateNewId().ToString();
+            var id = ObjectId.GenerateNewId().ToString();
+            var rootId = ObjectId.GenerateNewId().ToString();
             DomainUnit rootUnit = new() { Id = rootId, Name = "UKSF", TeamspeakGroup = "10", Parent = ObjectId.Empty.ToString() };
             DomainUnit unit = new() { Name = "JSFAW", TeamspeakGroup = "6", Members = new() { id }, Parent = rootId };
             DomainUnit auxiliaryUnit = new()
@@ -151,15 +151,15 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
                 2
             );
 
-            _addedGroups.Should().BeEquivalentTo(3, 5, 6, 9);
+            _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 5, 6, 9 });
             _removedGroups.Should().BeEmpty();
         }
 
         [Fact]
         public async Task Should_add_correct_groups_for_first_root_child_in_elcom()
         {
-            string id = ObjectId.GenerateNewId().ToString();
-            string rootId = ObjectId.GenerateNewId().ToString();
+            var id = ObjectId.GenerateNewId().ToString();
+            var rootId = ObjectId.GenerateNewId().ToString();
             DomainUnit rootUnit = new() { Id = rootId, Name = "UKSF", TeamspeakGroup = "10", Parent = ObjectId.Empty.ToString() };
             DomainUnit unit = new() { Name = "JSFAW", TeamspeakGroup = "6", Members = new() { id }, Parent = rootId };
             DomainUnit auxiliaryUnit = new()
@@ -181,16 +181,16 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
                 2
             );
 
-            _addedGroups.Should().BeEquivalentTo(3, 5, 4, 6, 9);
+            _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 5, 4, 6, 9 });
             _removedGroups.Should().BeEmpty();
         }
 
         [Fact]
         public async Task Should_add_correct_groups_for_member()
         {
-            string id = ObjectId.GenerateNewId().ToString();
-            string parentId = ObjectId.GenerateNewId().ToString();
-            string parentParentId = ObjectId.GenerateNewId().ToString();
+            var id = ObjectId.GenerateNewId().ToString();
+            var parentId = ObjectId.GenerateNewId().ToString();
+            var parentParentId = ObjectId.GenerateNewId().ToString();
             DomainUnit unit = new() { Name = "1 Section", TeamspeakGroup = "6", Members = new() { id }, Parent = parentId };
             DomainUnit unitParent = new() { Id = parentId, Name = "SFSG", TeamspeakGroup = "7", Parent = parentParentId };
             DomainUnit unitParentParent = new() { Id = parentParentId, Name = "UKSF", TeamspeakGroup = "8" };
@@ -212,17 +212,18 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
                 2
             );
 
-            _addedGroups.Should().BeEquivalentTo(3, 5, 6, 7, 9);
+            _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 5, 6, 7, 9 });
+
             _removedGroups.Should().BeEmpty();
         }
 
         [Fact]
         public async Task Should_add_correct_groups_for_member_with_gaps_in_parents()
         {
-            string id = ObjectId.GenerateNewId().ToString();
-            string parentId = ObjectId.GenerateNewId().ToString();
-            string parentParentId = ObjectId.GenerateNewId().ToString();
-            string parentParentParentId = ObjectId.GenerateNewId().ToString();
+            var id = ObjectId.GenerateNewId().ToString();
+            var parentId = ObjectId.GenerateNewId().ToString();
+            var parentParentId = ObjectId.GenerateNewId().ToString();
+            var parentParentParentId = ObjectId.GenerateNewId().ToString();
             DomainUnit unit = new() { Name = "1 Section", Members = new() { id }, Parent = parentId };
             DomainUnit unitParent = new() { Id = parentId, Name = "1 Platoon", TeamspeakGroup = "7", Parent = parentParentId };
             DomainUnit unitParentParent = new() { Id = parentParentId, Name = "A Company", Parent = parentParentParentId };
@@ -241,7 +242,8 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
                 2
             );
 
-            _addedGroups.Should().BeEquivalentTo(3, 5, 7, 8);
+            _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 5, 7, 8 });
+
             _removedGroups.Should().BeEmpty();
         }
 
@@ -250,7 +252,7 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
         {
             await _teamspeakGroupService.UpdateAccountGroups(new() { MembershipState = MembershipState.UNCONFIRMED }, new List<int>(), 2);
 
-            _addedGroups.Should().BeEquivalentTo(1);
+            _addedGroups.Should().BeEquivalentTo(new List<int> { 1 });
             _removedGroups.Should().BeEmpty();
         }
 
@@ -259,14 +261,14 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
         {
             await _teamspeakGroupService.UpdateAccountGroups(null, new List<int>(), 2);
 
-            _addedGroups.Should().BeEquivalentTo(1);
+            _addedGroups.Should().BeEquivalentTo(new List<int> { 1 });
             _removedGroups.Should().BeEmpty();
         }
 
         [Fact]
         public async Task Should_add_correct_groups_for_stratcom()
         {
-            string id = ObjectId.GenerateNewId().ToString();
+            var id = ObjectId.GenerateNewId().ToString();
             DomainUnit rootUnit = new() { Name = "UKSF", TeamspeakGroup = "10", Members = new() { id }, Parent = ObjectId.Empty.ToString() };
             DomainUnit auxiliaryUnit = new()
             {
@@ -287,16 +289,16 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
                 2
             );
 
-            _addedGroups.Should().BeEquivalentTo(3, 4, 5, 10, 9);
+            _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 4, 5, 10, 9 });
             _removedGroups.Should().BeEmpty();
         }
 
         [Fact]
         public async Task Should_only_add_groups_if_not_set()
         {
-            string id = ObjectId.GenerateNewId().ToString();
-            string parentId = ObjectId.GenerateNewId().ToString();
-            string parentParentId = ObjectId.GenerateNewId().ToString();
+            var id = ObjectId.GenerateNewId().ToString();
+            var parentId = ObjectId.GenerateNewId().ToString();
+            var parentParentId = ObjectId.GenerateNewId().ToString();
             DomainUnit unit = new() { Name = "1 Section", TeamspeakGroup = "6", Members = new() { id }, Parent = parentId };
             DomainUnit unitParent = new() { Id = parentId, Name = "SFSG", TeamspeakGroup = "7", Parent = parentParentId };
             DomainUnit unitParentParent = new() { Id = parentParentId, Name = "UKSF", TeamspeakGroup = "8" };
@@ -318,16 +320,16 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
                 2
             );
 
-            _addedGroups.Should().BeEquivalentTo(6, 7, 9);
+            _addedGroups.Should().BeEquivalentTo(new List<int> { 6, 7, 9 });
             _removedGroups.Should().BeEmpty();
         }
 
         [Fact]
         public async Task Should_remove_correct_groups()
         {
-            string id = ObjectId.GenerateNewId().ToString();
-            string parentId = ObjectId.GenerateNewId().ToString();
-            string parentParentId = ObjectId.GenerateNewId().ToString();
+            var id = ObjectId.GenerateNewId().ToString();
+            var parentId = ObjectId.GenerateNewId().ToString();
+            var parentParentId = ObjectId.GenerateNewId().ToString();
             DomainUnit unit = new() { Name = "1 Section", TeamspeakGroup = "6", Members = new() { id }, Parent = parentId };
             DomainUnit unitParent = new() { Id = parentId, Name = "SFSG", TeamspeakGroup = "7", Parent = parentParentId };
             DomainUnit unitParentParent = new() { Id = parentParentId, Name = "UKSF", TeamspeakGroup = "8" };
@@ -349,8 +351,8 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
                 2
             );
 
-            _addedGroups.Should().BeEquivalentTo(3, 5, 6, 7, 9);
-            _removedGroups.Should().BeEquivalentTo(1, 10);
+            _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 5, 6, 7, 9 });
+            _removedGroups.Should().BeEquivalentTo(new List<int> { 1, 10 });
         }
 
         [Fact]
@@ -359,7 +361,7 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
             await _teamspeakGroupService.UpdateAccountGroups(null, new List<int> { 1, 3, 4 }, 2);
 
             _addedGroups.Should().BeEmpty();
-            _removedGroups.Should().BeEquivalentTo(3, 4);
+            _removedGroups.Should().BeEquivalentTo(new List<int> { 3, 4 });
         }
 
         [Fact]
@@ -368,7 +370,7 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
             await _teamspeakGroupService.UpdateAccountGroups(null, new List<int> { 1, 3, 4, 99, 100 }, 2);
 
             _addedGroups.Should().BeEmpty();
-            _removedGroups.Should().BeEquivalentTo(3, 4);
+            _removedGroups.Should().BeEquivalentTo(new List<int> { 3, 4 });
         }
     }
 }
