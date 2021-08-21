@@ -85,8 +85,11 @@ namespace UKSF.Tests.Unit.Data
             _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Exactly(2));
             subjects.Should()
                     .BeEquivalentTo(
-                        new EventModel(EventType.DELETE, new ContextEventData<TestDataModel>(_id1, null)),
-                        new EventModel(EventType.DELETE, new ContextEventData<TestDataModel>(_id2, null))
+                        new List<EventModel>
+                        {
+                            new(EventType.DELETE, new ContextEventData<TestDataModel>(_id1, null)),
+                            new(EventType.DELETE, new ContextEventData<TestDataModel>(_id2, null))
+                        }
                     );
         }
 
@@ -109,7 +112,8 @@ namespace UKSF.Tests.Unit.Data
         {
             List<EventModel> subjects = new();
 
-            _mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);
+            _mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
+                               .Returns(Task.CompletedTask);
             _mockEventBus.Setup(x => x.Send(It.IsAny<EventModel>())).Callback<EventModel>(dataEventModel => subjects.Add(dataEventModel));
 
             await _testCachedContext.UpdateMany(x => x.Name == "1", Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
@@ -117,8 +121,11 @@ namespace UKSF.Tests.Unit.Data
             _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Exactly(2));
             subjects.Should()
                     .BeEquivalentTo(
-                        new EventModel(EventType.UPDATE, new ContextEventData<TestDataModel>(_id1, null)),
-                        new EventModel(EventType.UPDATE, new ContextEventData<TestDataModel>(_id2, null))
+                        new List<EventModel>
+                        {
+                            new(EventType.UPDATE, new ContextEventData<TestDataModel>(_id1, null)),
+                            new(EventType.UPDATE, new ContextEventData<TestDataModel>(_id2, null))
+                        }
                     );
         }
 
@@ -128,7 +135,8 @@ namespace UKSF.Tests.Unit.Data
             List<EventModel> subjects = new();
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);
-            _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<TestDataModel>>(), It.IsAny<UpdateDefinition<TestDataModel>>())).Returns(Task.CompletedTask);
+            _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<TestDataModel>>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
+                               .Returns(Task.CompletedTask);
             _mockEventBus.Setup(x => x.Send(It.IsAny<EventModel>())).Callback<EventModel>(dataEventModel => subjects.Add(dataEventModel));
 
             await _testCachedContext.Update(_id1, x => x.Name, "1");
@@ -138,9 +146,12 @@ namespace UKSF.Tests.Unit.Data
             _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Exactly(3));
             subjects.Should()
                     .BeEquivalentTo(
-                        new EventModel(EventType.UPDATE, new ContextEventData<TestDataModel>(_id1, null)),
-                        new EventModel(EventType.UPDATE, new ContextEventData<TestDataModel>(_id2, null)),
-                        new EventModel(EventType.UPDATE, new ContextEventData<TestDataModel>(_id3, null))
+                        new List<EventModel>
+                        {
+                            new(EventType.UPDATE, new ContextEventData<TestDataModel>(_id1, null)),
+                            new(EventType.UPDATE, new ContextEventData<TestDataModel>(_id2, null)),
+                            new(EventType.UPDATE, new ContextEventData<TestDataModel>(_id3, null))
+                        }
                     );
         }
     }

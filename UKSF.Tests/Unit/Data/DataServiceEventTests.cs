@@ -101,8 +101,11 @@ namespace UKSF.Tests.Unit.Data
             _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Exactly(2));
             subjects.Should()
                     .BeEquivalentTo(
+                        new List<EventModel>
+                        {
                         new EventModel(EventType.DELETE, new ContextEventData<TestDataModel>(_id1, null)),
                         new EventModel(EventType.DELETE, new ContextEventData<TestDataModel>(_id2, null))
+                        }
                     );
         }
 
@@ -133,8 +136,11 @@ namespace UKSF.Tests.Unit.Data
             _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Exactly(2));
             subjects.Should()
                     .BeEquivalentTo(
+                        new List<EventModel>
+                        {
                         new EventModel(EventType.UPDATE, new ContextEventData<TestDataModel>(_id1, null)),
                         new EventModel(EventType.UPDATE, new ContextEventData<TestDataModel>(_id2, null))
+                        }
                     );
         }
 
@@ -154,9 +160,12 @@ namespace UKSF.Tests.Unit.Data
             _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Exactly(3));
             subjects.Should()
                     .BeEquivalentTo(
+                        new List<EventModel>
+                        {
                         new EventModel(EventType.UPDATE, new ContextEventData<TestDataModel>(_id1, null)),
                         new EventModel(EventType.UPDATE, new ContextEventData<TestDataModel>(_id2, null)),
                         new EventModel(EventType.UPDATE, new ContextEventData<TestDataModel>(_id3, null))
+                        }
                     );
         }
     }
