@@ -8,7 +8,7 @@
     <ItemGroup>
         <PackageReference Include="AspNet.Security.OpenId.Steam" Version="5.0.0"/>
         <PackageReference Include="BCrypt.Net-Next" Version="4.0.2"/>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.6"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.9"/>
         <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.12.2"/>
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.12.2"/>
     </ItemGroup>
