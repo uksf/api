@@ -29,7 +29,7 @@ namespace UKSF.Api.Teamspeak
         {
             return services.AddSingleton<ITeamspeakService, TeamspeakService>()
                            .AddTransient<ITeamspeakMetricsService, TeamspeakMetricsService>()
-                           .AddTransient<ITeamspeakManagerService, TeamspeakManagerService>()
+                           .AddSingleton<ITeamspeakManagerService, TeamspeakManagerService>()
                            .AddTransient<ITeamspeakGroupService, TeamspeakGroupService>();
         }
 
