@@ -7,7 +7,6 @@ using Newtonsoft.Json.Linq;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.Context;
-using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Models;
@@ -27,7 +26,13 @@ namespace UKSF.Api.Teamspeak.EventHandlers
         private readonly ITeamspeakGroupService _teamspeakGroupService;
         private readonly ITeamspeakService _teamspeakService;
 
-        public TeamspeakServerEventHandler(IAccountContext accountContext, IEventBus eventBus, ITeamspeakService teamspeakService, ITeamspeakGroupService teamspeakGroupService, ILogger logger)
+        public TeamspeakServerEventHandler(
+            IAccountContext accountContext,
+            IEventBus eventBus,
+            ITeamspeakService teamspeakService,
+            ITeamspeakGroupService teamspeakGroupService,
+            ILogger logger
+        )
         {
             _accountContext = accountContext;
             _eventBus = eventBus;
@@ -59,29 +64,29 @@ namespace UKSF.Api.Teamspeak.EventHandlers
         private async Task UpdateClients(string args)
         {
             await Console.Out.WriteLineAsync(args);
-            JArray clientsArray = JArray.Parse(args);
+            var clientsArray = JArray.Parse(args);
             if (clientsArray.Count == 0)
             {
                 return;
             }
 
-            HashSet<TeamspeakClient> clients = clientsArray.ToObject<HashSet<TeamspeakClient>>();
+            var clients = clientsArray.ToObject<HashSet<TeamspeakClient>>();
             await Console.Out.WriteLineAsync("Updating online clients");
             await _teamspeakService.UpdateClients(clients);
         }
 
         private async Task UpdateClientServerGroups(string args)
         {
-            JObject updateObject = JObject.Parse(args);
-            int clientDbid = int.Parse(updateObject["clientDbid"].ToString());
-            int serverGroupId = int.Parse(updateObject["serverGroupId"].ToString());
+            var updateObject = JObject.Parse(args);
+            var clientDbid = int.Parse(updateObject["clientDbid"].ToString());
+            var serverGroupId = int.Parse(updateObject["serverGroupId"].ToString());
             await Console.Out.WriteLineAsync($"Server group for {clientDbid}: {serverGroupId}");
 
-            TeamspeakServerGroupUpdate update = _serverGroupUpdates.GetOrAdd(clientDbid, _ => new());
+            var update = _serverGroupUpdates.GetOrAdd(clientDbid, _ => new());
             update.ServerGroups.Add(serverGroupId);
             update.CancellationTokenSource?.Cancel();
             update.CancellationTokenSource = new();
-            Task unused = TaskUtilities.DelayWithCallback(
+            var unused = TaskUtilities.DelayWithCallback(
                 TimeSpan.FromMilliseconds(500),
                 update.CancellationTokenSource.Token,
                 async () =>
@@ -95,10 +100,13 @@ namespace UKSF.Api.Teamspeak.EventHandlers
         private async Task ProcessAccountData(int clientDbId, ICollection<int> serverGroups)
         {
             await Console.Out.WriteLineAsync($"Processing server groups for {clientDbId}");
-            DomainAccount domainAccount = _accountContext.GetSingle(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
-            Task unused = _teamspeakGroupService.UpdateAccountGroups(domainAccount, serverGroups, clientDbId);
+            var accounts = _accountContext.Get(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
+            foreach (var account in accounts)
+            {
+                var unused = _teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
+            }
 
-            _serverGroupUpdates.TryRemove(clientDbId, out TeamspeakServerGroupUpdate _);
+            _serverGroupUpdates.TryRemove(clientDbId, out _);
         }
     }
 }
