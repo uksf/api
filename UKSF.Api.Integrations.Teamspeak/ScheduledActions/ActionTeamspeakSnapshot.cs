@@ -33,6 +33,7 @@ namespace UKSF.Api.Teamspeak.ScheduledActions
 
         public Task Run(params object[] parameters)
         {
+            return Task.CompletedTask;
             return _teamspeakService.StoreTeamspeakServerSnapshot();
         }
 

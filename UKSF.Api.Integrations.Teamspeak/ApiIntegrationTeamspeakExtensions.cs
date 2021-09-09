@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.Teamspeak.EventHandlers;
+using UKSF.Api.Teamspeak.ScheduledActions;
 using UKSF.Api.Teamspeak.Services;
 using UKSF.Api.Teamspeak.Signalr.Hubs;
 
@@ -11,8 +12,7 @@ namespace UKSF.Api.Teamspeak
     {
         public static IServiceCollection AddUksfIntegrationTeamspeak(this IServiceCollection services)
         {
-            return services.AddContexts().AddEventHandlers().AddServices();
-            // .AddTransient<IActionTeamspeakSnapshot, ActionTeamspeakSnapshot>();
+            return services.AddContexts().AddEventHandlers().AddServices().AddTransient<IActionTeamspeakSnapshot, ActionTeamspeakSnapshot>();
         }
 
         private static IServiceCollection AddContexts(this IServiceCollection services)
