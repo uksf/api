@@ -58,7 +58,7 @@ namespace UKSF.Api.Teamspeak.Services
 
             _runTeamspeak = false;
             _token.Cancel();
-            Task.Delay(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            Task.Delay(TimeSpan.FromSeconds(3)).GetAwaiter().GetResult();
             ShutTeamspeak().GetAwaiter().GetResult();
         }
 
@@ -84,7 +84,7 @@ namespace UKSF.Api.Teamspeak.Services
 
         private async void KeepOnline()
         {
-            await TaskUtilities.Delay(TimeSpan.FromSeconds(5), _token.Token);
+            await TaskUtilities.Delay(TimeSpan.FromSeconds(2), _token.Token);
             while (_runTeamspeak)
             {
                 if (Process.GetProcessesByName("ts3server").Length == 0)
@@ -108,7 +108,7 @@ namespace UKSF.Api.Teamspeak.Services
                     }
                 }
 
-                await TaskUtilities.Delay(TimeSpan.FromSeconds(30), _token.Token);
+                await TaskUtilities.Delay(TimeSpan.FromSeconds(15), _token.Token);
             }
         }
 
