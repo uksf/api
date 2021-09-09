@@ -58,8 +58,8 @@ namespace UKSF.Api.Teamspeak.Services
 
             _runTeamspeak = false;
             _token.Cancel();
-            Task.Delay(TimeSpan.FromSeconds(5)).Wait();
-            ShutTeamspeak().Wait();
+            Task.Delay(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            ShutTeamspeak().GetAwaiter().GetResult();
         }
 
         public async Task SendGroupProcedure(TeamspeakProcedureType procedure, TeamspeakGroupProcedure groupProcedure)

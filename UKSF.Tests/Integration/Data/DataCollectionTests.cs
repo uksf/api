@@ -56,7 +56,7 @@
 // new Role { Name = "NCOiC", RoleType = RoleType.UNIT, Order = 3 },
 // new Role { Name = "NCOiC Air Troop", RoleType = RoleType.INDIVIDUAL, Order = 0 }
 // };
-// roles.ForEach(x => mongoCollection.AddAsync(x).Wait());
+// roles.ForEach(x => mongoCollection.AddAsync(x).GetAwaiter().GetResult());
 
 // return (mongoCollection, testId);
 // }
