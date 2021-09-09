@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
@@ -23,7 +22,7 @@ using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Launcher.Controllers
 {
-    [Route("[controller]"), Authorize, Permissions(Permissions.CONFIRMED, Permissions.MEMBER)]
+    [Route("[controller]"), Permissions(Permissions.CONFIRMED, Permissions.MEMBER)]
     public class LauncherController : ControllerBase
     {
         private readonly IDisplayNameService _displayNameService;

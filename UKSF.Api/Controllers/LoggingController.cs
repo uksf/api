@@ -34,28 +34,28 @@ namespace UKSF.Api.Controllers
             _discordLogContext = discordLogContext;
         }
 
-        [HttpGet("basic"), Authorize]
+        [HttpGet("basic")]
         public PagedResult<BasicLog> GetBasicLogs([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] SortDirection sortDirection, [FromQuery] string sortField, [FromQuery] string filter)
         {
             IEnumerable<Expression<Func<BasicLog, object>>> filterProperties = GetBasicLogFilterProperties();
             return _logContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
         }
 
-        [HttpGet("error"), Authorize]
+        [HttpGet("error")]
         public PagedResult<ErrorLog> GetErrorLogs([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] SortDirection sortDirection, [FromQuery] string sortField, [FromQuery] string filter)
         {
             IEnumerable<Expression<Func<ErrorLog, object>>> filterProperties = GetErrorLogFilterProperties();
             return _errorLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
         }
 
-        [HttpGet("audit"), Authorize]
+        [HttpGet("audit")]
         public PagedResult<AuditLog> GetAuditLogs([FromQuery] int page, [FromQuery] int pageSize, [FromQuery] SortDirection sortDirection, [FromQuery] string sortField, [FromQuery] string filter)
         {
             IEnumerable<Expression<Func<AuditLog, object>>> filterProperties = GetAuditLogFilterProperties();
             return _auditLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
         }
 
-        [HttpGet("launcher"), Authorize]
+        [HttpGet("launcher")]
         public PagedResult<LauncherLog> GetLauncherLogs(
             [FromQuery] int page,
             [FromQuery] int pageSize,

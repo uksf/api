@@ -155,7 +155,7 @@ namespace UKSF.Api.Personnel.Controllers
             return _accountMapper.MapToAccount(domainAccount);
         }
 
-        [HttpGet("under"), Authorize(Roles = Permissions.COMMAND)]
+        [HttpGet("under"), Permissions(Roles = Permissions.COMMAND)]
         public List<BasicAccount> GetAccountsUnder([FromQuery] bool reverse = false)
         {
             List<DomainAccount> memberAccounts = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER).ToList();

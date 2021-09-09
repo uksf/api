@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
@@ -48,7 +47,7 @@ namespace UKSF.Api.Personnel.Controllers
             _logger = logger;
         }
 
-        [HttpPost, Authorize, Permissions(Permissions.CONFIRMED)]
+        [HttpPost, Permissions(Permissions.CONFIRMED)]
         public async Task Post([FromBody] JObject body)
         {
             DomainAccount domainAccount = _accountService.GetUserAccount();
@@ -94,7 +93,7 @@ namespace UKSF.Api.Personnel.Controllers
             _logger.LogAudit($"Application submitted for {domainAccount.Id}. Assigned to {_displayNameService.GetDisplayName(domainAccount.Application.Recruiter)}");
         }
 
-        [HttpPost("update"), Authorize, Permissions(Permissions.CONFIRMED)]
+        [HttpPost("update"), Permissions(Permissions.CONFIRMED)]
         public async Task PostUpdate([FromBody] JObject body)
         {
             DomainAccount domainAccount = _accountService.GetUserAccount();

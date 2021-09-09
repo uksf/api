@@ -7,6 +7,7 @@ namespace UKSF.Api.Teamspeak.Models
         UNASSIGN,
         GROUPS,
         MESSAGE,
-        SHUTDOWN
+        SHUTDOWN,
+        RELOAD
     }
 }

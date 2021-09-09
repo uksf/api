@@ -2,7 +2,6 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Command.Services;
@@ -48,7 +47,7 @@ namespace UKSF.Api.Command.Controllers
             _httpContextService = httpContextService;
         }
 
-        [HttpPut("rank"), Authorize, Permissions(Permissions.COMMAND)]
+        [HttpPut("rank"), Permissions(Permissions.COMMAND)]
         public async Task CreateRequestRank([FromBody] CommandRequest request)
         {
             request.Requester = _httpContextService.GetUserId();
@@ -70,7 +69,7 @@ namespace UKSF.Api.Command.Controllers
             await _commandRequestService.Add(request);
         }
 
-        [HttpPut("loa"), Authorize, Permissions(Permissions.MEMBER)]
+        [HttpPut("loa"), Permissions(Permissions.MEMBER)]
         public async Task CreateRequestLoa([FromBody] CommandRequestLoa request)
         {
             DateTime now = DateTime.UtcNow;
@@ -103,7 +102,7 @@ namespace UKSF.Api.Command.Controllers
             await _commandRequestService.Add(request, ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF);
         }
 
-        [HttpPut("discharge"), Authorize, Permissions(Permissions.COMMAND)]
+        [HttpPut("discharge"), Permissions(Permissions.COMMAND)]
         public async Task CreateRequestDischarge([FromBody] CommandRequest request)
         {
             request.Requester = _httpContextService.GetUserId();
@@ -118,7 +117,7 @@ namespace UKSF.Api.Command.Controllers
             await _commandRequestService.Add(request, ChainOfCommandMode.COMMANDER_AND_PERSONNEL);
         }
 
-        [HttpPut("role"), Authorize, Permissions(Permissions.COMMAND)]
+        [HttpPut("role"), Permissions(Permissions.COMMAND)]
         public async Task CreateRequestIndividualRole([FromBody] CommandRequest request)
         {
             request.Requester = _httpContextService.GetUserId();
@@ -133,7 +132,7 @@ namespace UKSF.Api.Command.Controllers
             await _commandRequestService.Add(request, ChainOfCommandMode.NEXT_COMMANDER);
         }
 
-        [HttpPut("unitrole"), Authorize, Permissions(Permissions.COMMAND)]
+        [HttpPut("unitrole"), Permissions(Permissions.COMMAND)]
         public async Task CreateRequestUnitRole([FromBody] CommandRequest request)
         {
             var unit = _unitsContext.GetSingle(request.Value);
@@ -166,7 +165,7 @@ namespace UKSF.Api.Command.Controllers
             await _commandRequestService.Add(request);
         }
 
-        [HttpPut("unitremoval"), Authorize, Permissions(Permissions.COMMAND)]
+        [HttpPut("unitremoval"), Permissions(Permissions.COMMAND)]
         public async Task CreateRequestUnitRemoval([FromBody] CommandRequest request)
         {
             var removeUnit = _unitsContext.GetSingle(request.Value);
@@ -187,7 +186,7 @@ namespace UKSF.Api.Command.Controllers
             await _commandRequestService.Add(request, ChainOfCommandMode.TARGET_COMMANDER);
         }
 
-        [HttpPut("transfer"), Authorize, Permissions(Permissions.COMMAND)]
+        [HttpPut("transfer"), Permissions(Permissions.COMMAND)]
         public async Task CreateRequestTransfer([FromBody] CommandRequest request)
         {
             var toUnit = _unitsContext.GetSingle(request.Value);
@@ -217,7 +216,7 @@ namespace UKSF.Api.Command.Controllers
             }
         }
 
-        [HttpPut("reinstate"), Authorize, Permissions(Permissions.COMMAND, Permissions.RECRUITER, Permissions.NCO)]
+        [HttpPut("reinstate"), Permissions(Permissions.COMMAND, Permissions.RECRUITER, Permissions.NCO)]
         public async Task CreateRequestReinstateMember([FromBody] CommandRequest request)
         {
             request.Requester = _httpContextService.GetUserId();

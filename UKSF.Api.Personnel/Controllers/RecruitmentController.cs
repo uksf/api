@@ -49,7 +49,7 @@ namespace UKSF.Api.Personnel.Controllers
             _logger = logger;
         }
 
-        [HttpGet, Authorize, Permissions(Permissions.RECRUITER)]
+        [HttpGet, Permissions(Permissions.RECRUITER)]
         public ApplicationsOverview GetAll()
         {
             return _recruitmentService.GetAllApplications();
@@ -62,13 +62,13 @@ namespace UKSF.Api.Personnel.Controllers
             return _recruitmentService.GetApplication(domainAccount);
         }
 
-        [HttpGet("isrecruiter"), Authorize, Permissions(Permissions.RECRUITER)]
+        [HttpGet("isrecruiter"), Permissions(Permissions.RECRUITER)]
         public bool GetIsRecruiter()
         {
             return _recruitmentService.IsRecruiter(_accountService.GetUserAccount());
         }
 
-        [HttpGet("stats"), Authorize, Permissions(Permissions.RECRUITER)]
+        [HttpGet("stats"), Permissions(Permissions.RECRUITER)]
         public RecruitmentStatsDataset GetRecruitmentStats()
         {
             string account = _httpContextService.GetUserId();
@@ -96,7 +96,7 @@ namespace UKSF.Api.Personnel.Controllers
             };
         }
 
-        [HttpPost("{id}"), Authorize, Permissions(Permissions.RECRUITER)]
+        [HttpPost("{id}"), Permissions(Permissions.RECRUITER)]
         public async Task UpdateState([FromBody] dynamic body, string id)
         {
             ApplicationState updatedState = body.updatedState;
@@ -183,7 +183,7 @@ namespace UKSF.Api.Personnel.Controllers
             }
         }
 
-        [HttpPost("recruiter/{id}"), Authorize, Permissions(Permissions.RECRUITER_LEAD)]
+        [HttpPost("recruiter/{id}"), Permissions(Permissions.RECRUITER_LEAD)]
         public async Task PostReassignment([FromBody] JObject newRecruiter, string id)
         {
             if (!_httpContextService.UserHasPermission(Permissions.ADMIN) && !_recruitmentService.IsRecruiterLead())
@@ -210,7 +210,7 @@ namespace UKSF.Api.Personnel.Controllers
             _logger.LogAudit($"Application recruiter changed for {id} to {newRecruiter["newRecruiter"]}");
         }
 
-        [HttpPost("ratings/{id}"), Authorize, Permissions(Permissions.RECRUITER)]
+        [HttpPost("ratings/{id}"), Permissions(Permissions.RECRUITER)]
         public async Task<Dictionary<string, uint>> Ratings([FromBody] KeyValuePair<string, uint> value, string id)
         {
             Dictionary<string, uint> ratings = _accountContext.GetSingle(id).Application.Ratings;
@@ -229,7 +229,7 @@ namespace UKSF.Api.Personnel.Controllers
             return ratings;
         }
 
-        [HttpGet("recruiters"), Authorize, Permissions(Permissions.RECRUITER_LEAD)]
+        [HttpGet("recruiters"), Permissions(Permissions.RECRUITER_LEAD)]
         public IEnumerable<Recruiter> GetRecruiters()
         {
             return _recruitmentService.GetActiveRecruiters();
