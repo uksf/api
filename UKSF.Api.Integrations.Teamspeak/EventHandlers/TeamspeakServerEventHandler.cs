@@ -100,11 +100,9 @@ namespace UKSF.Api.Teamspeak.EventHandlers
         private async Task ProcessAccountData(int clientDbId, ICollection<int> serverGroups)
         {
             await Console.Out.WriteLineAsync($"Processing server groups for {clientDbId}");
-            var accounts = _accountContext.Get(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
-            foreach (var account in accounts)
-            {
-                var unused = _teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
-            }
+            var domainAccounts = _accountContext.Get(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
+            var domainAccount = domainAccounts.OrderByDescending(x => x.MembershipState).FirstOrDefault();
+            var unused = _teamspeakGroupService.UpdateAccountGroups(domainAccount, serverGroups, clientDbId);
 
             _serverGroupUpdates.TryRemove(clientDbId, out _);
         }

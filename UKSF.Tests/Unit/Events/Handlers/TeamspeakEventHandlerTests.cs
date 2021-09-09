@@ -77,19 +77,19 @@ namespace UKSF.Tests.Unit.Events.Handlers
         [Fact]
         public async Task ShouldGetCorrectAccount()
         {
-            DomainAccount account1 = new() { TeamspeakIdentities = new() { 1 } };
-            DomainAccount account2 = new() { TeamspeakIdentities = new() { 2 } };
+            DomainAccount account1 = new() { TeamspeakIdentities = new() { 1 }, MembershipState = MembershipState.UNCONFIRMED };
+            DomainAccount account2 = new() { TeamspeakIdentities = new() { 1 }, MembershipState = MembershipState.MEMBER };
             List<DomainAccount> mockAccountCollection = new() { account1, account2 };
 
-            _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns<Func<DomainAccount, bool>>(x => mockAccountCollection.FirstOrDefault(x));
-            _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(account1, It.IsAny<ICollection<int>>(), 1)).Returns(Task.CompletedTask);
+            _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns<Func<DomainAccount, bool>>(x => mockAccountCollection);
+            _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(account2, It.IsAny<ICollection<int>>(), 1)).Returns(Task.CompletedTask);
 
             _teamspeakServerEventHandler.Init();
 
             _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" });
             await Task.Delay(TimeSpan.FromMilliseconds(600));
 
-            _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(account1, new List<int> { 5 }, 1), Times.Once);
+            _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(account2, new List<int> { 5 }, 1), Times.Once);
         }
 
         [Fact]
@@ -123,7 +123,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
         {
             DomainAccount domainAccount = new() { TeamspeakIdentities = new() { 1 } };
 
-            _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns(domainAccount);
+            _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount> { domainAccount });
             _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(domainAccount, It.IsAny<ICollection<int>>(), 1)).Returns(Task.CompletedTask);
 
             _teamspeakServerEventHandler.Init();
@@ -139,7 +139,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
         {
             DomainAccount domainAccount = new() { TeamspeakIdentities = new() { 1 } };
 
-            _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns(domainAccount);
+            _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount> { domainAccount });
             _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(It.IsAny<DomainAccount>(), It.IsAny<ICollection<int>>(), It.IsAny<int>()));
 
             _teamspeakServerEventHandler.Init();
@@ -160,7 +160,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
             DomainAccount account2 = new() { TeamspeakIdentities = new() { 2 } };
             List<DomainAccount> mockCollection = new() { account1, account2 };
 
-            _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns<Func<DomainAccount, bool>>(x => mockCollection.FirstOrDefault(x));
+            _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns<Func<DomainAccount, bool>>(x => mockCollection.Where(x));
             _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(It.IsAny<DomainAccount>(), It.IsAny<ICollection<int>>(), It.IsAny<int>()));
 
             _teamspeakServerEventHandler.Init();
@@ -178,7 +178,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
         {
             DomainAccount domainAccount = new() { TeamspeakIdentities = new() { 1 } };
 
-            _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns(domainAccount);
+            _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount> { domainAccount });
             _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(It.IsAny<DomainAccount>(), It.IsAny<ICollection<int>>(), It.IsAny<int>()));
 
             _teamspeakServerEventHandler.Init();
@@ -204,13 +204,13 @@ namespace UKSF.Tests.Unit.Events.Handlers
             _mockTeamspeakService.Verify(x => x.UpdateClients(It.IsAny<HashSet<TeamspeakClient>>()), Times.Once);
         }
 
-        [Theory, InlineData(2), InlineData(-1)]
-        public async Task ShouldGetNoAccountForNoMatchingIdsOrNull(int id)
+        [Fact]
+        public async Task ShouldGetNoAccountForNoMatchingId()
         {
-            DomainAccount domainAccount = new() { TeamspeakIdentities = Math.Abs(id - -1) < 0.01 ? null : new HashSet<int> { id } };
-            List<DomainAccount> mockAccountCollection = new() { domainAccount };
+            DomainAccount domainAccount = new() { TeamspeakIdentities = new() { 2 } };
+            List<DomainAccount> mockCollection = new() { domainAccount };
 
-            _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns<Func<DomainAccount, bool>>(x => mockAccountCollection.FirstOrDefault(x));
+            _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns<Func<DomainAccount, bool>>(x => mockCollection.Where(x));
             _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(It.IsAny<DomainAccount>(), It.IsAny<ICollection<int>>(), It.IsAny<int>())).Returns(Task.CompletedTask);
 
             _teamspeakServerEventHandler.Init();
