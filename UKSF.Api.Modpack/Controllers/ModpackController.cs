@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services;
@@ -21,25 +20,25 @@ namespace UKSF.Api.Modpack.Controllers
             _githubService = githubService;
         }
 
-        [HttpGet("releases"), Authorize, Permissions(Permissions.MEMBER)]
+        [HttpGet("releases"), Permissions(Permissions.MEMBER)]
         public IEnumerable<ModpackRelease> GetReleases()
         {
             return _modpackService.GetReleases();
         }
 
-        [HttpGet("rcs"), Authorize, Permissions(Permissions.MEMBER)]
+        [HttpGet("rcs"), Permissions(Permissions.MEMBER)]
         public IEnumerable<ModpackBuild> GetReleaseCandidates()
         {
             return _modpackService.GetRcBuilds();
         }
 
-        [HttpGet("builds"), Authorize, Permissions(Permissions.MEMBER)]
+        [HttpGet("builds"), Permissions(Permissions.MEMBER)]
         public IEnumerable<ModpackBuild> GetBuilds()
         {
             return _modpackService.GetDevBuilds();
         }
 
-        [HttpGet("builds/{id}"), Authorize, Permissions(Permissions.MEMBER)]
+        [HttpGet("builds/{id}"), Permissions(Permissions.MEMBER)]
         public ModpackBuild GetBuild(string id)
         {
             ModpackBuild build = _modpackService.GetBuild(id);
@@ -51,7 +50,7 @@ namespace UKSF.Api.Modpack.Controllers
             return build;
         }
 
-        [HttpGet("builds/{id}/step/{index}"), Authorize, Permissions(Permissions.MEMBER)]
+        [HttpGet("builds/{id}/step/{index}"), Permissions(Permissions.MEMBER)]
         public ModpackBuildStep GetBuildStep(string id, int index)
         {
             ModpackBuild build = _modpackService.GetBuild(id);
@@ -68,7 +67,7 @@ namespace UKSF.Api.Modpack.Controllers
             throw new NotFoundException("Build step does not exist");
         }
 
-        [HttpGet("builds/{id}/rebuild"), Authorize, Permissions(Permissions.ADMIN)]
+        [HttpGet("builds/{id}/rebuild"), Permissions(Permissions.ADMIN)]
         public async Task Rebuild(string id)
         {
             ModpackBuild build = _modpackService.GetBuild(id);
@@ -80,7 +79,7 @@ namespace UKSF.Api.Modpack.Controllers
             await _modpackService.Rebuild(build);
         }
 
-        [HttpGet("builds/{id}/cancel"), Authorize, Permissions(Permissions.ADMIN)]
+        [HttpGet("builds/{id}/cancel"), Permissions(Permissions.ADMIN)]
         public async Task CancelBuild(string id)
         {
             ModpackBuild build = _modpackService.GetBuild(id);
@@ -92,7 +91,7 @@ namespace UKSF.Api.Modpack.Controllers
             await _modpackService.CancelBuild(build);
         }
 
-        [HttpPatch("release/{version}"), Authorize, Permissions(Permissions.ADMIN)]
+        [HttpPatch("release/{version}"), Permissions(Permissions.ADMIN)]
         public async Task UpdateRelease(string version, [FromBody] ModpackRelease release)
         {
             if (!release.IsDraft)
@@ -103,20 +102,20 @@ namespace UKSF.Api.Modpack.Controllers
             await _modpackService.UpdateReleaseDraft(release);
         }
 
-        [HttpGet("release/{version}"), Authorize, Permissions(Permissions.ADMIN)]
+        [HttpGet("release/{version}"), Permissions(Permissions.ADMIN)]
         public async Task Release(string version)
         {
             await _modpackService.Release(version);
         }
 
-        [HttpGet("release/{version}/changelog"), Authorize, Permissions(Permissions.ADMIN)]
+        [HttpGet("release/{version}/changelog"), Permissions(Permissions.ADMIN)]
         public async Task<ModpackRelease> RegenerateChangelog(string version)
         {
             await _modpackService.RegnerateReleaseDraftChangelog(version);
             return _modpackService.GetRelease(version);
         }
 
-        [HttpPost("newbuild"), Authorize, Permissions(Permissions.TESTER)]
+        [HttpPost("newbuild"), Permissions(Permissions.TESTER)]
         public async Task NewBuild([FromBody] NewBuild newBuild)
         {
             if (!await _githubService.IsReferenceValid(newBuild.Reference))

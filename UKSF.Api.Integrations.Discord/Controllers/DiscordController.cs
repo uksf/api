@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord.WebSocket;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Discord.Services;
 using UKSF.Api.Shared;
@@ -20,20 +19,20 @@ namespace UKSF.Api.Discord.Controllers
             _discordService = discordService;
         }
 
-        [HttpGet("roles"), Authorize, Permissions(Permissions.ADMIN)]
+        [HttpGet("roles"), Permissions(Permissions.ADMIN)]
         public async Task<string> GetRoles()
         {
             IReadOnlyCollection<SocketRole> roles = await _discordService.GetRoles();
             return roles.OrderBy(x => x.Name).Select(x => $"{x.Name}: {x.Id}").Aggregate((x, y) => $"{x}\n{y}");
         }
 
-        [HttpGet("updateuserroles"), Authorize, Permissions(Permissions.ADMIN)]
+        [HttpGet("updateuserroles"), Permissions(Permissions.ADMIN)]
         public async Task UpdateUserRoles()
         {
             await _discordService.UpdateAllUsers();
         }
 
-        [HttpGet("{accountId}/onlineUserDetails"), Authorize, Permissions(Permissions.RECRUITER)]
+        [HttpGet("{accountId}/onlineUserDetails"), Permissions(Permissions.RECRUITER)]
         public OnlineState GetOnlineUserDetails([FromRoute] string accountId)
         {
             return _discordService.GetOnlineUserDetails(accountId);

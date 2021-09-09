@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -60,13 +59,13 @@ namespace UKSF.Api.Modpack.Controllers
             }
         }
 
-        [HttpGet("branches"), Authorize, Permissions(Permissions.TESTER)]
+        [HttpGet("branches"), Permissions(Permissions.TESTER)]
         public async Task<List<string>> GetBranches()
         {
             return await _githubService.GetBranches();
         }
 
-        [HttpGet("populatereleases"), Authorize, Permissions(Permissions.ADMIN)]
+        [HttpGet("populatereleases"), Permissions(Permissions.ADMIN)]
         public async Task Release()
         {
             List<ModpackRelease> releases = await _githubService.GetHistoricReleases();

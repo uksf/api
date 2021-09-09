@@ -24,6 +24,7 @@ namespace UKSF.Api.Teamspeak.Services
         Task UpdateAccountTeamspeakGroups(DomainAccount domainAccount);
         Task SendTeamspeakMessageToClient(DomainAccount domainAccount, string message);
         Task SendTeamspeakMessageToClient(IEnumerable<int> clientDbIds, string message);
+        Task Reload();
         Task Shutdown();
         Task StoreTeamspeakServerSnapshot();
     }
@@ -73,7 +74,7 @@ namespace UKSF.Api.Teamspeak.Services
                 return;
             }
 
-            foreach (int clientDbId in domainAccount.TeamspeakIdentities)
+            foreach (var clientDbId in domainAccount.TeamspeakIdentities)
             {
                 await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.GROUPS, new { clientDbId });
             }
@@ -87,7 +88,7 @@ namespace UKSF.Api.Teamspeak.Services
         public async Task SendTeamspeakMessageToClient(IEnumerable<int> clientDbIds, string message)
         {
             message = FormatTeamspeakMessage(message);
-            foreach (int clientDbId in clientDbIds)
+            foreach (var clientDbId in clientDbIds)
             {
                 await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.MESSAGE, new { clientDbId, message });
             }
@@ -104,6 +105,11 @@ namespace UKSF.Api.Teamspeak.Services
             // TODO: Remove direct db call
             TeamspeakServerSnapshot teamspeakServerSnapshot = new() { Timestamp = DateTime.UtcNow, Users = _clients };
             await _database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots").InsertOneAsync(teamspeakServerSnapshot);
+        }
+
+        public async Task Reload()
+        {
+            await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.RELOAD, new { });
         }
 
         public async Task Shutdown()
@@ -134,7 +140,7 @@ namespace UKSF.Api.Teamspeak.Services
                 return null;
             }
 
-            DomainAccount domainAccount = _accountContext.GetSingle(accountId);
+            var domainAccount = _accountContext.GetSingle(accountId);
             if (domainAccount?.TeamspeakIdentities == null)
             {
                 return null;

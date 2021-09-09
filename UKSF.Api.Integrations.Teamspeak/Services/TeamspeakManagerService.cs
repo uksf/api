@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
+using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Teamspeak.Models;
 using UKSF.Api.Teamspeak.Signalr.Clients;
@@ -24,14 +25,16 @@ namespace UKSF.Api.Teamspeak.Services
     public class TeamspeakManagerService : ITeamspeakManagerService
     {
         private readonly IHubContext<TeamspeakHub, ITeamspeakClient> _hub;
+        private readonly ILogger _logger;
         private readonly IVariablesService _variablesService;
         private bool _runTeamspeak;
         private CancellationTokenSource _token;
 
-        public TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient> hub, IVariablesService variablesService)
+        public TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient> hub, IVariablesService variablesService, ILogger logger)
         {
             _hub = hub;
             _variablesService = variablesService;
+            _logger = logger;
         }
 
         public void Start()
@@ -111,7 +114,10 @@ namespace UKSF.Api.Teamspeak.Services
 
         private async Task LaunchTeamspeakServer()
         {
-            await ProcessUtilities.LaunchExternalProcess("TeamspeakServer", $"start \"\" \"{_variablesService.GetVariable("TEAMSPEAK_SERVER_PATH").AsString()}\"");
+            await ProcessUtilities.LaunchExternalProcess(
+                "TeamspeakServer",
+                $"start \"\" \"{_variablesService.GetVariable("TEAMSPEAK_SERVER_PATH").AsString()}\""
+            );
         }
 
         private async Task LaunchTeamspeak()
@@ -121,9 +127,11 @@ namespace UKSF.Api.Teamspeak.Services
 
         private async Task ShutTeamspeak()
         {
-            Process process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == "ts3client_win64");
+            _logger.LogInfo("Teampseak shutdown via process");
+            var process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == "ts3client_win64");
             if (process == null)
             {
+                _logger.LogInfo("Teampseak process not found");
                 return;
             }
 
@@ -133,9 +141,12 @@ namespace UKSF.Api.Teamspeak.Services
             process.Refresh();
             if (!process.HasExited)
             {
+                _logger.LogInfo("Teamspeak process not shutdown, trying to kill");
                 process.Kill();
                 await TaskUtilities.Delay(TimeSpan.FromMilliseconds(100), _token.Token);
             }
+
+            _logger.LogInfo("Teampseak process should be closed");
         }
 
         private bool IsTeamspeakDisabled()

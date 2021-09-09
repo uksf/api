@@ -8,6 +8,7 @@ using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
+using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Models;
 using UKSF.Api.Teamspeak.Models;
@@ -22,6 +23,7 @@ namespace UKSF.Api.Teamspeak.Controllers
         private readonly IConfirmationCodeService _confirmationCodeService;
         private readonly IDisplayNameService _displayNameService;
         private readonly INotificationsService _notificationsService;
+        private readonly ILogger _logger;
         private readonly IRanksService _ranksService;
         private readonly IRecruitmentService _recruitmentService;
         private readonly ITeamspeakService _teamspeakService;
@@ -35,7 +37,8 @@ namespace UKSF.Api.Teamspeak.Controllers
             IRecruitmentService recruitmentService,
             IDisplayNameService displayNameService,
             IConfirmationCodeService confirmationCodeService,
-            INotificationsService notificationsService
+            INotificationsService notificationsService,
+            ILogger logger
         )
         {
             _accountContext = accountContext;
@@ -46,6 +49,7 @@ namespace UKSF.Api.Teamspeak.Controllers
             _displayNameService = displayNameService;
             _confirmationCodeService = confirmationCodeService;
             _notificationsService = notificationsService;
+            _logger = logger;
         }
 
         [HttpGet("{teamspeakId}"), Authorize]
@@ -58,15 +62,23 @@ namespace UKSF.Api.Teamspeak.Controllers
             );
         }
 
-        [HttpGet("online"), Authorize, Permissions(Permissions.CONFIRMED, Permissions.MEMBER, Permissions.DISCHARGED)]
+        [HttpGet("online"), Permissions(Permissions.CONFIRMED, Permissions.MEMBER, Permissions.DISCHARGED)]
         public IEnumerable<object> GetOnlineClients()
         {
             return _teamspeakService.GetFormattedClients();
         }
 
-        [HttpGet("shutdown"), Authorize, Permissions(Permissions.ADMIN)]
+        [HttpGet("reload"), Permissions(Permissions.ADMIN)]
+        public async Task Reload()
+        {
+            _logger.LogInfo("Teampseak reload via API");
+            await _teamspeakService.Reload();
+        }
+
+        [HttpGet("shutdown"), Permissions(Permissions.ADMIN)]
         public async Task Shutdown()
         {
+            _logger.LogInfo("Teampseak shutdown via API");
             await _teamspeakService.Shutdown();
             await Task.Delay(TimeSpan.FromSeconds(3));
         }
@@ -116,7 +128,7 @@ namespace UKSF.Api.Teamspeak.Controllers
             return new() { Commanders = commanders, Recruiters = recruiters, Members = members, Guests = guests };
         }
 
-        [HttpGet("{accountId}/onlineUserDetails"), Authorize, Permissions(Permissions.RECRUITER)]
+        [HttpGet("{accountId}/onlineUserDetails"), Permissions(Permissions.RECRUITER)]
         public OnlineState GetOnlineUserDetails([FromRoute] string accountId)
         {
             return _teamspeakService.GetOnlineUserDetails(accountId);
