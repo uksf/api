@@ -15,6 +15,7 @@ using UKSF.Api.Middleware;
 using UKSF.Api.Modpack;
 using UKSF.Api.Personnel;
 using UKSF.Api.Shared;
+using UKSF.Api.Shared.Events;
 using UKSF.Api.Teamspeak;
 
 namespace UKSF.Api
@@ -51,7 +52,13 @@ namespace UKSF.Api
 
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime hostApplicationLifetime, IServiceProvider serviceProvider)
         {
-            hostApplicationLifetime.ApplicationStopping.Register(() => OnShutdown(serviceProvider));
+            hostApplicationLifetime.ApplicationStopping.Register(
+                () =>
+                {
+                    using var scope = app.ApplicationServices.CreateScope();
+                    OnShutdown(scope.ServiceProvider);
+                }
+            );
 
             app.UseStaticFiles()
                .UseCookiePolicy(new() { MinimumSameSitePolicy = SameSiteMode.Lax })
@@ -90,7 +97,11 @@ namespace UKSF.Api
 
         private static void OnShutdown(IServiceProvider serviceProvider)
         {
+            var logger = serviceProvider.GetService<ILogger>();
+
+            logger?.LogInfo("Shutting down, stopping services");
             serviceProvider.StopUksfServices();
+            logger?.LogInfo("Services stopped");
         }
 
         private string[] GetCorsPaths()
