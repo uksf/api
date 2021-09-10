@@ -257,6 +257,15 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
         }
 
         [Fact]
+        public async Task Should_add_correct_groups_for_confirmed_non_member()
+        {
+            await _teamspeakGroupService.UpdateAccountGroups(new() { MembershipState = MembershipState.CONFIRMED }, new List<int>(), 2);
+
+            _addedGroups.Should().BeEquivalentTo(new List<int>());
+            _removedGroups.Should().BeEmpty();
+        }
+
+        [Fact]
         public async Task Should_add_correct_groups_for_non_member_with_no_account()
         {
             await _teamspeakGroupService.UpdateAccountGroups(null, new List<int>(), 2);
