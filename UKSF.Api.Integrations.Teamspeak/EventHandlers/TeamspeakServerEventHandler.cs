@@ -78,11 +78,11 @@ namespace UKSF.Api.Teamspeak.EventHandlers
         private async Task UpdateClientServerGroups(string args)
         {
             var updateObject = JObject.Parse(args);
-            var clientDbid = int.Parse(updateObject["clientDbid"].ToString());
+            var clientDbId = int.Parse(updateObject["clientDbid"].ToString());
             var serverGroupId = int.Parse(updateObject["serverGroupId"].ToString());
-            await Console.Out.WriteLineAsync($"Server group for {clientDbid}: {serverGroupId}");
+            await Console.Out.WriteLineAsync($"Server group for {clientDbId}: {serverGroupId}");
 
-            var update = _serverGroupUpdates.GetOrAdd(clientDbid, _ => new());
+            var update = _serverGroupUpdates.GetOrAdd(clientDbId, _ => new());
             update.ServerGroups.Add(serverGroupId);
             update.CancellationTokenSource?.Cancel();
             update.CancellationTokenSource = new();
@@ -92,7 +92,16 @@ namespace UKSF.Api.Teamspeak.EventHandlers
                 async () =>
                 {
                     update.CancellationTokenSource.Cancel();
-                    await ProcessAccountData(clientDbid, update.ServerGroups);
+                    _serverGroupUpdates.TryRemove(clientDbId, out _);
+
+                    try
+                    {
+                        await ProcessAccountData(clientDbId, update.ServerGroups);
+                    }
+                    catch (Exception exception)
+                    {
+                        _logger.LogError(exception);
+                    }
                 }
             );
         }
@@ -102,9 +111,7 @@ namespace UKSF.Api.Teamspeak.EventHandlers
             await Console.Out.WriteLineAsync($"Processing server groups for {clientDbId}");
             var domainAccounts = _accountContext.Get(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
             var domainAccount = domainAccounts.OrderByDescending(x => x.MembershipState).FirstOrDefault();
-            var unused = _teamspeakGroupService.UpdateAccountGroups(domainAccount, serverGroups, clientDbId);
-
-            _serverGroupUpdates.TryRemove(clientDbId, out _);
+            await _teamspeakGroupService.UpdateAccountGroups(domainAccount, serverGroups, clientDbId);
         }
     }
 }
