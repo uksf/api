@@ -72,8 +72,8 @@ namespace UKSF.Api.Teamspeak.Services
                 }
             }
 
-            List<int> groupsBlacklist = _variablesService.GetVariable("TEAMSPEAK_GID_BLACKLIST").AsIntArray().ToList();
-            foreach (int serverGroup in serverGroups)
+            var groupsBlacklist = _variablesService.GetVariable("TEAMSPEAK_GID_BLACKLIST").AsIntArray().ToList();
+            foreach (var serverGroup in serverGroups)
             {
                 if (!memberGroups.Contains(serverGroup) && !groupsBlacklist.Contains(serverGroup))
                 {
@@ -81,7 +81,7 @@ namespace UKSF.Api.Teamspeak.Services
                 }
             }
 
-            foreach (int serverGroup in memberGroups.Where(serverGroup => !serverGroups.Contains(serverGroup)))
+            foreach (var serverGroup in memberGroups.Where(serverGroup => !serverGroups.Contains(serverGroup)))
             {
                 await AddServerGroup(clientDbId, serverGroup);
             }
@@ -89,6 +89,11 @@ namespace UKSF.Api.Teamspeak.Services
 
         private void ResolveRankGroup(DomainAccount domainAccount, ISet<int> memberGroups)
         {
+            if (string.IsNullOrEmpty(domainAccount.Rank))
+            {
+                return;
+            }
+
             memberGroups.Add(_ranksContext.GetSingle(domainAccount.Rank).TeamspeakGroup.ToInt());
         }
 
@@ -102,7 +107,7 @@ namespace UKSF.Api.Teamspeak.Services
                 memberGroups.Add(accountUnit.TeamspeakGroup.ToInt());
             }
 
-            int group = elcom.Members.Contains(domainAccount.Id)
+            var group = elcom.Members.Contains(domainAccount.Id)
                 ? _variablesService.GetVariable("TEAMSPEAK_GID_ELCOM").AsInt()
                 : accountUnit.TeamspeakGroup.ToInt();
             if (group == 0)
