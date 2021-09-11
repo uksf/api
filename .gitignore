@@ -244,19 +244,7 @@ tools/**
 coverage.xml
 
 # Rider
-.idea/**/workspace.xml
-.idea/**/tasks.xml
-.idea/dictionaries
-.idea/**/dataSources/
-.idea/**/dataSources.ids
-.idea/**/dataSources.local.xml
-.idea/**/sqlDataSources.xml
-.idea/**/dynamic.xml
-.idea/**/uiDesigner.xml
-.idea/**/contentModel.xml
-.idea/httpRequests/http-requests-log.http
-.idea/httpRequests/
-.idea/
+.idea/**
 
 # Specific
 appsettings.Development.json

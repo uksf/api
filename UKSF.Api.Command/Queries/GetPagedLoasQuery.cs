@@ -131,15 +131,24 @@ namespace UKSF.Api.Command.Queries
                 Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Id, regex),
                 Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Account.Lastname, regex),
                 Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Account.Firstname, regex),
-                Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Account.Rank, regex),
-                Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Account.UnitAssignment, regex)
+                Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Rank.Name, regex),
+                Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Rank.Abbreviation, regex),
+                Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Unit.Name, regex),
+                Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Unit.Shortname, regex)
             };
             return Builders<DomainLoaWithAccount>.Filter.Or(filters);
         }
 
         private static IAggregateFluent<DomainLoaWithAccount> BuildAggregator(IMongoCollection<DomainLoa> collection)
         {
-            return collection.Aggregate().Lookup("accounts", "recipient", "_id", "account").Unwind("account").As<DomainLoaWithAccount>();
+            return collection.Aggregate()
+                             .Lookup("accounts", "recipient", "_id", "account")
+                             .Unwind("account")
+                             .Lookup("ranks", "account.rank", "name", "rank")
+                             .Unwind("rank")
+                             .Lookup("units", "account.unitAssignment", "name", "unit")
+                             .Unwind("unit")
+                             .As<DomainLoaWithAccount>();
         }
     }
 
