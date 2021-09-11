@@ -28,6 +28,8 @@ namespace UKSF.Api.Command.Models
     public class DomainLoaWithAccount : DomainLoa
     {
         public DomainAccount Account;
+        public DomainRank Rank;
+        public DomainUnit Unit;
     }
 
     public class Loa
