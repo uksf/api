@@ -77,9 +77,9 @@ namespace UKSF.Api.Command.Queries
         {
             BsonDocument sortDocument = selectionMode switch
             {
-                LoaSelectionMode.CURRENT => new() { { "end", 1 }, { "start", 1 } },
-                LoaSelectionMode.FUTURE  => new() { { "start", 1 }, { "end", 1 } },
-                LoaSelectionMode.PAST    => new() { { "end", -1 }, { "start", -1 } },
+                LoaSelectionMode.CURRENT => new() { { "end", 1 }, { "start", 1 }, { "submitted", 1 } },
+                LoaSelectionMode.FUTURE  => new() { { "start", 1 }, { "end", 1 }, { "submitted", 1 } },
+                LoaSelectionMode.PAST    => new() { { "end", -1 }, { "start", -1 }, { "submitted", 1 } },
                 _                        => throw new ArgumentOutOfRangeException(nameof(selectionMode))
             };
             return new BsonDocumentSortDefinition<DomainLoaWithAccount>(sortDocument);
