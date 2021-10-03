@@ -5,7 +5,6 @@ using System.Linq;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
-using UKSF.Api.Auth.Exceptions;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Exceptions;
@@ -68,7 +67,7 @@ namespace UKSF.Api.Auth.Services
 
             if (!BCrypt.Net.BCrypt.Verify(password, domainAccount.Password))
             {
-                throw new BadRequestException("Incorrect password");
+                throw new BadRequestException("Password or email did not match");
             }
 
             return domainAccount;
