@@ -87,7 +87,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
             _teamspeakServerEventHandler.Init();
 
             _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" });
-            await Task.Delay(TimeSpan.FromMilliseconds(600));
+            await Task.Delay(TimeSpan.FromMilliseconds(750));
 
             _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(account2, new List<int> { 5 }, 1), Times.Once);
         }
@@ -129,7 +129,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
             _teamspeakServerEventHandler.Init();
 
             _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" });
-            await Task.Delay(TimeSpan.FromMilliseconds(600));
+            await Task.Delay(TimeSpan.FromMilliseconds(750));
 
             _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(domainAccount, new List<int> { 5 }, 1), Times.Once);
         }
@@ -145,9 +145,9 @@ namespace UKSF.Tests.Unit.Events.Handlers
             _teamspeakServerEventHandler.Init();
 
             _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" });
-            await Task.Delay(TimeSpan.FromMilliseconds(600));
+            await Task.Delay(TimeSpan.FromMilliseconds(750));
             _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 10}" });
-            await Task.Delay(TimeSpan.FromMilliseconds(600));
+            await Task.Delay(TimeSpan.FromMilliseconds(750));
 
             _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(domainAccount, new List<int> { 5 }, 1), Times.Once);
             _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(domainAccount, new List<int> { 10 }, 1), Times.Once);
@@ -167,7 +167,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
 
             _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" });
             _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 2, \"serverGroupId\": 10}" });
-            await Task.Delay(TimeSpan.FromMilliseconds(600 * 2));
+            await Task.Delay(TimeSpan.FromMilliseconds(750 * 2));
 
             _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(account1, new List<int> { 5 }, 1), Times.Once);
             _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(account2, new List<int> { 10 }, 2), Times.Once);
@@ -185,7 +185,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
 
             _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" });
             _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 10}" });
-            await Task.Delay(TimeSpan.FromMilliseconds(600 * 2));
+            await Task.Delay(TimeSpan.FromMilliseconds(750 * 2));
 
             _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(domainAccount, new List<int> { 5, 10 }, 1), Times.Once);
         }
@@ -216,7 +216,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
             _teamspeakServerEventHandler.Init();
 
             _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" });
-            await Task.Delay(TimeSpan.FromMilliseconds(600));
+            await Task.Delay(TimeSpan.FromMilliseconds(750));
 
             _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(null, new List<int> { 5 }, 1), Times.Once);
         }
