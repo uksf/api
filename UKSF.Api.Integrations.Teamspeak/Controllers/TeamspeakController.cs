@@ -58,7 +58,7 @@ namespace UKSF.Api.Teamspeak.Controllers
             string code = await _confirmationCodeService.CreateConfirmationCode(teamspeakId);
             _notificationsService.SendTeamspeakNotification(
                 new HashSet<int> { teamspeakId.ToInt() },
-                $"This Teamspeak ID was selected for connection to the website. Copy this code to your clipboard and return to the UKSF website application page to enter the code:\n{code}\nIf this request was not made by you, please contact an admin"
+                $"This Teamspeak ID was selected for connection to the website. Copy this code to your clipboard and return to the UKSF website application page to enter the code:\n{code}\nIf this request was not made by you, it is safe to ignore. Do not pass this code on to anyone else."
             );
         }
 
