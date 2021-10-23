@@ -33,15 +33,6 @@ namespace UKSF.Tests.Unit.Common
         }
 
         [Fact]
-        public void ShouldDelay()
-        {
-            CancellationTokenSource token = new();
-            Func<Task> act = async () => await TaskUtilities.Delay(TimeSpan.FromMilliseconds(10), token.Token);
-
-            act.ExecutionTime().Should().BeLessOrEqualTo(TimeSpan.FromMilliseconds(10));
-        }
-
-        [Fact]
         public void ShouldNotCallbackForCancellation()
         {
             CancellationTokenSource token = new();
