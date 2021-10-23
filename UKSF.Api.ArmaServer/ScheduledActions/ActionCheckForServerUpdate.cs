@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
+using UKSF.Api.Admin.Services;
 using UKSF.Api.ArmaServer.Commands;
 using UKSF.Api.ArmaServer.Queries;
 using UKSF.Api.Base.ScheduledActions;
@@ -18,6 +19,7 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
 
         private readonly IHostEnvironment _currentEnvironment;
         private readonly IClock _clock;
+        private readonly IVariablesService _variablesService;
         private readonly IUpdateServerInfrastructureCommand _updateServerInfrastructureCommand;
         private readonly IGetLatestServerInfrastructureQuery _getLatestServerInfrastructureQuery;
         private readonly IGetCurrentServerInfrastructureQuery _getCurrentServerInfrastructureQuery;
@@ -31,6 +33,7 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
             ISchedulerContext schedulerContext,
             IHostEnvironment currentEnvironment,
             IClock clock,
+            IVariablesService variablesService,
             IUpdateServerInfrastructureCommand updateServerInfrastructureCommand,
             IGetLatestServerInfrastructureQuery getLatestServerInfrastructureQuery,
             IGetCurrentServerInfrastructureQuery getCurrentServerInfrastructureQuery,
@@ -42,6 +45,7 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
             _schedulerContext = schedulerContext;
             _currentEnvironment = currentEnvironment;
             _clock = clock;
+            _variablesService = variablesService;
             _updateServerInfrastructureCommand = updateServerInfrastructureCommand;
             _getLatestServerInfrastructureQuery = getLatestServerInfrastructureQuery;
             _getCurrentServerInfrastructureQuery = getCurrentServerInfrastructureQuery;
@@ -53,6 +57,11 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
 
         public async Task Run(params object[] parameters)
         {
+            if (!_variablesService.GetFeatureState("FEATURE_AUTO_INFRA_UPDATE"))
+            {
+                return;
+            }
+
             var latestInfo = await _getLatestServerInfrastructureQuery.ExecuteAsync();
             var currentInfo = await _getCurrentServerInfrastructureQuery.ExecuteAsync();
             var installedInfo = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
