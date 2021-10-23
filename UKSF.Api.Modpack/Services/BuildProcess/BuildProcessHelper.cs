@@ -67,8 +67,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
             _process.OutputDataReceived += OnOutputDataReceived;
             _process.ErrorDataReceived += OnErrorDataReceived;
 
-            using CancellationTokenRegistration unused = _cancellationTokenSource.Token.Register(_process.Kill);
-            using CancellationTokenRegistration _ = _errorCancellationTokenSource.Token.Register(_process.Kill);
+            using var unused = _cancellationTokenSource.Token.Register(_process.Kill);
+            using var _ = _errorCancellationTokenSource.Token.Register(_process.Kill);
 
             _process.Start();
             _process.BeginOutputReadLine();
@@ -96,8 +96,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
 
                 if (_raiseErrors && _process.ExitCode != 0)
                 {
-                    string json = "";
-                    List<Tuple<string, string>> messages = ExtractMessages(_results.Last(), ref json);
+                    var json = "";
+                    var messages = ExtractMessages(_results.Last(), ref json);
                     if (messages.Any())
                     {
                         throw new(messages.First().Item1);
@@ -135,7 +135,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
                 return;
             }
 
-            string message = receivedEventArgs.Data;
+            var message = receivedEventArgs.Data;
             if (!string.IsNullOrEmpty(message))
             {
                 _results.Add(message);
@@ -143,11 +143,11 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
 
             if (!_suppressOutput)
             {
-                string json = "";
+                var json = "";
                 try
                 {
-                    List<Tuple<string, string>> messages = ExtractMessages(message, ref json);
-                    foreach ((string text, string colour) in messages)
+                    var messages = ExtractMessages(message, ref json);
+                    foreach (var (text, colour) in messages)
                     {
                         _logger.Log(text, colour);
                     }
@@ -168,7 +168,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
                 return;
             }
 
-            string message = receivedEventArgs.Data;
+            var message = receivedEventArgs.Data;
             if (string.IsNullOrEmpty(message) || CheckIgnoreErrorGates(message))
             {
                 return;
@@ -210,9 +210,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
             List<Tuple<string, string>> messages = new();
             if (message.Length > 5 && message.Substring(0, 4) == "JSON")
             {
-                string[] parts = message.Split('{', '}'); // covers cases where buffer gets extra data flushed to it after the closing brace
+                var parts = message.Split('{', '}'); // covers cases where buffer gets extra data flushed to it after the closing brace
                 json = $"{{{parts[1].Escape().Replace("\\\\n", "\\n")}}}";
-                JObject jsonObject = JObject.Parse(json);
+                var jsonObject = JObject.Parse(json);
                 messages.Add(new(jsonObject.GetValueFromBody("message"), jsonObject.GetValueFromBody("colour")));
                 messages.AddRange(parts.Skip(2).Where(x => !string.IsNullOrEmpty(x)).Select(extra => new Tuple<string, string>(extra, "")));
             }

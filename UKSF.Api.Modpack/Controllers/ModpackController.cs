@@ -41,7 +41,7 @@ namespace UKSF.Api.Modpack.Controllers
         [HttpGet("builds/{id}"), Permissions(Permissions.MEMBER)]
         public ModpackBuild GetBuild(string id)
         {
-            ModpackBuild build = _modpackService.GetBuild(id);
+            var build = _modpackService.GetBuild(id);
             if (build == null)
             {
                 throw new NotFoundException("Build does not exist");
@@ -53,7 +53,7 @@ namespace UKSF.Api.Modpack.Controllers
         [HttpGet("builds/{id}/step/{index}"), Permissions(Permissions.MEMBER)]
         public ModpackBuildStep GetBuildStep(string id, int index)
         {
-            ModpackBuild build = _modpackService.GetBuild(id);
+            var build = _modpackService.GetBuild(id);
             if (build == null)
             {
                 throw new NotFoundException("Build does not exist");
@@ -70,7 +70,7 @@ namespace UKSF.Api.Modpack.Controllers
         [HttpGet("builds/{id}/rebuild"), Permissions(Permissions.ADMIN)]
         public async Task Rebuild(string id)
         {
-            ModpackBuild build = _modpackService.GetBuild(id);
+            var build = _modpackService.GetBuild(id);
             if (build == null)
             {
                 throw new NotFoundException("Build does not exist");
@@ -82,7 +82,7 @@ namespace UKSF.Api.Modpack.Controllers
         [HttpGet("builds/{id}/cancel"), Permissions(Permissions.ADMIN)]
         public async Task CancelBuild(string id)
         {
-            ModpackBuild build = _modpackService.GetBuild(id);
+            var build = _modpackService.GetBuild(id);
             if (build == null)
             {
                 throw new NotFoundException("Build does not exist");

@@ -45,7 +45,7 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions
         [Fact]
         public void When_getting_action_name()
         {
-            string subject = _actionPruneLogs.Name;
+            var subject = _actionPruneLogs.Name;
 
             subject.Should().Be("ActionPruneLogs");
         }

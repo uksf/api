@@ -46,7 +46,7 @@ namespace UKSF.Api.Personnel.Tests.Commands
         {
             _mockConfirmationCodeService.Setup(x => x.GetConfirmationCodeValue(_confirmationCode)).ReturnsAsync(_teamspeakId);
 
-            BsonValue expectedUpdate = Builders<DomainAccount>.Update.Set(x => x.TeamspeakIdentities, new() { 2 }).RenderUpdate();
+            var expectedUpdate = Builders<DomainAccount>.Update.Set(x => x.TeamspeakIdentities, new() { 2 }).RenderUpdate();
             BsonValue createdUpdate = null;
             _mockAccountContext.Setup(x => x.Update(_accountId, It.IsAny<UpdateDefinition<DomainAccount>>()))
                                .Callback((string _, UpdateDefinition<DomainAccount> update) => createdUpdate = update.RenderUpdate());
@@ -65,7 +65,7 @@ namespace UKSF.Api.Personnel.Tests.Commands
                                    }
                                );
 
-            DomainAccount result = await _subject.ExecuteAsync(new(_accountId, _teamspeakId, _confirmationCode));
+            var result = await _subject.ExecuteAsync(new(_accountId, _teamspeakId, _confirmationCode));
 
             result.TeamspeakIdentities.Single().Should().Be(2);
             createdUpdate.Should().BeEquivalentTo(expectedUpdate);

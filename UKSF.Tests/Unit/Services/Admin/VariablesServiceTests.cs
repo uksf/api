@@ -16,7 +16,7 @@ namespace UKSF.Tests.Unit.Services.Admin
         {
             VariableItem variableItem = new() { Key = "Test", Item = "item1,item2, item3" };
 
-            string[] subject = variableItem.AsArray();
+            var subject = variableItem.AsArray();
 
             subject.Should().HaveCount(3);
             subject.Should().Contain(new[] { "item1", "item2", "item3" });
@@ -27,7 +27,7 @@ namespace UKSF.Tests.Unit.Services.Admin
         {
             VariableItem variableItem = new() { Key = "Test", Item = "\"item1\",item2" };
 
-            string[] subject = variableItem.AsArray(x => x.RemoveQuotes());
+            var subject = variableItem.AsArray(x => x.RemoveQuotes());
 
             subject.Should().HaveCount(2);
             subject.Should().Contain(new[] { "item1", "item2" });
@@ -39,7 +39,7 @@ namespace UKSF.Tests.Unit.Services.Admin
             const bool EXPECTED = true;
             VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
 
-            bool subject = variableItem.AsBool();
+            var subject = variableItem.AsBool();
 
             subject.Should().Be(EXPECTED);
         }
@@ -50,7 +50,7 @@ namespace UKSF.Tests.Unit.Services.Admin
             const double EXPECTED = 1.5;
             VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
 
-            double subject = variableItem.AsDouble();
+            var subject = variableItem.AsDouble();
 
             subject.Should().Be(EXPECTED);
         }
@@ -60,7 +60,7 @@ namespace UKSF.Tests.Unit.Services.Admin
         {
             VariableItem variableItem = new() { Key = "Test", Item = "1.5,1.67845567657, -0.000000456" };
 
-            List<double> subject = variableItem.AsDoublesArray().ToList();
+            var subject = variableItem.AsDoublesArray().ToList();
 
             subject.Should().HaveCount(3);
             subject.Should().Contain(new[] { 1.5, 1.67845567657, -0.000000456 });
@@ -72,7 +72,7 @@ namespace UKSF.Tests.Unit.Services.Admin
         {
             VariableItem variableItem = new() { Key = "Test", Item = "item1,item2, item3" };
 
-            IEnumerable<string> subject = variableItem.AsEnumerable();
+            var subject = variableItem.AsEnumerable();
 
             subject.Should().BeAssignableTo<IEnumerable<string>>();
             subject.Should().HaveCount(3);
@@ -86,7 +86,7 @@ namespace UKSF.Tests.Unit.Services.Admin
             const string EXPECTED = "Value";
             VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
 
-            string subject = variableItem.AsString();
+            var subject = variableItem.AsString();
 
             subject.Should().Be(EXPECTED);
         }
@@ -97,7 +97,7 @@ namespace UKSF.Tests.Unit.Services.Admin
             const ulong EXPECTED = ulong.MaxValue;
             VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
 
-            ulong subject = variableItem.AsUlong();
+            var subject = variableItem.AsUlong();
 
             subject.Should().Be(EXPECTED);
         }

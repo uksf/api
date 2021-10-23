@@ -26,8 +26,8 @@ namespace UKSF.Api.Admin.Extensions
 
         public static int AsInt(this VariableItem variable)
         {
-            string item = variable.AsString();
-            if (!int.TryParse(item, out int output))
+            var item = variable.AsString();
+            if (!int.TryParse(item, out var output))
             {
                 throw new InvalidCastException($"VariableItem {item} cannot be converted to an int");
             }
@@ -37,8 +37,8 @@ namespace UKSF.Api.Admin.Extensions
 
         public static double AsDouble(this VariableItem variable)
         {
-            string item = variable.AsString();
-            if (!double.TryParse(item, out double output))
+            var item = variable.AsString();
+            if (!double.TryParse(item, out var output))
             {
                 throw new InvalidCastException($"VariableItem {item} cannot be converted to a double");
             }
@@ -48,8 +48,8 @@ namespace UKSF.Api.Admin.Extensions
 
         public static bool AsBool(this VariableItem variable)
         {
-            string item = variable.AsString();
-            if (!bool.TryParse(item, out bool output))
+            var item = variable.AsString();
+            if (!bool.TryParse(item, out var output))
             {
                 throw new InvalidCastException($"VariableItem {item} cannot be converted to a bool");
             }
@@ -64,14 +64,14 @@ namespace UKSF.Api.Admin.Extensions
                 return false;
             }
 
-            string item = variable.Item.ToString();
-            return !bool.TryParse(item, out bool output) ? defaultState : output;
+            var item = variable.Item.ToString();
+            return !bool.TryParse(item, out var output) ? defaultState : output;
         }
 
         public static ulong AsUlong(this VariableItem variable)
         {
-            string item = variable.AsString();
-            if (!ulong.TryParse(item, out ulong output))
+            var item = variable.AsString();
+            if (!ulong.TryParse(item, out var output))
             {
                 throw new InvalidCastException($"VariableItem {item} cannot be converted to a ulong");
             }
@@ -81,33 +81,33 @@ namespace UKSF.Api.Admin.Extensions
 
         public static string[] AsArray(this VariableItem variable, Func<string, string> predicate = null)
         {
-            string itemString = variable.AsString();
+            var itemString = variable.AsString();
             itemString = Regex.Replace(itemString, "\\s*,\\s*", ",");
-            string[] items = itemString.Split(",");
+            var items = itemString.Split(",");
             return predicate != null ? items.Select(predicate).ToArray() : items;
         }
 
         public static IEnumerable<string> AsEnumerable(this VariableItem variable, Func<string, string> predicate = null)
         {
-            string itemString = variable.AsString();
+            var itemString = variable.AsString();
             itemString = Regex.Replace(itemString, "\\s*,\\s*", ",");
-            IEnumerable<string> items = itemString.Split(",").AsEnumerable();
+            var items = itemString.Split(",").AsEnumerable();
             return predicate != null ? items.Select(predicate) : items;
         }
 
         public static IEnumerable<int> AsIntArray(this VariableItem variable)
         {
-            string itemString = variable.AsString();
+            var itemString = variable.AsString();
             itemString = Regex.Replace(itemString, "\\s*,\\s*", ",");
-            IEnumerable<int> items = itemString.Split(",").Select(x => x.ToInt());
+            var items = itemString.Split(",").Select(x => x.ToInt());
             return items;
         }
 
         public static IEnumerable<double> AsDoublesArray(this VariableItem variable)
         {
-            string itemString = variable.AsString();
+            var itemString = variable.AsString();
             itemString = Regex.Replace(itemString, "\\s*,\\s*", ",");
-            IEnumerable<double> items = itemString.Split(",").Select(x => x.ToDouble());
+            var items = itemString.Split(",").Select(x => x.ToDouble());
             return items;
         }
     }

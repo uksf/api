@@ -34,7 +34,7 @@ namespace UKSF.Tests.Unit.Services.Common
             _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(x => collection.FirstOrDefault(x));
             _mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(x => x);
 
-            string subject = _objectIdConversionService.ConvertObjectIds(unit1.Id);
+            var subject = _objectIdConversionService.ConvertObjectIds(unit1.Id);
 
             subject.Should().Be("7 Squadron");
         }
@@ -49,7 +49,7 @@ namespace UKSF.Tests.Unit.Services.Common
             _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
             _mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(x => x);
 
-            string subject = _objectIdConversionService.ConvertObjectIds(INPUT);
+            var subject = _objectIdConversionService.ConvertObjectIds(INPUT);
 
             subject.Should().Be(EXPECTED);
         }
@@ -63,7 +63,7 @@ namespace UKSF.Tests.Unit.Services.Common
             _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns<DomainUnit>(null);
             _mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(x => x);
 
-            string subject = _objectIdConversionService.ConvertObjectIds(INPUT);
+            var subject = _objectIdConversionService.ConvertObjectIds(INPUT);
 
             subject.Should().Be(EXPECTED);
         }
@@ -71,7 +71,7 @@ namespace UKSF.Tests.Unit.Services.Common
         [Fact]
         public void ShouldReturnEmpty()
         {
-            string subject = _objectIdConversionService.ConvertObjectIds("");
+            var subject = _objectIdConversionService.ConvertObjectIds("");
 
             subject.Should().Be(string.Empty);
         }
@@ -89,7 +89,7 @@ namespace UKSF.Tests.Unit.Services.Common
             _mockDisplayNameService.Setup(x => x.GetDisplayName("5e39336e1b92ee2d14b7fe08")).Returns("Maj.Bridgford.A");
             _mockDisplayNameService.Setup(x => x.GetDisplayName("5e3935db1b92ee2d14b7fe09")).Returns("Cpl.Carr.C");
 
-            string subject = _objectIdConversionService.ConvertObjectIds(input);
+            var subject = _objectIdConversionService.ConvertObjectIds(input);
 
             subject.Should().Be(expected);
         }

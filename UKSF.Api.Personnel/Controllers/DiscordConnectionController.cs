@@ -77,7 +77,7 @@ namespace UKSF.Api.Personnel.Controllers
         private async Task<string> GetUrlParameters(string code, string redirectUrl)
         {
             using HttpClient client = new();
-            HttpResponseMessage response = await client.PostAsync(
+            var response = await client.PostAsync(
                 "https://discord.com/api/oauth2/token",
                 new FormUrlEncodedContent(
                     new Dictionary<string, string>
@@ -91,14 +91,14 @@ namespace UKSF.Api.Personnel.Controllers
                     }
                 )
             );
-            string result = await response.Content.ReadAsStringAsync();
+            var result = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning($"A discord connection request was denied by the user, or an error occurred: {result}");
                 return "discordid=fail";
             }
 
-            string token = JObject.Parse(result)["access_token"]?.ToString();
+            var token = JObject.Parse(result)["access_token"]?.ToString();
             if (string.IsNullOrEmpty(token))
             {
                 _logger.LogWarning("A discord connection request failed. Could not get access token");
@@ -108,8 +108,8 @@ namespace UKSF.Api.Personnel.Controllers
             client.DefaultRequestHeaders.Authorization = new("Bearer", token);
             response = await client.GetAsync("https://discord.com/api/users/@me");
             result = await response.Content.ReadAsStringAsync();
-            string id = JObject.Parse(result)["id"]?.ToString();
-            string username = JObject.Parse(result)["username"]?.ToString();
+            var id = JObject.Parse(result)["id"]?.ToString();
+            var username = JObject.Parse(result)["username"]?.ToString();
             if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(username))
             {
                 _logger.LogWarning($"A discord connection request failed. Could not get username ({username}) or id ({id}) or an error occurred: {result}");
@@ -121,14 +121,14 @@ namespace UKSF.Api.Personnel.Controllers
                 $"https://discord.com/api/guilds/{_variablesService.GetVariable("DID_SERVER").AsUlong()}/members/{id}",
                 new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json")
             );
-            string added = "true";
+            var added = "true";
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning($"Failed to add '{username}' to guild: {response.StatusCode}, {response.Content.ReadAsStringAsync().Result}");
                 added = "false";
             }
 
-            string confirmationCode = await _confirmationCodeService.CreateConfirmationCode(id);
+            var confirmationCode = await _confirmationCodeService.CreateConfirmationCode(id);
             return $"validation={confirmationCode}&discordid={id}&added={added}";
         }
     }

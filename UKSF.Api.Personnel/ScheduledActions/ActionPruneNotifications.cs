@@ -39,8 +39,8 @@ namespace UKSF.Api.Personnel.ScheduledActions
 
         public Task Run(params object[] parameters)
         {
-            DateTime now = _clock.UtcNow();
-            Task notificationsTask = _notificationsContext.DeleteMany(x => x.Timestamp < now.AddMonths(-1));
+            var now = _clock.UtcNow();
+            var notificationsTask = _notificationsContext.DeleteMany(x => x.Timestamp < now.AddMonths(-1));
 
             Task.WaitAll(notificationsTask);
             return Task.CompletedTask;

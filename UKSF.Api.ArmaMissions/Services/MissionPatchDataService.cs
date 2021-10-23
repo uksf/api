@@ -53,15 +53,14 @@ namespace UKSF.Api.ArmaMissions.Services
                 MissionPatchData.Instance.Units.Add(new() { SourceUnit = unit });
             }
 
-            foreach (DomainAccount account in _accountContext.Get()
-                                                             .Where(x => !string.IsNullOrEmpty(x.Rank) && _ranksService.IsSuperiorOrEqual(x.Rank, "Recruit")))
+            foreach (var account in _accountContext.Get().Where(x => !string.IsNullOrEmpty(x.Rank) && _ranksService.IsSuperiorOrEqual(x.Rank, "Recruit")))
             {
                 MissionPatchData.Instance.Players.Add(
                     new() { DomainAccount = account, Rank = _ranksContext.GetSingle(account.Rank), Name = _displayNameService.GetDisplayName(account) }
                 );
             }
 
-            foreach (MissionUnit missionUnit in MissionPatchData.Instance.Units)
+            foreach (var missionUnit in MissionPatchData.Instance.Units)
             {
                 missionUnit.Callsign = MissionDataResolver.ResolveCallsign(missionUnit, missionUnit.SourceUnit.Callsign);
                 missionUnit.Members = missionUnit.SourceUnit.Members.Select(x => MissionPatchData.Instance.Players.FirstOrDefault(y => y.DomainAccount.Id == x))
@@ -75,13 +74,13 @@ namespace UKSF.Api.ArmaMissions.Services
                 }
             }
 
-            foreach (MissionPlayer missionPlayer in MissionPatchData.Instance.Players)
+            foreach (var missionPlayer in MissionPatchData.Instance.Players)
             {
                 missionPlayer.Unit = MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Name == missionPlayer.DomainAccount.UnitAssignment);
                 missionPlayer.ObjectClass = MissionDataResolver.ResolveObjectClass(missionPlayer);
             }
 
-            MissionUnit parent = MissionPatchData.Instance.Units.First(x => x.SourceUnit.Parent == ObjectId.Empty.ToString());
+            var parent = MissionPatchData.Instance.Units.First(x => x.SourceUnit.Parent == ObjectId.Empty.ToString());
             MissionPatchData.Instance.OrderedUnits.Add(parent);
             InsertUnitChildren(MissionPatchData.Instance.OrderedUnits, parent);
             MissionPatchData.Instance.OrderedUnits.RemoveAll(
@@ -92,17 +91,15 @@ namespace UKSF.Api.ArmaMissions.Services
 
         private static void InsertUnitChildren(List<MissionUnit> newUnits, MissionUnit parent)
         {
-            List<MissionUnit> children = MissionPatchData.Instance.Units.Where(x => x.SourceUnit.Parent == parent.SourceUnit.Id)
-                                                         .OrderBy(x => x.SourceUnit.Order)
-                                                         .ToList();
+            var children = MissionPatchData.Instance.Units.Where(x => x.SourceUnit.Parent == parent.SourceUnit.Id).OrderBy(x => x.SourceUnit.Order).ToList();
             if (children.Count == 0)
             {
                 return;
             }
 
-            int index = newUnits.IndexOf(parent);
+            var index = newUnits.IndexOf(parent);
             newUnits.InsertRange(index + 1, children);
-            foreach (MissionUnit child in children)
+            foreach (var child in children)
             {
                 InsertUnitChildren(newUnits, child);
             }

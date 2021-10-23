@@ -30,7 +30,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
             _mockRanksDataService.Setup(x => x.Get()).Returns(mockCollection);
             _mockRanksDataService.Setup(x => x.GetSingle("Private")).Returns(rank1);
 
-            int subject = _ranksService.GetRankOrder("Private");
+            var subject = _ranksService.GetRankOrder("Private");
 
             subject.Should().Be(0);
         }
@@ -44,7 +44,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
 
             _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
-            int subject = _ranksService.Sort("Recruit", "Private");
+            var subject = _ranksService.Sort("Recruit", "Private");
 
             subject.Should().Be(1);
         }
@@ -54,7 +54,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
         {
             _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(null);
 
-            bool subject = _ranksService.IsEqual("Private", "Recruit");
+            var subject = _ranksService.IsEqual("Private", "Recruit");
 
             subject.Should().Be(true);
         }
@@ -64,7 +64,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
         {
             _mockRanksDataService.Setup(x => x.Get()).Returns(new List<DomainRank>());
 
-            int subject = _ranksService.GetRankOrder("Private");
+            var subject = _ranksService.GetRankOrder("Private");
             _mockRanksDataService.Setup(x => x.GetSingle("Private")).Returns<DomainRank>(null);
 
             subject.Should().Be(-1);
@@ -75,7 +75,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
         {
             _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(null);
 
-            int subject = _ranksService.Sort("Recruit", "Private");
+            var subject = _ranksService.Sort("Recruit", "Private");
 
             subject.Should().Be(0);
         }
@@ -112,7 +112,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
 
             _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
-            bool subject = _ranksService.IsSuperior(rankName1, rankName2);
+            var subject = _ranksService.IsSuperior(rankName1, rankName2);
 
             subject.Should().Be(expected);
         }
@@ -127,7 +127,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
 
             _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
-            bool subject = _ranksService.IsEqual(rankName1, rankName2);
+            var subject = _ranksService.IsEqual(rankName1, rankName2);
 
             subject.Should().Be(expected);
         }
@@ -143,7 +143,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
 
             _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
-            bool subject = _ranksService.IsSuperiorOrEqual(rankName1, rankName2);
+            var subject = _ranksService.IsSuperiorOrEqual(rankName1, rankName2);
 
             subject.Should().Be(expected);
         }

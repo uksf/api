@@ -17,7 +17,7 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions
         [Fact]
         public async Task When_deleting_confirmation_code()
         {
-            string id = ObjectId.GenerateNewId().ToString();
+            var id = ObjectId.GenerateNewId().ToString();
 
             _actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(_mockConfirmationCodeContext.Object);
 
@@ -41,7 +41,7 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions
         {
             _actionDeleteExpiredConfirmationCode = new ActionDeleteExpiredConfirmationCode(_mockConfirmationCodeContext.Object);
 
-            string subject = _actionDeleteExpiredConfirmationCode.Name;
+            var subject = _actionDeleteExpiredConfirmationCode.Name;
 
             subject.Should().Be("ActionDeleteExpiredConfirmationCode");
         }

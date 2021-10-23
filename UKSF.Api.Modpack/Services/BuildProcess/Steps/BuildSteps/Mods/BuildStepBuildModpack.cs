@@ -14,9 +14,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
         {
             StepLogger.Log("Running build for UKSF");
 
-            string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
-            string releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@uksf");
-            string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
+            var toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
+            var releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@uksf");
+            var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
 
             StepLogger.LogSurround("\nRunning make.py...");
             BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource);

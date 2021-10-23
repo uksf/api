@@ -38,7 +38,7 @@ namespace UKSF.Tests.Unit.Data.Message
             _mockCollection = new() { commentThread };
 
             Comment comment = new() { Author = ObjectId.GenerateNewId().ToString(), Content = "Hello there" };
-            BsonValue expected = Builders<CommentThread>.Update.Push(x => x.Comments, comment).RenderUpdate();
+            var expected = Builders<CommentThread>.Update.Push(x => x.Comments, comment).RenderUpdate();
             UpdateDefinition<CommentThread> subject = null;
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<CommentThread>>()))
@@ -57,7 +57,7 @@ namespace UKSF.Tests.Unit.Data.Message
             _mockCollection = new() { commentThread };
 
             Comment comment = new() { Author = ObjectId.GenerateNewId().ToString(), Content = "Hello there" };
-            BsonValue expected = Builders<CommentThread>.Update.Pull(x => x.Comments, comment).RenderUpdate();
+            var expected = Builders<CommentThread>.Update.Pull(x => x.Comments, comment).RenderUpdate();
             UpdateDefinition<CommentThread> subject = null;
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<CommentThread>>()))

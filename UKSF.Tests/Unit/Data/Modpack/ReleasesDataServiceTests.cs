@@ -34,7 +34,7 @@ namespace UKSF.Tests.Unit.Data.Modpack
 
             _mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackRelease> { item1, item2, item3 });
 
-            IEnumerable<ModpackRelease> subject = _releasesContext.Get();
+            var subject = _releasesContext.Get();
 
             subject.Should().ContainInOrder(item2, item3, item1);
         }

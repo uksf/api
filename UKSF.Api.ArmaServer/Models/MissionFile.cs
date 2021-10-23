@@ -10,7 +10,7 @@ namespace UKSF.Api.ArmaServer.Models
 
         public MissionFile(FileSystemInfo fileInfo)
         {
-            string[] fileNameParts = fileInfo.Name.Split(".");
+            var fileNameParts = fileInfo.Name.Split(".");
             Path = fileInfo.Name;
             Name = fileNameParts[0];
             Map = fileNameParts[1];

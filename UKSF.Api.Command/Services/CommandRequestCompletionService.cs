@@ -69,7 +69,7 @@ namespace UKSF.Api.Command.Services
         {
             if (_commandRequestService.IsRequestApproved(id) || _commandRequestService.IsRequestRejected(id))
             {
-                CommandRequest request = _commandRequestContext.GetSingle(id);
+                var request = _commandRequestContext.GetSingle(id);
                 switch (request.Type)
                 {
                     case CommandRequestType.PROMOTION:
@@ -109,8 +109,8 @@ namespace UKSF.Api.Command.Services
         {
             if (_commandRequestService.IsRequestApproved(request.Id))
             {
-                string role = HandleRecruitToPrivate(request.Recipient, request.Value);
-                Notification notification = await _assignmentService.UpdateUnitRankAndRole(
+                var role = HandleRecruitToPrivate(request.Recipient, request.Value);
+                var notification = await _assignmentService.UpdateUnitRankAndRole(
                     request.Recipient,
                     rankString: request.Value,
                     role: role,
@@ -151,7 +151,7 @@ namespace UKSF.Api.Command.Services
         {
             if (_commandRequestService.IsRequestApproved(request.Id))
             {
-                DomainAccount domainAccount = _accountContext.GetSingle(request.Recipient);
+                var domainAccount = _accountContext.GetSingle(request.Recipient);
                 Discharge discharge = new()
                 {
                     Rank = domainAccount.Rank,
@@ -160,7 +160,7 @@ namespace UKSF.Api.Command.Services
                     DischargedBy = request.DisplayRequester,
                     Reason = request.Reason
                 };
-                DischargeCollection dischargeCollection = _dischargeContext.GetSingle(x => x.AccountId == domainAccount.Id);
+                var dischargeCollection = _dischargeContext.GetSingle(x => x.AccountId == domainAccount.Id);
                 if (dischargeCollection == null)
                 {
                     dischargeCollection = new() { AccountId = domainAccount.Id, Name = $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}" };
@@ -180,7 +180,7 @@ namespace UKSF.Api.Command.Services
 
                 await _accountContext.Update(domainAccount.Id, x => x.MembershipState, MembershipState.DISCHARGED);
 
-                Notification notification = await _assignmentService.UpdateUnitRankAndRole(
+                var notification = await _assignmentService.UpdateUnitRankAndRole(
                     domainAccount.Id,
                     AssignmentService.REMOVE_FLAG,
                     AssignmentService.REMOVE_FLAG,
@@ -207,7 +207,7 @@ namespace UKSF.Api.Command.Services
         {
             if (_commandRequestService.IsRequestApproved(request.Id))
             {
-                Notification notification = await _assignmentService.UpdateUnitRankAndRole(
+                var notification = await _assignmentService.UpdateUnitRankAndRole(
                     request.Recipient,
                     role: request.Value == "None" ? AssignmentService.REMOVE_FLAG : request.Value,
                     reason: request.Reason
@@ -245,7 +245,7 @@ namespace UKSF.Api.Command.Services
                     }
                     else
                     {
-                        string role = await _assignmentService.UnassignUnitRole(request.Recipient, request.Value);
+                        var role = await _assignmentService.UnassignUnitRole(request.Recipient, request.Value);
                         _notificationsService.Add(
                             new()
                             {
@@ -312,7 +312,7 @@ namespace UKSF.Api.Command.Services
             if (_commandRequestService.IsRequestApproved(request.Id))
             {
                 var unit = _unitsContext.GetSingle(request.Value);
-                Notification notification = await _assignmentService.UpdateUnitRankAndRole(request.Recipient, unit.Name, reason: request.Reason);
+                var notification = await _assignmentService.UpdateUnitRankAndRole(request.Recipient, unit.Name, reason: request.Reason);
                 _notificationsService.Add(notification);
                 await _commandRequestService.ArchiveRequest(request.Id);
                 _logger.LogAudit(
@@ -330,10 +330,10 @@ namespace UKSF.Api.Command.Services
         {
             if (_commandRequestService.IsRequestApproved(request.Id))
             {
-                DischargeCollection dischargeCollection = _dischargeContext.GetSingle(x => x.AccountId == request.Recipient);
+                var dischargeCollection = _dischargeContext.GetSingle(x => x.AccountId == request.Recipient);
                 await _dischargeContext.Update(dischargeCollection.Id, x => x.Reinstated, true);
                 await _accountContext.Update(dischargeCollection.AccountId, x => x.MembershipState, MembershipState.MEMBER);
-                Notification notification = await _assignmentService.UpdateUnitRankAndRole(
+                var notification = await _assignmentService.UpdateUnitRankAndRole(
                     dischargeCollection.AccountId,
                     "Basic Training Unit",
                     "Trainee",
@@ -359,7 +359,7 @@ namespace UKSF.Api.Command.Services
 
         private string HandleRecruitToPrivate(string id, string targetRank)
         {
-            DomainAccount domainAccount = _accountContext.GetSingle(id);
+            var domainAccount = _accountContext.GetSingle(id);
             return domainAccount.Rank == "Recruit" && targetRank == "Private" ? "Rifleman" : domainAccount.RoleAssignment;
         }
     }

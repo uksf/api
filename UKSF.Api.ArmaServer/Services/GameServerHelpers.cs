@@ -89,7 +89,7 @@ namespace UKSF.Api.ArmaServer.Services
 
         public string GetGameServerExecutablePath(GameServer gameServer)
         {
-            string variableKey = gameServer.Environment switch
+            var variableKey = gameServer.Environment switch
             {
                 GameEnvironment.RELEASE => "SERVER_PATH_RELEASE",
                 GameEnvironment.RC      => "SERVER_PATH_RC",
@@ -116,7 +116,7 @@ namespace UKSF.Api.ArmaServer.Services
 
         public string GetGameServerModsPaths(GameEnvironment environment)
         {
-            string variableKey = environment switch
+            var variableKey = environment switch
             {
                 GameEnvironment.RELEASE => "MODPACK_PATH_RELEASE",
                 GameEnvironment.RC      => "MODPACK_PATH_RC",
@@ -162,15 +162,15 @@ namespace UKSF.Api.ArmaServer.Services
 
         public string GetMaxPlayerCountFromConfig(GameServer gameServer)
         {
-            string maxPlayers = File.ReadAllLines(GetGameServerConfigPath(gameServer)).First(x => x.Contains("maxPlayers"));
+            var maxPlayers = File.ReadAllLines(GetGameServerConfigPath(gameServer)).First(x => x.Contains("maxPlayers"));
             maxPlayers = maxPlayers.RemoveSpaces().Replace(";", "");
             return maxPlayers.Split("=")[1];
         }
 
         public int GetMaxCuratorCountFromSettings()
         {
-            string[] lines = File.ReadAllLines(GetGameServerSettingsPath());
-            string curatorsMaxString = lines.FirstOrDefault(x => x.Contains("uksf_curator_curatorsMax"));
+            var lines = File.ReadAllLines(GetGameServerSettingsPath());
+            var curatorsMaxString = lines.FirstOrDefault(x => x.Contains("uksf_curator_curatorsMax"));
             if (string.IsNullOrEmpty(curatorsMaxString))
             {
                 _logger.LogWarning("Could not find max curators in server settings file. Loading hardcoded deault '5'");
@@ -193,7 +193,7 @@ namespace UKSF.Api.ArmaServer.Services
 
         public bool IsMainOpTime()
         {
-            DateTime now = DateTime.UtcNow;
+            var now = DateTime.UtcNow;
             return now.DayOfWeek == DayOfWeek.Saturday && now.Hour >= 19 && now.Minute >= 30;
         }
 

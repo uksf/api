@@ -41,8 +41,8 @@ namespace UKSF.Api.Modpack.Services
 
         public async Task MakeDraftRelease(string version, GithubCommit commit)
         {
-            string changelog = await _githubService.GenerateChangelog(version);
-            string creatorId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
+            var changelog = await _githubService.GenerateChangelog(version);
+            var creatorId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
             await _releasesContext.Add(new() { Timestamp = DateTime.Now, Version = version, Changelog = changelog, IsDraft = true, CreatorId = creatorId });
         }
 
@@ -53,7 +53,7 @@ namespace UKSF.Api.Modpack.Services
 
         public async Task PublishRelease(string version)
         {
-            ModpackRelease release = GetRelease(version);
+            var release = GetRelease(version);
             if (release == null)
             {
                 throw new NullReferenceException($"Could not find release {version}");
@@ -73,8 +73,8 @@ namespace UKSF.Api.Modpack.Services
 
         public async Task AddHistoricReleases(IEnumerable<ModpackRelease> releases)
         {
-            IEnumerable<ModpackRelease> existingReleases = _releasesContext.Get();
-            foreach (ModpackRelease release in releases.Where(x => existingReleases.All(y => y.Version != x.Version)))
+            var existingReleases = _releasesContext.Get();
+            foreach (var release in releases.Where(x => existingReleases.All(y => y.Version != x.Version)))
             {
                 await _releasesContext.Add(release);
             }

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FluentAssertions;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Base.Context;
@@ -94,7 +93,7 @@ namespace UKSF.Tests.Unit.Data
         {
             _mockDataCollection.Setup(x => x.Get()).Returns(() => _mockCollection);
 
-            IEnumerable<TestDataModel> subject = _testContext.Get();
+            var subject = _testContext.Get();
 
             subject.Should().BeSameAs(_mockCollection);
         }
@@ -108,7 +107,7 @@ namespace UKSF.Tests.Unit.Data
 
             _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(x => _mockCollection.Where(x).ToList());
 
-            IEnumerable<TestDataModel> subject = _testContext.Get(x => x.Id == item1.Id);
+            var subject = _testContext.Get(x => x.Id == item1.Id);
 
             subject.Should().HaveCount(1).And.Contain(item1);
         }
@@ -120,7 +119,7 @@ namespace UKSF.Tests.Unit.Data
 
             _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(item1);
 
-            TestDataModel subject = _testContext.GetSingle(item1.Id);
+            var subject = _testContext.GetSingle(item1.Id);
 
             subject.Should().Be(item1);
         }
@@ -134,7 +133,7 @@ namespace UKSF.Tests.Unit.Data
 
             _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(x => _mockCollection.First(x));
 
-            TestDataModel subject = _testContext.GetSingle(x => x.Id == item1.Id);
+            var subject = _testContext.GetSingle(x => x.Id == item1.Id);
 
             subject.Should().Be(item1);
         }
@@ -170,8 +169,8 @@ namespace UKSF.Tests.Unit.Data
         {
             TestDataModel item1 = new() { Id = "1", Name = "1" };
             _mockCollection = new() { item1 };
-            BsonValue expectedFilter = Builders<TestDataModel>.Filter.Where(x => x.Name == "1").RenderFilter();
-            BsonValue expectedUpdate = Builders<TestDataModel>.Update.Set(x => x.Name, "2").RenderUpdate();
+            var expectedFilter = Builders<TestDataModel>.Filter.Where(x => x.Name == "1").RenderFilter();
+            var expectedUpdate = Builders<TestDataModel>.Update.Set(x => x.Name, "2").RenderUpdate();
             FilterDefinition<TestDataModel> subjectFilter = null;
             UpdateDefinition<TestDataModel> subjectUpdate = null;
 
@@ -227,7 +226,7 @@ namespace UKSF.Tests.Unit.Data
         {
             TestDataModel item1 = new() { Name = "1" };
             _mockCollection = new() { item1 };
-            BsonValue expected = Builders<TestDataModel>.Update.Set(x => x.Name, "2").RenderUpdate();
+            var expected = Builders<TestDataModel>.Update.Set(x => x.Name, "2").RenderUpdate();
             UpdateDefinition<TestDataModel> subject = null;
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
@@ -244,7 +243,7 @@ namespace UKSF.Tests.Unit.Data
         {
             TestDataModel item1 = new() { Name = "1" };
             _mockCollection = new() { item1 };
-            BsonValue expected = Builders<TestDataModel>.Update.Unset(x => x.Name).RenderUpdate();
+            var expected = Builders<TestDataModel>.Update.Unset(x => x.Name).RenderUpdate();
             UpdateDefinition<TestDataModel> subject = null;
 
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))

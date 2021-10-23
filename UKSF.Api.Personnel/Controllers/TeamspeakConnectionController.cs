@@ -23,7 +23,7 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpPost("teamspeak/{teamspeakId}"), Authorize]
         public async Task<Account> ConnectTeamspeakCode([FromRoute] string accountId, [FromRoute] string teamspeakId, [FromBody] TeamspeakCode teamspeakCode)
         {
-            DomainAccount updatedAccount = await _connectTeamspeakIdToAccountCommand.ExecuteAsync(new(accountId, teamspeakId, teamspeakCode.Code));
+            var updatedAccount = await _connectTeamspeakIdToAccountCommand.ExecuteAsync(new(accountId, teamspeakId, teamspeakCode.Code));
             return _accountMapper.MapToAccount(updatedAccount);
         }
     }

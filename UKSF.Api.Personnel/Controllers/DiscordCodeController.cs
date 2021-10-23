@@ -34,15 +34,15 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpPost("{discordId}"), Authorize]
         public async Task DiscordConnect(string discordId, [FromBody] JObject body)
         {
-            string value = await _confirmationCodeService.GetConfirmationCodeValue(body["code"].ToString());
+            var value = await _confirmationCodeService.GetConfirmationCodeValue(body["code"].ToString());
             if (string.IsNullOrEmpty(value) || value != discordId)
             {
                 throw new DiscordConnectFailedException();
             }
 
-            string id = _httpContextService.GetUserId();
+            var id = _httpContextService.GetUserId();
             await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.DiscordId, discordId));
-            DomainAccount domainAccount = _accountContext.GetSingle(id);
+            var domainAccount = _accountContext.GetSingle(id);
             _eventBus.Send(domainAccount);
             _logger.LogAudit($"DiscordID updated for {domainAccount.Id} to {discordId}");
         }

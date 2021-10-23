@@ -11,11 +11,11 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps
         protected override async Task ProcessExecute()
         {
             StepLogger.Log("Restoring previous release");
-            string environmentPath = GetBuildEnvironmentPath();
-            string repoPath = Path.Join(environmentPath, "Repo");
-            string keysPath = Path.Join(environmentPath, "Keys");
-            string repoBackupPath = Path.Join(environmentPath, "Backup", "Repo");
-            string keysBackupPath = Path.Join(environmentPath, "Backup", "Keys");
+            var environmentPath = GetBuildEnvironmentPath();
+            var repoPath = Path.Join(environmentPath, "Repo");
+            var keysPath = Path.Join(environmentPath, "Keys");
+            var repoBackupPath = Path.Join(environmentPath, "Backup", "Repo");
+            var keysBackupPath = Path.Join(environmentPath, "Backup", "Keys");
 
             StepLogger.LogSurround("\nRestoring repo...");
             await AddFiles(repoBackupPath, repoPath);

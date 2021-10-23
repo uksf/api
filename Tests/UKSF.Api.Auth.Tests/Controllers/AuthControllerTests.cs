@@ -38,7 +38,7 @@ namespace UKSF.Api.Auth.Tests.Controllers
         {
             _mockHttpContextService.Setup(x => x.IsUserAuthenticated()).Returns(true);
 
-            bool result = _subject.IsUserAuthenticated();
+            var result = _subject.IsUserAuthenticated();
 
             result.Should().BeTrue();
         }
@@ -48,7 +48,7 @@ namespace UKSF.Api.Auth.Tests.Controllers
         {
             _mockLoginService.Setup(x => x.Login("email", "password")).Returns("token");
 
-            string result = _subject.Login(new() { Email = "email", Password = "password" });
+            var result = _subject.Login(new() { Email = "email", Password = "password" });
 
             result.Should().Be("token");
         }
@@ -59,7 +59,7 @@ namespace UKSF.Api.Auth.Tests.Controllers
             _mockHttpContextService.Setup(x => x.GetUserId()).Returns(_userId);
             _mockLoginService.Setup(x => x.RegenerateBearerToken(_userId)).Returns("token");
 
-            string result = _subject.RefreshToken();
+            var result = _subject.RefreshToken();
 
             result.Should().Be("token");
         }
@@ -89,7 +89,7 @@ namespace UKSF.Api.Auth.Tests.Controllers
             _mockResetPasswordCommand.Setup(x => x.ExecuteAsync(It.Is<ResetPasswordCommandArgs>(m => m.Email == "email" && m.Password == "password" && m.Code == "code")));
             _mockLoginService.Setup(x => x.LoginForPasswordReset("email")).Returns("token");
 
-            string result = await _subject.ResetPassword("code", new() { Email = "email", Password = "password" });
+            var result = await _subject.ResetPassword("code", new() { Email = "email", Password = "password" });
 
             result.Should().Be("token");
         }

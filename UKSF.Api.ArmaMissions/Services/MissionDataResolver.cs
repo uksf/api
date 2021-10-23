@@ -89,7 +89,7 @@ namespace UKSF.Api.ArmaMissions.Services
         public static List<MissionPlayer> ResolveUnitSlots(MissionUnit unit)
         {
             List<MissionPlayer> slots = new();
-            int max = 12;
+            var max = 12;
             int fillerCount;
             switch (unit.SourceUnit.Id)
             {
@@ -103,7 +103,7 @@ namespace UKSF.Api.ArmaMissions.Services
                     max = 3;
                     slots.AddRange(unit.Members);
                     fillerCount = max - slots.Count;
-                    for (int i = 0; i < fillerCount; i++)
+                    for (var i = 0; i < fillerCount; i++)
                     {
                         MissionPlayer player = new() { Name = "Sniper", Unit = unit, Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Private") };
                         player.ObjectClass = ResolveObjectClass(player);
@@ -116,7 +116,7 @@ namespace UKSF.Api.ArmaMissions.Services
                 case "5bbbbe365eb3a4170c488f30": // "Guardian 1-3"
                     slots.AddRange(unit.Members);
                     fillerCount = max - slots.Count;
-                    for (int i = 0; i < fillerCount; i++)
+                    for (var i = 0; i < fillerCount; i++)
                     {
                         MissionPlayer player = new() { Name = "Reserve", Unit = unit, Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Recruit") };
                         player.ObjectClass = ResolveObjectClass(player);
@@ -125,7 +125,7 @@ namespace UKSF.Api.ArmaMissions.Services
 
                     break;
                 case "5ad748e0de5d414f4c4055e0": // "Guardian 1-R"
-                    for (int i = 0; i < 10; i++)
+                    for (var i = 0; i < 10; i++)
                     {
                         MissionPlayer player = new() { Name = "Reserve", Unit = unit, Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Recruit") };
                         player.ObjectClass = ResolveObjectClass(player);
@@ -141,10 +141,10 @@ namespace UKSF.Api.ArmaMissions.Services
             slots.Sort(
                 (a, b) =>
                 {
-                    int roleA = ResolvePlayerUnitRole(a);
-                    int roleB = ResolvePlayerUnitRole(b);
-                    int rankA = MissionPatchData.Instance.Ranks.IndexOf(a.Rank);
-                    int rankB = MissionPatchData.Instance.Ranks.IndexOf(b.Rank);
+                    var roleA = ResolvePlayerUnitRole(a);
+                    var roleB = ResolvePlayerUnitRole(b);
+                    var rankA = MissionPatchData.Instance.Ranks.IndexOf(a.Rank);
+                    var rankB = MissionPatchData.Instance.Ranks.IndexOf(b.Rank);
                     return roleA < roleB ? 1 :
                         roleA > roleB    ? -1 :
                         rankA < rankB    ? -1 :

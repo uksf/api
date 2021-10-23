@@ -23,8 +23,8 @@ namespace UKSF.Api.Personnel.Services
         {
             var roleA = _rolesContext.GetSingle(nameA);
             var roleB = _rolesContext.GetSingle(nameB);
-            int roleOrderA = roleA?.Order ?? 0;
-            int roleOrderB = roleB?.Order ?? 0;
+            var roleOrderA = roleA?.Order ?? 0;
+            var roleOrderB = roleB?.Order ?? 0;
             return roleOrderA < roleOrderB ? -1 :
                 roleOrderA > roleOrderB    ? 1 : 0;
         }

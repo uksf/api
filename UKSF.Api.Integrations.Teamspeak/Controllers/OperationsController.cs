@@ -22,7 +22,9 @@ namespace UKSF.Api.Teamspeak.Controllers
         [HttpGet, Authorize]
         public TeampseakReportsDataset Get()
         {
-            List<TeamspeakServerSnapshot> tsServerSnapshots = _database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots").Find(x => x.Timestamp > DateTime.Now.AddDays(-7)).ToList();
+            var tsServerSnapshots = _database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots")
+                                             .Find(x => x.Timestamp > DateTime.Now.AddDays(-7))
+                                             .ToList();
             TeampseakReportDataset acreData = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, true) };
             TeampseakReportDataset data = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, false) };
             return new() { AcreData = acreData, Data = data };
@@ -31,13 +33,13 @@ namespace UKSF.Api.Teamspeak.Controllers
         private static int[] GetReportData(IReadOnlyCollection<TeamspeakServerSnapshot> serverSnapshots, DateTime day, bool acre)
         {
             List<int> dataset = new();
-            for (int i = 0; i < 48; i++)
+            for (var i = 0; i < 48; i++)
             {
-                DateTime startdate = DateTime.Today.AddMinutes(30 * i);
-                DateTime enddate = DateTime.Today.AddMinutes(30 * (i + 1));
+                var startdate = DateTime.Today.AddMinutes(30 * i);
+                var enddate = DateTime.Today.AddMinutes(30 * (i + 1));
                 try
                 {
-                    TeamspeakServerSnapshot serverSnapshot =
+                    var serverSnapshot =
                         serverSnapshots.FirstOrDefault(x => x.Timestamp.TimeOfDay > startdate.TimeOfDay && x.Timestamp.TimeOfDay < enddate.TimeOfDay && x.Timestamp.Date == day);
                     if (serverSnapshot != null)
                     {
@@ -61,10 +63,10 @@ namespace UKSF.Api.Teamspeak.Controllers
         {
             List<string> labels = new();
 
-            for (int i = 0; i < 48; i++)
+            for (var i = 0; i < 48; i++)
             {
-                DateTime startdate = DateTime.Today.AddMinutes(30 * i);
-                DateTime enddate = DateTime.Today.AddMinutes(30 * (i + 1));
+                var startdate = DateTime.Today.AddMinutes(30 * i);
+                var enddate = DateTime.Today.AddMinutes(30 * (i + 1));
                 labels.Add(startdate.TimeOfDay + " - " + enddate.TimeOfDay);
             }
 
@@ -76,7 +78,7 @@ namespace UKSF.Api.Teamspeak.Controllers
             List<TeampseakReport> datasets = new();
             string[] colors = { "#4bc0c0", "#3992e6", "#a539e6", "#42e639", "#aae639", "#e6d239", "#e63939" };
 
-            for (int i = 0; i < 7; i++)
+            for (var i = 0; i < 7; i++)
             {
                 datasets.Add(
                     new()

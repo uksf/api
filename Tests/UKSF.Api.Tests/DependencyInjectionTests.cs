@@ -22,7 +22,7 @@ namespace UKSF.Api.Tests
             Services.AddTransient<LoaController>();
             Services.AddTransient<LoggingController>();
             Services.AddTransient<ModsController>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<LoaController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<LoggingController>().Should().NotBeNull();
@@ -33,7 +33,7 @@ namespace UKSF.Api.Tests
         public void When_resolving_event_handlers()
         {
             Services.AddTransient<LoggerEventHandler>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<LoggerEventHandler>().Should().NotBeNull();
         }
@@ -42,7 +42,7 @@ namespace UKSF.Api.Tests
         public void When_resolving_filters()
         {
             Services.AddTransient<ExceptionHandler>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<ExceptionHandler>().Should().NotBeNull();
         }

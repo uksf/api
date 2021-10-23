@@ -10,9 +10,9 @@ namespace UKSF.Tests.Unit.Common
         [Fact]
         public void Should_return_correct_value_from_body()
         {
-            JObject jObject = JObject.Parse("{\"key1\":\"item1\", \"key2\":\"item2\"}");
+            var jObject = JObject.Parse("{\"key1\":\"item1\", \"key2\":\"item2\"}");
 
-            string subject = jObject.GetValueFromBody("key2");
+            var subject = jObject.GetValueFromBody("key2");
 
             subject.Should().Be("item2");
         }
@@ -20,9 +20,9 @@ namespace UKSF.Tests.Unit.Common
         [Fact]
         public void Should_return_nothing_from_body_for_invalid_key()
         {
-            JObject jObject = JObject.Parse("{\"key\":\"value\"}");
+            var jObject = JObject.Parse("{\"key\":\"value\"}");
 
-            string subject = jObject.GetValueFromBody("notthekey");
+            var subject = jObject.GetValueFromBody("notthekey");
 
             subject.Should().Be(string.Empty);
         }
@@ -30,9 +30,9 @@ namespace UKSF.Tests.Unit.Common
         [Fact]
         public void Should_return_value_as_string_from_body_when_data_is_not_string()
         {
-            JObject jObject = JObject.Parse("{\"key\":2}");
+            var jObject = JObject.Parse("{\"key\":2}");
 
-            string subject = jObject.GetValueFromBody("key");
+            var subject = jObject.GetValueFromBody("key");
 
             subject.Should().Be("2");
         }

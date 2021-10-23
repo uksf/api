@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Octokit;
 using Octokit.Internal;
-using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services;
 using UKSF.Api.Shared;
 using UKSF.Api.Shared.Exceptions;
@@ -39,7 +38,7 @@ namespace UKSF.Api.Modpack.Controllers
                 throw new UnauthorizedException();
             }
 
-            PushWebhookPayload payload = new SimpleJsonSerializer().Deserialize<PushWebhookPayload>(body.ToString());
+            var payload = new SimpleJsonSerializer().Deserialize<PushWebhookPayload>(body.ToString());
             if (payload.Repository.Name != REPO_NAME || githubEvent != PUSH_EVENT)
             {
                 return;
@@ -68,7 +67,7 @@ namespace UKSF.Api.Modpack.Controllers
         [HttpGet("populatereleases"), Permissions(Permissions.ADMIN)]
         public async Task Release()
         {
-            List<ModpackRelease> releases = await _githubService.GetHistoricReleases();
+            var releases = await _githubService.GetHistoricReleases();
             await _releaseService.AddHistoricReleases(releases);
         }
     }

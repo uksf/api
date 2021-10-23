@@ -64,11 +64,11 @@ namespace UKSF.Api.Command.Services
 
         public async Task Add(CommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE)
         {
-            DomainAccount requesterDomainAccount = _accountService.GetUserAccount();
-            DomainAccount recipientDomainAccount = _accountContext.GetSingle(request.Recipient);
+            var requesterDomainAccount = _accountService.GetUserAccount();
+            var recipientDomainAccount = _accountContext.GetSingle(request.Recipient);
             request.DisplayRequester = _displayNameService.GetDisplayName(requesterDomainAccount);
             request.DisplayRecipient = _displayNameService.GetDisplayName(recipientDomainAccount);
-            HashSet<string> ids = _chainOfCommandService.ResolveChain(
+            var ids = _chainOfCommandService.ResolveChain(
                 mode,
                 recipientDomainAccount.Id,
                 _unitsContext.GetSingle(x => x.Name == recipientDomainAccount.UnitAssignment),
@@ -79,22 +79,22 @@ namespace UKSF.Api.Command.Services
                 throw new($"Failed to get any commanders for review for {request.Type.ToLower()} request for {request.DisplayRecipient}.\nContact an admin");
             }
 
-            List<DomainAccount> accounts = ids.Select(x => _accountContext.GetSingle(x))
-                                              .OrderBy(x => x.Rank, new RankComparer(_ranksService))
-                                              .ThenBy(x => x.Lastname)
-                                              .ThenBy(x => x.Firstname)
-                                              .ToList();
-            foreach (DomainAccount account in accounts)
+            var accounts = ids.Select(x => _accountContext.GetSingle(x))
+                              .OrderBy(x => x.Rank, new RankComparer(_ranksService))
+                              .ThenBy(x => x.Lastname)
+                              .ThenBy(x => x.Firstname)
+                              .ToList();
+            foreach (var account in accounts)
             {
                 request.Reviews.Add(account.Id, ReviewState.PENDING);
             }
 
             await _commandRequestContext.Add(request);
             _logger.LogAudit($"{request.Type} request created for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
-            bool selfRequest = request.DisplayRequester == request.DisplayRecipient;
-            string notificationMessage =
+            var selfRequest = request.DisplayRequester == request.DisplayRecipient;
+            var notificationMessage =
                 $"{request.DisplayRequester} requires your review on {(selfRequest ? "their" : AvsAn.Query(request.Type).Article)} {request.Type.ToLower()} request{(selfRequest ? "" : $" for {request.DisplayRecipient}")}";
-            foreach (DomainAccount account in accounts.Where(x => x.Id != requesterDomainAccount.Id))
+            foreach (var account in accounts.Where(x => x.Id != requesterDomainAccount.Id))
             {
                 _notificationsService.Add(new() { Owner = account.Id, Icon = NotificationIcons.REQUEST, Message = notificationMessage, Link = "/command/requests" });
             }
@@ -102,7 +102,7 @@ namespace UKSF.Api.Command.Services
 
         public async Task ArchiveRequest(string id)
         {
-            CommandRequest request = _commandRequestContext.GetSingle(id);
+            var request = _commandRequestContext.GetSingle(id);
             await _dataArchive.Add(request);
             await _commandRequestContext.Delete(id);
         }
@@ -115,7 +115,7 @@ namespace UKSF.Api.Command.Services
         public async Task SetRequestAllReviewStates(CommandRequest request, ReviewState newState)
         {
             List<string> keys = new(request.Reviews.Keys);
-            foreach (string key in keys)
+            foreach (var key in keys)
             {
                 request.Reviews[key] = newState;
             }
@@ -125,7 +125,7 @@ namespace UKSF.Api.Command.Services
 
         public ReviewState GetReviewState(string id, string reviewer)
         {
-            CommandRequest request = _commandRequestContext.GetSingle(id);
+            var request = _commandRequestContext.GetSingle(id);
             return request == null                     ? ReviewState.ERROR :
                 !request.Reviews.ContainsKey(reviewer) ? ReviewState.ERROR : request.Reviews[reviewer];
         }

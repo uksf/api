@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -64,7 +63,7 @@ namespace UKSF.Api.Launcher.Controllers
         [HttpPost("version"), Permissions(Permissions.ADMIN)]
         public async Task UpdateVersion([FromBody] JObject body)
         {
-            string version = body["version"].ToString();
+            var version = body["version"].ToString();
             await _variablesContext.Update("LAUNCHER_VERSION", version);
             await _launcherFileService.UpdateAllVersions();
             await _launcherHub.Clients.All.ReceiveLauncherVersion(version);
@@ -85,8 +84,8 @@ namespace UKSF.Api.Launcher.Controllers
         [HttpPost("download/update")]
         public async Task<FileStreamResult> GetUpdatedFiles([FromBody] JObject body)
         {
-            List<LauncherFile> files = JsonConvert.DeserializeObject<List<LauncherFile>>(body["files"].ToString());
-            Stream updatedFiles = await _launcherFileService.GetUpdatedFiles(files);
+            var files = JsonConvert.DeserializeObject<List<LauncherFile>>(body["files"].ToString());
+            var updatedFiles = await _launcherFileService.GetUpdatedFiles(files);
             FileStreamResult stream = new(updatedFiles, "application/octet-stream");
             return stream;
         }
@@ -94,8 +93,8 @@ namespace UKSF.Api.Launcher.Controllers
         [HttpPost("error")]
         public void ReportError([FromBody] JObject body)
         {
-            string version = body["version"].ToString();
-            string message = body["message"].ToString();
+            var version = body["version"].ToString();
+            var message = body["message"].ToString();
             // logger.Log(new LauncherLog(version, message) { userId = httpContextService.GetUserId(), name = displayNameService.GetDisplayName(accountService.GetUserAccount()) });
         }
     }

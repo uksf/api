@@ -21,7 +21,7 @@ namespace UKSF.Api.Shared.Extensions
                 onInvalid(id);
             }
 
-            if (!ObjectId.TryParse(id, out ObjectId _))
+            if (!ObjectId.TryParse(id, out var _))
             {
                 onInvalid(id);
             }

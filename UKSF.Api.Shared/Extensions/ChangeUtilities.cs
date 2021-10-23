@@ -17,7 +17,7 @@ namespace UKSF.Api.Shared.Extensions
         private static List<Change> GetChanges<T>(this T original, T updated)
         {
             List<Change> changes = new();
-            Type type = original.GetType();
+            var type = original.GetType();
             IEnumerable<FieldInfo> fields = type.GetFields();
 
             if (!fields.Any())
@@ -26,11 +26,11 @@ namespace UKSF.Api.Shared.Extensions
                 return changes;
             }
 
-            foreach (FieldInfo fieldInfo in fields)
+            foreach (var fieldInfo in fields)
             {
-                string name = fieldInfo.Name;
-                object originalValue = fieldInfo.GetValue(original);
-                object updatedValue = fieldInfo.GetValue(updated);
+                var name = fieldInfo.Name;
+                var originalValue = fieldInfo.GetValue(original);
+                var updatedValue = fieldInfo.GetValue(updated);
                 if (originalValue == null && updatedValue == null)
                 {
                     continue;
@@ -76,11 +76,11 @@ namespace UKSF.Api.Shared.Extensions
 
         private static List<Change> GetListChanges(this IEnumerable original, IEnumerable updated)
         {
-            List<object> originalObjects = original == null ? new() : original.Cast<object>().ToList();
-            List<object> updatedObjects = updated == null ? new() : updated.Cast<object>().ToList();
-            List<Change> changes = originalObjects.Where(originalObject => !updatedObjects.Any(updatedObject => DeepEquals(originalObject, updatedObject)))
-                                                  .Select(x => new Change { Type = ChangeType.ADDITION, Updated = x.ToString() })
-                                                  .ToList();
+            var originalObjects = original == null ? new() : original.Cast<object>().ToList();
+            var updatedObjects = updated == null ? new() : updated.Cast<object>().ToList();
+            var changes = originalObjects.Where(originalObject => !updatedObjects.Any(updatedObject => DeepEquals(originalObject, updatedObject)))
+                                         .Select(x => new Change { Type = ChangeType.ADDITION, Updated = x.ToString() })
+                                         .ToList();
             changes.AddRange(
                 updatedObjects.Where(updatedObject => !originalObjects.Any(originalObject => DeepEquals(originalObject, updatedObject)))
                               .Select(x => new Change { Type = ChangeType.REMOVAL, Original = x.ToString() })
@@ -100,8 +100,8 @@ namespace UKSF.Api.Shared.Extensions
                 return false;
             }
 
-            JToken originalObject = JToken.FromObject(original);
-            JToken updatedObject = JToken.FromObject(updated);
+            var originalObject = JToken.FromObject(original);
+            var updatedObject = JToken.FromObject(updated);
             return JToken.DeepEquals(originalObject, updatedObject);
         }
 
@@ -132,8 +132,8 @@ namespace UKSF.Api.Shared.Extensions
 
         private static string FormatListChanges(IEnumerable<Change> changes, string indentation = "")
         {
-            string changesString = "";
-            foreach (Change change in changes.OrderBy(x => x.Type).ThenBy(x => x.Name))
+            var changesString = "";
+            foreach (var change in changes.OrderBy(x => x.Type).ThenBy(x => x.Name))
             {
                 if (change.Type == ChangeType.ADDITION)
                 {

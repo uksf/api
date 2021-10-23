@@ -34,7 +34,7 @@ namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions
         [Fact]
         public void When_getting_action_name()
         {
-            string subject = _actionTeamspeakSnapshot.Name;
+            var subject = _actionTeamspeakSnapshot.Name;
 
             subject.Should().Be("ActionTeamspeakSnapshot");
         }

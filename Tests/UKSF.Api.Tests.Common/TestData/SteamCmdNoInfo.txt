@@ -1,0 +1,11 @@
+Redirecting stderr to 'F:\Website\Steam CMD\logs\stderr.txt'
+[  0%] Checking for available updates...
+[----] Verifying installation...
+Steam Console Client (c) Valve Corporation
+-- type 'quit' to exit --
+Loading Steam API...OK
+
+Connecting anonymously to Steam Public...OK
+Waiting for client config...OK
+Waiting for user info...OK
+No app info for AppID 23378065 found, requesting...

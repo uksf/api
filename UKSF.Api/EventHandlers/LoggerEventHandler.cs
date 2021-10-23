@@ -50,7 +50,7 @@ namespace UKSF.Api.EventHandlers
 
         private Task HandleLog(EventModel eventModel, LoggerEventData logData)
         {
-            Task _ = HandleLogAsync(logData.Log);
+            var _ = HandleLogAsync(logData.Log);
             return Task.CompletedTask;
         }
 

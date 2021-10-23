@@ -20,14 +20,14 @@ namespace UKSF.Api.Personnel.Context
 
         public async Task AddCommentToThread(string commentThreadId, Comment comment)
         {
-            UpdateDefinition<CommentThread> updateDefinition = Builders<CommentThread>.Update.Push(x => x.Comments, comment);
+            var updateDefinition = Builders<CommentThread>.Update.Push(x => x.Comments, comment);
             await base.Update(commentThreadId, updateDefinition);
             CommentThreadDataEvent(new(EventType.ADD, new CommentThreadEventData(commentThreadId, comment)));
         }
 
         public async Task RemoveCommentFromThread(string commentThreadId, Comment comment)
         {
-            UpdateDefinition<CommentThread> updateDefinition = Builders<CommentThread>.Update.Pull(x => x.Comments, comment);
+            var updateDefinition = Builders<CommentThread>.Update.Pull(x => x.Comments, comment);
             await base.Update(commentThreadId, updateDefinition);
             CommentThreadDataEvent(new(EventType.DELETE, new CommentThreadEventData(commentThreadId, comment)));
         }

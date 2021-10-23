@@ -31,7 +31,7 @@ namespace UKSF.Api.Command.Controllers
         [HttpGet("{id}"), Authorize]
         public OprepDataset Get(string id)
         {
-            Oprep oprep = _operationReportContext.GetSingle(id);
+            var oprep = _operationReportContext.GetSingle(id);
             return new() { OperationEntity = oprep, GroupedAttendance = oprep.AttendanceReport.Users.GroupBy(x => x.GroupName) };
         }
 

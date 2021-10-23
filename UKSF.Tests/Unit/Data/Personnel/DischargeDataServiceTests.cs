@@ -28,7 +28,7 @@ namespace UKSF.Tests.Unit.Data.Personnel
 
             DischargeContext dischargeContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
 
-            IEnumerable<DischargeCollection> subject = dischargeContext.Get();
+            var subject = dischargeContext.Get();
 
             subject.Should().ContainInOrder(item2, item3, item1);
         }

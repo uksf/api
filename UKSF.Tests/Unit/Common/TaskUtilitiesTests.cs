@@ -12,7 +12,7 @@ namespace UKSF.Tests.Unit.Common
         [Fact]
         public async Task ShouldCallbackAfterDelay()
         {
-            bool subject = false;
+            var subject = false;
             Func<Task> act = async () =>
             {
                 CancellationTokenSource token = new();
@@ -36,7 +36,7 @@ namespace UKSF.Tests.Unit.Common
         public void ShouldDelay()
         {
             CancellationTokenSource token = new();
-            Action act = async () => await TaskUtilities.Delay(TimeSpan.FromMilliseconds(10), token.Token);
+            Func<Task> act = async () => await TaskUtilities.Delay(TimeSpan.FromMilliseconds(10), token.Token);
 
             act.ExecutionTime().Should().BeLessOrEqualTo(TimeSpan.FromMilliseconds(10));
         }
@@ -58,7 +58,7 @@ namespace UKSF.Tests.Unit.Common
             Action act = () =>
             {
                 CancellationTokenSource token = new();
-                Task unused = TaskUtilities.Delay(TimeSpan.FromMilliseconds(50), token.Token);
+                var unused = TaskUtilities.Delay(TimeSpan.FromMilliseconds(50), token.Token);
                 token.Cancel();
             };
 

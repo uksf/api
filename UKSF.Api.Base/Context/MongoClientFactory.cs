@@ -9,7 +9,7 @@ namespace UKSF.Api.Base.Context
         {
             ConventionPack conventionPack = new() { new IgnoreExtraElementsConvention(true), new IgnoreIfNullConvention(true), new CamelCaseElementNameConvention() };
             ConventionRegistry.Register("DefaultConventions", conventionPack, _ => true);
-            string database = MongoUrl.Create(connectionString).DatabaseName;
+            var database = MongoUrl.Create(connectionString).DatabaseName;
             return new MongoClient(connectionString).GetDatabase(database);
         }
     }

@@ -59,9 +59,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
         {
             if (_cancellationTokenSources.ContainsKey(id))
             {
-                CancellationTokenSource cancellationTokenSource = _cancellationTokenSources[id];
+                var cancellationTokenSource = _cancellationTokenSources[id];
                 cancellationTokenSource.Cancel();
-                _cancellationTokenSources.TryRemove(id, out CancellationTokenSource _);
+                _cancellationTokenSources.TryRemove(id, out var _);
             }
 
             if (_buildTasks.ContainsKey(id))
@@ -72,11 +72,11 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
                         await Task.Delay(TimeSpan.FromMinutes(1));
                         if (_buildTasks.ContainsKey(id))
                         {
-                            Task buildTask = _buildTasks[id];
+                            var buildTask = _buildTasks[id];
 
                             if (buildTask.IsCompleted)
                             {
-                                _buildTasks.TryRemove(id, out Task _);
+                                _buildTasks.TryRemove(id, out var _);
                             }
                             else
                             {
@@ -92,7 +92,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
         {
             _queue.Clear();
 
-            foreach ((string _, CancellationTokenSource cancellationTokenSource) in _cancellationTokenSources)
+            foreach (var (_, cancellationTokenSource) in _cancellationTokenSources)
             {
                 cancellationTokenSource.Cancel();
             }
@@ -103,7 +103,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
         private async Task ProcessQueue()
         {
             _processing = true;
-            while (_queue.TryDequeue(out ModpackBuild build))
+            while (_queue.TryDequeue(out var build))
             {
                 // TODO: Expand this to check if a server is running using the repo for this build. If no servers are running but there are processes, don't build at all.
                 // Will require better game <-> api interaction to communicate with servers and headless clients properly
@@ -115,10 +115,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
 
                 CancellationTokenSource cancellationTokenSource = new();
                 _cancellationTokenSources.TryAdd(build.Id, cancellationTokenSource);
-                Task buildTask = _buildProcessorService.ProcessBuildWithErrorHandling(build, cancellationTokenSource);
+                var buildTask = _buildProcessorService.ProcessBuildWithErrorHandling(build, cancellationTokenSource);
                 _buildTasks.TryAdd(build.Id, buildTask);
                 await buildTask;
-                _cancellationTokenSources.TryRemove(build.Id, out CancellationTokenSource _);
+                _cancellationTokenSources.TryRemove(build.Id, out var _);
             }
 
             _processing = false;

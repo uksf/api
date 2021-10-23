@@ -23,7 +23,7 @@ namespace UKSF.Api.Integrations.Discord.Tests
         public void When_resolving_controllers()
         {
             Services.AddTransient<DiscordController>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<DiscordController>().Should().NotBeNull();
         }
@@ -32,7 +32,7 @@ namespace UKSF.Api.Integrations.Discord.Tests
         public void When_resolving_event_handlers()
         {
             Services.AddTransient<DiscordAccountEventHandler>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<DiscordAccountEventHandler>().Should().NotBeNull();
         }

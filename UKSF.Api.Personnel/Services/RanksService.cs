@@ -30,8 +30,8 @@ namespace UKSF.Api.Personnel.Services
         {
             var rankA = _ranksContext.GetSingle(nameA);
             var rankB = _ranksContext.GetSingle(nameB);
-            int rankOrderA = rankA?.Order ?? int.MaxValue;
-            int rankOrderB = rankB?.Order ?? int.MaxValue;
+            var rankOrderA = rankA?.Order ?? int.MaxValue;
+            var rankOrderB = rankB?.Order ?? int.MaxValue;
             return rankOrderA < rankOrderB ? -1 :
                 rankOrderA > rankOrderB    ? 1 : 0;
         }
@@ -40,8 +40,8 @@ namespace UKSF.Api.Personnel.Services
         {
             var rankA = _ranksContext.GetSingle(nameA);
             var rankB = _ranksContext.GetSingle(nameB);
-            int rankOrderA = rankA?.Order ?? int.MaxValue;
-            int rankOrderB = rankB?.Order ?? int.MaxValue;
+            var rankOrderA = rankA?.Order ?? int.MaxValue;
+            var rankOrderB = rankB?.Order ?? int.MaxValue;
             return rankOrderA < rankOrderB;
         }
 
@@ -49,8 +49,8 @@ namespace UKSF.Api.Personnel.Services
         {
             var rankA = _ranksContext.GetSingle(nameA);
             var rankB = _ranksContext.GetSingle(nameB);
-            int rankOrderA = rankA?.Order ?? int.MinValue;
-            int rankOrderB = rankB?.Order ?? int.MinValue;
+            var rankOrderA = rankA?.Order ?? int.MinValue;
+            var rankOrderB = rankB?.Order ?? int.MinValue;
             return rankOrderA == rankOrderB;
         }
 

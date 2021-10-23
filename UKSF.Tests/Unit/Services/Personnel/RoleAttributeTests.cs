@@ -11,7 +11,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
         {
             PermissionsAttribute permissionsAttribute = new(roles);
 
-            string subject = permissionsAttribute.Roles;
+            var subject = permissionsAttribute.Roles;
 
             subject.Should().Be(expected);
         }

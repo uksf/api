@@ -21,7 +21,7 @@ namespace UKSF.Api.Admin.Tests
             Services.AddTransient<DataController>();
             Services.AddTransient<VariablesController>();
             Services.AddTransient<VersionController>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<DataController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<VariablesController>().Should().NotBeNull();
@@ -32,7 +32,7 @@ namespace UKSF.Api.Admin.Tests
         public void When_resolving_event_handlers()
         {
             Services.AddTransient<LogDataEventHandler>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<LogDataEventHandler>().Should().NotBeNull();
         }
@@ -41,7 +41,7 @@ namespace UKSF.Api.Admin.Tests
         public void When_resolving_scheduled_actions()
         {
             Services.AddTransient<ActionPruneLogs>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<ActionPruneLogs>().Should().NotBeNull();
         }

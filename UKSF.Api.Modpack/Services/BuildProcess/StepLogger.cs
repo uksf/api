@@ -77,7 +77,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
 
         private void LogLines(string log, string colour = "")
         {
-            List<ModpackBuildStepLogItem> logs = log.Split("\n").Select(x => new ModpackBuildStepLogItem { Text = x, Colour = string.IsNullOrEmpty(x) ? "" : colour }).ToList();
+            var logs = log.Split("\n").Select(x => new ModpackBuildStepLogItem { Text = x, Colour = string.IsNullOrEmpty(x) ? "" : colour }).ToList();
             if (logs.Count == 0)
             {
                 return;

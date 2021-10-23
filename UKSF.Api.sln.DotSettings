@@ -475,6 +475,22 @@
 	<s:Int64 x:Key="/Default/Environment/UnitTesting/ParallelProcessesCount/@EntryValue">10</s:Int64>
 	<s:String x:Key="/Default/GlobalFilterSettingsManager/AttributeFilterXml/@EntryValue">&lt;data&gt;&lt;AttributeFilter ClassMask="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute" IsEnabled="True" /&gt;&lt;/data&gt;</s:String>
 	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionDefault/PlatformType/@EntryValue">x64</s:String>
+	<s:String x:Key="/Default/PatternsAndTemplates/LiveTemplates/Template/=168112D2950CC342A188F50B5B0F1BFC/Text/@EntryValue">using System.Threading.Tasks;
+
+namespace $NAMESPACE$
+{
+    public interface I$CLASS$ {
+        Task ExecuteAsync();
+    }
+
+    public class $CLASS$ : I$CLASS$ {
+        public $CLASS$() { }
+        
+        public async Task ExecuteAsync() {
+            $END$
+        }
+    }
+}</s:String>
 	<s:String x:Key="/Default/SnapshotsStore/CurrentStore/@EntryValue">C:\Users\Tim\AppData\Local\JetBrains\Shared\vAny\Sessions</s:String>
 	<s:Double x:Key="/Default/TimelineLayout/MethodsPanelHeight/@EntryValue">303</s:Double>
 	

@@ -47,9 +47,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
         {
             await _buildsService.SetBuildRunning(build);
 
-            foreach (ModpackBuildStep buildStep in build.Steps)
+            foreach (var buildStep in build.Steps)
             {
-                IBuildStep step = _buildStepService.ResolveBuildStep(buildStep.Name);
+                var step = _buildStepService.ResolveBuildStep(buildStep.Name);
                 step.Init(
                     _serviceProvider,
                     build,
@@ -106,7 +106,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
             }
 
             _logger.LogInfo($"Attempting to restore repo prior to {build.Version}");
-            ModpackBuildStep restoreStep = _buildStepService.GetRestoreStepForRelease();
+            var restoreStep = _buildStepService.GetRestoreStepForRelease();
             if (restoreStep == null)
             {
                 _logger.LogError("Restore step expected but not found. Won't restore");
@@ -114,7 +114,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
             }
 
             restoreStep.Index = build.Steps.Count;
-            IBuildStep step = _buildStepService.ResolveBuildStep(restoreStep.Name);
+            var step = _buildStepService.ResolveBuildStep(restoreStep.Name);
             step.Init(
                 _serviceProvider,
                 build,

@@ -15,12 +15,12 @@ namespace UKSF.Api.Shared.Extensions
 
         public static double ToDouble(this string text)
         {
-            return double.TryParse(text, out double number) ? number : 0d;
+            return double.TryParse(text, out var number) ? number : 0d;
         }
 
         public static int ToInt(this string text)
         {
-            return int.TryParse(text, out int number) ? number : 0;
+            return int.TryParse(text, out var number) ? number : 0;
         }
 
         public static string ToTitleCase(this string text)
@@ -50,7 +50,7 @@ namespace UKSF.Api.Shared.Extensions
 
         public static string RemoveEmbeddedQuotes(this string item)
         {
-            Match match = new Regex("(\\\".*).+(.*?\\\")").Match(item);
+            var match = new Regex("(\\\".*).+(.*?\\\")").Match(item);
             item = item.Remove(match.Index, match.Length).Insert(match.Index, match.ToString().Replace("\"\"", "'"));
             return Regex.Replace(item, "\\\"\\s+\\\"", string.Empty);
         }
@@ -62,7 +62,7 @@ namespace UKSF.Api.Shared.Extensions
 
         public static bool IsObjectId(this string text)
         {
-            return ObjectId.TryParse(text, out ObjectId unused);
+            return ObjectId.TryParse(text, out var unused);
         }
     }
 }

@@ -17,9 +17,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
         {
             StepLogger.Log("Running build for ACRE");
 
-            string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
-            string releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@acre2");
-            string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@acre2");
+            var toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
+            var releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@acre2");
+            var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@acre2");
 
             if (IsBuildNeeded(MOD_NAME))
             {

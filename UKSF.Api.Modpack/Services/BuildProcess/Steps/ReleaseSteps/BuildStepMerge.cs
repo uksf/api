@@ -14,7 +14,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps
             try
             {
                 // Necessary to get around branch protection rules for master. Runs locally on server using user stored login as credentials
-                string modpackPath = Path.Join(GetBuildSourcesPath(), "modpack");
+                var modpackPath = Path.Join(GetBuildSourcesPath(), "modpack");
                 GitCommand(modpackPath, "git fetch");
                 GitCommand(modpackPath, "git checkout -t origin/release");
                 GitCommand(modpackPath, "git checkout release");

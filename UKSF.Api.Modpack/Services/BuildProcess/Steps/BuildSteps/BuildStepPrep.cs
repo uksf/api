@@ -13,7 +13,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
         {
             StepLogger.Log("Mounting build environment");
 
-            string projectsPath = VariablesService.GetVariable("BUILD_PATH_PROJECTS").AsString();
+            var projectsPath = VariablesService.GetVariable("BUILD_PATH_PROJECTS").AsString();
             BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource, raiseErrors: false);
             processHelper.Run("C:/", "cmd.exe", $"/c \"subst P: \"{projectsPath}\"\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
 

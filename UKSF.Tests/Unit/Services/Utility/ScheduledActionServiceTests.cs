@@ -23,7 +23,7 @@ namespace UKSF.Tests.Unit.Services.Utility
             scheduledActionFactory.RegisterScheduledActions(new HashSet<IScheduledAction> { mockDeleteExpiredConfirmationCodeAction1.Object });
             scheduledActionFactory.RegisterScheduledActions(new HashSet<IScheduledAction> { mockDeleteExpiredConfirmationCodeAction2.Object });
 
-            IScheduledAction subject = scheduledActionFactory.GetScheduledAction("TestAction");
+            var subject = scheduledActionFactory.GetScheduledAction("TestAction");
 
             subject.Should().Be(mockDeleteExpiredConfirmationCodeAction2.Object);
         }
@@ -37,7 +37,7 @@ namespace UKSF.Tests.Unit.Services.Utility
             IScheduledActionFactory scheduledActionFactory = new ScheduledActionFactory();
             scheduledActionFactory.RegisterScheduledActions(new HashSet<IScheduledAction> { mockDeleteExpiredConfirmationCodeAction.Object });
 
-            IScheduledAction subject = scheduledActionFactory.GetScheduledAction("TestAction");
+            var subject = scheduledActionFactory.GetScheduledAction("TestAction");
 
             subject.Should().Be(mockDeleteExpiredConfirmationCodeAction.Object);
         }

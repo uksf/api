@@ -81,8 +81,8 @@ namespace UKSF.Api.Modpack.Services
 
         public async Task<ModpackBuild> CreateDevBuild(string version, GithubCommit commit, NewBuild newBuild = null)
         {
-            ModpackBuild previousBuild = GetLatestDevBuild();
-            string builderId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
+            var previousBuild = GetLatestDevBuild();
+            var builderId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
             ModpackBuild build = new()
             {
                 Version = version,
@@ -104,8 +104,8 @@ namespace UKSF.Api.Modpack.Services
 
         public async Task<ModpackBuild> CreateRcBuild(string version, GithubCommit commit)
         {
-            ModpackBuild previousBuild = GetLatestRcBuild(version);
-            string builderId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
+            var previousBuild = GetLatestRcBuild(version);
+            var builderId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
             ModpackBuild build = new()
             {
                 Version = version,
@@ -128,7 +128,7 @@ namespace UKSF.Api.Modpack.Services
         public async Task<ModpackBuild> CreateReleaseBuild(string version)
         {
             // There must be at least one RC build to release
-            ModpackBuild previousBuild = GetRcBuilds().FirstOrDefault(x => x.Version == version);
+            var previousBuild = GetRcBuilds().FirstOrDefault(x => x.Version == version);
             if (previousBuild == null)
             {
                 throw new InvalidOperationException("Release build requires at least one RC build");
@@ -150,7 +150,7 @@ namespace UKSF.Api.Modpack.Services
 
         public async Task<ModpackBuild> CreateRebuild(ModpackBuild build, string newSha = "")
         {
-            ModpackBuild latestBuild = build.Environment == GameEnvironment.DEV ? GetLatestDevBuild() : GetLatestRcBuild(build.Version);
+            var latestBuild = build.Environment == GameEnvironment.DEV ? GetLatestDevBuild() : GetLatestRcBuild(build.Version);
             ModpackBuild rebuild = new()
             {
                 Version = latestBuild.Environment == GameEnvironment.DEV ? null : latestBuild.Version,
@@ -198,16 +198,16 @@ namespace UKSF.Api.Modpack.Services
 
         public void CancelInterruptedBuilds()
         {
-            List<ModpackBuild> builds = _buildsContext.Get(x => x.Running || x.Steps.Any(y => y.Running)).ToList();
+            var builds = _buildsContext.Get(x => x.Running || x.Steps.Any(y => y.Running)).ToList();
             if (!builds.Any())
             {
                 return;
             }
 
-            IEnumerable<Task> tasks = builds.Select(
+            var tasks = builds.Select(
                 async build =>
                 {
-                    ModpackBuildStep runningStep = build.Steps.FirstOrDefault(x => x.Running);
+                    var runningStep = build.Steps.FirstOrDefault(x => x.Running);
                     if (runningStep != null)
                     {
                         runningStep.Running = false;
@@ -251,10 +251,10 @@ namespace UKSF.Api.Modpack.Services
 
             if (previousBuild.EnvironmentVariables.ContainsKey(key))
             {
-                bool updated = (bool)previousBuild.EnvironmentVariables[key];
+                var updated = (bool)previousBuild.EnvironmentVariables[key];
                 if (updated)
                 {
-                    ModpackBuildStep step = previousBuild.Steps.FirstOrDefault(x => x.Name == stepName);
+                    var step = previousBuild.Steps.FirstOrDefault(x => x.Name == stepName);
                     if (step != null && (!step.Finished || step.BuildResult is ModpackBuildResult.FAILED or ModpackBuildResult.CANCELLED))
                     {
                         build.EnvironmentVariables[key] = true;

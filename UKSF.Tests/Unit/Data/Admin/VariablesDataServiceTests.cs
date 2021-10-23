@@ -39,7 +39,7 @@ namespace UKSF.Tests.Unit.Data.Admin
             VariableItem item3 = new() { Key = "DISCORD_IDS" };
             _mockCollection = new() { item1, item2, item3 };
 
-            IEnumerable<VariableItem> subject = _variablesContext.Get();
+            var subject = _variablesContext.Get();
 
             subject.Should().ContainInOrder(item3, item1, item2);
         }
@@ -65,7 +65,7 @@ namespace UKSF.Tests.Unit.Data.Admin
             VariableItem item3 = new() { Key = "DISCORD_IDS" };
             _mockCollection = new() { item1, item2, item3 };
 
-            VariableItem subject = _variablesContext.GetSingle("server path");
+            var subject = _variablesContext.GetSingle("server path");
 
             subject.Should().Be(item2);
         }
@@ -93,7 +93,7 @@ namespace UKSF.Tests.Unit.Data.Admin
             VariableItem item3 = new() { Key = "DISCORD_IDS" };
             _mockCollection = new() { item1, item2, item3 };
 
-            VariableItem subject = _variablesContext.GetSingle(key);
+            var subject = _variablesContext.GetSingle(key);
 
             subject.Should().Be(null);
         }

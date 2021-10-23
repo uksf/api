@@ -16,7 +16,7 @@ namespace UKSF.Tests.Unit.Data
 
             MongoCollectionFactory mongoCollectionFactory = new(mockMongoDatabase.Object);
 
-            Api.Base.Context.IMongoCollection<TestDataModel> subject = mongoCollectionFactory.CreateMongoCollection<TestDataModel>("test");
+            var subject = mongoCollectionFactory.CreateMongoCollection<TestDataModel>("test");
 
             subject.Should().NotBeNull();
         }

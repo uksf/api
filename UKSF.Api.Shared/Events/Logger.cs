@@ -62,8 +62,10 @@ namespace UKSF.Api.Shared.Events
 
         public void LogError(Exception exception, HttpContext context, HttpResponse response, string userId, string userDisplayName)
         {
-            ControllerActionDescriptor controllerActionDescriptor = context.GetEndpoint()?.Metadata.GetMetadata<ControllerActionDescriptor>();
-            string endpointName = controllerActionDescriptor == null ? null : controllerActionDescriptor.ControllerName + "." + controllerActionDescriptor.ActionName;
+            var controllerActionDescriptor = context.GetEndpoint()?.Metadata.GetMetadata<ControllerActionDescriptor>();
+            var endpointName = controllerActionDescriptor == null
+                ? null
+                : controllerActionDescriptor.ControllerName + "." + controllerActionDescriptor.ActionName;
             Log(new ErrorLog(exception, context.Request.Path + context.Request.QueryString, context.Request.Method, endpointName, response?.StatusCode ?? 500, userId, userDisplayName));
         }
 

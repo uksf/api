@@ -26,7 +26,7 @@ namespace UKSF.Api.Command.Tests
             Services.AddTransient<DischargesController>();
             Services.AddTransient<OperationOrderController>();
             Services.AddTransient<OperationReportController>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<CommandRequestsController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<CommandRequestsCreationController>().Should().NotBeNull();
@@ -39,7 +39,7 @@ namespace UKSF.Api.Command.Tests
         public void When_resolving_event_handlers()
         {
             Services.AddTransient<CommandRequestEventHandler>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<CommandRequestEventHandler>().Should().NotBeNull();
         }

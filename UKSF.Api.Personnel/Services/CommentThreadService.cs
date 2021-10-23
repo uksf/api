@@ -43,7 +43,7 @@ namespace UKSF.Api.Personnel.Services
 
         public IEnumerable<string> GetCommentThreadParticipants(string commentThreadId)
         {
-            HashSet<string> participants = GetCommentThreadComments(commentThreadId).Select(x => x.Author).ToHashSet();
+            var participants = GetCommentThreadComments(commentThreadId).Select(x => x.Author).ToHashSet();
             participants.UnionWith(_commentThreadContext.GetSingle(commentThreadId).Authors);
             return participants;
         }

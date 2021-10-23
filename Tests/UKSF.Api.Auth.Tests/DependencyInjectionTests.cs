@@ -21,7 +21,7 @@ namespace UKSF.Api.Auth.Tests
         public void When_resolving_controllers()
         {
             Services.AddTransient<AuthController>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<AuthController>().Should().NotBeNull();
         }

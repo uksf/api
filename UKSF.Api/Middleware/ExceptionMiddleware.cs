@@ -66,9 +66,9 @@ namespace UKSF.Api.Middleware
                 await _exceptionHandler.Handle(exception, context);
             }
 
-            bool authenticated = _httpContextService.IsUserAuthenticated();
-            string userId = _httpContextService.GetUserId();
-            string userDisplayName = authenticated ? _displayNameService.GetDisplayName(userId) : "Guest";
+            var authenticated = _httpContextService.IsUserAuthenticated();
+            var userId = _httpContextService.GetUserId();
+            var userDisplayName = authenticated ? _displayNameService.GetDisplayName(userId) : "Guest";
             _logger.LogError(exception, context, context.Response, authenticated ? userId : "Guest", userDisplayName);
         }
 

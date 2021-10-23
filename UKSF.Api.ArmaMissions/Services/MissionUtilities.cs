@@ -9,7 +9,7 @@ namespace UKSF.Api.ArmaMissions.Services
         {
             List<string> data = new() { source[index] };
             index += 1;
-            string opening = source[index];
+            var opening = source[index];
             Stack<string> stack = new();
             stack.Push(opening);
             data.Add(opening);
@@ -21,7 +21,7 @@ namespace UKSF.Api.ArmaMissions.Services
                     return new();
                 }
 
-                string line = source[index];
+                var line = source[index];
                 if (line.Equals("{"))
                 {
                     stack.Push(line);
@@ -41,7 +41,7 @@ namespace UKSF.Api.ArmaMissions.Services
 
         public static int GetIndexByKey(List<string> source, string key)
         {
-            int index = 0;
+            var index = 0;
             while (true)
             {
                 if (index >= source.Count)
@@ -49,7 +49,7 @@ namespace UKSF.Api.ArmaMissions.Services
                     return -1;
                 }
 
-                string line = source[index];
+                var line = source[index];
                 if (line.ToLower().Contains(key.ToLower()))
                 {
                     return index;
@@ -61,13 +61,13 @@ namespace UKSF.Api.ArmaMissions.Services
 
         public static List<string> ReadDataByKey(List<string> source, string key)
         {
-            int index = GetIndexByKey(source, key);
+            var index = GetIndexByKey(source, key);
             return index == -1 ? new() : ReadDataFromIndex(source, ref index);
         }
 
         public static object ReadSingleDataByKey(List<string> source, string key)
         {
-            int index = 0;
+            var index = 0;
             while (true)
             {
                 if (index >= source.Count)
@@ -75,8 +75,8 @@ namespace UKSF.Api.ArmaMissions.Services
                     return "";
                 }
 
-                string line = source[index];
-                string[] parts = line.Split('=');
+                var line = source[index];
+                var parts = line.Split('=');
                 if (parts.Length == 2 && parts.First().Trim().ToLower().Equals(key.ToLower()))
                 {
                     return parts.Last().Replace(";", "").Replace("\"", "").Trim();

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using UKSF.Api.Personnel.Context;
@@ -42,14 +41,14 @@ namespace UKSF.Api.Personnel.Services
 
         public async Task<string> GetConfirmationCodeValue(string id)
         {
-            ConfirmationCode confirmationCode = _confirmationCodeContext.GetSingle(id);
+            var confirmationCode = _confirmationCodeContext.GetSingle(id);
             if (confirmationCode == null)
             {
                 return string.Empty;
             }
 
             await _confirmationCodeContext.Delete(confirmationCode);
-            string actionParameters = JsonConvert.SerializeObject(new object[] { confirmationCode.Id });
+            var actionParameters = JsonConvert.SerializeObject(new object[] { confirmationCode.Id });
             await _schedulerService.Cancel(x => x.ActionParameters == actionParameters);
 
             return confirmationCode.Value;
@@ -57,10 +56,10 @@ namespace UKSF.Api.Personnel.Services
 
         public async Task ClearConfirmationCodes(Func<ConfirmationCode, bool> predicate)
         {
-            IEnumerable<ConfirmationCode> codes = _confirmationCodeContext.Get(predicate);
-            foreach (ConfirmationCode confirmationCode in codes)
+            var codes = _confirmationCodeContext.Get(predicate);
+            foreach (var confirmationCode in codes)
             {
-                string actionParameters = JsonConvert.SerializeObject(new object[] { confirmationCode.Id });
+                var actionParameters = JsonConvert.SerializeObject(new object[] { confirmationCode.Id });
                 await _schedulerService.Cancel(x => x.ActionParameters == actionParameters);
             }
 

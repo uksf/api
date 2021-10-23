@@ -27,7 +27,7 @@ namespace UKSF.Api.Personnel.ScheduledActions
                 throw new ArgumentException("ActionDeleteExpiredConfirmationCode requires an id to be passed as a parameter, but no paramters were passed");
             }
 
-            string id = parameters[0].ToString();
+            var id = parameters[0].ToString();
             _confirmationCodeContext.Delete(id);
 
             return Task.CompletedTask;

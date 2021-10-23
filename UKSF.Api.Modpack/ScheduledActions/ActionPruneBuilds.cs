@@ -35,8 +35,8 @@ namespace UKSF.Api.Modpack.ScheduledActions
 
         public Task Run(params object[] parameters)
         {
-            int threshold = _buildsContext.Get(x => x.Environment == GameEnvironment.DEV).Select(x => x.BuildNumber).OrderByDescending(x => x).First() - 100;
-            Task modpackBuildsTask = _buildsContext.DeleteMany(x => x.Environment == GameEnvironment.DEV && x.BuildNumber < threshold);
+            var threshold = _buildsContext.Get(x => x.Environment == GameEnvironment.DEV).Select(x => x.BuildNumber).OrderByDescending(x => x).First() - 100;
+            var modpackBuildsTask = _buildsContext.DeleteMany(x => x.Environment == GameEnvironment.DEV && x.BuildNumber < threshold);
 
             Task.WaitAll(modpackBuildsTask);
             return Task.CompletedTask;

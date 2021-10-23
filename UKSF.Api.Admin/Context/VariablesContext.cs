@@ -25,7 +25,7 @@ namespace UKSF.Api.Admin.Context
 
         public async Task Update(string key, object value)
         {
-            VariableItem variableItem = GetSingle(key);
+            var variableItem = GetSingle(key);
             if (variableItem == null)
             {
                 throw new KeyNotFoundException($"VariableItem with key '{key}' does not exist");
@@ -36,7 +36,7 @@ namespace UKSF.Api.Admin.Context
 
         public override async Task Delete(string key)
         {
-            VariableItem variableItem = GetSingle(key);
+            var variableItem = GetSingle(key);
             if (variableItem == null)
             {
                 throw new KeyNotFoundException($"VariableItem with key '{key}' does not exist");

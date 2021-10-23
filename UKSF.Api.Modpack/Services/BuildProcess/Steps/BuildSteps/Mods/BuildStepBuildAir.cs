@@ -14,9 +14,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
         {
             StepLogger.Log("Running build for Air");
 
-            string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
-            string releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@uksf_air");
-            string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_air");
+            var toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
+            var releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@uksf_air");
+            var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_air");
 
             if (IsBuildNeeded(MOD_NAME))
             {

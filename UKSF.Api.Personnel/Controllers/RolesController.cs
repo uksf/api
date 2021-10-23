@@ -47,14 +47,14 @@ namespace UKSF.Api.Personnel.Controllers
             {
                 var unit = _unitsContext.GetSingle(unitId);
                 var unitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order);
-                IEnumerable<KeyValuePair<string, string>> existingPairs = unit.Roles.Where(x => x.Value == id);
+                var existingPairs = unit.Roles.Where(x => x.Value == id);
                 var filteredRoles = unitRoles.Where(x => existingPairs.All(y => y.Key != x.Name));
                 return new() { UnitRoles = filteredRoles };
             }
 
             if (!string.IsNullOrEmpty(id))
             {
-                DomainAccount domainAccount = _accountContext.GetSingle(id);
+                var domainAccount = _accountContext.GetSingle(id);
                 return new()
                 {
                     IndividualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL && x.Name != domainAccount.RoleAssignment)
@@ -104,7 +104,7 @@ namespace UKSF.Api.Personnel.Controllers
             var oldRole = _rolesContext.GetSingle(x => x.Id == role.Id);
             _logger.LogAudit($"Role updated from '{oldRole.Name}' to '{role.Name}'");
             await _rolesContext.Update(role.Id, x => x.Name, role.Name);
-            foreach (DomainAccount account in _accountContext.Get(x => x.RoleAssignment == oldRole.Name))
+            foreach (var account in _accountContext.Get(x => x.RoleAssignment == oldRole.Name))
             {
                 await _accountContext.Update(account.Id, x => x.RoleAssignment, role.Name);
             }
@@ -123,9 +123,9 @@ namespace UKSF.Api.Personnel.Controllers
             var role = _rolesContext.GetSingle(x => x.Id == id);
             _logger.LogAudit($"Role deleted '{role.Name}'");
             await _rolesContext.Delete(id);
-            foreach (DomainAccount account in _accountContext.Get(x => x.RoleAssignment == role.Name))
+            foreach (var account in _accountContext.Get(x => x.RoleAssignment == role.Name))
             {
-                Notification notification = await _assignmentService.UpdateUnitRankAndRole(
+                var notification = await _assignmentService.UpdateUnitRankAndRole(
                     account.Id,
                     role: AssignmentService.REMOVE_FLAG,
                     reason: $"the '{role.Name}' role was deleted"
@@ -144,7 +144,7 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpPost("order"), Authorize]
         public async Task<IOrderedEnumerable<DomainRole>> UpdateOrder([FromBody] List<DomainRole> newRoleOrder)
         {
-            for (int index = 0; index < newRoleOrder.Count; index++)
+            for (var index = 0; index < newRoleOrder.Count; index++)
             {
                 var role = newRoleOrder[index];
                 if (_rolesContext.GetSingle(role.Name).Order != index)

@@ -27,9 +27,9 @@ namespace UKSF.Api.Personnel.Services
                 return text;
             }
 
-            foreach (string objectId in text.ExtractObjectIds())
+            foreach (var objectId in text.ExtractObjectIds())
             {
-                string displayString = _displayNameService.GetDisplayName(objectId);
+                var displayString = _displayNameService.GetDisplayName(objectId);
                 if (displayString == objectId)
                 {
                     var unit = _unitsContext.GetSingle(x => x.Id == objectId);

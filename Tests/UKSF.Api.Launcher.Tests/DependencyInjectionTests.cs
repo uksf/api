@@ -21,7 +21,7 @@ namespace UKSF.Api.Launcher.Tests
         public void When_resolving_controllers()
         {
             Services.AddTransient<LauncherController>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<LauncherController>().Should().NotBeNull();
         }

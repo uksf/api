@@ -35,7 +35,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
 
         public List<ModpackBuildStep> GetSteps(GameEnvironment environment)
         {
-            List<ModpackBuildStep> steps = environment switch
+            var steps = environment switch
             {
                 GameEnvironment.RELEASE => GetStepsForRelease(),
                 GameEnvironment.RC      => GetStepsForRc(),
@@ -58,8 +58,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
                 throw new NullReferenceException($"Build step '{buildStepName}' does not exist in build step dictionary");
             }
 
-            Type type = _buildStepDictionary[buildStepName];
-            IBuildStep step = Activator.CreateInstance(type) as IBuildStep;
+            var type = _buildStepDictionary[buildStepName];
+            var step = Activator.CreateInstance(type) as IBuildStep;
             return step;
         }
 
@@ -124,7 +124,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
 
         private static void ResolveIndices(IReadOnlyList<ModpackBuildStep> steps)
         {
-            for (int i = 0; i < steps.Count; i++)
+            for (var i = 0; i < steps.Count; i++)
             {
                 steps[i].Index = i;
             }

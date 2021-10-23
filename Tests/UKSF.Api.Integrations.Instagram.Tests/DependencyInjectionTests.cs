@@ -20,7 +20,7 @@ namespace UKSF.Api.Integrations.Instagram.Tests
         public void When_resolving_controllers()
         {
             Services.AddTransient<InstagramController>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<InstagramController>().Should().NotBeNull();
         }
@@ -30,7 +30,7 @@ namespace UKSF.Api.Integrations.Instagram.Tests
         {
             Services.AddTransient<ActionInstagramImages>();
             Services.AddTransient<ActionInstagramToken>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<ActionInstagramImages>().Should().NotBeNull();
             serviceProvider.GetRequiredService<ActionInstagramToken>().Should().NotBeNull();

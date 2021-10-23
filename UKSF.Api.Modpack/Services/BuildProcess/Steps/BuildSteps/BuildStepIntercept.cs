@@ -10,8 +10,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
 
         protected override async Task ProcessExecute()
         {
-            string sourcePath = Path.Join(GetBuildSourcesPath(), "modpack", "@intercept");
-            string targetPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@intercept");
+            var sourcePath = Path.Join(GetBuildSourcesPath(), "modpack", "@intercept");
+            var targetPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@intercept");
 
             StepLogger.LogSurround("\nCleaning intercept directory...");
             await DeleteDirectoryContents(targetPath);

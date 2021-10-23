@@ -12,7 +12,7 @@ namespace UKSF.PostMessage
 
         public static void Main(string[] args)
         {
-            Process process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == args[0]);
+            var process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == args[0]);
             if (process == null)
             {
                 return;
