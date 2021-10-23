@@ -10,7 +10,7 @@ namespace UKSF.Api.ArmaMissions.Services
         public static MissionEntity CreateFromItems(List<string> rawEntities)
         {
             MissionEntity missionEntity = new() { ItemsCount = Convert.ToInt32(MissionUtilities.ReadSingleDataByKey(rawEntities, "items")) };
-            int index = rawEntities.FindIndex(x => x.Contains("class Item"));
+            var index = rawEntities.FindIndex(x => x.Contains("class Item"));
             while (missionEntity.MissionEntityItems.Count != missionEntity.ItemsCount)
             {
                 missionEntity.MissionEntityItems.Add(MissionEntityItemHelper.CreateFromList(MissionUtilities.ReadDataFromIndex(rawEntities, ref index)));
@@ -22,8 +22,8 @@ namespace UKSF.Api.ArmaMissions.Services
         private static MissionEntity CreateFromUnit(MissionUnit unit)
         {
             MissionEntity missionEntity = new();
-            List<MissionPlayer> slots = MissionDataResolver.ResolveUnitSlots(unit);
-            for (int i = 0; i < slots.Count; i++)
+            var slots = MissionDataResolver.ResolveUnitSlots(unit);
+            for (var i = 0; i < slots.Count; i++)
             {
                 missionEntity.MissionEntityItems.Add(MissionEntityItemHelper.CreateFromPlayer(slots[i], i));
             }
@@ -35,20 +35,20 @@ namespace UKSF.Api.ArmaMissions.Services
         {
             MissionEntityItem.Position = 10;
             missionEntity.MissionEntityItems.RemoveAll(x => x.DataType.Equals("Group") && x.MissionEntity != null && x.MissionEntity.MissionEntityItems.All(y => y.IsPlayable && !y.Ignored()));
-            foreach (MissionUnit unit in MissionPatchData.Instance.OrderedUnits)
+            foreach (var unit in MissionPatchData.Instance.OrderedUnits)
             {
                 missionEntity.MissionEntityItems.Add(MissionEntityItemHelper.CreateFromMissionEntity(CreateFromUnit(unit), unit.Callsign));
             }
 
             MissionEntityItem.CuratorPosition = 0.5;
             missionEntity.MissionEntityItems.RemoveAll(x => x.DataType == "Logic" && x.Type == "ModuleCurator_F");
-            for (int index = 0; index < maxCurators; index++)
+            for (var index = 0; index < maxCurators; index++)
             {
                 missionEntity.MissionEntityItems.Add(MissionEntityItemHelper.CreateCuratorEntity());
             }
 
             missionEntity.ItemsCount = missionEntity.MissionEntityItems.Count;
-            for (int index = 0; index < missionEntity.MissionEntityItems.Count; index++)
+            for (var index = 0; index < missionEntity.MissionEntityItems.Count; index++)
             {
                 missionEntity.MissionEntityItems[index].Patch(index);
             }
@@ -58,7 +58,7 @@ namespace UKSF.Api.ArmaMissions.Services
         {
             missionEntity.ItemsCount = missionEntity.MissionEntityItems.Count;
             List<string> serialized = new() { "class Entities", "{", $"items = {missionEntity.ItemsCount};" };
-            foreach (MissionEntityItem item in missionEntity.MissionEntityItems)
+            foreach (var item in missionEntity.MissionEntityItems)
             {
                 serialized.AddRange(item.Serialize());
             }

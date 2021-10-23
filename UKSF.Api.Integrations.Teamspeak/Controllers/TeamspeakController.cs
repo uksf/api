@@ -55,7 +55,7 @@ namespace UKSF.Api.Teamspeak.Controllers
         [HttpGet("{teamspeakId}"), Authorize]
         public async Task RequestTeamspeakCode([FromRoute] string teamspeakId)
         {
-            string code = await _confirmationCodeService.CreateConfirmationCode(teamspeakId);
+            var code = await _confirmationCodeService.CreateConfirmationCode(teamspeakId);
             _notificationsService.SendTeamspeakNotification(
                 new HashSet<int> { teamspeakId.ToInt() },
                 $"This Teamspeak ID was selected for connection to the website. Copy this code to your clipboard and return to the UKSF website application page to enter the code:\n{code}\nIf this request was not made by you, it is safe to ignore. Do not pass this code on to anyone else."
@@ -86,8 +86,8 @@ namespace UKSF.Api.Teamspeak.Controllers
         [HttpGet("onlineAccounts")]
         public TeamspeakAccountsDataset GetOnlineAccounts()
         {
-            IEnumerable<TeamspeakClient> teamnspeakClients = _teamspeakService.GetOnlineTeamspeakClients();
-            IEnumerable<DomainAccount> allAccounts = _accountContext.Get();
+            var teamnspeakClients = _teamspeakService.GetOnlineTeamspeakClients();
+            var allAccounts = _accountContext.Get();
             var clients = teamnspeakClients.Where(x => x != null)
                                            .Select(
                                                x => new
@@ -100,7 +100,7 @@ namespace UKSF.Api.Teamspeak.Controllers
                                         .OrderBy(x => x.account.Rank, new RankComparer(_ranksService))
                                         .ThenBy(x => x.account.Lastname)
                                         .ThenBy(x => x.account.Firstname);
-            List<string> commandAccounts = _unitsService.GetAuxilliaryRoot().Members;
+            var commandAccounts = _unitsService.GetAuxilliaryRoot().Members;
 
             List<TeamspeakAccountDataset> commanders = new();
             List<TeamspeakAccountDataset> recruiters = new();
@@ -121,9 +121,9 @@ namespace UKSF.Api.Teamspeak.Controllers
                 }
             }
 
-            List<TeamspeakAccountDataset> guests = clients.Where(x => x.account is not { MembershipState: MembershipState.MEMBER })
-                                                          .Select(client => (TeamspeakAccountDataset) new() { DisplayName = client.client.ClientName })
-                                                          .ToList();
+            var guests = clients.Where(x => x.account is not { MembershipState: MembershipState.MEMBER })
+                                .Select(client => (TeamspeakAccountDataset)new() { DisplayName = client.client.ClientName })
+                                .ToList();
 
             return new() { Commanders = commanders, Recruiters = recruiters, Members = members, Guests = guests };
         }

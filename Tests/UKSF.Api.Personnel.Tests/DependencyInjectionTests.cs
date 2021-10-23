@@ -35,7 +35,7 @@ namespace UKSF.Api.Personnel.Tests
             Services.AddTransient<SteamCodeController>();
             Services.AddTransient<SteamConnectionController>();
             Services.AddTransient<UnitsController>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<AccountsController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<ApplicationsController>().Should().NotBeNull();
@@ -60,7 +60,7 @@ namespace UKSF.Api.Personnel.Tests
             Services.AddTransient<AccountDataEventHandler>();
             Services.AddTransient<CommentThreadEventHandler>();
             Services.AddTransient<NotificationsEventHandler>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<AccountDataEventHandler>().Should().NotBeNull();
             serviceProvider.GetRequiredService<CommentThreadEventHandler>().Should().NotBeNull();
@@ -72,7 +72,7 @@ namespace UKSF.Api.Personnel.Tests
         {
             Services.AddTransient<ActionDeleteExpiredConfirmationCode>();
             Services.AddTransient<ActionPruneNotifications>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<ActionDeleteExpiredConfirmationCode>().Should().NotBeNull();
             serviceProvider.GetRequiredService<ActionPruneNotifications>().Should().NotBeNull();

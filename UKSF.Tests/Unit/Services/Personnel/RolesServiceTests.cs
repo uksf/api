@@ -36,7 +36,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
         {
             _mockRolesDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(null);
 
-            int subject = _rolesService.Sort("Trainee", "Rifleman");
+            var subject = _rolesService.Sort("Trainee", "Rifleman");
 
             subject.Should().Be(0);
         }
@@ -51,7 +51,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
             _mockRolesDataService.Setup(x => x.Get()).Returns(mockCollection);
             _mockRolesDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
-            int subject = _rolesService.Sort(nameA, nameB);
+            var subject = _rolesService.Sort(nameA, nameB);
 
             subject.Should().Be(expected);
         }

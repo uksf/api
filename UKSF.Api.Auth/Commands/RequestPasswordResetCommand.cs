@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using UKSF.Api.Personnel.Context;
-using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared.Commands;
 using UKSF.Api.Shared.Events;
@@ -50,14 +49,14 @@ namespace UKSF.Api.Auth.Commands
 
         public async Task ExecuteAsync(RequestPasswordResetCommandArgs args)
         {
-            DomainAccount domainAccount = _accountContext.GetSingle(x => string.Equals(x.Email, args.Email, StringComparison.InvariantCultureIgnoreCase));
+            var domainAccount = _accountContext.GetSingle(x => string.Equals(x.Email, args.Email, StringComparison.InvariantCultureIgnoreCase));
             if (domainAccount == null)
             {
                 return;
             }
 
-            string code = await _confirmationCodeService.CreateConfirmationCode(domainAccount.Id);
-            string url = BuildResetUrl(code);
+            var code = await _confirmationCodeService.CreateConfirmationCode(domainAccount.Id);
+            var url = BuildResetUrl(code);
             await _sendTemplatedEmailCommand.ExecuteAsync(new(domainAccount.Email, "UKSF Password Reset", TemplatedEmailNames.ResetPasswordTemplate, new() { { "reset", url } }));
 
             _logger.LogAudit($"Password reset request made for {domainAccount.Id}", domainAccount.Id);

@@ -78,7 +78,7 @@ namespace UKSF.Api.Command.Queries
 
         private FilterDefinition<DomainCommandMember> BuildViewModeFilterDefinition(CommandMemberViewMode viewMode)
         {
-            if (viewMode == CommandMemberViewMode.All)
+            if (viewMode == CommandMemberViewMode.ALL)
             {
                 return Builders<DomainCommandMember>.Filter.Empty;
             }
@@ -154,7 +154,7 @@ namespace UKSF.Api.Command.Queries
 
     public enum CommandMemberViewMode
     {
-        All,
+        ALL,
         COC,
         UNIT
     }

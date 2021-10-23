@@ -31,7 +31,7 @@ namespace UKSF.Api.Modpack.Tests
             Services.AddTransient<GithubController>();
             Services.AddTransient<IssueController>();
             Services.AddTransient<ModpackController>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<GithubController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<IssueController>().Should().NotBeNull();
@@ -42,7 +42,7 @@ namespace UKSF.Api.Modpack.Tests
         public void When_resolving_event_handlers()
         {
             Services.AddTransient<BuildsEventHandler>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<BuildsEventHandler>().Should().NotBeNull();
         }
@@ -51,7 +51,7 @@ namespace UKSF.Api.Modpack.Tests
         public void When_resolving_scheduled_actions()
         {
             Services.AddTransient<ActionPruneBuilds>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<ActionPruneBuilds>().Should().NotBeNull();
         }

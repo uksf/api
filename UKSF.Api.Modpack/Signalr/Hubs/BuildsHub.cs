@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Primitives;
 using UKSF.Api.Modpack.Signalr.Clients;
 
 namespace UKSF.Api.Modpack.Signalr.Hubs
@@ -14,7 +13,7 @@ namespace UKSF.Api.Modpack.Signalr.Hubs
 
         public override async Task OnConnectedAsync()
         {
-            StringValues buildId = Context.GetHttpContext().Request.Query["buildId"];
+            var buildId = Context.GetHttpContext().Request.Query["buildId"];
             if (!string.IsNullOrEmpty(buildId))
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, buildId);
@@ -25,7 +24,7 @@ namespace UKSF.Api.Modpack.Signalr.Hubs
 
         public override async Task OnDisconnectedAsync(Exception exception)
         {
-            StringValues buildId = Context.GetHttpContext().Request.Query["buildId"];
+            var buildId = Context.GetHttpContext().Request.Query["buildId"];
             if (!string.IsNullOrEmpty(buildId))
             {
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, buildId);

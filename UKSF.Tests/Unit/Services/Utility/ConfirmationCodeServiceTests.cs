@@ -33,7 +33,7 @@ namespace UKSF.Tests.Unit.Services.Utility
         {
             ConfirmationCode confirmationCode = new() { Value = "test" };
             List<ConfirmationCode> confirmationCodeData = new() { confirmationCode };
-            string actionParameters = JsonConvert.SerializeObject(new object[] { confirmationCode.Id });
+            var actionParameters = JsonConvert.SerializeObject(new object[] { confirmationCode.Id });
 
             ScheduledJob scheduledJob = new() { ActionParameters = actionParameters };
             List<ScheduledJob> subject = new() { scheduledJob };
@@ -73,7 +73,7 @@ namespace UKSF.Tests.Unit.Services.Utility
             _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => confirmationCodeData.FirstOrDefault(y => y.Id == x));
             _mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<ScheduledJob, bool>>())).Returns<Func<ScheduledJob, bool>>(x => Task.FromResult(new List<ScheduledJob>().FirstOrDefault(x)));
 
-            string subject = await _confirmationCodeService.GetConfirmationCodeValue(confirmationCode2.Id);
+            var subject = await _confirmationCodeService.GetConfirmationCodeValue(confirmationCode2.Id);
 
             subject.Should().Be("test2");
         }
@@ -87,7 +87,7 @@ namespace UKSF.Tests.Unit.Services.Utility
             _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => confirmationCodeData.FirstOrDefault(y => y.Id == x));
             _mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<ScheduledJob, bool>>())).Returns<Func<ScheduledJob, bool>>(x => Task.FromResult(new List<ScheduledJob>().FirstOrDefault(x)));
 
-            string subject = await _confirmationCodeService.GetConfirmationCodeValue(confirmationCode.Id);
+            var subject = await _confirmationCodeService.GetConfirmationCodeValue(confirmationCode.Id);
 
             subject.Should().Be("test");
         }
@@ -98,10 +98,10 @@ namespace UKSF.Tests.Unit.Services.Utility
             _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>())).Returns(Task.CompletedTask);
             _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<string>(), It.IsAny<object[]>())).Returns(Task.CompletedTask);
 
-            string subject = await _confirmationCodeService.CreateConfirmationCode("test");
+            var subject = await _confirmationCodeService.CreateConfirmationCode("test");
 
             subject.Should().HaveLength(24);
-            ObjectId.TryParse(subject, out ObjectId _).Should().BeTrue();
+            ObjectId.TryParse(subject, out var _).Should().BeTrue();
         }
 
         [Fact]
@@ -123,7 +123,7 @@ namespace UKSF.Tests.Unit.Services.Utility
         {
             _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<ConfirmationCode>(null);
 
-            string subject = await _confirmationCodeService.GetConfirmationCodeValue(id);
+            var subject = await _confirmationCodeService.GetConfirmationCodeValue(id);
 
             subject.Should().Be(string.Empty);
         }

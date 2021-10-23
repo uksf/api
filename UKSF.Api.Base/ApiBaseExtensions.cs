@@ -11,7 +11,7 @@ namespace UKSF.Api.Base
     {
         public static IServiceCollection AddUksfBase(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment)
         {
-            string connectionString = configuration.GetConnectionString("database");
+            var connectionString = configuration.GetConnectionString("database");
             services.AddContexts()
                     .AddEventHandlers()
                     .AddServices()

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -74,7 +73,10 @@ namespace UKSF.Api.ArmaMissions.Services
 
         private void CreateBackup()
         {
-            string backupPath = Path.Combine(_variablesService.GetVariable("MISSIONS_BACKUPS").AsString(), Path.GetFileName(_filePath) ?? throw new FileNotFoundException());
+            var backupPath = Path.Combine(
+                _variablesService.GetVariable("MISSIONS_BACKUPS").AsString(),
+                Path.GetFileName(_filePath) ?? throw new FileNotFoundException()
+            );
 
             Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? throw new DirectoryNotFoundException());
             File.Copy(_filePath, backupPath, true);
@@ -128,8 +130,8 @@ namespace UKSF.Api.ArmaMissions.Services
                 }
             };
             process.Start();
-            string output = await process.StandardOutput.ReadToEndAsync();
-            string errorOutput = await process.StandardError.ReadToEndAsync();
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var errorOutput = await process.StandardError.ReadToEndAsync();
             process.WaitForExit();
 
             if (File.Exists(_filePath))
@@ -137,7 +139,7 @@ namespace UKSF.Api.ArmaMissions.Services
                 return;
             }
 
-            List<string> outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
+            var outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
             output = outputLines.Where(x => !string.IsNullOrEmpty(x) && !x.ContainsIgnoreCase("compressing")).Aggregate((x, y) => $"{x}\n{y}");
             throw new(output);
         }

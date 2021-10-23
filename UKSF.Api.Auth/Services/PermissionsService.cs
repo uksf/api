@@ -40,7 +40,7 @@ namespace UKSF.Api.Auth.Services
                 case MembershipState.MEMBER:
                 {
                     permissions.Add(Permissions.MEMBER);
-                    bool admin = domainAccount.Admin;
+                    var admin = domainAccount.Admin;
                     if (admin)
                     {
                         permissions.UnionWith(Permissions.ALL);
@@ -52,7 +52,7 @@ namespace UKSF.Api.Auth.Services
                         permissions.Add(Permissions.COMMAND);
                     }
 
-                    string ncoRank = _variablesService.GetVariable("PERMISSIONS_NCO_RANK").AsString();
+                    var ncoRank = _variablesService.GetVariable("PERMISSIONS_NCO_RANK").AsString();
                     if (domainAccount.Rank != null && _ranksService.IsSuperiorOrEqual(domainAccount.Rank, ncoRank))
                     {
                         permissions.Add(Permissions.NCO);
@@ -68,19 +68,19 @@ namespace UKSF.Api.Auth.Services
                         permissions.Add(Permissions.RECRUITER);
                     }
 
-                    string personnelId = _variablesService.GetVariable("UNIT_ID_PERSONNEL").AsString();
+                    var personnelId = _variablesService.GetVariable("UNIT_ID_PERSONNEL").AsString();
                     if (_unitsContext.GetSingle(personnelId).Members.Contains(domainAccount.Id))
                     {
                         permissions.Add(Permissions.PERSONNEL);
                     }
 
-                    string[] missionsId = _variablesService.GetVariable("UNIT_ID_MISSIONS").AsArray();
+                    var missionsId = _variablesService.GetVariable("UNIT_ID_MISSIONS").AsArray();
                     if (_unitsContext.GetSingle(x => missionsId.Contains(x.Id)).Members.Contains(domainAccount.Id))
                     {
                         permissions.Add(Permissions.SERVERS);
                     }
 
-                    string testersId = _variablesService.GetVariable("UNIT_ID_TESTERS").AsString();
+                    var testersId = _variablesService.GetVariable("UNIT_ID_TESTERS").AsString();
                     if (_unitsContext.GetSingle(testersId).Members.Contains(domainAccount.Id))
                     {
                         permissions.Add(Permissions.TESTER);

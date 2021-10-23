@@ -13,10 +13,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
 
         protected override async Task ProcessExecute()
         {
-            string environmentPath = GetBuildEnvironmentPath();
+            var environmentPath = GetBuildEnvironmentPath();
             if (Build.Environment == GameEnvironment.RELEASE)
             {
-                string keysPath = Path.Join(environmentPath, "Backup", "Keys");
+                var keysPath = Path.Join(environmentPath, "Backup", "Keys");
 
                 StepLogger.LogSurround("\nCleaning keys backup...");
                 await DeleteDirectoryContents(keysPath);
@@ -24,8 +24,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
             }
             else
             {
-                string path = Path.Join(environmentPath, "Build");
-                string repoPath = Path.Join(environmentPath, "Repo");
+                var path = Path.Join(environmentPath, "Build");
+                var repoPath = Path.Join(environmentPath, "Repo");
                 DirectoryInfo repo = new(repoPath);
 
                 StepLogger.LogSurround("\nCleaning build folder...");
@@ -33,9 +33,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
                 StepLogger.LogSurround("Cleaned build folder");
 
                 StepLogger.LogSurround("\nCleaning orphaned zsync files...");
-                IEnumerable<FileInfo> contentFiles = GetDirectoryContents(repo).Where(x => !x.Name.Contains(".zsync"));
+                var contentFiles = GetDirectoryContents(repo).Where(x => !x.Name.Contains(".zsync"));
                 IEnumerable<FileInfo> zsyncFiles = GetDirectoryContents(repo, "*.zsync");
-                List<FileInfo> orphanedFiles = zsyncFiles.Where(x => contentFiles.All(y => !x.FullName.Contains(y.FullName))).ToList();
+                var orphanedFiles = zsyncFiles.Where(x => contentFiles.All(y => !x.FullName.Contains(y.FullName))).ToList();
                 await DeleteFiles(orphanedFiles);
                 StepLogger.LogSurround("Cleaned orphaned zsync files");
             }

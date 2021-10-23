@@ -58,7 +58,7 @@ namespace UKSF.Api.Command.Controllers
                 throw new BadRequestException("Ranks are equal");
             }
 
-            bool direction = _ranksService.IsSuperior(request.DisplayValue, request.DisplayFrom);
+            var direction = _ranksService.IsSuperior(request.DisplayValue, request.DisplayFrom);
             request.Type = string.IsNullOrEmpty(request.DisplayFrom) ? CommandRequestType.PROMOTION :
                 direction                                            ? CommandRequestType.PROMOTION : CommandRequestType.DEMOTION;
             if (_commandRequestService.DoesEquivalentRequestExist(request))
@@ -72,7 +72,7 @@ namespace UKSF.Api.Command.Controllers
         [HttpPut("loa"), Permissions(Permissions.MEMBER)]
         public async Task CreateRequestLoa([FromBody] CommandRequestLoa request)
         {
-            DateTime now = DateTime.UtcNow;
+            var now = DateTime.UtcNow;
             if (request.Start <= now.AddDays(-1))
             {
                 throw new BadRequestException("Start date cannot be in the past");
@@ -136,7 +136,7 @@ namespace UKSF.Api.Command.Controllers
         public async Task CreateRequestUnitRole([FromBody] CommandRequest request)
         {
             var unit = _unitsContext.GetSingle(request.Value);
-            bool recipientHasUnitRole = _unitsService.RolesHasMember(unit, request.Recipient);
+            var recipientHasUnitRole = _unitsService.RolesHasMember(unit, request.Recipient);
             if (!recipientHasUnitRole && request.SecondaryValue == "None")
             {
                 throw new BadRequestException(
@@ -148,7 +148,7 @@ namespace UKSF.Api.Command.Controllers
             request.DisplayValue = request.SecondaryValue == "None" ? $"Remove role from {unit.Name}" : $"{request.SecondaryValue} of {unit.Name}";
             if (recipientHasUnitRole)
             {
-                string role = unit.Roles.FirstOrDefault(x => x.Value == request.Recipient).Key;
+                var role = unit.Roles.FirstOrDefault(x => x.Value == request.Recipient).Key;
                 request.DisplayFrom = $"{role} of {unit.Name}";
             }
             else

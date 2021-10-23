@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using UKSF.Api.Auth.Commands;
 using UKSF.Api.Auth.Services;
@@ -84,7 +83,7 @@ namespace UKSF.Api.Auth
                             {
                                 OnMessageReceived = context =>
                                 {
-                                    StringValues accessToken = context.Request.Query["access_token"];
+                                    var accessToken = context.Request.Query["access_token"];
                                     if (!string.IsNullOrEmpty(accessToken) && context.Request.Path.StartsWithSegments("/hub"))
                                     {
                                         context.Token = accessToken;
@@ -109,8 +108,10 @@ namespace UKSF.Api.Auth
                                 },
                                 OnTicketReceived = context =>
                                 {
-                                    string[] idParts = context.Principal?.Claims.First(claim => claim.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier").Value.Split('/');
-                                    string id = idParts?[^1];
+                                    var idParts = context.Principal?.Claims
+                                                         .First(claim => claim.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+                                                         .Value.Split('/');
+                                    var id = idParts?[^1];
                                     context.ReturnUri = $"{context.ReturnUri}?id={id}";
                                     return Task.CompletedTask;
                                 }

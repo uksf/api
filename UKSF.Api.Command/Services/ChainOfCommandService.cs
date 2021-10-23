@@ -41,7 +41,7 @@ namespace UKSF.Api.Command.Services
 
         public HashSet<string> ResolveChain(ChainOfCommandMode mode, string recipient, DomainUnit start, DomainUnit target)
         {
-            HashSet<string> chain = ResolveMode(mode, start, target).Where(x => x != recipient).ToHashSet();
+            var chain = ResolveMode(mode, start, target).Where(x => x != recipient).ToHashSet();
             chain.CleanHashset();
 
             // If no chain, and mode is not next commander, get next commander
@@ -82,7 +82,7 @@ namespace UKSF.Api.Command.Services
 
         public bool InContextChainOfCommand(string id)
         {
-            DomainAccount contextDomainAccount = _accountService.GetUserAccount();
+            var contextDomainAccount = _accountService.GetUserAccount();
             if (id == contextDomainAccount.Id)
             {
                 return true;
@@ -198,7 +198,7 @@ namespace UKSF.Api.Command.Services
             {
                 if (UnitHasCommander(unit))
                 {
-                    string commander = GetCommander(unit);
+                    var commander = GetCommander(unit);
                     if (commander != _httpContextService.GetUserId())
                     {
                         return commander;

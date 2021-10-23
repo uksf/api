@@ -38,19 +38,21 @@ namespace UKSF.Api.Integrations.Instagram.Services
         {
             try
             {
-                string accessToken = _variablesService.GetVariable("INSTAGRAM_ACCESS_TOKEN").AsString();
+                var accessToken = _variablesService.GetVariable("INSTAGRAM_ACCESS_TOKEN").AsString();
 
                 using HttpClient client = new();
-                HttpResponseMessage response = await client.GetAsync($"https://graph.instagram.com/refresh_access_token?access_token={accessToken}&grant_type=ig_refresh_token");
+                var response = await client.GetAsync(
+                    $"https://graph.instagram.com/refresh_access_token?access_token={accessToken}&grant_type=ig_refresh_token"
+                );
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogError($"Failed to get instagram access token, error: {response}");
                     return;
                 }
 
-                string contentString = await response.Content.ReadAsStringAsync();
+                var contentString = await response.Content.ReadAsStringAsync();
                 _logger.LogInfo($"Instagram response: {contentString}");
-                string newAccessToken = JObject.Parse(contentString)["access_token"]?.ToString();
+                var newAccessToken = JObject.Parse(contentString)["access_token"]?.ToString();
 
                 if (string.IsNullOrEmpty(newAccessToken))
                 {
@@ -71,20 +73,22 @@ namespace UKSF.Api.Integrations.Instagram.Services
         {
             try
             {
-                string userId = _variablesService.GetVariable("INSTAGRAM_USER_ID").AsString();
-                string accessToken = _variablesService.GetVariable("INSTAGRAM_ACCESS_TOKEN").AsString();
+                var userId = _variablesService.GetVariable("INSTAGRAM_USER_ID").AsString();
+                var accessToken = _variablesService.GetVariable("INSTAGRAM_ACCESS_TOKEN").AsString();
 
                 using HttpClient client = new();
-                HttpResponseMessage response = await client.GetAsync($"https://graph.instagram.com/{userId}/media?access_token={accessToken}&fields=id,timestamp,media_type,media_url,permalink");
+                var response = await client.GetAsync(
+                    $"https://graph.instagram.com/{userId}/media?access_token={accessToken}&fields=id,timestamp,media_type,media_url,permalink"
+                );
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogError($"Failed to get instagram images, error: {response}");
                     return;
                 }
 
-                string contentString = await response.Content.ReadAsStringAsync();
-                JObject contentObject = JObject.Parse(contentString);
-                List<InstagramImage> allMedia = JsonConvert.DeserializeObject<List<InstagramImage>>(contentObject["data"]?.ToString() ?? "");
+                var contentString = await response.Content.ReadAsStringAsync();
+                var contentObject = JObject.Parse(contentString);
+                var allMedia = JsonConvert.DeserializeObject<List<InstagramImage>>(contentObject["data"]?.ToString() ?? "");
                 allMedia = allMedia.OrderByDescending(x => x.Timestamp).ToList();
 
                 if (allMedia.Count == 0)
@@ -98,7 +102,7 @@ namespace UKSF.Api.Integrations.Instagram.Services
                     return;
                 }
 
-                List<InstagramImage> newImages = allMedia.Where(x => x.MediaType == "IMAGE").ToList();
+                var newImages = allMedia.Where(x => x.MediaType == "IMAGE").ToList();
 
                 // // Handle carousel images
                 // foreach ((InstagramImage value, int index) instagramImage in newImages.Select((value, index) => ( value, index ))) {
@@ -109,7 +113,7 @@ namespace UKSF.Api.Integrations.Instagram.Services
 
                 _images = newImages.Take(12).ToList();
 
-                foreach (InstagramImage instagramImage in _images)
+                foreach (var instagramImage in _images)
                 {
                     instagramImage.Base64 = await GetBase64(instagramImage);
                 }
@@ -128,7 +132,7 @@ namespace UKSF.Api.Integrations.Instagram.Services
         private static async Task<string> GetBase64(InstagramImage image)
         {
             using HttpClient client = new();
-            byte[] bytes = await client.GetByteArrayAsync(image.MediaUrl);
+            var bytes = await client.GetByteArrayAsync(image.MediaUrl);
             return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
         }
     }

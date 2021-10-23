@@ -25,11 +25,11 @@ namespace UKSF.Api.Shared.Extensions
             ManagementClass processInfo = new("Win32_ProcessStartup");
             processInfo.Properties["CreateFlags"].Value = 0x00000008;
 
-            ManagementBaseObject inParameters = managementClass.GetMethodParameters("Create");
+            var inParameters = managementClass.GetMethodParameters("Create");
             inParameters["CommandLine"] = $"\"{executable}\" {arguments}";
             inParameters["ProcessStartupInformation"] = processInfo;
 
-            ManagementBaseObject result = managementClass.InvokeMethod("Create", inParameters, null);
+            var result = managementClass.InvokeMethod("Create", inParameters, null);
             if (result != null && (uint) result.Properties["ReturnValue"].Value == 0)
             {
                 processId = Convert.ToInt32(result.Properties["ProcessId"].Value.ToString());
@@ -41,7 +41,7 @@ namespace UKSF.Api.Shared.Extensions
         public static async Task LaunchExternalProcess(string name, string command)
         {
             TaskService.Instance.RootFolder.DeleteTask(name, false);
-            using TaskDefinition taskDefinition = TaskService.Instance.NewTask();
+            using var taskDefinition = TaskService.Instance.NewTask();
             taskDefinition.Actions.Add(new ExecAction("cmd", $"/C {command}"));
             taskDefinition.Triggers.Add(new TimeTrigger(DateTime.Now.AddSeconds(1)));
             TaskService.Instance.RootFolder.RegisterTaskDefinition(name, taskDefinition);

@@ -13,7 +13,7 @@ namespace UKSF.Tests.Unit.Events
         {
             EventBus eventBus = new();
 
-            IObservable<EventModel> subject = eventBus.AsObservable();
+            var subject = eventBus.AsObservable();
 
             subject.Should().NotBeNull();
             subject.Should().BeAssignableTo<IObservable<EventModel>>();

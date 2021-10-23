@@ -34,9 +34,9 @@ namespace UKSF.Api.Modpack.Controllers
         [HttpPut, Authorize]
         public async Task<string> CreateIssue([FromQuery] int type, [FromBody] JObject data)
         {
-            string title = data["title"].ToString();
-            string body = data["body"].ToString();
-            string user = _displayNameService.GetDisplayName(_httpContextService.GetUserId());
+            var title = data["title"].ToString();
+            var body = data["body"].ToString();
+            var user = _displayNameService.GetDisplayName(_httpContextService.GetUserId());
             body += $"\n\n---\n_**Submitted by:** {user}_";
 
             string issueUrl;
@@ -44,13 +44,13 @@ namespace UKSF.Api.Modpack.Controllers
             {
                 using HttpClient client = new();
                 StringContent content = new(JsonConvert.SerializeObject(new { title, body }), Encoding.UTF8, "application/vnd.github.v3.full+json");
-                string url = type == 0 ? "https://api.github.com/repos/uksf/website-issues/issues" : "https://api.github.com/repos/uksf/modpack/issues";
+                var url = type == 0 ? "https://api.github.com/repos/uksf/website-issues/issues" : "https://api.github.com/repos/uksf/modpack/issues";
                 client.DefaultRequestHeaders.Authorization = new("token", _githubToken);
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(user);
 
-                HttpResponseMessage response = await client.PostAsync(url, content);
+                var response = await client.PostAsync(url, content);
 
-                string result = await response.Content.ReadAsStringAsync();
+                var result = await response.Content.ReadAsStringAsync();
                 issueUrl = JObject.Parse(result)["html_url"]?.ToString();
                 await _sendBasicEmailCommand.ExecuteAsync(new("contact.tim.here@gmail.com", "New Issue Created", $"New {(type == 0 ? "website" : "modpack")} issue reported by {user}\n\n{issueUrl}"));
             }

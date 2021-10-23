@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -56,7 +55,7 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpGet("{id}"), Authorize]
         public CommentThreadsDataset Get(string id)
         {
-            IEnumerable<Comment> comments = _commentThreadService.GetCommentThreadComments(id);
+            var comments = _commentThreadService.GetCommentThreadComments(id);
             return new()
             {
                 Comments = comments.Select(
@@ -75,10 +74,10 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpGet("canpost/{id}"), Authorize]
         public bool GetCanPostComment(string id)
         {
-            CommentThread commentThread = _commentThreadContext.GetSingle(id);
-            DomainAccount domainAccount = _accountService.GetUserAccount();
-            bool admin = _httpContextService.UserHasPermission(Permissions.ADMIN);
-            bool canPost = commentThread.Mode switch
+            var commentThread = _commentThreadContext.GetSingle(id);
+            var domainAccount = _accountService.GetUserAccount();
+            var admin = _httpContextService.UserHasPermission(Permissions.ADMIN);
+            var canPost = commentThread.Mode switch
             {
                 ThreadMode.RECRUITER           => commentThread.Authors.Any(x => x == _httpContextService.GetUserId()) || admin || _recruitmentService.IsRecruiter(_accountService.GetUserAccount()),
                 ThreadMode.RANKSUPERIOR        => commentThread.Authors.Any(x => admin || _ranksService.IsSuperior(domainAccount.Rank, _accountContext.GetSingle(x).Rank)),
@@ -98,14 +97,16 @@ namespace UKSF.Api.Personnel.Controllers
             comment.Author = _httpContextService.GetUserId();
             await _commentThreadService.InsertComment(commentThreadId, comment);
 
-            CommentThread thread = _commentThreadContext.GetSingle(commentThreadId);
-            IEnumerable<string> participants = _commentThreadService.GetCommentThreadParticipants(thread.Id);
-            DomainAccount applicationAccount = _accountContext.GetSingle(x => x.Application?.ApplicationCommentThread == commentThreadId || x.Application?.RecruiterCommentThread == commentThreadId);
+            var thread = _commentThreadContext.GetSingle(commentThreadId);
+            var participants = _commentThreadService.GetCommentThreadParticipants(thread.Id);
+            var applicationAccount = _accountContext.GetSingle(
+                x => x.Application?.ApplicationCommentThread == commentThreadId || x.Application?.RecruiterCommentThread == commentThreadId
+            );
 
-            foreach (string participant in participants.Where(x => x != comment.Author))
+            foreach (var participant in participants.Where(x => x != comment.Author))
             {
-                string url = _environment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
-                string link = applicationAccount.Id != participant ? $"{url}/recruitment/{applicationAccount.Id}" : $"{url}/application";
+                var url = _environment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
+                var link = applicationAccount.Id != participant ? $"{url}/recruitment/{applicationAccount.Id}" : $"{url}/application";
                 _notificationsService.Add(
                     new()
                     {
@@ -121,8 +122,8 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpPost("{id}/{commentId}"), Authorize]
         public async Task DeleteComment(string id, string commentId)
         {
-            List<Comment> comments = _commentThreadService.GetCommentThreadComments(id).ToList();
-            Comment comment = comments.FirstOrDefault(x => x.Id == commentId);
+            var comments = _commentThreadService.GetCommentThreadComments(id).ToList();
+            var comment = comments.FirstOrDefault(x => x.Id == commentId);
             await _commentThreadService.RemoveComment(id, comment);
         }
     }

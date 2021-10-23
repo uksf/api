@@ -16,9 +16,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
         {
             StepLogger.Log("Running build for ACE");
 
-            string toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
-            string releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@ace");
-            string buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_ace");
+            var toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
+            var releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@ace");
+            var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_ace");
 
             if (IsBuildNeeded(MOD_NAME))
             {
@@ -39,13 +39,13 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
 
         private async Task MoveOptionals(string buildPath)
         {
-            string optionalsPath = Path.Join(buildPath, "optionals");
-            string addonsPath = Path.Join(buildPath, "addons");
+            var optionalsPath = Path.Join(buildPath, "optionals");
+            var addonsPath = Path.Join(buildPath, "addons");
             DirectoryInfo addons = new(addonsPath);
-            foreach (string optionalName in _allowedOptionals)
+            foreach (var optionalName in _allowedOptionals)
             {
                 DirectoryInfo optional = new(Path.Join(optionalsPath, $"@{optionalName}", "addons"));
-                List<FileInfo> files = GetDirectoryContents(optional);
+                var files = GetDirectoryContents(optional);
                 await CopyFiles(optional, addons, files);
             }
         }

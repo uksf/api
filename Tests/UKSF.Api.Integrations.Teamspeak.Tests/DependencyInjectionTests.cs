@@ -25,7 +25,7 @@ namespace UKSF.Api.Integrations.Teamspeak.Tests
         {
             Services.AddTransient<OperationsController>();
             Services.AddTransient<TeamspeakController>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<OperationsController>().Should().NotBeNull();
             serviceProvider.GetRequiredService<TeamspeakController>().Should().NotBeNull();
@@ -36,7 +36,7 @@ namespace UKSF.Api.Integrations.Teamspeak.Tests
         {
             Services.AddTransient<TeamspeakEventHandler>();
             Services.AddTransient<TeamspeakServerEventHandler>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<TeamspeakEventHandler>().Should().NotBeNull();
             serviceProvider.GetRequiredService<TeamspeakServerEventHandler>().Should().NotBeNull();
@@ -46,7 +46,7 @@ namespace UKSF.Api.Integrations.Teamspeak.Tests
         public void When_resolving_scheduled_actions()
         {
             Services.AddTransient<ActionTeamspeakSnapshot>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<ActionTeamspeakSnapshot>().Should().NotBeNull();
         }

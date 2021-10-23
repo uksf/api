@@ -58,7 +58,7 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpGet("{id}"), Authorize]
         public DetailedApplication GetSingle(string id)
         {
-            DomainAccount domainAccount = _accountContext.GetSingle(id);
+            var domainAccount = _accountContext.GetSingle(id);
             return _recruitmentService.GetApplication(domainAccount);
         }
 
@@ -71,11 +71,11 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpGet("stats"), Permissions(Permissions.RECRUITER)]
         public RecruitmentStatsDataset GetRecruitmentStats()
         {
-            string account = _httpContextService.GetUserId();
+            var account = _httpContextService.GetUserId();
             List<RecruitmentActivityDataset> activity = new();
-            foreach (DomainAccount recruiterAccount in _recruitmentService.GetRecruiters())
+            foreach (var recruiterAccount in _recruitmentService.GetRecruiters())
             {
-                List<DomainAccount> recruiterApplications = _accountContext.Get(x => x.Application != null && x.Application.Recruiter == recruiterAccount.Id).ToList();
+                var recruiterApplications = _accountContext.Get(x => x.Application != null && x.Application.Recruiter == recruiterAccount.Id).ToList();
                 activity.Add(
                     new()
                     {
@@ -100,13 +100,13 @@ namespace UKSF.Api.Personnel.Controllers
         public async Task UpdateState([FromBody] dynamic body, string id)
         {
             ApplicationState updatedState = body.updatedState;
-            DomainAccount domainAccount = _accountContext.GetSingle(id);
+            var domainAccount = _accountContext.GetSingle(id);
             if (updatedState == domainAccount.Application.State)
             {
                 return;
             }
 
-            string sessionId = _httpContextService.GetUserId();
+            var sessionId = _httpContextService.GetUserId();
             await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.State, updatedState));
             _logger.LogAudit($"Application state changed for {id} from {domainAccount.Application.State} to {updatedState}");
 
@@ -115,14 +115,20 @@ namespace UKSF.Api.Personnel.Controllers
                 case ApplicationState.ACCEPTED:
                 {
                     await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.DateAccepted, DateTime.Now).Set(x => x.MembershipState, MembershipState.MEMBER));
-                    Notification notification = await _assignmentService.UpdateUnitRankAndRole(id, "Basic Training Unit", "Trainee", "Recruit", reason: "your application was accepted");
+                    var notification = await _assignmentService.UpdateUnitRankAndRole(
+                        id,
+                        "Basic Training Unit",
+                        "Trainee",
+                        "Recruit",
+                        reason: "your application was accepted"
+                    );
                     _notificationsService.Add(notification);
                     break;
                 }
                 case ApplicationState.REJECTED:
                 {
                     await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.DateAccepted, DateTime.Now).Set(x => x.MembershipState, MembershipState.CONFIRMED));
-                    Notification notification = await _assignmentService.UpdateUnitRankAndRole(
+                    var notification = await _assignmentService.UpdateUnitRankAndRole(
                         id,
                         AssignmentService.REMOVE_FLAG,
                         AssignmentService.REMOVE_FLAG,
@@ -140,11 +146,17 @@ namespace UKSF.Api.Personnel.Controllers
                         id,
                         Builders<DomainAccount>.Update.Set(x => x.Application.DateCreated, DateTime.Now).Unset(x => x.Application.DateAccepted).Set(x => x.MembershipState, MembershipState.CONFIRMED)
                     );
-                    Notification notification = await _assignmentService.UpdateUnitRankAndRole(id, AssignmentService.REMOVE_FLAG, "Applicant", "Candidate", reason: "your application was reactivated");
+                    var notification = await _assignmentService.UpdateUnitRankAndRole(
+                        id,
+                        AssignmentService.REMOVE_FLAG,
+                        "Applicant",
+                        "Candidate",
+                        reason: "your application was reactivated"
+                    );
                     _notificationsService.Add(notification);
                     if (_recruitmentService.GetRecruiters().All(x => x.Id != domainAccount.Application.Recruiter))
                     {
-                        string newRecruiterId = _recruitmentService.GetRecruiter();
+                        var newRecruiterId = _recruitmentService.GetRecruiter();
                         _logger.LogAudit($"Application recruiter for {id} is no longer SR1, reassigning from {domainAccount.Application.Recruiter} to {newRecruiterId}");
                         await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.Recruiter, newRecruiterId));
                     }
@@ -155,7 +167,7 @@ namespace UKSF.Api.Personnel.Controllers
             }
 
             domainAccount = _accountContext.GetSingle(id);
-            string message = updatedState == ApplicationState.WAITING ? "was reactivated" : $"was {updatedState}";
+            var message = updatedState == ApplicationState.WAITING ? "was reactivated" : $"was {updatedState}";
             if (sessionId != domainAccount.Application.Recruiter)
             {
                 _notificationsService.Add(
@@ -169,7 +181,8 @@ namespace UKSF.Api.Personnel.Controllers
                 );
             }
 
-            foreach (string value in _recruitmentService.GetRecruiterLeads().Values.Where(value => sessionId != value && domainAccount.Application.Recruiter != value))
+            foreach (var value in _recruitmentService.GetRecruiterLeads()
+                                                     .Values.Where(value => sessionId != value && domainAccount.Application.Recruiter != value))
             {
                 _notificationsService.Add(
                     new()
@@ -191,9 +204,9 @@ namespace UKSF.Api.Personnel.Controllers
                 throw new($"attempted to assign recruiter to {newRecruiter}. Context is not recruitment lead.");
             }
 
-            string recruiter = newRecruiter["newRecruiter"].ToString();
+            var recruiter = newRecruiter["newRecruiter"].ToString();
             await _recruitmentService.SetRecruiter(id, recruiter);
-            DomainAccount domainAccount = _accountContext.GetSingle(id);
+            var domainAccount = _accountContext.GetSingle(id);
             if (domainAccount.Application.State == ApplicationState.WAITING)
             {
                 _notificationsService.Add(
@@ -213,9 +226,9 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpPost("ratings/{id}"), Permissions(Permissions.RECRUITER)]
         public async Task<Dictionary<string, uint>> Ratings([FromBody] KeyValuePair<string, uint> value, string id)
         {
-            Dictionary<string, uint> ratings = _accountContext.GetSingle(id).Application.Ratings;
+            var ratings = _accountContext.GetSingle(id).Application.Ratings;
 
-            (string key, uint rating) = value;
+            var (key, rating) = value;
             if (ratings.ContainsKey(key))
             {
                 ratings[key] = rating;

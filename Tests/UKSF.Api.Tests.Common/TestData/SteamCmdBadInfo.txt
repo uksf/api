@@ -1,0 +1,156 @@
+Steam Console Client (c) Valve Corporation
+-- type 'quit' to exit --
+Loading Steam API...OK
+
+Connecting anonymously to Steam Public...OK
+Waiting for client config...OK
+Waiting for user info...OK
+AppID : 233780, change number : 12921088/4294967295, last change : Sat Oct 23 14:45:31 2021
+"233780"
+{
+	"common"
+	{
+		"name"		"Arma 3 Server"
+		"type"		"Tool"
+		"ReleaseState"		"released"
+		"oslist"		"windows,linux"
+		"parent"		"107410"
+		"logo"		"dbf7763b674955fd374966ba4d4c5e8fc98eaded"
+		"logo_small"		"dbf7763b674955fd374966ba4d4c5e8fc98eaded_thumb"
+		"clienticon"		"65008c45141949621c1485a4099596ee6297476f"
+		"clienttga"		"ab2d0fd9178e03d78524335c74ebcdc2ce37de61"
+		"icon"		"03fac7ea514d12d5abf1526ddec2b363d5f72629"
+		"eulas"
+		{
+			"0"
+			{
+				"id"		"233780_eula_0"
+				"name"		"Arma 3 Server EULA"
+				"url"		"http://store.steampowered.com/eula/233780_eula_0"
+			}
+		}
+		"metacritic_name"		"Arma 3 Server"
+		"small_capsule"
+		{
+			"english"		"capsule_231x87.jpg"
+		}
+		"header_image"
+		{
+			"english"		"header.jpg"
+		}
+		"store_asset_mtime"		"1438284794"
+		"associations"
+		{
+			"0"
+			{
+				"type"		"developer"
+				"name"		"Bohemia Interactive"
+			}
+			"1"
+			{
+				"type"		"publisher"
+				"name"		"Bohemia Interactive"
+			}
+		}
+		"steam_release_date"		"1386795600"
+		"gameid"		"233780"
+		"exfgls"		"1"
+	}
+	"extended"
+	{
+		"developer"		"Bohemia Interactive"
+		"developer_url"		"http://www.bistudio.com/"
+		"checkpkgstate"		"1"
+		"gamedir"		"ValveTestApp233780"
+		"homepage"		"http://dev.arma3.com"
+		"icon"		""
+		"noservers"		"0"
+		"sourcegame"		"1"
+		"state"		"eStateComingSoonNoPreload"
+		"visibleonlywhensubscribed"		"1"
+		"publisher"		"Bohemia Interactive"
+	}
+	"config"
+	{
+		"contenttype"		"3"
+		"installdir"		"Arma 3 Server"
+		"launch"
+		{
+			"0"
+			{
+				"executable"		"arma3server_readme.txt"
+				"description"		"Launch Server"
+			}
+		}
+	}
+	"depots"
+	{
+		"branches"
+		{
+			"public"
+			{
+				"buildid"		"7459543"
+				"timeupdated"		"1633438866"
+			}
+			"cdlc_internal_server"
+			{
+				"buildid"		"6475122"
+				"description"		"For internal CDLC testing"
+				"pwdrequired"		"1"
+				"timeupdated"		"1617270887"
+			}
+			"gmstaging"
+			{
+				"buildid"		"4481552"
+				"description"		"GM staging branch"
+				"pwdrequired"		"1"
+				"timeupdated"		"1576068786"
+			}
+			"legacy"
+			{
+				"buildid"		"6830389"
+				"description"		"Legacy Build (2.04)"
+				"pwdrequired"		"1"
+				"timeupdated"		"1633438653"
+			}
+			"legacycontact"
+			{
+				"buildid"		"6830402"
+				"description"		"Contact Legacy Build (2.04)"
+				"pwdrequired"		"1"
+				"timeupdated"		"1633438695"
+			}
+			"legacyports"
+			{
+				"buildid"		"2745873"
+				"description"		"Legacy Build (1.82 - ports)"
+				"pwdrequired"		"1"
+				"timeupdated"		"1532420309"
+			}
+			"profiling"
+			{
+				"buildid"		"7567015"
+				"description"		"Performance Profiling Build"
+				"pwdrequired"		"1"
+				"timeupdated"		"1634733826"
+			}
+			"staging"
+			{
+				"buildid"		"7558765"
+				"description"		"Staging Build"
+				"pwdrequired"		"1"
+				"timeupdated"		"1634636026"
+			}
+			"temp"
+			{
+				"buildid"		"6879455"
+				"description"		"temp"
+				"pwdrequired"		"1"
+				"timeupdated"		"1624028396"
+			}
+		}
+	}
+}
+Redirecting stderr to 'F:\Website\Steam CMD\logs\stderr.txt'
+[  0%] Checking for available updates...
+[----] Verifying installation...

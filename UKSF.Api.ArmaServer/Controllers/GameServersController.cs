@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Primitives;
@@ -12,7 +11,6 @@ using Newtonsoft.Json.Linq;
 using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
-using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Exceptions;
 using UKSF.Api.ArmaServer.Models;
@@ -66,7 +64,7 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpGet("status/{id}"), Authorize]
         public async Task<GameServerDataset> GetGameServerStatus(string id)
         {
-            GameServer gameServer = _gameServersContext.GetSingle(id);
+            var gameServer = _gameServersContext.GetSingle(id);
             await _gameServersService.GetGameServerStatus(gameServer);
             return new() { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
         }
@@ -76,7 +74,7 @@ namespace UKSF.Api.ArmaServer.Controllers
         {
             if (gameServer != null)
             {
-                GameServer safeGameServer = gameServer;
+                var safeGameServer = gameServer;
                 return _gameServersContext.GetSingle(x => x.Id != safeGameServer.Id && (x.Name == check || x.ApiPort.ToString() == check));
             }
 
@@ -96,9 +94,9 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpPatch, Authorize]
         public async Task<bool> EditGameServer([FromBody] GameServer gameServer)
         {
-            GameServer oldGameServer = _gameServersContext.GetSingle(gameServer.Id);
+            var oldGameServer = _gameServersContext.GetSingle(gameServer.Id);
             _logger.LogAudit($"Game server '{gameServer.Name}' updated:{oldGameServer.Changes(gameServer)}");
-            bool environmentChanged = false;
+            var environmentChanged = false;
             if (oldGameServer.Environment != gameServer.Environment)
             {
                 environmentChanged = true;
@@ -129,7 +127,7 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpDelete("{id}"), Authorize]
         public async Task<IEnumerable<GameServer>> DeleteGameServer(string id)
         {
-            GameServer gameServer = _gameServersContext.GetSingle(id);
+            var gameServer = _gameServersContext.GetSingle(id);
             _logger.LogAudit($"Game server deleted '{gameServer.Name}'");
             await _gameServersContext.Delete(id);
 
@@ -140,9 +138,9 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpPost("order"), Authorize]
         public async Task<IEnumerable<GameServer>> UpdateOrder([FromBody] List<GameServer> newServerOrder)
         {
-            for (int index = 0; index < newServerOrder.Count; index++)
+            for (var index = 0; index < newServerOrder.Count; index++)
             {
-                GameServer gameServer = newServerOrder[index];
+                var gameServer = newServerOrder[index];
                 if (_gameServersContext.GetSingle(gameServer.Id).Order != index)
                 {
                     await _gameServersContext.Update(gameServer.Id, x => x.Order, index);
@@ -159,10 +157,10 @@ namespace UKSF.Api.ArmaServer.Controllers
             List<MissionReportDataset> missionReports = new();
             try
             {
-                foreach (IFormFile file in Request.Form.Files.Where(x => x.Length > 0))
+                foreach (var file in Request.Form.Files.Where(x => x.Length > 0))
                 {
                     await _gameServersService.UploadMissionFile(file);
-                    MissionPatchingResult missionPatchingResult = await _gameServersService.PatchMissionFile(file.Name);
+                    var missionPatchingResult = await _gameServersService.PatchMissionFile(file.Name);
                     missionPatchingResult.Reports = missionPatchingResult.Reports.OrderByDescending(x => x.Error).ToList();
                     missionReports.Add(new() { Mission = file.Name, Reports = missionPatchingResult.Reports });
                     _logger.LogAudit($"Uploaded mission '{file.Name}'");
@@ -174,7 +172,7 @@ namespace UKSF.Api.ArmaServer.Controllers
                 throw new BadRequestException(exception.Message); // TODO: Needs better error handling
             }
 
-            List<MissionFile> missions = _gameServersService.GetMissionFiles();
+            var missions = _gameServersService.GetMissionFiles();
             SendMissionsUpdateIfNotCaller(missions);
             return new() { Missions = missions, MissionReports = missionReports };
         }
@@ -183,7 +181,7 @@ namespace UKSF.Api.ArmaServer.Controllers
         public async Task<List<ValidationReport>> LaunchServer(string id, [FromBody] JObject data)
         {
             Task.WaitAll(_gameServersContext.Get().Select(x => _gameServersService.GetGameServerStatus(x)).ToArray());
-            GameServer gameServer = _gameServersContext.GetSingle(id);
+            var gameServer = _gameServersContext.GetSingle(id);
             if (gameServer.Status.Running)
             {
                 throw new BadRequestException("Server is already running. This shouldn't happen so please contact an admin");
@@ -210,12 +208,12 @@ namespace UKSF.Api.ArmaServer.Controllers
                 throw new BadRequestException("Server cannot be launched while another server with the same port is running");
             }
 
-            string missionSelection = data["missionName"].ToString();
-            MissionPatchingResult patchingResult = await _gameServersService.PatchMissionFile(missionSelection);
+            var missionSelection = data["missionName"].ToString();
+            var patchingResult = await _gameServersService.PatchMissionFile(missionSelection);
             if (!patchingResult.Success)
             {
                 patchingResult.Reports = patchingResult.Reports.OrderByDescending(x => x.Error).ToList();
-                string error =
+                var error =
                     $"{(patchingResult.Reports.Count > 0 ? "Failed to patch mission for the reasons detailed below" : "Failed to patch mission for an unknown reason")}.\n\nContact an admin for help";
                 throw new MissionPatchingFailedException(error, new() { Reports = patchingResult.Reports });
             }
@@ -233,7 +231,7 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpGet("stop/{id}"), Authorize]
         public async Task<GameServerDataset> StopServer(string id)
         {
-            GameServer gameServer = _gameServersContext.GetSingle(id);
+            var gameServer = _gameServersContext.GetSingle(id);
             _logger.LogAudit($"Game server stopped '{gameServer.Name}'");
             await _gameServersService.GetGameServerStatus(gameServer);
             if (!gameServer.Status.Started && !gameServer.Status.Running)
@@ -250,7 +248,7 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpGet("kill/{id}"), Authorize]
         public async Task<GameServerDataset> KillServer(string id)
         {
-            GameServer gameServer = _gameServersContext.GetSingle(id);
+            var gameServer = _gameServersContext.GetSingle(id);
             _logger.LogAudit($"Game server killed '{gameServer.Name}'");
             await _gameServersService.GetGameServerStatus(gameServer);
             if (!gameServer.Status.Started && !gameServer.Status.Running)
@@ -275,7 +273,7 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpGet("killall"), Authorize]
         public void KillAllArmaProcesses()
         {
-            int killed = _gameServersService.KillAllArmaProcesses();
+            var killed = _gameServersService.KillAllArmaProcesses();
             _logger.LogAudit($"Killed {killed} Arma instances");
             SendAnyUpdateIfNotCaller();
         }
@@ -289,7 +287,7 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpPost("{id}/mods"), Authorize]
         public async Task<List<GameServerMod>> SetGameServerMods(string id, [FromBody] GameServer gameServer)
         {
-            GameServer oldGameServer = _gameServersContext.GetSingle(id);
+            var oldGameServer = _gameServersContext.GetSingle(id);
             await _gameServersContext.Update(id, Builders<GameServer>.Update.Unset(x => x.Mods).Unset(x => x.ServerMods));
             await _gameServersContext.Update(id, Builders<GameServer>.Update.Set(x => x.Mods, gameServer.Mods).Set(x => x.ServerMods, gameServer.ServerMods));
             _logger.LogAudit($"Game server '{gameServer.Name}' updated:{oldGameServer.Changes(gameServer)}");
@@ -299,7 +297,7 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpGet("{id}/mods/reset"), Authorize]
         public GameServerModsDataset ResetGameServerMods(string id)
         {
-            GameServer gameServer = _gameServersContext.GetSingle(id);
+            var gameServer = _gameServersContext.GetSingle(id);
             return new() { AvailableMods = _gameServersService.GetAvailableMods(id), Mods = _gameServersService.GetEnvironmentMods(gameServer.Environment), ServerMods = new() };
         }
 
@@ -312,14 +310,14 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpPost("disabled"), Authorize]
         public async Task SetDisabledState([FromBody] JObject body)
         {
-            bool state = bool.Parse(body["state"].ToString());
+            var state = bool.Parse(body["state"].ToString());
             await _variablesContext.Update("SERVER_CONTROL_DISABLED", state);
             await _serversHub.Clients.All.ReceiveDisabledState(state);
         }
 
         private void SendAnyUpdateIfNotCaller(bool skipRefresh = false)
         {
-            if (!HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out StringValues connectionId))
+            if (!GetHubConnectionId(out var connectionId))
             {
                 return;
             }
@@ -329,7 +327,7 @@ namespace UKSF.Api.ArmaServer.Controllers
 
         private void SendServerUpdateIfNotCaller(string serverId)
         {
-            if (!HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out StringValues connectionId))
+            if (!GetHubConnectionId(out var connectionId))
             {
                 return;
             }
@@ -339,12 +337,17 @@ namespace UKSF.Api.ArmaServer.Controllers
 
         private void SendMissionsUpdateIfNotCaller(List<MissionFile> missions)
         {
-            if (!HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out StringValues connectionId))
+            if (!GetHubConnectionId(out var connectionId))
             {
                 return;
             }
 
             _ = _serversHub.Clients.All.ReceiveMissionsUpdateIfNotCaller(connectionId, missions);
+        }
+
+        private bool GetHubConnectionId(out StringValues connecctionId)
+        {
+            return HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out connecctionId);
         }
     }
 }

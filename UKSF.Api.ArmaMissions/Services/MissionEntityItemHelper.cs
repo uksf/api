@@ -20,8 +20,8 @@ namespace UKSF.Api.ArmaMissions.Services
             }
             else if (missionEntityItem.DataType.Equals("Object"))
             {
-                string isPlayable = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "isPlayable").ToString();
-                string isPlayer = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "isPlayer").ToString();
+                var isPlayable = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "isPlayable").ToString();
+                var isPlayer = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "isPlayer").ToString();
                 if (!string.IsNullOrEmpty(isPlayable))
                 {
                     missionEntityItem.IsPlayable = isPlayable == "1";
@@ -33,7 +33,7 @@ namespace UKSF.Api.ArmaMissions.Services
             }
             else if (missionEntityItem.DataType.Equals("Logic"))
             {
-                string type = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "type").ToString();
+                var type = MissionUtilities.ReadSingleDataByKey(missionEntityItem.RawMissionEntityItem, "type").ToString();
                 if (!string.IsNullOrEmpty(type))
                 {
                     missionEntityItem.Type = type;
@@ -145,8 +145,8 @@ namespace UKSF.Api.ArmaMissions.Services
         {
             if (missionEntityItem.RawMissionEntities.Count > 0)
             {
-                int start = MissionUtilities.GetIndexByKey(missionEntityItem.RawMissionEntityItem, "Entities");
-                int count = missionEntityItem.RawMissionEntities.Count;
+                var start = MissionUtilities.GetIndexByKey(missionEntityItem.RawMissionEntityItem, "Entities");
+                var count = missionEntityItem.RawMissionEntities.Count;
                 missionEntityItem.RawMissionEntityItem.RemoveRange(start, count);
                 missionEntityItem.RawMissionEntityItem.InsertRange(start, missionEntityItem.MissionEntity.Serialize());
             }

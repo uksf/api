@@ -45,7 +45,7 @@ namespace UKSF.Api.Admin.Controllers
 
             if (variableItem != null)
             {
-                VariableItem safeVariableItem = variableItem;
+                var safeVariableItem = variableItem;
                 return _variablesContext.GetSingle(x => x.Id != safeVariableItem.Id && x.Key == key.Keyify());
             }
 
@@ -63,7 +63,7 @@ namespace UKSF.Api.Admin.Controllers
         [HttpPatch, Authorize]
         public async Task<IEnumerable<VariableItem>> EditVariableItem([FromBody] VariableItem variableItem)
         {
-            VariableItem oldVariableItem = _variablesContext.GetSingle(variableItem.Key);
+            var oldVariableItem = _variablesContext.GetSingle(variableItem.Key);
             _logger.LogAudit($"VariableItem '{oldVariableItem.Key}' updated from '{oldVariableItem.Item}' to '{variableItem.Item}'");
             await _variablesContext.Update(variableItem.Key, variableItem.Item);
             return _variablesContext.Get();
@@ -72,7 +72,7 @@ namespace UKSF.Api.Admin.Controllers
         [HttpDelete("{key}"), Authorize]
         public async Task<IEnumerable<VariableItem>> DeleteVariableItem(string key)
         {
-            VariableItem variableItem = _variablesContext.GetSingle(key);
+            var variableItem = _variablesContext.GetSingle(key);
             _logger.LogAudit($"VariableItem deleted '{variableItem.Key}, {variableItem.Item}'");
             await _variablesContext.Delete(key);
             return _variablesContext.Get();

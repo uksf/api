@@ -12,8 +12,8 @@ namespace UKSF.Api.Shared.Extensions
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            Type objType = obj.GetType();
-            FieldInfo fieldInfo = GetFieldInfo(objType, fieldName);
+            var objType = obj.GetType();
+            var fieldInfo = GetFieldInfo(objType, fieldName);
             if (fieldInfo == null)
             {
                 throw new ArgumentOutOfRangeException(fieldName, $"Couldn't find field {fieldName} in type {objType.FullName}");
@@ -42,8 +42,8 @@ namespace UKSF.Api.Shared.Extensions
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            Type objType = obj.GetType();
-            PropertyInfo propertyInfo = GetPropertyInfo(objType, propertyName);
+            var objType = obj.GetType();
+            var propertyInfo = GetPropertyInfo(objType, propertyName);
             if (propertyInfo == null)
             {
                 throw new ArgumentOutOfRangeException(propertyName, $"Couldn't find property {propertyName} in type {objType.FullName}");

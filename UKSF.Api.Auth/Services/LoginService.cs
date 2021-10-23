@@ -31,19 +31,19 @@ namespace UKSF.Api.Auth.Services
 
         public string Login(string email, string password)
         {
-            DomainAccount domainAccount = AuthenticateAccount(email, password);
+            var domainAccount = AuthenticateAccount(email, password);
             return GenerateBearerToken(domainAccount);
         }
 
         public string LoginForPasswordReset(string email)
         {
-            DomainAccount domainAccount = AuthenticateAccount(email, "", true);
+            var domainAccount = AuthenticateAccount(email, "", true);
             return GenerateBearerToken(domainAccount);
         }
 
         public string RegenerateBearerToken(string accountId)
         {
-            DomainAccount domainAccount = _accountContext.GetSingle(accountId);
+            var domainAccount = _accountContext.GetSingle(accountId);
             if (domainAccount == null)
             {
                 throw new BadRequestException("No user found with that email");
@@ -54,7 +54,7 @@ namespace UKSF.Api.Auth.Services
 
         private DomainAccount AuthenticateAccount(string email, string password, bool passwordReset = false)
         {
-            DomainAccount domainAccount = _accountContext.GetSingle(x => string.Equals(x.Email, email, StringComparison.InvariantCultureIgnoreCase));
+            var domainAccount = _accountContext.GetSingle(x => string.Equals(x.Email, email, StringComparison.InvariantCultureIgnoreCase));
             if (domainAccount == null)
             {
                 throw new BadRequestException("No user found with that email");

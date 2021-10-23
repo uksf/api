@@ -30,8 +30,8 @@ namespace UKSF.Api.Admin.Controllers
         [HttpGet("update"), Authorize]
         public async Task UpdateFrontendVersion()
         {
-            int version = _variablesContext.GetSingle("FRONTEND_VERSION").AsInt();
-            int newVersion = version + 1;
+            var version = _variablesContext.GetSingle("FRONTEND_VERSION").AsInt();
+            var newVersion = version + 1;
 
             await _variablesContext.Update("FRONTEND_VERSION", newVersion);
             await _utilityHub.Clients.All.ReceiveFrontendUpdate(newVersion.ToString());

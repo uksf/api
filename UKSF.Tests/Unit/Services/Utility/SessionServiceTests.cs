@@ -32,7 +32,7 @@ namespace UKSF.Tests.Unit.Services.Utility
             ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
             _httpContext = new() { User = contextUser };
 
-            string subject = _httpContextService.GetUserEmail();
+            var subject = _httpContextService.GetUserEmail();
 
             subject.Should().Be(domainAccount.Email);
         }
@@ -45,7 +45,7 @@ namespace UKSF.Tests.Unit.Services.Utility
             ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
             _httpContext = new() { User = contextUser };
 
-            string subject = _httpContextService.GetUserId();
+            var subject = _httpContextService.GetUserId();
 
             subject.Should().Be(domainAccount.Id);
         }
@@ -57,7 +57,7 @@ namespace UKSF.Tests.Unit.Services.Utility
             ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
             _httpContext = new() { User = contextUser };
 
-            bool subject = _httpContextService.UserHasPermission(Permissions.COMMAND);
+            var subject = _httpContextService.UserHasPermission(Permissions.COMMAND);
 
             subject.Should().BeFalse();
         }
@@ -69,7 +69,7 @@ namespace UKSF.Tests.Unit.Services.Utility
             ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
             _httpContext = new() { User = contextUser };
 
-            bool subject = _httpContextService.UserHasPermission(Permissions.ADMIN);
+            var subject = _httpContextService.UserHasPermission(Permissions.ADMIN);
 
             subject.Should().BeTrue();
         }

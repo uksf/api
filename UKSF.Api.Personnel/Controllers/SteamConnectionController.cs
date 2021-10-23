@@ -52,7 +52,7 @@ namespace UKSF.Api.Personnel.Controllers
                 return "steamid=fail";
             }
 
-            string code = await _confirmationCodeService.CreateConfirmationCode(id);
+            var code = await _confirmationCodeService.CreateConfirmationCode(id);
             return $"validation={code}&steamid={id}";
         }
     }

@@ -81,7 +81,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
             DomainAccount account2 = new() { TeamspeakIdentities = new() { 1 }, MembershipState = MembershipState.MEMBER };
             List<DomainAccount> mockAccountCollection = new() { account1, account2 };
 
-            _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns<Func<DomainAccount, bool>>(x => mockAccountCollection);
+            _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns<Func<DomainAccount, bool>>(_ => mockAccountCollection);
             _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(account2, It.IsAny<ICollection<int>>(), 1)).Returns(Task.CompletedTask);
 
             _teamspeakServerEventHandler.Init();

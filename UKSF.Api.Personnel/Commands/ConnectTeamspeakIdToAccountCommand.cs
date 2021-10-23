@@ -55,8 +55,8 @@ namespace UKSF.Api.Personnel.Commands
 
         public async Task<DomainAccount> ExecuteAsync(ConnectTeamspeakIdToAccountCommandArgs args)
         {
-            DomainAccount domainAccount = _accountContext.GetSingle(args.AccountId);
-            string teamspeakId = await _confirmationCodeService.GetConfirmationCodeValue(args.Code);
+            var domainAccount = _accountContext.GetSingle(args.AccountId);
+            var teamspeakId = await _confirmationCodeService.GetConfirmationCodeValue(args.Code);
             if (string.IsNullOrWhiteSpace(teamspeakId) || teamspeakId != args.TeamspeakId)
             {
                 await _confirmationCodeService.ClearConfirmationCodes(x => x.Value == args.TeamspeakId);
@@ -67,7 +67,7 @@ namespace UKSF.Api.Personnel.Commands
             domainAccount.TeamspeakIdentities.Add(int.Parse(teamspeakId));
             await _accountContext.Update(domainAccount.Id, Builders<DomainAccount>.Update.Set(x => x.TeamspeakIdentities, domainAccount.TeamspeakIdentities));
 
-            DomainAccount updatedAccount = _accountContext.GetSingle(domainAccount.Id);
+            var updatedAccount = _accountContext.GetSingle(domainAccount.Id);
             _eventBus.Send(updatedAccount);
             _notificationsService.SendTeamspeakNotification(
                 new HashSet<int> { teamspeakId.ToInt() },

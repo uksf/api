@@ -154,7 +154,8 @@ namespace UKSF.Api.ArmaMissions.Services
         private void ReadSettings()
         {
             _mission.MaxCurators = 5;
-            string curatorsMaxLine = File.ReadAllLines(Path.Combine(_mission.Path, "cba_settings.sqf")).FirstOrDefault(x => x.Contains("uksf_curator_curatorsMax"));
+            var curatorsMaxLine = File.ReadAllLines(Path.Combine(_mission.Path, "cba_settings.sqf"))
+                                      .FirstOrDefault(x => x.Contains("uksf_curator_curatorsMax"));
             if (string.IsNullOrEmpty(curatorsMaxLine))
             {
                 _mission.MaxCurators = _armaServerDefaultMaxCurators;
@@ -166,8 +167,8 @@ namespace UKSF.Api.ArmaMissions.Services
                 return;
             }
 
-            string curatorsMaxString = curatorsMaxLine.Split("=")[1].RemoveSpaces().Replace(";", "");
-            if (!int.TryParse(curatorsMaxString, out int maxCurators))
+            var curatorsMaxString = curatorsMaxLine.Split("=")[1].RemoveSpaces().Replace(";", "");
+            if (!int.TryParse(curatorsMaxString, out var maxCurators))
             {
                 _reports.Add(
                     new("Using hardcoded setting 'uksf_curator_curatorsMax'", $"Could not read malformed setting: '{curatorsMaxLine}' in cba_settings.sqf" +
@@ -187,8 +188,8 @@ namespace UKSF.Api.ArmaMissions.Services
 
             if (!CheckIgnoreKey("missionImageIgnore"))
             {
-                string imagePath = Path.Combine(_mission.Path, "uksf.paa");
-                string modpackImagePath = Path.Combine(_armaServerModsPath, "@uksf", "UKSFTemplate.VR", "uksf.paa");
+                var imagePath = Path.Combine(_mission.Path, "uksf.paa");
+                var modpackImagePath = Path.Combine(_armaServerModsPath, "@uksf", "UKSFTemplate.VR", "uksf.paa");
                 if (File.Exists(modpackImagePath))
                 {
                     if (File.Exists(imagePath) && new FileInfo(imagePath).Length != new FileInfo(modpackImagePath).Length)
@@ -207,10 +208,10 @@ namespace UKSF.Api.ArmaMissions.Services
 
         private void Write()
         {
-            int start = MissionUtilities.GetIndexByKey(_mission.SqmLines, "Entities");
-            int count = _mission.RawEntities.Count;
+            var start = MissionUtilities.GetIndexByKey(_mission.SqmLines, "Entities");
+            var count = _mission.RawEntities.Count;
             _mission.SqmLines.RemoveRange(start, count);
-            IEnumerable<string> newEntities = _mission.MissionEntity.Serialize();
+            var newEntities = _mission.MissionEntity.Serialize();
             _mission.SqmLines.InsertRange(start, newEntities);
             _mission.SqmLines = _mission.SqmLines.Select(x => x.RemoveNewLines().RemoveEmbeddedQuotes()).ToList();
             File.WriteAllLines(_mission.SqmPath, _mission.SqmLines);
@@ -218,7 +219,8 @@ namespace UKSF.Api.ArmaMissions.Services
 
         private void PatchDescription()
         {
-            int playable = _mission.SqmLines.Select(x => x.RemoveSpaces()).Count(x => x.ContainsIgnoreCase("isPlayable=1") || x.ContainsIgnoreCase("isPlayer=1"));
+            var playable = _mission.SqmLines.Select(x => x.RemoveSpaces())
+                                   .Count(x => x.ContainsIgnoreCase("isPlayable=1") || x.ContainsIgnoreCase("isPlayer=1"));
             _mission.PlayerCount = playable;
 
             _mission.DescriptionLines = File.ReadAllLines(_mission.DescriptionPath).ToList();
@@ -257,12 +259,14 @@ namespace UKSF.Api.ArmaMissions.Services
 
         private void CheckDescriptionItem(string key, string defaultValue, bool required = true)
         {
-            int index = _mission.DescriptionLines.FindIndex(x => x.Contains($"{key} = ") || x.Contains($"{key}=") || x.Contains($"{key}= ") || x.Contains($"{key} ="));
+            var index = _mission.DescriptionLines.FindIndex(
+                x => x.Contains($"{key} = ") || x.Contains($"{key}=") || x.Contains($"{key}= ") || x.Contains($"{key} =")
+            );
             if (index != -1)
             {
-                string itemValue = _mission.DescriptionLines[index].Split("=")[1].Trim();
+                var itemValue = _mission.DescriptionLines[index].Split("=")[1].Trim();
                 itemValue = itemValue.Remove(itemValue.Length - 1);
-                bool equal = string.Equals(itemValue, defaultValue, StringComparison.InvariantCultureIgnoreCase);
+                var equal = string.Equals(itemValue, defaultValue, StringComparison.InvariantCultureIgnoreCase);
                 if (!equal && required)
                 {
                     _reports.Add(

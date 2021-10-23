@@ -57,7 +57,7 @@ namespace UKSF.Api.Command.Controllers
         public IEnumerable<DischargeCollection> Get()
         {
             IEnumerable<DischargeCollection> discharges = _dischargeContext.Get().ToList();
-            foreach (DischargeCollection discharge in discharges)
+            foreach (var discharge in discharges)
             {
                 discharge.RequestExists = _commandRequestService.DoesEquivalentRequestExist(
                     new() { Recipient = discharge.AccountId, Type = CommandRequestType.REINSTATE_MEMBER, DisplayValue = "Member", DisplayFrom = "Discharged" }
@@ -70,10 +70,10 @@ namespace UKSF.Api.Command.Controllers
         [HttpGet("reinstate/{id}")]
         public async Task<IEnumerable<DischargeCollection>> Reinstate(string id)
         {
-            DischargeCollection dischargeCollection = _dischargeContext.GetSingle(id);
+            var dischargeCollection = _dischargeContext.GetSingle(id);
             await _dischargeContext.Update(dischargeCollection.Id, Builders<DischargeCollection>.Update.Set(x => x.Reinstated, true));
             await _accountContext.Update(dischargeCollection.AccountId, x => x.MembershipState, MembershipState.MEMBER);
-            Notification notification = await _assignmentService.UpdateUnitRankAndRole(
+            var notification = await _assignmentService.UpdateUnitRankAndRole(
                 dischargeCollection.AccountId,
                 "Basic Training Unit",
                 "Trainee",
@@ -85,8 +85,8 @@ namespace UKSF.Api.Command.Controllers
             _notificationsService.Add(notification);
 
             _logger.LogAudit($"{_httpContextService.GetUserId()} reinstated {dischargeCollection.Name}'s membership", _httpContextService.GetUserId());
-            string personnelId = _variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
-            foreach (string member in _unitsContext.GetSingle(personnelId).Members.Where(x => x != _httpContextService.GetUserId()))
+            var personnelId = _variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
+            foreach (var member in _unitsContext.GetSingle(personnelId).Members.Where(x => x != _httpContextService.GetUserId()))
             {
                 _notificationsService.Add(
                     new() { Owner = member, Icon = NotificationIcons.PROMOTION, Message = $"{dischargeCollection.Name}'s membership was reinstated by {_httpContextService.GetUserId()}" }

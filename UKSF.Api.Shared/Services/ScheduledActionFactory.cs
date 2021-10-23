@@ -16,7 +16,7 @@ namespace UKSF.Api.Shared.Services
 
         public void RegisterScheduledActions(IEnumerable<IScheduledAction> newScheduledActions)
         {
-            foreach (IScheduledAction scheduledAction in newScheduledActions)
+            foreach (var scheduledAction in newScheduledActions)
             {
                 _scheduledActions[scheduledAction.Name] = scheduledAction;
             }
@@ -24,7 +24,7 @@ namespace UKSF.Api.Shared.Services
 
         public IScheduledAction GetScheduledAction(string actionName)
         {
-            if (_scheduledActions.TryGetValue(actionName, out IScheduledAction action))
+            if (_scheduledActions.TryGetValue(actionName, out var action))
             {
                 return action;
             }

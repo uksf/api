@@ -119,7 +119,7 @@ namespace UKSF.Api.Personnel.Services
         {
             foreach (var unit in _unitsContext.Get(x => x.Roles.ContainsKey(oldName)))
             {
-                string id = unit.Roles[oldName];
+                var id = unit.Roles[oldName];
                 await _unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Unset($"roles.{oldName}"));
                 await _unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set($"roles.{newName}", id));
             }
@@ -244,7 +244,7 @@ namespace UKSF.Api.Personnel.Services
                 return 0;
             }
 
-            int depth = 0;
+            var depth = 0;
             var parent = _unitsContext.GetSingle(unit.Parent);
             while (parent != null)
             {
@@ -258,16 +258,16 @@ namespace UKSF.Api.Personnel.Services
         public string GetChainString(DomainUnit unit)
         {
             var parentUnits = GetParents(unit).Skip(1).ToList();
-            string unitNames = unit.Name;
+            var unitNames = unit.Name;
             parentUnits.ForEach(x => unitNames += $", {x.Name}");
             return unitNames;
         }
 
         private async Task RemoveMemberRoles(string id, DomainUnit unit)
         {
-            Dictionary<string, string> roles = unit.Roles;
-            int originalCount = unit.Roles.Count;
-            foreach ((string key, string _) in roles.Where(x => x.Value == id).ToList())
+            var roles = unit.Roles;
+            var originalCount = unit.Roles.Count;
+            foreach (var (key, _) in roles.Where(x => x.Value == id).ToList())
             {
                 roles.Remove(key);
             }

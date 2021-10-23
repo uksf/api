@@ -54,15 +54,15 @@ namespace UKSF.Api.ArmaServer.Services
 
         public async Task UploadMissionFile(IFormFile file)
         {
-            string fileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
-            string filePath = Path.Combine(_gameServerHelpers.GetGameServerMissionsPath(), fileName);
+            var fileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
+            var filePath = Path.Combine(_gameServerHelpers.GetGameServerMissionsPath(), fileName);
             await using FileStream stream = new(filePath, FileMode.Create);
             await file.CopyToAsync(stream);
         }
 
         public List<MissionFile> GetMissionFiles()
         {
-            IEnumerable<FileInfo> files = new DirectoryInfo(_gameServerHelpers.GetGameServerMissionsPath()).EnumerateFiles("*.pbo", SearchOption.TopDirectoryOnly);
+            var files = new DirectoryInfo(_gameServerHelpers.GetGameServerMissionsPath()).EnumerateFiles("*.pbo", SearchOption.TopDirectoryOnly);
             return files.Select(fileInfo => new MissionFile(fileInfo)).OrderBy(x => x.Map).ThenBy(x => x.Name).ToList();
         }
 
@@ -81,13 +81,13 @@ namespace UKSF.Api.ArmaServer.Services
             client.DefaultRequestHeaders.Accept.Add(new("application/json"));
             try
             {
-                HttpResponseMessage response = await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server");
+                var response = await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server");
                 if (!response.IsSuccessStatusCode)
                 {
                     gameServer.Status.Running = false;
                 }
 
-                string content = await response.Content.ReadAsStringAsync();
+                var content = await response.Content.ReadAsStringAsync();
                 gameServer.Status = JsonConvert.DeserializeObject<GameServerStatus>(content);
                 gameServer.Status.ParsedUptime = _gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(gameServer.Status.Uptime)).ToString();
                 gameServer.Status.MaxPlayers = _gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
@@ -102,7 +102,7 @@ namespace UKSF.Api.ArmaServer.Services
 
         public async Task<List<GameServer>> GetAllGameServerStatuses()
         {
-            List<GameServer> gameServers = _gameServersContext.Get().ToList();
+            var gameServers = _gameServersContext.Get().ToList();
             await Task.WhenAll(gameServers.Select(GetGameServerStatus));
             return gameServers;
         }
@@ -116,8 +116,8 @@ namespace UKSF.Api.ArmaServer.Services
             //     };
             // }
 
-            string missionPath = Path.Combine(_gameServerHelpers.GetGameServerMissionsPath(), missionName);
-            MissionPatchingResult result = await _missionPatchingService.PatchMission(
+            var missionPath = Path.Combine(_gameServerHelpers.GetGameServerMissionsPath(), missionName);
+            var result = await _missionPatchingService.PatchMission(
                 missionPath,
                 _gameServerHelpers.GetGameServerModsPaths(GameEnvironment.RELEASE),
                 _gameServerHelpers.GetMaxCuratorCountFromSettings()
@@ -132,7 +132,7 @@ namespace UKSF.Api.ArmaServer.Services
 
         public async Task LaunchGameServer(GameServer gameServer)
         {
-            string launchArguments = _gameServerHelpers.FormatGameServerLaunchArguments(gameServer);
+            var launchArguments = _gameServerHelpers.FormatGameServerLaunchArguments(gameServer);
             gameServer.ProcessId = ProcessUtilities.LaunchManagedProcess(_gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments);
 
             await Task.Delay(TimeSpan.FromSeconds(1));
@@ -140,7 +140,7 @@ namespace UKSF.Api.ArmaServer.Services
             // launch headless clients
             if (gameServer.NumberHeadlessClients > 0)
             {
-                for (int index = 0; index < gameServer.NumberHeadlessClients; index++)
+                for (var index = 0; index < gameServer.NumberHeadlessClients; index++)
                 {
                     launchArguments = _gameServerHelpers.FormatHeadlessClientLaunchArguments(gameServer, index);
                     gameServer.HeadlessClientProcessIds.Add(ProcessUtilities.LaunchManagedProcess(_gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments));
@@ -165,7 +165,7 @@ namespace UKSF.Api.ArmaServer.Services
 
             if (gameServer.NumberHeadlessClients > 0)
             {
-                for (int index = 0; index < gameServer.NumberHeadlessClients; index++)
+                for (var index = 0; index < gameServer.NumberHeadlessClients; index++)
                 {
                     try
                     {
@@ -188,7 +188,7 @@ namespace UKSF.Api.ArmaServer.Services
                 throw new NullReferenceException();
             }
 
-            Process process = Process.GetProcesses().FirstOrDefault(x => x.Id == gameServer.ProcessId.Value);
+            var process = Process.GetProcesses().FirstOrDefault(x => x.Id == gameServer.ProcessId.Value);
             if (process != null && !process.HasExited)
             {
                 process.Kill();
@@ -211,8 +211,8 @@ namespace UKSF.Api.ArmaServer.Services
 
         public int KillAllArmaProcesses()
         {
-            List<Process> processes = _gameServerHelpers.GetArmaProcesses().ToList();
-            foreach (Process process in processes)
+            var processes = _gameServerHelpers.GetArmaProcesses().ToList();
+            foreach (var process in processes)
             {
                 process.Kill();
             }
@@ -231,18 +231,18 @@ namespace UKSF.Api.ArmaServer.Services
 
         public List<GameServerMod> GetAvailableMods(string id)
         {
-            GameServer gameServer = _gameServersContext.GetSingle(id);
+            var gameServer = _gameServersContext.GetSingle(id);
             Uri serverExecutable = new(_gameServerHelpers.GetGameServerExecutablePath(gameServer));
 
             IEnumerable<string> availableModsFolders = new[] { _gameServerHelpers.GetGameServerModsPaths(gameServer.Environment) };
             availableModsFolders = availableModsFolders.Concat(_gameServerHelpers.GetGameServerExtraModsPaths());
 
             List<GameServerMod> mods = new();
-            foreach (string modsPath in availableModsFolders)
+            foreach (var modsPath in availableModsFolders)
             {
                 Regex allowedPaths = new("@.*|(?<!.)(vn)(?!.)|(?<!.)(gm)(?!.)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                IEnumerable<DirectoryInfo> modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("*.*", SearchOption.AllDirectories).Where(x => allowedPaths.IsMatch(x.Name));
-                foreach (DirectoryInfo modFolder in modFolders)
+                var modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("*.*", SearchOption.AllDirectories).Where(x => allowedPaths.IsMatch(x.Name));
+                foreach (var modFolder in modFolders)
                 {
                     if (mods.Any(x => x.Path == modFolder.FullName))
                     {
@@ -250,7 +250,8 @@ namespace UKSF.Api.ArmaServer.Services
                     }
 
                     Regex allowedExtensions = new("[ep]bo", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                    bool hasModFiles = new DirectoryInfo(modFolder.FullName).EnumerateFiles("*.*", SearchOption.AllDirectories).Any(x => allowedExtensions.IsMatch(x.Extension));
+                    var hasModFiles = new DirectoryInfo(modFolder.FullName).EnumerateFiles("*.*", SearchOption.AllDirectories)
+                                                                           .Any(x => allowedExtensions.IsMatch(x.Extension));
                     if (!hasModFiles)
                     {
                         continue;
@@ -267,14 +268,14 @@ namespace UKSF.Api.ArmaServer.Services
                 }
             }
 
-            foreach (GameServerMod mod in mods)
+            foreach (var mod in mods)
             {
                 if (mods.Any(x => x.Name == mod.Name && x.Path != mod.Path))
                 {
                     mod.IsDuplicate = true;
                 }
 
-                foreach (GameServerMod duplicate in mods.Where(x => x.Name == mod.Name && x.Path != mod.Path))
+                foreach (var duplicate in mods.Where(x => x.Name == mod.Name && x.Path != mod.Path))
                 {
                     duplicate.IsDuplicate = true;
                 }
@@ -285,8 +286,8 @@ namespace UKSF.Api.ArmaServer.Services
 
         public List<GameServerMod> GetEnvironmentMods(GameEnvironment environment)
         {
-            string repoModsFolder = _gameServerHelpers.GetGameServerModsPaths(environment);
-            IEnumerable<DirectoryInfo> modFolders = new DirectoryInfo(repoModsFolder).EnumerateDirectories("@*", SearchOption.TopDirectoryOnly);
+            var repoModsFolder = _gameServerHelpers.GetGameServerModsPaths(environment);
+            var modFolders = new DirectoryInfo(repoModsFolder).EnumerateDirectories("@*", SearchOption.TopDirectoryOnly);
             return modFolders.Select(modFolder => new { modFolder, modFiles = new DirectoryInfo(modFolder.FullName).EnumerateFiles("*.pbo", SearchOption.AllDirectories) })
                              .Where(x => x.modFiles.Any())
                              .Select(x => new GameServerMod { Name = x.modFolder.Name, Path = x.modFolder.FullName })

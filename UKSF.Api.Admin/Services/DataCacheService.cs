@@ -20,7 +20,7 @@ namespace UKSF.Api.Admin.Services
 
         public void RefreshCachedData()
         {
-            foreach (ICachedMongoContext cachedDataService in _serviceProvider.GetInterfaceServices<ICachedMongoContext>())
+            foreach (var cachedDataService in _serviceProvider.GetInterfaceServices<ICachedMongoContext>())
             {
                 cachedDataService.Refresh();
             }

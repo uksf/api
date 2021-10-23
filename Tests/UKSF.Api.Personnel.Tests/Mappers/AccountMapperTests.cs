@@ -24,8 +24,8 @@ namespace UKSF.Api.Personnel.Tests.Mappers
         [Fact]
         public void ShouldCopyAccountCorrectly()
         {
-            string id = ObjectId.GenerateNewId().ToString();
-            DateTime timestamp = DateTime.Now.AddDays(-1);
+            var id = ObjectId.GenerateNewId().ToString();
+            var timestamp = DateTime.Now.AddDays(-1);
             DomainAccount domainAccount = new()
             {
                 Id = id,
@@ -40,7 +40,7 @@ namespace UKSF.Api.Personnel.Tests.Mappers
 
             _mockDisplayNameService.Setup(x => x.GetDisplayName(domainAccount)).Returns("Cdt.McTest.B");
 
-            Account subject = _subject.MapToAccount(domainAccount);
+            var subject = _subject.MapToAccount(domainAccount);
 
             subject.Id.Should().Be(id);
             subject.DisplayName.Should().Be("Cdt.McTest.B");

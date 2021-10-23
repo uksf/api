@@ -55,7 +55,7 @@ namespace UKSF.Tests.Unit.Data
 
             _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
-            TestDataModel subject = _testCachedContext.GetSingle(item2.Id);
+            var subject = _testCachedContext.GetSingle(item2.Id);
 
             _testCachedContext.Cache.Should().NotBeNull();
             _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
@@ -71,7 +71,7 @@ namespace UKSF.Tests.Unit.Data
 
             _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
-            TestDataModel subject = _testCachedContext.GetSingle(x => x.Name == "2");
+            var subject = _testCachedContext.GetSingle(x => x.Name == "2");
 
             _testCachedContext.Cache.Should().NotBeNull();
             _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
@@ -87,7 +87,7 @@ namespace UKSF.Tests.Unit.Data
 
             _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
 
-            IEnumerable<TestDataModel> subject = _testCachedContext.Get(x => x.Name == "1");
+            var subject = _testCachedContext.Get(x => x.Name == "1");
 
             _testCachedContext.Cache.Should().NotBeNull();
             subject.Should().BeSubsetOf(_testCachedContext.Cache);
@@ -117,12 +117,12 @@ namespace UKSF.Tests.Unit.Data
 
             _testCachedContext.Cache.Should().BeNull();
 
-            List<TestDataModel> subject1 = _testCachedContext.Get().ToList();
+            var subject1 = _testCachedContext.Get().ToList();
 
             subject1.Should().NotBeNull();
             subject1.Should().BeEquivalentTo(_mockCollection);
 
-            List<TestDataModel> subject2 = _testCachedContext.Get().ToList();
+            var subject2 = _testCachedContext.Get().ToList();
 
             subject2.Should().NotBeNull();
             subject2.Should().BeEquivalentTo(_mockCollection).And.BeEquivalentTo(subject1);

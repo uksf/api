@@ -11,7 +11,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps
 
         protected override async Task SetupExecute()
         {
-            string keysPath = Path.Join(GetBuildEnvironmentPath(), "Keys");
+            var keysPath = Path.Join(GetBuildEnvironmentPath(), "Keys");
 
             StepLogger.LogSurround("Wiping release server keys folder");
             await DeleteDirectoryContents(keysPath);
@@ -22,8 +22,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps
         {
             StepLogger.Log("Copy RC keys to release keys folder");
 
-            string keysPath = Path.Join(GetBuildEnvironmentPath(), "Keys");
-            string rcKeysPath = Path.Join(GetEnvironmentPath(GameEnvironment.RC), "Keys");
+            var keysPath = Path.Join(GetBuildEnvironmentPath(), "Keys");
+            var rcKeysPath = Path.Join(GetEnvironmentPath(GameEnvironment.RC), "Keys");
 
             StepLogger.LogSurround("\nCopying keys...");
             await CopyDirectory(rcKeysPath, keysPath);

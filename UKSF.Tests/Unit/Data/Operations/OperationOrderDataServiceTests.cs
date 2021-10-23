@@ -35,7 +35,7 @@ namespace UKSF.Tests.Unit.Data.Operations
 
             _mockDataCollection.Setup(x => x.Get()).Returns(new List<Opord> { item1, item2, item3 });
 
-            IEnumerable<Opord> subject = _operationOrderContext.Get();
+            var subject = _operationOrderContext.Get();
 
             subject.Should().ContainInOrder(item3, item2, item1);
         }
@@ -49,7 +49,7 @@ namespace UKSF.Tests.Unit.Data.Operations
 
             _mockDataCollection.Setup(x => x.Get()).Returns(new List<Opord> { item1, item2, item3 });
 
-            IEnumerable<Opord> subject = _operationOrderContext.Get(x => x.Description == "1");
+            var subject = _operationOrderContext.Get(x => x.Description == "1");
 
             subject.Should().ContainInOrder(item3, item1);
         }

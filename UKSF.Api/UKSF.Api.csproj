@@ -5,7 +5,6 @@
         <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
         <RootNamespace>UKSF.Api</RootNamespace>
         <OutputType>Exe</OutputType>
-        <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
         <LangVersion>default</LangVersion>
         <Nullable>disable</Nullable>
     </PropertyGroup>

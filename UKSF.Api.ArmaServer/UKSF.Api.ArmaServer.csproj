@@ -6,9 +6,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\UKSF.Api.Admin\UKSF.Api.Admin.csproj" />
-      <ProjectReference Include="..\UKSF.Api.ArmaMissions\UKSF.Api.ArmaMissions.csproj" />
-      <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Admin\UKSF.Api.Admin.csproj"/>
+        <ProjectReference Include="..\UKSF.Api.ArmaMissions\UKSF.Api.ArmaMissions.csproj"/>
+        <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CliWrap" Version="3.3.3"/>
+        <PackageReference Include="Gameloop.Vdf.JsonConverter" Version="0.2.1"/>
     </ItemGroup>
 
 </Project>

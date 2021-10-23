@@ -201,7 +201,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
         {
             if (Build.EnvironmentVariables.ContainsKey(key))
             {
-                object value = Build.EnvironmentVariables[key];
+                var value = Build.EnvironmentVariables[key];
                 return (T)value;
             }
 
@@ -215,13 +215,13 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
                 _ = Task.Run(
                     async () =>
                     {
-                        string previousBuildStepState = JsonConvert.SerializeObject(_buildStep);
+                        var previousBuildStepState = JsonConvert.SerializeObject(_buildStep);
 
                         do
                         {
                             await Task.Delay(_updateInterval, _updatePusherCancellationTokenSource.Token);
 
-                            string newBuildStepState = JsonConvert.SerializeObject(_buildStep);
+                            var newBuildStepState = JsonConvert.SerializeObject(_buildStep);
                             if (newBuildStepState != previousBuildStepState)
                             {
                                 await Update();

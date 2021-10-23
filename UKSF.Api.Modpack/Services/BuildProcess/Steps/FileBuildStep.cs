@@ -25,10 +25,11 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
             DirectoryInfo source = new(sourcePath);
             DirectoryInfo target = new(targetPath);
             IEnumerable<FileInfo> sourceFiles = GetDirectoryContents(source);
-            List<FileInfo> addedFiles = sourceFiles.Select(sourceFile => new { sourceFile, targetFile = new FileInfo(sourceFile.FullName.Replace(source.FullName, target.FullName)) })
-                                                   .Where(x => !x.targetFile.Exists)
-                                                   .Select(x => x.sourceFile)
-                                                   .ToList();
+            var addedFiles = sourceFiles
+                             .Select(sourceFile => new { sourceFile, targetFile = new FileInfo(sourceFile.FullName.Replace(source.FullName, target.FullName)) })
+                             .Where(x => !x.targetFile.Exists)
+                             .Select(x => x.sourceFile)
+                             .ToList();
             await CopyFiles(source, target, addedFiles);
         }
 
@@ -37,10 +38,16 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
             DirectoryInfo source = new(sourcePath);
             DirectoryInfo target = new(targetPath);
             IEnumerable<FileInfo> sourceFiles = GetDirectoryContents(source);
-            List<FileInfo> updatedFiles = sourceFiles.Select(sourceFile => new { sourceFile, targetFile = new FileInfo(sourceFile.FullName.Replace(source.FullName, target.FullName)) })
-                                                     .Where(x => x.targetFile.Exists && (x.targetFile.Length != x.sourceFile.Length || x.targetFile.LastWriteTime < x.sourceFile.LastWriteTime))
-                                                     .Select(x => x.sourceFile)
-                                                     .ToList();
+            var updatedFiles = sourceFiles
+                               .Select(
+                                   sourceFile => new { sourceFile, targetFile = new FileInfo(sourceFile.FullName.Replace(source.FullName, target.FullName)) }
+                               )
+                               .Where(
+                                   x => x.targetFile.Exists &&
+                                        (x.targetFile.Length != x.sourceFile.Length || x.targetFile.LastWriteTime < x.sourceFile.LastWriteTime)
+                               )
+                               .Select(x => x.sourceFile)
+                               .ToList();
             await CopyFiles(source, target, updatedFiles);
         }
 
@@ -49,29 +56,32 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
             DirectoryInfo source = new(sourcePath);
             DirectoryInfo target = new(targetPath);
             IEnumerable<FileInfo> targetFiles = GetDirectoryContents(target);
-            List<FileInfo> deletedFiles = targetFiles.Select(targetFile => new { targetFile, sourceFile = new FileInfo(targetFile.FullName.Replace(target.FullName, source.FullName)) })
-                                                     .Where(
-                                                         x =>
-                                                         {
-                                                             if (x.sourceFile.Exists)
-                                                             {
-                                                                 return false;
-                                                             }
+            var deletedFiles = targetFiles
+                               .Select(
+                                   targetFile => new { targetFile, sourceFile = new FileInfo(targetFile.FullName.Replace(target.FullName, source.FullName)) }
+                               )
+                               .Where(
+                                   x =>
+                                   {
+                                       if (x.sourceFile.Exists)
+                                       {
+                                           return false;
+                                       }
 
-                                                             if (!matchSubdirectories)
-                                                             {
-                                                                 return true;
-                                                             }
+                                       if (!matchSubdirectories)
+                                       {
+                                           return true;
+                                       }
 
-                                                             string sourceSubdirectoryPath = x.sourceFile.FullName.Replace(sourcePath, "")
-                                                                                              .Split(new[] { Path.DirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries)
-                                                                                              .First();
-                                                             DirectoryInfo sourceSubdirectory = new(Path.Join(sourcePath, sourceSubdirectoryPath));
-                                                             return sourceSubdirectory.Exists;
-                                                         }
-                                                     )
-                                                     .Select(x => x.targetFile)
-                                                     .ToList();
+                                       var sourceSubdirectoryPath = x.sourceFile.FullName.Replace(sourcePath, "")
+                                                                     .Split(new[] { Path.DirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries)
+                                                                     .First();
+                                       DirectoryInfo sourceSubdirectory = new(Path.Join(sourcePath, sourceSubdirectoryPath));
+                                       return sourceSubdirectory.Exists;
+                                   }
+                               )
+                               .Select(x => x.targetFile)
+                               .ToList();
             await DeleteFiles(deletedFiles);
             await DeleteEmptyDirectories(target);
         }
@@ -80,7 +90,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
         {
             DirectoryInfo source = new(sourceDirectory);
             DirectoryInfo target = new(targetDirectory);
-            List<FileInfo> files = GetDirectoryContents(source);
+            var files = GetDirectoryContents(source);
             await CopyFiles(source, target, files);
         }
 
@@ -93,7 +103,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
                 return;
             }
 
-            long totalSize = files.Select(x => x.Length).Sum();
+            var totalSize = files.Select(x => x.Length).Sum();
             if (files.Count > FILE_COPY_TASK_COUNT_THRESHOLD || totalSize > FILE_COPY_TASK_SIZE_THRESHOLD)
             {
                 await ParallelCopyFiles(source, target, files, totalSize, flatten);
@@ -125,7 +135,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
                 return;
             }
 
-            foreach (DirectoryInfo directory in directories)
+            foreach (var directory in directories)
             {
                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
                 StepLogger.Log($"Deleting directory: {directory}");
@@ -153,7 +163,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
 
         internal async Task DeleteEmptyDirectories(DirectoryInfo directory)
         {
-            foreach (DirectoryInfo subDirectory in directory.GetDirectories())
+            foreach (var subDirectory in directory.GetDirectories())
             {
                 await DeleteEmptyDirectories(subDirectory);
                 if (subDirectory.GetFiles().Length == 0 && subDirectory.GetDirectories().Length == 0)
@@ -167,7 +177,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
         internal async Task ParallelProcessFiles(IEnumerable<FileInfo> files, int taskLimit, Func<FileInfo, Task> process, Func<string> getLog, string error)
         {
             SemaphoreSlim taskLimiter = new(taskLimit);
-            IEnumerable<Task> tasks = files.Select(
+            var tasks = files.Select(
                 file =>
                 {
                     return Task.Run(
@@ -208,11 +218,11 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
         internal async Task BatchProcessFiles(IEnumerable<FileInfo> files, int batchSize, Func<FileInfo, Task> process, Func<string> getLog, string error)
         {
             StepLogger.Log(getLog());
-            IEnumerable<IEnumerable<FileInfo>> fileBatches = files.Batch(batchSize);
-            foreach (IEnumerable<FileInfo> fileBatch in fileBatches)
+            var fileBatches = files.Batch(batchSize);
+            foreach (var fileBatch in fileBatches)
             {
-                List<FileInfo> fileList = fileBatch.ToList();
-                IEnumerable<Task> tasks = fileList.Select(
+                var fileList = fileBatch.ToList();
+                var tasks = fileList.Select(
                     async file =>
                     {
                         try
@@ -237,10 +247,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
 
         private void SimpleCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, bool flatten = false)
         {
-            foreach (FileInfo file in files)
+            foreach (var file in files)
             {
                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
-                string targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
+                var targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
                 StepLogger.Log($"Copying '{file}' to '{target.FullName}'");
                 Directory.CreateDirectory(Path.GetDirectoryName(targetFile));
                 file.CopyTo(targetFile, true);
@@ -250,13 +260,13 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
         private async Task ParallelCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, long totalSize, bool flatten = false)
         {
             long copiedSize = 0;
-            string totalSizeString = totalSize.Bytes().ToString("#.#");
+            var totalSizeString = totalSize.Bytes().ToString("#.#");
             await BatchProcessFiles(
                 files,
                 10,
                 file =>
                 {
-                    string targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
+                    var targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
                     Directory.CreateDirectory(Path.GetDirectoryName(targetFile));
                     file.CopyTo(targetFile, true);
                     Interlocked.Add(ref copiedSize, file.Length);
@@ -269,7 +279,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
 
         private void SimpleDeleteFiles(IEnumerable<FileInfo> files)
         {
-            foreach (FileInfo file in files)
+            foreach (var file in files)
             {
                 CancellationTokenSource.Token.ThrowIfCancellationRequested();
                 StepLogger.Log($"Deleting file: {file}");
@@ -279,8 +289,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
 
         private async Task ParallelDeleteFiles(IReadOnlyCollection<FileInfo> files)
         {
-            int deleted = 0;
-            int total = files.Count;
+            var deleted = 0;
+            var total = files.Count;
             await BatchProcessFiles(
                 files,
                 10,

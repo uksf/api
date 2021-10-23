@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,15 +27,15 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpPost("read"), Authorize]
         public async Task MarkAsRead([FromBody] JObject jObject)
         {
-            List<string> ids = JArray.Parse(jObject["notifications"].ToString()).Select(notification => notification["id"].ToString()).ToList();
+            var ids = JArray.Parse(jObject["notifications"].ToString()).Select(notification => notification["id"].ToString()).ToList();
             await _notificationsService.MarkNotificationsAsRead(ids);
         }
 
         [HttpPost("clear"), Authorize]
         public async Task Clear([FromBody] JObject jObject)
         {
-            JArray clear = JArray.Parse(jObject["clear"].ToString());
-            List<string> ids = clear.Select(notification => notification["id"].ToString()).ToList();
+            var clear = JArray.Parse(jObject["clear"].ToString());
+            var ids = clear.Select(notification => notification["id"].ToString()).ToList();
             await _notificationsService.Delete(ids);
         }
     }

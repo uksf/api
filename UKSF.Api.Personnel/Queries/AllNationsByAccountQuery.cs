@@ -21,14 +21,14 @@ namespace UKSF.Api.Personnel.Queries
 
         public Task<List<string>> ExecuteAsync()
         {
-            List<string> nations = _accountContext.Get()
-                                                  .Select(x => x.Nation)
-                                                  .Where(x => !string.IsNullOrWhiteSpace(x))
-                                                  .GroupBy(x => x)
-                                                  .OrderByDescending(x => x.Count())
-                                                  .ThenBy(x => x.Key)
-                                                  .Select(x => x.Key)
-                                                  .ToList();
+            var nations = _accountContext.Get()
+                                         .Select(x => x.Nation)
+                                         .Where(x => !string.IsNullOrWhiteSpace(x))
+                                         .GroupBy(x => x)
+                                         .OrderByDescending(x => x.Count())
+                                         .ThenBy(x => x.Key)
+                                         .Select(x => x.Key)
+                                         .ToList();
             return Task.FromResult(nations);
         }
     }

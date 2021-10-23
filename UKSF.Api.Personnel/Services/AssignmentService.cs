@@ -78,9 +78,9 @@ namespace UKSF.Api.Personnel.Services
         {
             StringBuilder notificationBuilder = new();
 
-            (bool unitUpdate, bool unitPositive) = await UpdateUnit(id, unitString, notificationBuilder);
-            (bool roleUpdate, bool rolePositive) = await UpdateRole(id, role, unitUpdate, notificationBuilder);
-            (bool rankUpdate, bool rankPositive) = await UpdateRank(id, rankString, unitUpdate, roleUpdate, notificationBuilder);
+            var (unitUpdate, unitPositive) = await UpdateUnit(id, unitString, notificationBuilder);
+            var (roleUpdate, rolePositive) = await UpdateRole(id, role, unitUpdate, notificationBuilder);
+            var (rankUpdate, rankPositive) = await UpdateRank(id, rankString, unitUpdate, roleUpdate, notificationBuilder);
             bool positive;
             if (rankPositive)
             {
@@ -146,7 +146,7 @@ namespace UKSF.Api.Personnel.Services
         public async Task<string> UnassignUnitRole(string id, string unitId)
         {
             var unit = _unitsContext.GetSingle(unitId);
-            string role = unit.Roles.FirstOrDefault(x => x.Value == id).Key;
+            var role = unit.Roles.FirstOrDefault(x => x.Value == id).Key;
             if (_unitsService.RolesHasMember(unit, id))
             {
                 await _unitsService.SetMemberRole(id, unitId);
@@ -166,15 +166,15 @@ namespace UKSF.Api.Personnel.Services
         // TODO: teamspeak and discord should probably be updated for account update events, or a separate assignment event bus could be used
         public async Task UpdateGroupsAndRoles(string id)
         {
-            DomainAccount domainAccount = _accountContext.GetSingle(id);
+            var domainAccount = _accountContext.GetSingle(id);
             _eventBus.Send(domainAccount);
             await _accountHub.Clients.Group(id).ReceiveAccountUpdate();
         }
 
         private async Task<Tuple<bool, bool>> UpdateUnit(string id, string unitString, StringBuilder notificationMessage)
         {
-            bool unitUpdate = false;
-            bool positive = true;
+            var unitUpdate = false;
+            var positive = true;
             var unit = _unitsContext.GetSingle(x => x.Name == unitString);
             if (unit != null)
             {
@@ -190,7 +190,7 @@ namespace UKSF.Api.Personnel.Services
             }
             else if (unitString == REMOVE_FLAG)
             {
-                string currentUnit = _accountContext.GetSingle(id).UnitAssignment;
+                var currentUnit = _accountContext.GetSingle(id).UnitAssignment;
                 if (string.IsNullOrEmpty(currentUnit))
                 {
                     return new(false, false);
@@ -209,8 +209,8 @@ namespace UKSF.Api.Personnel.Services
 
         private async Task<Tuple<bool, bool>> UpdateRole(string id, string role, bool unitUpdate, StringBuilder notificationMessage)
         {
-            bool roleUpdate = false;
-            bool positive = true;
+            var roleUpdate = false;
+            var positive = true;
             if (!string.IsNullOrEmpty(role) && role != REMOVE_FLAG)
             {
                 await _accountContext.Update(id, x => x.RoleAssignment, role);
@@ -221,7 +221,7 @@ namespace UKSF.Api.Personnel.Services
             }
             else if (role == REMOVE_FLAG)
             {
-                string currentRole = _accountContext.GetSingle(id).RoleAssignment;
+                var currentRole = _accountContext.GetSingle(id).RoleAssignment;
                 await _accountContext.Update(id, x => x.RoleAssignment, null);
                 notificationMessage.Append(
                     string.IsNullOrEmpty(currentRole)
@@ -238,9 +238,9 @@ namespace UKSF.Api.Personnel.Services
 
         private async Task<Tuple<bool, bool>> UpdateRank(string id, string rank, bool unitUpdate, bool roleUpdate, StringBuilder notificationMessage)
         {
-            bool rankUpdate = false;
-            bool positive = true;
-            string currentRank = _accountContext.GetSingle(id).Rank;
+            var rankUpdate = false;
+            var positive = true;
+            var currentRank = _accountContext.GetSingle(id).Rank;
             if (!string.IsNullOrEmpty(rank) && rank != REMOVE_FLAG)
             {
                 if (currentRank == rank)
@@ -249,7 +249,7 @@ namespace UKSF.Api.Personnel.Services
                 }
 
                 await _accountContext.Update(id, x => x.Rank, rank);
-                bool promotion = string.IsNullOrEmpty(currentRank) || _ranksService.IsSuperior(rank, currentRank);
+                var promotion = string.IsNullOrEmpty(currentRank) || _ranksService.IsSuperior(rank, currentRank);
                 notificationMessage.Append(
                     $"{(unitUpdate || roleUpdate ? $" and {(promotion ? "promoted" : "demoted")} to {rank}" : $"You have been {(promotion ? "promoted" : "demoted")} to {rank}")}"
                 );

@@ -65,17 +65,17 @@ namespace UKSF.Api.Command.Controllers
         [HttpGet, Authorize]
         public CommandRequestsDataset Get()
         {
-            IEnumerable<CommandRequest> allRequests = _commandRequestContext.Get();
+            var allRequests = _commandRequestContext.Get();
             List<CommandRequest> myRequests = new();
             List<CommandRequest> otherRequests = new();
-            string contextId = _httpContextService.GetUserId();
-            string id = _variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
-            bool canOverride = _unitsContext.GetSingle(id).Members.Any(x => x == contextId);
-            bool superAdmin = contextId == SUPER_ADMIN;
-            DateTime now = DateTime.Now;
-            foreach (CommandRequest commandRequest in allRequests)
+            var contextId = _httpContextService.GetUserId();
+            var id = _variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
+            var canOverride = _unitsContext.GetSingle(id).Members.Any(x => x == contextId);
+            var superAdmin = contextId == SUPER_ADMIN;
+            var now = DateTime.Now;
+            foreach (var commandRequest in allRequests)
             {
-                Dictionary<string, ReviewState>.KeyCollection reviewers = commandRequest.Reviews.Keys;
+                var reviewers = commandRequest.Reviews.Keys;
                 if (reviewers.Any(x => x == contextId))
                 {
                     myRequests.Add(commandRequest);
@@ -92,10 +92,10 @@ namespace UKSF.Api.Command.Controllers
         [HttpPatch("{id}"), Authorize]
         public async Task UpdateRequestReview(string id, [FromBody] JObject body)
         {
-            bool overriden = bool.Parse(body["overriden"].ToString());
-            ReviewState state = Enum.Parse<ReviewState>(body["reviewState"].ToString());
-            DomainAccount sessionDomainAccount = _accountService.GetUserAccount();
-            CommandRequest request = _commandRequestContext.GetSingle(id);
+            var overriden = bool.Parse(body["overriden"].ToString());
+            var state = Enum.Parse<ReviewState>(body["reviewState"].ToString());
+            var sessionDomainAccount = _accountService.GetUserAccount();
+            var request = _commandRequestContext.GetSingle(id);
             if (request == null)
             {
                 throw new NotFoundException($"Request with id {id} not found");
@@ -106,7 +106,7 @@ namespace UKSF.Api.Command.Controllers
                 _logger.LogAudit($"Review state of {request.Type.ToLower()} request for {request.DisplayRecipient} overriden to {state}");
                 await _commandRequestService.SetRequestAllReviewStates(request, state);
 
-                foreach (string reviewerId in request.Reviews.Select(x => x.Key).Where(x => x != sessionDomainAccount.Id))
+                foreach (var reviewerId in request.Reviews.Select(x => x.Key).Where(x => x != sessionDomainAccount.Id))
                 {
                     _notificationsService.Add(
                         new()
@@ -121,7 +121,7 @@ namespace UKSF.Api.Command.Controllers
             }
             else
             {
-                ReviewState currentState = _commandRequestService.GetReviewState(request.Id, sessionDomainAccount.Id);
+                var currentState = _commandRequestService.GetReviewState(request.Id, sessionDomainAccount.Id);
                 if (currentState == ReviewState.ERROR)
                 {
                     throw new BadRequestException(

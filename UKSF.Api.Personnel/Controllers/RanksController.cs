@@ -43,7 +43,7 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpGet("{id}"), Authorize]
         public IEnumerable<DomainRank> GetRanks(string id)
         {
-            DomainAccount domainAccount = _accountContext.GetSingle(id);
+            var domainAccount = _accountContext.GetSingle(id);
             return _ranksContext.Get(x => x.Name != domainAccount.Rank);
         }
 
@@ -91,9 +91,9 @@ namespace UKSF.Api.Personnel.Controllers
                                     .Set(x => x.TeamspeakGroup, rank.TeamspeakGroup)
                                     .Set(x => x.DiscordRoleId, rank.DiscordRoleId)
             );
-            foreach (DomainAccount account in _accountContext.Get(x => x.Rank == oldRank.Name))
+            foreach (var account in _accountContext.Get(x => x.Rank == oldRank.Name))
             {
-                Notification notification = await _assignmentService.UpdateUnitRankAndRole(
+                var notification = await _assignmentService.UpdateUnitRankAndRole(
                     account.Id,
                     rankString: rank.Name,
                     reason: $"the '{rank.Name}' rank was updated"
@@ -110,9 +110,9 @@ namespace UKSF.Api.Personnel.Controllers
             var rank = _ranksContext.GetSingle(x => x.Id == id);
             _logger.LogAudit($"Rank deleted '{rank.Name}'");
             await _ranksContext.Delete(id);
-            foreach (DomainAccount account in _accountContext.Get(x => x.Rank == rank.Name))
+            foreach (var account in _accountContext.Get(x => x.Rank == rank.Name))
             {
-                Notification notification = await _assignmentService.UpdateUnitRankAndRole(
+                var notification = await _assignmentService.UpdateUnitRankAndRole(
                     account.Id,
                     rankString: AssignmentService.REMOVE_FLAG,
                     reason: $"the '{rank.Name}' rank was deleted"
@@ -126,7 +126,7 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpPost("order"), Authorize]
         public async Task<IEnumerable<DomainRank>> UpdateOrder([FromBody] List<DomainRank> newRankOrder)
         {
-            for (int index = 0; index < newRankOrder.Count; index++)
+            for (var index = 0; index < newRankOrder.Count; index++)
             {
                 var rank = newRankOrder[index];
                 if (_ranksContext.GetSingle(rank.Name).Order != index)

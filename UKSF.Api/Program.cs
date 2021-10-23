@@ -32,7 +32,7 @@ namespace UKSF.Api
 
             _config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
-            bool runAsService = bool.Parse(_config.GetSection("appSettings")["runAsService"]);
+            var runAsService = bool.Parse(_config.GetSection("appSettings")["runAsService"]);
             if (runAsService)
             {
                 InitLogging();
@@ -46,15 +46,15 @@ namespace UKSF.Api
 
         private static IWebHost BuildDebugWebHost(string[] args)
         {
-            string port = _config.GetSection("appSettings")["port"];
+            var port = _config.GetSection("appSettings")["port"];
             return WebHost.CreateDefaultBuilder(args).UseStartup<Startup>().UseKestrel().UseContentRoot(Directory.GetCurrentDirectory()).UseUrls($"http://*:{port}").Build();
         }
 
         private static IWebHost BuildProductionWebHost(string[] args)
         {
-            int port = int.Parse(_config.GetSection("appSettings")["port"]);
-            int portSsl = int.Parse(_config.GetSection("appSettings")["portSsl"]);
-            string certificatePath = _config.GetSection("appSettings")["certificatePath"];
+            var port = int.Parse(_config.GetSection("appSettings")["port"]);
+            var portSsl = int.Parse(_config.GetSection("appSettings")["portSsl"]);
+            var certificatePath = _config.GetSection("appSettings")["certificatePath"];
             return WebHost.CreateDefaultBuilder(args)
                           .UseStartup<Startup>()
                           .UseKestrel(
@@ -70,16 +70,16 @@ namespace UKSF.Api
 
         private static void InitLogging()
         {
-            string certificatePath = _config.GetSection("appSettings")["logsPath"];
-            string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), certificatePath);
+            var certificatePath = _config.GetSection("appSettings")["logsPath"];
+            var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), certificatePath);
             Directory.CreateDirectory(appData);
-            string[] logFiles = new DirectoryInfo(appData).EnumerateFiles("*.log").OrderByDescending(file => file.LastWriteTime).Select(file => file.Name).ToArray();
+            var logFiles = new DirectoryInfo(appData).EnumerateFiles("*.log").OrderByDescending(file => file.LastWriteTime).Select(file => file.Name).ToArray();
             if (logFiles.Length > 9)
             {
                 File.Delete(Path.Combine(appData, logFiles.Last()));
             }
 
-            string logFile = Path.Combine(appData, $"LOG__{DateTime.Now:yyyy-MM-dd__HH-mm}.log");
+            var logFile = Path.Combine(appData, $"LOG__{DateTime.Now:yyyy-MM-dd__HH-mm}.log");
             try
             {
                 File.Create(logFile).Close();

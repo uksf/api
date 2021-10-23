@@ -26,7 +26,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
         {
             DomainAccount domainAccount = new() { Lastname = "Beswick", Firstname = "Tim" };
 
-            string subject = _displayNameService.GetDisplayName(domainAccount);
+            var subject = _displayNameService.GetDisplayName(domainAccount);
 
             subject.Should().Be("Beswick.T");
         }
@@ -38,7 +38,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
 
             _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(domainAccount);
 
-            string subject = _displayNameService.GetDisplayName(domainAccount.Id);
+            var subject = _displayNameService.GetDisplayName(domainAccount.Id);
 
             subject.Should().Be("Beswick.T");
         }
@@ -48,7 +48,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
         {
             DomainAccount domainAccount = new() { Lastname = "Beswick", Firstname = "Tim" };
 
-            string subject = _displayNameService.GetDisplayNameWithoutRank(domainAccount);
+            var subject = _displayNameService.GetDisplayNameWithoutRank(domainAccount);
 
             subject.Should().Be("Beswick.T");
         }
@@ -61,7 +61,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
 
             _mockRanksContext.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(rank);
 
-            string subject = _displayNameService.GetDisplayName(domainAccount);
+            var subject = _displayNameService.GetDisplayName(domainAccount);
 
             subject.Should().Be("SqnLdr.Beswick.T");
         }
@@ -71,7 +71,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
         {
             DomainAccount domainAccount = new();
 
-            string subject = _displayNameService.GetDisplayNameWithoutRank(domainAccount);
+            var subject = _displayNameService.GetDisplayNameWithoutRank(domainAccount);
 
             subject.Should().Be("Guest");
         }
@@ -79,7 +79,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
         [Fact]
         public void ShouldGetGuestWhenAccountIsNull()
         {
-            string subject = _displayNameService.GetDisplayNameWithoutRank(null);
+            var subject = _displayNameService.GetDisplayNameWithoutRank(null);
 
             subject.Should().Be("Guest");
         }
@@ -89,7 +89,7 @@ namespace UKSF.Tests.Unit.Services.Personnel
         {
             _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<DomainAccount>(null);
 
-            string subject = _displayNameService.GetDisplayName("5e39336e1b92ee2d14b7fe08");
+            var subject = _displayNameService.GetDisplayName("5e39336e1b92ee2d14b7fe08");
 
             subject.Should().Be("5e39336e1b92ee2d14b7fe08");
         }

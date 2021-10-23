@@ -94,7 +94,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
             Mock<IHubClients<INotificationsClient>> mockHubClients = new();
             Mock<INotificationsClient> mockClient = new();
 
-            string subject = "";
+            var subject = "";
             _mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
             mockHubClients.Setup(x => x.Group("1")).Returns(mockClient.Object).Callback((string x) => subject = x);
             mockClient.Setup(x => x.ReceiveNotification(It.IsAny<Notification>()));

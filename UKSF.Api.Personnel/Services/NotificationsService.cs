@@ -71,7 +71,7 @@ namespace UKSF.Api.Personnel.Services
 
         public IEnumerable<Notification> GetNotificationsForContext()
         {
-            string contextId = _httpContextService.GetUserId();
+            var contextId = _httpContextService.GetUserId();
             return _notificationsContext.Get(x => x.Owner == contextId);
         }
 
@@ -82,12 +82,12 @@ namespace UKSF.Api.Personnel.Services
                 return;
             }
 
-            Task unused = AddNotificationAsync(notification);
+            var unused = AddNotificationAsync(notification);
         }
 
         public async Task MarkNotificationsAsRead(List<string> ids)
         {
-            string contextId = _httpContextService.GetUserId();
+            var contextId = _httpContextService.GetUserId();
             await _notificationsContext.UpdateMany(x => x.Owner == contextId && ids.Contains(x.Id), Builders<Notification>.Update.Set(x => x.Read, true));
             await _notificationsHub.Clients.Group(contextId).ReceiveRead(ids);
         }
@@ -95,7 +95,7 @@ namespace UKSF.Api.Personnel.Services
         public async Task Delete(List<string> ids)
         {
             ids = ids.ToList();
-            string contextId = _httpContextService.GetUserId();
+            var contextId = _httpContextService.GetUserId();
             await _notificationsContext.DeleteMany(x => x.Owner == contextId && ids.Contains(x.Id));
             await _notificationsHub.Clients.Group(contextId).ReceiveClear(ids);
         }
@@ -103,7 +103,7 @@ namespace UKSF.Api.Personnel.Services
         private async Task AddNotificationAsync(Notification notification)
         {
             notification.Message = _objectIdConversionService.ConvertObjectIds(notification.Message);
-            DomainAccount domainAccount = _accountContext.GetSingle(notification.Owner);
+            var domainAccount = _accountContext.GetSingle(notification.Owner);
             if (domainAccount.MembershipState == MembershipState.DISCHARGED)
             {
                 return;

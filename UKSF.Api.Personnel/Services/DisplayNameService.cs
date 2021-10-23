@@ -31,7 +31,7 @@ namespace UKSF.Api.Personnel.Services
 
         public string GetDisplayName(string id)
         {
-            DomainAccount domainAccount = _accountContext.GetSingle(id);
+            var domainAccount = _accountContext.GetSingle(id);
             return domainAccount != null ? GetDisplayName(domainAccount) : id;
         }
 

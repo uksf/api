@@ -20,7 +20,7 @@ namespace UKSF.Api.Modpack.Context
                 Cache = newCollection?.Select(
                                          x =>
                                          {
-                                             int[] parts = x.Version.Split('.').Select(int.Parse).ToArray();
+                                             var parts = x.Version.Split('.').Select(int.Parse).ToArray();
                                              return new { release = x, major = parts[0], minor = parts[1], patch = parts[2] };
                                          }
                                      )

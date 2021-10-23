@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
@@ -8,7 +7,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
     {
         internal string GitCommand(string workingDirectory, string command)
         {
-            List<string> results = new BuildProcessHelper(StepLogger, CancellationTokenSource, false, false, true).Run(
+            var results = new BuildProcessHelper(StepLogger, CancellationTokenSource, false, false, true).Run(
                 workingDirectory,
                 "cmd.exe",
                 $"/c \"{command}\"",

@@ -1,7 +1,5 @@
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord.WebSocket;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Discord.Services;
 using UKSF.Api.Shared;
@@ -22,7 +20,7 @@ namespace UKSF.Api.Discord.Controllers
         [HttpGet("roles"), Permissions(Permissions.ADMIN)]
         public async Task<string> GetRoles()
         {
-            IReadOnlyCollection<SocketRole> roles = await _discordService.GetRoles();
+            var roles = await _discordService.GetRoles();
             return roles.OrderBy(x => x.Name).Select(x => $"{x.Name}: {x.Id}").Aggregate((x, y) => $"{x}\n{y}");
         }
 

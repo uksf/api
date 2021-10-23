@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Primitives;
 using UKSF.Api.Personnel.Signalr.Clients;
 
 namespace UKSF.Api.Personnel.Signalr.Hubs
@@ -14,14 +13,14 @@ namespace UKSF.Api.Personnel.Signalr.Hubs
 
         public override async Task OnConnectedAsync()
         {
-            StringValues threadId = Context.GetHttpContext().Request.Query["threadId"];
+            var threadId = Context.GetHttpContext().Request.Query["threadId"];
             await Groups.AddToGroupAsync(Context.ConnectionId, threadId);
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception exception)
         {
-            StringValues threadId = Context.GetHttpContext().Request.Query["threadId"];
+            var threadId = Context.GetHttpContext().Request.Query["threadId"];
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, threadId);
             await base.OnDisconnectedAsync(exception);
         }

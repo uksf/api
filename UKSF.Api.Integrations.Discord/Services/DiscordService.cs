@@ -105,7 +105,7 @@ namespace UKSF.Api.Discord.Services
 
             await AssertOnline();
 
-            SocketTextChannel channel = _guild.GetTextChannel(channelId);
+            var channel = _guild.GetTextChannel(channelId);
             await channel.SendMessageAsync(message);
         }
 
@@ -136,9 +136,9 @@ namespace UKSF.Api.Discord.Services
             await Task.Run(
                 () =>
                 {
-                    foreach (SocketGuildUser user in _guild.Users)
+                    foreach (var user in _guild.Users)
                     {
-                        Task unused = UpdateAccount(null, user.Id);
+                        var unused = UpdateAccount(null, user.Id);
                     }
                 }
             );
@@ -172,7 +172,7 @@ namespace UKSF.Api.Discord.Services
                 return;
             }
 
-            SocketGuildUser user = _guild.GetUser(discordId);
+            var user = _guild.GetUser(discordId);
             if (user == null)
             {
                 return;
@@ -185,14 +185,14 @@ namespace UKSF.Api.Discord.Services
         // TODO: Change to use signalr if events are available
         public OnlineState GetOnlineUserDetails(string accountId)
         {
-            DomainAccount domainAccount = _accountContext.GetSingle(accountId);
-            if (domainAccount?.DiscordId == null || !ulong.TryParse(domainAccount.DiscordId, out ulong discordId))
+            var domainAccount = _accountContext.GetSingle(accountId);
+            if (domainAccount?.DiscordId == null || !ulong.TryParse(domainAccount.DiscordId, out var discordId))
             {
                 return null;
             }
 
-            bool online = IsAccountOnline(discordId);
-            string nickname = GetAccountNickname(discordId);
+            var online = IsAccountOnline(discordId);
+            var nickname = GetAccountNickname(discordId);
 
             return new() { Online = online, Nickname = nickname };
         }
@@ -214,7 +214,7 @@ namespace UKSF.Api.Discord.Services
 
         private string GetAccountNickname(ulong discordId)
         {
-            SocketGuildUser user = _guild.GetUser(discordId);
+            var user = _guild.GetUser(discordId);
             return GetUserNickname(user);
         }
 
@@ -226,7 +226,7 @@ namespace UKSF.Api.Discord.Services
 
         private async Task UpdateAccountRoles(SocketGuildUser user, DomainAccount domainAccount)
         {
-            IReadOnlyCollection<SocketRole> userRoles = user.Roles;
+            var userRoles = user.Roles;
             HashSet<string> allowedRoles = new();
 
             if (domainAccount != null)
@@ -235,8 +235,8 @@ namespace UKSF.Api.Discord.Services
                 UpdateAccountUnits(domainAccount, allowedRoles);
             }
 
-            string[] rolesBlacklist = _variablesService.GetVariable("DID_R_BLACKLIST").AsArray();
-            foreach (SocketRole role in userRoles)
+            var rolesBlacklist = _variablesService.GetVariable("DID_R_BLACKLIST").AsArray();
+            foreach (var role in userRoles)
             {
                 if (!allowedRoles.Contains(role.Id.ToString()) && !rolesBlacklist.Contains(role.Id.ToString()))
                 {
@@ -244,9 +244,9 @@ namespace UKSF.Api.Discord.Services
                 }
             }
 
-            foreach (string role in allowedRoles.Where(role => userRoles.All(x => x.Id.ToString() != role)))
+            foreach (var role in allowedRoles.Where(role => userRoles.All(x => x.Id.ToString() != role)))
             {
-                if (ulong.TryParse(role, out ulong roleId))
+                if (ulong.TryParse(role, out var roleId))
                 {
                     await user.AddRoleAsync(_roles.First(x => x.Id == roleId));
                 }
@@ -255,7 +255,7 @@ namespace UKSF.Api.Discord.Services
 
         private async Task UpdateAccountNickname(IGuildUser user, DomainAccount domainAccount)
         {
-            string name = _displayNameService.GetDisplayName(domainAccount);
+            var name = _displayNameService.GetDisplayName(domainAccount);
             if (user.Nickname != name)
             {
                 try
@@ -273,7 +273,7 @@ namespace UKSF.Api.Discord.Services
 
         private void UpdateAccountRanks(DomainAccount domainAccount, ISet<string> allowedRoles)
         {
-            string rank = domainAccount.Rank;
+            var rank = domainAccount.Rank;
             foreach (var x in _ranksContext.Get().Where(x => rank == x.Name))
             {
                 allowedRoles.Add(x.DiscordRoleId);
@@ -328,8 +328,8 @@ namespace UKSF.Api.Discord.Services
 
             _client.UserJoined += user =>
             {
-                string name = GetUserNickname(user);
-                string associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
+                var name = GetUserNickname(user);
+                var associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
                 _logger.LogDiscordEvent(DiscordUserEventType.JOINED, user.Id.ToString(), name, string.Empty, name, $"Joined, {associatedAccountMessage}");
 
                 return Task.CompletedTask;
@@ -337,9 +337,9 @@ namespace UKSF.Api.Discord.Services
 
             _client.UserLeft += user =>
             {
-                string name = GetUserNickname(user);
-                DomainAccount domainAccount = _accountContext.GetSingle(x => x.DiscordId == user.Id.ToString());
-                string associatedAccountMessage = GetAssociatedAccountMessage(domainAccount);
+                var name = GetUserNickname(user);
+                var domainAccount = _accountContext.GetSingle(x => x.DiscordId == user.Id.ToString());
+                var associatedAccountMessage = GetAssociatedAccountMessage(domainAccount);
                 _logger.LogDiscordEvent(DiscordUserEventType.LEFT, user.Id.ToString(), name, string.Empty, name, $"Left, {associatedAccountMessage}");
                 if (domainAccount != null)
                 {
@@ -351,9 +351,9 @@ namespace UKSF.Api.Discord.Services
 
             _client.UserBanned += async (user, _) =>
             {
-                string associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
-                ulong instigatorId = await GetBannedAuditLogInstigator(user.Id);
-                string instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
+                var associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
+                var instigatorId = await GetBannedAuditLogInstigator(user.Id);
+                var instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
                 _logger.LogDiscordEvent(
                     DiscordUserEventType.BANNED,
                     instigatorId.ToString(),
@@ -366,9 +366,9 @@ namespace UKSF.Api.Discord.Services
 
             _client.UserUnbanned += async (user, _) =>
             {
-                string associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
-                ulong instigatorId = await GetUnbannedAuditLogInstigator(user.Id);
-                string instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
+                var associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
+                var instigatorId = await GetUnbannedAuditLogInstigator(user.Id);
+                var instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
                 _logger.LogDiscordEvent(
                     DiscordUserEventType.UNBANNED,
                     instigatorId.ToString(),
@@ -381,12 +381,12 @@ namespace UKSF.Api.Discord.Services
 
             _client.MessagesBulkDeleted += async (cacheables, channel) =>
             {
-                int irretrievableMessageCount = 0;
+                var irretrievableMessageCount = 0;
                 List<DiscordDeletedMessageResult> messages = new();
 
-                foreach (Cacheable<IMessage, ulong> cacheable in cacheables)
+                foreach (var cacheable in cacheables)
                 {
-                    DiscordDeletedMessageResult result = await GetDeletedMessageDetails(cacheable, channel);
+                    var result = await GetDeletedMessageDetails(cacheable, channel);
                     switch (result.InstigatorId)
                     {
                         case ulong.MaxValue: continue;
@@ -411,10 +411,10 @@ namespace UKSF.Api.Discord.Services
                     );
                 }
 
-                IEnumerable<IGrouping<string, DiscordDeletedMessageResult>> groupedMessages = messages.GroupBy(x => x.Name);
-                foreach (IGrouping<string, DiscordDeletedMessageResult> groupedMessage in groupedMessages)
+                var groupedMessages = messages.GroupBy(x => x.Name);
+                foreach (var groupedMessage in groupedMessages)
                 {
-                    foreach (DiscordDeletedMessageResult result in groupedMessage)
+                    foreach (var result in groupedMessage)
                     {
                         _logger.LogDiscordEvent(
                             DiscordUserEventType.MESSAGE_DELETED,
@@ -430,7 +430,7 @@ namespace UKSF.Api.Discord.Services
 
             _client.MessageDeleted += async (cacheable, channel) =>
             {
-                DiscordDeletedMessageResult result = await GetDeletedMessageDetails(cacheable, channel);
+                var result = await GetDeletedMessageDetails(cacheable, channel);
                 switch (result.InstigatorId)
                 {
                     case ulong.MaxValue: return;
@@ -465,8 +465,8 @@ namespace UKSF.Api.Discord.Services
                 return;
             }
 
-            string oldRoles = oldUser.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}").Aggregate((x, y) => $"{x},{y}");
-            string newRoles = user.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}").Aggregate((x, y) => $"{x},{y}");
+            var oldRoles = oldUser.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}").Aggregate((x, y) => $"{x},{y}");
+            var newRoles = user.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}").Aggregate((x, y) => $"{x},{y}");
             if (oldRoles != newRoles || oldUser.Nickname != user.Nickname)
             {
                 await UpdateAccount(null, user.Id);
@@ -512,7 +512,7 @@ namespace UKSF.Api.Discord.Services
                 Emote.Parse("<:Sunday:732349782541991957>")
             };
 
-            foreach (Emote emote in emotes)
+            foreach (var emote in emotes)
             {
                 await incomingMessage.AddReactionAsync(emote);
             }
@@ -522,11 +522,11 @@ namespace UKSF.Api.Discord.Services
         {
             if (TRIGGERS.Any(x => incomingMessage.Content.Contains(x, StringComparison.InvariantCultureIgnoreCase)))
             {
-                bool owner = incomingMessage.Author.Id == _variablesService.GetVariable("DID_U_OWNER").AsUlong();
-                string message = owner ? OWNER_REPLIES[new Random().Next(0, OWNER_REPLIES.Length)] : REPLIES[new Random().Next(0, REPLIES.Length)];
-                string[] parts = _guild.GetUser(incomingMessage.Author.Id).Nickname.Split('.');
-                string nickname = owner ? "Daddy" :
-                    parts.Length > 1    ? parts[1] : parts[0];
+                var owner = incomingMessage.Author.Id == _variablesService.GetVariable("DID_U_OWNER").AsUlong();
+                var message = owner ? OWNER_REPLIES[new Random().Next(0, OWNER_REPLIES.Length)] : REPLIES[new Random().Next(0, REPLIES.Length)];
+                var parts = _guild.GetUser(incomingMessage.Author.Id).Nickname.Split('.');
+                var nickname = owner ? "Daddy" :
+                    parts.Length > 1 ? parts[1] : parts[0];
                 await SendMessage(incomingMessage.Channel.Id, string.Format(message, nickname));
             }
         }
@@ -538,13 +538,13 @@ namespace UKSF.Api.Discord.Services
                 return;
             }
 
-            IUserMessage message = await cacheable.GetOrDownloadAsync();
+            var message = await cacheable.GetOrDownloadAsync();
             if (!MessageIsWeeklyEventsMessage(message))
             {
                 return;
             }
 
-            if (!message.Reactions.TryGetValue(reaction.Emote, out ReactionMetadata metadata))
+            if (!message.Reactions.TryGetValue(reaction.Emote, out var metadata))
             {
                 return;
             }
@@ -567,13 +567,13 @@ namespace UKSF.Api.Discord.Services
                 return;
             }
 
-            IUserMessage message = await cacheable.GetOrDownloadAsync();
+            var message = await cacheable.GetOrDownloadAsync();
             if (!MessageIsWeeklyEventsMessage(message))
             {
                 return;
             }
 
-            if (!message.Reactions.TryGetValue(reaction.Emote, out ReactionMetadata _))
+            if (!message.Reactions.TryGetValue(reaction.Emote, out var _))
             {
                 await message.AddReactionAsync(reaction.Emote);
             }
@@ -590,7 +590,7 @@ namespace UKSF.Api.Discord.Services
 
         private string GetAssociatedAccountMessageFromUserId(ulong userId)
         {
-            DomainAccount domainAccount = _accountContext.GetSingle(x => x.DiscordId == userId.ToString());
+            var domainAccount = _accountContext.GetSingle(x => x.DiscordId == userId.ToString());
             return GetAssociatedAccountMessage(domainAccount);
         }
 
@@ -603,35 +603,35 @@ namespace UKSF.Api.Discord.Services
 
         private async Task<DiscordDeletedMessageResult> GetDeletedMessageDetails(Cacheable<IMessage, ulong> cacheable, ISocketMessageChannel channel)
         {
-            IMessage message = await cacheable.GetOrDownloadAsync();
+            var message = await cacheable.GetOrDownloadAsync();
             if (message == null)
             {
                 return new(0, null, null, null);
             }
 
-            ulong userId = message.Author.Id;
-            ulong instigatorId = await GetMessageDeletedAuditLogInstigator(channel.Id, userId);
+            var userId = message.Author.Id;
+            var instigatorId = await GetMessageDeletedAuditLogInstigator(channel.Id, userId);
             if (instigatorId == 0 || instigatorId == userId)
             {
                 return new(ulong.MaxValue, null, null, null);
             }
 
-            string name = message.Author is SocketGuildUser user ? GetUserNickname(user) : GetUserNickname(_guild.GetUser(userId));
-            string instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
-            string messageString = message.Content;
+            var name = message.Author is SocketGuildUser user ? GetUserNickname(user) : GetUserNickname(_guild.GetUser(userId));
+            var instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
+            var messageString = message.Content;
 
             return new(instigatorId, instigatorName, name, messageString);
         }
 
         private async Task<ulong> GetMessageDeletedAuditLogInstigator(ulong channelId, ulong authorId)
         {
-            IAsyncEnumerator<IReadOnlyCollection<RestAuditLogEntry>> auditLogsEnumerator =
+            var auditLogsEnumerator =
                 _guild.GetAuditLogsAsync(10, RequestOptions.Default, null, null, ActionType.MessageDeleted).GetAsyncEnumerator();
             try
             {
                 while (await auditLogsEnumerator.MoveNextAsync())
                 {
-                    IReadOnlyCollection<RestAuditLogEntry> auditLogs = auditLogsEnumerator.Current;
+                    var auditLogs = auditLogsEnumerator.Current;
                     var auditUser = auditLogs.Where(x => x.Data is MessageDeleteAuditLogData)
                                              .Select(x => new { Data = x.Data as MessageDeleteAuditLogData, x.User })
                                              .FirstOrDefault(x => x.Data.ChannelId == channelId && x.Data.Target.Id == authorId);
@@ -651,13 +651,13 @@ namespace UKSF.Api.Discord.Services
 
         private async Task<ulong> GetBannedAuditLogInstigator(ulong userId)
         {
-            IAsyncEnumerator<IReadOnlyCollection<RestAuditLogEntry>> auditLogsEnumerator =
+            var auditLogsEnumerator =
                 _guild.GetAuditLogsAsync(10, RequestOptions.Default, null, null, ActionType.Ban).GetAsyncEnumerator();
             try
             {
                 while (await auditLogsEnumerator.MoveNextAsync())
                 {
-                    IReadOnlyCollection<RestAuditLogEntry> auditLogs = auditLogsEnumerator.Current;
+                    var auditLogs = auditLogsEnumerator.Current;
                     var auditUser = auditLogs.Where(x => x.Data is BanAuditLogData)
                                              .Select(x => new { Data = x.Data as BanAuditLogData, x.User })
                                              .FirstOrDefault(x => x.Data.Target.Id == userId);
@@ -677,13 +677,13 @@ namespace UKSF.Api.Discord.Services
 
         private async Task<ulong> GetUnbannedAuditLogInstigator(ulong userId)
         {
-            IAsyncEnumerator<IReadOnlyCollection<RestAuditLogEntry>> auditLogsEnumerator =
+            var auditLogsEnumerator =
                 _guild.GetAuditLogsAsync(10, RequestOptions.Default, null, null, ActionType.Unban).GetAsyncEnumerator();
             try
             {
                 while (await auditLogsEnumerator.MoveNextAsync())
                 {
-                    IReadOnlyCollection<RestAuditLogEntry> auditLogs = auditLogsEnumerator.Current;
+                    var auditLogs = auditLogsEnumerator.Current;
                     var auditUser = auditLogs.Where(x => x.Data is UnbanAuditLogData)
                                              .Select(x => new { Data = x.Data as UnbanAuditLogData, x.User })
                                              .FirstOrDefault(x => x.Data.Target.Id == userId);

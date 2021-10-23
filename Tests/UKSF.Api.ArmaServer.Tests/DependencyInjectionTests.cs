@@ -23,7 +23,7 @@ namespace UKSF.Api.ArmaServer.Tests
         public void When_resolving_controllers()
         {
             Services.AddTransient<GameServersController>();
-            ServiceProvider serviceProvider = Services.BuildServiceProvider();
+            var serviceProvider = Services.BuildServiceProvider();
 
             serviceProvider.GetRequiredService<GameServersController>().Should().NotBeNull();
         }

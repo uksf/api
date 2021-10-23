@@ -17,7 +17,7 @@ namespace UKSF.Tests.Unit.Common
             TestComplexDataModel testComplexDataModel =
                 new() { Name = "Test", Data = testDataModel1, List = new() { "a", "b", "c" }, DataList = new() { testDataModel1, testDataModel2, testDataModel3 } };
 
-            TestComplexDataModel subject = testComplexDataModel.Copy<TestComplexDataModel>();
+            var subject = testComplexDataModel.Copy<TestComplexDataModel>();
 
             subject.Id.Should().Be(testComplexDataModel.Id);
             subject.Name.Should().Be(testComplexDataModel.Name);
@@ -31,7 +31,7 @@ namespace UKSF.Tests.Unit.Common
         {
             TestDataModel testDataModel = new() { Name = "Test" };
 
-            TestDataModel subject = testDataModel.Copy<TestDataModel>();
+            var subject = testDataModel.Copy<TestDataModel>();
 
             subject.Id.Should().Be(testDataModel.Id);
             subject.Name.Should().Be(testDataModel.Name);
@@ -42,7 +42,7 @@ namespace UKSF.Tests.Unit.Common
         {
             const string UNESCAPED_JSON = "JSON:{\"message\": \"\\nMaking zeus \\ at 'C:\\test\\path'\", \"colour\": \"#20d18b\"}";
 
-            string subject = UNESCAPED_JSON.Escape();
+            var subject = UNESCAPED_JSON.Escape();
 
             subject.Should().Be("JSON:{\"message\": \"\\\\nMaking zeus \\\\ at 'C:\\\\test\\\\path'\", \"colour\": \"#20d18b\"}");
         }

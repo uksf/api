@@ -22,8 +22,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
             _dsCreateKey = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSCreateKey.exe");
             _keyName = GetKeyname();
 
-            string keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
-            string keysPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "keys");
+            var keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
+            var keysPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "keys");
             DirectoryInfo keygen = new(keygenPath);
             DirectoryInfo keys = new(keysPath);
             keygen.Create();
@@ -44,9 +44,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
 
         protected override async Task ProcessExecute()
         {
-            string addonsPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "addons");
-            string interceptPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@intercept", "addons");
-            string keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
+            var addonsPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "addons");
+            var interceptPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@intercept", "addons");
+            var keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
             DirectoryInfo addons = new(addonsPath);
             DirectoryInfo intercept = new(interceptPath);
 
@@ -54,12 +54,12 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
             await DeleteFiles(GetDirectoryContents(addons, "*.bisign*"));
             StepLogger.LogSurround("Deleted dependencies signatures");
 
-            List<FileInfo> repoFiles = GetDirectoryContents(addons, "*.pbo");
+            var repoFiles = GetDirectoryContents(addons, "*.pbo");
             StepLogger.LogSurround("\nSigning dependencies...");
             await SignFiles(keygenPath, addonsPath, repoFiles);
             StepLogger.LogSurround("Signed dependencies");
 
-            List<FileInfo> interceptFiles = GetDirectoryContents(intercept, "*.pbo");
+            var interceptFiles = GetDirectoryContents(intercept, "*.pbo");
             StepLogger.LogSurround("\nSigning intercept...");
             await SignFiles(keygenPath, addonsPath, interceptFiles);
             StepLogger.LogSurround("Signed intercept");
@@ -78,9 +78,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
 
         private Task SignFiles(string keygenPath, string addonsPath, IReadOnlyCollection<FileInfo> files)
         {
-            string privateKey = Path.Join(keygenPath, $"{_keyName}.biprivatekey");
-            int signed = 0;
-            int total = files.Count;
+            var privateKey = Path.Join(keygenPath, $"{_keyName}.biprivatekey");
+            var signed = 0;
+            var total = files.Count;
 
             return BatchProcessFiles(
                 files,

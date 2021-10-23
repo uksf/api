@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using Microsoft.Extensions.Hosting;
 using UKSF.Api.Admin.Context;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Services
 {
@@ -45,7 +43,7 @@ namespace UKSF.Api.Services
 
         public void Migrate()
         {
-            bool migrated = true;
+            var migrated = true;
             if (!_currentEnvironment.IsDevelopment())
             {
                 migrated = _variablesService.GetVariable(KEY).AsBool();
@@ -72,26 +70,26 @@ namespace UKSF.Api.Services
         // TODO: CHECK BEFORE RELEASE
         private void ExecuteMigration()
         {
-            IEnumerable<BasicLog> logs = _logContext.Get();
-            foreach (BasicLog log in logs)
+            var logs = _logContext.Get();
+            foreach (var log in logs)
             {
                 _logContext.Replace(log);
             }
 
-            IEnumerable<ErrorLog> errorLogs = _errorLogContext.Get();
-            foreach (ErrorLog log in errorLogs)
+            var errorLogs = _errorLogContext.Get();
+            foreach (var log in errorLogs)
             {
                 _errorLogContext.Replace(log);
             }
 
-            IEnumerable<AuditLog> auditLogs = _auditLogContext.Get();
-            foreach (AuditLog log in auditLogs)
+            var auditLogs = _auditLogContext.Get();
+            foreach (var log in auditLogs)
             {
                 _auditLogContext.Replace(log);
             }
 
-            IEnumerable<LauncherLog> launcherLogs = _launcherLogContext.Get();
-            foreach (LauncherLog log in launcherLogs)
+            var launcherLogs = _launcherLogContext.Get();
+            foreach (var log in launcherLogs)
             {
                 _launcherLogContext.Replace(log);
             }

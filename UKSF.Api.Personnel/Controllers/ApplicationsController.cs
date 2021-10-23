@@ -50,7 +50,7 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpPost, Permissions(Permissions.CONFIRMED)]
         public async Task Post([FromBody] JObject body)
         {
-            DomainAccount domainAccount = _accountService.GetUserAccount();
+            var domainAccount = _accountService.GetUserAccount();
             await Update(body, domainAccount);
             CommentThread recruiterCommentThread = new() { Authors = _recruitmentService.GetRecruiterLeads().Values.ToArray(), Mode = ThreadMode.RECRUITER };
             CommentThread applicationCommentThread = new() { Authors = new[] { domainAccount.Id }, Mode = ThreadMode.RECRUITER };
@@ -66,7 +66,13 @@ namespace UKSF.Api.Personnel.Controllers
             };
             await _accountContext.Update(domainAccount.Id, Builders<DomainAccount>.Update.Set(x => x.Application, application));
             domainAccount = _accountContext.GetSingle(domainAccount.Id);
-            Notification notification = await _assignmentService.UpdateUnitRankAndRole(domainAccount.Id, "", "Applicant", "Candidate", reason: "you were entered into the recruitment process");
+            var notification = await _assignmentService.UpdateUnitRankAndRole(
+                domainAccount.Id,
+                "",
+                "Applicant",
+                "Candidate",
+                reason: "you were entered into the recruitment process"
+            );
             _notificationsService.Add(notification);
             _notificationsService.Add(
                 new()
@@ -77,7 +83,7 @@ namespace UKSF.Api.Personnel.Controllers
                     Link = $"/recruitment/{domainAccount.Id}"
                 }
             );
-            foreach (string id in _recruitmentService.GetRecruiterLeads().Values.Where(x => domainAccount.Application.Recruiter != x))
+            foreach (var id in _recruitmentService.GetRecruiterLeads().Values.Where(x => domainAccount.Application.Recruiter != x))
             {
                 _notificationsService.Add(
                     new()
@@ -96,7 +102,7 @@ namespace UKSF.Api.Personnel.Controllers
         [HttpPost("update"), Permissions(Permissions.CONFIRMED)]
         public async Task PostUpdate([FromBody] JObject body)
         {
-            DomainAccount domainAccount = _accountService.GetUserAccount();
+            var domainAccount = _accountService.GetUserAccount();
             await Update(body, domainAccount);
             _notificationsService.Add(
                 new()
@@ -107,7 +113,7 @@ namespace UKSF.Api.Personnel.Controllers
                     Link = $"/recruitment/{domainAccount.Id}"
                 }
             );
-            string difference = domainAccount.Changes(_accountContext.GetSingle(domainAccount.Id));
+            var difference = domainAccount.Changes(_accountContext.GetSingle(domainAccount.Id));
             _logger.LogAudit($"Application updated for {domainAccount.Id}: {difference}");
         }
 

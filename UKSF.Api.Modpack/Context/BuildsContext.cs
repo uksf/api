@@ -22,7 +22,7 @@ namespace UKSF.Api.Modpack.Context
 
         public async Task Update(ModpackBuild build, ModpackBuildStep buildStep)
         {
-            UpdateDefinition<ModpackBuild> updateDefinition = Builders<ModpackBuild>.Update.Set(x => x.Steps[buildStep.Index], buildStep);
+            var updateDefinition = Builders<ModpackBuild>.Update.Set(x => x.Steps[buildStep.Index], buildStep);
             await base.Update(build.Id, updateDefinition);
             DataEvent(new(EventType.UPDATE, new ModpackBuildStepEventData(build.Id, buildStep)));
         }

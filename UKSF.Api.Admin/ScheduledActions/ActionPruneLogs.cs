@@ -44,10 +44,10 @@ namespace UKSF.Api.Admin.ScheduledActions
 
         public Task Run(params object[] parameters)
         {
-            DateTime now = _clock.UtcNow();
-            Task logsTask = _logContext.DeleteMany(x => x.Timestamp < now.AddDays(-7));
-            Task auditLogsTask = _auditLogContext.DeleteMany(x => x.Timestamp < now.AddMonths(-3));
-            Task errorLogsTask = _errorLogContext.DeleteMany(x => x.Timestamp < now.AddDays(-7));
+            var now = _clock.UtcNow();
+            var logsTask = _logContext.DeleteMany(x => x.Timestamp < now.AddDays(-7));
+            var auditLogsTask = _auditLogContext.DeleteMany(x => x.Timestamp < now.AddMonths(-3));
+            var errorLogsTask = _errorLogContext.DeleteMany(x => x.Timestamp < now.AddDays(-7));
 
             Task.WaitAll(logsTask, errorLogsTask, auditLogsTask);
             return Task.CompletedTask;

@@ -39,7 +39,7 @@ namespace UKSF.Tests.Unit.Data.Modpack
 
             _mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackBuild> { item1, item2, item3 });
 
-            IEnumerable<ModpackBuild> subject = _buildsContext.Get();
+            var subject = _buildsContext.Get();
 
             subject.Should().ContainInOrder(item2, item3, item1);
         }
@@ -47,7 +47,7 @@ namespace UKSF.Tests.Unit.Data.Modpack
         [Fact]
         public void Should_update_build_step_with_event()
         {
-            string id = ObjectId.GenerateNewId().ToString();
+            var id = ObjectId.GenerateNewId().ToString();
             ModpackBuildStep modpackBuildStep = new("step") { Index = 0, Running = false };
             ModpackBuild modpackBuild = new() { Id = id, BuildNumber = 1, Steps = new() { modpackBuildStep } };
             EventModel subject = null;
@@ -66,7 +66,7 @@ namespace UKSF.Tests.Unit.Data.Modpack
         [Fact]
         public void Should_update_build_with_event_data()
         {
-            string id = ObjectId.GenerateNewId().ToString();
+            var id = ObjectId.GenerateNewId().ToString();
             EventModel subject = null;
 
             _mockDataCollection.Setup(x => x.Get()).Returns(new List<ModpackBuild>());

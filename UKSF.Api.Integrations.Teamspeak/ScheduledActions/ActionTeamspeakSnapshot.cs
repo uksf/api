@@ -34,7 +34,7 @@ namespace UKSF.Api.Teamspeak.ScheduledActions
         public Task Run(params object[] parameters)
         {
             return Task.CompletedTask;
-            return _teamspeakService.StoreTeamspeakServerSnapshot();
+            // return _teamspeakService.StoreTeamspeakServerSnapshot();
         }
 
         public async Task CreateSelf()

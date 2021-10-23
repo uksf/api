@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using UKSF.Api.Shared.Extensions;
@@ -13,7 +12,7 @@ namespace UKSF.Tests.Unit.Common
          InlineData("hello world", "HELLOWORLD", false)]
         public void ShouldIgnoreCase(string text, string searchElement, bool expected)
         {
-            bool subject = text.ContainsIgnoreCase(searchElement);
+            var subject = text.ContainsIgnoreCase(searchElement);
 
             subject.Should().Be(expected);
         }
@@ -30,7 +29,7 @@ namespace UKSF.Tests.Unit.Common
          InlineData("-1.79769313486232E+307", -1.79769313486232E+307d)] // E+307 is one less than double max/min
         public void ShouldParseDoubleCorrectly(string text, double expected)
         {
-            double subject = text.ToDouble();
+            var subject = text.ToDouble();
 
             subject.Should().Be(expected);
         }
@@ -38,7 +37,7 @@ namespace UKSF.Tests.Unit.Common
         [Theory, InlineData("", ""), InlineData("hello", "Hello"), InlineData("hi there my name is bob", "Hi There My Name Is Bob"), InlineData("HELLO BOB", "HELLO BOB")]
         public void ShouldConvertToTitleCase(string text, string expected)
         {
-            string subject = text.ToTitleCase();
+            var subject = text.ToTitleCase();
 
             subject.Should().Be(expected);
         }
@@ -46,7 +45,7 @@ namespace UKSF.Tests.Unit.Common
         [Theory, InlineData("", ""), InlineData("hello world", "HELLO_WORLD"), InlineData("HELLO_WORLD", "HELLO_WORLD"), InlineData("  i am key   ", "I_AM_KEY")]
         public void ShouldKeyify(string text, string expected)
         {
-            string subject = text.Keyify();
+            var subject = text.Keyify();
 
             subject.Should().Be(expected);
         }
@@ -54,7 +53,7 @@ namespace UKSF.Tests.Unit.Common
         [Theory, InlineData("", ""), InlineData("hello world hello world", "helloworldhelloworld"), InlineData("hello", "hello"), InlineData("  hello world   ", "helloworld")]
         public void ShouldRemoveSpaces(string text, string expected)
         {
-            string subject = text.RemoveSpaces();
+            var subject = text.RemoveSpaces();
 
             subject.Should().Be(expected);
         }
@@ -62,7 +61,7 @@ namespace UKSF.Tests.Unit.Common
         [Theory, InlineData("", ""), InlineData("hello\\nworld\\n\\nhello world", "helloworldhello world"), InlineData("hello\\n", "hello"), InlineData("\\n  hello world   \\n", "  hello world   ")]
         public void ShouldRemoveNewLines(string text, string expected)
         {
-            string subject = text.RemoveNewLines();
+            var subject = text.RemoveNewLines();
 
             subject.Should().Be(expected);
         }
@@ -70,7 +69,7 @@ namespace UKSF.Tests.Unit.Common
         [Theory, InlineData("", ""), InlineData("\"helloworld\" \"hello world\"", "helloworld hello world"), InlineData("hello\"\"", "hello"), InlineData("\"  hello world   \"", "  hello world   ")]
         public void ShouldRemoveQuotes(string text, string expected)
         {
-            string subject = text.RemoveQuotes();
+            var subject = text.RemoveQuotes();
 
             subject.Should().Be(expected);
         }
@@ -79,7 +78,7 @@ namespace UKSF.Tests.Unit.Common
          InlineData("\"\"\"\"", "''")]
         public void ShouldRemoveEmbeddedQuotes(string text, string expected)
         {
-            string subject = text.RemoveEmbeddedQuotes();
+            var subject = text.RemoveEmbeddedQuotes();
 
             subject.Should().Be(expected);
         }
@@ -87,7 +86,7 @@ namespace UKSF.Tests.Unit.Common
         [Theory, InlineData("Hello I am 5e39336e1b92ee2d14b7fe08", "5e39336e1b92ee2d14b7fe08"), InlineData("Hello I am 5e39336e1b92ee2d14b7fe08, I will be your SR1", "5e39336e1b92ee2d14b7fe08")]
         public void ShouldExtractObjectIds(string input, string expected)
         {
-            List<string> subject = input.ExtractObjectIds().ToList();
+            var subject = input.ExtractObjectIds().ToList();
 
             subject.Should().Contain(expected);
         }

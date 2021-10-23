@@ -22,26 +22,26 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
         {
             StepLogger.LogSurround($"\nChecking out latest {displayName}...");
 
-            string path = Path.Join(GetBuildSourcesPath(), modName);
+            var path = Path.Join(GetBuildSourcesPath(), modName);
             DirectoryInfo directory = new(path);
             if (!directory.Exists)
             {
                 throw new($"{displayName} source directory does not exist. {displayName} should be cloned before running a build.");
             }
 
-            string releasePath = Path.Join(GetBuildSourcesPath(), modName, "release", releaseName);
-            string repoPath = Path.Join(GetBuildEnvironmentPath(), "Repo", repoName);
+            var releasePath = Path.Join(GetBuildSourcesPath(), modName, "release", releaseName);
+            var repoPath = Path.Join(GetBuildEnvironmentPath(), "Repo", repoName);
             DirectoryInfo release = new(releasePath);
             DirectoryInfo repo = new(repoPath);
 
             GitCommand(path, "git reset --hard HEAD && git clean -d -f && git fetch");
             GitCommand(path, $"git checkout -t origin/{branchName}");
             GitCommand(path, $"git checkout {branchName}");
-            string before = GitCommand(path, "git rev-parse HEAD");
+            var before = GitCommand(path, "git rev-parse HEAD");
             GitCommand(path, "git pull");
-            string after = GitCommand(path, "git rev-parse HEAD");
+            var after = GitCommand(path, "git rev-parse HEAD");
 
-            bool forceBuild = GetEnvironmentVariable<bool>($"{modName}_updated");
+            var forceBuild = GetEnvironmentVariable<bool>($"{modName}_updated");
             bool updated;
             if (!release.Exists || !repo.Exists)
             {
@@ -67,10 +67,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
 
         private Task CheckoutModpack()
         {
-            string reference = string.Equals(Build.Commit.Branch, "None") ? Build.Commit.After : Build.Commit.Branch.Replace("refs/heads/", "");
-            string referenceName = string.Equals(Build.Commit.Branch, "None") ? reference : $"latest {reference}";
+            var reference = string.Equals(Build.Commit.Branch, "None") ? Build.Commit.After : Build.Commit.Branch.Replace("refs/heads/", "");
+            var referenceName = string.Equals(Build.Commit.Branch, "None") ? reference : $"latest {reference}";
             StepLogger.LogSurround("\nChecking out modpack...");
-            string modpackPath = Path.Join(GetBuildSourcesPath(), "modpack");
+            var modpackPath = Path.Join(GetBuildSourcesPath(), "modpack");
             DirectoryInfo modpack = new(modpackPath);
             if (!modpack.Exists)
             {

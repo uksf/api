@@ -35,7 +35,7 @@ namespace UKSF.Api.Auth.Controllers
         [HttpGet("refresh"), Authorize]
         public string RefreshToken()
         {
-            string loginToken = _loginService.RegenerateBearerToken(_httpContextService.GetUserId());
+            var loginToken = _loginService.RegenerateBearerToken(_httpContextService.GetUserId());
             if (loginToken == null)
             {
                 throw new TokenRefreshFailedException();

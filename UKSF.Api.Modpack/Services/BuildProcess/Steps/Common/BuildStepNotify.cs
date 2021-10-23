@@ -29,7 +29,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
             {
                 case GameEnvironment.RELEASE:
                 {
-                    ModpackRelease release = _releaseService.GetRelease(Build.Version);
+                    var release = _releaseService.GetRelease(Build.Version);
                     await _discordService.SendMessageToEveryone(VariablesService.GetVariable("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage(release));
                     break;
                 }
