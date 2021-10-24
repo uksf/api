@@ -87,7 +87,7 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
 
             if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null)
             {
-                await _schedulerService.CreateScheduledJob(_clock.Today().AddHours(3).AddDays(1), TimeSpan.FromDays(1), ACTION_NAME);
+                await _schedulerService.CreateScheduledJob(_clock.UtcNow().Date.AddHours(18).AddDays(1), TimeSpan.FromDays(1), ACTION_NAME);
             }
         }
 
