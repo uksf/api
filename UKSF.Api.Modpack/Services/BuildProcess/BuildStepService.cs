@@ -102,7 +102,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
                 new(BuildStepKeys.NAME),
                 new(BuildStepCbaSettings.NAME),
                 new(BuildStepBuildRepo.NAME),
-                new(BuildStepNotify.NAME)
+                // new(BuildStepNotify.NAME)
             };
         }
 
