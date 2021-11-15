@@ -54,8 +54,16 @@ namespace UKSF.Api.Integrations.Teamspeak.Tests.Services
 
             result.Should()
                   .SatisfyRespectively(
-                      first => { first.ClientName.Should().Be("Dummy Client"); },
-                      second => { second.ClientName.Should().Be("SqnLdr.Beswick.T"); }
+                      first =>
+                      {
+                          first.ClientName.Should().Be("Dummy Client");
+                          first.Connected.Should().BeFalse();
+                      },
+                      second =>
+                      {
+                          second.ClientName.Should().Be("SqnLdr.Beswick.T");
+                          second.Connected.Should().BeTrue();
+                      }
                   );
         }
 
@@ -69,8 +77,16 @@ namespace UKSF.Api.Integrations.Teamspeak.Tests.Services
 
             result.Should()
                   .SatisfyRespectively(
-                      first => { first.ClientName.Should().Be("SqnLdr.Beswick.T"); },
-                      second => { second.ClientName.Should().Be("Dummy Client"); }
+                      first =>
+                      {
+                          first.ClientName.Should().Be("SqnLdr.Beswick.T");
+                          first.Connected.Should().BeFalse();
+                      },
+                      second =>
+                      {
+                          second.ClientName.Should().Be("Dummy Client");
+                          second.Connected.Should().BeFalse();
+                      }
                   );
         }
     }

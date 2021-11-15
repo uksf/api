@@ -6,6 +6,6 @@ namespace UKSF.Api.Teamspeak.Signalr.Clients
 {
     public interface ITeamspeakClientsClient
     {
-        Task ReceiveClients(List<TeamspeakClient> clients);
+        Task ReceiveClients(List<TeamspeakConnectClient> clients);
     }
 }
