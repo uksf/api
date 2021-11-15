@@ -19,7 +19,7 @@ namespace UKSF.Api.Teamspeak.Services
     {
         IEnumerable<TeamspeakClient> GetOnlineTeamspeakClients();
         OnlineState GetOnlineUserDetails(string accountId);
-        List<TeamspeakClient> GetFormattedClients();
+        List<TeamspeakConnectClient> GetFormattedClients();
         Task UpdateClients(HashSet<TeamspeakClient> newClients);
         Task UpdateAccountTeamspeakGroups(DomainAccount domainAccount);
         Task SendTeamspeakMessageToClient(DomainAccount domainAccount, string message);
@@ -117,7 +117,7 @@ namespace UKSF.Api.Teamspeak.Services
             await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.SHUTDOWN, new { });
         }
 
-        public List<TeamspeakClient> GetFormattedClients()
+        public List<TeamspeakConnectClient> GetFormattedClients()
         {
             var clients = _clients;
             if (_environment.IsDevelopment())
@@ -130,11 +130,10 @@ namespace UKSF.Api.Teamspeak.Services
                               x =>
                               {
                                   var account = _accountContext.GetSingle(y => y.TeamspeakIdentities != null && y.TeamspeakIdentities.Contains(x.ClientDbId));
-                                  return new { teamspeakClient = x, account };
+                                  return new TeamspeakConnectClient { ClientName = x.ClientName, ClientDbId = x.ClientDbId, Connected = account != null };
                               }
                           )
-                          .OrderBy(x => x.account != null)
-                          .Select(x => x.teamspeakClient)
+                          .OrderBy(x => x.Connected)
                           .ToList();
         }
 

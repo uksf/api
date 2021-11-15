@@ -7,4 +7,11 @@
         public int ClientDbId;
         public string ClientName;
     }
+
+    public class TeamspeakConnectClient
+    {
+        public int ClientDbId;
+        public string ClientName;
+        public bool Connected;
+    }
 }
