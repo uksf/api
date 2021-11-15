@@ -19,7 +19,7 @@ namespace UKSF.Api.Teamspeak.Services
     {
         IEnumerable<TeamspeakClient> GetOnlineTeamspeakClients();
         OnlineState GetOnlineUserDetails(string accountId);
-        IEnumerable<object> GetFormattedClients();
+        IEnumerable<TeamspeakClient> GetFormattedClients();
         Task UpdateClients(HashSet<TeamspeakClient> newClients);
         Task UpdateAccountTeamspeakGroups(DomainAccount domainAccount);
         Task SendTeamspeakMessageToClient(DomainAccount domainAccount, string message);
@@ -117,14 +117,24 @@ namespace UKSF.Api.Teamspeak.Services
             await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.SHUTDOWN, new { });
         }
 
-        public IEnumerable<object> GetFormattedClients()
+        public IEnumerable<TeamspeakClient> GetFormattedClients()
         {
+            var clients = _clients;
             if (_environment.IsDevelopment())
             {
-                return new List<object> { new { name = "SqnLdr.Beswick.T", clientDbId = 2 } };
+                clients = new() { new() { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 }, new() { ClientName = "Dummy Client", ClientDbId = 999999 } };
             }
 
-            return _clients.Where(x => x != null).Select(x => new { name = $"{x.ClientName}", clientDbId = x.ClientDbId });
+            return clients.Where(x => x != null)
+                          .Select(
+                              x =>
+                              {
+                                  var account = _accountContext.GetSingle(y => y.TeamspeakIdentities.Contains(x.ClientDbId));
+                                  return new { teamspeakClient = x, account };
+                              }
+                          )
+                          .OrderBy(x => x.account)
+                          .Select(x => x.teamspeakClient);
         }
 
         // TODO: Change to use signalr (or hook into existing _teamspeakClientsHub)
