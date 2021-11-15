@@ -19,7 +19,7 @@ namespace UKSF.Api.Teamspeak.Services
     {
         IEnumerable<TeamspeakClient> GetOnlineTeamspeakClients();
         OnlineState GetOnlineUserDetails(string accountId);
-        IEnumerable<TeamspeakClient> GetFormattedClients();
+        List<TeamspeakClient> GetFormattedClients();
         Task UpdateClients(HashSet<TeamspeakClient> newClients);
         Task UpdateAccountTeamspeakGroups(DomainAccount domainAccount);
         Task SendTeamspeakMessageToClient(DomainAccount domainAccount, string message);
@@ -117,7 +117,7 @@ namespace UKSF.Api.Teamspeak.Services
             await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.SHUTDOWN, new { });
         }
 
-        public IEnumerable<TeamspeakClient> GetFormattedClients()
+        public List<TeamspeakClient> GetFormattedClients()
         {
             var clients = _clients;
             if (_environment.IsDevelopment())
@@ -129,12 +129,13 @@ namespace UKSF.Api.Teamspeak.Services
                           .Select(
                               x =>
                               {
-                                  var account = _accountContext.GetSingle(y => y.TeamspeakIdentities.Contains(x.ClientDbId));
+                                  var account = _accountContext.GetSingle(y => y.TeamspeakIdentities != null && y.TeamspeakIdentities.Contains(x.ClientDbId));
                                   return new { teamspeakClient = x, account };
                               }
                           )
                           .OrderBy(x => x.account)
-                          .Select(x => x.teamspeakClient);
+                          .Select(x => x.teamspeakClient)
+                          .ToList();
         }
 
         // TODO: Change to use signalr (or hook into existing _teamspeakClientsHub)
