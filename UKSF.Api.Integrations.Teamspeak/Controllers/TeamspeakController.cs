@@ -63,7 +63,7 @@ namespace UKSF.Api.Teamspeak.Controllers
         }
 
         [HttpGet("online"), Permissions(Permissions.CONFIRMED, Permissions.MEMBER, Permissions.DISCHARGED)]
-        public IEnumerable<object> GetOnlineClients()
+        public IEnumerable<TeamspeakClient> GetOnlineClients()
         {
             return _teamspeakService.GetFormattedClients();
         }
