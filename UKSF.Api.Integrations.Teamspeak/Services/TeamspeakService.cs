@@ -133,7 +133,7 @@ namespace UKSF.Api.Teamspeak.Services
                                   return new { teamspeakClient = x, account };
                               }
                           )
-                          .OrderBy(x => x.account)
+                          .OrderBy(x => x.account != null)
                           .Select(x => x.teamspeakClient)
                           .ToList();
         }
