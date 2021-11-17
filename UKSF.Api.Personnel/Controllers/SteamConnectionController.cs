@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
 using UKSF.Api.Personnel.Services;
 
 namespace UKSF.Api.Personnel.Controllers
@@ -13,12 +13,12 @@ namespace UKSF.Api.Personnel.Controllers
         private readonly string _url;
         private readonly string _urlReturn;
 
-        public SteamConnectionController(IConfirmationCodeService confirmationCodeService, IHostEnvironment currentEnvironment)
+        public SteamConnectionController(IConfirmationCodeService confirmationCodeService, IConfiguration configuration)
         {
             _confirmationCodeService = confirmationCodeService;
 
-            _url = currentEnvironment.IsDevelopment() ? "http://localhost:5000" : "https://api.uk-sf.co.uk";
-            _urlReturn = currentEnvironment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
+            _url = configuration.GetSection("appSettings")["redirectApiUrl"];
+            _urlReturn = configuration.GetSection("appSettings")["redirectUrl"];
         }
 
         [HttpGet]

@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Linq;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
@@ -30,7 +29,6 @@ namespace UKSF.Api.Personnel.Controllers
         public DiscordConnectionController(
             IConfirmationCodeService confirmationCodeService,
             IConfiguration configuration,
-            IHostEnvironment currentEnvironment,
             IVariablesService variablesService,
             ILogger logger
         )
@@ -42,8 +40,8 @@ namespace UKSF.Api.Personnel.Controllers
             _clientSecret = configuration.GetSection("Discord")["clientSecret"];
             _botToken = configuration.GetSection("Discord")["botToken"];
 
-            _url = currentEnvironment.IsDevelopment() ? "http://localhost:5000" : "https://api.uk-sf.co.uk";
-            _urlReturn = currentEnvironment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
+            _url = configuration.GetSection("appSettings")["redirectApiUrl"];
+            _urlReturn = configuration.GetSection("appSettings")["redirectUrl"];
         }
 
         [HttpGet]
