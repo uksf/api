@@ -62,7 +62,7 @@ namespace UKSF.Api.Personnel.Tests.Commands
                                );
             _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Lastname == "Match"))).Returns("Match.1");
 
-            await _subject.ExecuteAsync(new() { Id = _accountId });
+            await _subject.ExecuteAsync(_accountId, new());
 
             _mockCommentThreadService.Verify(
                 x => x.InsertComment(It.IsAny<string>(), It.Is<Comment>(m => m.Content == "Last.F has the same Steam account as Match.1")),
@@ -89,7 +89,7 @@ namespace UKSF.Api.Personnel.Tests.Commands
             _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Firstname == "1"))).Returns("Match.1");
             _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Firstname == "2"))).Returns("Match.2");
 
-            await _subject.ExecuteAsync(new() { Id = _accountId });
+            await _subject.ExecuteAsync(_accountId, new());
 
             _mockCommentThreadService.Verify(
                 x => x.InsertComment(It.IsAny<string>(), It.Is<Comment>(m => m.Content == "Last.F has the same Steam account as Match.1, Match.2")),
@@ -107,7 +107,7 @@ namespace UKSF.Api.Personnel.Tests.Commands
             Given_an_account_with_application();
             _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount>());
 
-            await _subject.ExecuteAsync(new() { Id = _accountId });
+            await _subject.ExecuteAsync(_accountId, new());
 
             _mockCommentThreadService.Verify(x => x.InsertComment(It.IsAny<string>(), It.IsAny<Comment>()), Times.Never);
         }
