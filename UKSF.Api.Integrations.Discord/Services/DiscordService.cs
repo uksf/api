@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Rest;
@@ -329,8 +330,8 @@ namespace UKSF.Api.Discord.Services
             _client.UserJoined += user =>
             {
                 var name = GetUserNickname(user);
-                var associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
-                _logger.LogDiscordEvent(DiscordUserEventType.JOINED, user.Id.ToString(), name, string.Empty, name, $"Joined, {associatedAccountMessage}");
+                var connectedAccountMessage = GetConnectedAccountMessageFromUserId(user.Id);
+                _logger.LogDiscordEvent(DiscordUserEventType.JOINED, user.Id.ToString(), name, string.Empty, name, $"Joined {connectedAccountMessage}");
 
                 return Task.CompletedTask;
             };
@@ -339,8 +340,8 @@ namespace UKSF.Api.Discord.Services
             {
                 var name = GetUserNickname(user);
                 var domainAccount = _accountContext.GetSingle(x => x.DiscordId == user.Id.ToString());
-                var associatedAccountMessage = GetAssociatedAccountMessage(domainAccount);
-                _logger.LogDiscordEvent(DiscordUserEventType.LEFT, user.Id.ToString(), name, string.Empty, name, $"Left, {associatedAccountMessage}");
+                var connectedAccountMessage = GetConnectedAccountMessage(domainAccount);
+                _logger.LogDiscordEvent(DiscordUserEventType.LEFT, user.Id.ToString(), name, string.Empty, name, $"Left {connectedAccountMessage}");
                 if (domainAccount != null)
                 {
                     _eventBus.Send(new DiscordEventData(DiscordUserEventType.LEFT, domainAccount.Id));
@@ -351,7 +352,7 @@ namespace UKSF.Api.Discord.Services
 
             _client.UserBanned += async (user, _) =>
             {
-                var associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
+                var connectedAccountMessage = GetConnectedAccountMessageFromUserId(user.Id);
                 var instigatorId = await GetBannedAuditLogInstigator(user.Id);
                 var instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
                 _logger.LogDiscordEvent(
@@ -360,13 +361,13 @@ namespace UKSF.Api.Discord.Services
                     instigatorName,
                     string.Empty,
                     user.Username,
-                    $"Banned, {associatedAccountMessage}"
+                    $"Banned {connectedAccountMessage}"
                 );
             };
 
             _client.UserUnbanned += async (user, _) =>
             {
-                var associatedAccountMessage = GetAssociatedAccountMessageFromUserId(user.Id);
+                var connectedAccountMessage = GetConnectedAccountMessageFromUserId(user.Id);
                 var instigatorId = await GetUnbannedAuditLogInstigator(user.Id);
                 var instigatorName = GetUserNickname(_guild.GetUser(instigatorId));
                 _logger.LogDiscordEvent(
@@ -375,7 +376,7 @@ namespace UKSF.Api.Discord.Services
                     instigatorName,
                     string.Empty,
                     user.Username,
-                    $"Unbanned, {associatedAccountMessage}"
+                    $"Unbanned {connectedAccountMessage}"
                 );
             };
 
@@ -496,7 +497,7 @@ namespace UKSF.Api.Discord.Services
                 return;
             }
 
-            if (message.Content.Contains("bot", StringComparison.InvariantCultureIgnoreCase) || message.MentionedUsers.Any(x => x.IsBot))
+            if (new Regex(@"\bbot\b", RegexOptions.IgnoreCase).IsMatch(message.Content) || message.MentionedUsers.Any(x => x.IsBot))
             {
                 await HandleBotMessageResponse(message);
             }
@@ -588,17 +589,17 @@ namespace UKSF.Api.Discord.Services
                    );
         }
 
-        private string GetAssociatedAccountMessageFromUserId(ulong userId)
+        private string GetConnectedAccountMessageFromUserId(ulong userId)
         {
             var domainAccount = _accountContext.GetSingle(x => x.DiscordId == userId.ToString());
-            return GetAssociatedAccountMessage(domainAccount);
+            return GetConnectedAccountMessage(domainAccount);
         }
 
-        private string GetAssociatedAccountMessage(DomainAccount domainAccount)
+        private string GetConnectedAccountMessage(DomainAccount domainAccount)
         {
             return domainAccount == null
-                ? "with no associated account"
-                : $"with associated account ({domainAccount.Id}, {_displayNameService.GetDisplayName(domainAccount)}, {domainAccount.MembershipState.ToString()})";
+                ? "(No connected account)"
+                : $"(Connected account - {domainAccount.Id}, {_displayNameService.GetDisplayName(domainAccount)}, {domainAccount.MembershipState.ToString()})";
         }
 
         private async Task<DiscordDeletedMessageResult> GetDeletedMessageDetails(Cacheable<IMessage, ulong> cacheable, ISocketMessageChannel channel)
