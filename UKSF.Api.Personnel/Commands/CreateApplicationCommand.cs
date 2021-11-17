@@ -12,7 +12,7 @@ namespace UKSF.Api.Personnel.Commands
 {
     public interface ICreateApplicationCommand
     {
-        Task ExecuteAsync(Account jObject);
+        Task ExecuteAsync(string id, Account jObject);
     }
 
     public class CreateApplicationCommand : ICreateApplicationCommand
@@ -47,16 +47,16 @@ namespace UKSF.Api.Personnel.Commands
             _logger = logger;
         }
 
-        public async Task ExecuteAsync(Account account)
+        public async Task ExecuteAsync(string id, Account account)
         {
-            var application = await CreateApplication(account.Id);
-            var domainAccount = await UpdateDomainAccount(account, application);
+            var application = await CreateApplication(id);
+            var domainAccount = await UpdateDomainAccount(id, account, application);
 
             await AssignAndNotify(domainAccount, application);
             await CheckExistingSteamAndDiscordConnections(domainAccount);
 
             _logger.LogAudit(
-                $"Application submitted for {domainAccount.Id}. Assigned to {_displayNameService.GetDisplayName(domainAccount.Application.Recruiter)}"
+                $"Application submitted for {id}. Assigned to {_displayNameService.GetDisplayName(domainAccount.Application.Recruiter)}"
             );
         }
 
@@ -79,10 +79,10 @@ namespace UKSF.Api.Personnel.Commands
             return application;
         }
 
-        private async Task<DomainAccount> UpdateDomainAccount(Account account, Application application)
+        private async Task<DomainAccount> UpdateDomainAccount(string id, Account account, Application application)
         {
             await _accountContext.Update(
-                account.Id,
+                id,
                 Builders<DomainAccount>.Update.Set(x => x.ArmaExperience, account.ArmaExperience)
                                        .Set(x => x.UnitsExperience, account.UnitsExperience)
                                        .Set(x => x.Background, account.Background)
@@ -92,7 +92,7 @@ namespace UKSF.Api.Personnel.Commands
                                        .Set(x => x.Application, application)
             );
 
-            return _accountContext.GetSingle(account.Id);
+            return _accountContext.GetSingle(id);
         }
 
         private async Task AssignAndNotify(DomainAccount domainAccount, Application application)
