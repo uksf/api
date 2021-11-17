@@ -18,11 +18,7 @@ namespace UKSF.Api.Personnel.Controllers
         private readonly ILogger _logger;
         private readonly INotificationsService _notificationsService;
 
-        public ApplicationsController(
-            IAccountContext accountContext,
-            INotificationsService notificationsService,
-            ILogger logger
-        )
+        public ApplicationsController(IAccountContext accountContext, INotificationsService notificationsService, ILogger logger)
         {
             _accountContext = accountContext;
             _notificationsService = notificationsService;
