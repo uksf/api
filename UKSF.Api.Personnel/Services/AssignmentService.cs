@@ -106,7 +106,7 @@ namespace UKSF.Api.Personnel.Services
 
                 if (rankUpdate)
                 {
-                    message = $"{message}. Please change your name to {_displayNameService.GetDisplayName(id)}";
+                    message = $"{message}. Please change your TeamSpeak and Arma name to {_displayNameService.GetDisplayName(id)}";
                 }
             }
 
