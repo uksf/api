@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Bson;
@@ -18,6 +19,12 @@ namespace UKSF.Api.Personnel.Commands
     public class CreateApplicationCommand : ICreateApplicationCommand
     {
         private readonly IAccountContext _accountContext;
+
+        private readonly List<MembershipState> _allowedMembershipStates = new()
+        {
+            MembershipState.CONFIRMED, MembershipState.MEMBER, MembershipState.DISCHARGED
+        };
+
         private readonly IAssignmentService _assignmentService;
         private readonly ICommentThreadContext _commentThreadContext;
         private readonly ICommentThreadService _commentThreadService;
@@ -55,9 +62,7 @@ namespace UKSF.Api.Personnel.Commands
             await AssignAndNotify(domainAccount, application);
             await CheckExistingSteamAndDiscordConnections(domainAccount);
 
-            _logger.LogAudit(
-                $"Application submitted for {id}. Assigned to {_displayNameService.GetDisplayName(domainAccount.Application.Recruiter)}"
-            );
+            _logger.LogAudit($"Application submitted for {id}. Assigned to {_displayNameService.GetDisplayName(domainAccount.Application.Recruiter)}");
         }
 
         private async Task<Application> CreateApplication(string accountId)
@@ -134,12 +139,14 @@ namespace UKSF.Api.Personnel.Commands
         private async Task CheckExistingSteamAndDiscordConnections(DomainAccount domainAccount)
         {
             var accountName = _displayNameService.GetDisplayNameWithoutRank(domainAccount);
-            var accountsWithSameSteamConnection = _accountContext.Get(x => x.Steamname == domainAccount.Steamname)
-                                                                 .Select(x => _displayNameService.GetDisplayNameWithoutRank(x))
-                                                                 .ToList();
-            var accountsWithSameDiscordConnection = _accountContext.Get(x => x.DiscordId == domainAccount.DiscordId)
-                                                                   .Select(x => _displayNameService.GetDisplayNameWithoutRank(x))
-                                                                   .ToList();
+            var accountsWithSameSteamConnection = _accountContext
+                                                  .Get(x => x.Steamname == domainAccount.Steamname && _allowedMembershipStates.Contains(x.MembershipState))
+                                                  .Select(x => _displayNameService.GetDisplayNameWithoutRank(x))
+                                                  .ToList();
+            var accountsWithSameDiscordConnection = _accountContext
+                                                    .Get(x => x.DiscordId == domainAccount.DiscordId && _allowedMembershipStates.Contains(x.MembershipState))
+                                                    .Select(x => _displayNameService.GetDisplayNameWithoutRank(x))
+                                                    .ToList();
 
             if (accountsWithSameSteamConnection.Any())
             {

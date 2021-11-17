@@ -58,7 +58,17 @@ namespace UKSF.Api.Personnel.Tests.Commands
             Given_an_account_with_application();
             _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>()))
                                .Returns(
-                                   new List<DomainAccount> { new() { Lastname = "Match", Firstname = "1", Steamname = _steamName, DiscordId = _discordId } }
+                                   new List<DomainAccount>
+                                   {
+                                       new()
+                                       {
+                                           Lastname = "Match",
+                                           Firstname = "1",
+                                           Steamname = _steamName,
+                                           DiscordId = _discordId,
+                                           MembershipState = MembershipState.MEMBER
+                                       }
+                                   }
                                );
             _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Lastname == "Match"))).Returns("Match.1");
 
@@ -82,8 +92,22 @@ namespace UKSF.Api.Personnel.Tests.Commands
                                .Returns(
                                    new List<DomainAccount>
                                    {
-                                       new() { Lastname = "Match", Firstname = "1", Steamname = _steamName, DiscordId = _discordId },
-                                       new() { Lastname = "Match", Firstname = "2", Steamname = _steamName, DiscordId = _discordId }
+                                       new()
+                                       {
+                                           Lastname = "Match",
+                                           Firstname = "1",
+                                           Steamname = _steamName,
+                                           DiscordId = _discordId,
+                                           MembershipState = MembershipState.CONFIRMED
+                                       },
+                                       new()
+                                       {
+                                           Lastname = "Match",
+                                           Firstname = "2",
+                                           Steamname = _steamName,
+                                           DiscordId = _discordId,
+                                           MembershipState = MembershipState.DISCHARGED
+                                       }
                                    }
                                );
             _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Firstname == "1"))).Returns("Match.1");
