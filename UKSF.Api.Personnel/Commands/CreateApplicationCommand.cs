@@ -26,8 +26,8 @@ namespace UKSF.Api.Personnel.Commands
         };
 
         private readonly IAssignmentService _assignmentService;
-        private readonly ICommentThreadContext _commentThreadContext;
         private readonly ICommentThreadService _commentThreadService;
+        private readonly ICreateCommentThreadCommand _createCommentThreadCommand;
         private readonly IDisplayNameService _displayNameService;
         private readonly ILogger _logger;
         private readonly INotificationsService _notificationsService;
@@ -35,22 +35,22 @@ namespace UKSF.Api.Personnel.Commands
 
         public CreateApplicationCommand(
             IAccountContext accountContext,
-            ICommentThreadContext commentThreadContext,
             IRecruitmentService recruitmentService,
             IAssignmentService assignmentService,
             INotificationsService notificationsService,
             IDisplayNameService displayNameService,
             ICommentThreadService commentThreadService,
+            ICreateCommentThreadCommand createCommentThreadCommand,
             ILogger logger
         )
         {
             _accountContext = accountContext;
-            _commentThreadContext = commentThreadContext;
             _recruitmentService = recruitmentService;
             _assignmentService = assignmentService;
             _notificationsService = notificationsService;
             _displayNameService = displayNameService;
             _commentThreadService = commentThreadService;
+            _createCommentThreadCommand = createCommentThreadCommand;
             _logger = logger;
         }
 
@@ -67,10 +67,11 @@ namespace UKSF.Api.Personnel.Commands
 
         private async Task<Application> CreateApplication(string accountId)
         {
-            CommentThread recruiterCommentThread = new() { Authors = _recruitmentService.GetRecruiterLeads().Values.ToArray(), Mode = ThreadMode.RECRUITER };
-            CommentThread applicationCommentThread = new() { Authors = new[] { accountId }, Mode = ThreadMode.RECRUITER };
-            await _commentThreadContext.Add(recruiterCommentThread);
-            await _commentThreadContext.Add(applicationCommentThread);
+            var recruiterCommentThread = await _createCommentThreadCommand.ExecuteAsync(
+                _recruitmentService.GetRecruiterLeads().Values.ToArray(),
+                ThreadMode.RECRUITER
+            );
+            var applicationCommentThread = await _createCommentThreadCommand.ExecuteAsync(new[] { accountId }, ThreadMode.RECRUITER);
 
             Application application = new()
             {
