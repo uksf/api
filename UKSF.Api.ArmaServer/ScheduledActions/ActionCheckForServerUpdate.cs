@@ -65,6 +65,9 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
             var latestInfo = await _getLatestServerInfrastructureQuery.ExecuteAsync();
             var currentInfo = await _getCurrentServerInfrastructureQuery.ExecuteAsync();
             var installedInfo = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
+            _logger.LogInfo(
+                $"Checking server infrastructure ({currentInfo.CurrentBuild} > {latestInfo.LatestBuild}, {currentInfo.CurrentUpdated} > {latestInfo.LatestUpdate}, {installedInfo.InstalledVersion})"
+            );
 
             if (latestInfo.LatestBuild != currentInfo.CurrentBuild ||
                 latestInfo.LatestUpdate > currentInfo.CurrentUpdated ||
@@ -73,8 +76,12 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
                 _logger.LogInfo("Server infrastructure update required");
                 await _updateServerInfrastructureCommand.ExecuteAsync();
 
-                var after = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
-                _logger.LogInfo($"Server infrastructure updated from version {installedInfo.InstalledVersion} to {after.InstalledVersion}");
+                var afterVersion = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
+                var afterBuild = await _getCurrentServerInfrastructureQuery.ExecuteAsync();
+
+                _logger.LogInfo(
+                    $"Server infrastructure updated from version {installedInfo.InstalledVersion}.{currentInfo.CurrentBuild} to {afterVersion.InstalledVersion}.{afterBuild.CurrentBuild}"
+                );
             }
         }
 
@@ -87,7 +94,7 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
 
             if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null)
             {
-                await _schedulerService.CreateScheduledJob(_clock.UtcNow().Date.AddHours(18).AddDays(1), TimeSpan.FromDays(1), ACTION_NAME);
+                await _schedulerService.CreateScheduledJob(_clock.UtcNow().Date.AddHours(18).AddDays(1), TimeSpan.FromHours(12), ACTION_NAME);
             }
         }
 
