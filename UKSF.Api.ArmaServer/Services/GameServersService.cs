@@ -237,11 +237,13 @@ namespace UKSF.Api.ArmaServer.Services
             IEnumerable<string> availableModsFolders = new[] { _gameServerHelpers.GetGameServerModsPaths(gameServer.Environment) };
             availableModsFolders = availableModsFolders.Concat(_gameServerHelpers.GetGameServerExtraModsPaths());
 
+            var dlcModFoldersRegexString = _gameServerHelpers.GetDlcModFoldersRegexString();
+            Regex allowedPaths = new($"@.*|{dlcModFoldersRegexString}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            Regex allowedExtensions = new("[ep]bo", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
             List<GameServerMod> mods = new();
             foreach (var modsPath in availableModsFolders)
             {
-                var dlcModFoldersRegexString = _gameServerHelpers.GetDlcModFoldersRegexString();
-                Regex allowedPaths = new($"@.*|{dlcModFoldersRegexString}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 var modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("*.*", SearchOption.AllDirectories).Where(x => allowedPaths.IsMatch(x.Name));
                 foreach (var modFolder in modFolders)
                 {
@@ -250,7 +252,6 @@ namespace UKSF.Api.ArmaServer.Services
                         continue;
                     }
 
-                    Regex allowedExtensions = new("[ep]bo", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                     var hasModFiles = new DirectoryInfo(modFolder.FullName).EnumerateFiles("*.*", SearchOption.AllDirectories)
                                                                            .Any(x => allowedExtensions.IsMatch(x.Extension));
                     if (!hasModFiles)
