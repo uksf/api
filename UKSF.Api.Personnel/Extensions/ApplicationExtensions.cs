@@ -7,7 +7,7 @@ namespace UKSF.Api.Personnel.Extensions
     {
         public static ApplicationAge ToAge(this DateTime dob, DateTime? date = null)
         {
-            var today = date ?? DateTime.Today;
+            var today = date ?? DateTime.UtcNow.Date;
             var months = today.Month - dob.Month;
             var years = today.Year - dob.Year;
 

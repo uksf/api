@@ -177,8 +177,8 @@ namespace UKSF.Api.Modpack.Services
         public async Task SetBuildRunning(ModpackBuild build)
         {
             build.Running = true;
-            build.StartTime = DateTime.Now;
-            await _buildsContext.Update(build, Builders<ModpackBuild>.Update.Set(x => x.Running, true).Set(x => x.StartTime, DateTime.Now));
+            build.StartTime = DateTime.UtcNow;
+            await _buildsContext.Update(build, Builders<ModpackBuild>.Update.Set(x => x.Running, true).Set(x => x.StartTime, DateTime.UtcNow));
         }
 
         public async Task SucceedBuild(ModpackBuild build)
@@ -212,7 +212,7 @@ namespace UKSF.Api.Modpack.Services
                     {
                         runningStep.Running = false;
                         runningStep.Finished = true;
-                        runningStep.EndTime = DateTime.Now;
+                        runningStep.EndTime = DateTime.UtcNow;
                         runningStep.BuildResult = ModpackBuildResult.CANCELLED;
                         runningStep.Logs.Add(new() { Text = "\nBuild was interrupted", Colour = "goldenrod" });
                         await _buildsContext.Update(build, runningStep);
@@ -230,8 +230,8 @@ namespace UKSF.Api.Modpack.Services
             build.Running = false;
             build.Finished = true;
             build.BuildResult = result;
-            build.EndTime = DateTime.Now;
-            await _buildsContext.Update(build, Builders<ModpackBuild>.Update.Set(x => x.Running, false).Set(x => x.Finished, true).Set(x => x.BuildResult, result).Set(x => x.EndTime, DateTime.Now));
+            build.EndTime = DateTime.UtcNow;
+            await _buildsContext.Update(build, Builders<ModpackBuild>.Update.Set(x => x.Running, false).Set(x => x.Finished, true).Set(x => x.BuildResult, result).Set(x => x.EndTime, DateTime.UtcNow));
         }
 
         private static void SetEnvironmentVariables(ModpackBuild build, ModpackBuild previousBuild, NewBuild newBuild = null)

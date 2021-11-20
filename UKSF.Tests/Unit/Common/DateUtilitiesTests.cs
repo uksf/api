@@ -20,7 +20,7 @@ namespace UKSF.Tests.Unit.Common
         [Theory, InlineData(25, 4, 25, 4), InlineData(25, 13, 26, 1)]
         public void ShouldGiveCorrectAge(int years, int months, int expectedYears, int expectedMonths)
         {
-            var dob = DateTime.Today.AddYears(-years).AddMonths(-months);
+            var dob = DateTime.UtcNow.Date.AddYears(-years).AddMonths(-months);
 
             var age = dob.ToAge();
 

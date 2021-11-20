@@ -118,7 +118,7 @@ namespace UKSF.Api.Personnel.Services
                 Account = _accountMapper.MapToAccount(domainAccount),
                 DisplayName = _displayNameService.GetDisplayName(domainAccount),
                 Age = age,
-                DaysProcessing = Math.Ceiling((DateTime.Now - domainAccount.Application.DateCreated).TotalDays),
+                DaysProcessing = Math.Ceiling((DateTime.UtcNow - domainAccount.Application.DateCreated).TotalDays),
                 DaysProcessed = Math.Ceiling((domainAccount.Application.DateAccepted - domainAccount.Application.DateCreated).TotalDays),
                 NextCandidateOp = GetNextCandidateOp(),
                 AverageProcessingTime = GetAverageProcessingTime(),
@@ -155,7 +155,7 @@ namespace UKSF.Api.Personnel.Services
 
             if (monthly)
             {
-                accounts = accounts.Where(x => x.Application.DateAccepted < DateTime.Now && x.Application.DateAccepted > DateTime.Now.AddMonths(-1));
+                accounts = accounts.Where(x => x.Application.DateAccepted < DateTime.UtcNow && x.Application.DateAccepted > DateTime.UtcNow.AddMonths(-1));
             }
 
             var accountsList = accounts.ToList();
@@ -215,7 +215,7 @@ namespace UKSF.Api.Personnel.Services
         private WaitingApplication GetWaitingApplication(DomainAccount domainAccount)
         {
             var averageProcessingTime = GetAverageProcessingTime();
-            var daysProcessing = Math.Ceiling((DateTime.Now - domainAccount.Application.DateCreated).TotalDays);
+            var daysProcessing = Math.Ceiling((DateTime.UtcNow - domainAccount.Application.DateCreated).TotalDays);
             var processingDifference = daysProcessing - averageProcessingTime;
             return new()
             {
@@ -229,7 +229,7 @@ namespace UKSF.Api.Personnel.Services
 
         private static string GetNextCandidateOp()
         {
-            var nextDate = DateTime.Now;
+            var nextDate = DateTime.UtcNow;
             while (nextDate.DayOfWeek != DayOfWeek.Tuesday &&
                    nextDate.DayOfWeek != DayOfWeek.Thursday &&
                    nextDate.DayOfWeek != DayOfWeek.Friday &&
@@ -238,8 +238,8 @@ namespace UKSF.Api.Personnel.Services
                 nextDate = nextDate.AddDays(1);
             }
 
-            return nextDate.Day == DateTime.Today.Day         ? "Today" :
-                nextDate.Day == DateTime.Today.AddDays(1).Day ? "Tomorrow" : nextDate.ToString("dddd");
+            return nextDate.Day == DateTime.UtcNow.Date.Day         ? "Today" :
+                nextDate.Day == DateTime.UtcNow.Date.AddDays(1).Day ? "Tomorrow" : nextDate.ToString("dddd");
         }
 
         private double GetAverageProcessingTime()

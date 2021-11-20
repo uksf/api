@@ -72,7 +72,7 @@ namespace UKSF.Api.Command.Controllers
             var id = _variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
             var canOverride = _unitsContext.GetSingle(id).Members.Any(x => x == contextId);
             var superAdmin = contextId == SUPER_ADMIN;
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             foreach (var commandRequest in allRequests)
             {
                 var reviewers = commandRequest.Reviews.Keys;

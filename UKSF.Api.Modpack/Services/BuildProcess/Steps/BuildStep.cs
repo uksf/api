@@ -72,7 +72,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
             StartUpdatePusher();
             _buildStep.Running = true;
-            _buildStep.StartTime = DateTime.Now;
+            _buildStep.StartTime = DateTime.UtcNow;
             StepLogger.LogStart();
             await Update();
         }
@@ -259,7 +259,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
         {
             _buildStep.Running = false;
             _buildStep.Finished = true;
-            _buildStep.EndTime = DateTime.Now;
+            _buildStep.EndTime = DateTime.UtcNow;
             StopUpdatePusher();
             await Update();
         }

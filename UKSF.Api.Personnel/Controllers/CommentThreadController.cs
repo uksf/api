@@ -93,7 +93,7 @@ namespace UKSF.Api.Personnel.Controllers
         public async Task AddComment(string commentThreadId, [FromBody] Comment comment)
         {
             comment.Id = ObjectId.GenerateNewId().ToString();
-            comment.Timestamp = DateTime.Now;
+            comment.Timestamp = DateTime.UtcNow;
             comment.Author = _httpContextService.GetUserId();
             await _commentThreadService.InsertComment(commentThreadId, comment);
 

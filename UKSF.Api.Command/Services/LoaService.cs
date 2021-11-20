@@ -34,7 +34,7 @@ namespace UKSF.Api.Command.Services
         {
             DomainLoa domainLoa = new()
             {
-                Submitted = DateTime.Now,
+                Submitted = DateTime.UtcNow,
                 Recipient = requestBase.Recipient,
                 Start = requestBase.Start,
                 End = requestBase.End,

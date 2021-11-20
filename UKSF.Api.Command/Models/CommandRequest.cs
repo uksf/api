@@ -45,7 +45,7 @@ namespace UKSF.Api.Command.Models
 
         public CommandRequest()
         {
-            DateCreated = DateTime.Now;
+            DateCreated = DateTime.UtcNow;
         }
     }
 }

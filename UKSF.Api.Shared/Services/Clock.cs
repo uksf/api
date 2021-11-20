@@ -18,7 +18,7 @@ namespace UKSF.Api.Shared.Services
 
         public DateTime Today()
         {
-            return DateTime.Today;
+            return UtcNow().Date;
         }
 
         public DateTime UtcNow()

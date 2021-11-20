@@ -114,7 +114,7 @@ namespace UKSF.Api.Personnel.Controllers
             {
                 case ApplicationState.ACCEPTED:
                 {
-                    await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.DateAccepted, DateTime.Now).Set(x => x.MembershipState, MembershipState.MEMBER));
+                    await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.DateAccepted, DateTime.UtcNow).Set(x => x.MembershipState, MembershipState.MEMBER));
                     var notification = await _assignmentService.UpdateUnitRankAndRole(
                         id,
                         "Basic Training Unit",
@@ -127,7 +127,7 @@ namespace UKSF.Api.Personnel.Controllers
                 }
                 case ApplicationState.REJECTED:
                 {
-                    await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.DateAccepted, DateTime.Now).Set(x => x.MembershipState, MembershipState.CONFIRMED));
+                    await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.DateAccepted, DateTime.UtcNow).Set(x => x.MembershipState, MembershipState.CONFIRMED));
                     var notification = await _assignmentService.UpdateUnitRankAndRole(
                         id,
                         AssignmentService.REMOVE_FLAG,
@@ -144,7 +144,7 @@ namespace UKSF.Api.Personnel.Controllers
                 {
                     await _accountContext.Update(
                         id,
-                        Builders<DomainAccount>.Update.Set(x => x.Application.DateCreated, DateTime.Now).Unset(x => x.Application.DateAccepted).Set(x => x.MembershipState, MembershipState.CONFIRMED)
+                        Builders<DomainAccount>.Update.Set(x => x.Application.DateCreated, DateTime.UtcNow).Unset(x => x.Application.DateAccepted).Set(x => x.MembershipState, MembershipState.CONFIRMED)
                     );
                     var notification = await _assignmentService.UpdateUnitRankAndRole(
                         id,

@@ -43,7 +43,7 @@ namespace UKSF.Api.Shared.Extensions
             TaskService.Instance.RootFolder.DeleteTask(name, false);
             using var taskDefinition = TaskService.Instance.NewTask();
             taskDefinition.Actions.Add(new ExecAction("cmd", $"/C {command}"));
-            taskDefinition.Triggers.Add(new TimeTrigger(DateTime.Now.AddSeconds(1)));
+            taskDefinition.Triggers.Add(new TimeTrigger(DateTime.UtcNow.AddSeconds(1)));
             TaskService.Instance.RootFolder.RegisterTaskDefinition(name, taskDefinition);
             await Task.Delay(TimeSpan.FromSeconds(1));
         }

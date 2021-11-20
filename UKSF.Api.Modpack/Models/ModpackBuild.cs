@@ -13,13 +13,13 @@ namespace UKSF.Api.Modpack.Models
         public int BuildNumber;
         public ModpackBuildResult BuildResult = ModpackBuildResult.NONE;
         public GithubCommit Commit;
-        public DateTime EndTime = DateTime.Now;
+        public DateTime EndTime = DateTime.UtcNow;
         public GameEnvironment Environment;
         public Dictionary<string, object> EnvironmentVariables = new();
         public bool Finished;
         public bool IsRebuild;
         public bool Running;
-        public DateTime StartTime = DateTime.Now;
+        public DateTime StartTime = DateTime.UtcNow;
         public List<ModpackBuildStep> Steps = new();
         public string Version;
     }

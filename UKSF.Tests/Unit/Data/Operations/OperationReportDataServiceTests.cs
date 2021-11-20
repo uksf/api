@@ -29,9 +29,9 @@ namespace UKSF.Tests.Unit.Data.Operations
         [Fact]
         public void Should_get_collection_in_order()
         {
-            Oprep item1 = new() { Start = DateTime.Now.AddDays(-1) };
-            Oprep item2 = new() { Start = DateTime.Now.AddDays(-2) };
-            Oprep item3 = new() { Start = DateTime.Now.AddDays(-3) };
+            Oprep item1 = new() { Start = DateTime.UtcNow.AddDays(-1) };
+            Oprep item2 = new() { Start = DateTime.UtcNow.AddDays(-2) };
+            Oprep item3 = new() { Start = DateTime.UtcNow.AddDays(-3) };
 
             _mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> { item1, item2, item3 });
 
@@ -43,9 +43,9 @@ namespace UKSF.Tests.Unit.Data.Operations
         [Fact]
         public void ShouldGetOrderedCollectionByPredicate()
         {
-            Oprep item1 = new() { Description = "1", Start = DateTime.Now.AddDays(-1) };
-            Oprep item2 = new() { Description = "2", Start = DateTime.Now.AddDays(-2) };
-            Oprep item3 = new() { Description = "1", Start = DateTime.Now.AddDays(-3) };
+            Oprep item1 = new() { Description = "1", Start = DateTime.UtcNow.AddDays(-1) };
+            Oprep item2 = new() { Description = "2", Start = DateTime.UtcNow.AddDays(-2) };
+            Oprep item3 = new() { Description = "1", Start = DateTime.UtcNow.AddDays(-3) };
 
             _mockDataCollection.Setup(x => x.Get()).Returns(new List<Oprep> { item1, item2, item3 });
 

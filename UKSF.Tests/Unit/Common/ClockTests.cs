@@ -12,7 +12,7 @@ namespace UKSF.Tests.Unit.Common
         {
             var subject = new Clock().Today();
 
-            subject.Should().BeCloseTo(DateTime.Today, TimeSpan.FromMilliseconds(0));
+            subject.Should().BeCloseTo(DateTime.UtcNow.Date, TimeSpan.FromMilliseconds(0));
         }
 
         [Fact]
@@ -20,7 +20,7 @@ namespace UKSF.Tests.Unit.Common
         {
             var subject = new Clock().Now();
 
-            subject.Should().BeCloseTo(DateTime.Now, TimeSpan.FromMilliseconds(10));
+            subject.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMilliseconds(10));
         }
 
         [Fact]

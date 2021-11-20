@@ -43,7 +43,7 @@ namespace UKSF.Api.Modpack.Services
         {
             var changelog = await _githubService.GenerateChangelog(version);
             var creatorId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
-            await _releasesContext.Add(new() { Timestamp = DateTime.Now, Version = version, Changelog = changelog, IsDraft = true, CreatorId = creatorId });
+            await _releasesContext.Add(new() { Timestamp = DateTime.UtcNow, Version = version, Changelog = changelog, IsDraft = true, CreatorId = creatorId });
         }
 
         public async Task UpdateDraft(ModpackRelease release)
@@ -67,7 +67,7 @@ namespace UKSF.Api.Modpack.Services
             release.Changelog += release.Changelog.EndsWith("\n\n") ? "<br>" : "\n\n<br>";
             release.Changelog += "SR3 - Development Team<br>[Report and track issues here](https://github.com/uksf/modpack/issues)";
 
-            await _releasesContext.Update(release.Id, Builders<ModpackRelease>.Update.Set(x => x.Timestamp, DateTime.Now).Set(x => x.IsDraft, false).Set(x => x.Changelog, release.Changelog));
+            await _releasesContext.Update(release.Id, Builders<ModpackRelease>.Update.Set(x => x.Timestamp, DateTime.UtcNow).Set(x => x.IsDraft, false).Set(x => x.Changelog, release.Changelog));
             await _githubService.PublishRelease(release);
         }
 

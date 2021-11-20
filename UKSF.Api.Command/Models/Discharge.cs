@@ -21,7 +21,7 @@ namespace UKSF.Api.Command.Models
         public string Rank;
         public string Reason;
         public string Role;
-        public DateTime Timestamp = DateTime.Now;
+        public DateTime Timestamp = DateTime.UtcNow;
         public string Unit;
     }
 }

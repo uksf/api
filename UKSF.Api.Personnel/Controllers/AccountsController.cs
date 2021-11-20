@@ -227,7 +227,7 @@ namespace UKSF.Api.Personnel.Controllers
         public string Test()
         {
             _logger.LogInfo("This is a test");
-            return DateTime.Now.ToLongTimeString();
+            return DateTime.UtcNow.ToLongTimeString();
         }
 
         private async Task SendConfirmationCode(DomainAccount domainAccount)
