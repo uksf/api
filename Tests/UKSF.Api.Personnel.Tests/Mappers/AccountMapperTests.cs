@@ -25,7 +25,7 @@ namespace UKSF.Api.Personnel.Tests.Mappers
         public void ShouldCopyAccountCorrectly()
         {
             var id = ObjectId.GenerateNewId().ToString();
-            var timestamp = DateTime.Now.AddDays(-1);
+            var timestamp = DateTime.UtcNow.AddDays(-1);
             DomainAccount domainAccount = new()
             {
                 Id = id,

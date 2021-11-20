@@ -61,7 +61,7 @@ namespace UKSF.Api.Personnel.EventHandlers
             var name = _displayNameService.GetDisplayName(domainAccount);
             await _commentThreadService.InsertComment(
                 domainAccount.Application.RecruiterCommentThread,
-                new() { Author = ObjectId.Empty.ToString(), Content = $"{name} left Discord", Timestamp = DateTime.Now }
+                new() { Author = ObjectId.Empty.ToString(), Content = $"{name} left Discord", Timestamp = DateTime.UtcNow }
             );
         }
     }

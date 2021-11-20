@@ -13,7 +13,7 @@
 //             releaseService.Data.Add(
 //                 new ModpackRelease {
 //                     id = ObjectId.GenerateNewId().ToString(),
-//                     timestamp = DateTime.Now.AddDays(-15),
+//                     timestamp = DateTime.UtcNow.AddDays(-15),
 //                     version = "5.17.16",
 //                     description =
 //                         "Added captive escort animations and different radio backpacks, fixed backpack-on-chest errors, and arsenal adding extra mag error." +
@@ -44,7 +44,7 @@
 //             releaseService.Data.Add(
 //                 new ModpackRelease {
 //                     id = ObjectId.GenerateNewId().ToString(),
-//                     timestamp = DateTime.Now.AddDays(-9),
+//                     timestamp = DateTime.UtcNow.AddDays(-9),
 //                     version = "5.17.17",
 //                     description =
 //                         "Added captive escort animations and different radio backpacks, fixed backpack-on-chest errors, and arsenal adding extra mag error." +
@@ -80,25 +80,25 @@
 //                     version = "5.17.16",
 //                     builds = new List<ModpackBuild> {
 //                         new ModpackBuild {
-//                             timestamp = DateTime.Now.AddDays(-14),
+//                             timestamp = DateTime.UtcNow.AddDays(-14),
 //                             buildNumber = 0,
 //                             pushEvent = new GithubPushEvent { commit = new GithubCommit { message = "New version" } },
 //                             isNewVersion = true
 //                         },
 //                         new ModpackBuild {
-//                             timestamp = DateTime.Now.AddDays(-16).AddHours(-2),
+//                             timestamp = DateTime.UtcNow.AddDays(-16).AddHours(-2),
 //                             buildNumber = 1,
 //                             pushEvent = new GithubPushEvent {
 //                                 commit = new GithubCommit { message = "Changed captive escort to be local to unit" + "\n\n- Exit escort if weapon holstered (can't get anims right)" }
 //                             }
 //                         },
 //                         new ModpackBuild {
-//                             timestamp = DateTime.Now.AddDays(-16),
+//                             timestamp = DateTime.UtcNow.AddDays(-16),
 //                             buildNumber = 2,
 //                             pushEvent = new GithubPushEvent { commit = new GithubCommit { message = "Fix missing getPos for zeus fps" } }
 //                         },
 //                         new ModpackBuild {
-//                             timestamp = DateTime.Now.AddDays(-15).AddHours(-1),
+//                             timestamp = DateTime.UtcNow.AddDays(-15).AddHours(-1),
 //                             buildNumber = 3,
 //                             pushEvent = new GithubPushEvent {
 //                                 commit = new GithubCommit {
@@ -109,7 +109,7 @@
 //                             }
 //                         },
 //                         new ModpackBuild {
-//                             timestamp = DateTime.Now.AddDays(-15),
+//                             timestamp = DateTime.UtcNow.AddDays(-15),
 //                             buildNumber = 4,
 //                             isReleaseCandidate = true,
 //                             pushEvent = new GithubPushEvent { commit = new GithubCommit { message = "Tweak zeus player fps display" } }
@@ -123,25 +123,25 @@
 //                     version = "5.17.17",
 //                     builds = new List<ModpackBuild> {
 //                         new ModpackBuild {
-//                             timestamp = DateTime.Now.AddDays(-14),
+//                             timestamp = DateTime.UtcNow.AddDays(-14),
 //                             buildNumber = 0,
 //                             pushEvent = new GithubPushEvent { commit = new GithubCommit { message = "New version" } },
 //                             isNewVersion = true
 //                         },
 //                         new ModpackBuild {
-//                             timestamp = DateTime.Now.AddDays(-11).AddHours(-2),
+//                             timestamp = DateTime.UtcNow.AddDays(-11).AddHours(-2),
 //                             buildNumber = 1,
 //                             pushEvent = new GithubPushEvent {
 //                                 commit = new GithubCommit { message = "Changed captive escort to be local to unit" + "\n\n- Exit escort if weapon holstered (can't get anims right)" }
 //                             }
 //                         },
 //                         new ModpackBuild {
-//                             timestamp = DateTime.Now.AddDays(-11),
+//                             timestamp = DateTime.UtcNow.AddDays(-11),
 //                             buildNumber = 2,
 //                             pushEvent = new GithubPushEvent { commit = new GithubCommit { message = "Fix missing getPos for zeus fps" } }
 //                         },
 //                         new ModpackBuild {
-//                             timestamp = DateTime.Now.AddDays(-10).AddHours(-1),
+//                             timestamp = DateTime.UtcNow.AddDays(-10).AddHours(-1),
 //                             buildNumber = 3,
 //                             pushEvent = new GithubPushEvent {
 //                                 commit = new GithubCommit {
@@ -152,12 +152,12 @@
 //                             }
 //                         },
 //                         new ModpackBuild {
-//                             timestamp = DateTime.Now.AddDays(-10),
+//                             timestamp = DateTime.UtcNow.AddDays(-10),
 //                             buildNumber = 4,
 //                             pushEvent = new GithubPushEvent { commit = new GithubCommit { message = "Tweak zeus player fps display" } }
 //                         },
 //                         new ModpackBuild {
-//                             timestamp = DateTime.Now.AddDays(-9),
+//                             timestamp = DateTime.UtcNow.AddDays(-9),
 //                             buildNumber = 5,
 //                             pushEvent = new GithubPushEvent {
 //                                 commit = new GithubCommit {

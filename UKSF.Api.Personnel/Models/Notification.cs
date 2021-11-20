@@ -12,6 +12,6 @@ namespace UKSF.Api.Personnel.Models
         public string Message;
         [BsonRepresentation(BsonType.ObjectId)] public string Owner;
         public bool Read;
-        public DateTime Timestamp = DateTime.Now;
+        public DateTime Timestamp = DateTime.UtcNow;
     }
 }

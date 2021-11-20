@@ -21,7 +21,7 @@ namespace UKSF.Api.Personnel.Services
 
         public void AddServiceRecord(string id, string occurence, string notes)
         {
-            _accountContext.Update(id, Builders<DomainAccount>.Update.Push("serviceRecord", new ServiceRecordEntry { Timestamp = DateTime.Now, Occurence = occurence, Notes = notes }));
+            _accountContext.Update(id, Builders<DomainAccount>.Update.Push("serviceRecord", new ServiceRecordEntry { Timestamp = DateTime.UtcNow, Occurence = occurence, Notes = notes }));
         }
     }
 }

@@ -23,7 +23,7 @@ namespace UKSF.Api.Teamspeak.Controllers
         public TeampseakReportsDataset Get()
         {
             var tsServerSnapshots = _database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots")
-                                             .Find(x => x.Timestamp > DateTime.Now.AddDays(-7))
+                                             .Find(x => x.Timestamp > DateTime.UtcNow.AddDays(-7))
                                              .ToList();
             TeampseakReportDataset acreData = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, true) };
             TeampseakReportDataset data = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, false) };
@@ -35,8 +35,8 @@ namespace UKSF.Api.Teamspeak.Controllers
             List<int> dataset = new();
             for (var i = 0; i < 48; i++)
             {
-                var startdate = DateTime.Today.AddMinutes(30 * i);
-                var enddate = DateTime.Today.AddMinutes(30 * (i + 1));
+                var startdate = DateTime.UtcNow.Date.AddMinutes(30 * i);
+                var enddate = DateTime.UtcNow.Date.AddMinutes(30 * (i + 1));
                 try
                 {
                     var serverSnapshot =
@@ -65,8 +65,8 @@ namespace UKSF.Api.Teamspeak.Controllers
 
             for (var i = 0; i < 48; i++)
             {
-                var startdate = DateTime.Today.AddMinutes(30 * i);
-                var enddate = DateTime.Today.AddMinutes(30 * (i + 1));
+                var startdate = DateTime.UtcNow.Date.AddMinutes(30 * i);
+                var enddate = DateTime.UtcNow.Date.AddMinutes(30 * (i + 1));
                 labels.Add(startdate.TimeOfDay + " - " + enddate.TimeOfDay);
             }
 
@@ -83,8 +83,8 @@ namespace UKSF.Api.Teamspeak.Controllers
                 datasets.Add(
                     new()
                     {
-                        Label = $"{DateTime.Now.AddDays(-i).DayOfWeek} - {DateTime.Now.AddDays(-i).ToShortDateString()}",
-                        Data = GetReportData(tsServerSnapshots, DateTime.Now.AddDays(-i).Date, acre),
+                        Label = $"{DateTime.UtcNow.AddDays(-i).DayOfWeek} - {DateTime.UtcNow.AddDays(-i).ToShortDateString()}",
+                        Data = GetReportData(tsServerSnapshots, DateTime.UtcNow.AddDays(-i).Date, acre),
                         Fill = true,
                         BorderColor = colors[i]
                     }

@@ -25,11 +25,13 @@ namespace UKSF.Api.Shared.Services
         private readonly ISchedulerContext _context;
         private readonly ILogger _logger;
         private readonly IScheduledActionFactory _scheduledActionFactory;
+        private readonly IClock _clock;
 
-        public SchedulerService(ISchedulerContext context, IScheduledActionFactory scheduledActionFactory, ILogger logger)
+        public SchedulerService(ISchedulerContext context, IScheduledActionFactory scheduledActionFactory, IClock clock, ILogger logger)
         {
             _context = context;
             _scheduledActionFactory = scheduledActionFactory;
+            _clock = clock;
             _logger = logger;
         }
 
@@ -85,7 +87,7 @@ namespace UKSF.Api.Shared.Services
             var unused = Task.Run(
                 async () =>
                 {
-                    var now = DateTime.Now;
+                    var now = _clock.UtcNow();
                     if (now < job.Next)
                     {
                         var delay = job.Next - now;
@@ -109,7 +111,7 @@ namespace UKSF.Api.Shared.Services
 
                     try
                     {
-                        ExecuteAction(job);
+                        await ExecuteAction(job);
                     }
                     catch (Exception exception)
                     {
@@ -125,7 +127,7 @@ namespace UKSF.Api.Shared.Services
                     else
                     {
                         await _context.Delete(job);
-                        ACTIVE_TASKS.TryRemove(job.Id, out var _);
+                        ACTIVE_TASKS.TryRemove(job.Id, out _);
                     }
                 },
                 token.Token
@@ -148,11 +150,11 @@ namespace UKSF.Api.Shared.Services
             return _context.GetSingle(job.Id) == null;
         }
 
-        private void ExecuteAction(ScheduledJob job)
+        private async Task ExecuteAction(ScheduledJob job)
         {
             var action = _scheduledActionFactory.GetScheduledAction(job.Action);
             var parameters = job.ActionParameters == null ? null : JsonConvert.DeserializeObject<object[]>(job.ActionParameters);
-            var unused = action.Run(parameters);
+            await action.Run(parameters);
         }
     }
 }

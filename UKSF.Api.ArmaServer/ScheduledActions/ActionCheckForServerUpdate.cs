@@ -78,7 +78,6 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
 
                 var afterVersion = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
                 var afterBuild = await _getCurrentServerInfrastructureQuery.ExecuteAsync();
-
                 _logger.LogInfo(
                     $"Server infrastructure updated from version {installedInfo.InstalledVersion}.{currentInfo.CurrentBuild} to {afterVersion.InstalledVersion}.{afterBuild.CurrentBuild}"
                 );
@@ -94,7 +93,7 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
 
             if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null)
             {
-                await _schedulerService.CreateScheduledJob(_clock.UtcNow().Date.AddHours(18).AddDays(1), TimeSpan.FromHours(12), ACTION_NAME);
+                await _schedulerService.CreateScheduledJob(_clock.Today().AddHours(06).AddDays(1), TimeSpan.FromHours(12), ACTION_NAME);
             }
         }
 

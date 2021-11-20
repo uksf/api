@@ -79,7 +79,7 @@ namespace UKSF.Api
                 File.Delete(Path.Combine(appData, logFiles.Last()));
             }
 
-            var logFile = Path.Combine(appData, $"LOG__{DateTime.Now:yyyy-MM-dd__HH-mm}.log");
+            var logFile = Path.Combine(appData, $"LOG__{DateTime.UtcNow:yyyy-MM-dd__HH-mm}.log");
             try
             {
                 File.Create(logFile).Close();

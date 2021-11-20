@@ -19,11 +19,13 @@ namespace UKSF.Api.Personnel.Services
     {
         private readonly IConfirmationCodeContext _confirmationCodeContext;
         private readonly ISchedulerService _schedulerService;
+        private readonly IClock _clock;
 
-        public ConfirmationCodeService(IConfirmationCodeContext confirmationCodeContext, ISchedulerService schedulerService)
+        public ConfirmationCodeService(IConfirmationCodeContext confirmationCodeContext, ISchedulerService schedulerService, IClock clock)
         {
             _confirmationCodeContext = confirmationCodeContext;
             _schedulerService = schedulerService;
+            _clock = clock;
         }
 
         public async Task<string> CreateConfirmationCode(string value)
@@ -35,7 +37,7 @@ namespace UKSF.Api.Personnel.Services
 
             ConfirmationCode code = new() { Value = value };
             await _confirmationCodeContext.Add(code);
-            await _schedulerService.CreateAndScheduleJob(DateTime.Now.AddMinutes(30), TimeSpan.Zero, ActionDeleteExpiredConfirmationCode.ACTION_NAME, code.Id);
+            await _schedulerService.CreateAndScheduleJob(_clock.UtcNow().AddMinutes(30), TimeSpan.Zero, ActionDeleteExpiredConfirmationCode.ACTION_NAME, code.Id);
             return code.Id;
         }
 
