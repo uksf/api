@@ -241,7 +241,7 @@ namespace UKSF.Api.ArmaServer.Services
             foreach (var modsPath in availableModsFolders)
             {
                 var dlcModFoldersRegexString = _gameServerHelpers.GetDlcModFoldersRegexString();
-                Regex allowedPaths = new($".*|{dlcModFoldersRegexString}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                Regex allowedPaths = new($"@.*|{dlcModFoldersRegexString}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 var modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("*.*", SearchOption.AllDirectories).Where(x => allowedPaths.IsMatch(x.Name));
                 foreach (var modFolder in modFolders)
                 {

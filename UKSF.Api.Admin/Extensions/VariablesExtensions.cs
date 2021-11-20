@@ -89,26 +89,20 @@ namespace UKSF.Api.Admin.Extensions
 
         public static IEnumerable<string> AsEnumerable(this VariableItem variable, Func<string, string> predicate = null)
         {
-            var itemString = variable.AsString();
-            itemString = Regex.Replace(itemString, "\\s*,\\s*", ",");
-            var items = itemString.Split(",").AsEnumerable();
-            return predicate != null ? items.Select(predicate) : items;
+            var items = variable.AsArray();
+            return predicate != null ? items.Select(predicate) : items.AsEnumerable();
         }
 
         public static IEnumerable<int> AsIntArray(this VariableItem variable)
         {
-            var itemString = variable.AsString();
-            itemString = Regex.Replace(itemString, "\\s*,\\s*", ",");
-            var items = itemString.Split(",").Select(x => x.ToInt());
-            return items;
+            var items = variable.AsArray();
+            return items.Select(x => x.ToInt());
         }
 
         public static IEnumerable<double> AsDoublesArray(this VariableItem variable)
         {
-            var itemString = variable.AsString();
-            itemString = Regex.Replace(itemString, "\\s*,\\s*", ",");
-            var items = itemString.Split(",").Select(x => x.ToDouble());
-            return items;
+            var items = variable.AsArray();
+            return items.Select(x => x.ToDouble());
         }
     }
 }
