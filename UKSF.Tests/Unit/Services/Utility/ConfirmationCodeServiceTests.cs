@@ -25,7 +25,11 @@ namespace UKSF.Tests.Unit.Services.Utility
         {
             _mockConfirmationCodeDataService = new();
             _mockSchedulerService = new();
-            _confirmationCodeService = new(_mockConfirmationCodeDataService.Object, _mockSchedulerService.Object);
+
+            var mockClock = new Mock<IClock>();
+            mockClock.Setup(x => x.UtcNow()).Returns(DateTime.UtcNow);
+
+            _confirmationCodeService = new(_mockConfirmationCodeDataService.Object, _mockSchedulerService.Object, mockClock.Object);
         }
 
         [Fact]
