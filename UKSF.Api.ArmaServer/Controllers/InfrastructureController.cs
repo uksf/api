@@ -64,13 +64,19 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpGet("update")]
         public async Task<ServerInfrastructureUpdate> Update()
         {
-            var before = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
+            var beforeVersion = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
+            var beforeBuild = await _getCurrentServerInfrastructureQuery.ExecuteAsync();
+
             var result = await _updateServerInfrastructureCommand.ExecuteAsync();
-            var after = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
 
-            _logger.LogInfo($"Server infrastructure updated from version {before.InstalledVersion} to {after.InstalledVersion}");
+            var afterVersion = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
+            var afterBuild = await _getCurrentServerInfrastructureQuery.ExecuteAsync();
 
-            return new() { NewVersion = after.InstalledVersion, UpdateOutput = result };
+            _logger.LogInfo(
+                $"Server infrastructure updated from version {beforeVersion.InstalledVersion}.{beforeBuild.CurrentBuild} to {afterVersion.InstalledVersion}.{afterBuild.CurrentBuild}"
+            );
+
+            return new() { NewVersion = afterVersion.InstalledVersion, UpdateOutput = result };
         }
     }
 }

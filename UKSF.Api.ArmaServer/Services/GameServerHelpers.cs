@@ -27,6 +27,7 @@ namespace UKSF.Api.ArmaServer.Services
         TimeSpan StripMilliseconds(TimeSpan time);
         IEnumerable<Process> GetArmaProcesses();
         bool IsMainOpTime();
+        string GetDlcModFoldersRegexString();
     }
 
     public class GameServerHelpers : IGameServerHelpers
@@ -197,12 +198,18 @@ namespace UKSF.Api.ArmaServer.Services
             return now.DayOfWeek == DayOfWeek.Saturday && now.Hour >= 19 && now.Minute >= 30;
         }
 
-        private string FormatGameServerMods(GameServer gameServer)
+        public string GetDlcModFoldersRegexString()
+        {
+            var dlcModFolders = _variablesService.GetVariable("SERVER_DLC_MOD_FOLDERS").AsArray();
+            return dlcModFolders.Select(x => $"(?<!.)({x})(?!.)").Aggregate((a, b) => $"{a}|{b}");
+        }
+
+        private static string FormatGameServerMods(GameServer gameServer)
         {
             return gameServer.Mods.Count > 0 ? $"{string.Join(";", gameServer.Mods.Select(x => x.PathRelativeToServerExecutable ?? x.Path))};" : string.Empty;
         }
 
-        private string FormatGameServerServerMods(GameServer gameServer)
+        private static string FormatGameServerServerMods(GameServer gameServer)
         {
             return gameServer.ServerMods.Count > 0 ? $"{string.Join(";", gameServer.ServerMods.Select(x => x.Name))};" : string.Empty;
         }
