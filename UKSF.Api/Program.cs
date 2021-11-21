@@ -35,7 +35,7 @@ namespace UKSF.Api
             var runAsService = bool.Parse(_config.GetSection("appSettings")["runAsService"]);
             if (runAsService)
             {
-                InitLogging();
+                InitServiceLogging();
                 BuildProductionWebHost(args).RunAsService();
             }
             else
@@ -68,10 +68,10 @@ namespace UKSF.Api
                           .Build();
         }
 
-        private static void InitLogging()
+        private static void InitServiceLogging()
         {
-            var certificatePath = _config.GetSection("appSettings")["logsPath"];
-            var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), certificatePath);
+            var logsPath = _config.GetSection("appSettings")["logsPath"];
+            var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), logsPath);
             Directory.CreateDirectory(appData);
             var logFiles = new DirectoryInfo(appData).EnumerateFiles("*.log").OrderByDescending(file => file.LastWriteTime).Select(file => file.Name).ToArray();
             if (logFiles.Length > 9)

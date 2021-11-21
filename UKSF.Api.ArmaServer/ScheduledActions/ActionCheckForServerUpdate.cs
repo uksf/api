@@ -57,7 +57,7 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
 
         public async Task Run(params object[] parameters)
         {
-            if (!_variablesService.GetFeatureState("FEATURE_AUTO_INFRA_UPDATE"))
+            if (!_variablesService.GetFeatureState("AUTO_INFRA_UPDATE"))
             {
                 return;
             }
