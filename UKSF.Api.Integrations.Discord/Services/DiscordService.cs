@@ -57,6 +57,14 @@ namespace UKSF.Api.Discord.Services
         private SocketGuild _guild;
         private IReadOnlyCollection<SocketRole> _roles;
 
+        private static readonly List<Emote> EMOTES = new()
+        {
+            Emote.Parse("<:Tuesday:732349730809708564>"),
+            Emote.Parse("<:Thursday:732349755816149062>"),
+            Emote.Parse("<:Friday:732349765060395029>"),
+            Emote.Parse("<:Sunday:732349782541991957>")
+        };
+
         public DiscordService(
             IUnitsContext unitsContext,
             IRanksContext ranksContext,
@@ -505,15 +513,7 @@ namespace UKSF.Api.Discord.Services
 
         private static async Task HandleWeeklyEventsMessageReacts(IMessage incomingMessage)
         {
-            List<Emote> emotes = new()
-            {
-                Emote.Parse("<:Tuesday:732349730809708564>"),
-                Emote.Parse("<:Thursday:732349755816149062>"),
-                Emote.Parse("<:Friday:732349765060395029>"),
-                Emote.Parse("<:Sunday:732349782541991957>")
-            };
-
-            foreach (var emote in emotes)
+            foreach (var emote in EMOTES)
             {
                 await incomingMessage.AddReactionAsync(emote);
             }
@@ -574,7 +574,12 @@ namespace UKSF.Api.Discord.Services
                 return;
             }
 
-            if (!message.Reactions.TryGetValue(reaction.Emote, out var _))
+            if (reaction.Emote is Emote emote && EMOTES.All(x => x.Id != emote.Id))
+            {
+                return;
+            }
+
+            if (!message.Reactions.TryGetValue(reaction.Emote, out _))
             {
                 await message.AddReactionAsync(reaction.Emote);
             }
