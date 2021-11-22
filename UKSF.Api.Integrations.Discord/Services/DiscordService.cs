@@ -574,7 +574,7 @@ namespace UKSF.Api.Discord.Services
                 return;
             }
 
-            if (reaction.Emote is Emote emote && EMOTES.All(x => x.Id != emote.Id))
+            if (reaction.Emote is not Emote emote || EMOTES.All(x => x.Id != emote.Id))
             {
                 return;
             }
