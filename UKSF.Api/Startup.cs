@@ -55,7 +55,6 @@ namespace UKSF.Api
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime hostApplicationLifetime, IServiceProvider serviceProvider)
         {
             var logger = serviceProvider.GetService<ILogger>();
-            logger?.LogInfo("Services starting");
 
             hostApplicationLifetime.ApplicationStopping.Register(
                 () =>
