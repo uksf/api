@@ -65,9 +65,6 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
             var latestInfo = await _getLatestServerInfrastructureQuery.ExecuteAsync();
             var currentInfo = await _getCurrentServerInfrastructureQuery.ExecuteAsync();
             var installedInfo = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
-            _logger.LogInfo(
-                $"Checking server infrastructure ({currentInfo.CurrentBuild} > {latestInfo.LatestBuild}, {currentInfo.CurrentUpdated} > {latestInfo.LatestUpdate}, {installedInfo.InstalledVersion})"
-            );
 
             if (latestInfo.LatestBuild != currentInfo.CurrentBuild ||
                 latestInfo.LatestUpdate > currentInfo.CurrentUpdated ||
