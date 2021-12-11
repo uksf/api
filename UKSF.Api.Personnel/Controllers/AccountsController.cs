@@ -215,12 +215,14 @@ namespace UKSF.Api.Personnel.Controllers
             _logger.LogAudit($"Password changed for {contextId}");
         }
 
-        [HttpPost("updatesetting/{id}"), Authorize]
-        public async Task UpdateSetting(string id, [FromBody] AccountSettings settings)
+        [HttpPut("{id}/updatesetting"), Authorize]
+        public async Task<AccountSettings> UpdateSetting([FromRoute] string id, [FromBody] AccountSettings settings)
         {
             var domainAccount = string.IsNullOrEmpty(id) ? _accountService.GetUserAccount() : _accountContext.GetSingle(id);
             await _accountContext.Update(domainAccount.Id, Builders<DomainAccount>.Update.Set(x => x.Settings, settings));
             _logger.LogAudit($"Account settings updated: {domainAccount.Settings.Changes(settings)}");
+
+            return _accountContext.GetSingle(domainAccount.Id).Settings;
         }
 
         [HttpGet("test")]
