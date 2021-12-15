@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using AvsAnLib;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
@@ -136,14 +137,16 @@ namespace UKSF.Api.Command.Services
                 await _loaService.SetLoaState(request.Value, LoaReviewState.APPROVED);
                 await _commandRequestService.ArchiveRequest(request.Id);
                 _logger.LogAudit(
-                    $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
+                    $"{request.Type} request approved for {request.DisplayRecipient} from {FormatDate(request.DisplayFrom)} to {FormatDate(request.DisplayValue)} because '{request.Reason}'"
                 );
             }
             else if (_commandRequestService.IsRequestRejected(request.Id))
             {
                 await _loaService.SetLoaState(request.Value, LoaReviewState.REJECTED);
                 await _commandRequestService.ArchiveRequest(request.Id);
-                _logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue}");
+                _logger.LogAudit(
+                    $"{request.Type} request rejected for {request.DisplayRecipient} from {FormatDate(request.DisplayFrom)} to {FormatDate(request.DisplayValue)}"
+                );
             }
         }
 
@@ -361,6 +364,11 @@ namespace UKSF.Api.Command.Services
         {
             var domainAccount = _accountContext.GetSingle(id);
             return domainAccount.Rank == "Recruit" && targetRank == "Private" ? "Rifleman" : domainAccount.RoleAssignment;
+        }
+
+        private static string FormatDate(string input)
+        {
+            return DateTime.TryParse(input, out var date) ? $"{date:dd MMM yyyy}" : input;
         }
     }
 }
