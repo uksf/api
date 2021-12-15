@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AvsAnLib;
@@ -90,7 +91,10 @@ namespace UKSF.Api.Command.Services
             }
 
             await _commandRequestContext.Add(request);
-            _logger.LogAudit($"{request.Type} request created for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'");
+            _logger.LogAudit(
+                $"{request.Type} request created for {request.DisplayRecipient} from {FormatIfDate(request.DisplayFrom)} to {FormatIfDate(request.DisplayValue)} because '{request.Reason}'"
+            );
+
             var selfRequest = request.DisplayRequester == request.DisplayRecipient;
             var notificationMessage =
                 $"{request.DisplayRequester} requires your review on {(selfRequest ? "their" : AvsAn.Query(request.Type).Article)} {request.Type.ToLower()} request{(selfRequest ? "" : $" for {request.DisplayRecipient}")}";
@@ -143,6 +147,11 @@ namespace UKSF.Api.Command.Services
         public bool DoesEquivalentRequestExist(CommandRequest request)
         {
             return _commandRequestContext.Get().Any(x => x.Recipient == request.Recipient && x.Type == request.Type && x.DisplayValue == request.DisplayValue && x.DisplayFrom == request.DisplayFrom);
+        }
+
+        private static string FormatIfDate(string input)
+        {
+            return DateTime.TryParse(input, out var date) ? $"{date:dd MMM yyyy}" : input;
         }
     }
 }
