@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -90,8 +89,8 @@ namespace UKSF.Api.Command.Controllers
 
             request.Recipient = _httpContextService.GetUserId();
             request.Requester = _httpContextService.GetUserId();
-            request.DisplayValue = request.End.ToString(CultureInfo.InvariantCulture);
-            request.DisplayFrom = request.Start.ToString(CultureInfo.InvariantCulture);
+            request.DisplayValue = request.End.ToString("O");
+            request.DisplayFrom = request.Start.ToString("O");
             request.Type = CommandRequestType.LOA;
             if (_commandRequestService.DoesEquivalentRequestExist(request))
             {
