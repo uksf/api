@@ -84,12 +84,12 @@ namespace UKSF.Api.Command.Controllers
                 }
 
                 _logger.LogAudit(
-                    $"Loa request deleted for '{_displayNameService.GetDisplayName(_accountContext.GetSingle(domainLoa.Recipient))}' from '{domainLoa.Start:dd MMM yyyy}' to '{domainLoa.End:dd MMM yyyy}'"
+                    $"Loa request deleted for {_displayNameService.GetDisplayName(_accountContext.GetSingle(domainLoa.Recipient))} from {domainLoa.Start:dd MMM yyyy} to {domainLoa.End:dd MMM yyyy}"
                 );
             }
 
             _logger.LogAudit(
-                $"Loa deleted for '{_displayNameService.GetDisplayName(_accountContext.GetSingle(domainLoa.Recipient))}' from '{domainLoa.Start:dd MMM yyyy}' to '{domainLoa.End:dd MMM yyyy}'"
+                $"Loa deleted for {_displayNameService.GetDisplayName(_accountContext.GetSingle(domainLoa.Recipient))} from {domainLoa.Start:dd MMM yyyy} to {domainLoa.End:dd MMM yyyy}"
             );
             await _loaContext.Delete(domainLoa);
         }
