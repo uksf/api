@@ -141,11 +141,19 @@ namespace UKSF.Api.Personnel.Commands
         {
             var accountName = _displayNameService.GetDisplayNameWithoutRank(domainAccount);
             var accountsWithSameSteamConnection = _accountContext
-                                                  .Get(x => x.Steamname == domainAccount.Steamname && _allowedMembershipStates.Contains(x.MembershipState))
+                                                  .Get(
+                                                      x => x.Id != domainAccount.Id &&
+                                                           x.Steamname == domainAccount.Steamname &&
+                                                           _allowedMembershipStates.Contains(x.MembershipState)
+                                                  )
                                                   .Select(x => _displayNameService.GetDisplayNameWithoutRank(x))
                                                   .ToList();
             var accountsWithSameDiscordConnection = _accountContext
-                                                    .Get(x => x.DiscordId == domainAccount.DiscordId && _allowedMembershipStates.Contains(x.MembershipState))
+                                                    .Get(
+                                                        x => x.Id != domainAccount.Id &&
+                                                             x.DiscordId == domainAccount.DiscordId &&
+                                                             _allowedMembershipStates.Contains(x.MembershipState)
+                                                    )
                                                     .Select(x => _displayNameService.GetDisplayNameWithoutRank(x))
                                                     .ToList();
 
