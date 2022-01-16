@@ -18,7 +18,7 @@ namespace UKSF.Api.Admin
 
         private static IServiceCollection AddContexts(this IServiceCollection services)
         {
-            return services;
+            return services.AddSingleton<IVariablesContext, VariablesContext>();
         }
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services)
@@ -28,7 +28,7 @@ namespace UKSF.Api.Admin
 
         private static IServiceCollection AddServices(this IServiceCollection services)
         {
-            return services.AddSingleton<IDataCacheService, DataCacheService>().AddTransient<IVariablesContext, VariablesContext>().AddTransient<IVariablesService, VariablesService>();
+            return services.AddSingleton<IDataCacheService, DataCacheService>().AddSingleton<IVariablesService, VariablesService>();
         }
 
         private static IServiceCollection AddActions(this IServiceCollection services)
