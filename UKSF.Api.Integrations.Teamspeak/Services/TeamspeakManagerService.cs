@@ -92,9 +92,7 @@ namespace UKSF.Api.Teamspeak.Services
                     await LaunchTeamspeakServer();
                 }
 
-                var run = _variablesService.GetVariable("TEAMSPEAK_RUN");
-                Console.Out.WriteLine(run.Item);
-                if (run.AsBool())
+                if (_variablesService.GetVariable("TEAMSPEAK_RUN").AsBool())
                 {
                     if (!TeamspeakHubState.Connected)
                     {
