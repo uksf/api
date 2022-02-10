@@ -140,7 +140,7 @@ namespace UKSF.Api.ArmaServer.Services
         public string FormatGameServerLaunchArguments(GameServer gameServer)
         {
             return $"-config={GetGameServerConfigPath(gameServer)}" +
-                   $" -profiles={GetGameServerProfilesPath()}" +
+                   $" -profiles={GetGameServerProfilesPath(gameServer.Name)}" +
                    $" -cfg={GetGameServerPerfConfigPath()}" +
                    $" -name={gameServer.Name}" +
                    $" -port={gameServer.Port}" +
@@ -152,7 +152,7 @@ namespace UKSF.Api.ArmaServer.Services
 
         public string FormatHeadlessClientLaunchArguments(GameServer gameServer, int index)
         {
-            return $"-profiles={GetGameServerProfilesPath()}" +
+            return $"-profiles={GetGameServerProfilesPath($"{gameServer.Name}{GetHeadlessClientName(index)}")}" +
                    $" -name={GetHeadlessClientName(index)}" +
                    $" -port={gameServer.Port}" +
                    $" -apiport=\"{gameServer.ApiPort + index + 1}\"" +
@@ -214,9 +214,9 @@ namespace UKSF.Api.ArmaServer.Services
             return gameServer.ServerMods.Count > 0 ? $"{string.Join(";", gameServer.ServerMods.Select(x => x.Name))};" : string.Empty;
         }
 
-        private string GetGameServerProfilesPath()
+        private string GetGameServerProfilesPath(string profile)
         {
-            return _variablesService.GetVariable("SERVER_PATH_PROFILES").AsString();
+            return Path.Combine(_variablesService.GetVariable("SERVER_PATH_PROFILES").AsString(), profile);
         }
 
         private string GetGameServerPerfConfigPath()
