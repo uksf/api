@@ -180,6 +180,7 @@ namespace UKSF.Api.ArmaMissions.Services
 
             if (File.Exists(_filePath))
             {
+                File.Delete($"{_filePath}.bak");
                 return;
             }
 
