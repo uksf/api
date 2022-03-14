@@ -21,6 +21,7 @@ namespace UKSF.Api.ArmaMissions.Services
     {
         private const string EXTRACT_PBO = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\ExtractPboDos.exe";
         private const string MAKE_PBO = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\MakePbo.exe";
+        private const string PACK_PBO = "C:\\Program Files\\PBO Manager v.1.4 beta\\PBOConsole.exe";
         private readonly ILogger _logger;
 
         private readonly MissionService _missionService;
@@ -51,7 +52,15 @@ namespace UKSF.Api.ArmaMissions.Services
                         Mission mission = new(_folderPath);
                         result.Reports = _missionService.ProcessMission(mission, armaServerModsPath, armaServerDefaultMaxCurators);
 
-                        await PackPbo();
+                        if (MissionUtilities.CheckFlag(mission, "missionUseSimplePack"))
+                        {
+                            await PackPbo();
+                        }
+                        else
+                        {
+                            await MakePbo();
+                        }
+
                         result.PlayerCount = mission.PlayerCount;
                         result.Success = result.Reports.All(x => !x.Error);
                     }
@@ -109,7 +118,7 @@ namespace UKSF.Api.ArmaMissions.Services
             }
         }
 
-        private async Task PackPbo()
+        private async Task MakePbo()
         {
             if (Directory.Exists(_filePath))
             {
@@ -132,7 +141,7 @@ namespace UKSF.Api.ArmaMissions.Services
             process.Start();
             var output = await process.StandardOutput.ReadToEndAsync();
             var errorOutput = await process.StandardError.ReadToEndAsync();
-            process.WaitForExit();
+            await process.WaitForExitAsync();
 
             if (File.Exists(_filePath))
             {
@@ -141,6 +150,41 @@ namespace UKSF.Api.ArmaMissions.Services
 
             var outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
             output = outputLines.Where(x => !string.IsNullOrEmpty(x) && !x.ContainsIgnoreCase("compressing")).Aggregate((x, y) => $"{x}\n{y}");
+            throw new(output);
+        }
+
+        private async Task PackPbo()
+        {
+            if (Directory.Exists(_filePath))
+            {
+                _filePath += ".pbo";
+            }
+
+            Process process = new()
+            {
+                StartInfo =
+                {
+                    FileName = PACK_PBO,
+                    WorkingDirectory = _variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
+                    Arguments = $"-pack \"{_folderPath}\" \"{_filePath}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                }
+            };
+            process.Start();
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var errorOutput = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (File.Exists(_filePath))
+            {
+                return;
+            }
+
+            var outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
+            output = outputLines.Where(x => !string.IsNullOrEmpty(x)).Aggregate((x, y) => $"{x}\n{y}");
             throw new(output);
         }
 

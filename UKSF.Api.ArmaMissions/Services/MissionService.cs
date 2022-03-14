@@ -42,7 +42,7 @@ namespace UKSF.Api.ArmaMissions.Services
 
             Read();
 
-            if (CheckIgnoreKey("missionPatchingIgnore"))
+            if (MissionUtilities.CheckFlag(_mission, "missionPatchingIgnore"))
             {
                 _reports.Add(
                     new("Mission Patching Ignored", "Mission patching for this mission was ignored.\nThis means no changes to the mission.sqm were made." +
@@ -91,12 +91,6 @@ namespace UKSF.Api.ArmaMissions.Services
             }
 
             return true;
-        }
-
-        private bool CheckIgnoreKey(string key)
-        {
-            _mission.DescriptionLines = File.ReadAllLines(_mission.DescriptionPath).ToList();
-            return _mission.DescriptionLines.Any(x => x.ContainsIgnoreCase(key));
         }
 
         private bool CheckBinned()
@@ -186,7 +180,7 @@ namespace UKSF.Api.ArmaMissions.Services
         {
             _mission.MissionEntity.Patch(_mission.MaxCurators);
 
-            if (!CheckIgnoreKey("missionImageIgnore"))
+            if (!MissionUtilities.CheckFlag(_mission, "missionImageIgnore"))
             {
                 var imagePath = Path.Combine(_mission.Path, "uksf.paa");
                 var modpackImagePath = Path.Combine(_armaServerModsPath, "@uksf", "UKSFTemplate.VR", "uksf.paa");
