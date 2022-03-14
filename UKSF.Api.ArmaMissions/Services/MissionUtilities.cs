@@ -1,5 +1,8 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using UKSF.Api.ArmaMissions.Models;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.ArmaMissions.Services
 {
@@ -84,6 +87,12 @@ namespace UKSF.Api.ArmaMissions.Services
 
                 index++;
             }
+        }
+
+        public static bool CheckFlag(Mission mission, string key)
+        {
+            mission.DescriptionLines = File.ReadAllLines(mission.DescriptionPath).ToList();
+            return mission.DescriptionLines.Any(x => x.ContainsIgnoreCase(key));
         }
     }
 }
