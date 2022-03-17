@@ -64,6 +64,7 @@ namespace UKSF.Api.ArmaServer.Controllers
         [HttpGet("update")]
         public async Task<ServerInfrastructureUpdate> Update()
         {
+            _logger.LogAudit("Server infrastructure manual update triggered");
             var beforeVersion = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
             var beforeBuild = await _getCurrentServerInfrastructureQuery.ExecuteAsync();
 
