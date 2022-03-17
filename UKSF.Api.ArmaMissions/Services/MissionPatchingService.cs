@@ -54,7 +54,7 @@ namespace UKSF.Api.ArmaMissions.Services
 
                         if (MissionUtilities.CheckFlag(mission, "missionUseSimplePack"))
                         {
-                            _logger.LogAudit($"Mission uploaded with simple packing enabled ({Path.GetFileName(path)})");
+                            _logger.LogAudit($"Mission processed with simple packing enabled ({Path.GetFileName(path)})");
                             await PackPbo();
                         }
                         else
