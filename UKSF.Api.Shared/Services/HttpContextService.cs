@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 
@@ -8,6 +9,7 @@ namespace UKSF.Api.Shared.Services
     {
         bool IsUserAuthenticated();
         string GetImpersonatingUserId();
+        bool HasImpersonationExpired();
         public string GetUserId();
         public string GetUserEmail();
         bool UserHasPermission(string permission);
@@ -16,10 +18,12 @@ namespace UKSF.Api.Shared.Services
     public class HttpContextService : IHttpContextService
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IClock _clock;
 
-        public HttpContextService(IHttpContextAccessor httpContextAccessor)
+        public HttpContextService(IHttpContextAccessor httpContextAccessor, IClock clock)
         {
             _httpContextAccessor = httpContextAccessor;
+            _clock = clock;
         }
 
         public bool IsUserAuthenticated()
@@ -30,6 +34,22 @@ namespace UKSF.Api.Shared.Services
         public string GetImpersonatingUserId()
         {
             return _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == UksfClaimTypes.ImpersonatingUserId)?.Value;
+        }
+
+        public bool HasImpersonationExpired()
+        {
+            if (string.IsNullOrEmpty(GetImpersonatingUserId()))
+            {
+                return false;
+            }
+
+            var expiry = _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == UksfClaimTypes.Expiry)?.Value;
+            if (string.IsNullOrEmpty(expiry))
+            {
+                throw new("Token has no expiry");
+            }
+
+            return _clock.UtcNow() > DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiry)).UtcDateTime;
         }
 
         public string GetUserId()
