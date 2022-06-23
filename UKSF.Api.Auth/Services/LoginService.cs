@@ -121,7 +121,7 @@ namespace UKSF.Api.Auth.Services
                         ApiAuthExtensions.TokenAudience,
                         claims,
                         DateTime.UtcNow,
-                        impersonating ? DateTime.UtcNow.AddSeconds(1) : DateTime.UtcNow.AddDays(15),
+                        impersonating ? DateTime.UtcNow.AddMinutes(15) : DateTime.UtcNow.AddDays(15),
                         new(ApiAuthExtensions.SecurityKey, SecurityAlgorithms.HmacSha256)
                     )
                 )
