@@ -9,7 +9,7 @@ using UKSF.Api.Teamspeak.Models;
 
 namespace UKSF.Api.Teamspeak.Controllers
 {
-    [Route("[controller]"), Permissions(Permissions.MEMBER)]
+    [Route("[controller]"), Permissions(Permissions.Member)]
     public class OperationsController : ControllerBase
     {
         private readonly IMongoDatabase _database;

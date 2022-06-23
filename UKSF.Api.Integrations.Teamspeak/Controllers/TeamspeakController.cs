@@ -62,20 +62,20 @@ namespace UKSF.Api.Teamspeak.Controllers
             );
         }
 
-        [HttpGet("online"), Permissions(Permissions.CONFIRMED, Permissions.MEMBER, Permissions.DISCHARGED)]
+        [HttpGet("online"), Permissions(Permissions.Confirmed, Permissions.Member, Permissions.Discharged)]
         public List<TeamspeakConnectClient> GetOnlineClients()
         {
             return _teamspeakService.GetFormattedClients();
         }
 
-        [HttpGet("reload"), Permissions(Permissions.ADMIN)]
+        [HttpGet("reload"), Permissions(Permissions.Admin)]
         public async Task Reload()
         {
             _logger.LogInfo("Teampseak reload via API");
             await _teamspeakService.Reload();
         }
 
-        [HttpGet("shutdown"), Permissions(Permissions.ADMIN)]
+        [HttpGet("shutdown"), Permissions(Permissions.Admin)]
         public async Task Shutdown()
         {
             _logger.LogInfo("Teampseak shutdown via API");
@@ -128,7 +128,7 @@ namespace UKSF.Api.Teamspeak.Controllers
             return new() { Commanders = commanders, Recruiters = recruiters, Members = members, Guests = guests };
         }
 
-        [HttpGet("{accountId}/onlineUserDetails"), Permissions(Permissions.RECRUITER)]
+        [HttpGet("{accountId}/onlineUserDetails"), Permissions(Permissions.Recruiter)]
         public OnlineState GetOnlineUserDetails([FromRoute] string accountId)
         {
             return _teamspeakService.GetOnlineUserDetails(accountId);

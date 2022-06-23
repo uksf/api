@@ -13,7 +13,7 @@ using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Personnel.Controllers
 {
-    [Route("commentthread"), Permissions(Permissions.CONFIRMED, Permissions.MEMBER, Permissions.DISCHARGED)]
+    [Route("commentthread"), Permissions(Permissions.Confirmed, Permissions.Member, Permissions.Discharged)]
     public class CommentThreadController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
@@ -76,7 +76,7 @@ namespace UKSF.Api.Personnel.Controllers
         {
             var commentThread = _commentThreadContext.GetSingle(id);
             var domainAccount = _accountService.GetUserAccount();
-            var admin = _httpContextService.UserHasPermission(Permissions.ADMIN);
+            var admin = _httpContextService.UserHasPermission(Permissions.Admin);
             var canPost = commentThread.Mode switch
             {
                 ThreadMode.RECRUITER           => commentThread.Authors.Any(x => x == _httpContextService.GetUserId()) || admin || _recruitmentService.IsRecruiter(_accountService.GetUserAccount()),
@@ -111,7 +111,7 @@ namespace UKSF.Api.Personnel.Controllers
                     new()
                     {
                         Owner = participant,
-                        Icon = NotificationIcons.COMMENT,
+                        Icon = NotificationIcons.Comment,
                         Message = $"{_displayNameService.GetDisplayName(comment.Author)} replied to a comment:\n\"{comment.Content}\"",
                         Link = link
                     }

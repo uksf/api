@@ -38,8 +38,8 @@ namespace UKSF.Api.Admin
 
         public static void AddUksfAdminSignalr(this IEndpointRouteBuilder builder)
         {
-            builder.MapHub<AdminHub>($"/hub/{AdminHub.END_POINT}");
-            builder.MapHub<UtilityHub>($"/hub/{UtilityHub.END_POINT}");
+            builder.MapHub<AdminHub>($"/hub/{AdminHub.EndPoint}");
+            builder.MapHub<UtilityHub>($"/hub/{UtilityHub.EndPoint}");
         }
     }
 }

@@ -21,7 +21,7 @@ using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Launcher.Controllers
 {
-    [Route("[controller]"), Permissions(Permissions.CONFIRMED, Permissions.MEMBER)]
+    [Route("[controller]"), Permissions(Permissions.Confirmed, Permissions.Member)]
     public class LauncherController : ControllerBase
     {
         private readonly IDisplayNameService _displayNameService;
@@ -60,7 +60,7 @@ namespace UKSF.Api.Launcher.Controllers
             return _variablesContext.GetSingle("LAUNCHER_VERSION").AsString();
         }
 
-        [HttpPost("version"), Permissions(Permissions.ADMIN)]
+        [HttpPost("version"), Permissions(Permissions.Admin)]
         public async Task UpdateVersion([FromBody] JObject body)
         {
             var version = body["version"].ToString();

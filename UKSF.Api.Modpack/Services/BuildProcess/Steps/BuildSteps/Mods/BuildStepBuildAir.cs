@@ -4,21 +4,21 @@ using System.Threading.Tasks;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepBuildAir : ModBuildStep
     {
-        public const string NAME = "Build Air";
-        private const string MOD_NAME = "uksf_air";
+        public const string Name = "Build Air";
+        private const string ModName = "uksf_air";
 
         protected override async Task ProcessExecute()
         {
             StepLogger.Log("Running build for Air");
 
-            var toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
-            var releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@uksf_air");
+            var toolsPath = Path.Join(GetBuildSourcesPath(), ModName, "tools");
+            var releasePath = Path.Join(GetBuildSourcesPath(), ModName, "release", "@uksf_air");
             var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_air");
 
-            if (IsBuildNeeded(MOD_NAME))
+            if (IsBuildNeeded(ModName))
             {
                 StepLogger.LogSurround("\nRunning make.py...");
                 BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource);

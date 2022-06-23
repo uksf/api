@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepBuildAcre : ModBuildStep
     {
-        public const string NAME = "Build ACRE";
-        private const string MOD_NAME = "acre";
+        public const string Name = "Build ACRE";
+        private const string ModName = "acre";
 
         private readonly List<string> _errorExclusions = new() { "Found DirectX", "Linking statically", "Visual Studio 16", "INFO: Building", "Build Type" };
 
@@ -17,11 +17,11 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
         {
             StepLogger.Log("Running build for ACRE");
 
-            var toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
-            var releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@acre2");
+            var toolsPath = Path.Join(GetBuildSourcesPath(), ModName, "tools");
+            var releasePath = Path.Join(GetBuildSourcesPath(), ModName, "release", "@acre2");
             var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@acre2");
 
-            if (IsBuildNeeded(MOD_NAME))
+            if (IsBuildNeeded(ModName))
             {
                 StepLogger.LogSurround("\nRunning make.py...");
                 BuildProcessHelper processHelper =

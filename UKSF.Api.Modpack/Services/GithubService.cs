@@ -29,18 +29,18 @@ namespace UKSF.Api.Modpack.Services
 
     public class GithubService : IGithubService
     {
-        private const string REPO_ORG = "uksf";
-        private const string REPO_NAME = "modpack";
-        private const string VERSION_FILE = "addons/main/script_version.hpp";
-        private const int APP_ID = 53456;
-        private const long APP_INSTALLATION = 6681715;
-        private const string APP_NAME = "uksf-api-integration";
-        private static readonly string[] LABELS_ADDED = { "type/feature", "type/mod addition" };
-        private static readonly string[] LABELS_CHANGED = { "type/arsenal", "type/cleanup", "type/enhancement", "type/task" };
-        private static readonly string[] LABELS_FIXED = { "type/bug fix", "type/bug" };
-        private static readonly string[] LABELS_UPDATED = { "type/mod update" };
-        private static readonly string[] LABELS_REMOVED = { "type/mod deletion" };
-        private static readonly string[] LABELS_EXCLUDE = { "type/cleanup", "type/by design", "fault/bi", "fault/other mod" };
+        private const string RepoOrg = "uksf";
+        private const string RepoName = "modpack";
+        private const string VersionFile = "addons/main/script_version.hpp";
+        private const int AppId = 53456;
+        private const long AppInstallation = 6681715;
+        private const string AppName = "uksf-api-integration";
+        private static readonly string[] LabelsAdded = { "type/feature", "type/mod addition" };
+        private static readonly string[] LabelsChanged = { "type/arsenal", "type/cleanup", "type/enhancement", "type/task" };
+        private static readonly string[] LabelsFixed = { "type/bug fix", "type/bug" };
+        private static readonly string[] LabelsUpdated = { "type/mod update" };
+        private static readonly string[] LabelsRemoved = { "type/mod deletion" };
+        private static readonly string[] LabelsExclude = { "type/cleanup", "type/by design", "fault/bi", "fault/other mod" };
 
         private readonly IConfiguration _configuration;
         private readonly ILogger _logger;
@@ -66,7 +66,7 @@ namespace UKSF.Api.Modpack.Services
         {
             reference = reference.Split('/')[^1];
             var client = await GetAuthenticatedClient();
-            var contentBytes = await client.Repository.Content.GetRawContentByRef(REPO_ORG, REPO_NAME, VERSION_FILE, reference);
+            var contentBytes = await client.Repository.Content.GetRawContentByRef(RepoOrg, RepoName, VersionFile, reference);
             if (contentBytes.Length == 0)
             {
                 return "0.0.0";
@@ -89,7 +89,7 @@ namespace UKSF.Api.Modpack.Services
         public async Task<GithubCommit> GetLatestReferenceCommit(string reference)
         {
             var client = await GetAuthenticatedClient();
-            var commit = await client.Repository.Commit.Get(REPO_ORG, REPO_NAME, reference);
+            var commit = await client.Repository.Commit.Get(RepoOrg, RepoName, reference);
             var branch = Regex.Match(reference, @"^[a-fA-F0-9]{40}$").Success ? "None" : reference;
             return new() { Branch = branch, Before = commit.Parents.FirstOrDefault()?.Sha, After = commit.Sha, Message = commit.Commit.Message, Author = commit.Commit.Author.Email };
         }
@@ -102,7 +102,7 @@ namespace UKSF.Api.Modpack.Services
             }
 
             var client = await GetAuthenticatedClient();
-            var result = await client.Repository.Commit.Compare(REPO_ORG, REPO_NAME, latestCommit, payload.After);
+            var result = await client.Repository.Commit.Compare(RepoOrg, RepoName, latestCommit, payload.After);
             var message = result.Commits.Count > 0 ? CombineCommitMessages(result.Commits) : result.BaseCommit.Commit.Message;
             return new() { Branch = payload.Ref, BaseBranch = payload.BaseRef, Before = payload.Before, After = payload.After, Message = message, Author = payload.HeadCommit.Author.Email };
         }
@@ -117,22 +117,22 @@ namespace UKSF.Api.Modpack.Services
             }
 
             var issues = await client.Issue.GetAllForRepository(
-                REPO_ORG,
-                REPO_NAME,
+                RepoOrg,
+                RepoName,
                 new RepositoryIssueRequest { Milestone = milestone.Number.ToString(), State = ItemStateFilter.All }
             );
 
             var changelog = "";
 
-            var added = issues.Where(x => x.Labels.Any(y => LABELS_ADDED.Contains(y.Name) && !LABELS_EXCLUDE.Contains(y.Name))).OrderBy(x => x.Title).ToList();
-            var changed = issues.Where(x => x.Labels.Any(y => LABELS_CHANGED.Contains(y.Name) && !LABELS_EXCLUDE.Contains(y.Name)))
+            var added = issues.Where(x => x.Labels.Any(y => LabelsAdded.Contains(y.Name) && !LabelsExclude.Contains(y.Name))).OrderBy(x => x.Title).ToList();
+            var changed = issues.Where(x => x.Labels.Any(y => LabelsChanged.Contains(y.Name) && !LabelsExclude.Contains(y.Name)))
                                 .OrderBy(x => x.Title)
                                 .ToList();
-            var fixes = issues.Where(x => x.Labels.Any(y => LABELS_FIXED.Contains(y.Name) && !LABELS_EXCLUDE.Contains(y.Name))).OrderBy(x => x.Title).ToList();
-            var updated = issues.Where(x => x.Labels.Any(y => LABELS_UPDATED.Contains(y.Name) && !LABELS_EXCLUDE.Contains(y.Name)))
+            var fixes = issues.Where(x => x.Labels.Any(y => LabelsFixed.Contains(y.Name) && !LabelsExclude.Contains(y.Name))).OrderBy(x => x.Title).ToList();
+            var updated = issues.Where(x => x.Labels.Any(y => LabelsUpdated.Contains(y.Name) && !LabelsExclude.Contains(y.Name)))
                                 .OrderBy(x => x.Title)
                                 .ToList();
-            var removed = issues.Where(x => x.Labels.Any(y => LABELS_REMOVED.Contains(y.Name) && !LABELS_EXCLUDE.Contains(y.Name)))
+            var removed = issues.Where(x => x.Labels.Any(y => LabelsRemoved.Contains(y.Name) && !LabelsExclude.Contains(y.Name)))
                                 .OrderBy(x => x.Title)
                                 .ToList();
 
@@ -152,15 +152,15 @@ namespace UKSF.Api.Modpack.Services
             try
             {
                 await client.Repository.Release.Create(
-                    REPO_ORG,
-                    REPO_NAME,
+                    RepoOrg,
+                    RepoName,
                     new(release.Version) { Name = $"Modpack Version {release.Version}", Body = $"{release.Description}\n\n## Changelog\n{release.Changelog.Replace("<br>", "\n")}" }
                 );
 
                 var milestone = await GetOpenMilestone(release.Version);
                 if (milestone != null)
                 {
-                    await client.Issue.Milestone.Update(REPO_ORG, REPO_NAME, milestone.Number, new() { State = ItemState.Closed });
+                    await client.Issue.Milestone.Update(RepoOrg, RepoName, milestone.Number, new() { State = ItemState.Closed });
                 }
             }
             catch (Exception exception)
@@ -172,7 +172,7 @@ namespace UKSF.Api.Modpack.Services
         public async Task<List<string>> GetBranches()
         {
             var client = await GetAuthenticatedClient();
-            var branches = await client.Repository.Branch.GetAll(REPO_ORG, REPO_NAME);
+            var branches = await client.Repository.Branch.GetAll(RepoOrg, RepoName);
             ConcurrentBag<string> validBranchesBag = new();
             var task = branches.Select(
                 async branch =>
@@ -205,7 +205,7 @@ namespace UKSF.Api.Modpack.Services
         {
             var client = await GetAuthenticatedClient();
 
-            var releases = await client.Repository.Release.GetAll(REPO_ORG, "modpack");
+            var releases = await client.Repository.Release.GetAll(RepoOrg, "modpack");
             return releases.Select(x => new ModpackRelease { Version = x.Name.Split(" ")[^1], Timestamp = x.CreatedAt.DateTime, Changelog = FormatChangelog(x.Body) }).ToList();
         }
 
@@ -221,7 +221,7 @@ namespace UKSF.Api.Modpack.Services
         private async Task<Milestone> GetOpenMilestone(string version)
         {
             var client = await GetAuthenticatedClient();
-            var milestones = await client.Issue.Milestone.GetAllForRepository(REPO_ORG, REPO_NAME, new MilestoneRequest { State = ItemStateFilter.Open });
+            var milestones = await client.Issue.Milestone.GetAllForRepository(RepoOrg, RepoName, new MilestoneRequest { State = ItemStateFilter.Open });
             var milestone = milestones.FirstOrDefault(x => x.Title == version);
             if (milestone == null)
             {
@@ -293,9 +293,9 @@ namespace UKSF.Api.Modpack.Services
 
         private async Task<GitHubClient> GetAuthenticatedClient()
         {
-            GitHubClient client = new(new ProductHeaderValue(APP_NAME)) { Credentials = new(GetJwtToken(), AuthenticationType.Bearer) };
-            var response = await client.GitHubApps.CreateInstallationToken(APP_INSTALLATION);
-            GitHubClient installationClient = new(new ProductHeaderValue(APP_NAME)) { Credentials = new(response.Token) };
+            GitHubClient client = new(new ProductHeaderValue(AppName)) { Credentials = new(GetJwtToken(), AuthenticationType.Bearer) };
+            var response = await client.GitHubApps.CreateInstallationToken(AppInstallation);
+            GitHubClient installationClient = new(new ProductHeaderValue(AppName)) { Credentials = new(response.Token) };
             return installationClient;
         }
 
@@ -304,7 +304,7 @@ namespace UKSF.Api.Modpack.Services
             var base64Key = _configuration.GetSection("Github")["appPrivateKey"];
             var base64Bytes = Convert.FromBase64String(base64Key);
             var privateKey = Encoding.UTF8.GetString(base64Bytes).Replace("\n", Environment.NewLine, StringComparison.Ordinal);
-            GitHubJwtFactory generator = new(new StringPrivateKeySource(privateKey), new() { AppIntegrationId = APP_ID, ExpirationSeconds = 540 });
+            GitHubJwtFactory generator = new(new StringPrivateKeySource(privateKey), new() { AppIntegrationId = AppId, ExpirationSeconds = 540 });
             return generator.CreateEncodedJwtToken();
         }
     }

@@ -53,11 +53,11 @@ namespace UKSF.Tests.Unit.Services.Utility
         [Fact]
         public void ShouldReturnFalseForInvalidRole()
         {
-            List<Claim> claims = new() { new(ClaimTypes.Role, Permissions.ADMIN) };
+            List<Claim> claims = new() { new(ClaimTypes.Role, Permissions.Admin) };
             ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
             _httpContext = new() { User = contextUser };
 
-            var subject = _httpContextService.UserHasPermission(Permissions.COMMAND);
+            var subject = _httpContextService.UserHasPermission(Permissions.Command);
 
             subject.Should().BeFalse();
         }
@@ -65,11 +65,11 @@ namespace UKSF.Tests.Unit.Services.Utility
         [Fact]
         public void ShouldReturnTrueForValidRole()
         {
-            List<Claim> claims = new() { new(ClaimTypes.Role, Permissions.ADMIN) };
+            List<Claim> claims = new() { new(ClaimTypes.Role, Permissions.Admin) };
             ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
             _httpContext = new() { User = contextUser };
 
-            var subject = _httpContextService.UserHasPermission(Permissions.ADMIN);
+            var subject = _httpContextService.UserHasPermission(Permissions.Admin);
 
             subject.Should().BeTrue();
         }

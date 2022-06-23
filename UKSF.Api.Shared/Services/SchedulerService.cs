@@ -21,7 +21,7 @@ namespace UKSF.Api.Shared.Services
 
     public class SchedulerService : ISchedulerService
     {
-        private static readonly ConcurrentDictionary<string, CancellationTokenSource> ACTIVE_TASKS = new();
+        private static readonly ConcurrentDictionary<string, CancellationTokenSource> ActiveTasks = new();
         private readonly ISchedulerContext _context;
         private readonly ILogger _logger;
         private readonly IScheduledActionFactory _scheduledActionFactory;
@@ -54,10 +54,10 @@ namespace UKSF.Api.Shared.Services
                 return;
             }
 
-            if (ACTIVE_TASKS.TryGetValue(job.Id, out var token))
+            if (ActiveTasks.TryGetValue(job.Id, out var token))
             {
                 token.Cancel();
-                ACTIVE_TASKS.TryRemove(job.Id, out var _);
+                ActiveTasks.TryRemove(job.Id, out var _);
             }
 
             await _context.Delete(job);
@@ -127,12 +127,12 @@ namespace UKSF.Api.Shared.Services
                     else
                     {
                         await _context.Delete(job);
-                        ACTIVE_TASKS.TryRemove(job.Id, out _);
+                        ActiveTasks.TryRemove(job.Id, out _);
                     }
                 },
                 token.Token
             );
-            ACTIVE_TASKS[job.Id] = token;
+            ActiveTasks[job.Id] = token;
         }
 
         private async Task SetNext(ScheduledJob job)

@@ -9,7 +9,7 @@ using UKSF.Api.Shared;
 
 namespace UKSF.Api.Command.Controllers
 {
-    [Route("command/members"), Permissions(Permissions.COMMAND)]
+    [Route("command/members"), Permissions(Permissions.Command)]
     public class CommandMembersController : ControllerBase
     {
         private readonly ICommandMemberMapper _commandMemberMapper;

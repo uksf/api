@@ -49,7 +49,7 @@ namespace UKSF.Api.Personnel.Controllers
             _logger = logger;
         }
 
-        [HttpGet, Permissions(Permissions.RECRUITER)]
+        [HttpGet, Permissions(Permissions.Recruiter)]
         public ApplicationsOverview GetAll()
         {
             return _recruitmentService.GetAllApplications();
@@ -62,13 +62,13 @@ namespace UKSF.Api.Personnel.Controllers
             return _recruitmentService.GetApplication(domainAccount);
         }
 
-        [HttpGet("isrecruiter"), Permissions(Permissions.RECRUITER)]
+        [HttpGet("isrecruiter"), Permissions(Permissions.Recruiter)]
         public bool GetIsRecruiter()
         {
             return _recruitmentService.IsRecruiter(_accountService.GetUserAccount());
         }
 
-        [HttpGet("stats"), Permissions(Permissions.RECRUITER)]
+        [HttpGet("stats"), Permissions(Permissions.Recruiter)]
         public RecruitmentStatsDataset GetRecruitmentStats()
         {
             var account = _httpContextService.GetUserId();
@@ -96,7 +96,7 @@ namespace UKSF.Api.Personnel.Controllers
             };
         }
 
-        [HttpPost("{id}"), Permissions(Permissions.RECRUITER)]
+        [HttpPost("{id}"), Permissions(Permissions.Recruiter)]
         public async Task UpdateState([FromBody] dynamic body, string id)
         {
             ApplicationState updatedState = body.updatedState;
@@ -130,9 +130,9 @@ namespace UKSF.Api.Personnel.Controllers
                     await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.DateAccepted, DateTime.UtcNow).Set(x => x.MembershipState, MembershipState.CONFIRMED));
                     var notification = await _assignmentService.UpdateUnitRankAndRole(
                         id,
-                        AssignmentService.REMOVE_FLAG,
-                        AssignmentService.REMOVE_FLAG,
-                        AssignmentService.REMOVE_FLAG,
+                        AssignmentService.RemoveFlag,
+                        AssignmentService.RemoveFlag,
+                        AssignmentService.RemoveFlag,
                         "",
                         "Unfortunately you have not been accepted into our unit, however we thank you for your interest and hope you find a suitable alternative."
                     );
@@ -148,7 +148,7 @@ namespace UKSF.Api.Personnel.Controllers
                     );
                     var notification = await _assignmentService.UpdateUnitRankAndRole(
                         id,
-                        AssignmentService.REMOVE_FLAG,
+                        AssignmentService.RemoveFlag,
                         "Applicant",
                         "Candidate",
                         reason: "your application was reactivated"
@@ -174,7 +174,7 @@ namespace UKSF.Api.Personnel.Controllers
                     new()
                     {
                         Owner = domainAccount.Application.Recruiter,
-                        Icon = NotificationIcons.APPLICATION,
+                        Icon = NotificationIcons.Application,
                         Message = $"{domainAccount.Firstname} {domainAccount.Lastname}'s application {message} by {_displayNameService.GetDisplayName(_accountService.GetUserAccount())}",
                         Link = $"/recruitment/{id}"
                     }
@@ -188,7 +188,7 @@ namespace UKSF.Api.Personnel.Controllers
                     new()
                     {
                         Owner = value,
-                        Icon = NotificationIcons.APPLICATION,
+                        Icon = NotificationIcons.Application,
                         Message = $"{domainAccount.Firstname} {domainAccount.Lastname}'s application {message} by {_displayNameService.GetDisplayName(_accountService.GetUserAccount())}",
                         Link = $"/recruitment/{id}"
                     }
@@ -196,10 +196,10 @@ namespace UKSF.Api.Personnel.Controllers
             }
         }
 
-        [HttpPost("recruiter/{id}"), Permissions(Permissions.RECRUITER_LEAD)]
+        [HttpPost("recruiter/{id}"), Permissions(Permissions.RecruiterLead)]
         public async Task PostReassignment([FromBody] JObject newRecruiter, string id)
         {
-            if (!_httpContextService.UserHasPermission(Permissions.ADMIN) && !_recruitmentService.IsRecruiterLead())
+            if (!_httpContextService.UserHasPermission(Permissions.Admin) && !_recruitmentService.IsRecruiterLead())
             {
                 throw new($"attempted to assign recruiter to {newRecruiter}. Context is not recruitment lead.");
             }
@@ -213,7 +213,7 @@ namespace UKSF.Api.Personnel.Controllers
                     new()
                     {
                         Owner = recruiter,
-                        Icon = NotificationIcons.APPLICATION,
+                        Icon = NotificationIcons.Application,
                         Message = $"{domainAccount.Firstname} {domainAccount.Lastname}'s application has been transferred to you",
                         Link = $"/recruitment/{domainAccount.Id}"
                     }
@@ -223,7 +223,7 @@ namespace UKSF.Api.Personnel.Controllers
             _logger.LogAudit($"Application recruiter changed for {id} to {newRecruiter["newRecruiter"]}");
         }
 
-        [HttpPost("ratings/{id}"), Permissions(Permissions.RECRUITER)]
+        [HttpPost("ratings/{id}"), Permissions(Permissions.Recruiter)]
         public async Task<Dictionary<string, uint>> Ratings([FromBody] KeyValuePair<string, uint> value, string id)
         {
             var ratings = _accountContext.GetSingle(id).Application.Ratings;
@@ -242,7 +242,7 @@ namespace UKSF.Api.Personnel.Controllers
             return ratings;
         }
 
-        [HttpGet("recruiters"), Permissions(Permissions.RECRUITER_LEAD)]
+        [HttpGet("recruiters"), Permissions(Permissions.RecruiterLead)]
         public IEnumerable<Recruiter> GetRecruiters()
         {
             return _recruitmentService.GetActiveRecruiters();

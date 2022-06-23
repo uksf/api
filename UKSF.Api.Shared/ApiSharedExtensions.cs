@@ -58,8 +58,8 @@ namespace UKSF.Api.Shared
 
         public static void AddUksfSignalr(this IEndpointRouteBuilder builder)
         {
-            builder.MapHub<AllHub>($"/hub/{AllHub.END_POINT}");
-            builder.MapHub<AccountGroupedHub>($"/hub/{AccountGroupedHub.END_POINT}");
+            builder.MapHub<AllHub>($"/hub/{AllHub.EndPoint}");
+            builder.MapHub<AccountGroupedHub>($"/hub/{AccountGroupedHub.EndPoint}");
         }
     }
 }

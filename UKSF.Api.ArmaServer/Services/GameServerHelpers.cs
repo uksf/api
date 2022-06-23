@@ -32,7 +32,7 @@ namespace UKSF.Api.ArmaServer.Services
 
     public class GameServerHelpers : IGameServerHelpers
     {
-        private static readonly string[] BASE_CONFIG =
+        private static readonly string[] BaseConfig =
         {
             "hostname = \"{0}\";",
             "password = \"{1}\";",
@@ -134,7 +134,14 @@ namespace UKSF.Api.ArmaServer.Services
 
         public string FormatGameServerConfig(GameServer gameServer, int playerCount, string missionSelection)
         {
-            return string.Format(string.Join("\n", BASE_CONFIG), gameServer.HostName, gameServer.Password, gameServer.AdminPassword, playerCount, missionSelection.Replace(".pbo", ""));
+            return string.Format(
+                string.Join("\n", BaseConfig),
+                gameServer.HostName,
+                gameServer.Password,
+                gameServer.AdminPassword,
+                playerCount,
+                missionSelection.Replace(".pbo", "")
+            );
         }
 
         public string FormatGameServerLaunchArguments(GameServer gameServer)

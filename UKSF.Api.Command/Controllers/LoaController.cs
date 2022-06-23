@@ -15,7 +15,7 @@ using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.Command.Controllers
 {
-    [Route("[controller]"), Permissions(Permissions.MEMBER)]
+    [Route("[controller]"), Permissions(Permissions.Member)]
     public class LoaController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
@@ -76,7 +76,7 @@ namespace UKSF.Api.Command.Controllers
                         new()
                         {
                             Owner = reviewerId,
-                            Icon = NotificationIcons.REQUEST,
+                            Icon = NotificationIcons.Request,
                             Message = $"Your review for {request.DisplayRequester}'s LOA is no longer required as they deleted their LOA",
                             Link = "/command/requests"
                         }

@@ -4,10 +4,10 @@ using UKSF.Api.ArmaServer.Models;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepCbaSettings : FileBuildStep
     {
-        public const string NAME = "CBA Settings";
+        public const string Name = "CBA Settings";
 
         protected override async Task ProcessExecute()
         {

@@ -32,7 +32,7 @@ namespace UKSF.Api.Launcher
 
         public static void AddUksfLauncherSignalr(this IEndpointRouteBuilder builder)
         {
-            builder.MapHub<LauncherHub>($"/hub/{LauncherHub.END_POINT}");
+            builder.MapHub<LauncherHub>($"/hub/{LauncherHub.EndPoint}");
         }
     }
 }

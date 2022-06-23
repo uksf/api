@@ -19,9 +19,9 @@ namespace UKSF.Api.ArmaMissions.Services
 
     public class MissionPatchingService : IMissionPatchingService
     {
-        private const string EXTRACT_PBO = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\ExtractPboDos.exe";
-        private const string MAKE_PBO = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\MakePbo.exe";
-        private const string PACK_PBO = "C:\\Program Files\\PBO Manager v.1.4 beta\\PBOConsole.exe";
+        private const string ExtractPboPath = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\ExtractPboDos.exe";
+        private const string MakePboPath = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\MakePbo.exe";
+        private const string PackPboPath = "C:\\Program Files\\PBO Manager v.1.4 beta\\PBOConsole.exe";
         private readonly ILogger _logger;
 
         private readonly MissionService _missionService;
@@ -109,7 +109,10 @@ namespace UKSF.Api.ArmaMissions.Services
                 Directory.Delete(_folderPath, true);
             }
 
-            Process process = new() { StartInfo = { FileName = EXTRACT_PBO, Arguments = $"-D -P \"{_filePath}\"", UseShellExecute = false, CreateNoWindow = true } };
+            Process process = new()
+            {
+                StartInfo = { FileName = ExtractPboPath, Arguments = $"-D -P \"{_filePath}\"", UseShellExecute = false, CreateNoWindow = true }
+            };
             process.Start();
             process.WaitForExit();
 
@@ -130,7 +133,7 @@ namespace UKSF.Api.ArmaMissions.Services
             {
                 StartInfo =
                 {
-                    FileName = MAKE_PBO,
+                    FileName = MakePboPath,
                     WorkingDirectory = _variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
                     Arguments = $"-Z -BD -P -X=\"thumbs.db,*.txt,*.h,*.dep,*.cpp,*.bak,*.png,*.log,*.pew\" \"{_folderPath}\"",
                     UseShellExecute = false,
@@ -165,7 +168,7 @@ namespace UKSF.Api.ArmaMissions.Services
             {
                 StartInfo =
                 {
-                    FileName = PACK_PBO,
+                    FileName = PackPboPath,
                     WorkingDirectory = _variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
                     Arguments = $"-pack \"{_folderPath}\" \"{_filePath}\"",
                     UseShellExecute = false,

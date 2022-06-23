@@ -116,7 +116,7 @@ namespace UKSF.Api.Personnel.Commands
                 new()
                 {
                     Owner = application.Recruiter,
-                    Icon = NotificationIcons.APPLICATION,
+                    Icon = NotificationIcons.Application,
                     Message = $"You have been assigned {domainAccount.Firstname} {domainAccount.Lastname}'s application",
                     Link = $"/recruitment/{domainAccount.Id}"
                 }
@@ -128,7 +128,7 @@ namespace UKSF.Api.Personnel.Commands
                     new()
                     {
                         Owner = id,
-                        Icon = NotificationIcons.APPLICATION,
+                        Icon = NotificationIcons.Application,
                         Message =
                             $"{_displayNameService.GetDisplayName(domainAccount.Application.Recruiter)} has been assigned {domainAccount.Firstname} {domainAccount.Lastname}'s application",
                         Link = $"/recruitment/{domainAccount.Id}"

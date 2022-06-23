@@ -6,10 +6,10 @@ using UKSF.Api.ArmaServer.Models;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepClean : FileBuildStep
     {
-        public const string NAME = "Clean folders";
+        public const string Name = "Clean folders";
 
         protected override async Task ProcessExecute()
         {

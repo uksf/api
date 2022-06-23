@@ -9,7 +9,7 @@ namespace UKSF.Api.Personnel.ScheduledActions
 
     public class ActionDeleteExpiredConfirmationCode : IActionDeleteExpiredConfirmationCode
     {
-        public const string ACTION_NAME = nameof(ActionDeleteExpiredConfirmationCode);
+        public const string ActionName = nameof(ActionDeleteExpiredConfirmationCode);
 
         private readonly IConfirmationCodeContext _confirmationCodeContext;
 
@@ -18,7 +18,7 @@ namespace UKSF.Api.Personnel.ScheduledActions
             _confirmationCodeContext = confirmationCodeContext;
         }
 
-        public string Name => ACTION_NAME;
+        public string Name => ActionName;
 
         public Task Run(params object[] parameters)
         {

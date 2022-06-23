@@ -10,7 +10,7 @@ using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Controllers
 {
-    [Route("[controller]"), Permissions(Permissions.ADMIN)]
+    [Route("[controller]"), Permissions(Permissions.Admin)]
     public class LoggingController : ControllerBase
     {
         private readonly IAuditLogContext _auditLogContext;

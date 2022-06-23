@@ -35,8 +35,8 @@ namespace UKSF.Api.Teamspeak
 
         public static void AddUksfIntegrationTeamspeakSignalr(this IEndpointRouteBuilder builder)
         {
-            builder.MapHub<TeamspeakHub>($"/hub/{TeamspeakHub.END_POINT}").RequireHost("localhost");
-            builder.MapHub<TeamspeakClientsHub>($"/hub/{TeamspeakClientsHub.END_POINT}");
+            builder.MapHub<TeamspeakHub>($"/hub/{TeamspeakHub.EndPoint}").RequireHost("localhost");
+            builder.MapHub<TeamspeakClientsHub>($"/hub/{TeamspeakClientsHub.EndPoint}");
         }
     }
 }

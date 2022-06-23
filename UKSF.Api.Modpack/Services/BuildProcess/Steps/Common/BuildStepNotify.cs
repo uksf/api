@@ -8,10 +8,10 @@ using UKSF.Api.Modpack.Models;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepNotify : BuildStep
     {
-        public const string NAME = "Notify";
+        public const string Name = "Notify";
         private IDiscordService _discordService;
         private IReleaseService _releaseService;
 

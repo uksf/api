@@ -18,11 +18,11 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
 {
     public class TeamspeakGroupServiceTests
     {
-        private static readonly VariableItem TEAMSPEAK_GID_UNVERIFIED = new() { Key = "TEAMSPEAK_GID_UNVERIFIED", Item = "1" };
-        private static readonly VariableItem TEAMSPEAK_GID_DISCHARGED = new() { Key = "TEAMSPEAK_GID_DISCHARGED", Item = "2" };
-        private static readonly VariableItem TEAMSPEAK_GID_ROOT = new() { Key = "TEAMSPEAK_GID_ROOT", Item = "3" };
-        private static readonly VariableItem TEAMSPEAK_GID_ELCOM = new() { Key = "TEAMSPEAK_GID_ELCOM", Item = "4" };
-        private static readonly VariableItem TEAMSPEAK_GID_BLACKLIST = new() { Key = "TEAMSPEAK_GID_BLACKLIST", Item = "99,100" };
+        private static readonly VariableItem TeamspeakGidUnverified = new() { Key = "TEAMSPEAK_GID_UNVERIFIED", Item = "1" };
+        private static readonly VariableItem TeamspeakGidDischarged = new() { Key = "TEAMSPEAK_GID_DISCHARGED", Item = "2" };
+        private static readonly VariableItem TeamspeakGidRoot = new() { Key = "TEAMSPEAK_GID_ROOT", Item = "3" };
+        private static readonly VariableItem TeamspeakGidElcom = new() { Key = "TEAMSPEAK_GID_ELCOM", Item = "4" };
+        private static readonly VariableItem TeamspeakGidBlacklist = new() { Key = "TEAMSPEAK_GID_BLACKLIST", Item = "99,100" };
 
         private readonly List<int> _addedGroups = new();
 
@@ -41,11 +41,11 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak
 
         public TeamspeakGroupServiceTests()
         {
-            _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_GID_UNVERIFIED")).Returns(TEAMSPEAK_GID_UNVERIFIED);
-            _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_GID_DISCHARGED")).Returns(TEAMSPEAK_GID_DISCHARGED);
-            _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_GID_ROOT")).Returns(TEAMSPEAK_GID_ROOT);
-            _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_GID_ELCOM")).Returns(TEAMSPEAK_GID_ELCOM);
-            _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_GID_BLACKLIST")).Returns(TEAMSPEAK_GID_BLACKLIST);
+            _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_GID_UNVERIFIED")).Returns(TeamspeakGidUnverified);
+            _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_GID_DISCHARGED")).Returns(TeamspeakGidDischarged);
+            _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_GID_ROOT")).Returns(TeamspeakGidRoot);
+            _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_GID_ELCOM")).Returns(TeamspeakGidElcom);
+            _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_GID_BLACKLIST")).Returns(TeamspeakGidBlacklist);
 
             _mockTeampeakManagerService.Setup(x => x.SendGroupProcedure(TeamspeakProcedureType.ASSIGN, It.IsAny<TeamspeakGroupProcedure>()))
                                        .Returns(Task.CompletedTask)

@@ -35,7 +35,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
 
     public class BuildStep : IBuildStep
     {
-        private const string COLOUR_BLUE = "#0c78ff";
+        private const string ColourBlue = "#0c78ff";
         private readonly TimeSpan _updateInterval = TimeSpan.FromSeconds(2);
         private readonly CancellationTokenSource _updatePusherCancellationTokenSource = new();
         private readonly SemaphoreSlim _updateSemaphore = new(1);
@@ -85,7 +85,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
         public async Task Setup()
         {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
-            StepLogger.Log("\nSetup", COLOUR_BLUE);
+            StepLogger.Log("\nSetup", ColourBlue);
             await SetupExecute();
             await Update();
         }
@@ -93,7 +93,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
         public async Task Process()
         {
             CancellationTokenSource.Token.ThrowIfCancellationRequested();
-            StepLogger.Log("\nProcess", COLOUR_BLUE);
+            StepLogger.Log("\nProcess", ColourBlue);
             await ProcessExecute();
             await Update();
         }

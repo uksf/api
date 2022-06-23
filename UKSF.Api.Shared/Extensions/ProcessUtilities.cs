@@ -10,8 +10,8 @@ namespace UKSF.Api.Shared.Extensions
     [ExcludeFromCodeCoverage]
     public static class ProcessUtilities
     {
-        private const int SC_CLOSE = 0xF060;
-        private const int WM_SYSCOMMAND = 0x0112;
+        private const int ScClose = 0xF060;
+        private const int WmSyscommand = 0x0112;
 
         public static int LaunchManagedProcess(string executable, string arguments = null)
         {
@@ -51,7 +51,7 @@ namespace UKSF.Api.Shared.Extensions
         public static async Task CloseProcessGracefully(this Process process)
         {
             // UKSF.PostMessage exe location should be set as a PATH variable
-            await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WM_SYSCOMMAND} {SC_CLOSE} 0");
+            await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WmSyscommand} {ScClose} 0");
         }
     }
 }

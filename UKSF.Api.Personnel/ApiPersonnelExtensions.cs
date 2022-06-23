@@ -87,9 +87,9 @@ namespace UKSF.Api.Personnel
 
         public static void AddUksfPersonnelSignalr(this IEndpointRouteBuilder builder)
         {
-            builder.MapHub<AccountHub>($"/hub/{AccountHub.END_POINT}");
-            builder.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.END_POINT}");
-            builder.MapHub<NotificationHub>($"/hub/{NotificationHub.END_POINT}");
+            builder.MapHub<AccountHub>($"/hub/{AccountHub.EndPoint}");
+            builder.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.EndPoint}");
+            builder.MapHub<NotificationHub>($"/hub/{NotificationHub.EndPoint}");
         }
     }
 }

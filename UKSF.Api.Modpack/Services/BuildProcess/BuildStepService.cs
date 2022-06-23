@@ -48,7 +48,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
 
         public ModpackBuildStep GetRestoreStepForRelease()
         {
-            return new(BuildStepRestore.NAME);
+            return new(BuildStepRestore.Name);
         }
 
         public IBuildStep ResolveBuildStep(string buildStepName)
@@ -67,20 +67,20 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
         {
             return new()
             {
-                new(BuildStepPrep.NAME),
-                new(BuildStepClean.NAME),
-                new(BuildStepSources.NAME),
-                new(BuildStepBuildAce.NAME),
-                new(BuildStepBuildAcre.NAME),
-                new(BuildStepBuildAir.NAME),
-                new(BuildStepBuildModpack.NAME),
-                new(BuildStepIntercept.NAME),
-                new(BuildStepExtensions.NAME),
-                new(BuildStepSignDependencies.NAME),
-                new(BuildStepDeploy.NAME),
-                new(BuildStepKeys.NAME),
-                new(BuildStepCbaSettings.NAME),
-                new(BuildStepBuildRepo.NAME)
+                new(BuildStepPrep.Name),
+                new(BuildStepClean.Name),
+                new(BuildStepSources.Name),
+                new(BuildStepBuildAce.Name),
+                new(BuildStepBuildAcre.Name),
+                new(BuildStepBuildAir.Name),
+                new(BuildStepBuildModpack.Name),
+                new(BuildStepIntercept.Name),
+                new(BuildStepExtensions.Name),
+                new(BuildStepSignDependencies.Name),
+                new(BuildStepDeploy.Name),
+                new(BuildStepKeys.Name),
+                new(BuildStepCbaSettings.Name),
+                new(BuildStepBuildRepo.Name)
             };
         }
 
@@ -88,20 +88,20 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
         {
             return new()
             {
-                new(BuildStepPrep.NAME),
-                new(BuildStepClean.NAME),
-                new(BuildStepSources.NAME),
-                new(BuildStepBuildAce.NAME),
-                new(BuildStepBuildAcre.NAME),
-                new(BuildStepBuildAir.NAME),
-                new(BuildStepBuildModpack.NAME),
-                new(BuildStepIntercept.NAME),
-                new(BuildStepExtensions.NAME),
-                new(BuildStepSignDependencies.NAME),
-                new(BuildStepDeploy.NAME),
-                new(BuildStepKeys.NAME),
-                new(BuildStepCbaSettings.NAME),
-                new(BuildStepBuildRepo.NAME),
+                new(BuildStepPrep.Name),
+                new(BuildStepClean.Name),
+                new(BuildStepSources.Name),
+                new(BuildStepBuildAce.Name),
+                new(BuildStepBuildAcre.Name),
+                new(BuildStepBuildAir.Name),
+                new(BuildStepBuildModpack.Name),
+                new(BuildStepIntercept.Name),
+                new(BuildStepExtensions.Name),
+                new(BuildStepSignDependencies.Name),
+                new(BuildStepDeploy.Name),
+                new(BuildStepKeys.Name),
+                new(BuildStepCbaSettings.Name),
+                new(BuildStepBuildRepo.Name)
                 // new(BuildStepNotify.NAME)
             };
         }
@@ -110,15 +110,15 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
         {
             return new()
             {
-                new(BuildStepClean.NAME),
-                new(BuildStepBackup.NAME),
-                new(BuildStepDeploy.NAME),
-                new(BuildStepReleaseKeys.NAME),
-                new(BuildStepCbaSettings.NAME),
-                new(BuildStepBuildRepo.NAME),
-                new(BuildStepPublish.NAME),
-                new(BuildStepNotify.NAME),
-                new(BuildStepMerge.NAME)
+                new(BuildStepClean.Name),
+                new(BuildStepBackup.Name),
+                new(BuildStepDeploy.Name),
+                new(BuildStepReleaseKeys.Name),
+                new(BuildStepCbaSettings.Name),
+                new(BuildStepBuildRepo.Name),
+                new(BuildStepPublish.Name),
+                new(BuildStepNotify.Name),
+                new(BuildStepMerge.Name)
             };
         }
 

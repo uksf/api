@@ -9,7 +9,7 @@ namespace UKSF.Api.Modpack.Signalr.Hubs
     [Authorize]
     public class BuildsHub : Hub<IModpackClient>
     {
-        public const string END_POINT = "builds";
+        public const string EndPoint = "builds";
 
         public override async Task OnConnectedAsync()
         {

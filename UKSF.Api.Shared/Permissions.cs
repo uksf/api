@@ -6,27 +6,28 @@ namespace UKSF.Api.Shared
 {
     public static class Permissions
     {
-        public static readonly HashSet<string> ALL = new() { MEMBER, ADMIN, COMMAND, NCO, RECRUITER, RECRUITER_LEAD, PERSONNEL, SERVERS, TESTER };
+        public static readonly HashSet<string> All = new() { Member, Admin, Command, Nco, Recruiter, RecruiterLead, Personnel, Servers, Tester };
 
         #region MemberStates
 
-        public const string CONFIRMED = "CONFIRMED";
-        public const string DISCHARGED = "DISCHARGED";
-        public const string MEMBER = "MEMBER";
-        public const string UNCONFIRMED = "UNCONFIRMED";
+        public const string Confirmed = "CONFIRMED";
+        public const string Discharged = "DISCHARGED";
+        public const string Member = "MEMBER";
+        public const string Unconfirmed = "UNCONFIRMED";
 
         #endregion
 
         #region Roles
 
-        public const string ADMIN = "ADMIN";
-        public const string COMMAND = "COMMAND";
-        public const string NCO = "NCO";
-        public const string RECRUITER = "RECRUITER";
-        public const string RECRUITER_LEAD = "RECRUITER_LEAD";
-        public const string PERSONNEL = "PERSONNEL";
-        public const string SERVERS = "SERVERS";
-        public const string TESTER = "TESTER";
+        public const string Superadmin = "SUPERADMIN";
+        public const string Admin = "ADMIN";
+        public const string Command = "COMMAND";
+        public const string Nco = "NCO";
+        public const string Recruiter = "RECRUITER";
+        public const string RecruiterLead = "RECRUITER_LEAD";
+        public const string Personnel = "PERSONNEL";
+        public const string Servers = "SERVERS";
+        public const string Tester = "TESTER";
 
         #endregion
     }

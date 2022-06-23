@@ -5,6 +5,6 @@ namespace UKSF.Api.Admin.Signalr.Hubs
 {
     public class UtilityHub : Hub<IUtilityClient>
     {
-        public const string END_POINT = "utility";
+        public const string EndPoint = "utility";
     }
 }

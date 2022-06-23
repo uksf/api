@@ -11,7 +11,7 @@ namespace UKSF.Api.Admin.ScheduledActions
 
     public class ActionPruneLogs : IActionPruneLogs
     {
-        private const string ACTION_NAME = nameof(ActionPruneLogs);
+        private const string ActionName = nameof(ActionPruneLogs);
 
         private readonly IAuditLogContext _auditLogContext;
         private readonly IClock _clock;
@@ -40,7 +40,7 @@ namespace UKSF.Api.Admin.ScheduledActions
             _clock = clock;
         }
 
-        public string Name => ACTION_NAME;
+        public string Name => ActionName;
 
         public Task Run(params object[] parameters)
         {
@@ -60,9 +60,9 @@ namespace UKSF.Api.Admin.ScheduledActions
                 return;
             }
 
-            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null)
+            if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
             {
-                await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(1), TimeSpan.FromDays(1), ACTION_NAME);
+                await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(1), TimeSpan.FromDays(1), ActionName);
             }
         }
 

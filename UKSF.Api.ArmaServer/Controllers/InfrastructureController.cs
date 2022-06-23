@@ -10,7 +10,7 @@ using UKSF.Api.Shared.Events;
 
 namespace UKSF.Api.ArmaServer.Controllers
 {
-    [Route("servers/infrastructure"), Permissions(Permissions.ADMIN)]
+    [Route("servers/infrastructure"), Permissions(Permissions.Admin)]
     public class InfrastructureController : ControllerBase
     {
         private readonly IGetCurrentServerInfrastructureQuery _getCurrentServerInfrastructureQuery;

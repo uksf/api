@@ -114,7 +114,7 @@ namespace UKSF.Api.Personnel.Controllers
             {
                 var notification = await _assignmentService.UpdateUnitRankAndRole(
                     account.Id,
-                    rankString: AssignmentService.REMOVE_FLAG,
+                    rankString: AssignmentService.RemoveFlag,
                     reason: $"the '{rank.Name}' rank was deleted"
                 );
                 _notificationsService.Add(notification);

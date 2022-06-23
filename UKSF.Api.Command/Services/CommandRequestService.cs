@@ -100,7 +100,9 @@ namespace UKSF.Api.Command.Services
                 $"{request.DisplayRequester} requires your review on {(selfRequest ? "their" : AvsAn.Query(request.Type).Article)} {request.Type.ToLower()} request{(selfRequest ? "" : $" for {request.DisplayRecipient}")}";
             foreach (var account in accounts.Where(x => x.Id != requesterDomainAccount.Id))
             {
-                _notificationsService.Add(new() { Owner = account.Id, Icon = NotificationIcons.REQUEST, Message = notificationMessage, Link = "/command/requests" });
+                _notificationsService.Add(
+                    new() { Owner = account.Id, Icon = NotificationIcons.Request, Message = notificationMessage, Link = "/command/requests" }
+                );
             }
         }
 

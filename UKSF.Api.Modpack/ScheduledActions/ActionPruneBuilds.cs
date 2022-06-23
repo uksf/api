@@ -14,7 +14,7 @@ namespace UKSF.Api.Modpack.ScheduledActions
 
     public class ActionPruneBuilds : IActionPruneBuilds
     {
-        private const string ACTION_NAME = nameof(ActionPruneBuilds);
+        private const string ActionName = nameof(ActionPruneBuilds);
         private readonly IBuildsContext _buildsContext;
 
         private readonly IClock _clock;
@@ -31,7 +31,7 @@ namespace UKSF.Api.Modpack.ScheduledActions
             _clock = clock;
         }
 
-        public string Name => ACTION_NAME;
+        public string Name => ActionName;
 
         public Task Run(params object[] parameters)
         {
@@ -49,9 +49,9 @@ namespace UKSF.Api.Modpack.ScheduledActions
                 return;
             }
 
-            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null)
+            if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
             {
-                await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(1), TimeSpan.FromDays(1), ACTION_NAME);
+                await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(1), TimeSpan.FromDays(1), ActionName);
             }
         }
 

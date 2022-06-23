@@ -32,17 +32,17 @@ namespace UKSF.Api.Discord.Services
 
     public class DiscordService : IDiscordService, IDisposable
     {
-        private static readonly string[] OWNER_REPLIES =
+        private static readonly string[] OwnerReplies =
         {
             "Why thank you {0} owo", "Thank you {0}, you're too kind", "Thank you so much {0} uwu", "Aw shucks {0} you're embarrassing me"
         };
 
-        private static readonly string[] REPLIES =
+        private static readonly string[] Replies =
         {
             "Why thank you {0}", "Thank you {0}, you're too kind", "Thank you so much {0}", "Aw shucks {0} you're embarrassing me"
         };
 
-        private static readonly string[] TRIGGERS = { "thank you", "thank", "best", "mvp", "love you", "appreciate you", "good" };
+        private static readonly string[] Triggers = { "thank you", "thank", "best", "mvp", "love you", "appreciate you", "good" };
         private readonly IAccountContext _accountContext;
         private readonly IConfiguration _configuration;
         private readonly IDisplayNameService _displayNameService;
@@ -57,7 +57,7 @@ namespace UKSF.Api.Discord.Services
         private SocketGuild _guild;
         private IReadOnlyCollection<SocketRole> _roles;
 
-        private static readonly List<Emote> EMOTES = new()
+        private static readonly List<Emote> Emotes = new()
         {
             Emote.Parse("<:Tuesday:732349730809708564>"),
             Emote.Parse("<:Thursday:732349755816149062>"),
@@ -513,7 +513,7 @@ namespace UKSF.Api.Discord.Services
 
         private static async Task HandleWeeklyEventsMessageReacts(IMessage incomingMessage)
         {
-            foreach (var emote in EMOTES)
+            foreach (var emote in Emotes)
             {
                 await incomingMessage.AddReactionAsync(emote);
             }
@@ -521,10 +521,10 @@ namespace UKSF.Api.Discord.Services
 
         private async Task HandleBotMessageResponse(SocketMessage incomingMessage)
         {
-            if (TRIGGERS.Any(x => incomingMessage.Content.Contains(x, StringComparison.InvariantCultureIgnoreCase)))
+            if (Triggers.Any(x => incomingMessage.Content.Contains(x, StringComparison.InvariantCultureIgnoreCase)))
             {
                 var owner = incomingMessage.Author.Id == _variablesService.GetVariable("DID_U_OWNER").AsUlong();
-                var message = owner ? OWNER_REPLIES[new Random().Next(0, OWNER_REPLIES.Length)] : REPLIES[new Random().Next(0, REPLIES.Length)];
+                var message = owner ? OwnerReplies[new Random().Next(0, OwnerReplies.Length)] : Replies[new Random().Next(0, Replies.Length)];
                 var parts = _guild.GetUser(incomingMessage.Author.Id).Nickname.Split('.');
                 var nickname = owner ? "Daddy" :
                     parts.Length > 1 ? parts[1] : parts[0];
@@ -574,7 +574,7 @@ namespace UKSF.Api.Discord.Services
                 return;
             }
 
-            if (reaction.Emote is not Emote emote || EMOTES.All(x => x.Id != emote.Id))
+            if (reaction.Emote is not Emote emote || Emotes.All(x => x.Id != emote.Id))
             {
                 return;
             }

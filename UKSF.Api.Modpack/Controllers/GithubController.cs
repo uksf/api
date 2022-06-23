@@ -14,10 +14,10 @@ namespace UKSF.Api.Modpack.Controllers
     [Route("[controller]")]
     public class GithubController : ControllerBase
     {
-        private const string PUSH_EVENT = "push";
-        private const string REPO_NAME = "modpack";
-        private const string MASTER = "refs/heads/master";
-        private const string RELEASE = "refs/heads/release";
+        private const string PushEvent = "push";
+        private const string RepoName = "modpack";
+        private const string Master = "refs/heads/master";
+        private const string Release = "refs/heads/release";
 
         private readonly IGithubService _githubService;
         private readonly IModpackService _modpackService;
@@ -39,33 +39,33 @@ namespace UKSF.Api.Modpack.Controllers
             }
 
             var payload = new SimpleJsonSerializer().Deserialize<PushWebhookPayload>(body.ToString());
-            if (payload.Repository.Name != REPO_NAME || githubEvent != PUSH_EVENT)
+            if (payload.Repository.Name != RepoName || githubEvent != PushEvent)
             {
                 return;
             }
 
             switch (payload.Ref)
             {
-                case MASTER when payload.BaseRef != RELEASE:
+                case Master when payload.BaseRef != Release:
                 {
                     await _modpackService.CreateDevBuildFromPush(payload);
                     return;
                 }
-                case RELEASE:
+                case Release:
                     await _modpackService.CreateRcBuildFromPush(payload);
                     return;
                 default: return;
             }
         }
 
-        [HttpGet("branches"), Permissions(Permissions.TESTER)]
+        [HttpGet("branches"), Permissions(Permissions.Tester)]
         public async Task<List<string>> GetBranches()
         {
             return await _githubService.GetBranches();
         }
 
-        [HttpGet("populatereleases"), Permissions(Permissions.ADMIN)]
-        public async Task Release()
+        [HttpGet("populatereleases"), Permissions(Permissions.Admin)]
+        public async Task PopulateReleases()
         {
             var releases = await _githubService.GetHistoricReleases();
             await _releaseService.AddHistoricReleases(releases);

@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepIntercept : FileBuildStep
     {
-        public const string NAME = "Intercept";
+        public const string Name = "Intercept";
 
         protected override async Task ProcessExecute()
         {

@@ -7,6 +7,7 @@ namespace UKSF.Api.Shared.Services
     public interface IHttpContextService
     {
         bool IsUserAuthenticated();
+        string GetImpersonatingUserId();
         public string GetUserId();
         public string GetUserEmail();
         bool UserHasPermission(string permission);
@@ -24,6 +25,11 @@ namespace UKSF.Api.Shared.Services
         public bool IsUserAuthenticated()
         {
             return _httpContextAccessor.HttpContext?.User.Identity != null && _httpContextAccessor.HttpContext.User.Identity.IsAuthenticated;
+        }
+
+        public string GetImpersonatingUserId()
+        {
+            return _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == UksfClaimTypes.ImpersonatingUserId)?.Value;
         }
 
         public string GetUserId()

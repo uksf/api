@@ -11,7 +11,7 @@ using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Admin.Controllers
 {
-    [Route("[controller]"), Permissions(Permissions.ADMIN)]
+    [Route("[controller]"), Permissions(Permissions.Admin)]
     public class VariablesController : ControllerBase
     {
         private readonly ILogger _logger;

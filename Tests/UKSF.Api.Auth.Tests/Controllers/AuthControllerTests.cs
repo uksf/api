@@ -57,7 +57,7 @@ namespace UKSF.Api.Auth.Tests.Controllers
         public void When_refreshing_token()
         {
             _mockHttpContextService.Setup(x => x.GetUserId()).Returns(_userId);
-            _mockLoginService.Setup(x => x.RegenerateBearerToken(_userId)).Returns("token");
+            _mockLoginService.Setup(x => x.RegenerateBearerToken()).Returns("token");
 
             var result = _subject.RefreshToken();
 
@@ -68,7 +68,7 @@ namespace UKSF.Api.Auth.Tests.Controllers
         public void When_refreshing_token_fails()
         {
             _mockHttpContextService.Setup(x => x.GetUserId()).Returns(_userId);
-            _mockLoginService.Setup(x => x.RegenerateBearerToken(_userId)).Returns((string) null);
+            _mockLoginService.Setup(x => x.RegenerateBearerToken()).Returns((string)null);
 
             Action act = () => _subject.RefreshToken();
 
@@ -76,9 +76,9 @@ namespace UKSF.Api.Auth.Tests.Controllers
         }
 
         [Fact]
-        public void When_requesting_password_reset()
+        public async Task When_requesting_password_reset()
         {
-            _subject.RequestPasswordReset(new() { Email = "email" });
+            await _subject.RequestPasswordReset(new() { Email = "email" });
 
             _mockRequestPasswordResetCommand.Verify(x => x.ExecuteAsync(It.Is<RequestPasswordResetCommandArgs>(m => m.Email == "email")), Times.Once);
         }

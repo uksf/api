@@ -53,7 +53,7 @@ namespace UKSF.Api.ArmaServer
 
         public static void AddUksfArmaServerSignalr(this IEndpointRouteBuilder builder)
         {
-            builder.MapHub<ServersHub>($"/hub/{ServersHub.END_POINT}");
+            builder.MapHub<ServersHub>($"/hub/{ServersHub.EndPoint}");
         }
     }
 }

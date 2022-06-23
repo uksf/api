@@ -7,6 +7,6 @@ namespace UKSF.Api.Command.Signalr.Hubs
     [Authorize]
     public class CommandRequestsHub : Hub<ICommandRequestsClient>
     {
-        public const string END_POINT = "commandRequests";
+        public const string EndPoint = "commandRequests";
     }
 }
