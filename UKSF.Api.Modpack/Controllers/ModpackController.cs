@@ -20,25 +20,25 @@ namespace UKSF.Api.Modpack.Controllers
             _githubService = githubService;
         }
 
-        [HttpGet("releases"), Permissions(Permissions.MEMBER)]
+        [HttpGet("releases"), Permissions(Permissions.Member)]
         public IEnumerable<ModpackRelease> GetReleases()
         {
             return _modpackService.GetReleases();
         }
 
-        [HttpGet("rcs"), Permissions(Permissions.MEMBER)]
+        [HttpGet("rcs"), Permissions(Permissions.Member)]
         public IEnumerable<ModpackBuild> GetReleaseCandidates()
         {
             return _modpackService.GetRcBuilds();
         }
 
-        [HttpGet("builds"), Permissions(Permissions.MEMBER)]
+        [HttpGet("builds"), Permissions(Permissions.Member)]
         public IEnumerable<ModpackBuild> GetBuilds()
         {
             return _modpackService.GetDevBuilds();
         }
 
-        [HttpGet("builds/{id}"), Permissions(Permissions.MEMBER)]
+        [HttpGet("builds/{id}"), Permissions(Permissions.Member)]
         public ModpackBuild GetBuild(string id)
         {
             var build = _modpackService.GetBuild(id);
@@ -50,7 +50,7 @@ namespace UKSF.Api.Modpack.Controllers
             return build;
         }
 
-        [HttpGet("builds/{id}/step/{index}"), Permissions(Permissions.MEMBER)]
+        [HttpGet("builds/{id}/step/{index}"), Permissions(Permissions.Member)]
         public ModpackBuildStep GetBuildStep(string id, int index)
         {
             var build = _modpackService.GetBuild(id);
@@ -67,7 +67,7 @@ namespace UKSF.Api.Modpack.Controllers
             throw new NotFoundException("Build step does not exist");
         }
 
-        [HttpGet("builds/{id}/rebuild"), Permissions(Permissions.ADMIN)]
+        [HttpGet("builds/{id}/rebuild"), Permissions(Permissions.Admin)]
         public async Task Rebuild(string id)
         {
             var build = _modpackService.GetBuild(id);
@@ -79,7 +79,7 @@ namespace UKSF.Api.Modpack.Controllers
             await _modpackService.Rebuild(build);
         }
 
-        [HttpGet("builds/{id}/cancel"), Permissions(Permissions.ADMIN)]
+        [HttpGet("builds/{id}/cancel"), Permissions(Permissions.Admin)]
         public async Task CancelBuild(string id)
         {
             var build = _modpackService.GetBuild(id);
@@ -91,7 +91,7 @@ namespace UKSF.Api.Modpack.Controllers
             await _modpackService.CancelBuild(build);
         }
 
-        [HttpPatch("release/{version}"), Permissions(Permissions.ADMIN)]
+        [HttpPatch("release/{version}"), Permissions(Permissions.Admin)]
         public async Task UpdateRelease(string version, [FromBody] ModpackRelease release)
         {
             if (!release.IsDraft)
@@ -102,20 +102,20 @@ namespace UKSF.Api.Modpack.Controllers
             await _modpackService.UpdateReleaseDraft(release);
         }
 
-        [HttpGet("release/{version}"), Permissions(Permissions.ADMIN)]
+        [HttpGet("release/{version}"), Permissions(Permissions.Admin)]
         public async Task Release(string version)
         {
             await _modpackService.Release(version);
         }
 
-        [HttpGet("release/{version}/changelog"), Permissions(Permissions.ADMIN)]
+        [HttpGet("release/{version}/changelog"), Permissions(Permissions.Admin)]
         public async Task<ModpackRelease> RegenerateChangelog(string version)
         {
             await _modpackService.RegnerateReleaseDraftChangelog(version);
             return _modpackService.GetRelease(version);
         }
 
-        [HttpPost("newbuild"), Permissions(Permissions.TESTER)]
+        [HttpPost("newbuild"), Permissions(Permissions.Tester)]
         public async Task NewBuild([FromBody] NewBuild newBuild)
         {
             if (!await _githubService.IsReferenceValid(newBuild.Reference))

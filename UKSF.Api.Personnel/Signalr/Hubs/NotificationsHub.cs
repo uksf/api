@@ -9,7 +9,7 @@ namespace UKSF.Api.Personnel.Signalr.Hubs
     [Authorize]
     public class NotificationHub : Hub<INotificationsClient>
     {
-        public const string END_POINT = "notifications";
+        public const string EndPoint = "notifications";
 
         public override async Task OnConnectedAsync()
         {

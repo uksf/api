@@ -3,7 +3,7 @@ using UKSF.Api.Shared;
 
 namespace UKSF.Api.Controllers
 {
-    [Route("[controller]"), Permissions(Permissions.CONFIRMED, Permissions.MEMBER)]
+    [Route("[controller]"), Permissions(Permissions.Confirmed, Permissions.Member)]
     public class ModsController : ControllerBase
     {
         // TODO: Return size of modpack folder

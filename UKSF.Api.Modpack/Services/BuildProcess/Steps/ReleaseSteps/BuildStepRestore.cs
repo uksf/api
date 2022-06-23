@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepRestore : FileBuildStep
     {
-        public const string NAME = "Restore";
+        public const string Name = "Restore";
 
         protected override async Task ProcessExecute()
         {

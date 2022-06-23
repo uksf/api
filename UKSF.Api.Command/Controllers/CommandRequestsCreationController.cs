@@ -46,7 +46,7 @@ namespace UKSF.Api.Command.Controllers
             _httpContextService = httpContextService;
         }
 
-        [HttpPut("rank"), Permissions(Permissions.COMMAND)]
+        [HttpPut("rank"), Permissions(Permissions.Command)]
         public async Task CreateRequestRank([FromBody] CommandRequest request)
         {
             request.Requester = _httpContextService.GetUserId();
@@ -58,8 +58,8 @@ namespace UKSF.Api.Command.Controllers
             }
 
             var direction = _ranksService.IsSuperior(request.DisplayValue, request.DisplayFrom);
-            request.Type = string.IsNullOrEmpty(request.DisplayFrom) ? CommandRequestType.PROMOTION :
-                direction                                            ? CommandRequestType.PROMOTION : CommandRequestType.DEMOTION;
+            request.Type = string.IsNullOrEmpty(request.DisplayFrom) ? CommandRequestType.Promotion :
+                direction                                            ? CommandRequestType.Promotion : CommandRequestType.Demotion;
             if (_commandRequestService.DoesEquivalentRequestExist(request))
             {
                 throw new BadRequestException("An equivalent request already exists");
@@ -68,7 +68,7 @@ namespace UKSF.Api.Command.Controllers
             await _commandRequestService.Add(request);
         }
 
-        [HttpPut("loa"), Permissions(Permissions.MEMBER)]
+        [HttpPut("loa"), Permissions(Permissions.Member)]
         public async Task CreateRequestLoa([FromBody] CommandRequestLoa request)
         {
             var now = DateTime.UtcNow;
@@ -91,7 +91,7 @@ namespace UKSF.Api.Command.Controllers
             request.Requester = _httpContextService.GetUserId();
             request.DisplayValue = request.End.ToString("O");
             request.DisplayFrom = request.Start.ToString("O");
-            request.Type = CommandRequestType.LOA;
+            request.Type = CommandRequestType.Loa;
             if (_commandRequestService.DoesEquivalentRequestExist(request))
             {
                 throw new BadRequestException("An equivalent request already exists");
@@ -101,13 +101,13 @@ namespace UKSF.Api.Command.Controllers
             await _commandRequestService.Add(request, ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF);
         }
 
-        [HttpPut("discharge"), Permissions(Permissions.COMMAND)]
+        [HttpPut("discharge"), Permissions(Permissions.Command)]
         public async Task CreateRequestDischarge([FromBody] CommandRequest request)
         {
             request.Requester = _httpContextService.GetUserId();
             request.DisplayValue = "Discharged";
             request.DisplayFrom = "Member";
-            request.Type = CommandRequestType.DISCHARGE;
+            request.Type = CommandRequestType.Discharge;
             if (_commandRequestService.DoesEquivalentRequestExist(request))
             {
                 throw new BadRequestException("An equivalent request already exists");
@@ -116,13 +116,13 @@ namespace UKSF.Api.Command.Controllers
             await _commandRequestService.Add(request, ChainOfCommandMode.COMMANDER_AND_PERSONNEL);
         }
 
-        [HttpPut("role"), Permissions(Permissions.COMMAND)]
+        [HttpPut("role"), Permissions(Permissions.Command)]
         public async Task CreateRequestIndividualRole([FromBody] CommandRequest request)
         {
             request.Requester = _httpContextService.GetUserId();
             request.DisplayValue = request.Value;
             request.DisplayFrom = _accountContext.GetSingle(request.Recipient).RoleAssignment;
-            request.Type = CommandRequestType.INDIVIDUAL_ROLE;
+            request.Type = CommandRequestType.IndividualRole;
             if (_commandRequestService.DoesEquivalentRequestExist(request))
             {
                 throw new BadRequestException("An equivalent request already exists");
@@ -131,7 +131,7 @@ namespace UKSF.Api.Command.Controllers
             await _commandRequestService.Add(request, ChainOfCommandMode.NEXT_COMMANDER);
         }
 
-        [HttpPut("unitrole"), Permissions(Permissions.COMMAND)]
+        [HttpPut("unitrole"), Permissions(Permissions.Command)]
         public async Task CreateRequestUnitRole([FromBody] CommandRequest request)
         {
             var unit = _unitsContext.GetSingle(request.Value);
@@ -155,7 +155,7 @@ namespace UKSF.Api.Command.Controllers
                 request.DisplayFrom = $"Member of {unit.Name}";
             }
 
-            request.Type = CommandRequestType.UNIT_ROLE;
+            request.Type = CommandRequestType.UnitRole;
             if (_commandRequestService.DoesEquivalentRequestExist(request))
             {
                 throw new BadRequestException("An equivalent request already exists");
@@ -164,7 +164,7 @@ namespace UKSF.Api.Command.Controllers
             await _commandRequestService.Add(request);
         }
 
-        [HttpPut("unitremoval"), Permissions(Permissions.COMMAND)]
+        [HttpPut("unitremoval"), Permissions(Permissions.Command)]
         public async Task CreateRequestUnitRemoval([FromBody] CommandRequest request)
         {
             var removeUnit = _unitsContext.GetSingle(request.Value);
@@ -176,7 +176,7 @@ namespace UKSF.Api.Command.Controllers
             request.Requester = _httpContextService.GetUserId();
             request.DisplayValue = "N/A";
             request.DisplayFrom = removeUnit.Name;
-            request.Type = CommandRequestType.UNIT_REMOVAL;
+            request.Type = CommandRequestType.UnitRemoval;
             if (_commandRequestService.DoesEquivalentRequestExist(request))
             {
                 throw new BadRequestException("An equivalent request already exists");
@@ -185,7 +185,7 @@ namespace UKSF.Api.Command.Controllers
             await _commandRequestService.Add(request, ChainOfCommandMode.TARGET_COMMANDER);
         }
 
-        [HttpPut("transfer"), Permissions(Permissions.COMMAND)]
+        [HttpPut("transfer"), Permissions(Permissions.Command)]
         public async Task CreateRequestTransfer([FromBody] CommandRequest request)
         {
             var toUnit = _unitsContext.GetSingle(request.Value);
@@ -194,7 +194,7 @@ namespace UKSF.Api.Command.Controllers
             if (toUnit.Branch == UnitBranch.AUXILIARY)
             {
                 request.DisplayFrom = "N/A";
-                request.Type = CommandRequestType.AUXILIARY_TRANSFER;
+                request.Type = CommandRequestType.AuxiliaryTransfer;
                 if (_commandRequestService.DoesEquivalentRequestExist(request))
                 {
                     throw new BadRequestException("An equivalent request already exists");
@@ -205,7 +205,7 @@ namespace UKSF.Api.Command.Controllers
             else
             {
                 request.DisplayFrom = _accountContext.GetSingle(request.Recipient).UnitAssignment;
-                request.Type = CommandRequestType.TRANSFER;
+                request.Type = CommandRequestType.Transfer;
                 if (_commandRequestService.DoesEquivalentRequestExist(request))
                 {
                     throw new BadRequestException("An equivalent request already exists");
@@ -215,13 +215,13 @@ namespace UKSF.Api.Command.Controllers
             }
         }
 
-        [HttpPut("reinstate"), Permissions(Permissions.COMMAND, Permissions.RECRUITER, Permissions.NCO)]
+        [HttpPut("reinstate"), Permissions(Permissions.Command, Permissions.Recruiter, Permissions.Nco)]
         public async Task CreateRequestReinstateMember([FromBody] CommandRequest request)
         {
             request.Requester = _httpContextService.GetUserId();
             request.DisplayValue = "Member";
             request.DisplayFrom = "Discharged";
-            request.Type = CommandRequestType.REINSTATE_MEMBER;
+            request.Type = CommandRequestType.ReinstateMember;
             if (_commandRequestService.DoesEquivalentRequestExist(request))
             {
                 throw new BadRequestException("An equivalent request already exists");

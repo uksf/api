@@ -17,20 +17,20 @@ namespace UKSF.Api.Discord.Controllers
             _discordService = discordService;
         }
 
-        [HttpGet("roles"), Permissions(Permissions.ADMIN)]
+        [HttpGet("roles"), Permissions(Permissions.Admin)]
         public async Task<string> GetRoles()
         {
             var roles = await _discordService.GetRoles();
             return roles.OrderBy(x => x.Name).Select(x => $"{x.Name}: {x.Id}").Aggregate((x, y) => $"{x}\n{y}");
         }
 
-        [HttpGet("updateuserroles"), Permissions(Permissions.ADMIN)]
+        [HttpGet("updateuserroles"), Permissions(Permissions.Admin)]
         public async Task UpdateUserRoles()
         {
             await _discordService.UpdateAllUsers();
         }
 
-        [HttpGet("{accountId}/onlineUserDetails"), Permissions(Permissions.RECRUITER)]
+        [HttpGet("{accountId}/onlineUserDetails"), Permissions(Permissions.Recruiter)]
         public OnlineState GetOnlineUserDetails([FromRoute] string accountId)
         {
             return _discordService.GetOnlineUserDetails(accountId);

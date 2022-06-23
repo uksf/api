@@ -25,7 +25,7 @@ using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.ArmaServer.Controllers
 {
-    [Route("[controller]"), Permissions(Permissions.NCO, Permissions.SERVERS, Permissions.COMMAND)]
+    [Route("[controller]"), Permissions(Permissions.Nco, Permissions.Servers, Permissions.Command)]
     public class GameServersController : ControllerBase
     {
         private readonly IGameServerHelpers _gameServerHelpers;

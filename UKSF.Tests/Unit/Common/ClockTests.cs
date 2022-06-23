@@ -19,8 +19,9 @@ namespace UKSF.Tests.Unit.Common
         public void Should_return_current_date_and_time()
         {
             var subject = new Clock().Now();
+            var expected = DateTime.UtcNow;
 
-            subject.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMilliseconds(10));
+            subject.Should().BeCloseTo(expected, TimeSpan.FromMilliseconds(100));
         }
 
         [Fact]
@@ -28,7 +29,7 @@ namespace UKSF.Tests.Unit.Common
         {
             var subject = new Clock().UtcNow();
 
-            subject.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMilliseconds(10));
+            subject.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMilliseconds(100));
         }
     }
 }

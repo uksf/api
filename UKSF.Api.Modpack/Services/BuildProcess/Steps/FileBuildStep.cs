@@ -11,9 +11,9 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
 {
     public class FileBuildStep : BuildStep
     {
-        private const double FILE_COPY_TASK_SIZE_THRESHOLD = 5_000_000_000;
-        private const double FILE_COPY_TASK_COUNT_THRESHOLD = 50;
-        private const double FILE_DELETE_TASK_COUNT_THRESHOLD = 50;
+        private const double FileCopyTaskSizeThreshold = 5_000_000_000;
+        private const double FileCopyTaskCountThreshold = 50;
+        private const double FileDeleteTaskCountThreshold = 50;
 
         internal static List<FileInfo> GetDirectoryContents(DirectoryInfo source, string searchPattern = "*")
         {
@@ -104,7 +104,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
             }
 
             var totalSize = files.Select(x => x.Length).Sum();
-            if (files.Count > FILE_COPY_TASK_COUNT_THRESHOLD || totalSize > FILE_COPY_TASK_SIZE_THRESHOLD)
+            if (files.Count > FileCopyTaskCountThreshold || totalSize > FileCopyTaskSizeThreshold)
             {
                 await ParallelCopyFiles(source, target, files, totalSize, flatten);
             }
@@ -151,7 +151,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
                 return;
             }
 
-            if (files.Count > FILE_DELETE_TASK_COUNT_THRESHOLD)
+            if (files.Count > FileDeleteTaskCountThreshold)
             {
                 await ParallelDeleteFiles(files);
             }

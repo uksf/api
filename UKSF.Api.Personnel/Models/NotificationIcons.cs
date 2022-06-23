@@ -2,11 +2,11 @@ namespace UKSF.Api.Personnel.Models
 {
     public static class NotificationIcons
     {
-        public const string APPLICATION = "group_add";
-        public const string BUILD = "build";
-        public const string COMMENT = "comment";
-        public const string DEMOTION = "mood_bad";
-        public const string PROMOTION = "stars";
-        public const string REQUEST = "add_circle";
+        public const string Application = "group_add";
+        public const string Build = "build";
+        public const string Comment = "comment";
+        public const string Demotion = "mood_bad";
+        public const string Promotion = "stars";
+        public const string Request = "add_circle";
     }
 }

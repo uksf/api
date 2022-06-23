@@ -37,7 +37,12 @@ namespace UKSF.Api.Personnel.Services
 
             ConfirmationCode code = new() { Value = value };
             await _confirmationCodeContext.Add(code);
-            await _schedulerService.CreateAndScheduleJob(_clock.UtcNow().AddMinutes(30), TimeSpan.Zero, ActionDeleteExpiredConfirmationCode.ACTION_NAME, code.Id);
+            await _schedulerService.CreateAndScheduleJob(
+                _clock.UtcNow().AddMinutes(30),
+                TimeSpan.Zero,
+                ActionDeleteExpiredConfirmationCode.ActionName,
+                code.Id
+            );
             return code.Id;
         }
 

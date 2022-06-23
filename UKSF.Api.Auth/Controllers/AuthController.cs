@@ -5,6 +5,7 @@ using UKSF.Api.Auth.Commands;
 using UKSF.Api.Auth.Exceptions;
 using UKSF.Api.Auth.Models.Parameters;
 using UKSF.Api.Auth.Services;
+using UKSF.Api.Shared;
 using UKSF.Api.Shared.Exceptions;
 using UKSF.Api.Shared.Services;
 
@@ -35,7 +36,7 @@ namespace UKSF.Api.Auth.Controllers
         [HttpGet("refresh"), Authorize]
         public string RefreshToken()
         {
-            var loginToken = _loginService.RegenerateBearerToken(_httpContextService.GetUserId());
+            var loginToken = _loginService.RegenerateBearerToken();
             if (loginToken == null)
             {
                 throw new TokenRefreshFailedException();
@@ -66,6 +67,12 @@ namespace UKSF.Api.Auth.Controllers
         {
             await _resetPasswordCommand.ExecuteAsync(new(credentials.Email, credentials.Password, code));
             return _loginService.LoginForPasswordReset(credentials.Email);
+        }
+
+        [HttpGet("impersonate"), Authorize, Permissions(Permissions.Superadmin)]
+        public string Impersonate([FromQuery] string accountId)
+        {
+            return _loginService.LoginForImpersonate(accountId);
         }
     }
 }

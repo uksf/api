@@ -10,7 +10,7 @@ namespace UKSF.Api.Services
 {
     public class MigrationUtility
     {
-        private const string KEY = "MIGRATED";
+        private const string Key = "MIGRATED";
         private readonly IAuditLogContext _auditLogContext;
         private readonly IHostEnvironment _currentEnvironment;
         private readonly IErrorLogContext _errorLogContext;
@@ -46,7 +46,7 @@ namespace UKSF.Api.Services
             var migrated = true;
             if (!_currentEnvironment.IsDevelopment())
             {
-                migrated = _variablesService.GetVariable(KEY).AsBool();
+                migrated = _variablesService.GetVariable(Key).AsBool();
             }
 
             if (!migrated)
@@ -62,7 +62,7 @@ namespace UKSF.Api.Services
                 }
                 finally
                 {
-                    _variablesContext.Update(KEY, "true");
+                    _variablesContext.Update(Key, "true");
                 }
             }
         }

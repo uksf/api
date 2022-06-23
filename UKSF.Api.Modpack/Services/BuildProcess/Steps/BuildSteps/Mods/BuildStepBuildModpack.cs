@@ -4,18 +4,18 @@ using System.Threading.Tasks;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepBuildModpack : ModBuildStep
     {
-        public const string NAME = "Build UKSF";
-        private const string MOD_NAME = "modpack";
+        public const string Name = "Build UKSF";
+        private const string ModName = "modpack";
 
         protected override async Task ProcessExecute()
         {
             StepLogger.Log("Running build for UKSF");
 
-            var toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
-            var releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@uksf");
+            var toolsPath = Path.Join(GetBuildSourcesPath(), ModName, "tools");
+            var releasePath = Path.Join(GetBuildSourcesPath(), ModName, "release", "@uksf");
             var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
 
             StepLogger.LogSurround("\nRunning make.py...");

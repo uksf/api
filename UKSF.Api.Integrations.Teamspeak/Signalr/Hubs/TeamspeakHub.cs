@@ -14,7 +14,7 @@ namespace UKSF.Api.Teamspeak.Signalr.Hubs
 
     public class TeamspeakHub : Hub<ITeamspeakClient>
     {
-        public const string END_POINT = "teamspeak";
+        public const string EndPoint = "teamspeak";
         private readonly IEventBus _eventBus;
 
         public TeamspeakHub(IEventBus eventBus)

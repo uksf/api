@@ -3,10 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepPublish : BuildStep
     {
-        public const string NAME = "Publish";
+        public const string Name = "Publish";
         private IReleaseService _releaseService;
 
         protected override Task SetupExecute()

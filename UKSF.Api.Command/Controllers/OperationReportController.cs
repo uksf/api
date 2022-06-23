@@ -10,7 +10,7 @@ using UKSF.Api.Shared;
 
 namespace UKSF.Api.Command.Controllers
 {
-    [Route("[controller]"), Permissions(Permissions.MEMBER)]
+    [Route("[controller]"), Permissions(Permissions.Member)]
     public class OperationReportController : ControllerBase
     {
         private readonly IOperationReportContext _operationReportContext;

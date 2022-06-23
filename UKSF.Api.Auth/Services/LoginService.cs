@@ -7,7 +7,9 @@ using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
+using UKSF.Api.Shared;
 using UKSF.Api.Shared.Exceptions;
+using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Auth.Services
 {
@@ -15,18 +17,21 @@ namespace UKSF.Api.Auth.Services
     {
         string Login(string email, string password);
         string LoginForPasswordReset(string email);
-        string RegenerateBearerToken(string accountId);
+        string LoginForImpersonate(string accountId);
+        string RegenerateBearerToken();
     }
 
     public class LoginService : ILoginService
     {
         private readonly IAccountContext _accountContext;
         private readonly IPermissionsService _permissionsService;
+        private readonly IHttpContextService _httpContextService;
 
-        public LoginService(IAccountContext accountContext, IPermissionsService permissionsService)
+        public LoginService(IAccountContext accountContext, IPermissionsService permissionsService, IHttpContextService httpContextService)
         {
             _accountContext = accountContext;
             _permissionsService = permissionsService;
+            _httpContextService = httpContextService;
         }
 
         public string Login(string email, string password)
@@ -41,9 +46,20 @@ namespace UKSF.Api.Auth.Services
             return GenerateBearerToken(domainAccount);
         }
 
-        public string RegenerateBearerToken(string accountId)
+        public string LoginForImpersonate(string accountId)
         {
             var domainAccount = _accountContext.GetSingle(accountId);
+            if (domainAccount == null)
+            {
+                throw new BadRequestException($"No user found with id {accountId}");
+            }
+
+            return GenerateImpersonationBearerToken(domainAccount);
+        }
+
+        public string RegenerateBearerToken()
+        {
+            var domainAccount = _accountContext.GetSingle(_httpContextService.GetUserId());
             if (domainAccount == null)
             {
                 throw new BadRequestException("No user found with that email");
@@ -78,6 +94,12 @@ namespace UKSF.Api.Auth.Services
             List<Claim> claims = new() { new(ClaimTypes.Email, domainAccount.Email, ClaimValueTypes.String), new(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String) };
             claims.AddRange(_permissionsService.GrantPermissions(domainAccount).Select(x => new Claim(ClaimTypes.Role, x)));
 
+            var impersonatingUserId = _httpContextService.GetImpersonatingUserId();
+            if (!string.IsNullOrEmpty(impersonatingUserId))
+            {
+                claims.Add(new(UksfClaimTypes.ImpersonatingUserId, impersonatingUserId));
+            }
+
             return JsonConvert.ToString(
                 new JwtSecurityTokenHandler().WriteToken(
                     new JwtSecurityToken(
@@ -86,6 +108,29 @@ namespace UKSF.Api.Auth.Services
                         claims,
                         DateTime.UtcNow,
                         DateTime.UtcNow.AddDays(15),
+                        new(ApiAuthExtensions.SecurityKey, SecurityAlgorithms.HmacSha256)
+                    )
+                )
+            );
+        }
+
+        private string GenerateImpersonationBearerToken(DomainAccount domainAccount)
+        {
+            List<Claim> claims = new()
+            {
+                new(ClaimTypes.Email, domainAccount.Email, ClaimValueTypes.String), new(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String)
+            };
+            claims.AddRange(_permissionsService.GrantPermissions(domainAccount).Select(x => new Claim(ClaimTypes.Role, x)));
+            claims.Add(new(UksfClaimTypes.ImpersonatingUserId, _httpContextService.GetUserId()));
+
+            return JsonConvert.ToString(
+                new JwtSecurityTokenHandler().WriteToken(
+                    new JwtSecurityToken(
+                        ApiAuthExtensions.TokenIssuer,
+                        ApiAuthExtensions.TokenAudience,
+                        claims,
+                        DateTime.UtcNow,
+                        DateTime.UtcNow.AddMinutes(15),
                         new(ApiAuthExtensions.SecurityKey, SecurityAlgorithms.HmacSha256)
                     )
                 )

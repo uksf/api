@@ -5,22 +5,22 @@ using System.Threading.Tasks;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepBuildAce : ModBuildStep
     {
-        public const string NAME = "Build ACE";
-        private const string MOD_NAME = "ace";
+        public const string Name = "Build ACE";
+        private const string ModName = "ace";
         private readonly List<string> _allowedOptionals = new() { "ace_compat_rksl_pm_ii", "ace_nouniformrestrictions" };
 
         protected override async Task ProcessExecute()
         {
             StepLogger.Log("Running build for ACE");
 
-            var toolsPath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "tools");
-            var releasePath = Path.Join(GetBuildSourcesPath(), MOD_NAME, "release", "@ace");
+            var toolsPath = Path.Join(GetBuildSourcesPath(), ModName, "tools");
+            var releasePath = Path.Join(GetBuildSourcesPath(), ModName, "release", "@ace");
             var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_ace");
 
-            if (IsBuildNeeded(MOD_NAME))
+            if (IsBuildNeeded(ModName))
             {
                 StepLogger.LogSurround("\nRunning make.py...");
                 BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource, ignoreErrorGateClose: "File written to", ignoreErrorGateOpen: "MakePbo Version");

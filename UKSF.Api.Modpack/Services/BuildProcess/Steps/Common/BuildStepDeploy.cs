@@ -4,10 +4,10 @@ using UKSF.Api.ArmaServer.Models;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepDeploy : FileBuildStep
     {
-        public const string NAME = "Deploy";
+        public const string Name = "Deploy";
 
         protected override async Task ProcessExecute()
         {

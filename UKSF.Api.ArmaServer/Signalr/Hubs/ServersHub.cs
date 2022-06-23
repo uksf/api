@@ -5,6 +5,6 @@ namespace UKSF.Api.ArmaServer.Signalr.Hubs
 {
     public class ServersHub : Hub<IServersClient>
     {
-        public const string END_POINT = "servers";
+        public const string EndPoint = "servers";
     }
 }

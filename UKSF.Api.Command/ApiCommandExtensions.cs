@@ -59,7 +59,7 @@ namespace UKSF.Api.Command
 
         public static void AddUksfCommandSignalr(this IEndpointRouteBuilder builder)
         {
-            builder.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.END_POINT}");
+            builder.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.EndPoint}");
         }
     }
 }

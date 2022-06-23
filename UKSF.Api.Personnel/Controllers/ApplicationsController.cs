@@ -11,7 +11,7 @@ using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Personnel.Controllers
 {
-    [Route("accounts/{id}/application"), Permissions(Permissions.CONFIRMED)]
+    [Route("accounts/{id}/application"), Permissions(Permissions.Confirmed)]
     public class ApplicationsController : ControllerBase
     {
         private readonly IAccountContext _accountContext;
@@ -49,7 +49,7 @@ namespace UKSF.Api.Personnel.Controllers
                 new()
                 {
                     Owner = domainAccount.Application.Recruiter,
-                    Icon = NotificationIcons.APPLICATION,
+                    Icon = NotificationIcons.Application,
                     Message = $"{domainAccount.Firstname} {domainAccount.Lastname} updated their application",
                     Link = $"/recruitment/{id}"
                 }

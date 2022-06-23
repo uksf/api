@@ -6,6 +6,7 @@ namespace UKSF.Api.Personnel.Models
 {
     public class DomainAccount : MongoObject
     {
+        public bool SuperAdmin;
         public bool Admin;
         public Application Application;
         public string ArmaExperience;

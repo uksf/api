@@ -8,10 +8,10 @@ using UKSF.Api.ArmaServer.Models;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepSignDependencies : FileBuildStep
     {
-        public const string NAME = "Signatures";
+        public const string Name = "Signatures";
         private string _dsCreateKey;
         private string _dsSignFile;
         private string _keyName;

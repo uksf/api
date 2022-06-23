@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepMerge : GitBuildStep
     {
-        public const string NAME = "Merge";
+        public const string Name = "Merge";
 
         protected override Task ProcessExecute()
         {

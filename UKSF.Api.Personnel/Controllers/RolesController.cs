@@ -127,7 +127,7 @@ namespace UKSF.Api.Personnel.Controllers
             {
                 var notification = await _assignmentService.UpdateUnitRankAndRole(
                     account.Id,
-                    role: AssignmentService.REMOVE_FLAG,
+                    role: AssignmentService.RemoveFlag,
                     reason: $"the '{role.Name}' role was deleted"
                 );
                 _notificationsService.Add(notification);

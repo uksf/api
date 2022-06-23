@@ -15,7 +15,7 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
 
     public class ActionCheckForServerUpdate : IActionCheckForServerUpdate
     {
-        private const string ACTION_NAME = nameof(ActionCheckForServerUpdate);
+        private const string ActionName = nameof(ActionCheckForServerUpdate);
 
         private readonly IHostEnvironment _currentEnvironment;
         private readonly IClock _clock;
@@ -53,7 +53,7 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
             _logger = logger;
         }
 
-        public string Name => ACTION_NAME;
+        public string Name => ActionName;
 
         public async Task Run(params object[] parameters)
         {
@@ -88,9 +88,9 @@ namespace UKSF.Api.ArmaServer.ScheduledActions
                 return;
             }
 
-            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null)
+            if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
             {
-                await _schedulerService.CreateScheduledJob(_clock.Today().AddHours(06).AddDays(1), TimeSpan.FromHours(12), ACTION_NAME);
+                await _schedulerService.CreateScheduledJob(_clock.Today().AddHours(06).AddDays(1), TimeSpan.FromHours(12), ActionName);
             }
         }
 

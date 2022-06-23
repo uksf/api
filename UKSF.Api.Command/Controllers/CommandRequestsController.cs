@@ -22,10 +22,10 @@ using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Command.Controllers
 {
-    [Route("[controller]"), Permissions(Permissions.COMMAND)]
+    [Route("[controller]"), Permissions(Permissions.Command)]
     public class CommandRequestsController : ControllerBase
     {
-        private const string SUPER_ADMIN = "59e38f10594c603b78aa9dbd";
+        private const string SuperAdmin = "59e38f10594c603b78aa9dbd";
         private readonly IAccountService _accountService;
         private readonly ICommandRequestCompletionService _commandRequestCompletionService;
         private readonly ICommandRequestContext _commandRequestContext;
@@ -71,7 +71,7 @@ namespace UKSF.Api.Command.Controllers
             var contextId = _httpContextService.GetUserId();
             var id = _variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
             var canOverride = _unitsContext.GetSingle(id).Members.Any(x => x == contextId);
-            var superAdmin = contextId == SUPER_ADMIN;
+            var superAdmin = contextId == SuperAdmin;
             var now = DateTime.UtcNow;
             foreach (var commandRequest in allRequests)
             {
@@ -112,7 +112,7 @@ namespace UKSF.Api.Command.Controllers
                         new()
                         {
                             Owner = reviewerId,
-                            Icon = NotificationIcons.REQUEST,
+                            Icon = NotificationIcons.Request,
                             Message =
                                 $"Your review on {AvsAn.Query(request.Type).Article} {request.Type.ToLower()} request for {request.DisplayRecipient} was overriden by {sessionDomainAccount.Id}"
                         }

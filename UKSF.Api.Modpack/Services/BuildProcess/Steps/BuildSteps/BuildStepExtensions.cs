@@ -8,10 +8,10 @@ using UKSF.Api.Admin.Extensions;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepExtensions : FileBuildStep
     {
-        public const string NAME = "Extensions";
+        public const string Name = "Extensions";
 
         protected override async Task ProcessExecute()
         {

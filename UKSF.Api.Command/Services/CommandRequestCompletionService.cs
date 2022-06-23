@@ -73,30 +73,30 @@ namespace UKSF.Api.Command.Services
                 var request = _commandRequestContext.GetSingle(id);
                 switch (request.Type)
                 {
-                    case CommandRequestType.PROMOTION:
-                    case CommandRequestType.DEMOTION:
+                    case CommandRequestType.Promotion:
+                    case CommandRequestType.Demotion:
                         await Rank(request);
                         break;
-                    case CommandRequestType.LOA:
+                    case CommandRequestType.Loa:
                         await Loa(request);
                         break;
-                    case CommandRequestType.DISCHARGE:
+                    case CommandRequestType.Discharge:
                         await Discharge(request);
                         break;
-                    case CommandRequestType.INDIVIDUAL_ROLE:
+                    case CommandRequestType.IndividualRole:
                         await IndividualRole(request);
                         break;
-                    case CommandRequestType.UNIT_ROLE:
+                    case CommandRequestType.UnitRole:
                         await UnitRole(request);
                         break;
-                    case CommandRequestType.TRANSFER:
-                    case CommandRequestType.AUXILIARY_TRANSFER:
+                    case CommandRequestType.Transfer:
+                    case CommandRequestType.AuxiliaryTransfer:
                         await Transfer(request);
                         break;
-                    case CommandRequestType.UNIT_REMOVAL:
+                    case CommandRequestType.UnitRemoval:
                         await UnitRemoval(request);
                         break;
-                    case CommandRequestType.REINSTATE_MEMBER:
+                    case CommandRequestType.ReinstateMember:
                         await Reinstate(request);
                         break;
                     default: throw new BadRequestException($"Request type not recognized: '{request.Type}'");
@@ -185,12 +185,12 @@ namespace UKSF.Api.Command.Services
 
                 var notification = await _assignmentService.UpdateUnitRankAndRole(
                     domainAccount.Id,
-                    AssignmentService.REMOVE_FLAG,
-                    AssignmentService.REMOVE_FLAG,
-                    AssignmentService.REMOVE_FLAG,
+                    AssignmentService.RemoveFlag,
+                    AssignmentService.RemoveFlag,
+                    AssignmentService.RemoveFlag,
                     request.Reason,
                     "",
-                    AssignmentService.REMOVE_FLAG
+                    AssignmentService.RemoveFlag
                 );
                 _notificationsService.Add(notification);
                 await _assignmentService.UnassignAllUnits(domainAccount.Id);
@@ -212,7 +212,7 @@ namespace UKSF.Api.Command.Services
             {
                 var notification = await _assignmentService.UpdateUnitRankAndRole(
                     request.Recipient,
-                    role: request.Value == "None" ? AssignmentService.REMOVE_FLAG : request.Value,
+                    role: request.Value == "None" ? AssignmentService.RemoveFlag : request.Value,
                     reason: request.Reason
                 );
                 _notificationsService.Add(notification);
@@ -242,7 +242,7 @@ namespace UKSF.Api.Command.Services
                             {
                                 Owner = request.Recipient,
                                 Message = "You have been unassigned from all roles in all units",
-                                Icon = NotificationIcons.DEMOTION
+                                Icon = NotificationIcons.Demotion
                             }
                         );
                     }
@@ -255,7 +255,7 @@ namespace UKSF.Api.Command.Services
                                 Owner = request.Recipient,
                                 Message =
                                     $"You have been unassigned as {AvsAn.Query(role).Article} {role} in {_unitsService.GetChainString(_unitsContext.GetSingle(request.Value))}",
-                                Icon = NotificationIcons.DEMOTION
+                                Icon = NotificationIcons.Demotion
                             }
                         );
                     }
@@ -269,7 +269,7 @@ namespace UKSF.Api.Command.Services
                             Owner = request.Recipient,
                             Message =
                                 $"You have been assigned as {AvsAn.Query(request.SecondaryValue).Article} {request.SecondaryValue} in {_unitsService.GetChainString(_unitsContext.GetSingle(request.Value))}",
-                            Icon = NotificationIcons.PROMOTION
+                            Icon = NotificationIcons.Promotion
                         }
                     );
                 }
@@ -297,7 +297,7 @@ namespace UKSF.Api.Command.Services
                     {
                         Owner = request.Recipient,
                         Message = $"You have been removed from {_unitsService.GetChainString(unit)}",
-                        Icon = NotificationIcons.DEMOTION
+                        Icon = NotificationIcons.Demotion
                     }
                 );
                 await _commandRequestService.ArchiveRequest(request.Id);

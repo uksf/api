@@ -35,7 +35,7 @@ namespace UKSF.Api.Personnel.Services
 
     public class AssignmentService : IAssignmentService
     {
-        public const string REMOVE_FLAG = "REMOVE";
+        public const string RemoveFlag = "REMOVE";
         private readonly IAccountContext _accountContext;
         private readonly IHubContext<AccountHub, IAccountClient> _accountHub;
         private readonly IDisplayNameService _displayNameService;
@@ -112,8 +112,8 @@ namespace UKSF.Api.Personnel.Services
 
             _serviceRecordService.AddServiceRecord(id, message, notes);
             await UpdateGroupsAndRoles(id);
-            return message != REMOVE_FLAG
-                ? new Notification { Owner = id, Message = message, Icon = positive ? NotificationIcons.PROMOTION : NotificationIcons.DEMOTION }
+            return message != RemoveFlag
+                ? new Notification { Owner = id, Message = message, Icon = positive ? NotificationIcons.Promotion : NotificationIcons.Demotion }
                 : null;
         }
 
@@ -188,7 +188,7 @@ namespace UKSF.Api.Personnel.Services
                 notificationMessage.Append($"You have been transfered to {_unitsService.GetChainString(unit)}");
                 unitUpdate = true;
             }
-            else if (unitString == REMOVE_FLAG)
+            else if (unitString == RemoveFlag)
             {
                 var currentUnit = _accountContext.GetSingle(id).UnitAssignment;
                 if (string.IsNullOrEmpty(currentUnit))
@@ -211,7 +211,7 @@ namespace UKSF.Api.Personnel.Services
         {
             var roleUpdate = false;
             var positive = true;
-            if (!string.IsNullOrEmpty(role) && role != REMOVE_FLAG)
+            if (!string.IsNullOrEmpty(role) && role != RemoveFlag)
             {
                 await _accountContext.Update(id, x => x.RoleAssignment, role);
                 notificationMessage.Append(
@@ -219,7 +219,7 @@ namespace UKSF.Api.Personnel.Services
                 );
                 roleUpdate = true;
             }
-            else if (role == REMOVE_FLAG)
+            else if (role == RemoveFlag)
             {
                 var currentRole = _accountContext.GetSingle(id).RoleAssignment;
                 await _accountContext.Update(id, x => x.RoleAssignment, null);
@@ -241,7 +241,7 @@ namespace UKSF.Api.Personnel.Services
             var rankUpdate = false;
             var positive = true;
             var currentRank = _accountContext.GetSingle(id).Rank;
-            if (!string.IsNullOrEmpty(rank) && rank != REMOVE_FLAG)
+            if (!string.IsNullOrEmpty(rank) && rank != RemoveFlag)
             {
                 if (currentRank == rank)
                 {
@@ -255,7 +255,7 @@ namespace UKSF.Api.Personnel.Services
                 );
                 rankUpdate = true;
             }
-            else if (rank == REMOVE_FLAG)
+            else if (rank == RemoveFlag)
             {
                 await _accountContext.Update(id, x => x.Rank, null);
                 notificationMessage.Append($"{(unitUpdate || roleUpdate ? $" and demoted from {currentRank}" : $"You have been demoted from {currentRank}")}");

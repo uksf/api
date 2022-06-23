@@ -9,7 +9,7 @@ namespace UKSF.Api.Personnel.Signalr.Hubs
     [Authorize]
     public class AccountHub : Hub<IAccountClient>
     {
-        public const string END_POINT = "account";
+        public const string EndPoint = "account";
 
         public override async Task OnConnectedAsync()
         {

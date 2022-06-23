@@ -9,7 +9,7 @@ namespace UKSF.Api.Shared.Signalr.Hubs
     [Authorize]
     public class AccountGroupedHub : Hub<IAccountGroupedClient>
     {
-        public const string END_POINT = "accountGrouped";
+        public const string EndPoint = "accountGrouped";
 
         public override async Task OnConnectedAsync()
         {

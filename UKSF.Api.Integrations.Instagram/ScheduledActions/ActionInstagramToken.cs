@@ -11,7 +11,7 @@ namespace UKSF.Api.Integrations.Instagram.ScheduledActions
 
     public class ActionInstagramToken : IActionInstagramToken
     {
-        private const string ACTION_NAME = nameof(ActionInstagramToken);
+        private const string ActionName = nameof(ActionInstagramToken);
 
         private readonly IClock _clock;
         private readonly IInstagramService _instagramService;
@@ -26,7 +26,7 @@ namespace UKSF.Api.Integrations.Instagram.ScheduledActions
             _clock = clock;
         }
 
-        public string Name => ACTION_NAME;
+        public string Name => ActionName;
 
         public Task Run(params object[] parameters)
         {
@@ -35,15 +35,15 @@ namespace UKSF.Api.Integrations.Instagram.ScheduledActions
 
         public async Task CreateSelf()
         {
-            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null)
+            if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
             {
-                await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(45), TimeSpan.FromDays(45), ACTION_NAME);
+                await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(45), TimeSpan.FromDays(45), ActionName);
             }
         }
 
         public async Task Reset()
         {
-            var job = _schedulerContext.GetSingle(x => x.Action == ACTION_NAME);
+            var job = _schedulerContext.GetSingle(x => x.Action == ActionName);
             await _schedulerContext.Delete(job.Id);
 
             await CreateSelf();

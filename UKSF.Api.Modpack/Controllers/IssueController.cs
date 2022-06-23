@@ -15,7 +15,7 @@ using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Modpack.Controllers
 {
-    [Route("issue"), Permissions(Permissions.MEMBER)]
+    [Route("issue"), Permissions(Permissions.Member)]
     public class IssueController : ControllerBase
     {
         private readonly IDisplayNameService _displayNameService;

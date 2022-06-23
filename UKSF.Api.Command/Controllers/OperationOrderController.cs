@@ -9,7 +9,7 @@ using UKSF.Api.Shared;
 
 namespace UKSF.Api.Command.Controllers
 {
-    [Route("[controller]"), Permissions(Permissions.MEMBER)]
+    [Route("[controller]"), Permissions(Permissions.Member)]
     public class OperationOrderController : ControllerBase
     {
         private readonly IOperationOrderContext _operationOrderContext;

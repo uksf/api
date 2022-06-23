@@ -4,10 +4,10 @@ using UKSF.Api.ArmaServer.Models;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepReleaseKeys : FileBuildStep
     {
-        public const string NAME = "Copy Keys";
+        public const string Name = "Copy Keys";
 
         protected override async Task SetupExecute()
         {

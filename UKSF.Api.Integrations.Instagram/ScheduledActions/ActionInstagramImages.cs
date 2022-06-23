@@ -11,7 +11,7 @@ namespace UKSF.Api.Integrations.Instagram.ScheduledActions
 
     public class ActionInstagramImages : IActionInstagramImages
     {
-        private const string ACTION_NAME = nameof(ActionInstagramImages);
+        private const string ActionName = nameof(ActionInstagramImages);
 
         private readonly IClock _clock;
         private readonly IInstagramService _instagramService;
@@ -26,7 +26,7 @@ namespace UKSF.Api.Integrations.Instagram.ScheduledActions
             _clock = clock;
         }
 
-        public string Name => ACTION_NAME;
+        public string Name => ActionName;
 
         public Task Run(params object[] parameters)
         {
@@ -35,9 +35,9 @@ namespace UKSF.Api.Integrations.Instagram.ScheduledActions
 
         public async Task CreateSelf()
         {
-            if (_schedulerContext.GetSingle(x => x.Action == ACTION_NAME) == null)
+            if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
             {
-                await _schedulerService.CreateScheduledJob(_clock.Today(), TimeSpan.FromMinutes(15), ACTION_NAME);
+                await _schedulerService.CreateScheduledJob(_clock.Today(), TimeSpan.FromMinutes(15), ActionName);
             }
 
             await Run();

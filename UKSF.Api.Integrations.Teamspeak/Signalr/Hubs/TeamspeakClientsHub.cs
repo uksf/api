@@ -5,6 +5,6 @@ namespace UKSF.Api.Teamspeak.Signalr.Hubs
 {
     public class TeamspeakClientsHub : Hub<ITeamspeakClientsClient>
     {
-        public const string END_POINT = "teamspeakClients";
+        public const string EndPoint = "teamspeakClients";
     }
 }

@@ -16,16 +16,16 @@ namespace UKSF.Api.Command.Models
 
     public static class CommandRequestType
     {
-        public const string AUXILIARY_TRANSFER = "Axuiliary Transfer";
-        public const string DEMOTION = "Demotion";
-        public const string DISCHARGE = "Discharge";
-        public const string INDIVIDUAL_ROLE = "Individual Role";
-        public const string LOA = "Loa";
-        public const string PROMOTION = "Promotion";
-        public const string REINSTATE_MEMBER = "Reinstate Member";
-        public const string TRANSFER = "Transfer";
-        public const string UNIT_REMOVAL = "Unit Removal";
-        public const string UNIT_ROLE = "Unit Role";
+        public const string AuxiliaryTransfer = "Axuiliary Transfer";
+        public const string Demotion = "Demotion";
+        public const string Discharge = "Discharge";
+        public const string IndividualRole = "Individual Role";
+        public const string Loa = "Loa";
+        public const string Promotion = "Promotion";
+        public const string ReinstateMember = "Reinstate Member";
+        public const string Transfer = "Transfer";
+        public const string UnitRemoval = "Unit Removal";
+        public const string UnitRole = "Unit Role";
     }
 
     public class CommandRequest : MongoObject

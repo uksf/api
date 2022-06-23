@@ -45,7 +45,7 @@ namespace UKSF.Api.Modpack
 
         public static void AddUksfModpackSignalr(this IEndpointRouteBuilder builder)
         {
-            builder.MapHub<BuildsHub>($"/hub/{BuildsHub.END_POINT}");
+            builder.MapHub<BuildsHub>($"/hub/{BuildsHub.EndPoint}");
         }
     }
 }

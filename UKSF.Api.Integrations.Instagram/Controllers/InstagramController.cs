@@ -26,7 +26,7 @@ namespace UKSF.Api.Integrations.Instagram.Controllers
             return _instagramService.GetImages();
         }
 
-        [HttpGet("refreshToken"), Permissions(Permissions.ADMIN)]
+        [HttpGet("refreshToken"), Permissions(Permissions.Admin)]
         public async Task RefreshToken()
         {
             await _actionInstagramToken.Reset();

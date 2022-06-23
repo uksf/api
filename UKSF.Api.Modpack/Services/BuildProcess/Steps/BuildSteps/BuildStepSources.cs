@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepSources : GitBuildStep
     {
-        public const string NAME = "Sources";
+        public const string Name = "Sources";
 
         protected override async Task ProcessExecute()
         {

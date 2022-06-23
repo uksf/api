@@ -4,10 +4,10 @@ using UKSF.Api.Admin.Extensions;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
 {
-    [BuildStep(NAME)]
+    [BuildStep(Name)]
     public class BuildStepBuildRepo : BuildStep
     {
-        public const string NAME = "Build Repo";
+        public const string Name = "Build Repo";
 
         protected override Task ProcessExecute()
         {

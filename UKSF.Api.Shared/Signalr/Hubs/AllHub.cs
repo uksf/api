@@ -7,6 +7,6 @@ namespace UKSF.Api.Shared.Signalr.Hubs
     [Authorize]
     public class AllHub : Hub<IAllClient>
     {
-        public const string END_POINT = "all";
+        public const string EndPoint = "all";
     }
 }

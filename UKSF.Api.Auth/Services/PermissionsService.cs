@@ -39,67 +39,72 @@ namespace UKSF.Api.Auth.Services
             {
                 case MembershipState.MEMBER:
                 {
-                    permissions.Add(Permissions.MEMBER);
-                    var admin = domainAccount.Admin;
-                    if (admin)
+                    permissions.Add(Permissions.Member);
+
+                    if (domainAccount.Admin)
                     {
-                        permissions.UnionWith(Permissions.ALL);
+                        permissions.UnionWith(Permissions.All);
+
+                        if (domainAccount.SuperAdmin)
+                        {
+                            permissions.Add(Permissions.Superadmin);
+                        }
                         break;
                     }
 
                     if (_unitsService.MemberHasAnyRole(domainAccount.Id))
                     {
-                        permissions.Add(Permissions.COMMAND);
+                        permissions.Add(Permissions.Command);
                     }
 
                     var ncoRank = _variablesService.GetVariable("PERMISSIONS_NCO_RANK").AsString();
                     if (domainAccount.Rank != null && _ranksService.IsSuperiorOrEqual(domainAccount.Rank, ncoRank))
                     {
-                        permissions.Add(Permissions.NCO);
+                        permissions.Add(Permissions.Nco);
                     }
 
                     if (_recruitmentService.IsRecruiterLead(domainAccount))
                     {
-                        permissions.Add(Permissions.RECRUITER_LEAD);
+                        permissions.Add(Permissions.RecruiterLead);
                     }
 
                     if (_recruitmentService.IsRecruiter(domainAccount))
                     {
-                        permissions.Add(Permissions.RECRUITER);
+                        permissions.Add(Permissions.Recruiter);
                     }
 
                     var personnelId = _variablesService.GetVariable("UNIT_ID_PERSONNEL").AsString();
                     if (_unitsContext.GetSingle(personnelId).Members.Contains(domainAccount.Id))
                     {
-                        permissions.Add(Permissions.PERSONNEL);
+                        permissions.Add(Permissions.Personnel);
                     }
 
                     var missionsId = _variablesService.GetVariable("UNIT_ID_MISSIONS").AsArray();
                     if (_unitsContext.GetSingle(x => missionsId.Contains(x.Id)).Members.Contains(domainAccount.Id))
                     {
-                        permissions.Add(Permissions.SERVERS);
+                        permissions.Add(Permissions.Servers);
                     }
 
                     var testersId = _variablesService.GetVariable("UNIT_ID_TESTERS").AsString();
                     if (_unitsContext.GetSingle(testersId).Members.Contains(domainAccount.Id))
                     {
-                        permissions.Add(Permissions.TESTER);
+                        permissions.Add(Permissions.Tester);
                     }
 
                     break;
                 }
 
                 case MembershipState.SERVER:
-                    permissions.Add(Permissions.ADMIN);
+                    permissions.Add(Permissions.Admin);
                     break;
                 case MembershipState.CONFIRMED:
-                    permissions.Add(Permissions.CONFIRMED);
+                    permissions.Add(Permissions.Confirmed);
                     break;
                 case MembershipState.DISCHARGED:
-                    permissions.Add(Permissions.DISCHARGED);
+                    permissions.Add(Permissions.Discharged);
                     break;
                 default:
-                    permissions.Add(Permissions.UNCONFIRMED);
+                    permissions.Add(Permissions.Unconfirmed);
                     break;
             }
 

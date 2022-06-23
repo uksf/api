@@ -13,11 +13,11 @@ namespace UKSF.Api.Personnel.Tests.Commands
 {
     public class CreateApplicationCommandTests
     {
-        private const string ACCOUNT_ID = "id";
-        private const string APPLICATION_COMMENT_THREAD_ID = "applicationCommentThreadId";
-        private const string DISCORD_ID = "discord";
-        private const string RECRUITER_COMMENT_THREAD_ID = "recruiterCommentThreadId";
-        private const string STEAM_NAME = "steam";
+        private const string AccountId = "id";
+        private const string ApplicationCommentThreadId = "applicationCommentThreadId";
+        private const string DiscordId = "discord";
+        private const string RecruiterCommentThreadId = "recruiterCommentThreadId";
+        private const string SteamName = "steam";
         private readonly Mock<IAccountContext> _mockAccountContext;
         private readonly Mock<IAssignmentService> _mockAssignmentService;
         private readonly Mock<ICommentThreadService> _mockCommentThreadService;
@@ -40,7 +40,7 @@ namespace UKSF.Api.Personnel.Tests.Commands
             _mockCreateCommentThreadCommand = new();
 
             _mockRecruitmentService.Setup(x => x.GetRecruiterLeads()).Returns(new Dictionary<string, string>());
-            _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Id == ACCOUNT_ID))).Returns("Last.F");
+            _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Id == AccountId))).Returns("Last.F");
 
             _subject = new(
                 _mockAccountContext.Object,
@@ -67,22 +67,22 @@ namespace UKSF.Api.Personnel.Tests.Commands
                                        {
                                            Lastname = "Match",
                                            Firstname = "1",
-                                           Steamname = STEAM_NAME,
-                                           DiscordId = DISCORD_ID,
+                                           Steamname = SteamName,
+                                           DiscordId = DiscordId,
                                            MembershipState = MembershipState.MEMBER
                                        }
                                    }
                                );
             _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Lastname == "Match"))).Returns("Match.1");
 
-            await _subject.ExecuteAsync(ACCOUNT_ID, new());
+            await _subject.ExecuteAsync(AccountId, new());
 
             _mockCommentThreadService.Verify(
-                x => x.InsertComment(RECRUITER_COMMENT_THREAD_ID, It.Is<Comment>(m => m.Content == "Last.F has the same Steam account as Match.1")),
+                x => x.InsertComment(RecruiterCommentThreadId, It.Is<Comment>(m => m.Content == "Last.F has the same Steam account as Match.1")),
                 Times.Once
             );
             _mockCommentThreadService.Verify(
-                x => x.InsertComment(RECRUITER_COMMENT_THREAD_ID, It.Is<Comment>(m => m.Content == "Last.F has the same Discord account as Match.1")),
+                x => x.InsertComment(RecruiterCommentThreadId, It.Is<Comment>(m => m.Content == "Last.F has the same Discord account as Match.1")),
                 Times.Once
             );
         }
@@ -100,16 +100,16 @@ namespace UKSF.Api.Personnel.Tests.Commands
                                        {
                                            Lastname = "Match",
                                            Firstname = "1",
-                                           Steamname = STEAM_NAME,
-                                           DiscordId = DISCORD_ID,
+                                           Steamname = SteamName,
+                                           DiscordId = DiscordId,
                                            MembershipState = MembershipState.CONFIRMED
                                        },
                                        new()
                                        {
                                            Lastname = "Match",
                                            Firstname = "2",
-                                           Steamname = STEAM_NAME,
-                                           DiscordId = DISCORD_ID,
+                                           Steamname = SteamName,
+                                           DiscordId = DiscordId,
                                            MembershipState = MembershipState.DISCHARGED
                                        }
                                    }
@@ -117,14 +117,14 @@ namespace UKSF.Api.Personnel.Tests.Commands
             _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Firstname == "1"))).Returns("Match.1");
             _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Firstname == "2"))).Returns("Match.2");
 
-            await _subject.ExecuteAsync(ACCOUNT_ID, new());
+            await _subject.ExecuteAsync(AccountId, new());
 
             _mockCommentThreadService.Verify(
-                x => x.InsertComment(RECRUITER_COMMENT_THREAD_ID, It.Is<Comment>(m => m.Content == "Last.F has the same Steam account as Match.1, Match.2")),
+                x => x.InsertComment(RecruiterCommentThreadId, It.Is<Comment>(m => m.Content == "Last.F has the same Steam account as Match.1, Match.2")),
                 Times.Once
             );
             _mockCommentThreadService.Verify(
-                x => x.InsertComment(RECRUITER_COMMENT_THREAD_ID, It.Is<Comment>(m => m.Content == "Last.F has the same Discord account as Match.1, Match.2")),
+                x => x.InsertComment(RecruiterCommentThreadId, It.Is<Comment>(m => m.Content == "Last.F has the same Discord account as Match.1, Match.2")),
                 Times.Once
             );
         }
@@ -136,34 +136,34 @@ namespace UKSF.Api.Personnel.Tests.Commands
             Given_an_account_with_application();
             _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount>());
 
-            await _subject.ExecuteAsync(ACCOUNT_ID, new());
+            await _subject.ExecuteAsync(AccountId, new());
 
-            _mockCommentThreadService.Verify(x => x.InsertComment(RECRUITER_COMMENT_THREAD_ID, It.IsAny<Comment>()), Times.Never);
+            _mockCommentThreadService.Verify(x => x.InsertComment(RecruiterCommentThreadId, It.IsAny<Comment>()), Times.Never);
         }
 
         private void Given_application_comment_threads()
         {
             _mockCreateCommentThreadCommand.Setup(x => x.ExecuteAsync(It.Is<string[]>(m => m.Length == 0), ThreadMode.RECRUITER))
-                                           .ReturnsAsync(new CommentThread { Id = RECRUITER_COMMENT_THREAD_ID });
+                                           .ReturnsAsync(new CommentThread { Id = RecruiterCommentThreadId });
             _mockCreateCommentThreadCommand.Setup(x => x.ExecuteAsync(It.Is<string[]>(m => m.Length == 1), ThreadMode.RECRUITER))
-                                           .ReturnsAsync(new CommentThread { Id = APPLICATION_COMMENT_THREAD_ID });
+                                           .ReturnsAsync(new CommentThread { Id = ApplicationCommentThreadId });
         }
 
         private void Given_an_account_with_application()
         {
-            _mockAccountContext.Setup(x => x.GetSingle(ACCOUNT_ID))
+            _mockAccountContext.Setup(x => x.GetSingle(AccountId))
                                .Returns(
                                    () => new()
                                    {
-                                       Id = ACCOUNT_ID,
+                                       Id = AccountId,
                                        Lastname = "Last",
                                        Firstname = "First",
                                        Application = new()
                                        {
-                                           RecruiterCommentThread = RECRUITER_COMMENT_THREAD_ID, ApplicationCommentThread = APPLICATION_COMMENT_THREAD_ID
+                                           RecruiterCommentThread = RecruiterCommentThreadId, ApplicationCommentThread = ApplicationCommentThreadId
                                        },
-                                       Steamname = STEAM_NAME,
-                                       DiscordId = DISCORD_ID
+                                       Steamname = SteamName,
+                                       DiscordId = DiscordId
                                    }
                                );
         }

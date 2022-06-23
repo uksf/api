@@ -9,7 +9,7 @@ namespace UKSF.Api.Personnel.Signalr.Hubs
     [Authorize]
     public class CommentThreadHub : Hub<ICommentThreadClient>
     {
-        public const string END_POINT = "commentThread";
+        public const string EndPoint = "commentThread";
 
         public override async Task OnConnectedAsync()
         {

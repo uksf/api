@@ -7,6 +7,6 @@ namespace UKSF.Api.Launcher.Signalr.Hubs
     [Authorize]
     public class LauncherHub : Hub<ILauncherClient>
     {
-        public const string END_POINT = "launcher";
+        public const string EndPoint = "launcher";
     }
 }

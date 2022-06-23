@@ -11,7 +11,7 @@ namespace UKSF.Api.ArmaMissions.Services
 {
     public class MissionService
     {
-        private const string UNBIN = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\DeRapDos.exe";
+        private const string Unbin = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\DeRapDos.exe";
 
         private readonly MissionPatchDataService _missionPatchDataService;
         private int _armaServerDefaultMaxCurators;
@@ -95,7 +95,10 @@ namespace UKSF.Api.ArmaMissions.Services
 
         private bool CheckBinned()
         {
-            Process process = new() { StartInfo = { FileName = UNBIN, Arguments = $"-p -q \"{_mission.SqmPath}\"", UseShellExecute = false, CreateNoWindow = true } };
+            Process process = new()
+            {
+                StartInfo = { FileName = Unbin, Arguments = $"-p -q \"{_mission.SqmPath}\"", UseShellExecute = false, CreateNoWindow = true }
+            };
             process.Start();
             process.WaitForExit();
             return process.ExitCode == 0;
@@ -103,7 +106,10 @@ namespace UKSF.Api.ArmaMissions.Services
 
         private void UnBin()
         {
-            Process process = new() { StartInfo = { FileName = UNBIN, Arguments = $"-p \"{_mission.SqmPath}\"", UseShellExecute = false, CreateNoWindow = true } };
+            Process process = new()
+            {
+                StartInfo = { FileName = Unbin, Arguments = $"-p \"{_mission.SqmPath}\"", UseShellExecute = false, CreateNoWindow = true }
+            };
             process.Start();
             process.WaitForExit();
 

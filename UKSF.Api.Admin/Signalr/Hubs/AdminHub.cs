@@ -7,6 +7,6 @@ namespace UKSF.Api.Admin.Signalr.Hubs
     [Authorize]
     public class AdminHub : Hub<IAdminClient>
     {
-        public const string END_POINT = "admin";
+        public const string EndPoint = "admin";
     }
 }
