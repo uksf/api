@@ -6,6 +6,6 @@ namespace UKSF.Api.Auth.Exceptions
     [Serializable]
     public class TokenRefreshFailedException : UksfException
     {
-        public TokenRefreshFailedException() : base("Failed to refresh token", 401) { }
+        public TokenRefreshFailedException(string message) : base(message, 401) { }
     }
 }

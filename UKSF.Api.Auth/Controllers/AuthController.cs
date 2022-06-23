@@ -39,7 +39,7 @@ namespace UKSF.Api.Auth.Controllers
             var loginToken = _loginService.RegenerateBearerToken();
             if (loginToken == null)
             {
-                throw new TokenRefreshFailedException();
+                throw new TokenRefreshFailedException("Failed to refresh token");
             }
 
             return loginToken;

@@ -52,8 +52,13 @@ namespace UKSF.Api.Middleware
                 {
                     await HandleError(context, uksfException);
                 }
-                else if (IsError(context.Response) || exception != null)
+                else if (exception != null)
                 {
+                    await HandleError(context, exception);
+                }
+                else if (IsError(context.Response))
+                {
+                    exception = GetException(context);
                     await HandleError(context, exception);
                 }
             }
@@ -75,6 +80,13 @@ namespace UKSF.Api.Middleware
         private static bool IsError(HttpResponse response)
         {
             return response is { StatusCode: >= 400 };
+        }
+
+        private static Exception GetException(HttpContext context)
+        {
+            context.Items.TryGetValue("exception", out var exception);
+
+            return exception as Exception ?? new Exception("unknown error");
         }
     }
 }

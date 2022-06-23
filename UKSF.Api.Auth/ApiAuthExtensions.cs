@@ -81,6 +81,12 @@ namespace UKSF.Api.Auth
                             options.SaveToken = true;
                             options.Events = new()
                             {
+                                OnAuthenticationFailed = context =>
+                                {
+                                    context.HttpContext.Items.Add("exception", context.Exception);
+
+                                    return Task.CompletedTask;
+                                },
                                 OnMessageReceived = context =>
                                 {
                                     var accessToken = context.Request.Query["access_token"];

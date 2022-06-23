@@ -18,10 +18,11 @@ namespace UKSF.Tests.Unit.Services.Utility
         public SessionServiceTests()
         {
             Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
+            Mock<IClock> mockClock = new();
 
             mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(() => _httpContext);
 
-            _httpContextService = new(mockHttpContextAccessor.Object);
+            _httpContextService = new(mockHttpContextAccessor.Object, mockClock.Object);
         }
 
         [Fact]

@@ -80,7 +80,7 @@ namespace UKSF.Api.Auth.Services
                     }
 
                     var missionsId = _variablesService.GetVariable("UNIT_ID_MISSIONS").AsArray();
-                    if (_unitsContext.GetSingle(x => missionsId.Contains(x.Id)).Members.Contains(domainAccount.Id))
+                    if (_unitsContext.Get(x => missionsId.Contains(x.Id)).Any(x => x.Members.Contains(domainAccount.Id)))
                     {
                         permissions.Add(Permissions.Servers);
                     }
