@@ -41,6 +41,8 @@ namespace UKSF.Api.Teamspeak.EventHandlers
             _logger = logger;
         }
 
+        public void EarlyInit() { }
+
         public void Init()
         {
             _eventBus.AsObservable().SubscribeWithAsyncNext<SignalrEventData>(HandleEvent, _logger.LogError);

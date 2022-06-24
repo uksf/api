@@ -23,6 +23,8 @@ namespace UKSF.Api.Discord.EventHandlers
             _discordService = discordService;
         }
 
+        public void EarlyInit() { }
+
         public void Init()
         {
             _eventBus.AsObservable().SubscribeWithAsyncNext<DomainAccount>(HandleAccountEvent, _logger.LogError);

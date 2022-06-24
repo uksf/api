@@ -38,6 +38,8 @@ namespace UKSF.Api.Personnel.EventHandlers
             _logger = logger;
         }
 
+        public void EarlyInit() { }
+
         public void Init()
         {
             _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainAccount>>(HandleAccountEvent, _logger.LogError);

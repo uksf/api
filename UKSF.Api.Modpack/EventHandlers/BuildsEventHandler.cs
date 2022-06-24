@@ -26,6 +26,8 @@ namespace UKSF.Api.Modpack.EventHandlers
             _logger = logger;
         }
 
+        public void EarlyInit() { }
+
         public void Init()
         {
             _eventBus.AsObservable().SubscribeWithAsyncNext<ModpackBuild>(HandleBuildEvent, _logger.LogError);
