@@ -35,7 +35,7 @@ namespace UKSF.Tests.Unit.Events.Handlers
             LoggerEventHandler logEventHandler =
                 new(_eventBus, _mockLogDataService.Object, _mockAuditLogDataService.Object, _mockErrorLogDataService.Object, _mockLauncherLogDataService.Object, _mockDiscordLogDataService.Object,
                     mockLogger.Object, _mockObjectIdConversionService.Object);
-            logEventHandler.Init();
+            logEventHandler.EarlyInit();
         }
 
         [Fact]
