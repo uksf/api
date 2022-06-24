@@ -24,6 +24,8 @@ namespace UKSF.Api.Teamspeak.EventHandlers
             _teamspeakService = teamspeakService;
         }
 
+        public void EarlyInit() { }
+
         public void Init()
         {
             _eventBus.AsObservable().SubscribeWithAsyncNext<DomainAccount>(HandleAccountEvent, _logger.LogError);

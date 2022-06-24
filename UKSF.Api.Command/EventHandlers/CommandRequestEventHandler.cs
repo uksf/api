@@ -26,6 +26,8 @@ namespace UKSF.Api.Command.EventHandlers
             _logger = logger;
         }
 
+        public void EarlyInit() { }
+
         public void Init()
         {
             _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<CommandRequest>>(HandleEvent, _logger.LogError);

@@ -30,7 +30,7 @@ namespace UKSF.Api.Services
             {
                 ExecuteMigration();
                 _migrationContext.Add(new() { Version = Version });
-                _logger.LogAudit($"Migration version {Version} executed successfully");
+                _logger.LogInfo($"Migration version {Version} executed successfully");
             }
             catch (Exception e)
             {

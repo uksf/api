@@ -43,9 +43,13 @@ namespace UKSF.Api.EventHandlers
             _objectIdConversionService = objectIdConversionService;
         }
 
-        public void Init()
+        public void EarlyInit()
         {
             _eventBus.AsObservable().SubscribeWithAsyncNext<LoggerEventData>(HandleLog, _logger.LogError);
+        }
+
+        public void Init()
+        {
         }
 
         private Task HandleLog(EventModel eventModel, LoggerEventData logData)

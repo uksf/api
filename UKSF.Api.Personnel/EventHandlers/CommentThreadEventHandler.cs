@@ -28,6 +28,8 @@ namespace UKSF.Api.Personnel.EventHandlers
             _logger = logger;
         }
 
+        public void EarlyInit() { }
+
         public void Init()
         {
             _eventBus.AsObservable().SubscribeWithAsyncNext<CommentThreadEventData>(HandleEvent, _logger.LogError);

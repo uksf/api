@@ -25,6 +25,9 @@ namespace UKSF.Api.AppStart
                 // TestDataSetup.Run(serviceProvider);
             }
 
+            // Early init event handlers
+            serviceProvider.GetInterfaceServices<IEventHandler>().ForEach(x => x.EarlyInit());
+
             // Execute any DB migration
             serviceProvider.GetService<MigrationUtility>()?.Migrate();
 
@@ -38,7 +41,7 @@ namespace UKSF.Api.AppStart
             // Register build steps
             serviceProvider.GetService<IBuildStepService>()?.RegisterBuildSteps();
 
-            // Add event handlers
+            // Init event handlers
             serviceProvider.GetInterfaceServices<IEventHandler>().ForEach(x => x.Init());
 
             // Start teamspeak manager

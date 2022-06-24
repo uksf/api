@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -45,7 +46,7 @@ namespace UKSF.Tests.Unit.Data.Modpack
         }
 
         [Fact]
-        public void Should_update_build_step_with_event()
+        public async Task Should_update_build_step_with_event()
         {
             var id = ObjectId.GenerateNewId().ToString();
             ModpackBuildStep modpackBuildStep = new("step") { Index = 0, Running = false };
@@ -56,7 +57,7 @@ namespace UKSF.Tests.Unit.Data.Modpack
             _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<ModpackBuild>>())).Callback(() => { modpackBuild.Steps.First().Running = true; });
             _mockEventBus.Setup(x => x.Send(It.IsAny<EventModel>())).Callback<EventModel>(x => subject = x);
 
-            _buildsContext.Update(modpackBuild, modpackBuildStep);
+            await _buildsContext.Update(modpackBuild, modpackBuildStep);
 
             modpackBuildStep.Running.Should().BeTrue();
             subject.Data.Should().NotBeNull();
@@ -64,7 +65,7 @@ namespace UKSF.Tests.Unit.Data.Modpack
         }
 
         [Fact]
-        public void Should_update_build_with_event_data()
+        public async Task Should_update_build_with_event_data()
         {
             var id = ObjectId.GenerateNewId().ToString();
             EventModel subject = null;
@@ -74,7 +75,7 @@ namespace UKSF.Tests.Unit.Data.Modpack
             _mockEventBus.Setup(x => x.Send(It.IsAny<EventModel>())).Callback<EventModel>(x => subject = x);
 
             ModpackBuild modpackBuild = new() { Id = id, BuildNumber = 1 };
-            _buildsContext.Update(modpackBuild, Builders<ModpackBuild>.Update.Set(x => x.Running, true));
+            await _buildsContext.Update(modpackBuild, Builders<ModpackBuild>.Update.Set(x => x.Running, true));
 
             subject.Data.Should().NotBeNull();
             subject.Data.Should().Be(modpackBuild);
