@@ -8,6 +8,7 @@ namespace UKSF.Api.Command.Models
     {
         public string Firstname;
         public string Lastname;
+        public Qualifications Qualifications;
         public List<DomainUnit> ParentUnits;
         public DomainRank Rank;
         public DomainRole Role;

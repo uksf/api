@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using UKSF.Api.ArmaMissions.Models;
 
 namespace UKSF.Api.ArmaMissions.Services
@@ -55,12 +54,12 @@ namespace UKSF.Api.ArmaMissions.Services
 
         private static bool IsMedic(MissionPlayer player)
         {
-            return MissionPatchData.Instance.MedicIds.Contains(player.DomainAccount?.Id);
+            return player.DomainAccount.Qualifications.Medic;
         }
 
         public static bool IsEngineer(MissionPlayer player)
         {
-            return MissionPatchData.Instance.EngineerIds.Contains(player.DomainAccount?.Id);
+            return player.DomainAccount.Qualifications.Engineer;
         }
 
         public static string ResolveCallsign(MissionUnit unit, string defaultCallsign)

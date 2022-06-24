@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
-using UKSF.Api.Admin.Extensions;
-using UKSF.Api.Admin.Services;
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
@@ -17,15 +15,13 @@ namespace UKSF.Api.ArmaMissions.Services
         private readonly IRanksContext _ranksContext;
         private readonly IRanksService _ranksService;
         private readonly IUnitsContext _unitContext;
-        private readonly IVariablesService _variablesService;
 
         public MissionPatchDataService(
             IRanksContext ranksContext,
             IAccountContext accountContext,
             IUnitsContext unitContext,
             IRanksService ranksService,
-            IDisplayNameService displayNameService,
-            IVariablesService variablesService
+            IDisplayNameService displayNameService
         )
         {
             _ranksContext = ranksContext;
@@ -33,7 +29,6 @@ namespace UKSF.Api.ArmaMissions.Services
             _unitContext = unitContext;
             _ranksService = ranksService;
             _displayNameService = displayNameService;
-            _variablesService = variablesService;
         }
 
         public void UpdatePatchData()
@@ -43,9 +38,7 @@ namespace UKSF.Api.ArmaMissions.Services
                 Units = new(),
                 Ranks = _ranksContext.Get().ToList(),
                 Players = new(),
-                OrderedUnits = new(),
-                MedicIds = _variablesService.GetVariable("MISSIONS_MEDIC_IDS").AsEnumerable(),
-                EngineerIds = _variablesService.GetVariable("MISSIONS_ENGINEER_IDS").AsEnumerable()
+                OrderedUnits = new()
             };
 
             foreach (var unit in _unitContext.Get(x => x.Branch == UnitBranch.COMBAT).ToList())
