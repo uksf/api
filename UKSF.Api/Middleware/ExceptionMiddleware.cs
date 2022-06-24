@@ -71,15 +71,23 @@ namespace UKSF.Api.Middleware
                 await _exceptionHandler.Handle(exception, context);
             }
 
-            var authenticated = _httpContextService.IsUserAuthenticated();
-            var userId = _httpContextService.GetUserId();
-            var userDisplayName = authenticated ? _displayNameService.GetDisplayName(userId) : "Guest";
-            _logger.LogError(exception, context, context.Response, authenticated ? userId : "Guest", userDisplayName);
+            if (ShouldLogError(context.Response))
+            {
+                var authenticated = _httpContextService.IsUserAuthenticated();
+                var userId = _httpContextService.GetUserId();
+                var userDisplayName = authenticated ? _displayNameService.GetDisplayName(userId) : "Guest";
+                _logger.LogError(exception, context, context.Response, authenticated ? userId : "Guest", userDisplayName);
+            }
         }
 
         private static bool IsError(HttpResponse response)
         {
             return response is { StatusCode: >= 400 };
+        }
+
+        private static bool ShouldLogError(HttpResponse response)
+        {
+            return response.StatusCode is not 401 and not 404;
         }
 
         private static Exception GetException(HttpContext context)
