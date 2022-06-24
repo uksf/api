@@ -21,6 +21,7 @@ namespace UKSF.Api.Command.Mappers
                 Id = domainCommandMember.Id,
                 Firstname = domainCommandMember.Firstname,
                 Lastname = domainCommandMember.Lastname,
+                Qualifications = domainCommandMember.Qualifications,
                 RankObject = MapToRank(domainCommandMember.Rank),
                 RoleObject = MapToRole(domainCommandMember.Role),
                 UnitObject = MapToUnitWithParentTree(domainCommandMember.Unit, domainCommandMember.ParentUnits),

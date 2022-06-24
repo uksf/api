@@ -1,8 +1,5 @@
 ﻿using System;
-using Microsoft.Extensions.Hosting;
-using UKSF.Api.Admin.Context;
-using UKSF.Api.Admin.Extensions;
-using UKSF.Api.Admin.Services;
+using UKSF.Api.Personnel.Context;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Events;
 
@@ -10,88 +7,45 @@ namespace UKSF.Api.Services
 {
     public class MigrationUtility
     {
-        private const string Key = "MIGRATED";
-        private readonly IAuditLogContext _auditLogContext;
-        private readonly IHostEnvironment _currentEnvironment;
-        private readonly IErrorLogContext _errorLogContext;
-        private readonly ILauncherLogContext _launcherLogContext;
-        private readonly ILogContext _logContext;
+        private readonly IAccountContext _accountContext;
         private readonly ILogger _logger;
-        private readonly IVariablesContext _variablesContext;
-        private readonly IVariablesService _variablesService;
+        private readonly IMigrationContext _migrationContext;
+        private const int Version = 0;
 
-        public MigrationUtility(
-            IHostEnvironment currentEnvironment,
-            IVariablesService variablesService,
-            IVariablesContext variablesContext,
-            ILogger logger,
-            ILogContext logContext,
-            IErrorLogContext errorLogContext,
-            IAuditLogContext auditLogContext,
-            ILauncherLogContext launcherLogContext
-        )
+        public MigrationUtility(IMigrationContext migrationContext, ILogger logger, IAccountContext accountContext)
         {
-            _currentEnvironment = currentEnvironment;
-            _variablesService = variablesService;
-            _variablesContext = variablesContext;
+            _migrationContext = migrationContext;
             _logger = logger;
-            _logContext = logContext;
-            _errorLogContext = errorLogContext;
-            _auditLogContext = auditLogContext;
-            _launcherLogContext = launcherLogContext;
+            _accountContext = accountContext;
         }
 
         public void Migrate()
         {
-            var migrated = true;
-            if (!_currentEnvironment.IsDevelopment())
+            if (_migrationContext.GetSingle(x => x.Version == Version) != null)
             {
-                migrated = _variablesService.GetVariable(Key).AsBool();
+                return;
             }
 
-            if (!migrated)
+            try
             {
-                try
-                {
-                    ExecuteMigration();
-                    _logger.LogAudit("Migration utility successfully ran");
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError(e);
-                }
-                finally
-                {
-                    _variablesContext.Update(Key, "true");
-                }
+                ExecuteMigration();
+                _migrationContext.Add(new() { Version = Version });
+                _logger.LogAudit($"Migration version {Version} executed successfully");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e);
+                throw;
             }
         }
 
-        // TODO: CHECK BEFORE RELEASE
         private void ExecuteMigration()
         {
-            var logs = _logContext.Get();
-            foreach (var log in logs)
+            var accounts = _accountContext.Get();
+            foreach (var account in accounts)
             {
-                _logContext.Replace(log);
-            }
-
-            var errorLogs = _errorLogContext.Get();
-            foreach (var log in errorLogs)
-            {
-                _errorLogContext.Replace(log);
-            }
-
-            var auditLogs = _auditLogContext.Get();
-            foreach (var log in auditLogs)
-            {
-                _auditLogContext.Replace(log);
-            }
-
-            var launcherLogs = _launcherLogContext.Get();
-            foreach (var log in launcherLogs)
-            {
-                _launcherLogContext.Replace(log);
+                account.Qualifications = new();
+                _accountContext.Replace(account);
             }
         }
     }

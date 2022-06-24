@@ -66,7 +66,8 @@ namespace UKSF.Api.Personnel
         {
             return services.AddSingleton<IConnectTeamspeakIdToAccountCommand, ConnectTeamspeakIdToAccountCommand>()
                            .AddSingleton<ICreateApplicationCommand, CreateApplicationCommand>()
-                           .AddSingleton<ICreateCommentThreadCommand, CreateCommentThreadCommand>();
+                           .AddSingleton<ICreateCommentThreadCommand, CreateCommentThreadCommand>()
+                           .AddSingleton<IQualificationsUpdateCommand, QualificationsUpdateCommand>();
         }
 
         private static IServiceCollection AddQueries(this IServiceCollection services)

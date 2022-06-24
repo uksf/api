@@ -20,16 +20,23 @@ namespace UKSF.Api.Personnel.Models
         public bool MilitaryExperience;
         public string Nation;
         public string Password;
+        public Qualifications Qualifications = new();
         public string Rank;
         public string Reference;
         public string RoleAssignment;
         public List<string> RolePreferences = new();
         public List<ServiceRecordEntry> ServiceRecord = new();
-        public AccountSettings Settings = new();
+        public readonly AccountSettings Settings = new();
         public string Steamname;
         public HashSet<int> TeamspeakIdentities;
         public string UnitAssignment;
         public string UnitsExperience;
+    }
+
+    public class Qualifications
+    {
+        public bool Medic;
+        public bool Engineer;
     }
 
     public class RosterAccount : MongoObject
@@ -57,8 +64,8 @@ namespace UKSF.Api.Personnel.Models
         public MembershipState MembershipState;
         public bool MilitaryExperience;
         public string Nation;
+        public Qualifications Qualifications;
         public string Rank;
-
         public Rank RankObject;
         public string Reference;
         public string RoleAssignment;

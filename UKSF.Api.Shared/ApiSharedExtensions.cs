@@ -33,7 +33,8 @@ namespace UKSF.Api.Shared
                            .AddSingleton<IDiscordLogContext, DiscordLogContext>()
                            .AddSingleton<ISchedulerContext, SchedulerContext>()
                            .AddSingleton<ISmtpClientContext, SmtpClientContext>()
-                           .AddSingleton<IFileContext, FileContext>();
+                           .AddSingleton<IFileContext, FileContext>()
+                           .AddSingleton<IMigrationContext, MigrationContext>();
         }
 
         private static IServiceCollection AddEventHandlers(this IServiceCollection services)
