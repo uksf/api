@@ -86,7 +86,7 @@ namespace UKSF.Api.Middleware
         {
             context.Items.TryGetValue("exception", out var exception);
 
-            return exception as Exception ?? new Exception("unknown error");
+            return exception as Exception;
         }
     }
 }
