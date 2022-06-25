@@ -54,12 +54,12 @@ namespace UKSF.Api.ArmaMissions.Services
 
         private static bool IsMedic(MissionPlayer player)
         {
-            return player.DomainAccount.Qualifications.Medic;
+            return player.DomainAccount?.Qualifications?.Medic ?? false;
         }
 
         public static bool IsEngineer(MissionPlayer player)
         {
-            return player.DomainAccount.Qualifications.Engineer;
+            return player.DomainAccount?.Qualifications?.Engineer ?? false;
         }
 
         public static string ResolveCallsign(MissionUnit unit, string defaultCallsign)
