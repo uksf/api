@@ -113,11 +113,14 @@ namespace UKSF.Api.Personnel.Services
         {
             var recruiterAccount = _accountContext.GetSingle(domainAccount.Application.Recruiter);
             var age = domainAccount.Dob.ToAge();
+            var acceptableAge = _variablesService.GetVariable("RECRUITMENT_ENTRY_AGE");
+
             return new()
             {
                 Account = _accountMapper.MapToAccount(domainAccount),
                 DisplayName = _displayNameService.GetDisplayName(domainAccount),
                 Age = age,
+                AcceptableAge = acceptableAge.AsInt(),
                 DaysProcessing = Math.Ceiling((DateTime.UtcNow - domainAccount.Application.DateCreated).TotalDays),
                 DaysProcessed = Math.Ceiling((domainAccount.Application.DateAccepted - domainAccount.Application.DateCreated).TotalDays),
                 NextCandidateOp = GetNextCandidateOp(),

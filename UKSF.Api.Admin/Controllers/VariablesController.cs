@@ -11,7 +11,7 @@ using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Admin.Controllers
 {
-    [Route("[controller]"), Permissions(Permissions.Admin)]
+    [Route("variables"), Permissions(Permissions.Admin)]
     public class VariablesController : ControllerBase
     {
         private readonly ILogger _logger;
@@ -30,7 +30,7 @@ namespace UKSF.Api.Admin.Controllers
         }
 
         [HttpGet("{key}"), Authorize]
-        public VariableItem GetVariableItems(string key)
+        public VariableItem GetVariableItem(string key)
         {
             return _variablesContext.GetSingle(key);
         }

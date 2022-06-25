@@ -27,6 +27,7 @@ namespace UKSF.Api.Personnel.Models
     {
         public Account Account;
         public ApplicationAge Age;
+        public int AcceptableAge;
         public double AverageProcessingTime;
         public double DaysProcessed;
         public double DaysProcessing;
