@@ -6,7 +6,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
+using UKSF.Api.Admin.Extensions;
+using UKSF.Api.Admin.Services;
 using UKSF.Api.Personnel.Context;
+using UKSF.Api.Personnel.Exceptions;
+using UKSF.Api.Personnel.Extensions;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
@@ -24,6 +28,7 @@ namespace UKSF.Api.Personnel.Controllers
         private readonly IAssignmentService _assignmentService;
         private readonly IDisplayNameService _displayNameService;
         private readonly IHttpContextService _httpContextService;
+        private readonly IVariablesService _variablesService;
         private readonly ILogger _logger;
         private readonly INotificationsService _notificationsService;
         private readonly IRecruitmentService _recruitmentService;
@@ -36,6 +41,7 @@ namespace UKSF.Api.Personnel.Controllers
             IDisplayNameService displayNameService,
             INotificationsService notificationsService,
             IHttpContextService httpContextService,
+            IVariablesService variablesService,
             ILogger logger
         )
         {
@@ -46,6 +52,7 @@ namespace UKSF.Api.Personnel.Controllers
             _displayNameService = displayNameService;
             _notificationsService = notificationsService;
             _httpContextService = httpContextService;
+            _variablesService = variablesService;
             _logger = logger;
         }
 
@@ -104,6 +111,13 @@ namespace UKSF.Api.Personnel.Controllers
             if (updatedState == domainAccount.Application.State)
             {
                 return;
+            }
+
+            var age = domainAccount.Dob.ToAge();
+            var acceptableAge = _variablesService.GetVariable("RECRUITMENT_ENTRY_AGE").AsInt();
+            if (updatedState == ApplicationState.ACCEPTED && !age.IsAcceptableAge(acceptableAge))
+            {
+                throw new AgeNotAllowedException();
             }
 
             var sessionId = _httpContextService.GetUserId();

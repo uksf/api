@@ -24,5 +24,10 @@ namespace UKSF.Api.Personnel.Extensions
 
             return new() { Years = years, Months = months };
         }
+
+        public static bool IsAcceptableAge(this ApplicationAge age, int acceptableAge)
+        {
+            return age.Years >= acceptableAge || (age.Years == acceptableAge - 1 && age.Months == 1);
+        }
     }
 }
