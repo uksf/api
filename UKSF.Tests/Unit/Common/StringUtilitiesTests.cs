@@ -83,7 +83,7 @@ namespace UKSF.Tests.Unit.Common
 
         [Theory]
         [InlineData("", "")]
-        [InlineData("\"hello world;\" \n \"\";", "\"hello world;\";")]
+        [InlineData("\"hello world;\" \\n \"\";", "\"hello world;\";")]
         public void ShouldRemoveTrailingNewLineGroup(string text, string expected)
         {
             var subject = text.RemoveTrailingNewLineGroup();
