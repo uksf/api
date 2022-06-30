@@ -213,7 +213,7 @@ namespace UKSF.Api.ArmaMissions.Services
             _mission.SqmLines.RemoveRange(start, count);
             var newEntities = _mission.MissionEntity.Serialize();
             _mission.SqmLines.InsertRange(start, newEntities);
-            _mission.SqmLines = _mission.SqmLines.Select(x => x.RemoveNewLines().RemoveEmbeddedQuotes()).ToList();
+            _mission.SqmLines = _mission.SqmLines.Select(x => x.RemoveTrailingNewLineGroup().RemoveNewLines().RemoveEmbeddedQuotes()).ToList();
             File.WriteAllLines(_mission.SqmPath, _mission.SqmLines);
         }
 
