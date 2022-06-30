@@ -40,7 +40,7 @@ namespace UKSF.Api.Shared.Extensions
 
         public static string RemoveTrailingNewLineGroup(this string item)
         {
-            return Regex.Replace(item, "\\s\\n\\s\\\"\\\";", ";");
+            return Regex.Replace(item, "\\s\\\\n\\s\"\";", ";");
         }
 
         public static string RemoveNewLines(this string item)
