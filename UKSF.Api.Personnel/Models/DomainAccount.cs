@@ -26,7 +26,7 @@ namespace UKSF.Api.Personnel.Models
         public string RoleAssignment;
         public List<string> RolePreferences = new();
         public List<ServiceRecordEntry> ServiceRecord = new();
-        public readonly AccountSettings Settings = new();
+        public AccountSettings Settings = new();
         public string Steamname;
         public HashSet<int> TeamspeakIdentities;
         public string UnitAssignment;
