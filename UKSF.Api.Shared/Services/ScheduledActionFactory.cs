@@ -2,34 +2,33 @@
 using System.Collections.Generic;
 using UKSF.Api.Base.ScheduledActions;
 
-namespace UKSF.Api.Shared.Services
+namespace UKSF.Api.Shared.Services;
+
+public interface IScheduledActionFactory
 {
-    public interface IScheduledActionFactory
+    void RegisterScheduledActions(IEnumerable<IScheduledAction> newScheduledActions);
+    IScheduledAction GetScheduledAction(string actionName);
+}
+
+public class ScheduledActionFactory : IScheduledActionFactory
+{
+    private readonly Dictionary<string, IScheduledAction> _scheduledActions = new();
+
+    public void RegisterScheduledActions(IEnumerable<IScheduledAction> newScheduledActions)
     {
-        void RegisterScheduledActions(IEnumerable<IScheduledAction> newScheduledActions);
-        IScheduledAction GetScheduledAction(string actionName);
+        foreach (var scheduledAction in newScheduledActions)
+        {
+            _scheduledActions[scheduledAction.Name] = scheduledAction;
+        }
     }
 
-    public class ScheduledActionFactory : IScheduledActionFactory
+    public IScheduledAction GetScheduledAction(string actionName)
     {
-        private readonly Dictionary<string, IScheduledAction> _scheduledActions = new();
-
-        public void RegisterScheduledActions(IEnumerable<IScheduledAction> newScheduledActions)
+        if (_scheduledActions.TryGetValue(actionName, out var action))
         {
-            foreach (var scheduledAction in newScheduledActions)
-            {
-                _scheduledActions[scheduledAction.Name] = scheduledAction;
-            }
+            return action;
         }
 
-        public IScheduledAction GetScheduledAction(string actionName)
-        {
-            if (_scheduledActions.TryGetValue(actionName, out var action))
-            {
-                return action;
-            }
-
-            throw new ArgumentException($"Failed to find action '{actionName}'");
-        }
+        throw new ArgumentException($"Failed to find action '{actionName}'");
     }
 }

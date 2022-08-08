@@ -1,13 +1,12 @@
 ﻿using UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.ArmaMissions.Models
+namespace UKSF.Api.ArmaMissions.Models;
+
+public class MissionPlayer
 {
-    public class MissionPlayer
-    {
-        public DomainAccount DomainAccount;
-        public string Name;
-        public string ObjectClass;
-        public DomainRank Rank;
-        public MissionUnit Unit;
-    }
+    public DomainAccount DomainAccount { get; set; }
+    public string Name { get; set; }
+    public string ObjectClass { get; set; }
+    public DomainRank Rank { get; set; }
+    public MissionUnit Unit { get; set; }
 }

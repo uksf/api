@@ -1,56 +1,52 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using UKSF.Api.Admin.Models;
+﻿using UKSF.Api.Admin.Models;
 using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Extensions;
 
-namespace UKSF.Api.Admin.Context
+namespace UKSF.Api.Admin.Context;
+
+public interface IVariablesContext : IMongoContext<VariableItem>, ICachedMongoContext
 {
-    public interface IVariablesContext : IMongoContext<VariableItem>, ICachedMongoContext
+    Task Update(string key, object value);
+}
+
+public class VariablesContext : CachedMongoContext<VariableItem>, IVariablesContext
+{
+    public VariablesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "variables") { }
+
+    public override VariableItem GetSingle(string key)
     {
-        Task Update(string key, object value);
+        return base.GetSingle(x => x.Key == key.Keyify());
     }
 
-    public class VariablesContext : CachedMongoContext<VariableItem>, IVariablesContext
+    public async Task Update(string key, object value)
     {
-        public VariablesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "variables") { }
-
-        public override VariableItem GetSingle(string key)
+        var variableItem = GetSingle(key);
+        if (variableItem == null)
         {
-            return base.GetSingle(x => x.Key == key.Keyify());
+            throw new KeyNotFoundException($"VariableItem with key '{key}' does not exist");
         }
 
-        public async Task Update(string key, object value)
-        {
-            var variableItem = GetSingle(key);
-            if (variableItem == null)
-            {
-                throw new KeyNotFoundException($"VariableItem with key '{key}' does not exist");
-            }
+        await base.Update(variableItem.Id, x => x.Item, value);
+    }
 
-            await base.Update(variableItem.Id, x => x.Item, value);
+    public override async Task Delete(string key)
+    {
+        var variableItem = GetSingle(key);
+        if (variableItem == null)
+        {
+            throw new KeyNotFoundException($"VariableItem with key '{key}' does not exist");
         }
 
-        public override async Task Delete(string key)
-        {
-            var variableItem = GetSingle(key);
-            if (variableItem == null)
-            {
-                throw new KeyNotFoundException($"VariableItem with key '{key}' does not exist");
-            }
+        await base.Delete(variableItem);
+    }
 
-            await base.Delete(variableItem);
-        }
-
-        protected override void SetCache(IEnumerable<VariableItem> newCollection)
+    protected override void SetCache(IEnumerable<VariableItem> newCollection)
+    {
+        lock (LockObject)
         {
-            lock (LockObject)
-            {
-                Cache = newCollection?.OrderBy(x => x.Key).ToList();
-            }
+            Cache = newCollection?.OrderBy(x => x.Key).ToList();
         }
     }
 }

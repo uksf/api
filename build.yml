@@ -43,7 +43,7 @@ jobs:
           projects: '**/UKSF.Api.csproj'
           feedsToUse: 'config'
           nugetConfigPath: 'NuGet.config'
-        
+
       - task: DotNetCoreCLI@2
         displayName: 'Publish API'
         inputs:

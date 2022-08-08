@@ -1,17 +1,16 @@
-﻿namespace UKSF.Api.Teamspeak.Models
-{
-    public class TeamspeakClient
-    {
-        public int ChannelId;
-        public string ChannelName;
-        public int ClientDbId;
-        public string ClientName;
-    }
+﻿namespace UKSF.Api.Teamspeak.Models;
 
-    public class TeamspeakConnectClient
-    {
-        public int ClientDbId;
-        public string ClientName;
-        public bool Connected;
-    }
+public class TeamspeakClient
+{
+    public int ChannelId { get; set; }
+    public string ChannelName { get; set; }
+    public int ClientDbId { get; set; }
+    public string ClientName { get; set; }
+}
+
+public class TeamspeakConnectClient
+{
+    public int ClientDbId { get; set; }
+    public string ClientName { get; set; }
+    public bool Connected { get; set; }
 }

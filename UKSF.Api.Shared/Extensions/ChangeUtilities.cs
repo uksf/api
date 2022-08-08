@@ -5,165 +5,167 @@ using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json.Linq;
 
-namespace UKSF.Api.Shared.Extensions
+namespace UKSF.Api.Shared.Extensions;
+
+public static class ChangeUtilities
 {
-    public static class ChangeUtilities
+    public static string Changes<T>(this T original, T updated)
     {
-        public static string Changes<T>(this T original, T updated)
+        return DeepEquals(original, updated) ? "\tNo changes" : FormatChanges(GetChanges(original, updated));
+    }
+
+    private static List<Change> GetChanges<T>(this T original, T updated)
+    {
+        List<Change> changes = new();
+        var type = original.GetType();
+        IEnumerable<FieldInfo> fields = type.GetFields();
+
+        if (!fields.Any())
         {
-            return DeepEquals(original, updated) ? "\tNo changes" : FormatChanges(GetChanges(original, updated));
-        }
-
-        private static List<Change> GetChanges<T>(this T original, T updated)
-        {
-            List<Change> changes = new();
-            var type = original.GetType();
-            IEnumerable<FieldInfo> fields = type.GetFields();
-
-            if (!fields.Any())
-            {
-                changes.Add(GetChange(type, type.Name.Split('`')[0], original, updated));
-                return changes;
-            }
-
-            foreach (var fieldInfo in fields)
-            {
-                var name = fieldInfo.Name;
-                var originalValue = fieldInfo.GetValue(original);
-                var updatedValue = fieldInfo.GetValue(updated);
-                if (originalValue == null && updatedValue == null)
-                {
-                    continue;
-                }
-
-                if (DeepEquals(originalValue, updatedValue))
-                {
-                    continue;
-                }
-
-                if (fieldInfo.FieldType.IsClass && !fieldInfo.FieldType.IsSerializable)
-                {
-                    changes.Add(new() { Type = ChangeType.CLASS, Name = name, InnerChanges = GetChanges(originalValue, updatedValue) });
-                }
-                else
-                {
-                    changes.Add(GetChange(fieldInfo.FieldType, name, originalValue, updatedValue));
-                }
-            }
-
+            changes.Add(GetChange(type, type.Name.Split('`')[0], original, updated));
             return changes;
         }
 
-        private static Change GetChange(Type type, string name, object original, object updated)
+        foreach (var fieldInfo in fields)
         {
-            if (type != typeof(string) && updated is IEnumerable originalListValue && original is IEnumerable updatedListValue)
+            var name = fieldInfo.Name;
+            var originalValue = fieldInfo.GetValue(original);
+            var updatedValue = fieldInfo.GetValue(updated);
+            if (originalValue == null && updatedValue == null)
             {
-                return new() { Type = ChangeType.LIST, Name = name == string.Empty ? "List" : name, InnerChanges = GetListChanges(originalListValue, updatedListValue) };
+                continue;
             }
 
-            if (original == null)
+            if (DeepEquals(originalValue, updatedValue))
             {
-                return new() { Type = ChangeType.ADDITION, Name = name, Updated = updated.ToString() };
+                continue;
             }
 
-            if (updated == null)
+            if (fieldInfo.FieldType.IsClass && !fieldInfo.FieldType.IsSerializable)
             {
-                return new() { Type = ChangeType.REMOVAL, Name = name, Original = original.ToString() };
+                changes.Add(new() { Type = ChangeType.CLASS, Name = name, InnerChanges = GetChanges(originalValue, updatedValue) });
             }
-
-            return new() { Type = ChangeType.CHANGE, Name = name, Original = original.ToString(), Updated = updated.ToString() };
+            else
+            {
+                changes.Add(GetChange(fieldInfo.FieldType, name, originalValue, updatedValue));
+            }
         }
 
-        private static List<Change> GetListChanges(this IEnumerable original, IEnumerable updated)
-        {
-            var originalObjects = original == null ? new() : original.Cast<object>().ToList();
-            var updatedObjects = updated == null ? new() : updated.Cast<object>().ToList();
-            var changes = originalObjects.Where(originalObject => !updatedObjects.Any(updatedObject => DeepEquals(originalObject, updatedObject)))
-                                         .Select(x => new Change { Type = ChangeType.ADDITION, Updated = x.ToString() })
-                                         .ToList();
-            changes.AddRange(
-                updatedObjects.Where(updatedObject => !originalObjects.Any(originalObject => DeepEquals(originalObject, updatedObject)))
-                              .Select(x => new Change { Type = ChangeType.REMOVAL, Original = x.ToString() })
-            );
-            return changes;
-        }
-
-        private static bool DeepEquals(object original, object updated)
-        {
-            if (original == null && updated == null)
-            {
-                return true;
-            }
-
-            if (original == null || updated == null)
-            {
-                return false;
-            }
-
-            var originalObject = JToken.FromObject(original);
-            var updatedObject = JToken.FromObject(updated);
-            return JToken.DeepEquals(originalObject, updatedObject);
-        }
-
-        private static string FormatChanges(IReadOnlyCollection<Change> changes, string indentation = "")
-        {
-            if (!changes.Any())
-            {
-                return "\tNo changes";
-            }
-
-            return changes.OrderBy(x => x.Type)
-                          .ThenBy(x => x.Name)
-                          .Aggregate(
-                              "",
-                              (current, change) => current +
-                                                   $"\n\t{indentation}'{change.Name}'" +
-                                                   " " +
-                                                   change.Type switch
-                                                   {
-                                                       ChangeType.ADDITION => $"added as '{change.Updated}'",
-                                                       ChangeType.REMOVAL  => $"as '{change.Original}' removed",
-                                                       ChangeType.CLASS    => $"changed:{FormatChanges(change.InnerChanges, indentation + "\t")}",
-                                                       ChangeType.LIST     => $"changed:{FormatListChanges(change.InnerChanges, indentation + "\t")}",
-                                                       _                   => $"changed from '{change.Original}' to '{change.Updated}'"
-                                                   }
-                          );
-        }
-
-        private static string FormatListChanges(IEnumerable<Change> changes, string indentation = "")
-        {
-            var changesString = "";
-            foreach (var change in changes.OrderBy(x => x.Type).ThenBy(x => x.Name))
-            {
-                if (change.Type == ChangeType.ADDITION)
-                {
-                    changesString += $"\n\t{indentation}added: '{change.Updated}'";
-                }
-                else if (change.Type == ChangeType.REMOVAL)
-                {
-                    changesString += $"\n\t{indentation}removed: '{change.Original}'";
-                }
-            }
-
-            return changesString;
-        }
+        return changes;
     }
 
-    public class Change
+    private static Change GetChange(Type type, string name, object original, object updated)
     {
-        public List<Change> InnerChanges = new();
-        public string Name;
-        public string Original;
-        public ChangeType Type;
-        public string Updated;
+        if (type != typeof(string) && updated is IEnumerable originalListValue && original is IEnumerable updatedListValue)
+        {
+            return new()
+            {
+                Type = ChangeType.LIST, Name = name == string.Empty ? "List" : name, InnerChanges = GetListChanges(originalListValue, updatedListValue)
+            };
+        }
+
+        if (original == null)
+        {
+            return new() { Type = ChangeType.ADDITION, Name = name, Updated = updated.ToString() };
+        }
+
+        if (updated == null)
+        {
+            return new() { Type = ChangeType.REMOVAL, Name = name, Original = original.ToString() };
+        }
+
+        return new() { Type = ChangeType.CHANGE, Name = name, Original = original.ToString(), Updated = updated.ToString() };
     }
 
-    public enum ChangeType
+    private static List<Change> GetListChanges(this IEnumerable original, IEnumerable updated)
     {
-        ADDITION,
-        CHANGE,
-        LIST,
-        REMOVAL,
-        CLASS
+        var originalObjects = original == null ? new() : original.Cast<object>().ToList();
+        var updatedObjects = updated == null ? new() : updated.Cast<object>().ToList();
+        var changes = originalObjects.Where(originalObject => !updatedObjects.Any(updatedObject => DeepEquals(originalObject, updatedObject)))
+                                     .Select(x => new Change { Type = ChangeType.ADDITION, Updated = x.ToString() })
+                                     .ToList();
+        changes.AddRange(
+            updatedObjects.Where(updatedObject => !originalObjects.Any(originalObject => DeepEquals(originalObject, updatedObject)))
+                          .Select(x => new Change { Type = ChangeType.REMOVAL, Original = x.ToString() })
+        );
+        return changes;
     }
+
+    private static bool DeepEquals(object original, object updated)
+    {
+        if (original == null && updated == null)
+        {
+            return true;
+        }
+
+        if (original == null || updated == null)
+        {
+            return false;
+        }
+
+        var originalObject = JToken.FromObject(original);
+        var updatedObject = JToken.FromObject(updated);
+        return JToken.DeepEquals(originalObject, updatedObject);
+    }
+
+    private static string FormatChanges(IReadOnlyCollection<Change> changes, string indentation = "")
+    {
+        if (!changes.Any())
+        {
+            return "\tNo changes";
+        }
+
+        return changes.OrderBy(x => x.Type)
+                      .ThenBy(x => x.Name)
+                      .Aggregate(
+                          "",
+                          (current, change) => current +
+                                               $"\n\t{indentation}'{change.Name}'" +
+                                               " " +
+                                               change.Type switch
+                                               {
+                                                   ChangeType.ADDITION => $"added as '{change.Updated}'",
+                                                   ChangeType.REMOVAL  => $"as '{change.Original}' removed",
+                                                   ChangeType.CLASS    => $"changed:{FormatChanges(change.InnerChanges, indentation + "\t")}",
+                                                   ChangeType.LIST     => $"changed:{FormatListChanges(change.InnerChanges, indentation + "\t")}",
+                                                   _                   => $"changed from '{change.Original}' to '{change.Updated}'"
+                                               }
+                      );
+    }
+
+    private static string FormatListChanges(IEnumerable<Change> changes, string indentation = "")
+    {
+        var changesString = "";
+        foreach (var change in changes.OrderBy(x => x.Type).ThenBy(x => x.Name))
+        {
+            if (change.Type == ChangeType.ADDITION)
+            {
+                changesString += $"\n\t{indentation}added: '{change.Updated}'";
+            }
+            else if (change.Type == ChangeType.REMOVAL)
+            {
+                changesString += $"\n\t{indentation}removed: '{change.Original}'";
+            }
+        }
+
+        return changesString;
+    }
+}
+
+public class Change
+{
+    public List<Change> InnerChanges = new();
+    public string Name;
+    public string Original;
+    public ChangeType Type;
+    public string Updated;
+}
+
+public enum ChangeType
+{
+    ADDITION,
+    CHANGE,
+    LIST,
+    REMOVAL,
+    CLASS
 }

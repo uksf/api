@@ -1,34 +1,32 @@
-using System;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Base.Events
+namespace UKSF.Api.Base.Events;
+
+public interface IEventBus
 {
-    public interface IEventBus
+    void Send(EventModel eventModel);
+    void Send(object data);
+    IObservable<EventModel> AsObservable();
+}
+
+public class EventBus : IEventBus
+{
+    private readonly Subject<object> _subject = new();
+
+    public void Send(EventModel eventModel)
     {
-        void Send(EventModel eventModel);
-        void Send(object data);
-        IObservable<EventModel> AsObservable();
+        _subject.OnNext(eventModel);
     }
 
-    public class EventBus : IEventBus
+    public void Send(object data)
     {
-        protected readonly Subject<object> Subject = new();
+        Send(new(EventType.NONE, data));
+    }
 
-        public void Send(EventModel eventModel)
-        {
-            Subject.OnNext(eventModel);
-        }
-
-        public void Send(object data)
-        {
-            Send(new(EventType.NONE, data));
-        }
-
-        public virtual IObservable<EventModel> AsObservable()
-        {
-            return Subject.OfType<EventModel>();
-        }
+    public IObservable<EventModel> AsObservable()
+    {
+        return _subject.OfType<EventModel>();
     }
 }

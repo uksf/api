@@ -1,7 +1,6 @@
-﻿namespace UKSF.Api.Personnel.Models.Parameters
+﻿namespace UKSF.Api.Personnel.Models.Parameters;
+
+public class TeamspeakCode
 {
-    public class TeamspeakCode
-    {
-        public string Code;
-    }
+    public string Code { get; set; }
 }

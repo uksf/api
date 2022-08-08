@@ -1,16 +1,13 @@
-﻿using System;
+﻿namespace UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.Personnel.Models
+public class ServiceRecordEntry
 {
-    public class ServiceRecordEntry
-    {
-        public string Notes;
-        public string Occurence;
-        public DateTime Timestamp;
+    public string Notes { get; set; }
+    public string Occurence { get; set; }
+    public DateTime Timestamp { get; set; }
 
-        public override string ToString()
-        {
-            return $"{Timestamp:dd/MM/yyyy}: {Occurence}{(string.IsNullOrEmpty(Notes) ? "" : $"({Notes})")}";
-        }
+    public override string ToString()
+    {
+        return $"{Timestamp:dd/MM/yyyy}: {Occurence}{(string.IsNullOrEmpty(Notes) ? "" : $"({Notes})")}";
     }
 }

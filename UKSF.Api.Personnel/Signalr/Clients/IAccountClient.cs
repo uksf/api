@@ -1,9 +1,6 @@
-using System.Threading.Tasks;
+namespace UKSF.Api.Personnel.Signalr.Clients;
 
-namespace UKSF.Api.Personnel.Signalr.Clients
+public interface IAccountClient
 {
-    public interface IAccountClient
-    {
-        Task ReceiveAccountUpdate();
-    }
+    Task ReceiveAccountUpdate();
 }

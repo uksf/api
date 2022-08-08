@@ -1,25 +1,22 @@
-using System.Collections.Generic;
+namespace UKSF.Api.ArmaMissions.Models;
 
-namespace UKSF.Api.ArmaMissions.Models
+public class Mission
 {
-    public class Mission
-    {
-        public static int NextId;
-        public List<string> DescriptionLines;
-        public string DescriptionPath;
-        public int MaxCurators;
-        public MissionEntity MissionEntity;
-        public string Path;
-        public int PlayerCount;
-        public List<string> RawEntities;
-        public List<string> SqmLines;
-        public string SqmPath;
+    public static int NextId { get; set; }
+    public List<string> DescriptionLines { get; set; }
+    public string DescriptionPath { get; set; }
+    public int MaxCurators { get; set; }
+    public MissionEntity MissionEntity { get; set; }
+    public string Path { get; set; }
+    public int PlayerCount { get; set; }
+    public List<string> RawEntities { get; set; }
+    public List<string> SqmLines { get; set; }
+    public string SqmPath { get; set; }
 
-        public Mission(string path)
-        {
-            Path = path;
-            DescriptionPath = $"{Path}/description.ext";
-            SqmPath = $"{Path}/mission.sqm";
-        }
+    public Mission(string path)
+    {
+        Path = path;
+        DescriptionPath = $"{Path}/description.ext";
+        SqmPath = $"{Path}/mission.sqm";
     }
 }

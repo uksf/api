@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Base.Models;
@@ -11,64 +10,63 @@ using UKSF.Api.Shared.Models;
 using UKSF.Api.Shared.Signalr.Clients;
 using UKSF.Api.Shared.Signalr.Hubs;
 
-namespace UKSF.Api.Personnel.EventHandlers
+namespace UKSF.Api.Personnel.EventHandlers;
+
+public interface IAccountDataEventHandler : IEventHandler { }
+
+public class AccountDataEventHandler : IAccountDataEventHandler
 {
-    public interface IAccountDataEventHandler : IEventHandler { }
+    private readonly IHubContext<AllHub, IAllClient> _allHub;
+    private readonly IEventBus _eventBus;
+    private readonly IHubContext<AccountGroupedHub, IAccountGroupedClient> _groupedHub;
+    private readonly IHubContext<AccountHub, IAccountClient> _hub;
+    private readonly IUksfLogger _logger;
 
-    public class AccountDataEventHandler : IAccountDataEventHandler
+    public AccountDataEventHandler(
+        IEventBus eventBus,
+        IHubContext<AccountHub, IAccountClient> hub,
+        IHubContext<AccountGroupedHub, IAccountGroupedClient> groupedHub,
+        IHubContext<AllHub, IAllClient> allHub,
+        IUksfLogger logger
+    )
     {
-        private readonly IHubContext<AllHub, IAllClient> _allHub;
-        private readonly IEventBus _eventBus;
-        private readonly IHubContext<AccountGroupedHub, IAccountGroupedClient> _groupedHub;
-        private readonly IHubContext<AccountHub, IAccountClient> _hub;
-        private readonly ILogger _logger;
+        _eventBus = eventBus;
+        _hub = hub;
+        _groupedHub = groupedHub;
+        _allHub = allHub;
+        _logger = logger;
+    }
 
-        public AccountDataEventHandler(
-            IEventBus eventBus,
-            IHubContext<AccountHub, IAccountClient> hub,
-            IHubContext<AccountGroupedHub, IAccountGroupedClient> groupedHub,
-            IHubContext<AllHub, IAllClient> allHub,
-            ILogger logger
-        )
+    public void EarlyInit() { }
+
+    public void Init()
+    {
+        _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainAccount>>(HandleAccountEvent, _logger.LogError);
+        _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainUnit>>(HandleUnitEvent, _logger.LogError);
+    }
+
+    private async Task HandleAccountEvent(EventModel eventModel, ContextEventData<DomainAccount> contextEventData)
+    {
+        if (eventModel.EventType == EventType.UPDATE)
         {
-            _eventBus = eventBus;
-            _hub = hub;
-            _groupedHub = groupedHub;
-            _allHub = allHub;
-            _logger = logger;
+            await UpdatedEvent(contextEventData.Id);
         }
+    }
 
-        public void EarlyInit() { }
-
-        public void Init()
+    private async Task HandleUnitEvent(EventModel eventModel, ContextEventData<DomainUnit> contextEventData)
+    {
+        if (eventModel.EventType == EventType.UPDATE)
         {
-            _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainAccount>>(HandleAccountEvent, _logger.LogError);
-            _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainUnit>>(HandleUnitEvent, _logger.LogError);
+            await UpdatedEvent(contextEventData.Id);
         }
+    }
 
-        private async Task HandleAccountEvent(EventModel eventModel, ContextEventData<DomainAccount> contextEventData)
-        {
-            if (eventModel.EventType == EventType.UPDATE)
-            {
-                await UpdatedEvent(contextEventData.Id);
-            }
-        }
+    private async Task UpdatedEvent(string id)
+    {
+        var oldTask = _hub.Clients.Group(id).ReceiveAccountUpdate();
+        var groupedTask = _groupedHub.Clients.Group(id).ReceiveAccountUpdate();
+        var allTask = _allHub.Clients.All.ReceiveAccountUpdate();
 
-        private async Task HandleUnitEvent(EventModel eventModel, ContextEventData<DomainUnit> contextEventData)
-        {
-            if (eventModel.EventType == EventType.UPDATE)
-            {
-                await UpdatedEvent(contextEventData.Id);
-            }
-        }
-
-        private async Task UpdatedEvent(string id)
-        {
-            var oldTask = _hub.Clients.Group(id).ReceiveAccountUpdate();
-            var groupedTask = _groupedHub.Clients.Group(id).ReceiveAccountUpdate();
-            var allTask = _allHub.Clients.All.ReceiveAccountUpdate();
-
-            await Task.WhenAll(oldTask, groupedTask, allTask);
-        }
+        await Task.WhenAll(oldTask, groupedTask, allTask);
     }
 }

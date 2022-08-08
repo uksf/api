@@ -1,10 +1,9 @@
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Launcher.Models
+namespace UKSF.Api.Launcher.Models;
+
+public class LauncherFile : MongoObject
 {
-    public class LauncherFile : MongoObject
-    {
-        public string FileName;
-        public string Version;
-    }
+    public string FileName { get; set; }
+    public string Version { get; set; }
 }

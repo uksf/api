@@ -1,97 +1,96 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using UKSF.Api.Shared;
 using UKSF.Api.Teamspeak.Models;
 
-namespace UKSF.Api.Teamspeak.Controllers
+namespace UKSF.Api.Teamspeak.Controllers;
+
+[Route("[controller]")]
+[Permissions(Permissions.Member)]
+public class OperationsController : ControllerBase
 {
-    [Route("[controller]"), Permissions(Permissions.Member)]
-    public class OperationsController : ControllerBase
+    private readonly IMongoDatabase _database;
+
+    public OperationsController(IMongoDatabase database)
     {
-        private readonly IMongoDatabase _database;
+        _database = database;
+    }
 
-        public OperationsController(IMongoDatabase database)
-        {
-            _database = database;
-        }
+    [HttpGet]
+    [Authorize]
+    public TeampseakReportsDataset Get()
+    {
+        var tsServerSnapshots = _database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots")
+                                         .Find(x => x.Timestamp > DateTime.UtcNow.AddDays(-7))
+                                         .ToList();
+        TeampseakReportDataset acreData = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, true) };
+        TeampseakReportDataset data = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, false) };
+        return new() { AcreData = acreData, Data = data };
+    }
 
-        [HttpGet, Authorize]
-        public TeampseakReportsDataset Get()
+    private static int[] GetReportData(IReadOnlyCollection<TeamspeakServerSnapshot> serverSnapshots, DateTime day, bool acre)
+    {
+        List<int> dataset = new();
+        for (var i = 0; i < 48; i++)
         {
-            var tsServerSnapshots = _database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots")
-                                             .Find(x => x.Timestamp > DateTime.UtcNow.AddDays(-7))
-                                             .ToList();
-            TeampseakReportDataset acreData = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, true) };
-            TeampseakReportDataset data = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, false) };
-            return new() { AcreData = acreData, Data = data };
-        }
-
-        private static int[] GetReportData(IReadOnlyCollection<TeamspeakServerSnapshot> serverSnapshots, DateTime day, bool acre)
-        {
-            List<int> dataset = new();
-            for (var i = 0; i < 48; i++)
+            var startdate = DateTime.UtcNow.Date.AddMinutes(30 * i);
+            var enddate = DateTime.UtcNow.Date.AddMinutes(30 * (i + 1));
+            try
             {
-                var startdate = DateTime.UtcNow.Date.AddMinutes(30 * i);
-                var enddate = DateTime.UtcNow.Date.AddMinutes(30 * (i + 1));
-                try
+                var serverSnapshot = serverSnapshots.FirstOrDefault(
+                    x => x.Timestamp.TimeOfDay > startdate.TimeOfDay && x.Timestamp.TimeOfDay < enddate.TimeOfDay && x.Timestamp.Date == day
+                );
+                if (serverSnapshot != null)
                 {
-                    var serverSnapshot =
-                        serverSnapshots.FirstOrDefault(x => x.Timestamp.TimeOfDay > startdate.TimeOfDay && x.Timestamp.TimeOfDay < enddate.TimeOfDay && x.Timestamp.Date == day);
-                    if (serverSnapshot != null)
-                    {
-                        dataset.Add(acre ? serverSnapshot.Users.Where(x => x.ChannelName == "ACRE").ToArray().Length : serverSnapshot.Users.Count);
-                    }
-                    else
-                    {
-                        dataset.Add(0);
-                    }
+                    dataset.Add(acre ? serverSnapshot.Users.Where(x => x.ChannelName == "ACRE").ToArray().Length : serverSnapshot.Users.Count);
                 }
-                catch (Exception)
+                else
                 {
                     dataset.Add(0);
                 }
             }
-
-            return dataset.ToArray();
-        }
-
-        private static List<string> GetLabels()
-        {
-            List<string> labels = new();
-
-            for (var i = 0; i < 48; i++)
+            catch (Exception)
             {
-                var startdate = DateTime.UtcNow.Date.AddMinutes(30 * i);
-                var enddate = DateTime.UtcNow.Date.AddMinutes(30 * (i + 1));
-                labels.Add(startdate.TimeOfDay + " - " + enddate.TimeOfDay);
+                dataset.Add(0);
             }
-
-            return labels;
         }
 
-        private static List<TeampseakReport> GetReports(IReadOnlyCollection<TeamspeakServerSnapshot> tsServerSnapshots, bool acre)
+        return dataset.ToArray();
+    }
+
+    private static List<string> GetLabels()
+    {
+        List<string> labels = new();
+
+        for (var i = 0; i < 48; i++)
         {
-            List<TeampseakReport> datasets = new();
-            string[] colors = { "#4bc0c0", "#3992e6", "#a539e6", "#42e639", "#aae639", "#e6d239", "#e63939" };
-
-            for (var i = 0; i < 7; i++)
-            {
-                datasets.Add(
-                    new()
-                    {
-                        Label = $"{DateTime.UtcNow.AddDays(-i).DayOfWeek} - {DateTime.UtcNow.AddDays(-i).ToShortDateString()}",
-                        Data = GetReportData(tsServerSnapshots, DateTime.UtcNow.AddDays(-i).Date, acre),
-                        Fill = true,
-                        BorderColor = colors[i]
-                    }
-                );
-            }
-
-            return datasets;
+            var startdate = DateTime.UtcNow.Date.AddMinutes(30 * i);
+            var enddate = DateTime.UtcNow.Date.AddMinutes(30 * (i + 1));
+            labels.Add(startdate.TimeOfDay + " - " + enddate.TimeOfDay);
         }
+
+        return labels;
+    }
+
+    private static List<TeampseakReport> GetReports(IReadOnlyCollection<TeamspeakServerSnapshot> tsServerSnapshots, bool acre)
+    {
+        List<TeampseakReport> datasets = new();
+        string[] colors = { "#4bc0c0", "#3992e6", "#a539e6", "#42e639", "#aae639", "#e6d239", "#e63939" };
+
+        for (var i = 0; i < 7; i++)
+        {
+            datasets.Add(
+                new()
+                {
+                    Label = $"{DateTime.UtcNow.AddDays(-i).DayOfWeek} - {DateTime.UtcNow.AddDays(-i).ToShortDateString()}",
+                    Data = GetReportData(tsServerSnapshots, DateTime.UtcNow.AddDays(-i).Date, acre),
+                    Fill = true,
+                    BorderColor = colors[i]
+                }
+            );
+        }
+
+        return datasets;
     }
 }

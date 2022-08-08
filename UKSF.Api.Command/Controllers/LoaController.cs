@@ -1,6 +1,4 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Base.Models;
 using UKSF.Api.Command.Context;
@@ -13,85 +11,86 @@ using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared;
 using UKSF.Api.Shared.Events;
 
-namespace UKSF.Api.Command.Controllers
+namespace UKSF.Api.Command.Controllers;
+
+[Route("[controller]")]
+[Permissions(Permissions.Member)]
+public class LoaController : ControllerBase
 {
-    [Route("[controller]"), Permissions(Permissions.Member)]
-    public class LoaController : ControllerBase
+    private readonly IAccountContext _accountContext;
+    private readonly ICommandRequestContext _commandRequestContext;
+    private readonly IDisplayNameService _displayNameService;
+    private readonly IGetPagedLoasQuery _getPagedLoasQuery;
+    private readonly ILoaContext _loaContext;
+    private readonly ILoaMapper _loaMapper;
+    private readonly IUksfLogger _logger;
+    private readonly INotificationsService _notificationsService;
+
+    public LoaController(
+        ILoaContext loaContext,
+        IAccountContext accountContext,
+        ICommandRequestContext commandRequestContext,
+        IDisplayNameService displayNameService,
+        INotificationsService notificationsService,
+        IUksfLogger logger,
+        IGetPagedLoasQuery getPagedLoasQuery,
+        ILoaMapper loaMapper
+    )
     {
-        private readonly IAccountContext _accountContext;
-        private readonly ICommandRequestContext _commandRequestContext;
-        private readonly IDisplayNameService _displayNameService;
-        private readonly IGetPagedLoasQuery _getPagedLoasQuery;
-        private readonly ILoaContext _loaContext;
-        private readonly ILoaMapper _loaMapper;
-        private readonly ILogger _logger;
-        private readonly INotificationsService _notificationsService;
+        _loaContext = loaContext;
+        _accountContext = accountContext;
+        _commandRequestContext = commandRequestContext;
+        _displayNameService = displayNameService;
+        _notificationsService = notificationsService;
+        _logger = logger;
+        _getPagedLoasQuery = getPagedLoasQuery;
+        _loaMapper = loaMapper;
+    }
 
-        public LoaController(
-            ILoaContext loaContext,
-            IAccountContext accountContext,
-            ICommandRequestContext commandRequestContext,
-            IDisplayNameService displayNameService,
-            INotificationsService notificationsService,
-            ILogger logger,
-            IGetPagedLoasQuery getPagedLoasQuery,
-            ILoaMapper loaMapper
-        )
+    [HttpGet]
+    public async Task<PagedResult<Loa>> GetPaged(
+        [FromQuery] int page,
+        [FromQuery] int pageSize = 15,
+        [FromQuery] string query = null,
+        [FromQuery] LoaSelectionMode selectionMode = default,
+        [FromQuery] LoaViewMode viewMode = default
+    )
+    {
+        var pagedResult = await _getPagedLoasQuery.ExecuteAsync(new(page, pageSize, query, selectionMode, viewMode));
+
+        return new(pagedResult.TotalCount, pagedResult.Data.Select(_loaMapper.MapToLoa).ToList());
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task DeleteLoa(string id)
+    {
+        var domainLoa = _loaContext.GetSingle(id);
+        var request = _commandRequestContext.GetSingle(x => x.Value == id);
+        if (request != null)
         {
-            _loaContext = loaContext;
-            _accountContext = accountContext;
-            _commandRequestContext = commandRequestContext;
-            _displayNameService = displayNameService;
-            _notificationsService = notificationsService;
-            _logger = logger;
-            _getPagedLoasQuery = getPagedLoasQuery;
-            _loaMapper = loaMapper;
-        }
-
-        [HttpGet]
-        public async Task<PagedResult<Loa>> GetPaged(
-            [FromQuery] int page,
-            [FromQuery] int pageSize = 15,
-            [FromQuery] string query = null,
-            [FromQuery] LoaSelectionMode selectionMode = default,
-            [FromQuery] LoaViewMode viewMode = default
-        )
-        {
-            var pagedResult = await _getPagedLoasQuery.ExecuteAsync(new(page, pageSize, query, selectionMode, viewMode));
-
-            return new(pagedResult.TotalCount, pagedResult.Data.Select(_loaMapper.MapToLoa).ToList());
-        }
-
-        [HttpDelete("{id}"), Authorize]
-        public async Task DeleteLoa(string id)
-        {
-            var domainLoa = _loaContext.GetSingle(id);
-            var request = _commandRequestContext.GetSingle(x => x.Value == id);
-            if (request != null)
+            await _commandRequestContext.Delete(request);
+            foreach (var reviewerId in request.Reviews.Keys.Where(x => x != request.Requester))
             {
-                await _commandRequestContext.Delete(request);
-                foreach (var reviewerId in request.Reviews.Keys.Where(x => x != request.Requester))
-                {
-                    _notificationsService.Add(
-                        new()
-                        {
-                            Owner = reviewerId,
-                            Icon = NotificationIcons.Request,
-                            Message = $"Your review for {request.DisplayRequester}'s LOA is no longer required as they deleted their LOA",
-                            Link = "/command/requests"
-                        }
-                    );
-                }
-
-                _logger.LogAudit(
-                    $"Loa request deleted for {_displayNameService.GetDisplayName(_accountContext.GetSingle(domainLoa.Recipient))} from {domainLoa.Start:dd MMM yyyy} to {domainLoa.End:dd MMM yyyy}"
+                _notificationsService.Add(
+                    new()
+                    {
+                        Owner = reviewerId,
+                        Icon = NotificationIcons.Request,
+                        Message = $"Your review for {request.DisplayRequester}'s LOA is no longer required as they deleted their LOA",
+                        Link = "/command/requests"
+                    }
                 );
             }
 
             _logger.LogAudit(
-                $"Loa deleted for {_displayNameService.GetDisplayName(_accountContext.GetSingle(domainLoa.Recipient))} from {domainLoa.Start:dd MMM yyyy} to {domainLoa.End:dd MMM yyyy}"
+                $"Loa request deleted for {_displayNameService.GetDisplayName(_accountContext.GetSingle(domainLoa.Recipient))} from {domainLoa.Start:dd MMM yyyy} to {domainLoa.End:dd MMM yyyy}"
             );
-            await _loaContext.Delete(domainLoa);
         }
+
+        _logger.LogAudit(
+            $"Loa deleted for {_displayNameService.GetDisplayName(_accountContext.GetSingle(domainLoa.Recipient))} from {domainLoa.Start:dd MMM yyyy} to {domainLoa.End:dd MMM yyyy}"
+        );
+        await _loaContext.Delete(domainLoa);
     }
 }

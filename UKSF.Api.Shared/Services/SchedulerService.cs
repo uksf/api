@@ -9,152 +9,151 @@ using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
 
-namespace UKSF.Api.Shared.Services
+namespace UKSF.Api.Shared.Services;
+
+public interface ISchedulerService
 {
-    public interface ISchedulerService
+    void Load();
+    Task CreateAndScheduleJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters);
+    Task<ScheduledJob> CreateScheduledJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters);
+    Task Cancel(Func<ScheduledJob, bool> predicate);
+}
+
+public class SchedulerService : ISchedulerService
+{
+    private static readonly ConcurrentDictionary<string, CancellationTokenSource> ActiveTasks = new();
+    private readonly IClock _clock;
+    private readonly ISchedulerContext _context;
+    private readonly IScheduledActionFactory _scheduledActionFactory;
+    private readonly IUksfLogger _uksfLogger;
+
+    public SchedulerService(ISchedulerContext context, IScheduledActionFactory scheduledActionFactory, IClock clock, IUksfLogger uksfLogger)
     {
-        void Load();
-        Task CreateAndScheduleJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters);
-        Task<ScheduledJob> CreateScheduledJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters);
-        Task Cancel(Func<ScheduledJob, bool> predicate);
+        _context = context;
+        _scheduledActionFactory = scheduledActionFactory;
+        _clock = clock;
+        _uksfLogger = uksfLogger;
     }
 
-    public class SchedulerService : ISchedulerService
+    public void Load()
     {
-        private static readonly ConcurrentDictionary<string, CancellationTokenSource> ActiveTasks = new();
-        private readonly ISchedulerContext _context;
-        private readonly ILogger _logger;
-        private readonly IScheduledActionFactory _scheduledActionFactory;
-        private readonly IClock _clock;
+        _context.Get().ToList().ForEach(Schedule);
+    }
 
-        public SchedulerService(ISchedulerContext context, IScheduledActionFactory scheduledActionFactory, IClock clock, ILogger logger)
+    public async Task CreateAndScheduleJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters)
+    {
+        var job = await CreateScheduledJob(next, interval, action, actionParameters);
+        Schedule(job);
+    }
+
+    public async Task Cancel(Func<ScheduledJob, bool> predicate)
+    {
+        var job = _context.GetSingle(predicate);
+        if (job == null)
         {
-            _context = context;
-            _scheduledActionFactory = scheduledActionFactory;
-            _clock = clock;
-            _logger = logger;
+            return;
         }
 
-        public void Load()
+        if (ActiveTasks.TryGetValue(job.Id, out var token))
         {
-            _context.Get().ToList().ForEach(Schedule);
+            token.Cancel();
+            ActiveTasks.TryRemove(job.Id, out var _);
         }
 
-        public async Task CreateAndScheduleJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters)
+        await _context.Delete(job);
+    }
+
+    public async Task<ScheduledJob> CreateScheduledJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters)
+    {
+        ScheduledJob job = new() { Next = next, Action = action };
+        if (actionParameters.Length > 0)
         {
-            var job = await CreateScheduledJob(next, interval, action, actionParameters);
-            Schedule(job);
+            job.ActionParameters = JsonConvert.SerializeObject(actionParameters);
         }
 
-        public async Task Cancel(Func<ScheduledJob, bool> predicate)
+        if (interval != TimeSpan.Zero)
         {
-            var job = _context.GetSingle(predicate);
-            if (job == null)
+            job.Interval = interval;
+            job.Repeat = true;
+        }
+
+        await _context.Add(job);
+        return job;
+    }
+
+    private void Schedule(ScheduledJob job)
+    {
+        CancellationTokenSource token = new();
+        var unused = Task.Run(
+            async () =>
             {
-                return;
-            }
-
-            if (ActiveTasks.TryGetValue(job.Id, out var token))
-            {
-                token.Cancel();
-                ActiveTasks.TryRemove(job.Id, out var _);
-            }
-
-            await _context.Delete(job);
-        }
-
-        public async Task<ScheduledJob> CreateScheduledJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters)
-        {
-            ScheduledJob job = new() { Next = next, Action = action };
-            if (actionParameters.Length > 0)
-            {
-                job.ActionParameters = JsonConvert.SerializeObject(actionParameters);
-            }
-
-            if (interval != TimeSpan.Zero)
-            {
-                job.Interval = interval;
-                job.Repeat = true;
-            }
-
-            await _context.Add(job);
-            return job;
-        }
-
-        private void Schedule(ScheduledJob job)
-        {
-            CancellationTokenSource token = new();
-            var unused = Task.Run(
-                async () =>
+                var now = _clock.UtcNow();
+                if (now < job.Next)
                 {
-                    var now = _clock.UtcNow();
-                    if (now < job.Next)
+                    var delay = job.Next - now;
+                    await Task.Delay(delay, token.Token);
+                    if (IsCancelled(job, token))
                     {
-                        var delay = job.Next - now;
-                        await Task.Delay(delay, token.Token);
-                        if (IsCancelled(job, token))
-                        {
-                            return;
-                        }
+                        return;
                     }
-                    else
-                    {
-                        if (job.Repeat)
-                        {
-                            var nowLessInterval = now - job.Interval;
-                            while (job.Next < nowLessInterval)
-                            {
-                                job.Next += job.Interval;
-                            }
-                        }
-                    }
-
-                    try
-                    {
-                        await ExecuteAction(job);
-                    }
-                    catch (Exception exception)
-                    {
-                        _logger.LogError(exception);
-                    }
-
+                }
+                else
+                {
                     if (job.Repeat)
                     {
-                        job.Next += job.Interval;
-                        await SetNext(job);
-                        Schedule(job);
+                        var nowLessInterval = now - job.Interval;
+                        while (job.Next < nowLessInterval)
+                        {
+                            job.Next += job.Interval;
+                        }
                     }
-                    else
-                    {
-                        await _context.Delete(job);
-                        ActiveTasks.TryRemove(job.Id, out _);
-                    }
-                },
-                token.Token
-            );
-            ActiveTasks[job.Id] = token;
-        }
+                }
 
-        private async Task SetNext(ScheduledJob job)
+                try
+                {
+                    await ExecuteAction(job);
+                }
+                catch (Exception exception)
+                {
+                    _uksfLogger.LogError(exception);
+                }
+
+                if (job.Repeat)
+                {
+                    job.Next += job.Interval;
+                    await SetNext(job);
+                    Schedule(job);
+                }
+                else
+                {
+                    await _context.Delete(job);
+                    ActiveTasks.TryRemove(job.Id, out _);
+                }
+            },
+            token.Token
+        );
+        ActiveTasks[job.Id] = token;
+    }
+
+    private async Task SetNext(ScheduledJob job)
+    {
+        await _context.Update(job.Id, x => x.Next, job.Next);
+    }
+
+    private bool IsCancelled(MongoObject job, CancellationTokenSource token)
+    {
+        if (token.IsCancellationRequested)
         {
-            await _context.Update(job.Id, x => x.Next, job.Next);
+            return true;
         }
 
-        private bool IsCancelled(MongoObject job, CancellationTokenSource token)
-        {
-            if (token.IsCancellationRequested)
-            {
-                return true;
-            }
+        return _context.GetSingle(job.Id) == null;
+    }
 
-            return _context.GetSingle(job.Id) == null;
-        }
-
-        private async Task ExecuteAction(ScheduledJob job)
-        {
-            var action = _scheduledActionFactory.GetScheduledAction(job.Action);
-            var parameters = job.ActionParameters == null ? null : JsonConvert.DeserializeObject<object[]>(job.ActionParameters);
-            await action.Run(parameters);
-        }
+    private async Task ExecuteAction(ScheduledJob job)
+    {
+        var action = _scheduledActionFactory.GetScheduledAction(job.Action);
+        var parameters = job.ActionParameters == null ? null : JsonConvert.DeserializeObject<object[]>(job.ActionParameters);
+        await action.Run(parameters);
     }
 }

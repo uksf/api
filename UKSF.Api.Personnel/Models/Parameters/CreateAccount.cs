@@ -1,14 +1,13 @@
-﻿namespace UKSF.Api.Personnel.Models.Parameters
+﻿namespace UKSF.Api.Personnel.Models.Parameters;
+
+public class CreateAccount
 {
-    public class CreateAccount
-    {
-        public string DobDay;
-        public string DobMonth;
-        public string DobYear;
-        public string Email;
-        public string FirstName;
-        public string LastName;
-        public string Nation;
-        public string Password;
-    }
+    public string DobDay { get; set; }
+    public string DobMonth { get; set; }
+    public string DobYear { get; set; }
+    public string Email { get; set; }
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public string Nation { get; set; }
+    public string Password { get; set; }
 }

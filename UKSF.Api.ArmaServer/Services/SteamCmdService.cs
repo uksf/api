@@ -1,75 +1,74 @@
 ﻿using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
 using CliWrap;
 using CliWrap.Buffered;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using UKSF.Api.Admin.Extensions;
 using UKSF.Api.Admin.Services;
+using UKSF.Api.Base.Configuration;
 
-namespace UKSF.Api.ArmaServer.Services
+namespace UKSF.Api.ArmaServer.Services;
+
+public interface ISteamCmdService
 {
-    public interface ISteamCmdService
+    Task<string> GetServerInfo();
+    Task<string> UpdateServer();
+}
+
+public class SteamCmdService : ISteamCmdService
+{
+    private readonly string _password;
+    private readonly string _username;
+    private readonly IVariablesService _variablesService;
+
+    public SteamCmdService(IVariablesService variablesService, IOptions<AppSettings> options)
     {
-        Task<string> GetServerInfo();
-        Task<string> UpdateServer();
+        _variablesService = variablesService;
+        var appSettings = options.Value;
+        _username = appSettings.Secrets.SteamCmd.Username;
+        _password = appSettings.Secrets.SteamCmd.Password;
     }
 
-    public class SteamCmdService : ISteamCmdService
+    public async Task<string> GetServerInfo()
     {
-        private readonly IConfiguration _configuration;
-        private readonly IVariablesService _variablesService;
+        var process = ExecuteSteamCmdCommand("+login anonymous +app_info_update 1 +app_info_print 233780 +quit");
 
-        public SteamCmdService(IVariablesService variablesService, IConfiguration configuration)
+        process.Start();
+        var output = await process.StandardOutput.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        return output;
+    }
+
+    public async Task<string> UpdateServer()
+    {
+        var steamPath = _variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
+        var cmdPath = Path.Combine(steamPath, "steamcmd.exe");
+
+        var result = await Cli.Wrap(cmdPath)
+                              .WithWorkingDirectory(steamPath)
+                              .WithArguments($"+login {_username} {_password} +\"app_update 233780 -beta creatordlc\" validate +quit")
+                              .ExecuteBufferedAsync();
+
+        return result.StandardOutput;
+    }
+
+    private Process ExecuteSteamCmdCommand(string command)
+    {
+        var steamPath = _variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
+        var cmdPath = Path.Combine(steamPath, "steamcmd.exe");
+
+        return new()
         {
-            _variablesService = variablesService;
-            _configuration = configuration;
-        }
-
-        public async Task<string> GetServerInfo()
-        {
-            var process = ExecuteSteamCmdCommand("+login anonymous +app_info_update 1 +app_info_print 233780 +quit");
-
-            process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            return output;
-        }
-
-        public async Task<string> UpdateServer()
-        {
-            var steamPath = _variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
-            var cmdPath = Path.Combine(steamPath, "steamcmd.exe");
-            var username = _configuration.GetSection("SteamCmd")["username"];
-            var password = _configuration.GetSection("SteamCmd")["password"];
-
-            var result = await Cli.Wrap(cmdPath)
-                                  .WithWorkingDirectory(steamPath)
-                                  .WithArguments($"+login {username} {password} +\"app_update 233780 -beta creatordlc\" validate +quit")
-                                  .ExecuteBufferedAsync();
-
-            return result.StandardOutput;
-        }
-
-        private Process ExecuteSteamCmdCommand(string command)
-        {
-            var steamPath = _variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
-            var cmdPath = Path.Combine(steamPath, "steamcmd.exe");
-
-            return new()
+            StartInfo =
             {
-                StartInfo =
-                {
-                    FileName = cmdPath,
-                    WorkingDirectory = steamPath,
-                    Arguments = command,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                }
-            };
-        }
+                FileName = cmdPath,
+                WorkingDirectory = steamPath,
+                Arguments = command,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            }
+        };
     }
 }

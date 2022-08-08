@@ -2,19 +2,20 @@
 using UKSF.Api.Shared;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Services.Personnel
+namespace UKSF.Tests.Unit.Services.Personnel;
+
+public class RoleAttributeTests
 {
-    public class RoleAttributeTests
+    [Theory]
+    [InlineData("ADMIN,PERSONNEL", Permissions.Admin, Permissions.Personnel)]
+    [InlineData("ADMIN", Permissions.Admin)]
+    [InlineData("ADMIN", Permissions.Admin, Permissions.Admin)]
+    public void ShouldCombineRoles(string expected, params string[] roles)
     {
-        [Theory, InlineData("ADMIN,PERSONNEL", Permissions.Admin, Permissions.Personnel), InlineData("ADMIN", Permissions.Admin),
-         InlineData("ADMIN", Permissions.Admin, Permissions.Admin)]
-        public void ShouldCombineRoles(string expected, params string[] roles)
-        {
-            PermissionsAttribute permissionsAttribute = new(roles);
+        PermissionsAttribute permissionsAttribute = new(roles);
 
-            var subject = permissionsAttribute.Roles;
+        var subject = permissionsAttribute.Roles;
 
-            subject.Should().Be(expected);
-        }
+        subject.Should().Be(expected);
     }
 }

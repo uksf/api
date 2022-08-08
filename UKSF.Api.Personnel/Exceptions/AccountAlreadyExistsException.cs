@@ -1,11 +1,9 @@
-﻿using System;
-using UKSF.Api.Shared.Exceptions;
+﻿using UKSF.Api.Shared.Exceptions;
 
-namespace UKSF.Api.Personnel.Exceptions
+namespace UKSF.Api.Personnel.Exceptions;
+
+[Serializable]
+public class AccountAlreadyExistsException : UksfException
 {
-    [Serializable]
-    public class AccountAlreadyExistsException : UksfException
-    {
-        public AccountAlreadyExistsException() : base("An account with that email already exists", 409) { }
-    }
+    public AccountAlreadyExistsException() : base("An account with that email already exists", 409) { }
 }

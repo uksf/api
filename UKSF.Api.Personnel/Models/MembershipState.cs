@@ -1,12 +1,11 @@
-﻿namespace UKSF.Api.Personnel.Models
+﻿namespace UKSF.Api.Personnel.Models;
+
+public enum MembershipState
 {
-    public enum MembershipState
-    {
-        UNCONFIRMED,
-        CONFIRMED,
-        MEMBER,
-        DISCHARGED,
-        SERVER,
-        EMPTY
-    }
+    UNCONFIRMED,
+    CONFIRMED,
+    MEMBER,
+    DISCHARGED,
+    SERVER,
+    EMPTY
 }

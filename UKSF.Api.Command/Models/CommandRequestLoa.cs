@@ -1,12 +1,9 @@
-﻿using System;
+﻿namespace UKSF.Api.Command.Models;
 
-namespace UKSF.Api.Command.Models
+public class CommandRequestLoa : CommandRequest
 {
-    public class CommandRequestLoa : CommandRequest
-    {
-        public string Emergency;
-        public DateTime End;
-        public string Late;
-        public DateTime Start;
-    }
+    public bool Emergency { get; set; }
+    public DateTime End { get; set; }
+    public bool Late { get; set; }
+    public DateTime Start { get; set; }
 }

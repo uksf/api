@@ -1,89 +1,86 @@
-﻿using System;
-using System.Collections.Generic;
-using UKSF.Api.Base.Models;
+﻿using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Personnel.Models
+namespace UKSF.Api.Personnel.Models;
+
+public class DomainAccount : MongoObject
 {
-    public class DomainAccount : MongoObject
-    {
-        public bool SuperAdmin;
-        public bool Admin;
-        public Application Application;
-        public string ArmaExperience;
-        public string Background;
-        public string DiscordId;
-        public DateTime Dob;
-        public string Email;
-        public string Firstname;
-        public string Lastname;
-        public MembershipState MembershipState = MembershipState.UNCONFIRMED;
-        public bool MilitaryExperience;
-        public string Nation;
-        public string Password;
-        public Qualifications Qualifications = new();
-        public string Rank;
-        public string Reference;
-        public string RoleAssignment;
-        public List<string> RolePreferences = new();
-        public List<ServiceRecordEntry> ServiceRecord = new();
-        public AccountSettings Settings = new();
-        public string Steamname;
-        public HashSet<int> TeamspeakIdentities;
-        public string UnitAssignment;
-        public string UnitsExperience;
-    }
+    public bool Admin { get; set; }
+    public Application Application { get; set; }
+    public string ArmaExperience { get; set; }
+    public string Background { get; set; }
+    public string DiscordId { get; set; }
+    public DateTime Dob { get; set; }
+    public string Email { get; set; }
+    public string Firstname { get; set; }
+    public string Lastname { get; set; }
+    public MembershipState MembershipState { get; set; } = MembershipState.UNCONFIRMED;
+    public bool MilitaryExperience { get; set; }
+    public string Nation { get; set; }
+    public string Password { get; set; }
+    public Qualifications Qualifications = new();
+    public string Rank { get; set; }
+    public string Reference { get; set; }
+    public string RoleAssignment { get; set; }
+    public List<string> RolePreferences { get; set; } = new();
+    public List<ServiceRecordEntry> ServiceRecord { get; set; } = new();
+    public AccountSettings Settings { get; set; } = new();
+    public string Steamname { get; set; }
+    public bool SuperAdmin { get; set; }
+    public HashSet<int> TeamspeakIdentities { get; set; }
+    public string UnitAssignment { get; set; }
+    public string UnitsExperience { get; set; }
+}
 
-    public class Qualifications
-    {
-        public bool Medic;
-        public bool Engineer;
-    }
+public class Qualifications
+{
+    public bool Engineer { get; set; }
+    public bool Medic { get; set; }
+}
 
-    public class RosterAccount : MongoObject
-    {
-        public string Name;
-        public string Nation;
-        public string Rank;
-        public string RoleAssignment;
-        public string UnitAssignment;
-    }
+public class RosterAccount : MongoObject
+{
+    public string Name { get; set; }
+    public string Nation { get; set; }
+    public string Rank { get; set; }
+    public string RoleAssignment { get; set; }
+    public string UnitAssignment { get; set; }
+}
 
-    public class Account
-    {
-        public bool Admin;
-        public Application Application;
-        public string ArmaExperience;
-        public string Background;
-        public string DiscordId;
-        public string DisplayName;
-        public DateTime Dob;
-        public string Email;
-        public string Firstname;
-        public string Id;
-        public string Lastname;
-        public MembershipState MembershipState;
-        public bool MilitaryExperience;
-        public string Nation;
-        public Qualifications Qualifications;
-        public string Rank;
-        public Rank RankObject;
-        public string Reference;
-        public string RoleAssignment;
-        public Role RoleObject;
-        public List<string> RolePreferences;
-        public List<ServiceRecordEntry> ServiceRecord;
-        public AccountSettings Settings;
-        public string Steamname;
-        public HashSet<int> TeamspeakIdentities;
-        public string UnitAssignment;
-        public Unit UnitObject;
-        public List<Unit> UnitObjects;
-        public string UnitsExperience;
-    }
+public class Account
+{
+    public bool Admin { get; set; }
+    public Application Application { get; set; }
+    public string ArmaExperience { get; set; }
+    public string Background { get; set; }
+    public string DiscordId { get; set; }
+    public string DisplayName { get; set; }
+    public DateTime Dob { get; set; }
+    public string Email { get; set; }
+    public string Firstname { get; set; }
+    public string Id { get; set; }
+    public string Lastname { get; set; }
+    public MembershipState MembershipState { get; set; }
+    public bool MilitaryExperience { get; set; }
+    public string Nation { get; set; }
+    public Qualifications Qualifications { get; set; }
+    public string Rank { get; set; }
+    public Rank RankObject { get; set; }
+    public string Reference { get; set; }
+    public string RoleAssignment { get; set; }
+    public Role RoleObject { get; set; }
+    public List<string> RolePreferences { get; set; }
+    public List<ServiceRecordEntry> ServiceRecord { get; set; }
+    public AccountSettings Settings { get; set; }
+    public string Steamname { get; set; }
+    public HashSet<int> TeamspeakIdentities { get; set; }
+    public string UnitAssignment { get; set; }
+    public Unit UnitObject { get; set; }
+    public List<Unit> UnitObjects { get; set; }
+    public string UnitsExperience { get; set; }
+}
 
-    public class BasicAccount
-    {
-        public string DisplayName;
-        public string Id;
-    }
+public class BasicAccount
+{
+    public string DisplayName { get; set; }
+    public string Id { get; set; }
 }

@@ -1,10 +1,7 @@
-using System.Collections.Generic;
+namespace UKSF.Api.ArmaMissions.Models;
 
-namespace UKSF.Api.ArmaMissions.Models
+public class MissionEntity
 {
-    public class MissionEntity
-    {
-        public int ItemsCount;
-        public List<MissionEntityItem> MissionEntityItems = new();
-    }
+    public int ItemsCount { get; set; }
+    public List<MissionEntityItem> MissionEntityItems { get; set; } = new();
 }

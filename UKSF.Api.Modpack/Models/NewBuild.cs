@@ -1,10 +1,9 @@
-﻿namespace UKSF.Api.Modpack.Models
+﻿namespace UKSF.Api.Modpack.Models;
+
+public class NewBuild
 {
-    public class NewBuild
-    {
-        public bool Ace;
-        public bool Acre;
-        public bool Air;
-        public string Reference;
-    }
+    public bool Ace { get; set; }
+    public bool Acre { get; set; }
+    public bool Air { get; set; }
+    public string Reference { get; set; }
 }

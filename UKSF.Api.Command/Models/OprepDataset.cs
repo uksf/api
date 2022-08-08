@@ -1,12 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using UKSF.Api.Personnel.Models;
+﻿using UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.Command.Models
+namespace UKSF.Api.Command.Models;
+
+public class OprepDataset
 {
-    public class OprepDataset
-    {
-        public IEnumerable<IGrouping<string, AccountAttendanceStatus>> GroupedAttendance;
-        public Oprep OperationEntity;
-    }
+    public IEnumerable<IGrouping<string, AccountAttendanceStatus>> GroupedAttendance { get; set; }
+    public Oprep OperationEntity { get; set; }
 }

@@ -1,8 +1,7 @@
-﻿namespace UKSF.Api.Base.Models
+﻿namespace UKSF.Api.Base.Models;
+
+public enum SortDirection
 {
-    public enum SortDirection
-    {
-        ASCENDING,
-        DESCENDING
-    }
+    ASCENDING,
+    DESCENDING
 }

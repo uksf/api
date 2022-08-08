@@ -1,11 +1,9 @@
-﻿using System;
-using UKSF.Api.Shared.Exceptions;
+﻿using UKSF.Api.Shared.Exceptions;
 
-namespace UKSF.Api.Command.Exceptions
+namespace UKSF.Api.Command.Exceptions;
+
+[Serializable]
+public class InvalidLoaScopeException : UksfException
 {
-    [Serializable]
-    public class InvalidLoaScopeException : UksfException
-    {
-        public InvalidLoaScopeException(string scope) : base($"'{scope}' is an invalid LOA scope", 400) { }
-    }
+    public InvalidLoaScopeException(string scope) : base($"'{scope}' is an invalid LOA scope", 400) { }
 }

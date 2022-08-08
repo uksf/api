@@ -1,0 +1,33 @@
+﻿<component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="UKSF.Api" type="docker-deploy" factoryName="dockerfile" server-name="Docker">
+        <deployment type="dockerfile">
+            <settings>
+                <option name="imageTag" value="uksf-api"/>
+                <option name="containerName" value="uksf-api"/>
+                <option name="envVars">
+                    <list>
+                        <DockerEnvVarImpl>
+                            <option name="name" value="ASPNETCORE_ENVIRONMENT"/>
+                            <option name="value" value="Development"/>
+                        </DockerEnvVarImpl>
+                        <DockerEnvVarImpl>
+                            <option name="name" value="ASPNETCORE_URLS"/>
+                            <option name="value" value="http://+:5500"/>
+                        </DockerEnvVarImpl>
+                    </list>
+                </option>
+                <option name="portBindings">
+                    <list>
+                        <DockerPortBindingImpl>
+                            <option name="containerPort" value="5500"/>
+                            <option name="hostPort" value="5500"/>
+                        </DockerPortBindingImpl>
+                    </list>
+                </option>
+                <option name="sourceFilePath" value="Dockerfile"/>
+            </settings>
+        </deployment>
+        <EXTENSION ID="com.jetbrains.rider.docker.debug" isFastModeEnabled="true" isPublishEnabled="true"/>
+        <method v="2"/>
+    </configuration>
+</component>

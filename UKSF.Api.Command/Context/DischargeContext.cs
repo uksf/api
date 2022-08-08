@@ -1,24 +1,21 @@
-using System.Collections.Generic;
-using System.Linq;
 using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Command.Models;
 using UKSF.Api.Shared.Context;
 
-namespace UKSF.Api.Command.Context
+namespace UKSF.Api.Command.Context;
+
+public interface IDischargeContext : IMongoContext<DischargeCollection>, ICachedMongoContext { }
+
+public class DischargeContext : CachedMongoContext<DischargeCollection>, IDischargeContext
 {
-    public interface IDischargeContext : IMongoContext<DischargeCollection>, ICachedMongoContext { }
+    public DischargeContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "discharges") { }
 
-    public class DischargeContext : CachedMongoContext<DischargeCollection>, IDischargeContext
+    protected override void SetCache(IEnumerable<DischargeCollection> newCollection)
     {
-        public DischargeContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "discharges") { }
-
-        protected override void SetCache(IEnumerable<DischargeCollection> newCollection)
+        lock (LockObject)
         {
-            lock (LockObject)
-            {
-                Cache = newCollection?.OrderByDescending(x => x.Discharges.Last().Timestamp).ToList();
-            }
+            Cache = newCollection?.OrderByDescending(x => x.Discharges.Last().Timestamp).ToList();
         }
     }
 }

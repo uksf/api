@@ -1,26 +1,25 @@
 ﻿using MongoDB.Driver;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Base.Context
+namespace UKSF.Api.Base.Context;
+
+public interface IMongoCollectionFactory
 {
-    public interface IMongoCollectionFactory
+    IMongoCollection<T> CreateMongoCollection<T>(string collectionName) where T : MongoObject;
+}
+
+public class MongoCollectionFactory : IMongoCollectionFactory
+{
+    private readonly IMongoDatabase _database;
+
+    public MongoCollectionFactory(IMongoDatabase database)
     {
-        IMongoCollection<T> CreateMongoCollection<T>(string collectionName) where T : MongoObject;
+        _database = database;
     }
 
-    public class MongoCollectionFactory : IMongoCollectionFactory
+    public IMongoCollection<T> CreateMongoCollection<T>(string collectionName) where T : MongoObject
     {
-        private readonly IMongoDatabase _database;
-
-        public MongoCollectionFactory(IMongoDatabase database)
-        {
-            _database = database;
-        }
-
-        public IMongoCollection<T> CreateMongoCollection<T>(string collectionName) where T : MongoObject
-        {
-            IMongoCollection<T> mongoCollection = new MongoCollection<T>(_database, collectionName);
-            return mongoCollection;
-        }
+        IMongoCollection<T> mongoCollection = new MongoCollection<T>(_database, collectionName);
+        return mongoCollection;
     }
 }

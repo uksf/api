@@ -6,24 +6,23 @@ using UKSF.Api.Personnel;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Api.Launcher.Tests
+namespace UKSF.Api.Launcher.Tests;
+
+public class DependencyInjectionTests : DependencyInjectionTestsBase
 {
-    public class DependencyInjectionTests : DependencyInjectionTestsBase
+    public DependencyInjectionTests()
     {
-        public DependencyInjectionTests()
-        {
-            Services.AddUksfAdmin();
-            Services.AddUksfPersonnel();
-            Services.AddUksfLauncher();
-        }
+        Services.AddUksfAdmin();
+        Services.AddUksfPersonnel();
+        Services.AddUksfLauncher();
+    }
 
-        [Fact]
-        public void When_resolving_controllers()
-        {
-            Services.AddTransient<LauncherController>();
-            var serviceProvider = Services.BuildServiceProvider();
+    [Fact]
+    public void When_resolving_controllers()
+    {
+        Services.AddTransient<LauncherController>();
+        var serviceProvider = Services.BuildServiceProvider();
 
-            serviceProvider.GetRequiredService<LauncherController>().Should().NotBeNull();
-        }
+        serviceProvider.GetRequiredService<LauncherController>().Should().NotBeNull();
     }
 }

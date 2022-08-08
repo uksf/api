@@ -3,34 +3,33 @@ using FluentAssertions;
 using UKSF.Api.Shared.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Models.Message.Logging
+namespace UKSF.Tests.Unit.Models.Message.Logging;
+
+public class BasicLogMessageTests
 {
-    public class BasicLogMessageTests
+    [Fact]
+    public void ShouldSetText()
     {
-        [Fact]
-        public void ShouldSetText()
-        {
-            BasicLog subject = new("test");
+        BasicLog subject = new("test");
 
-            subject.Message.Should().Be("test");
-        }
+        subject.Message.Should().Be("test");
+    }
 
-        [Fact]
-        public void ShouldSetTextAndLogLevel()
-        {
-            BasicLog subject = new("test", LogLevel.DEBUG);
+    [Fact]
+    public void ShouldSetTextAndLogLevel()
+    {
+        BasicLog subject = new("test", LogLevel.DEBUG);
 
-            subject.Message.Should().Be("test");
-            subject.Level.Should().Be(LogLevel.DEBUG);
-        }
+        subject.Message.Should().Be("test");
+        subject.Level.Should().Be(LogLevel.DEBUG);
+    }
 
-        [Fact]
-        public void ShouldSetTextAndLogLevelFromException()
-        {
-            BasicLog subject = new(new Exception("test"));
+    [Fact]
+    public void ShouldSetTextAndLogLevelFromException()
+    {
+        BasicLog subject = new(new Exception("test"));
 
-            subject.Message.Should().Be("System.Exception: test");
-            subject.Level.Should().Be(LogLevel.ERROR);
-        }
+        subject.Message.Should().Be("System.Exception: test");
+        subject.Level.Should().Be(LogLevel.ERROR);
     }
 }

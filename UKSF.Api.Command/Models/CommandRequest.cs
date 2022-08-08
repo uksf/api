@@ -1,51 +1,53 @@
-﻿using System;
-using System.Collections.Generic;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Command.Models
+namespace UKSF.Api.Command.Models;
+
+public enum ReviewState
 {
-    public enum ReviewState
-    {
-        APPROVED,
-        REJECTED,
-        PENDING,
-        ERROR
-    }
+    APPROVED,
+    REJECTED,
+    PENDING,
+    ERROR
+}
 
-    public static class CommandRequestType
-    {
-        public const string AuxiliaryTransfer = "Axuiliary Transfer";
-        public const string Demotion = "Demotion";
-        public const string Discharge = "Discharge";
-        public const string IndividualRole = "Individual Role";
-        public const string Loa = "Loa";
-        public const string Promotion = "Promotion";
-        public const string ReinstateMember = "Reinstate Member";
-        public const string Transfer = "Transfer";
-        public const string UnitRemoval = "Unit Removal";
-        public const string UnitRole = "Unit Role";
-    }
+public static class CommandRequestType
+{
+    public const string AuxiliaryTransfer = "Axuiliary Transfer";
+    public const string Demotion = "Demotion";
+    public const string Discharge = "Discharge";
+    public const string IndividualRole = "Individual Role";
+    public const string Loa = "Loa";
+    public const string Promotion = "Promotion";
+    public const string ReinstateMember = "Reinstate Member";
+    public const string Transfer = "Transfer";
+    public const string UnitRemoval = "Unit Removal";
+    public const string UnitRole = "Unit Role";
+}
 
-    public class CommandRequest : MongoObject
-    {
-        public DateTime DateCreated;
-        public string DisplayFrom;
-        public string DisplayRecipient;
-        public string DisplayRequester;
-        public string DisplayValue;
-        public string Reason;
-        [BsonRepresentation(BsonType.ObjectId)] public string Recipient;
-        [BsonRepresentation(BsonType.ObjectId)] public string Requester;
-        public Dictionary<string, ReviewState> Reviews = new();
-        public string SecondaryValue;
-        public string Type;
-        public string Value;
+public class CommandRequest : MongoObject
+{
+    public DateTime DateCreated { get; set; }
+    public string DisplayFrom { get; set; }
+    public string DisplayRecipient { get; set; }
+    public string DisplayRequester { get; set; }
+    public string DisplayValue { get; set; }
+    public string Reason { get; set; }
 
-        public CommandRequest()
-        {
-            DateCreated = DateTime.UtcNow;
-        }
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Recipient { get; set; }
+
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Requester { get; set; }
+
+    public Dictionary<string, ReviewState> Reviews { get; set; } = new();
+    public string SecondaryValue { get; set; }
+    public string Type { get; set; }
+    public string Value { get; set; }
+
+    public CommandRequest()
+    {
+        DateCreated = DateTime.UtcNow;
     }
 }

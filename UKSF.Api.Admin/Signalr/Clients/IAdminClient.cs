@@ -1,9 +1,6 @@
-using System.Threading.Tasks;
+namespace UKSF.Api.Admin.Signalr.Clients;
 
-namespace UKSF.Api.Admin.Signalr.Clients
+public interface IAdminClient
 {
-    public interface IAdminClient
-    {
-        Task ReceiveLog();
-    }
+    Task ReceiveLog();
 }

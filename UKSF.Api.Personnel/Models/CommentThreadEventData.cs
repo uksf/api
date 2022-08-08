@@ -1,15 +1,13 @@
-﻿namespace UKSF.Api.Personnel.Models
+﻿namespace UKSF.Api.Personnel.Models;
+
+public class CommentThreadEventData
 {
-    public class CommentThreadEventData
+    public Comment Comment { get; set; }
+    public string CommentThreadId { get; set; }
+
+    public CommentThreadEventData(string commentThreadId, Comment comment)
     {
-        public Comment Comment;
-
-        public string CommentThreadId;
-
-        public CommentThreadEventData(string commentThreadId, Comment comment)
-        {
-            CommentThreadId = commentThreadId;
-            Comment = comment;
-        }
+        CommentThreadId = commentThreadId;
+        Comment = comment;
     }
 }

@@ -1,35 +1,32 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using UKSF.Api.Base.Context;
+﻿using UKSF.Api.Base.Context;
 using UKSF.Api.Base.Events;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Shared.Context;
 
-namespace UKSF.Api.Modpack.Context
+namespace UKSF.Api.Modpack.Context;
+
+public interface IReleasesContext : IMongoContext<ModpackRelease>, ICachedMongoContext { }
+
+public class ReleasesContext : CachedMongoContext<ModpackRelease>, IReleasesContext
 {
-    public interface IReleasesContext : IMongoContext<ModpackRelease>, ICachedMongoContext { }
+    public ReleasesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "modpackReleases") { }
 
-    public class ReleasesContext : CachedMongoContext<ModpackRelease>, IReleasesContext
+    protected override void SetCache(IEnumerable<ModpackRelease> newCollection)
     {
-        public ReleasesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "modpackReleases") { }
-
-        protected override void SetCache(IEnumerable<ModpackRelease> newCollection)
+        lock (LockObject)
         {
-            lock (LockObject)
-            {
-                Cache = newCollection?.Select(
-                                         x =>
-                                         {
-                                             var parts = x.Version.Split('.').Select(int.Parse).ToArray();
-                                             return new { release = x, major = parts[0], minor = parts[1], patch = parts[2] };
-                                         }
-                                     )
-                                     .OrderByDescending(x => x.major)
-                                     .ThenByDescending(x => x.minor)
-                                     .ThenByDescending(x => x.patch)
-                                     .Select(x => x.release)
-                                     .ToList();
-            }
+            Cache = newCollection?.Select(
+                                     x =>
+                                     {
+                                         var parts = x.Version.Split('.').Select(int.Parse).ToArray();
+                                         return new { release = x, major = parts[0], minor = parts[1], patch = parts[2] };
+                                     }
+                                 )
+                                 .OrderByDescending(x => x.major)
+                                 .ThenByDescending(x => x.minor)
+                                 .ThenByDescending(x => x.patch)
+                                 .Select(x => x.release)
+                                 .ToList();
         }
     }
 }

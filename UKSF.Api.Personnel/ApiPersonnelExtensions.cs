@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
-using UKSF.Api.Personnel.Commands;
+﻿using UKSF.Api.Personnel.Commands;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.EventHandlers;
 using UKSF.Api.Personnel.Mappers;
@@ -9,88 +6,87 @@ using UKSF.Api.Personnel.Queries;
 using UKSF.Api.Personnel.ScheduledActions;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Personnel.Signalr.Hubs;
+using UKSF.Api.Shared.Extensions;
 
-namespace UKSF.Api.Personnel
+namespace UKSF.Api.Personnel;
+
+public static class ApiPersonnelExtensions
 {
-    public static class ApiPersonnelExtensions
+    public static IServiceCollection AddUksfPersonnel(this IServiceCollection services)
     {
-        public static IServiceCollection AddUksfPersonnel(this IServiceCollection services)
-        {
-            return services.AddContexts()
-                           .AddEventHandlers()
-                           .AddServices()
-                           .AddCommands()
-                           .AddQueries()
-                           .AddMappers()
-                           .AddActions()
-                           .AddTransient<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>()
-                           .AddAutoMapper(typeof(AutoMapperUnitProfile));
-        }
+        return services.AddContexts()
+                       .AddEventHandlers()
+                       .AddServices()
+                       .AddCommands()
+                       .AddQueries()
+                       .AddMappers()
+                       .AddActions()
+                       .AddAutoMapper(typeof(AutoMapperUnitProfile));
+    }
 
-        private static IServiceCollection AddContexts(this IServiceCollection services)
-        {
-            return services.AddSingleton<IAccountContext, AccountContext>()
-                           .AddSingleton<ICommentThreadContext, CommentThreadContext>()
-                           .AddSingleton<IConfirmationCodeContext, ConfirmationCodeContext>()
-                           .AddSingleton<INotificationsContext, NotificationsContext>()
-                           .AddSingleton<IRanksContext, RanksContext>()
-                           .AddSingleton<IRolesContext, RolesContext>()
-                           .AddSingleton<IUnitsContext, UnitsContext>();
-        }
+    private static IServiceCollection AddContexts(this IServiceCollection services)
+    {
+        return services.AddCachedContext<IAccountContext, AccountContext>()
+                       .AddCachedContext<ICommentThreadContext, CommentThreadContext>()
+                       .AddContext<IConfirmationCodeContext, ConfirmationCodeContext>()
+                       .AddCachedContext<INotificationsContext, NotificationsContext>()
+                       .AddCachedContext<IRanksContext, RanksContext>()
+                       .AddCachedContext<IRolesContext, RolesContext>()
+                       .AddCachedContext<IUnitsContext, UnitsContext>();
+    }
 
-        private static IServiceCollection AddEventHandlers(this IServiceCollection services)
-        {
-            return services.AddSingleton<IAccountDataEventHandler, AccountDataEventHandler>()
-                           .AddSingleton<ICommentThreadEventHandler, CommentThreadEventHandler>()
-                           .AddSingleton<IDiscordEventhandler, DiscordEventhandler>()
-                           .AddSingleton<INotificationsEventHandler, NotificationsEventHandler>();
-        }
+    private static IServiceCollection AddEventHandlers(this IServiceCollection services)
+    {
+        return services.AddEventHandler<IAccountDataEventHandler, AccountDataEventHandler>()
+                       .AddEventHandler<ICommentThreadEventHandler, CommentThreadEventHandler>()
+                       .AddEventHandler<IDiscordEventhandler, DiscordEventhandler>()
+                       .AddEventHandler<INotificationsEventHandler, NotificationsEventHandler>();
+    }
 
-        private static IServiceCollection AddServices(this IServiceCollection services)
-        {
-            return services.AddSingleton<IAccountService, AccountService>()
-                           .AddSingleton<IAssignmentService, AssignmentService>()
-                           .AddSingleton<ICommentThreadService, CommentThreadService>()
-                           .AddSingleton<IConfirmationCodeService, ConfirmationCodeService>()
-                           .AddSingleton<IDisplayNameService, DisplayNameService>()
-                           .AddSingleton<INotificationsService, NotificationsService>()
-                           .AddSingleton<IObjectIdConversionService, ObjectIdConversionService>()
-                           .AddSingleton<IRanksService, RanksService>()
-                           .AddSingleton<IRecruitmentService, RecruitmentService>()
-                           .AddSingleton<IRolesService, RolesService>()
-                           .AddSingleton<IServiceRecordService, ServiceRecordService>()
-                           .AddSingleton<IUnitsService, UnitsService>();
-        }
+    private static IServiceCollection AddServices(this IServiceCollection services)
+    {
+        return services.AddSingleton<IAccountService, AccountService>()
+                       .AddSingleton<IAssignmentService, AssignmentService>()
+                       .AddSingleton<ICommentThreadService, CommentThreadService>()
+                       .AddSingleton<IConfirmationCodeService, ConfirmationCodeService>()
+                       .AddSingleton<IDisplayNameService, DisplayNameService>()
+                       .AddSingleton<INotificationsService, NotificationsService>()
+                       .AddSingleton<IObjectIdConversionService, ObjectIdConversionService>()
+                       .AddSingleton<IRanksService, RanksService>()
+                       .AddSingleton<IRecruitmentService, RecruitmentService>()
+                       .AddSingleton<IRolesService, RolesService>()
+                       .AddSingleton<IServiceRecordService, ServiceRecordService>()
+                       .AddSingleton<IUnitsService, UnitsService>();
+    }
 
-        private static IServiceCollection AddCommands(this IServiceCollection services)
-        {
-            return services.AddSingleton<IConnectTeamspeakIdToAccountCommand, ConnectTeamspeakIdToAccountCommand>()
-                           .AddSingleton<ICreateApplicationCommand, CreateApplicationCommand>()
-                           .AddSingleton<ICreateCommentThreadCommand, CreateCommentThreadCommand>()
-                           .AddSingleton<IQualificationsUpdateCommand, QualificationsUpdateCommand>();
-        }
+    private static IServiceCollection AddCommands(this IServiceCollection services)
+    {
+        return services.AddSingleton<IConnectTeamspeakIdToAccountCommand, ConnectTeamspeakIdToAccountCommand>()
+                       .AddSingleton<ICreateApplicationCommand, CreateApplicationCommand>()
+                       .AddSingleton<ICreateCommentThreadCommand, CreateCommentThreadCommand>()
+                       .AddSingleton<IQualificationsUpdateCommand, QualificationsUpdateCommand>();
+    }
 
-        private static IServiceCollection AddQueries(this IServiceCollection services)
-        {
-            return services.AddSingleton<IAllNationsByAccountQuery, AllNationsByAccountQuery>().AddSingleton<IGetUnitTreeQuery, GetUnitTreeQuery>();
-        }
+    private static IServiceCollection AddQueries(this IServiceCollection services)
+    {
+        return services.AddSingleton<IAllNationsByAccountQuery, AllNationsByAccountQuery>().AddSingleton<IGetUnitTreeQuery, GetUnitTreeQuery>();
+    }
 
-        private static IServiceCollection AddMappers(this IServiceCollection services)
-        {
-            return services.AddSingleton<IAccountMapper, AccountMapper>().AddSingleton<IUnitTreeMapper, UnitTreeMapper>();
-        }
+    private static IServiceCollection AddMappers(this IServiceCollection services)
+    {
+        return services.AddSingleton<IAccountMapper, AccountMapper>().AddSingleton<IUnitTreeMapper, UnitTreeMapper>();
+    }
 
-        private static IServiceCollection AddActions(this IServiceCollection services)
-        {
-            return services.AddSingleton<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>()
-                           .AddSingleton<IActionPruneNotifications, ActionPruneNotifications>();
-        }
+    private static IServiceCollection AddActions(this IServiceCollection services)
+    {
+        return services.AddScheduledAction<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>()
+                       .AddSelfCreatingScheduledAction<IActionPruneNotifications, ActionPruneNotifications>();
+    }
 
-        public static void AddUksfPersonnelSignalr(this IEndpointRouteBuilder builder)
-        {
-            builder.MapHub<AccountHub>($"/hub/{AccountHub.EndPoint}");
-            builder.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.EndPoint}");
-            builder.MapHub<NotificationHub>($"/hub/{NotificationHub.EndPoint}");
-        }
+    public static void AddUksfPersonnelSignalr(this IEndpointRouteBuilder builder)
+    {
+        builder.MapHub<AccountHub>($"/hub/{AccountHub.EndPoint}");
+        builder.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.EndPoint}");
+        builder.MapHub<NotificationHub>($"/hub/{NotificationHub.EndPoint}");
     }
 }

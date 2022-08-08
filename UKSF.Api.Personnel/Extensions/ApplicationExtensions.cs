@@ -1,33 +1,31 @@
-﻿using System;
-using UKSF.Api.Personnel.Models;
+﻿using UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.Personnel.Extensions
+namespace UKSF.Api.Personnel.Extensions;
+
+public static class ApplicationExtensions
 {
-    public static class ApplicationExtensions
+    public static ApplicationAge ToAge(this DateTime dob, DateTime? date = null)
     {
-        public static ApplicationAge ToAge(this DateTime dob, DateTime? date = null)
+        var today = date ?? DateTime.UtcNow.Date;
+        var months = today.Month - dob.Month;
+        var years = today.Year - dob.Year;
+
+        if (today.Day < dob.Day)
         {
-            var today = date ?? DateTime.UtcNow.Date;
-            var months = today.Month - dob.Month;
-            var years = today.Year - dob.Year;
-
-            if (today.Day < dob.Day)
-            {
-                months--;
-            }
-
-            if (months < 0)
-            {
-                years--;
-                months += 12;
-            }
-
-            return new() { Years = years, Months = months };
+            months--;
         }
 
-        public static bool IsAcceptableAge(this ApplicationAge age, int acceptableAge)
+        if (months < 0)
         {
-            return age.Years >= acceptableAge || (age.Years == acceptableAge - 1 && age.Months == 1);
+            years--;
+            months += 12;
         }
+
+        return new() { Years = years, Months = months };
+    }
+
+    public static bool IsAcceptableAge(this ApplicationAge age, int acceptableAge)
+    {
+        return age.Years >= acceptableAge || (age.Years == acceptableAge - 1 && age.Months == 1);
     }
 }

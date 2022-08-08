@@ -1,10 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿namespace UKSF.Api.Base.ScheduledActions;
 
-namespace UKSF.Api.Base.ScheduledActions
+public interface IScheduledAction
 {
-    public interface IScheduledAction
-    {
-        string Name { get; }
-        Task Run(params object[] parameters);
-    }
+    string Name { get; }
+    Task Run(params object[] parameters);
 }

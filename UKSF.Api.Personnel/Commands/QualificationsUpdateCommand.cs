@@ -1,41 +1,39 @@
-﻿using System.Threading.Tasks;
-using UKSF.Api.Personnel.Context;
+﻿using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared.Events;
 
-namespace UKSF.Api.Personnel.Commands
+namespace UKSF.Api.Personnel.Commands;
+
+public interface IQualificationsUpdateCommand
 {
-    public interface IQualificationsUpdateCommand
+    Task ExecuteAsync(string accountId, Qualifications qualifications);
+}
+
+public class QualificationsUpdateCommand : IQualificationsUpdateCommand
+{
+    private readonly IAccountContext _accountContext;
+    private readonly IUksfLogger _logger;
+
+    public QualificationsUpdateCommand(IAccountContext accountContext, IUksfLogger logger)
     {
-        Task ExecuteAsync(string accountId, Qualifications qualifications);
+        _accountContext = accountContext;
+        _logger = logger;
     }
 
-    public class QualificationsUpdateCommand : IQualificationsUpdateCommand
+    public async Task ExecuteAsync(string accountId, Qualifications qualifications)
     {
-        private readonly IAccountContext _accountContext;
-        private readonly ILogger _logger;
+        var account = _accountContext.GetSingle(accountId);
 
-        public QualificationsUpdateCommand(IAccountContext accountContext, ILogger logger)
+        if (account.Qualifications.Medic != qualifications.Medic)
         {
-            _accountContext = accountContext;
-            _logger = logger;
+            await _accountContext.Update(accountId, x => x.Qualifications.Medic, qualifications.Medic);
+            _logger.LogAudit($"Medic qualification for {accountId} was {(qualifications.Medic ? "enabled" : "disabled")}");
         }
 
-        public async Task ExecuteAsync(string accountId, Qualifications qualifications)
+        if (account.Qualifications.Engineer != qualifications.Engineer)
         {
-            var account = _accountContext.GetSingle(accountId);
-
-            if (account.Qualifications.Medic != qualifications.Medic)
-            {
-                await _accountContext.Update(accountId, x => x.Qualifications.Medic, qualifications.Medic);
-                _logger.LogAudit($"Medic qualification for {accountId} was {(qualifications.Medic ? "enabled" : "disabled")}");
-            }
-
-            if (account.Qualifications.Engineer != qualifications.Engineer)
-            {
-                await _accountContext.Update(accountId, x => x.Qualifications.Engineer, qualifications.Engineer);
-                _logger.LogAudit($"Engineer qualification for {accountId} was {(qualifications.Engineer ? "enabled" : "disabled")}");
-            }
+            await _accountContext.Update(accountId, x => x.Qualifications.Engineer, qualifications.Engineer);
+            _logger.LogAudit($"Engineer qualification for {accountId} was {(qualifications.Engineer ? "enabled" : "disabled")}");
         }
     }
 }

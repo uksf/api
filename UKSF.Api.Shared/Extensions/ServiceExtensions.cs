@@ -1,50 +1,34 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using UKSF.Api.Base.Events;
+using UKSF.Api.Base.ScheduledActions;
+using UKSF.Api.Shared.Context;
 
-// ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
+namespace UKSF.Api.Shared.Extensions;
 
-namespace UKSF.Api.Shared.Extensions
+public static class ServiceExtensions
 {
-    public static class ServiceExtensions
+    public static IServiceCollection AddContext<TService, TImplementation>(this IServiceCollection collection)
     {
-        public static IEnumerable<T> GetInterfaceServices<T>(this IServiceProvider provider)
-        {
-            List<ServiceDescriptor> services = new();
+        return collection.AddSingleton(typeof(TService), typeof(TImplementation));
+    }
 
-            object engine;
-            var fieldInfo = provider.GetType().GetFieldInfo("_engine");
-            if (fieldInfo == null)
-            {
-                var propertyInfo = provider.GetType().GetPropertyInfo("Engine");
-                if (propertyInfo == null)
-                {
-                    throw new($"Could not find Field '_engine' or Property 'Engine' on {provider.GetType()}");
-                }
+    public static IServiceCollection AddCachedContext<TService, TImplementation>(this IServiceCollection collection)
+    {
+        return collection.AddContext<TService, TImplementation>().AddSingleton(typeof(ICachedMongoContext), typeof(TImplementation));
+    }
 
-                engine = propertyInfo.GetValue(provider);
-            }
-            else
-            {
-                engine = fieldInfo.GetValue(provider);
-            }
+    public static IServiceCollection AddEventHandler<TService, TImplementation>(this IServiceCollection collection)
+    {
+        return collection.AddSingleton(typeof(TService), typeof(TImplementation)).AddSingleton(typeof(IEventHandler), typeof(TImplementation));
+    }
 
-            var callSiteFactory = engine.GetPropertyValue("CallSiteFactory");
-            var descriptorLookup = callSiteFactory.GetFieldValue("_descriptorLookup");
-            if (descriptorLookup is IDictionary dictionary)
-            {
-                foreach (DictionaryEntry entry in dictionary)
-                {
-                    if (typeof(T).IsAssignableFrom((Type) entry.Key))
-                    {
-                        services.Add((ServiceDescriptor) entry.Value.GetPropertyValue("Last"));
-                    }
-                }
-            }
+    public static IServiceCollection AddScheduledAction<TService, TImplementation>(this IServiceCollection collection)
+    {
+        return collection.AddSingleton(typeof(TService), typeof(TImplementation)).AddSingleton(typeof(IScheduledAction), typeof(TImplementation));
+    }
 
-            return services.Select(x => (T) provider.GetService(x.ServiceType));
-        }
+    public static IServiceCollection AddSelfCreatingScheduledAction<TService, TImplementation>(this IServiceCollection collection)
+    {
+        return collection.AddScheduledAction<TService, TImplementation>().AddSingleton(typeof(ISelfCreatingScheduledAction), typeof(TImplementation));
     }
 }

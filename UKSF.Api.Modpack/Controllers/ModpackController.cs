@@ -1,129 +1,137 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services;
 using UKSF.Api.Shared;
 using UKSF.Api.Shared.Exceptions;
 
-namespace UKSF.Api.Modpack.Controllers
+namespace UKSF.Api.Modpack.Controllers;
+
+[Route("[controller]")]
+public class ModpackController : ControllerBase
 {
-    [Route("[controller]")]
-    public class ModpackController : ControllerBase
+    private readonly IGithubService _githubService;
+    private readonly IModpackService _modpackService;
+
+    public ModpackController(IModpackService modpackService, IGithubService githubService)
     {
-        private readonly IGithubService _githubService;
-        private readonly IModpackService _modpackService;
+        _modpackService = modpackService;
+        _githubService = githubService;
+    }
 
-        public ModpackController(IModpackService modpackService, IGithubService githubService)
+    [HttpGet("releases")]
+    [Permissions(Permissions.Member)]
+    public IEnumerable<ModpackRelease> GetReleases()
+    {
+        return _modpackService.GetReleases();
+    }
+
+    [HttpGet("rcs")]
+    [Permissions(Permissions.Member)]
+    public IEnumerable<ModpackBuild> GetReleaseCandidates()
+    {
+        return _modpackService.GetRcBuilds();
+    }
+
+    [HttpGet("builds")]
+    [Permissions(Permissions.Member)]
+    public IEnumerable<ModpackBuild> GetBuilds()
+    {
+        return _modpackService.GetDevBuilds();
+    }
+
+    [HttpGet("builds/{id}")]
+    [Permissions(Permissions.Member)]
+    public ModpackBuild GetBuild(string id)
+    {
+        var build = _modpackService.GetBuild(id);
+        if (build == null)
         {
-            _modpackService = modpackService;
-            _githubService = githubService;
+            throw new NotFoundException("Build does not exist");
         }
 
-        [HttpGet("releases"), Permissions(Permissions.Member)]
-        public IEnumerable<ModpackRelease> GetReleases()
+        return build;
+    }
+
+    [HttpGet("builds/{id}/step/{index}")]
+    [Permissions(Permissions.Member)]
+    public ModpackBuildStep GetBuildStep(string id, int index)
+    {
+        var build = _modpackService.GetBuild(id);
+        if (build == null)
         {
-            return _modpackService.GetReleases();
+            throw new NotFoundException("Build does not exist");
         }
 
-        [HttpGet("rcs"), Permissions(Permissions.Member)]
-        public IEnumerable<ModpackBuild> GetReleaseCandidates()
+        if (build.Steps.Count > index)
         {
-            return _modpackService.GetRcBuilds();
+            return build.Steps[index];
         }
 
-        [HttpGet("builds"), Permissions(Permissions.Member)]
-        public IEnumerable<ModpackBuild> GetBuilds()
+        throw new NotFoundException("Build step does not exist");
+    }
+
+    [HttpGet("builds/{id}/rebuild")]
+    [Permissions(Permissions.Admin)]
+    public async Task Rebuild(string id)
+    {
+        var build = _modpackService.GetBuild(id);
+        if (build == null)
         {
-            return _modpackService.GetDevBuilds();
+            throw new NotFoundException("Build does not exist");
         }
 
-        [HttpGet("builds/{id}"), Permissions(Permissions.Member)]
-        public ModpackBuild GetBuild(string id)
-        {
-            var build = _modpackService.GetBuild(id);
-            if (build == null)
-            {
-                throw new NotFoundException("Build does not exist");
-            }
+        await _modpackService.Rebuild(build);
+    }
 
-            return build;
+    [HttpGet("builds/{id}/cancel")]
+    [Permissions(Permissions.Admin)]
+    public async Task CancelBuild(string id)
+    {
+        var build = _modpackService.GetBuild(id);
+        if (build == null)
+        {
+            throw new NotFoundException("Build does not exist");
         }
 
-        [HttpGet("builds/{id}/step/{index}"), Permissions(Permissions.Member)]
-        public ModpackBuildStep GetBuildStep(string id, int index)
+        await _modpackService.CancelBuild(build);
+    }
+
+    [HttpPatch("release/{version}")]
+    [Permissions(Permissions.Admin)]
+    public async Task UpdateRelease(string version, [FromBody] ModpackRelease release)
+    {
+        if (!release.IsDraft)
         {
-            var build = _modpackService.GetBuild(id);
-            if (build == null)
-            {
-                throw new NotFoundException("Build does not exist");
-            }
-
-            if (build.Steps.Count > index)
-            {
-                return build.Steps[index];
-            }
-
-            throw new NotFoundException("Build step does not exist");
+            throw new BadRequestException($"Release {version} is not a draft");
         }
 
-        [HttpGet("builds/{id}/rebuild"), Permissions(Permissions.Admin)]
-        public async Task Rebuild(string id)
-        {
-            var build = _modpackService.GetBuild(id);
-            if (build == null)
-            {
-                throw new NotFoundException("Build does not exist");
-            }
+        await _modpackService.UpdateReleaseDraft(release);
+    }
 
-            await _modpackService.Rebuild(build);
+    [HttpGet("release/{version}")]
+    [Permissions(Permissions.Admin)]
+    public async Task Release(string version)
+    {
+        await _modpackService.Release(version);
+    }
+
+    [HttpGet("release/{version}/changelog")]
+    [Permissions(Permissions.Admin)]
+    public async Task<ModpackRelease> RegenerateChangelog(string version)
+    {
+        await _modpackService.RegnerateReleaseDraftChangelog(version);
+        return _modpackService.GetRelease(version);
+    }
+
+    [HttpPost("newbuild")]
+    [Permissions(Permissions.Tester)]
+    public async Task NewBuild([FromBody] NewBuild newBuild)
+    {
+        if (!await _githubService.IsReferenceValid(newBuild.Reference))
+        {
+            throw new BadRequestException($"{newBuild.Reference} cannot be built as its version does not have the required make files");
         }
 
-        [HttpGet("builds/{id}/cancel"), Permissions(Permissions.Admin)]
-        public async Task CancelBuild(string id)
-        {
-            var build = _modpackService.GetBuild(id);
-            if (build == null)
-            {
-                throw new NotFoundException("Build does not exist");
-            }
-
-            await _modpackService.CancelBuild(build);
-        }
-
-        [HttpPatch("release/{version}"), Permissions(Permissions.Admin)]
-        public async Task UpdateRelease(string version, [FromBody] ModpackRelease release)
-        {
-            if (!release.IsDraft)
-            {
-                throw new BadRequestException($"Release {version} is not a draft");
-            }
-
-            await _modpackService.UpdateReleaseDraft(release);
-        }
-
-        [HttpGet("release/{version}"), Permissions(Permissions.Admin)]
-        public async Task Release(string version)
-        {
-            await _modpackService.Release(version);
-        }
-
-        [HttpGet("release/{version}/changelog"), Permissions(Permissions.Admin)]
-        public async Task<ModpackRelease> RegenerateChangelog(string version)
-        {
-            await _modpackService.RegnerateReleaseDraftChangelog(version);
-            return _modpackService.GetRelease(version);
-        }
-
-        [HttpPost("newbuild"), Permissions(Permissions.Tester)]
-        public async Task NewBuild([FromBody] NewBuild newBuild)
-        {
-            if (!await _githubService.IsReferenceValid(newBuild.Reference))
-            {
-                throw new BadRequestException($"{newBuild.Reference} cannot be built as its version does not have the required make files");
-            }
-
-            await _modpackService.NewBuild(newBuild);
-        }
+        await _modpackService.NewBuild(newBuild);
     }
 }

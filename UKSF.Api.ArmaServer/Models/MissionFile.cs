@@ -1,19 +1,16 @@
-using System.IO;
+namespace UKSF.Api.ArmaServer.Models;
 
-namespace UKSF.Api.ArmaServer.Models
+public class MissionFile
 {
-    public class MissionFile
-    {
-        public string Map;
-        public string Name;
-        public string Path;
+    public string Map { get; set; }
+    public string Name { get; set; }
+    public string Path { get; set; }
 
-        public MissionFile(FileSystemInfo fileInfo)
-        {
-            var fileNameParts = fileInfo.Name.Split(".");
-            Path = fileInfo.Name;
-            Name = fileNameParts[0];
-            Map = fileNameParts[1];
-        }
+    public MissionFile(FileSystemInfo fileInfo)
+    {
+        var fileNameParts = fileInfo.Name.Split(".");
+        Path = fileInfo.Name;
+        Name = fileNameParts[0];
+        Map = fileNameParts[1];
     }
 }

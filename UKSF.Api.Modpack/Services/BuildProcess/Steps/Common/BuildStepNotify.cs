@@ -1,63 +1,59 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
-using UKSF.Api.Admin.Extensions;
+﻿using UKSF.Api.Admin.Extensions;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Discord.Services;
 using UKSF.Api.Modpack.Models;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common;
+
+[BuildStep(Name)]
+public class BuildStepNotify : BuildStep
 {
-    [BuildStep(Name)]
-    public class BuildStepNotify : BuildStep
+    public const string Name = "Notify";
+    private IDiscordService _discordService;
+    private IReleaseService _releaseService;
+
+    protected override Task SetupExecute()
     {
-        public const string Name = "Notify";
-        private IDiscordService _discordService;
-        private IReleaseService _releaseService;
+        _discordService = ServiceProvider.GetService<IDiscordService>();
+        _releaseService = ServiceProvider.GetService<IReleaseService>();
+        StepLogger.Log("Retrieved services");
+        return Task.CompletedTask;
+    }
 
-        protected override Task SetupExecute()
+    protected override async Task ProcessExecute()
+    {
+        switch (Build.Environment)
         {
-            _discordService = ServiceProvider.GetService<IDiscordService>();
-            _releaseService = ServiceProvider.GetService<IReleaseService>();
-            StepLogger.Log("Retrieved services");
-            return Task.CompletedTask;
-        }
-
-        protected override async Task ProcessExecute()
-        {
-            switch (Build.Environment)
+            case GameEnvironment.RELEASE:
             {
-                case GameEnvironment.RELEASE:
-                {
-                    var release = _releaseService.GetRelease(Build.Version);
-                    await _discordService.SendMessageToEveryone(VariablesService.GetVariable("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage(release));
-                    break;
-                }
-                case GameEnvironment.RC:
-                    await _discordService.SendMessage(VariablesService.GetVariable("DID_C_MODPACK_DEV").AsUlong(), GetDiscordMessage());
-                    break;
-                case GameEnvironment.DEV: break;
-                default:                  throw new ArgumentOutOfRangeException();
+                var release = _releaseService.GetRelease(Build.Version);
+                await _discordService.SendMessageToEveryone(VariablesService.GetVariable("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage(release));
+                break;
             }
-
-            StepLogger.Log("Notifications sent");
+            case GameEnvironment.RC:
+                await _discordService.SendMessage(VariablesService.GetVariable("DID_C_MODPACK_DEV").AsUlong(), GetDiscordMessage());
+                break;
+            case GameEnvironment.DEV: break;
+            default:                  throw new ArgumentOutOfRangeException();
         }
 
-        private string GetBuildMessage()
-        {
-            return $"New release candidate available for {Build.Version} on the rc repository";
-        }
+        StepLogger.Log("Notifications sent");
+    }
 
-        private string GetBuildLink()
-        {
-            return $"https://uk-sf.co.uk/modpack/builds-rc?version={Build.Version}&build={Build.Id}";
-        }
+    private string GetBuildMessage()
+    {
+        return $"New release candidate available for {Build.Version} on the rc repository";
+    }
 
-        private string GetDiscordMessage(ModpackRelease release = null)
-        {
-            return release == null
-                ? $"Modpack RC Build - {Build.Version} RC# {Build.BuildNumber}\n{GetBuildMessage()}\n<{GetBuildLink()}>"
-                : $"Modpack Update - {release.Version}\nFull Changelog: <https://uk-sf.co.uk/modpack/releases?version={release.Version}>\n\nSummary:\n```{release.Description}```";
-        }
+    private string GetBuildLink()
+    {
+        return $"https://uk-sf.co.uk/modpack/builds-rc?version={Build.Version}&build={Build.Id}";
+    }
+
+    private string GetDiscordMessage(ModpackRelease release = null)
+    {
+        return release == null
+            ? $"Modpack RC Build - {Build.Version} RC# {Build.BuildNumber}\n{GetBuildMessage()}\n<{GetBuildLink()}>"
+            : $"Modpack Update - {release.Version}\nFull Changelog: <https://uk-sf.co.uk/modpack/releases?version={release.Version}>\n\nSummary:\n```{release.Description}```";
     }
 }

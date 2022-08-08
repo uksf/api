@@ -1,21 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <OutputType>Library</OutputType>
+        <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\UKSF.Api.Admin\UKSF.Api.Admin.csproj" />
-      <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj" />
-      <ProjectReference Include="..\UKSF.Api.Shared\UKSF.Api.Shared.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Admin\UKSF.Api.Admin.csproj"/>
+        <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj"/>
+        <ProjectReference Include="..\UKSF.Api.Shared\UKSF.Api.Shared.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="AutoMapper" Version="10.1.1" />
+        <PackageReference Include="AutoMapper" Version="10.1.1"/>
         <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1"/>
-      <PackageReference Include="AvsAn" Version="3.2.0" />
-      <PackageReference Include="BCrypt.Net-Next" Version="4.0.2" />
+        <PackageReference Include="AvsAn" Version="3.2.0"/>
+        <PackageReference Include="BCrypt.Net-Next" Version="4.0.3"/>
         <PackageReference Include="NameCase" Version="1.0.0"/>
     </ItemGroup>
 

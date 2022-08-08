@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
 
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="FluentAssertions" Version="6.0.0"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0"/>
         <PackageReference Include="Moq" Version="4.16.1"/>
         <PackageReference Include="xunit" Version="2.4.1"/>
@@ -23,8 +23,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\UKSF.Api.Base\UKSF.Api.Base.csproj" />
-      <ProjectReference Include="..\UKSF.Api.Tests.Common\UKSF.Api.Tests.Common.csproj" />
+        <ProjectReference Include="..\..\UKSF.Api.Base\UKSF.Api.Base.csproj"/>
+        <ProjectReference Include="..\UKSF.Api.Tests.Common\UKSF.Api.Tests.Common.csproj"/>
     </ItemGroup>
 
 </Project>

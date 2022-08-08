@@ -1,24 +1,21 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Personnel.Queries;
 
-namespace UKSF.Api.Personnel.Controllers
+namespace UKSF.Api.Personnel.Controllers;
+
+[Route("accounts/nations")]
+public class AccountNationsController : ControllerBase
 {
-    [Route("accounts/nations")]
-    public class AccountNationsController : ControllerBase
+    private readonly IAllNationsByAccountQuery _allNationsByAccountQuery;
+
+    public AccountNationsController(IAllNationsByAccountQuery allNationsByAccountQuery)
     {
-        private readonly IAllNationsByAccountQuery _allNationsByAccountQuery;
+        _allNationsByAccountQuery = allNationsByAccountQuery;
+    }
 
-        public AccountNationsController(IAllNationsByAccountQuery allNationsByAccountQuery)
-        {
-            _allNationsByAccountQuery = allNationsByAccountQuery;
-        }
-
-        [HttpGet]
-        public async Task<List<string>> GetNations()
-        {
-            return await _allNationsByAccountQuery.ExecuteAsync();
-        }
+    [HttpGet]
+    public async Task<List<string>> GetNations()
+    {
+        return await _allNationsByAccountQuery.ExecuteAsync();
     }
 }

@@ -1,210 +1,210 @@
 {
-	"_id": {
-		"$oid": "5bfd3f16827ae9251067284a"
-	},
-	"key": "MISSIONS_PATH",
-	"item": "C:\\Users\\Tim\\Desktop\\servers\\missions"
+    "_id": {
+        "$oid": "5bfd3f16827ae9251067284a"
+    },
+    "key": "MISSIONS_PATH",
+    "item": "C:\\Users\\Tim\\Desktop\\servers\\missions"
 }
 {
-	"_id": {
-		"$oid": "5bfd4376437576718cef5170"
-	},
-	"key": "SERVER_EXECUTABLE",
-	"item": "B:\\Steam\\steamapps\\common\\Arma 3\\arma3server_x64.exe"
+    "_id": {
+        "$oid": "5bfd4376437576718cef5170"
+    },
+    "key": "SERVER_EXECUTABLE",
+    "item": "B:\\Steam\\steamapps\\common\\Arma 3\\arma3server_x64.exe"
 }
 {
-	"_id": {
-		"$oid": "5bfd4402437576718cef5172"
-	},
-	"key": "SERVERS_PATH",
-	"item": "C:\\Users\\Tim\\Desktop\\servers"
+    "_id": {
+        "$oid": "5bfd4402437576718cef5172"
+    },
+    "key": "SERVERS_PATH",
+    "item": "C:\\Users\\Tim\\Desktop\\servers"
 }
 {
-	"_id": {
-		"$oid": "5bfd45655f4cff925caf0a0f"
-	},
-	"key": "SERVER_PROFILES",
-	"item": "C:\\Users\\Tim\\Desktop\\servers\\Profiles"
+    "_id": {
+        "$oid": "5bfd45655f4cff925caf0a0f"
+    },
+    "key": "SERVER_PROFILES",
+    "item": "C:\\Users\\Tim\\Desktop\\servers\\Profiles"
 }
 {
-	"_id": {
-		"$oid": "5bfd45925f4cff925caf0a11"
-	},
-	"key": "SERVER_PERF_CONFIG",
-	"item": "C:\\Users\\Tim\\Desktop\\servers\\perf.cfg"
+    "_id": {
+        "$oid": "5bfd45925f4cff925caf0a11"
+    },
+    "key": "SERVER_PERF_CONFIG",
+    "item": "C:\\Users\\Tim\\Desktop\\servers\\perf.cfg"
 }
 {
-	"_id": {
-		"$oid": "5bfd46a2901e3e870c6c1c57"
-	},
-	"key": "HEADLESS_CLIENT_NAMES",
-	"item": "Jarvis, Ultron, TheVision"
+    "_id": {
+        "$oid": "5bfd46a2901e3e870c6c1c57"
+    },
+    "key": "HEADLESS_CLIENT_NAMES",
+    "item": "Jarvis, Ultron, TheVision"
 }
 {
-	"_id": {
-		"$oid": "5bfd49676bc4e84354475969"
-	},
-	"key": "TSGID_ELCOM",
-	"item": "49"
+    "_id": {
+        "$oid": "5bfd49676bc4e84354475969"
+    },
+    "key": "TSGID_ELCOM",
+    "item": "49"
 }
 {
-	"_id": {
-		"$oid": "5bfd49736bc4e8435447596b"
-	},
-	"key": "TSGID_UNVERIFIED",
-	"item": "85"
+    "_id": {
+        "$oid": "5bfd49736bc4e8435447596b"
+    },
+    "key": "TSGID_UNVERIFIED",
+    "item": "85"
 }
 {
-	"_id": {
-		"$oid": "5bfd497e6bc4e8435447596d"
-	},
-	"key": "TSGID_DISCHARGED",
-	"item": "75"
+    "_id": {
+        "$oid": "5bfd497e6bc4e8435447596d"
+    },
+    "key": "TSGID_DISCHARGED",
+    "item": "75"
 }
 {
-	"_id": {
-		"$oid": "5bfd4a356bc4e8435447596f"
-	},
-	"key": "TSGID_BLACKLIST",
-	"item": "6,8,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,76,77,78,79,80,81,82,83,84,86"
+    "_id": {
+        "$oid": "5bfd4a356bc4e8435447596f"
+    },
+    "key": "TSGID_BLACKLIST",
+    "item": "6,8,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,76,77,78,79,80,81,82,83,84,86"
 }
 {
-	"_id": {
-		"$oid": "5bfd51a77e4b4d2440d33a09"
-	},
-	"key": "MODS_PATHS",
-	"item": "B:\\Steam\\steamapps\\common\\Arma 3\\uksf,B:\\Steam\\steamapps\\common\\Arma 3,B:\\Steam\\steamapps\\common\\Arma 3\\u,B:\\Steam\\steamapps\\common\\Arma 3\\z\\intercept_cba\\rv,B:\\Steam\\steamapps\\common\\Arma 3\\z\\intercept_cba\\intercept"
+    "_id": {
+        "$oid": "5bfd51a77e4b4d2440d33a09"
+    },
+    "key": "MODS_PATHS",
+    "item": "B:\\Steam\\steamapps\\common\\Arma 3\\uksf,B:\\Steam\\steamapps\\common\\Arma 3,B:\\Steam\\steamapps\\common\\Arma 3\\u,B:\\Steam\\steamapps\\common\\Arma 3\\z\\intercept_cba\\rv,B:\\Steam\\steamapps\\common\\Arma 3\\z\\intercept_cba\\intercept"
 }
 {
-	"_id": {
-		"$oid": "5bfddfb4774a43837c0a9a5b"
-	},
-	"key": "MIGRATED",
-	"item": "true"
+    "_id": {
+        "$oid": "5bfddfb4774a43837c0a9a5b"
+    },
+    "key": "MIGRATED",
+    "item": "true"
 }
 {
-	"_id": {
-		"$oid": "5c1029f144996c3f20b6150c"
-	},
-	"key": "DOCUMENTS_LOCATION",
-	"item": "F:\\Website\\Documents"
+    "_id": {
+        "$oid": "5c1029f144996c3f20b6150c"
+    },
+    "key": "DOCUMENTS_LOCATION",
+    "item": "F:\\Website\\Documents"
 }
 {
-	"_id": {
-		"$oid": "5c36743cf2b65905f4a75ea4"
-	},
-	"key": "MAKEPBO_WORKING_DIR",
-	"item": "F:\\Website"
+    "_id": {
+        "$oid": "5c36743cf2b65905f4a75ea4"
+    },
+    "key": "MAKEPBO_WORKING_DIR",
+    "item": "F:\\Website"
 }
 {
-	"_id": {
-		"$oid": "5c3fab36dee76d26cc9f4a02"
-	},
-	"item": "F:\\Website\\Backups",
-	"key": "MISSIONS_BACKUPS"
+    "_id": {
+        "$oid": "5c3fab36dee76d26cc9f4a02"
+    },
+    "item": "F:\\Website\\Backups",
+    "key": "MISSIONS_BACKUPS"
 }
 {
-	"_id": {
-		"$oid": "5c5a0a03b7864a2c949088ca"
-	},
-	"item": "311543678126653451",
-	"key": "DID_SERVER"
+    "_id": {
+        "$oid": "5c5a0a03b7864a2c949088ca"
+    },
+    "item": "311543678126653451",
+    "key": "DID_SERVER"
 }
 {
-	"_id": {
-		"$oid": "5c5a0a09b7864a2c949088cc"
-	},
-	"item": "147037209621430272",
-	"key": "DID_U_OWNER"
+    "_id": {
+        "$oid": "5c5a0a09b7864a2c949088cc"
+    },
+    "item": "147037209621430272",
+    "key": "DID_U_OWNER"
 }
 {
-	"_id": {
-		"$oid": "5c5a1fcab7864a2c949088d9"
-	},
-	"item": "311543678126653451,311544735456165898,342023317009465344,523526517997961240,523526922492182538,316364551660765196,311544985998721024,626789351396737044",
-	"key": "DID_R_BLACKLIST"
+    "_id": {
+        "$oid": "5c5a1fcab7864a2c949088d9"
+    },
+    "item": "311543678126653451,311544735456165898,342023317009465344,523526517997961240,523526922492182538,316364551660765196,311544985998721024,626789351396737044",
+    "key": "DID_R_BLACKLIST"
 }
 {
-	"_id": {
-		"$oid": "5c5ace700a407f25b410b379"
-	},
-	"item": "523525678180859924,520619696576266241",
-	"key": "DID_U_BLACKLIST"
+    "_id": {
+        "$oid": "5c5ace700a407f25b410b379"
+    },
+    "item": "523525678180859924,520619696576266241",
+    "key": "DID_U_BLACKLIST"
 }
 {
-	"_id": {
-		"$oid": "5c6ee91d24bfdd792405e014"
-	},
-	"item": "B:\\Steam\\steamapps\\common\\Arma 3\\uksf",
-	"key": "PATH_MODPACK"
+    "_id": {
+        "$oid": "5c6ee91d24bfdd792405e014"
+    },
+    "item": "B:\\Steam\\steamapps\\common\\Arma 3\\uksf",
+    "key": "PATH_MODPACK"
 }
 {
-	"_id": {
-		"$oid": "5c7ed3a07e6f0f1c183b66b2"
-	},
-	"item": "903",
-	"key": "FRONTEND_VERSION"
+    "_id": {
+        "$oid": "5c7ed3a07e6f0f1c183b66b2"
+    },
+    "item": "903",
+    "key": "FRONTEND_VERSION"
 }
 {
-	"_id": {
-		"$oid": "5c8d25041e599420e816a233"
-	},
-	"item": false,
-	"key": "SERVERS_DISABLED"
+    "_id": {
+        "$oid": "5c8d25041e599420e816a233"
+    },
+    "item": false,
+    "key": "SERVERS_DISABLED"
 }
 {
-	"_id": {
-		"$oid": "5c90e60c4a264b2508e7d33d"
-	},
-	"item": "E:\\Workspace\\UKSF.Launcher\\Test",
-	"key": "LAUNCHER_LOCATION"
+    "_id": {
+        "$oid": "5c90e60c4a264b2508e7d33d"
+    },
+    "item": "E:\\Workspace\\UKSF.Launcher\\Test",
+    "key": "LAUNCHER_LOCATION"
 }
 {
-	"_id": {
-		"$oid": "5c90e6134a264b2508e7d33f"
-	},
-	"item": "1.0.0.811",
-	"key": "LAUNCHER_VERSION"
+    "_id": {
+        "$oid": "5c90e6134a264b2508e7d33f"
+    },
+    "item": "1.0.0.811",
+    "key": "LAUNCHER_VERSION"
 }
 {
-	"_id": {
-		"$oid": "5dcc824c2d5f140f30e61e06"
-	},
-	"item": "6,8,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,76,77,78,79,80,81,82,83,84,86,104",
-	"key": "TEAMSPEAK_GID_BLACKLIST"
+    "_id": {
+        "$oid": "5dcc824c2d5f140f30e61e06"
+    },
+    "item": "6,8,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,76,77,78,79,80,81,82,83,84,86,104",
+    "key": "TEAMSPEAK_GID_BLACKLIST"
 }
 {
-	"_id": {
-		"$oid": "5dcc82512d5f140f30e61e08"
-	},
-	"item": "75",
-	"key": "TEAMSPEAK_GID_DISCHARGED"
+    "_id": {
+        "$oid": "5dcc82512d5f140f30e61e08"
+    },
+    "item": "75",
+    "key": "TEAMSPEAK_GID_DISCHARGED"
 }
 {
-	"_id": {
-		"$oid": "5dcc82562d5f140f30e61e0a"
-	},
-	"item": "49",
-	"key": "TEAMSPEAK_GID_ELCOM"
+    "_id": {
+        "$oid": "5dcc82562d5f140f30e61e0a"
+    },
+    "item": "49",
+    "key": "TEAMSPEAK_GID_ELCOM"
 }
 {
-	"_id": {
-		"$oid": "5dcc82672d5f140f30e61e0c"
-	},
-	"item": "85",
-	"key": "TEAMSPEAK_GID_UNVERIFIED"
+    "_id": {
+        "$oid": "5dcc82672d5f140f30e61e0c"
+    },
+    "item": "85",
+    "key": "TEAMSPEAK_GID_UNVERIFIED"
 }
 {
-	"_id": {
-		"$oid": "5dcc826c2d5f140f30e61e0e"
-	},
-	"item": "C:\\Program Files\\TeamSpeak 3 Client\\ts3client_win64.exe",
-	"key": "TEAMSPEAK_PATH"
+    "_id": {
+        "$oid": "5dcc826c2d5f140f30e61e0e"
+    },
+    "item": "C:\\Program Files\\TeamSpeak 3 Client\\ts3client_win64.exe",
+    "key": "TEAMSPEAK_PATH"
 }
 {
-	"_id": {
-		"$oid": "5dcc82722d5f140f30e61e10"
-	},
-	"item": "true",
-	"key": "TEAMSPEAK_RUN"
+    "_id": {
+        "$oid": "5dcc82722d5f140f30e61e10"
+    },
+    "item": "true",
+    "key": "TEAMSPEAK_RUN"
 }

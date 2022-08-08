@@ -1,16 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Shared;
 
-namespace UKSF.Api.Controllers
+namespace UKSF.Api.Controllers;
+
+[Route("[controller]")]
+[Permissions(Permissions.Confirmed, Permissions.Member)]
+public class ModsController : ControllerBase
 {
-    [Route("[controller]"), Permissions(Permissions.Confirmed, Permissions.Member)]
-    public class ModsController : ControllerBase
+    // TODO: Return size of modpack folder
+    [HttpGet("size")]
+    public string Index()
     {
-        // TODO: Return size of modpack folder
-        [HttpGet("size")]
-        public string Index()
-        {
-            return "37580963840";
-        }
+        return "37580963840";
     }
 }

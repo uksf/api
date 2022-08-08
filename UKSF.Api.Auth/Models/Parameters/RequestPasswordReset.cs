@@ -1,7 +1,6 @@
-﻿namespace UKSF.Api.Auth.Models.Parameters
+﻿namespace UKSF.Api.Auth.Models.Parameters;
+
+public class RequestPasswordReset
 {
-    public class RequestPasswordReset
-    {
-        public string Email;
-    }
+    public string Email { get; set; }
 }

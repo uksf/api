@@ -1,27 +1,28 @@
-using System;
-using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Command.Models
-{
-    public class DischargeCollection : MongoObject
-    {
-        [BsonRepresentation(BsonType.ObjectId)] public string AccountId;
-        public List<Discharge> Discharges = new();
-        public string Name;
-        public bool Reinstated;
-        [BsonIgnore] public bool RequestExists;
-    }
+namespace UKSF.Api.Command.Models;
 
-    public class Discharge : MongoObject
-    {
-        public string DischargedBy;
-        public string Rank;
-        public string Reason;
-        public string Role;
-        public DateTime Timestamp = DateTime.UtcNow;
-        public string Unit;
-    }
+public class DischargeCollection : MongoObject
+{
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string AccountId { get; set; }
+
+    public List<Discharge> Discharges { get; set; } = new();
+    public string Name { get; set; }
+    public bool Reinstated { get; set; }
+
+    [BsonIgnore]
+    public bool RequestExists { get; set; }
+}
+
+public class Discharge : MongoObject
+{
+    public string DischargedBy { get; set; }
+    public string Rank { get; set; }
+    public string Reason { get; set; }
+    public string Role { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public string Unit { get; set; }
 }

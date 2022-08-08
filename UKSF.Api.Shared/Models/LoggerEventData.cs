@@ -1,12 +1,11 @@
-﻿namespace UKSF.Api.Shared.Models
-{
-    public class LoggerEventData
-    {
-        public BasicLog Log;
+﻿namespace UKSF.Api.Shared.Models;
 
-        public LoggerEventData(BasicLog log)
-        {
-            Log = log;
-        }
+public class LoggerEventData
+{
+    public BasicLog Log { get; set; }
+
+    public LoggerEventData(BasicLog log)
+    {
+        Log = log;
     }
 }

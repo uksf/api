@@ -1,18 +1,17 @@
-﻿namespace UKSF.Api.Discord.Models
-{
-    public class DiscordDeletedMessageResult
-    {
-        public readonly ulong InstigatorId;
-        public readonly string InstigatorName;
-        public readonly string Message;
-        public readonly string Name;
+﻿namespace UKSF.Api.Discord.Models;
 
-        public DiscordDeletedMessageResult(ulong instigatorId, string instigatorName, string name, string message)
-        {
-            InstigatorId = instigatorId;
-            InstigatorName = instigatorName;
-            Name = name;
-            Message = message;
-        }
+public class DiscordDeletedMessageResult
+{
+    public ulong InstigatorId { get; set; }
+    public string InstigatorName { get; set; }
+    public string Message { get; set; }
+    public string Name { get; set; }
+
+    public DiscordDeletedMessageResult(ulong instigatorId, string instigatorName, string name, string message)
+    {
+        InstigatorId = instigatorId;
+        InstigatorName = instigatorName;
+        Name = name;
+        Message = message;
     }
 }

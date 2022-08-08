@@ -1,17 +1,18 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
-namespace UKSF.Api.Integrations.Instagram.Models
+namespace UKSF.Api.Integrations.Instagram.Models;
+
+public class InstagramImage
 {
-    public class InstagramImage
-    {
-        public string Base64;
-        public string Id;
+    public string Base64 { get; set; }
+    public string Id { get; set; }
 
-        [JsonProperty("media_type")] public string MediaType;
-        [JsonProperty("media_url")] public string MediaUrl;
+    [JsonProperty("media_type")]
+    public string MediaType { get; set; }
 
-        public string Permalink;
-        public DateTime Timestamp;
-    }
+    [JsonProperty("media_url")]
+    public string MediaUrl { get; set; }
+
+    public string Permalink { get; set; }
+    public DateTime Timestamp { get; set; }
 }

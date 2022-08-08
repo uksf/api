@@ -1,7 +1,6 @@
-﻿namespace UKSF.Api.Personnel.Models
+﻿namespace UKSF.Api.Personnel.Models;
+
+public class AttendanceReport
 {
-    public class AttendanceReport
-    {
-        public AccountAttendanceStatus[] Users;
-    }
+    public AccountAttendanceStatus[] Users { get; set; }
 }

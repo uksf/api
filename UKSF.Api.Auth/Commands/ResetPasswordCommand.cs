@@ -1,61 +1,58 @@
-﻿using System;
-using System.Threading.Tasks;
-using UKSF.Api.Personnel.Context;
+﻿using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Services;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Exceptions;
 
-namespace UKSF.Api.Auth.Commands
+namespace UKSF.Api.Auth.Commands;
+
+public interface IResetPasswordCommand
 {
-    public interface IResetPasswordCommand
+    Task ExecuteAsync(ResetPasswordCommandArgs args);
+}
+
+public class ResetPasswordCommandArgs
+{
+    public ResetPasswordCommandArgs(string email, string password, string code)
     {
-        Task ExecuteAsync(ResetPasswordCommandArgs args);
+        Email = email;
+        Password = password;
+        Code = code;
     }
 
-    public class ResetPasswordCommandArgs
-    {
-        public ResetPasswordCommandArgs(string email, string password, string code)
-        {
-            Email = email;
-            Password = password;
-            Code = code;
-        }
+    public string Email { get; }
+    public string Password { get; }
+    public string Code { get; }
+}
 
-        public string Email { get; }
-        public string Password { get; }
-        public string Code { get; }
+public class ResetPasswordCommand : IResetPasswordCommand
+{
+    private readonly IAccountContext _accountContext;
+    private readonly IConfirmationCodeService _confirmationCodeService;
+    private readonly IUksfLogger _logger;
+
+    public ResetPasswordCommand(IAccountContext accountContext, IConfirmationCodeService confirmationCodeService, IUksfLogger logger)
+    {
+        _accountContext = accountContext;
+        _confirmationCodeService = confirmationCodeService;
+        _logger = logger;
     }
 
-    public class ResetPasswordCommand : IResetPasswordCommand
+    public async Task ExecuteAsync(ResetPasswordCommandArgs args)
     {
-        private readonly IAccountContext _accountContext;
-        private readonly IConfirmationCodeService _confirmationCodeService;
-        private readonly ILogger _logger;
-
-        public ResetPasswordCommand(IAccountContext accountContext, IConfirmationCodeService confirmationCodeService, ILogger logger)
+        var domainAccount = _accountContext.GetSingle(x => string.Equals(x.Email, args.Email, StringComparison.InvariantCultureIgnoreCase));
+        if (domainAccount == null)
         {
-            _accountContext = accountContext;
-            _confirmationCodeService = confirmationCodeService;
-            _logger = logger;
+            throw new BadRequestException("No user found with that email");
         }
 
-        public async Task ExecuteAsync(ResetPasswordCommandArgs args)
+        var codeValue = await _confirmationCodeService.GetConfirmationCodeValue(args.Code);
+        if (codeValue != domainAccount.Id)
         {
-            var domainAccount = _accountContext.GetSingle(x => string.Equals(x.Email, args.Email, StringComparison.InvariantCultureIgnoreCase));
-            if (domainAccount == null)
-            {
-                throw new BadRequestException("No user found with that email");
-            }
-
-            var codeValue = await _confirmationCodeService.GetConfirmationCodeValue(args.Code);
-            if (codeValue != domainAccount.Id)
-            {
-                throw new BadRequestException("Password reset failed (Invalid code)");
-            }
-
-            await _accountContext.Update(domainAccount.Id, x => x.Password, BCrypt.Net.BCrypt.HashPassword(args.Password));
-
-            _logger.LogAudit($"Password changed for {domainAccount.Id}", domainAccount.Id);
+            throw new BadRequestException("Password reset failed (Invalid code)");
         }
+
+        await _accountContext.Update(domainAccount.Id, x => x.Password, BCrypt.Net.BCrypt.HashPassword(args.Password));
+
+        _logger.LogAudit($"Password changed for {domainAccount.Id}", domainAccount.Id);
     }
 }

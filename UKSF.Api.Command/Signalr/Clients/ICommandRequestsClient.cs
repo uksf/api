@@ -1,9 +1,6 @@
-using System.Threading.Tasks;
+namespace UKSF.Api.Command.Signalr.Clients;
 
-namespace UKSF.Api.Command.Signalr.Clients
+public interface ICommandRequestsClient
 {
-    public interface ICommandRequestsClient
-    {
-        Task ReceiveRequestUpdate();
-    }
+    Task ReceiveRequestUpdate();
 }

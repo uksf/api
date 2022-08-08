@@ -1,8 +1,7 @@
-namespace UKSF.Api.Base.Events
+namespace UKSF.Api.Base.Events;
+
+public interface IEventHandler
 {
-    public interface IEventHandler
-    {
-        void EarlyInit();
-        void Init();
-    }
+    void EarlyInit();
+    void Init();
 }

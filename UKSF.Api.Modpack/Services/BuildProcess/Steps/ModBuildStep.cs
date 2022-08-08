@@ -1,33 +1,31 @@
-﻿using System.Threading.Tasks;
-using UKSF.Api.Admin.Extensions;
+﻿using UKSF.Api.Admin.Extensions;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps;
+
+public class ModBuildStep : FileBuildStep
 {
-    public class ModBuildStep : FileBuildStep
+    protected string PythonPath;
+
+    protected override Task SetupExecute()
     {
-        protected string PythonPath;
+        PythonPath = VariablesService.GetVariable("BUILD_PATH_PYTHON").AsString();
+        StepLogger.Log("Retrieved python path");
+        return Task.CompletedTask;
+    }
 
-        protected override Task SetupExecute()
+    internal bool IsBuildNeeded(string key)
+    {
+        if (!GetEnvironmentVariable<bool>($"{key}_updated"))
         {
-            PythonPath = VariablesService.GetVariable("BUILD_PATH_PYTHON").AsString();
-            StepLogger.Log("Retrieved python path");
-            return Task.CompletedTask;
+            StepLogger.Log("\nBuild is not needed");
+            return false;
         }
 
-        internal bool IsBuildNeeded(string key)
-        {
-            if (!GetEnvironmentVariable<bool>($"{key}_updated"))
-            {
-                StepLogger.Log("\nBuild is not needed");
-                return false;
-            }
+        return true;
+    }
 
-            return true;
-        }
-
-        internal static string MakeCommand(string arguments = "")
-        {
-            return $"make.py {arguments}";
-        }
+    internal static string MakeCommand(string arguments = "")
+    {
+        return $"make.py {arguments}";
     }
 }

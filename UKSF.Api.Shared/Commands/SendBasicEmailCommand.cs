@@ -2,45 +2,44 @@
 using System.Threading.Tasks;
 using UKSF.Api.Shared.Context;
 
-namespace UKSF.Api.Shared.Commands
+namespace UKSF.Api.Shared.Commands;
+
+public interface ISendBasicEmailCommand
 {
-    public interface ISendBasicEmailCommand
+    Task ExecuteAsync(SendBasicEmailCommandArgs args);
+}
+
+public class SendBasicEmailCommandArgs
+{
+    public SendBasicEmailCommandArgs(string recipient, string subject, string body)
     {
-        Task ExecuteAsync(SendBasicEmailCommandArgs args);
+        Recipient = recipient;
+        Subject = subject;
+        Body = body;
     }
 
-    public class SendBasicEmailCommandArgs
-    {
-        public SendBasicEmailCommandArgs(string recipient, string subject, string body)
-        {
-            Recipient = recipient;
-            Subject = subject;
-            Body = body;
-        }
+    public string Recipient { get; }
+    public string Subject { get; }
+    public string Body { get; }
+}
 
-        public string Recipient { get; }
-        public string Subject { get; }
-        public string Body { get; }
+public class SendBasicEmailCommand : ISendBasicEmailCommand
+{
+    private readonly ISmtpClientContext _smtpClientContext;
+
+    public SendBasicEmailCommand(ISmtpClientContext smtpClientContext)
+    {
+        _smtpClientContext = smtpClientContext;
     }
 
-    public class SendBasicEmailCommand : ISendBasicEmailCommand
+    public async Task ExecuteAsync(SendBasicEmailCommandArgs args)
     {
-        private readonly ISmtpClientContext _smtpClientContext;
+        using MailMessage mail = new();
+        mail.To.Add(args.Recipient);
+        mail.Subject = args.Subject;
+        mail.Body = args.Body;
+        mail.IsBodyHtml = true;
 
-        public SendBasicEmailCommand(ISmtpClientContext smtpClientContext)
-        {
-            _smtpClientContext = smtpClientContext;
-        }
-
-        public async Task ExecuteAsync(SendBasicEmailCommandArgs args)
-        {
-            using MailMessage mail = new();
-            mail.To.Add(args.Recipient);
-            mail.Subject = args.Subject;
-            mail.Body = args.Body;
-            mail.IsBodyHtml = true;
-
-            await _smtpClientContext.SendEmailAsync(mail);
-        }
+        await _smtpClientContext.SendEmailAsync(mail);
     }
 }

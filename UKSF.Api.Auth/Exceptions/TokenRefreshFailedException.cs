@@ -1,11 +1,9 @@
-﻿using System;
-using UKSF.Api.Shared.Exceptions;
+﻿using UKSF.Api.Shared.Exceptions;
 
-namespace UKSF.Api.Auth.Exceptions
+namespace UKSF.Api.Auth.Exceptions;
+
+[Serializable]
+public class TokenRefreshFailedException : UksfException
 {
-    [Serializable]
-    public class TokenRefreshFailedException : UksfException
-    {
-        public TokenRefreshFailedException(string message) : base(message, 401) { }
-    }
+    public TokenRefreshFailedException(string message) : base(message, 401) { }
 }

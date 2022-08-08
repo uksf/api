@@ -1,10 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿namespace UKSF.Api.Base.ScheduledActions;
 
-namespace UKSF.Api.Base.ScheduledActions
+public interface ISelfCreatingScheduledAction : IScheduledAction
 {
-    public interface ISelfCreatingScheduledAction : IScheduledAction
-    {
-        Task CreateSelf();
-        Task Reset();
-    }
+    Task CreateSelf();
+    Task Reset();
 }

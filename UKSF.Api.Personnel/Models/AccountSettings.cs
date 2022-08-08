@@ -1,9 +1,8 @@
-﻿namespace UKSF.Api.Personnel.Models
+﻿namespace UKSF.Api.Personnel.Models;
+
+public class AccountSettings
 {
-    public class AccountSettings
-    {
-        public bool NotificationsEmail = true;
-        public bool NotificationsTeamspeak = true;
-        public bool Sr1Enabled = true;
-    }
+    public bool NotificationsEmail { get; set; } = true;
+    public bool NotificationsTeamspeak { get; set; } = true;
+    public bool Sr1Enabled { get; set; } = true;
 }

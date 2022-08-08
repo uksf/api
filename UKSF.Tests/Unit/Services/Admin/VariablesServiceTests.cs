@@ -7,149 +7,148 @@ using UKSF.Api.Admin.Models;
 using UKSF.Api.Shared.Extensions;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Services.Admin
+namespace UKSF.Tests.Unit.Services.Admin;
+
+public class VariablesServiceTests
 {
-    public class VariablesServiceTests
+    [Fact]
+    public void ShouldGetVariableAsArray()
     {
-        [Fact]
-        public void ShouldGetVariableAsArray()
-        {
-            VariableItem variableItem = new() { Key = "Test", Item = "item1,item2, item3" };
+        VariableItem variableItem = new() { Key = "Test", Item = "item1,item2, item3" };
 
-            var subject = variableItem.AsArray();
+        var subject = variableItem.AsArray();
 
-            subject.Should().HaveCount(3);
-            subject.Should().Contain(new[] { "item1", "item2", "item3" });
-        }
+        subject.Should().HaveCount(3);
+        subject.Should().Contain(new[] { "item1", "item2", "item3" });
+    }
 
-        [Fact]
-        public void ShouldGetVariableAsArrayWithPredicate()
-        {
-            VariableItem variableItem = new() { Key = "Test", Item = "\"item1\",item2" };
+    [Fact]
+    public void ShouldGetVariableAsArrayWithPredicate()
+    {
+        VariableItem variableItem = new() { Key = "Test", Item = "\"item1\",item2" };
 
-            var subject = variableItem.AsArray(x => x.RemoveQuotes());
+        var subject = variableItem.AsArray(x => x.RemoveQuotes());
 
-            subject.Should().HaveCount(2);
-            subject.Should().Contain(new[] { "item1", "item2" });
-        }
+        subject.Should().HaveCount(2);
+        subject.Should().Contain(new[] { "item1", "item2" });
+    }
 
-        [Fact]
-        public void ShouldGetVariableAsBool()
-        {
-            const bool EXPECTED = true;
-            VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
+    [Fact]
+    public void ShouldGetVariableAsBool()
+    {
+        const bool EXPECTED = true;
+        VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
 
-            var subject = variableItem.AsBool();
+        var subject = variableItem.AsBool();
 
-            subject.Should().Be(EXPECTED);
-        }
+        subject.Should().Be(EXPECTED);
+    }
 
-        [Fact]
-        public void ShouldGetVariableAsDouble()
-        {
-            const double EXPECTED = 1.5;
-            VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
+    [Fact]
+    public void ShouldGetVariableAsDouble()
+    {
+        const double EXPECTED = 1.5;
+        VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
 
-            var subject = variableItem.AsDouble();
+        var subject = variableItem.AsDouble();
 
-            subject.Should().Be(EXPECTED);
-        }
+        subject.Should().Be(EXPECTED);
+    }
 
-        [Fact]
-        public void ShouldGetVariableAsDoublesArray()
-        {
-            VariableItem variableItem = new() { Key = "Test", Item = "1.5,1.67845567657, -0.000000456" };
+    [Fact]
+    public void ShouldGetVariableAsDoublesArray()
+    {
+        VariableItem variableItem = new() { Key = "Test", Item = "1.5,1.67845567657, -0.000000456" };
 
-            var subject = variableItem.AsDoublesArray().ToList();
+        var subject = variableItem.AsDoublesArray().ToList();
 
-            subject.Should().HaveCount(3);
-            subject.Should().Contain(new[] { 1.5, 1.67845567657, -0.000000456 });
-        }
+        subject.Should().HaveCount(3);
+        subject.Should().Contain(new[] { 1.5, 1.67845567657, -0.000000456 });
+    }
 
-        // ReSharper disable PossibleMultipleEnumeration
-        [Fact]
-        public void ShouldGetVariableAsEnumerable()
-        {
-            VariableItem variableItem = new() { Key = "Test", Item = "item1,item2, item3" };
+    // ReSharper disable PossibleMultipleEnumeration
+    [Fact]
+    public void ShouldGetVariableAsEnumerable()
+    {
+        VariableItem variableItem = new() { Key = "Test", Item = "item1,item2, item3" };
 
-            var subject = variableItem.AsEnumerable();
+        var subject = variableItem.AsEnumerable();
 
-            subject.Should().BeAssignableTo<IEnumerable<string>>();
-            subject.Should().HaveCount(3);
-            subject.Should().Contain(new[] { "item1", "item2", "item3" });
-        }
-        // ReSharper restore PossibleMultipleEnumeration
+        subject.Should().BeAssignableTo<IEnumerable<string>>();
+        subject.Should().HaveCount(3);
+        subject.Should().Contain(new[] { "item1", "item2", "item3" });
+    }
+    // ReSharper restore PossibleMultipleEnumeration
 
-        [Fact]
-        public void ShouldGetVariableAsString()
-        {
-            const string EXPECTED = "Value";
-            VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
+    [Fact]
+    public void ShouldGetVariableAsString()
+    {
+        const string EXPECTED = "Value";
+        VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
 
-            var subject = variableItem.AsString();
+        var subject = variableItem.AsString();
 
-            subject.Should().Be(EXPECTED);
-        }
+        subject.Should().Be(EXPECTED);
+    }
 
-        [Fact]
-        public void ShouldGetVariableAsUlong()
-        {
-            const ulong EXPECTED = ulong.MaxValue;
-            VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
+    [Fact]
+    public void ShouldGetVariableAsUlong()
+    {
+        const ulong EXPECTED = ulong.MaxValue;
+        VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
 
-            var subject = variableItem.AsUlong();
+        var subject = variableItem.AsUlong();
 
-            subject.Should().Be(EXPECTED);
-        }
+        subject.Should().Be(EXPECTED);
+    }
 
-        [Fact]
-        public void ShouldHaveItem()
-        {
-            VariableItem variableItem = new() { Key = "Test", Item = "test" };
+    [Fact]
+    public void ShouldHaveItem()
+    {
+        VariableItem variableItem = new() { Key = "Test", Item = "test" };
 
-            Action act = () => variableItem.AssertHasItem();
+        Action act = () => variableItem.AssertHasItem();
 
-            act.Should().NotThrow();
-        }
+        act.Should().NotThrow();
+    }
 
-        [Fact]
-        public void ShouldThrowWithInvalidBool()
-        {
-            VariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
+    [Fact]
+    public void ShouldThrowWithInvalidBool()
+    {
+        VariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
 
-            Action act = () => variableItem.AsBool();
+        Action act = () => variableItem.AsBool();
 
-            act.Should().Throw<InvalidCastException>();
-        }
+        act.Should().Throw<InvalidCastException>();
+    }
 
-        [Fact]
-        public void ShouldThrowWithInvalidDouble()
-        {
-            VariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
+    [Fact]
+    public void ShouldThrowWithInvalidDouble()
+    {
+        VariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
 
-            Action act = () => variableItem.AsDouble();
+        Action act = () => variableItem.AsDouble();
 
-            act.Should().Throw<InvalidCastException>();
-        }
+        act.Should().Throw<InvalidCastException>();
+    }
 
-        [Fact]
-        public void ShouldThrowWithInvalidUlong()
-        {
-            VariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
+    [Fact]
+    public void ShouldThrowWithInvalidUlong()
+    {
+        VariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
 
-            Action act = () => variableItem.AsUlong();
+        Action act = () => variableItem.AsUlong();
 
-            act.Should().Throw<InvalidCastException>();
-        }
+        act.Should().Throw<InvalidCastException>();
+    }
 
-        [Fact]
-        public void ShouldThrowWithNoItem()
-        {
-            VariableItem variableItem = new() { Key = "Test" };
+    [Fact]
+    public void ShouldThrowWithNoItem()
+    {
+        VariableItem variableItem = new() { Key = "Test" };
 
-            Action act = () => variableItem.AssertHasItem();
+        Action act = () => variableItem.AssertHasItem();
 
-            act.Should().Throw<Exception>();
-        }
+        act.Should().Throw<Exception>();
     }
 }

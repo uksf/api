@@ -1,14 +1,13 @@
-﻿namespace UKSF.Api.Shared.Models
-{
-    public class DiscordEventData
-    {
-        public string EventData;
-        public DiscordUserEventType EventType;
+﻿namespace UKSF.Api.Shared.Models;
 
-        public DiscordEventData(DiscordUserEventType eventType, string eventData)
-        {
-            EventType = eventType;
-            EventData = eventData;
-        }
+public class DiscordEventData
+{
+    public string EventData { get; set; }
+    public DiscordUserEventType EventType { get; set; }
+
+    public DiscordEventData(DiscordUserEventType eventType, string eventData)
+    {
+        EventType = eventType;
+        EventData = eventData;
     }
 }

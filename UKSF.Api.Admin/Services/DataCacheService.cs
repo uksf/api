@@ -1,29 +1,27 @@
-using System;
 using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Extensions;
 
-namespace UKSF.Api.Admin.Services
+namespace UKSF.Api.Admin.Services;
+
+public interface IDataCacheService
 {
-    public interface IDataCacheService
+    void RefreshCachedData();
+}
+
+public class DataCacheService : IDataCacheService
+{
+    private readonly IServiceProvider _serviceProvider;
+
+    public DataCacheService(IServiceProvider serviceProvider)
     {
-        void RefreshCachedData();
+        _serviceProvider = serviceProvider;
     }
 
-    public class DataCacheService : IDataCacheService
+    public void RefreshCachedData()
     {
-        private readonly IServiceProvider _serviceProvider;
-
-        public DataCacheService(IServiceProvider serviceProvider)
+        var cachedContexts = _serviceProvider.GetRequiredService<IEnumerable<ICachedMongoContext>>();
+        foreach (var cachedDataService in cachedContexts)
         {
-            _serviceProvider = serviceProvider;
-        }
-
-        public void RefreshCachedData()
-        {
-            foreach (var cachedDataService in _serviceProvider.GetInterfaceServices<ICachedMongoContext>())
-            {
-                cachedDataService.Refresh();
-            }
+            cachedDataService.Refresh();
         }
     }
 }

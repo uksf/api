@@ -1,10 +1,7 @@
-﻿using System.Collections.Generic;
+﻿namespace UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.Personnel.Models
+public class RolesDataset
 {
-    public class RolesDataset
-    {
-        public IEnumerable<DomainRole> IndividualRoles;
-        public IEnumerable<DomainRole> UnitRoles;
-    }
+    public IEnumerable<DomainRole> IndividualRoles { get; set; }
+    public IEnumerable<DomainRole> UnitRoles { get; set; }
 }

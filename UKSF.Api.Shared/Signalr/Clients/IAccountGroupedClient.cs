@@ -1,9 +1,8 @@
 using System.Threading.Tasks;
 
-namespace UKSF.Api.Shared.Signalr.Clients
+namespace UKSF.Api.Shared.Signalr.Clients;
+
+public interface IAccountGroupedClient
 {
-    public interface IAccountGroupedClient
-    {
-        Task ReceiveAccountUpdate();
-    }
+    Task ReceiveAccountUpdate();
 }

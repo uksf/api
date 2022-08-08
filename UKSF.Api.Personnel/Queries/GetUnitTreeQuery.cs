@@ -1,57 +1,53 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using UKSF.Api.Base.Models;
 using UKSF.Api.Personnel.Context;
 using UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.Personnel.Queries
+namespace UKSF.Api.Personnel.Queries;
+
+public interface IGetUnitTreeQuery
 {
-    public interface IGetUnitTreeQuery
+    Task<DomainUnit> ExecuteAsync(GetUnitTreeQueryArgs args);
+}
+
+public class GetUnitTreeQueryArgs
+{
+    public GetUnitTreeQueryArgs(UnitBranch unitBranch)
     {
-        Task<DomainUnit> ExecuteAsync(GetUnitTreeQueryArgs args);
+        UnitBranch = unitBranch;
     }
 
-    public class GetUnitTreeQueryArgs
-    {
-        public GetUnitTreeQueryArgs(UnitBranch unitBranch)
-        {
-            UnitBranch = unitBranch;
-        }
+    public UnitBranch UnitBranch { get; }
+}
 
-        public UnitBranch UnitBranch { get; }
+public class GetUnitTreeQuery : IGetUnitTreeQuery
+{
+    private readonly IUnitsContext _unitsContext;
+
+    public GetUnitTreeQuery(IUnitsContext unitsContext)
+    {
+        _unitsContext = unitsContext;
     }
 
-    public class GetUnitTreeQuery : IGetUnitTreeQuery
+    public async Task<DomainUnit> ExecuteAsync(GetUnitTreeQueryArgs args)
     {
-        private readonly IUnitsContext _unitsContext;
+        var root = _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == args.UnitBranch);
 
-        public GetUnitTreeQuery(IUnitsContext unitsContext)
-        {
-            _unitsContext = unitsContext;
-        }
+        root.Children = GetUnitChildren(root);
 
-        public async Task<DomainUnit> ExecuteAsync(GetUnitTreeQueryArgs args)
-        {
-            var root = _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == args.UnitBranch);
+        return await Task.FromResult(root);
+    }
 
-            root.Children = GetUnitChildren(root);
-
-            return await Task.FromResult(root);
-        }
-
-        private List<DomainUnit> GetUnitChildren(MongoObject parentUnit)
-        {
-            return _unitsContext.Get(x => x.Parent == parentUnit.Id)
-                                .Select(
-                                    x =>
-                                    {
-                                        x.Children = GetUnitChildren(x);
-                                        return x;
-                                    }
-                                )
-                                .ToList();
-        }
+    private List<DomainUnit> GetUnitChildren(MongoObject parentUnit)
+    {
+        return _unitsContext.Get(x => x.Parent == parentUnit.Id)
+                            .Select(
+                                x =>
+                                {
+                                    x.Children = GetUnitChildren(x);
+                                    return x;
+                                }
+                            )
+                            .ToList();
     }
 }

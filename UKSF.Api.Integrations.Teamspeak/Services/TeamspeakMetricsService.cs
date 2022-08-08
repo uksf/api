@@ -1,17 +1,14 @@
-﻿using System.Collections.Generic;
+﻿namespace UKSF.Api.Teamspeak.Services;
 
-namespace UKSF.Api.Teamspeak.Services
+public interface ITeamspeakMetricsService
 {
-    public interface ITeamspeakMetricsService
-    {
-        float GetWeeklyParticipationTrend(HashSet<int> teamspeakIdentities);
-    }
+    float GetWeeklyParticipationTrend(HashSet<int> teamspeakIdentities);
+}
 
-    public class TeamspeakMetricsService : ITeamspeakMetricsService
+public class TeamspeakMetricsService : ITeamspeakMetricsService
+{
+    public float GetWeeklyParticipationTrend(HashSet<int> teamspeakIdentities)
     {
-        public float GetWeeklyParticipationTrend(HashSet<int> teamspeakIdentities)
-        {
-            return 3;
-        }
+        return 3;
     }
 }

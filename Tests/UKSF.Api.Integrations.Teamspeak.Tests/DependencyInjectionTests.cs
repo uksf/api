@@ -9,46 +9,45 @@ using UKSF.Api.Teamspeak.ScheduledActions;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Api.Integrations.Teamspeak.Tests
+namespace UKSF.Api.Integrations.Teamspeak.Tests;
+
+public class DependencyInjectionTests : DependencyInjectionTestsBase
 {
-    public class DependencyInjectionTests : DependencyInjectionTestsBase
+    public DependencyInjectionTests()
     {
-        public DependencyInjectionTests()
-        {
-            Services.AddUksfAdmin();
-            Services.AddUksfPersonnel();
-            Services.AddUksfIntegrationTeamspeak();
-        }
+        Services.AddUksfAdmin();
+        Services.AddUksfPersonnel();
+        Services.AddUksfIntegrationTeamspeak();
+    }
 
-        [Fact]
-        public void When_resolving_controllers()
-        {
-            Services.AddTransient<OperationsController>();
-            Services.AddTransient<TeamspeakController>();
-            var serviceProvider = Services.BuildServiceProvider();
+    [Fact]
+    public void When_resolving_controllers()
+    {
+        Services.AddTransient<OperationsController>();
+        Services.AddTransient<TeamspeakController>();
+        var serviceProvider = Services.BuildServiceProvider();
 
-            serviceProvider.GetRequiredService<OperationsController>().Should().NotBeNull();
-            serviceProvider.GetRequiredService<TeamspeakController>().Should().NotBeNull();
-        }
+        serviceProvider.GetRequiredService<OperationsController>().Should().NotBeNull();
+        serviceProvider.GetRequiredService<TeamspeakController>().Should().NotBeNull();
+    }
 
-        [Fact]
-        public void When_resolving_event_handlers()
-        {
-            Services.AddTransient<TeamspeakEventHandler>();
-            Services.AddTransient<TeamspeakServerEventHandler>();
-            var serviceProvider = Services.BuildServiceProvider();
+    [Fact]
+    public void When_resolving_event_handlers()
+    {
+        Services.AddTransient<TeamspeakEventHandler>();
+        Services.AddTransient<TeamspeakServerEventHandler>();
+        var serviceProvider = Services.BuildServiceProvider();
 
-            serviceProvider.GetRequiredService<TeamspeakEventHandler>().Should().NotBeNull();
-            serviceProvider.GetRequiredService<TeamspeakServerEventHandler>().Should().NotBeNull();
-        }
+        serviceProvider.GetRequiredService<TeamspeakEventHandler>().Should().NotBeNull();
+        serviceProvider.GetRequiredService<TeamspeakServerEventHandler>().Should().NotBeNull();
+    }
 
-        [Fact]
-        public void When_resolving_scheduled_actions()
-        {
-            Services.AddTransient<ActionTeamspeakSnapshot>();
-            var serviceProvider = Services.BuildServiceProvider();
+    [Fact]
+    public void When_resolving_scheduled_actions()
+    {
+        Services.AddTransient<ActionTeamspeakSnapshot>();
+        var serviceProvider = Services.BuildServiceProvider();
 
-            serviceProvider.GetRequiredService<ActionTeamspeakSnapshot>().Should().NotBeNull();
-        }
+        serviceProvider.GetRequiredService<ActionTeamspeakSnapshot>().Should().NotBeNull();
     }
 }

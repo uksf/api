@@ -1,36 +1,33 @@
-﻿using System;
-using System.Threading.Tasks;
-using UKSF.Api.Base.ScheduledActions;
+﻿using UKSF.Api.Base.ScheduledActions;
 using UKSF.Api.Personnel.Context;
 
-namespace UKSF.Api.Personnel.ScheduledActions
+namespace UKSF.Api.Personnel.ScheduledActions;
+
+public interface IActionDeleteExpiredConfirmationCode : IScheduledAction { }
+
+public class ActionDeleteExpiredConfirmationCode : IActionDeleteExpiredConfirmationCode
 {
-    public interface IActionDeleteExpiredConfirmationCode : IScheduledAction { }
+    public const string ActionName = nameof(ActionDeleteExpiredConfirmationCode);
 
-    public class ActionDeleteExpiredConfirmationCode : IActionDeleteExpiredConfirmationCode
+    private readonly IConfirmationCodeContext _confirmationCodeContext;
+
+    public ActionDeleteExpiredConfirmationCode(IConfirmationCodeContext confirmationCodeContext)
     {
-        public const string ActionName = nameof(ActionDeleteExpiredConfirmationCode);
+        _confirmationCodeContext = confirmationCodeContext;
+    }
 
-        private readonly IConfirmationCodeContext _confirmationCodeContext;
+    public string Name => ActionName;
 
-        public ActionDeleteExpiredConfirmationCode(IConfirmationCodeContext confirmationCodeContext)
+    public Task Run(params object[] parameters)
+    {
+        if (parameters.Length == 0)
         {
-            _confirmationCodeContext = confirmationCodeContext;
+            throw new ArgumentException("ActionDeleteExpiredConfirmationCode requires an id to be passed as a parameter, but no paramters were passed");
         }
 
-        public string Name => ActionName;
+        var id = parameters[0].ToString();
+        _confirmationCodeContext.Delete(id);
 
-        public Task Run(params object[] parameters)
-        {
-            if (parameters.Length == 0)
-            {
-                throw new ArgumentException("ActionDeleteExpiredConfirmationCode requires an id to be passed as a parameter, but no paramters were passed");
-            }
-
-            var id = parameters[0].ToString();
-            _confirmationCodeContext.Delete(id);
-
-            return Task.CompletedTask;
-        }
+        return Task.CompletedTask;
     }
 }

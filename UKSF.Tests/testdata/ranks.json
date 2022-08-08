@@ -1,59 +1,59 @@
 {
-	"_id": {
-		"$oid": "5b72fbb52d54990cec7c4b24"
-	},
-	"name": "Sergeant",
-	"abbreviation": "Sgt",
-	"teamspeakGroup": "15",
-	"order": 17,
-	"discordRoleId": "311546932403240971"
+    "_id": {
+        "$oid": "5b72fbb52d54990cec7c4b24"
+    },
+    "name": "Sergeant",
+    "abbreviation": "Sgt",
+    "teamspeakGroup": "15",
+    "order": 17,
+    "discordRoleId": "311546932403240971"
 }
 {
-	"_id": {
-		"$oid": "5b72fbcd2d54990cec7c4b26"
-	},
-	"name": "Corporal",
-	"abbreviation": "Cpl",
-	"teamspeakGroup": "16",
-	"order": 19,
-	"discordRoleId": "311546932403240971"
+    "_id": {
+        "$oid": "5b72fbcd2d54990cec7c4b26"
+    },
+    "name": "Corporal",
+    "abbreviation": "Cpl",
+    "teamspeakGroup": "16",
+    "order": 19,
+    "discordRoleId": "311546932403240971"
 }
 {
-	"_id": {
-		"$oid": "5b72fbde2d54990cec7c4b28"
-	},
-	"name": "Lance Corporal",
-	"abbreviation": "LCpl",
-	"teamspeakGroup": "17",
-	"order": 22,
-	"discordRoleId": "311546932403240971"
+    "_id": {
+        "$oid": "5b72fbde2d54990cec7c4b28"
+    },
+    "name": "Lance Corporal",
+    "abbreviation": "LCpl",
+    "teamspeakGroup": "17",
+    "order": 22,
+    "discordRoleId": "311546932403240971"
 }
 {
-	"_id": {
-		"$oid": "5b72fd592d54990cec7c4b2d"
-	},
-	"name": "Private",
-	"abbreviation": "Pte",
-	"teamspeakGroup": "18",
-	"order": 24
+    "_id": {
+        "$oid": "5b72fd592d54990cec7c4b2d"
+    },
+    "name": "Private",
+    "abbreviation": "Pte",
+    "teamspeakGroup": "18",
+    "order": 24
 }
 {
-	"_id": {
-		"$oid": "5b72fbfe2d54990cec7c4b2b"
-	},
-	"name": "Recruit",
-	"abbreviation": "Rct",
-	"teamspeakGroup": "19",
-	"order": 26,
-	"discordRoleId": "568562800855875605"
+    "_id": {
+        "$oid": "5b72fbfe2d54990cec7c4b2b"
+    },
+    "name": "Recruit",
+    "abbreviation": "Rct",
+    "teamspeakGroup": "19",
+    "order": 26,
+    "discordRoleId": "568562800855875605"
 }
 {
-	"_id": {
-		"$oid": "5b72fc062d54990cec7c4b2c"
-	},
-	"name": "Candidate",
-	"abbreviation": "Cdt",
-	"teamspeakGroup": "20",
-	"order": 27,
-	"discordRoleId": "318050573997965314"
+    "_id": {
+        "$oid": "5b72fc062d54990cec7c4b2c"
+    },
+    "name": "Candidate",
+    "abbreviation": "Cdt",
+    "teamspeakGroup": "20",
+    "order": 27,
+    "discordRoleId": "318050573997965314"
 }

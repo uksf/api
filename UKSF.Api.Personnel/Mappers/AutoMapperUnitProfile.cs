@@ -1,13 +1,12 @@
 ﻿using AutoMapper;
 using UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.Personnel.Mappers
+namespace UKSF.Api.Personnel.Mappers;
+
+public class AutoMapperUnitProfile : Profile
 {
-    public class AutoMapperUnitProfile : Profile
+    public AutoMapperUnitProfile()
     {
-        public AutoMapperUnitProfile()
-        {
-            CreateMap<DomainUnit, ResponseUnit>();
-        }
+        CreateMap<DomainUnit, ResponseUnit>();
     }
 }

@@ -7,41 +7,40 @@ using UKSF.Api.Personnel;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Api.Command.Tests
+namespace UKSF.Api.Command.Tests;
+
+public class DependencyInjectionTests : DependencyInjectionTestsBase
 {
-    public class DependencyInjectionTests : DependencyInjectionTestsBase
+    public DependencyInjectionTests()
     {
-        public DependencyInjectionTests()
-        {
-            Services.AddUksfAdmin();
-            Services.AddUksfPersonnel();
-            Services.AddUksfCommand();
-        }
+        Services.AddUksfAdmin();
+        Services.AddUksfPersonnel();
+        Services.AddUksfCommand();
+    }
 
-        [Fact]
-        public void When_resolving_controllers()
-        {
-            Services.AddTransient<CommandRequestsController>();
-            Services.AddTransient<CommandRequestsCreationController>();
-            Services.AddTransient<DischargesController>();
-            Services.AddTransient<OperationOrderController>();
-            Services.AddTransient<OperationReportController>();
-            var serviceProvider = Services.BuildServiceProvider();
+    [Fact]
+    public void When_resolving_controllers()
+    {
+        Services.AddTransient<CommandRequestsController>();
+        Services.AddTransient<CommandRequestsCreationController>();
+        Services.AddTransient<DischargesController>();
+        Services.AddTransient<OperationOrderController>();
+        Services.AddTransient<OperationReportController>();
+        var serviceProvider = Services.BuildServiceProvider();
 
-            serviceProvider.GetRequiredService<CommandRequestsController>().Should().NotBeNull();
-            serviceProvider.GetRequiredService<CommandRequestsCreationController>().Should().NotBeNull();
-            serviceProvider.GetRequiredService<DischargesController>().Should().NotBeNull();
-            serviceProvider.GetRequiredService<OperationOrderController>().Should().NotBeNull();
-            serviceProvider.GetRequiredService<OperationReportController>().Should().NotBeNull();
-        }
+        serviceProvider.GetRequiredService<CommandRequestsController>().Should().NotBeNull();
+        serviceProvider.GetRequiredService<CommandRequestsCreationController>().Should().NotBeNull();
+        serviceProvider.GetRequiredService<DischargesController>().Should().NotBeNull();
+        serviceProvider.GetRequiredService<OperationOrderController>().Should().NotBeNull();
+        serviceProvider.GetRequiredService<OperationReportController>().Should().NotBeNull();
+    }
 
-        [Fact]
-        public void When_resolving_event_handlers()
-        {
-            Services.AddTransient<CommandRequestEventHandler>();
-            var serviceProvider = Services.BuildServiceProvider();
+    [Fact]
+    public void When_resolving_event_handlers()
+    {
+        Services.AddTransient<CommandRequestEventHandler>();
+        var serviceProvider = Services.BuildServiceProvider();
 
-            serviceProvider.GetRequiredService<CommandRequestEventHandler>().Should().NotBeNull();
-        }
+        serviceProvider.GetRequiredService<CommandRequestEventHandler>().Should().NotBeNull();
     }
 }

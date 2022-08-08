@@ -1,19 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace UKSF.Api.Personnel.Models;
 
-namespace UKSF.Api.Personnel.Models
+public class CommentThreadsDataset
 {
-    public class CommentThreadsDataset
-    {
-        public IEnumerable<CommentThreadDataset> Comments;
-    }
+    public IEnumerable<CommentThreadDataset> Comments { get; set; }
+}
 
-    public class CommentThreadDataset
-    {
-        public string Author;
-        public string Content;
-        public string DisplayName;
-        public string Id;
-        public DateTime Timestamp;
-    }
+public class CommentThreadDataset
+{
+    public string Author { get; set; }
+    public string Content { get; set; }
+    public string DisplayName { get; set; }
+    public string Id { get; set; }
+    public DateTime Timestamp { get; set; }
 }
