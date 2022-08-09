@@ -247,5 +247,5 @@ coverage.xml
 .idea/**
 
 # Specific
-appsettings.Development.json
+appsettings.Development*.json
 *.info

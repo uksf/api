@@ -6,6 +6,10 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E4EB7191-C18B-4657-845C-C779AF8AFB2F}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
+		build.yml = build.yml
+		NuGet.Config = NuGet.Config
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UKSF.Api", "UKSF.Api\UKSF.Api.csproj", "{E89A896F-CA6E-4E2E-835B-0AE7AD1B9284}"
