@@ -105,8 +105,7 @@ namespace UKSF.Api.Personnel.Controllers
 
             foreach (var participant in participants.Where(x => x != comment.Author))
             {
-                var url = _environment.IsDevelopment() ? "http://localhost:4200" : "https://uk-sf.co.uk";
-                var link = applicationAccount.Id != participant ? $"{url}/recruitment/{applicationAccount.Id}" : $"{url}/application";
+                var link = applicationAccount.Id != participant ? $"/recruitment/{applicationAccount.Id}" : "/application";
                 _notificationsService.Add(
                     new()
                     {
