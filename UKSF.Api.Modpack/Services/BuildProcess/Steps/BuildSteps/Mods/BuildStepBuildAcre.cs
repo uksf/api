@@ -19,7 +19,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
 
             var toolsPath = Path.Join(GetBuildSourcesPath(), ModName, "tools");
             var releasePath = Path.Join(GetBuildSourcesPath(), ModName, "release", "@acre2");
-            var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@acre2");
+            var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_acre2");
 
             if (IsBuildNeeded(ModName))
             {
