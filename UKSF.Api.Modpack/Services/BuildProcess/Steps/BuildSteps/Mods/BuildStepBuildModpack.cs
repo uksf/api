@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using UKSF.Api.ArmaServer.Models;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
 {
@@ -34,6 +35,22 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
             StepLogger.LogSurround("\nMoving UKSF release to build...");
             await CopyDirectory(releasePath, buildPath);
             StepLogger.LogSurround("Moved UKSF release to build");
+
+            if (Build.Environment == GameEnvironment.RC)
+            {
+                StepLogger.LogSurround("\nMoving RC optional...");
+                await MoveRcOptional(buildPath);
+                StepLogger.LogSurround("Moved RC optionals");
+            }
+        }
+
+        private async Task MoveRcOptional(string buildPath)
+        {
+            DirectoryInfo addons = new(Path.Join(buildPath, "addons"));
+            DirectoryInfo optional = new(Path.Join(buildPath, "optionals", "@uksf_rc", "addons"));
+
+            var files = GetDirectoryContents(optional);
+            await CopyFiles(optional, addons, files);
         }
     }
 }
