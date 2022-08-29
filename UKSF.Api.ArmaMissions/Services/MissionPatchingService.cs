@@ -44,6 +44,7 @@ namespace UKSF.Api.ArmaMissions.Services
                 {
                     _filePath = path;
                     _parentFolderPath = Path.GetDirectoryName(_filePath);
+
                     MissionPatchingResult result = new();
                     try
                     {
@@ -51,6 +52,13 @@ namespace UKSF.Api.ArmaMissions.Services
                         UnpackPbo();
                         Mission mission = new(_folderPath);
                         result.Reports = _missionService.ProcessMission(mission, armaServerModsPath, armaServerDefaultMaxCurators);
+                        result.PlayerCount = mission.PlayerCount;
+                        result.Success = result.Reports.All(x => !x.Error);
+
+                        if (!result.Success)
+                        {
+                            return result;
+                        }
 
                         if (MissionUtilities.CheckFlag(mission, "missionUseSimplePack"))
                         {
@@ -61,9 +69,6 @@ namespace UKSF.Api.ArmaMissions.Services
                         {
                             await MakePbo();
                         }
-
-                        result.PlayerCount = mission.PlayerCount;
-                        result.Success = result.Reports.All(x => !x.Error);
                     }
                     catch (Exception exception)
                     {
@@ -92,7 +97,7 @@ namespace UKSF.Api.ArmaMissions.Services
             File.Copy(_filePath, backupPath, true);
             if (!File.Exists(backupPath))
             {
-                throw new FileNotFoundException();
+                throw new FileNotFoundException("Could not create backup", backupPath);
             }
         }
 
