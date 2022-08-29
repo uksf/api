@@ -157,10 +157,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
         {
             return environment switch
             {
-                GameEnvironment.RELEASE => VariablesService.GetVariable("MODPACK_PATH_RELEASE").AsString(),
-                GameEnvironment.RC      => VariablesService.GetVariable("MODPACK_PATH_RC").AsString(),
-                GameEnvironment.DEV     => VariablesService.GetVariable("MODPACK_PATH_DEV").AsString(),
-                _                       => throw new ArgumentException("Invalid build environment")
+                GameEnvironment.RELEASE     => VariablesService.GetVariable("MODPACK_PATH_RELEASE").AsString(),
+                GameEnvironment.RC          => VariablesService.GetVariable("MODPACK_PATH_RC").AsString(),
+                GameEnvironment.DEVELOPMENT => VariablesService.GetVariable("MODPACK_PATH_DEV").AsString(),
+                _                           => throw new ArgumentException("Invalid build environment")
             };
         }
 
@@ -168,10 +168,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
         {
             return environment switch
             {
-                GameEnvironment.RELEASE => VariablesService.GetVariable("SERVER_PATH_RELEASE").AsString(),
-                GameEnvironment.RC      => VariablesService.GetVariable("SERVER_PATH_RC").AsString(),
-                GameEnvironment.DEV     => VariablesService.GetVariable("SERVER_PATH_DEV").AsString(),
-                _                       => throw new ArgumentException("Invalid build environment")
+                GameEnvironment.RELEASE     => VariablesService.GetVariable("SERVER_PATH_RELEASE").AsString(),
+                GameEnvironment.RC          => VariablesService.GetVariable("SERVER_PATH_RC").AsString(),
+                GameEnvironment.DEVELOPMENT => VariablesService.GetVariable("SERVER_PATH_DEV").AsString(),
+                _                           => throw new ArgumentException("Invalid build environment")
             };
         }
 
@@ -179,10 +179,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps
         {
             return Build.Environment switch
             {
-                GameEnvironment.RELEASE => "UKSF",
-                GameEnvironment.RC      => "UKSF-Rc",
-                GameEnvironment.DEV     => "UKSF-Dev",
-                _                       => throw new ArgumentException("Invalid build environment")
+                GameEnvironment.RELEASE     => "UKSF",
+                GameEnvironment.RC          => "UKSF-Rc",
+                GameEnvironment.DEVELOPMENT => "UKSF-Dev",
+                _                           => throw new ArgumentException("Invalid build environment")
             };
         }
 

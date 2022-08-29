@@ -18,9 +18,17 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
             var releasePath = Path.Join(GetBuildSourcesPath(), ModName, "release", "@uksf");
             var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
 
+            var configuration = GetEnvironmentVariable<string>("configuration");
+            if (string.IsNullOrEmpty(configuration))
+            {
+                throw new("Configuration not set for build");
+            }
+
+            StepLogger.Log($"\nConfiguration set to '{configuration}'");
+
             StepLogger.LogSurround("\nRunning make.py...");
             BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource);
-            processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int) TimeSpan.FromMinutes(5).TotalMilliseconds);
+            processHelper.Run(toolsPath, PythonPath, MakeCommand($"redirect configuration {configuration}"), (int)TimeSpan.FromMinutes(5).TotalMilliseconds);
             StepLogger.LogSurround("Make.py complete");
 
             StepLogger.LogSurround("\nMoving UKSF release to build...");

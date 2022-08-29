@@ -37,10 +37,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess
         {
             var steps = environment switch
             {
-                GameEnvironment.RELEASE => GetStepsForRelease(),
-                GameEnvironment.RC      => GetStepsForRc(),
-                GameEnvironment.DEV     => GetStepsForBuild(),
-                _                       => throw new ArgumentException("Invalid build environment")
+                GameEnvironment.RELEASE     => GetStepsForRelease(),
+                GameEnvironment.RC          => GetStepsForRc(),
+                GameEnvironment.DEVELOPMENT => GetStepsForBuild(),
+                _                           => throw new ArgumentException("Invalid build environment")
             };
             ResolveIndices(steps);
             return steps;

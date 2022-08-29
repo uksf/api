@@ -36,8 +36,8 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
                 case GameEnvironment.RC:
                     await _discordService.SendMessage(VariablesService.GetVariable("DID_C_MODPACK_DEV").AsUlong(), GetDiscordMessage());
                     break;
-                case GameEnvironment.DEV: break;
-                default:                  throw new ArgumentOutOfRangeException();
+                case GameEnvironment.DEVELOPMENT: break;
+                default:                          throw new ArgumentOutOfRangeException();
             }
 
             StepLogger.Log("Notifications sent");
