@@ -92,10 +92,10 @@ namespace UKSF.Api.ArmaServer.Services
         {
             var variableKey = gameServer.Environment switch
             {
-                GameEnvironment.RELEASE => "SERVER_PATH_RELEASE",
-                GameEnvironment.RC      => "SERVER_PATH_RC",
-                GameEnvironment.DEV     => "SERVER_PATH_DEV",
-                _                       => throw new ArgumentException("Server environment is invalid")
+                GameEnvironment.RELEASE     => "SERVER_PATH_RELEASE",
+                GameEnvironment.RC          => "SERVER_PATH_RC",
+                GameEnvironment.DEVELOPMENT => "SERVER_PATH_DEV",
+                _                           => throw new ArgumentException("Server environment is invalid")
             };
             return Path.Join(_variablesService.GetVariable(variableKey).AsString(), "arma3server_x64.exe");
         }
@@ -119,10 +119,10 @@ namespace UKSF.Api.ArmaServer.Services
         {
             var variableKey = environment switch
             {
-                GameEnvironment.RELEASE => "MODPACK_PATH_RELEASE",
-                GameEnvironment.RC      => "MODPACK_PATH_RC",
-                GameEnvironment.DEV     => "MODPACK_PATH_DEV",
-                _                       => throw new ArgumentException("Server environment is invalid")
+                GameEnvironment.RELEASE     => "MODPACK_PATH_RELEASE",
+                GameEnvironment.RC          => "MODPACK_PATH_RC",
+                GameEnvironment.DEVELOPMENT => "MODPACK_PATH_DEV",
+                _                           => throw new ArgumentException("Server environment is invalid")
             };
             return Path.Join(_variablesService.GetVariable(variableKey).AsString(), "Repo");
         }

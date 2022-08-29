@@ -69,10 +69,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps
         {
             return Build.Environment switch
             {
-                GameEnvironment.RELEASE => $"uksf_dependencies_{Build.Version}",
-                GameEnvironment.RC      => $"uksf_dependencies_{Build.Version}_rc{Build.BuildNumber}",
-                GameEnvironment.DEV     => $"uksf_dependencies_dev_{Build.BuildNumber}",
-                _                       => throw new ArgumentException("Invalid build environment")
+                GameEnvironment.RELEASE     => $"uksf_dependencies_{Build.Version}",
+                GameEnvironment.RC          => $"uksf_dependencies_{Build.Version}_rc{Build.BuildNumber}",
+                GameEnvironment.DEVELOPMENT => $"uksf_dependencies_dev_{Build.BuildNumber}",
+                _                           => throw new ArgumentException("Invalid build environment")
             };
         }
 

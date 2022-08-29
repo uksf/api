@@ -4,6 +4,6 @@
     {
         RELEASE,
         RC,
-        DEV
+        DEVELOPMENT
     }
 }

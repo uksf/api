@@ -67,7 +67,7 @@ namespace UKSF.Api.Modpack.EventHandlers
 
         private async Task AddedEvent(ModpackBuild build)
         {
-            if (build.Environment == GameEnvironment.DEV)
+            if (build.Environment == GameEnvironment.DEVELOPMENT)
             {
                 await _hub.Clients.All.ReceiveBuild(build);
             }
@@ -79,7 +79,7 @@ namespace UKSF.Api.Modpack.EventHandlers
 
         private async Task UpdatedEvent(ModpackBuild build)
         {
-            if (build.Environment == GameEnvironment.DEV)
+            if (build.Environment == GameEnvironment.DEVELOPMENT)
             {
                 await _hub.Clients.All.ReceiveBuild(build);
             }

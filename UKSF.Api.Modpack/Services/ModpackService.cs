@@ -198,10 +198,10 @@ namespace UKSF.Api.Modpack.Services
         {
             return build.Environment switch
             {
-                GameEnvironment.RELEASE => $"release {build.Version}",
-                GameEnvironment.RC      => $"{build.Version} RC# {build.BuildNumber}",
-                GameEnvironment.DEV     => $"#{build.BuildNumber}",
-                _                       => throw new ArgumentException("Invalid build environment")
+                GameEnvironment.RELEASE     => $"release {build.Version}",
+                GameEnvironment.RC          => $"{build.Version} RC# {build.BuildNumber}",
+                GameEnvironment.DEVELOPMENT => $"#{build.BuildNumber}",
+                _                           => throw new ArgumentException("Invalid build environment")
             };
         }
     }
