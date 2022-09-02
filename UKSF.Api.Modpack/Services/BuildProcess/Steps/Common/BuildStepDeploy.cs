@@ -26,17 +26,6 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
                 targetPath = Path.Join(GetBuildEnvironmentPath(), "Repo");
             }
 
-            if (Build.Environment != GameEnvironment.RC)
-            {
-                StepLogger.LogSurround("\nRemoving RC optional...");
-                await RemoveRcOptional(targetPath);
-                StepLogger.LogSurround("Removed RC optional");
-            }
-
-            StepLogger.LogSurround("\nRemoving UKSF optionals...");
-            RemoveUksfOptionalsFolder(targetPath);
-            StepLogger.LogSurround("Removed UKSF optionals");
-
             StepLogger.LogSurround("\nAdding new files...");
             await AddFiles(sourcePath, targetPath);
             StepLogger.LogSurround("Added new files");
@@ -48,6 +37,17 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
             StepLogger.LogSurround("\nDeleting removed files...");
             await DeleteFiles(sourcePath, targetPath, Build.Environment != GameEnvironment.RELEASE);
             StepLogger.LogSurround("Deleted removed files");
+
+            if (Build.Environment != GameEnvironment.RC)
+            {
+                StepLogger.LogSurround("\nRemoving RC optional...");
+                await RemoveRcOptional(targetPath);
+                StepLogger.LogSurround("Removed RC optional");
+            }
+
+            StepLogger.LogSurround("\nRemoving UKSF optionals...");
+            await RemoveUksfOptionalsFolder(targetPath);
+            StepLogger.LogSurround("Removed UKSF optionals");
         }
 
         private async Task RemoveRcOptional(string repoPath)
@@ -56,10 +56,10 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
             await DeleteFiles(GetDirectoryContents(new(addonsPath), "uksf_rc.*"));
         }
 
-        private void RemoveUksfOptionalsFolder(string repoPath)
+        private async Task RemoveUksfOptionalsFolder(string repoPath)
         {
             var buildPath = Path.Join(repoPath, "@uksf");
-            DeleteDirectories(new() { new(Path.Join(buildPath, "optionals")) });
+            await DeleteDirectoryContents(Path.Join(buildPath, "optionals"));
         }
     }
 }
