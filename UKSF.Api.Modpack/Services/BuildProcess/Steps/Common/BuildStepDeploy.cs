@@ -29,12 +29,12 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
             if (Build.Environment != GameEnvironment.RC)
             {
                 StepLogger.LogSurround("\nRemoving RC optional...");
-                await RemoveRcOptional();
+                await RemoveRcOptional(targetPath);
                 StepLogger.LogSurround("Removed RC optional");
             }
 
             StepLogger.LogSurround("\nRemoving UKSF optionals...");
-            RemoveUksfOptionalsFolder();
+            RemoveUksfOptionalsFolder(targetPath);
             StepLogger.LogSurround("Removed UKSF optionals");
 
             StepLogger.LogSurround("\nAdding new files...");
@@ -50,16 +50,15 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
             StepLogger.LogSurround("Deleted removed files");
         }
 
-        private async Task RemoveRcOptional()
+        private async Task RemoveRcOptional(string repoPath)
         {
-            var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
-            var addonsPath = Path.Join(buildPath, "addons");
+            var addonsPath = Path.Join(repoPath, "@uksf", "addons");
             await DeleteFiles(GetDirectoryContents(new(addonsPath), "uksf_rc.*"));
         }
 
-        private void RemoveUksfOptionalsFolder()
+        private void RemoveUksfOptionalsFolder(string repoPath)
         {
-            var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
+            var buildPath = Path.Join(repoPath, "@uksf");
             DeleteDirectories(new() { new(Path.Join(buildPath, "optionals")) });
         }
     }
