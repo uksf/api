@@ -37,11 +37,11 @@ public static class ProcessUtilities
         return processId;
     }
 
-    public static async Task LaunchExternalProcess(string name, string command)
+    public static async Task LaunchExternalProcess(string name, string command, string workingDirectory = null)
     {
         TaskService.Instance.RootFolder.DeleteTask(name, false);
         using var taskDefinition = TaskService.Instance.NewTask();
-        taskDefinition.Actions.Add(new ExecAction("cmd", $"/C {command}"));
+        taskDefinition.Actions.Add(new ExecAction("cmd", $"/C {command}", workingDirectory));
         taskDefinition.Triggers.Add(new TimeTrigger(DateTime.UtcNow.AddSeconds(1)));
         TaskService.Instance.RootFolder.RegisterTaskDefinition(name, taskDefinition);
         await Task.Delay(TimeSpan.FromSeconds(1));

@@ -109,7 +109,9 @@ public class TeamspeakManagerService : ITeamspeakManagerService
 
     private async Task LaunchTeamspeakServer()
     {
-        await ProcessUtilities.LaunchExternalProcess("TeamspeakServer", $"start \"\" \"{_variablesService.GetVariable("TEAMSPEAK_SERVER_PATH").AsString()}\"");
+        var serverPath = _variablesService.GetVariable("TEAMSPEAK_SERVER_PATH").AsString();
+        var serverDirectory = Path.GetDirectoryName(serverPath);
+        await ProcessUtilities.LaunchExternalProcess("TeamspeakServer", $"start \"\" \"{serverPath}\"", serverDirectory);
     }
 
     private async Task LaunchTeamspeak()
