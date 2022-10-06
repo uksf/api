@@ -1,29 +1,26 @@
-﻿using System;
+﻿namespace UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Shared.Services
+public interface IClock
 {
-    public interface IClock
+    public DateTime Now();
+    public DateTime Today();
+    public DateTime UtcNow();
+}
+
+public class Clock : IClock
+{
+    public DateTime Now()
     {
-        public DateTime Now();
-        public DateTime Today();
-        public DateTime UtcNow();
+        return DateTime.Now;
     }
 
-    public class Clock : IClock
+    public DateTime Today()
     {
-        public DateTime Now()
-        {
-            return DateTime.Now;
-        }
+        return UtcNow().Date;
+    }
 
-        public DateTime Today()
-        {
-            return UtcNow().Date;
-        }
-
-        public DateTime UtcNow()
-        {
-            return DateTime.UtcNow;
-        }
+    public DateTime UtcNow()
+    {
+        return DateTime.UtcNow;
     }
 }

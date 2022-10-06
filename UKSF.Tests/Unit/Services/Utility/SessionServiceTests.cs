@@ -3,76 +3,75 @@ using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Moq;
-using UKSF.Api.Personnel.Models;
 using UKSF.Api.Shared;
+using UKSF.Api.Shared.Models;
 using UKSF.Api.Shared.Services;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Services.Utility
+namespace UKSF.Tests.Unit.Services.Utility;
+
+public class SessionServiceTests
 {
-    public class SessionServiceTests
+    private readonly HttpContextService _httpContextService;
+    private DefaultHttpContext _httpContext;
+
+    public SessionServiceTests()
     {
-        private readonly HttpContextService _httpContextService;
-        private DefaultHttpContext _httpContext;
+        Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
+        Mock<IClock> mockClock = new();
 
-        public SessionServiceTests()
-        {
-            Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
-            Mock<IClock> mockClock = new();
+        mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(() => _httpContext);
 
-            mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(() => _httpContext);
+        _httpContextService = new(mockHttpContextAccessor.Object, mockClock.Object);
+    }
 
-            _httpContextService = new(mockHttpContextAccessor.Object, mockClock.Object);
-        }
+    [Fact]
+    public void ShouldGetContextEmail()
+    {
+        DomainAccount domainAccount = new() { Email = "contact.tim.here@gmail.com" };
+        List<Claim> claims = new() { new(ClaimTypes.Email, domainAccount.Email) };
+        ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
+        _httpContext = new() { User = contextUser };
 
-        [Fact]
-        public void ShouldGetContextEmail()
-        {
-            DomainAccount domainAccount = new() { Email = "contact.tim.here@gmail.com" };
-            List<Claim> claims = new() { new(ClaimTypes.Email, domainAccount.Email) };
-            ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
-            _httpContext = new() { User = contextUser };
+        var subject = _httpContextService.GetUserEmail();
 
-            var subject = _httpContextService.GetUserEmail();
+        subject.Should().Be(domainAccount.Email);
+    }
 
-            subject.Should().Be(domainAccount.Email);
-        }
+    [Fact]
+    public void ShouldGetContextId()
+    {
+        DomainAccount domainAccount = new();
+        List<Claim> claims = new() { new(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String) };
+        ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
+        _httpContext = new() { User = contextUser };
 
-        [Fact]
-        public void ShouldGetContextId()
-        {
-            DomainAccount domainAccount = new();
-            List<Claim> claims = new() { new(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String) };
-            ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
-            _httpContext = new() { User = contextUser };
+        var subject = _httpContextService.GetUserId();
 
-            var subject = _httpContextService.GetUserId();
+        subject.Should().Be(domainAccount.Id);
+    }
 
-            subject.Should().Be(domainAccount.Id);
-        }
+    [Fact]
+    public void ShouldReturnFalseForInvalidRole()
+    {
+        List<Claim> claims = new() { new(ClaimTypes.Role, Permissions.Admin) };
+        ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
+        _httpContext = new() { User = contextUser };
 
-        [Fact]
-        public void ShouldReturnFalseForInvalidRole()
-        {
-            List<Claim> claims = new() { new(ClaimTypes.Role, Permissions.Admin) };
-            ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
-            _httpContext = new() { User = contextUser };
+        var subject = _httpContextService.UserHasPermission(Permissions.Command);
 
-            var subject = _httpContextService.UserHasPermission(Permissions.Command);
+        subject.Should().BeFalse();
+    }
 
-            subject.Should().BeFalse();
-        }
+    [Fact]
+    public void ShouldReturnTrueForValidRole()
+    {
+        List<Claim> claims = new() { new(ClaimTypes.Role, Permissions.Admin) };
+        ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
+        _httpContext = new() { User = contextUser };
 
-        [Fact]
-        public void ShouldReturnTrueForValidRole()
-        {
-            List<Claim> claims = new() { new(ClaimTypes.Role, Permissions.Admin) };
-            ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
-            _httpContext = new() { User = contextUser };
+        var subject = _httpContextService.UserHasPermission(Permissions.Admin);
 
-            var subject = _httpContextService.UserHasPermission(Permissions.Admin);
-
-            subject.Should().BeTrue();
-        }
+        subject.Should().BeTrue();
     }
 }

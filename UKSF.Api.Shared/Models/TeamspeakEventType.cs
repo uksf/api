@@ -1,9 +1,8 @@
-namespace UKSF.Api.Shared.Models
+namespace UKSF.Api.Shared.Models;
+
+public enum TeamspeakEventType
 {
-    public enum TeamspeakEventType
-    {
-        EMPTY,
-        CLIENTS,
-        CLIENT_SERVER_GROUPS
-    }
+    EMPTY,
+    CLIENTS,
+    CLIENT_SERVER_GROUPS
 }

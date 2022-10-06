@@ -1,8 +1,7 @@
-﻿namespace UKSF.Api.Shared.Models
+﻿namespace UKSF.Api.Shared.Models;
+
+public class OnlineState
 {
-    public class OnlineState
-    {
-        public string Nickname;
-        public bool Online;
-    }
+    public string Nickname { get; set; }
+    public bool Online { get; set; }
 }

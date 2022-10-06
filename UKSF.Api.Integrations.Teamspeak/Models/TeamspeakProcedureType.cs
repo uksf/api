@@ -1,13 +1,12 @@
-namespace UKSF.Api.Teamspeak.Models
+namespace UKSF.Api.Teamspeak.Models;
+
+public enum TeamspeakProcedureType
 {
-    public enum TeamspeakProcedureType
-    {
-        EMPTY,
-        ASSIGN,
-        UNASSIGN,
-        GROUPS,
-        MESSAGE,
-        SHUTDOWN,
-        RELOAD
-    }
+    EMPTY,
+    ASSIGN,
+    UNASSIGN,
+    GROUPS,
+    MESSAGE,
+    SHUTDOWN,
+    RELOAD
 }

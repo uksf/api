@@ -1,9 +1,8 @@
-﻿namespace UKSF.Api.ArmaServer.Models
+﻿namespace UKSF.Api.ArmaServer.Models;
+
+public enum GameEnvironment
 {
-    public enum GameEnvironment
-    {
-        RELEASE,
-        RC,
-        DEVELOPMENT
-    }
+    RELEASE,
+    RC,
+    DEVELOPMENT
 }

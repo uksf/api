@@ -1,24 +1,23 @@
 ﻿using FluentAssertions;
 using MongoDB.Driver;
 using Moq;
-using UKSF.Api.Base.Context;
+using UKSF.Api.Shared.Context.Base;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Data
+namespace UKSF.Tests.Unit.Data;
+
+public class DataCollectionFactoryTests
 {
-    public class DataCollectionFactoryTests
+    [Fact]
+    public void ShouldCreateDataCollection()
     {
-        [Fact]
-        public void ShouldCreateDataCollection()
-        {
-            Mock<IMongoDatabase> mockMongoDatabase = new();
+        Mock<IMongoDatabase> mockMongoDatabase = new();
 
-            MongoCollectionFactory mongoCollectionFactory = new(mockMongoDatabase.Object);
+        MongoCollectionFactory mongoCollectionFactory = new(mockMongoDatabase.Object);
 
-            var subject = mongoCollectionFactory.CreateMongoCollection<TestDataModel>("test");
+        var subject = mongoCollectionFactory.CreateMongoCollection<TestDataModel>("test");
 
-            subject.Should().NotBeNull();
-        }
+        subject.Should().NotBeNull();
     }
 }

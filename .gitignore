@@ -249,3 +249,4 @@ coverage.xml
 # Specific
 appsettings.Development*.json
 *.info
+/UKSF.Api/dockersettings.json

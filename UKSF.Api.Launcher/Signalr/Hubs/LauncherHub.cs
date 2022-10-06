@@ -2,11 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Launcher.Signalr.Clients;
 
-namespace UKSF.Api.Launcher.Signalr.Hubs
+namespace UKSF.Api.Launcher.Signalr.Hubs;
+
+[Authorize]
+public class LauncherHub : Hub<ILauncherClient>
 {
-    [Authorize]
-    public class LauncherHub : Hub<ILauncherClient>
-    {
-        public const string EndPoint = "launcher";
-    }
+    public const string EndPoint = "launcher";
 }

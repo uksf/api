@@ -1,12 +1,11 @@
-﻿namespace UKSF.Api.Modpack.Models
+﻿namespace UKSF.Api.Modpack.Models;
+
+public enum ModpackBuildResult
 {
-    public enum ModpackBuildResult
-    {
-        NONE,
-        SUCCESS,
-        FAILED,
-        CANCELLED,
-        WARNING,
-        SKIPPED
-    }
+    NONE,
+    SUCCESS,
+    FAILED,
+    CANCELLED,
+    WARNING,
+    SKIPPED
 }

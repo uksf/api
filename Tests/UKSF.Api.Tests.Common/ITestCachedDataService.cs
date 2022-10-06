@@ -1,6 +1,5 @@
-﻿using UKSF.Api.Shared.Context;
+﻿using UKSF.Api.Shared.Context.Base;
 
-namespace UKSF.Api.Tests.Common
-{
-    public interface ITestCachedContext : IMongoContext<TestDataModel> { }
-}
+namespace UKSF.Api.Tests.Common;
+
+public interface ITestCachedContext : IMongoContext<TestDataModel> { }

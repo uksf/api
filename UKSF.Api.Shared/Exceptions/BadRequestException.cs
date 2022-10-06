@@ -1,12 +1,9 @@
-﻿using System;
+﻿namespace UKSF.Api.Shared.Exceptions;
 
-namespace UKSF.Api.Shared.Exceptions
+[Serializable]
+public class BadRequestException : UksfException
 {
-    [Serializable]
-    public class BadRequestException : UksfException
-    {
-        public BadRequestException(string message) : base(message, 400) { }
+    public BadRequestException(string message) : base(message, 400) { }
 
-        public BadRequestException() : this("Bad request") { }
-    }
+    public BadRequestException() : this("Bad request") { }
 }

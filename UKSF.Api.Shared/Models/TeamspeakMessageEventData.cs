@@ -1,16 +1,13 @@
-﻿using System.Collections.Generic;
+﻿namespace UKSF.Api.Shared.Models;
 
-namespace UKSF.Api.Shared.Models
+public class TeamspeakMessageEventData
 {
-    public class TeamspeakMessageEventData
+    public TeamspeakMessageEventData(IEnumerable<int> clientDbIds, string message)
     {
-        public IEnumerable<int> ClientDbIds;
-        public string Message;
-
-        public TeamspeakMessageEventData(IEnumerable<int> clientDbIds, string message)
-        {
-            ClientDbIds = clientDbIds;
-            Message = message;
-        }
+        ClientDbIds = clientDbIds;
+        Message = message;
     }
+
+    public IEnumerable<int> ClientDbIds { get; set; }
+    public string Message { get; set; }
 }

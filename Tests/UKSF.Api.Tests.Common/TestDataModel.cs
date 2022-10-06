@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
-using UKSF.Api.Base.Models;
+using UKSF.Api.Shared.Models;
 
-namespace UKSF.Api.Tests.Common
+namespace UKSF.Api.Tests.Common;
+
+public class TestDataModel : MongoObject
 {
-    public class TestDataModel : MongoObject
-    {
-        public Dictionary<string, object> Dictionary = new();
-        public string Name;
-        public List<object> Stuff;
-    }
+    public Dictionary<string, object> Dictionary { get; set; } = new();
+    public string Name { get; set; }
+    public List<object> Stuff { get; set; }
 }

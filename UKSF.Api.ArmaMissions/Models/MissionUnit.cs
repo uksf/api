@@ -1,13 +1,11 @@
-using System.Collections.Generic;
-using UKSF.Api.Personnel.Models;
+using UKSF.Api.Shared.Models;
 
-namespace UKSF.Api.ArmaMissions.Models
+namespace UKSF.Api.ArmaMissions.Models;
+
+public class MissionUnit
 {
-    public class MissionUnit
-    {
-        public string Callsign;
-        public List<MissionPlayer> Members = new();
-        public Dictionary<string, MissionPlayer> Roles = new();
-        public DomainUnit SourceUnit;
-    }
+    public string Callsign { get; set; }
+    public List<MissionPlayer> Members { get; set; } = new();
+    public Dictionary<string, MissionPlayer> Roles { get; set; } = new();
+    public DomainUnit SourceUnit { get; set; }
 }

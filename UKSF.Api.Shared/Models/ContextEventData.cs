@@ -1,14 +1,13 @@
-﻿namespace UKSF.Api.Shared.Models
-{
-    public class ContextEventData<T>
-    {
-        public T Data;
-        public string Id;
+﻿namespace UKSF.Api.Shared.Models;
 
-        public ContextEventData(string id, T data)
-        {
-            Id = id;
-            Data = data;
-        }
+public class ContextEventData<T>
+{
+    public ContextEventData(string id, T data)
+    {
+        Id = id;
+        Data = data;
     }
+
+    public T Data { get; set; }
+    public string Id { get; set; }
 }

@@ -1,70 +1,67 @@
-﻿using System;
-using System.Linq;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
+﻿using System.Security.Claims;
 
-namespace UKSF.Api.Shared.Services
+namespace UKSF.Api.Shared.Services;
+
+public interface IHttpContextService
 {
-    public interface IHttpContextService
+    bool IsUserAuthenticated();
+    string GetImpersonatingUserId();
+    bool HasImpersonationExpired();
+    public string GetUserId();
+    public string GetUserEmail();
+    bool UserHasPermission(string permission);
+}
+
+public class HttpContextService : IHttpContextService
+{
+    private readonly IClock _clock;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public HttpContextService(IHttpContextAccessor httpContextAccessor, IClock clock)
     {
-        bool IsUserAuthenticated();
-        string GetImpersonatingUserId();
-        bool HasImpersonationExpired();
-        public string GetUserId();
-        public string GetUserEmail();
-        bool UserHasPermission(string permission);
+        _httpContextAccessor = httpContextAccessor;
+        _clock = clock;
     }
 
-    public class HttpContextService : IHttpContextService
+    public bool IsUserAuthenticated()
     {
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IClock _clock;
+        return _httpContextAccessor.HttpContext?.User.Identity != null && _httpContextAccessor.HttpContext.User.Identity.IsAuthenticated;
+    }
 
-        public HttpContextService(IHttpContextAccessor httpContextAccessor, IClock clock)
+    public string GetImpersonatingUserId()
+    {
+        return _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == UksfClaimTypes.ImpersonatingUserId)?.Value;
+    }
+
+    public bool HasImpersonationExpired()
+    {
+        if (string.IsNullOrEmpty(GetImpersonatingUserId()))
         {
-            _httpContextAccessor = httpContextAccessor;
-            _clock = clock;
+            return false;
         }
 
-        public bool IsUserAuthenticated()
+        var expiry = _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == UksfClaimTypes.Expiry)?.Value;
+        if (string.IsNullOrEmpty(expiry))
         {
-            return _httpContextAccessor.HttpContext?.User.Identity != null && _httpContextAccessor.HttpContext.User.Identity.IsAuthenticated;
+            throw new("Token has no expiry");
         }
 
-        public string GetImpersonatingUserId()
-        {
-            return _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == UksfClaimTypes.ImpersonatingUserId)?.Value;
-        }
+        return _clock.UtcNow() > DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiry)).UtcDateTime;
+    }
 
-        public bool HasImpersonationExpired()
-        {
-            if (string.IsNullOrEmpty(GetImpersonatingUserId()))
-            {
-                return false;
-            }
+    public string GetUserId()
+    {
+        return _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Sid)?.Value;
+    }
 
-            var expiry = _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == UksfClaimTypes.Expiry)?.Value;
-            if (string.IsNullOrEmpty(expiry))
-            {
-                throw new("Token has no expiry");
-            }
+    public string GetUserEmail()
+    {
+        return _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
+    }
 
-            return _clock.UtcNow() > DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiry)).UtcDateTime;
-        }
-
-        public string GetUserId()
-        {
-            return _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Sid)?.Value;
-        }
-
-        public string GetUserEmail()
-        {
-            return _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
-        }
-
-        public bool UserHasPermission(string permission)
-        {
-            return _httpContextAccessor.HttpContext != null && _httpContextAccessor.HttpContext.User.Claims.Any(x => x.Type == ClaimTypes.Role && x.Value == permission);
-        }
+    public bool UserHasPermission(string permission)
+    {
+        return _httpContextAccessor.HttpContext != null &&
+               _httpContextAccessor.HttpContext.User.Claims.Any(x => x.Type == ClaimTypes.Role && x.Value == permission);
     }
 }

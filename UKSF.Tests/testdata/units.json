@@ -1,179 +1,179 @@
 {
-	"_id": {
-		"$oid": "5a42835b55d6109bf0b081bd"
-	},
-	"branch": 0,
-	"callsign": "Stonebridge",
-	"type": 6,
-	"icon": "https://uk-sf.co.uk/assets/dist/images/orbat/uksf.png",
-	"members": [],
-	"name": "UKSF",
-	"parent": {
-		"$oid": "000000000000000000000000"
-	},
-	"roles": {},
-	"shortname": "UKSF",
-	"teamspeakGroup": "7",
-	"discordRoleId": "542441181498310668"
+    "_id": {
+        "$oid": "5a42835b55d6109bf0b081bd"
+    },
+    "branch": 0,
+    "callsign": "Stonebridge",
+    "type": 6,
+    "icon": "https://uk-sf.co.uk/assets/dist/images/orbat/uksf.png",
+    "members": [],
+    "name": "UKSF",
+    "parent": {
+        "$oid": "000000000000000000000000"
+    },
+    "roles": {},
+    "shortname": "UKSF",
+    "teamspeakGroup": "7",
+    "discordRoleId": "542441181498310668"
 }
 {
-	"_id": {
-		"$oid": "5ad748e0de5d414f4c4055e1"
-	},
-	"branch": 0,
-	"type": 1,
-	"members": [
-		{
-			"$oid": "59e38f0f594c603b78aa9dbb"
-		}
-	],
-	"name": "Basic Training Unit",
-	"parent": {
-		"$oid": "5a42835b55d6109bf0b081bd"
-	},
-	"roles": {},
-	"shortname": "BTU",
-	"order": 4
+    "_id": {
+        "$oid": "5ad748e0de5d414f4c4055e1"
+    },
+    "branch": 0,
+    "type": 1,
+    "members": [
+        {
+            "$oid": "59e38f0f594c603b78aa9dbb"
+        }
+    ],
+    "name": "Basic Training Unit",
+    "parent": {
+        "$oid": "5a42835b55d6109bf0b081bd"
+    },
+    "roles": {},
+    "shortname": "BTU",
+    "order": 4
 }
 {
-	"_id": {
-		"$oid": "5a6917732364471b38dac709"
-	},
-	"branch": 0,
-	"type": 5,
-	"icon": "https://uk-sf.co.uk/assets/dist/images/orbat/sas.png",
-	"members": [
-		{
-			"$oid": "59e38f10594c603b78aa9dbd"
-		}
-	],
-	"name": "22nd Special Air Service Regiment",
-	"parent": {
-		"$oid": "5a42835b55d6109bf0b081bd"
-	},
-	"roles": {
-		"1iC": {
-			"$oid": "59e38f10594c603b78aa9dbd"
-		}
-	},
-	"shortname": "SAS",
-	"teamspeakGroup": "36",
-	"order": 0,
-	"callsign": "Sabre",
-	"discordRoleId": "495213709107527680"
-}
-{
-	"_id": {
-		"$oid": "5bbbb8875eb3a4170c488b24"
-	},
-	"branch": 0,
-	"callsign": "Sabre 1",
-	"icon": "",
-	"members": [
-		{
-			"$oid": "59e38f13594c603b78aa9dbf"
-		},
-		{
-			"$oid": "59e38f1b594c603b78aa9dc1"
-		}
-	],
-	"name": "Air Troop",
-	"order": 0,
-	"parent": {
-		"$oid": "5a6917732364471b38dac709"
-	},
-	"roles":  {
-		"NCOiC": {
-			"$oid": "59e38f13594c603b78aa9dbf"
-		},
-		"2iC": {
-			"$oid": "59e38f1b594c603b78aa9dc1"
-		}
-	},
-	"shortname": "Air Troop",
-	"teamspeakGroup": "37",
-	"type": 1
-}
-{
-	"_id": {
-		"$oid": "5a4283ce55d6109bf0b081bf"
-	},
-	"branch": 1,
-	"type": 0,
-	"members": [
-		{
-			"$oid": "59e38f10594c603b78aa9dbd"
-		}
-	],
-	"name": "Command Staff",
-	"parent": {
-		"$oid": "000000000000000000000000"
-	},
-	"roles": {},
-	"shortname": "CStaff"
-}
-{
-	"_id": {
-		"$oid": "5a121a2e56134f4654eecee8"
-	},
-	"branch": 1,
-	"type": 0,
-	"members": [
-		{
-			"$oid": "59e38f10594c603b78aa9dbd"
-		},
-		{
-			"$oid": "59e38f1b594c603b78aa9dc1"
-		},
-		{
-			"$oid": "59e38f13594c603b78aa9dbf"
-		}
-	],
-	"name": "SR1 Recruitment",
-	"parent": {
-		"$oid": "5a4283ce55d6109bf0b081bf"
-	},
-	"roles": {
+    "_id": {
+        "$oid": "5a6917732364471b38dac709"
+    },
+    "branch": 0,
+    "type": 5,
+    "icon": "https://uk-sf.co.uk/assets/dist/images/orbat/sas.png",
+    "members": [
+        {
+            "$oid": "59e38f10594c603b78aa9dbd"
+        }
+    ],
+    "name": "22nd Special Air Service Regiment",
+    "parent": {
+        "$oid": "5a42835b55d6109bf0b081bd"
+    },
+    "roles": {
         "1iC": {
-			"$oid": "59e38f10594c603b78aa9dbd"
-		},
-		"2iC": {
-			"$oid": "59e38f1b594c603b78aa9dc1"
-		}
-	},
-	"teamspeakGroup": "26",
-	"order": 0,
-	"callsign": null,
-	"icon": null,
-	"shortname": "SR1",
-	"discordRoleId": "311545206266920960"
+            "$oid": "59e38f10594c603b78aa9dbd"
+        }
+    },
+    "shortname": "SAS",
+    "teamspeakGroup": "36",
+    "order": 0,
+    "callsign": "Sabre",
+    "discordRoleId": "495213709107527680"
 }
 {
-	"_id": {
-		"$oid": "5a655eaef5336e21e8a8bc1d"
-	},
-	"branch": 1,
-	"type": 0,
-	"members": [
-		{
-			"$oid": "59e38f10594c603b78aa9dbd"
-		},
-		{
-			"$oid": "59e38f13594c603b78aa9dbf"
-		}
-	],
-	"name": "SR7 Personnel & Processing",
-	"parent": {
-		"$oid": "5a4283ce55d6109bf0b081bf"
-	},
-	"roles": {
-		"1iC": {
-			"$oid": "59e38f10594c603b78aa9dbd"
-		}
-	},
-	"shortname": "SR7",
-	"teamspeakGroup": "35",
-	"order": 8,
-	"callsign": null,
-	"icon": null
+    "_id": {
+        "$oid": "5bbbb8875eb3a4170c488b24"
+    },
+    "branch": 0,
+    "callsign": "Sabre 1",
+    "icon": "",
+    "members": [
+        {
+            "$oid": "59e38f13594c603b78aa9dbf"
+        },
+        {
+            "$oid": "59e38f1b594c603b78aa9dc1"
+        }
+    ],
+    "name": "Air Troop",
+    "order": 0,
+    "parent": {
+        "$oid": "5a6917732364471b38dac709"
+    },
+    "roles": {
+        "NCOiC": {
+            "$oid": "59e38f13594c603b78aa9dbf"
+        },
+        "2iC": {
+            "$oid": "59e38f1b594c603b78aa9dc1"
+        }
+    },
+    "shortname": "Air Troop",
+    "teamspeakGroup": "37",
+    "type": 1
+}
+{
+    "_id": {
+        "$oid": "5a4283ce55d6109bf0b081bf"
+    },
+    "branch": 1,
+    "type": 0,
+    "members": [
+        {
+            "$oid": "59e38f10594c603b78aa9dbd"
+        }
+    ],
+    "name": "Command Staff",
+    "parent": {
+        "$oid": "000000000000000000000000"
+    },
+    "roles": {},
+    "shortname": "CStaff"
+}
+{
+    "_id": {
+        "$oid": "5a121a2e56134f4654eecee8"
+    },
+    "branch": 1,
+    "type": 0,
+    "members": [
+        {
+            "$oid": "59e38f10594c603b78aa9dbd"
+        },
+        {
+            "$oid": "59e38f1b594c603b78aa9dc1"
+        },
+        {
+            "$oid": "59e38f13594c603b78aa9dbf"
+        }
+    ],
+    "name": "SR1 Recruitment",
+    "parent": {
+        "$oid": "5a4283ce55d6109bf0b081bf"
+    },
+    "roles": {
+        "1iC": {
+            "$oid": "59e38f10594c603b78aa9dbd"
+        },
+        "2iC": {
+            "$oid": "59e38f1b594c603b78aa9dc1"
+        }
+    },
+    "teamspeakGroup": "26",
+    "order": 0,
+    "callsign": null,
+    "icon": null,
+    "shortname": "SR1",
+    "discordRoleId": "311545206266920960"
+}
+{
+    "_id": {
+        "$oid": "5a655eaef5336e21e8a8bc1d"
+    },
+    "branch": 1,
+    "type": 0,
+    "members": [
+        {
+            "$oid": "59e38f10594c603b78aa9dbd"
+        },
+        {
+            "$oid": "59e38f13594c603b78aa9dbf"
+        }
+    ],
+    "name": "SR7 Personnel & Processing",
+    "parent": {
+        "$oid": "5a4283ce55d6109bf0b081bf"
+    },
+    "roles": {
+        "1iC": {
+            "$oid": "59e38f10594c603b78aa9dbd"
+        }
+    },
+    "shortname": "SR7",
+    "teamspeakGroup": "35",
+    "order": 8,
+    "callsign": null,
+    "icon": null
 }

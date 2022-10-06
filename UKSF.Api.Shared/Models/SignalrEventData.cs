@@ -1,8 +1,7 @@
-namespace UKSF.Api.Shared.Models
+namespace UKSF.Api.Shared.Models;
+
+public class SignalrEventData
 {
-    public class SignalrEventData
-    {
-        public object Args;
-        public TeamspeakEventType Procedure;
-    }
+    public object Args { get; set; }
+    public TeamspeakEventType Procedure { get; set; }
 }

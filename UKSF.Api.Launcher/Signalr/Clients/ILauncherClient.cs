@@ -1,9 +1,6 @@
-using System.Threading.Tasks;
+namespace UKSF.Api.Launcher.Signalr.Clients;
 
-namespace UKSF.Api.Launcher.Signalr.Clients
+public interface ILauncherClient
 {
-    public interface ILauncherClient
-    {
-        Task ReceiveLauncherVersion(string version);
-    }
+    Task ReceiveLauncherVersion(string version);
 }
