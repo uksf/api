@@ -1,19 +1,15 @@
-﻿using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿namespace UKSF.Api.Middleware;
 
-namespace UKSF.Api.Middleware
+public class CorsMiddleware : IMiddleware
 {
-    public class CorsMiddleware : IMiddleware
+    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
-        public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+        if (context.Request.Path.Value != null && context.Request.Path.Value.Contains("hub"))
         {
-            if (context.Request.Path.Value != null && context.Request.Path.Value.Contains("hub"))
-            {
-                context.Response.Headers["Access-Control-Allow-Origin"] = context.Request.Headers["Origin"];
-                context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
-            }
-
-            await next(context);
+            context.Response.Headers["Access-Control-Allow-Origin"] = context.Request.Headers["Origin"];
+            context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
         }
+
+        await next(context);
     }
 }

@@ -1,50 +1,50 @@
 {
-	"_id": {
-		"$oid": "5b73f047bcd9d4150cce911b"
-	},
-	"name": "Rifleman"
+    "_id": {
+        "$oid": "5b73f047bcd9d4150cce911b"
+    },
+    "name": "Rifleman"
 }
 {
-	"_id": {
-		"$oid": "5b742439a144bb436484fbc1"
-	},
-	"name": "Trainee"
+    "_id": {
+        "$oid": "5b742439a144bb436484fbc1"
+    },
+    "name": "Trainee"
 }
 {
-	"_id": {
-		"$oid": "5b7424eda144bb436484fbc2"
-	},
-	"name": "Marksman"
+    "_id": {
+        "$oid": "5b7424eda144bb436484fbc2"
+    },
+    "name": "Marksman"
 }
 {
-	"_id": {
-		"$oid": "5b743cce0349702af02a6cc8"
-	},
-	"name": "1iC",
-	"roleType": 1,
-	"order": 0
+    "_id": {
+        "$oid": "5b743cce0349702af02a6cc8"
+    },
+    "name": "1iC",
+    "roleType": 1,
+    "order": 0
 }
 {
-	"_id": {
-		"$oid": "5b743cfc275f4355fc7b8cde"
-	},
-	"name": "2iC",
-	"roleType": 1,
-	"order": 1
+    "_id": {
+        "$oid": "5b743cfc275f4355fc7b8cde"
+    },
+    "name": "2iC",
+    "roleType": 1,
+    "order": 1
 }
 {
-	"_id": {
-		"$oid": "5b746d75b5b85b00017f2e56"
-	},
-	"name": "NCOiC",
-	"roleType": 1,
-	"order": 3
+    "_id": {
+        "$oid": "5b746d75b5b85b00017f2e56"
+    },
+    "name": "NCOiC",
+    "roleType": 1,
+    "order": 3
 }
 {
-	"_id": {
-		"$oid": "5b93fc12afe56b00019a8780"
-	},
-	"name": "NCOiC Air Troop",
-	"roleType": 0,
-	"order": 0
+    "_id": {
+        "$oid": "5b93fc12afe56b00019a8780"
+    },
+    "name": "NCOiC Air Troop",
+    "roleType": 0,
+    "order": 0
 }

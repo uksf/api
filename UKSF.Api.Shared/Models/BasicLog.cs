@@ -1,46 +1,44 @@
-﻿using System;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using UKSF.Api.Base.Models;
 
-namespace UKSF.Api.Shared.Models
+namespace UKSF.Api.Shared.Models;
+
+public enum UksfLogLevel
 {
-    public enum LogLevel
+    DEBUG,
+    INFO,
+    ERROR,
+    WARNING
+}
+
+public class BasicLog : MongoObject
+{
+    protected BasicLog()
     {
-        DEBUG,
-        INFO,
-        ERROR,
-        WARNING
+        Level = UksfLogLevel.INFO;
+        Timestamp = DateTime.UtcNow;
     }
 
-    public class BasicLog : MongoObject
+    public BasicLog(string text) : this()
     {
-        [BsonRepresentation(BsonType.String)] public LogLevel Level;
-
-        public string Message;
-        public DateTime Timestamp;
-
-        protected BasicLog()
-        {
-            Level = LogLevel.INFO;
-            Timestamp = DateTime.UtcNow;
-        }
-
-        public BasicLog(string text) : this()
-        {
-            Message = text;
-        }
-
-        public BasicLog(string text, LogLevel logLevel) : this()
-        {
-            Message = text;
-            Level = logLevel;
-        }
-
-        public BasicLog(Exception exception) : this()
-        {
-            Message = exception.GetBaseException().ToString();
-            Level = LogLevel.ERROR;
-        }
+        Message = text;
     }
+
+    public BasicLog(string text, UksfLogLevel uksfLogLevel) : this()
+    {
+        Message = text;
+        Level = uksfLogLevel;
+    }
+
+    public BasicLog(Exception exception) : this()
+    {
+        Message = exception.GetBaseException().ToString();
+        Level = UksfLogLevel.ERROR;
+    }
+
+    [BsonRepresentation(BsonType.String)]
+    public UksfLogLevel Level { get; set; }
+
+    public string Message { get; set; }
+    public DateTime Timestamp { get; set; }
 }

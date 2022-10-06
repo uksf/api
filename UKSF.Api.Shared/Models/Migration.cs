@@ -1,9 +1,6 @@
-﻿using UKSF.Api.Base.Models;
+﻿namespace UKSF.Api.Shared.Models;
 
-namespace UKSF.Api.Shared.Models
+public class Migration : MongoObject
 {
-    public class Migration : MongoObject
-    {
-        public int Version;
-    }
+    public int Version { get; set; }
 }

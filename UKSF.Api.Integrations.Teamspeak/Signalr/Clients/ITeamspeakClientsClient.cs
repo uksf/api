@@ -1,11 +1,8 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using UKSF.Api.Teamspeak.Models;
 
-namespace UKSF.Api.Teamspeak.Signalr.Clients
+namespace UKSF.Api.Teamspeak.Signalr.Clients;
+
+public interface ITeamspeakClientsClient
 {
-    public interface ITeamspeakClientsClient
-    {
-        Task ReceiveClients(List<TeamspeakConnectClient> clients);
-    }
+    Task ReceiveClients(List<TeamspeakConnectClient> clients);
 }

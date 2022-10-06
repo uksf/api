@@ -1,56 +1,52 @@
-﻿using System;
-using System.IO;
-using System.Threading.Tasks;
-using UKSF.Api.ArmaServer.Models;
+﻿using UKSF.Api.ArmaServer.Models;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.BuildSteps.Mods;
+
+[BuildStep(Name)]
+public class BuildStepBuildModpack : ModBuildStep
 {
-    [BuildStep(Name)]
-    public class BuildStepBuildModpack : ModBuildStep
+    public const string Name = "Build UKSF";
+    private const string ModName = "modpack";
+
+    protected override async Task ProcessExecute()
     {
-        public const string Name = "Build UKSF";
-        private const string ModName = "modpack";
+        StepLogger.Log("Running build for UKSF");
 
-        protected override async Task ProcessExecute()
+        var toolsPath = Path.Join(GetBuildSourcesPath(), ModName, "tools");
+        var releasePath = Path.Join(GetBuildSourcesPath(), ModName, "release", "@uksf");
+        var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
+
+        var configuration = GetEnvironmentVariable<string>("configuration");
+        if (string.IsNullOrEmpty(configuration))
         {
-            StepLogger.Log("Running build for UKSF");
-
-            var toolsPath = Path.Join(GetBuildSourcesPath(), ModName, "tools");
-            var releasePath = Path.Join(GetBuildSourcesPath(), ModName, "release", "@uksf");
-            var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
-
-            var configuration = GetEnvironmentVariable<string>("configuration");
-            if (string.IsNullOrEmpty(configuration))
-            {
-                throw new("Configuration not set for build");
-            }
-
-            StepLogger.Log($"\nConfiguration set to '{configuration}'");
-
-            StepLogger.LogSurround("\nRunning make.py...");
-            BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource);
-            processHelper.Run(toolsPath, PythonPath, MakeCommand($"redirect configuration {configuration}"), (int)TimeSpan.FromMinutes(5).TotalMilliseconds);
-            StepLogger.LogSurround("Make.py complete");
-
-            StepLogger.LogSurround("\nMoving UKSF release to build...");
-            await CopyDirectory(releasePath, buildPath);
-            StepLogger.LogSurround("Moved UKSF release to build");
-
-            if (Build.Environment == GameEnvironment.RC)
-            {
-                StepLogger.LogSurround("\nMoving RC optional...");
-                await MoveRcOptional(buildPath);
-                StepLogger.LogSurround("Moved RC optionals");
-            }
+            throw new("Configuration not set for build");
         }
 
-        private async Task MoveRcOptional(string buildPath)
-        {
-            DirectoryInfo addons = new(Path.Join(buildPath, "addons"));
-            DirectoryInfo optional = new(Path.Join(buildPath, "optionals", "@uksf_rc", "addons"));
+        StepLogger.Log($"\nConfiguration set to '{configuration}'");
 
-            var files = GetDirectoryContents(optional);
-            await CopyFiles(optional, addons, files);
+        StepLogger.LogSurround("\nRunning make.py...");
+        BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource);
+        processHelper.Run(toolsPath, PythonPath, MakeCommand($"redirect configuration {configuration}"), (int)TimeSpan.FromMinutes(5).TotalMilliseconds);
+        StepLogger.LogSurround("Make.py complete");
+
+        StepLogger.LogSurround("\nMoving UKSF release to build...");
+        await CopyDirectory(releasePath, buildPath);
+        StepLogger.LogSurround("Moved UKSF release to build");
+
+        if (Build.Environment == GameEnvironment.RC)
+        {
+            StepLogger.LogSurround("\nMoving RC optional...");
+            await MoveRcOptional(buildPath);
+            StepLogger.LogSurround("Moved RC optionals");
         }
+    }
+
+    private async Task MoveRcOptional(string buildPath)
+    {
+        DirectoryInfo addons = new(Path.Join(buildPath, "addons"));
+        DirectoryInfo optional = new(Path.Join(buildPath, "optionals", "@uksf_rc", "addons"));
+
+        var files = GetDirectoryContents(optional);
+        await CopyFiles(optional, addons, files);
     }
 }

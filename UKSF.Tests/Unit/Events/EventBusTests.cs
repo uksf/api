@@ -1,22 +1,21 @@
 ﻿using System;
 using FluentAssertions;
-using UKSF.Api.Base.Events;
-using UKSF.Api.Base.Models;
+using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Events
+namespace UKSF.Tests.Unit.Events;
+
+public class EventBusTests
 {
-    public class EventBusTests
+    [Fact]
+    public void When_getting_event_bus_observable()
     {
-        [Fact]
-        public void When_getting_event_bus_observable()
-        {
-            EventBus eventBus = new();
+        EventBus eventBus = new();
 
-            var subject = eventBus.AsObservable();
+        var subject = eventBus.AsObservable();
 
-            subject.Should().NotBeNull();
-            subject.Should().BeAssignableTo<IObservable<EventModel>>();
-        }
+        subject.Should().NotBeNull();
+        subject.Should().BeAssignableTo<IObservable<EventModel>>();
     }
 }

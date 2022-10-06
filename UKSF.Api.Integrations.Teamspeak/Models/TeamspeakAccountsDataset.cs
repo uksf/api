@@ -1,17 +1,14 @@
-﻿using System.Collections.Generic;
+﻿namespace UKSF.Api.Teamspeak.Models;
 
-namespace UKSF.Api.Teamspeak.Models
+public class TeamspeakAccountsDataset
 {
-    public class TeamspeakAccountsDataset
-    {
-        public List<TeamspeakAccountDataset> Commanders;
-        public List<TeamspeakAccountDataset> Guests;
-        public List<TeamspeakAccountDataset> Members;
-        public List<TeamspeakAccountDataset> Recruiters;
-    }
+    public List<TeamspeakAccountDataset> Commanders { get; set; }
+    public List<TeamspeakAccountDataset> Guests { get; set; }
+    public List<TeamspeakAccountDataset> Members { get; set; }
+    public List<TeamspeakAccountDataset> Recruiters { get; set; }
+}
 
-    public class TeamspeakAccountDataset
-    {
-        public string DisplayName;
-    }
+public class TeamspeakAccountDataset
+{
+    public string DisplayName { get; set; }
 }

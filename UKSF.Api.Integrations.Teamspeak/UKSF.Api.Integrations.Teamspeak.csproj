@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <OutputType>Library</OutputType>
+        <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>UKSF.Api.Teamspeak</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\UKSF.Api.Base\UKSF.Api.Base.csproj" />
-      <ProjectReference Include="..\UKSF.Api.Personnel\UKSF.Api.Personnel.csproj" />
+        <ProjectReference Include="..\UKSF.Api.Shared\UKSF.Api.Shared.csproj"/>
     </ItemGroup>
 
 </Project>

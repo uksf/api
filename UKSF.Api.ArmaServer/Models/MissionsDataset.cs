@@ -1,17 +1,15 @@
-﻿using System.Collections.Generic;
-using UKSF.Api.Shared.Models;
+﻿using UKSF.Api.Shared.Models;
 
-namespace UKSF.Api.ArmaServer.Models
+namespace UKSF.Api.ArmaServer.Models;
+
+public class MissionsDataset
 {
-    public class MissionsDataset
-    {
-        public List<MissionReportDataset> MissionReports;
-        public List<MissionFile> Missions;
-    }
+    public List<MissionReportDataset> MissionReports { get; set; }
+    public List<MissionFile> Missions { get; set; }
+}
 
-    public class MissionReportDataset
-    {
-        public string Mission;
-        public List<ValidationReport> Reports;
-    }
+public class MissionReportDataset
+{
+    public string Mission { get; set; }
+    public List<ValidationReport> Reports { get; set; }
 }

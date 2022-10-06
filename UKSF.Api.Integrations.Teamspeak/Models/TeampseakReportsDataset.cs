@@ -1,24 +1,21 @@
-﻿using System.Collections.Generic;
+﻿namespace UKSF.Api.Teamspeak.Models;
 
-namespace UKSF.Api.Teamspeak.Models
+public class TeampseakReportsDataset
 {
-    public class TeampseakReportsDataset
-    {
-        public TeampseakReportDataset AcreData;
-        public TeampseakReportDataset Data;
-    }
+    public TeampseakReportDataset AcreData { get; set; }
+    public TeampseakReportDataset Data { get; set; }
+}
 
-    public class TeampseakReportDataset
-    {
-        public List<TeampseakReport> Datasets;
-        public List<string> Labels;
-    }
+public class TeampseakReportDataset
+{
+    public List<TeampseakReport> Datasets { get; set; }
+    public List<string> Labels { get; set; }
+}
 
-    public class TeampseakReport
-    {
-        public string BorderColor;
-        public int[] Data;
-        public bool Fill;
-        public string Label;
-    }
+public class TeampseakReport
+{
+    public string BorderColor { get; set; }
+    public int[] Data { get; set; }
+    public bool Fill { get; set; }
+    public string Label { get; set; }
 }
