@@ -1,58 +1,55 @@
-﻿using System;
-using System.IO.Pipelines;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using System.Text.Json.Serialization;
 using UKSF.Api.Shared.Exceptions;
 using UKSF.Api.Shared.Models;
-using Utf8Json;
-using Utf8Json.Resolvers;
 
-namespace UKSF.Api.Middleware
+namespace UKSF.Api.Middleware;
+
+public interface IExceptionHandler
 {
-    public interface IExceptionHandler
+    Task Handle(Exception exception, HttpContext context);
+}
+
+public class ExceptionHandler : IExceptionHandler
+{
+    public async Task Handle(Exception exception, HttpContext context)
     {
-        ValueTask Handle(Exception exception, HttpContext context);
+        switch (exception)
+        {
+            case UksfException uksfException:
+                await HandleUksfException(uksfException, context);
+                break;
+            default:
+                await HandleUnhandledException(exception, context);
+                break;
+        }
+
+        await context.Response.Body.FlushAsync();
     }
 
-    public class ExceptionHandler : IExceptionHandler
+    private static Task HandleUnhandledException(Exception exception, HttpContext context)
     {
-        public async ValueTask Handle(Exception exception, HttpContext context)
+        if (context.Response.StatusCode < 300)
         {
-            switch (exception)
-            {
-                case UksfException uksfException:
-                    await HandleUksfException(uksfException, context);
-                    break;
-                default:
-                    await HandleUnhandledException(exception, context);
-                    break;
-            }
-
-            await context.Response.BodyWriter.FlushAsync();
+            context.Response.StatusCode = 500;
         }
 
-        private static ValueTask<FlushResult> HandleUnhandledException(Exception exception, HttpContext context)
-        {
-            if (context.Response.StatusCode < 300)
-            {
-                context.Response.StatusCode = 500;
-            }
+        context.Response.ContentType = "application/json";
+        return SerializeToStream(context.Response, new(context.Response.StatusCode, 0, exception?.Message, null));
+    }
 
-            context.Response.ContentType = "application/json";
-            return SerializeToStream(context.Response.BodyWriter, new(context.Response.StatusCode, 0, exception?.Message, null));
-        }
+    private static Task HandleUksfException(UksfException uksfException, HttpContext context)
+    {
+        context.Response.StatusCode = uksfException.StatusCode;
+        context.Response.ContentType = "application/json";
 
-        private static ValueTask<FlushResult> HandleUksfException(UksfException uksfException, HttpContext context)
-        {
-            context.Response.StatusCode = uksfException.StatusCode;
-            context.Response.ContentType = "application/json";
+        return SerializeToStream(context.Response, new(uksfException.StatusCode, uksfException.DetailCode, uksfException.Message, uksfException.Validation));
+    }
 
-            return SerializeToStream(context.Response.BodyWriter, new(uksfException.StatusCode, uksfException.DetailCode, uksfException.Message, uksfException.Validation));
-        }
-
-        private static ValueTask<FlushResult> SerializeToStream(PipeWriter output, UksfErrorMessage error)
-        {
-            return output.WriteAsync(JsonSerializer.Serialize(error, StandardResolver.AllowPrivateExcludeNullCamelCase));
-        }
+    private static Task SerializeToStream(HttpResponse response, UksfErrorMessage error)
+    {
+        return response.WriteAsJsonAsync(
+            error,
+            new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
+        );
     }
 }

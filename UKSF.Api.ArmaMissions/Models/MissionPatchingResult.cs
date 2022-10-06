@@ -1,12 +1,10 @@
-using System.Collections.Generic;
 using UKSF.Api.Shared.Models;
 
-namespace UKSF.Api.ArmaMissions.Models
+namespace UKSF.Api.ArmaMissions.Models;
+
+public class MissionPatchingResult
 {
-    public class MissionPatchingResult
-    {
-        public int PlayerCount;
-        public List<ValidationReport> Reports = new();
-        public bool Success;
-    }
+    public int PlayerCount { get; set; }
+    public List<ValidationReport> Reports { get; set; } = new();
+    public bool Success { get; set; }
 }

@@ -1,17 +1,14 @@
-﻿using System.Collections.Generic;
+﻿namespace UKSF.Api.ArmaServer.Models;
 
-namespace UKSF.Api.ArmaServer.Models
+public class GameServersDataset
 {
-    public class GameServersDataset
-    {
-        public int InstanceCount;
-        public List<MissionFile> Missions;
-        public IEnumerable<GameServer> Servers;
-    }
+    public int InstanceCount { get; set; }
+    public List<MissionFile> Missions { get; set; }
+    public IEnumerable<GameServer> Servers { get; set; }
+}
 
-    public class GameServerDataset
-    {
-        public GameServer GameServer;
-        public int InstanceCount;
-    }
+public class GameServerDataset
+{
+    public GameServer GameServer { get; set; }
+    public int InstanceCount { get; set; }
 }

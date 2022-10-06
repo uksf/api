@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
 
         <IsPackable>false</IsPackable>
     </PropertyGroup>
@@ -21,8 +21,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\UKSF.Api.Launcher\UKSF.Api.Launcher.csproj" />
-      <ProjectReference Include="..\UKSF.Api.Tests.Common\UKSF.Api.Tests.Common.csproj" />
+        <ProjectReference Include="..\..\UKSF.Api.Launcher\UKSF.Api.Launcher.csproj"/>
+        <ProjectReference Include="..\UKSF.Api.Tests.Common\UKSF.Api.Tests.Common.csproj"/>
     </ItemGroup>
 
 </Project>

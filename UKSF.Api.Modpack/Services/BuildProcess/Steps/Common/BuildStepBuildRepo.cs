@@ -1,24 +1,21 @@
-﻿using System;
-using System.Threading.Tasks;
-using UKSF.Api.Admin.Extensions;
+﻿using UKSF.Api.Shared.Extensions;
 
-namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common
+namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common;
+
+[BuildStep(Name)]
+public class BuildStepBuildRepo : BuildStep
 {
-    [BuildStep(Name)]
-    public class BuildStepBuildRepo : BuildStep
+    public const string Name = "Build Repo";
+
+    protected override Task ProcessExecute()
     {
-        public const string Name = "Build Repo";
+        var repoName = GetEnvironmentRepoName();
+        StepLogger.Log($"Building {repoName} repo");
 
-        protected override Task ProcessExecute()
-        {
-            var repoName = GetEnvironmentRepoName();
-            StepLogger.Log($"Building {repoName} repo");
+        var arma3SyncPath = VariablesService.GetVariable("BUILD_PATH_ARMA3SYNC").AsString();
+        BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource);
+        processHelper.Run(arma3SyncPath, "Java", $"-jar .\\ArmA3Sync.jar -BUILD {repoName}", (int)TimeSpan.FromMinutes(5).TotalMilliseconds);
 
-            var arma3SyncPath = VariablesService.GetVariable("BUILD_PATH_ARMA3SYNC").AsString();
-            BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource);
-            processHelper.Run(arma3SyncPath, "Java", $"-jar .\\ArmA3Sync.jar -BUILD {repoName}", (int) TimeSpan.FromMinutes(5).TotalMilliseconds);
-
-            return Task.CompletedTask;
-        }
+        return Task.CompletedTask;
     }
 }

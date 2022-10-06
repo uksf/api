@@ -1,300 +1,300 @@
 {
-	"_id": {
-		"$oid": "59e38f0f594c603b78aa9dbb"
-	},
-	"application": {
-		"applicationCommentThread": {
-			"$oid": "5a6bdf837819f048ecb224d5"
-		},
-		"dateAccepted": {
-			"$date": "2017-12-04T22:04:05.353Z"
-		},
-		"dateCreated": {
-			"$date": "2017-12-04T21:45:17.657Z"
-		},
-		"ratings": {
-			"attitude": 4,
-			"maturity": 4,
-			"sociability": 4,
-			"criticism": 4,
-			"skills": 4
-		},
-		"recruiter": {
-			"$oid": "59e38f1b594c603b78aa9dc1"
-		},
-		"recruiterCommentThread": {
-			"$oid": "5a6bdf837819f048ecb224d4"
-		},
-		"state": 0
-	},
-	"armaExperience": "3-4 years",
-	"aviation": false,
-	"background": "-",
-	"dob": {
-		"$date": "2000-11-08T00:00:00Z"
-	},
-	"email": "Steve.J@uk-sf.co.uk",
-	"firstname": "Jeff",
-	"lastname": "Steve",
-	"membershipState": 3,
-	"militaryExperience": false,
-	"nation": "GBR",
-	"nco": true,
-	"officer": false,
-	"password": "",
-	"reference": "Google",
-	"serviceRecord": [
-		{
-			"notes": "N/A",
-			"occurence": "was accepted into the recruitment process",
-			"timestamp": {
-				"$date": "2017-12-04T21:45:18.04Z"
-			}
-		},
-		{
-			"notes": "comments and ratings from the recruitment process can be viewed in the recruitment centre.",
-			"occurence": "passed the recruitment process and was accepted into the Basic Training Program",
-			"timestamp": {
-				"$date": "2017-12-04T22:04:06.033Z"
-			}
-		}
-	],
-	"settings": {
-		"errorEmails": false,
-		"notificationsEmail": true,
-		"notificationsTeamspeak": true,
-		"sr1Enabled": false
-	},
-	"steamname": "",
-	"teamspeakIdentities": [],
-	"unitsExperience": "Ages ago can't actually remember names",
-	"discordId": "",
-	"unitAssignment": "Basic Training Unit",
-	"roleAssignment": "Trainee",
-	"rank": "Recruit"
+    "_id": {
+        "$oid": "59e38f0f594c603b78aa9dbb"
+    },
+    "application": {
+        "applicationCommentThread": {
+            "$oid": "5a6bdf837819f048ecb224d5"
+        },
+        "dateAccepted": {
+            "$date": "2017-12-04T22:04:05.353Z"
+        },
+        "dateCreated": {
+            "$date": "2017-12-04T21:45:17.657Z"
+        },
+        "ratings": {
+            "attitude": 4,
+            "maturity": 4,
+            "sociability": 4,
+            "criticism": 4,
+            "skills": 4
+        },
+        "recruiter": {
+            "$oid": "59e38f1b594c603b78aa9dc1"
+        },
+        "recruiterCommentThread": {
+            "$oid": "5a6bdf837819f048ecb224d4"
+        },
+        "state": 0
+    },
+    "armaExperience": "3-4 years",
+    "aviation": false,
+    "background": "-",
+    "dob": {
+        "$date": "2000-11-08T00:00:00Z"
+    },
+    "email": "Steve.J@uk-sf.co.uk",
+    "firstname": "Jeff",
+    "lastname": "Steve",
+    "membershipState": 3,
+    "militaryExperience": false,
+    "nation": "GBR",
+    "nco": true,
+    "officer": false,
+    "password": "",
+    "reference": "Google",
+    "serviceRecord": [
+        {
+            "notes": "N/A",
+            "occurence": "was accepted into the recruitment process",
+            "timestamp": {
+                "$date": "2017-12-04T21:45:18.04Z"
+            }
+        },
+        {
+            "notes": "comments and ratings from the recruitment process can be viewed in the recruitment centre.",
+            "occurence": "passed the recruitment process and was accepted into the Basic Training Program",
+            "timestamp": {
+                "$date": "2017-12-04T22:04:06.033Z"
+            }
+        }
+    ],
+    "settings": {
+        "errorEmails": false,
+        "notificationsEmail": true,
+        "notificationsTeamspeak": true,
+        "sr1Enabled": false
+    },
+    "steamname": "",
+    "teamspeakIdentities": [],
+    "unitsExperience": "Ages ago can't actually remember names",
+    "discordId": "",
+    "unitAssignment": "Basic Training Unit",
+    "roleAssignment": "Trainee",
+    "rank": "Recruit"
 }
 {
-	"_id": {
-		"$oid": "59e38f10594c603b78aa9dbd"
-	},
-	"application": {
-		"applicationCommentThread": {
-			"$oid": "5a6bdf747819f048ecb224a9"
-		},
-		"dateAccepted": {
-			"$date": "2017-11-28T23:43:45.408Z"
-		},
-		"dateCreated": {
-			"$date": "2017-11-26T01:43:05.953Z"
-		},
-		"ratings": {
-			"attitude": 5,
-			"maturity": 5,
-			"sociability": 5,
-			"criticism": 5,
-			"skills": 5
-		},
-		"recruiter": {
-			"$oid": "59e38f10594c603b78aa9dbd"
-		},
-		"recruiterCommentThread": {
-			"$oid": "5a6bdf737819f048ecb224a8"
-		},
-		"state": 0
-	},
-	"armaExperience": "Too long",
-	"aviation": true,
-	"background": "I'm fine.",
-	"dob": {
-		"$date": "1996-01-16T00:00:00Z"
-	},
-	"email": "Bob.F@uk-sf.co.uk",
-	"firstname": "Fred",
-	"lastname": "Bob",
-	"membershipState": 2,
-	"militaryExperience": false,
-	"nation": "GBR",
-	"nco": false,
-	"officer": true,
-	"password": "",
-	"rank": "Sergeant",
-	"reference": "Google",
-	"roleAssignment": "Rifleman",
-	"serviceRecord": [
-		{
-			"notes": "comments and ratings from the recruitment process can be viewed in the recruitment centre.",
-			"occurence": "passed the recruitment process and was accepted into the Basic Training Program",
-			"timestamp": {
-				"$date": "2017-11-28T23:43:46.237Z"
-			}
-		},
-		{
-			"notes": "s",
-			"occurence": "promoted to the rank of Sergeant",
-			"timestamp": {
-				"$date": "2017-12-20T15:53:46.875Z"
-			}
-		}
-	],
-	"settings": {
-		"errorEmails": true,
-		"notificationsEmail": false,
-		"notificationsTeamspeak": true,
-		"sr1Enabled": false
-	},
-	"steamname": "",
-	"unitAssignment": "22nd Special Air Service Regiment",
-	"unitsExperience": "No",
-	"discordId": "",
-	"teamspeakIdentities": []
+    "_id": {
+        "$oid": "59e38f10594c603b78aa9dbd"
+    },
+    "application": {
+        "applicationCommentThread": {
+            "$oid": "5a6bdf747819f048ecb224a9"
+        },
+        "dateAccepted": {
+            "$date": "2017-11-28T23:43:45.408Z"
+        },
+        "dateCreated": {
+            "$date": "2017-11-26T01:43:05.953Z"
+        },
+        "ratings": {
+            "attitude": 5,
+            "maturity": 5,
+            "sociability": 5,
+            "criticism": 5,
+            "skills": 5
+        },
+        "recruiter": {
+            "$oid": "59e38f10594c603b78aa9dbd"
+        },
+        "recruiterCommentThread": {
+            "$oid": "5a6bdf737819f048ecb224a8"
+        },
+        "state": 0
+    },
+    "armaExperience": "Too long",
+    "aviation": true,
+    "background": "I'm fine.",
+    "dob": {
+        "$date": "1996-01-16T00:00:00Z"
+    },
+    "email": "Bob.F@uk-sf.co.uk",
+    "firstname": "Fred",
+    "lastname": "Bob",
+    "membershipState": 2,
+    "militaryExperience": false,
+    "nation": "GBR",
+    "nco": false,
+    "officer": true,
+    "password": "",
+    "rank": "Sergeant",
+    "reference": "Google",
+    "roleAssignment": "Rifleman",
+    "serviceRecord": [
+        {
+            "notes": "comments and ratings from the recruitment process can be viewed in the recruitment centre.",
+            "occurence": "passed the recruitment process and was accepted into the Basic Training Program",
+            "timestamp": {
+                "$date": "2017-11-28T23:43:46.237Z"
+            }
+        },
+        {
+            "notes": "s",
+            "occurence": "promoted to the rank of Sergeant",
+            "timestamp": {
+                "$date": "2017-12-20T15:53:46.875Z"
+            }
+        }
+    ],
+    "settings": {
+        "errorEmails": true,
+        "notificationsEmail": false,
+        "notificationsTeamspeak": true,
+        "sr1Enabled": false
+    },
+    "steamname": "",
+    "unitAssignment": "22nd Special Air Service Regiment",
+    "unitsExperience": "No",
+    "discordId": "",
+    "teamspeakIdentities": []
 }
 {
-	"_id": {
-		"$oid": "59e38f13594c603b78aa9dbf"
-	},
-	"application": {
-		"applicationCommentThread": {
-			"$oid": "5a6bdf767819f048ecb224af"
-		},
-		"dateAccepted": {
-			"$date": "2017-11-29T18:33:35.879Z"
-		},
-		"dateCreated": {
-			"$date": "2017-11-29T18:25:02.282Z"
-		},
-		"ratings": {
-			"attitude": 4,
-			"maturity": 4,
-			"sociability": 4,
-			"criticism": 4,
-			"skills": 4
-		},
-		"recruiter": {
-			"$oid": "59e38f10594c603b78aa9dbd"
-		},
-		"recruiterCommentThread": {
-			"$oid": "5a6bdf757819f048ecb224ae"
-		},
-		"state": 0
-	},
-	"armaExperience": "3 Years",
-	"aviation": false,
-	"background": "N/A",
-	"dob": {
-		"$date": "1994-03-25T00:00:00Z"
-	},
-	"email": "Adam.K@uk-sf.co.uk",
-	"firstname": "Kris",
-	"lastname": "Adam",
-	"membershipState": 2,
-	"militaryExperience": false,
-	"nation": "GBR",
-	"nco": false,
-	"officer": false,
-	"password": "",
-	"rank": "Sergeant",
-	"reference": "Reference from friend",
-	"roleAssignment": "NCOiC Air Troop",
-	"serviceRecord": [
-		{
-			"notes": "comments and ratings from the recruitment process can be viewed in the recruitment centre.",
-			"occurence": "passed the recruitment process and was accepted into the Basic Training Program",
-			"timestamp": {
-				"$date": "2017-11-29T18:25:02.734Z"
-			}
-		},
-		{
-			"notes": "comments and ratings from the recruitment process can be viewed in the recruitment centre.",
-			"occurence": "passed the recruitment process and was accepted into the Basic Training Program",
-			"timestamp": {
-				"$date": "2017-11-29T18:33:36.602Z"
-			}
-		}
-	],
-	"settings": {
-		"errorEmails": false,
-		"notificationsEmail": true,
-		"notificationsTeamspeak": false,
-		"sr1Enabled": true
-	},
-	"steamname": "",
-	"teamspeakIdentities": [],
-	"unitAssignment": "Air Troop",
-	"unitsExperience": "None",
-	"discordId": ""
+    "_id": {
+        "$oid": "59e38f13594c603b78aa9dbf"
+    },
+    "application": {
+        "applicationCommentThread": {
+            "$oid": "5a6bdf767819f048ecb224af"
+        },
+        "dateAccepted": {
+            "$date": "2017-11-29T18:33:35.879Z"
+        },
+        "dateCreated": {
+            "$date": "2017-11-29T18:25:02.282Z"
+        },
+        "ratings": {
+            "attitude": 4,
+            "maturity": 4,
+            "sociability": 4,
+            "criticism": 4,
+            "skills": 4
+        },
+        "recruiter": {
+            "$oid": "59e38f10594c603b78aa9dbd"
+        },
+        "recruiterCommentThread": {
+            "$oid": "5a6bdf757819f048ecb224ae"
+        },
+        "state": 0
+    },
+    "armaExperience": "3 Years",
+    "aviation": false,
+    "background": "N/A",
+    "dob": {
+        "$date": "1994-03-25T00:00:00Z"
+    },
+    "email": "Adam.K@uk-sf.co.uk",
+    "firstname": "Kris",
+    "lastname": "Adam",
+    "membershipState": 2,
+    "militaryExperience": false,
+    "nation": "GBR",
+    "nco": false,
+    "officer": false,
+    "password": "",
+    "rank": "Sergeant",
+    "reference": "Reference from friend",
+    "roleAssignment": "NCOiC Air Troop",
+    "serviceRecord": [
+        {
+            "notes": "comments and ratings from the recruitment process can be viewed in the recruitment centre.",
+            "occurence": "passed the recruitment process and was accepted into the Basic Training Program",
+            "timestamp": {
+                "$date": "2017-11-29T18:25:02.734Z"
+            }
+        },
+        {
+            "notes": "comments and ratings from the recruitment process can be viewed in the recruitment centre.",
+            "occurence": "passed the recruitment process and was accepted into the Basic Training Program",
+            "timestamp": {
+                "$date": "2017-11-29T18:33:36.602Z"
+            }
+        }
+    ],
+    "settings": {
+        "errorEmails": false,
+        "notificationsEmail": true,
+        "notificationsTeamspeak": false,
+        "sr1Enabled": true
+    },
+    "steamname": "",
+    "teamspeakIdentities": [],
+    "unitAssignment": "Air Troop",
+    "unitsExperience": "None",
+    "discordId": ""
 }
 {
-	"_id": {
-		"$oid": "59e38f1b594c603b78aa9dc1"
-	},
-	"application": {
-		"applicationCommentThread": {
-			"$oid": "5a6bdf817819f048ecb224cf"
-		},
-		"dateAccepted": {
-			"$date": "2017-12-04T20:34:42.123Z"
-		},
-		"dateCreated": {
-			"$date": "2017-12-04T19:59:28.761Z"
-		},
-		"ratings": {
-			"attitude": 4,
-			"maturity": 4,
-			"sociability": 4,
-			"criticism": 4,
-			"skills": 4
-		},
-		"recruiter": {
-			"$oid": "59e38f13594c603b78aa9dbf"
-		},
-		"recruiterCommentThread": {
-			"$oid": "5a6bdf817819f048ecb224ce"
-		},
-		"state": 0
-	},
-	"armaExperience": "3-4 yrs",
-	"aviation": false,
-	"background": "Component maintenance technician",
-	"dob": {
-		"$date": "1999-01-21T23:00:00Z"
-	},
-	"email": "Jim.D@uk-sf.co.uk",
-	"firstname": "Dennis",
-	"lastname": "Jim",
-	"membershipState": 2,
-	"militaryExperience": true,
-	"nation": "NLD",
-	"nco": true,
-	"officer": false,
-	"password": "",
-	"rank": "Lance Corporal",
-	"reference": "Reference from friend",
-	"roleAssignment": "Marksman",
-	"serviceRecord": [
-		{
-			"notes": "N/A",
-			"occurence": "was accepted into the recruitment process",
-			"timestamp": {
-				"$date": "2017-12-04T19:59:29.222Z"
-			}
-		},
-		{
-			"notes": "comments and ratings from the recruitment process can be viewed in the recruitment centre.",
-			"occurence": "passed the recruitment process and was accepted into the Basic Training Program",
-			"timestamp": {
-				"$date": "2017-12-04T20:34:42.804Z"
-			}
-		}
-	],
-	"settings": {
-		"errorEmails": false,
-		"notificationsEmail": true,
-		"notificationsTeamspeak": true,
-		"sr1Enabled": true
-	},
-	"steamname": "",
-	"teamspeakIdentities": [],
-	"unitAssignment": "Air Troop",
-	"unitsExperience": "No",
-	"discordId": ""
+    "_id": {
+        "$oid": "59e38f1b594c603b78aa9dc1"
+    },
+    "application": {
+        "applicationCommentThread": {
+            "$oid": "5a6bdf817819f048ecb224cf"
+        },
+        "dateAccepted": {
+            "$date": "2017-12-04T20:34:42.123Z"
+        },
+        "dateCreated": {
+            "$date": "2017-12-04T19:59:28.761Z"
+        },
+        "ratings": {
+            "attitude": 4,
+            "maturity": 4,
+            "sociability": 4,
+            "criticism": 4,
+            "skills": 4
+        },
+        "recruiter": {
+            "$oid": "59e38f13594c603b78aa9dbf"
+        },
+        "recruiterCommentThread": {
+            "$oid": "5a6bdf817819f048ecb224ce"
+        },
+        "state": 0
+    },
+    "armaExperience": "3-4 yrs",
+    "aviation": false,
+    "background": "Component maintenance technician",
+    "dob": {
+        "$date": "1999-01-21T23:00:00Z"
+    },
+    "email": "Jim.D@uk-sf.co.uk",
+    "firstname": "Dennis",
+    "lastname": "Jim",
+    "membershipState": 2,
+    "militaryExperience": true,
+    "nation": "NLD",
+    "nco": true,
+    "officer": false,
+    "password": "",
+    "rank": "Lance Corporal",
+    "reference": "Reference from friend",
+    "roleAssignment": "Marksman",
+    "serviceRecord": [
+        {
+            "notes": "N/A",
+            "occurence": "was accepted into the recruitment process",
+            "timestamp": {
+                "$date": "2017-12-04T19:59:29.222Z"
+            }
+        },
+        {
+            "notes": "comments and ratings from the recruitment process can be viewed in the recruitment centre.",
+            "occurence": "passed the recruitment process and was accepted into the Basic Training Program",
+            "timestamp": {
+                "$date": "2017-12-04T20:34:42.804Z"
+            }
+        }
+    ],
+    "settings": {
+        "errorEmails": false,
+        "notificationsEmail": true,
+        "notificationsTeamspeak": true,
+        "sr1Enabled": true
+    },
+    "steamname": "",
+    "teamspeakIdentities": [],
+    "unitAssignment": "Air Troop",
+    "unitsExperience": "No",
+    "discordId": ""
 }

@@ -1,11 +1,9 @@
-﻿using System;
-using UKSF.Api.Shared.Exceptions;
+﻿using UKSF.Api.Shared.Exceptions;
 
-namespace UKSF.Api.ArmaServer.Exceptions
+namespace UKSF.Api.ArmaServer.Exceptions;
+
+[Serializable]
+public class ServerInfrastructureException : UksfException
 {
-    [Serializable]
-    public class ServerInfrastructureException : UksfException
-    {
-        public ServerInfrastructureException(string message, int statusCode) : base(message, statusCode) { }
-    }
+    public ServerInfrastructureException(string message, int statusCode) : base(message, statusCode) { }
 }

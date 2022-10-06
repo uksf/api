@@ -1,13 +1,8 @@
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+namespace UKSF.Api.Teamspeak.Models;
 
-namespace UKSF.Api.Teamspeak.Models
+public class TeamspeakServerGroupUpdate
 {
-    public class TeamspeakServerGroupUpdate
-    {
-        public CancellationTokenSource CancellationTokenSource;
-        public Task DelayedProcessTask;
-        public List<int> ServerGroups = new();
-    }
+    public CancellationTokenSource CancellationTokenSource { get; set; }
+    public Task DelayedProcessTask { get; set; }
+    public List<int> ServerGroups { get; set; } = new();
 }

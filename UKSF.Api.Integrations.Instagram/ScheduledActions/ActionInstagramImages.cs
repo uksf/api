@@ -1,51 +1,48 @@
-﻿using System;
-using System.Threading.Tasks;
-using UKSF.Api.Base.ScheduledActions;
-using UKSF.Api.Integrations.Instagram.Services;
+﻿using UKSF.Api.Integrations.Instagram.Services;
 using UKSF.Api.Shared.Context;
+using UKSF.Api.Shared.ScheduledActions;
 using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Integrations.Instagram.ScheduledActions
+namespace UKSF.Api.Integrations.Instagram.ScheduledActions;
+
+public interface IActionInstagramImages : ISelfCreatingScheduledAction { }
+
+public class ActionInstagramImages : IActionInstagramImages
 {
-    public interface IActionInstagramImages : ISelfCreatingScheduledAction { }
+    private const string ActionName = nameof(ActionInstagramImages);
 
-    public class ActionInstagramImages : IActionInstagramImages
+    private readonly IClock _clock;
+    private readonly IInstagramService _instagramService;
+    private readonly ISchedulerContext _schedulerContext;
+    private readonly ISchedulerService _schedulerService;
+
+    public ActionInstagramImages(ISchedulerContext schedulerContext, IInstagramService instagramService, ISchedulerService schedulerService, IClock clock)
     {
-        private const string ActionName = nameof(ActionInstagramImages);
+        _schedulerContext = schedulerContext;
+        _instagramService = instagramService;
+        _schedulerService = schedulerService;
+        _clock = clock;
+    }
 
-        private readonly IClock _clock;
-        private readonly IInstagramService _instagramService;
-        private readonly ISchedulerContext _schedulerContext;
-        private readonly ISchedulerService _schedulerService;
+    public string Name => ActionName;
 
-        public ActionInstagramImages(ISchedulerContext schedulerContext, IInstagramService instagramService, ISchedulerService schedulerService, IClock clock)
+    public Task Run(params object[] parameters)
+    {
+        return _instagramService.CacheInstagramImages();
+    }
+
+    public async Task CreateSelf()
+    {
+        if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
         {
-            _schedulerContext = schedulerContext;
-            _instagramService = instagramService;
-            _schedulerService = schedulerService;
-            _clock = clock;
+            await _schedulerService.CreateScheduledJob(_clock.Today(), TimeSpan.FromMinutes(15), ActionName);
         }
 
-        public string Name => ActionName;
+        await Run();
+    }
 
-        public Task Run(params object[] parameters)
-        {
-            return _instagramService.CacheInstagramImages();
-        }
-
-        public async Task CreateSelf()
-        {
-            if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
-            {
-                await _schedulerService.CreateScheduledJob(_clock.Today(), TimeSpan.FromMinutes(15), ActionName);
-            }
-
-            await Run();
-        }
-
-        public Task Reset()
-        {
-            return Task.CompletedTask;
-        }
+    public Task Reset()
+    {
+        return Task.CompletedTask;
     }
 }

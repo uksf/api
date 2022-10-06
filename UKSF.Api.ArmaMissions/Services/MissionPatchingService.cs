@@ -1,213 +1,207 @@
-using System;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using UKSF.Api.Admin.Extensions;
-using UKSF.Api.Admin.Services;
 using UKSF.Api.ArmaMissions.Models;
-using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared;
 using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.ArmaMissions.Services
+namespace UKSF.Api.ArmaMissions.Services;
+
+public interface IMissionPatchingService
 {
-    public interface IMissionPatchingService
+    Task<MissionPatchingResult> PatchMission(string path, string armaServerModsPath, int armaServerDefaultMaxCurators);
+}
+
+public class MissionPatchingService : IMissionPatchingService
+{
+    private const string ExtractPboPath = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\ExtractPboDos.exe";
+    private const string MakePboPath = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\MakePbo.exe";
+    private const string PackPboPath = "C:\\Program Files\\PBO Manager v.1.4 beta\\PBOConsole.exe";
+    private readonly IUksfLogger _logger;
+
+    private readonly MissionService _missionService;
+    private readonly IVariablesService _variablesService;
+    private string _filePath;
+    private string _folderPath;
+    private string _parentFolderPath;
+
+    public MissionPatchingService(MissionService missionService, IVariablesService variablesService, IUksfLogger logger)
     {
-        Task<MissionPatchingResult> PatchMission(string path, string armaServerModsPath, int armaServerDefaultMaxCurators);
+        _missionService = missionService;
+        _variablesService = variablesService;
+        _logger = logger;
     }
 
-    public class MissionPatchingService : IMissionPatchingService
+    public Task<MissionPatchingResult> PatchMission(string path, string armaServerModsPath, int armaServerDefaultMaxCurators)
     {
-        private const string ExtractPboPath = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\ExtractPboDos.exe";
-        private const string MakePboPath = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\MakePbo.exe";
-        private const string PackPboPath = "C:\\Program Files\\PBO Manager v.1.4 beta\\PBOConsole.exe";
-        private readonly ILogger _logger;
+        return Task.Run(
+            async () =>
+            {
+                _filePath = path;
+                _parentFolderPath = Path.GetDirectoryName(_filePath);
 
-        private readonly MissionService _missionService;
-        private readonly IVariablesService _variablesService;
-        private string _filePath;
-        private string _folderPath;
-        private string _parentFolderPath;
-
-        public MissionPatchingService(MissionService missionService, IVariablesService variablesService, ILogger logger)
-        {
-            _missionService = missionService;
-            _variablesService = variablesService;
-            _logger = logger;
-        }
-
-        public Task<MissionPatchingResult> PatchMission(string path, string armaServerModsPath, int armaServerDefaultMaxCurators)
-        {
-            return Task.Run(
-                async () =>
+                MissionPatchingResult result = new();
+                try
                 {
-                    _filePath = path;
-                    _parentFolderPath = Path.GetDirectoryName(_filePath);
+                    CreateBackup();
+                    UnpackPbo();
+                    Mission mission = new(_folderPath);
+                    result.Reports = _missionService.ProcessMission(mission, armaServerModsPath, armaServerDefaultMaxCurators);
+                    result.PlayerCount = mission.PlayerCount;
+                    result.Success = result.Reports.All(x => !x.Error);
 
-                    MissionPatchingResult result = new();
-                    try
+                    if (!result.Success)
                     {
-                        CreateBackup();
-                        UnpackPbo();
-                        Mission mission = new(_folderPath);
-                        result.Reports = _missionService.ProcessMission(mission, armaServerModsPath, armaServerDefaultMaxCurators);
-                        result.PlayerCount = mission.PlayerCount;
-                        result.Success = result.Reports.All(x => !x.Error);
-
-                        if (!result.Success)
-                        {
-                            return result;
-                        }
-
-                        if (MissionUtilities.CheckFlag(mission, "missionUseSimplePack"))
-                        {
-                            _logger.LogAudit($"Mission processed with simple packing enabled ({Path.GetFileName(path)})");
-                            await PackPbo();
-                        }
-                        else
-                        {
-                            await MakePbo();
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        _logger.LogError(exception);
-                        result.Reports = new() { new(exception) };
-                        result.Success = false;
-                    }
-                    finally
-                    {
-                        Cleanup();
+                        return result;
                     }
 
-                    return result;
+                    if (MissionUtilities.CheckFlag(mission, "missionUseSimplePack"))
+                    {
+                        _logger.LogAudit($"Mission processed with simple packing enabled ({Path.GetFileName(path)})");
+                        await PackPbo();
+                    }
+                    else
+                    {
+                        await MakePbo();
+                    }
                 }
-            );
-        }
-
-        private void CreateBackup()
-        {
-            var backupPath = Path.Combine(
-                _variablesService.GetVariable("MISSIONS_BACKUPS").AsString(),
-                Path.GetFileName(_filePath) ?? throw new FileNotFoundException()
-            );
-
-            Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? throw new DirectoryNotFoundException());
-            File.Copy(_filePath, backupPath, true);
-            if (!File.Exists(backupPath))
-            {
-                throw new FileNotFoundException("Could not create backup", backupPath);
-            }
-        }
-
-        private void UnpackPbo()
-        {
-            if (Path.GetExtension(_filePath) != ".pbo")
-            {
-                throw new FileLoadException("File is not a pbo");
-            }
-
-            _folderPath = Path.Combine(_parentFolderPath, Path.GetFileNameWithoutExtension(_filePath) ?? throw new FileNotFoundException());
-            if (Directory.Exists(_folderPath))
-            {
-                Directory.Delete(_folderPath, true);
-            }
-
-            Process process = new()
-            {
-                StartInfo = { FileName = ExtractPboPath, Arguments = $"-D -P \"{_filePath}\"", UseShellExecute = false, CreateNoWindow = true }
-            };
-            process.Start();
-            process.WaitForExit();
-
-            if (!Directory.Exists(_folderPath))
-            {
-                throw new DirectoryNotFoundException("Could not find unpacked pbo");
-            }
-        }
-
-        private async Task MakePbo()
-        {
-            if (Directory.Exists(_filePath))
-            {
-                _filePath += ".pbo";
-            }
-
-            Process process = new()
-            {
-                StartInfo =
+                catch (Exception exception)
                 {
-                    FileName = MakePboPath,
-                    WorkingDirectory = _variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
-                    Arguments = $"-Z -BD -P -X=\"thumbs.db,*.txt,*.h,*.dep,*.cpp,*.bak,*.png,*.log,*.pew\" \"{_folderPath}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
+                    _logger.LogError(exception);
+                    result.Reports = new() { new(exception) };
+                    result.Success = false;
                 }
-            };
-            process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var errorOutput = await process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            if (File.Exists(_filePath))
-            {
-                return;
-            }
-
-            var outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
-            output = outputLines.Where(x => !string.IsNullOrEmpty(x) && !x.ContainsIgnoreCase("compressing")).Aggregate((x, y) => $"{x}\n{y}");
-            throw new(output);
-        }
-
-        private async Task PackPbo()
-        {
-            if (Directory.Exists(_filePath))
-            {
-                _filePath += ".pbo";
-            }
-
-            Process process = new()
-            {
-                StartInfo =
+                finally
                 {
-                    FileName = PackPboPath,
-                    WorkingDirectory = _variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
-                    Arguments = $"-pack \"{_folderPath}\" \"{_filePath}\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
+                    Cleanup();
                 }
-            };
-            process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var errorOutput = await process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
 
-            if (File.Exists(_filePath))
-            {
-                File.Delete($"{_filePath}.bak");
-                return;
+                return result;
             }
+        );
+    }
 
-            var outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
-            output = outputLines.Where(x => !string.IsNullOrEmpty(x)).Aggregate((x, y) => $"{x}\n{y}");
-            throw new(output);
+    private void CreateBackup()
+    {
+        var backupPath = Path.Combine(
+            _variablesService.GetVariable("MISSIONS_BACKUPS").AsString(),
+            Path.GetFileName(_filePath) ?? throw new FileNotFoundException()
+        );
+
+        Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? throw new DirectoryNotFoundException());
+        File.Copy(_filePath, backupPath, true);
+        if (!File.Exists(backupPath))
+        {
+            throw new FileNotFoundException("Could not create backup", backupPath);
+        }
+    }
+
+    private void UnpackPbo()
+    {
+        if (Path.GetExtension(_filePath) != ".pbo")
+        {
+            throw new FileLoadException("File is not a pbo");
         }
 
-        private void Cleanup()
+        _folderPath = Path.Combine(_parentFolderPath, Path.GetFileNameWithoutExtension(_filePath) ?? throw new FileNotFoundException());
+        if (Directory.Exists(_folderPath))
         {
-            try
+            Directory.Delete(_folderPath, true);
+        }
+
+        Process process = new()
+        {
+            StartInfo = { FileName = ExtractPboPath, Arguments = $"-D -P \"{_filePath}\"", UseShellExecute = false, CreateNoWindow = true }
+        };
+        process.Start();
+        process.WaitForExit();
+
+        if (!Directory.Exists(_folderPath))
+        {
+            throw new DirectoryNotFoundException("Could not find unpacked pbo");
+        }
+    }
+
+    private async Task MakePbo()
+    {
+        if (Directory.Exists(_filePath))
+        {
+            _filePath += ".pbo";
+        }
+
+        Process process = new()
+        {
+            StartInfo =
             {
-                Directory.Delete(_folderPath, true);
+                FileName = MakePboPath,
+                WorkingDirectory = _variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
+                Arguments = $"-Z -BD -P -X=\"thumbs.db,*.txt,*.h,*.dep,*.cpp,*.bak,*.png,*.log,*.pew\" \"{_folderPath}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             }
-            catch (Exception)
+        };
+        process.Start();
+        var output = await process.StandardOutput.ReadToEndAsync();
+        var errorOutput = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        if (File.Exists(_filePath))
+        {
+            return;
+        }
+
+        var outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
+        output = outputLines.Where(x => !string.IsNullOrEmpty(x) && !x.ContainsIgnoreCase("compressing")).Aggregate((x, y) => $"{x}\n{y}");
+        throw new(output);
+    }
+
+    private async Task PackPbo()
+    {
+        if (Directory.Exists(_filePath))
+        {
+            _filePath += ".pbo";
+        }
+
+        Process process = new()
+        {
+            StartInfo =
             {
-                // ignore
+                FileName = PackPboPath,
+                WorkingDirectory = _variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
+                Arguments = $"-pack \"{_folderPath}\" \"{_filePath}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             }
+        };
+        process.Start();
+        var output = await process.StandardOutput.ReadToEndAsync();
+        var errorOutput = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        if (File.Exists(_filePath))
+        {
+            File.Delete($"{_filePath}.bak");
+            return;
+        }
+
+        var outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
+        output = outputLines.Where(x => !string.IsNullOrEmpty(x)).Aggregate((x, y) => $"{x}\n{y}");
+        throw new(output);
+    }
+
+    private void Cleanup()
+    {
+        try
+        {
+            Directory.Delete(_folderPath, true);
+        }
+        catch (Exception)
+        {
+            // ignore
         }
     }
 }

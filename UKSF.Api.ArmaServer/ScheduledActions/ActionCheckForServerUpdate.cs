@@ -1,102 +1,95 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
-using UKSF.Api.Admin.Services;
-using UKSF.Api.ArmaServer.Commands;
+﻿using UKSF.Api.ArmaServer.Commands;
 using UKSF.Api.ArmaServer.Queries;
-using UKSF.Api.Base.ScheduledActions;
+using UKSF.Api.Shared;
 using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Events;
+using UKSF.Api.Shared.ScheduledActions;
 using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.ArmaServer.ScheduledActions
+namespace UKSF.Api.ArmaServer.ScheduledActions;
+
+public interface IActionCheckForServerUpdate : ISelfCreatingScheduledAction { }
+
+public class ActionCheckForServerUpdate : IActionCheckForServerUpdate
 {
-    public interface IActionCheckForServerUpdate : ISelfCreatingScheduledAction { }
+    private const string ActionName = nameof(ActionCheckForServerUpdate);
+    private readonly IClock _clock;
 
-    public class ActionCheckForServerUpdate : IActionCheckForServerUpdate
+    private readonly IHostEnvironment _currentEnvironment;
+    private readonly IGetCurrentServerInfrastructureQuery _getCurrentServerInfrastructureQuery;
+    private readonly IGetInstalledServerInfrastructureQuery _getInstalledServerInfrastructureQuery;
+    private readonly IGetLatestServerInfrastructureQuery _getLatestServerInfrastructureQuery;
+    private readonly IUksfLogger _logger;
+    private readonly ISchedulerContext _schedulerContext;
+    private readonly ISchedulerService _schedulerService;
+    private readonly IUpdateServerInfrastructureCommand _updateServerInfrastructureCommand;
+    private readonly IVariablesService _variablesService;
+
+    public ActionCheckForServerUpdate(
+        ISchedulerService schedulerService,
+        ISchedulerContext schedulerContext,
+        IHostEnvironment currentEnvironment,
+        IClock clock,
+        IVariablesService variablesService,
+        IUpdateServerInfrastructureCommand updateServerInfrastructureCommand,
+        IGetLatestServerInfrastructureQuery getLatestServerInfrastructureQuery,
+        IGetCurrentServerInfrastructureQuery getCurrentServerInfrastructureQuery,
+        IGetInstalledServerInfrastructureQuery getInstalledServerInfrastructureQuery,
+        IUksfLogger logger
+    )
     {
-        private const string ActionName = nameof(ActionCheckForServerUpdate);
+        _schedulerService = schedulerService;
+        _schedulerContext = schedulerContext;
+        _currentEnvironment = currentEnvironment;
+        _clock = clock;
+        _variablesService = variablesService;
+        _updateServerInfrastructureCommand = updateServerInfrastructureCommand;
+        _getLatestServerInfrastructureQuery = getLatestServerInfrastructureQuery;
+        _getCurrentServerInfrastructureQuery = getCurrentServerInfrastructureQuery;
+        _getInstalledServerInfrastructureQuery = getInstalledServerInfrastructureQuery;
+        _logger = logger;
+    }
 
-        private readonly IHostEnvironment _currentEnvironment;
-        private readonly IClock _clock;
-        private readonly IVariablesService _variablesService;
-        private readonly IUpdateServerInfrastructureCommand _updateServerInfrastructureCommand;
-        private readonly IGetLatestServerInfrastructureQuery _getLatestServerInfrastructureQuery;
-        private readonly IGetCurrentServerInfrastructureQuery _getCurrentServerInfrastructureQuery;
-        private readonly IGetInstalledServerInfrastructureQuery _getInstalledServerInfrastructureQuery;
-        private readonly ILogger _logger;
-        private readonly ISchedulerContext _schedulerContext;
-        private readonly ISchedulerService _schedulerService;
+    public string Name => ActionName;
 
-        public ActionCheckForServerUpdate(
-            ISchedulerService schedulerService,
-            ISchedulerContext schedulerContext,
-            IHostEnvironment currentEnvironment,
-            IClock clock,
-            IVariablesService variablesService,
-            IUpdateServerInfrastructureCommand updateServerInfrastructureCommand,
-            IGetLatestServerInfrastructureQuery getLatestServerInfrastructureQuery,
-            IGetCurrentServerInfrastructureQuery getCurrentServerInfrastructureQuery,
-            IGetInstalledServerInfrastructureQuery getInstalledServerInfrastructureQuery,
-            ILogger logger
-        )
+    public async Task Run(params object[] parameters)
+    {
+        if (!_variablesService.GetFeatureState("AUTO_INFRA_UPDATE"))
         {
-            _schedulerService = schedulerService;
-            _schedulerContext = schedulerContext;
-            _currentEnvironment = currentEnvironment;
-            _clock = clock;
-            _variablesService = variablesService;
-            _updateServerInfrastructureCommand = updateServerInfrastructureCommand;
-            _getLatestServerInfrastructureQuery = getLatestServerInfrastructureQuery;
-            _getCurrentServerInfrastructureQuery = getCurrentServerInfrastructureQuery;
-            _getInstalledServerInfrastructureQuery = getInstalledServerInfrastructureQuery;
-            _logger = logger;
+            return;
         }
 
-        public string Name => ActionName;
+        var latestInfo = await _getLatestServerInfrastructureQuery.ExecuteAsync();
+        var currentInfo = await _getCurrentServerInfrastructureQuery.ExecuteAsync();
+        var installedInfo = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
 
-        public async Task Run(params object[] parameters)
+        if (latestInfo.LatestBuild != currentInfo.CurrentBuild || latestInfo.LatestUpdate > currentInfo.CurrentUpdated || installedInfo.InstalledVersion == "0")
         {
-            if (!_variablesService.GetFeatureState("AUTO_INFRA_UPDATE"))
-            {
-                return;
-            }
+            _logger.LogInfo("Server infrastructure update required");
+            await _updateServerInfrastructureCommand.ExecuteAsync();
 
-            var latestInfo = await _getLatestServerInfrastructureQuery.ExecuteAsync();
-            var currentInfo = await _getCurrentServerInfrastructureQuery.ExecuteAsync();
-            var installedInfo = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
+            var afterVersion = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
+            var afterBuild = await _getCurrentServerInfrastructureQuery.ExecuteAsync();
+            _logger.LogInfo(
+                $"Server infrastructure updated from version {installedInfo.InstalledVersion}.{currentInfo.CurrentBuild} to {afterVersion.InstalledVersion}.{afterBuild.CurrentBuild}"
+            );
+        }
+    }
 
-            if (latestInfo.LatestBuild != currentInfo.CurrentBuild ||
-                latestInfo.LatestUpdate > currentInfo.CurrentUpdated ||
-                installedInfo.InstalledVersion == "0")
-            {
-                _logger.LogInfo("Server infrastructure update required");
-                await _updateServerInfrastructureCommand.ExecuteAsync();
-
-                var afterVersion = await _getInstalledServerInfrastructureQuery.ExecuteAsync();
-                var afterBuild = await _getCurrentServerInfrastructureQuery.ExecuteAsync();
-                _logger.LogInfo(
-                    $"Server infrastructure updated from version {installedInfo.InstalledVersion}.{currentInfo.CurrentBuild} to {afterVersion.InstalledVersion}.{afterBuild.CurrentBuild}"
-                );
-            }
+    public async Task CreateSelf()
+    {
+        if (_currentEnvironment.IsDevelopment())
+        {
+            return;
         }
 
-        public async Task CreateSelf()
+        if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
         {
-            if (_currentEnvironment.IsDevelopment())
-            {
-                return;
-            }
-
-            if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
-            {
-                await _schedulerService.CreateScheduledJob(_clock.Today().AddHours(06).AddDays(1), TimeSpan.FromHours(12), ActionName);
-            }
+            await _schedulerService.CreateScheduledJob(_clock.Today().AddHours(06).AddDays(1), TimeSpan.FromHours(12), ActionName);
         }
+    }
 
-        public Task Reset()
-        {
-            return Task.CompletedTask;
-        }
+    public Task Reset()
+    {
+        return Task.CompletedTask;
     }
 }

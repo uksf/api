@@ -1,14 +1,12 @@
-using System.Collections.Generic;
-using UKSF.Api.Personnel.Models;
+using UKSF.Api.Shared.Models;
 
-namespace UKSF.Api.ArmaMissions.Models
+namespace UKSF.Api.ArmaMissions.Models;
+
+public class MissionPatchData
 {
-    public class MissionPatchData
-    {
-        public static MissionPatchData Instance;
-        public List<MissionUnit> OrderedUnits;
-        public List<MissionPlayer> Players;
-        public List<DomainRank> Ranks;
-        public List<MissionUnit> Units;
-    }
+    public static MissionPatchData Instance { get; set; }
+    public List<MissionUnit> OrderedUnits { get; set; }
+    public List<MissionPlayer> Players { get; set; }
+    public List<DomainRank> Ranks { get; set; }
+    public List<MissionUnit> Units { get; set; }
 }

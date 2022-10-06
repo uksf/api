@@ -3,18 +3,17 @@ using FluentAssertions;
 using UKSF.Api.Shared.Extensions;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Common
+namespace UKSF.Tests.Unit.Common;
+
+public class CollectionUtilitiesTests
 {
-    public class CollectionUtilitiesTests
+    [Fact]
+    public void Should_remove_empty_strings_from_hashset()
     {
-        [Fact]
-        public void Should_remove_empty_strings_from_hashset()
-        {
-            HashSet<string> subject = new() { "1", "", null, "3" };
+        HashSet<string> subject = new() { "1", "", null, "3" };
 
-            subject.CleanHashset();
+        subject.CleanHashset();
 
-            subject.Should().BeEquivalentTo(new HashSet<string> { "1", "3" });
-        }
+        subject.Should().BeEquivalentTo(new HashSet<string> { "1", "3" });
     }
 }

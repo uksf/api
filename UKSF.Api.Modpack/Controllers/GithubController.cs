@@ -1,74 +1,73 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Microsoft.AspNetCore.Mvc;
 using Octokit;
 using Octokit.Internal;
 using UKSF.Api.Modpack.Services;
 using UKSF.Api.Shared;
 using UKSF.Api.Shared.Exceptions;
 
-namespace UKSF.Api.Modpack.Controllers
+namespace UKSF.Api.Modpack.Controllers;
+
+[Route("[controller]")]
+public class GithubController : ControllerBase
 {
-    [Route("[controller]")]
-    public class GithubController : ControllerBase
+    private const string PushEvent = "push";
+    private const string RepoName = "modpack";
+    private const string Master = "refs/heads/master";
+    private const string Release = "refs/heads/release";
+
+    private readonly IGithubService _githubService;
+    private readonly IModpackService _modpackService;
+    private readonly IReleaseService _releaseService;
+
+    public GithubController(IModpackService modpackService, IGithubService githubService, IReleaseService releaseService)
     {
-        private const string PushEvent = "push";
-        private const string RepoName = "modpack";
-        private const string Master = "refs/heads/master";
-        private const string Release = "refs/heads/release";
+        _modpackService = modpackService;
+        _githubService = githubService;
+        _releaseService = releaseService;
+    }
 
-        private readonly IGithubService _githubService;
-        private readonly IModpackService _modpackService;
-        private readonly IReleaseService _releaseService;
-
-        public GithubController(IModpackService modpackService, IGithubService githubService, IReleaseService releaseService)
+    [HttpPost]
+    public async Task GithubWebhook([FromHeader(Name = "x-hub-signature")] string githubSignature, [FromHeader(Name = "x-github-event")] string githubEvent)
+    {
+        using var reader = new StreamReader(Request.Body);
+        var body = await reader.ReadToEndAsync();
+        if (!_githubService.VerifySignature(githubSignature, body))
         {
-            _modpackService = modpackService;
-            _githubService = githubService;
-            _releaseService = releaseService;
+            throw new UnauthorizedException();
         }
 
-        [HttpPost]
-        public async Task GithubWebhook([FromHeader(Name = "x-hub-signature")] string githubSignature, [FromHeader(Name = "x-github-event")] string githubEvent, [FromBody] JObject body)
+        var payload = new SimpleJsonSerializer().Deserialize<PushWebhookPayload>(body);
+        if (payload.Repository.Name != RepoName || githubEvent != PushEvent)
         {
-            if (!_githubService.VerifySignature(githubSignature, body.ToString(Formatting.None)))
-            {
-                throw new UnauthorizedException();
-            }
+            return;
+        }
 
-            var payload = new SimpleJsonSerializer().Deserialize<PushWebhookPayload>(body.ToString());
-            if (payload.Repository.Name != RepoName || githubEvent != PushEvent)
+        switch (payload.Ref)
+        {
+            case Master when payload.BaseRef != Release:
             {
+                await _modpackService.CreateDevBuildFromPush(payload);
                 return;
             }
-
-            switch (payload.Ref)
-            {
-                case Master when payload.BaseRef != Release:
-                {
-                    await _modpackService.CreateDevBuildFromPush(payload);
-                    return;
-                }
-                case Release:
-                    await _modpackService.CreateRcBuildFromPush(payload);
-                    return;
-                default: return;
-            }
+            case Release:
+                await _modpackService.CreateRcBuildFromPush(payload);
+                return;
+            default: return;
         }
+    }
 
-        [HttpGet("branches"), Permissions(Permissions.Tester)]
-        public async Task<List<string>> GetBranches()
-        {
-            return await _githubService.GetBranches();
-        }
+    [HttpGet("branches")]
+    [Permissions(Permissions.Tester)]
+    public async Task<List<string>> GetBranches()
+    {
+        return await _githubService.GetBranches();
+    }
 
-        [HttpGet("populatereleases"), Permissions(Permissions.Admin)]
-        public async Task PopulateReleases()
-        {
-            var releases = await _githubService.GetHistoricReleases();
-            await _releaseService.AddHistoricReleases(releases);
-        }
+    [HttpGet("populatereleases")]
+    [Permissions(Permissions.Admin)]
+    public async Task PopulateReleases()
+    {
+        var releases = await _githubService.GetHistoricReleases();
+        await _releaseService.AddHistoricReleases(releases);
     }
 }

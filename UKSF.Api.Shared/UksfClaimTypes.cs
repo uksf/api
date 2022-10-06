@@ -1,8 +1,7 @@
-﻿namespace UKSF.Api.Shared
+﻿namespace UKSF.Api.Shared;
+
+public static class UksfClaimTypes
 {
-    public static class UksfClaimTypes
-    {
-        public const string ImpersonatingUserId = "impersonator";
-        public const string Expiry = "exp";
-    }
+    public const string ImpersonatingUserId = "impersonator";
+    public const string Expiry = "exp";
 }

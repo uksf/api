@@ -1,14 +1,13 @@
-﻿namespace UKSF.Api.Modpack.Models
-{
-    public class ModpackBuildStepEventData
-    {
-        public string BuildId;
-        public ModpackBuildStep BuildStep;
+﻿namespace UKSF.Api.Modpack.Models;
 
-        public ModpackBuildStepEventData(string buildId, ModpackBuildStep buildStep)
-        {
-            BuildId = buildId;
-            BuildStep = buildStep;
-        }
+public class ModpackBuildStepEventData
+{
+    public ModpackBuildStepEventData(string buildId, ModpackBuildStep buildStep)
+    {
+        BuildId = buildId;
+        BuildStep = buildStep;
     }
+
+    public string BuildId { get; set; }
+    public ModpackBuildStep BuildStep { get; set; }
 }

@@ -1,8 +1,7 @@
-﻿namespace UKSF.Api.Teamspeak.Models
+﻿namespace UKSF.Api.Teamspeak.Models;
+
+public class TeamspeakGroupProcedure
 {
-    public class TeamspeakGroupProcedure
-    {
-        public int ClientDbId;
-        public int ServerGroup;
-    }
+    public int ClientDbId { get; set; }
+    public int ServerGroup { get; set; }
 }

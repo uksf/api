@@ -1,51 +1,60 @@
-using System.Collections.Generic;
 using MongoDB.Bson.Serialization.Attributes;
-using UKSF.Api.Base.Models;
+using UKSF.Api.Shared.Models;
 
-namespace UKSF.Api.ArmaServer.Models
+namespace UKSF.Api.ArmaServer.Models;
+
+public enum GameServerOption
 {
-    public enum GameServerOption
-    {
-        NONE,
-        SINGLETON,
-        DCG
-    }
+    NONE,
+    SINGLETON,
+    DCG
+}
 
-    public class GameServer : MongoObject
-    {
-        public string AdminPassword;
-        public int ApiPort;
-        [BsonIgnore] public bool CanLaunch;
-        public GameEnvironment Environment;
-        [BsonIgnore] public List<int> HeadlessClientProcessIds = new();
-        public string HostName;
-        public List<GameServerMod> Mods = new();
-        public string Name;
-        public int NumberHeadlessClients;
-        public int Order = 0;
-        public string Password;
-        public int Port;
-        [BsonIgnore] public int? ProcessId;
-        public string ProfileName;
-        public List<GameServerMod> ServerMods = new();
-        public GameServerOption ServerOption;
-        [BsonIgnore] public GameServerStatus Status = new();
+public class GameServer : MongoObject
+{
+    public List<GameServerMod> Mods = new();
+    public string AdminPassword { get; set; }
+    public int ApiPort { get; set; }
 
-        public override string ToString()
-        {
-            return $"{Name}, {Port}, {ApiPort}, {NumberHeadlessClients}, {ProfileName}, {HostName}, {Password}, {AdminPassword}, {Environment}, {ServerOption}";
-        }
-    }
+    [BsonIgnore]
+    public bool CanLaunch { get; set; }
 
-    public class GameServerStatus
+    public GameEnvironment Environment { get; set; }
+
+    [BsonIgnore]
+    public List<int> HeadlessClientProcessIds { get; set; } = new();
+
+    public string HostName { get; set; }
+    public string Name { get; set; }
+    public int NumberHeadlessClients { get; set; }
+    public int Order { get; set; } = 0;
+    public string Password { get; set; }
+    public int Port { get; set; }
+
+    [BsonIgnore]
+    public int? ProcessId { get; set; }
+
+    public string ProfileName { get; set; }
+    public List<GameServerMod> ServerMods { get; set; } = new();
+    public GameServerOption ServerOption { get; set; }
+
+    [BsonIgnore]
+    public GameServerStatus Status { get; set; } = new();
+
+    public override string ToString()
     {
-        public string Map;
-        public string MaxPlayers;
-        public string Mission;
-        public string ParsedUptime;
-        public int Players;
-        public bool Running;
-        public bool Started;
-        public float Uptime;
+        return $"{Name}, {Port}, {ApiPort}, {NumberHeadlessClients}, {ProfileName}, {HostName}, {Password}, {AdminPassword}, {Environment}, {ServerOption}";
     }
+}
+
+public class GameServerStatus
+{
+    public string Map { get; set; }
+    public string MaxPlayers { get; set; }
+    public string Mission { get; set; }
+    public string ParsedUptime { get; set; }
+    public int Players { get; set; }
+    public bool Running { get; set; }
+    public bool Started { get; set; }
+    public float Uptime { get; set; }
 }
