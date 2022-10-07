@@ -33,8 +33,11 @@ public class ExceptionHandler : IExceptionHandler
             context.Response.StatusCode = 500;
         }
 
+        Console.Out.WriteLine(exception.ToString());
+        Console.Out.WriteLine(exception.InnerException?.ToString());
+
         context.Response.ContentType = "application/json";
-        return SerializeToStream(context.Response, new(context.Response.StatusCode, 0, exception?.Message, null));
+        return SerializeToStream(context.Response, new(context.Response.StatusCode, 0, $"{exception.Message}\n{exception.InnerException?.Message}", null));
     }
 
     private static Task HandleUksfException(UksfException uksfException, HttpContext context)
