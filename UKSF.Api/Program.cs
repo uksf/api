@@ -12,6 +12,32 @@ using UKSF.Api.Shared.Configuration;
 using UKSF.Api.Shared.Converters;
 using UKSF.Api.Teamspeak;
 
+void InitServiceLogging(AppSettings appSettings)
+{
+    var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), appSettings.LogsPath);
+    Directory.CreateDirectory(appData);
+    var logFiles = new DirectoryInfo(appData).EnumerateFiles("*.log").OrderByDescending(file => file.LastWriteTime).Select(file => file.Name).ToArray();
+    if (logFiles.Length > 9)
+    {
+        File.Delete(Path.Combine(appData, logFiles.Last()));
+    }
+
+    var logFile = Path.Combine(appData, $"LOG__{DateTime.UtcNow:yyyy-MM-dd__HH-mm}.log");
+    try
+    {
+        File.Create(logFile).Close();
+    }
+    catch (Exception e)
+    {
+        Console.Out.WriteLine($"Log file not created: {logFile}. {e.Message}");
+    }
+
+    FileStream fileStream = new(logFile, FileMode.Create);
+    StreamWriter streamWriter = new(fileStream) { AutoFlush = true };
+    Console.SetOut(streamWriter);
+    Console.SetError(streamWriter);
+}
+
 var developmentOrigins = new[] { "http://localhost:4200", "http://localhost:4300", "https://dev.uk-sf.co.uk", "https://api-dev.uk-sf.co.uk" };
 var productionOrigins = new[] { "https://uk-sf.co.uk", "https://api.uk-sf.co.uk" };
 
@@ -20,6 +46,11 @@ if (WindowsServiceHelpers.IsWindowsService())
 {
     builder = WebApplication.CreateBuilder(new WebApplicationOptions { ContentRootPath = AppContext.BaseDirectory, Args = args });
     builder.Host.UseWindowsService();
+
+    var appSettings = new AppSettings();
+    builder.Configuration.GetSection(nameof(AppSettings)).Bind(appSettings);
+
+    InitServiceLogging(appSettings);
 }
 else
 {
@@ -93,7 +124,7 @@ builder.Services.AddCors(
 
 var app = builder.Build();
 
-var logger = app.Services.GetService<IUksfLogger>();
+var logger = app.Services.GetRequiredService<IUksfLogger>();
 app.Lifetime.ApplicationStopping.Register(
     () =>
     {
@@ -135,7 +166,7 @@ app.UseCookiePolicy(new() { MinimumSameSitePolicy = SameSiteMode.Lax })
    );
 
 app.Services.StartUksfServices();
-logger?.LogInfo("Services started");
+logger.LogInfo("Services started");
 
 app.Run();
 
