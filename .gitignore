@@ -247,6 +247,5 @@ coverage.xml
 .idea/**
 
 # Specific
-appsettings.Development*.json
+appsettings.*.json
 *.info
-/UKSF.Api/dockersettings.json

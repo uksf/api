@@ -15,11 +15,10 @@
         <PackageReference Include="BCrypt.Net-Next" Version="4.0.3"/>
         <PackageReference Include="Discord.OAuth2" Version="2.0.0"/>
         <PackageReference Include="Markdig" Version="0.25.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.6"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.9"/>
         <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="6.0.9"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.0"/>
-        <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.21.0"/>
         <PackageReference Include="MongoDB.Driver" Version="2.13.1"/>
         <PackageReference Include="NameCase" Version="1.0.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.1.5"/>
