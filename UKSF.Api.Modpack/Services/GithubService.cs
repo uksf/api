@@ -316,9 +316,7 @@ public class GithubService : IGithubService
 
     private string GetJwtToken()
     {
-        var base64Bytes = Convert.FromBase64String(_appPrivateKey);
-        var privateKey = Encoding.UTF8.GetString(base64Bytes).Replace("\n", Environment.NewLine, StringComparison.Ordinal);
-        GitHubJwtFactory generator = new(new StringPrivateKeySource(privateKey), new() { AppIntegrationId = AppId, ExpirationSeconds = 540 });
+        GitHubJwtFactory generator = new(new StringPrivateKeySource(_appPrivateKey), new() { AppIntegrationId = AppId, ExpirationSeconds = 540 });
         return generator.CreateEncodedJwtToken();
     }
 }
