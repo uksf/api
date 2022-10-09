@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using UKSF.Api.Shared.Exceptions;
+using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Middleware;
@@ -33,11 +34,10 @@ public class ExceptionHandler : IExceptionHandler
             context.Response.StatusCode = 500;
         }
 
-        Console.Out.WriteLine(exception.ToString());
-        Console.Out.WriteLine(exception.InnerException?.ToString());
+        Console.Out.WriteLine(exception.GetCompleteString());
 
         context.Response.ContentType = "application/json";
-        return SerializeToStream(context.Response, new(context.Response.StatusCode, 0, $"{exception.Message}\n{exception.InnerException?.Message}", null));
+        return SerializeToStream(context.Response, new(context.Response.StatusCode, 0, exception.GetCompleteMessage(), null));
     }
 
     private static Task HandleUksfException(UksfException uksfException, HttpContext context)

@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Shared.Models;
 
@@ -32,7 +33,7 @@ public class BasicLog : MongoObject
 
     public BasicLog(Exception exception) : this()
     {
-        Message = exception.GetBaseException().ToString();
+        Message = exception.GetCompleteString();
         Level = UksfLogLevel.ERROR;
     }
 

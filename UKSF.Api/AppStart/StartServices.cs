@@ -61,5 +61,8 @@ public static class StartServices
 
         // Stop teamspeak
         serviceProvider.GetRequiredService<ITeamspeakManagerService>().Stop();
+
+        // Stop discord
+        serviceProvider.GetRequiredService<IDiscordActivationService>().Deactivate();
     }
 }

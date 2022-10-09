@@ -11,6 +11,7 @@ namespace UKSF.Api.Discord.Services;
 public interface IDiscordClientService
 {
     Task Connect();
+    Task Disconnect();
     DiscordSocketClient GetClient();
     SocketGuild GetGuild();
     bool IsDiscordDisabled();
@@ -45,9 +46,14 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         await _client.StartAsync();
     }
 
+    public Task Disconnect()
+    {
+        return _client.StopAsync();
+    }
+
     public void Dispose()
     {
-        _client.StopAsync().Wait(TimeSpan.FromSeconds(5));
+        Disconnect().Wait();
     }
 
     public DiscordSocketClient GetClient()

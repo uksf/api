@@ -1,5 +1,6 @@
 ﻿using Humanizer;
 using MoreLinq;
+using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps;
 
@@ -190,7 +191,7 @@ public class FileBuildStep : BuildStep
                         catch (Exception exception)
                         {
                             throw new(
-                                $"{error} '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}",
+                                $"{error} '{file}'\n{exception.GetCompleteMessage()}",
                                 exception
                             );
                         }
@@ -230,7 +231,7 @@ public class FileBuildStep : BuildStep
                     catch (Exception exception)
                     {
                         throw new(
-                            $"{error} '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}",
+                            $"{error} '{file}'\n{exception.GetCompleteMessage()}",
                             exception
                         );
                     }

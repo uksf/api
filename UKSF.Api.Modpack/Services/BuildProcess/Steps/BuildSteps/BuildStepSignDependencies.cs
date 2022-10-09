@@ -100,7 +100,7 @@ public class BuildStepSignDependencies : FileBuildStep
         //     } catch (OperationCanceledException) {
         //         throw;
         //     } catch (Exception exception) {
-        //         throw new Exception($"Failed to sign file '{file}'\n{exception.Message}{(exception.InnerException != null ? $"\n{exception.InnerException.Message}" : "")}", exception);
+        //         throw new Exception($"Failed to sign file '{file}'\n{exception.GetCompleteMessage()}", exception);
         //     }
         // }
         //

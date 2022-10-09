@@ -1,11 +1,13 @@
-﻿namespace UKSF.Api.Shared.Models;
+﻿using UKSF.Api.Shared.Extensions;
+
+namespace UKSF.Api.Shared.Models;
 
 public class ErrorLog : BasicLog
 {
     public ErrorLog(Exception exception, string url, string method, string endpointName, int statusCode, string userId, string name)
     {
         Level = UksfLogLevel.ERROR;
-        Exception = exception.ToString();
+        Exception = exception.GetCompleteString();
         Message = exception.GetBaseException().Message;
         Url = url;
         Method = method;
@@ -18,7 +20,7 @@ public class ErrorLog : BasicLog
     public ErrorLog(Exception exception)
     {
         Level = UksfLogLevel.ERROR;
-        Exception = exception.ToString();
+        Exception = exception.GetCompleteString();
         Message = exception.GetBaseException().Message;
     }
 

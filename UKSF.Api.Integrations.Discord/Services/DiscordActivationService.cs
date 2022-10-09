@@ -3,6 +3,7 @@
 public interface IDiscordActivationService
 {
     Task Activate();
+    Task Deactivate();
 }
 
 public class DiscordActivationService : IDiscordActivationService
@@ -31,6 +32,11 @@ public class DiscordActivationService : IDiscordActivationService
         {
             discordService.Activate();
         }
+    }
+
+    public async Task Deactivate()
+    {
+        await _discordClientService.Disconnect();
     }
 }
 
