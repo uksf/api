@@ -103,25 +103,28 @@ public class DiscordConnectionController : ControllerBase
         }
 
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
-        response = await client.GetAsync("https://discord.com/api/users/@me");
-        result = await response.Content.ReadAsStringAsync();
-        var id = resultJson.GetValueFromObject("id");
-        var username = resultJson.GetValueFromObject("username");
+        var userResponse = await client.GetAsync("https://discord.com/api/users/@me");
+        var userResult = await userResponse.Content.ReadAsStringAsync();
+        var userResultJson = JsonNode.Parse(userResult);
+        var id = userResultJson.GetValueFromObject("id");
+        var username = userResultJson.GetValueFromObject("username");
         if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(username))
         {
-            _logger.LogWarning($"A discord connection request failed. Could not get username ({username}) or id ({id}) or an error occurred: {result}");
+            _logger.LogWarning($"A discord connection request failed. Could not get username ({username}) or id ({id}) or an error occurred: {userResult}");
             return "discordid=fail";
         }
 
         client.DefaultRequestHeaders.Authorization = new("Bot", _botToken);
-        response = await client.PutAsync(
+        var addToServerResponse = await client.PutAsync(
             $"https://discord.com/api/guilds/{_variablesService.GetVariable("DID_SERVER").AsUlong()}/members/{id}",
             new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json")
         );
         var added = "true";
-        if (!response.IsSuccessStatusCode)
+        if (!addToServerResponse.IsSuccessStatusCode)
         {
-            _logger.LogWarning($"Failed to add '{username}' to guild: {response.StatusCode}, {response.Content.ReadAsStringAsync().Result}");
+            _logger.LogWarning(
+                $"Failed to add '{username}' to guild: {addToServerResponse.StatusCode}, {addToServerResponse.Content.ReadAsStringAsync().Result}"
+            );
             added = "false";
         }
 
