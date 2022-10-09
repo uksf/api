@@ -5,7 +5,7 @@ public class ErrorLog : BasicLog
     public ErrorLog(Exception exception, string url, string method, string endpointName, int statusCode, string userId, string name)
     {
         Level = UksfLogLevel.ERROR;
-        Exception = exception.ToString();
+        Exception = $"{exception}\n{exception.InnerException}";
         Message = exception.GetBaseException().Message;
         Url = url;
         Method = method;
@@ -18,7 +18,7 @@ public class ErrorLog : BasicLog
     public ErrorLog(Exception exception)
     {
         Level = UksfLogLevel.ERROR;
-        Exception = exception.ToString();
+        Exception = $"{exception}\n{exception.InnerException}";
         Message = exception.GetBaseException().Message;
     }
 

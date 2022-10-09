@@ -32,7 +32,7 @@ public class BasicLog : MongoObject
 
     public BasicLog(Exception exception) : this()
     {
-        Message = exception.GetBaseException().ToString();
+        Message = $"{exception.GetBaseException()}\n{exception.InnerException}";
         Level = UksfLogLevel.ERROR;
     }
 
