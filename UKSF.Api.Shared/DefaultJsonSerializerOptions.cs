@@ -7,6 +7,8 @@ public static class DefaultJsonSerializerOptions
 {
     public static readonly JsonSerializerOptions Options = new()
     {
-        PropertyNameCaseInsensitive = true, DictionaryKeyPolicy = JsonNamingPolicy.CamelCase, Converters = { new InferredTypeConverter() }
+        PropertyNameCaseInsensitive = true,
+        DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new InferredTypeConverter(), new DateTimeOffsetConverter() }
     };
 }

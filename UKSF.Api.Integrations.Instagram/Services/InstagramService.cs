@@ -108,10 +108,7 @@ public class InstagramService : IInstagramService
 
             _images = newImages.Take(12).ToList();
 
-            foreach (var instagramImage in _images)
-            {
-                instagramImage.Base64 = await GetBase64(instagramImage);
-            }
+            await Task.WhenAll(_images.Select(x => Task.Run(async () => x.Base64 = await GetBase64(x))));
         }
         catch (Exception exception)
         {
@@ -131,3 +128,4 @@ public class InstagramService : IInstagramService
         return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
     }
 }
+

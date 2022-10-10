@@ -14,5 +14,5 @@ public class InstagramImage
     public string MediaUrl { get; set; }
 
     public string Permalink { get; set; }
-    public DateTime Timestamp { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
 }
