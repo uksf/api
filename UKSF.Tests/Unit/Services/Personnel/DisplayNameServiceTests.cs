@@ -79,7 +79,7 @@ public class DisplayNameServiceTests
     [Fact]
     public void ShouldGetGuestWhenAccountIsNull()
     {
-        var subject = _displayNameService.GetDisplayNameWithoutRank(null);
+        var subject = _displayNameService.GetDisplayNameWithoutRank((DomainAccount)null);
 
         subject.Should().Be("Guest");
     }

@@ -21,11 +21,13 @@ public class DiscordAdminService : DiscordBaseService, IDiscordAdminService
 
     public DiscordAdminService(
         IDiscordClientService discordClientService,
+        IHttpContextService httpContextService,
+        IVariablesService variablesService,
         IAccountContext accountContext,
         IDisplayNameService displayNameService,
         IEventBus eventBus,
         IUksfLogger logger
-    ) : base(discordClientService)
+    ) : base(discordClientService, httpContextService, variablesService, logger)
     {
         _accountContext = accountContext;
         _displayNameService = displayNameService;

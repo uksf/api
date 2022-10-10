@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using UKSF.Api.Signalr.Clients;
+using UKSF.Api.Shared.Signalr.Clients;
 
-namespace UKSF.Api.Signalr.Hubs;
+namespace UKSF.Api.Shared.Signalr.Hubs;
 
 [Authorize]
 public class AccountHub : Hub<IAccountClient>

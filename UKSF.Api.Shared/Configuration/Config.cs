@@ -4,6 +4,8 @@ public class AppSettings
 {
     public string Environment { get; set; }
     public string LogsPath { get; set; }
+    public string WebUrl { get; set; }
+    public string ApiUrl { get; set; }
     public string RedirectUrl { get; set; }
     public string RedirectApiUrl { get; set; }
     public ConnectionStringsConfig ConnectionStrings { get; set; }

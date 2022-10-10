@@ -1,4 +1,4 @@
-namespace UKSF.Api.Signalr.Clients;
+namespace UKSF.Api.Shared.Signalr.Clients;
 
 public interface IAccountClient
 {

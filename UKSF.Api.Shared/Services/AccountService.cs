@@ -1,8 +1,7 @@
 ﻿using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
 
-namespace UKSF.Api.Services;
+namespace UKSF.Api.Shared.Services;
 
 public interface IAccountService
 {

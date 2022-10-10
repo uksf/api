@@ -32,7 +32,8 @@ public static class ApiIntegrationDiscordExtensions
                        .AddSingleton<InteractionService>()
                        .AddDiscordService<IDiscordMessageService, DiscordMessageService>()
                        .AddDiscordService<IDiscordMembersService, DiscordMembersService>()
-                       .AddDiscordService<IDiscordAdminService, DiscordAdminService>();
+                       .AddDiscordService<IDiscordAdminService, DiscordAdminService>()
+                       .AddDiscordService<IDiscordRecruitmentService, DiscordRecruitmentService>();
     }
 
     private static IServiceCollection AddDiscordService<TService, TImplementation>(this IServiceCollection collection)

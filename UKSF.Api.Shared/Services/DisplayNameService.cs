@@ -8,6 +8,7 @@ public interface IDisplayNameService
     string GetDisplayName(DomainAccount domainAccount);
     string GetDisplayName(string id);
     string GetDisplayNameWithoutRank(DomainAccount domainAccount);
+    string GetDisplayNameWithoutRank(string id);
 }
 
 public class DisplayNameService : IDisplayNameService
@@ -23,6 +24,11 @@ public class DisplayNameService : IDisplayNameService
 
     public string GetDisplayName(DomainAccount domainAccount)
     {
+        if (domainAccount is { MembershipState: MembershipState.SERVER })
+        {
+            return $"{domainAccount.Firstname} {domainAccount.Lastname}";
+        }
+
         var rank = domainAccount.Rank != null ? _ranksContext.GetSingle(domainAccount.Rank) : null;
         return rank == null
             ? $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}"
@@ -37,6 +43,17 @@ public class DisplayNameService : IDisplayNameService
 
     public string GetDisplayNameWithoutRank(DomainAccount domainAccount)
     {
+        if (domainAccount is { MembershipState: MembershipState.SERVER })
+        {
+            return $"{domainAccount.Firstname} {domainAccount.Lastname}";
+        }
+
         return string.IsNullOrEmpty(domainAccount?.Lastname) ? "Guest" : $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}";
+    }
+
+    public string GetDisplayNameWithoutRank(string id)
+    {
+        var domainAccount = _accountContext.GetSingle(id);
+        return domainAccount != null ? GetDisplayNameWithoutRank(domainAccount) : id;
     }
 }

@@ -2,7 +2,7 @@
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Models;
 
-namespace UKSF.Api.Services;
+namespace UKSF.Api.Shared.Services;
 
 public interface IServiceRecordService
 {

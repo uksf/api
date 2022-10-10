@@ -4,11 +4,10 @@ using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Shared.Context;
 using UKSF.Api.Shared.Events;
 using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
-using UKSF.Api.Signalr.Clients;
-using UKSF.Api.Signalr.Hubs;
+using UKSF.Api.Shared.Signalr.Clients;
+using UKSF.Api.Shared.Signalr.Hubs;
 
-namespace UKSF.Api.Services;
+namespace UKSF.Api.Shared.Services;
 
 public interface IAssignmentService
 {

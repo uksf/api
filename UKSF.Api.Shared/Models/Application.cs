@@ -5,9 +5,9 @@ namespace UKSF.Api.Shared.Models;
 
 public enum ApplicationState
 {
-    ACCEPTED,
-    REJECTED,
-    WAITING
+    ACCEPTED = 0,
+    REJECTED = 1,
+    WAITING = 2
 }
 
 public class Application

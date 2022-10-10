@@ -7,20 +7,24 @@ public interface IHttpContextService
     bool IsUserAuthenticated();
     string GetImpersonatingUserId();
     bool HasImpersonationExpired();
-    public string GetUserId();
-    public string GetUserEmail();
+    string GetUserId();
+    string GetUserEmail();
+    string GetUserDisplayName(bool withRank = false);
     bool UserHasPermission(string permission);
+    void SetContextId(string id);
 }
 
 public class HttpContextService : IHttpContextService
 {
     private readonly IClock _clock;
+    private readonly IDisplayNameService _displayNameService;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public HttpContextService(IHttpContextAccessor httpContextAccessor, IClock clock)
+    public HttpContextService(IHttpContextAccessor httpContextAccessor, IClock clock, IDisplayNameService displayNameService)
     {
         _httpContextAccessor = httpContextAccessor;
         _clock = clock;
+        _displayNameService = displayNameService;
     }
 
     public bool IsUserAuthenticated()
@@ -59,9 +63,28 @@ public class HttpContextService : IHttpContextService
         return _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
     }
 
+    public string GetUserDisplayName(bool withRank = false)
+    {
+        var userId = GetUserId();
+        return withRank ? _displayNameService.GetDisplayName(userId) : _displayNameService.GetDisplayNameWithoutRank(userId);
+    }
+
     public bool UserHasPermission(string permission)
     {
         return _httpContextAccessor.HttpContext != null &&
                _httpContextAccessor.HttpContext.User.Claims.Any(x => x.Type == ClaimTypes.Role && x.Value == permission);
     }
+
+    public void SetContextId(string id)
+    {
+        var currentId = _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Sid)?.Value;
+        if (string.IsNullOrEmpty(currentId) || currentId == id)
+        {
+            _httpContextAccessor.HttpContext = new DefaultHttpContext { User = new(new ClaimsIdentity(new List<Claim> { new(ClaimTypes.Sid, id) })) };
+            return;
+        }
+
+        throw new($"Tried to overwrite user ID ({currentId})");
+    }
 }
+

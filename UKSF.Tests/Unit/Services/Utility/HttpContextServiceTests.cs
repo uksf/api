@@ -10,19 +10,20 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility;
 
-public class SessionServiceTests
+public class HttpContextServiceTests
 {
     private readonly HttpContextService _httpContextService;
     private DefaultHttpContext _httpContext;
 
-    public SessionServiceTests()
+    public HttpContextServiceTests()
     {
         Mock<IHttpContextAccessor> mockHttpContextAccessor = new();
         Mock<IClock> mockClock = new();
+        Mock<IDisplayNameService> mockDisplayNameService = new();
 
         mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(() => _httpContext);
 
-        _httpContextService = new(mockHttpContextAccessor.Object, mockClock.Object);
+        _httpContextService = new(mockHttpContextAccessor.Object, mockClock.Object, mockDisplayNameService.Object);
     }
 
     [Fact]

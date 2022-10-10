@@ -22,7 +22,8 @@ public static class ApiSharedExtensions
     {
         var appSettings = new AppSettings();
         configuration.GetSection(nameof(AppSettings)).Bind(appSettings);
-        services.AddConfiguration(configuration)
+
+        services.AddConfiguration(configuration, appSettings)
                 .AddContexts()
                 .AddEventHandlers()
                 .AddServices()
@@ -51,9 +52,9 @@ public static class ApiSharedExtensions
         return services;
     }
 
-    private static IServiceCollection AddConfiguration(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddConfiguration(this IServiceCollection services, IConfiguration configuration, AppSettings appSettings)
     {
-        return services.Configure<AppSettings>(configuration.GetSection(nameof(AppSettings)));
+        return services.Configure<AppSettings>(configuration.GetSection(nameof(AppSettings))).AddSingleton(appSettings);
     }
 
     private static IServiceCollection AddContexts(this IServiceCollection services)
@@ -92,17 +93,22 @@ public static class ApiSharedExtensions
                        .AddSingleton<IConfirmationCodeService, ConfirmationCodeService>()
                        .AddSingleton<INotificationsService, NotificationsService>()
                        .AddSingleton<IRecruitmentService, RecruitmentService>()
-                       .AddSingleton<IObjectIdConversionService, ObjectIdConversionService>();
+                       .AddSingleton<IObjectIdConversionService, ObjectIdConversionService>()
+                       .AddSingleton<IAccountService, AccountService>()
+                       .AddSingleton<IAssignmentService, AssignmentService>()
+                       .AddSingleton<IServiceRecordService, ServiceRecordService>();
     }
 
     private static IServiceCollection AddCommands(this IServiceCollection services)
     {
-        return services.AddSingleton<ISendTemplatedEmailCommand, SendTemplatedEmailCommand>().AddSingleton<ISendBasicEmailCommand, SendBasicEmailCommand>();
+        return services.AddSingleton<ISendTemplatedEmailCommand, SendTemplatedEmailCommand>()
+                       .AddSingleton<ISendBasicEmailCommand, SendBasicEmailCommand>()
+                       .AddSingleton<IUpdateApplicationCommand, UpdateApplicationCommand>();
     }
 
     private static IServiceCollection AddQueries(this IServiceCollection services)
     {
-        return services.AddSingleton<IGetEmailTemplateQuery, GetEmailTemplateQuery>();
+        return services.AddSingleton<IGetEmailTemplateQuery, GetEmailTemplateQuery>().AddSingleton<IBuildUrlQuery, BuildUrlQuery>();
     }
 
     private static IServiceCollection AddMappers(this IServiceCollection services)
@@ -120,6 +126,7 @@ public static class ApiSharedExtensions
         builder.MapHub<AllHub>($"/hub/{AllHub.EndPoint}");
         builder.MapHub<AccountGroupedHub>($"/hub/{AccountGroupedHub.EndPoint}");
         builder.MapHub<NotificationHub>($"/hub/{NotificationHub.EndPoint}");
+        builder.MapHub<AccountHub>($"/hub/{AccountHub.EndPoint}");
     }
 
     private static IMongoDatabase GetDatabase(string connectionString)

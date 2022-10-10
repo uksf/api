@@ -28,6 +28,7 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
 
     public DiscordMembersService(
         IDiscordClientService discordClientService,
+        IHttpContextService httpContextService,
         IVariablesService variablesService,
         IAccountContext accountContext,
         IUnitsContext unitsContext,
@@ -35,7 +36,7 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
         IUnitsService unitsService,
         IDisplayNameService displayNameService,
         IUksfLogger logger
-    ) : base(discordClientService)
+    ) : base(discordClientService, httpContextService, variablesService, logger)
     {
         _variablesService = variablesService;
         _accountContext = accountContext;
@@ -44,13 +45,6 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
         _unitsService = unitsService;
         _displayNameService = displayNameService;
         _logger = logger;
-    }
-
-    public override void Activate()
-    {
-        var client = GetClient();
-        client.GuildMemberUpdated += ClientOnGuildMemberUpdated;
-        client.UserJoined += ClientOnUserJoined;
     }
 
     public async Task<IReadOnlyCollection<SocketRole>> GetRoles()
@@ -133,6 +127,13 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
 
         await UpdateAccountRoles(user, domainAccount);
         await UpdateAccountNickname(user, domainAccount);
+    }
+
+    public override void Activate()
+    {
+        var client = GetClient();
+        client.GuildMemberUpdated += ClientOnGuildMemberUpdated;
+        client.UserJoined += ClientOnUserJoined;
     }
 
     private async Task UpdateAccountRoles(SocketGuildUser user, DomainAccount domainAccount)
@@ -222,3 +223,4 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
         return WrapEventTask(async () => { await UpdateAccount(null, user.Id); });
     }
 }
+

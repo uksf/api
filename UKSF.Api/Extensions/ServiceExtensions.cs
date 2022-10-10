@@ -70,11 +70,8 @@ public static class ServiceExtensions
                        .AddTransient<IOperationReportService, OperationReportService>()
                        .AddSingleton<ILoginService, LoginService>()
                        .AddSingleton<IPermissionsService, PermissionsService>()
-                       .AddSingleton<IAccountService, AccountService>()
-                       .AddSingleton<IAssignmentService, AssignmentService>()
                        .AddSingleton<ICommentThreadService, CommentThreadService>()
-                       .AddSingleton<IRolesService, RolesService>()
-                       .AddSingleton<IServiceRecordService, ServiceRecordService>();
+                       .AddSingleton<IRolesService, RolesService>();
     }
 
     private static IServiceCollection AddCommands(this IServiceCollection services)
@@ -118,7 +115,6 @@ public static class ServiceExtensions
         builder.MapHub<AdminHub>($"/hub/{AdminHub.EndPoint}");
         builder.MapHub<UtilityHub>($"/hub/{UtilityHub.EndPoint}");
         builder.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.EndPoint}");
-        builder.MapHub<AccountHub>($"/hub/{AccountHub.EndPoint}");
         builder.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.EndPoint}");
     }
 

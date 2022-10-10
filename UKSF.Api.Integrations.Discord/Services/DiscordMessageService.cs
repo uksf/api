@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using Discord;
 using Discord.WebSocket;
+using UKSF.Api.Shared;
 using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Shared.Services;
 
@@ -37,7 +38,12 @@ public class DiscordMessageService : DiscordBaseService, IDiscordMessageService
     private readonly IDiscordClientService _discordClientService;
     private readonly IVariablesService _variablesService;
 
-    public DiscordMessageService(IDiscordClientService discordClientService, IVariablesService variablesService) : base(discordClientService)
+    public DiscordMessageService(
+        IDiscordClientService discordClientService,
+        IHttpContextService httpContextService,
+        IVariablesService variablesService,
+        IUksfLogger logger
+    ) : base(discordClientService, httpContextService, variablesService, logger)
     {
         _discordClientService = discordClientService;
         _variablesService = variablesService;
