@@ -95,6 +95,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
     {
         _guild = _client.GetGuild(_variablesService.GetVariable("DID_SERVER").AsUlong());
         _connected = true;
+        _logger.LogInfo("Discord reconnected");
 
         return Task.CompletedTask;
     }
@@ -102,8 +103,12 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
     private Task ClientOnDisconnected(Exception exception)
     {
         _connected = false;
-        _logger.LogError(exception);
+        if (exception is GatewayReconnectException)
+        {
+            return Task.CompletedTask;
+        }
 
+        _logger.LogError(exception);
         return Task.CompletedTask;
     }
 }
