@@ -49,15 +49,6 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
         var client = GetClient();
         client.UserLeft += ClientOnUserLeft;
         client.ButtonExecuted += ClientOnButtonExecuted;
-        client.Log += message =>
-        {
-            if (message.Exception != null)
-            {
-                _logger.LogError(message.Exception);
-            }
-
-            return Task.CompletedTask;
-        };
     }
 
     private Task ClientOnUserLeft(SocketGuild _, SocketUser user)

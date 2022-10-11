@@ -103,7 +103,7 @@ public class DiscordBaseService : IDiscordService
         return GetUserNickname(user);
     }
 
-    protected string BuildButtonData(string customId, params string[] data)
+    protected static string BuildButtonData(string customId, params string[] data)
     {
         return $"{customId}:{string.Join(":", data)}";
     }
