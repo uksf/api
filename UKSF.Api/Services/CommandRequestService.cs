@@ -17,6 +17,7 @@ public interface ICommandRequestService
     bool IsRequestApproved(string id);
     bool IsRequestRejected(string id);
     bool DoesEquivalentRequestExist(CommandRequest request);
+    bool DoesEquivalentRequestExist(CommandRequest request, Func<CommandRequest, bool> filter);
 }
 
 public class CommandRequestService : ICommandRequestService
@@ -142,13 +143,17 @@ public class CommandRequestService : ICommandRequestService
 
     public bool DoesEquivalentRequestExist(CommandRequest request)
     {
-        return _commandRequestContext.Get()
-                                     .Any(
-                                         x => x.Recipient == request.Recipient &&
-                                              x.Type == request.Type &&
+        return DoesEquivalentRequestExist(
+            request,
+            x =>
                                               x.DisplayValue == request.DisplayValue &&
                                               x.DisplayFrom == request.DisplayFrom
                                      );
+    }
+
+    public bool DoesEquivalentRequestExist(CommandRequest request, Func<CommandRequest, bool> filter)
+    {
+        return _commandRequestContext.Get().Any(x => x.Recipient == request.Recipient && x.Type == request.Type && filter(x));
     }
 
     private static string FormatIfDate(string input)

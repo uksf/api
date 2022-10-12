@@ -1,5 +1,6 @@
 ﻿using MongoDB.Driver;
 using UKSF.Api.Shared.Context;
+using UKSF.Api.Shared.Exceptions;
 using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Services;
@@ -28,6 +29,12 @@ public class LoaService : ILoaService
 
     public async Task<string> Add(CommandRequestLoa requestBase)
     {
+        if (_loaContext.Get(x => x.Recipient == requestBase.Recipient && x.State != LoaReviewState.REJECTED)
+                       .Any(x => requestBase.Start >= x.Start && requestBase.End <= x.End))
+        {
+            throw new BadRequestException("An LOA covering the same date range already exists");
+        }
+
         DomainLoa domainLoa = new()
         {
             Submitted = DateTime.UtcNow,
@@ -52,3 +59,4 @@ public class LoaService : ILoaService
         return _loaContext.Get(loa => loa.Recipient == id && loa.Start < eventStart && loa.End > eventStart).Any();
     }
 }
+

@@ -68,8 +68,6 @@ public class CommandRequestsCreationController : ControllerBase
     [Permissions(Permissions.Member)]
     public async Task CreateRequestLoa([FromBody] CommandRequestLoa request)
     {
-        Console.Out.WriteLine(ModelState.IsValid);
-        ;
         var now = DateTime.UtcNow;
         if (request.Start <= now.AddDays(-1))
         {
@@ -88,10 +86,18 @@ public class CommandRequestsCreationController : ControllerBase
 
         request.Recipient = _httpContextService.GetUserId();
         request.Requester = _httpContextService.GetUserId();
-        request.DisplayValue = request.End.ToString("O");
         request.DisplayFrom = request.Start.ToString("O");
+        request.DisplayValue = request.End.ToString("O");
         request.Type = CommandRequestType.Loa;
-        if (_commandRequestService.DoesEquivalentRequestExist(request))
+        if (_commandRequestService.DoesEquivalentRequestExist(
+                request,
+                x =>
+                {
+                    var start = DateTime.Parse(x.DisplayFrom);
+                    var end = DateTime.Parse(x.DisplayValue);
+                    return request.Start >= start && request.End <= end;
+                }
+            ))
         {
             throw new BadRequestException("An equivalent request already exists");
         }
@@ -235,3 +241,4 @@ public class CommandRequestsCreationController : ControllerBase
         await _commandRequestService.Add(request, ChainOfCommandMode.PERSONNEL);
     }
 }
+
