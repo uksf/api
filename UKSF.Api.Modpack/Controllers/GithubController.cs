@@ -12,7 +12,7 @@ public class GithubController : ControllerBase
 {
     private const string PushEvent = "push";
     private const string RepoName = "modpack";
-    private const string Master = "refs/heads/master";
+    private const string Main = "refs/heads/main";
     private const string Release = "refs/heads/release";
 
     private readonly IGithubService _githubService;
@@ -44,7 +44,7 @@ public class GithubController : ControllerBase
 
         switch (payload.Ref)
         {
-            case Master when payload.BaseRef != Release:
+            case Main when payload.BaseRef != Release:
             {
                 await _modpackService.CreateDevBuildFromPush(payload);
                 return;

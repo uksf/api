@@ -204,10 +204,10 @@ public class GithubService : IGithubService
             validBranches.Insert(0, "release");
         }
 
-        if (validBranches.Contains("master"))
+        if (validBranches.Contains("main"))
         {
-            validBranches.Remove("master");
-            validBranches.Insert(0, "master");
+            validBranches.Remove("main");
+            validBranches.Insert(0, "main");
         }
 
         return validBranches;
