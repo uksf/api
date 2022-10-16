@@ -12,7 +12,7 @@ public enum GameServerOption
 
 public class GameServer : MongoObject
 {
-    public List<GameServerMod> Mods = new();
+    public List<GameServerMod> Mods { get; set; } = new();
     public string AdminPassword { get; set; }
     public int ApiPort { get; set; }
 
