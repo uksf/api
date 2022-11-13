@@ -5,7 +5,6 @@ using MongoDB.Driver;
 using NameCase;
 using UKSF.Api.Exceptions;
 using UKSF.Api.Models.Parameters;
-using UKSF.Api.Services;
 using UKSF.Api.Shared;
 using UKSF.Api.Shared.Commands;
 using UKSF.Api.Shared.Context;

@@ -2,9 +2,9 @@
 
 public class CreateAccount
 {
-    public string DobDay { get; set; }
-    public string DobMonth { get; set; }
-    public string DobYear { get; set; }
+    public int DobDay { get; set; }
+    public int DobMonth { get; set; }
+    public int DobYear { get; set; }
     public string Email { get; set; }
     public string FirstName { get; set; }
     public string LastName { get; set; }
