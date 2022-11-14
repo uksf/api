@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using NameCase;
 using UKSF.Api.Exceptions;
+using UKSF.Api.Models;
 using UKSF.Api.Models.Parameters;
+using UKSF.Api.Services;
 using UKSF.Api.Shared;
 using UKSF.Api.Shared.Commands;
 using UKSF.Api.Shared.Context;
@@ -23,6 +25,7 @@ public class AccountsController : ControllerBase
 {
     private readonly IAccountContext _accountContext;
     private readonly IAccountMapper _accountMapper;
+    private readonly ILoginService _loginService;
     private readonly IAccountService _accountService;
     private readonly IConfirmationCodeService _confirmationCodeService;
     private readonly IDisplayNameService _displayNameService;
@@ -40,9 +43,10 @@ public class AccountsController : ControllerBase
         IDisplayNameService displayNameService,
         IHttpContextService httpContextService,
         ISendTemplatedEmailCommand sendTemplatedEmailCommand,
+        IAccountMapper accountMapper,
+        ILoginService loginService,
         IEventBus eventBus,
-        IUksfLogger logger,
-        IAccountMapper accountMapper
+        IUksfLogger logger
     )
     {
         _accountContext = accountContext;
@@ -55,6 +59,7 @@ public class AccountsController : ControllerBase
         _eventBus = eventBus;
         _logger = logger;
         _accountMapper = accountMapper;
+        _loginService = loginService;
     }
 
     [HttpGet]
@@ -73,8 +78,8 @@ public class AccountsController : ControllerBase
         return _accountMapper.MapToAccount(domainAccount);
     }
 
-    [HttpPut]
-    public async Task<Account> Put([FromBody] CreateAccount createAccount)
+    [HttpPost("create")]
+    public async Task<TokenResponse> Create([FromBody] CreateAccount createAccount)
     {
         if (_accountContext.Get(x => string.Equals(x.Email, createAccount.Email, StringComparison.InvariantCultureIgnoreCase)).Any())
         {
@@ -97,10 +102,10 @@ public class AccountsController : ControllerBase
         var createdAccount = _accountContext.GetSingle(x => x.Email == domainAccount.Email);
         _logger.LogAudit($"New account created: '{domainAccount.Firstname} {domainAccount.Lastname}, {domainAccount.Email}'", createdAccount.Id);
 
-        return _accountMapper.MapToAccount(createdAccount);
+        return _loginService.Login(createAccount.Email, createAccount.Password);
     }
 
-    [HttpPost]
+    [HttpPost("code")]
     [Authorize]
     public async Task ApplyConfirmationCode([FromBody] ApplyConfirmationCodeRequest applyConfirmationCodeRequest)
     {
@@ -138,10 +143,9 @@ public class AccountsController : ControllerBase
 
     [HttpPost("resend-email-code")]
     [Authorize]
-    public async Task<Account> ResendConfirmationCode()
+    public async Task ResendConfirmationCode()
     {
         var domainAccount = _accountService.GetUserAccount();
-
         if (domainAccount.MembershipState != MembershipState.UNCONFIRMED)
         {
             throw new AccountAlreadyConfirmedException();
@@ -149,7 +153,6 @@ public class AccountsController : ControllerBase
 
         await _confirmationCodeService.ClearConfirmationCodes(x => x.Value == domainAccount.Email);
         await SendConfirmationCode(domainAccount);
-        return _accountMapper.MapToAccount(domainAccount);
     }
 
     [HttpGet("under")]
