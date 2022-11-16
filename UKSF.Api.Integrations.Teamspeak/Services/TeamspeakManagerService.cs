@@ -82,9 +82,12 @@ public class TeamspeakManagerService : ITeamspeakManagerService
         await TaskUtilities.Delay(TimeSpan.FromSeconds(2), _token.Token);
         while (_runTeamspeak)
         {
-            if (Process.GetProcessesByName("ts3server").Length == 0)
+            if (_variablesService.GetVariable("TEAMSPEAK_SERVER_RUN").AsBool())
             {
-                await LaunchTeamspeakServer();
+                if (Process.GetProcessesByName("ts3server").Length == 0)
+                {
+                    await LaunchTeamspeakServer();
+                }
             }
 
             if (_variablesService.GetVariable("TEAMSPEAK_RUN").AsBool())
