@@ -185,23 +185,16 @@ public class GithubService : IGithubService
         var client = await GetAuthenticatedClient();
         var branches = await client.Repository.Branch.GetAll(RepoOrg, RepoName);
         ConcurrentBag<string> validBranchesBag = new();
-        foreach (var branch in branches)
-        {
-            if (await IsReferenceValid(branch.Name))
+        var task = branches.Select(
+            async branch =>
             {
-                validBranchesBag.Add(branch.Name);
+                if (await IsReferenceValid(branch.Name))
+                {
+                    validBranchesBag.Add(branch.Name);
+                }
             }
-        }
-        // var task = branches.Select(
-        //     async branch =>
-        //     {
-        //         if (await IsReferenceValid(branch.Name))
-        //         {
-        //             validBranchesBag.Add(branch.Name);
-        //         }
-        //     }
-        // );
-        // await Task.WhenAll(task);
+        );
+        await Task.WhenAll(task);
 
         var validBranches = validBranchesBag.OrderBy(x => x).ToList();
         if (validBranches.Contains("release"))
