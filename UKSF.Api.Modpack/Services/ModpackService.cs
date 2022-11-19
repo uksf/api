@@ -149,14 +149,14 @@ public class ModpackService : IModpackService
     public async Task CreateDevBuildFromPush(PushWebhookPayload payload)
     {
         var devCommit = await _githubService.GetPushEvent(payload);
-        var version = await _githubService.GetReferenceVersion(payload.Ref);
+        var version = await _githubService.GetReferenceVersion(payload.Ref.Split('/')[^1]);
         var devBuild = await _buildsService.CreateDevBuild(version, devCommit);
         _buildQueueService.QueueBuild(devBuild);
     }
 
     public async Task CreateRcBuildFromPush(PushWebhookPayload payload)
     {
-        var rcVersion = await _githubService.GetReferenceVersion(payload.Ref);
+        var rcVersion = await _githubService.GetReferenceVersion(payload.Ref.Split('/')[^1]);
         var release = _releaseService.GetRelease(rcVersion);
         if (release is { IsDraft: false })
         {

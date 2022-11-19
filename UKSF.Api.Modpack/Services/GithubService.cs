@@ -64,7 +64,6 @@ public class GithubService : IGithubService
 
     public async Task<string> GetReferenceVersion(string reference)
     {
-        reference = reference.Split('/')[^1];
         var client = await GetAuthenticatedClient();
         var contentBytes = await client.Repository.Content.GetRawContentByRef(RepoOrg, RepoName, VersionFile, reference);
         if (contentBytes.Length == 0)
@@ -186,16 +185,23 @@ public class GithubService : IGithubService
         var client = await GetAuthenticatedClient();
         var branches = await client.Repository.Branch.GetAll(RepoOrg, RepoName);
         ConcurrentBag<string> validBranchesBag = new();
-        var task = branches.Select(
-            async branch =>
+        foreach (var branch in branches)
+        {
+            if (await IsReferenceValid(branch.Name))
             {
-                if (await IsReferenceValid(branch.Name))
-                {
-                    validBranchesBag.Add(branch.Name);
-                }
+                validBranchesBag.Add(branch.Name);
             }
-        );
-        await Task.WhenAll(task);
+        }
+        // var task = branches.Select(
+        //     async branch =>
+        //     {
+        //         if (await IsReferenceValid(branch.Name))
+        //         {
+        //             validBranchesBag.Add(branch.Name);
+        //         }
+        //     }
+        // );
+        // await Task.WhenAll(task);
 
         var validBranches = validBranchesBag.OrderBy(x => x).ToList();
         if (validBranches.Contains("release"))
