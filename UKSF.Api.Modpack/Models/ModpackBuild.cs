@@ -7,8 +7,6 @@ namespace UKSF.Api.Modpack.Models;
 
 public class ModpackBuild : MongoObject
 {
-    public DateTime EndTime = DateTime.UtcNow;
-
     [BsonRepresentation(BsonType.ObjectId)]
     public string BuilderId { get; set; }
 
@@ -20,7 +18,8 @@ public class ModpackBuild : MongoObject
     public bool Finished { get; set; }
     public bool IsRebuild { get; set; }
     public bool Running { get; set; }
-    public DateTime StartTime { get; set; } = DateTime.UtcNow;
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
     public List<ModpackBuildStep> Steps { get; set; } = new();
     public string Version { get; set; }
 }
