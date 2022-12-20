@@ -59,6 +59,7 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
                 var domainAccount = _accountContext.GetSingle(x => x.DiscordId == user.Id.ToString());
                 if (domainAccount is { MembershipState: MembershipState.CONFIRMED, Application.State: ApplicationState.WAITING })
                 {
+                    _logger.LogInfo($"User left discord, ({domainAccount.Id}) is a candidate");
                     var channelId = _variablesService.GetVariable("DID_C_SR1").AsUlong();
                     var guild = GetGuild();
                     var channel = guild.GetTextChannel(channelId);
@@ -70,6 +71,10 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
                                                         .WithButton("Reject", BuildButtonData(ButtonIdReject, domainAccount.Id), ButtonStyle.Danger)
                                                         .WithButton("Dismiss", BuildButtonData(ButtonIdDismissRejection, domainAccount.Id));
                     await channel.SendMessageAsync(message, components: builder.Build());
+                }
+                else
+                {
+                    _logger.LogInfo($"User left discord, ({domainAccount.Id}) was not a candidate");
                 }
             }
         );
@@ -105,7 +110,7 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
         if (string.IsNullOrEmpty(accountId))
         {
             _logger.LogError("Discord application rejection button was pressed but had invalid data");
-            await component.RespondAsync("Hmm, that didn't work. Try again or contact an admin", ephemeral: true);
+            await component.RespondAsync("Hmmmmm, that didn't work. Try again or yell at Bes...gently", ephemeral: true);
             return;
         }
 
@@ -117,7 +122,7 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
         if (domainAccount == null)
         {
             _logger.LogError($"Discord application rejection button tried to reject a null account ({accountId})");
-            await component.RespondAsync("Hmm, that didn't work. Contact an admin", ephemeral: true);
+            await component.RespondAsync("Hmmmmmmmmmmm, that didn't work. Bes broke something but it's probably still your fault", ephemeral: true);
             return;
         }
 
@@ -125,7 +130,7 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
         if (domainAccount is { Application.State: ApplicationState.ACCEPTED } or { Application.State: ApplicationState.REJECTED })
         {
             _logger.LogError($"Discord application rejection button tried to reject an already accepted/rejected account ({accountId})");
-            await component.RespondAsync($"Hmm, that didn't work. It looks like {name}'s application has already been accepted or rejected", ephemeral: true);
+            await component.RespondAsync($"Hmmmm, that didn't work. It looks like {name}'s application has already been accepted or rejected", ephemeral: true);
             return;
         }
 
@@ -139,7 +144,7 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
         if (string.IsNullOrEmpty(accountId))
         {
             _logger.LogError("Discord application rejection dismissal button was pressed but had invalid data");
-            await component.RespondAsync("Hmm, that didn't work. Try again or contact an admin", ephemeral: true);
+            await component.RespondAsync("Hmmmm, that didn't work. Bes wrote this code so don't expect too much", ephemeral: true);
             return;
         }
 
