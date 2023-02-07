@@ -1,11 +1,11 @@
 ﻿using MoreLinq;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.ScheduledActions;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Discord.Services;
 using UKSF.Api.Modpack.Services;
 using UKSF.Api.Modpack.Services.BuildProcess;
 using UKSF.Api.Services;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.ScheduledActions;
-using UKSF.Api.Shared.Services;
 using UKSF.Api.Teamspeak.Services;
 
 namespace UKSF.Api.AppStart;

@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using UKSF.Api.ArmaMissions.Models;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaMissions.Services;
 

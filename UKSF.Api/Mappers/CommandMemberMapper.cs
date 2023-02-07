@@ -1,6 +1,6 @@
 ﻿using MongoDB.Bson;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Models;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Mappers;
 

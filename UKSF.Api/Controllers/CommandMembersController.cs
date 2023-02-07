@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Models;
 using UKSF.Api.Mappers;
 using UKSF.Api.Queries;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Controllers;
 

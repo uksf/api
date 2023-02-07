@@ -4,12 +4,12 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using UKSF.Api.AppStart;
 using UKSF.Api.ArmaServer;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Configuration;
+using UKSF.Api.Core.Converters;
 using UKSF.Api.Extensions;
 using UKSF.Api.Middleware;
 using UKSF.Api.Modpack;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Configuration;
-using UKSF.Api.Shared.Converters;
 using UKSF.Api.Teamspeak;
 
 void InitServiceLogging(AppSettings appSettings)

@@ -3,8 +3,8 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
 using Moq;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.ScheduledActions;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.ScheduledActions;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions;

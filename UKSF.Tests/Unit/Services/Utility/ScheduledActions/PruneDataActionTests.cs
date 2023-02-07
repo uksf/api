@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.Hosting;
 using Moq;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using UKSF.Api.ScheduledActions;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions;

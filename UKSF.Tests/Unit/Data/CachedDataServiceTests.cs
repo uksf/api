@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Driver;
 using Moq;
-using UKSF.Api.Shared.Context.Base;
-using UKSF.Api.Shared.Events;
+using UKSF.Api.Core.Context.Base;
+using UKSF.Api.Core.Events;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
@@ -15,7 +15,7 @@ namespace UKSF.Tests.Unit.Data;
 
 public class CachedDataServiceTests
 {
-    private readonly Mock<Api.Shared.Context.Base.IMongoCollection<TestDataModel>> _mockDataCollection;
+    private readonly Mock<Api.Core.Context.Base.IMongoCollection<TestDataModel>> _mockDataCollection;
     private readonly Mock<IMongoCollectionFactory> _mockDataCollectionFactory;
     private readonly Mock<IEventBus> _mockEventBus;
     private List<TestDataModel> _mockCollection;

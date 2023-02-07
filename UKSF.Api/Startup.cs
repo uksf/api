@@ -9,8 +9,8 @@
 // using UKSF.Api.Middleware;
 // using UKSF.Api.Modpack;
 // using UKSF.Api.Personnel;
-// using UKSF.Api.Shared;
-// using UKSF.Api.Shared.Events;
+// using UKSF.Api.Core;
+// using UKSF.Api.Core.Events;
 // using UKSF.Api.Teamspeak;
 //
 // namespace UKSF.Api;

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Models;
 using UKSF.Api.Teamspeak.Signalr.Clients;
 
 namespace UKSF.Api.Teamspeak.Signalr.Hubs;

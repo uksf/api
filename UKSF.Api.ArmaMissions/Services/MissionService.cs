@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using UKSF.Api.ArmaMissions.Models;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Models;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.ArmaMissions.Services;
 

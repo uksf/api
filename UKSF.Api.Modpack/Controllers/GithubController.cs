@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Octokit;
 using Octokit.Internal;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Modpack.Services;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Exceptions;
 
 namespace UKSF.Api.Modpack.Controllers;
 

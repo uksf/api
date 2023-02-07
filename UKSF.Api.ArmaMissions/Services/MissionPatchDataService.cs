@@ -1,8 +1,8 @@
 using MongoDB.Bson;
 using UKSF.Api.ArmaMissions.Models;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaMissions.Services;
 

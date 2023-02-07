@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text.Json.Nodes;
-using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Core.Extensions;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess;
 

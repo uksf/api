@@ -1,6 +1,6 @@
-﻿using UKSF.Api.Modpack.Models;
-using UKSF.Api.Shared.Context.Base;
-using UKSF.Api.Shared.Events;
+﻿using UKSF.Api.Core.Context.Base;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Modpack.Models;
 
 namespace UKSF.Api.Modpack.Context;
 

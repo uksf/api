@@ -1,6 +1,6 @@
 ﻿using System;
 using FluentAssertions;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Common;

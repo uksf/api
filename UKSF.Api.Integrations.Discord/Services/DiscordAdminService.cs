@@ -1,12 +1,12 @@
 ﻿using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Discord.Models;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Discord.Services;
 

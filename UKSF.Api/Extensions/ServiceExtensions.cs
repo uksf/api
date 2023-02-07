@@ -1,6 +1,9 @@
 ﻿using UKSF.Api.ArmaMissions;
 using UKSF.Api.ArmaServer;
 using UKSF.Api.Commands;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Discord;
 using UKSF.Api.EventHandlers;
 using UKSF.Api.Integrations.Instagram;
@@ -11,9 +14,6 @@ using UKSF.Api.Modpack;
 using UKSF.Api.Queries;
 using UKSF.Api.ScheduledActions;
 using UKSF.Api.Services;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Extensions;
 using UKSF.Api.Signalr.Hubs;
 using UKSF.Api.Teamspeak;
 
@@ -71,7 +71,10 @@ public static class ServiceExtensions
                        .AddSingleton<ILoginService, LoginService>()
                        .AddSingleton<IPermissionsService, PermissionsService>()
                        .AddSingleton<ICommentThreadService, CommentThreadService>()
-                       .AddSingleton<IRolesService, RolesService>();
+                       .AddSingleton<IRolesService, RolesService>()
+                       .AddSingleton<IDocumentFolderService, DocumentFolderService>()
+                       .AddSingleton<IDocumentService, DocumentService>()
+                       .AddSingleton<IDocumentPermissionsService, DocumentPermissionsService>();
     }
 
     private static IServiceCollection AddCommands(this IServiceCollection services)

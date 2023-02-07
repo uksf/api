@@ -1,6 +1,6 @@
-﻿using UKSF.Api.Services;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
+﻿using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
+using UKSF.Api.Services;
 
 namespace UKSF.Api.Mappers;
 

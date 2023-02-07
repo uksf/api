@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Teamspeak.Models;
 using UKSF.Api.Teamspeak.Signalr.Clients;
 using UKSF.Api.Teamspeak.Signalr.Hubs;

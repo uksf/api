@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Context.Base;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Context.Base;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Units;

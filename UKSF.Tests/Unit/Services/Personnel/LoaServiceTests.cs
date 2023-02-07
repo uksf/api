@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Moq;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Models;
 using UKSF.Api.Services;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Personnel;

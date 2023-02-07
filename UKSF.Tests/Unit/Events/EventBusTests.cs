@@ -1,7 +1,7 @@
 ﻿using System;
 using FluentAssertions;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events;

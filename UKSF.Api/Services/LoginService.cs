@@ -1,13 +1,13 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Extensions;
-using UKSF.Api.Models;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Exceptions;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Models.Response;
 
 namespace UKSF.Api.Services;
 

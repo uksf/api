@@ -3,8 +3,8 @@ using FluentAssertions;
 using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.Shared.Context.Base;
-using UKSF.Api.Shared.Events;
+using UKSF.Api.Core.Context.Base;
+using UKSF.Api.Core.Events;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Game;

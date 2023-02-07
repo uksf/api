@@ -4,17 +4,17 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Driver;
 using Moq;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Context.Base;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Context.Base;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Admin;
 
 public class VariablesDataServiceTests
 {
-    private readonly Mock<Api.Shared.Context.Base.IMongoCollection<VariableItem>> _mockDataCollection;
+    private readonly Mock<Api.Core.Context.Base.IMongoCollection<VariableItem>> _mockDataCollection;
     private readonly VariablesContext _variablesContext;
     private List<VariableItem> _mockCollection;
 

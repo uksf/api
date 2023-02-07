@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using FluentAssertions;
-using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Core.Extensions;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Common;

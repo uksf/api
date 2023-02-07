@@ -10,12 +10,12 @@ using UKSF.Api.ArmaServer.Models.Parameters;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.ArmaServer.Signalr.Clients;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Exceptions;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.Controllers;
 

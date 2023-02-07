@@ -1,9 +1,9 @@
 ﻿using AvsAnLib;
 using MongoDB.Driver;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Services;
 
@@ -121,7 +121,7 @@ public class CommandRequestService : ICommandRequestService
             request.Reviews[key] = newState;
         }
 
-        await _commandRequestContext.Update(request.Id, Builders<CommandRequest>.Update.Set("reviews", request.Reviews));
+        await _commandRequestContext.Update(request.Id, Builders<CommandRequest>.Update.Set(x => x.Reviews, request.Reviews));
     }
 
     public ReviewState GetReviewState(string id, string reviewer)

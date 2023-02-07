@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Services;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Context.Base;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility;

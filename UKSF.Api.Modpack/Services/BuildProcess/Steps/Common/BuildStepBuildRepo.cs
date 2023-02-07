@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Shared.Extensions;
+﻿using UKSF.Api.Core.Extensions;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.Common;
 

@@ -1,11 +1,11 @@
 ﻿using AvsAnLib;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Exceptions;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Signalr.Clients;
 using UKSF.Api.Signalr.Hubs;
 

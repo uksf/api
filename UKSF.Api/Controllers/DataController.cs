@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Core;
 using UKSF.Api.Services;
-using UKSF.Api.Shared;
 
 namespace UKSF.Api.Controllers;
 

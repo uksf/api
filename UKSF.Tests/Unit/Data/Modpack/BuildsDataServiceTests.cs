@@ -5,11 +5,11 @@ using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
+using UKSF.Api.Core.Context.Base;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Models;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
-using UKSF.Api.Shared.Context.Base;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Modpack;
@@ -17,7 +17,7 @@ namespace UKSF.Tests.Unit.Data.Modpack;
 public class BuildsDataServiceTests
 {
     private readonly BuildsContext _buildsContext;
-    private readonly Mock<Api.Shared.Context.Base.IMongoCollection<ModpackBuild>> _mockDataCollection;
+    private readonly Mock<Api.Core.Context.Base.IMongoCollection<ModpackBuild>> _mockDataCollection;
     private readonly Mock<IEventBus> _mockEventBus;
 
     public BuildsDataServiceTests()

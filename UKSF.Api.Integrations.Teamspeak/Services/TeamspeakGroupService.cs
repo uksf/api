@@ -1,8 +1,8 @@
 ﻿using MongoDB.Bson;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Teamspeak.Models;
 
 namespace UKSF.Api.Teamspeak.Services;

@@ -1,9 +1,9 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Discord.EventHandlers;
 using UKSF.Api.Discord.Services;
-using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Discord;
 

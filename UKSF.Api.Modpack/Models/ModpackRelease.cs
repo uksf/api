@@ -1,6 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using UKSF.Api.Shared.Models;
+using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Modpack.Models;
 

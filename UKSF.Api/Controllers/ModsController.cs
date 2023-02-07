@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using UKSF.Api.Shared;
+using UKSF.Api.Core;
 
 namespace UKSF.Api.Controllers;
 

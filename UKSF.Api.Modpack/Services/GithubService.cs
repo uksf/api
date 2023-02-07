@@ -5,9 +5,9 @@ using System.Text.RegularExpressions;
 using GitHubJwt;
 using Microsoft.Extensions.Options;
 using Octokit;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Configuration;
 using UKSF.Api.Modpack.Models;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Configuration;
 
 namespace UKSF.Api.Modpack.Services;
 

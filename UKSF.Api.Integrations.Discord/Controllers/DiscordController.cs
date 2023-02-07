@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Models;
 using UKSF.Api.Discord.Services;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Discord.Controllers;
 

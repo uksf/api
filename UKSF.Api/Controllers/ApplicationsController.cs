@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using UKSF.Api.Commands;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Controllers;
 

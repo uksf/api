@@ -5,10 +5,10 @@ using MongoDB.Bson;
 using Moq;
 using UKSF.Api.Commands;
 using UKSF.Api.Controllers;
-using UKSF.Api.Models;
+using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Services;
+using UKSF.Api.Models.Response;
 using UKSF.Api.Services;
-using UKSF.Api.Shared.Exceptions;
-using UKSF.Api.Shared.Services;
 using UKSF.Api.Tests.Common;
 using Xunit;
 

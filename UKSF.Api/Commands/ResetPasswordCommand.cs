@@ -1,7 +1,7 @@
-﻿using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Exceptions;
-using UKSF.Api.Shared.Services;
+﻿using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Commands;
 

@@ -1,10 +1,10 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Configuration;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Configuration;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Discord.Services;
 

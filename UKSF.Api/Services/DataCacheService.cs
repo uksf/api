@@ -1,4 +1,4 @@
-using UKSF.Api.Shared.Context.Base;
+using UKSF.Api.Core.Context.Base;
 
 namespace UKSF.Api.Services;
 

@@ -1,5 +1,5 @@
-﻿using UKSF.Api.Shared.Context.Base;
-using UKSF.Api.Shared.Events;
+﻿using UKSF.Api.Core.Context.Base;
+using UKSF.Api.Core.Events;
 
 namespace UKSF.Api.Tests.Common;
 

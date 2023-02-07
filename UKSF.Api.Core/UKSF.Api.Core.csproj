@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <OutputType>Library</OutputType>
+        <Nullable>disable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AvsAn" Version="3.2.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.Json" Version="6.0.9"/>
+        <PackageReference Include="Microsoft.IdentityModel.Abstractions" Version="6.26.0"/>
+        <PackageReference Include="MongoDB.Bson" Version="2.19.0"/>
+        <PackageReference Include="MongoDB.Driver" Version="2.19.0"/>
+        <PackageReference Include="morelinq" Version="3.3.2"/>
+        <PackageReference Include="System.Management" Version="5.0.0"/>
+        <PackageReference Include="System.Reactive" Version="5.0.0"/>
+        <PackageReference Include="SystemTextJson.JsonDiffPatch" Version="1.3.1"/>
+        <PackageReference Include="TaskScheduler" Version="2.10.1"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="EmailHtmlTemplates\Premailed\**">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
+</Project>

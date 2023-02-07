@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Shared.Context;
+﻿using UKSF.Api.Core.Context;
 
 namespace UKSF.Api.Queries;
 

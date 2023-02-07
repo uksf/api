@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
-using UKSF.Api.Models.Parameters;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Models.Request;
 
 namespace UKSF.Api.Controllers;
 

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using FluentAssertions;
-using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Tests.Common;
 using Xunit;
 

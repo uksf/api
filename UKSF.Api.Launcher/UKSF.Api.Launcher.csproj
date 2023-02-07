@@ -7,11 +7,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\UKSF.Api.Shared\UKSF.Api.Shared.csproj"/>
+        <ProjectReference Include="..\UKSF.Api.Core\UKSF.Api.Core.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="MimeMapping" Version="1.0.1.37"/>
+        <PackageReference Include="MimeMapping" Version="1.0.1.50"/>
     </ItemGroup>
 
 </Project>

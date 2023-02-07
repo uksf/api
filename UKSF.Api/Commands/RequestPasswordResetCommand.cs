@@ -1,8 +1,8 @@
-﻿using UKSF.Api.Shared;
-using UKSF.Api.Shared.Commands;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Queries;
-using UKSF.Api.Shared.Services;
+﻿using UKSF.Api.Core;
+using UKSF.Api.Core.Commands;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Queries;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Commands;
 

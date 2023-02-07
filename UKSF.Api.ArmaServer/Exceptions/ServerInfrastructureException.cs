@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Shared.Exceptions;
+﻿using UKSF.Api.Core.Exceptions;
 
 namespace UKSF.Api.ArmaServer.Exceptions;
 

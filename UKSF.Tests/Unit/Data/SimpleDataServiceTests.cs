@@ -1,10 +1,10 @@
 ﻿using Moq;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Context.Base;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Models;
 using UKSF.Api.Launcher.Context;
 using UKSF.Api.Launcher.Models;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Context.Base;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data;

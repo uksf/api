@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.Queries;
 

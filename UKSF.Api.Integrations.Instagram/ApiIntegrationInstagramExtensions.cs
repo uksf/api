@@ -1,6 +1,6 @@
-﻿using UKSF.Api.Integrations.Instagram.ScheduledActions;
+﻿using UKSF.Api.Core.Extensions;
+using UKSF.Api.Integrations.Instagram.ScheduledActions;
 using UKSF.Api.Integrations.Instagram.Services;
-using UKSF.Api.Shared.Extensions;
 
 namespace UKSF.Api.Integrations.Instagram;
 

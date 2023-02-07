@@ -1,4 +1,4 @@
-using UKSF.Api.Shared.Models;
+using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.ArmaMissions.Models;
 

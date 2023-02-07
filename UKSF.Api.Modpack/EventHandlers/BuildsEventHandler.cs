@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Signalr.Clients;
 using UKSF.Api.Modpack.Signalr.Hubs;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Models;
 
 namespace UKSF.Api.Modpack.EventHandlers;
 

@@ -1,7 +1,9 @@
-﻿using System.Text.Json.Serialization;
-using UKSF.Api.Shared.Exceptions;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Models;
+﻿using System.IO.Pipelines;
+using System.Net;
+using System.Text.Json.Serialization;
+using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Middleware;
 
@@ -12,6 +14,11 @@ public interface IExceptionHandler
 
 public class ExceptionHandler : IExceptionHandler
 {
+    private static readonly JsonSerializerOptions JsonSerializerOptions = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     public async Task Handle(Exception exception, HttpContext context)
     {
         switch (exception)
@@ -34,10 +41,14 @@ public class ExceptionHandler : IExceptionHandler
             context.Response.StatusCode = 500;
         }
 
-        Console.Out.WriteLine(exception.GetCompleteString());
+        if (exception is not null)
+        {
+            Console.Out.WriteLine(exception.GetCompleteString());
+        }
 
         context.Response.ContentType = "application/json";
-        return SerializeToStream(context.Response, new(context.Response.StatusCode, 0, exception.GetCompleteMessage(), null));
+        var message = exception?.GetCompleteMessage() ?? ((HttpStatusCode)context.Response.StatusCode).ToString();
+        return SerializeToStream(context.Response.BodyWriter, new(context.Response.StatusCode, 0, message, null));
     }
 
     private static Task HandleUksfException(UksfException uksfException, HttpContext context)
@@ -45,14 +56,14 @@ public class ExceptionHandler : IExceptionHandler
         context.Response.StatusCode = uksfException.StatusCode;
         context.Response.ContentType = "application/json";
 
-        return SerializeToStream(context.Response, new(uksfException.StatusCode, uksfException.DetailCode, uksfException.Message, uksfException.Validation));
+        return SerializeToStream(
+            context.Response.BodyWriter,
+            new(uksfException.StatusCode, uksfException.DetailCode, uksfException.Message, uksfException.Validation)
+        );
     }
 
-    private static Task SerializeToStream(HttpResponse response, UksfErrorMessage error)
+    private static Task SerializeToStream(PipeWriter output, UksfErrorMessage error)
     {
-        return response.WriteAsJsonAsync(
-            error,
-            new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
-        );
+        return output.WriteAsync(JsonSerializer.SerializeToUtf8Bytes(error, JsonSerializerOptions)).AsTask();
     }
 }

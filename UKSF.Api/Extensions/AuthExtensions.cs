@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using UKSF.Api.Shared.Configuration;
+using UKSF.Api.Core.Configuration;
 
 namespace UKSF.Api.Extensions;
 

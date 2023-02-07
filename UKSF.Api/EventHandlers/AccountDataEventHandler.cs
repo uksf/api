@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.SignalR;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Signalr.Clients;
-using UKSF.Api.Shared.Signalr.Hubs;
-using UKSF.Api.Signalr.Clients;
-using UKSF.Api.Signalr.Hubs;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Signalr.Clients;
+using UKSF.Api.Core.Signalr.Hubs;
 
 namespace UKSF.Api.EventHandlers;
 

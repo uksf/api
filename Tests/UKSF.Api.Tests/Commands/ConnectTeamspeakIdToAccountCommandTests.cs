@@ -7,12 +7,12 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Commands;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
 using UKSF.Api.Tests.Common;
 using Xunit;
 

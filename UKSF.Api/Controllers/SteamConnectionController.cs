@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using UKSF.Api.Shared.Configuration;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core.Configuration;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Controllers;
 

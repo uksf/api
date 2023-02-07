@@ -2,16 +2,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Mappers;
 using UKSF.Api.Queries;
 using UKSF.Api.Services;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Exceptions;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
 
 namespace UKSF.Api.Controllers;
 

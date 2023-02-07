@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Signalr.Clients;
 using UKSF.Api.Signalr.Hubs;
 

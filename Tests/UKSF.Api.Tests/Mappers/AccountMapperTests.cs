@@ -2,9 +2,9 @@ using System;
 using FluentAssertions;
 using MongoDB.Bson;
 using Moq;
-using UKSF.Api.Shared.Mappers;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core.Mappers;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using Xunit;
 
 namespace UKSF.Api.Tests.Mappers;

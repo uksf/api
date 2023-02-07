@@ -1,5 +1,5 @@
 using UKSF.Api.ArmaMissions.Models;
-using UKSF.Api.Shared.Extensions;
+using UKSF.Api.Core.Extensions;
 
 namespace UKSF.Api.ArmaMissions.Services;
 

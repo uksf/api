@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Models;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
 using UKSF.Api.Teamspeak.Models;
 using UKSF.Api.Teamspeak.Services;
 

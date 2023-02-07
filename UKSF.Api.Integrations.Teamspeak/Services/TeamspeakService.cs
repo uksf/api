@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Models;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Models;
 using UKSF.Api.Teamspeak.Models;
 using UKSF.Api.Teamspeak.Signalr.Clients;
 using UKSF.Api.Teamspeak.Signalr.Hubs;

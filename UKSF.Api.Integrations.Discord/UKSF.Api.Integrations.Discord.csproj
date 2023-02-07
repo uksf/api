@@ -8,11 +8,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\UKSF.Api.Shared\UKSF.Api.Shared.csproj"/>
+        <ProjectReference Include="..\UKSF.Api.Core\UKSF.Api.Core.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Discord.Net" Version="3.8.1"/>
+        <PackageReference Include="Discord.Net" Version="3.9.0"/>
     </ItemGroup>
 
     <ItemGroup>

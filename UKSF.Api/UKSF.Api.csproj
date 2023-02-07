@@ -13,15 +13,15 @@
         <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1"/>
         <PackageReference Include="BCrypt.Net-Next" Version="4.0.3"/>
         <PackageReference Include="Discord.OAuth2" Version="2.0.0"/>
-        <PackageReference Include="Markdig" Version="0.25.0"/>
+        <PackageReference Include="Markdig" Version="0.30.4"/>
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.9"/>
         <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="6.0.9"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.0"/>
-        <PackageReference Include="MongoDB.Driver" Version="2.13.1"/>
+        <PackageReference Include="MongoDB.Driver" Version="2.19.0"/>
         <PackageReference Include="NameCase" Version="1.0.0"/>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.1.5"/>
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.23.1"/>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.26.0"/>
         <PackageReference Include="System.Net.Http" Version="4.3.4"/>
         <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1"/>
         <PackageReference Include="Utf8Json" Version="1.3.7"/>

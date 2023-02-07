@@ -1,6 +1,6 @@
-﻿using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.ScheduledActions;
-using UKSF.Api.Shared.Services;
+﻿using UKSF.Api.Core.Context;
+using UKSF.Api.Core.ScheduledActions;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ScheduledActions;
 

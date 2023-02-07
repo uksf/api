@@ -1,14 +1,14 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Commands;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Queries;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Discord.Models;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Commands;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Extensions;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Queries;
-using UKSF.Api.Shared.Services;
-using MembershipState = UKSF.Api.Shared.Models.MembershipState;
+using MembershipState = UKSF.Api.Core.Models.MembershipState;
 
 namespace UKSF.Api.Discord.Services;
 

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
-using UKSF.Api.Shared;
+using UKSF.Api.Core;
 using UKSF.Api.Teamspeak.Models;
 
 namespace UKSF.Api.Teamspeak.Controllers;

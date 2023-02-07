@@ -1,5 +1,5 @@
-﻿using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context;
+﻿using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
 
 namespace UKSF.Api.Services;
 

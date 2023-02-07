@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using UKSF.Api.Shared.Models;
+using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Tests.Common;
 

@@ -1,15 +1,13 @@
 ﻿using System;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
+using UKSF.Api.Core;
+using UKSF.Api.Core.Context.Base;
+using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Signalr.Clients;
+using UKSF.Api.Core.Signalr.Hubs;
 using UKSF.Api.EventHandlers;
-using UKSF.Api.Shared;
-using UKSF.Api.Shared.Context.Base;
-using UKSF.Api.Shared.Events;
-using UKSF.Api.Shared.Models;
-using UKSF.Api.Shared.Signalr.Clients;
-using UKSF.Api.Shared.Signalr.Hubs;
-using UKSF.Api.Signalr.Clients;
-using UKSF.Api.Signalr.Hubs;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers;
@@ -46,7 +44,7 @@ public class AccountEventHandlerTests
 
         _mockAccountHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
         mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockAccountClient.Object);
-        mockAccountClient.Setup(x => x.ReceiveAccountUpdate()).Throws(new());
+        mockAccountClient.Setup(x => x.ReceiveAccountUpdate()).Throws(new Exception());
         _mockLoggingService.Setup(x => x.LogError(It.IsAny<Exception>()));
 
         _accountDataEventHandler.Init();

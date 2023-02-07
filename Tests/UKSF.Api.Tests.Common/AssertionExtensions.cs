@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using FluentAssertions;
 using FluentAssertions.Specialized;
-using UKSF.Api.Shared.Exceptions;
+using UKSF.Api.Core.Exceptions;
 
 namespace UKSF.Api.Tests.Common;
 

@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
-using UKSF.Api.Shared;
+using UKSF.Api.Core;
 
 namespace UKSF.Api.Tests.Common;
 

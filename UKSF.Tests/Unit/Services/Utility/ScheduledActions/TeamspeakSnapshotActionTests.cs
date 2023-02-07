@@ -1,8 +1,8 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.Hosting;
 using Moq;
-using UKSF.Api.Shared.Context;
-using UKSF.Api.Shared.Services;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Teamspeak.ScheduledActions;
 using UKSF.Api.Teamspeak.Services;
 using Xunit;
