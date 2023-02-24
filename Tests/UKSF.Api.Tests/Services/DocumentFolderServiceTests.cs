@@ -54,7 +54,7 @@ public class DocumentFolderServiceTests
     {
         _mockIDocumentMetadataContext.Setup(x => x.Get()).Returns(new List<DomainDocumentFolderMetadata>());
 
-        await _subject.CreateFolder(new() { Parent = "", Name = "About" });
+        await _subject.CreateFolder(new() { Parent = ObjectId.Empty.ToString(), Name = "About" });
 
         _mockIDocumentMetadataContext.Verify(x => x.Add(It.IsAny<DomainDocumentFolderMetadata>()), Times.Once());
     }
@@ -64,7 +64,7 @@ public class DocumentFolderServiceTests
     {
         Given_folder_metadata();
 
-        var act = async () => await _subject.CreateFolder(new() { Parent = "", Name = "UKSF" });
+        var act = async () => await _subject.CreateFolder(new() { Parent = ObjectId.Empty.ToString(), Name = "UKSF" });
 
         await act.Should().ThrowAsync<FolderException>().WithMessageAndStatusCode("A folder already exists at path 'UKSF'", 400);
     }
@@ -118,7 +118,7 @@ public class DocumentFolderServiceTests
                                      .Returns(
                                          new List<DomainDocumentFolderMetadata>
                                          {
-                                             new() { Id = "1", Parent = "", Name = "UKSF", FullPath = "UKSF" },
+                                             new() { Id = "1", Parent = ObjectId.Empty.ToString(), Name = "UKSF", FullPath = "UKSF" },
                                              new() { Id = "2", Parent = "1", Name = "JSFAW", FullPath = "UKSF\\JSFAW" },
                                              new() { Id = "3", Parent = "1", Name = "SFSG", FullPath = "UKSF\\SFSG" },
                                              new() { Id = "4", Parent = "2", Name = "Training", FullPath = "UKSF\\JSFAW\\Training" },
@@ -127,5 +127,7 @@ public class DocumentFolderServiceTests
                                      );
         _mockIDocumentMetadataContext.Setup(x => x.GetSingle("2"))
                                      .Returns(new DomainDocumentFolderMetadata { Id = "2", Parent = "1", Name = "JSFAW", FullPath = "UKSF\\JSFAW" });
+        _mockIDocumentMetadataContext.Setup(x => x.GetSingle("3"))
+                                     .Returns(new DomainDocumentFolderMetadata { Id = "3", Parent = "1", Name = "SFSG", FullPath = "UKSF\\SFSG" });
     }
 }

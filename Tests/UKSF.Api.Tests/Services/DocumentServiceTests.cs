@@ -125,7 +125,5 @@ public class DocumentServiceTests
                                              }
                                          }
                                      );
-        _mockIDocumentMetadataContext.Setup(x => x.GetSingle("2"))
-                                     .Returns(new DomainDocumentFolderMetadata { Id = "2", Parent = "1", Name = "JSFAW", FullPath = "UKSF\\JSFAW" });
     }
 }
