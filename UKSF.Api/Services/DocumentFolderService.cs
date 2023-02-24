@@ -63,6 +63,15 @@ public class DocumentFolderService : IDocumentFolderService
 
     public async Task<FolderMetadataResponse> CreateFolder(CreateFolderRequest createFolder)
     {
+        if (createFolder.Parent != ObjectId.Empty.ToString())
+        {
+            var parentFolderMetadata = ValidateAndGetFolder(createFolder.Parent);
+            if (!_documentPermissionsService.DoesContextHaveWritePermission(parentFolderMetadata.ReadPermissions))
+            {
+                throw new FolderException("Cannot create folder");
+            }
+        }
+
         var allFolders = _documentFolderMetadataContext.Get().ToList();
         var folderMetadata = new DomainDocumentFolderMetadata
         {

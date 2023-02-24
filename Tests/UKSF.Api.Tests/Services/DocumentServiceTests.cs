@@ -78,7 +78,7 @@ public class DocumentServiceTests
 
         var act = async () => await _subject.CreateDocument("2", new() { Name = "Training2.json" });
 
-        await act.Should().ThrowAsync<FolderException>().WithMessageAndStatusCode("Access denied", 400);
+        await act.Should().ThrowAsync<FolderException>().WithMessageAndStatusCode("Cannot create documents in this folder", 400);
     }
 
     [Fact]
@@ -125,5 +125,7 @@ public class DocumentServiceTests
                                              }
                                          }
                                      );
+        _mockIDocumentMetadataContext.Setup(x => x.GetSingle("2"))
+                                     .Returns(new DomainDocumentFolderMetadata { Id = "2", Parent = "1", Name = "JSFAW", FullPath = "UKSF\\JSFAW" });
     }
 }

@@ -37,6 +37,7 @@
         <ProjectReference Include="..\UKSF.Api.Integrations.Teamspeak\UKSF.Api.Integrations.Teamspeak.csproj"/>
         <ProjectReference Include="..\UKSF.Api.Launcher\UKSF.Api.Launcher.csproj"/>
         <ProjectReference Include="..\UKSF.Api.Modpack\UKSF.Api.Modpack.csproj"/>
+        <ProjectReference Include="..\UKSF.Api.Core\UKSF.Api.Core.csproj"/>
     </ItemGroup>
 
 </Project>

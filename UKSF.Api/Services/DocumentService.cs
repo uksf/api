@@ -62,9 +62,9 @@ public class DocumentService : IDocumentService
     public async Task<DocumentMetadataResponse> CreateDocument(string folderId, CreateDocumentRequest createDocument)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.ReadPermissions))
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.WritePermissions))
         {
-            throw new FolderException("Cannot create documents for this folder");
+            throw new FolderException("Cannot create documents in this folder");
         }
 
         var documentMetadata = new DomainDocumentMetadata
@@ -101,7 +101,7 @@ public class DocumentService : IDocumentService
         var folderMetadata = ValidateAndGetFolder(folderId);
         if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.ReadPermissions))
         {
-            throw new FolderException("Cannot edit documents for this folder");
+            throw new FolderException("Cannot edit documents in this folder");
         }
 
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
@@ -133,7 +133,7 @@ public class DocumentService : IDocumentService
         var folderMetadata = ValidateAndGetFolder(folderId);
         if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.ReadPermissions))
         {
-            throw new FolderException("Cannot delete documents for this folder");
+            throw new FolderException("Cannot delete documents from this folder");
         }
 
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
@@ -167,7 +167,7 @@ public class DocumentService : IDocumentService
         var folderMetadata = ValidateAndGetFolder(folderId);
         if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.ReadPermissions))
         {
-            throw new FolderException("Cannot edit documents for this folder");
+            throw new FolderException("Cannot edit documents in this folder");
         }
 
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);

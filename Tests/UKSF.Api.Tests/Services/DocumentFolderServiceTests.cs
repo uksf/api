@@ -92,11 +92,12 @@ public class DocumentFolderServiceTests
     [Fact]
     public async Task When_creating_a_folder_without_permission()
     {
+        Given_folder_metadata();
         _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DocumentPermissions>())).Returns(false);
 
         var act = async () => await _subject.CreateFolder(new() { Parent = "2", Name = "SOPs" });
 
-        await act.Should().ThrowAsync<FolderException>().WithMessageAndStatusCode("Access denied", 400);
+        await act.Should().ThrowAsync<FolderException>().WithMessageAndStatusCode("Cannot create folder", 400);
     }
 
     [Theory]
@@ -124,5 +125,7 @@ public class DocumentFolderServiceTests
                                              new() { Id = "5", Parent = "3", Name = "Training", FullPath = "UKSF\\SFSG\\Training" }
                                          }
                                      );
+        _mockIDocumentMetadataContext.Setup(x => x.GetSingle("2"))
+                                     .Returns(new DomainDocumentFolderMetadata { Id = "2", Parent = "1", Name = "JSFAW", FullPath = "UKSF\\JSFAW" });
     }
 }
