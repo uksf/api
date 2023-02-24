@@ -96,7 +96,7 @@ public class DocumentFolderServiceTests
 
         var act = async () => await _subject.CreateFolder(new() { Parent = "2", Name = "SOPs" });
 
-        await act.Should().ThrowAsync<FolderAccessDeniedException>().WithMessageAndStatusCode("Access denied", 403);
+        await act.Should().ThrowAsync<FolderException>().WithMessageAndStatusCode("Access denied", 400);
     }
 
     [Theory]

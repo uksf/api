@@ -152,6 +152,7 @@ public class RolesController : ControllerBase
             if (_rolesContext.GetSingle(role.Name).Order != index)
             {
                 await _rolesContext.Update(role.Id, x => x.Order, index);
+
             }
         }
 

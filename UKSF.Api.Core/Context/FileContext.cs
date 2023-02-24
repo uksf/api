@@ -37,6 +37,7 @@ public class FileContext : IFileContext
 
     public void Rename(string path, string newPath)
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(newPath)!);
         File.Move(path, newPath);
     }
 }

@@ -85,7 +85,7 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         DataAddEvent(item);
     }
 
-    public override async Task Update(string id, Expression<Func<T, object>> fieldSelector, object value)
+    public override async Task Update<TField>(string id, Expression<Func<T, TField>> fieldSelector, TField value)
     {
         await base.Update(id, fieldSelector, value);
         Refresh(); // TODO: intelligent refresh

@@ -72,10 +72,18 @@ public abstract class MongoContextBase<T> where T : MongoObject
         await _mongoCollection.AddAsync(item);
     }
 
-    public virtual async Task Update(string id, Expression<Func<T, object>> fieldSelector, object value)
+    public virtual async Task Update<TField>(string id, Expression<Func<T, TField>> fieldSelector, TField value)
     {
-        var update = value == null ? Builders<T>.Update.Unset(fieldSelector) : Builders<T>.Update.Set(fieldSelector, value);
-        await _mongoCollection.UpdateAsync(id, update);
+        if (value == null)
+        {
+            Expression converted = Expression.Convert(fieldSelector.Body, typeof(object));
+            var unsetFieldSelector = Expression.Lambda<Func<T, object>>(converted, fieldSelector.Parameters);
+            await _mongoCollection.UpdateAsync(id, Builders<T>.Update.Unset(unsetFieldSelector));
+        }
+        else
+        {
+            await _mongoCollection.UpdateAsync(id, Builders<T>.Update.Set(fieldSelector, value));
+        }
     }
 
     public virtual async Task Update(string id, UpdateDefinition<T> update)

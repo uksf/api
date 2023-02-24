@@ -32,7 +32,7 @@ public interface IMongoContext<T> where T : MongoObject
     T GetSingle(string id);
     T GetSingle(Func<T, bool> predicate);
     Task Add(T item);
-    Task Update(string id, Expression<Func<T, object>> fieldSelector, object value);
+    Task Update<TField>(string id, Expression<Func<T, TField>> fieldSelector, TField value);
     Task Update(string id, UpdateDefinition<T> update);
     Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update);
     Task UpdateMany(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update);
@@ -62,7 +62,7 @@ public class MongoContext<T> : MongoContextBase<T>, IMongoContext<T> where T : M
         DataAddEvent(item);
     }
 
-    public override async Task Update(string id, Expression<Func<T, object>> fieldSelector, object value)
+    public override async Task Update<TField>(string id, Expression<Func<T, TField>> fieldSelector, TField value)
     {
         await base.Update(id, fieldSelector, value);
         DataUpdateEvent(id);

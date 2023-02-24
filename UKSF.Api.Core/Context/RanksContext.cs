@@ -16,7 +16,7 @@ public class RanksContext : CachedMongoContext<DomainRank>, IRanksContext
 
     public override DomainRank GetSingle(string name)
     {
-        return GetSingle(x => x.Name == name || x.Id == name);
+        return GetSingle(x => x.Name == name);
     }
 
     protected override void SetCache(IEnumerable<DomainRank> newCollection)

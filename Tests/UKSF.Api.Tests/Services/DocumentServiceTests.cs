@@ -55,7 +55,7 @@ public class DocumentServiceTests
     {
         Given_folder_metadata();
 
-        await _subject.CreateDocument("2", new() { Name = "About.md" });
+        await _subject.CreateDocument("2", new() { Name = "About.json" });
 
         _mockIDocumentMetadataContext.Verify(x => x.Update("2", It.IsAny<UpdateDefinition<DomainDocumentFolderMetadata>>()), Times.Once());
     }
@@ -65,9 +65,9 @@ public class DocumentServiceTests
     {
         Given_folder_metadata();
 
-        var act = async () => await _subject.CreateDocument("2", new() { Name = "Training1.md" });
+        var act = async () => await _subject.CreateDocument("2", new() { Name = "Training1.json" });
 
-        await act.Should().ThrowAsync<DocumentException>().WithMessageAndStatusCode("A document already exists at path 'UKSF\\JSFAW\\Training1.md'", 400);
+        await act.Should().ThrowAsync<DocumentException>().WithMessageAndStatusCode("A document already exists at path 'UKSF\\JSFAW\\Training1.json'", 400);
     }
 
     [Fact]
@@ -76,16 +76,16 @@ public class DocumentServiceTests
         Given_folder_metadata();
         _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DocumentPermissions>())).Returns(false);
 
-        var act = async () => await _subject.CreateDocument("2", new() { Name = "Training2.md" });
+        var act = async () => await _subject.CreateDocument("2", new() { Name = "Training2.json" });
 
-        await act.Should().ThrowAsync<FolderAccessDeniedException>().WithMessageAndStatusCode("Access denied", 403);
+        await act.Should().ThrowAsync<FolderException>().WithMessageAndStatusCode("Access denied", 400);
     }
 
     [Fact]
     public async Task When_updating_a_document_and_update_is_newer()
     {
         Given_folder_metadata();
-        _mockIFileContext.Setup(x => x.Exists("1.md")).Returns(true);
+        _mockIFileContext.Setup(x => x.Exists("1.json")).Returns(true);
 
         var result = await _subject.UpdateDocumentContent("2", "1", new() { NewText = "New text", LastKnownUpdated = _utcNow.AddDays(-1) });
 
@@ -106,7 +106,7 @@ public class DocumentServiceTests
 
         await act.Should()
                  .ThrowAsync<DocumentException>()
-                 .WithMessageAndStatusCode("Document update for 'Training1.md' is behind more recent changes. Please refresh", 400);
+                 .WithMessageAndStatusCode("Document update for 'Training1.json' is behind more recent changes. Please refresh", 400);
     }
 
     private void Given_folder_metadata()
@@ -121,7 +121,7 @@ public class DocumentServiceTests
                                              FullPath = "UKSF\\JSFAW",
                                              Documents = new()
                                              {
-                                                 new() { Id = "1", Folder = "2", Name = "Training1.md", LastUpdated = _utcNow.AddDays(-2) }
+                                                 new() { Id = "1", Folder = "2", Name = "Training1.json", LastUpdated = _utcNow.AddDays(-2) }
                                              }
                                          }
                                      );

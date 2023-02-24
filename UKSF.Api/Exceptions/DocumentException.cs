@@ -13,6 +13,3 @@ public class DocumentNotFoundException : NotFoundException
 {
     public DocumentNotFoundException(string message) : base(message) { }
 }
-
-[Serializable]
-public class DocumentAccessDeniedException : AccessDeniedException { }

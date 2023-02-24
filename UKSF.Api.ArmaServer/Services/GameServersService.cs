@@ -8,6 +8,8 @@ using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models.Request;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.Services;
 
@@ -26,19 +28,27 @@ public interface IGameServersService
     int KillAllArmaProcesses();
     List<GameServerMod> GetAvailableMods(string id);
     List<GameServerMod> GetEnvironmentMods(GameEnvironment environment);
+    Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate);
 }
 
 public class GameServersService : IGameServersService
 {
     private readonly IGameServerHelpers _gameServerHelpers;
+    private readonly IVariablesService _variablesService;
     private readonly IGameServersContext _gameServersContext;
     private readonly IMissionPatchingService _missionPatchingService;
 
-    public GameServersService(IGameServersContext gameServersContext, IMissionPatchingService missionPatchingService, IGameServerHelpers gameServerHelpers)
+    public GameServersService(
+        IGameServersContext gameServersContext,
+        IMissionPatchingService missionPatchingService,
+        IGameServerHelpers gameServerHelpers,
+        IVariablesService variablesService
+    )
     {
         _gameServersContext = gameServersContext;
         _missionPatchingService = missionPatchingService;
         _gameServerHelpers = gameServerHelpers;
+        _variablesService = variablesService;
     }
 
     public int GetGameInstanceCount()
@@ -62,6 +72,11 @@ public class GameServersService : IGameServersService
 
     public async Task GetGameServerStatus(GameServer gameServer)
     {
+        if (_variablesService.GetFeatureState("SKIP_SERVER_STATUS"))
+        {
+            return;
+        }
+
         if (gameServer.ProcessId != 0)
         {
             gameServer.Status.Started = Process.GetProcesses().Any(x => x.Id == gameServer.ProcessId);
@@ -294,5 +309,24 @@ public class GameServersService : IGameServersService
                .Where(x => x.modFiles.Any())
                .Select(x => new GameServerMod { Name = x.modFolder.Name, Path = x.modFolder.FullName })
                .ToList();
+    }
+
+    public async Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate)
+    {
+        foreach (var server in _gameServersContext.Get())
+        {
+            if (server.Order == orderUpdate.PreviousIndex)
+            {
+                await _gameServersContext.Update(server.Id, x => x.Order, orderUpdate.NewIndex);
+            }
+            else if (server.Order > orderUpdate.PreviousIndex && server.Order <= orderUpdate.NewIndex)
+            {
+                await _gameServersContext.Update(server.Id, x => x.Order, server.Order - 1);
+            }
+            else if (server.Order < orderUpdate.PreviousIndex && server.Order >= orderUpdate.NewIndex)
+            {
+                await _gameServersContext.Update(server.Id, x => x.Order, server.Order + 1);
+            }
+        }
     }
 }

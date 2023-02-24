@@ -13,9 +13,9 @@ namespace UKSF.Api.Services;
 
 public interface IDocumentService
 {
-    Task<DomainDocumentMetadata> GetDocument(string folderId, string documentId);
-    Task<DomainDocumentMetadata> CreateDocument(string folderId, CreateDocumentRequest createDocument);
-    Task<DomainDocumentMetadata> UpdateDocumentPermissions(string folderId, string documentId, UpdateDocumentPermissionsRequest newPermissions);
+    Task<DocumentMetadataResponse> GetDocument(string folderId, string documentId);
+    Task<DocumentMetadataResponse> CreateDocument(string folderId, CreateDocumentRequest createDocument);
+    Task<DocumentMetadataResponse> UpdateDocument(string folderId, string documentId, CreateDocumentRequest newPermissions);
     Task DeleteDocument(string folderId, string documentId);
 
     Task<DocumentContentResponse> GetDocumentContent(string folderId, string documentId);
@@ -51,17 +51,22 @@ public class DocumentService : IDocumentService
         _logger = logger;
     }
 
-    public Task<DomainDocumentMetadata> GetDocument(string folderId, string documentId)
+    public Task<DocumentMetadataResponse> GetDocument(string folderId, string documentId)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
 
-        return Task.FromResult(documentMetadata);
+        return Task.FromResult(MapDocument(documentMetadata));
     }
 
-    public async Task<DomainDocumentMetadata> CreateDocument(string folderId, CreateDocumentRequest createDocument)
+    public async Task<DocumentMetadataResponse> CreateDocument(string folderId, CreateDocumentRequest createDocument)
     {
-        var folderMetadata = ValidateAndGetFolder(folderId, true);
+        var folderMetadata = ValidateAndGetFolder(folderId);
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.ReadPermissions))
+        {
+            throw new FolderException("Cannot create documents for this folder");
+        }
+
         var documentMetadata = new DomainDocumentMetadata
         {
             Folder = folderId,
@@ -73,7 +78,11 @@ public class DocumentService : IDocumentService
             ReadPermissions = createDocument.ReadPermissions,
             WritePermissions = createDocument.WritePermissions
         };
-        ValidateDocumentWritePermissions(documentMetadata);
+
+        if (!_documentPermissionsService.DoesContextHaveReadPermission(documentMetadata.ReadPermissions))
+        {
+            throw new DocumentException("Cannot create document you won't be able to view");
+        }
 
         if (folderMetadata.Documents.Any(x => x.Name.EqualsIgnoreCase(documentMetadata.Name)))
         {
@@ -81,17 +90,30 @@ public class DocumentService : IDocumentService
         }
 
         await _documentFolderMetadataContext.Update(folderId, Builders<DomainDocumentFolderMetadata>.Update.Push(x => x.Documents, documentMetadata));
-        await CreateDocumentFile(documentMetadata.Id);
+        CreateDocumentFile(documentMetadata.Id);
 
         _logger.LogAudit($"Created document at {documentMetadata.FullPath}");
-        return documentMetadata;
+        return MapDocument(documentMetadata);
     }
 
-    public async Task<DomainDocumentMetadata> UpdateDocumentPermissions(string folderId, string documentId, UpdateDocumentPermissionsRequest newPermissions)
+    public async Task<DocumentMetadataResponse> UpdateDocument(string folderId, string documentId, CreateDocumentRequest newPermissions)
     {
-        var folderMetadata = ValidateAndGetFolder(folderId, true);
-        var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId, true);
+        var folderMetadata = ValidateAndGetFolder(folderId);
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.ReadPermissions))
+        {
+            throw new FolderException("Cannot edit documents for this folder");
+        }
 
+        var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata.ReadPermissions))
+        {
+            throw new DocumentException("Cannot edit document");
+        }
+
+        await _documentFolderMetadataContext.FindAndUpdate(
+            x => x.Id == folderId && x.Documents.Any(y => y.Id == documentId),
+            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Documents.FirstMatchingElement().Name, newPermissions.Name)
+        );
         await _documentFolderMetadataContext.FindAndUpdate(
             x => x.Id == folderId && x.Documents.Any(y => y.Id == documentId),
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Documents.FirstMatchingElement().WritePermissions, newPermissions.WritePermissions)
@@ -101,14 +123,25 @@ public class DocumentService : IDocumentService
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Documents.FirstMatchingElement().ReadPermissions, newPermissions.ReadPermissions)
         );
 
-        _logger.LogAudit($"Updated document permissions for {documentMetadata.FullPath}");
-        return ValidateAndGetDocument(folderMetadata, documentId);
+        _logger.LogAudit($"Updated document for {documentMetadata.FullPath}");
+        documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
+        return MapDocument(documentMetadata);
     }
 
     public async Task DeleteDocument(string folderId, string documentId)
     {
-        var folderMetadata = ValidateAndGetFolder(folderId, true);
-        var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId, true);
+        var folderMetadata = ValidateAndGetFolder(folderId);
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.ReadPermissions))
+        {
+            throw new FolderException("Cannot delete documents for this folder");
+        }
+
+        var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata.ReadPermissions))
+        {
+            throw new DocumentException("Cannot delete document");
+        }
+
         ValidateAndGetDocumentPath(documentMetadata.Id);
 
         await _documentFolderMetadataContext.Update(
@@ -131,8 +164,18 @@ public class DocumentService : IDocumentService
 
     public async Task<DocumentContentResponse> UpdateDocumentContent(string folderId, string documentId, UpdateDocumentContentRequest updateDocumentContent)
     {
-        var folderMetadata = ValidateAndGetFolder(folderId, true);
-        var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId, true);
+        var folderMetadata = ValidateAndGetFolder(folderId);
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.ReadPermissions))
+        {
+            throw new FolderException("Cannot edit documents for this folder");
+        }
+
+        var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata.ReadPermissions))
+        {
+            throw new DocumentException("Cannot edit document");
+        }
+
         if (updateDocumentContent.LastKnownUpdated < documentMetadata.LastUpdated)
         {
             throw new DocumentException($"Document update for '{documentMetadata.Name}' is behind more recent changes. Please refresh");
@@ -151,7 +194,7 @@ public class DocumentService : IDocumentService
         return new() { Text = updateDocumentContent.NewText, LastUpdated = updated };
     }
 
-    private DomainDocumentFolderMetadata ValidateAndGetFolder(string folderId, bool requireWritePermission = false)
+    private DomainDocumentFolderMetadata ValidateAndGetFolder(string folderId)
     {
         var folderMetadata = _documentFolderMetadataContext.GetSingle(folderId);
         if (folderMetadata == null)
@@ -159,17 +202,15 @@ public class DocumentService : IDocumentService
             throw new FolderNotFoundException($"Folder with ID '{folderId}' not found");
         }
 
-        if (requireWritePermission)
+        if (!_documentPermissionsService.DoesContextHaveReadPermission(folderMetadata.ReadPermissions))
         {
-            ValidateFolderWritePermissions(folderMetadata);
-            return folderMetadata;
+            throw new FolderException("Cannot view folder");
         }
 
-        ValidateFolderReadPermissions(folderMetadata);
         return folderMetadata;
     }
 
-    private DomainDocumentMetadata ValidateAndGetDocument(DomainDocumentFolderMetadata folderMetadata, string documentId, bool requireWritePermission = false)
+    private DomainDocumentMetadata ValidateAndGetDocument(DomainDocumentFolderMetadata folderMetadata, string documentId)
     {
         var documentMetadata = folderMetadata.Documents.FirstOrDefault(x => x.Id == documentId);
         if (documentMetadata == null)
@@ -177,46 +218,12 @@ public class DocumentService : IDocumentService
             throw new DocumentNotFoundException($"Document with ID '{documentId}' not found");
         }
 
-        if (requireWritePermission)
-        {
-            ValidateDocumentWritePermissions(documentMetadata);
-            return documentMetadata;
-        }
-
-        ValidateDocumentReadPermissions(documentMetadata);
-        return documentMetadata;
-    }
-
-    private void ValidateDocumentReadPermissions(DomainDocumentMetadata documentMetadata)
-    {
         if (!_documentPermissionsService.DoesContextHaveReadPermission(documentMetadata.ReadPermissions))
         {
-            throw new DocumentAccessDeniedException();
+            throw new DocumentException("Cannot view document");
         }
-    }
 
-    private void ValidateDocumentWritePermissions(DomainDocumentMetadata documentMetadata)
-    {
-        if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata.WritePermissions))
-        {
-            throw new DocumentAccessDeniedException();
-        }
-    }
-
-    private void ValidateFolderReadPermissions(DomainDocumentFolderMetadata folderMetadata)
-    {
-        if (!_documentPermissionsService.DoesContextHaveReadPermission(folderMetadata.ReadPermissions))
-        {
-            throw new FolderAccessDeniedException();
-        }
-    }
-
-    private void ValidateFolderWritePermissions(DomainDocumentFolderMetadata folderMetadata)
-    {
-        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.WritePermissions))
-        {
-            throw new FolderAccessDeniedException();
-        }
+        return documentMetadata;
     }
 
     private string ValidateAndGetDocumentPath(string documentId)
@@ -224,30 +231,46 @@ public class DocumentService : IDocumentService
         var documentPath = FormatDocumentPath(documentId);
         if (!_fileContext.Exists(documentPath))
         {
-            throw new DocumentNotFoundException($"No document file found for '{documentPath}'");
+            throw new DocumentNotFoundException("No document file found");
         }
 
         return documentPath;
     }
 
-    private Task CreateDocumentFile(string documentId)
+    private void CreateDocumentFile(string documentId)
     {
         var documentPath = FormatDocumentPath(documentId);
         _fileContext.CreateFile(documentPath);
-        return _fileContext.WriteTextToFile(documentPath, "Markdown supported!\nStart adding some text...");
     }
 
     private void RenameDocumentFile(string documentId)
     {
         var documentsPath = _variablesService.GetVariable("DOCUMENTS_PATH").AsString();
-        var documentPath = Path.Combine(documentsPath, $"{documentId}.md");
-        var newPath = Path.Combine(documentsPath, "__DELETED", $"{documentId}.md");
+        var documentPath = Path.Combine(documentsPath, $"{documentId}.json");
+        var newPath = Path.Combine(documentsPath, "__DELETED", $"{documentId}.json");
         _fileContext.Rename(documentPath, newPath);
     }
 
     private string FormatDocumentPath(string documentId)
     {
         var documentsPath = _variablesService.GetVariable("DOCUMENTS_PATH").AsString();
-        return Path.Combine(documentsPath, $"{documentId}.md");
+        return Path.Combine(documentsPath, $"{documentId}.json");
+    }
+
+    private DocumentMetadataResponse MapDocument(DomainDocumentMetadata documentMetadata)
+    {
+        return new()
+        {
+            Id = documentMetadata.Id,
+            Folder = documentMetadata.Folder,
+            Name = documentMetadata.Name,
+            FullPath = documentMetadata.FullPath,
+            Created = documentMetadata.Created,
+            LastUpdated = documentMetadata.LastUpdated,
+            Creator = documentMetadata.Creator,
+            ReadPermissions = documentMetadata.ReadPermissions,
+            WritePermissions = documentMetadata.WritePermissions,
+            CanWrite = _documentPermissionsService.DoesContextHaveWritePermission(documentMetadata.WritePermissions)
+        };
     }
 }

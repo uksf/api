@@ -13,6 +13,3 @@ public class FolderNotFoundException : NotFoundException
 {
     public FolderNotFoundException(string message) : base(message) { }
 }
-
-[Serializable]
-public class FolderAccessDeniedException : AccessDeniedException { }

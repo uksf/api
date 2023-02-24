@@ -75,10 +75,10 @@ public class DocumentPermissionsService : IDocumentPermissionsService
         return writePermission || unitIds.Any(unitId => _unitsService.AnyChildHasMember(unitId, memberId));
     }
 
-    private bool ValidateRankPermissions(string rankId)
+    private bool ValidateRankPermissions(string requiredRank)
     {
         var domainAccount = _accountService.GetUserAccount();
         var memberRank = domainAccount.Rank;
-        return _ranksService.IsSuperiorOrEqual(memberRank, rankId);
+        return _ranksService.IsSuperiorOrEqual(memberRank, requiredRank);
     }
 }

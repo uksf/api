@@ -5,6 +5,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Configuration;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
+using UKSF.Api.Discord.Exceptions;
 
 namespace UKSF.Api.Discord.Services;
 
@@ -87,6 +88,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
             if (tries >= 3)
             {
                 _logger.LogError("Discord failed to reconnect itself after 45 seconds");
+                throw new DiscordOfflineException();
             }
         }
     }

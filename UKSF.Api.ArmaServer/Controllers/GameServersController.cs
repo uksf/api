@@ -15,6 +15,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Request;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.Controllers;
@@ -141,19 +142,11 @@ public class GameServersController : ControllerBase
         return _gameServersContext.Get();
     }
 
-    [HttpPost("order")]
+    [HttpPatch("order")]
     [Authorize]
-    public async Task<IEnumerable<GameServer>> UpdateOrder([FromBody] List<GameServer> newServerOrder)
+    public async Task<IEnumerable<GameServer>> UpdateOrder([FromBody] OrderUpdateRequest orderUpdate)
     {
-        for (var index = 0; index < newServerOrder.Count; index++)
-        {
-            var gameServer = newServerOrder[index];
-            if (_gameServersContext.GetSingle(gameServer.Id).Order != index)
-            {
-                await _gameServersContext.Update(gameServer.Id, x => x.Order, index);
-            }
-        }
-
+        await _gameServersService.UpdateGameServerOrder(orderUpdate);
         SendAnyUpdateIfNotCaller(true);
         return _gameServersContext.Get();
     }
