@@ -66,13 +66,14 @@ public class DocumentPermissionsService : IDocumentPermissionsService
 
     private bool ValidateUnitPermissions(IReadOnlyCollection<string> unitIds, string memberId, bool checkUnitParents)
     {
-        var writePermission = unitIds.Any(unitId => _unitsService.AnyParentHasMember(unitId, memberId));
-        if (checkUnitParents)
-        {
-            return writePermission;
-        }
-
-        return writePermission || unitIds.Any(unitId => _unitsService.AnyChildHasMember(unitId, memberId));
+        return unitIds.Any(unitId => _unitsService.AnyParentHasMember(unitId, memberId));
+        // var writePermission = unitIds.Any(unitId => _unitsService.AnyParentHasMember(unitId, memberId));
+        // if (checkUnitParents)
+        // {
+        //     return writePermission;
+        // }
+        //
+        // return writePermission || unitIds.Any(unitId => _unitsService.AnyChildHasMember(unitId, memberId));
     }
 
     private bool ValidateRankPermissions(string requiredRank)

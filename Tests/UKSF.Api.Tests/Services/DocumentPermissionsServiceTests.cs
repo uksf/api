@@ -53,21 +53,7 @@ public class DocumentPermissionsServiceTests
     [InlineData(false)]
     public void When_checking_read_permission_for_units_only(bool hasPermission)
     {
-        _mockIUnitsService.Setup(x => x.AnyChildHasMember(_unitId, _memberId)).Returns(hasPermission);
-
-        var result = _subject.DoesContextHaveReadPermission(new() { Units = new() { _unitId } });
-
-        result.Should().Be(hasPermission);
-    }
-
-    [Theory]
-    [InlineData(true, false, true)]
-    [InlineData(false, true, true)]
-    [InlineData(false, false, false)]
-    public void When_checking_read_permission_for_units_only_with_write_permission(bool hasWrite, bool hasRead, bool hasPermission)
-    {
-        _mockIUnitsService.Setup(x => x.AnyParentHasMember(_unitId, _memberId)).Returns(hasWrite);
-        _mockIUnitsService.Setup(x => x.AnyChildHasMember(_unitId, _memberId)).Returns(hasRead);
+        _mockIUnitsService.Setup(x => x.AnyParentHasMember(_unitId, _memberId)).Returns(hasPermission);
 
         var result = _subject.DoesContextHaveReadPermission(new() { Units = new() { _unitId } });
 
@@ -105,7 +91,7 @@ public class DocumentPermissionsServiceTests
     [InlineData(false, false, false)]
     public void When_checking_permission_for_units_and_rank(bool hasUnitPermission, bool hasRankPermission, bool hasPermission)
     {
-        _mockIUnitsService.Setup(x => x.AnyChildHasMember(_unitId, _memberId)).Returns(hasUnitPermission);
+        _mockIUnitsService.Setup(x => x.AnyParentHasMember(_unitId, _memberId)).Returns(hasUnitPermission);
         _mockIRanksService.Setup(x => x.IsSuperiorOrEqual(It.IsAny<string>(), It.IsAny<string>())).Returns(hasRankPermission);
 
         var result = _subject.DoesContextHaveReadPermission(new() { Units = new() { _unitId }, Rank = "otherRank" });
