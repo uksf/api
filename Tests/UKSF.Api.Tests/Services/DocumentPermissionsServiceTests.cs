@@ -63,6 +63,19 @@ public class DocumentPermissionsServiceTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
+    public void When_checking_permission_for_units_with_selected_units_only(bool selectedUnitsOnly)
+    {
+        _mockIUnitsService.Setup(x => x.HasMember(_unitId, _memberId)).Returns(true);
+        _mockIUnitsService.Setup(x => x.AnyParentHasMember(_unitId, _memberId)).Returns(true);
+
+        var result = _subject.DoesContextHaveReadPermission(new() { Units = new() { _unitId }, SelectedUnitsOnly = selectedUnitsOnly });
+
+        result.Should().Be(true);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
     public void When_checking_write_permission_for_units_only(bool hasPermission)
     {
         _mockIUnitsService.Setup(x => x.AnyParentHasMember(_unitId, _memberId)).Returns(hasPermission);

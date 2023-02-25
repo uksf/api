@@ -33,15 +33,15 @@ public class DocumentPermissionsService : IDocumentPermissionsService
 
     public bool DoesContextHaveReadPermission(DocumentPermissions documentPermissions)
     {
-        return DoesContextHavePermission(documentPermissions, false);
+        return DoesContextHavePermission(documentPermissions);
     }
 
     public bool DoesContextHaveWritePermission(DocumentPermissions documentPermissions)
     {
-        return DoesContextHavePermission(documentPermissions, true);
+        return DoesContextHavePermission(documentPermissions);
     }
 
-    private bool DoesContextHavePermission(DocumentPermissions documentPermissions, bool checkUnitParents)
+    private bool DoesContextHavePermission(DocumentPermissions documentPermissions)
     {
         if (_httpContextService.UserHasPermission(Permissions.Superadmin))
         {
@@ -53,7 +53,7 @@ public class DocumentPermissionsService : IDocumentPermissionsService
         var hasPermission = true;
         if (documentPermissions.Units.Any())
         {
-            hasPermission = ValidateUnitPermissions(documentPermissions.Units, id, checkUnitParents);
+            hasPermission = ValidateUnitPermissions(documentPermissions.Units, documentPermissions.SelectedUnitsOnly, id);
         }
 
         if (!documentPermissions.Rank.IsNullOrEmpty())
@@ -64,16 +64,11 @@ public class DocumentPermissionsService : IDocumentPermissionsService
         return hasPermission;
     }
 
-    private bool ValidateUnitPermissions(IReadOnlyCollection<string> unitIds, string memberId, bool checkUnitParents)
+    private bool ValidateUnitPermissions(IEnumerable<string> unitIds, bool selectedUnitsOnly, string memberId)
     {
-        return unitIds.Any(unitId => _unitsService.AnyParentHasMember(unitId, memberId));
-        // var writePermission = unitIds.Any(unitId => _unitsService.AnyParentHasMember(unitId, memberId));
-        // if (checkUnitParents)
-        // {
-        //     return writePermission;
-        // }
-        //
-        // return writePermission || unitIds.Any(unitId => _unitsService.AnyChildHasMember(unitId, memberId));
+        return selectedUnitsOnly
+            ? unitIds.Any(unitId => _unitsService.HasMember(unitId, memberId))
+            : unitIds.Any(unitId => _unitsService.AnyParentHasMember(unitId, memberId));
     }
 
     private bool ValidateRankPermissions(string requiredRank)

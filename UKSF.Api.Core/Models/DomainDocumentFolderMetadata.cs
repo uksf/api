@@ -43,4 +43,5 @@ public class DocumentPermissions
     [BsonRepresentation(BsonType.ObjectId)]
     public List<string> Units { get; set; } = new();
     public string Rank { get; set; }
+    public bool SelectedUnitsOnly { get; set; }
 }
