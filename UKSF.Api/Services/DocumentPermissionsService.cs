@@ -7,8 +7,8 @@ namespace UKSF.Api.Services;
 
 public interface IDocumentPermissionsService
 {
-    bool DoesContextHaveReadPermission(DocumentPermissions documentPermissions);
-    bool DoesContextHaveWritePermission(DocumentPermissions documentPermissions);
+    bool DoesContextHaveReadPermission(DomainMetadataWithPermissions metadataWithPermissions);
+    bool DoesContextHaveWritePermission(DomainMetadataWithPermissions metadataWithPermissions);
 }
 
 public class DocumentPermissionsService : IDocumentPermissionsService
@@ -31,17 +31,17 @@ public class DocumentPermissionsService : IDocumentPermissionsService
         _accountService = accountService;
     }
 
-    public bool DoesContextHaveReadPermission(DocumentPermissions documentPermissions)
+    public bool DoesContextHaveReadPermission(DomainMetadataWithPermissions metadataWithPermissions)
     {
-        return DoesContextHavePermission(documentPermissions);
+        return DoesContextHavePermission(metadataWithPermissions, false);
     }
 
-    public bool DoesContextHaveWritePermission(DocumentPermissions documentPermissions)
+    public bool DoesContextHaveWritePermission(DomainMetadataWithPermissions metadataWithPermissions)
     {
-        return DoesContextHavePermission(documentPermissions);
+        return DoesContextHavePermission(metadataWithPermissions, true);
     }
 
-    private bool DoesContextHavePermission(DocumentPermissions documentPermissions)
+    private bool DoesContextHavePermission(DomainMetadataWithPermissions metadataWithPermissions, bool write)
     {
         if (_httpContextService.UserHasPermission(Permissions.Superadmin))
         {
@@ -49,11 +49,14 @@ public class DocumentPermissionsService : IDocumentPermissionsService
         }
 
         var id = _httpContextService.GetUserId();
+        var documentPermissions = write ? metadataWithPermissions.WritePermissions : metadataWithPermissions.ReadPermissions;
 
         var hasPermission = true;
         if (documentPermissions.Units.Any())
         {
-            hasPermission = ValidateUnitPermissions(documentPermissions.Units, documentPermissions.SelectedUnitsOnly, id);
+            hasPermission = write
+                ? ValidateUnitWritePermissions(documentPermissions, id)
+                : ValidateUnitReadPermissions(documentPermissions, metadataWithPermissions.WritePermissions, id);
         }
 
         if (!documentPermissions.Rank.IsNullOrEmpty())
@@ -64,11 +67,24 @@ public class DocumentPermissionsService : IDocumentPermissionsService
         return hasPermission;
     }
 
-    private bool ValidateUnitPermissions(IEnumerable<string> unitIds, bool selectedUnitsOnly, string memberId)
+    private bool ValidateUnitReadPermissions(DocumentPermissions readPermissions, DocumentPermissions writePermissions, string memberId)
     {
-        return selectedUnitsOnly
-            ? unitIds.Any(unitId => _unitsService.HasMember(unitId, memberId))
-            : unitIds.Any(unitId => _unitsService.AnyParentHasMember(unitId, memberId));
+        var writePermission = ValidateUnitWritePermissions(writePermissions, memberId);
+        if (writePermission)
+        {
+            return true;
+        }
+
+        return readPermissions.SelectedUnitsOnly
+            ? readPermissions.Units.Any(unitId => _unitsService.HasMember(unitId, memberId))
+            : readPermissions.Units.Any(unitId => _unitsService.AnyChildHasMember(unitId, memberId));
+    }
+
+    private bool ValidateUnitWritePermissions(DocumentPermissions writePermissions, string memberId)
+    {
+        return writePermissions.SelectedUnitsOnly
+            ? writePermissions.Units.Any(unitId => _unitsService.HasMember(unitId, memberId))
+            : writePermissions.Units.Any(unitId => _unitsService.AnyParentHasMember(unitId, memberId));
     }
 
     private bool ValidateRankPermissions(string requiredRank)

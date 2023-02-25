@@ -62,7 +62,7 @@ public class DocumentService : IDocumentService
     public async Task<DocumentMetadataResponse> CreateDocument(string folderId, CreateDocumentRequest createDocument)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.WritePermissions))
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
             throw new FolderException("Cannot create documents in this folder");
         }
@@ -79,7 +79,7 @@ public class DocumentService : IDocumentService
             WritePermissions = createDocument.WritePermissions
         };
 
-        if (!_documentPermissionsService.DoesContextHaveReadPermission(documentMetadata.ReadPermissions))
+        if (!_documentPermissionsService.DoesContextHaveReadPermission(documentMetadata))
         {
             throw new DocumentException("Cannot create document you won't be able to view");
         }
@@ -99,13 +99,13 @@ public class DocumentService : IDocumentService
     public async Task<DocumentMetadataResponse> UpdateDocument(string folderId, string documentId, CreateDocumentRequest newPermissions)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.ReadPermissions))
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
             throw new FolderException("Cannot edit documents in this folder");
         }
 
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
-        if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata.ReadPermissions))
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata))
         {
             throw new DocumentException("Cannot edit document");
         }
@@ -131,13 +131,13 @@ public class DocumentService : IDocumentService
     public async Task DeleteDocument(string folderId, string documentId)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.ReadPermissions))
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
             throw new FolderException("Cannot delete documents from this folder");
         }
 
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
-        if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata.ReadPermissions))
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata))
         {
             throw new DocumentException("Cannot delete document");
         }
@@ -165,13 +165,13 @@ public class DocumentService : IDocumentService
     public async Task<DocumentContentResponse> UpdateDocumentContent(string folderId, string documentId, UpdateDocumentContentRequest updateDocumentContent)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.ReadPermissions))
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
             throw new FolderException("Cannot edit documents in this folder");
         }
 
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
-        if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata.ReadPermissions))
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata))
         {
             throw new DocumentException("Cannot edit document");
         }
@@ -202,7 +202,7 @@ public class DocumentService : IDocumentService
             throw new FolderNotFoundException($"Folder with ID '{folderId}' not found");
         }
 
-        if (!_documentPermissionsService.DoesContextHaveReadPermission(folderMetadata.ReadPermissions))
+        if (!_documentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
         {
             throw new FolderException("Cannot view folder");
         }
@@ -218,7 +218,7 @@ public class DocumentService : IDocumentService
             throw new DocumentNotFoundException($"Document with ID '{documentId}' not found");
         }
 
-        if (!_documentPermissionsService.DoesContextHaveReadPermission(documentMetadata.ReadPermissions))
+        if (!_documentPermissionsService.DoesContextHaveReadPermission(documentMetadata))
         {
             throw new DocumentException("Cannot view document");
         }
@@ -270,7 +270,7 @@ public class DocumentService : IDocumentService
             Creator = documentMetadata.Creator,
             ReadPermissions = documentMetadata.ReadPermissions,
             WritePermissions = documentMetadata.WritePermissions,
-            CanWrite = _documentPermissionsService.DoesContextHaveWritePermission(documentMetadata.WritePermissions)
+            CanWrite = _documentPermissionsService.DoesContextHaveWritePermission(documentMetadata)
         };
     }
 }

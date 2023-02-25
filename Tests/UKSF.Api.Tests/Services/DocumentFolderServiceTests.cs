@@ -33,8 +33,8 @@ public class DocumentFolderServiceTests
     public DocumentFolderServiceTests()
     {
         _mockIVariablesService.Setup(x => x.GetVariable("DOCUMENTS_PATH")).Returns(new VariableItem { Item = "" });
-        _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DocumentPermissions>())).Returns(true);
-        _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DocumentPermissions>())).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
         _mockIClock.Setup(x => x.UtcNow()).Returns(_utcNow);
         _mockIHttpContextService.Setup(x => x.GetUserId()).Returns(_memberId);
 
@@ -93,7 +93,7 @@ public class DocumentFolderServiceTests
     public async Task When_creating_a_folder_without_permission()
     {
         Given_folder_metadata();
-        _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DocumentPermissions>())).Returns(false);
+        _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
 
         var act = async () => await _subject.CreateFolder(new() { Parent = "2", Name = "SOPs" });
 

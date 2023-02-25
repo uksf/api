@@ -51,7 +51,7 @@ public class DocumentFolderService : IDocumentFolderService
 
     public List<FolderMetadataResponse> GetAllFolders()
     {
-        return _documentFolderMetadataContext.Get(x => _documentPermissionsService.DoesContextHaveReadPermission(x.ReadPermissions)).Select(MapFolder).ToList();
+        return _documentFolderMetadataContext.Get(x => _documentPermissionsService.DoesContextHaveReadPermission(x)).Select(MapFolder).ToList();
     }
 
     public Task<FolderMetadataResponse> GetFolder(string folderId)
@@ -66,7 +66,7 @@ public class DocumentFolderService : IDocumentFolderService
         if (createFolder.Parent != ObjectId.Empty.ToString())
         {
             var parentFolderMetadata = ValidateAndGetFolder(createFolder.Parent);
-            if (!_documentPermissionsService.DoesContextHaveWritePermission(parentFolderMetadata.ReadPermissions))
+            if (!_documentPermissionsService.DoesContextHaveWritePermission(parentFolderMetadata))
             {
                 throw new FolderException("Cannot create folder");
             }
@@ -84,7 +84,7 @@ public class DocumentFolderService : IDocumentFolderService
             WritePermissions = createFolder.WritePermissions
         };
 
-        if (!_documentPermissionsService.DoesContextHaveReadPermission(folderMetadata.ReadPermissions))
+        if (!_documentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
         {
             throw new FolderException("Cannot create folder you won't be able to view");
         }
@@ -103,7 +103,7 @@ public class DocumentFolderService : IDocumentFolderService
     public async Task<FolderMetadataResponse> UpdateFolder(string folderId, CreateFolderRequest newPermissions)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.WritePermissions))
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
             throw new FolderException("Cannot edit folder");
         }
@@ -126,7 +126,7 @@ public class DocumentFolderService : IDocumentFolderService
     public async Task DeleteFolder(string folderId)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.WritePermissions))
+        if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
             throw new FolderException("Cannot delete folder");
         }
@@ -152,7 +152,7 @@ public class DocumentFolderService : IDocumentFolderService
             throw new FolderNotFoundException($"Folder with ID '{folderId}' not found");
         }
 
-        if (!_documentPermissionsService.DoesContextHaveReadPermission(folderMetadata.ReadPermissions))
+        if (!_documentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
         {
             throw new FolderException("Cannot view folder");
         }
@@ -194,7 +194,7 @@ public class DocumentFolderService : IDocumentFolderService
             ReadPermissions = folderMetadata.ReadPermissions,
             WritePermissions = folderMetadata.WritePermissions,
             Documents = folderMetadata.Documents.Select(MapDocument),
-            CanWrite = _documentPermissionsService.DoesContextHaveWritePermission(folderMetadata.WritePermissions)
+            CanWrite = _documentPermissionsService.DoesContextHaveWritePermission(folderMetadata)
         };
     }
 
@@ -211,7 +211,7 @@ public class DocumentFolderService : IDocumentFolderService
             Creator = documentMetadata.Creator,
             ReadPermissions = documentMetadata.ReadPermissions,
             WritePermissions = documentMetadata.WritePermissions,
-            CanWrite = _documentPermissionsService.DoesContextHaveWritePermission(documentMetadata.WritePermissions)
+            CanWrite = _documentPermissionsService.DoesContextHaveWritePermission(documentMetadata)
         };
     }
 }
