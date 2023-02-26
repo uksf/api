@@ -51,7 +51,6 @@ public class DocumentPermissionsServiceTests
     [InlineData(false)]
     public void When_checking_read_permission_for_units_only(bool hasPermission)
     {
-        Given_unit_write_permissions(false);
         Given_unit_read_permissions(hasPermission);
 
         var result = _subject.DoesContextHaveReadPermission(new() { ReadPermissions = { Units = new() { _unitId } } });
@@ -76,7 +75,7 @@ public class DocumentPermissionsServiceTests
     [InlineData(false)]
     public void When_checking_write_permission_for_units_only(bool hasPermission)
     {
-        _mockIUnitsService.Setup(x => x.AnyParentHasMember(_unitId, _memberId)).Returns(hasPermission);
+        Given_unit_write_permissions(hasPermission);
 
         var result = _subject.DoesContextHaveWritePermission(new() { WritePermissions = new() { Units = new() { _unitId } } });
 
@@ -113,11 +112,6 @@ public class DocumentPermissionsServiceTests
     private void Given_unit_write_permissions(bool hasPermission)
     {
         _mockIUnitsService.Setup(x => x.AnyParentHasMember(_unitId, _memberId)).Returns(hasPermission);
-    }
-
-    private void Given_unit_write_permissions_for_selected_units_only(bool hasPermission)
-    {
-        _mockIUnitsService.Setup(x => x.HasMember(_unitId, _memberId)).Returns(hasPermission);
     }
 
     private void Given_unit_read_permissions(bool hasPermission)

@@ -54,9 +54,7 @@ public class DocumentPermissionsService : IDocumentPermissionsService
         var hasPermission = true;
         if (documentPermissions.Units.Any())
         {
-            hasPermission = write
-                ? ValidateUnitWritePermissions(documentPermissions, id)
-                : ValidateUnitReadPermissions(documentPermissions, metadataWithPermissions.WritePermissions, id);
+            hasPermission = ValidateUnitPermissions(documentPermissions, id, write);
         }
 
         if (!documentPermissions.Rank.IsNullOrEmpty())
@@ -67,24 +65,11 @@ public class DocumentPermissionsService : IDocumentPermissionsService
         return hasPermission;
     }
 
-    private bool ValidateUnitReadPermissions(DocumentPermissions readPermissions, DocumentPermissions writePermissions, string memberId)
+    private bool ValidateUnitPermissions(DocumentPermissions permissions, string memberId, bool write)
     {
-        var writePermission = ValidateUnitWritePermissions(writePermissions, memberId);
-        if (writePermission)
-        {
-            return true;
-        }
-
-        return readPermissions.SelectedUnitsOnly
-            ? readPermissions.Units.Any(unitId => _unitsService.HasMember(unitId, memberId))
-            : readPermissions.Units.Any(unitId => _unitsService.AnyChildHasMember(unitId, memberId));
-    }
-
-    private bool ValidateUnitWritePermissions(DocumentPermissions writePermissions, string memberId)
-    {
-        return writePermissions.SelectedUnitsOnly
-            ? writePermissions.Units.Any(unitId => _unitsService.HasMember(unitId, memberId))
-            : writePermissions.Units.Any(unitId => _unitsService.AnyParentHasMember(unitId, memberId));
+        return permissions.SelectedUnitsOnly
+            ? permissions.Units.Any(unitId => _unitsService.HasMember(unitId, memberId))
+            : permissions.Units.Any(unitId => write ? _unitsService.AnyParentHasMember(unitId, memberId) : _unitsService.AnyChildHasMember(unitId, memberId));
     }
 
     private bool ValidateRankPermissions(string requiredRank)
