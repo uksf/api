@@ -33,49 +33,77 @@ public class DocumentPermissionsService : IDocumentPermissionsService
 
     public bool DoesContextHaveReadPermission(DomainMetadataWithPermissions metadataWithPermissions)
     {
-        return DoesContextHavePermission(metadataWithPermissions, false);
+        if (_httpContextService.UserHasPermission(Permissions.Superadmin))
+        {
+            return true;
+        }
+
+        var memberId = _httpContextService.GetUserId();
+        return ValidateWritePermission(metadataWithPermissions.WritePermissions, memberId, false) ||
+               ValidateReadPermission(metadataWithPermissions.ReadPermissions, memberId);
     }
 
     public bool DoesContextHaveWritePermission(DomainMetadataWithPermissions metadataWithPermissions)
-    {
-        return DoesContextHavePermission(metadataWithPermissions, true);
-    }
-
-    private bool DoesContextHavePermission(DomainMetadataWithPermissions metadataWithPermissions, bool write)
     {
         if (_httpContextService.UserHasPermission(Permissions.Superadmin))
         {
             return true;
         }
 
-        var id = _httpContextService.GetUserId();
-        var documentPermissions = write ? metadataWithPermissions.WritePermissions : metadataWithPermissions.ReadPermissions;
+        var memberId = _httpContextService.GetUserId();
+        return ValidateWritePermission(metadataWithPermissions.WritePermissions, memberId);
+    }
 
-        var hasPermission = true;
-        if (documentPermissions.Units.Any())
+    private bool ValidateWritePermission(DocumentPermissions writePermissions, string memberId, bool defaultPermission = true)
+    {
+        var hasPermission = defaultPermission;
+        if (writePermissions.Units.Any())
         {
-            hasPermission = ValidateUnitPermissions(documentPermissions, id, write);
+            hasPermission = ValidateUnitWritePermissions(writePermissions, memberId);
         }
 
-        if (!documentPermissions.Rank.IsNullOrEmpty())
+        if (!writePermissions.Rank.IsNullOrEmpty())
         {
-            hasPermission &= ValidateRankPermissions(documentPermissions.Rank);
+            hasPermission &= ValidateRankPermissions(writePermissions);
         }
 
         return hasPermission;
     }
 
-    private bool ValidateUnitPermissions(DocumentPermissions permissions, string memberId, bool write)
+    private bool ValidateReadPermission(DocumentPermissions readPermissions, string memberId)
     {
-        return permissions.SelectedUnitsOnly
-            ? permissions.Units.Any(unitId => _unitsService.HasMember(unitId, memberId))
-            : permissions.Units.Any(unitId => write ? _unitsService.AnyParentHasMember(unitId, memberId) : _unitsService.AnyChildHasMember(unitId, memberId));
+        var hasPermission = true;
+        if (readPermissions.Units.Any())
+        {
+            hasPermission = ValidateUnitReadPermissions(readPermissions, memberId);
+        }
+
+        if (!readPermissions.Rank.IsNullOrEmpty())
+        {
+            hasPermission &= ValidateRankPermissions(readPermissions);
+        }
+
+        return hasPermission;
     }
 
-    private bool ValidateRankPermissions(string requiredRank)
+    private bool ValidateUnitWritePermissions(DocumentPermissions writePermissions, string memberId)
+    {
+        return writePermissions.SelectedUnitsOnly
+            ? writePermissions.Units.Any(unitId => _unitsService.HasMember(unitId, memberId))
+            : writePermissions.Units.Any(unitId => _unitsService.AnyParentHasMember(unitId, memberId));
+    }
+
+    private bool ValidateUnitReadPermissions(DocumentPermissions readPermissions, string memberId)
+    {
+        return readPermissions.SelectedUnitsOnly
+            ? readPermissions.Units.Any(unitId => _unitsService.HasMember(unitId, memberId))
+            : readPermissions.Units.Any(unitId => _unitsService.AnyChildHasMember(unitId, memberId));
+    }
+
+    private bool ValidateRankPermissions(DocumentPermissions permissions)
     {
         var domainAccount = _accountService.GetUserAccount();
         var memberRank = domainAccount.Rank;
-        return _ranksService.IsSuperiorOrEqual(memberRank, requiredRank);
+        return _ranksService.IsSuperiorOrEqual(memberRank, permissions.Rank);
     }
 }

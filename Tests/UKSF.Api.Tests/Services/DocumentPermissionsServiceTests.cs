@@ -16,8 +16,9 @@ public class DocumentPermissionsServiceTests
     private readonly Mock<IHttpContextService> _mockIHttpContextService = new();
     private readonly Mock<IRanksService> _mockIRanksService = new();
     private readonly Mock<IUnitsService> _mockIUnitsService = new();
+    private readonly string _readUnitId = ObjectId.GenerateNewId().ToString();
     private readonly DocumentPermissionsService _subject;
-    private readonly string _unitId = ObjectId.GenerateNewId().ToString();
+    private readonly string _writeUnitId = ObjectId.GenerateNewId().ToString();
 
     public DocumentPermissionsServiceTests()
     {
@@ -29,103 +30,178 @@ public class DocumentPermissionsServiceTests
     }
 
     [Fact]
-    public void When_checking_permission_as_superadmin()
+    public void When_read_permissions_are_empty()
+    {
+        var result = _subject.DoesContextHaveReadPermission(new());
+
+        result.Should().Be(true);
+    }
+
+    [Fact]
+    public void When_user_is_superadmin()
     {
         _mockIHttpContextService.Setup(x => x.UserHasPermission(Permissions.Superadmin)).Returns(true);
 
-        var result = _subject.DoesContextHaveReadPermission(new());
+        var result = _subject.DoesContextHaveWritePermission(new());
 
         result.Should().Be(true);
     }
 
     [Fact]
-    public void When_checking_permission_for_empty()
+    public void When_write_permissions_are_empty()
     {
-        var result = _subject.DoesContextHaveReadPermission(new());
+        var result = _subject.DoesContextHaveWritePermission(new());
 
         result.Should().Be(true);
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void When_checking_read_permission_for_units_only(bool hasPermission)
-    {
-        Given_unit_read_permissions(hasPermission);
-
-        var result = _subject.DoesContextHaveReadPermission(new() { ReadPermissions = { Units = new() { _unitId } } });
-
-        result.Should().Be(hasPermission);
-    }
-
-    [Fact]
-    public void When_checking_permission_for_units_with_selected_units_only()
-    {
-        Given_unit_read_permissions_for_selected_units_only(true);
-
-        var result = _subject.DoesContextHaveReadPermission(new() { ReadPermissions = { Units = new() { _unitId }, SelectedUnitsOnly = true } });
-
-        result.Should().Be(true);
-        _mockIUnitsService.Verify(x => x.AnyParentHasMember(_unitId, _memberId), Times.Never);
-        _mockIUnitsService.Verify(x => x.AnyChildHasMember(_unitId, _memberId), Times.Never);
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void When_checking_write_permission_for_units_only(bool hasPermission)
-    {
-        Given_unit_write_permissions(hasPermission);
-
-        var result = _subject.DoesContextHaveWritePermission(new() { WritePermissions = new() { Units = new() { _unitId } } });
-
-        result.Should().Be(hasPermission);
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void When_checking_permission_for_rank_only(bool hasPermission)
-    {
-        Given_rank_permission(hasPermission);
-
-        var result = _subject.DoesContextHaveReadPermission(new() { ReadPermissions = new() { Rank = "otherRank" } });
-
-        result.Should().Be(hasPermission);
     }
 
     [Theory]
     [InlineData(true, true, true)]
-    [InlineData(false, true, false)]
     [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
     [InlineData(false, false, false)]
-    public void When_checking_permission_for_units_and_rank(bool hasUnitPermission, bool hasRankPermission, bool hasPermission)
+    public void When_checking_write_permissions(bool hasUnitPermission, bool hasRankPermission, bool hasPermission)
     {
-        Given_unit_read_permissions(hasUnitPermission);
+        Given_unit_write_permissions(hasUnitPermission);
         Given_rank_permission(hasRankPermission);
 
-        var result = _subject.DoesContextHaveReadPermission(new() { ReadPermissions = new() { Units = new() { _unitId }, Rank = "otherRank" } });
+        var result = _subject.DoesContextHaveWritePermission(
+            new() { WritePermissions = new() { Units = new() { _writeUnitId }, Rank = "permissionsRank", SelectedUnitsOnly = false } }
+        );
 
         result.Should().Be(hasPermission);
     }
 
+    [Theory]
+    [InlineData(true, true, false, true)]
+    [InlineData(true, true, true, true)]
+    [InlineData(true, false, false, true)]
+    [InlineData(false, true, false, true)]
+    [InlineData(false, false, false, true)]
+    public void When_checking_partial_write_permissions(bool hasUnits, bool hasRank, bool selectedUnitsOnly, bool hasPermission)
+    {
+        Given_unit_write_permissions(true);
+        Given_unit_write_permissions_for_selected_units_only(true);
+        Given_rank_permission(true);
+
+        var result = _subject.DoesContextHaveWritePermission(
+            new()
+            {
+                WritePermissions = new()
+                {
+                    Units = hasUnits ? new() { _writeUnitId } : new(),
+                    Rank = hasRank ? "permissionsRank" : string.Empty,
+                    SelectedUnitsOnly = selectedUnitsOnly
+                }
+            }
+        );
+
+        result.Should().Be(hasPermission);
+    }
+
+    [Fact]
+    public void When_checking_write_permissions_for_selected_units_only()
+    {
+        Given_unit_write_permissions(false);
+        Given_unit_write_permissions_for_selected_units_only(true);
+
+        var result = _subject.DoesContextHaveWritePermission(new() { WritePermissions = new() { Units = new() { _writeUnitId }, SelectedUnitsOnly = true } });
+
+        result.Should().Be(true);
+        Units_tree_is_not_checked(_writeUnitId);
+        Only_selected_units_are_checked(_writeUnitId);
+    }
+
+    [Theory]
+    [InlineData(true, true, true)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, false)]
+    public void When_checking_read_permissions(bool hasUnitPermission, bool hasRankPermission, bool hasPermission)
+    {
+        Given_unit_read_permissions(hasUnitPermission);
+        Given_rank_permission(hasRankPermission);
+
+        var result = _subject.DoesContextHaveReadPermission(
+            new() { ReadPermissions = new() { Units = new() { _readUnitId }, Rank = "permissionsRank", SelectedUnitsOnly = false } }
+        );
+
+        result.Should().Be(hasPermission);
+    }
+
+    [Theory]
+    [InlineData(true, true, false, true)]
+    [InlineData(true, true, true, true)]
+    [InlineData(true, false, false, true)]
+    [InlineData(false, true, false, true)]
+    [InlineData(false, false, false, true)]
+    public void When_checking_partial_read_permissions(bool hasUnits, bool hasRank, bool selectedUnitsOnly, bool hasPermission)
+    {
+        Given_unit_read_permissions(true);
+        Given_unit_read_permissions_for_selected_units_only(true);
+        Given_rank_permission(true);
+
+        var result = _subject.DoesContextHaveReadPermission(
+            new()
+            {
+                ReadPermissions =
+                {
+                    Units = hasUnits ? new() { _readUnitId } : new(),
+                    Rank = hasRank ? "permissionsRank" : string.Empty,
+                    SelectedUnitsOnly = selectedUnitsOnly
+                }
+            }
+        );
+
+        result.Should().Be(hasPermission);
+    }
+
+    [Fact]
+    public void When_checking_read_permissions_for_selected_units_only()
+    {
+        Given_unit_read_permissions(false);
+        Given_unit_read_permissions_for_selected_units_only(true);
+
+        var result = _subject.DoesContextHaveReadPermission(new() { ReadPermissions = new() { Units = new() { _readUnitId }, SelectedUnitsOnly = true } });
+
+        result.Should().Be(true);
+        Units_tree_is_not_checked(_readUnitId);
+        Only_selected_units_are_checked(_readUnitId);
+    }
+
     private void Given_unit_write_permissions(bool hasPermission)
     {
-        _mockIUnitsService.Setup(x => x.AnyParentHasMember(_unitId, _memberId)).Returns(hasPermission);
+        _mockIUnitsService.Setup(x => x.AnyParentHasMember(_writeUnitId, _memberId)).Returns(hasPermission);
+    }
+
+    private void Given_unit_write_permissions_for_selected_units_only(bool hasPermission)
+    {
+        _mockIUnitsService.Setup(x => x.HasMember(_writeUnitId, _memberId)).Returns(hasPermission);
     }
 
     private void Given_unit_read_permissions(bool hasPermission)
     {
-        _mockIUnitsService.Setup(x => x.AnyChildHasMember(_unitId, _memberId)).Returns(hasPermission);
+        _mockIUnitsService.Setup(x => x.AnyChildHasMember(_readUnitId, _memberId)).Returns(hasPermission);
     }
 
     private void Given_unit_read_permissions_for_selected_units_only(bool hasPermission)
     {
-        _mockIUnitsService.Setup(x => x.HasMember(_unitId, _memberId)).Returns(hasPermission);
+        _mockIUnitsService.Setup(x => x.HasMember(_readUnitId, _memberId)).Returns(hasPermission);
     }
 
     private void Given_rank_permission(bool hasPermission)
     {
         _mockIRanksService.Setup(x => x.IsSuperiorOrEqual(It.IsAny<string>(), It.IsAny<string>())).Returns(hasPermission);
+    }
+
+    private void Only_selected_units_are_checked(string unitId)
+    {
+        _mockIUnitsService.Verify(x => x.HasMember(unitId, _memberId), Times.Once);
+    }
+
+    private void Units_tree_is_not_checked(string unitId)
+    {
+        _mockIUnitsService.Verify(x => x.AnyParentHasMember(unitId, _memberId), Times.Never);
+        _mockIUnitsService.Verify(x => x.AnyChildHasMember(unitId, _memberId), Times.Never);
     }
 }
