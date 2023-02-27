@@ -40,6 +40,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
 
     public async Task Connect()
     {
+        _logger.LogInfo("Discord connecting");
         _client.Ready += OnClientOnReady;
         _client.Disconnected += ClientOnDisconnected;
 
@@ -49,6 +50,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
 
     public Task Disconnect()
     {
+        _logger.LogInfo("Discord disconnecting");
         return _client.StopAsync();
     }
 
@@ -82,12 +84,12 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         var tries = 0;
         while (!_connected)
         {
-            await Task.Delay(15);
+            await Task.Delay(30);
             tries++;
 
-            if (tries >= 3)
+            if (tries >= 10)
             {
-                _logger.LogError("Discord failed to reconnect itself after 45 seconds");
+                _logger.LogError("Discord failed to reconnect itself after 5 minutes");
                 throw new DiscordOfflineException();
             }
         }
