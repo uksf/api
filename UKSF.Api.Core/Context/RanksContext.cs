@@ -14,9 +14,9 @@ public class RanksContext : CachedMongoContext<DomainRank>, IRanksContext
 {
     public RanksContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "ranks") { }
 
-    public override DomainRank GetSingle(string name)
+    public override DomainRank GetSingle(string idOrName)
     {
-        return GetSingle(x => x.Name == name);
+        return GetSingle(x => x.Id == idOrName || x.Name == idOrName);
     }
 
     protected override void SetCache(IEnumerable<DomainRank> newCollection)

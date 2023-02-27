@@ -14,9 +14,9 @@ public class VariablesContext : CachedMongoContext<VariableItem>, IVariablesCont
 {
     public VariablesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "variables") { }
 
-    public override VariableItem GetSingle(string key)
+    public override VariableItem GetSingle(string idOrKey)
     {
-        return base.GetSingle(x => x.Key == key.Keyify());
+        return base.GetSingle(x => x.Id == idOrKey || x.Key == idOrKey.Keyify());
     }
 
     public async Task Update(string key, object value)

@@ -14,9 +14,9 @@ public class RolesContext : CachedMongoContext<DomainRole>, IRolesContext
 {
     public RolesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "roles") { }
 
-    public override DomainRole GetSingle(string name)
+    public override DomainRole GetSingle(string idOrName)
     {
-        return GetSingle(x => x.Name == name);
+        return GetSingle(x => x.Id == idOrName || x.Name == idOrName);
     }
 
     protected override void SetCache(IEnumerable<DomainRole> newCollection)
