@@ -76,7 +76,7 @@ public class ExceptionMiddleware : IMiddleware
             var authenticated = _httpContextService.IsUserAuthenticated();
             var userId = _httpContextService.GetUserId();
             var userDisplayName = authenticated ? _displayNameService.GetDisplayName(userId) : "Guest";
-            _logger.LogError(exception, context, context.Response, authenticated ? userId : "Guest", userDisplayName);
+            _logger.LogHttpError(exception, context, context.Response, authenticated ? userId : "Guest", userDisplayName);
         }
     }
 

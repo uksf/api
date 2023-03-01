@@ -56,7 +56,7 @@ public class DiscordBaseService : IDiscordService
             return Task.CompletedTask;
         }
 
-        _ = Task.Run(
+        Task.Run(
             () =>
             {
                 var discordAccountId = _variablesService.GetVariable("DISCORD_BOT_ACCOUNT_ID").AsString();
@@ -70,7 +70,7 @@ public class DiscordBaseService : IDiscordService
 
     protected Task WrapAdminEventTask(Func<Task> action)
     {
-        _ = Task.Run(
+        Task.Run(
             () =>
             {
                 var discordAccountId = _variablesService.GetVariable("DISCORD_BOT_ACCOUNT_ID").AsString();

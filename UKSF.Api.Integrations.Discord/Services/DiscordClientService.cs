@@ -5,7 +5,6 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Configuration;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
-using UKSF.Api.Discord.Exceptions;
 
 namespace UKSF.Api.Discord.Services;
 
@@ -36,22 +35,25 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
 
         var appSettings = options.Value;
         _botToken = appSettings.Secrets.Discord.BotToken;
+
+        _client.Ready += OnClientOnReady;
+        _client.Disconnected += ClientOnDisconnected;
     }
 
     public async Task Connect()
     {
         _logger.LogInfo("Discord connecting");
-        _client.Ready += OnClientOnReady;
-        _client.Disconnected += ClientOnDisconnected;
 
         await _client.LoginAsync(TokenType.Bot, _botToken);
         await _client.StartAsync();
     }
 
-    public Task Disconnect()
+    public async Task Disconnect()
     {
         _logger.LogInfo("Discord disconnecting");
-        return _client.StopAsync();
+
+        await _client.LogoutAsync();
+        await _client.StopAsync();
     }
 
     public void Dispose()
@@ -89,8 +91,10 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
 
             if (tries >= 10)
             {
-                _logger.LogError("Discord failed to reconnect itself after 5 minutes");
-                throw new DiscordOfflineException();
+                _logger.LogError($"Discord failed to reconnect itself after 5 minutes, trying to reconnect. Connection state: {_client.ConnectionState}");
+                await Disconnect();
+                await Connect();
+                // throw new DiscordOfflineException();
             }
         }
     }
@@ -100,12 +104,16 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         _guild = _client.GetGuild(_variablesService.GetVariable("DID_SERVER").AsUlong());
         _connected = true;
 
+        _logger.LogInfo("Discord connected");
         return Task.CompletedTask;
     }
 
     private Task ClientOnDisconnected(Exception exception)
     {
         _connected = false;
+
+        _logger.LogError("Discord disconnected");
+        _logger.LogError(exception);
         return Task.CompletedTask;
     }
 }

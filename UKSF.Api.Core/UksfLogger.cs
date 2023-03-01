@@ -12,7 +12,7 @@ public interface IUksfLogger
     void LogWarning(string message);
     void LogError(string message);
     void LogError(Exception exception);
-    void LogError(Exception exception, HttpContext context, HttpResponse response, string userId, string userDisplayName);
+    void LogHttpError(Exception exception, HttpContext context, HttpResponse response, string userId, string userDisplayName);
     void LogAudit(string message, string userId = null);
 
     void LogDiscordEvent(
@@ -74,7 +74,7 @@ public class UksfLogger : IUksfLogger
         Log(new DiscordLog(discordUserEventType, instigatorId, instigatorName, channelName, name, message));
     }
 
-    public void LogError(Exception exception, HttpContext context, HttpResponse response, string userId, string userDisplayName)
+    public void LogHttpError(Exception exception, HttpContext context, HttpResponse response, string userId, string userDisplayName)
     {
         var controllerActionDescriptor = context.GetEndpoint()?.Metadata.GetMetadata<ControllerActionDescriptor>();
         var endpointName = controllerActionDescriptor == null ? null : controllerActionDescriptor.ControllerName + "." + controllerActionDescriptor.ActionName;
