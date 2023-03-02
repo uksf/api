@@ -63,6 +63,6 @@ public static class StartServices
         serviceProvider.GetRequiredService<ITeamspeakManagerService>().Stop();
 
         // Stop discord
-        serviceProvider.GetRequiredService<IDiscordActivationService>().Deactivate();
+        serviceProvider.GetRequiredService<IDiscordActivationService>().Deactivate().Wait(TimeSpan.FromSeconds(10));
     }
 }
