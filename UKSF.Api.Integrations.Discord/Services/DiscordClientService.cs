@@ -22,8 +22,8 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
 {
     private readonly string _botToken;
     private readonly DiscordSocketClient _client;
-    private readonly IVariablesService _variablesService;
     private readonly IUksfLogger _logger;
+    private readonly IVariablesService _variablesService;
     private bool _connected;
     private SocketGuild _guild;
 
@@ -41,19 +41,19 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         _client.Disconnected += ClientOnDisconnected;
         _client.LoggedIn += () =>
         {
-            _logger.LogInfo("Discord logged in");
+            Log("Discord logged in");
             return Task.CompletedTask;
         };
         _client.LoggedOut += () =>
         {
-            _logger.LogInfo("Discord logged out");
+            Log("Discord logged out");
             return Task.CompletedTask;
         };
     }
 
     public async Task Connect()
     {
-        _logger.LogInfo("Discord connecting");
+        Log("Discord connecting");
 
         await _client.LoginAsync(TokenType.Bot, _botToken);
         await _client.StartAsync();
@@ -61,15 +61,10 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
 
     public async Task Disconnect()
     {
-        _logger.LogInfo("Discord disconnecting");
+        Log("Discord disconnecting");
 
         await _client.LogoutAsync();
         await _client.StopAsync();
-    }
-
-    public void Dispose()
-    {
-        Disconnect().Wait();
     }
 
     public DiscordSocketClient GetClient()
@@ -97,24 +92,27 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         var tries = 0;
         while (!_connected)
         {
-            await Task.Delay(30);
+            await Task.Delay(15);
             tries++;
 
-            if (tries >= 10)
+            if (tries >= 4)
             {
-                _logger.LogError($"Discord failed to reconnect itself after 5 minutes, trying to reconnect. Connection state: {_client.ConnectionState}");
-                // await Disconnect();
+                _logger.LogError($"Discord failed to reconnect itself after 60 seconds, trying to reconnect. Connection state: {_client.ConnectionState}");
                 await Connect();
-                // throw new DiscordOfflineException();
             }
         }
+    }
+
+    public void Dispose()
+    {
+        Disconnect().Wait();
     }
 
     private Task OnClientConnected()
     {
         _connected = true;
 
-        _logger.LogInfo("Discord connected");
+        Log("Discord connected");
         return Task.CompletedTask;
     }
 
@@ -122,7 +120,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
     {
         _guild = _client.GetGuild(_variablesService.GetVariable("DID_SERVER").AsUlong());
 
-        _logger.LogInfo("Discord ready");
+        Log("Discord ready");
         return Task.CompletedTask;
     }
 
@@ -130,8 +128,25 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
     {
         _connected = false;
 
-        _logger.LogError("Discord disconnected");
-        _logger.LogError(exception);
+        if (IsDiscordLoggingEnabled())
+        {
+            _logger.LogError("Discord disconnected");
+            _logger.LogError(exception);
+        }
+
         return Task.CompletedTask;
+    }
+
+    private void Log(string message)
+    {
+        if (IsDiscordLoggingEnabled())
+        {
+            _logger.LogInfo(message);
+        }
+    }
+
+    private bool IsDiscordLoggingEnabled()
+    {
+        return _variablesService.GetVariable("DISCORD_CONNECTION_LOGGING").AsBoolWithDefault(false);
     }
 }
