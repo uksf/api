@@ -37,7 +37,18 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         _botToken = appSettings.Secrets.Discord.BotToken;
 
         _client.Ready += OnClientOnReady;
+        _client.Connected += OnClientConnected;
         _client.Disconnected += ClientOnDisconnected;
+        _client.LoggedIn += () =>
+        {
+            _logger.LogInfo("Discord logged in");
+            return Task.CompletedTask;
+        };
+        _client.LoggedOut += () =>
+        {
+            _logger.LogInfo("Discord logged out");
+            return Task.CompletedTask;
+        };
     }
 
     public async Task Connect()
@@ -99,12 +110,19 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         }
     }
 
-    private Task OnClientOnReady()
+    private Task OnClientConnected()
     {
-        _guild = _client.GetGuild(_variablesService.GetVariable("DID_SERVER").AsUlong());
         _connected = true;
 
         _logger.LogInfo("Discord connected");
+        return Task.CompletedTask;
+    }
+
+    private Task OnClientOnReady()
+    {
+        _guild = _client.GetGuild(_variablesService.GetVariable("DID_SERVER").AsUlong());
+
+        _logger.LogInfo("Discord ready");
         return Task.CompletedTask;
     }
 
