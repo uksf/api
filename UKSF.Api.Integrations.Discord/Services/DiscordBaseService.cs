@@ -61,7 +61,15 @@ public class DiscordBaseService : IDiscordService
             {
                 var discordAccountId = _variablesService.GetVariable("DISCORD_BOT_ACCOUNT_ID").AsString();
                 _httpContextService.SetContextId(discordAccountId);
-                action();
+                try
+                {
+                    action();
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(exception);
+                    throw;
+                }
             }
         );
 
@@ -75,7 +83,15 @@ public class DiscordBaseService : IDiscordService
             {
                 var discordAccountId = _variablesService.GetVariable("DISCORD_BOT_ACCOUNT_ID").AsString();
                 _httpContextService.SetContextId(discordAccountId);
-                action();
+                try
+                {
+                    action();
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(exception);
+                    throw;
+                }
             }
         );
 
