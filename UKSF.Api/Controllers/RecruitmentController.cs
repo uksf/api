@@ -17,7 +17,6 @@ public class RecruitmentController : ControllerBase
 {
     private readonly IAccountContext _accountContext;
     private readonly IAccountService _accountService;
-    private readonly IAssignmentService _assignmentService;
     private readonly IDisplayNameService _displayNameService;
     private readonly IHttpContextService _httpContextService;
     private readonly IUksfLogger _logger;
@@ -29,7 +28,6 @@ public class RecruitmentController : ControllerBase
         IAccountContext accountContext,
         IAccountService accountService,
         IRecruitmentService recruitmentService,
-        IAssignmentService assignmentService,
         IDisplayNameService displayNameService,
         INotificationsService notificationsService,
         IHttpContextService httpContextService,
@@ -40,7 +38,6 @@ public class RecruitmentController : ControllerBase
         _accountContext = accountContext;
         _accountService = accountService;
         _recruitmentService = recruitmentService;
-        _assignmentService = assignmentService;
         _displayNameService = displayNameService;
         _notificationsService = notificationsService;
         _httpContextService = httpContextService;
@@ -75,21 +72,29 @@ public class RecruitmentController : ControllerBase
     public RecruitmentStatsDataset GetRecruitmentStats()
     {
         var account = _httpContextService.GetUserId();
-        List<RecruitmentActivityDataset> activity = new();
-        foreach (var recruiterAccount in _recruitmentService.GetRecruiters())
-        {
-            var recruiterApplications = _accountContext.Get(x => x.Application != null && x.Application.Recruiter == recruiterAccount.Id).ToList();
-            activity.Add(
-                new()
-                {
-                    Account = new { id = recruiterAccount.Id, settings = recruiterAccount.Settings },
-                    Name = _displayNameService.GetDisplayName(recruiterAccount),
-                    Active = recruiterApplications.Count(x => x.Application.State == ApplicationState.WAITING),
-                    Accepted = recruiterApplications.Count(x => x.Application.State == ApplicationState.ACCEPTED),
-                    Rejected = recruiterApplications.Count(x => x.Application.State == ApplicationState.REJECTED)
-                }
-            );
-        }
+        var activity = _recruitmentService.GetRecruiters()
+                                          .Select(
+                                              recruiterAccount => new
+                                              {
+                                                  recruiterAccount,
+                                                  recruiterApplications = _accountContext.Get(
+                                                                                             x => x.Application != null &&
+                                                                                                  x.Application.Recruiter == recruiterAccount.Id
+                                                                                         )
+                                                                                         .ToList()
+                                              }
+                                          )
+                                          .Select(
+                                              x => new RecruitmentActivityDataset
+                                              {
+                                                  Account = new { id = x.recruiterAccount.Id, settings = x.recruiterAccount.Settings },
+                                                  Name = _displayNameService.GetDisplayName(x.recruiterAccount),
+                                                  Active = x.recruiterApplications.Count(x => x.Application.State == ApplicationState.WAITING),
+                                                  Accepted = x.recruiterApplications.Count(x => x.Application.State == ApplicationState.ACCEPTED),
+                                                  Rejected = x.recruiterApplications.Count(x => x.Application.State == ApplicationState.REJECTED)
+                                              }
+                                          )
+                                          .ToList();
 
         return new()
         {
@@ -116,7 +121,7 @@ public class RecruitmentController : ControllerBase
 
         var age = domainAccount.Dob.ToAge();
         var acceptableAge = _variablesService.GetVariable("RECRUITMENT_ENTRY_AGE").AsInt();
-        if (updatedState == ApplicationState.ACCEPTED && !age.IsAcceptableAge(acceptableAge))
+        if (updatedState == ApplicationState.ACCEPTED && !age.IsAcceptableAge(acceptableAge) && !_httpContextService.UserHasPermission(Permissions.Superadmin))
         {
             throw new AgeNotAllowedException();
         }
@@ -158,14 +163,7 @@ public class RecruitmentController : ControllerBase
         var ratings = _accountContext.GetSingle(id).Application.Ratings;
 
         var (key, rating) = value;
-        if (ratings.ContainsKey(key))
-        {
-            ratings[key] = rating;
-        }
-        else
-        {
-            ratings.Add(key, rating);
-        }
+        ratings[key] = rating;
 
         await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.Ratings, ratings));
         return ratings;
