@@ -89,9 +89,9 @@ public class RecruitmentController : ControllerBase
                                               {
                                                   Account = new { id = x.recruiterAccount.Id, settings = x.recruiterAccount.Settings },
                                                   Name = _displayNameService.GetDisplayName(x.recruiterAccount),
-                                                  Active = x.recruiterApplications.Count(x => x.Application.State == ApplicationState.WAITING),
-                                                  Accepted = x.recruiterApplications.Count(x => x.Application.State == ApplicationState.ACCEPTED),
-                                                  Rejected = x.recruiterApplications.Count(x => x.Application.State == ApplicationState.REJECTED)
+                                                  Active = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.WAITING),
+                                                  Accepted = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.ACCEPTED),
+                                                  Rejected = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.REJECTED)
                                               }
                                           )
                                           .ToList();
