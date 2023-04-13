@@ -56,25 +56,35 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
         return WrapEventTask(
             async () =>
             {
-                var domainAccount = _accountContext.GetSingle(x => x.DiscordId == user.Id.ToString());
-                if (domainAccount is { MembershipState: MembershipState.CONFIRMED, Application.State: ApplicationState.WAITING })
+                try
                 {
-                    _logger.LogInfo($"User left discord, ({domainAccount.Id}) is a candidate");
-                    var channelId = _variablesService.GetVariable("DID_C_SR1").AsUlong();
-                    var guild = GetGuild();
-                    var channel = guild.GetTextChannel(channelId);
+                    var domainAccount = _accountContext.GetSingle(x => x.DiscordId == user.Id.ToString());
+                    if (domainAccount is { MembershipState: MembershipState.CONFIRMED, Application.State: ApplicationState.WAITING })
+                    {
+                        _logger.LogInfo($"User left discord, ({domainAccount.Id}) is a candidate");
+                        var channelId = _variablesService.GetVariable("DID_C_SR1").AsUlong();
+                        var guild = GetGuild();
+                        var channel = guild.GetTextChannel(channelId);
+                        _logger.LogInfo($"User left discord, channel ({channel.Name})");
 
-                    var name = _displayNameService.GetDisplayName(domainAccount);
-                    var applicationUrl = _buildUrlQuery.Web($"recruitment/{domainAccount.Id}");
-                    var message = $"{name} left Discord\nWould you like me to reject their application?";
-                    var builder = new ComponentBuilder().WithButton("View application", style: ButtonStyle.Link, url: applicationUrl)
-                                                        .WithButton("Reject", BuildButtonData(ButtonIdReject, domainAccount.Id), ButtonStyle.Danger)
-                                                        .WithButton("Dismiss", BuildButtonData(ButtonIdDismissRejection, domainAccount.Id));
-                    await channel.SendMessageAsync(message, components: builder.Build());
+                        var name = _displayNameService.GetDisplayName(domainAccount);
+                        var applicationUrl = _buildUrlQuery.Web($"recruitment/{domainAccount.Id}");
+                        var message = $"{name} left Discord\nWould you like me to reject their application?";
+                        var builder = new ComponentBuilder().WithButton("View application", style: ButtonStyle.Link, url: applicationUrl)
+                                                            .WithButton("Reject", BuildButtonData(ButtonIdReject, domainAccount.Id), ButtonStyle.Danger)
+                                                            .WithButton("Dismiss", BuildButtonData(ButtonIdDismissRejection, domainAccount.Id));
+                        _logger.LogInfo($"User left discord, name ({name})");
+                        await channel.SendMessageAsync(message, components: builder.Build());
+                        _logger.LogInfo("User left discord, message sent");
+                    }
+                    else
+                    {
+                        _logger.LogInfo($"User left discord, ({domainAccount.Id}) was not a candidate");
+                    }
                 }
-                else
+                finally
                 {
-                    _logger.LogInfo($"User left discord, ({domainAccount.Id}) was not a candidate");
+                    _logger.LogInfo("User left discord finished processing");
                 }
             }
         );
