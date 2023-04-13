@@ -174,7 +174,7 @@ public class BuildsService : IBuildsService
 
         rebuild.Commit.Message = latestBuild.Environment == GameEnvironment.RELEASE
             ? $"Re-deployment of release {rebuild.Version}"
-            : $"Rebuild of #{build.BuildNumber}\n\n{rebuild.Commit.Message}";
+            : $"Rebuild of #{build.BuildNumber}";
         await _buildsContext.Add(rebuild);
         return rebuild;
     }
