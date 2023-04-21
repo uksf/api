@@ -153,8 +153,8 @@ public class GameServersController : ControllerBase
 
     [HttpPost("mission")]
     [Authorize]
-    [RequestSizeLimit(10485760)]
-    [RequestFormLimits(MultipartBodyLengthLimit = 10485760)]
+    [RequestSizeLimit(52428800)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 52428800)]
     public async Task<MissionsDataset> UploadMissionFile()
     {
         List<MissionReportDataset> missionReports = new();
