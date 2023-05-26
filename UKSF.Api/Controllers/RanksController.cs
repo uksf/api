@@ -65,14 +65,14 @@ public class RanksController : ControllerBase
         return _ranksContext.GetSingle(x => x.Name == check || x.TeamspeakGroup == check);
     }
 
-    [HttpPost]
+    [HttpPost("exists")]
     [Authorize]
     public DomainRank CheckRank([FromBody] DomainRank rank)
     {
         return rank == null ? null : _ranksContext.GetSingle(x => x.Id != rank.Id && (x.Name == rank.Name || x.TeamspeakGroup == rank.TeamspeakGroup));
     }
 
-    [HttpPut]
+    [HttpPost]
     [Authorize]
     public async Task AddRank([FromBody] DomainRank rank)
     {
