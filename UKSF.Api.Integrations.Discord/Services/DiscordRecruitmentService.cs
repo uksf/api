@@ -82,6 +82,11 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
                         _logger.LogInfo($"User left discord, ({domainAccount.Id}) was not a candidate");
                     }
                 }
+                catch (Exception exception)
+                {
+                    _logger.LogInfo("User left discord processing failed. See errors");
+                    _logger.LogError(exception);
+                }
                 finally
                 {
                     _logger.LogInfo("User left discord finished processing");

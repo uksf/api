@@ -36,24 +36,25 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         var appSettings = options.Value;
         _botToken = appSettings.Secrets.Discord.BotToken;
 
+        _client.Log += ClientLog;
         _client.Ready += OnClientOnReady;
         _client.Connected += OnClientConnected;
         _client.Disconnected += ClientOnDisconnected;
         _client.LoggedIn += () =>
         {
-            Log("Discord logged in");
+            ConnectionLog("Discord logged in");
             return Task.CompletedTask;
         };
         _client.LoggedOut += () =>
         {
-            Log("Discord logged out");
+            ConnectionLog("Discord logged out");
             return Task.CompletedTask;
         };
     }
 
     public async Task Connect()
     {
-        Log("Discord connecting");
+        ConnectionLog("Discord connecting");
 
         await _client.LoginAsync(TokenType.Bot, _botToken);
         await _client.StartAsync();
@@ -61,7 +62,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
 
     public async Task Disconnect()
     {
-        Log("Discord disconnecting");
+        ConnectionLog("Discord disconnecting");
 
         await _client.LogoutAsync();
         await _client.StopAsync();
@@ -108,11 +109,26 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         Disconnect().Wait();
     }
 
+    private Task ClientLog(LogMessage logMessage)
+    {
+        if (logMessage.Exception is not null && logMessage.Severity is LogSeverity.Critical or LogSeverity.Error)
+        {
+            _logger.LogError(logMessage.Message);
+            _logger.LogError(logMessage.Exception);
+        }
+        else if (logMessage.Severity is LogSeverity.Warning)
+        {
+            _logger.LogInfo($"Discord warning log: {logMessage.Message}");
+        }
+
+        return Task.CompletedTask;
+    }
+
     private Task OnClientConnected()
     {
         _connected = true;
 
-        Log("Discord connected");
+        ConnectionLog("Discord connected");
         return Task.CompletedTask;
     }
 
@@ -120,7 +136,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
     {
         _guild = _client.GetGuild(_variablesService.GetVariable("DID_SERVER").AsUlong());
 
-        Log("Discord ready");
+        ConnectionLog("Discord ready");
         return Task.CompletedTask;
     }
 
@@ -128,7 +144,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
     {
         _connected = false;
 
-        if (IsDiscordLoggingEnabled())
+        if (IsDiscordConnectionLoggingEnabled())
         {
             _logger.LogError("Discord disconnected");
             _logger.LogError(exception);
@@ -137,15 +153,15 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         return Task.CompletedTask;
     }
 
-    private void Log(string message)
+    private void ConnectionLog(string message)
     {
-        if (IsDiscordLoggingEnabled())
+        if (IsDiscordConnectionLoggingEnabled())
         {
             _logger.LogInfo(message);
         }
     }
 
-    private bool IsDiscordLoggingEnabled()
+    private bool IsDiscordConnectionLoggingEnabled()
     {
         return _variablesService.GetVariable("DISCORD_CONNECTION_LOGGING").AsBoolWithDefault(false);
     }
