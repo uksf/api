@@ -26,7 +26,15 @@ public static class ApiIntegrationDiscordExtensions
 
     private static IServiceCollection AddDiscord(this IServiceCollection services)
     {
-        var config = new DiscordSocketConfig { AlwaysDownloadUsers = true, MessageCacheSize = 1000, GatewayIntents = GatewayIntents.All };
+        var config = new DiscordSocketConfig
+        {
+            AlwaysDownloadUsers = true,
+            MessageCacheSize = 1000,
+            GatewayIntents = GatewayIntents.All & ~(GatewayIntents.GuildInvites | GatewayIntents.GuildScheduledEvents | GatewayIntents.GuildPresences),
+            LogLevel = LogSeverity.Warning,
+            LogGatewayIntentWarnings = false
+        };
+
         return services.AddSingleton(config)
                        .AddSingleton<DiscordSocketClient>()
                        .AddSingleton<InteractionService>()

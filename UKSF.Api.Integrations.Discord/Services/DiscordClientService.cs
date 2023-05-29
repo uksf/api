@@ -118,7 +118,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         }
         else if (logMessage.Severity is LogSeverity.Warning)
         {
-            _logger.LogInfo($"Discord warning log: {logMessage.Message}");
+            _logger.LogInfo($"Discord warning log: {logMessage.Message}, {logMessage.Source}, {logMessage.Exception}");
         }
 
         return Task.CompletedTask;
