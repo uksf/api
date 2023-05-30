@@ -62,10 +62,9 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
                     if (domainAccount is { MembershipState: MembershipState.CONFIRMED, Application.State: ApplicationState.WAITING })
                     {
                         _logger.LogInfo($"User left discord, ({domainAccount.Id}) is a candidate");
-                        var channelId = _variablesService.GetVariable("DID_C_SR1").AsUlong();
                         var guild = GetGuild();
+                        var channelId = _variablesService.GetVariable("DID_C_SR1").AsUlong();
                         var channel = guild.GetTextChannel(channelId);
-                        _logger.LogInfo($"User left discord, channel ({channel.Name})");
 
                         var name = _displayNameService.GetDisplayName(domainAccount);
                         var applicationUrl = _buildUrlQuery.Web($"recruitment/{domainAccount.Id}");
@@ -79,7 +78,7 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
                     }
                     else
                     {
-                        _logger.LogInfo($"User left discord, ({domainAccount.Id}) was not a candidate");
+                        _logger.LogInfo($"User left discord, ({domainAccount?.Id ?? user.Username}) was not a candidate");
                     }
                 }
                 catch (Exception exception)

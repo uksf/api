@@ -36,10 +36,10 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         var appSettings = options.Value;
         _botToken = appSettings.Secrets.Discord.BotToken;
 
-        _client.Log += ClientLog;
+        _client.Log += OnClientLog;
         _client.Ready += OnClientOnReady;
         _client.Connected += OnClientConnected;
-        _client.Disconnected += ClientOnDisconnected;
+        _client.Disconnected += OnClientDisconnected;
         _client.LoggedIn += () =>
         {
             ConnectionLog("Discord logged in");
@@ -109,7 +109,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         Disconnect().Wait();
     }
 
-    private Task ClientLog(LogMessage logMessage)
+    private Task OnClientLog(LogMessage logMessage)
     {
         if (logMessage.Exception is not null && logMessage.Severity is LogSeverity.Critical or LogSeverity.Error)
         {
@@ -140,7 +140,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         return Task.CompletedTask;
     }
 
-    private Task ClientOnDisconnected(Exception exception)
+    private Task OnClientDisconnected(Exception exception)
     {
         _connected = false;
 
