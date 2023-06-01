@@ -116,7 +116,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
             _logger.LogError(logMessage.Message);
             _logger.LogError(logMessage.Exception);
         }
-        else if (logMessage.Severity is LogSeverity.Warning)
+        else if (logMessage.Severity is LogSeverity.Warning && logMessage.Exception is not GatewayReconnectException)
         {
             _logger.LogInfo($"Discord warning log: {logMessage.Message}, {logMessage.Source}, {logMessage.Exception}");
         }
