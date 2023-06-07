@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using System.Net.WebSockets;
+using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
 using UKSF.Api.Core;
@@ -115,8 +116,12 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         {
             _logger.LogError(logMessage.Message);
             _logger.LogError(logMessage.Exception);
+            return Task.CompletedTask;
         }
-        else if (logMessage.Severity is LogSeverity.Warning && logMessage.Exception is not GatewayReconnectException)
+
+        if (logMessage.Severity is LogSeverity.Warning &&
+            logMessage.Exception is not GatewayReconnectException &&
+            logMessage.Exception?.InnerException is not WebSocketException)
         {
             _logger.LogInfo($"Discord warning log: {logMessage.Message}, {logMessage.Source}, {logMessage.Exception}");
         }
