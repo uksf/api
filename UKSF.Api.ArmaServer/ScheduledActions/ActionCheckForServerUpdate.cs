@@ -84,7 +84,7 @@ public class ActionCheckForServerUpdate : IActionCheckForServerUpdate
 
         if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
         {
-            await _schedulerService.CreateScheduledJob(_clock.Today().AddHours(06).AddDays(1), TimeSpan.FromHours(12), ActionName);
+            await _schedulerService.CreateScheduledJob(_clock.Today().AddHours(03).AddDays(1), TimeSpan.FromHours(12), ActionName);
         }
     }
 
