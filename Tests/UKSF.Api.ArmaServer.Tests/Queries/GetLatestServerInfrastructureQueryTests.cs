@@ -6,6 +6,7 @@ using Moq;
 using UKSF.Api.ArmaServer.Exceptions;
 using UKSF.Api.ArmaServer.Queries;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Core;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
@@ -13,14 +14,13 @@ namespace UKSF.Api.ArmaServer.Tests.Queries;
 
 public class GetLatestServerInfrastructureQueryTests
 {
-    private readonly Mock<ISteamCmdService> _mockSteamCmdService;
+    private readonly Mock<ISteamCmdService> _mockSteamCmdService = new();
+    private readonly Mock<IUksfLogger> _mockLoggingService = new();
     private readonly GetLatestServerInfrastructureQuery _subject;
 
     public GetLatestServerInfrastructureQueryTests()
     {
-        _mockSteamCmdService = new();
-
-        _subject = new(_mockSteamCmdService.Object);
+        _subject = new(_mockSteamCmdService.Object, _mockLoggingService.Object);
     }
 
     [Fact]
@@ -30,8 +30,8 @@ public class GetLatestServerInfrastructureQueryTests
 
         var result = await _subject.ExecuteAsync();
 
-        result.LatestBuild.Should().Be("7513259");
-        result.LatestUpdate.Should().Be(new(2021, 10, 11, 12, 55, 23));
+        result.LatestBuild.Should().Be("11458298");
+        result.LatestUpdate.Should().Be(new(2023, 06, 13, 13, 05, 09));
     }
 
     [Fact]

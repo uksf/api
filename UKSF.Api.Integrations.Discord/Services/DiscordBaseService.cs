@@ -49,53 +49,38 @@ public class DiscordBaseService : IDiscordService
         return _discordClientService.IsDiscordDisabled();
     }
 
-    protected Task WrapEventTask(Func<Task> action)
+    protected Task WrapEventTask(Func<Task> actionTask)
     {
         if (IsDiscordDisabled())
         {
             return Task.CompletedTask;
         }
 
-        Task.Run(
-            () =>
-            {
-                var discordAccountId = _variablesService.GetVariable("DISCORD_BOT_ACCOUNT_ID").AsString();
-                _httpContextService.SetContextId(discordAccountId);
-                try
-                {
-                    action();
-                }
-                catch (Exception exception)
-                {
-                    _logger.LogError(exception);
-                    throw;
-                }
-            }
-        );
+        Task.Run(async () => { await RunEventTask(actionTask); });
 
         return Task.CompletedTask;
     }
 
-    protected Task WrapAdminEventTask(Func<Task> action)
+    protected Task WrapAdminEventTask(Func<Task> actionTask)
     {
-        Task.Run(
-            () =>
-            {
-                var discordAccountId = _variablesService.GetVariable("DISCORD_BOT_ACCOUNT_ID").AsString();
-                _httpContextService.SetContextId(discordAccountId);
-                try
-                {
-                    action();
-                }
-                catch (Exception exception)
-                {
-                    _logger.LogError(exception);
-                    throw;
-                }
-            }
-        );
+        Task.Run(async () => { await RunEventTask(actionTask); });
 
         return Task.CompletedTask;
+    }
+
+    private async Task RunEventTask(Func<Task> actionTask)
+    {
+        var discordAccountId = _variablesService.GetVariable("DISCORD_BOT_ACCOUNT_ID").AsString();
+        _httpContextService.SetContextId(discordAccountId);
+        try
+        {
+            await actionTask();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception);
+            throw;
+        }
     }
 
     protected static string GetUserNickname(IGuildUser user)
@@ -131,5 +116,3 @@ public class DiscordBaseService : IDiscordService
         return new() { Id = dataParts[0], Data = dataParts.Skip(1).ToList() };
     }
 }
-
-

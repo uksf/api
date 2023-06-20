@@ -1,0 +1,107 @@
+Steam Console Client (c) Valve Corporation
+-- type 'quit' to exit --
+Loading Steam API...OK
+
+Connecting anonymously to Steam Public...OK
+Waiting for client config...OK
+Waiting for user info...OK
+AppID : 233780, change number : 12921088/4294967295, last change : Sat Oct 23 14:45:31 2021
+"233780"
+{
+	"depots"
+	{
+		"branches"
+		{
+			"public"
+			{
+				"buildid"		"7459543"
+				"timeupdated"		"1633438866"
+			}
+			"cdlc_internal_server"
+			{
+				"buildid"		"6475122"
+				"description"		"For internal CDLC testing"
+				"pwdrequired"		"1"
+				"timeupdated"		"1617270887"
+			}
+			"cdlc_private_beta_server"
+			{
+				"buildid"		"7581003"
+				"description"		"For private CDLC Betas"
+				"pwdrequired"		"1"
+				"timeupdated"		"1634900667"
+			}
+			"contact"
+			{
+				"buildid"		"7459557"
+				"description"		"Contact Build"
+				"timeupdated"		"1633438897"
+			}
+			"contact_staging"
+			{
+				"buildid"		"7558782"
+				"description"		"Contact Staging Build"
+				"pwdrequired"		"1"
+				"timeupdated"		"1634636162"
+			}
+			"creatordlc"
+			{
+				"buildid"		"7513259"
+				"description"		"Creator DLC Build"
+				"timeupdated"		"1633956923"
+			}
+			"gmstaging"
+			{
+				"buildid"		"4481552"
+				"description"		"GM staging branch"
+				"pwdrequired"		"1"
+				"timeupdated"		"1576068786"
+			}
+			"legacy"
+			{
+				"buildid"		"6830389"
+				"description"		"Legacy Build (2.04)"
+				"pwdrequired"		"1"
+				"timeupdated"		"1633438653"
+			}
+			"legacycontact"
+			{
+				"buildid"		"6830402"
+				"description"		"Contact Legacy Build (2.04)"
+				"pwdrequired"		"1"
+				"timeupdated"		"1633438695"
+			}
+			"legacyports"
+			{
+				"buildid"		"2745873"
+				"description"		"Legacy Build (1.82 - ports)"
+				"pwdrequired"		"1"
+				"timeupdated"		"1532420309"
+			}
+			"profiling"
+			{
+				"buildid"		"7567015"
+				"description"		"Performance Profiling Build"
+				"pwdrequired"		"1"
+				"timeupdated"		"1634733826"
+			}
+			"staging"
+			{
+				"buildid"		"7558765"
+				"description"		"Staging Build"
+				"pwdrequired"		"1"
+				"timeupdated"		"1634636026"
+			}
+			"temp"
+			{
+				"buildid"		"6879455"
+				"description"		"temp"
+				"pwdrequired"		"1"
+				"timeupdated"		"1624028396"
+			}
+		}
+	}
+}
+Redirecting stderr to 'F:\Website\Steam CMD\logs\stderr.txt'
+[  0%] Checking for available updates...
+[----] Verifying installation...

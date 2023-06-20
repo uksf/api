@@ -3,6 +3,7 @@ using Gameloop.Vdf.JsonConverter;
 using UKSF.Api.ArmaServer.Exceptions;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Core;
 
 namespace UKSF.Api.ArmaServer.Queries;
 
@@ -14,10 +15,12 @@ public interface IGetLatestServerInfrastructureQuery
 public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructureQuery
 {
     private readonly ISteamCmdService _steamCmdService;
+    private readonly IUksfLogger _logger;
 
-    public GetLatestServerInfrastructureQuery(ISteamCmdService steamCmdService)
+    public GetLatestServerInfrastructureQuery(ISteamCmdService steamCmdService, IUksfLogger logger)
     {
         _steamCmdService = steamCmdService;
+        _logger = logger;
     }
 
     public async Task<ServerInfrastructureLatest> ExecuteAsync()
@@ -28,7 +31,14 @@ public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructure
             throw new ServerInfrastructureException("No info found from Steam", 404);
         }
 
-        output = output[output.IndexOf(@"""233780""", StringComparison.Ordinal)..];
+        var appInfoIndex = output.IndexOf(@"""233780""", StringComparison.Ordinal);
+        if (appInfoIndex < 0)
+        {
+            _logger.LogInfo(output);
+            throw new ServerInfrastructureException("Unable to parse app info data from Steam", 404);
+        }
+
+        output = output[appInfoIndex..];
         output = string.Join('}', output.Split("}")[..^1]);
         output += "}";
 
