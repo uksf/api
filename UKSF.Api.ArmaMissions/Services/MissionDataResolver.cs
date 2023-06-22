@@ -54,8 +54,10 @@ public static class MissionDataResolver
 
     private static bool IsPilot(string id)
     {
-        // "UKSF", "Joint Special Forces Aviation Wing", "Combat Ready", "RAF Cranwell"
-        return id is "5a42835b55d6109bf0b081bd" or "5a435eea905d47336442c75a" or "5fe39de7815f5f03801134f7" or "5a848590eab14d12cc7fa618";
+        return id is // "5a42835b55d6109bf0b081bd" // "UKSF"
+            "5a435eea905d47336442c75a" // "Joint Special Forces Aviation Wing"
+            or "5fe39de7815f5f03801134f7" // "Combat Ready"
+            or "5a848590eab14d12cc7fa618"; // "RAF Cranwell"
     }
 
     private static bool IsMedic(MissionPlayer player)
@@ -77,7 +79,7 @@ public static class MissionDataResolver
     {
         List<string> ids = new()
         {
-            "5a42835b55d6109bf0b081bd", // "UKSF"
+            // "5a42835b55d6109bf0b081bd", // "UKSF"
             "5fe39de7815f5f03801134f7", // "Combat Ready"
             "5a848590eab14d12cc7fa618" // "RAF Cranwell"
         };
@@ -92,7 +94,7 @@ public static class MissionDataResolver
         switch (unit.SourceUnit.Id)
         {
             case "5a435eea905d47336442c75a": // "Joint Special Forces Aviation Wing"
-                slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a42835b55d6109bf0b081bd")?.Members ?? new List<MissionPlayer>());
+                // slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a42835b55d6109bf0b081bd")?.Members ?? new List<MissionPlayer>());
                 slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a435eea905d47336442c75a")?.Members ?? new List<MissionPlayer>());
                 slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5fe39de7815f5f03801134f7")?.Members ?? new List<MissionPlayer>());
                 slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a848590eab14d12cc7fa618")?.Members ?? new List<MissionPlayer>());
