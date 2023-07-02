@@ -25,8 +25,16 @@ public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructure
 
     public async Task<ServerInfrastructureLatest> ExecuteAsync()
     {
-        var output = await _steamCmdService.GetServerInfo();
-        if (output.Contains("No app info for AppID 233780"))
+        var output = string.Empty;
+        var tries = 0;
+
+        while (!output.Contains("change number") && tries < 10)
+        {
+            output = await _steamCmdService.GetServerInfo();
+            tries++;
+        }
+
+        if (tries >= 10 || !output.Contains("change number") || output.Contains("No app info for AppID 233780"))
         {
             throw new ServerInfrastructureException("No info found from Steam", 404);
         }

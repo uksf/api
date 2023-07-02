@@ -1,0 +1,11 @@
+﻿Redirecting stderr to 'C:\Server\SteamCMD\logs\stderr.txt'
+[  0%] Checking for available updates...
+[----] Verifying installation...
+Steam Console Client (c) Valve Corporation - version 1687387651
+-- type 'quit' to exit --
+Loading Steam API...src\public\tier1\interface.h (265) : m_pModule
+OK
+
+Connecting anonymously to Steam Public...OK
+Waiting for client config...OK
+Waiting for user info...OK
