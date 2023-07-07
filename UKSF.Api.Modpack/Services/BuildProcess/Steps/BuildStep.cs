@@ -224,6 +224,8 @@ public class BuildStep : IBuildStep
                             await Update();
                             previousBuildStepState = newBuildStepState;
                         }
+
+                        await Task.Yield();
                     }
                     while (!_updatePusherCancellationTokenSource.IsCancellationRequested);
                 },

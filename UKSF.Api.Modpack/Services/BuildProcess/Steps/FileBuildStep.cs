@@ -189,10 +189,7 @@ public class FileBuildStep : BuildStep
                         }
                         catch (Exception exception)
                         {
-                            throw new(
-                                $"{error} '{file}'\n{exception.GetCompleteMessage()}",
-                                exception
-                            );
+                            throw new($"{error} '{file}'\n{exception.GetCompleteMessage()}", exception);
                         }
                         finally
                         {
@@ -211,25 +208,26 @@ public class FileBuildStep : BuildStep
     internal async Task BatchProcessFiles(IEnumerable<FileInfo> files, int batchSize, Func<FileInfo, Task> process, Func<string> getLog, string error)
     {
         StepLogger.Log(getLog());
+        var filesList = files.ToList();
+        var lateralBatchSize = filesList.Count / batchSize;
         var fileBatches = new List<List<FileInfo>>();
         do
         {
-            var batch = files.Take(batchSize);
-            fileBatches.Add(batch.ToList());
-            files = files.Skip(10);
+            fileBatches.Add(filesList.Take(lateralBatchSize).ToList());
+            filesList = filesList.Skip(lateralBatchSize).ToList();
         }
-        while (files.Any());
-        foreach (var fileBatch in fileBatches)
-        {
-            var fileList = fileBatch.ToList();
+        while (filesList.Any());
 
-            var tasks = fileList.Select(
-                async file =>
+        var fileTasks = fileBatches.Select(
+            async fileBatch =>
+            {
+                foreach (var fileInfo in fileBatch)
                 {
                     try
                     {
                         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-                        await process(file);
+                        await process(fileInfo);
+                        StepLogger.LogInline(getLog());
                     }
                     catch (OperationCanceledException)
                     {
@@ -237,16 +235,17 @@ public class FileBuildStep : BuildStep
                     }
                     catch (Exception exception)
                     {
-                        throw new(
-                            $"{error} '{file}'\n{exception.GetCompleteMessage()}",
-                            exception
-                        );
+                        throw new($"{error} '{fileInfo}'\n{exception.GetCompleteMessage()}", exception);
+                    }
+                    finally
+                    {
+                        await Task.Yield();
                     }
                 }
-            );
-            await Task.WhenAll(tasks);
-            StepLogger.LogInline(getLog());
-        }
+            }
+        );
+        await Task.WhenAll(fileTasks);
+        StepLogger.LogInline(getLog());
     }
 
     private void SimpleCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, bool flatten = false)
@@ -273,7 +272,7 @@ public class FileBuildStep : BuildStep
         var totalSizeString = totalSize.Bytes().ToString("#.#");
         await BatchProcessFiles(
             files,
-            10,
+            100,
             file =>
             {
                 var targetFile = flatten ? Path.Join(target.FullName, file.Name) : file.FullName.Replace(source.FullName, target.FullName);
