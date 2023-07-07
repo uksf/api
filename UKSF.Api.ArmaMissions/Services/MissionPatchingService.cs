@@ -14,9 +14,9 @@ public interface IMissionPatchingService
 
 public class MissionPatchingService : IMissionPatchingService
 {
-    private const string ExtractPboPath = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\ExtractPboDos.exe";
+    private const string ExtractPboPath = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\ExtractPbo.exe";
     private const string MakePboPath = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\MakePbo.exe";
-    private const string PackPboPath = "C:\\Program Files\\PBO Manager v.1.4 beta\\PBOConsole.exe";
+    private const string SimplePackPboPath = "C:\\Program Files\\PBO Manager v.1.4 beta\\PBOConsole.exe";
     private readonly IUksfLogger _logger;
 
     private readonly MissionService _missionService;
@@ -58,7 +58,7 @@ public class MissionPatchingService : IMissionPatchingService
                     if (MissionUtilities.CheckFlag(mission, "missionUseSimplePack"))
                     {
                         _logger.LogAudit($"Mission processed with simple packing enabled ({Path.GetFileName(path)})");
-                        await PackPbo();
+                        await SimplePackPbo();
                     }
                     else
                     {
@@ -157,7 +157,7 @@ public class MissionPatchingService : IMissionPatchingService
         throw new(output);
     }
 
-    private async Task PackPbo()
+    private async Task SimplePackPbo()
     {
         if (Directory.Exists(_filePath))
         {
@@ -168,7 +168,7 @@ public class MissionPatchingService : IMissionPatchingService
         {
             StartInfo =
             {
-                FileName = PackPboPath,
+                FileName = SimplePackPboPath,
                 WorkingDirectory = _variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
                 Arguments = $"-pack \"{_folderPath}\" \"{_filePath}\"",
                 UseShellExecute = false,
