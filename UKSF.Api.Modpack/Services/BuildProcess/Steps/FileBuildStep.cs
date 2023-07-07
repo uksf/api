@@ -209,42 +209,42 @@ public class FileBuildStep : BuildStep
     {
         StepLogger.Log(getLog());
         var filesList = files.ToList();
-        var lateralBatchSize = filesList.Count / batchSize;
         var fileBatches = new List<List<FileInfo>>();
         do
         {
-            fileBatches.Add(filesList.Take(lateralBatchSize).ToList());
-            filesList = filesList.Skip(lateralBatchSize).ToList();
+            fileBatches.Add(filesList.Take(batchSize).ToList());
+            filesList = filesList.Skip(batchSize).ToList();
         }
         while (filesList.Any());
 
-        var fileTasks = fileBatches.Select(
-            async fileBatch =>
-            {
-                foreach (var fileInfo in fileBatch)
-                {
-                    try
-                    {
-                        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-                        await process(fileInfo);
-                        StepLogger.LogInline(getLog());
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception exception)
-                    {
-                        throw new($"{error} '{fileInfo}'\n{exception.GetCompleteMessage()}", exception);
-                    }
-                    finally
-                    {
-                        await Task.Yield();
-                    }
-                }
-            }
+        var batchesTasks = fileBatches.Select(
+            batch => batch.Select(
+                              async fileInfo =>
+                              {
+                                  try
+                                  {
+                                      CancellationTokenSource.Token.ThrowIfCancellationRequested();
+                                      await process(fileInfo);
+                                  }
+                                  catch (OperationCanceledException)
+                                  {
+                                      throw;
+                                  }
+                                  catch (Exception exception)
+                                  {
+                                      throw new($"{error} '{fileInfo}'\n{exception.GetCompleteMessage()}", exception);
+                                  }
+                              }
+                          )
+                          .ToList()
         );
-        await Task.WhenAll(fileTasks);
+        foreach (var batchTasks in batchesTasks)
+        {
+            await Task.WhenAll(batchTasks);
+            StepLogger.LogInline(getLog());
+            await Task.Yield();
+        }
+
         StepLogger.LogInline(getLog());
     }
 
