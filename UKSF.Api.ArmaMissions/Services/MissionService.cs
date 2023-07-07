@@ -7,7 +7,7 @@ namespace UKSF.Api.ArmaMissions.Services;
 
 public class MissionService
 {
-    private const string Unbin = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\DeRap.exe";
+    private const string Unbin = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\DeRapDos.exe";
 
     private readonly MissionPatchDataService _missionPatchDataService;
     private int _armaServerDefaultMaxCurators;
