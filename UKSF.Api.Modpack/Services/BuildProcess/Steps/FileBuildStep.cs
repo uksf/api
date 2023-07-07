@@ -240,8 +240,16 @@ public class FileBuildStep : BuildStep
         );
         foreach (var batchTasks in batchesTasks)
         {
-            await Task.WhenAll(batchTasks);
-            StepLogger.LogInline(getLog());
+            try
+            {
+                await Task.WhenAll(batchTasks);
+            }
+            catch (Exception)
+            {
+                StepLogger.LogInline(getLog());
+                throw;
+            }
+
             await Task.Yield();
         }
 
