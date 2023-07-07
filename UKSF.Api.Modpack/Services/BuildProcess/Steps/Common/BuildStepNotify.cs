@@ -11,11 +11,14 @@ public class BuildStepNotify : BuildStep
     public const string Name = "Notify";
     private IDiscordMessageService _discordMessageService;
     private IReleaseService _releaseService;
+    private bool _tagEveryone;
 
     protected override Task SetupExecute()
     {
         _discordMessageService = ServiceProvider.GetService<IDiscordMessageService>();
         _releaseService = ServiceProvider.GetService<IReleaseService>();
+
+        _tagEveryone = VariablesService.GetVariable("MODPACK_NOTIFY_TAG_EVERYONE").AsBoolWithDefault(false);
         StepLogger.Log("Retrieved services");
         return Task.CompletedTask;
     }
@@ -27,7 +30,17 @@ public class BuildStepNotify : BuildStep
             case GameEnvironment.RELEASE:
             {
                 var release = _releaseService.GetRelease(Build.Version);
-                await _discordMessageService.SendMessageToEveryone(VariablesService.GetVariable("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage(release));
+                if (_tagEveryone)
+                {
+                    await _discordMessageService.SendMessageToEveryone(
+                        VariablesService.GetVariable("DID_C_MODPACK_RELEASE").AsUlong(),
+                        GetDiscordMessage(release)
+                    );
+                }
+                else
+                {
+                    await _discordMessageService.SendMessage(VariablesService.GetVariable("DID_C_MODPACK_RELEASE").AsUlong(), GetDiscordMessage(release));
+                }
                 break;
             }
             case GameEnvironment.RC:

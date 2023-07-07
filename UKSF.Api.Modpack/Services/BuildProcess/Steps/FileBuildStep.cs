@@ -216,6 +216,7 @@ public class FileBuildStep : BuildStep
         foreach (var fileBatch in fileBatches)
         {
             var fileList = fileBatch.ToList();
+
             var tasks = fileList.Select(
                 async file =>
                 {
