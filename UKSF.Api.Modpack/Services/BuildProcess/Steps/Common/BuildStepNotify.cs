@@ -1,5 +1,6 @@
 ﻿using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Discord.Services;
 using UKSF.Api.Modpack.Models;
 
@@ -12,11 +13,13 @@ public class BuildStepNotify : BuildStep
     private IDiscordMessageService _discordMessageService;
     private IReleaseService _releaseService;
     private bool _tagEveryone;
+    private IClock _clock;
 
     protected override Task SetupExecute()
     {
         _discordMessageService = ServiceProvider.GetService<IDiscordMessageService>();
         _releaseService = ServiceProvider.GetService<IReleaseService>();
+        _clock = ServiceProvider.GetService<IClock>();
 
         _tagEveryone = VariablesService.GetVariable("MODPACK_NOTIFY_TAG_EVERYONE").AsBoolWithDefault(false);
         StepLogger.Log("Retrieved services");
@@ -30,7 +33,8 @@ public class BuildStepNotify : BuildStep
             case GameEnvironment.RELEASE:
             {
                 var release = _releaseService.GetRelease(Build.Version);
-                if (_tagEveryone)
+                var isAllowedAtThisTime = _clock.UtcNow().Hour > 10 || _clock.UtcNow().Hour > 22;
+                if (_tagEveryone && isAllowedAtThisTime)
                 {
                     await _discordMessageService.SendMessageToEveryone(
                         VariablesService.GetVariable("DID_C_MODPACK_RELEASE").AsUlong(),

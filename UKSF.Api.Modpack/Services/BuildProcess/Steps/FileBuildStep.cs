@@ -1,5 +1,4 @@
 ﻿using Humanizer;
-using MoreLinq;
 using UKSF.Api.Core.Extensions;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess.Steps;
@@ -212,7 +211,14 @@ public class FileBuildStep : BuildStep
     internal async Task BatchProcessFiles(IEnumerable<FileInfo> files, int batchSize, Func<FileInfo, Task> process, Func<string> getLog, string error)
     {
         StepLogger.Log(getLog());
-        var fileBatches = files.Batch(batchSize);
+        var fileBatches = new List<List<FileInfo>>();
+        do
+        {
+            var batch = files.Take(batchSize);
+            fileBatches.Add(batch.ToList());
+            files = files.Skip(10);
+        }
+        while (files.Any());
         foreach (var fileBatch in fileBatches)
         {
             var fileList = fileBatch.ToList();
@@ -255,7 +261,13 @@ public class FileBuildStep : BuildStep
         }
     }
 
-    private async Task ParallelCopyFiles(FileSystemInfo source, FileSystemInfo target, IEnumerable<FileInfo> files, long totalSize, bool flatten = false)
+    private async Task ParallelCopyFiles(
+        FileSystemInfo source,
+        FileSystemInfo target,
+        IReadOnlyCollection<FileInfo> files,
+        long totalSize,
+        bool flatten = false
+    )
     {
         long copiedSize = 0;
         var totalSizeString = totalSize.Bytes().ToString("#.#");
