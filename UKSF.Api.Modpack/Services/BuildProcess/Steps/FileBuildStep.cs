@@ -224,6 +224,7 @@ public class FileBuildStep : BuildStep
                                   try
                                   {
                                       await process(fileInfo);
+                                      StepLogger.LogInline(getLog());
                                   }
                                   catch (OperationCanceledException)
                                   {
