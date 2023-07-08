@@ -223,7 +223,6 @@ public class FileBuildStep : BuildStep
                               {
                                   try
                                   {
-                                      CancellationTokenSource.Token.ThrowIfCancellationRequested();
                                       await process(fileInfo);
                                   }
                                   catch (OperationCanceledException)
@@ -232,6 +231,7 @@ public class FileBuildStep : BuildStep
                                   }
                                   catch (Exception exception)
                                   {
+                                      CancellationTokenSource.Cancel();
                                       throw new($"{error} '{fileInfo}'\n{exception.GetCompleteMessage()}", exception);
                                   }
                               }
@@ -240,17 +240,9 @@ public class FileBuildStep : BuildStep
         );
         foreach (var batchTasks in batchesTasks)
         {
-            try
-            {
-                await Task.WhenAll(batchTasks);
-            }
-            catch (Exception)
-            {
-                StepLogger.LogInline(getLog());
-                throw;
-            }
-
-            await Task.Yield();
+            await Task.WhenAll(batchTasks);
+            StepLogger.LogInline(getLog());
+            CancellationTokenSource.Token.ThrowIfCancellationRequested();
         }
 
         StepLogger.LogInline(getLog());

@@ -10,11 +10,13 @@ public class BuildStepSignDependencies : FileBuildStep
     private string _dsCreateKey;
     private string _dsSignFile;
     private string _keyName;
+    private int _batchSize = 10;
 
     protected override async Task SetupExecute()
     {
         _dsSignFile = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSSignFile.exe");
         _dsCreateKey = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSCreateKey.exe");
+        _batchSize = VariablesService.GetVariable("BUILD_SIGNATURES_BATCH_SIZE").AsInt();
         _keyName = GetKeyname();
 
         var keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
@@ -79,7 +81,7 @@ public class BuildStepSignDependencies : FileBuildStep
 
         return BatchProcessFiles(
             files,
-            10,
+            _batchSize,
             file =>
             {
                 BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource, true);

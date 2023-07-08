@@ -53,11 +53,10 @@ public class BuildQueueService : IBuildQueueService
 
     public void Cancel(string id)
     {
-        if (_cancellationTokenSources.ContainsKey(id))
+        if (_cancellationTokenSources.TryGetValue(id, out var source))
         {
-            var cancellationTokenSource = _cancellationTokenSources[id];
-            cancellationTokenSource.Cancel();
-            _cancellationTokenSources.TryRemove(id, out var _);
+            source.Cancel();
+            _cancellationTokenSources.TryRemove(id, out _);
         }
 
         if (_buildTasks.ContainsKey(id))
@@ -66,13 +65,11 @@ public class BuildQueueService : IBuildQueueService
                 async () =>
                 {
                     await Task.Delay(TimeSpan.FromMinutes(1));
-                    if (_buildTasks.ContainsKey(id))
+                    if (_buildTasks.TryGetValue(id, out var task))
                     {
-                        var buildTask = _buildTasks[id];
-
-                        if (buildTask.IsCompleted)
+                        if (task.IsCompleted)
                         {
-                            _buildTasks.TryRemove(id, out var _);
+                            _buildTasks.TryRemove(id, out _);
                         }
                         else
                         {

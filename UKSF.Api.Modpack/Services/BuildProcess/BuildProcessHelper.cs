@@ -63,8 +63,8 @@ public class BuildProcessHelper
         _process.OutputDataReceived += OnOutputDataReceived;
         _process.ErrorDataReceived += OnErrorDataReceived;
 
-        using var unused = _cancellationTokenSource.Token.Register(_process.Kill);
-        using var _ = _errorCancellationTokenSource.Token.Register(_process.Kill);
+        using var unused = _cancellationTokenSource.Token.Register(Kill);
+        using var _ = _errorCancellationTokenSource.Token.Register(Kill);
 
         _process.Start();
         _process.BeginOutputReadLine();
@@ -72,10 +72,7 @@ public class BuildProcessHelper
 
         if (_process.WaitForExit(timeout) && _outputWaitHandle.WaitOne(timeout) && _errorWaitHandle.WaitOne(timeout))
         {
-            if (_cancellationTokenSource.IsCancellationRequested)
-            {
-                return _results;
-            }
+            _cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
             if (_capturedException != null)
             {
@@ -90,7 +87,7 @@ public class BuildProcessHelper
                 }
             }
 
-            if (_raiseErrors && _process.ExitCode != 0)
+            if (_process.ExitCode != 0 && _raiseErrors)
             {
                 var json = "";
                 var messages = ExtractMessages(_results.Last(), ref json);
@@ -104,19 +101,23 @@ public class BuildProcessHelper
         }
         else
         {
-            // Timeout or cancelled
-            if (!_cancellationTokenSource.IsCancellationRequested)
-            {
-                Exception exception = new($"Process exited with non-zero code ({_process.ExitCode})");
-                if (_raiseErrors)
-                {
-                    throw exception;
-                }
+            // Process timed out
+            _process.Kill();
+            _cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
-                if (!_errorSilently)
-                {
-                    _logger.LogError(exception);
-                }
+            var json = "";
+            var messages = ExtractMessages(_results.Last(), ref json);
+            var lastMessage = messages.FirstOrDefault()?.Item1 ?? "Woopsy Poospy the programme made an Oopsy";
+
+            Exception exception = new($"Process timed out and exited with non-zero code ({_process.ExitCode}) and last message ({lastMessage})");
+            if (_raiseErrors)
+            {
+                throw exception;
+            }
+
+            if (!_errorSilently)
+            {
+                _logger.LogError(exception);
             }
         }
 
@@ -131,28 +132,15 @@ public class BuildProcessHelper
             return;
         }
 
-        var message = receivedEventArgs.Data;
-        if (!string.IsNullOrEmpty(message))
+        var data = receivedEventArgs.Data;
+        if (!string.IsNullOrEmpty(data))
         {
-            _results.Add(message);
+            _results.Add(data);
         }
 
         if (!_suppressOutput)
         {
-            var json = "";
-            try
-            {
-                var messages = ExtractMessages(message, ref json);
-                foreach (var (text, colour) in messages)
-                {
-                    _logger.Log(text, colour);
-                }
-            }
-            catch (Exception exception)
-            {
-                _capturedException = new($"Json failed: {json}\n\n{exception}");
-                _errorCancellationTokenSource.Cancel();
-            }
+            LogMessagesFromData(data);
         }
     }
 
@@ -164,24 +152,31 @@ public class BuildProcessHelper
             return;
         }
 
-        var message = receivedEventArgs.Data;
-        if (string.IsNullOrEmpty(message) || CheckIgnoreErrorGates(message))
+        var data = receivedEventArgs.Data;
+        if (string.IsNullOrEmpty(data) || SkipForIgnoreErrorGate(data))
         {
             return;
         }
 
-        if (_errorExclusions != null && _errorExclusions.Any(x => message.ContainsIgnoreCase(x)))
+        if (_errorExclusions != null && _errorExclusions.Any(x => data.ContainsIgnoreCase(x)))
         {
             return;
         }
 
-        _capturedException = new(message);
+        _capturedException = new(data);
         _errorCancellationTokenSource.Cancel();
     }
 
-    private bool CheckIgnoreErrorGates(string message)
+    private void Kill()
     {
-        if (message.ContainsIgnoreCase(_ignoreErrorGateClose))
+        _process.Kill();
+        _outputWaitHandle.Set();
+        _errorWaitHandle.Set();
+    }
+
+    private bool SkipForIgnoreErrorGate(string data)
+    {
+        if (data.ContainsIgnoreCase(_ignoreErrorGateClose))
         {
             _ignoreErrors = false;
             return true;
@@ -192,7 +187,7 @@ public class BuildProcessHelper
             return true;
         }
 
-        if (message.ContainsIgnoreCase(_ignoreErrorGateOpen))
+        if (data.ContainsIgnoreCase(_ignoreErrorGateOpen))
         {
             _ignoreErrors = true;
             return true;
@@ -201,13 +196,31 @@ public class BuildProcessHelper
         return false;
     }
 
+    private void LogMessagesFromData(string message)
+    {
+        var json = "";
+        try
+        {
+            var messages = ExtractMessages(message, ref json);
+            foreach (var (text, colour) in messages)
+            {
+                _logger.Log(text, colour);
+            }
+        }
+        catch (Exception exception)
+        {
+            _capturedException = new($"Json failed: {json}\n\n{exception}");
+            _errorCancellationTokenSource.Cancel();
+        }
+    }
+
     private static List<Tuple<string, string>> ExtractMessages(string message, ref string json)
     {
         List<Tuple<string, string>> messages = new();
         if (message.Length > 5 && message[..4] == "JSON")
         {
-            var parts = message.Split('{', '}'); // covers cases where buffer gets extra data flushed to it after the closing brace
-            json = $"{{{parts[1].Escape().Replace("\\\\n", "\\n")}}}";
+            var parts = message.Split('}', '{'); // covers cases where buffer gets extra data flushed to it after the closing brace
+            json = $"{{{parts[1].Escape().Replace(@"\\n", "\\n")}}}";
             var jsonObject = JsonNode.Parse(json);
             messages.Add(new(jsonObject.GetValueFromObject("message"), jsonObject.GetValueFromObject("colour")));
             messages.AddRange(parts.Skip(2).Where(x => !string.IsNullOrEmpty(x)).Select(extra => new Tuple<string, string>(extra, "")));
