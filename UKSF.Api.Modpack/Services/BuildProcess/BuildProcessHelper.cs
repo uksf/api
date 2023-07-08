@@ -10,11 +10,11 @@ public class BuildProcessHelper
     private readonly CancellationTokenSource _errorCancellationTokenSource = new();
     private readonly List<string> _errorExclusions;
     private readonly bool _errorSilently;
-    private readonly AutoResetEvent _errorWaitHandle = new(false);
+    private readonly ManualResetEvent _errorWaitHandle = new(false);
     private readonly string _ignoreErrorGateClose;
     private readonly string _ignoreErrorGateOpen;
     private readonly IStepLogger _logger;
-    private readonly AutoResetEvent _outputWaitHandle = new(false);
+    private readonly ManualResetEvent _outputWaitHandle = new(false);
     private readonly bool _raiseErrors;
     private readonly List<string> _results = new();
     private readonly bool _suppressOutput;
@@ -169,9 +169,13 @@ public class BuildProcessHelper
 
     private void Kill()
     {
-        _process.Kill();
-        _outputWaitHandle.Set();
-        _errorWaitHandle.Set();
+        if (!_process.HasExited)
+        {
+            _process?.Kill();
+        }
+
+        _outputWaitHandle?.Set();
+        _errorWaitHandle?.Set();
     }
 
     private bool SkipForIgnoreErrorGate(string data)
