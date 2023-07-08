@@ -18,7 +18,9 @@ public class BuildProcessHelper
     private readonly bool _raiseErrors;
     private readonly List<string> _results = new();
     private readonly bool _suppressOutput;
+    private CancellationTokenRegistration _cancellationTokenRegistration;
     private Exception _capturedException;
+    private CancellationTokenRegistration _errorCancellationTokenRegistration;
     private bool _ignoreErrors;
     private Process _process;
 
@@ -45,6 +47,9 @@ public class BuildProcessHelper
 
     public List<string> Run(string workingDirectory, string executable, string args, int timeout)
     {
+        _cancellationTokenRegistration = _cancellationTokenSource.Token.Register(Kill);
+        _errorCancellationTokenRegistration = _errorCancellationTokenSource.Token.Register(Kill);
+
         _process = new()
         {
             StartInfo =
@@ -62,9 +67,6 @@ public class BuildProcessHelper
 
         _process.OutputDataReceived += OnOutputDataReceived;
         _process.ErrorDataReceived += OnErrorDataReceived;
-
-        using var unused = _cancellationTokenSource.Token.Register(Kill);
-        using var _ = _errorCancellationTokenSource.Token.Register(Kill);
 
         _process.Start();
         _process.BeginOutputReadLine();
@@ -124,6 +126,20 @@ public class BuildProcessHelper
         return _results;
     }
 
+    private void Kill()
+    {
+        if (_process is { HasExited: false })
+        {
+            _process?.Kill();
+        }
+
+        _outputWaitHandle?.Set();
+        _errorWaitHandle?.Set();
+
+        _cancellationTokenRegistration.Dispose();
+        _errorCancellationTokenRegistration.Dispose();
+    }
+
     private void OnOutputDataReceived(object sender, DataReceivedEventArgs receivedEventArgs)
     {
         if (receivedEventArgs.Data == null)
@@ -165,17 +181,6 @@ public class BuildProcessHelper
 
         _capturedException = new(data);
         _errorCancellationTokenSource.Cancel();
-    }
-
-    private void Kill()
-    {
-        if (!_process.HasExited)
-        {
-            _process?.Kill();
-        }
-
-        _outputWaitHandle?.Set();
-        _errorWaitHandle?.Set();
     }
 
     private bool SkipForIgnoreErrorGate(string data)
