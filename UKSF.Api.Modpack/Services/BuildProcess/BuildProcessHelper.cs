@@ -103,7 +103,7 @@ public class BuildProcessHelper
         }
         else
         {
-            // Process timed out
+            // Process bombed out
             _cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
             var json = "";

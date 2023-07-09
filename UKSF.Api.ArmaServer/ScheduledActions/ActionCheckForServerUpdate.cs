@@ -9,18 +9,15 @@ namespace UKSF.Api.ArmaServer.ScheduledActions;
 
 public interface IActionCheckForServerUpdate : ISelfCreatingScheduledAction { }
 
-public class ActionCheckForServerUpdate : IActionCheckForServerUpdate
+public class ActionCheckForServerUpdate : SelfCreatingScheduledAction, IActionCheckForServerUpdate
 {
     private const string ActionName = nameof(ActionCheckForServerUpdate);
     private readonly IClock _clock;
 
-    private readonly IHostEnvironment _currentEnvironment;
     private readonly IGetCurrentServerInfrastructureQuery _getCurrentServerInfrastructureQuery;
     private readonly IGetInstalledServerInfrastructureQuery _getInstalledServerInfrastructureQuery;
     private readonly IGetLatestServerInfrastructureQuery _getLatestServerInfrastructureQuery;
     private readonly IUksfLogger _logger;
-    private readonly ISchedulerContext _schedulerContext;
-    private readonly ISchedulerService _schedulerService;
     private readonly IUpdateServerInfrastructureCommand _updateServerInfrastructureCommand;
     private readonly IVariablesService _variablesService;
 
@@ -35,11 +32,8 @@ public class ActionCheckForServerUpdate : IActionCheckForServerUpdate
         IGetCurrentServerInfrastructureQuery getCurrentServerInfrastructureQuery,
         IGetInstalledServerInfrastructureQuery getInstalledServerInfrastructureQuery,
         IUksfLogger logger
-    )
+    ) : base(schedulerService, schedulerContext, currentEnvironment)
     {
-        _schedulerService = schedulerService;
-        _schedulerContext = schedulerContext;
-        _currentEnvironment = currentEnvironment;
         _clock = clock;
         _variablesService = variablesService;
         _updateServerInfrastructureCommand = updateServerInfrastructureCommand;
@@ -49,9 +43,11 @@ public class ActionCheckForServerUpdate : IActionCheckForServerUpdate
         _logger = logger;
     }
 
-    public string Name => ActionName;
+    public override DateTime NextRun => _clock.Today().AddHours(03).AddDays(1);
+    public override TimeSpan RunInterval => TimeSpan.FromHours(12);
+    public override string Name => ActionName;
 
-    public async Task Run(params object[] parameters)
+    public override async Task Run(params object[] parameters)
     {
         if (!_variablesService.GetFeatureState("AUTO_INFRA_UPDATE"))
         {
@@ -73,23 +69,5 @@ public class ActionCheckForServerUpdate : IActionCheckForServerUpdate
                 $"Server infrastructure updated from version {installedInfo.InstalledVersion}.{currentInfo.CurrentBuild} to {afterVersion.InstalledVersion}.{afterBuild.CurrentBuild}"
             );
         }
-    }
-
-    public async Task CreateSelf()
-    {
-        if (_currentEnvironment.IsDevelopment())
-        {
-            return;
-        }
-
-        if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
-        {
-            await _schedulerService.CreateScheduledJob(_clock.Today().AddHours(03).AddDays(1), TimeSpan.FromHours(12), ActionName);
-        }
-    }
-
-    public Task Reset()
-    {
-        return Task.CompletedTask;
     }
 }

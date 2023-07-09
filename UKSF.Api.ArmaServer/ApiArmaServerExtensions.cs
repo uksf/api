@@ -46,7 +46,8 @@ public static class ApiArmaServerExtensions
 
     private static IServiceCollection AddActions(this IServiceCollection services)
     {
-        return services.AddSelfCreatingScheduledAction<IActionCheckForServerUpdate, ActionCheckForServerUpdate>();
+        return services.AddSelfCreatingScheduledAction<IActionCheckForServerUpdate, ActionCheckForServerUpdate>()
+                       .AddSelfCreatingScheduledAction<IActionCleanupRunningServers, ActionCleanupRunningServers>();
     }
 
     public static void AddUksfArmaServerSignalr(this IEndpointRouteBuilder builder)
