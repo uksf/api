@@ -78,7 +78,7 @@ public class SchedulerService : ISchedulerService
     private void Schedule(ScheduledJob job)
     {
         CancellationTokenSource token = new();
-        var unused = Task.Run(
+        _ = Task.Run(
             async () =>
             {
                 var now = _clock.UtcNow();

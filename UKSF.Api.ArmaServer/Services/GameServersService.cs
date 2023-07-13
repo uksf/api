@@ -197,7 +197,7 @@ public class GameServersService : IGameServersService
 
     public void KillGameServer(GameServer gameServer)
     {
-        if (!gameServer.ProcessId.HasValue)
+        if (gameServer.ProcessId is null or 0)
         {
             throw new NullReferenceException();
         }
@@ -205,7 +205,7 @@ public class GameServersService : IGameServersService
         var process = Process.GetProcesses().FirstOrDefault(x => x.Id == gameServer.ProcessId.Value);
         if (process is { HasExited: false })
         {
-            process.Kill();
+            process.Kill(true);
         }
 
         gameServer.ProcessId = null;
@@ -216,7 +216,7 @@ public class GameServersService : IGameServersService
                 process = Process.GetProcesses().FirstOrDefault(y => y.Id == x);
                 if (process is { HasExited: false })
                 {
-                    process.Kill();
+                    process.Kill(true);
                 }
             }
         );
@@ -228,7 +228,7 @@ public class GameServersService : IGameServersService
         var processes = _gameServerHelpers.GetArmaProcesses().ToList();
         foreach (var process in processes)
         {
-            process.Kill();
+            process.Kill(true);
         }
 
         _gameServersContext.Get()

@@ -33,7 +33,7 @@ public class BuildStepNotify : BuildStep
             case GameEnvironment.RELEASE:
             {
                 var release = _releaseService.GetRelease(Build.Version);
-                var isAllowedAtThisTime = _clock.UtcNow().Hour > 10 || _clock.UtcNow().Hour > 22;
+                var isAllowedAtThisTime = _clock.UkNow().Hour >= 10 && _clock.UkNow().Hour < 22;
                 if (_tagEveryone && isAllowedAtThisTime)
                 {
                     await _discordMessageService.SendMessageToEveryone(

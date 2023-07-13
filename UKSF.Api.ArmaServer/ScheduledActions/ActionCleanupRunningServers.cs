@@ -1,6 +1,7 @@
 ﻿using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;
 
@@ -58,16 +59,32 @@ public class ActionCleanupRunningServers : SelfCreatingScheduledAction, IActionC
         // Kill all running servers
         foreach (var runningServer in runningServers)
         {
-            _gameServersService.KillGameServer(runningServer);
+            try
+            {
+                _gameServersService.KillGameServer(runningServer);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(
+                    $"Failed to kill running game server - Name: {runningServer.Name} - ProcessId: {runningServer.ProcessId}\n{exception.GetCompleteString()}"
+                );
+            }
         }
 
         _logger.LogInfo($"Killed {runningServers.Count} leftover servers");
 
         // Kill any remaining processes
-        var killedCount = _gameServersService.KillAllArmaProcesses();
-        if (killedCount > 0)
+        try
         {
-            _logger.LogInfo($"Killed {killedCount} orphaned arma processes");
+            var killedCount = _gameServersService.KillAllArmaProcesses();
+            if (killedCount > 0)
+            {
+                _logger.LogInfo($"Killed {killedCount} orphaned arma processes");
+            }
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError($"Failed to kill arma processes\n{exception.GetCompleteString()}");
         }
     }
 }
