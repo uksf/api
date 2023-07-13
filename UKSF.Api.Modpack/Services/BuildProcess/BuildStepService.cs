@@ -12,7 +12,7 @@ public interface IBuildStepService
 {
     void RegisterBuildSteps();
     List<ModpackBuildStep> GetSteps(GameEnvironment environment);
-    ModpackBuildStep GetRestoreStepForRelease();
+    List<ModpackBuildStep> GetStepsForReleaseRestore();
     IBuildStep ResolveBuildStep(string buildStepName);
 }
 
@@ -43,9 +43,9 @@ public class BuildStepService : IBuildStepService
         return steps;
     }
 
-    public ModpackBuildStep GetRestoreStepForRelease()
+    public List<ModpackBuildStep> GetStepsForReleaseRestore()
     {
-        return new(BuildStepRestore.Name);
+        return new() { new(BuildStepRestore.Name), new(BuildStepUnlockServerControl.Name) };
     }
 
     public IBuildStep ResolveBuildStep(string buildStepName)
@@ -108,6 +108,7 @@ public class BuildStepService : IBuildStepService
         return new()
         {
             new(BuildStepClean.Name),
+            new(BuildStepLockServerControl.Name),
             new(BuildStepBackup.Name),
             new(BuildStepDeploy.Name),
             new(BuildStepReleaseKeys.Name),
@@ -115,7 +116,8 @@ public class BuildStepService : IBuildStepService
             new(BuildStepBuildRepo.Name),
             new(BuildStepPublish.Name),
             new(BuildStepNotify.Name),
-            new(BuildStepMerge.Name)
+            new(BuildStepMerge.Name),
+            new(BuildStepUnlockServerControl.Name)
         };
     }
 

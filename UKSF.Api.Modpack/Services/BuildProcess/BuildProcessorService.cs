@@ -103,14 +103,23 @@ public class BuildProcessorService : IBuildProcessorService
         }
 
         _logger.LogInfo($"Attempting to restore repo prior to {build.Version}");
-        var restoreStep = _buildStepService.GetRestoreStepForRelease();
-        if (restoreStep == null)
+        var restoreSteps = _buildStepService.GetStepsForReleaseRestore();
+        if (restoreSteps.Any())
         {
-            _logger.LogError("Restore step expected but not found. Won't restore");
+            _logger.LogError("Restore steps expected but not found. Won't restore");
             return;
         }
 
-        restoreStep.Index = build.Steps.Count;
+        var lastStepIndex = build.Steps.Last().Index;
+        foreach (var restoreStep in restoreSteps)
+        {
+            restoreStep.Index = ++lastStepIndex;
+            await ExecuteRestoreStep(build, restoreStep);
+        }
+    }
+
+    private async Task ExecuteRestoreStep(ModpackBuild build, ModpackBuildStep restoreStep)
+    {
         var step = _buildStepService.ResolveBuildStep(restoreStep.Name);
         step.Init(
             _serviceProvider,
