@@ -31,7 +31,9 @@ public class SmtpClientContext : ISmtpClientContext
 
         mailMessage.From = new(_username, "UKSF");
 
-        using SmtpClient smtp = new("smtp.gmail.com", 587) { Credentials = new NetworkCredential(_username, _password), EnableSsl = true };
+        using SmtpClient smtp = new("smtp.gmail.com", 587);
+        smtp.Credentials = new NetworkCredential(_username, _password);
+        smtp.EnableSsl = true;
         await smtp.SendMailAsync(mailMessage);
     }
 }

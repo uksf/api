@@ -42,30 +42,34 @@ public class ObjectIdConversionServiceTests
     [Fact]
     public void ShouldConvertUnitObjectIds()
     {
-        const string INPUT = "5e39336e1b92ee2d14b7fe08";
-        const string EXPECTED = "7 Squadron";
-        DomainUnit unit = new() { Name = EXPECTED, Id = INPUT };
+        const string Input = "5e39336e1b92ee2d14b7fe08";
+        const string Expected = "7 Squadron";
+        DomainUnit unit = new()
+        {
+            Name = Expected,
+            Id = Input
+        };
 
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
         _mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(x => x);
 
-        var subject = _objectIdConversionService.ConvertObjectIds(INPUT);
+        var subject = _objectIdConversionService.ConvertObjectIds(Input);
 
-        subject.Should().Be(EXPECTED);
+        subject.Should().Be(Expected);
     }
 
     [Fact]
     public void ShouldDoNothingToTextWhenNameOrUnitNotFound()
     {
-        const string INPUT = "5e39336e1b92ee2d14b7fe08";
-        const string EXPECTED = "5e39336e1b92ee2d14b7fe08";
+        const string Input = "5e39336e1b92ee2d14b7fe08";
+        const string Expected = "5e39336e1b92ee2d14b7fe08";
 
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns<DomainUnit>(null);
         _mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(x => x);
 
-        var subject = _objectIdConversionService.ConvertObjectIds(INPUT);
+        var subject = _objectIdConversionService.ConvertObjectIds(Input);
 
-        subject.Should().Be(EXPECTED);
+        subject.Should().Be(Expected);
     }
 
     [Fact]

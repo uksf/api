@@ -60,7 +60,9 @@ public static class ApiSharedExtensions
 
     private static IServiceCollection AddContexts(this IServiceCollection services)
     {
-        return services.AddContext<ILogContext, LogContext>()
+        return services.AddSingleton<ISmtpClientContext, SmtpClientContext>()
+                       .AddSingleton<IFileContext, FileContext>()
+                       .AddContext<ILogContext, LogContext>()
                        .AddContext<IAuditLogContext, AuditLogContext>()
                        .AddContext<IErrorLogContext, ErrorLogContext>()
                        .AddContext<ILauncherLogContext, LauncherLogContext>()
@@ -69,14 +71,12 @@ public static class ApiSharedExtensions
                        .AddContext<IMigrationContext, MigrationContext>()
                        .AddContext<IConfirmationCodeContext, ConfirmationCodeContext>()
                        .AddContext<IDocumentFolderMetadataContext, DocumentFolderMetadataContext>()
+                       .AddContext<IVariablesContext, VariablesContext>()
                        .AddCachedContext<IAccountContext, AccountContext>()
                        .AddCachedContext<IRanksContext, RanksContext>()
                        .AddCachedContext<IRolesContext, RolesContext>()
                        .AddCachedContext<IUnitsContext, UnitsContext>()
-                       .AddCachedContext<INotificationsContext, NotificationsContext>()
-                       .AddCachedContext<IVariablesContext, VariablesContext>()
-                       .AddSingleton<ISmtpClientContext, SmtpClientContext>()
-                       .AddSingleton<IFileContext, FileContext>();
+                       .AddCachedContext<INotificationsContext, NotificationsContext>();
     }
 
     private static IServiceCollection AddEventHandlers(this IServiceCollection services)
@@ -133,9 +133,14 @@ public static class ApiSharedExtensions
 
     private static IMongoDatabase GetDatabase(string connectionString)
     {
-        ConventionPack conventionPack =
-            new() { new IgnoreExtraElementsConvention(true), new IgnoreIfNullConvention(true), new CamelCaseElementNameConvention() };
+        ConventionPack conventionPack = new()
+        {
+            new IgnoreExtraElementsConvention(true),
+            new IgnoreIfNullConvention(true),
+            new CamelCaseElementNameConvention()
+        };
         ConventionRegistry.Register("DefaultConventions", conventionPack, _ => true);
+
         var database = MongoUrl.Create(connectionString).DatabaseName;
         return new MongoClient(connectionString).GetDatabase(database);
     }

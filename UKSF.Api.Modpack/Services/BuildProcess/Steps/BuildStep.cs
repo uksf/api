@@ -196,10 +196,9 @@ public class BuildStep : IBuildStep
 
     internal T GetEnvironmentVariable<T>(string key)
     {
-        if (Build.EnvironmentVariables.ContainsKey(key))
+        if (Build.EnvironmentVariables.TryGetValue(key, out var variable))
         {
-            var value = Build.EnvironmentVariables[key];
-            return (T)value;
+            return (T)variable;
         }
 
         return default;

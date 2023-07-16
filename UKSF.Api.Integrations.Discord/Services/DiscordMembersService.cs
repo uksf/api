@@ -83,7 +83,7 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
             {
                 foreach (var user in guild.Users)
                 {
-                    var unused = UpdateAccount(null, user.Id);
+                    _ = UpdateAccount(null, user.Id);
                 }
             }
         );
@@ -106,7 +106,7 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
 
         if (discordId != 0 && domainAccount == null)
         {
-            domainAccount = _accountContext.GetSingle(x => !string.IsNullOrEmpty(x.DiscordId) && x.DiscordId == discordId.ToString());
+            domainAccount = _accountContext.GetSingle(x => x.DiscordId == discordId.ToString());
         }
 
         if (discordId == 0)
@@ -168,7 +168,12 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
 
     private async Task UpdateAccountNickname(IGuildUser user, DomainAccount domainAccount)
     {
-        var name = _displayNameService.GetDisplayName(domainAccount);
+        var name = domainAccount switch
+        {
+            null => user.DisplayName,
+            _    => _displayNameService.GetDisplayName(domainAccount)
+        };
+
         if (user.Nickname != name)
         {
             try

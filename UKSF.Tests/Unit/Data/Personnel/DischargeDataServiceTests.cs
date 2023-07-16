@@ -6,6 +6,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Personnel;
@@ -18,6 +19,7 @@ public class DischargeDataServiceTests
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
         Mock<IMongoCollection<DischargeCollection>> mockDataCollection = new();
+        Mock<IVariablesService> mockVariablesService = new();
 
         DischargeCollection item1 = new() { Discharges = new() { new() { Timestamp = DateTime.UtcNow.AddDays(-3) } } };
         DischargeCollection item2 = new()
@@ -31,8 +33,9 @@ public class DischargeDataServiceTests
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DischargeCollection>(It.IsAny<string>())).Returns(mockDataCollection.Object);
         mockDataCollection.Setup(x => x.Get()).Returns(new List<DischargeCollection> { item1, item2, item3 });
+        mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        DischargeContext dischargeContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
+        DischargeContext dischargeContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
 
         var subject = dischargeContext.Get();
 

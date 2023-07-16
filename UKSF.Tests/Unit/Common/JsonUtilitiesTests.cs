@@ -42,9 +42,9 @@ public class JsonUtilitiesTests
     [Fact]
     public void ShouldEscapeJsonString()
     {
-        const string UNESCAPED_JSON = "JSON:{\"message\": \"\\nMaking zeus \\ at 'C:\\test\\path'\", \"colour\": \"#20d18b\"}";
+        const string UnescapedJson = "JSON:{\"message\": \"\\nMaking zeus \\ at 'C:\\test\\path'\", \"colour\": \"#20d18b\"}";
 
-        var subject = UNESCAPED_JSON.Escape();
+        var subject = UnescapedJson.Escape();
 
         subject.Should().Be("JSON:{\"message\": \"\\\\nMaking zeus \\\\ at 'C:\\\\test\\\\path'\", \"colour\": \"#20d18b\"}");
     }

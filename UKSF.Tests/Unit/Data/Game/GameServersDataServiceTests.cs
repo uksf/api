@@ -5,6 +5,7 @@ using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Game;
@@ -18,11 +19,13 @@ public class GameServersDataServiceTests
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
+        Mock<IVariablesService> mockVariablesService = new();
         _mockDataCollection = new();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<GameServer>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
+        mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        _gameServersContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
+        _gameServersContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
     }
 
     [Fact]

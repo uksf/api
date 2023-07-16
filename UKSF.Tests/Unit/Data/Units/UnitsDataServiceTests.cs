@@ -5,6 +5,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Units;
@@ -17,6 +18,7 @@ public class UnitsDataServiceTests
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
         Mock<IMongoCollection<DomainUnit>> mockDataCollection = new();
+        Mock<IVariablesService> mockVariablesService = new();
 
         DomainUnit rank1 = new() { Name = "Air Troop", Order = 2 };
         DomainUnit rank2 = new() { Name = "UKSF", Order = 0 };
@@ -24,8 +26,9 @@ public class UnitsDataServiceTests
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainUnit>(It.IsAny<string>())).Returns(mockDataCollection.Object);
         mockDataCollection.Setup(x => x.Get()).Returns(new List<DomainUnit> { rank1, rank2, rank3 });
+        mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        UnitsContext unitsContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
+        UnitsContext unitsContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
 
         var subject = unitsContext.Get();
 
@@ -38,6 +41,7 @@ public class UnitsDataServiceTests
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
         Mock<IMongoCollection<DomainUnit>> mockDataCollection = new();
+        Mock<IVariablesService> mockVariablesService = new();
 
         DomainUnit rank1 = new() { Name = "Air Troop", Order = 3, Branch = UnitBranch.COMBAT };
         DomainUnit rank2 = new() { Name = "Boat Troop", Order = 2, Branch = UnitBranch.COMBAT };
@@ -46,8 +50,9 @@ public class UnitsDataServiceTests
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainUnit>(It.IsAny<string>())).Returns(mockDataCollection.Object);
         mockDataCollection.Setup(x => x.Get()).Returns(new List<DomainUnit> { rank1, rank2, rank3, rank4 });
+        mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        UnitsContext unitsContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
+        UnitsContext unitsContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
 
         var subject = unitsContext.Get(x => x.Branch == UnitBranch.COMBAT);
 

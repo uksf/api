@@ -19,24 +19,21 @@ public class TeamspeakServiceTests
 {
     private readonly Mock<IAccountContext> _mockAccountContext;
     private readonly Mock<IHostEnvironment> _mockHostEnvironment;
-    private readonly Mock<IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient>> _mockHubContext;
-    private readonly Mock<IMongoDatabase> _mockMongoDatabase;
-    private readonly Mock<ITeamspeakManagerService> _mockTeamspeakManagerService;
     private readonly TeamspeakService _subject;
 
     public TeamspeakServiceTests()
     {
+        Mock<IMongoDatabase> mockMongoDatabase = new();
+        Mock<IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient>> mockHubContext = new();
+        Mock<ITeamspeakManagerService> mockTeamspeakManagerService = new();
         _mockAccountContext = new();
-        _mockMongoDatabase = new();
-        _mockHubContext = new();
-        _mockTeamspeakManagerService = new();
         _mockHostEnvironment = new();
 
         _subject = new(
             _mockAccountContext.Object,
-            _mockMongoDatabase.Object,
-            _mockHubContext.Object,
-            _mockTeamspeakManagerService.Object,
+            mockMongoDatabase.Object,
+            mockHubContext.Object,
+            mockTeamspeakManagerService.Object,
             _mockHostEnvironment.Object
         );
     }

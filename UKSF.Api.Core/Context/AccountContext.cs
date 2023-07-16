@@ -1,6 +1,7 @@
 ﻿using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context;
 
@@ -8,10 +9,12 @@ public interface IAccountContext : IMongoContext<DomainAccount>, ICachedMongoCon
 
 public class AccountContext : CachedMongoContext<DomainAccount>, IAccountContext
 {
-    public Guid Id;
-
-    public AccountContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "accounts")
+    public AccountContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
+        mongoCollectionFactory,
+        eventBus,
+        variablesService,
+        "accounts"
+    )
     {
-        Id = Guid.NewGuid();
     }
 }

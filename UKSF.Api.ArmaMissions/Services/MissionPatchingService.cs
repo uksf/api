@@ -103,7 +103,7 @@ public class MissionPatchingService : IMissionPatchingService
             throw new FileLoadException("File is not a pbo");
         }
 
-        _folderPath = Path.Combine(_parentFolderPath, Path.GetFileNameWithoutExtension(_filePath) ?? throw new FileNotFoundException());
+        _folderPath = Path.Combine(_parentFolderPath, Path.GetFileNameWithoutExtension(_filePath));
         if (Directory.Exists(_folderPath))
         {
             Directory.Delete(_folderPath, true);

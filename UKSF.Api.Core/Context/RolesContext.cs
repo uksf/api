@@ -1,6 +1,7 @@
 ﻿using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context;
 
@@ -12,18 +13,25 @@ public interface IRolesContext : IMongoContext<DomainRole>, ICachedMongoContext
 
 public class RolesContext : CachedMongoContext<DomainRole>, IRolesContext
 {
-    public RolesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "roles") { }
+    public RolesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
+        mongoCollectionFactory,
+        eventBus,
+        variablesService,
+        "roles"
+    ) { }
 
     public override DomainRole GetSingle(string idOrName)
     {
         return GetSingle(x => x.Id == idOrName || x.Name == idOrName);
     }
 
-    protected override void SetCache(IEnumerable<DomainRole> newCollection)
+    public override IEnumerable<DomainRole> Get()
     {
-        lock (LockObject)
-        {
-            Cache = newCollection?.OrderBy(x => x.Name).ToList();
-        }
+        return base.Get().OrderBy(x => x.Name);
+    }
+
+    public override IEnumerable<DomainRole> Get(Func<DomainRole, bool> predicate)
+    {
+        return base.Get(predicate).OrderBy(x => x.Name);
     }
 }

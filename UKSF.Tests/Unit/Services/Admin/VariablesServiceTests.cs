@@ -35,23 +35,31 @@ public class VariablesServiceTests
     [Fact]
     public void ShouldGetVariableAsBool()
     {
-        const bool EXPECTED = true;
-        VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
+        const bool Expected = true;
+        VariableItem variableItem = new()
+        {
+            Key = "Test",
+            Item = Expected
+        };
 
         var subject = variableItem.AsBool();
 
-        subject.Should().Be(EXPECTED);
+        subject.Should().Be(Expected);
     }
 
     [Fact]
     public void ShouldGetVariableAsDouble()
     {
-        const double EXPECTED = 1.5;
-        VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
+        const double Expected = 1.5;
+        VariableItem variableItem = new()
+        {
+            Key = "Test",
+            Item = Expected
+        };
 
         var subject = variableItem.AsDouble();
 
-        subject.Should().Be(EXPECTED);
+        subject.Should().Be(Expected);
     }
 
     [Fact]
@@ -82,23 +90,31 @@ public class VariablesServiceTests
     [Fact]
     public void ShouldGetVariableAsString()
     {
-        const string EXPECTED = "Value";
-        VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
+        const string Expected = "Value";
+        VariableItem variableItem = new()
+        {
+            Key = "Test",
+            Item = Expected
+        };
 
         var subject = variableItem.AsString();
 
-        subject.Should().Be(EXPECTED);
+        subject.Should().Be(Expected);
     }
 
     [Fact]
     public void ShouldGetVariableAsUlong()
     {
-        const ulong EXPECTED = ulong.MaxValue;
-        VariableItem variableItem = new() { Key = "Test", Item = EXPECTED };
+        const ulong Expected = ulong.MaxValue;
+        VariableItem variableItem = new()
+        {
+            Key = "Test",
+            Item = Expected
+        };
 
         var subject = variableItem.AsUlong();
 
-        subject.Should().Be(EXPECTED);
+        subject.Should().Be(Expected);
     }
 
     [Fact]

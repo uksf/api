@@ -2,6 +2,7 @@
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.Models;
 
 namespace UKSF.Api.Modpack.Context;
@@ -14,7 +15,12 @@ public interface IBuildsContext : IMongoContext<ModpackBuild>, ICachedMongoConte
 
 public class BuildsContext : CachedMongoContext<ModpackBuild>, IBuildsContext
 {
-    public BuildsContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "modpackBuilds") { }
+    public BuildsContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
+        mongoCollectionFactory,
+        eventBus,
+        variablesService,
+        "modpackBuilds"
+    ) { }
 
     public async Task Update(ModpackBuild build, ModpackBuildStep buildStep)
     {
@@ -29,11 +35,13 @@ public class BuildsContext : CachedMongoContext<ModpackBuild>, IBuildsContext
         DataEvent(new(EventType.UPDATE, build));
     }
 
-    protected override void SetCache(IEnumerable<ModpackBuild> newCollection)
+    public override IEnumerable<ModpackBuild> Get()
     {
-        lock (LockObject)
-        {
-            Cache = newCollection?.OrderByDescending(x => x.BuildNumber).ToList();
-        }
+        return base.Get().OrderByDescending(x => x.BuildNumber);
+    }
+
+    public override IEnumerable<ModpackBuild> Get(Func<ModpackBuild, bool> predicate)
+    {
+        return base.Get(predicate).OrderByDescending(x => x.BuildNumber);
     }
 }

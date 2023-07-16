@@ -1,6 +1,7 @@
 ﻿using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context;
 
@@ -8,13 +9,20 @@ public interface IOperationOrderContext : IMongoContext<Opord>, ICachedMongoCont
 
 public class OperationOrderContext : CachedMongoContext<Opord>, IOperationOrderContext
 {
-    public OperationOrderContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "opord") { }
+    public OperationOrderContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
+        mongoCollectionFactory,
+        eventBus,
+        variablesService,
+        "opord"
+    ) { }
 
-    protected override void SetCache(IEnumerable<Opord> newCollection)
+    public override IEnumerable<Opord> Get()
     {
-        lock (LockObject)
-        {
-            Cache = newCollection?.OrderBy(x => x.Start).ToList();
-        }
+        return base.Get().OrderBy(x => x.Start);
+    }
+
+    public override IEnumerable<Opord> Get(Func<Opord, bool> predicate)
+    {
+        return base.Get(predicate).OrderBy(x => x.Start);
     }
 }

@@ -9,6 +9,7 @@ using Moq;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
@@ -22,6 +23,8 @@ public class CachedDataServiceEventTests
     private readonly TestDataModel _item1;
     private readonly Mock<Api.Core.Context.Base.IMongoCollection<TestDataModel>> _mockDataCollection;
     private readonly Mock<IEventBus> _mockEventBus;
+    private readonly Mock<IVariablesService> _mockIVariablesService = new();
+
     private readonly TestCachedContext _testCachedContext;
 
     public CachedDataServiceEventTests()
@@ -40,7 +43,9 @@ public class CachedDataServiceEventTests
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
         _mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
 
-        _testCachedContext = new(mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _mockIVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
+
+        _testCachedContext = new(mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
     }
 
     [Fact]

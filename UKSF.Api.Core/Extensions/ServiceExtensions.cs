@@ -11,7 +11,7 @@ public static class ServiceExtensions
         return collection.AddSingleton(typeof(TService), typeof(TImplementation));
     }
 
-    public static IServiceCollection AddCachedContext<TService, TImplementation>(this IServiceCollection collection)
+    public static IServiceCollection AddCachedContext<TService, TImplementation>(this IServiceCollection collection) where TService : ICachedMongoContext
     {
         return collection.AddContext<TService, TImplementation>().AddSingleton(typeof(ICachedMongoContext), typeof(TImplementation));
     }

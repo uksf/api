@@ -8,6 +8,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
@@ -23,12 +24,14 @@ public class CommentThreadDataServiceTests
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
+        Mock<IVariablesService> mockVariablesService = new();
         _mockDataCollection = new();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommentThread>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
+        mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
         _mockDataCollection.Setup(x => x.Get()).Returns(() => _mockCollection);
 
-        _commentThreadContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
+        _commentThreadContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
     }
 
     [Fact]

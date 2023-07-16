@@ -5,6 +5,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Personnel;
@@ -18,11 +19,13 @@ public class RolesDataServiceTests
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
+        Mock<IVariablesService> mockVariablesService = new();
         _mockDataCollection = new();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainRole>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
+        mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        _rolesContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
+        _rolesContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
     }
 
     [Fact]

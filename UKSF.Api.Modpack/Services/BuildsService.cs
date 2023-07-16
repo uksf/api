@@ -260,11 +260,13 @@ public class BuildsService : IBuildsService
             return;
         }
 
-        if (previousBuild.EnvironmentVariables.ContainsKey(key))
+        // Check if previous build had the env variable set for this step
+        if (previousBuild.EnvironmentVariables.TryGetValue(key, out var variable))
         {
-            var updated = (bool)previousBuild.EnvironmentVariables[key];
+            var updated = (bool)variable;
             if (updated)
             {
+                // We only want to try it again due to a failed/cancelled or unfinished step
                 var step = previousBuild.Steps.FirstOrDefault(x => x.Name == stepName);
                 if (step != null && (!step.Finished || step.BuildResult is ModpackBuildResult.FAILED or ModpackBuildResult.CANCELLED))
                 {

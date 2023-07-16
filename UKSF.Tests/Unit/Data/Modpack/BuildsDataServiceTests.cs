@@ -8,6 +8,7 @@ using Moq;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
 using Xunit;
@@ -23,12 +24,14 @@ public class BuildsDataServiceTests
     public BuildsDataServiceTests()
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
+        Mock<IVariablesService> mockVariablesService = new();
         _mockEventBus = new();
         _mockDataCollection = new();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<ModpackBuild>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
+        mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        _buildsContext = new(mockDataCollectionFactory.Object, _mockEventBus.Object);
+        _buildsContext = new(mockDataCollectionFactory.Object, _mockEventBus.Object, mockVariablesService.Object);
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.DataContext;
 
@@ -8,13 +9,20 @@ public interface IGameServersContext : IMongoContext<GameServer>, ICachedMongoCo
 
 public class GameServersContext : CachedMongoContext<GameServer>, IGameServersContext
 {
-    public GameServersContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "gameServers") { }
+    public GameServersContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
+        mongoCollectionFactory,
+        eventBus,
+        variablesService,
+        "gameServers"
+    ) { }
 
-    protected override void SetCache(IEnumerable<GameServer> newCollection)
+    public override IEnumerable<GameServer> Get()
     {
-        lock (LockObject)
-        {
-            Cache = newCollection?.OrderBy(x => x.Order).ToList();
-        }
+        return base.Get().OrderBy(x => x.Order);
+    }
+
+    public override IEnumerable<GameServer> Get(Func<GameServer, bool> predicate)
+    {
+        return base.Get(predicate).OrderBy(x => x.Order);
     }
 }

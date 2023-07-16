@@ -8,6 +8,7 @@ using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
@@ -18,6 +19,7 @@ public class CachedDataServiceTests
     private readonly Mock<Api.Core.Context.Base.IMongoCollection<TestDataModel>> _mockDataCollection;
     private readonly Mock<IMongoCollectionFactory> _mockDataCollectionFactory;
     private readonly Mock<IEventBus> _mockEventBus;
+    private readonly Mock<IVariablesService> _mockIVariablesService = new();
     private List<TestDataModel> _mockCollection;
     private TestCachedContext _testCachedContext;
 
@@ -29,6 +31,7 @@ public class CachedDataServiceTests
 
         _mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
         _mockDataCollection.Setup(x => x.Get()).Returns(() => new List<TestDataModel>(_mockCollection));
+        _mockIVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
     }
 
     [Fact]
@@ -36,7 +39,7 @@ public class CachedDataServiceTests
     {
         _mockCollection = new();
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         _testCachedContext.Cache.Should().BeNull();
 
@@ -53,7 +56,7 @@ public class CachedDataServiceTests
         TestDataModel item2 = new() { Name = "2" };
         _mockCollection = new() { item1, item2 };
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         var subject = _testCachedContext.GetSingle(item2.Id);
 
@@ -69,7 +72,7 @@ public class CachedDataServiceTests
         TestDataModel item2 = new() { Name = "2" };
         _mockCollection = new() { item1, item2 };
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         var subject = _testCachedContext.GetSingle(x => x.Name == "2");
 
@@ -85,7 +88,7 @@ public class CachedDataServiceTests
         TestDataModel item2 = new() { Name = "2" };
         _mockCollection = new() { item1, item2 };
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         var subject = _testCachedContext.Get(x => x.Name == "1");
 
@@ -98,7 +101,7 @@ public class CachedDataServiceTests
     {
         _mockCollection = new();
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         _testCachedContext.Cache.Should().BeNull();
 
@@ -113,7 +116,7 @@ public class CachedDataServiceTests
     {
         _mockCollection = new();
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         _testCachedContext.Cache.Should().BeNull();
 
@@ -136,7 +139,7 @@ public class CachedDataServiceTests
 
         _mockDataCollection.Setup(x => x.AddAsync(It.IsAny<TestDataModel>())).Callback<TestDataModel>(x => _mockCollection.Add(x));
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         _testCachedContext.Cache.Should().BeNull();
 
@@ -155,7 +158,7 @@ public class CachedDataServiceTests
 
         _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => _mockCollection.RemoveAll(x => x.Id == id));
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         await _testCachedContext.Delete(item1);
 
@@ -172,7 +175,7 @@ public class CachedDataServiceTests
 
         _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => _mockCollection.RemoveAll(x => x.Id == id));
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         await _testCachedContext.Delete(item1.Id);
 
@@ -195,7 +198,7 @@ public class CachedDataServiceTests
                                    _mockCollection.RemoveAll(x => _mockCollection.Where(expression.Compile()).Contains(x))
                            );
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         await _testCachedContext.DeleteMany(x => x.Name == "1");
 
@@ -215,7 +218,7 @@ public class CachedDataServiceTests
                            .Returns(Task.CompletedTask)
                            .Callback((string id, TestDataModel value) => _mockCollection[_mockCollection.FindIndex(x => x.Id == id)] = value);
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         await _testCachedContext.Replace(item2);
 
@@ -233,7 +236,7 @@ public class CachedDataServiceTests
                            .Returns(Task.CompletedTask)
                            .Callback((string id, UpdateDefinition<TestDataModel> _) => _mockCollection.First(x => x.Id == id).Name = "2");
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         await _testCachedContext.Update(item1.Id, x => x.Name, "2");
 
@@ -251,7 +254,7 @@ public class CachedDataServiceTests
                            .Returns(Task.CompletedTask)
                            .Callback((string id, UpdateDefinition<TestDataModel> _) => _mockCollection.First(x => x.Id == id).Name = "2");
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         await _testCachedContext.Update(item1.Id, Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
 
@@ -274,7 +277,7 @@ public class CachedDataServiceTests
                                    _mockCollection.Where(expression.Compile()).ToList().ForEach(x => x.Name = "3")
                            );
 
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
         await _testCachedContext.UpdateMany(x => x.Name == "1", Builders<TestDataModel>.Update.Set(x => x.Name, "3"));
 

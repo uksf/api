@@ -2,6 +2,7 @@
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context;
 
@@ -13,8 +14,12 @@ public interface ICommentThreadContext : IMongoContext<CommentThread>, ICachedMo
 
 public class CommentThreadContext : CachedMongoContext<CommentThread>, ICommentThreadContext
 {
-    public CommentThreadContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) :
-        base(mongoCollectionFactory, eventBus, "commentThreads") { }
+    public CommentThreadContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
+        mongoCollectionFactory,
+        eventBus,
+        variablesService,
+        "commentThreads"
+    ) { }
 
     public async Task AddCommentToThread(string commentThreadId, Comment comment)
     {

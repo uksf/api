@@ -3,6 +3,7 @@ using FluentAssertions;
 using Moq;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
 using Xunit;
@@ -18,11 +19,13 @@ public class ReleasesDataServiceTests
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
+        Mock<IVariablesService> mockVariablesService = new();
         _mockDataCollection = new();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<ModpackRelease>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
+        mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        _releasesContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
+        _releasesContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
     }
 
     [Fact]

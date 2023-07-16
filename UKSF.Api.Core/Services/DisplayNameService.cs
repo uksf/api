@@ -5,10 +5,10 @@ namespace UKSF.Api.Core.Services;
 
 public interface IDisplayNameService
 {
-    string GetDisplayName(DomainAccount domainAccount);
     string GetDisplayName(string id);
-    string GetDisplayNameWithoutRank(DomainAccount domainAccount);
+    string GetDisplayName(DomainAccount domainAccount);
     string GetDisplayNameWithoutRank(string id);
+    string GetDisplayNameWithoutRank(DomainAccount domainAccount);
 }
 
 public class DisplayNameService : IDisplayNameService
@@ -22,38 +22,56 @@ public class DisplayNameService : IDisplayNameService
         _ranksContext = ranksContext;
     }
 
-    public string GetDisplayName(DomainAccount domainAccount)
-    {
-        if (domainAccount is { MembershipState: MembershipState.SERVER })
-        {
-            return $"{domainAccount.Firstname} {domainAccount.Lastname}";
-        }
-
-        var rank = domainAccount.Rank != null ? _ranksContext.GetSingle(domainAccount.Rank) : null;
-        return rank == null
-            ? $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}"
-            : $"{rank.Abbreviation}.{domainAccount.Lastname}.{domainAccount.Firstname[0]}";
-    }
-
     public string GetDisplayName(string id)
     {
         var domainAccount = _accountContext.GetSingle(id);
-        return domainAccount != null ? GetDisplayName(domainAccount) : id;
+
+        return domainAccount switch
+        {
+            null => id,
+            _    => GetDisplayName(domainAccount)
+        };
     }
 
-    public string GetDisplayNameWithoutRank(DomainAccount domainAccount)
+    public string GetDisplayName(DomainAccount domainAccount)
     {
-        if (domainAccount is { MembershipState: MembershipState.SERVER })
+        return domainAccount switch
         {
-            return $"{domainAccount.Firstname} {domainAccount.Lastname}";
-        }
-
-        return string.IsNullOrEmpty(domainAccount?.Lastname) ? "Guest" : $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}";
+            _ when string.IsNullOrEmpty(domainAccount?.Lastname) => "Guest",
+            { MembershipState: MembershipState.SERVER }          => FormatDisplayName(domainAccount.Lastname, domainAccount.Firstname),
+            _                                                    => FormatDisplayName(domainAccount.Lastname, domainAccount.Firstname, domainAccount.Rank)
+        };
     }
 
     public string GetDisplayNameWithoutRank(string id)
     {
         var domainAccount = _accountContext.GetSingle(id);
-        return domainAccount != null ? GetDisplayNameWithoutRank(domainAccount) : id;
+
+        return domainAccount switch
+        {
+            null => id,
+            _    => GetDisplayNameWithoutRank(domainAccount)
+        };
+    }
+
+    public string GetDisplayNameWithoutRank(DomainAccount domainAccount)
+    {
+        return domainAccount switch
+        {
+            _ when string.IsNullOrEmpty(domainAccount?.Lastname) => "Guest",
+            { MembershipState: MembershipState.SERVER }          => FormatDisplayName(domainAccount.Lastname, domainAccount.Firstname),
+            _                                                    => FormatDisplayName(domainAccount.Lastname, domainAccount.Firstname)
+        };
+    }
+
+    private string FormatDisplayName(string lastName, string firstName, string rank = null)
+    {
+        if (!string.IsNullOrEmpty(rank))
+        {
+            var rankAbbreviation = _ranksContext.GetSingle(rank).Abbreviation;
+            return $"{rankAbbreviation}.{lastName}.{firstName[0]}";
+        }
+
+        return $"{lastName}.{firstName[0]}";
     }
 }

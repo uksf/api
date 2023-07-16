@@ -3,6 +3,7 @@ using MongoDB.Driver;
 using MoreLinq;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context.Base;
 
@@ -13,27 +14,36 @@ public interface ICachedMongoContext
 
 public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICachedMongoContext where T : MongoObject
 {
+    private const string UseMemoryDataCacheFeatureKey = "USE_MEMORY_DATA_CACHE";
     private readonly IEventBus _eventBus;
-    protected readonly object LockObject = new();
+    private readonly object _lockObject = new();
+    private readonly IVariablesService _variablesService;
 
-    protected CachedMongoContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, string collectionName) : base(
-        mongoCollectionFactory,
-        collectionName
-    )
+    protected CachedMongoContext(
+        IMongoCollectionFactory mongoCollectionFactory,
+        IEventBus eventBus,
+        IVariablesService variablesService,
+        string collectionName
+    ) : base(mongoCollectionFactory, collectionName)
     {
         _eventBus = eventBus;
+        _variablesService = variablesService;
     }
 
-    public List<T> Cache { get; protected set; }
+    public List<T> Cache { get; private set; }
 
     public void Refresh()
     {
-        SetCache(null);
-        Get();
+        SetCache(base.Get());
     }
 
-    public sealed override IEnumerable<T> Get()
+    public override IEnumerable<T> Get()
     {
+        if (!UseCache())
+        {
+            return base.Get();
+        }
+
         if (Cache != null)
         {
             return Cache;
@@ -45,43 +55,53 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
     public override IEnumerable<T> Get(Func<T, bool> predicate)
     {
+        if (!UseCache())
+        {
+            return base.Get(predicate);
+        }
+
         if (Cache == null)
         {
             Get();
         }
 
-        return Cache.Where(predicate);
+        return Cache!.Where(predicate);
     }
 
     public override T GetSingle(string id)
     {
+        if (!UseCache())
+        {
+            return base.GetSingle(id);
+        }
+
         if (Cache == null)
         {
             Get();
         }
 
-        return Cache.FirstOrDefault(x => x.Id == id);
+        return Cache!.FirstOrDefault(x => x.Id == id);
     }
 
     public override T GetSingle(Func<T, bool> predicate)
     {
+        if (!UseCache())
+        {
+            return base.GetSingle(predicate);
+        }
+
         if (Cache == null)
         {
             Get();
         }
 
-        return Cache.FirstOrDefault(predicate);
+        return Cache!.FirstOrDefault(predicate);
     }
 
     public override async Task Add(T item)
     {
-        if (Cache == null)
-        {
-            Get();
-        }
-
         await base.Add(item);
-        SetCache(Cache.Concat(new[] { item }));
+        SetCache(base.Get());
         DataAddEvent(item);
     }
 
@@ -123,30 +143,22 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
     public override async Task Replace(T item)
     {
-        var id = item.Id;
-        var cacheItem = GetSingle(id);
         await base.Replace(item);
-        SetCache(Cache.Except(new[] { cacheItem }).Concat(new[] { item }));
+        SetCache(base.Get());
         DataUpdateEvent(item.Id);
     }
 
     public override async Task Delete(string id)
     {
-        var cacheItem = GetSingle(id);
         await base.Delete(id);
-        SetCache(Cache.Except(new[] { cacheItem }));
+        SetCache(base.Get());
         DataDeleteEvent(id);
     }
 
     public override async Task Delete(T item)
     {
-        if (Cache == null)
-        {
-            Get();
-        }
-
         await base.Delete(item);
-        SetCache(Cache.Except(new[] { item }));
+        SetCache(base.Get());
         DataDeleteEvent(item.Id);
     }
 
@@ -154,16 +166,21 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     {
         var ids = Get(filterExpression.Compile()).ToList();
         await base.DeleteMany(filterExpression);
-        SetCache(Cache.Except(ids));
+        SetCache(base.Get());
         ids.ForEach(x => DataDeleteEvent(x.Id));
     }
 
-    protected virtual void SetCache(IEnumerable<T> newCollection)
+    private void SetCache(IEnumerable<T> newCollection)
     {
-        lock (LockObject)
+        lock (_lockObject)
         {
             Cache = newCollection?.ToList();
         }
+    }
+
+    private bool UseCache()
+    {
+        return _variablesService.GetFeatureState(UseMemoryDataCacheFeatureKey);
     }
 
     private void DataAddEvent(T item)

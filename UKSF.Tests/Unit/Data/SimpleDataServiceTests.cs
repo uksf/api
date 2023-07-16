@@ -3,6 +3,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Launcher.Context;
 using UKSF.Api.Launcher.Models;
 using Xunit;
@@ -16,13 +17,13 @@ public class SimpleDataServiceTests
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
 
-        AccountContext unused1 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
-        CommandRequestContext unused2 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
+        AccountContext unused1 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object, new Mock<IVariablesService>().Object);
+        CommandRequestContext unused2 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object, new Mock<IVariablesService>().Object);
         CommandRequestArchiveContext unused3 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
         ConfirmationCodeContext unused4 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
-        LauncherFileContext unused5 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
-        LoaContext unused6 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
-        NotificationsContext unused7 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
+        LauncherFileContext unused5 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object, new Mock<IVariablesService>().Object);
+        LoaContext unused6 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object, new Mock<IVariablesService>().Object);
+        NotificationsContext unused7 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object, new Mock<IVariablesService>().Object);
         SchedulerContext unused8 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
 
         mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<DomainAccount>(It.IsAny<string>()), Times.Once);

@@ -18,7 +18,6 @@ public class CommentThreadController : ControllerBase
     private readonly ICommentThreadContext _commentThreadContext;
     private readonly ICommentThreadService _commentThreadService;
     private readonly IDisplayNameService _displayNameService;
-    private readonly IHostEnvironment _environment;
     private readonly IHttpContextService _httpContextService;
     private readonly INotificationsService _notificationsService;
     private readonly IRanksService _ranksService;
@@ -33,8 +32,7 @@ public class CommentThreadController : ControllerBase
         IDisplayNameService displayNameService,
         IRecruitmentService recruitmentService,
         INotificationsService notificationsService,
-        IHttpContextService httpContextService,
-        IHostEnvironment environment
+        IHttpContextService httpContextService
     )
     {
         _accountContext = accountContext;
@@ -46,7 +44,6 @@ public class CommentThreadController : ControllerBase
         _recruitmentService = recruitmentService;
         _notificationsService = notificationsService;
         _httpContextService = httpContextService;
-        _environment = environment;
     }
 
     [HttpGet("{id}")]
