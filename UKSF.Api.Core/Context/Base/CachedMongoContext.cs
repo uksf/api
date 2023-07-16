@@ -1,12 +1,29 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using MongoDB.Driver;
-using MoreLinq;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context.Base;
+
+public class ContextCache<T> where T : MongoObject
+{
+    private ConcurrentBag<T> _data = new();
+    public bool DataInitialized { get; private set; }
+    public ConcurrentBag<T> Data => _data;
+
+    public void SetData(IEnumerable<T> newCollection)
+    {
+        var newCache = new ConcurrentBag<T>(newCollection);
+        Interlocked.Exchange(ref _data, newCache);
+
+        if (!DataInitialized)
+        {
+            DataInitialized = true;
+        }
+    }
+}
 
 public interface ICachedMongoContext
 {
@@ -16,9 +33,9 @@ public interface ICachedMongoContext
 public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICachedMongoContext where T : MongoObject
 {
     private const string UseMemoryDataCacheFeatureKey = "USE_MEMORY_DATA_CACHE";
+    private readonly ContextCache<T> _cache = new();
     private readonly IEventBus _eventBus;
     private readonly IVariablesService _variablesService;
-    private ConcurrentBag<T> _cache = new();
 
     protected CachedMongoContext(
         IMongoCollectionFactory mongoCollectionFactory,
@@ -29,18 +46,21 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     {
         _eventBus = eventBus;
         _variablesService = variablesService;
-
-        Refresh();
     }
 
     public void Refresh()
     {
-        SetCache(base.Get());
+        _cache.SetData(base.Get());
     }
 
     public override IEnumerable<T> Get()
     {
-        return UseCache() ? _cache : base.Get();
+        if (!_cache.DataInitialized)
+        {
+            Refresh();
+        }
+
+        return UseCache() ? _cache.Data : base.Get();
     }
 
     public override IEnumerable<T> Get(Func<T, bool> predicate)
@@ -89,9 +109,10 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
     public override async Task UpdateMany(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
     {
+        var ids = Get(filterExpression.Compile()).ToList();
         await base.UpdateMany(filterExpression, update);
         Refresh(); // TODO: intelligent refresh
-        Get(filterExpression.Compile()).ForEach(x => DataUpdateEvent(x.Id));
+        ids.ForEach(x => DataUpdateEvent(x.Id));
     }
 
     public override async Task FindAndUpdate(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
@@ -128,12 +149,6 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         await base.DeleteMany(filterExpression);
         Refresh();
         ids.ForEach(x => DataDeleteEvent(x.Id));
-    }
-
-    private void SetCache(IEnumerable<T> newCollection)
-    {
-        var newCache = new ConcurrentBag<T>(newCollection);
-        Interlocked.Exchange(ref _cache, newCache);
     }
 
     private bool UseCache()
