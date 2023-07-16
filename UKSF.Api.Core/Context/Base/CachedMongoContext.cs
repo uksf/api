@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using MongoDB.Driver;
 using MoreLinq;
@@ -16,8 +17,8 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 {
     private const string UseMemoryDataCacheFeatureKey = "USE_MEMORY_DATA_CACHE";
     private readonly IEventBus _eventBus;
-    private readonly object _lockObject = new();
     private readonly IVariablesService _variablesService;
+    private ConcurrentBag<T> _cache = new();
 
     protected CachedMongoContext(
         IMongoCollectionFactory mongoCollectionFactory,
@@ -28,9 +29,9 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     {
         _eventBus = eventBus;
         _variablesService = variablesService;
-    }
 
-    public List<T> Cache { get; private set; }
+        Refresh();
+    }
 
     public void Refresh()
     {
@@ -39,69 +40,28 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
     public override IEnumerable<T> Get()
     {
-        if (!UseCache())
-        {
-            return base.Get();
-        }
-
-        if (Cache != null)
-        {
-            return Cache;
-        }
-
-        SetCache(base.Get());
-        return Cache;
+        return UseCache() ? _cache : base.Get();
     }
 
     public override IEnumerable<T> Get(Func<T, bool> predicate)
     {
-        if (!UseCache())
-        {
-            return base.Get(predicate);
-        }
-
-        if (Cache == null)
-        {
-            Get();
-        }
-
-        return Cache!.Where(predicate);
+        return UseCache() ? Get().Where(predicate) : base.Get(predicate);
     }
 
     public override T GetSingle(string id)
     {
-        if (!UseCache())
-        {
-            return base.GetSingle(id);
-        }
-
-        if (Cache == null)
-        {
-            Get();
-        }
-
-        return Cache!.FirstOrDefault(x => x.Id == id);
+        return UseCache() ? Get().FirstOrDefault(x => x.Id == id) : base.GetSingle(id);
     }
 
     public override T GetSingle(Func<T, bool> predicate)
     {
-        if (!UseCache())
-        {
-            return base.GetSingle(predicate);
-        }
-
-        if (Cache == null)
-        {
-            Get();
-        }
-
-        return Cache!.FirstOrDefault(predicate);
+        return UseCache() ? Get().FirstOrDefault(predicate) : base.GetSingle(predicate);
     }
 
     public override async Task Add(T item)
     {
         await base.Add(item);
-        SetCache(base.Get());
+        Refresh();
         DataAddEvent(item);
     }
 
@@ -144,21 +104,21 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     public override async Task Replace(T item)
     {
         await base.Replace(item);
-        SetCache(base.Get());
+        Refresh();
         DataUpdateEvent(item.Id);
     }
 
     public override async Task Delete(string id)
     {
         await base.Delete(id);
-        SetCache(base.Get());
+        Refresh();
         DataDeleteEvent(id);
     }
 
     public override async Task Delete(T item)
     {
         await base.Delete(item);
-        SetCache(base.Get());
+        Refresh();
         DataDeleteEvent(item.Id);
     }
 
@@ -166,16 +126,14 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     {
         var ids = Get(filterExpression.Compile()).ToList();
         await base.DeleteMany(filterExpression);
-        SetCache(base.Get());
+        Refresh();
         ids.ForEach(x => DataDeleteEvent(x.Id));
     }
 
     private void SetCache(IEnumerable<T> newCollection)
     {
-        lock (_lockObject)
-        {
-            Cache = newCollection?.ToList();
-        }
+        var newCache = new ConcurrentBag<T>(newCollection);
+        Interlocked.Exchange(ref _cache, newCache);
     }
 
     private bool UseCache()

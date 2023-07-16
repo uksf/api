@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using FluentAssertions;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Core.Context.Base;
@@ -35,100 +34,13 @@ public class CachedDataServiceTests
     }
 
     [Fact]
-    public void Should_cache_collection_when_null_for_get()
+    public void Should_cache_collection_for_new_context()
     {
         _mockCollection = new();
 
         _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
-        _testCachedContext.Cache.Should().BeNull();
-
-        _testCachedContext.Get();
-
-        _testCachedContext.Cache.Should().NotBeNull();
-        _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
-    }
-
-    [Fact]
-    public void Should_cache_collection_when_null_for_get_single_by_id()
-    {
-        TestDataModel item1 = new() { Name = "1" };
-        TestDataModel item2 = new() { Name = "2" };
-        _mockCollection = new() { item1, item2 };
-
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
-
-        var subject = _testCachedContext.GetSingle(item2.Id);
-
-        _testCachedContext.Cache.Should().NotBeNull();
-        _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
-        subject.Should().Be(item2);
-    }
-
-    [Fact]
-    public void Should_cache_collection_when_null_for_get_single_by_predicate()
-    {
-        TestDataModel item1 = new() { Name = "1" };
-        TestDataModel item2 = new() { Name = "2" };
-        _mockCollection = new() { item1, item2 };
-
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
-
-        var subject = _testCachedContext.GetSingle(x => x.Name == "2");
-
-        _testCachedContext.Cache.Should().NotBeNull();
-        _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
-        subject.Should().Be(item2);
-    }
-
-    [Fact]
-    public void Should_cache_collection_when_null_for_get_with_predicate()
-    {
-        TestDataModel item1 = new() { Name = "1" };
-        TestDataModel item2 = new() { Name = "2" };
-        _mockCollection = new() { item1, item2 };
-
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
-
-        var subject = _testCachedContext.Get(x => x.Name == "1");
-
-        _testCachedContext.Cache.Should().NotBeNull();
-        subject.Should().BeSubsetOf(_testCachedContext.Cache);
-    }
-
-    [Fact]
-    public void Should_cache_collection_when_null_for_refresh()
-    {
-        _mockCollection = new();
-
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
-
-        _testCachedContext.Cache.Should().BeNull();
-
-        _testCachedContext.Refresh();
-
-        _testCachedContext.Cache.Should().NotBeNull();
-        _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
-    }
-
-    [Fact]
-    public void Should_return_cached_collection_for_get()
-    {
-        _mockCollection = new();
-
-        _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
-
-        _testCachedContext.Cache.Should().BeNull();
-
-        var subject1 = _testCachedContext.Get().ToList();
-
-        subject1.Should().NotBeNull();
-        subject1.Should().BeEquivalentTo(_mockCollection);
-
-        var subject2 = _testCachedContext.Get().ToList();
-
-        subject2.Should().NotBeNull();
-        subject2.Should().BeEquivalentTo(_mockCollection).And.BeEquivalentTo(subject1);
+        _mockDataCollection.Verify(x => x.Get(), Times.Once);
     }
 
     [Fact]
@@ -141,12 +53,9 @@ public class CachedDataServiceTests
 
         _testCachedContext = new(_mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
 
-        _testCachedContext.Cache.Should().BeNull();
-
         await _testCachedContext.Add(item1);
 
-        _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
-        _testCachedContext.Cache.Should().Contain(item1);
+        _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
     }
 
     [Fact]
@@ -162,8 +71,7 @@ public class CachedDataServiceTests
 
         await _testCachedContext.Delete(item1);
 
-        _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
-        _testCachedContext.Cache.Should().HaveCount(1).And.NotContain(item1).And.Contain(item2);
+        _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
     }
 
     [Fact]
@@ -179,8 +87,7 @@ public class CachedDataServiceTests
 
         await _testCachedContext.Delete(item1.Id);
 
-        _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
-        _testCachedContext.Cache.Should().HaveCount(1).And.NotContain(item1).And.Contain(item2);
+        _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
     }
 
     [Fact]
@@ -202,9 +109,7 @@ public class CachedDataServiceTests
 
         await _testCachedContext.DeleteMany(x => x.Name == "1");
 
-        _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
-        _testCachedContext.Cache.Should().HaveCount(1);
-        _testCachedContext.Cache.Should().Contain(item3);
+        _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
     }
 
     [Fact]
@@ -222,8 +127,7 @@ public class CachedDataServiceTests
 
         await _testCachedContext.Replace(item2);
 
-        _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
-        _testCachedContext.Cache.First().Name.Should().Be("2");
+        _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
     }
 
     [Fact]
@@ -240,8 +144,7 @@ public class CachedDataServiceTests
 
         await _testCachedContext.Update(item1.Id, x => x.Name, "2");
 
-        _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
-        _testCachedContext.Cache.First().Name.Should().Be("2");
+        _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
     }
 
     [Fact]
@@ -258,8 +161,7 @@ public class CachedDataServiceTests
 
         await _testCachedContext.Update(item1.Id, Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
 
-        _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
-        _testCachedContext.Cache.First().Name.Should().Be("2");
+        _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
     }
 
     [Fact]
@@ -281,9 +183,6 @@ public class CachedDataServiceTests
 
         await _testCachedContext.UpdateMany(x => x.Name == "1", Builders<TestDataModel>.Update.Set(x => x.Name, "3"));
 
-        _testCachedContext.Cache.Should().BeEquivalentTo(_mockCollection);
-        _testCachedContext.Cache.ToList()[0].Name.Should().Be("3");
-        _testCachedContext.Cache.ToList()[1].Name.Should().Be("3");
-        _testCachedContext.Cache.ToList()[2].Name.Should().Be("3");
+        _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
     }
 }
