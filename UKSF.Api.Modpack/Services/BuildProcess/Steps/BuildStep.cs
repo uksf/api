@@ -33,11 +33,11 @@ public interface IBuildStep
 public class BuildStep : IBuildStep
 {
     private const string ColourBlue = "#0c78ff";
-    private readonly TimeSpan _updateInterval = TimeSpan.FromSeconds(2);
     private readonly CancellationTokenSource _updatePusherCancellationTokenSource = new();
     private readonly SemaphoreSlim _updateSemaphore = new(1);
     private ModpackBuildStep _buildStep;
     private Func<UpdateDefinition<ModpackBuild>, Task> _updateBuildCallback;
+    private TimeSpan _updateInterval;
     private Func<Task> _updateStepCallback;
     protected ModpackBuild Build;
     protected CancellationTokenSource CancellationTokenSource;
@@ -62,6 +62,9 @@ public class BuildStep : IBuildStep
         _updateStepCallback = stepUpdateCallback;
         CancellationTokenSource = newCancellationTokenSource;
         StepLogger = new StepLogger(_buildStep);
+
+        var updateInterval = VariablesService.GetVariable("BUILD_STATE_UPDATE_INTERVAL").AsDouble();
+        _updateInterval = TimeSpan.FromSeconds(updateInterval);
     }
 
     public async Task Start()
@@ -216,6 +219,11 @@ public class BuildStep : IBuildStep
                     do
                     {
                         await Task.Delay(_updateInterval, _updatePusherCancellationTokenSource.Token);
+
+                        if (_updatePusherCancellationTokenSource.IsCancellationRequested)
+                        {
+                            return;
+                        }
 
                         var newBuildStepState = JsonSerializer.Serialize(_buildStep, DefaultJsonSerializerOptions.Options);
                         if (newBuildStepState != previousBuildStepState)

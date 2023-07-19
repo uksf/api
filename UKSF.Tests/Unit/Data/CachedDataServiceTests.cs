@@ -14,7 +14,6 @@ namespace UKSF.Tests.Unit.Data;
 
 public class CachedDataServiceTests
 {
-    private readonly List<TestDataModel> _mockCollection = new();
     private readonly Mock<Api.Core.Context.Base.IMongoCollection<TestDataModel>> _mockDataCollection;
     private readonly Mock<IVariablesService> _mockIVariablesService = new();
     private readonly TestCachedContext _testCachedContext;
@@ -26,7 +25,7 @@ public class CachedDataServiceTests
         _mockDataCollection = new();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
-        _mockDataCollection.Setup(x => x.Get()).Returns(() => new List<TestDataModel>(_mockCollection));
+        _mockDataCollection.Setup(x => x.Get()).Returns(() => new List<TestDataModel>());
         _mockIVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
         _testCachedContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, _mockIVariablesService.Object, "test");
