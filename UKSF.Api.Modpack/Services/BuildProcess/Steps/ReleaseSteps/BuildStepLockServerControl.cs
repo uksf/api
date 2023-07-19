@@ -8,7 +8,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps;
 [BuildStep(Name)]
 public class BuildStepLockServerControl : BuildStep
 {
-    public const string Name = "Lock Server Control";
+    public const string Name = "Lock Servers";
     private IVariablesContext _variablesContext;
     private IHubContext<ServersHub, IServersClient> _serversHub;
 
