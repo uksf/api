@@ -8,7 +8,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess.Steps.ReleaseSteps;
 [BuildStep(Name)]
 public class BuildStepUnlockServerControl : BuildStep
 {
-    public const string Name = "Unock Servers";
+    public const string Name = "Unlock Servers";
     private IVariablesContext _variablesContext;
     private IHubContext<ServersHub, IServersClient> _serversHub;
 
