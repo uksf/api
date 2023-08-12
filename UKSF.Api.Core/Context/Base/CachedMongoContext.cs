@@ -1,9 +1,7 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
-using System.Text.Json;
 using MongoDB.Driver;
 using UKSF.Api.Core.Events;
-using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 
@@ -38,7 +36,6 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     private readonly ContextCache<T> _cache = new();
     private readonly IEventBus _eventBus;
     private readonly IVariablesService _variablesService;
-    private readonly string _collectionName;
 
     protected CachedMongoContext(
         IMongoCollectionFactory mongoCollectionFactory,
@@ -47,29 +44,12 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         string collectionName
     ) : base(mongoCollectionFactory, collectionName)
     {
-        _collectionName = collectionName;
         _eventBus = eventBus;
         _variablesService = variablesService;
     }
 
     public void Refresh()
     {
-        if (_collectionName == "accounts")
-        {
-            var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
-
-            var before = _cache.Data.SingleOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
-            var after = base.Get().SingleOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
-
-            _cache.SetData(base.Get());
-
-            logger.LogDebug(
-                $"Account data refresh: Before {JsonSerializer.Serialize(before).TruncateObjectIds()} - After {JsonSerializer.Serialize(after).TruncateObjectIds()}"
-            );
-
-            return;
-        }
-
         _cache.SetData(base.Get());
     }
 
@@ -90,37 +70,11 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
     public override T GetSingle(string id)
     {
-        if (_collectionName == "accounts" && id == "59e38f10594c603b78aa9dbd")
-        {
-            var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
-
-            var cached = Get().FirstOrDefault(x => x.Id == id);
-            var database = base.GetSingle(id);
-            logger.LogDebug(
-                $"Account data get single: Cached {JsonSerializer.Serialize(cached).TruncateObjectIds()} - Database {JsonSerializer.Serialize(database).TruncateObjectIds()}"
-            );
-
-            return UseCache() ? cached : database;
-        }
-
         return UseCache() ? Get().FirstOrDefault(x => x.Id == id) : base.GetSingle(id);
     }
 
     public override T GetSingle(Func<T, bool> predicate)
     {
-        if (_collectionName == "accounts" && Get().FirstOrDefault(predicate)?.Id == "59e38f10594c603b78aa9dbd")
-        {
-            var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
-
-            var cached = Get().FirstOrDefault(predicate);
-            var database = base.GetSingle(predicate);
-            logger.LogDebug(
-                $"Account data get single: Cached {JsonSerializer.Serialize(cached).TruncateObjectIds()} - Database {JsonSerializer.Serialize(database).TruncateObjectIds()}"
-            );
-
-            return UseCache() ? cached : database;
-        }
-
         return UseCache() ? Get().FirstOrDefault(predicate) : base.GetSingle(predicate);
     }
 
