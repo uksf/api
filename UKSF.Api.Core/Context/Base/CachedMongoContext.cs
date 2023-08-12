@@ -53,13 +53,16 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
     public void Refresh(string source)
     {
-        var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
-        logger.LogDebug($"Refresh cached data for Collection: {_collectionName} | ID: {_id} | Source: {source}");
-        if (_collectionName == "accounts")
+        var logger = StaticServiceProvider.ServiceProvider?.GetService<IUksfLogger>();
+        if (logger != null)
         {
-            var cached = _cache.Data.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
-            var database = base.Get().FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
-            logger.LogDebug($"Cached {cached} - Database {database}");
+            logger.LogDebug($"Refresh cached data for Collection: {_collectionName} | ID: {_id} | Source: {source}");
+            if (_collectionName == "accounts")
+            {
+                var cached = _cache.Data.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
+                var database = base.Get().FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
+                logger.LogDebug($"Cached {cached} - Database {database}");
+            }
         }
 
         _cache.SetData(base.Get());
