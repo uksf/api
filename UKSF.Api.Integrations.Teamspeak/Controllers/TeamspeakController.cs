@@ -86,16 +86,25 @@ public class TeamspeakController : ControllerBase
     public TeamspeakAccountsDataset GetOnlineAccounts()
     {
         var teamspeakClients = _teamspeakService.GetOnlineTeamspeakClients().ToList();
-        _logger.LogDebug($"Me account: ms - {JsonSerializer.Serialize(teamspeakClients)}");
-        var allAccounts = _accountContext.Get();
+        _logger.LogDebug($"Ts - {JsonSerializer.Serialize(teamspeakClients)}");
+        var allAccounts = _accountContext.Get().ToList();
+        _logger.LogDebug($"Account - {JsonSerializer.Serialize(allAccounts.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd"))}");
         var clients = teamspeakClients.Where(x => x != null)
                                       .Select(
-                                          x => new
+                                          client =>
                                           {
-                                              account = allAccounts.FirstOrDefault(
-                                                  y => y.TeamspeakIdentities != null && y.TeamspeakIdentities.Any(z => z.Equals(x.ClientDbId))
-                                              ),
-                                              client = x
+                                              var account = allAccounts.FirstOrDefault(
+                                                  x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(tsDbId => tsDbId.Equals(client.ClientDbId))
+                                              );
+                                              if (account is { Id: "59e38f10594c603b78aa9dbd" })
+                                              {
+                                                  _logger.LogDebug($"Account - {JsonSerializer.Serialize(string.Join(", ", account.TeamspeakIdentities))}");
+                                              }
+
+                                              return new
+                                              {
+                                                  account, client,
+                                              };
                                           }
                                       )
                                       .ToList();
