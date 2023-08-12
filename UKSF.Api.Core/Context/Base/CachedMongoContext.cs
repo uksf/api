@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
+using System.Text.Json;
 using MongoDB.Driver;
 using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 
@@ -34,6 +36,7 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 {
     private const string UseMemoryDataCacheFeatureKey = "USE_MEMORY_DATA_CACHE";
     private readonly ContextCache<T> _cache = new();
+    private readonly string _collectionName;
     private readonly IEventBus _eventBus;
     private readonly IVariablesService _variablesService;
 
@@ -44,6 +47,7 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         string collectionName
     ) : base(mongoCollectionFactory, collectionName)
     {
+        _collectionName = collectionName;
         _eventBus = eventBus;
         _variablesService = variablesService;
     }
@@ -57,7 +61,24 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     {
         if (!_cache.DataInitialized)
         {
+            if (_collectionName == "accounts")
+            {
+                var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
+                logger.LogDebug("Account data needs refresh");
+            }
+
             Refresh();
+        }
+
+        if (_collectionName == "accounts" && StaticServiceProvider.Context == "ts")
+        {
+            var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
+
+            var cached = _cache.Data.SingleOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
+            var database = base.Get().SingleOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
+            logger.LogDebug(
+                $"Account data get: Cached {JsonSerializer.Serialize(cached).TruncateObjectIds()} - Database {JsonSerializer.Serialize(database).TruncateObjectIds()}"
+            );
         }
 
         return UseCache() ? _cache.Data : base.Get();

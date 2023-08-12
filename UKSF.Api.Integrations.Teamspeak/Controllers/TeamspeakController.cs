@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
@@ -85,7 +86,11 @@ public class TeamspeakController : ControllerBase
     public TeamspeakAccountsDataset GetOnlineAccounts()
     {
         var teamnspeakClients = _teamspeakService.GetOnlineTeamspeakClients();
-        var allAccounts = _accountContext.Get();
+        StaticServiceProvider.Context = "ts";
+        var allAccounts = _accountContext.Get().ToList();
+        StaticServiceProvider.Context = string.Empty;
+        var data = allAccounts.SingleOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
+        _logger.LogDebug($"Account data return: {JsonSerializer.Serialize(data).TruncateObjectIds()}");
         var clients = teamnspeakClients.Where(x => x != null)
                                        .Select(
                                            x => new
