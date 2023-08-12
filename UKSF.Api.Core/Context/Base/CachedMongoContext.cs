@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using System.Text.Json;
 using MongoDB.Driver;
 using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 
@@ -62,7 +63,9 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
             _cache.SetData(base.Get());
 
-            logger.LogDebug($"Account data refresh: Before {JsonSerializer.Serialize(before)} - After {JsonSerializer.Serialize(after)}");
+            logger.LogDebug(
+                $"Account data refresh: Before {JsonSerializer.Serialize(before).TruncateObjectIds()} - After {JsonSerializer.Serialize(after).TruncateObjectIds()}"
+            );
 
             return;
         }
@@ -93,7 +96,9 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
             var cached = Get().FirstOrDefault(x => x.Id == id);
             var database = base.GetSingle(id);
-            logger.LogDebug($"Account data get single: Cached {JsonSerializer.Serialize(cached)} - Database {JsonSerializer.Serialize(database)}");
+            logger.LogDebug(
+                $"Account data get single: Cached {JsonSerializer.Serialize(cached).TruncateObjectIds()} - Database {JsonSerializer.Serialize(database).TruncateObjectIds()}"
+            );
 
             return UseCache() ? cached : database;
         }
@@ -109,7 +114,9 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
             var cached = Get().FirstOrDefault(predicate);
             var database = base.GetSingle(predicate);
-            logger.LogDebug($"Account data get single: Cached {JsonSerializer.Serialize(cached)} - Database {JsonSerializer.Serialize(database)}");
+            logger.LogDebug(
+                $"Account data get single: Cached {JsonSerializer.Serialize(cached).TruncateObjectIds()} - Database {JsonSerializer.Serialize(database).TruncateObjectIds()}"
+            );
 
             return UseCache() ? cached : database;
         }

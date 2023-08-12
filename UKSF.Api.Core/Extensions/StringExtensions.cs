@@ -58,14 +58,19 @@ public static class StringExtensions
 
     public static string RemoveEmbeddedQuotes(this string item)
     {
-        var match = new Regex("(\\\".*).+(.*?\\\")").Match(item);
+        var match = new Regex("(\".*).+(.*?\")").Match(item);
         item = item.Remove(match.Index, match.Length).Insert(match.Index, match.ToString().Replace("\"\"", "'"));
-        return Regex.Replace(item, "\\\"\\s+\\\"", string.Empty);
+        return Regex.Replace(item, "\"\\s+\"", string.Empty);
     }
 
     public static IEnumerable<string> ExtractObjectIds(this string text)
     {
-        return Regex.Matches(text, @"[{(]?[0-9a-fA-F]{24}[)}]?").Where(x => IsObjectId(x.Value)).Select(x => x.Value);
+        return Regex.Matches(text, "[{(]?[0-9a-fA-F]{24}[)}]?").Where(x => IsObjectId(x.Value)).Select(x => x.Value);
+    }
+
+    public static string TruncateObjectIds(this string text)
+    {
+        return Regex.Replace(text, "[{(]?([0-9a-fA-F]{4})([0-9a-fA-F]{16})([0-9a-fA-F]{4})[)}]?", "$1...$3");
     }
 
     public static bool IsObjectId(this string text)
