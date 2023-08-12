@@ -86,25 +86,25 @@ public class TeamspeakController : ControllerBase
     public TeamspeakAccountsDataset GetOnlineAccounts()
     {
         var teamspeakClients = _teamspeakService.GetOnlineTeamspeakClients().ToList();
-        _logger.LogDebug($"Ts - {JsonSerializer.Serialize(teamspeakClients)}");
         var allAccounts = _accountContext.Get().ToList();
-        _logger.LogDebug($"Account - {JsonSerializer.Serialize(allAccounts.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd"))}");
+        _logger.LogDebug($"Account - {JsonSerializer.Serialize(allAccounts.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd")).TruncateObjectIds()}");
         var clients = teamspeakClients.Where(x => x != null)
                                       .Select(
                                           client =>
                                           {
+                                              if (client.ClientName.Contains("Beswick"))
+                                              {
+                                                  _logger.LogDebug($"Client - {JsonSerializer.Serialize(client)}");
+                                              }
                                               var account = allAccounts.FirstOrDefault(
-                                                  x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(tsDbId => tsDbId.Equals(client.ClientDbId))
+                                                  x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(tsDbId => tsDbId == client.ClientDbId)
                                               );
                                               if (account is { Id: "59e38f10594c603b78aa9dbd" })
                                               {
-                                                  _logger.LogDebug($"Account - {JsonSerializer.Serialize(string.Join(", ", account.TeamspeakIdentities))}");
+                                                  _logger.LogDebug($"Account - {string.Join(", ", account.TeamspeakIdentities)}");
                                               }
 
-                                              return new
-                                              {
-                                                  account, client,
-                                              };
+                                              return new { account, client };
                                           }
                                       )
                                       .ToList();
@@ -114,8 +114,6 @@ public class TeamspeakController : ControllerBase
                                     .ThenBy(x => x.account.Firstname)
                                     .ToList();
         var commandAccounts = _unitsService.GetAuxilliaryRoot().Members;
-
-        _logger.LogDebug(clientAccounts.Any(x => x.account.Id == "59e38f10594c603b78aa9dbd") ? "Me found in accounts" : "Me not found in accounts");
 
         List<TeamspeakAccountDataset> commanders = new();
         List<TeamspeakAccountDataset> recruiters = new();
@@ -140,7 +138,13 @@ public class TeamspeakController : ControllerBase
                             .Select(client => new TeamspeakAccountDataset { DisplayName = client.client.ClientName })
                             .ToList();
 
-        return new() { Commanders = commanders, Recruiters = recruiters, Members = members, Guests = guests };
+        return new()
+        {
+            Commanders = commanders,
+            Recruiters = recruiters,
+            Members = members,
+            Guests = guests,
+        };
     }
 
     [HttpGet("{accountId}/onlineUserDetails")]
