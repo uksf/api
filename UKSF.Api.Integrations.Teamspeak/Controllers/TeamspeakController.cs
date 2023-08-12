@@ -102,9 +102,17 @@ public class TeamspeakController : ControllerBase
                                     .ThenBy(x => x.account.Lastname)
                                     .ThenBy(x => x.account.Firstname)
                                     .ToList();
-        StaticServiceProvider.Context = "ts";
         var commandAccounts = _unitsService.GetAuxilliaryRoot().Members;
-        StaticServiceProvider.Context = string.Empty;
+
+        var me = allAccounts.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
+        if (me != null)
+        {
+            _logger.LogDebug($"Me account: {string.Join(", ", me.TeamspeakIdentities)}");
+        }
+        else
+        {
+            _logger.LogDebug("Me no have account?");
+        }
 
         _logger.LogDebug(clientAccounts.Any(x => x.account.Id == "59e38f10594c603b78aa9dbd") ? "Me found in accounts" : "Me not found in accounts");
 

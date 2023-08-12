@@ -1,9 +1,7 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
-using System.Text.Json;
 using MongoDB.Driver;
 using UKSF.Api.Core.Events;
-using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 
@@ -36,7 +34,6 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 {
     private const string UseMemoryDataCacheFeatureKey = "USE_MEMORY_DATA_CACHE";
     private readonly ContextCache<T> _cache = new();
-    private readonly string _collectionName;
     private readonly IEventBus _eventBus;
     private readonly IVariablesService _variablesService;
 
@@ -47,7 +44,6 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         string collectionName
     ) : base(mongoCollectionFactory, collectionName)
     {
-        _collectionName = collectionName;
         _eventBus = eventBus;
         _variablesService = variablesService;
     }
@@ -79,17 +75,6 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
     public override T GetSingle(Func<T, bool> predicate)
     {
-        if (_collectionName == "units" && StaticServiceProvider.Context == "ts")
-        {
-            var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
-
-            var cached = _cache.Data.FirstOrDefault(predicate);
-            var database = base.GetSingle(predicate);
-            logger.LogDebug(
-                $"Units data get: Cached {JsonSerializer.Serialize(cached).TruncateObjectIds()} - Database {JsonSerializer.Serialize(database).TruncateObjectIds()}"
-            );
-        }
-
         return UseCache() ? Get().FirstOrDefault(predicate) : base.GetSingle(predicate);
     }
 
