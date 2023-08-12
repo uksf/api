@@ -21,7 +21,7 @@ public class DataCacheService : IDataCacheService
         var cachedContexts = _serviceProvider.GetRequiredService<IEnumerable<ICachedMongoContext>>();
         foreach (var cachedDataService in cachedContexts)
         {
-            cachedDataService.Refresh();
+            cachedDataService.Refresh("refresh");
         }
     }
 }
