@@ -107,7 +107,7 @@ public class TeamspeakController : ControllerBase
         var me = allAccounts.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
         if (me != null)
         {
-            _logger.LogDebug($"Me account: {string.Join(", ", me.TeamspeakIdentities)}");
+            _logger.LogDebug($"Me account: ms - {me.MembershipState}, ts - {string.Join(", ", me.TeamspeakIdentities)}");
         }
         else
         {
