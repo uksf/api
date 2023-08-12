@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
+using System.Text.Json;
 using MongoDB.Driver;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
@@ -36,6 +37,7 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     private readonly ContextCache<T> _cache = new();
     private readonly IEventBus _eventBus;
     private readonly IVariablesService _variablesService;
+    private readonly string _collectionName;
 
     protected CachedMongoContext(
         IMongoCollectionFactory mongoCollectionFactory,
@@ -44,12 +46,22 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         string collectionName
     ) : base(mongoCollectionFactory, collectionName)
     {
+        _collectionName = collectionName;
         _eventBus = eventBus;
         _variablesService = variablesService;
     }
 
     public void Refresh()
     {
+        if (_collectionName == "accounts")
+        {
+            var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
+
+            var before = _cache.Data;
+            var after = base.Get();
+            logger.LogDebug($"Account data refresh: Before {JsonSerializer.Serialize(before)} - After {JsonSerializer.Serialize(after)}");
+        }
+
         _cache.SetData(base.Get());
     }
 
@@ -70,11 +82,33 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
     public override T GetSingle(string id)
     {
+        if (_collectionName == "accounts")
+        {
+            var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
+
+            var cached = Get().FirstOrDefault(x => x.Id == id);
+            var database = base.GetSingle(id);
+            logger.LogDebug($"Account data get single: Cached {JsonSerializer.Serialize(cached)} - Database {JsonSerializer.Serialize(database)}");
+
+            return UseCache() ? cached : database;
+        }
+
         return UseCache() ? Get().FirstOrDefault(x => x.Id == id) : base.GetSingle(id);
     }
 
     public override T GetSingle(Func<T, bool> predicate)
     {
+        if (_collectionName == "accounts")
+        {
+            var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
+
+            var cached = Get().FirstOrDefault(predicate);
+            var database = base.GetSingle(predicate);
+            logger.LogDebug($"Account data get single: Cached {JsonSerializer.Serialize(cached)} - Database {JsonSerializer.Serialize(database)}");
+
+            return UseCache() ? cached : database;
+        }
+
         return UseCache() ? Get().FirstOrDefault(predicate) : base.GetSingle(predicate);
     }
 

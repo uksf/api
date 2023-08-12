@@ -1,4 +1,5 @@
-﻿using UKSF.Api.ArmaServer.Services;
+﻿using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
@@ -33,7 +34,7 @@ public class ActionCleanupRunningServers : SelfCreatingScheduledAction, IActionC
         _gameServerHelpers = gameServerHelpers;
     }
 
-    public override DateTime NextRun => _clock.Today().AddHours(03);
+    public override DateTime NextRun => _clock.UkToday().AddHours(02);
     public override TimeSpan RunInterval => TimeSpan.FromDays(1);
     public override string Name => ActionName;
 
@@ -52,16 +53,23 @@ public class ActionCleanupRunningServers : SelfCreatingScheduledAction, IActionC
 
         if (populatedServers.Any())
         {
-            // There are populated servers, don't clean anything up
+            // There are populated servers, don't kill anything
             return;
         }
 
-        // Kill all running servers
+        KillOrphanedServers(runningServers);
+        KillRemainingProcesses();
+    }
+
+    private void KillOrphanedServers(List<GameServer> runningServers)
+    {
+        var killedCount = 0;
         foreach (var runningServer in runningServers)
         {
             try
             {
                 _gameServersService.KillGameServer(runningServer);
+                killedCount++;
             }
             catch (Exception exception)
             {
@@ -71,9 +79,11 @@ public class ActionCleanupRunningServers : SelfCreatingScheduledAction, IActionC
             }
         }
 
-        _logger.LogInfo($"Killed {runningServers.Count} leftover servers");
+        _logger.LogInfo($"Killed {killedCount} leftover servers");
+    }
 
-        // Kill any remaining processes
+    private void KillRemainingProcesses()
+    {
         try
         {
             var killedCount = _gameServersService.KillAllArmaProcesses();

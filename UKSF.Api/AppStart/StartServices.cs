@@ -1,4 +1,5 @@
 ﻿using MoreLinq;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;
@@ -52,6 +53,8 @@ public static class StartServices
         // Mark running builds as cancelled & run queued builds
         serviceProvider.GetRequiredService<IBuildsService>().CancelInterruptedBuilds();
         serviceProvider.GetRequiredService<IModpackService>().RunQueuedBuilds();
+
+        StaticServiceProvider.ServiceProvider = serviceProvider;
     }
 
     public static void StopUksfServices(this IServiceProvider serviceProvider)

@@ -6,6 +6,7 @@ public interface IClock
     public DateTime Today();
     public DateTime UtcNow();
     public DateTime UkNow();
+    public DateTime UkToday();
 }
 
 public class Clock : IClock
@@ -29,5 +30,10 @@ public class Clock : IClock
     {
         var ukZone = TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time");
         return TimeZoneInfo.ConvertTime(UtcNow(), ukZone);
+    }
+
+    public DateTime UkToday()
+    {
+        return UkNow().Date;
     }
 }

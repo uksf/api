@@ -8,6 +8,7 @@ namespace UKSF.Api.Core;
 
 public interface IUksfLogger
 {
+    void LogDebug(string message);
     void LogInfo(string message);
     void LogWarning(string message);
     void LogError(string message);
@@ -34,6 +35,11 @@ public class UksfLogger : IUksfLogger
     {
         _httpContextService = httpContextService;
         _eventBus = eventBus;
+    }
+
+    public void LogDebug(string message)
+    {
+        Log(new(message, UksfLogLevel.DEBUG));
     }
 
     public void LogInfo(string message)

@@ -25,14 +25,21 @@ public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructure
 
     public async Task<ServerInfrastructureLatest> ExecuteAsync()
     {
-        var output = string.Empty;
+        string output;
         var tries = 0;
 
-        while (!output.Contains("change number") && tries < 10)
+        do
         {
             output = await _steamCmdService.GetServerInfo();
+            if (output.Contains("change number"))
+            {
+                break;
+            }
+
             tries++;
+            await Task.Delay(TimeSpan.FromSeconds(1));
         }
+        while (tries < 10);
 
         if (tries >= 10 || !output.Contains("change number") || output.Contains("No app info for AppID 233780"))
         {

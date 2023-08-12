@@ -1,5 +1,8 @@
 ﻿using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.ArmaServer.Signalr.Clients;
+using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
@@ -16,6 +19,7 @@ public interface IUpdateServerInfrastructureCommand
 public class UpdateServerInfrastructureCommand : IUpdateServerInfrastructureCommand
 {
     private readonly IGameServersService _gameServersService;
+    private readonly IHubContext<ServersHub, IServersClient> _serversHub;
     private readonly IUksfLogger _logger;
     private readonly ISteamCmdService _steamCmdService;
     private readonly IVariablesContext _variablesContext;
@@ -26,6 +30,7 @@ public class UpdateServerInfrastructureCommand : IUpdateServerInfrastructureComm
         IVariablesContext variablesContext,
         IVariablesService variablesService,
         IGameServersService gameServersService,
+        IHubContext<ServersHub, IServersClient> serversHub,
         IUksfLogger logger
     )
     {
@@ -33,6 +38,7 @@ public class UpdateServerInfrastructureCommand : IUpdateServerInfrastructureComm
         _variablesContext = variablesContext;
         _variablesService = variablesService;
         _gameServersService = gameServersService;
+        _serversHub = serversHub;
         _logger = logger;
     }
 
@@ -50,7 +56,10 @@ public class UpdateServerInfrastructureCommand : IUpdateServerInfrastructureComm
         }
 
         await _variablesContext.Update("SERVER_INFRA_UPDATING", true);
+        await _variablesContext.Update("SERVER_CONTROL_DISABLED", true);
+        await _serversHub.Clients.All.ReceiveDisabledState(true);
         _logger.LogInfo("Server infrastructure update starting");
+
         try
         {
             var result = await _steamCmdService.UpdateServer();
@@ -61,6 +70,8 @@ public class UpdateServerInfrastructureCommand : IUpdateServerInfrastructureComm
         finally
         {
             await _variablesContext.Update("SERVER_INFRA_UPDATING", false);
+            await _variablesContext.Update("SERVER_CONTROL_DISABLED", false);
+            await _serversHub.Clients.All.ReceiveDisabledState(false);
             _logger.LogInfo("Server infrastructure update finished");
         }
     }

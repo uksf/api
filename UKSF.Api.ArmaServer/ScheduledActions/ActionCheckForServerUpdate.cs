@@ -43,7 +43,7 @@ public class ActionCheckForServerUpdate : SelfCreatingScheduledAction, IActionCh
         _logger = logger;
     }
 
-    public override DateTime NextRun => _clock.Today().AddHours(03).AddDays(1);
+    public override DateTime NextRun => _clock.UkToday().AddHours(04).AddDays(1);
     public override TimeSpan RunInterval => TimeSpan.FromHours(12);
     public override string Name => ActionName;
 
