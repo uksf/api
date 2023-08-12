@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
+using System.Text.Json;
 using MongoDB.Driver;
 using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 
@@ -61,7 +63,9 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
             {
                 var cached = _cache.Data.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
                 var database = base.Get().FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
-                logger.LogDebug($"Cached {cached} - Database {database}");
+                logger.LogDebug(
+                    $"Cached {JsonSerializer.Serialize(cached).TruncateObjectIds()} - Database {JsonSerializer.Serialize(database).TruncateObjectIds()}"
+                );
             }
         }
 
