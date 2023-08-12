@@ -57,9 +57,14 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         {
             var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
 
-            var before = _cache.Data;
-            var after = base.Get();
+            var before = _cache.Data.SingleOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
+            var after = base.Get().SingleOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
+
+            _cache.SetData(base.Get());
+
             logger.LogDebug($"Account data refresh: Before {JsonSerializer.Serialize(before)} - After {JsonSerializer.Serialize(after)}");
+
+            return;
         }
 
         _cache.SetData(base.Get());
