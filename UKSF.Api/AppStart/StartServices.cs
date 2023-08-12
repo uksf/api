@@ -15,6 +15,8 @@ public static class StartServices
 {
     public static void StartUksfServices(this IServiceProvider serviceProvider)
     {
+        StaticServiceProvider.ServiceProvider = serviceProvider;
+
         if (serviceProvider.GetRequiredService<IHostEnvironment>().IsDevelopment())
         {
             // Do any test data setup
@@ -53,8 +55,6 @@ public static class StartServices
         // Mark running builds as cancelled & run queued builds
         serviceProvider.GetRequiredService<IBuildsService>().CancelInterruptedBuilds();
         serviceProvider.GetRequiredService<IModpackService>().RunQueuedBuilds();
-
-        StaticServiceProvider.ServiceProvider = serviceProvider;
     }
 
     public static void StopUksfServices(this IServiceProvider serviceProvider)
