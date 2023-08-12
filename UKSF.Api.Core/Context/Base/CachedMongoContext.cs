@@ -90,7 +90,7 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
     public override T GetSingle(string id)
     {
-        if (_collectionName == "accounts")
+        if (_collectionName == "accounts" && id == "59e38f10594c603b78aa9dbd")
         {
             var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
 
@@ -108,7 +108,7 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
     public override T GetSingle(Func<T, bool> predicate)
     {
-        if (_collectionName == "accounts")
+        if (_collectionName == "accounts" && Get().FirstOrDefault(predicate)?.Id == "59e38f10594c603b78aa9dbd")
         {
             var logger = StaticServiceProvider.ServiceProvider.GetRequiredService<IUksfLogger>();
 
