@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
@@ -84,7 +85,8 @@ public class TeamspeakController : ControllerBase
     [HttpGet("onlineAccounts")]
     public TeamspeakAccountsDataset GetOnlineAccounts()
     {
-        var teamspeakClients = _teamspeakService.GetOnlineTeamspeakClients();
+        var teamspeakClients = _teamspeakService.GetOnlineTeamspeakClients().ToList();
+        _logger.LogDebug($"Me account: ms - {JsonSerializer.Serialize(teamspeakClients)}");
         var allAccounts = _accountContext.Get();
         var clients = teamspeakClients.Where(x => x != null)
                                       .Select(
@@ -103,16 +105,6 @@ public class TeamspeakController : ControllerBase
                                     .ThenBy(x => x.account.Firstname)
                                     .ToList();
         var commandAccounts = _unitsService.GetAuxilliaryRoot().Members;
-
-        var me = allAccounts.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
-        if (me != null)
-        {
-            _logger.LogDebug($"Me account: ms - {me.MembershipState}, ts - {string.Join(", ", me.TeamspeakIdentities)}");
-        }
-        else
-        {
-            _logger.LogDebug("Me no have account?");
-        }
 
         _logger.LogDebug(clientAccounts.Any(x => x.account.Id == "59e38f10594c603b78aa9dbd") ? "Me found in accounts" : "Me not found in accounts");
 
