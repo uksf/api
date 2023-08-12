@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
@@ -85,28 +84,29 @@ public class TeamspeakController : ControllerBase
     [HttpGet("onlineAccounts")]
     public TeamspeakAccountsDataset GetOnlineAccounts()
     {
-        var teamnspeakClients = _teamspeakService.GetOnlineTeamspeakClients();
-        StaticServiceProvider.Context = "ts";
-        var allAccounts = _accountContext.Get().ToList();
-        StaticServiceProvider.Context = string.Empty;
-        var data = allAccounts.SingleOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
-        _logger.LogDebug($"Account data return: {JsonSerializer.Serialize(data).TruncateObjectIds()}");
-        var clients = teamnspeakClients.Where(x => x != null)
-                                       .Select(
-                                           x => new
-                                           {
-                                               account = allAccounts.FirstOrDefault(
-                                                   y => y.TeamspeakIdentities != null && y.TeamspeakIdentities.Any(z => z.Equals(x.ClientDbId))
-                                               ),
-                                               client = x
-                                           }
-                                       )
-                                       .ToList();
+        var teamspeakClients = _teamspeakService.GetOnlineTeamspeakClients();
+        var allAccounts = _accountContext.Get();
+        var clients = teamspeakClients.Where(x => x != null)
+                                      .Select(
+                                          x => new
+                                          {
+                                              account = allAccounts.FirstOrDefault(
+                                                  y => y.TeamspeakIdentities != null && y.TeamspeakIdentities.Any(z => z.Equals(x.ClientDbId))
+                                              ),
+                                              client = x
+                                          }
+                                      )
+                                      .ToList();
         var clientAccounts = clients.Where(x => x.account is { MembershipState: MembershipState.MEMBER })
                                     .OrderBy(x => x.account.Rank, new RankComparer(_ranksService))
                                     .ThenBy(x => x.account.Lastname)
-                                    .ThenBy(x => x.account.Firstname);
+                                    .ThenBy(x => x.account.Firstname)
+                                    .ToList();
+        StaticServiceProvider.Context = "ts";
         var commandAccounts = _unitsService.GetAuxilliaryRoot().Members;
+        StaticServiceProvider.Context = string.Empty;
+
+        _logger.LogDebug(clientAccounts.Any(x => x.account.Id == "59e38f10594c603b78aa9dbd") ? "Me found in accounts" : "Me not found in accounts");
 
         List<TeamspeakAccountDataset> commanders = new();
         List<TeamspeakAccountDataset> recruiters = new();
@@ -128,7 +128,7 @@ public class TeamspeakController : ControllerBase
         }
 
         var guests = clients.Where(x => x.account is not { MembershipState: MembershipState.MEMBER })
-                            .Select(client => (TeamspeakAccountDataset)new() { DisplayName = client.client.ClientName })
+                            .Select(client => new TeamspeakAccountDataset { DisplayName = client.client.ClientName })
                             .ToList();
 
         return new() { Commanders = commanders, Recruiters = recruiters, Members = members, Guests = guests };
