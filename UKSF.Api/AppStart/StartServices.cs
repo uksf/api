@@ -15,8 +15,6 @@ public static class StartServices
 {
     public static void StartUksfServices(this IServiceProvider serviceProvider)
     {
-        StaticServiceProvider.ServiceProvider = serviceProvider;
-
         if (serviceProvider.GetRequiredService<IHostEnvironment>().IsDevelopment())
         {
             // Do any test data setup

@@ -1,9 +1,7 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
-using System.Text.Json;
 using MongoDB.Driver;
 using UKSF.Api.Core.Events;
-using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 
@@ -29,8 +27,7 @@ public class ContextCache<T> where T : MongoObject
 
 public interface ICachedMongoContext
 {
-    void Refresh(string source);
-    string Id { get; }
+    void Refresh();
 }
 
 public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICachedMongoContext where T : MongoObject
@@ -39,7 +36,6 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     private readonly ContextCache<T> _cache = new();
     private readonly IEventBus _eventBus;
     private readonly IVariablesService _variablesService;
-    private readonly string _collectionName;
 
     protected CachedMongoContext(
         IMongoCollectionFactory mongoCollectionFactory,
@@ -48,35 +44,20 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         string collectionName
     ) : base(mongoCollectionFactory, collectionName)
     {
-        _collectionName = collectionName;
         _eventBus = eventBus;
         _variablesService = variablesService;
     }
 
-    public void Refresh(string source)
+    public void Refresh()
     {
-        var logger = StaticServiceProvider.ServiceProvider?.GetService<IUksfLogger>();
-        if (logger != null && _collectionName == "accounts")
-        {
-            logger.LogDebug($"Refresh cached data for Collection: {_collectionName} | ID: {Id} | Source: {source}");
-
-            var cached = _cache.Data.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
-            var database = base.Get().FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
-            logger.LogDebug(
-                $"Cached {JsonSerializer.Serialize(cached).TruncateObjectIds()} - Database {JsonSerializer.Serialize(database).TruncateObjectIds()}"
-            );
-        }
-
         _cache.SetData(base.Get());
     }
-
-    public string Id { get; } = Guid.NewGuid().ToString();
 
     public override IEnumerable<T> Get()
     {
         if (!_cache.DataInitialized)
         {
-            Refresh("get");
+            Refresh();
         }
 
         return UseCache() ? _cache.Data : base.Get();
@@ -100,14 +81,14 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     public override async Task Add(T item)
     {
         await base.Add(item);
-        Refresh("add");
+        Refresh();
         DataAddEvent(item);
     }
 
     public override async Task Update<TField>(string id, Expression<Func<T, TField>> fieldSelector, TField value)
     {
         await base.Update(id, fieldSelector, value);
-        Refresh("update 1"); // TODO: intelligent refresh
+        Refresh(); // TODO: intelligent refresh
         DataUpdateEvent(id);
     }
 
@@ -115,14 +96,14 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     public override async Task Update(string id, UpdateDefinition<T> update)
     {
         await base.Update(id, update);
-        Refresh("update 2"); // TODO: intelligent refresh
+        Refresh(); // TODO: intelligent refresh
         DataUpdateEvent(id);
     }
 
     public override async Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
     {
         await base.Update(filterExpression, update);
-        Refresh("update 3"); // TODO: intelligent refresh
+        Refresh(); // TODO: intelligent refresh
         DataUpdateEvent(GetSingle(filterExpression.Compile()).Id);
     }
 
@@ -130,35 +111,35 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     {
         var ids = Get(filterExpression.Compile()).ToList();
         await base.UpdateMany(filterExpression, update);
-        Refresh("update many"); // TODO: intelligent refresh
+        Refresh(); // TODO: intelligent refresh
         ids.ForEach(x => DataUpdateEvent(x.Id));
     }
 
     public override async Task FindAndUpdate(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
     {
         await base.FindAndUpdate(filterExpression, update);
-        Refresh("find and update"); // TODO: intelligent refresh
+        Refresh(); // TODO: intelligent refresh
         DataUpdateEvent(GetSingle(filterExpression.Compile()).Id);
     }
 
     public override async Task Replace(T item)
     {
         await base.Replace(item);
-        Refresh("replace");
+        Refresh();
         DataUpdateEvent(item.Id);
     }
 
     public override async Task Delete(string id)
     {
         await base.Delete(id);
-        Refresh("delete");
+        Refresh();
         DataDeleteEvent(id);
     }
 
     public override async Task Delete(T item)
     {
         await base.Delete(item);
-        Refresh("delete");
+        Refresh();
         DataDeleteEvent(item.Id);
     }
 
@@ -166,7 +147,7 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     {
         var ids = Get(filterExpression.Compile()).ToList();
         await base.DeleteMany(filterExpression);
-        Refresh("delete many");
+        Refresh();
         ids.ForEach(x => DataDeleteEvent(x.Id));
     }
 

@@ -24,8 +24,8 @@ public class DataCacheServiceTests
 
         dataCacheService.RefreshCachedData();
 
-        mockAccountDataService.Verify(x => x.Refresh("refresh"), Times.Once);
-        mockRanksDataService.Verify(x => x.Refresh("refresh"), Times.Once);
-        mockRolesDataService.Verify(x => x.Refresh("refresh"), Times.Once);
+        mockAccountDataService.Verify(x => x.Refresh(), Times.Once);
+        mockRanksDataService.Verify(x => x.Refresh(), Times.Once);
+        mockRolesDataService.Verify(x => x.Refresh(), Times.Once);
     }
 }
