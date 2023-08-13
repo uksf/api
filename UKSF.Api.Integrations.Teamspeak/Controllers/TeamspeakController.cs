@@ -87,7 +87,9 @@ public class TeamspeakController : ControllerBase
     {
         var teamspeakClients = _teamspeakService.GetOnlineTeamspeakClients().ToList();
         var allAccounts = _accountContext.Get().ToList();
-        _logger.LogDebug($"Account - {JsonSerializer.Serialize(allAccounts.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd")).TruncateObjectIds()}");
+        _logger.LogDebug(
+            $"Account from context ID {_accountContext.Id} - {JsonSerializer.Serialize(allAccounts.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd")).TruncateObjectIds()}"
+        );
         var clients = teamspeakClients.Where(x => x != null)
                                       .Select(
                                           client =>
@@ -95,6 +97,9 @@ public class TeamspeakController : ControllerBase
                                               if (client.ClientName.Contains("Beswick"))
                                               {
                                                   _logger.LogDebug($"Client - {JsonSerializer.Serialize(client)}");
+                                                  _logger.LogDebug(
+                                                      $"Account from context ID {_accountContext.Id} - {JsonSerializer.Serialize(allAccounts.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd")).TruncateObjectIds()}"
+                                                  );
                                               }
                                               var account = allAccounts.FirstOrDefault(
                                                   x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(tsDbId => tsDbId == client.ClientDbId)

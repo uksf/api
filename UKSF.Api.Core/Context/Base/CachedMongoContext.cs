@@ -30,6 +30,7 @@ public class ContextCache<T> where T : MongoObject
 public interface ICachedMongoContext
 {
     void Refresh(string source);
+    string Id { get; }
 }
 
 public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICachedMongoContext where T : MongoObject
@@ -39,7 +40,6 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     private readonly IEventBus _eventBus;
     private readonly IVariablesService _variablesService;
     private readonly string _collectionName;
-    private readonly string _id = Guid.NewGuid().ToString();
 
     protected CachedMongoContext(
         IMongoCollectionFactory mongoCollectionFactory,
@@ -56,21 +56,21 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     public void Refresh(string source)
     {
         var logger = StaticServiceProvider.ServiceProvider?.GetService<IUksfLogger>();
-        if (logger != null)
+        if (logger != null && _collectionName == "accounts")
         {
-            logger.LogDebug($"Refresh cached data for Collection: {_collectionName} | ID: {_id} | Source: {source}");
-            if (_collectionName == "accounts")
-            {
-                var cached = _cache.Data.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
-                var database = base.Get().FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
-                logger.LogDebug(
-                    $"Cached {JsonSerializer.Serialize(cached).TruncateObjectIds()} - Database {JsonSerializer.Serialize(database).TruncateObjectIds()}"
-                );
-            }
+            logger.LogDebug($"Refresh cached data for Collection: {_collectionName} | ID: {Id} | Source: {source}");
+
+            var cached = _cache.Data.FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
+            var database = base.Get().FirstOrDefault(x => x.Id == "59e38f10594c603b78aa9dbd");
+            logger.LogDebug(
+                $"Cached {JsonSerializer.Serialize(cached).TruncateObjectIds()} - Database {JsonSerializer.Serialize(database).TruncateObjectIds()}"
+            );
         }
 
         _cache.SetData(base.Get());
     }
+
+    public string Id { get; } = Guid.NewGuid().ToString();
 
     public override IEnumerable<T> Get()
     {
