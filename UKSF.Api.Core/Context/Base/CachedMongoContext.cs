@@ -14,7 +14,7 @@ public class ContextCache<T> where T : MongoObject
 
     public void SetData(IEnumerable<T> newCollection)
     {
-        var newCache = new List<T>(newCollection);
+        var newCache = newCollection.ToList();
         Interlocked.Exchange(ref _data, newCache);
 
         if (!DataInitialized)
