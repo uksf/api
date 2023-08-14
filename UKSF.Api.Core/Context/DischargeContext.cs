@@ -16,13 +16,8 @@ public class DischargeContext : CachedMongoContext<DischargeCollection>, IDischa
         "discharges"
     ) { }
 
-    public override IEnumerable<DischargeCollection> Get()
+    protected override IEnumerable<DischargeCollection> OrderCollection(IEnumerable<DischargeCollection> collection)
     {
-        return base.Get().OrderByDescending(x => x.Discharges.Last().Timestamp);
-    }
-
-    public override IEnumerable<DischargeCollection> Get(Func<DischargeCollection, bool> predicate)
-    {
-        return base.Get(predicate).OrderByDescending(x => x.Discharges.Last().Timestamp);
+        return collection.OrderByDescending(x => x.Discharges.Last().Timestamp);
     }
 }

@@ -120,10 +120,17 @@ public class TeamspeakService : ITeamspeakService
 
         return clients.Where(x => x != null)
                       .Select(
-                          x =>
+                          client =>
                           {
-                              var account = _accountContext.GetSingle(y => y.TeamspeakIdentities != null && y.TeamspeakIdentities.Contains(x.ClientDbId));
-                              return new TeamspeakConnectClient { ClientName = x.ClientName, ClientDbId = x.ClientDbId, Connected = account != null };
+                              var account = _accountContext.GetSingle(
+                                  account => account.TeamspeakIdentities != null && account.TeamspeakIdentities.Contains(client.ClientDbId)
+                              );
+                              return new TeamspeakConnectClient
+                              {
+                                  ClientName = client.ClientName,
+                                  ClientDbId = client.ClientDbId,
+                                  Connected = account != null,
+                              };
                           }
                       )
                       .OrderBy(x => x.Connected)

@@ -20,18 +20,13 @@ public class RanksContext : CachedMongoContext<DomainRank>, IRanksContext
         "ranks"
     ) { }
 
+    protected override IEnumerable<DomainRank> OrderCollection(IEnumerable<DomainRank> collection)
+    {
+        return collection.OrderBy(x => x.Order);
+    }
+
     public override DomainRank GetSingle(string idOrName)
     {
         return GetSingle(x => x.Id == idOrName || x.Name == idOrName);
-    }
-
-    public override IEnumerable<DomainRank> Get()
-    {
-        return base.Get().OrderBy(x => x.Order);
-    }
-
-    public override IEnumerable<DomainRank> Get(Func<DomainRank, bool> predicate)
-    {
-        return base.Get(predicate).OrderBy(x => x.Order);
     }
 }

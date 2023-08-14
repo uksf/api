@@ -10,12 +10,12 @@ using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Game;
 
-public class GameServersDataServiceTests
+public class GameServersContextTests
 {
     private readonly GameServersContext _gameServersContext;
     private readonly Mock<IMongoCollection<GameServer>> _mockDataCollection;
 
-    public GameServersDataServiceTests()
+    public GameServersContextTests()
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();

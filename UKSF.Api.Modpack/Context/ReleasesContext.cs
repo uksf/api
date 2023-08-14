@@ -16,17 +16,7 @@ public class ReleasesContext : CachedMongoContext<ModpackRelease>, IReleasesCont
         "modpackReleases"
     ) { }
 
-    public override IEnumerable<ModpackRelease> Get()
-    {
-        return ApplySorting(base.Get());
-    }
-
-    public override IEnumerable<ModpackRelease> Get(Func<ModpackRelease, bool> predicate)
-    {
-        return ApplySorting(base.Get(predicate));
-    }
-
-    private static IEnumerable<ModpackRelease> ApplySorting(IEnumerable<ModpackRelease> collection)
+    protected override IEnumerable<ModpackRelease> OrderCollection(IEnumerable<ModpackRelease> collection)
     {
         return collection.Select(
                              x =>

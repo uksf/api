@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using MongoDB.Driver;
 using UKSF.Api.Core.Events;
@@ -9,13 +8,13 @@ namespace UKSF.Api.Core.Context.Base;
 
 public class ContextCache<T> where T : MongoObject
 {
-    private ConcurrentBag<T> _data = new();
+    private List<T> _data = new();
     public bool DataInitialized { get; private set; }
-    public ConcurrentBag<T> Data => _data;
+    public List<T> Data => _data;
 
     public void SetData(IEnumerable<T> newCollection)
     {
-        var newCache = new ConcurrentBag<T>(newCollection);
+        var newCache = new List<T>(newCollection);
         Interlocked.Exchange(ref _data, newCache);
 
         if (!DataInitialized)
@@ -50,7 +49,12 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
     public void Refresh()
     {
-        _cache.SetData(base.Get());
+        _cache.SetData(OrderCollection(base.Get()));
+    }
+
+    protected virtual IEnumerable<T> OrderCollection(IEnumerable<T> collection)
+    {
+        return collection;
     }
 
     public override IEnumerable<T> Get()
@@ -60,12 +64,12 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
             Refresh();
         }
 
-        return UseCache() ? _cache.Data : base.Get();
+        return UseCache() ? _cache.Data : OrderCollection(base.Get());
     }
 
     public override IEnumerable<T> Get(Func<T, bool> predicate)
     {
-        return UseCache() ? Get().Where(predicate) : base.Get(predicate);
+        return UseCache() ? Get().Where(predicate) : OrderCollection(base.Get(predicate));
     }
 
     public override T GetSingle(string id)
@@ -88,22 +92,21 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     public override async Task Update<TField>(string id, Expression<Func<T, TField>> fieldSelector, TField value)
     {
         await base.Update(id, fieldSelector, value);
-        Refresh(); // TODO: intelligent refresh
+        Refresh();
         DataUpdateEvent(id);
     }
 
-    // TODO: Should this return the updated object? Probably
     public override async Task Update(string id, UpdateDefinition<T> update)
     {
         await base.Update(id, update);
-        Refresh(); // TODO: intelligent refresh
+        Refresh();
         DataUpdateEvent(id);
     }
 
     public override async Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
     {
         await base.Update(filterExpression, update);
-        Refresh(); // TODO: intelligent refresh
+        Refresh();
         DataUpdateEvent(GetSingle(filterExpression.Compile()).Id);
     }
 
@@ -111,14 +114,14 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     {
         var ids = Get(filterExpression.Compile()).ToList();
         await base.UpdateMany(filterExpression, update);
-        Refresh(); // TODO: intelligent refresh
+        Refresh();
         ids.ForEach(x => DataUpdateEvent(x.Id));
     }
 
     public override async Task FindAndUpdate(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
     {
         await base.FindAndUpdate(filterExpression, update);
-        Refresh(); // TODO: intelligent refresh
+        Refresh();
         DataUpdateEvent(GetSingle(filterExpression.Compile()).Id);
     }
 

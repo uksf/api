@@ -83,7 +83,7 @@ public class TeamspeakServerEventHandler : ITeamspeakServerEventHandler
         update.ServerGroups.Add(serverGroupId);
         update.CancellationTokenSource?.Cancel();
         update.CancellationTokenSource = new();
-        var unused = TaskUtilities.DelayWithCallback(
+        _ = TaskUtilities.DelayWithCallback(
             TimeSpan.FromMilliseconds(500),
             update.CancellationTokenSource.Token,
             async () =>
@@ -107,7 +107,7 @@ public class TeamspeakServerEventHandler : ITeamspeakServerEventHandler
     {
         await Console.Out.WriteLineAsync($"Processing server groups for {clientDbId}");
         var domainAccounts = _accountContext.Get(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
-        var domainAccount = domainAccounts.OrderByDescending(x => x.MembershipState).FirstOrDefault();
+        var domainAccount = domainAccounts.MaxBy(x => x.MembershipState);
         await _teamspeakGroupService.UpdateAccountGroups(domainAccount, serverGroups, clientDbId);
     }
 }

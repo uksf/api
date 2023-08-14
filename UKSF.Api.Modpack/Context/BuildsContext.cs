@@ -22,6 +22,11 @@ public class BuildsContext : CachedMongoContext<ModpackBuild>, IBuildsContext
         "modpackBuilds"
     ) { }
 
+    protected override IEnumerable<ModpackBuild> OrderCollection(IEnumerable<ModpackBuild> collection)
+    {
+        return collection.OrderByDescending(x => x.BuildNumber);
+    }
+
     public async Task Update(ModpackBuild build, ModpackBuildStep buildStep)
     {
         var updateDefinition = Builders<ModpackBuild>.Update.Set(x => x.Steps[buildStep.Index], buildStep);
@@ -33,15 +38,5 @@ public class BuildsContext : CachedMongoContext<ModpackBuild>, IBuildsContext
     {
         await base.Update(build.Id, updateDefinition);
         DataEvent(new(EventType.UPDATE, build));
-    }
-
-    public override IEnumerable<ModpackBuild> Get()
-    {
-        return base.Get().OrderByDescending(x => x.BuildNumber);
-    }
-
-    public override IEnumerable<ModpackBuild> Get(Func<ModpackBuild, bool> predicate)
-    {
-        return base.Get(predicate).OrderByDescending(x => x.BuildNumber);
     }
 }

@@ -20,18 +20,13 @@ public class RolesContext : CachedMongoContext<DomainRole>, IRolesContext
         "roles"
     ) { }
 
+    protected override IEnumerable<DomainRole> OrderCollection(IEnumerable<DomainRole> collection)
+    {
+        return collection.OrderBy(x => x.Name);
+    }
+
     public override DomainRole GetSingle(string idOrName)
     {
         return GetSingle(x => x.Id == idOrName || x.Name == idOrName);
-    }
-
-    public override IEnumerable<DomainRole> Get()
-    {
-        return base.Get().OrderBy(x => x.Name);
-    }
-
-    public override IEnumerable<DomainRole> Get(Func<DomainRole, bool> predicate)
-    {
-        return base.Get(predicate).OrderBy(x => x.Name);
     }
 }

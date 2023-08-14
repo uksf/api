@@ -16,13 +16,8 @@ public class UnitsContext : CachedMongoContext<DomainUnit>, IUnitsContext
         "units"
     ) { }
 
-    public override IEnumerable<DomainUnit> Get()
+    protected override IEnumerable<DomainUnit> OrderCollection(IEnumerable<DomainUnit> collection)
     {
-        return base.Get().OrderBy(x => x.Order);
-    }
-
-    public override IEnumerable<DomainUnit> Get(Func<DomainUnit, bool> predicate)
-    {
-        return base.Get(predicate).OrderBy(x => x.Order);
+        return collection.OrderBy(x => x.Order);
     }
 }

@@ -16,13 +16,8 @@ public class GameServersContext : CachedMongoContext<GameServer>, IGameServersCo
         "gameServers"
     ) { }
 
-    public override IEnumerable<GameServer> Get()
+    protected override IEnumerable<GameServer> OrderCollection(IEnumerable<GameServer> collection)
     {
-        return base.Get().OrderBy(x => x.Order);
-    }
-
-    public override IEnumerable<GameServer> Get(Func<GameServer, bool> predicate)
-    {
-        return base.Get(predicate).OrderBy(x => x.Order);
+        return collection.OrderBy(x => x.Order);
     }
 }

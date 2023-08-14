@@ -21,20 +21,20 @@ namespace UKSF.Api.Extensions;
 
 public static class ServiceExtensions
 {
-    public static void AddUksf(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment)
+    public static IServiceCollection AddUksf(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment)
     {
-        services.AddSingleton(services)
-                .AddContexts()
-                .AddEventHandlers()
-                .AddServices()
-                .AddCommands()
-                .AddQueries()
-                .AddMappers()
-                .AddActions()
-                .AddMiddlewares()
-                .AddSingleton<MigrationUtility>()
-                .AddAutoMapper(typeof(AutoMapperUnitProfile))
-                .AddComponents(configuration, currentEnvironment);
+        return services.AddSingleton(services)
+                       .AddContexts()
+                       .AddEventHandlers()
+                       .AddServices()
+                       .AddCommands()
+                       .AddQueries()
+                       .AddMappers()
+                       .AddActions()
+                       .AddMiddlewares()
+                       .AddSingleton<MigrationUtility>()
+                       .AddAutoMapper(typeof(AutoMapperUnitProfile))
+                       .AddComponents(configuration, currentEnvironment);
     }
 
     private static IServiceCollection AddContexts(this IServiceCollection services)
@@ -121,16 +121,16 @@ public static class ServiceExtensions
         builder.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.EndPoint}");
     }
 
-    private static void AddComponents(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment)
+    private static IServiceCollection AddComponents(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment)
     {
-        services.AddUksfShared(configuration, currentEnvironment)
-                .AddUksfAuthentication(configuration)
-                .AddUksfModpack()
-                .AddUksfArmaMissions()
-                .AddUksfArmaServer()
-                .AddUksfLauncher()
-                .AddUksfIntegrationDiscord()
-                .AddUksfIntegrationInstagram()
-                .AddUksfIntegrationTeamspeak();
+        return services.AddUksfShared(configuration, currentEnvironment)
+                       .AddUksfAuthentication(configuration)
+                       .AddUksfModpack()
+                       .AddUksfArmaMissions()
+                       .AddUksfArmaServer()
+                       .AddUksfLauncher()
+                       .AddUksfIntegrationDiscord()
+                       .AddUksfIntegrationInstagram()
+                       .AddUksfIntegrationTeamspeak();
     }
 }

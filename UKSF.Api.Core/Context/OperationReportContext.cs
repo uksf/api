@@ -16,13 +16,8 @@ public class OperationReportContext : CachedMongoContext<Oprep>, IOperationRepor
         "oprep"
     ) { }
 
-    public override IEnumerable<Oprep> Get()
+    protected override IEnumerable<Oprep> OrderCollection(IEnumerable<Oprep> collection)
     {
-        return base.Get().OrderBy(x => x.Start);
-    }
-
-    public override IEnumerable<Oprep> Get(Func<Oprep, bool> predicate)
-    {
-        return base.Get(predicate).OrderBy(x => x.Start);
+        return collection.OrderBy(x => x.Start);
     }
 }

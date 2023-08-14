@@ -16,13 +16,8 @@ public class OperationOrderContext : CachedMongoContext<Opord>, IOperationOrderC
         "opord"
     ) { }
 
-    public override IEnumerable<Opord> Get()
+    protected override IEnumerable<Opord> OrderCollection(IEnumerable<Opord> collection)
     {
-        return base.Get().OrderBy(x => x.Start);
-    }
-
-    public override IEnumerable<Opord> Get(Func<Opord, bool> predicate)
-    {
-        return base.Get(predicate).OrderBy(x => x.Start);
+        return collection.OrderBy(x => x.Start);
     }
 }
