@@ -79,7 +79,10 @@ public class ActionCleanupRunningServers : SelfCreatingScheduledAction, IActionC
             }
         }
 
-        _logger.LogInfo($"Killed {killedCount} leftover servers");
+        if (killedCount > 0)
+        {
+            _logger.LogInfo($"Killed {killedCount} leftover servers");
+        }
     }
 
     private void KillRemainingProcesses()
