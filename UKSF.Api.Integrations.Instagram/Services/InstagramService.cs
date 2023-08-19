@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
+using MoreLinq;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
@@ -84,7 +85,8 @@ public class InstagramService : IInstagramService
             var content = JsonNode.Parse(contentString);
             var allMedia = JsonSerializer.Deserialize<List<InstagramImage>>(content.GetValueFromObject("data") ?? "", DefaultJsonSerializerOptions.Options) ??
                            new List<InstagramImage>();
-            allMedia = allMedia.OrderByDescending(x => x.Timestamp).ToList();
+            // allMedia = allMedia.OrderByDescending(x => x.Timestamp).ToList();
+            allMedia = allMedia.Shuffle().ToList();
 
             if (allMedia.Count == 0)
             {
@@ -92,10 +94,10 @@ public class InstagramService : IInstagramService
                 return;
             }
 
-            if (_images.Count > 0 && allMedia.First().Id == _images.First().Id)
-            {
-                return;
-            }
+            // if (_images.Count > 0 && allMedia.First().Id == _images.First().Id)
+            // {
+            //     return;
+            // }
 
             var newImages = allMedia.Where(x => x.MediaType == "IMAGE").ToList();
 

@@ -58,7 +58,8 @@ public class DiscordEventhandler : IDiscordEventhandler
     private async Task LeftEvent(string accountId)
     {
         var domainAccount = _accountContext.GetSingle(accountId);
-        if (domainAccount.MembershipState is MembershipState.DISCHARGED or MembershipState.UNCONFIRMED)
+        if (domainAccount.MembershipState is MembershipState.DISCHARGED or MembershipState.UNCONFIRMED ||
+            domainAccount.Application?.State is not ApplicationState.REJECTED)
         {
             return;
         }
