@@ -49,10 +49,12 @@ public class LoaController : ControllerBase
         [FromQuery] int pageSize = 15,
         [FromQuery] string query = null,
         [FromQuery] LoaSelectionMode selectionMode = default,
+        [FromQuery] LoaDateMode dateMode = default,
+        [FromQuery] DateTime? selectedDate = null,
         [FromQuery] LoaViewMode viewMode = default
     )
     {
-        var pagedResult = await _getPagedLoasQuery.ExecuteAsync(new(page, pageSize, query, selectionMode, viewMode));
+        var pagedResult = await _getPagedLoasQuery.ExecuteAsync(new(page, pageSize, query, selectionMode, dateMode, selectedDate, viewMode));
 
         return new(pagedResult.TotalCount, pagedResult.Data.Select(_loaMapper.MapToLoa).ToList());
     }

@@ -7,28 +7,43 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Queries;
 
+public enum LoaSelectionMode
+{
+    Current,
+    Future,
+    Past,
+}
+
+public enum LoaViewMode
+{
+    All,
+    Coc,
+    Mine,
+}
+
+public enum LoaDateMode
+{
+    All,
+    Today,
+    NextOp,
+    NextTraining,
+    Select,
+}
+
 public interface IGetPagedLoasQuery
 {
     Task<PagedResult<DomainLoaWithAccount>> ExecuteAsync(GetPagedLoasQueryArgs args);
 }
 
-public class GetPagedLoasQueryArgs
-{
-    public GetPagedLoasQueryArgs(int page, int pageSize, string query, LoaSelectionMode selectionMode, LoaViewMode viewMode)
-    {
-        Page = page;
-        PageSize = pageSize;
-        Query = query;
-        SelectionMode = selectionMode;
-        ViewMode = viewMode;
-    }
-
-    public int Page { get; }
-    public int PageSize { get; }
-    public string Query { get; }
-    public LoaSelectionMode SelectionMode { get; }
-    public LoaViewMode ViewMode { get; }
-}
+public record GetPagedLoasQueryArgs(
+    int Page,
+    int PageSize,
+    string Query,
+    LoaSelectionMode SelectionMode,
+    LoaDateMode DateMode,
+    DateTime? SelectedDate,
+    LoaViewMode ViewMode
+);
 
 public class GetPagedLoasQuery : IGetPagedLoasQuery
 {
@@ -37,13 +52,15 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
     private readonly ILoaContext _loaContext;
     private readonly IUnitsContext _unitsContext;
     private readonly IUnitsService _unitsService;
+    private readonly IClock _clock;
 
     public GetPagedLoasQuery(
         ILoaContext loaContext,
         IAccountContext accountContext,
         IUnitsContext unitsContext,
         IHttpContextService httpContextService,
-        IUnitsService unitsService
+        IUnitsService unitsService,
+        IClock clock
     )
     {
         _loaContext = loaContext;
@@ -51,42 +68,99 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
         _unitsContext = unitsContext;
         _httpContextService = httpContextService;
         _unitsService = unitsService;
+        _clock = clock;
     }
 
     public async Task<PagedResult<DomainLoaWithAccount>> ExecuteAsync(GetPagedLoasQueryArgs args)
     {
-        var sortDefinition = BuildSortDefinition(args.SelectionMode);
-        var viewModeFilterDefinition = BuildViewModeFilterDefinition(args.ViewMode);
-        var selectionModeFilterDefinition = BuildSelectionModeFilterDefinition(args.SelectionMode);
-        var queryFilterDefinition = _loaContext.BuildPagedComplexQuery(args.Query, BuildFiltersFromQueryPart);
-        var filterDefinition = Builders<DomainLoaWithAccount>.Filter.And(viewModeFilterDefinition, selectionModeFilterDefinition, queryFilterDefinition);
+        var sorting = BuildSorting(args.SelectionMode);
+        var selectionModeFilter = BuildSelectionModeFilter(args.SelectionMode);
+        var dateModeFilter = BuildDateModeFilter(args.SelectionMode, args.DateMode, args.SelectedDate);
+        var viewModeFilter = BuildViewModeFilter(args.ViewMode);
+        var queryFilter = _loaContext.BuildPagedComplexQuery(args.Query, BuildFiltersFromQueryPart);
+        var filter = Builders<DomainLoaWithAccount>.Filter.And(selectionModeFilter, dateModeFilter, viewModeFilter, queryFilter);
 
-        var pagedResult = _loaContext.GetPaged(args.Page, args.PageSize, BuildAggregator, sortDefinition, filterDefinition);
+        var pagedResult = _loaContext.GetPaged(args.Page, args.PageSize, BuildAggregator, sorting, filter);
         return await Task.FromResult(pagedResult);
     }
 
-    private SortDefinition<DomainLoaWithAccount> BuildSortDefinition(LoaSelectionMode selectionMode)
+    private SortDefinition<DomainLoaWithAccount> BuildSorting(LoaSelectionMode selectionMode)
     {
         BsonDocument sortDocument = selectionMode switch
         {
-            LoaSelectionMode.CURRENT => new() { { "end", 1 }, { "start", 1 }, { "submitted", 1 } },
-            LoaSelectionMode.FUTURE  => new() { { "start", 1 }, { "end", 1 }, { "submitted", 1 } },
-            LoaSelectionMode.PAST    => new() { { "end", -1 }, { "start", -1 }, { "submitted", 1 } },
-            _                        => throw new ArgumentOutOfRangeException(nameof(selectionMode))
+            LoaSelectionMode.Current => new()
+            {
+                { "end", 1 },
+                { "start", 1 },
+                { "submitted", 1 },
+            },
+            LoaSelectionMode.Future => new()
+            {
+                { "start", 1 },
+                { "end", 1 },
+                { "submitted", 1 },
+            },
+            LoaSelectionMode.Past => new()
+            {
+                { "end", -1 },
+                { "start", -1 },
+                { "submitted", 1 },
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(selectionMode)),
         };
         return new BsonDocumentSortDefinition<DomainLoaWithAccount>(sortDocument);
     }
 
-    private FilterDefinition<DomainLoaWithAccount> BuildViewModeFilterDefinition(LoaViewMode viewMode)
+    private static FilterDefinition<DomainLoaWithAccount> BuildSelectionModeFilter(LoaSelectionMode selectionMode)
+    {
+        var now = DateTime.UtcNow;
+
+        return selectionMode switch
+        {
+            LoaSelectionMode.Current => Builders<DomainLoaWithAccount>.Filter.And(
+                Builders<DomainLoaWithAccount>.Filter.Lte(x => x.Start, now),
+                Builders<DomainLoaWithAccount>.Filter.Gt(x => x.End, now)
+            ),
+            LoaSelectionMode.Future => Builders<DomainLoaWithAccount>.Filter.Gte(x => x.Start, now),
+            LoaSelectionMode.Past   => Builders<DomainLoaWithAccount>.Filter.Lt(x => x.End, now),
+            _                       => throw new ArgumentOutOfRangeException(nameof(selectionMode)),
+        };
+    }
+
+    private FilterDefinition<DomainLoaWithAccount> BuildDateModeFilter(LoaSelectionMode selectionMode, LoaDateMode dateMode, DateTime? selectedDate)
+    {
+        if (dateMode == LoaDateMode.All)
+        {
+            return Builders<DomainLoaWithAccount>.Filter.Empty;
+        }
+
+        selectedDate = selectedDate?.Date;
+
+        var filterDate = dateMode switch
+        {
+            LoaDateMode.Today        => _clock.Today(),
+            LoaDateMode.NextOp       => GetNextDayOfWeek(DayOfWeek.Saturday),
+            LoaDateMode.NextTraining => GetNextDayOfWeek(DayOfWeek.Wednesday),
+            LoaDateMode.Select       => selectedDate ?? throw new ArgumentNullException(nameof(selectedDate), "Date must be selected"),
+            LoaDateMode.All          => throw new ArgumentOutOfRangeException(nameof(dateMode)),
+            _                        => throw new ArgumentOutOfRangeException(nameof(dateMode)),
+        };
+
+        var startBeforeOrOnDateFilter = Builders<DomainLoaWithAccount>.Filter.Lte(x => x.Start, filterDate);
+        var endOnDateOrAfterFilter = Builders<DomainLoaWithAccount>.Filter.Gte(x => x.End, filterDate);
+        return Builders<DomainLoaWithAccount>.Filter.And(startBeforeOrOnDateFilter, endOnDateOrAfterFilter);
+    }
+
+    private FilterDefinition<DomainLoaWithAccount> BuildViewModeFilter(LoaViewMode viewMode)
     {
         switch (viewMode)
         {
-            case LoaViewMode.ALL:
+            case LoaViewMode.All:
             {
                 var memberIds = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER).Select(x => x.Id).ToList();
                 return Builders<DomainLoaWithAccount>.Filter.In(x => x.Recipient, memberIds);
             }
-            case LoaViewMode.COC:
+            case LoaViewMode.Coc:
             {
                 var currentAccount = _accountContext.GetSingle(_httpContextService.GetUserId());
                 var parentUnit = _unitsContext.GetSingle(x => x.Name == currentAccount.UnitAssignment);
@@ -94,25 +168,9 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
                 var memberIds = cocUnits.SelectMany(x => x.Members).ToList();
                 return Builders<DomainLoaWithAccount>.Filter.In(x => x.Recipient, memberIds);
             }
-            case LoaViewMode.ME: return Builders<DomainLoaWithAccount>.Filter.Eq(x => x.Recipient, _httpContextService.GetUserId());
-            default:             throw new ArgumentOutOfRangeException(nameof(viewMode));
+            case LoaViewMode.Mine: return Builders<DomainLoaWithAccount>.Filter.Eq(x => x.Recipient, _httpContextService.GetUserId());
+            default:               throw new ArgumentOutOfRangeException(nameof(viewMode));
         }
-    }
-
-    private FilterDefinition<DomainLoaWithAccount> BuildSelectionModeFilterDefinition(LoaSelectionMode selectionMode)
-    {
-        var now = DateTime.UtcNow;
-
-        return selectionMode switch
-        {
-            LoaSelectionMode.CURRENT => Builders<DomainLoaWithAccount>.Filter.And(
-                Builders<DomainLoaWithAccount>.Filter.Lte(x => x.Start, now),
-                Builders<DomainLoaWithAccount>.Filter.Gt(x => x.End, now)
-            ),
-            LoaSelectionMode.FUTURE => Builders<DomainLoaWithAccount>.Filter.Gte(x => x.Start, now),
-            LoaSelectionMode.PAST   => Builders<DomainLoaWithAccount>.Filter.Lt(x => x.End, now),
-            _                       => throw new ArgumentOutOfRangeException(nameof(selectionMode))
-        };
     }
 
     private static FilterDefinition<DomainLoaWithAccount> BuildFiltersFromQueryPart(string queryPart)
@@ -126,7 +184,7 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
             Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Rank.Name, regex),
             Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Rank.Abbreviation, regex),
             Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Unit.Name, regex),
-            Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Unit.Shortname, regex)
+            Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Unit.Shortname, regex),
         };
         return Builders<DomainLoaWithAccount>.Filter.Or(filters);
     }
@@ -142,18 +200,11 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
                          .Unwind("unit")
                          .As<DomainLoaWithAccount>();
     }
-}
 
-public enum LoaSelectionMode
-{
-    CURRENT,
-    FUTURE,
-    PAST
-}
-
-public enum LoaViewMode
-{
-    ALL,
-    COC,
-    ME
+    private DateTime GetNextDayOfWeek(DayOfWeek dayOfWeek)
+    {
+        var today = _clock.Today();
+        var daysToAdd = ((int)dayOfWeek - (int)today.DayOfWeek + 7) % 7;
+        return today.AddDays(daysToAdd);
+    }
 }
