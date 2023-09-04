@@ -24,7 +24,6 @@ public enum LoaViewMode
 public enum LoaDateMode
 {
     All,
-    Today,
     NextOp,
     NextTraining,
     Select,
@@ -75,7 +74,7 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
     {
         var sorting = BuildSorting(args.SelectionMode);
         var selectionModeFilter = BuildSelectionModeFilter(args.SelectionMode);
-        var dateModeFilter = BuildDateModeFilter(args.SelectionMode, args.DateMode, args.SelectedDate);
+        var dateModeFilter = BuildDateModeFilter(args.DateMode, args.SelectedDate);
         var viewModeFilter = BuildViewModeFilter(args.ViewMode);
         var queryFilter = _loaContext.BuildPagedComplexQuery(args.Query, BuildFiltersFromQueryPart);
         var filter = Builders<DomainLoaWithAccount>.Filter.And(selectionModeFilter, dateModeFilter, viewModeFilter, queryFilter);
@@ -84,61 +83,55 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
         return await Task.FromResult(pagedResult);
     }
 
-    private SortDefinition<DomainLoaWithAccount> BuildSorting(LoaSelectionMode selectionMode)
+    private static SortDefinition<DomainLoaWithAccount> BuildSorting(LoaSelectionMode selectionMode)
     {
-        BsonDocument sortDocument = selectionMode switch
+        var startSorter = Builders<DomainLoaWithAccount>.Sort.Ascending(x => x.Start);
+        var endSorter = Builders<DomainLoaWithAccount>.Sort.Ascending(x => x.End);
+        var submittedSorter = Builders<DomainLoaWithAccount>.Sort.Ascending(x => x.Submitted);
+
+        switch (selectionMode)
         {
-            LoaSelectionMode.Current => new()
-            {
-                { "end", 1 },
-                { "start", 1 },
-                { "submitted", 1 },
-            },
-            LoaSelectionMode.Future => new()
-            {
-                { "start", 1 },
-                { "end", 1 },
-                { "submitted", 1 },
-            },
-            LoaSelectionMode.Past => new()
-            {
-                { "end", -1 },
-                { "start", -1 },
-                { "submitted", 1 },
-            },
-            _ => throw new ArgumentOutOfRangeException(nameof(selectionMode)),
-        };
-        return new BsonDocumentSortDefinition<DomainLoaWithAccount>(sortDocument);
+            case LoaSelectionMode.Current: return Builders<DomainLoaWithAccount>.Sort.Combine(endSorter, startSorter, submittedSorter);
+            case LoaSelectionMode.Future:  return Builders<DomainLoaWithAccount>.Sort.Combine(startSorter, endSorter, submittedSorter);
+            case LoaSelectionMode.Past:
+                startSorter = Builders<DomainLoaWithAccount>.Sort.Descending(x => x.Start);
+                endSorter = Builders<DomainLoaWithAccount>.Sort.Descending(x => x.End);
+                return Builders<DomainLoaWithAccount>.Sort.Combine(endSorter, startSorter, submittedSorter);
+            default: throw new ArgumentOutOfRangeException(nameof(selectionMode));
+        }
     }
 
-    private static FilterDefinition<DomainLoaWithAccount> BuildSelectionModeFilter(LoaSelectionMode selectionMode)
+    private FilterDefinition<DomainLoaWithAccount> BuildSelectionModeFilter(LoaSelectionMode selectionMode)
     {
-        var now = DateTime.UtcNow;
+        var today = _clock.UkToday();
 
         return selectionMode switch
         {
             LoaSelectionMode.Current => Builders<DomainLoaWithAccount>.Filter.And(
-                Builders<DomainLoaWithAccount>.Filter.Lte(x => x.Start, now),
-                Builders<DomainLoaWithAccount>.Filter.Gt(x => x.End, now)
+                Builders<DomainLoaWithAccount>.Filter.Lte(x => x.Start, today),
+                Builders<DomainLoaWithAccount>.Filter.Gte(x => x.End, today)
             ),
-            LoaSelectionMode.Future => Builders<DomainLoaWithAccount>.Filter.Gte(x => x.Start, now),
-            LoaSelectionMode.Past   => Builders<DomainLoaWithAccount>.Filter.Lt(x => x.End, now),
+            LoaSelectionMode.Future => Builders<DomainLoaWithAccount>.Filter.Gte(x => x.Start, today),
+            LoaSelectionMode.Past   => Builders<DomainLoaWithAccount>.Filter.Lt(x => x.End, today),
             _                       => throw new ArgumentOutOfRangeException(nameof(selectionMode)),
         };
     }
 
-    private FilterDefinition<DomainLoaWithAccount> BuildDateModeFilter(LoaSelectionMode selectionMode, LoaDateMode dateMode, DateTime? selectedDate)
+    private FilterDefinition<DomainLoaWithAccount> BuildDateModeFilter(LoaDateMode dateMode, DateTime? selectedDate)
     {
         if (dateMode == LoaDateMode.All)
         {
             return Builders<DomainLoaWithAccount>.Filter.Empty;
         }
 
-        selectedDate = selectedDate?.Date;
+        if (selectedDate.HasValue)
+        {
+            var ukZone = TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time");
+            selectedDate = TimeZoneInfo.ConvertTime(selectedDate.Value.Date, ukZone);
+        }
 
         var filterDate = dateMode switch
         {
-            LoaDateMode.Today        => _clock.Today(),
             LoaDateMode.NextOp       => GetNextDayOfWeek(DayOfWeek.Saturday),
             LoaDateMode.NextTraining => GetNextDayOfWeek(DayOfWeek.Wednesday),
             LoaDateMode.Select       => selectedDate ?? throw new ArgumentNullException(nameof(selectedDate), "Date must be selected"),
@@ -203,7 +196,7 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
 
     private DateTime GetNextDayOfWeek(DayOfWeek dayOfWeek)
     {
-        var today = _clock.Today();
+        var today = _clock.UkToday();
         var daysToAdd = ((int)dayOfWeek - (int)today.DayOfWeek + 7) % 7;
         return today.AddDays(daysToAdd);
     }
