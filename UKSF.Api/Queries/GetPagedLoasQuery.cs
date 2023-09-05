@@ -103,7 +103,7 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
 
     private FilterDefinition<DomainLoaWithAccount> BuildSelectionModeFilter(LoaSelectionMode selectionMode)
     {
-        var today = _clock.UkToday();
+        var today = _clock.Today();
 
         return selectionMode switch
         {
@@ -111,7 +111,7 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
                 Builders<DomainLoaWithAccount>.Filter.Lte(x => x.Start, today),
                 Builders<DomainLoaWithAccount>.Filter.Gte(x => x.End, today)
             ),
-            LoaSelectionMode.Future => Builders<DomainLoaWithAccount>.Filter.Gte(x => x.Start, today),
+            LoaSelectionMode.Future => Builders<DomainLoaWithAccount>.Filter.Gt(x => x.Start, today),
             LoaSelectionMode.Past   => Builders<DomainLoaWithAccount>.Filter.Lt(x => x.End, today),
             _                       => throw new ArgumentOutOfRangeException(nameof(selectionMode)),
         };
@@ -124,11 +124,7 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
             return Builders<DomainLoaWithAccount>.Filter.Empty;
         }
 
-        if (selectedDate.HasValue)
-        {
-            var ukZone = TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time");
-            selectedDate = TimeZoneInfo.ConvertTime(selectedDate.Value.Date, ukZone);
-        }
+        selectedDate = selectedDate?.Date;
 
         var filterDate = dateMode switch
         {
@@ -138,6 +134,8 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
             LoaDateMode.All          => throw new ArgumentOutOfRangeException(nameof(dateMode)),
             _                        => throw new ArgumentOutOfRangeException(nameof(dateMode)),
         };
+
+        filterDate = DateTime.SpecifyKind(filterDate, DateTimeKind.Utc);
 
         var startBeforeOrOnDateFilter = Builders<DomainLoaWithAccount>.Filter.Lte(x => x.Start, filterDate);
         var endOnDateOrAfterFilter = Builders<DomainLoaWithAccount>.Filter.Gte(x => x.End, filterDate);
@@ -196,7 +194,7 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
 
     private DateTime GetNextDayOfWeek(DayOfWeek dayOfWeek)
     {
-        var today = _clock.UkToday();
+        var today = _clock.Today();
         var daysToAdd = ((int)dayOfWeek - (int)today.DayOfWeek + 7) % 7;
         return today.AddDays(daysToAdd);
     }
