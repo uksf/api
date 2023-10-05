@@ -51,7 +51,7 @@ public class DocumentPermissionsService : IDocumentPermissionsService
         }
 
         var memberId = _httpContextService.GetUserId();
-        return ValidateWritePermission(metadataWithPermissions.WritePermissions, memberId);
+        return ValidateWritePermission(metadataWithPermissions.WritePermissions, memberId, false);
     }
 
     private bool ValidateWritePermission(DocumentPermissions writePermissions, string memberId, bool defaultPermission = true)

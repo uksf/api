@@ -105,7 +105,7 @@ public class DocumentFolderService : IDocumentFolderService
         var folderMetadata = ValidateAndGetFolder(folderId);
         if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
-            throw new FolderException("Cannot edit folder");
+            throw new FolderException($"Cannot edit folder '{folderMetadata.Name}'");
         }
 
         await _documentFolderMetadataContext.Update(folderId, Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Name, newPermissions.Name));
@@ -128,7 +128,7 @@ public class DocumentFolderService : IDocumentFolderService
         var folderMetadata = ValidateAndGetFolder(folderId);
         if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
-            throw new FolderException("Cannot delete folder");
+            throw new FolderException($"Cannot delete folder '{folderMetadata.Name}'");
         }
 
         var folderChildren = GetAllFolderChildren(folderMetadata);
@@ -154,7 +154,7 @@ public class DocumentFolderService : IDocumentFolderService
 
         if (!_documentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
         {
-            throw new FolderException("Cannot view folder");
+            throw new FolderException($"Cannot view folder '{folderMetadata.Name}'");
         }
 
         return folderMetadata;

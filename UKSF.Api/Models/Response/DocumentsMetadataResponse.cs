@@ -31,5 +31,6 @@ public class DocumentMetadataResponse
     public DocumentPermissions ReadPermissions { get; set; } = new();
     public DocumentPermissions WritePermissions { get; set; } = new();
 
+    public bool CanRead { get; set; }
     public bool CanWrite { get; set; }
 }

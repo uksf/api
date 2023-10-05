@@ -101,13 +101,13 @@ public class DocumentService : IDocumentService
         var folderMetadata = ValidateAndGetFolder(folderId);
         if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
-            throw new FolderException("Cannot edit documents in this folder");
+            throw new FolderException($"Cannot edit documents in this folder '{folderMetadata.Name}'");
         }
 
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
         if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata))
         {
-            throw new DocumentException("Cannot edit document");
+            throw new DocumentException($"Cannot edit document '{folderMetadata.Name}/{documentMetadata.Name}'");
         }
 
         await _documentFolderMetadataContext.FindAndUpdate(
@@ -133,13 +133,13 @@ public class DocumentService : IDocumentService
         var folderMetadata = ValidateAndGetFolder(folderId);
         if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
-            throw new FolderException("Cannot delete documents from this folder");
+            throw new FolderException($"Cannot delete documents from this folder '{folderMetadata.Name}'");
         }
 
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
         if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata))
         {
-            throw new DocumentException("Cannot delete document");
+            throw new DocumentException($"Cannot delete document '{folderMetadata.Name}/{documentMetadata.Name}'");
         }
 
         ValidateAndGetDocumentPath(documentMetadata.Id);
@@ -167,13 +167,13 @@ public class DocumentService : IDocumentService
         var folderMetadata = ValidateAndGetFolder(folderId);
         if (!_documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
-            throw new FolderException("Cannot edit documents in this folder");
+            throw new FolderException($"Cannot edit documents in this folder '{folderMetadata.Name}'");
         }
 
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
         if (!_documentPermissionsService.DoesContextHaveWritePermission(documentMetadata))
         {
-            throw new DocumentException("Cannot edit document");
+            throw new DocumentException($"Cannot edit document '{folderMetadata.Name}/{documentMetadata.Name}'");
         }
 
         if (updateDocumentContent.LastKnownUpdated < documentMetadata.LastUpdated)
@@ -204,7 +204,7 @@ public class DocumentService : IDocumentService
 
         if (!_documentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
         {
-            throw new FolderException("Cannot view folder");
+            throw new FolderException($"Cannot view folder '{folderMetadata.Name}'");
         }
 
         return folderMetadata;
@@ -220,7 +220,7 @@ public class DocumentService : IDocumentService
 
         if (!_documentPermissionsService.DoesContextHaveReadPermission(documentMetadata))
         {
-            throw new DocumentException("Cannot view document");
+            throw new DocumentException($"Cannot view document '{folderMetadata.Name}/{documentMetadata.Name}'");
         }
 
         return documentMetadata;
