@@ -52,7 +52,7 @@ public class DocumentPermissionsServiceTests
     {
         var result = _subject.DoesContextHaveWritePermission(new());
 
-        result.Should().Be(true);
+        result.Should().Be(false);
     }
 
     [Theory]
@@ -77,7 +77,7 @@ public class DocumentPermissionsServiceTests
     [InlineData(true, true, true, true)]
     [InlineData(true, false, false, true)]
     [InlineData(false, true, false, true)]
-    [InlineData(false, false, false, true)]
+    [InlineData(false, false, false, false)]
     public void When_checking_partial_write_permissions(bool hasUnits, bool hasRank, bool selectedUnitsOnly, bool hasPermission)
     {
         Given_unit_write_permissions(true);

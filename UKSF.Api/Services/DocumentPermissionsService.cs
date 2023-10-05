@@ -39,7 +39,7 @@ public class DocumentPermissionsService : IDocumentPermissionsService
         }
 
         var memberId = _httpContextService.GetUserId();
-        return ValidateWritePermission(metadataWithPermissions.WritePermissions, memberId, false) ||
+        return ValidateWritePermission(metadataWithPermissions.WritePermissions, memberId) ||
                ValidateReadPermission(metadataWithPermissions.ReadPermissions, memberId);
     }
 
@@ -51,23 +51,29 @@ public class DocumentPermissionsService : IDocumentPermissionsService
         }
 
         var memberId = _httpContextService.GetUserId();
-        return ValidateWritePermission(metadataWithPermissions.WritePermissions, memberId, false);
+        return ValidateWritePermission(metadataWithPermissions.WritePermissions, memberId);
     }
 
-    private bool ValidateWritePermission(DocumentPermissions writePermissions, string memberId, bool defaultPermission = true)
+    private bool ValidateWritePermission(DocumentPermissions writePermissions, string memberId)
     {
-        var hasPermission = defaultPermission;
-        if (writePermissions.Units.Any())
+        var checkUnitsPermission = writePermissions.Units.Any();
+        var checkRankPermission = !writePermissions.Rank.IsNullOrEmpty();
+        if (checkUnitsPermission && checkRankPermission)
         {
-            hasPermission = ValidateUnitWritePermissions(writePermissions, memberId);
+            return ValidateUnitWritePermissions(writePermissions, memberId) && ValidateRankPermissions(writePermissions);
         }
 
-        if (!writePermissions.Rank.IsNullOrEmpty())
+        if (checkUnitsPermission)
         {
-            hasPermission &= ValidateRankPermissions(writePermissions);
+            return ValidateUnitWritePermissions(writePermissions, memberId);
         }
 
-        return hasPermission;
+        if (checkRankPermission)
+        {
+            return ValidateRankPermissions(writePermissions);
+        }
+
+        return false;
     }
 
     private bool ValidateReadPermission(DocumentPermissions readPermissions, string memberId)
