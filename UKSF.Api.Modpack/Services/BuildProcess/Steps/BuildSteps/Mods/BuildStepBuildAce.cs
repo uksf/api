@@ -5,7 +5,7 @@ public class BuildStepBuildAce : ModBuildStep
 {
     public const string Name = "Build ACE";
     private const string ModName = "ace";
-    private readonly List<string> _allowedOptionals = new() { "ace_compat_rksl_pm_ii", "ace_nouniformrestrictions" };
+    private readonly List<string> _allowedOptionals = new() { "ace_nouniformrestrictions" };
 
     protected override async Task ProcessExecute()
     {
