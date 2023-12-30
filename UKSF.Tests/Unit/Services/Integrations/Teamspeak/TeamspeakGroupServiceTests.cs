@@ -8,8 +8,8 @@ using Moq;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
-using UKSF.Api.Teamspeak.Models;
-using UKSF.Api.Teamspeak.Services;
+using UKSF.Api.Integrations.Teamspeak.Models;
+using UKSF.Api.Integrations.Teamspeak.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak;

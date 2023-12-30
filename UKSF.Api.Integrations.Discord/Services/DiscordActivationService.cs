@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Discord.Services;
+﻿namespace UKSF.Api.Integrations.Discord.Services;
 
 public interface IDiscordActivationService
 {
@@ -38,9 +38,4 @@ public class DiscordActivationService : IDiscordActivationService
     {
         await _discordClientService.Disconnect();
     }
-}
-
-public interface IDiscordService
-{
-    void Activate();
 }

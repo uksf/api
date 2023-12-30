@@ -51,8 +51,8 @@ public class BuildProcessorService : IBuildProcessorService
                 _serviceProvider,
                 build,
                 buildStep,
-                async updateDefinition => await _buildsService.UpdateBuild(build, updateDefinition),
-                async () => await _buildsService.UpdateBuildStep(build, buildStep),
+                updateDefinition => _buildsService.UpdateBuild(build, updateDefinition),
+                () => _buildsService.UpdateBuildStep(build, buildStep),
                 cancellationTokenSource
             );
 

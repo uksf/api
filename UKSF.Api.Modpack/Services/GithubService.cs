@@ -72,8 +72,8 @@ public class GithubService : IGithubService
         }
 
         var content = Encoding.UTF8.GetString(contentBytes);
-        var lines = content.Split("\n").Take(3);
-        var version = string.Join('.', lines.Select(x => x.Split(' ')[^1]));
+        var versionParts = content.Split("\n").Take(3).Select(x => x.Split(' ')[^1]);
+        var version = string.Join('.', versionParts);
         return version;
     }
 
@@ -164,7 +164,7 @@ public class GithubService : IGithubService
                 RepoName,
                 new(release.Version)
                 {
-                    Name = $"Modpack Version {release.Version}", Body = $"{release.Description}\n\n## Changelog\n{release.Changelog.Replace("<br>", "\n")}"
+                    Name = $"Modpack Version {release.Version}", Body = $"## Changelog\n{release.Changelog.Replace("<br>", "\n")}",
                 }
             );
 

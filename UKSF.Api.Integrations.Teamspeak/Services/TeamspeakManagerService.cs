@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
-using UKSF.Api.Teamspeak.Models;
-using UKSF.Api.Teamspeak.Signalr.Clients;
-using UKSF.Api.Teamspeak.Signalr.Hubs;
+using UKSF.Api.Integrations.Teamspeak.Models;
+using UKSF.Api.Integrations.Teamspeak.Signalr.Clients;
+using UKSF.Api.Integrations.Teamspeak.Signalr.Hubs;
 
-namespace UKSF.Api.Teamspeak.Services;
+namespace UKSF.Api.Integrations.Teamspeak.Services;
 
 public interface ITeamspeakManagerService
 {

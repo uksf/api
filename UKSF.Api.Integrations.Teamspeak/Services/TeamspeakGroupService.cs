@@ -3,9 +3,9 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
-using UKSF.Api.Teamspeak.Models;
+using UKSF.Api.Integrations.Teamspeak.Models;
 
-namespace UKSF.Api.Teamspeak.Services;
+namespace UKSF.Api.Integrations.Teamspeak.Services;
 
 public interface ITeamspeakGroupService
 {

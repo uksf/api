@@ -8,9 +8,9 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Configuration;
 using UKSF.Api.Core.Converters;
 using UKSF.Api.Extensions;
+using UKSF.Api.Integrations.Teamspeak;
 using UKSF.Api.Middleware;
 using UKSF.Api.Modpack;
-using UKSF.Api.Teamspeak;
 
 void InitServiceLogging(AppSettings appSettings)
 {

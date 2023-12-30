@@ -2,9 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using UKSF.Api.Core;
-using UKSF.Api.Teamspeak.Models;
+using UKSF.Api.Integrations.Teamspeak.Models;
 
-namespace UKSF.Api.Teamspeak.Controllers;
+namespace UKSF.Api.Integrations.Teamspeak.Controllers;
 
 [Route("[controller]")]
 [Permissions(Permissions.Member)]

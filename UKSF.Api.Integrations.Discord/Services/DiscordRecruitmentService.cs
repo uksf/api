@@ -7,12 +7,12 @@ using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Queries;
 using UKSF.Api.Core.Services;
-using UKSF.Api.Discord.Models;
+using UKSF.Api.Integrations.Discord.Models;
 using MembershipState = UKSF.Api.Core.Models.MembershipState;
 
-namespace UKSF.Api.Discord.Services;
+namespace UKSF.Api.Integrations.Discord.Services;
 
-public interface IDiscordRecruitmentService { }
+public interface IDiscordRecruitmentService : IDiscordService { }
 
 public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitmentService
 {
@@ -44,7 +44,7 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
         _logger = logger;
     }
 
-    public override void Activate()
+    public void Activate()
     {
         var client = GetClient();
         client.UserLeft += ClientOnUserLeft;

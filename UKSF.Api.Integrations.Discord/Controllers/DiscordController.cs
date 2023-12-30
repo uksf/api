@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Models;
-using UKSF.Api.Discord.Services;
+using UKSF.Api.Integrations.Discord.Services;
 
-namespace UKSF.Api.Discord.Controllers;
+namespace UKSF.Api.Integrations.Discord.Controllers;
 
 [Route("[controller]")]
 public class DiscordController : ControllerBase

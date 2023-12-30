@@ -3,8 +3,8 @@ using Microsoft.Extensions.Hosting;
 using Moq;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Services;
-using UKSF.Api.Teamspeak.ScheduledActions;
-using UKSF.Api.Teamspeak.Services;
+using UKSF.Api.Integrations.Teamspeak.ScheduledActions;
+using UKSF.Api.Integrations.Teamspeak.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Utility.ScheduledActions;

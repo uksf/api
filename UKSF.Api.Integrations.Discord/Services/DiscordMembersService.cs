@@ -6,9 +6,9 @@ using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 
-namespace UKSF.Api.Discord.Services;
+namespace UKSF.Api.Integrations.Discord.Services;
 
-public interface IDiscordMembersService
+public interface IDiscordMembersService : IDiscordService
 {
     Task<IReadOnlyCollection<SocketRole>> GetRoles();
     OnlineState GetOnlineUserDetails(string accountId);
@@ -129,7 +129,7 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
         await UpdateAccountNickname(user, domainAccount);
     }
 
-    public override void Activate()
+    public void Activate()
     {
         var client = GetClient();
         client.GuildMemberUpdated += ClientOnGuildMemberUpdated;

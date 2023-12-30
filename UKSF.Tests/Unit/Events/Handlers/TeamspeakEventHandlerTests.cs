@@ -8,9 +8,9 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
-using UKSF.Api.Teamspeak.EventHandlers;
-using UKSF.Api.Teamspeak.Models;
-using UKSF.Api.Teamspeak.Services;
+using UKSF.Api.Integrations.Teamspeak.EventHandlers;
+using UKSF.Api.Integrations.Teamspeak.Models;
+using UKSF.Api.Integrations.Teamspeak.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Events.Handlers;

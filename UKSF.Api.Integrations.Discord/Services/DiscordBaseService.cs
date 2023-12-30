@@ -3,11 +3,16 @@ using Discord.WebSocket;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
-using UKSF.Api.Discord.Models;
+using UKSF.Api.Integrations.Discord.Models;
 
-namespace UKSF.Api.Discord.Services;
+namespace UKSF.Api.Integrations.Discord.Services;
 
-public class DiscordBaseService : IDiscordService
+public interface IDiscordService
+{
+    void Activate();
+}
+
+public class DiscordBaseService
 {
     private readonly IDiscordClientService _discordClientService;
     private readonly IHttpContextService _httpContextService;
@@ -26,8 +31,6 @@ public class DiscordBaseService : IDiscordService
         _variablesService = variablesService;
         _logger = logger;
     }
-
-    public virtual void Activate() { }
 
     protected DiscordSocketClient GetClient()
     {

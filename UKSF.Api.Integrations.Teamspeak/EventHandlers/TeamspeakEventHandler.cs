@@ -2,9 +2,9 @@
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
-using UKSF.Api.Teamspeak.Services;
+using UKSF.Api.Integrations.Teamspeak.Services;
 
-namespace UKSF.Api.Teamspeak.EventHandlers;
+namespace UKSF.Api.Integrations.Teamspeak.EventHandlers;
 
 public interface ITeamspeakEventHandler : IEventHandler { }
 

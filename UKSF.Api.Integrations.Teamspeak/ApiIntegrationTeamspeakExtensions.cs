@@ -1,10 +1,10 @@
 ﻿using UKSF.Api.Core.Extensions;
-using UKSF.Api.Teamspeak.EventHandlers;
-using UKSF.Api.Teamspeak.ScheduledActions;
-using UKSF.Api.Teamspeak.Services;
-using UKSF.Api.Teamspeak.Signalr.Hubs;
+using UKSF.Api.Integrations.Teamspeak.EventHandlers;
+using UKSF.Api.Integrations.Teamspeak.ScheduledActions;
+using UKSF.Api.Integrations.Teamspeak.Services;
+using UKSF.Api.Integrations.Teamspeak.Signalr.Hubs;
 
-namespace UKSF.Api.Teamspeak;
+namespace UKSF.Api.Integrations.Teamspeak;
 
 public static class ApiIntegrationTeamspeakExtensions
 {

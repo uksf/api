@@ -7,7 +7,7 @@ using UKSF.Api.Core.Configuration;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
 
-namespace UKSF.Api.Discord.Services;
+namespace UKSF.Api.Integrations.Discord.Services;
 
 public interface IDiscordClientService
 {

@@ -98,8 +98,7 @@ public class BuildStepService : IBuildStepService
             new(BuildStepDeploy.Name),
             new(BuildStepKeys.Name),
             new(BuildStepCbaSettings.Name),
-            new(BuildStepBuildRepo.Name)
-            // new(BuildStepNotify.NAME)
+            new(BuildStepBuildRepo.Name),
         };
     }
 

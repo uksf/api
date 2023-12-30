@@ -41,12 +41,12 @@ public class BuildStepBuildModpack : ModBuildStep
         }
     }
 
-    private async Task MoveRcOptional(string buildPath)
+    private Task MoveRcOptional(string buildPath)
     {
         DirectoryInfo addons = new(Path.Join(buildPath, "addons"));
         DirectoryInfo optional = new(Path.Join(buildPath, "optionals", "@uksf_rc", "addons"));
 
         var files = GetDirectoryContents(optional);
-        await CopyFiles(optional, addons, files);
+        return CopyFiles(optional, addons, files);
     }
 }

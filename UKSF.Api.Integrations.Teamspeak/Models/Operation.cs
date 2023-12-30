@@ -1,6 +1,6 @@
 ﻿using UKSF.Api.Core.Models;
 
-namespace UKSF.Api.Teamspeak.Models;
+namespace UKSF.Api.Integrations.Teamspeak.Models;
 
 public class Operation : MongoObject
 {

@@ -2,11 +2,11 @@ using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
-using UKSF.Api.Teamspeak.Models;
-using UKSF.Api.Teamspeak.Signalr.Clients;
-using UKSF.Api.Teamspeak.Signalr.Hubs;
+using UKSF.Api.Integrations.Teamspeak.Models;
+using UKSF.Api.Integrations.Teamspeak.Signalr.Clients;
+using UKSF.Api.Integrations.Teamspeak.Signalr.Hubs;
 
-namespace UKSF.Api.Teamspeak.Services;
+namespace UKSF.Api.Integrations.Teamspeak.Services;
 
 public interface ITeamspeakService
 {

@@ -2,9 +2,9 @@
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
-using UKSF.Api.Discord.Services;
+using UKSF.Api.Integrations.Discord.Services;
 
-namespace UKSF.Api.Discord.EventHandlers;
+namespace UKSF.Api.Integrations.Discord.EventHandlers;
 
 public interface IDiscordAccountEventHandler : IEventHandler { }
 

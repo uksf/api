@@ -6,11 +6,11 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
-using UKSF.Api.Discord.Models;
+using UKSF.Api.Integrations.Discord.Models;
 
-namespace UKSF.Api.Discord.Services;
+namespace UKSF.Api.Integrations.Discord.Services;
 
-public interface IDiscordAdminService { }
+public interface IDiscordAdminService : IDiscordService { }
 
 public class DiscordAdminService : DiscordBaseService, IDiscordAdminService
 {
@@ -35,7 +35,7 @@ public class DiscordAdminService : DiscordBaseService, IDiscordAdminService
         _logger = logger;
     }
 
-    public override void Activate()
+    public void Activate()
     {
         var client = GetClient();
         client.UserJoined += ClientOnUserJoined;

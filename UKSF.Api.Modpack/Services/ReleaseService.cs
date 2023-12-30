@@ -46,7 +46,7 @@ public class ReleaseService : IReleaseService
     {
         await _releasesContext.Update(
             release.Id,
-            Builders<ModpackRelease>.Update.Set(x => x.Description, release.Description).Set(x => x.Changelog, release.Changelog)
+            Builders<ModpackRelease>.Update.Set(x => x.Changelog, release.Changelog)
         );
     }
 

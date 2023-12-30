@@ -1,9 +1,9 @@
 ﻿using UKSF.Api.Core.Context;
 using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;
-using UKSF.Api.Teamspeak.Services;
+using UKSF.Api.Integrations.Teamspeak.Services;
 
-namespace UKSF.Api.Teamspeak.ScheduledActions;
+namespace UKSF.Api.Integrations.Teamspeak.ScheduledActions;
 
 public interface IActionTeamspeakSnapshot : ISelfCreatingScheduledAction { }
 

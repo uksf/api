@@ -4,9 +4,10 @@ using UKSF.Api.Commands;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
-using UKSF.Api.Discord;
 using UKSF.Api.EventHandlers;
+using UKSF.Api.Integrations.Discord;
 using UKSF.Api.Integrations.Instagram;
+using UKSF.Api.Integrations.Teamspeak;
 using UKSF.Api.Launcher;
 using UKSF.Api.Mappers;
 using UKSF.Api.Middleware;
@@ -15,7 +16,6 @@ using UKSF.Api.Queries;
 using UKSF.Api.ScheduledActions;
 using UKSF.Api.Services;
 using UKSF.Api.Signalr.Hubs;
-using UKSF.Api.Teamspeak;
 
 namespace UKSF.Api.Extensions;
 

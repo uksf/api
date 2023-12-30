@@ -1,6 +1,6 @@
-using UKSF.Api.Teamspeak.Models;
+using UKSF.Api.Integrations.Teamspeak.Models;
 
-namespace UKSF.Api.Teamspeak.Signalr.Clients;
+namespace UKSF.Api.Integrations.Teamspeak.Signalr.Clients;
 
 public interface ITeamspeakClient
 {

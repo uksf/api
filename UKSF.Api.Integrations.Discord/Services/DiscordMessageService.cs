@@ -5,11 +5,11 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
 
-namespace UKSF.Api.Discord.Services;
+namespace UKSF.Api.Integrations.Discord.Services;
 
-public interface IDiscordMessageService
+public interface IDiscordMessageService : IDiscordService
 {
-    Task SendMessageToEveryone(ulong channelId, string message);
+    Task SendMessageToEveryone(ulong channelId, string message, bool notifyOffline);
     Task SendMessage(ulong channelId, string message);
 }
 
@@ -49,7 +49,7 @@ public class DiscordMessageService : DiscordBaseService, IDiscordMessageService
         _variablesService = variablesService;
     }
 
-    public override void Activate()
+    public void Activate()
     {
         var client = GetClient();
         client.MessageReceived += ClientOnMessageReceived;
@@ -71,7 +71,7 @@ public class DiscordMessageService : DiscordBaseService, IDiscordMessageService
         await channel.SendMessageAsync(message);
     }
 
-    public async Task SendMessageToEveryone(ulong channelId, string message)
+    public async Task SendMessageToEveryone(ulong channelId, string message, bool notifyOffline)
     {
         if (_discordClientService.IsDiscordDisabled())
         {
@@ -79,7 +79,9 @@ public class DiscordMessageService : DiscordBaseService, IDiscordMessageService
         }
 
         var guild = _discordClientService.GetGuild();
-        await SendMessage(channelId, $"{guild.EveryoneRole} {message}");
+        var tag = notifyOffline ? guild.EveryoneRole.ToString() : "@here";
+
+        await SendMessage(channelId, $"{tag}\n{message}");
     }
 
     private Task ClientOnMessageReceived(SocketMessage message)

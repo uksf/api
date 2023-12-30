@@ -8,9 +8,9 @@ using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
-using UKSF.Api.Teamspeak.Services;
-using UKSF.Api.Teamspeak.Signalr.Clients;
-using UKSF.Api.Teamspeak.Signalr.Hubs;
+using UKSF.Api.Integrations.Teamspeak.Services;
+using UKSF.Api.Integrations.Teamspeak.Signalr.Clients;
+using UKSF.Api.Integrations.Teamspeak.Signalr.Hubs;
 using Xunit;
 
 namespace UKSF.Api.Integrations.Teamspeak.Tests.Services;

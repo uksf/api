@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
-using UKSF.Api.Teamspeak.Signalr.Clients;
+using UKSF.Api.Integrations.Teamspeak.Signalr.Clients;
 
-namespace UKSF.Api.Teamspeak.Signalr.Hubs;
+namespace UKSF.Api.Integrations.Teamspeak.Signalr.Hubs;
 
 public class TeamspeakClientsHub : Hub<ITeamspeakClientsClient>
 {

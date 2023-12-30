@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Discord.Models;
+﻿namespace UKSF.Api.Integrations.Discord.Models;
 
 public class DiscordButtonData
 {

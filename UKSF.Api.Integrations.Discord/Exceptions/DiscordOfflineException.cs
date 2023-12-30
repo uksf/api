@@ -1,6 +1,6 @@
 ﻿using UKSF.Api.Core.Exceptions;
 
-namespace UKSF.Api.Discord.Exceptions;
+namespace UKSF.Api.Integrations.Discord.Exceptions;
 
 [Serializable]
 public class DiscordOfflineException : UksfException

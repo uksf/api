@@ -2,10 +2,10 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using UKSF.Api.Core.Extensions;
-using UKSF.Api.Discord.EventHandlers;
-using UKSF.Api.Discord.Services;
+using UKSF.Api.Integrations.Discord.EventHandlers;
+using UKSF.Api.Integrations.Discord.Services;
 
-namespace UKSF.Api.Discord;
+namespace UKSF.Api.Integrations.Discord;
 
 public static class ApiIntegrationDiscordExtensions
 {
@@ -21,7 +21,9 @@ public static class ApiIntegrationDiscordExtensions
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
-        return services.AddSingleton<IDiscordActivationService, DiscordActivationService>().AddSingleton<IDiscordClientService, DiscordClientService>();
+        return services.AddSingleton<IDiscordActivationService, DiscordActivationService>()
+                       .AddSingleton<IDiscordClientService, DiscordClientService>()
+                       .AddSingleton<IDiscordTextService, DiscordTextService>();
     }
 
     private static IServiceCollection AddDiscord(this IServiceCollection services)
@@ -44,8 +46,9 @@ public static class ApiIntegrationDiscordExtensions
                        .AddDiscordService<IDiscordRecruitmentService, DiscordRecruitmentService>();
     }
 
-    private static IServiceCollection AddDiscordService<TService, TImplementation>(this IServiceCollection collection)
+    private static IServiceCollection AddDiscordService<TService, TImplementation>(this IServiceCollection collection) where TService : IDiscordService
     {
-        return collection.AddSingleton(typeof(TService), typeof(TImplementation)).AddSingleton(typeof(IDiscordService), typeof(TImplementation));
+        return collection.AddSingleton(typeof(TService), typeof(TImplementation))
+                         .AddSingleton<IDiscordService>(provider => provider.GetRequiredService<TService>());
     }
 }
