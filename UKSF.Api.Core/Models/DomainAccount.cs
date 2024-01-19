@@ -27,6 +27,16 @@ public class DomainAccount : MongoObject
     public HashSet<int> TeamspeakIdentities { get; set; }
     public string UnitAssignment { get; set; }
     public string UnitsExperience { get; set; }
+
+    public bool IsMember()
+    {
+        return MembershipState is MembershipState.MEMBER;
+    }
+
+    public bool IsCandidate()
+    {
+        return MembershipState is MembershipState.CONFIRMED && Rank == "Candidate";
+    }
 }
 
 public class Qualifications

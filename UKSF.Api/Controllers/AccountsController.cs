@@ -159,7 +159,35 @@ public class AccountsController : ControllerBase
     [Permissions(Roles = Permissions.Command)]
     public List<BasicAccount> GetAccountsUnder([FromQuery] bool reverse = false)
     {
-        var memberAccounts = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER).ToList();
+        var memberAccounts = _accountContext.Get(x => x.IsMember()).ToList();
+        memberAccounts = memberAccounts.OrderBy(x => x.Rank, new RankComparer(_ranksService)).ThenBy(x => x.Lastname).ThenBy(x => x.Firstname).ToList();
+        if (reverse)
+        {
+            memberAccounts.Reverse();
+        }
+
+        return memberAccounts.Select(x => new BasicAccount { Id = x.Id, DisplayName = _displayNameService.GetDisplayName(x) }).ToList();
+    }
+
+    [HttpGet("members")]
+    [Permissions(Roles = Permissions.Command)]
+    public List<BasicAccount> GetMemberAccounts([FromQuery] bool reverse = false)
+    {
+        var memberAccounts = _accountContext.Get(x => x.IsMember()).ToList();
+        memberAccounts = memberAccounts.OrderBy(x => x.Rank, new RankComparer(_ranksService)).ThenBy(x => x.Lastname).ThenBy(x => x.Firstname).ToList();
+        if (reverse)
+        {
+            memberAccounts.Reverse();
+        }
+
+        return memberAccounts.Select(x => new BasicAccount { Id = x.Id, DisplayName = _displayNameService.GetDisplayName(x) }).ToList();
+    }
+
+    [HttpGet("active")]
+    [Permissions(Roles = Permissions.Command)]
+    public List<BasicAccount> GetActiveAccounts([FromQuery] bool reverse = false)
+    {
+        var memberAccounts = _accountContext.Get(x => x.IsMember() || x.IsCandidate()).ToList();
         memberAccounts = memberAccounts.OrderBy(x => x.Rank, new RankComparer(_ranksService)).ThenBy(x => x.Lastname).ThenBy(x => x.Firstname).ToList();
         if (reverse)
         {
@@ -173,7 +201,7 @@ public class AccountsController : ControllerBase
     [Authorize]
     public IEnumerable<RosterAccount> GetRosterAccounts()
     {
-        var accounts = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER);
+        var accounts = _accountContext.Get(x => x.IsMember());
         var accountObjects = accounts.OrderBy(x => x.Rank, new RankComparer(_ranksService))
                                      .ThenBy(x => x.Lastname)
                                      .ThenBy(x => x.Firstname)
