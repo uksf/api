@@ -155,20 +155,6 @@ public class AccountsController : ControllerBase
         await SendConfirmationCode(domainAccount);
     }
 
-    [HttpGet("under")]
-    [Permissions(Roles = Permissions.Command)]
-    public List<BasicAccount> GetAccountsUnder([FromQuery] bool reverse = false)
-    {
-        var memberAccounts = _accountContext.Get(x => x.IsMember()).ToList();
-        memberAccounts = memberAccounts.OrderBy(x => x.Rank, new RankComparer(_ranksService)).ThenBy(x => x.Lastname).ThenBy(x => x.Firstname).ToList();
-        if (reverse)
-        {
-            memberAccounts.Reverse();
-        }
-
-        return memberAccounts.Select(x => new BasicAccount { Id = x.Id, DisplayName = _displayNameService.GetDisplayName(x) }).ToList();
-    }
-
     [HttpGet("members")]
     [Permissions(Roles = Permissions.Command)]
     public List<BasicAccount> GetMemberAccounts([FromQuery] bool reverse = false)
