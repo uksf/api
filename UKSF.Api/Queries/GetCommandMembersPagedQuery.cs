@@ -113,7 +113,7 @@ public class GetCommandMembersPagedQuery : IGetCommandMembersPagedQuery
     private static IAggregateFluent<DomainCommandMember> BuildAggregator(IMongoCollection<DomainAccount> collection)
     {
         return collection.Aggregate()
-                         .Match(x => x.IsMember())
+                         .Match(x => x.MembershipState == MembershipState.MEMBER)
                          .Lookup("ranks", "rank", "name", "rank")
                          .Unwind("rank")
                          .Lookup("roles", "roleAssignment", "name", "role")

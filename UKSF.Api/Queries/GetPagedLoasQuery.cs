@@ -148,7 +148,7 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
         {
             case LoaViewMode.All:
             {
-                var memberIds = _accountContext.Get(x => x.IsMember()).Select(x => x.Id).ToList();
+                var memberIds = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER).Select(x => x.Id).ToList();
                 return Builders<DomainLoaWithAccount>.Filter.In(x => x.Recipient, memberIds);
             }
             case LoaViewMode.Coc:
