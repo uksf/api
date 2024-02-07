@@ -30,7 +30,7 @@ public class SteamCmdService : ISteamCmdService
 
     public async Task<string> GetServerInfo()
     {
-        var process = ExecuteSteamCmdCommand("+login anonymous +app_info_update 1 +app_info_print 233780 +quit");
+        var process = ExecuteSteamCmdCommand("+login anonymous +app_info_update 1 +app_info_print 233780 +logoff +quit");
 
         process.Start();
         var output = await process.StandardOutput.ReadToEndAsync();

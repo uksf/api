@@ -13,6 +13,7 @@ public interface IUksfLogger
     void LogWarning(string message);
     void LogError(string message);
     void LogError(Exception exception);
+    void LogError(string message, Exception exception);
     void LogHttpError(Exception exception, HttpContext context, HttpResponse response, string userId, string userDisplayName);
     void LogAudit(string message, string userId = null);
 
@@ -60,6 +61,11 @@ public class UksfLogger : IUksfLogger
     public void LogError(Exception exception)
     {
         Log(new(exception));
+    }
+
+    public void LogError(string message, Exception exception)
+    {
+        Log(new BasicLog(message, exception));
     }
 
     public void LogAudit(string message, string userId = null)

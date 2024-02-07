@@ -85,8 +85,6 @@ public class InstagramService : IInstagramService
             var content = JsonNode.Parse(contentString);
             var allMedia = JsonSerializer.Deserialize<List<InstagramImage>>(content.GetValueFromObject("data") ?? "", DefaultJsonSerializerOptions.Options) ??
                            new List<InstagramImage>();
-            // allMedia = allMedia.OrderByDescending(x => x.Timestamp).ToList();
-            allMedia = allMedia.Shuffle().ToList();
 
             if (allMedia.Count == 0)
             {
@@ -94,40 +92,45 @@ public class InstagramService : IInstagramService
                 return;
             }
 
-            // if (_images.Count > 0 && allMedia.First().Id == _images.First().Id)
-            // {
-            //     return;
-            // }
-
-            var newImages = allMedia.Where(x => x.MediaType == "IMAGE").ToList();
-
-            // // Handle carousel images
-            // foreach ((InstagramImage value, int index) instagramImage in newImages.Select((value, index) => ( value, index ))) {
-            //     if (instagramImage.value.mediaType == "CAROUSEL_ALBUM ") {
-            //
-            //     }
-            // }
-
-            _images = newImages.Take(12).ToList();
-
-            await Task.WhenAll(_images.Select(x => Task.Run(async () => x.Base64 = await GetBase64(x))));
+            var newImages = allMedia.Where(x => x.MediaType == "IMAGE" && _images.All(y => x.Id != y.Id)).ToList();
+            foreach (var image in newImages)
+            {
+                var imageData = await GetImageData(image);
+                if (!imageData.IsNullOrEmpty())
+                {
+                    image.Base64 = imageData;
+                    _images.Add(image);
+                }
+            }
         }
         catch (Exception exception)
         {
             _logger.LogError(exception);
         }
+        finally
+        {
+            _images = _images.Where(x => !x.Base64.IsNullOrEmpty()).ToList();
+        }
     }
 
     public IEnumerable<InstagramImage> GetImages()
     {
-        return _images;
+        return _images.Shuffle().Take(12);
     }
 
-    private static async Task<string> GetBase64(InstagramImage image)
+    private async Task<string> GetImageData(InstagramImage image)
     {
-        using HttpClient client = new();
-        var bytes = await client.GetByteArrayAsync(image.MediaUrl);
-        return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
+        try
+        {
+            using HttpClient client = new();
+            var bytes = await client.GetByteArrayAsync(image.MediaUrl);
+            return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError("Failed to get image data", exception);
+        }
+
+        return string.Empty;
     }
 }
-

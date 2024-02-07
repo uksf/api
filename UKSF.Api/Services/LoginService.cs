@@ -96,13 +96,13 @@ public class LoginService : ILoginService
     {
         List<Claim> claims = new()
         {
-            new(ClaimTypes.Email, domainAccount.Email, ClaimValueTypes.String), new(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String)
+            new Claim(ClaimTypes.Email, domainAccount.Email, ClaimValueTypes.String), new Claim(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String)
         };
         claims.AddRange(_permissionsService.GrantPermissions(domainAccount).Select(x => new Claim(ClaimTypes.Role, x)));
 
         if (impersonating)
         {
-            claims.Add(new(UksfClaimTypes.ImpersonatingUserId, _httpContextService.GetUserId()));
+            claims.Add(new Claim(UksfClaimTypes.ImpersonatingUserId, _httpContextService.GetUserId()));
         }
         else
         {
@@ -110,7 +110,7 @@ public class LoginService : ILoginService
             if (!string.IsNullOrEmpty(impersonatingUserId))
             {
                 impersonating = true;
-                claims.Add(new(UksfClaimTypes.ImpersonatingUserId, impersonatingUserId));
+                claims.Add(new Claim(UksfClaimTypes.ImpersonatingUserId, impersonatingUserId));
             }
         }
 
@@ -121,10 +121,10 @@ public class LoginService : ILoginService
                 claims,
                 DateTime.UtcNow,
                 impersonating ? DateTime.UtcNow.AddMinutes(15) : DateTime.UtcNow.AddDays(15),
-                new(AuthExtensions.SecurityKey, SecurityAlgorithms.HmacSha256)
+                new SigningCredentials(AuthExtensions.SecurityKey, SecurityAlgorithms.HmacSha256)
             )
         );
 
-        return new() { Token = token };
+        return new TokenResponse { Token = token };
     }
 }

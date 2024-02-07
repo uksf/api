@@ -37,6 +37,12 @@ public class BasicLog : MongoObject
         Level = UksfLogLevel.ERROR;
     }
 
+    public BasicLog(string message, Exception exception) : this()
+    {
+        Message = $"{message}\n{exception.GetCompleteString()}";
+        Level = UksfLogLevel.ERROR;
+    }
+
     [BsonRepresentation(BsonType.String)]
     public UksfLogLevel Level { get; set; }
 

@@ -35,7 +35,7 @@ public class ActionInstagramImages : IActionInstagramImages
     {
         if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
         {
-            await _schedulerService.CreateScheduledJob(_clock.Today(), TimeSpan.FromMinutes(15), ActionName);
+            await _schedulerService.CreateScheduledJob(_clock.Today(), TimeSpan.FromHours(6), ActionName);
         }
 
         await Run();
