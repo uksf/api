@@ -30,4 +30,11 @@ public class InstagramController : ControllerBase
     {
         await _actionInstagramToken.Reset();
     }
+
+    [HttpGet("cache")]
+    [Permissions(Permissions.Admin)]
+    public async Task Cache()
+    {
+        await _instagramService.CacheInstagramImages();
+    }
 }
