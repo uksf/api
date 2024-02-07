@@ -1,5 +1,4 @@
-﻿using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Exceptions;
+﻿using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.ScheduledActions;
@@ -7,19 +6,18 @@ namespace UKSF.Api.Core.ScheduledActions;
 public class SelfCreatingScheduledAction : ISelfCreatingScheduledAction
 {
     private readonly IHostEnvironment _currentEnvironment;
-    private readonly ISchedulerContext _schedulerContext;
     private readonly ISchedulerService _schedulerService;
 
-    protected SelfCreatingScheduledAction(ISchedulerService schedulerService, ISchedulerContext schedulerContext, IHostEnvironment currentEnvironment)
+    protected SelfCreatingScheduledAction(ISchedulerService schedulerService, IHostEnvironment currentEnvironment)
     {
         _schedulerService = schedulerService;
-        _schedulerContext = schedulerContext;
         _currentEnvironment = currentEnvironment;
     }
 
     public virtual DateTime NextRun => throw new UksfException($"Undefined next run date for action {Name}", 500);
     public virtual TimeSpan RunInterval => throw new UksfException($"Undefined run interval for action {Name}", 500);
     public virtual string Name => "UNNAMED ACTION";
+    public virtual bool RunOnCreate => false;
 
     public async Task CreateSelf()
     {
@@ -28,9 +26,14 @@ public class SelfCreatingScheduledAction : ISelfCreatingScheduledAction
             return;
         }
 
-        if (_schedulerContext.GetSingle(x => x.Action == Name) == null)
+        if (_schedulerService.CheckJobScheduleChanged(Name, RunInterval))
         {
             await _schedulerService.CreateScheduledJob(NextRun, RunInterval, Name);
+        }
+
+        if (RunOnCreate)
+        {
+            _ = Task.Run(() => Run());
         }
     }
 
@@ -39,7 +42,7 @@ public class SelfCreatingScheduledAction : ISelfCreatingScheduledAction
         return Task.FromResult(Task.CompletedTask);
     }
 
-    public Task Reset()
+    public virtual Task Reset()
     {
         return Task.CompletedTask;
     }

@@ -32,7 +32,7 @@ public class ActionCheckForServerUpdate : SelfCreatingScheduledAction, IActionCh
         IGetCurrentServerInfrastructureQuery getCurrentServerInfrastructureQuery,
         IGetInstalledServerInfrastructureQuery getInstalledServerInfrastructureQuery,
         IUksfLogger logger
-    ) : base(schedulerService, schedulerContext, currentEnvironment)
+    ) : base(schedulerService, currentEnvironment)
     {
         _clock = clock;
         _variablesService = variablesService;

@@ -36,7 +36,6 @@ public class PruneDataActionTests
             _mockAuditLogContext.Object,
             _mockErrorLogContext.Object,
             mockSchedulerService.Object,
-            _mockSchedulerContext.Object,
             mockHostEnvironment.Object,
             mockClock.Object
         );

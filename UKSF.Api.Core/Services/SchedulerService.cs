@@ -8,6 +8,7 @@ namespace UKSF.Api.Core.Services;
 public interface ISchedulerService
 {
     void Load();
+    bool CheckJobScheduleChanged(string actionName, TimeSpan interval);
     Task CreateAndScheduleJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters);
     Task<ScheduledJob> CreateScheduledJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters);
     Task Cancel(Func<ScheduledJob, bool> predicate);
@@ -32,6 +33,12 @@ public class SchedulerService : ISchedulerService
     public void Load()
     {
         _context.Get().ToList().ForEach(Schedule);
+    }
+
+    public bool CheckJobScheduleChanged(string actionName, TimeSpan interval)
+    {
+        var job = _context.GetSingle(x => x.Action == actionName);
+        return job is null || interval != job.Interval;
     }
 
     public async Task CreateAndScheduleJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters)

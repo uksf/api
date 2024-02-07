@@ -1,5 +1,4 @@
 ﻿using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.Core.Context;
 using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.Context;
@@ -8,58 +7,31 @@ namespace UKSF.Api.Modpack.ScheduledActions;
 
 public interface IActionPruneBuilds : ISelfCreatingScheduledAction { }
 
-public class ActionPruneBuilds : IActionPruneBuilds
+public class ActionPruneBuilds : SelfCreatingScheduledAction, IActionPruneBuilds
 {
     private const string ActionName = nameof(ActionPruneBuilds);
     private readonly IBuildsContext _buildsContext;
 
     private readonly IClock _clock;
-    private readonly IHostEnvironment _currentEnvironment;
-    private readonly ISchedulerContext _schedulerContext;
-    private readonly ISchedulerService _schedulerService;
 
     public ActionPruneBuilds(
         IBuildsContext buildsContext,
-        ISchedulerContext schedulerContext,
         ISchedulerService schedulerService,
         IHostEnvironment currentEnvironment,
         IClock clock
-    )
+    ) : base(schedulerService, currentEnvironment)
     {
         _buildsContext = buildsContext;
-        _schedulerContext = schedulerContext;
-        _schedulerService = schedulerService;
-        _currentEnvironment = currentEnvironment;
         _clock = clock;
     }
 
-    public string Name => ActionName;
+    public override DateTime NextRun => _clock.Today().AddDays(1);
+    public override TimeSpan RunInterval => TimeSpan.FromDays(1);
+    public override string Name => ActionName;
 
-    public Task Run(params object[] parameters)
+    public override async Task Run(params object[] parameters)
     {
-        var threshold = _buildsContext.Get(x => x.Environment == GameEnvironment.DEVELOPMENT).Select(x => x.BuildNumber).OrderByDescending(x => x).First() -
-                        100;
-        var modpackBuildsTask = _buildsContext.DeleteMany(x => x.Environment == GameEnvironment.DEVELOPMENT && x.BuildNumber < threshold);
-
-        Task.WaitAll(modpackBuildsTask);
-        return Task.CompletedTask;
-    }
-
-    public async Task CreateSelf()
-    {
-        if (_currentEnvironment.IsDevelopment())
-        {
-            return;
-        }
-
-        if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
-        {
-            await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(1), TimeSpan.FromDays(1), ActionName);
-        }
-    }
-
-    public Task Reset()
-    {
-        return Task.CompletedTask;
+        var threshold = _buildsContext.Get(x => x.Environment == GameEnvironment.DEVELOPMENT).Select(x => x.BuildNumber).MaxBy(x => x) - 100;
+        await _buildsContext.DeleteMany(x => x.Environment == GameEnvironment.DEVELOPMENT && x.BuildNumber < threshold);
     }
 }

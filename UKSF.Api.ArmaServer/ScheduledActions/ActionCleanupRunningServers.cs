@@ -1,7 +1,6 @@
 ﻿using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
-using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;
@@ -20,13 +19,12 @@ public class ActionCleanupRunningServers : SelfCreatingScheduledAction, IActionC
 
     public ActionCleanupRunningServers(
         ISchedulerService schedulerService,
-        ISchedulerContext schedulerContext,
         IHostEnvironment currentEnvironment,
         IClock clock,
         IUksfLogger logger,
         IGameServersService gameServersService,
         IGameServerHelpers gameServerHelpers
-    ) : base(schedulerService, schedulerContext, currentEnvironment)
+    ) : base(schedulerService, currentEnvironment)
     {
         _clock = clock;
         _logger = logger;

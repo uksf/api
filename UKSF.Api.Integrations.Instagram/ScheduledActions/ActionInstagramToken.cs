@@ -7,39 +7,37 @@ namespace UKSF.Api.Integrations.Instagram.ScheduledActions;
 
 public interface IActionInstagramToken : ISelfCreatingScheduledAction { }
 
-public class ActionInstagramToken : IActionInstagramToken
+public class ActionInstagramToken : SelfCreatingScheduledAction, IActionInstagramToken
 {
     private const string ActionName = nameof(ActionInstagramToken);
 
     private readonly IClock _clock;
     private readonly IInstagramService _instagramService;
     private readonly ISchedulerContext _schedulerContext;
-    private readonly ISchedulerService _schedulerService;
 
-    public ActionInstagramToken(ISchedulerContext schedulerContext, IInstagramService instagramService, ISchedulerService schedulerService, IClock clock)
+    public ActionInstagramToken(
+        ISchedulerContext schedulerContext,
+        IInstagramService instagramService,
+        ISchedulerService schedulerService,
+        IHostEnvironment currentEnvironment,
+        IClock clock
+    ) : base(schedulerService, currentEnvironment)
     {
         _schedulerContext = schedulerContext;
         _instagramService = instagramService;
-        _schedulerService = schedulerService;
         _clock = clock;
     }
 
-    public string Name => ActionName;
+    public override DateTime NextRun => _clock.Today().AddDays(45);
+    public override TimeSpan RunInterval => TimeSpan.FromDays(45);
+    public override string Name => ActionName;
 
-    public Task Run(params object[] parameters)
+    public override Task Run(params object[] parameters)
     {
         return _instagramService.RefreshAccessToken();
     }
 
-    public async Task CreateSelf()
-    {
-        if (_schedulerContext.GetSingle(x => x.Action == ActionName) == null)
-        {
-            await _schedulerService.CreateScheduledJob(_clock.Today().AddDays(45), TimeSpan.FromDays(45), ActionName);
-        }
-    }
-
-    public async Task Reset()
+    public override async Task Reset()
     {
         var job = _schedulerContext.GetSingle(x => x.Action == ActionName);
         await _schedulerContext.Delete(job.Id);
