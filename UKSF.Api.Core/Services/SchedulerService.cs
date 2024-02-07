@@ -8,9 +8,8 @@ namespace UKSF.Api.Core.Services;
 public interface ISchedulerService
 {
     void Load();
-    bool CheckJobScheduleChanged(string actionName, TimeSpan interval);
-    Task CreateAndScheduleJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters);
-    Task<ScheduledJob> CreateScheduledJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters);
+    Task CreateAndScheduleJob(string actionName, DateTime next, TimeSpan interval, params object[] actionParameters);
+    Task<ScheduledJob> CreateScheduledJob(string actionName, DateTime next, TimeSpan interval, params object[] actionParameters);
     Task Cancel(Func<ScheduledJob, bool> predicate);
 }
 
@@ -35,15 +34,9 @@ public class SchedulerService : ISchedulerService
         _context.Get().ToList().ForEach(Schedule);
     }
 
-    public bool CheckJobScheduleChanged(string actionName, TimeSpan interval)
+    public async Task CreateAndScheduleJob(string actionName, DateTime next, TimeSpan interval, params object[] actionParameters)
     {
-        var job = _context.GetSingle(x => x.Action == actionName);
-        return job is null || interval != job.Interval;
-    }
-
-    public async Task CreateAndScheduleJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters)
-    {
-        var job = await CreateScheduledJob(next, interval, action, actionParameters);
+        var job = await CreateScheduledJob(actionName, next, interval, actionParameters);
         Schedule(job);
     }
 
@@ -64,9 +57,20 @@ public class SchedulerService : ISchedulerService
         await _context.Delete(job);
     }
 
-    public async Task<ScheduledJob> CreateScheduledJob(DateTime next, TimeSpan interval, string action, params object[] actionParameters)
+    public async Task<ScheduledJob> CreateScheduledJob(string actionName, DateTime next, TimeSpan interval, params object[] actionParameters)
     {
-        ScheduledJob job = new() { Next = next, Action = action };
+        var job = _context.GetSingle(x => x.Action == actionName);
+        if (job is not null)
+        {
+            if (job.Interval != interval)
+            {
+                await _context.Update(job.Id, x => x.Interval, interval);
+            }
+
+            return job;
+        }
+
+        job = new ScheduledJob { Next = next, Action = actionName };
         if (actionParameters.Length > 0)
         {
             job.ActionParameters = JsonSerializer.Serialize(actionParameters, DefaultJsonSerializerOptions.Options);

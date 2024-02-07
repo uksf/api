@@ -26,10 +26,7 @@ public class SelfCreatingScheduledAction : ISelfCreatingScheduledAction
             return;
         }
 
-        if (_schedulerService.CheckJobScheduleChanged(Name, RunInterval))
-        {
-            await _schedulerService.CreateScheduledJob(NextRun, RunInterval, Name);
-        }
+        await _schedulerService.CreateScheduledJob(Name, NextRun, RunInterval);
 
         if (RunOnCreate)
         {

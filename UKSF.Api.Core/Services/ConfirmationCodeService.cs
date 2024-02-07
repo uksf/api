@@ -34,7 +34,7 @@ public class ConfirmationCodeService : IConfirmationCodeService
 
         ConfirmationCode code = new() { Value = value };
         await _confirmationCodeContext.Add(code);
-        await _schedulerService.CreateAndScheduleJob(_clock.UtcNow().AddMinutes(30), TimeSpan.Zero, ActionDeleteExpiredConfirmationCode.ActionName, code.Id);
+        await _schedulerService.CreateAndScheduleJob(ActionDeleteExpiredConfirmationCode.ActionName, _clock.UtcNow().AddMinutes(30), TimeSpan.Zero, code.Id);
         return code.Id;
     }
 

@@ -60,7 +60,7 @@ public class ConfirmationCodeServiceTests
         _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>()))
                                         .Returns(Task.CompletedTask)
                                         .Callback<ConfirmationCode>(x => subject = x);
-        _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<string>(), It.IsAny<object[]>()))
+        _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<object[]>()))
                              .Returns(Task.CompletedTask);
 
         await _confirmationCodeService.CreateConfirmationCode("test");
@@ -104,7 +104,7 @@ public class ConfirmationCodeServiceTests
     public async Task ShouldReturnValidCodeId()
     {
         _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>())).Returns(Task.CompletedTask);
-        _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<string>(), It.IsAny<object[]>()))
+        _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<object[]>()))
                              .Returns(Task.CompletedTask);
 
         var subject = await _confirmationCodeService.CreateConfirmationCode("test");
@@ -121,7 +121,7 @@ public class ConfirmationCodeServiceTests
         _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>()))
                                         .Returns(Task.CompletedTask)
                                         .Callback<ConfirmationCode>(x => subject = x);
-        _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<string>(), It.IsAny<object[]>()))
+        _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<object[]>()))
                              .Returns(Task.CompletedTask);
 
         await _confirmationCodeService.CreateConfirmationCode("test");
@@ -149,7 +149,7 @@ public class ConfirmationCodeServiceTests
     public async Task ShouldThrowForCreateWhenValueNullOrEmpty(string value)
     {
         _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>())).Returns(Task.CompletedTask);
-        _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<string>(), It.IsAny<object[]>()))
+        _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<object[]>()))
                              .Returns(Task.CompletedTask);
 
         Func<Task> act = async () => await _confirmationCodeService.CreateConfirmationCode(value);

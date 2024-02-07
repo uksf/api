@@ -40,27 +40,27 @@ public class UksfLogger : IUksfLogger
 
     public void LogDebug(string message)
     {
-        Log(new(message, UksfLogLevel.DEBUG));
+        Log(new BasicLog(message, UksfLogLevel.DEBUG));
     }
 
     public void LogInfo(string message)
     {
-        Log(new(message, UksfLogLevel.INFO));
+        Log(new BasicLog(message, UksfLogLevel.INFO));
     }
 
     public void LogWarning(string message)
     {
-        Log(new(message, UksfLogLevel.WARNING));
+        Log(new BasicLog(message, UksfLogLevel.WARNING));
     }
 
     public void LogError(string message)
     {
-        Log(new(message, UksfLogLevel.ERROR));
+        Log(new BasicLog(message, UksfLogLevel.ERROR));
     }
 
     public void LogError(Exception exception)
     {
-        Log(new(exception));
+        Log(new BasicLog(exception));
     }
 
     public void LogError(string message, Exception exception)
@@ -90,7 +90,7 @@ public class UksfLogger : IUksfLogger
     {
         var controllerActionDescriptor = context.GetEndpoint()?.Metadata.GetMetadata<ControllerActionDescriptor>();
         var endpointName = controllerActionDescriptor == null ? null : controllerActionDescriptor.ControllerName + "." + controllerActionDescriptor.ActionName;
-        exception ??= new(((HttpStatusCode)context.Response.StatusCode).ToString());
+        exception ??= new Exception(((HttpStatusCode)context.Response.StatusCode).ToString());
         Log(
             new ErrorLog(
                 exception,
