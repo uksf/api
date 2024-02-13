@@ -11,21 +11,7 @@ namespace UKSF.Api.Commands;
 
 public interface IConnectTeamspeakIdToAccountCommand
 {
-    Task<DomainAccount> ExecuteAsync(ConnectTeamspeakIdToAccountCommandArgs args);
-}
-
-public class ConnectTeamspeakIdToAccountCommandArgs
-{
-    public ConnectTeamspeakIdToAccountCommandArgs(string accountId, string teamspeakId, string code)
-    {
-        AccountId = accountId;
-        TeamspeakId = teamspeakId;
-        Code = code;
-    }
-
-    public string AccountId { get; }
-    public string TeamspeakId { get; }
-    public string Code { get; }
+    Task<DomainAccount> ExecuteAsync(string accountId, string teamspeakId, string code);
 }
 
 public class ConnectTeamspeakIdToAccountCommand : IConnectTeamspeakIdToAccountCommand
@@ -51,17 +37,16 @@ public class ConnectTeamspeakIdToAccountCommand : IConnectTeamspeakIdToAccountCo
         _notificationsService = notificationsService;
     }
 
-    public async Task<DomainAccount> ExecuteAsync(ConnectTeamspeakIdToAccountCommandArgs args)
+    public async Task<DomainAccount> ExecuteAsync(string accountId, string teamspeakId, string code)
     {
-        var domainAccount = _accountContext.GetSingle(args.AccountId);
-        var teamspeakId = await _confirmationCodeService.GetConfirmationCodeValue(args.Code);
-        if (string.IsNullOrWhiteSpace(teamspeakId) || teamspeakId != args.TeamspeakId)
+        var domainAccount = _accountContext.GetSingle(accountId);
+        if (await _confirmationCodeService.GetConfirmationCodeValue(code) != teamspeakId)
         {
-            await _confirmationCodeService.ClearConfirmationCodes(x => x.Value == args.TeamspeakId);
+            await _confirmationCodeService.ClearConfirmationCodes(x => x.Value == teamspeakId);
             throw new InvalidConfirmationCodeException();
         }
 
-        domainAccount.TeamspeakIdentities ??= new();
+        domainAccount.TeamspeakIdentities ??= new HashSet<int>();
         domainAccount.TeamspeakIdentities.Add(int.Parse(teamspeakId));
         await _accountContext.Update(domainAccount.Id, Builders<DomainAccount>.Update.Set(x => x.TeamspeakIdentities, domainAccount.TeamspeakIdentities));
 
@@ -71,7 +56,7 @@ public class ConnectTeamspeakIdToAccountCommand : IConnectTeamspeakIdToAccountCo
             new HashSet<int> { teamspeakId.ToInt() },
             $"This teamspeak identity has been linked to the account with email '{updatedAccount.Email}'\nIf this was not done by you, please contact an admin"
         );
-        _logger.LogAudit($"Teamspeak ID {teamspeakId} added for {updatedAccount.Id}");
+        _logger.LogAudit($"Teamspeak ID ({teamspeakId}) linked to account {updatedAccount.Id}");
 
         return updatedAccount;
     }

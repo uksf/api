@@ -46,9 +46,18 @@ public class DiscordCodeController : ControllerBase
         }
 
         var id = _httpContextService.GetUserId();
+        var otherAccounts = _accountContext.Get(x => x.Id != id && x.DiscordId == discordId).ToList();
+        if (otherAccounts.Any())
+        {
+            _logger.LogWarning(
+                $"The Discord ID ({discordId}) was found on other accounts during linking. These accounts will be unlinked: {string.Join(",", otherAccounts.Select(x => x.Id))}"
+            );
+            await _accountContext.UpdateMany(x => x.DiscordId == discordId, Builders<DomainAccount>.Update.Unset(x => x.DiscordId));
+        }
+
         await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.DiscordId, discordId));
         var domainAccount = _accountContext.GetSingle(id);
         _eventBus.Send(domainAccount);
-        _logger.LogAudit($"DiscordID updated for {domainAccount.Id} to {discordId}");
+        _logger.LogAudit($"Discord ID ({discordId}) linked to account {domainAccount.Id}");
     }
 }

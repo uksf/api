@@ -71,7 +71,7 @@ public class ConnectTeamspeakIdToAccountCommandTests
                                }
                            );
 
-        var result = await _subject.ExecuteAsync(new(_accountId, TeamspeakId, _confirmationCode));
+        var result = await _subject.ExecuteAsync(_accountId, TeamspeakId, _confirmationCode);
 
         result.TeamspeakIdentities.Single().Should().Be(2);
         createdUpdate.Should().BeEquivalentTo(expectedUpdate);
@@ -85,7 +85,7 @@ public class ConnectTeamspeakIdToAccountCommandTests
             ),
             Times.Once
         );
-        _mockLogger.Verify(x => x.LogAudit($"Teamspeak ID {TeamspeakId} added for {_accountId}", null), Times.Once);
+        _mockLogger.Verify(x => x.LogAudit($"Teamspeak ID ({TeamspeakId}) linked to account {_accountId}", null), Times.Once);
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public class ConnectTeamspeakIdToAccountCommandTests
         _mockAccountContext.Setup(x => x.GetSingle(_accountId)).Returns(new DomainAccount());
         _mockConfirmationCodeService.Setup(x => x.GetConfirmationCodeValue(_confirmationCode)).ReturnsAsync((string)null);
 
-        Func<Task> act = async () => await _subject.ExecuteAsync(new(_accountId, TeamspeakId, _confirmationCode));
+        Func<Task> act = async () => await _subject.ExecuteAsync(_accountId, TeamspeakId, _confirmationCode);
 
         await act.Should()
                  .ThrowAsync<InvalidConfirmationCodeException>()

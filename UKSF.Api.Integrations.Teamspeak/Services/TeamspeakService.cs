@@ -115,7 +115,10 @@ public class TeamspeakService : ITeamspeakService
         var clients = _clients;
         if (_environment.IsDevelopment())
         {
-            clients = new() { new() { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 }, new() { ClientName = "Dummy Client", ClientDbId = 999999 } };
+            clients = new HashSet<TeamspeakClient>
+            {
+                new() { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 }, new() { ClientName = "Dummy Client", ClientDbId = 999999 }
+            };
         }
 
         return clients.Where(x => x != null)
@@ -142,7 +145,7 @@ public class TeamspeakService : ITeamspeakService
     {
         if (_environment.IsDevelopment())
         {
-            _clients = new() { new() { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 } };
+            _clients = new HashSet<TeamspeakClient> { new() { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 } };
         }
 
         if (_clients.Count == 0)

@@ -30,6 +30,6 @@ public class DiscordAccountEventHandler : IDiscordAccountEventHandler
 
     private async Task HandleAccountEvent(EventModel _, DomainAccount domainAccount)
     {
-        await _discordMembersService.UpdateAccount(domainAccount);
+        await _discordMembersService.UpdateUserByAccount(domainAccount);
     }
 }

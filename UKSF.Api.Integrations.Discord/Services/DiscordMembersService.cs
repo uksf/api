@@ -13,7 +13,8 @@ public interface IDiscordMembersService : IDiscordService
     Task<IReadOnlyCollection<SocketRole>> GetRoles();
     OnlineState GetOnlineUserDetails(string accountId);
     Task UpdateAllUsers();
-    Task UpdateAccount(DomainAccount domainAccount, ulong discordId = 0);
+    Task UpdateUserByAccount(DomainAccount domainAccount);
+    Task UpdateUserById(ulong discordId);
 }
 
 public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
@@ -66,7 +67,7 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
         var online = IsAccountOnline(discordId);
         var nickname = GetAccountNickname(discordId);
 
-        return new() { Online = online, Nickname = nickname };
+        return new OnlineState { Online = online, Nickname = nickname };
     }
 
     public async Task UpdateAllUsers()
@@ -83,13 +84,13 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
             {
                 foreach (var user in guild.Users)
                 {
-                    _ = UpdateAccount(null, user.Id);
+                    _ = UpdateUserById(user.Id);
                 }
             }
         );
     }
 
-    public async Task UpdateAccount(DomainAccount domainAccount, ulong discordId = 0)
+    public async Task UpdateUserByAccount(DomainAccount domainAccount)
     {
         if (IsDiscordDisabled())
         {
@@ -99,16 +100,13 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
         await AssertOnline();
         var guild = GetGuild();
 
-        if (discordId == 0 && domainAccount != null && !string.IsNullOrEmpty(domainAccount.DiscordId))
+        if (domainAccount is null)
         {
-            discordId = ulong.Parse(domainAccount.DiscordId);
+            _logger.LogError("Tried to update a Discord user without an account specified");
+            return;
         }
 
-        if (discordId != 0 && domainAccount == null)
-        {
-            domainAccount = _accountContext.GetSingle(x => x.DiscordId == discordId.ToString());
-        }
-
+        var discordId = ulong.Parse(domainAccount.DiscordId);
         if (discordId == 0)
         {
             return;
@@ -125,6 +123,47 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
             return;
         }
 
+        await UpdateAccountRoles(user, domainAccount);
+        await UpdateAccountNickname(user, domainAccount);
+    }
+
+    public async Task UpdateUserById(ulong discordId)
+    {
+        if (IsDiscordDisabled())
+        {
+            return;
+        }
+
+        await AssertOnline();
+        var guild = GetGuild();
+
+        if (discordId == 0)
+        {
+            _logger.LogError("Tried to update a Discord user without an ID specified");
+            return;
+        }
+
+        if (_variablesService.GetVariable("DID_U_BLACKLIST").AsArray().Contains(discordId.ToString()))
+        {
+            return;
+        }
+
+        var user = guild.GetUser(discordId);
+        if (user == null)
+        {
+            return;
+        }
+
+        var domainAccounts = _accountContext.Get(x => x.DiscordId == discordId.ToString()).ToList();
+        if (domainAccounts.Count > 1)
+        {
+            _logger.LogError(
+                $"Tried to update a Discord user by ID ({discordId}), but more than 1 account was found. Account IDs: {string.Join(",", domainAccounts.Select(x => x.Id))}"
+            );
+            return;
+        }
+
+        var domainAccount = domainAccounts.Single();
         await UpdateAccountRoles(user, domainAccount);
         await UpdateAccountNickname(user, domainAccount);
     }
@@ -217,7 +256,7 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
                 var newRoles = user.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}").Aggregate((x, y) => $"{x},{y}");
                 if (oldRoles != newRoles || oldUser.Nickname != user.Nickname)
                 {
-                    await UpdateAccount(null, user.Id);
+                    await UpdateUserById(user.Id);
                 }
             }
         );
@@ -225,7 +264,7 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
 
     private Task ClientOnUserJoined(SocketGuildUser user)
     {
-        return WrapEventTask(async () => { await UpdateAccount(null, user.Id); });
+        return WrapEventTask(async () => { await UpdateUserById(user.Id); });
     }
 }
 
