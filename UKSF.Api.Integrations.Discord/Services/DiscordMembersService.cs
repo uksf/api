@@ -163,7 +163,12 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
             return;
         }
 
-        var domainAccount = domainAccounts.Single();
+        var domainAccount = domainAccounts.SingleOrDefault();
+        if (domainAccount is null)
+        {
+            return;
+        }
+
         await UpdateAccountRoles(user, domainAccount);
         await UpdateAccountNickname(user, domainAccount);
     }
