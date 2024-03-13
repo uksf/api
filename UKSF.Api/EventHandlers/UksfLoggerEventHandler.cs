@@ -50,7 +50,7 @@ public class UksfLoggerEventHandler : IUksfLoggerEventHandler
 
     private Task HandleLog(EventModel eventModel, LoggerEventData logData)
     {
-        var _ = HandleLogAsync(logData.Log);
+        _ = HandleLogAsync(logData.Log);
         return Task.CompletedTask;
     }
 

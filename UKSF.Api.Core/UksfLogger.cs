@@ -40,22 +40,22 @@ public class UksfLogger : IUksfLogger
 
     public void LogDebug(string message)
     {
-        Log(new BasicLog(message, UksfLogLevel.DEBUG));
+        Log(new BasicLog(message, UksfLogLevel.Debug));
     }
 
     public void LogInfo(string message)
     {
-        Log(new BasicLog(message, UksfLogLevel.INFO));
+        Log(new BasicLog(message, UksfLogLevel.Info));
     }
 
     public void LogWarning(string message)
     {
-        Log(new BasicLog(message, UksfLogLevel.WARNING));
+        Log(new BasicLog(message, UksfLogLevel.Warning));
     }
 
     public void LogError(string message)
     {
-        Log(new BasicLog(message, UksfLogLevel.ERROR));
+        Log(new BasicLog(message, UksfLogLevel.Error));
     }
 
     public void LogError(Exception exception)

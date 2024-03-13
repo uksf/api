@@ -75,6 +75,6 @@ public static class StringExtensions
 
     public static bool IsObjectId(this string text)
     {
-        return ObjectId.TryParse(text, out var unused);
+        return ObjectId.TryParse(text, out _);
     }
 }

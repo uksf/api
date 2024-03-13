@@ -76,7 +76,7 @@ public class NotificationsService : INotificationsService
             return;
         }
 
-        var unused = AddNotificationAsync(notification);
+        _ = AddNotificationAsync(notification);
     }
 
     public async Task MarkNotificationsAsRead(List<string> ids)

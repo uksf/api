@@ -51,10 +51,15 @@ public class TeamspeakController : ControllerBase
     public async Task RequestTeamspeakCode([FromRoute] string teamspeakId)
     {
         var code = await _confirmationCodeService.CreateConfirmationCode(teamspeakId);
+
         _notificationsService.SendTeamspeakNotification(
             new HashSet<int> { teamspeakId.ToInt() },
-            $"This Teamspeak ID was selected for connection to the website. Copy this code to your clipboard and return to the UKSF website application page to enter the code:\n{code}\nIf this request was not made by you, it is safe to ignore. Do not pass this code on to anyone else."
+            $"This Teamspeak client was selected for connection to the website. Enter this code in the website to complete the connection:\n{code}" +
+            $"\nIf this request was not made by you, it is safe to ignore. Do not pass this code on to anyone else."
         );
+
+        var teamspeakClientName = _teamspeakService.GetOnlineTeamspeakClients().FirstOrDefault(x => x.ClientDbId.ToString() == teamspeakId)?.ClientName;
+        _logger.LogAudit($"Teamspeak connection code requested for Teamspeak client '{teamspeakClientName}'");
     }
 
     [HttpGet("online")]
@@ -111,15 +116,15 @@ public class TeamspeakController : ControllerBase
         {
             if (commandAccounts.Contains(onlineClient.account.Id))
             {
-                commanders.Add(new() { DisplayName = _displayNameService.GetDisplayName(onlineClient.account) });
+                commanders.Add(new TeamspeakAccountDataset { DisplayName = _displayNameService.GetDisplayName(onlineClient.account) });
             }
             else if (_recruitmentService.IsRecruiter(onlineClient.account))
             {
-                recruiters.Add(new() { DisplayName = _displayNameService.GetDisplayName(onlineClient.account) });
+                recruiters.Add(new TeamspeakAccountDataset { DisplayName = _displayNameService.GetDisplayName(onlineClient.account) });
             }
             else
             {
-                members.Add(new() { DisplayName = _displayNameService.GetDisplayName(onlineClient.account) });
+                members.Add(new TeamspeakAccountDataset { DisplayName = _displayNameService.GetDisplayName(onlineClient.account) });
             }
         }
 
@@ -127,7 +132,7 @@ public class TeamspeakController : ControllerBase
                             .Select(client => new TeamspeakAccountDataset { DisplayName = client.client.ClientName })
                             .ToList();
 
-        return new()
+        return new TeamspeakAccountsDataset
         {
             Commanders = commanders,
             Recruiters = recruiters,

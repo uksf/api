@@ -18,10 +18,10 @@ public class BasicLogMessageTests
     [Fact]
     public void ShouldSetTextAndLogLevel()
     {
-        BasicLog subject = new("test", UksfLogLevel.DEBUG);
+        BasicLog subject = new("test", UksfLogLevel.Debug);
 
         subject.Message.Should().Be("test");
-        subject.Level.Should().Be(UksfLogLevel.DEBUG);
+        subject.Level.Should().Be(UksfLogLevel.Debug);
     }
 
     [Fact]
@@ -30,6 +30,6 @@ public class BasicLogMessageTests
         BasicLog subject = new(new Exception("test"));
 
         subject.Message.Should().Be("System.Exception: test");
-        subject.Level.Should().Be(UksfLogLevel.ERROR);
+        subject.Level.Should().Be(UksfLogLevel.Error);
     }
 }

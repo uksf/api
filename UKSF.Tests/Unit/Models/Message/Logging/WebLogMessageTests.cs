@@ -13,7 +13,7 @@ public class WebLogMessageTests
 
         subject.Message.Should().Be("test");
         subject.Exception.Should().Be("System.Exception: test");
-        subject.Level.Should().Be(UksfLogLevel.ERROR);
+        subject.Level.Should().Be(UksfLogLevel.Error);
         subject.Url.Should().Be("url");
         subject.Method.Should().Be("method");
         subject.EndpointName.Should().Be("endpoint");

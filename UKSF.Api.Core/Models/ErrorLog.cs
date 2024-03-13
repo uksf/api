@@ -6,7 +6,7 @@ public class ErrorLog : BasicLog
 {
     public ErrorLog(Exception exception, string url, string method, string endpointName, int statusCode, string userId, string name)
     {
-        Level = UksfLogLevel.ERROR;
+        Level = UksfLogLevel.Error;
         Exception = exception.GetCompleteString();
         Message = exception.GetBaseException().Message;
         Url = url;
@@ -19,7 +19,7 @@ public class ErrorLog : BasicLog
 
     public ErrorLog(Exception exception)
     {
-        Level = UksfLogLevel.ERROR;
+        Level = UksfLogLevel.Error;
         Exception = exception.GetCompleteString();
         Message = exception.GetBaseException().Message;
     }

@@ -6,17 +6,17 @@ namespace UKSF.Api.Core.Models;
 
 public enum UksfLogLevel
 {
-    DEBUG,
-    INFO,
-    ERROR,
-    WARNING
+    Debug,
+    Info,
+    Error,
+    Warning
 }
 
 public class BasicLog : MongoObject
 {
     protected BasicLog()
     {
-        Level = UksfLogLevel.INFO;
+        Level = UksfLogLevel.Info;
         Timestamp = DateTime.UtcNow;
     }
 
@@ -34,13 +34,13 @@ public class BasicLog : MongoObject
     public BasicLog(Exception exception) : this()
     {
         Message = exception.GetCompleteString();
-        Level = UksfLogLevel.ERROR;
+        Level = UksfLogLevel.Error;
     }
 
     public BasicLog(string message, Exception exception) : this()
     {
         Message = $"{message}:\n{exception.GetCompleteString()}";
-        Level = UksfLogLevel.ERROR;
+        Level = UksfLogLevel.Error;
     }
 
     [BsonRepresentation(BsonType.String)]
