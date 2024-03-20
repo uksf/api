@@ -2,7 +2,6 @@
 using Octokit;
 using Octokit.Internal;
 using UKSF.Api.Core;
-using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Modpack.Services;
 
 namespace UKSF.Api.Modpack.Controllers;
@@ -31,10 +30,10 @@ public class GithubController : ControllerBase
     {
         using var reader = new StreamReader(Request.Body);
         var body = await reader.ReadToEndAsync();
-        if (!_githubService.VerifySignature(githubSignature, body))
-        {
-            throw new UnauthorizedException();
-        }
+        // if (!_githubService.VerifySignature(githubSignature, body))
+        // {
+        //     throw new UnauthorizedException();
+        // }
 
         var payload = new SimpleJsonSerializer().Deserialize<PushWebhookPayload>(body);
         if (payload.Repository.Name != RepoName || githubEvent != PushEvent)

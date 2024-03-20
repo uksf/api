@@ -18,7 +18,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Hosting.WindowsServices" Version="6.0.9"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.0"/>
-        <PackageReference Include="MongoDB.Driver" Version="2.19.0"/>
+        <PackageReference Include="MongoDB.Driver" Version="2.24.0"/>
         <PackageReference Include="NameCase" Version="1.0.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.26.0"/>
