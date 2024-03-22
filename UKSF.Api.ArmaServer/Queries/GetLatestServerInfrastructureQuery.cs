@@ -1,9 +1,11 @@
 ﻿using Gameloop.Vdf;
 using Gameloop.Vdf.JsonConverter;
+using Microsoft.Extensions.Options;
 using UKSF.Api.ArmaServer.Exceptions;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Configuration;
 
 namespace UKSF.Api.ArmaServer.Queries;
 
@@ -16,9 +18,11 @@ public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructure
 {
     private readonly ISteamCmdService _steamCmdService;
     private readonly IUksfLogger _logger;
+    private readonly AppSettings _appSettings;
 
-    public GetLatestServerInfrastructureQuery(ISteamCmdService steamCmdService, IUksfLogger logger)
+    public GetLatestServerInfrastructureQuery(ISteamCmdService steamCmdService, IOptions<AppSettings> options, IUksfLogger logger)
     {
+        _appSettings = options.Value;
         _steamCmdService = steamCmdService;
         _logger = logger;
     }
@@ -53,21 +57,42 @@ public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructure
             throw new ServerInfrastructureException("Unable to parse app info data from Steam", 404);
         }
 
-        output = output[appInfoIndex..];
-        output = string.Join('}', output.Split("}")[..^1]);
-        output += "}";
-
-        var latestJson = VdfConvert.Deserialize(output).ToJson();
-        var buildInfo = latestJson.Value.SelectToken("depots.branches.creatordlc");
-        if (buildInfo == null)
+        try
         {
-            throw new ServerInfrastructureException("No build info found in Steam data", 404);
+            output = output[appInfoIndex..];
+            output = string.Join('}', output.Split("}")[..^1]);
+            output += "}";
+
+            var latestJson = VdfConvert.Deserialize(output).ToJson();
+            var buildInfo = latestJson.Value.SelectToken("depots.branches.creatordlc");
+            if (buildInfo == null)
+            {
+                throw new ServerInfrastructureException("No build info found in Steam data", 404);
+            }
+
+            var buildId = buildInfo["buildid"]?.ToString();
+            var updatedUnix = long.Parse(buildInfo["timeupdated"]?.ToString()!);
+            var updated = DateTimeOffset.FromUnixTimeSeconds(updatedUnix);
+
+            return new ServerInfrastructureLatest { LatestBuild = buildId, LatestUpdate = updated.UtcDateTime };
         }
+        catch (Exception)
+        {
+            await DumpOutputToFile(output);
+            throw;
+        }
+    }
 
-        var buildId = buildInfo["buildid"]?.ToString();
-        var updatedUnix = long.Parse(buildInfo["timeupdated"]?.ToString()!);
-        var updated = DateTimeOffset.FromUnixTimeSeconds(updatedUnix);
-
-        return new() { LatestBuild = buildId, LatestUpdate = updated.UtcDateTime };
+    private async Task DumpOutputToFile(string output)
+    {
+        try
+        {
+            var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), _appSettings.LogsPath);
+            await File.WriteAllTextAsync(Path.Combine(appData, $"{DateTime.UtcNow:yyMMddHHmmss}_steamcmd_output"), output);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception);
+        }
     }
 }

@@ -1,11 +1,14 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Microsoft.Extensions.Options;
 using Moq;
 using UKSF.Api.ArmaServer.Exceptions;
 using UKSF.Api.ArmaServer.Queries;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Configuration;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
@@ -13,13 +16,14 @@ namespace UKSF.Api.ArmaServer.Tests.Queries;
 
 public class GetLatestServerInfrastructureQueryTests
 {
+    private readonly Mock<IOptions<AppSettings>> _mockAppSettings = new();
     private readonly Mock<IUksfLogger> _mockLoggingService = new();
     private readonly Mock<ISteamCmdService> _mockSteamCmdService = new();
     private readonly GetLatestServerInfrastructureQuery _subject;
 
     public GetLatestServerInfrastructureQueryTests()
     {
-        _subject = new(_mockSteamCmdService.Object, _mockLoggingService.Object);
+        _subject = new GetLatestServerInfrastructureQuery(_mockSteamCmdService.Object, _mockAppSettings.Object, _mockLoggingService.Object);
     }
 
     [Fact]
@@ -29,8 +33,8 @@ public class GetLatestServerInfrastructureQueryTests
 
         var result = await _subject.ExecuteAsync();
 
-        result.LatestBuild.Should().Be("11458298");
-        result.LatestUpdate.Should().Be(new(2023, 06, 13, 13, 05, 09));
+        result.LatestBuild.Should().Be("12403383");
+        result.LatestUpdate.Should().Be(new DateTime(2023, 10, 10, 12, 42, 30));
     }
 
     [Fact]
@@ -69,8 +73,8 @@ public class GetLatestServerInfrastructureQueryTests
 
         var result = await _subject.ExecuteAsync();
 
-        result.LatestBuild.Should().Be("11458298");
-        result.LatestUpdate.Should().Be(new(2023, 06, 13, 13, 05, 09));
+        result.LatestBuild.Should().Be("12403383");
+        result.LatestUpdate.Should().Be(new DateTime(2023, 10, 10, 12, 42, 30));
         _mockSteamCmdService.Verify(x => x.GetServerInfo(), Times.Exactly(6));
     }
 
