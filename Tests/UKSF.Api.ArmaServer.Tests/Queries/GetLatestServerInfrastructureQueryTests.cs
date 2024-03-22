@@ -48,6 +48,17 @@ public class GetLatestServerInfrastructureQueryTests
     }
 
     [Fact]
+    public async Task When_getting_latest_server_info_from_steam_with_info_with_mixed_outputs()
+    {
+        Given_steam_cmd_returns_info_with_mixed_outputs();
+
+        var result = await _subject.ExecuteAsync();
+
+        result.LatestBuild.Should().Be("12403383");
+        result.LatestUpdate.Should().Be(new DateTime(2023, 10, 10, 12, 42, 30));
+    }
+
+    [Fact]
     public async Task When_getting_latest_server_info_from_steam_with_failed_info()
     {
         Given_steam_cmd_returns_failed_info();
@@ -106,5 +117,10 @@ public class GetLatestServerInfrastructureQueryTests
     private void Given_steam_cmd_returns_bad_info()
     {
         _mockSteamCmdService.Setup(x => x.GetServerInfo()).ReturnsAsync(File.ReadAllText("TestData/SteamCmdBadInfo.txt"));
+    }
+
+    private void Given_steam_cmd_returns_info_with_mixed_outputs()
+    {
+        _mockSteamCmdService.Setup(x => x.GetServerInfo()).ReturnsAsync(File.ReadAllText("TestData/SteamCmdInfoMixedOutputs.txt"));
     }
 }

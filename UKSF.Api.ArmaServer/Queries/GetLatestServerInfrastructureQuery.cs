@@ -62,6 +62,7 @@ public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructure
             output = output[appInfoIndex..];
             output = string.Join('}', output.Split("}")[..^1]);
             output += "}";
+            output = output.Replace("OK", ""); // SteamCMD keeps being shit
 
             var latestJson = VdfConvert.Deserialize(output).ToJson();
             var buildInfo = latestJson.Value.SelectToken("depots.branches.creatordlc");
