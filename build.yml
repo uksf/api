@@ -6,8 +6,8 @@ trigger:
 pool: Avengers
 
 jobs:
-  - job: Test
-    displayName: Test
+  - job: Build
+    displayName: Build
     steps:
       - task: DotNetCoreCLI@2
         displayName: 'Restore'
@@ -31,19 +31,6 @@ jobs:
           projects: '**/*.Tests*.csproj'
           arguments: '-c Release --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
 
-  - job: Publish
-    displayName: Publish
-    dependsOn: Test
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-    steps:
-      - task: DotNetCoreCLI@2
-        displayName: 'Restore'
-        inputs:
-          command: 'restore'
-          projects: '**/UKSF.Api.csproj'
-          feedsToUse: 'config'
-          nugetConfigPath: 'NuGet.config'
-
       - task: DotNetCoreCLI@2
         displayName: 'Publish API'
         inputs:
@@ -65,6 +52,7 @@ jobs:
 
       - task: PublishBuildArtifacts@1
         displayName: 'Publish Artifact'
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
         inputs:
           PathtoPublish: '$(build.artifactstagingdirectory)/UKSF.Api.zip'
           ArtifactName: 'UKSF.Api'
