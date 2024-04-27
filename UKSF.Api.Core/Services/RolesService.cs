@@ -1,7 +1,7 @@
 ﻿using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
 
-namespace UKSF.Api.Services;
+namespace UKSF.Api.Core.Services;
 
 public interface IRolesService
 {
@@ -10,19 +10,12 @@ public interface IRolesService
     string GetCommanderRoleName();
 }
 
-public class RolesService : IRolesService
+public class RolesService(IRolesContext rolesContext) : IRolesService
 {
-    private readonly IRolesContext _rolesContext;
-
-    public RolesService(IRolesContext rolesContext)
-    {
-        _rolesContext = rolesContext;
-    }
-
     public int Sort(string nameA, string nameB)
     {
-        var roleA = _rolesContext.GetSingle(nameA);
-        var roleB = _rolesContext.GetSingle(nameB);
+        var roleA = rolesContext.GetSingle(nameA);
+        var roleB = rolesContext.GetSingle(nameB);
         var roleOrderA = roleA?.Order ?? 0;
         var roleOrderB = roleB?.Order ?? 0;
         return roleOrderA < roleOrderB ? -1 :
@@ -31,7 +24,7 @@ public class RolesService : IRolesService
 
     public DomainRole GetUnitRoleByOrder(int order)
     {
-        return _rolesContext.GetSingle(x => x.RoleType == RoleType.UNIT && x.Order == order);
+        return rolesContext.GetSingle(x => x.RoleType == RoleType.UNIT && x.Order == order);
     }
 
     public string GetCommanderRoleName()

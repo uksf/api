@@ -8,21 +8,14 @@ public interface IAccountMapper
     Account MapToAccount(DomainAccount domainAccount);
 }
 
-public class AccountMapper : IAccountMapper
+public class AccountMapper(IDisplayNameService displayNameService) : IAccountMapper
 {
-    private readonly IDisplayNameService _displayNameService;
-
-    public AccountMapper(IDisplayNameService displayNameService)
-    {
-        _displayNameService = displayNameService;
-    }
-
     public Account MapToAccount(DomainAccount domainAccount)
     {
-        return new()
+        return new Account
         {
             Id = domainAccount.Id,
-            DisplayName = _displayNameService.GetDisplayName(domainAccount),
+            DisplayName = displayNameService.GetDisplayName(domainAccount),
             Settings = domainAccount.Settings,
             MembershipState = domainAccount.MembershipState,
             RolePreferences = domainAccount.RolePreferences,

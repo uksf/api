@@ -115,7 +115,7 @@ public static class ApiSharedExtensions
 
     private static IServiceCollection AddMappers(this IServiceCollection services)
     {
-        return services.AddSingleton<IAccountMapper, AccountMapper>();
+        return services.AddSingleton<IAccountMapper, AccountMapper>().AddSingleton<IUnitMapper, UnitMapper>();
     }
 
     private static IServiceCollection AddActions(this IServiceCollection services)

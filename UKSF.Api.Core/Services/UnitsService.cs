@@ -1,12 +1,14 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Mappers;
 using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Core.Services;
 
 public interface IUnitsService
 {
+    UnitDto GetSingle(string id);
     IEnumerable<DomainUnit> GetSortedUnits(Func<DomainUnit, bool> predicate = null);
     Task AddMember(string id, string unitId);
     Task RemoveMember(string id, string unitName);
@@ -15,7 +17,6 @@ public interface IUnitsService
     Task SetMemberRole(string id, DomainUnit unit, string role = "");
     Task RenameRole(string oldName, string newName);
     Task DeleteRole(string role);
-
     bool HasRole(string unitId, string role);
     bool HasRole(DomainUnit unit, string role);
     bool HasMember(string unitId, string memberId);
@@ -27,34 +28,39 @@ public interface IUnitsService
     bool MemberHasRole(string id, DomainUnit unit, string role);
     bool MemberHasAnyRole(string id);
     int GetMemberRoleOrder(DomainAccount domainAccount, DomainUnit unit);
-
     DomainUnit GetRoot();
-    DomainUnit GetAuxilliaryRoot();
+    DomainUnit GetAuxiliaryRoot();
     DomainUnit GetParent(DomainUnit unit);
     IEnumerable<DomainUnit> GetParents(DomainUnit unit);
     IEnumerable<DomainUnit> GetChildren(DomainUnit parent);
     IEnumerable<DomainUnit> GetAllChildren(DomainUnit parent, bool includeParent = false);
-
     int GetUnitDepth(DomainUnit unit);
     string GetChainString(DomainUnit unit);
+    IEnumerable<UnitMemberDto> MapUnitMembers(DomainUnit unit);
 }
 
-public class UnitsService : IUnitsService
+public class UnitsService(
+    IUnitsContext unitsContext,
+    IRolesContext rolesContext,
+    IRanksService ranksService,
+    IRolesService rolesService,
+    IDisplayNameService displayNameService,
+    IAccountContext accountContext,
+    IUnitMapper unitMapper
+) : IUnitsService
 {
-    private readonly IRolesContext _rolesContext;
-    private readonly IUnitsContext _unitsContext;
-
-    public UnitsService(IUnitsContext unitsContext, IRolesContext rolesContext)
+    public UnitDto GetSingle(string id)
     {
-        _unitsContext = unitsContext;
-        _rolesContext = rolesContext;
+        var domainUnit = unitsContext.GetSingle(id);
+        var parent = GetParent(domainUnit);
+        return unitMapper.Map(domainUnit, GetChainString(domainUnit), parent?.Name, MapUnitMembers(domainUnit));
     }
 
     public IEnumerable<DomainUnit> GetSortedUnits(Func<DomainUnit, bool> predicate = null)
     {
-        List<DomainUnit> sortedUnits = new();
-        var combatRoot = _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.COMBAT);
-        var auxiliaryRoot = _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY);
+        List<DomainUnit> sortedUnits = [];
+        var combatRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.COMBAT);
+        var auxiliaryRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY);
         sortedUnits.Add(combatRoot);
         sortedUnits.AddRange(GetAllChildren(combatRoot));
         sortedUnits.Add(auxiliaryRoot);
@@ -65,17 +71,17 @@ public class UnitsService : IUnitsService
 
     public async Task AddMember(string id, string unitId)
     {
-        if (_unitsContext.GetSingle(x => x.Id == unitId && x.Members.Contains(id)) != null)
+        if (unitsContext.GetSingle(x => x.Id == unitId && x.Members.Contains(id)) != null)
         {
             return;
         }
 
-        await _unitsContext.Update(unitId, Builders<DomainUnit>.Update.Push(x => x.Members, id));
+        await unitsContext.Update(unitId, Builders<DomainUnit>.Update.Push(x => x.Members, id));
     }
 
     public async Task RemoveMember(string id, string unitName)
     {
-        var unit = _unitsContext.GetSingle(x => x.Name == unitName);
+        var unit = unitsContext.GetSingle(x => x.Name == unitName);
         if (unit == null)
         {
             return;
@@ -88,7 +94,7 @@ public class UnitsService : IUnitsService
     {
         if (unit.Members.Contains(id))
         {
-            await _unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Pull(x => x.Members, id));
+            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Pull(x => x.Members, id));
         }
 
         await RemoveMemberRoles(id, unit);
@@ -96,7 +102,7 @@ public class UnitsService : IUnitsService
 
     public async Task SetMemberRole(string id, string unitId, string role = "")
     {
-        var unit = _unitsContext.GetSingle(x => x.Id == unitId);
+        var unit = unitsContext.GetSingle(x => x.Id == unitId);
         if (unit == null)
         {
             return;
@@ -110,31 +116,31 @@ public class UnitsService : IUnitsService
         await RemoveMemberRoles(id, unit);
         if (!string.IsNullOrEmpty(role))
         {
-            await _unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set($"roles.{role}", id));
+            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set($"roles.{role}", id));
         }
     }
 
     public async Task RenameRole(string oldName, string newName)
     {
-        foreach (var unit in _unitsContext.Get(x => x.Roles.ContainsKey(oldName)))
+        foreach (var unit in unitsContext.Get(x => x.Roles.ContainsKey(oldName)))
         {
             var id = unit.Roles[oldName];
-            await _unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Unset($"roles.{oldName}"));
-            await _unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set($"roles.{newName}", id));
+            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Unset($"roles.{oldName}"));
+            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set($"roles.{newName}", id));
         }
     }
 
     public async Task DeleteRole(string role)
     {
-        foreach (var unit in from unit in _unitsContext.Get(x => x.Roles.ContainsKey(role)) let id = unit.Roles[role] select unit)
+        foreach (var unit in from unit in unitsContext.Get(x => x.Roles.ContainsKey(role)) let id = unit.Roles[role] select unit)
         {
-            await _unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Unset($"roles.{role}"));
+            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Unset($"roles.{role}"));
         }
     }
 
     public bool HasRole(string unitId, string role)
     {
-        var unit = _unitsContext.GetSingle(x => x.Id == unitId);
+        var unit = unitsContext.GetSingle(x => x.Id == unitId);
         return HasRole(unit, role);
     }
 
@@ -145,27 +151,27 @@ public class UnitsService : IUnitsService
 
     public bool HasMember(string unitId, string memberId)
     {
-        var unit = _unitsContext.GetSingle(unitId);
+        var unit = unitsContext.GetSingle(unitId);
         return unit.Members.Contains(memberId);
     }
 
     public bool AnyChildHasMember(string unitId, string memberId)
     {
-        var unit = _unitsContext.GetSingle(unitId);
+        var unit = unitsContext.GetSingle(unitId);
         var units = GetAllChildren(unit, true);
         return units.Any(x => x.Members.Contains(memberId));
     }
 
     public bool AnyParentHasMember(string unitId, string memberId)
     {
-        var unit = _unitsContext.GetSingle(unitId);
+        var unit = unitsContext.GetSingle(unitId);
         var units = GetParents(unit);
         return units.Any(x => x.Members.Contains(memberId));
     }
 
     public bool RolesHasMember(string unitId, string id)
     {
-        var unit = _unitsContext.GetSingle(x => x.Id == unitId);
+        var unit = unitsContext.GetSingle(x => x.Id == unitId);
         return RolesHasMember(unit, id);
     }
 
@@ -176,7 +182,7 @@ public class UnitsService : IUnitsService
 
     public bool MemberHasRole(string id, string unitId, string role)
     {
-        var unit = _unitsContext.GetSingle(x => x.Id == unitId);
+        var unit = unitsContext.GetSingle(x => x.Id == unitId);
         return MemberHasRole(id, unit, role);
     }
 
@@ -187,14 +193,14 @@ public class UnitsService : IUnitsService
 
     public bool MemberHasAnyRole(string id)
     {
-        return _unitsContext.Get().Any(x => RolesHasMember(x, id));
+        return unitsContext.Get().Any(x => RolesHasMember(x, id));
     }
 
     public int GetMemberRoleOrder(DomainAccount domainAccount, DomainUnit unit)
     {
         if (RolesHasMember(unit, domainAccount.Id))
         {
-            return int.MaxValue - _rolesContext.GetSingle(x => x.Name == unit.Roles.FirstOrDefault(y => y.Value == domainAccount.Id).Key).Order;
+            return int.MaxValue - rolesContext.GetSingle(x => x.Name == unit.Roles.FirstOrDefault(y => y.Value == domainAccount.Id).Key).Order;
         }
 
         return -1;
@@ -202,17 +208,17 @@ public class UnitsService : IUnitsService
 
     public DomainUnit GetRoot()
     {
-        return _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.COMBAT);
+        return unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.COMBAT);
     }
 
-    public DomainUnit GetAuxilliaryRoot()
+    public DomainUnit GetAuxiliaryRoot()
     {
-        return _unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY);
+        return unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY);
     }
 
     public DomainUnit GetParent(DomainUnit unit)
     {
-        return unit.Parent != string.Empty ? _unitsContext.GetSingle(x => x.Id == unit.Parent) : null;
+        return unit.Parent != string.Empty ? unitsContext.GetSingle(x => x.Id == unit.Parent) : null;
     }
 
     // TODO: Change this to not add the child unit to the return
@@ -228,7 +234,7 @@ public class UnitsService : IUnitsService
         {
             parentUnits.Add(unit);
             var child = unit;
-            unit = !string.IsNullOrEmpty(unit.Parent) ? _unitsContext.GetSingle(x => x.Id == child.Parent) : null;
+            unit = !string.IsNullOrEmpty(unit.Parent) ? unitsContext.GetSingle(x => x.Id == child.Parent) : null;
             if (unit == child)
             {
                 break;
@@ -241,13 +247,13 @@ public class UnitsService : IUnitsService
 
     public IEnumerable<DomainUnit> GetChildren(DomainUnit parent)
     {
-        return _unitsContext.Get(x => x.Parent == parent.Id).ToList();
+        return unitsContext.Get(x => x.Parent == parent.Id).ToList();
     }
 
     public IEnumerable<DomainUnit> GetAllChildren(DomainUnit parent, bool includeParent = false)
     {
         var children = includeParent ? new() { parent } : new List<DomainUnit>();
-        foreach (var unit in _unitsContext.Get(x => x.Parent == parent.Id))
+        foreach (var unit in unitsContext.Get(x => x.Parent == parent.Id))
         {
             children.Add(unit);
             children.AddRange(GetAllChildren(unit));
@@ -264,11 +270,11 @@ public class UnitsService : IUnitsService
         }
 
         var depth = 0;
-        var parent = _unitsContext.GetSingle(unit.Parent);
+        var parent = unitsContext.GetSingle(unit.Parent);
         while (parent != null)
         {
             depth++;
-            parent = _unitsContext.GetSingle(parent.Parent);
+            parent = unitsContext.GetSingle(parent.Parent);
         }
 
         return depth;
@@ -293,7 +299,51 @@ public class UnitsService : IUnitsService
 
         if (roles.Count != originalCount)
         {
-            await _unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set(x => x.Roles, roles));
+            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set(x => x.Roles, roles));
         }
+    }
+
+    public IEnumerable<UnitMemberDto> MapUnitMembers(DomainUnit unit)
+    {
+        return SortMembers(unit.Members, unit).Select(x => MapUnitMember(x, unit));
+    }
+
+    private UnitMemberDto MapUnitMember(DomainAccount member, DomainUnit unit)
+    {
+        return new UnitMemberDto
+        {
+            Name = displayNameService.GetDisplayName(member),
+            Role = member.RoleAssignment,
+            UnitRole = GetRole(unit, member.Id)
+        };
+    }
+
+    private IEnumerable<DomainAccount> SortMembers(IEnumerable<string> members, DomainUnit unit)
+    {
+        return members.Select(
+                          x =>
+                          {
+                              var domainAccount = accountContext.GetSingle(x);
+                              return new
+                              {
+                                  account = domainAccount,
+                                  rankIndex = ranksService.GetRankOrder(domainAccount.Rank),
+                                  roleIndex = GetMemberRoleOrder(domainAccount, unit)
+                              };
+                          }
+                      )
+                      .OrderByDescending(x => x.roleIndex)
+                      .ThenBy(x => x.rankIndex)
+                      .ThenBy(x => x.account.Lastname)
+                      .ThenBy(x => x.account.Firstname)
+                      .Select(x => x.account);
+    }
+
+    private string GetRole(DomainUnit unit, string accountId)
+    {
+        return MemberHasRole(accountId, unit, rolesService.GetUnitRoleByOrder(0).Name) ? "1" :
+            MemberHasRole(accountId, unit, rolesService.GetUnitRoleByOrder(1).Name)    ? "2" :
+            MemberHasRole(accountId, unit, rolesService.GetUnitRoleByOrder(2).Name)    ? "3" :
+            MemberHasRole(accountId, unit, rolesService.GetUnitRoleByOrder(3).Name)    ? "N" : "";
     }
 }

@@ -4,6 +4,7 @@ using UKSF.Api.Commands;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Services;
 using UKSF.Api.EventHandlers;
 using UKSF.Api.Integrations.Discord;
 using UKSF.Api.Integrations.Instagram;
@@ -33,7 +34,6 @@ public static class ServiceExtensions
                        .AddActions()
                        .AddMiddlewares()
                        .AddSingleton<MigrationUtility>()
-                       .AddAutoMapper(typeof(AutoMapperUnitProfile))
                        .AddComponents(configuration, currentEnvironment);
     }
 

@@ -3,7 +3,12 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Core.Models;
 
-// TODO: Migrate object names to names with Id
+public enum UnitBranch
+{
+    COMBAT,
+    AUXILIARY
+}
+
 public class DomainUnit : MongoObject
 {
     public UnitBranch Branch = UnitBranch.COMBAT;
@@ -38,62 +43,55 @@ public class DomainUnit : MongoObject
     }
 }
 
-public class Unit
-{
-    public List<Unit> Children { get; set; }
-    public string Id { get; set; }
-    public List<string> MemberIds { get; set; }
-    public string MemberRole { get; set; }
-    public string Name { get; set; }
-    public int Order { get; set; }
-    public Unit ParentUnit { get; set; }
-    public bool PreferShortname { get; set; }
-    public string Shortname { get; set; }
-}
-
-public enum UnitBranch
-{
-    COMBAT,
-    AUXILIARY
-}
-
-// TODO: Cleaner way of doing this? Inside controllers?
-public class ResponseUnit : DomainUnit
+public class UnitDto : DomainUnit
 {
     public string Code { get; set; }
     public string ParentName { get; set; }
-    public IEnumerable<ResponseUnitMember> UnitMembers { get; set; }
+    public IEnumerable<UnitMemberDto> UnitMembers { get; set; }
 }
 
-public class ResponseUnitMember
+public class UnitMemberDto
 {
     public string Name { get; set; }
     public string Role { get; set; }
     public string UnitRole { get; set; }
 }
 
-public class UnitTreeDataSet
+public class UnitTreeDto
 {
-    public IEnumerable<Unit> AuxiliaryNodes { get; set; }
-    public IEnumerable<Unit> CombatNodes { get; set; }
+    public IEnumerable<UnitTreeNodeDto> AuxiliaryNodes { get; set; }
+    public IEnumerable<UnitTreeNodeDto> CombatNodes { get; set; }
 }
 
-public class ResponseUnitChartNode
+public class UnitTreeNodeDto
 {
-    public IEnumerable<ResponseUnitChartNode> Children { get; set; }
+    public List<UnitTreeNodeDto> Children { get; set; }
     public string Id { get; set; }
-    public IEnumerable<ResponseUnitMember> Members { get; set; }
+    public List<string> MemberIds { get; set; }
+    public string MemberRole { get; set; }
+    public string Name { get; set; }
+    public int Order { get; set; }
+    public UnitTreeNodeDto ParentUnitTreeNodeDto { get; set; }
+    public bool PreferShortname { get; set; }
+    public string Shortname { get; set; }
+}
+
+public class UnitChartNodeDto
+{
+    public IEnumerable<UnitChartNodeDto> Children { get; set; }
+    public string Id { get; set; }
+    public IEnumerable<UnitMemberDto> Members { get; set; }
     public string Name { get; set; }
     public bool PreferShortname { get; set; }
 }
 
-public class RequestUnitUpdateParent
+public class UnitUpdateParentDto
 {
     public int Index { get; set; }
     public string ParentId { get; set; }
 }
 
-public class RequestUnitUpdateOrder
+public class UnitUpdateOrderDto
 {
     public int Index { get; set; }
 }

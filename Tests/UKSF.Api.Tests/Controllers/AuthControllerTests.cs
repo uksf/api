@@ -7,6 +7,7 @@ using UKSF.Api.Commands;
 using UKSF.Api.Controllers;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Services;
+using UKSF.Api.Models.Request;
 using UKSF.Api.Models.Response;
 using UKSF.Api.Services;
 using UKSF.Api.Tests.Common;
@@ -25,12 +26,17 @@ public class AuthControllerTests
 
     public AuthControllerTests()
     {
-        _mockLoginService = new();
-        _mockHttpContextService = new();
-        _mockRequestPasswordResetCommand = new();
-        _mockResetPasswordCommand = new();
+        _mockLoginService = new Mock<ILoginService>();
+        _mockHttpContextService = new Mock<IHttpContextService>();
+        _mockRequestPasswordResetCommand = new Mock<IRequestPasswordResetCommand>();
+        _mockResetPasswordCommand = new Mock<IResetPasswordCommand>();
 
-        _subject = new(_mockLoginService.Object, _mockHttpContextService.Object, _mockRequestPasswordResetCommand.Object, _mockResetPasswordCommand.Object);
+        _subject = new AuthController(
+            _mockLoginService.Object,
+            _mockHttpContextService.Object,
+            _mockRequestPasswordResetCommand.Object,
+            _mockResetPasswordCommand.Object
+        );
     }
 
     [Fact]
@@ -48,7 +54,7 @@ public class AuthControllerTests
     {
         _mockLoginService.Setup(x => x.Login("email", "password")).Returns(new TokenResponse { Token = "token" });
 
-        var result = _subject.Login(new() { Email = "email", Password = "password" });
+        var result = _subject.Login(new LoginCredentials { Email = "email", Password = "password" });
 
         result.Token.Should().Be("token");
     }
@@ -67,7 +73,7 @@ public class AuthControllerTests
     [Fact]
     public async Task When_requesting_password_reset()
     {
-        await _subject.RequestPasswordReset(new() { Email = "email" });
+        await _subject.RequestPasswordReset(new RequestPasswordReset { Email = "email" });
 
         _mockRequestPasswordResetCommand.Verify(x => x.ExecuteAsync(It.Is<RequestPasswordResetCommandArgs>(m => m.Email == "email")), Times.Once);
     }
@@ -80,7 +86,7 @@ public class AuthControllerTests
         );
         _mockLoginService.Setup(x => x.LoginForPasswordReset("email")).Returns(new TokenResponse { Token = "token" });
 
-        var result = await _subject.ResetPassword("code", new() { Email = "email", Password = "password" });
+        var result = await _subject.ResetPassword("code", new LoginCredentials { Email = "email", Password = "password" });
 
         result.Token.Should().Be("token");
     }
@@ -90,7 +96,7 @@ public class AuthControllerTests
     [InlineData("email", null)]
     public void When_logging_in_with_invalid_credentials(string email, string password)
     {
-        Action act = () => _subject.Login(new() { Email = email, Password = password });
+        Action act = () => _subject.Login(new LoginCredentials { Email = email, Password = password });
 
         act.Should().Throw<BadRequestException>().WithMessageAndStatusCode("Bad request", 400);
     }

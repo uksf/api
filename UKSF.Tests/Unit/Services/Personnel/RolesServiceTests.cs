@@ -5,7 +5,7 @@ using FluentAssertions;
 using Moq;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
-using UKSF.Api.Services;
+using UKSF.Api.Core.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Personnel;

@@ -31,7 +31,7 @@ public class GetLatestServerInfrastructureQueryTests
     {
         Given_steam_cmd_returns_info();
 
-        var result = await _subject.ExecuteAsync();
+        var result = await _subject.ExecuteAsync(0);
 
         result.LatestBuild.Should().Be("12403383");
         result.LatestUpdate.Should().Be(new DateTime(2023, 10, 10, 12, 42, 30));
@@ -42,7 +42,7 @@ public class GetLatestServerInfrastructureQueryTests
     {
         Given_steam_cmd_returns_bad_info();
 
-        var act = () => _subject.ExecuteAsync();
+        var act = () => _subject.ExecuteAsync(0);
 
         await act.Should().ThrowAsync<ServerInfrastructureException>().WithMessageAndStatusCode("No build info found in Steam data", 404);
     }
@@ -52,7 +52,7 @@ public class GetLatestServerInfrastructureQueryTests
     {
         Given_steam_cmd_returns_info_with_mixed_outputs();
 
-        var result = await _subject.ExecuteAsync();
+        var result = await _subject.ExecuteAsync(0);
 
         result.LatestBuild.Should().Be("12403383");
         result.LatestUpdate.Should().Be(new DateTime(2023, 10, 10, 12, 42, 30));
@@ -63,7 +63,7 @@ public class GetLatestServerInfrastructureQueryTests
     {
         Given_steam_cmd_returns_failed_info();
 
-        var act = () => _subject.ExecuteAsync();
+        var act = () => _subject.ExecuteAsync(0);
 
         await act.Should().ThrowAsync<ServerInfrastructureException>().WithMessageAndStatusCode("No info found from Steam", 404);
         _mockSteamCmdService.Verify(x => x.GetServerInfo(), Times.Exactly(10));
@@ -82,7 +82,7 @@ public class GetLatestServerInfrastructureQueryTests
                             .ReturnsAsync(failedInfo)
                             .ReturnsAsync(validInfo);
 
-        var result = await _subject.ExecuteAsync();
+        var result = await _subject.ExecuteAsync(0);
 
         result.LatestBuild.Should().Be("12403383");
         result.LatestUpdate.Should().Be(new DateTime(2023, 10, 10, 12, 42, 30));
@@ -94,7 +94,7 @@ public class GetLatestServerInfrastructureQueryTests
     {
         Given_steam_cmd_returns_no_info();
 
-        var act = () => _subject.ExecuteAsync();
+        var act = () => _subject.ExecuteAsync(0);
 
         await act.Should().ThrowAsync<ServerInfrastructureException>().WithMessageAndStatusCode("No info found from Steam", 404);
     }

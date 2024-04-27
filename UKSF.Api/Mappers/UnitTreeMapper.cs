@@ -4,17 +4,17 @@ namespace UKSF.Api.Mappers;
 
 public interface IUnitTreeMapper
 {
-    Unit MapUnitTree(DomainUnit rootUnit);
+    UnitTreeNodeDto MapUnitTree(DomainUnit rootUnit);
 }
 
 public class UnitTreeMapper : IUnitTreeMapper
 {
-    public Unit MapUnitTree(DomainUnit rootUnit)
+    public UnitTreeNodeDto MapUnitTree(DomainUnit rootUnit)
     {
         return MapUnit(rootUnit);
     }
 
-    private static Unit MapUnit(DomainUnit domainUnit)
+    private static UnitTreeNodeDto MapUnit(DomainUnit domainUnit)
     {
         return new()
         {

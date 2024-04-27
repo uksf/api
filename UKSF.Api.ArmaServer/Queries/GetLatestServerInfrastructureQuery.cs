@@ -11,7 +11,7 @@ namespace UKSF.Api.ArmaServer.Queries;
 
 public interface IGetLatestServerInfrastructureQuery
 {
-    Task<ServerInfrastructureLatest> ExecuteAsync();
+    Task<ServerInfrastructureLatest> ExecuteAsync(int retryDelay = 1);
 }
 
 public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructureQuery
@@ -27,7 +27,7 @@ public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructure
         _logger = logger;
     }
 
-    public async Task<ServerInfrastructureLatest> ExecuteAsync()
+    public async Task<ServerInfrastructureLatest> ExecuteAsync(int retryDelay = 1)
     {
         string output;
         var tries = 0;
@@ -41,7 +41,7 @@ public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructure
             }
 
             tries++;
-            await Task.Delay(TimeSpan.FromSeconds(1));
+            await Task.Delay(TimeSpan.FromSeconds(retryDelay));
         }
         while (tries < 10);
 

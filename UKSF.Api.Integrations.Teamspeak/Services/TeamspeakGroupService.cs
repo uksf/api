@@ -94,7 +94,7 @@ public class TeamspeakGroupService : ITeamspeakGroupService
     private void ResolveUnitGroup(DomainAccount domainAccount, ISet<int> memberGroups)
     {
         var accountUnit = _unitsContext.GetSingle(x => x.Name == domainAccount.UnitAssignment);
-        var elcom = _unitsService.GetAuxilliaryRoot();
+        var elcom = _unitsService.GetAuxiliaryRoot();
 
         if (accountUnit.Parent == ObjectId.Empty.ToString())
         {

@@ -21,7 +21,7 @@ public class CommandMemberMapper : ICommandMemberMapper
             Qualifications = domainCommandMember.Qualifications,
             RankObject = MapToRank(domainCommandMember.Rank),
             RoleObject = MapToRole(domainCommandMember.Role),
-            UnitObject = MapToUnitWithParentTree(domainCommandMember.Unit, domainCommandMember.ParentUnits),
+            UnitTreeNodeDtoObject = MapToUnitWithParentTree(domainCommandMember.Unit, domainCommandMember.ParentUnits),
             UnitObjects = domainCommandMember.Units.OrderBy(x => x.Branch).Select(x => MapToUnit(x, domainCommandMember.Id)).ToList()
         };
     }
@@ -36,7 +36,7 @@ public class CommandMemberMapper : ICommandMemberMapper
         return new() { Id = domainRole.Id, Name = domainRole.Name };
     }
 
-    private static Unit MapToUnit(DomainUnit domainUnit, string memberId)
+    private static UnitTreeNodeDto MapToUnit(DomainUnit domainUnit, string memberId)
     {
         return new()
         {
@@ -48,7 +48,7 @@ public class CommandMemberMapper : ICommandMemberMapper
         };
     }
 
-    private static Unit MapToUnitWithParentTree(DomainUnit domainUnit, List<DomainUnit> parents)
+    private static UnitTreeNodeDto MapToUnitWithParentTree(DomainUnit domainUnit, List<DomainUnit> parents)
     {
         var domainParent = domainUnit.Parent == ObjectId.Empty.ToString() ? null : parents.FirstOrDefault(x => x.Id == domainUnit.Parent);
         var parent = domainParent == null ? null : MapToUnitWithParentTree(domainParent, parents);
@@ -59,7 +59,7 @@ public class CommandMemberMapper : ICommandMemberMapper
             Name = domainUnit.Name,
             Shortname = domainUnit.Shortname,
             PreferShortname = domainUnit.PreferShortname,
-            ParentUnit = parent
+            ParentUnitTreeNodeDto = parent
         };
     }
 }

@@ -107,7 +107,7 @@ public class TeamspeakController : ControllerBase
                                     .ThenBy(x => x.account.Lastname)
                                     .ThenBy(x => x.account.Firstname)
                                     .ToList();
-        var commandAccounts = _unitsService.GetAuxilliaryRoot().Members;
+        var commandAccounts = _unitsService.GetAuxiliaryRoot().Members;
 
         List<TeamspeakAccountDataset> commanders = new();
         List<TeamspeakAccountDataset> recruiters = new();
