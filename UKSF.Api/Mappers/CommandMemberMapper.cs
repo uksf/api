@@ -21,7 +21,7 @@ public class CommandMemberMapper : ICommandMemberMapper
             Qualifications = domainCommandMember.Qualifications,
             RankObject = MapToRank(domainCommandMember.Rank),
             RoleObject = MapToRole(domainCommandMember.Role),
-            UnitTreeNodeDtoObject = MapToUnitWithParentTree(domainCommandMember.Unit, domainCommandMember.ParentUnits),
+            UnitObject = MapToUnitWithParentTree(domainCommandMember.Unit, domainCommandMember.ParentUnits),
             UnitObjects = domainCommandMember.Units.OrderBy(x => x.Branch).Select(x => MapToUnit(x, domainCommandMember.Id)).ToList()
         };
     }

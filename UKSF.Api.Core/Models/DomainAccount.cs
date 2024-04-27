@@ -82,7 +82,7 @@ public class Account
     public string Steamname { get; set; }
     public HashSet<int> TeamspeakIdentities { get; set; }
     public string UnitAssignment { get; set; }
-    public UnitTreeNodeDto UnitTreeNodeDtoObject { get; set; }
+    public UnitTreeNodeDto UnitObject { get; set; }
     public List<UnitTreeNodeDto> UnitObjects { get; set; }
     public string UnitsExperience { get; set; }
 }
