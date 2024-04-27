@@ -71,7 +71,7 @@ public class UnitTreeNodeDto
     public string MemberRole { get; set; }
     public string Name { get; set; }
     public int Order { get; set; }
-    public UnitTreeNodeDto ParentUnitTreeNodeDto { get; set; }
+    public UnitTreeNodeDto ParentUnit { get; set; }
     public bool PreferShortname { get; set; }
     public string Shortname { get; set; }
 }

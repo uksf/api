@@ -12,52 +12,25 @@ public interface IGetCommandMembersPagedQuery
     Task<PagedResult<DomainCommandMember>> ExecuteAsync(GetCommandMembersPagedQueryArgs args);
 }
 
-public class GetCommandMembersPagedQueryArgs
+public record GetCommandMembersPagedQueryArgs(
+    int Page,
+    int PageSize,
+    string Query,
+    CommandMemberSortMode SortMode,
+    int SortDirection,
+    CommandMemberViewMode ViewMode
+);
+
+public class GetCommandMembersPagedQuery(IAccountContext accountContext, IHttpContextService httpContextService) : IGetCommandMembersPagedQuery
 {
-    public GetCommandMembersPagedQueryArgs(
-        int page,
-        int pageSize,
-        string query,
-        CommandMemberSortMode sortMode,
-        int sortDirection,
-        CommandMemberViewMode viewMode
-    )
-    {
-        Page = page;
-        PageSize = pageSize;
-        Query = query;
-        SortMode = sortMode;
-        SortDirection = sortDirection;
-        ViewMode = viewMode;
-    }
-
-    public int Page { get; }
-    public int PageSize { get; }
-    public string Query { get; }
-    public CommandMemberSortMode SortMode { get; }
-    public int SortDirection { get; }
-    public CommandMemberViewMode ViewMode { get; }
-}
-
-public class GetCommandMembersPagedQuery : IGetCommandMembersPagedQuery
-{
-    private readonly IAccountContext _accountContext;
-    private readonly IHttpContextService _httpContextService;
-
-    public GetCommandMembersPagedQuery(IAccountContext accountContext, IHttpContextService httpContextService)
-    {
-        _accountContext = accountContext;
-        _httpContextService = httpContextService;
-    }
-
     public async Task<PagedResult<DomainCommandMember>> ExecuteAsync(GetCommandMembersPagedQueryArgs args)
     {
         var sortDefinition = BuildSortDefinition(args.SortMode, args.SortDirection);
         var viewModeFilterDefinition = BuildViewModeFilterDefinition(args.ViewMode);
-        var queryFilterDefinition = _accountContext.BuildPagedComplexQuery(args.Query, BuildFiltersFromQueryPart);
+        var queryFilterDefinition = accountContext.BuildPagedComplexQuery(args.Query, BuildFiltersFromQueryPart);
         var filterDefinition = Builders<DomainCommandMember>.Filter.And(viewModeFilterDefinition, queryFilterDefinition);
 
-        var pagedResult = _accountContext.GetPaged(args.Page, args.PageSize, BuildAggregator, sortDefinition, filterDefinition);
+        var pagedResult = accountContext.GetPaged(args.Page, args.PageSize, BuildAggregator, sortDefinition, filterDefinition);
         return await Task.FromResult(pagedResult);
     }
 
@@ -65,8 +38,18 @@ public class GetCommandMembersPagedQuery : IGetCommandMembersPagedQuery
     {
         var sortDocument = sortMode switch
         {
-            CommandMemberSortMode.RANK => new() { { "rank.order", sortDirection }, { "lastname", sortDirection }, { "firstname", sortDirection } },
-            CommandMemberSortMode.ROLE => new() { { "role.name", sortDirection }, { "lastname", sortDirection }, { "firstname", sortDirection } },
+            CommandMemberSortMode.RANK => new BsonDocument
+            {
+                { "rank.order", sortDirection },
+                { "lastname", sortDirection },
+                { "firstname", sortDirection }
+            },
+            CommandMemberSortMode.ROLE => new BsonDocument
+            {
+                { "role.name", sortDirection },
+                { "lastname", sortDirection },
+                { "firstname", sortDirection }
+            },
             _                          => new BsonDocument { { "lastname", sortDirection }, { "firstname", sortDirection } }
         };
         return new BsonDocumentSortDefinition<DomainCommandMember>(sortDocument);
@@ -79,7 +62,7 @@ public class GetCommandMembersPagedQuery : IGetCommandMembersPagedQuery
             return Builders<DomainCommandMember>.Filter.Empty;
         }
 
-        var currentAccount = _accountContext.GetSingle(_httpContextService.GetUserId());
+        var currentAccount = accountContext.GetSingle(httpContextService.GetUserId());
         var unitFilter = Builders<DomainCommandMember>.Filter.Eq(x => x.Unit.Name, currentAccount.UnitAssignment);
 
         if (viewMode == CommandMemberViewMode.COC)

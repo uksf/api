@@ -13,7 +13,7 @@ public class CommandMemberMapper : ICommandMemberMapper
 {
     public Account MapCommandMemberToAccount(DomainCommandMember domainCommandMember)
     {
-        return new()
+        return new Account
         {
             Id = domainCommandMember.Id,
             Firstname = domainCommandMember.Firstname,
@@ -28,17 +28,22 @@ public class CommandMemberMapper : ICommandMemberMapper
 
     private static Rank MapToRank(DomainRank domainRank)
     {
-        return new() { Id = domainRank.Id, Name = domainRank.Name, Abbreviation = domainRank.Abbreviation };
+        return new Rank
+        {
+            Id = domainRank.Id,
+            Name = domainRank.Name,
+            Abbreviation = domainRank.Abbreviation
+        };
     }
 
     private static Role MapToRole(DomainRole domainRole)
     {
-        return new() { Id = domainRole.Id, Name = domainRole.Name };
+        return new Role { Id = domainRole.Id, Name = domainRole.Name };
     }
 
     private static UnitTreeNodeDto MapToUnit(DomainUnit domainUnit, string memberId)
     {
-        return new()
+        return new UnitTreeNodeDto
         {
             Id = domainUnit.Id,
             Name = domainUnit.Name,
@@ -52,14 +57,14 @@ public class CommandMemberMapper : ICommandMemberMapper
     {
         var domainParent = domainUnit.Parent == ObjectId.Empty.ToString() ? null : parents.FirstOrDefault(x => x.Id == domainUnit.Parent);
         var parent = domainParent == null ? null : MapToUnitWithParentTree(domainParent, parents);
-        return new()
+        return new UnitTreeNodeDto
         {
             Id = domainUnit.Id,
             Order = domainUnit.Order,
             Name = domainUnit.Name,
             Shortname = domainUnit.Shortname,
             PreferShortname = domainUnit.PreferShortname,
-            ParentUnitTreeNodeDto = parent
+            ParentUnit = parent
         };
     }
 }
