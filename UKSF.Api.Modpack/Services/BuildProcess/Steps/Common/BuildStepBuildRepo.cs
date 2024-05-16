@@ -13,7 +13,7 @@ public class BuildStepBuildRepo : BuildStep
         StepLogger.Log($"Building {repoName} repo");
 
         var arma3SyncPath = VariablesService.GetVariable("BUILD_PATH_ARMA3SYNC").AsString();
-        BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource);
+        BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource);
         processHelper.Run(arma3SyncPath, "Java", $"-jar .\\ArmA3Sync.jar -BUILD {repoName}", (int)TimeSpan.FromMinutes(5).TotalMilliseconds);
 
         return Task.CompletedTask;

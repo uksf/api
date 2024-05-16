@@ -21,6 +21,7 @@ public class BuildStepBuildAcre : ModBuildStep
             StepLogger.LogSurround("\nRunning make.py...");
             BuildProcessHelper processHelper = new(
                 StepLogger,
+                Logger,
                 CancellationTokenSource,
                 errorExclusions: _errorExclusions,
                 ignoreErrorGateClose: "File written to",

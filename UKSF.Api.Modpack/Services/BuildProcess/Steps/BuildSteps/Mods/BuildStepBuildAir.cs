@@ -17,7 +17,7 @@ public class BuildStepBuildAir : ModBuildStep
         if (IsBuildNeeded(ModName))
         {
             StepLogger.LogSurround("\nRunning make.py...");
-            BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource);
+            BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource);
             processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int)TimeSpan.FromMinutes(1).TotalMilliseconds);
             StepLogger.LogSurround("Make.py complete");
         }

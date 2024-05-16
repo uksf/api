@@ -12,21 +12,9 @@ public interface IBuildProcessorService
     Task ProcessBuildWithErrorHandling(ModpackBuild build, CancellationTokenSource cancellationTokenSource);
 }
 
-public class BuildProcessorService : IBuildProcessorService
+public class BuildProcessorService(IServiceProvider serviceProvider, IBuildStepService buildStepService, IBuildsService buildsService, IUksfLogger logger)
+    : IBuildProcessorService
 {
-    private readonly IBuildsService _buildsService;
-    private readonly IBuildStepService _buildStepService;
-    private readonly IUksfLogger _logger;
-    private readonly IServiceProvider _serviceProvider;
-
-    public BuildProcessorService(IServiceProvider serviceProvider, IBuildStepService buildStepService, IBuildsService buildsService, IUksfLogger logger)
-    {
-        _serviceProvider = serviceProvider;
-        _buildStepService = buildStepService;
-        _buildsService = buildsService;
-        _logger = logger;
-    }
-
     public async Task ProcessBuildWithErrorHandling(ModpackBuild build, CancellationTokenSource cancellationTokenSource)
     {
         try
@@ -35,31 +23,32 @@ public class BuildProcessorService : IBuildProcessorService
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception);
-            await _buildsService.FailBuild(build);
+            logger.LogError(exception);
+            await buildsService.FailBuild(build);
         }
     }
 
     private async Task ProcessBuild(ModpackBuild build, CancellationTokenSource cancellationTokenSource)
     {
-        await _buildsService.SetBuildRunning(build);
+        await buildsService.SetBuildRunning(build);
 
         foreach (var buildStep in build.Steps)
         {
-            var step = _buildStepService.ResolveBuildStep(buildStep.Name);
+            var step = buildStepService.ResolveBuildStep(buildStep.Name);
             step.Init(
-                _serviceProvider,
+                serviceProvider,
+                logger,
                 build,
                 buildStep,
-                updateDefinition => _buildsService.UpdateBuild(build, updateDefinition),
-                () => _buildsService.UpdateBuildStep(build, buildStep),
+                updateDefinition => buildsService.UpdateBuild(build, updateDefinition),
+                () => buildsService.UpdateBuildStep(build, buildStep),
                 cancellationTokenSource
             );
 
             if (cancellationTokenSource.IsCancellationRequested)
             {
                 await step.Cancel();
-                await _buildsService.CancelBuild(build);
+                await buildsService.CancelBuild(build);
                 return;
             }
 
@@ -80,19 +69,19 @@ public class BuildProcessorService : IBuildProcessorService
             {
                 await step.Cancel();
                 await ProcessRestore(step, build);
-                await _buildsService.CancelBuild(build);
+                await buildsService.CancelBuild(build);
                 return;
             }
             catch (Exception exception)
             {
                 await step.Fail(exception);
                 await ProcessRestore(step, build);
-                await _buildsService.FailBuild(build);
+                await buildsService.FailBuild(build);
                 return;
             }
         }
 
-        await _buildsService.SucceedBuild(build);
+        await buildsService.SucceedBuild(build);
     }
 
     private async Task ProcessRestore(IBuildStep runningStep, ModpackBuild build)
@@ -102,11 +91,11 @@ public class BuildProcessorService : IBuildProcessorService
             return;
         }
 
-        _logger.LogInfo($"Attempting to restore repo prior to {build.Version}");
-        var restoreSteps = _buildStepService.GetStepsForReleaseRestore();
+        logger.LogInfo($"Attempting to restore repo prior to {build.Version}");
+        var restoreSteps = buildStepService.GetStepsForReleaseRestore();
         if (restoreSteps.Any())
         {
-            _logger.LogError("Restore steps expected but not found. Won't restore");
+            logger.LogError("Restore steps expected but not found. Won't restore");
             return;
         }
 
@@ -120,17 +109,18 @@ public class BuildProcessorService : IBuildProcessorService
 
     private async Task ExecuteRestoreStep(ModpackBuild build, ModpackBuildStep restoreStep)
     {
-        var step = _buildStepService.ResolveBuildStep(restoreStep.Name);
+        var step = buildStepService.ResolveBuildStep(restoreStep.Name);
         step.Init(
-            _serviceProvider,
+            serviceProvider,
+            logger,
             build,
             restoreStep,
-            async updateDefinition => await _buildsService.UpdateBuild(build, updateDefinition),
-            async () => await _buildsService.UpdateBuildStep(build, restoreStep),
-            new()
+            async updateDefinition => await buildsService.UpdateBuild(build, updateDefinition),
+            async () => await buildsService.UpdateBuildStep(build, restoreStep),
+            new CancellationTokenSource()
         );
         build.Steps.Add(restoreStep);
-        await _buildsService.UpdateBuildStep(build, restoreStep);
+        await buildsService.UpdateBuildStep(build, restoreStep);
 
         try
         {

@@ -20,6 +20,7 @@ public class BuildStepBuildAce : ModBuildStep
             StepLogger.LogSurround("\nRunning make.py...");
             BuildProcessHelper processHelper = new(
                 StepLogger,
+                Logger,
                 CancellationTokenSource,
                 ignoreErrorGateClose: "File written to",
                 ignoreErrorGateOpen: "MakePbo Version"

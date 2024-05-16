@@ -32,7 +32,7 @@ public class BuildStepSignDependencies : FileBuildStep
         StepLogger.LogSurround("Cleared keys directories");
 
         StepLogger.LogSurround("\nCreating key...");
-        BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource, true);
+        BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, true);
         processHelper.Run(keygenPath, _dsCreateKey, _keyName, (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
         StepLogger.Log($"Created {_keyName}");
         await CopyFiles(keygen, keys, new() { new(Path.Join(keygenPath, $"{_keyName}.bikey")) });
@@ -84,7 +84,7 @@ public class BuildStepSignDependencies : FileBuildStep
             _batchSize,
             file =>
             {
-                BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource, true);
+                BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, true);
                 processHelper.Run(addonsPath, _dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
                 Interlocked.Increment(ref signed);
                 return Task.CompletedTask;

@@ -1,56 +1,40 @@
 ﻿using System.Diagnostics;
 using System.Text.Json.Nodes;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
 
 namespace UKSF.Api.Modpack.Services.BuildProcess;
 
-public class BuildProcessHelper
+public class BuildProcessHelper(
+    IStepLogger stepLogger,
+    IUksfLogger logger,
+    CancellationTokenSource cancellationTokenSource,
+    bool suppressOutput = false,
+    bool raiseErrors = true,
+    bool errorSilently = false,
+    List<string> errorExclusions = null,
+    string ignoreErrorGateClose = "",
+    string ignoreErrorGateOpen = ""
+)
 {
-    private readonly CancellationTokenSource _cancellationTokenSource;
     private readonly CancellationTokenSource _errorCancellationTokenSource = new();
-    private readonly List<string> _errorExclusions;
-    private readonly bool _errorSilently;
     private readonly ManualResetEvent _errorWaitHandle = new(false);
-    private readonly string _ignoreErrorGateClose;
-    private readonly string _ignoreErrorGateOpen;
-    private readonly IStepLogger _logger;
     private readonly ManualResetEvent _outputWaitHandle = new(false);
-    private readonly bool _raiseErrors;
-    private readonly List<string> _results = new();
-    private readonly bool _suppressOutput;
+    private readonly List<string> _results = [];
     private CancellationTokenRegistration _cancellationTokenRegistration;
     private Exception _capturedException;
     private CancellationTokenRegistration _errorCancellationTokenRegistration;
     private bool _ignoreErrors;
     private Process _process;
-
-    public BuildProcessHelper(
-        IStepLogger logger,
-        CancellationTokenSource cancellationTokenSource,
-        bool suppressOutput = false,
-        bool raiseErrors = true,
-        bool errorSilently = false,
-        List<string> errorExclusions = null,
-        string ignoreErrorGateClose = "",
-        string ignoreErrorGateOpen = ""
-    )
-    {
-        _logger = logger;
-        _cancellationTokenSource = cancellationTokenSource;
-        _suppressOutput = suppressOutput;
-        _raiseErrors = raiseErrors;
-        _errorSilently = errorSilently;
-        _errorExclusions = errorExclusions;
-        _ignoreErrorGateClose = ignoreErrorGateClose;
-        _ignoreErrorGateOpen = ignoreErrorGateOpen;
-    }
+    private string _logInfo;
 
     public List<string> Run(string workingDirectory, string executable, string args, int timeout)
     {
-        _cancellationTokenRegistration = _cancellationTokenSource.Token.Register(Kill);
+        _cancellationTokenRegistration = cancellationTokenSource.Token.Register(Kill);
         _errorCancellationTokenRegistration = _errorCancellationTokenSource.Token.Register(Kill);
+        _logInfo = $"'{executable}' in '{workingDirectory}' with '{args}'";
 
-        _process = new()
+        _process = new Process
         {
             StartInfo =
             {
@@ -67,6 +51,11 @@ public class BuildProcessHelper
 
         _process.OutputDataReceived += OnOutputDataReceived;
         _process.ErrorDataReceived += OnErrorDataReceived;
+        _process.Exited += (_, _) =>
+        {
+            logger.LogWarning($"{_logInfo}: Build process exited via event");
+            Kill();
+        };
 
         _process.Start();
         _process.BeginOutputReadLine();
@@ -74,51 +63,52 @@ public class BuildProcessHelper
 
         if (_process.WaitForExit(timeout) && _outputWaitHandle.WaitOne(timeout) && _errorWaitHandle.WaitOne(timeout))
         {
-            _cancellationTokenSource.Token.ThrowIfCancellationRequested();
+            cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
             if (_capturedException != null)
             {
-                if (_raiseErrors)
+                if (raiseErrors)
                 {
                     throw _capturedException;
                 }
 
-                if (!_errorSilently)
+                if (!errorSilently)
                 {
-                    _logger.LogError(_capturedException);
+                    stepLogger.LogError(_capturedException);
                 }
             }
 
-            if (_process.ExitCode != 0 && _raiseErrors)
+            if (_process.ExitCode != 0 && raiseErrors)
             {
                 var json = "";
                 var messages = ExtractMessages(_results.Last(), ref json);
-                if (messages.Any())
+                if (messages.Count != 0)
                 {
-                    throw new(messages.First().Item1);
+                    throw new Exception(messages.First().Item1);
                 }
 
-                throw new();
+                throw new Exception();
             }
         }
         else
         {
             // Process bombed out
-            _cancellationTokenSource.Token.ThrowIfCancellationRequested();
+            cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
             var json = "";
             var messages = ExtractMessages(_results.Last(), ref json);
-            var lastMessage = messages.FirstOrDefault()?.Item1 ?? "Woopsy Poospy the programme made an Oopsy";
+            var lastMessage = messages.FirstOrDefault()?.Item1 ?? "Woopsy Poospy the program made an Oopsy";
 
             Exception exception = new($"Process timed out and exited with non-zero code ({_process.ExitCode}) and last message ({lastMessage})");
-            if (_raiseErrors)
+            logger.LogError($"{_logInfo}: Build process bombed out", exception);
+            if (raiseErrors)
             {
                 throw exception;
             }
 
-            if (!_errorSilently)
+            if (!errorSilently)
             {
-                _logger.LogError(exception);
+                stepLogger.LogError(exception);
             }
         }
 
@@ -127,6 +117,7 @@ public class BuildProcessHelper
 
     private void Kill()
     {
+        logger.LogWarning($"{_logInfo}: Build process kill instructed");
         if (_process is { HasExited: false })
         {
             _process?.Kill();
@@ -153,7 +144,7 @@ public class BuildProcessHelper
             _results.Add(data);
         }
 
-        if (!_suppressOutput)
+        if (!suppressOutput)
         {
             LogMessagesFromData(data);
         }
@@ -170,21 +161,22 @@ public class BuildProcessHelper
         var data = receivedEventArgs.Data;
         if (string.IsNullOrEmpty(data) || SkipForIgnoreErrorGate(data))
         {
+            logger.LogWarning($"{_logInfo}: Build process received error: {data}");
             return;
         }
 
-        if (_errorExclusions != null && _errorExclusions.Any(x => data.ContainsIgnoreCase(x)))
+        if (errorExclusions != null && errorExclusions.Any(x => data.ContainsIgnoreCase(x)))
         {
             return;
         }
 
-        _capturedException = new(data);
+        _capturedException = new Exception(data);
         _errorCancellationTokenSource.Cancel();
     }
 
     private bool SkipForIgnoreErrorGate(string data)
     {
-        if (data.ContainsIgnoreCase(_ignoreErrorGateClose))
+        if (data.ContainsIgnoreCase(ignoreErrorGateClose))
         {
             _ignoreErrors = false;
             return true;
@@ -195,7 +187,7 @@ public class BuildProcessHelper
             return true;
         }
 
-        if (data.ContainsIgnoreCase(_ignoreErrorGateOpen))
+        if (data.ContainsIgnoreCase(ignoreErrorGateOpen))
         {
             _ignoreErrors = true;
             return true;
@@ -212,30 +204,31 @@ public class BuildProcessHelper
             var messages = ExtractMessages(message, ref json);
             foreach (var (text, colour) in messages)
             {
-                _logger.Log(text, colour);
+                stepLogger.Log(text, colour);
             }
         }
         catch (Exception exception)
         {
-            _capturedException = new($"Json failed: {json}\n\n{exception}");
+            _capturedException = new Exception($"Json failed: {json}\n\n{exception}");
+            logger.LogError($"{_logInfo}: Build process failed to process json", _capturedException);
             _errorCancellationTokenSource.Cancel();
         }
     }
 
     private static List<Tuple<string, string>> ExtractMessages(string message, ref string json)
     {
-        List<Tuple<string, string>> messages = new();
+        List<Tuple<string, string>> messages = [];
         if (message.Length > 5 && message[..4] == "JSON")
         {
             var parts = message.Split('}', '{'); // covers cases where buffer gets extra data flushed to it after the closing brace
             json = $"{{{parts[1].Escape().Replace(@"\\n", "\\n")}}}";
             var jsonObject = JsonNode.Parse(json);
-            messages.Add(new(jsonObject.GetValueFromObject("message"), jsonObject.GetValueFromObject("colour")));
+            messages.Add(new Tuple<string, string>(jsonObject.GetValueFromObject("message"), jsonObject.GetValueFromObject("colour")));
             messages.AddRange(parts.Skip(2).Where(x => !string.IsNullOrEmpty(x)).Select(extra => new Tuple<string, string>(extra, "")));
         }
         else
         {
-            messages.Add(new(message, ""));
+            messages.Add(new Tuple<string, string>(message, ""));
         }
 
         return messages;

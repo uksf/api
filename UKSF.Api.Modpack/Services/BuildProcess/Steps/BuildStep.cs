@@ -12,6 +12,7 @@ public interface IBuildStep
 {
     void Init(
         IServiceProvider serviceProvider,
+        IUksfLogger logger,
         ModpackBuild modpackBuild,
         ModpackBuildStep modpackBuildStep,
         Func<UpdateDefinition<ModpackBuild>, Task> buildUpdateCallback,
@@ -42,11 +43,13 @@ public class BuildStep : IBuildStep
     protected ModpackBuild Build;
     protected CancellationTokenSource CancellationTokenSource;
     protected IServiceProvider ServiceProvider;
+    protected IUksfLogger Logger;
     protected IStepLogger StepLogger;
     protected IVariablesService VariablesService;
 
     public void Init(
         IServiceProvider newServiceProvider,
+        IUksfLogger logger,
         ModpackBuild modpackBuild,
         ModpackBuildStep modpackBuildStep,
         Func<UpdateDefinition<ModpackBuild>, Task> buildUpdateCallback,
@@ -55,6 +58,7 @@ public class BuildStep : IBuildStep
     )
     {
         ServiceProvider = newServiceProvider;
+        Logger = logger;
         VariablesService = ServiceProvider.GetService<IVariablesService>();
         Build = modpackBuild;
         _buildStep = modpackBuildStep;

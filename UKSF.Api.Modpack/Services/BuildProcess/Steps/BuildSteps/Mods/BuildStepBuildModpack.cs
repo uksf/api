@@ -25,7 +25,7 @@ public class BuildStepBuildModpack : ModBuildStep
         StepLogger.Log($"\nConfiguration set to '{configuration}'");
 
         StepLogger.LogSurround("\nRunning make.py...");
-        BuildProcessHelper processHelper = new(StepLogger, CancellationTokenSource);
+        var processHelper = new BuildProcessHelper(StepLogger, Logger, CancellationTokenSource);
         processHelper.Run(toolsPath, PythonPath, MakeCommand($"redirect configuration {configuration}"), (int)TimeSpan.FromMinutes(5).TotalMilliseconds);
         StepLogger.LogSurround("Make.py complete");
 
