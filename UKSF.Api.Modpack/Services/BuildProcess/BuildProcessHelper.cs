@@ -28,7 +28,7 @@ public class BuildProcessHelper(
     private Process _process;
     private string _logInfo;
 
-    public List<string> Run(string workingDirectory, string executable, string args, int timeout)
+    public List<string> Run(string workingDirectory, string executable, string args, int timeout, bool log = false)
     {
         _cancellationTokenRegistration = cancellationTokenSource.Token.Register(Kill);
         _errorCancellationTokenRegistration = _errorCancellationTokenSource.Token.Register(Kill);

@@ -25,7 +25,7 @@ public class BuildStepBuildAce : ModBuildStep
                 ignoreErrorGateClose: "File written to",
                 ignoreErrorGateOpen: "MakePbo Version"
             );
-            processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int)TimeSpan.FromMinutes(10).TotalMilliseconds);
+            processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int)TimeSpan.FromMinutes(10).TotalMilliseconds, true);
             StepLogger.LogSurround("Make.py complete");
         }
 
