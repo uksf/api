@@ -27,12 +27,14 @@ public class BuildProcessHelper(
     private bool _ignoreErrors;
     private Process _process;
     private string _logInfo;
+    private bool _useLogger;
 
     public List<string> Run(string workingDirectory, string executable, string args, int timeout, bool log = false)
     {
         _cancellationTokenRegistration = cancellationTokenSource.Token.Register(Kill);
         _errorCancellationTokenRegistration = _errorCancellationTokenSource.Token.Register(Kill);
         _logInfo = $"'{executable}' in '{workingDirectory}' with '{args}'";
+        _useLogger = log;
 
         _process = new Process
         {
@@ -53,7 +55,11 @@ public class BuildProcessHelper(
         _process.ErrorDataReceived += OnErrorDataReceived;
         _process.Exited += (_, _) =>
         {
-            logger.LogWarning($"{_logInfo}: Build process exited via event");
+            if (_useLogger)
+            {
+                logger.LogWarning($"{_logInfo}: Build process exited via event");
+            }
+
             Kill();
         };
 
@@ -100,7 +106,11 @@ public class BuildProcessHelper(
             var lastMessage = messages.FirstOrDefault()?.Item1 ?? "Woopsy Poospy the program made an Oopsy";
 
             Exception exception = new($"Process timed out and exited with non-zero code ({_process.ExitCode}) and last message ({lastMessage})");
-            logger.LogError($"{_logInfo}: Build process bombed out", exception);
+            if (_useLogger)
+            {
+                logger.LogError($"{_logInfo}: Build process bombed out", exception);
+            }
+
             if (raiseErrors)
             {
                 throw exception;
@@ -117,7 +127,11 @@ public class BuildProcessHelper(
 
     private void Kill()
     {
-        logger.LogWarning($"{_logInfo}: Build process kill instructed");
+        if (_useLogger)
+        {
+            logger.LogWarning($"{_logInfo}: Build process kill instructed");
+        }
+
         if (_process is { HasExited: false })
         {
             _process?.Kill();
@@ -161,7 +175,11 @@ public class BuildProcessHelper(
         var data = receivedEventArgs.Data;
         if (string.IsNullOrEmpty(data) || SkipForIgnoreErrorGate(data))
         {
-            logger.LogWarning($"{_logInfo}: Build process received error: {data}");
+            if (_useLogger)
+            {
+                logger.LogWarning($"{_logInfo}: Build process received error: {data}");
+            }
+
             return;
         }
 
@@ -210,7 +228,11 @@ public class BuildProcessHelper(
         catch (Exception exception)
         {
             _capturedException = new Exception($"Json failed: {json}\n\n{exception}");
-            logger.LogError($"{_logInfo}: Build process failed to process json", _capturedException);
+            if (_useLogger)
+            {
+                logger.LogError($"{_logInfo}: Build process failed to process json", _capturedException);
+            }
+
             _errorCancellationTokenSource.Cancel();
         }
     }
