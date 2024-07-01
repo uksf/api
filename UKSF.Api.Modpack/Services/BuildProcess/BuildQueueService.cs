@@ -44,7 +44,7 @@ public class BuildQueueService : IBuildQueueService
     {
         if (_queue.Any(x => x.Id == id))
         {
-            _queue = new(_queue.Where(x => x.Id != id));
+            _queue = new ConcurrentQueue<ModpackBuild>(_queue.Where(x => x.Id != id));
             return true;
         }
 
@@ -108,10 +108,13 @@ public class BuildQueueService : IBuildQueueService
 
             CancellationTokenSource cancellationTokenSource = new();
             _cancellationTokenSources.TryAdd(build.Id, cancellationTokenSource);
+
             var buildTask = _buildProcessorService.ProcessBuildWithErrorHandling(build, cancellationTokenSource);
             _buildTasks.TryAdd(build.Id, buildTask);
+
             await buildTask;
-            _cancellationTokenSources.TryRemove(build.Id, out var _);
+
+            _cancellationTokenSources.TryRemove(build.Id, out _);
         }
 
         _processing = false;

@@ -31,7 +31,17 @@ public class BuildProcessHelper(
 
     public List<string> Run(string workingDirectory, string executable, string args, int timeout, bool log = false)
     {
-        _cancellationTokenRegistration = cancellationTokenSource.Token.Register(Kill);
+        _cancellationTokenRegistration = cancellationTokenSource.Token.Register(
+            () =>
+            {
+                if (_useLogger)
+                {
+                    logger.LogInfo($"{_logInfo}: Build process cancelled via token");
+                }
+
+                Kill();
+            }
+        );
         _errorCancellationTokenRegistration = _errorCancellationTokenSource.Token.Register(Kill);
         _logInfo = $"'{executable}' in '{workingDirectory}' with '{args}'";
         _useLogger = log;
@@ -69,6 +79,11 @@ public class BuildProcessHelper(
 
         if (_process.WaitForExit(timeout) && _outputWaitHandle.WaitOne(timeout) && _errorWaitHandle.WaitOne(timeout))
         {
+            if (_useLogger)
+            {
+                logger.LogInfo($"{_logInfo}: Build process finished");
+            }
+
             cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
             if (_capturedException != null)
