@@ -1,4 +1,5 @@
 ﻿using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
@@ -6,36 +7,27 @@ using UKSF.Api.Integrations.Teamspeak.Services;
 
 namespace UKSF.Api.Integrations.Teamspeak.EventHandlers;
 
-public interface ITeamspeakEventHandler : IEventHandler { }
+public interface ITeamspeakEventHandler : IEventHandler;
 
-public class TeamspeakEventHandler : ITeamspeakEventHandler
+public class TeamspeakEventHandler(IEventBus eventBus, IUksfLogger logger, IAccountContext accountContext, ITeamspeakService teamspeakService)
+    : ITeamspeakEventHandler
 {
-    private readonly IEventBus _eventBus;
-    private readonly IUksfLogger _logger;
-    private readonly ITeamspeakService _teamspeakService;
-
-    public TeamspeakEventHandler(IEventBus eventBus, IUksfLogger logger, ITeamspeakService teamspeakService)
-    {
-        _eventBus = eventBus;
-        _logger = logger;
-        _teamspeakService = teamspeakService;
-    }
-
     public void EarlyInit() { }
 
     public void Init()
     {
-        _eventBus.AsObservable().SubscribeWithAsyncNext<DomainAccount>(HandleAccountEvent, _logger.LogError);
-        _eventBus.AsObservable().SubscribeWithAsyncNext<TeamspeakMessageEventData>(HandleTeamspeakMessageEvent, _logger.LogError);
+        eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainAccount>>(HandleAccountEvent, logger.LogError);
+        eventBus.AsObservable().SubscribeWithAsyncNext<TeamspeakMessageEventData>(HandleTeamspeakMessageEvent, logger.LogError);
     }
 
-    private async Task HandleAccountEvent(EventModel eventModel, DomainAccount domainAccount)
+    private async Task HandleAccountEvent(EventModel eventModel, ContextEventData<DomainAccount> contextEventData)
     {
-        await _teamspeakService.UpdateAccountTeamspeakGroups(domainAccount);
+        var domainAccount = contextEventData.Data ?? accountContext.GetSingle(contextEventData.Id);
+        await teamspeakService.UpdateAccountTeamspeakGroups(domainAccount);
     }
 
     private async Task HandleTeamspeakMessageEvent(EventModel eventModel, TeamspeakMessageEventData messageEvent)
     {
-        await _teamspeakService.SendTeamspeakMessageToClient(messageEvent.ClientDbIds, messageEvent.Message);
+        await teamspeakService.SendTeamspeakMessageToClient(messageEvent.ClientDbIds, messageEvent.Message);
     }
 }

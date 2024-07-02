@@ -8,7 +8,7 @@ using UKSF.Api.Signalr.Hubs;
 
 namespace UKSF.Api.EventHandlers;
 
-public interface ILogDataEventHandler : IEventHandler { }
+public interface ILogDataEventHandler : IEventHandler;
 
 public class LogDataEventHandler : ILogDataEventHandler
 {

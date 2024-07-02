@@ -13,15 +13,9 @@ public interface IBuildsContext : IMongoContext<ModpackBuild>, ICachedMongoConte
     Task Update(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition);
 }
 
-public class BuildsContext : CachedMongoContext<ModpackBuild>, IBuildsContext
+public class BuildsContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService)
+    : CachedMongoContext<ModpackBuild>(mongoCollectionFactory, eventBus, variablesService, "modpackBuilds"), IBuildsContext
 {
-    public BuildsContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
-        mongoCollectionFactory,
-        eventBus,
-        variablesService,
-        "modpackBuilds"
-    ) { }
-
     protected override IEnumerable<ModpackBuild> OrderCollection(IEnumerable<ModpackBuild> collection)
     {
         return collection.OrderByDescending(x => x.BuildNumber);
@@ -31,12 +25,12 @@ public class BuildsContext : CachedMongoContext<ModpackBuild>, IBuildsContext
     {
         var updateDefinition = Builders<ModpackBuild>.Update.Set(x => x.Steps[buildStep.Index], buildStep);
         await base.Update(build.Id, updateDefinition);
-        DataEvent(new(EventType.UPDATE, new ModpackBuildStepEventData(build.Id, buildStep)));
+        DataEvent(new EventModel(EventType.Update, new ModpackBuildStepEventData(build.Id, buildStep)));
     }
 
     public async Task Update(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition)
     {
         await base.Update(build.Id, updateDefinition);
-        DataEvent(new(EventType.UPDATE, build));
+        DataEvent(new EventModel(EventType.Update, new ModpackBuildEventData(build)));
     }
 }

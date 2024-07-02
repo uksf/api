@@ -2,20 +2,22 @@
 
 public enum EventType
 {
-    NONE,
-    ADD,
-    UPDATE,
-    DELETE
+    None,
+    Add,
+    Update,
+    Delete
 }
 
 public class EventModel
 {
-    public EventModel(EventType eventType, object data)
+    public EventModel(EventType eventType, EventData data)
     {
-        EventType = eventType;
         Data = data;
+        EventType = eventType;
     }
 
-    public object Data { get; set; }
-    public EventType EventType { get; set; }
+    public EventData Data { get; }
+    public EventType EventType { get; }
 }
+
+public class EventData { }

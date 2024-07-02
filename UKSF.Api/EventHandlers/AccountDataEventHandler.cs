@@ -8,42 +8,27 @@ using UKSF.Api.Core.Signalr.Hubs;
 
 namespace UKSF.Api.EventHandlers;
 
-public interface IAccountDataEventHandler : IEventHandler { }
+public interface IAccountDataEventHandler : IEventHandler;
 
-public class AccountDataEventHandler : IAccountDataEventHandler
+public class AccountDataEventHandler(
+    IEventBus eventBus,
+    IHubContext<AccountHub, IAccountClient> accountHub,
+    IHubContext<AccountGroupedHub, IAccountGroupedClient> groupedHub,
+    IHubContext<AllHub, IAllClient> allHub,
+    IUksfLogger logger
+) : IAccountDataEventHandler
 {
-    private readonly IHubContext<AllHub, IAllClient> _allHub;
-    private readonly IEventBus _eventBus;
-    private readonly IHubContext<AccountGroupedHub, IAccountGroupedClient> _groupedHub;
-    private readonly IHubContext<AccountHub, IAccountClient> _hub;
-    private readonly IUksfLogger _logger;
-
-    public AccountDataEventHandler(
-        IEventBus eventBus,
-        IHubContext<AccountHub, IAccountClient> hub,
-        IHubContext<AccountGroupedHub, IAccountGroupedClient> groupedHub,
-        IHubContext<AllHub, IAllClient> allHub,
-        IUksfLogger logger
-    )
-    {
-        _eventBus = eventBus;
-        _hub = hub;
-        _groupedHub = groupedHub;
-        _allHub = allHub;
-        _logger = logger;
-    }
-
     public void EarlyInit() { }
 
     public void Init()
     {
-        _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainAccount>>(HandleAccountEvent, _logger.LogError);
-        _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainUnit>>(HandleUnitEvent, _logger.LogError);
+        eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainAccount>>(HandleAccountEvent, logger.LogError);
+        eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainUnit>>(HandleUnitEvent, logger.LogError);
     }
 
     private async Task HandleAccountEvent(EventModel eventModel, ContextEventData<DomainAccount> contextEventData)
     {
-        if (eventModel.EventType == EventType.UPDATE)
+        if (eventModel.EventType == EventType.Update)
         {
             await UpdatedEvent(contextEventData.Id);
         }
@@ -51,7 +36,7 @@ public class AccountDataEventHandler : IAccountDataEventHandler
 
     private async Task HandleUnitEvent(EventModel eventModel, ContextEventData<DomainUnit> contextEventData)
     {
-        if (eventModel.EventType == EventType.UPDATE)
+        if (eventModel.EventType == EventType.Update)
         {
             await UpdatedEvent(contextEventData.Id);
         }
@@ -59,10 +44,10 @@ public class AccountDataEventHandler : IAccountDataEventHandler
 
     private async Task UpdatedEvent(string id)
     {
-        var oldTask = _hub.Clients.Group(id).ReceiveAccountUpdate();
-        var groupedTask = _groupedHub.Clients.Group(id).ReceiveAccountUpdate();
-        var allTask = _allHub.Clients.All.ReceiveAccountUpdate();
+        var accountTask = accountHub.Clients.Group(id).ReceiveAccountUpdate();
+        var groupedTask = groupedHub.Clients.Group(id).ReceiveAccountUpdate();
+        var allTask = allHub.Clients.All.ReceiveAccountUpdate();
 
-        await Task.WhenAll(oldTask, groupedTask, allTask);
+        await Task.WhenAll(accountTask, groupedTask, allTask);
     }
 }

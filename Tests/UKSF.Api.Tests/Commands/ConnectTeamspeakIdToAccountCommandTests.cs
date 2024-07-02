@@ -77,7 +77,7 @@ public class ConnectTeamspeakIdToAccountCommandTests
         createdUpdate.Should().BeEquivalentTo(expectedUpdate);
 
         _mockConfirmationCodeService.Verify(x => x.ClearConfirmationCodes(It.IsAny<Func<ConfirmationCode, bool>>()), Times.Never);
-        _mockEventBus.Verify(x => x.Send(It.Is<DomainAccount>(m => m.TeamspeakIdentities.Single() == 2)), Times.Once);
+        _mockEventBus.Verify(x => x.Send(It.Is<ContextEventData<DomainAccount>>(m => m.Data.TeamspeakIdentities.Single() == 2)), Times.Once);
         _mockNotificationsService.Verify(
             x => x.SendTeamspeakNotification(
                 It.Is<HashSet<int>>(m => m.Single() == 2),

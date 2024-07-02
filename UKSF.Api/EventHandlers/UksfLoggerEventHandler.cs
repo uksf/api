@@ -8,7 +8,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.EventHandlers;
 
-public interface IUksfLoggerEventHandler : IEventHandler { }
+public interface IUksfLoggerEventHandler : IEventHandler;
 
 public class UksfLoggerEventHandler(
     IEventBus eventBus,

@@ -8,7 +8,7 @@ using UKSF.Api.Core.Signalr.Hubs;
 
 namespace UKSF.Api.EventHandlers;
 
-public interface INotificationsEventHandler : IEventHandler { }
+public interface INotificationsEventHandler : IEventHandler;
 
 public class NotificationsEventHandler : INotificationsEventHandler
 {
@@ -32,7 +32,7 @@ public class NotificationsEventHandler : INotificationsEventHandler
 
     private async Task HandleEvent(EventModel eventModel, ContextEventData<Notification> contextEventData)
     {
-        if (eventModel.EventType == EventType.ADD)
+        if (eventModel.EventType == EventType.Add)
         {
             await AddedEvent(contextEventData.Data);
         }

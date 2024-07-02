@@ -1,11 +1,8 @@
 ﻿using System.Text;
 using AvsAnLib;
-using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
-using UKSF.Api.Core.Signalr.Clients;
-using UKSF.Api.Core.Signalr.Hubs;
 
 namespace UKSF.Api.Core.Services;
 
@@ -27,41 +24,20 @@ public interface IAssignmentService
 
     Task<string> UnassignUnitRole(string id, string unitId);
     Task UnassignUnit(string id, string unitId);
-    Task UpdateGroupsAndRoles(string id);
+    void UpdateGroupsAndRoles(string id);
 }
 
-public class AssignmentService : IAssignmentService
+public class AssignmentService(
+    IAccountContext accountContext,
+    IUnitsContext unitsContext,
+    IServiceRecordService serviceRecordService,
+    IRanksService ranksService,
+    IUnitsService unitsService,
+    IDisplayNameService displayNameService,
+    IEventBus eventBus
+) : IAssignmentService
 {
     public const string RemoveFlag = "REMOVE";
-    private readonly IAccountContext _accountContext;
-    private readonly IHubContext<AccountHub, IAccountClient> _accountHub;
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IEventBus _eventBus;
-    private readonly IRanksService _ranksService;
-    private readonly IServiceRecordService _serviceRecordService;
-    private readonly IUnitsContext _unitsContext;
-    private readonly IUnitsService _unitsService;
-
-    public AssignmentService(
-        IAccountContext accountContext,
-        IUnitsContext unitsContext,
-        IServiceRecordService serviceRecordService,
-        IRanksService ranksService,
-        IUnitsService unitsService,
-        IDisplayNameService displayNameService,
-        IHubContext<AccountHub, IAccountClient> accountHub,
-        IEventBus eventBus
-    )
-    {
-        _accountContext = accountContext;
-        _unitsContext = unitsContext;
-        _serviceRecordService = serviceRecordService;
-        _ranksService = ranksService;
-        _unitsService = unitsService;
-        _displayNameService = displayNameService;
-        _accountHub = accountHub;
-        _eventBus = eventBus;
-    }
 
     public async Task<Notification> UpdateUnitRankAndRole(
         string id,
@@ -103,12 +79,12 @@ public class AssignmentService : IAssignmentService
 
             if (rankUpdate)
             {
-                message = $"{message}. Please change your TeamSpeak and Arma name to {_displayNameService.GetDisplayName(id)}";
+                message = $"{message}. Please change your TeamSpeak and Arma name to {displayNameService.GetDisplayName(id)}";
             }
         }
 
-        _serviceRecordService.AddServiceRecord(id, message, notes);
-        await UpdateGroupsAndRoles(id);
+        serviceRecordService.AddServiceRecord(id, message, notes);
+        UpdateGroupsAndRoles(id);
         return message != RemoveFlag
             ? new Notification { Owner = id, Message = message, Icon = positive ? NotificationIcons.Promotion : NotificationIcons.Demotion }
             : null;
@@ -116,38 +92,38 @@ public class AssignmentService : IAssignmentService
 
     public async Task AssignUnitRole(string id, string unitId, string role)
     {
-        await _unitsService.SetMemberRole(id, unitId, role);
-        await UpdateGroupsAndRoles(id);
+        await unitsService.SetMemberRole(id, unitId, role);
+        UpdateGroupsAndRoles(id);
     }
 
     public async Task UnassignAllUnits(string id)
     {
-        foreach (var unit in _unitsContext.Get())
+        foreach (var unit in unitsContext.Get())
         {
-            await _unitsService.RemoveMember(id, unit);
+            await unitsService.RemoveMember(id, unit);
         }
 
-        await UpdateGroupsAndRoles(id);
+        UpdateGroupsAndRoles(id);
     }
 
     public async Task UnassignAllUnitRoles(string id)
     {
-        foreach (var unit in _unitsContext.Get())
+        foreach (var unit in unitsContext.Get())
         {
-            await _unitsService.SetMemberRole(id, unit);
+            await unitsService.SetMemberRole(id, unit);
         }
 
-        await UpdateGroupsAndRoles(id);
+        UpdateGroupsAndRoles(id);
     }
 
     public async Task<string> UnassignUnitRole(string id, string unitId)
     {
-        var unit = _unitsContext.GetSingle(unitId);
+        var unit = unitsContext.GetSingle(unitId);
         var role = unit.Roles.FirstOrDefault(x => x.Value == id).Key;
-        if (_unitsService.RolesHasMember(unit, id))
+        if (unitsService.RolesHasMember(unit, id))
         {
-            await _unitsService.SetMemberRole(id, unitId);
-            await UpdateGroupsAndRoles(id);
+            await unitsService.SetMemberRole(id, unitId);
+            UpdateGroupsAndRoles(id);
         }
 
         return role;
@@ -155,53 +131,51 @@ public class AssignmentService : IAssignmentService
 
     public async Task UnassignUnit(string id, string unitId)
     {
-        var unit = _unitsContext.GetSingle(unitId);
-        await _unitsService.RemoveMember(id, unit);
-        await UpdateGroupsAndRoles(unitId);
+        var unit = unitsContext.GetSingle(unitId);
+        await unitsService.RemoveMember(id, unit);
+        UpdateGroupsAndRoles(unitId);
     }
 
-    // TODO: teamspeak and discord should probably be updated for account update events, or a separate assignment event bus could be used
-    public async Task UpdateGroupsAndRoles(string id)
+    public void UpdateGroupsAndRoles(string id)
     {
-        var domainAccount = _accountContext.GetSingle(id);
-        _eventBus.Send(domainAccount);
-        await _accountHub.Clients.Group(id).ReceiveAccountUpdate();
+        var domainAccount = accountContext.GetSingle(id);
+        eventBus.Send(new ContextEventData<DomainAccount>(id, domainAccount));
     }
 
     private async Task<Tuple<bool, bool>> UpdateUnit(string id, string unitString, StringBuilder notificationMessage)
     {
         var unitUpdate = false;
         var positive = true;
-        var unit = _unitsContext.GetSingle(x => x.Name == unitString);
+        var unit = unitsContext.GetSingle(x => x.Name == unitString);
         if (unit != null)
         {
             if (unit.Branch == UnitBranch.COMBAT)
             {
-                await _unitsService.RemoveMember(id, _accountContext.GetSingle(id).UnitAssignment);
-                await _accountContext.Update(id, x => x.UnitAssignment, unit.Name);
+                await unitsService.RemoveMember(id, accountContext.GetSingle(id).UnitAssignment);
+                await accountContext.Update(id, x => x.UnitAssignment, unit.Name);
             }
 
-            await _unitsService.AddMember(id, unit.Id);
-            notificationMessage.Append($"You have been transfered to {_unitsService.GetChainString(unit)}");
+            await unitsService.AddMember(id, unit.Id);
+            notificationMessage.Append($"You have been transferred to {unitsService.GetChainString(unit)}");
             unitUpdate = true;
         }
         else if (unitString == RemoveFlag)
         {
-            var currentUnit = _accountContext.GetSingle(id).UnitAssignment;
+            var currentUnit = accountContext.GetSingle(id).UnitAssignment;
             if (string.IsNullOrEmpty(currentUnit))
             {
-                return new(false, false);
+                return new Tuple<bool, bool>(false, false);
             }
 
-            unit = _unitsContext.GetSingle(x => x.Name == currentUnit);
-            await _unitsService.RemoveMember(id, currentUnit);
-            await _accountContext.Update(id, x => x.UnitAssignment, null);
-            notificationMessage.Append($"You have been removed from {_unitsService.GetChainString(unit)}");
+            unit = unitsContext.GetSingle(x => x.Name == currentUnit);
+            await unitsService.RemoveMember(id, currentUnit);
+            await accountContext.Update(id, x => x.UnitAssignment, null);
+            notificationMessage.Append($"You have been removed from {unitsService.GetChainString(unit)}");
             unitUpdate = true;
             positive = false;
         }
 
-        return new(unitUpdate, positive);
+        return new Tuple<bool, bool>(unitUpdate, positive);
     }
 
     private async Task<Tuple<bool, bool>> UpdateRole(string id, string role, bool unitUpdate, StringBuilder notificationMessage)
@@ -210,7 +184,7 @@ public class AssignmentService : IAssignmentService
         var positive = true;
         if (!string.IsNullOrEmpty(role) && role != RemoveFlag)
         {
-            await _accountContext.Update(id, x => x.RoleAssignment, role);
+            await accountContext.Update(id, x => x.RoleAssignment, role);
             notificationMessage.Append(
                 $"{(unitUpdate ? $" as {AvsAn.Query(role).Article} {role}" : $"You have been assigned as {AvsAn.Query(role).Article} {role}")}"
             );
@@ -218,8 +192,8 @@ public class AssignmentService : IAssignmentService
         }
         else if (role == RemoveFlag)
         {
-            var currentRole = _accountContext.GetSingle(id).RoleAssignment;
-            await _accountContext.Update(id, x => x.RoleAssignment, null);
+            var currentRole = accountContext.GetSingle(id).RoleAssignment;
+            await accountContext.Update(id, x => x.RoleAssignment, null);
             notificationMessage.Append(
                 string.IsNullOrEmpty(currentRole)
                     ? $"{(unitUpdate ? " and unassigned from your role" : "You have been unassigned from your role")}"
@@ -230,23 +204,23 @@ public class AssignmentService : IAssignmentService
             positive = false;
         }
 
-        return new(roleUpdate, positive);
+        return new Tuple<bool, bool>(roleUpdate, positive);
     }
 
     private async Task<Tuple<bool, bool>> UpdateRank(string id, string rank, bool unitUpdate, bool roleUpdate, StringBuilder notificationMessage)
     {
         var rankUpdate = false;
         var positive = true;
-        var currentRank = _accountContext.GetSingle(id).Rank;
+        var currentRank = accountContext.GetSingle(id).Rank;
         if (!string.IsNullOrEmpty(rank) && rank != RemoveFlag)
         {
             if (currentRank == rank)
             {
-                return new(false, true);
+                return new Tuple<bool, bool>(false, true);
             }
 
-            await _accountContext.Update(id, x => x.Rank, rank);
-            var promotion = string.IsNullOrEmpty(currentRank) || _ranksService.IsSuperior(rank, currentRank);
+            await accountContext.Update(id, x => x.Rank, rank);
+            var promotion = string.IsNullOrEmpty(currentRank) || ranksService.IsSuperior(rank, currentRank);
             notificationMessage.Append(
                 $"{(unitUpdate || roleUpdate ? $" and {(promotion ? "promoted" : "demoted")} to {rank}" : $"You have been {(promotion ? "promoted" : "demoted")} to {rank}")}"
             );
@@ -254,12 +228,12 @@ public class AssignmentService : IAssignmentService
         }
         else if (rank == RemoveFlag)
         {
-            await _accountContext.Update(id, x => x.Rank, null);
+            await accountContext.Update(id, x => x.Rank, null);
             notificationMessage.Append($"{(unitUpdate || roleUpdate ? $" and demoted from {currentRank}" : $"You have been demoted from {currentRank}")}");
             rankUpdate = true;
             positive = false;
         }
 
-        return new(rankUpdate, positive);
+        return new Tuple<bool, bool>(rankUpdate, positive);
     }
 }

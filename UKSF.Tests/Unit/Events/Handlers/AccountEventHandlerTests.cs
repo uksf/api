@@ -47,8 +47,8 @@ public class AccountEventHandlerTests
 
         _accountDataEventHandler.Init();
 
-        _eventBus.Send(new(EventType.UPDATE, new ContextEventData<DomainAccount>(null, null)));
-        _eventBus.Send(new(EventType.UPDATE, new ContextEventData<DomainUnit>(null, null)));
+        _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<DomainAccount>(null, null)));
+        _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<DomainUnit>(null, null)));
 
         _mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Exactly(2));
     }
@@ -65,10 +65,10 @@ public class AccountEventHandlerTests
 
         _accountDataEventHandler.Init();
 
-        _eventBus.Send(new(EventType.ADD, new ContextEventData<DomainAccount>(null, null)));
-        _eventBus.Send(new(EventType.DELETE, new ContextEventData<DomainAccount>(null, null)));
-        _eventBus.Send(new(EventType.ADD, new ContextEventData<DomainUnit>(null, null)));
-        _eventBus.Send(new(EventType.DELETE, new ContextEventData<DomainUnit>(null, null)));
+        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<DomainAccount>(null, null)));
+        _eventBus.Send(new EventModel(EventType.Delete, new ContextEventData<DomainAccount>(null, null)));
+        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<DomainUnit>(null, null)));
+        _eventBus.Send(new EventModel(EventType.Delete, new ContextEventData<DomainUnit>(null, null)));
 
         mockAccountClient.Verify(x => x.ReceiveAccountUpdate(), Times.Never);
     }
@@ -85,8 +85,8 @@ public class AccountEventHandlerTests
 
         _accountDataEventHandler.Init();
 
-        _eventBus.Send(new(EventType.UPDATE, new ContextEventData<DomainAccount>("1", null)));
-        _eventBus.Send(new(EventType.UPDATE, new ContextEventData<DomainUnit>("2", null)));
+        _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<DomainAccount>("1", null)));
+        _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<DomainUnit>("2", null)));
 
         mockAccountClient.Verify(x => x.ReceiveAccountUpdate(), Times.Exactly(2));
     }

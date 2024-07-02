@@ -9,7 +9,7 @@ using UKSF.Api.Signalr.Hubs;
 
 namespace UKSF.Api.EventHandlers;
 
-public interface ICommentThreadEventHandler : IEventHandler { }
+public interface ICommentThreadEventHandler : IEventHandler;
 
 public class CommentThreadEventHandler : ICommentThreadEventHandler
 {
@@ -42,13 +42,13 @@ public class CommentThreadEventHandler : ICommentThreadEventHandler
     {
         switch (eventModel.EventType)
         {
-            case EventType.ADD:
+            case EventType.Add:
                 await AddedEvent(commentThreadEventData.CommentThreadId, commentThreadEventData.Comment);
                 break;
-            case EventType.DELETE:
+            case EventType.Delete:
                 await DeletedEvent(commentThreadEventData.CommentThreadId, commentThreadEventData.Comment);
                 break;
-            case EventType.UPDATE: break;
+            case EventType.Update: break;
         }
     }
 

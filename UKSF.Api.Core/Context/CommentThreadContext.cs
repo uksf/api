@@ -12,27 +12,21 @@ public interface ICommentThreadContext : IMongoContext<CommentThread>, ICachedMo
     Task RemoveCommentFromThread(string commentThreadId, Comment comment);
 }
 
-public class CommentThreadContext : CachedMongoContext<CommentThread>, ICommentThreadContext
+public class CommentThreadContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService)
+    : CachedMongoContext<CommentThread>(mongoCollectionFactory, eventBus, variablesService, "commentThreads"), ICommentThreadContext
 {
-    public CommentThreadContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
-        mongoCollectionFactory,
-        eventBus,
-        variablesService,
-        "commentThreads"
-    ) { }
-
     public async Task AddCommentToThread(string commentThreadId, Comment comment)
     {
         var updateDefinition = Builders<CommentThread>.Update.Push(x => x.Comments, comment);
         await base.Update(commentThreadId, updateDefinition);
-        CommentThreadDataEvent(new(EventType.ADD, new CommentThreadEventData(commentThreadId, comment)));
+        CommentThreadDataEvent(new EventModel(EventType.Add, new CommentThreadEventData(commentThreadId, comment)));
     }
 
     public async Task RemoveCommentFromThread(string commentThreadId, Comment comment)
     {
         var updateDefinition = Builders<CommentThread>.Update.Pull(x => x.Comments, comment);
         await base.Update(commentThreadId, updateDefinition);
-        CommentThreadDataEvent(new(EventType.DELETE, new CommentThreadEventData(commentThreadId, comment)));
+        CommentThreadDataEvent(new EventModel(EventType.Delete, new CommentThreadEventData(commentThreadId, comment)));
     }
 
     private void CommentThreadDataEvent(EventModel eventModel)

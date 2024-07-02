@@ -1,13 +1,7 @@
 ﻿namespace UKSF.Api.Core.Models;
 
-public class DiscordEventData
+public class DiscordEventData(DiscordUserEventType eventType, string eventData) : EventData
 {
-    public DiscordEventData(DiscordUserEventType eventType, string eventData)
-    {
-        EventType = eventType;
-        EventData = eventData;
-    }
-
-    public string EventData { get; set; }
-    public DiscordUserEventType EventType { get; set; }
+    public string EventData { get; } = eventData;
+    public DiscordUserEventType EventType { get; } = eventType;
 }

@@ -88,8 +88,14 @@ public class BuildProcessHelper(
 
             if (_capturedException != null)
             {
+                if (_useLogger)
+                {
+                    logger.LogError($"{_logInfo}: Build process captured exception", _capturedException);
+                }
+
                 if (raiseErrors)
                 {
+
                     throw _capturedException;
                 }
 
@@ -101,6 +107,11 @@ public class BuildProcessHelper(
 
             if (_process.ExitCode != 0 && raiseErrors)
             {
+                if (_useLogger)
+                {
+                    logger.LogError($"{_logInfo}: Build process exit code was non-zero ({_process.ExitCode})");
+                }
+
                 var json = "";
                 var messages = ExtractMessages(_results.Last(), ref json);
                 if (messages.Count != 0)
@@ -135,6 +146,11 @@ public class BuildProcessHelper(
             {
                 stepLogger.LogError(exception);
             }
+        }
+
+        if (_useLogger)
+        {
+            logger.LogWarning($"{_logInfo}: Build process reached return");
         }
 
         return _results;

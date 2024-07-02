@@ -12,6 +12,7 @@ public static class ObservableExtensions
     }
 
     public static void SubscribeWithAsyncNext<T>(this IObservable<EventModel> source, Func<EventModel, T, Task> onNext, Action<Exception> onError)
+        where T : EventData
     {
         source.Select(x => Observable.Defer(() => x.Data is T data ? onNext(x, data).ToObservable() : Task.CompletedTask.ToObservable()))
               .Concat()

@@ -8,7 +8,7 @@ using UKSF.Api.Signalr.Hubs;
 
 namespace UKSF.Api.EventHandlers;
 
-public interface ICommandRequestEventHandler : IEventHandler { }
+public interface ICommandRequestEventHandler : IEventHandler;
 
 public class CommandRequestEventHandler : ICommandRequestEventHandler
 {
@@ -34,11 +34,11 @@ public class CommandRequestEventHandler : ICommandRequestEventHandler
     {
         switch (eventModel.EventType)
         {
-            case EventType.ADD:
-            case EventType.UPDATE:
+            case EventType.Add:
+            case EventType.Update:
                 await UpdatedEvent();
                 break;
-            case EventType.DELETE: break;
+            case EventType.Delete: break;
         }
     }
 

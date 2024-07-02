@@ -46,7 +46,7 @@ public class NotificationsEventHandlerTests
 
         _notificationsEventHandler.Init();
 
-        _eventBus.Send(new(EventType.ADD, new ContextEventData<Notification>(string.Empty, null)));
+        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<Notification>(string.Empty, null)));
 
         _mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Once);
     }
@@ -63,8 +63,8 @@ public class NotificationsEventHandlerTests
 
         _notificationsEventHandler.Init();
 
-        _eventBus.Send(new(EventType.UPDATE, new ContextEventData<Notification>(string.Empty, null)));
-        _eventBus.Send(new(EventType.DELETE, new ContextEventData<Notification>(string.Empty, null)));
+        _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<Notification>(string.Empty, null)));
+        _eventBus.Send(new EventModel(EventType.Delete, new ContextEventData<Notification>(string.Empty, null)));
 
         mockClient.Verify(x => x.ReceiveNotification(It.IsAny<Notification>()), Times.Never);
     }
@@ -81,7 +81,7 @@ public class NotificationsEventHandlerTests
 
         _notificationsEventHandler.Init();
 
-        _eventBus.Send(new(EventType.ADD, new ContextEventData<Notification>(string.Empty, new())));
+        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<Notification>(string.Empty, new Notification())));
 
         mockClient.Verify(x => x.ReceiveNotification(It.IsAny<Notification>()), Times.Once);
     }
@@ -99,7 +99,7 @@ public class NotificationsEventHandlerTests
 
         _notificationsEventHandler.Init();
 
-        _eventBus.Send(new(EventType.ADD, new ContextEventData<Notification>(string.Empty, new() { Owner = "1" })));
+        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<Notification>(string.Empty, new Notification { Owner = "1" })));
 
         subject.Should().Be("1");
     }

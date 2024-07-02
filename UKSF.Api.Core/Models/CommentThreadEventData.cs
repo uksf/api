@@ -1,13 +1,7 @@
 ﻿namespace UKSF.Api.Core.Models;
 
-public class CommentThreadEventData
+public class CommentThreadEventData(string commentThreadId, Comment comment) : EventData
 {
-    public CommentThreadEventData(string commentThreadId, Comment comment)
-    {
-        CommentThreadId = commentThreadId;
-        Comment = comment;
-    }
-
-    public Comment Comment { get; set; }
-    public string CommentThreadId { get; set; }
+    public Comment Comment { get; } = comment;
+    public string CommentThreadId { get; } = commentThreadId;
 }

@@ -1,13 +1,7 @@
 ﻿namespace UKSF.Api.Core.Models;
 
-public class ContextEventData<T>
+public class ContextEventData<T>(string id, T data) : EventData
 {
-    public ContextEventData(string id, T data)
-    {
-        Id = id;
-        Data = data;
-    }
-
-    public T Data { get; set; }
-    public string Id { get; set; }
+    public T Data { get; } = data;
+    public string Id { get; } = id;
 }

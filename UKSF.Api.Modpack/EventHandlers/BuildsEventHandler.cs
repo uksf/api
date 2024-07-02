@@ -10,27 +10,16 @@ using UKSF.Api.Modpack.Signalr.Hubs;
 
 namespace UKSF.Api.Modpack.EventHandlers;
 
-public interface IBuildsEventHandler : IEventHandler { }
+public interface IBuildsEventHandler : IEventHandler;
 
-public class BuildsEventHandler : IBuildsEventHandler
+public class BuildsEventHandler(IEventBus eventBus, IHubContext<BuildsHub, IModpackClient> hub, IUksfLogger logger) : IBuildsEventHandler
 {
-    private readonly IEventBus _eventBus;
-    private readonly IHubContext<BuildsHub, IModpackClient> _hub;
-    private readonly IUksfLogger _logger;
-
-    public BuildsEventHandler(IEventBus eventBus, IHubContext<BuildsHub, IModpackClient> hub, IUksfLogger logger)
-    {
-        _eventBus = eventBus;
-        _hub = hub;
-        _logger = logger;
-    }
-
     public void EarlyInit() { }
 
     public void Init()
     {
-        _eventBus.AsObservable().SubscribeWithAsyncNext<ModpackBuild>(HandleBuildEvent, _logger.LogError);
-        _eventBus.AsObservable().SubscribeWithAsyncNext<ModpackBuildStepEventData>(HandleBuildStepEvent, _logger.LogError);
+        eventBus.AsObservable().SubscribeWithAsyncNext<ModpackBuildEventData>(HandleBuildEvent, logger.LogError);
+        eventBus.AsObservable().SubscribeWithAsyncNext<ModpackBuildStepEventData>(HandleBuildStepEvent, logger.LogError);
     }
 
     private async Task HandleBuildStepEvent(EventModel eventModel, ModpackBuildStepEventData data)
@@ -40,26 +29,26 @@ public class BuildsEventHandler : IBuildsEventHandler
             return;
         }
 
-        if (eventModel.EventType == EventType.UPDATE)
+        if (eventModel.EventType == EventType.Update)
         {
-            await _hub.Clients.Group(data.BuildId).ReceiveBuildStep(data.BuildStep);
+            await hub.Clients.Group(data.BuildId).ReceiveBuildStep(data.BuildStep);
         }
     }
 
-    private async Task HandleBuildEvent(EventModel eventModel, ModpackBuild build)
+    private async Task HandleBuildEvent(EventModel eventModel, ModpackBuildEventData data)
     {
-        if (build == null)
+        if (data.Build == null)
         {
             return;
         }
 
         switch (eventModel.EventType)
         {
-            case EventType.ADD:
-                await AddedEvent(build);
+            case EventType.Add:
+                await AddedEvent(data.Build);
                 break;
-            case EventType.UPDATE:
-                await UpdatedEvent(build);
+            case EventType.Update:
+                await UpdatedEvent(data.Build);
                 break;
         }
     }
@@ -68,11 +57,11 @@ public class BuildsEventHandler : IBuildsEventHandler
     {
         if (build.Environment == GameEnvironment.DEVELOPMENT)
         {
-            await _hub.Clients.All.ReceiveBuild(build);
+            await hub.Clients.All.ReceiveBuild(build);
         }
         else
         {
-            await _hub.Clients.All.ReceiveReleaseCandidateBuild(build);
+            await hub.Clients.All.ReceiveReleaseCandidateBuild(build);
         }
     }
 
@@ -80,11 +69,11 @@ public class BuildsEventHandler : IBuildsEventHandler
     {
         if (build.Environment == GameEnvironment.DEVELOPMENT)
         {
-            await _hub.Clients.All.ReceiveBuild(build);
+            await hub.Clients.All.ReceiveBuild(build);
         }
         else
         {
-            await _hub.Clients.All.ReceiveReleaseCandidateBuild(build);
+            await hub.Clients.All.ReceiveReleaseCandidateBuild(build);
         }
     }
 }

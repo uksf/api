@@ -9,7 +9,7 @@ using UKSF.Api.Services;
 
 namespace UKSF.Api.EventHandlers;
 
-public interface IDiscordEventhandler : IEventHandler { }
+public interface IDiscordEventhandler : IEventHandler;
 
 public class DiscordEventhandler : IDiscordEventhandler
 {

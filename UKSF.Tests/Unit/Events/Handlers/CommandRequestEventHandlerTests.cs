@@ -41,7 +41,7 @@ public class CommandRequestEventHandlerTests
 
         _commandRequestEventHandler.Init();
 
-        _eventBus.Send(new(EventType.DELETE, new ContextEventData<CommandRequest>(null, null)));
+        _eventBus.Send(new EventModel(EventType.Delete, new ContextEventData<CommandRequest>(null, null)));
 
         mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Never);
     }
@@ -58,8 +58,8 @@ public class CommandRequestEventHandlerTests
 
         _commandRequestEventHandler.Init();
 
-        _eventBus.Send(new(EventType.ADD, new ContextEventData<CommandRequest>(null, null)));
-        _eventBus.Send(new(EventType.UPDATE, new ContextEventData<CommandRequest>(null, null)));
+        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<CommandRequest>(null, null)));
+        _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<CommandRequest>(null, null)));
 
         mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Exactly(2));
     }

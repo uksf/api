@@ -119,7 +119,7 @@ public class UnitsController(
             foreach (var account in accountContext.Get(x => x.UnitAssignment == oldUnit.Name))
             {
                 await accountContext.Update(account.Id, x => x.UnitAssignment, unit.Name);
-                eventBus.Send(account);
+                eventBus.Send(new ContextEventData<DomainAccount>(id, account));
             }
         }
 
@@ -127,7 +127,7 @@ public class UnitsController(
         {
             foreach (var account in unit.Members.Select(accountContext.GetSingle))
             {
-                eventBus.Send(account);
+                eventBus.Send(new ContextEventData<DomainAccount>(id, account));
             }
         }
 
@@ -135,7 +135,7 @@ public class UnitsController(
         {
             foreach (var account in unit.Members.Select(accountContext.GetSingle))
             {
-                eventBus.Send(account);
+                eventBus.Send(new ContextEventData<DomainAccount>(id, account));
             }
         }
     }
@@ -185,7 +185,7 @@ public class UnitsController(
         {
             foreach (var accountId in child.Members)
             {
-                await assignmentService.UpdateGroupsAndRoles(accountId);
+                assignmentService.UpdateGroupsAndRoles(accountId);
             }
         }
     }
