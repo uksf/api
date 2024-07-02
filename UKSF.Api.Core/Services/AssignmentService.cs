@@ -133,7 +133,7 @@ public class AssignmentService(
     {
         var unit = unitsContext.GetSingle(unitId);
         await unitsService.RemoveMember(id, unit);
-        UpdateGroupsAndRoles(unitId);
+        UpdateGroupsAndRoles(id);
     }
 
     public void UpdateGroupsAndRoles(string id)
