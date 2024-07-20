@@ -40,9 +40,7 @@ public class DiscordGithubService(
 
         if (commands.FirstOrDefault(x => x.Name == NewGithubIssueCommandName) is null)
         {
-            var command = new SlashCommandBuilder().WithName(NewGithubIssueCommandName)
-                                                   .WithDescription("Create a new GitHub issue for the Modpack")
-                                                   .WithDefaultMemberPermissions(GuildPermission.SendMessages | GuildPermission.SendMessagesInThreads);
+            var command = new SlashCommandBuilder().WithName(NewGithubIssueCommandName).WithDescription("Create a new GitHub issue for the Modpack");
 
             await guild.CreateApplicationCommandAsync(command.Build());
         }
