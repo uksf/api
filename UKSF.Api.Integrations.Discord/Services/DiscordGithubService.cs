@@ -39,7 +39,7 @@ public class DiscordGithubService(
         {
             var command = new SlashCommandBuilder().WithName(NewGithubIssueCommandName)
                                                    .WithDescription("Create a new GitHub issue for the Modpack")
-                                                   .WithDefaultMemberPermissions(GuildPermission.SendMessages);
+                                                   .WithDefaultMemberPermissions(GuildPermission.SendMessages | GuildPermission.SendMessagesInThreads);
 
             await guild.CreateApplicationCommandAsync(command.Build());
         }
