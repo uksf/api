@@ -1,4 +1,6 @@
-﻿namespace UKSF.Api.Integrations.Discord.Services;
+﻿using UKSF.Api.Core.Services;
+
+namespace UKSF.Api.Integrations.Discord.Services;
 
 public interface IDiscordActivationService
 {
@@ -6,7 +8,11 @@ public interface IDiscordActivationService
     Task Deactivate();
 }
 
-public class DiscordActivationService(IDiscordClientService discordClientService, IEnumerable<IDiscordService> discordServices) : IDiscordActivationService
+public class DiscordActivationService(
+    IDiscordClientService discordClientService,
+    IEnumerable<IDiscordService> discordServices,
+    IVariablesService variablesService
+) : IDiscordActivationService
 {
     public async Task Activate()
     {
@@ -19,16 +25,22 @@ public class DiscordActivationService(IDiscordClientService discordClientService
         }
     }
 
+    public async Task Deactivate()
+    {
+        await discordClientService.Disconnect();
+    }
+
     private void OnClientReady()
     {
+        var createCommandsEnabled = variablesService.GetFeatureState("DISCORD_CREATE_COMMANDS");
+        if (!createCommandsEnabled)
+        {
+            return;
+        }
+
         foreach (var discordService in discordServices)
         {
             discordService.CreateCommands();
         }
-    }
-
-    public async Task Deactivate()
-    {
-        await discordClientService.Disconnect();
     }
 }

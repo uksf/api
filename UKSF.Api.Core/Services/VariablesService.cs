@@ -10,22 +10,15 @@ public interface IVariablesService
     bool GetFeatureState(string featureKey);
 }
 
-public class VariablesService : IVariablesService
+public class VariablesService(IVariablesContext context) : IVariablesService
 {
-    private readonly IVariablesContext _context;
-
-    public VariablesService(IVariablesContext context)
-    {
-        _context = context;
-    }
-
     public VariableItem GetVariable(string key)
     {
-        return _context.GetSingle(key);
+        return context.GetSingle(key);
     }
 
     public bool GetFeatureState(string featureKey)
     {
-        return _context.GetSingle($"FEATURE_{featureKey}").AsBoolWithDefault(false);
+        return context.GetSingle($"FEATURE_{featureKey}").AsBoolWithDefault(false);
     }
 }
