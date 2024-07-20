@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
-using UKSF.Api.Core.Commands;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Request;
@@ -14,7 +13,6 @@ namespace UKSF.Api.Modpack.Controllers;
 public class GithubIssueController(
     IDisplayNameService displayNameService,
     IGithubIssuesService githubIssuesService,
-    ISendBasicEmailCommand sendBasicEmailCommand,
     IHttpContextService httpContextService
 ) : ControllerBase
 {

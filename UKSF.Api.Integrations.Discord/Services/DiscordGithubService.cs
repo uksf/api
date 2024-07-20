@@ -8,7 +8,10 @@ using MembershipState = UKSF.Api.Core.Models.MembershipState;
 
 namespace UKSF.Api.Integrations.Discord.Services;
 
-public interface IDiscordGithubService : IDiscordService { }
+public interface IDiscordGithubService : IDiscordService
+{
+    Task DeleteCommands();
+}
 
 public class DiscordGithubService(
     IDiscordClientService discordClientService,
@@ -42,6 +45,18 @@ public class DiscordGithubService(
                                                    .WithDefaultMemberPermissions(GuildPermission.SendMessages | GuildPermission.SendMessagesInThreads);
 
             await guild.CreateApplicationCommandAsync(command.Build());
+        }
+    }
+
+    public async Task DeleteCommands()
+    {
+        var guild = GetGuild();
+        var commands = await guild.GetApplicationCommandsAsync();
+
+        var githubIssueCommand = commands.FirstOrDefault(x => x.Name == NewGithubIssueCommandName);
+        if (githubIssueCommand is not null)
+        {
+            await githubIssueCommand.DeleteAsync();
         }
     }
 

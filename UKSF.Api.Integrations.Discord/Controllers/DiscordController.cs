@@ -6,20 +6,13 @@ using UKSF.Api.Integrations.Discord.Services;
 namespace UKSF.Api.Integrations.Discord.Controllers;
 
 [Route("[controller]")]
-public class DiscordController : ControllerBase
+public class DiscordController(IDiscordMembersService discordMembersService, IDiscordGithubService discordGithubService) : ControllerBase
 {
-    private readonly IDiscordMembersService _discordMembersService;
-
-    public DiscordController(IDiscordMembersService discordMembersService)
-    {
-        _discordMembersService = discordMembersService;
-    }
-
     [HttpGet("roles")]
     [Permissions(Permissions.Admin)]
     public async Task<string> GetRoles()
     {
-        var roles = await _discordMembersService.GetRoles();
+        var roles = await discordMembersService.GetRoles();
         return roles.OrderBy(x => x.Name).Select(x => $"{x.Name}: {x.Id}").Aggregate((x, y) => $"{x}\n{y}");
     }
 
@@ -27,13 +20,20 @@ public class DiscordController : ControllerBase
     [Permissions(Permissions.Admin)]
     public async Task UpdateUserRoles()
     {
-        await _discordMembersService.UpdateAllUsers();
+        await discordMembersService.UpdateAllUsers();
     }
 
     [HttpGet("{accountId}/onlineUserDetails")]
     [Permissions(Permissions.Recruiter)]
     public OnlineState GetOnlineUserDetails([FromRoute] string accountId)
     {
-        return _discordMembersService.GetOnlineUserDetails(accountId);
+        return discordMembersService.GetOnlineUserDetails(accountId);
+    }
+
+    [HttpDelete("command")]
+    [Permissions(Permissions.Admin)]
+    public Task DeleteNewGithubIssueCommand()
+    {
+        return discordGithubService.DeleteCommands();
     }
 }
