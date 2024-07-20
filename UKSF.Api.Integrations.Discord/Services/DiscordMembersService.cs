@@ -17,35 +17,32 @@ public interface IDiscordMembersService : IDiscordService
     Task UpdateUserById(ulong discordId);
 }
 
-public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
+public class DiscordMembersService(
+    IDiscordClientService discordClientService,
+    IHttpContextService httpContextService,
+    IVariablesService variablesService,
+    IAccountContext accountContext,
+    IUnitsContext unitsContext,
+    IRanksContext ranksContext,
+    IUnitsService unitsService,
+    IDisplayNameService displayNameService,
+    IUksfLogger logger
+) : DiscordBaseService(discordClientService, accountContext, httpContextService, variablesService, logger), IDiscordMembersService
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IUksfLogger _logger;
-    private readonly IRanksContext _ranksContext;
-    private readonly IUnitsContext _unitsContext;
-    private readonly IUnitsService _unitsService;
-    private readonly IVariablesService _variablesService;
+    private readonly IUksfLogger _logger = logger;
+    private readonly IVariablesService _variablesService = variablesService;
+    private readonly IAccountContext _accountContext = accountContext;
 
-    public DiscordMembersService(
-        IDiscordClientService discordClientService,
-        IHttpContextService httpContextService,
-        IVariablesService variablesService,
-        IAccountContext accountContext,
-        IUnitsContext unitsContext,
-        IRanksContext ranksContext,
-        IUnitsService unitsService,
-        IDisplayNameService displayNameService,
-        IUksfLogger logger
-    ) : base(discordClientService, httpContextService, variablesService, logger)
+    public void Activate()
     {
-        _variablesService = variablesService;
-        _accountContext = accountContext;
-        _unitsContext = unitsContext;
-        _ranksContext = ranksContext;
-        _unitsService = unitsService;
-        _displayNameService = displayNameService;
-        _logger = logger;
+        var client = GetClient();
+        client.GuildMemberUpdated += ClientOnGuildMemberUpdated;
+        client.UserJoined += ClientOnUserJoined;
+    }
+
+    public Task CreateCommands()
+    {
+        return Task.CompletedTask;
     }
 
     public async Task<IReadOnlyCollection<SocketRole>> GetRoles()
@@ -173,13 +170,6 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
         await UpdateAccountNickname(user, domainAccount);
     }
 
-    public void Activate()
-    {
-        var client = GetClient();
-        client.GuildMemberUpdated += ClientOnGuildMemberUpdated;
-        client.UserJoined += ClientOnUserJoined;
-    }
-
     private async Task UpdateAccountRoles(SocketGuildUser user, DomainAccount domainAccount)
     {
         var userRoles = user.Roles;
@@ -215,7 +205,7 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
         var name = domainAccount switch
         {
             null => user.DisplayName,
-            _    => _displayNameService.GetDisplayName(domainAccount)
+            _    => displayNameService.GetDisplayName(domainAccount)
         };
 
         if (user.Nickname != name)
@@ -236,7 +226,7 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
     private void UpdateAccountRanks(DomainAccount domainAccount, ISet<string> allowedRoles)
     {
         var rank = domainAccount.Rank;
-        foreach (var x in _ranksContext.Get().Where(x => rank == x.Name))
+        foreach (var x in ranksContext.Get().Where(x => rank == x.Name))
         {
             allowedRoles.Add(x.DiscordRoleId);
         }
@@ -244,9 +234,9 @@ public class DiscordMembersService : DiscordBaseService, IDiscordMembersService
 
     private void UpdateAccountUnits(DomainAccount domainAccount, ISet<string> allowedRoles)
     {
-        var accountUnit = _unitsContext.GetSingle(x => x.Name == domainAccount.UnitAssignment);
-        var accountUnits = _unitsContext.Get(x => x.Members.Contains(domainAccount.Id)).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
-        var accountUnitParents = _unitsService.GetParents(accountUnit).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
+        var accountUnit = unitsContext.GetSingle(x => x.Name == domainAccount.UnitAssignment);
+        var accountUnits = unitsContext.Get(x => x.Members.Contains(domainAccount.Id)).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
+        var accountUnitParents = unitsService.GetParents(accountUnit).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
         accountUnits.ForEach(x => allowedRoles.Add(x.DiscordRoleId));
         accountUnitParents.ForEach(x => allowedRoles.Add(x.DiscordRoleId));
     }

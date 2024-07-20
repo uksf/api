@@ -1,7 +1,9 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Integrations.Discord.Models;
 
@@ -10,46 +12,35 @@ namespace UKSF.Api.Integrations.Discord.Services;
 public interface IDiscordService
 {
     void Activate();
+    Task CreateCommands();
 }
 
-public class DiscordBaseService
+public class DiscordBaseService(
+    IDiscordClientService discordClientService,
+    IAccountContext accountContext,
+    IHttpContextService httpContextService,
+    IVariablesService variablesService,
+    IUksfLogger logger
+)
 {
-    private readonly IDiscordClientService _discordClientService;
-    private readonly IHttpContextService _httpContextService;
-    private readonly IUksfLogger _logger;
-    private readonly IVariablesService _variablesService;
-
-    protected DiscordBaseService(
-        IDiscordClientService discordClientService,
-        IHttpContextService httpContextService,
-        IVariablesService variablesService,
-        IUksfLogger logger
-    )
-    {
-        _discordClientService = discordClientService;
-        _httpContextService = httpContextService;
-        _variablesService = variablesService;
-        _logger = logger;
-    }
-
     protected DiscordSocketClient GetClient()
     {
-        return _discordClientService.GetClient();
+        return discordClientService.GetClient();
     }
 
     protected SocketGuild GetGuild()
     {
-        return _discordClientService.GetGuild();
+        return discordClientService.GetGuild();
     }
 
     protected Task AssertOnline()
     {
-        return _discordClientService.AssertOnline();
+        return discordClientService.AssertOnline();
     }
 
     protected bool IsDiscordDisabled()
     {
-        return _discordClientService.IsDiscordDisabled();
+        return discordClientService.IsDiscordDisabled();
     }
 
     protected Task WrapEventTask(Func<Task> actionTask)
@@ -69,21 +60,6 @@ public class DiscordBaseService
         Task.Run(async () => { await RunEventTask(actionTask); });
 
         return Task.CompletedTask;
-    }
-
-    private async Task RunEventTask(Func<Task> actionTask)
-    {
-        var discordAccountId = _variablesService.GetVariable("DISCORD_BOT_ACCOUNT_ID").AsString();
-        _httpContextService.SetContextId(discordAccountId);
-        try
-        {
-            await actionTask();
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception);
-            throw;
-        }
     }
 
     protected static string GetUserNickname(IGuildUser user)
@@ -116,6 +92,32 @@ public class DiscordBaseService
     {
         var dataParts = customId.Split(':');
 
-        return new() { Id = dataParts[0], Data = dataParts.Skip(1).ToList() };
+        return new DiscordButtonData { Id = dataParts[0], Data = dataParts.Skip(1).ToList() };
+    }
+
+    protected DomainAccount GetAccountForDiscordUser(ulong userId)
+    {
+        return accountContext.GetSingle(x => x.DiscordId == userId.ToString());
+    }
+
+    protected void SetUserContextByDiscordUser(ulong userId)
+    {
+        var domainAccount = GetAccountForDiscordUser(userId);
+        httpContextService.SetContextId(domainAccount.Id);
+    }
+
+    private async Task RunEventTask(Func<Task> actionTask)
+    {
+        var discordAccountId = variablesService.GetVariable("DISCORD_BOT_ACCOUNT_ID").AsString();
+        httpContextService.SetContextId(discordAccountId);
+        try
+        {
+            await actionTask();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception);
+            throw;
+        }
     }
 }

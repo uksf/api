@@ -14,41 +14,33 @@ namespace UKSF.Api.Integrations.Discord.Services;
 
 public interface IDiscordRecruitmentService : IDiscordService { }
 
-public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitmentService
+public class DiscordRecruitmentService(
+    IDiscordClientService discordClientService,
+    IHttpContextService httpContextService,
+    IVariablesService variablesService,
+    IAccountContext accountContext,
+    IDisplayNameService displayNameService,
+    IBuildUrlQuery buildUrlQuery,
+    IUpdateApplicationCommand updateApplicationCommand,
+    IUksfLogger logger
+) : DiscordBaseService(discordClientService, accountContext, httpContextService, variablesService, logger), IDiscordRecruitmentService
 {
     private const string ButtonIdReject = "reject";
     private const string ButtonIdDismissRejection = "dismissrejection";
-    private readonly IAccountContext _accountContext;
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IBuildUrlQuery _buildUrlQuery;
-    private readonly IUpdateApplicationCommand _updateApplicationCommand;
-    private readonly IUksfLogger _logger;
-    private readonly IVariablesService _variablesService;
-
-    public DiscordRecruitmentService(
-        IDiscordClientService discordClientService,
-        IHttpContextService httpContextService,
-        IVariablesService variablesService,
-        IAccountContext accountContext,
-        IDisplayNameService displayNameService,
-        IBuildUrlQuery buildUrlQuery,
-        IUpdateApplicationCommand updateApplicationCommand,
-        IUksfLogger logger
-    ) : base(discordClientService, httpContextService, variablesService, logger)
-    {
-        _variablesService = variablesService;
-        _accountContext = accountContext;
-        _displayNameService = displayNameService;
-        _buildUrlQuery = buildUrlQuery;
-        _updateApplicationCommand = updateApplicationCommand;
-        _logger = logger;
-    }
+    private readonly IUksfLogger _logger = logger;
+    private readonly IVariablesService _variablesService = variablesService;
+    private readonly IAccountContext _accountContext = accountContext;
 
     public void Activate()
     {
         var client = GetClient();
         client.UserLeft += ClientOnUserLeft;
         client.ButtonExecuted += ClientOnButtonExecuted;
+    }
+
+    public Task CreateCommands()
+    {
+        return Task.CompletedTask;
     }
 
     private Task ClientOnUserLeft(SocketGuild _, SocketUser user)
@@ -58,7 +50,7 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
             {
                 try
                 {
-                    var domainAccount = _accountContext.GetSingle(x => x.DiscordId == user.Id.ToString());
+                    var domainAccount = GetAccountForDiscordUser(user.Id);
                     if (domainAccount is { MembershipState: MembershipState.CONFIRMED, Application.State: ApplicationState.WAITING })
                     {
                         _logger.LogInfo($"User left discord, ({domainAccount.Id}) is a candidate");
@@ -66,8 +58,8 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
                         var channelId = _variablesService.GetVariable("DID_C_SR1").AsUlong();
                         var channel = guild.GetTextChannel(channelId);
 
-                        var name = _displayNameService.GetDisplayName(domainAccount);
-                        var applicationUrl = _buildUrlQuery.Web($"recruitment/{domainAccount.Id}");
+                        var name = displayNameService.GetDisplayName(domainAccount);
+                        var applicationUrl = buildUrlQuery.Web($"recruitment/{domainAccount.Id}");
                         var message = $"{name} left Discord\nWould you like me to reject their application?";
                         var builder = new ComponentBuilder().WithButton("View application", style: ButtonStyle.Link, url: applicationUrl)
                                                             .WithButton("Reject", BuildButtonData(ButtonIdReject, domainAccount.Id), ButtonStyle.Danger)
@@ -117,7 +109,7 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
 
     private async Task HandleButtonReject(IComponentInteraction component, DiscordButtonData buttonData)
     {
-        var instigatorAccount = _accountContext.GetSingle(x => x.DiscordId == component.User.Id.ToString());
+        var instigatorAccount = GetAccountForDiscordUser(component.User.Id);
         _logger.LogAudit("Discord application rejection started", instigatorAccount.Id);
 
         var accountId = buttonData.Data.FirstOrDefault();
@@ -128,7 +120,7 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
             return;
         }
 
-        var applicationUrl = _buildUrlQuery.Web($"recruitment/{accountId}");
+        var applicationUrl = buildUrlQuery.Web($"recruitment/{accountId}");
         var updatedComponent = new ComponentBuilder().WithButton("View application", style: ButtonStyle.Link, url: applicationUrl).Build();
         await component.Message.ModifyAsync(properties => properties.Components = updatedComponent);
 
@@ -140,7 +132,7 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
             return;
         }
 
-        var name = _displayNameService.GetDisplayName(domainAccount);
+        var name = displayNameService.GetDisplayName(domainAccount);
         if (domainAccount is { Application.State: ApplicationState.ACCEPTED } or { Application.State: ApplicationState.REJECTED })
         {
             _logger.LogError($"Discord application rejection button tried to reject an already accepted/rejected account ({accountId})");
@@ -148,7 +140,7 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
             return;
         }
 
-        await _updateApplicationCommand.ExecuteAsync(accountId, ApplicationState.REJECTED);
+        await updateApplicationCommand.ExecuteAsync(accountId, ApplicationState.REJECTED);
         await component.RespondAsync($"Ok, I've rejected {name}'s application");
     }
 
@@ -162,10 +154,10 @@ public class DiscordRecruitmentService : DiscordBaseService, IDiscordRecruitment
             return;
         }
 
-        var instigatorAccount = _accountContext.GetSingle(x => x.DiscordId == component.User.Id.ToString());
+        var instigatorAccount = GetAccountForDiscordUser(component.User.Id);
         _logger.LogAudit("Discord application rejection dismissed", instigatorAccount.Id);
 
-        var applicationUrl = _buildUrlQuery.Web($"recruitment/{accountId}");
+        var applicationUrl = buildUrlQuery.Web($"recruitment/{accountId}");
         var builder = new ComponentBuilder().WithButton("View application", style: ButtonStyle.Link, url: applicationUrl);
         await component.Message.ModifyAsync(properties => properties.Components = builder.Build());
         await component.RespondAsync("Ok, I've dismissed the rejection");

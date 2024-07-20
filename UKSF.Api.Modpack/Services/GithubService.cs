@@ -2,11 +2,11 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using GitHubJwt;
 using Microsoft.Extensions.Options;
 using Octokit;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Configuration;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.Models;
 
 namespace UKSF.Api.Modpack.Services;
@@ -24,33 +24,19 @@ public interface IGithubService
     Task PublishRelease(ModpackRelease release);
 }
 
-public class GithubService : IGithubService
+public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings, IGithubClientService githubClientService) : IGithubService
 {
-    private const string RepoOrg = "uksf";
-    private const string RepoName = "modpack";
     private const string VersionFile = "addons/main/script_version.hpp";
-    private const int AppId = 53456;
-    private const long AppInstallation = 6681715;
-    private const string AppName = "uksf-api-integration";
-    private static readonly string[] LabelsAdded = { "type/feature", "type/mod addition" };
-    private static readonly string[] LabelsChanged = { "type/arsenal", "type/cleanup", "type/enhancement", "type/task" };
-    private static readonly string[] LabelsFixed = { "type/bug fix", "type/bug" };
-    private static readonly string[] LabelsUpdated = { "type/mod update" };
-    private static readonly string[] LabelsRemoved = { "type/mod deletion" };
-    private static readonly string[] LabelsExclude = { "type/cleanup", "type/by design", "fault/bi", "fault/other mod" };
-    private readonly string _appPrivateKey;
+    private static readonly string[] LabelsAdded = ["type/feature", "type/mod addition"];
+    private static readonly string[] LabelsChanged = ["type/arsenal", "type/cleanup", "type/enhancement", "type/task"];
+    private static readonly string[] LabelsFixed = ["type/bug fix", "type/bug"];
+    private static readonly string[] LabelsUpdated = ["type/mod update"];
+    private static readonly string[] LabelsRemoved = ["type/mod deletion"];
+    private static readonly string[] LabelsExclude = ["type/cleanup", "type/by design", "fault/bi", "fault/other mod"];
 
-    private readonly IUksfLogger _logger;
-    private readonly string _webhookSecret;
-
-    public GithubService(IUksfLogger logger, IOptions<AppSettings> options)
-    {
-        _logger = logger;
-
-        var appSettings = options.Value;
-        _webhookSecret = appSettings.Secrets.Github.WebhookSecret;
-        _appPrivateKey = appSettings.Secrets.Github.AppPrivateKey;
-    }
+    private readonly string _webhookSecret = appSettings.Value.Secrets.Github.WebhookSecret;
+    private string RepoOrg => githubClientService.RepoOrg;
+    private string RepoName => githubClientService.RepoName;
 
     public bool VerifySignature(string signature, string body)
     {
@@ -64,7 +50,7 @@ public class GithubService : IGithubService
 
     public async Task<string> GetReferenceVersion(string reference)
     {
-        var client = await GetAuthenticatedClient();
+        var client = await githubClientService.GetAuthenticatedClient();
         var contentBytes = await client.Repository.Content.GetRawContentByRef(RepoOrg, RepoName, VersionFile, reference);
         if (contentBytes.Length == 0)
         {
@@ -81,16 +67,17 @@ public class GithubService : IGithubService
     {
         var version = await GetReferenceVersion(reference);
         var versionParts = version.Split('.').Select(int.Parse).ToArray();
+
         // Version when make.py was changed to accommodate this system
         return versionParts[0] == 5 ? versionParts[1] == 17 ? versionParts[2] >= 19 : versionParts[1] > 17 : versionParts[0] > 5;
     }
 
     public async Task<GithubCommit> GetLatestReferenceCommit(string reference)
     {
-        var client = await GetAuthenticatedClient();
+        var client = await githubClientService.GetAuthenticatedClient();
         var commit = await client.Repository.Commit.Get(RepoOrg, RepoName, reference);
         var branch = Regex.Match(reference, @"^[a-fA-F0-9]{40}$").Success ? "None" : reference;
-        return new()
+        return new GithubCommit
         {
             Branch = branch,
             Before = commit.Parents.FirstOrDefault()?.Sha,
@@ -107,10 +94,10 @@ public class GithubService : IGithubService
             latestCommit = payload.Before;
         }
 
-        var client = await GetAuthenticatedClient();
+        var client = await githubClientService.GetAuthenticatedClient();
         var result = await client.Repository.Commit.Compare(RepoOrg, RepoName, latestCommit, payload.After);
         var message = result.Commits.Count > 0 ? CombineCommitMessages(result.Commits) : result.BaseCommit.Commit.Message;
-        return new()
+        return new GithubCommit
         {
             Branch = payload.Ref,
             BaseBranch = payload.BaseRef,
@@ -123,7 +110,7 @@ public class GithubService : IGithubService
 
     public async Task<string> GenerateChangelog(string version)
     {
-        var client = await GetAuthenticatedClient();
+        var client = await githubClientService.GetAuthenticatedClient();
         var milestone = await GetOpenMilestone(version);
         if (milestone == null)
         {
@@ -155,14 +142,14 @@ public class GithubService : IGithubService
 
     public async Task PublishRelease(ModpackRelease release)
     {
-        var client = await GetAuthenticatedClient();
+        var client = await githubClientService.GetAuthenticatedClient();
 
         try
         {
             await client.Repository.Release.Create(
                 RepoOrg,
                 RepoName,
-                new(release.Version)
+                new NewRelease(release.Version)
                 {
                     Name = $"Modpack Version {release.Version}", Body = $"## Changelog\n{release.Changelog.Replace("<br>", "\n")}",
                 }
@@ -171,20 +158,20 @@ public class GithubService : IGithubService
             var milestone = await GetOpenMilestone(release.Version);
             if (milestone != null)
             {
-                await client.Issue.Milestone.Update(RepoOrg, RepoName, milestone.Number, new() { State = ItemState.Closed });
+                await client.Issue.Milestone.Update(RepoOrg, RepoName, milestone.Number, new MilestoneUpdate { State = ItemState.Closed });
             }
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception);
+            logger.LogError(exception);
         }
     }
 
     public async Task<List<string>> GetBranches()
     {
-        var client = await GetAuthenticatedClient();
+        var client = await githubClientService.GetAuthenticatedClient();
         var branches = await client.Repository.Branch.GetAll(RepoOrg, RepoName);
-        ConcurrentBag<string> validBranchesBag = new();
+        ConcurrentBag<string> validBranchesBag = [];
         var task = branches.Select(
             async branch =>
             {
@@ -197,26 +184,19 @@ public class GithubService : IGithubService
         await Task.WhenAll(task);
 
         var validBranches = validBranchesBag.OrderBy(x => x).ToList();
-        if (validBranches.Contains("release"))
-        {
-            validBranches.Remove("release");
-            validBranches.Insert(0, "release");
-        }
-
-        if (validBranches.Contains("main"))
-        {
-            validBranches.Remove("main");
-            validBranches.Insert(0, "main");
-        }
+        validBranches.Remove("release");
+        validBranches.Insert(0, "release");
+        validBranches.Remove("main");
+        validBranches.Insert(0, "main");
 
         return validBranches;
     }
 
     public async Task<List<ModpackRelease>> GetHistoricReleases()
     {
-        var client = await GetAuthenticatedClient();
+        var client = await githubClientService.GetAuthenticatedClient();
 
-        var releases = await client.Repository.Release.GetAll(RepoOrg, "modpack");
+        var releases = await client.Repository.Release.GetAll(RepoOrg, RepoName);
         return releases.Select(
                            x => new ModpackRelease { Version = x.Name.Split(" ")[^1], Timestamp = x.CreatedAt.DateTime, Changelog = FormatChangelog(x.Body) }
                        )
@@ -227,19 +207,19 @@ public class GithubService : IGithubService
     {
         var filteredCommitMessages = commits.Select(x => x.Commit.Message)
                                             .Reverse()
-                                            .Where(x => !x.Contains("Merge branch") && !Regex.IsMatch(x, "Release \\d*\\.\\d*\\.\\d*"))
+                                            .Where(x => !x.Contains("Merge branch") && !Regex.IsMatch(x, @"Release \d*\.\d*\.\d*"))
                                             .ToList();
         return filteredCommitMessages.Count == 0 ? commits.First().Commit.Message : filteredCommitMessages.Aggregate((a, b) => $"{a}\n\n{b}");
     }
 
     private async Task<Milestone> GetOpenMilestone(string version)
     {
-        var client = await GetAuthenticatedClient();
+        var client = await githubClientService.GetAuthenticatedClient();
         var milestones = await client.Issue.Milestone.GetAllForRepository(RepoOrg, RepoName, new MilestoneRequest { State = ItemStateFilter.Open });
         var milestone = milestones.FirstOrDefault(x => x.Title == version);
         if (milestone == null)
         {
-            _logger.LogWarning($"Could not find open milestone for version {version}");
+            logger.LogWarning($"Could not find open milestone for version {version}");
         }
 
         return milestone;
@@ -247,7 +227,7 @@ public class GithubService : IGithubService
 
     private static void AddChangelogSection(ref string changelog, IReadOnlyCollection<Issue> issues, string header)
     {
-        if (issues.Any())
+        if (issues.Count != 0)
         {
             changelog += $"#### {header}";
             changelog += issues.Select(x => $"\n- {x.Title} [(#{x.Number})]({x.HtmlUrl})").Aggregate((a, b) => a + b);
@@ -257,7 +237,7 @@ public class GithubService : IGithubService
 
     private static void AddChangelogUpdated(ref string changelog, IReadOnlyCollection<Issue> issues, string header)
     {
-        if (issues.Any())
+        if (issues.Count != 0)
         {
             changelog += $"#### {header}";
             changelog += issues.Select(
@@ -303,19 +283,5 @@ public class GithubService : IGithubService
         }
 
         return string.Join("\n", lines);
-    }
-
-    private async Task<GitHubClient> GetAuthenticatedClient()
-    {
-        GitHubClient client = new(new ProductHeaderValue(AppName)) { Credentials = new(GetJwtToken(), AuthenticationType.Bearer) };
-        var response = await client.GitHubApps.CreateInstallationToken(AppInstallation);
-        GitHubClient installationClient = new(new ProductHeaderValue(AppName)) { Credentials = new(response.Token) };
-        return installationClient;
-    }
-
-    private string GetJwtToken()
-    {
-        GitHubJwtFactory generator = new(new StringPrivateKeySource(_appPrivateKey), new() { AppIntegrationId = AppId, ExpirationSeconds = 540 });
-        return generator.CreateEncodedJwtToken();
     }
 }

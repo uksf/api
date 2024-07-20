@@ -11,6 +11,7 @@ namespace UKSF.Api.Integrations.Discord.Services;
 
 public interface IDiscordClientService
 {
+    public event Action OnClientReady;
     Task Connect();
     Task Disconnect();
     DiscordSocketClient GetClient();
@@ -27,6 +28,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
     private readonly IVariablesService _variablesService;
     private bool _connected;
     private SocketGuild _guild;
+    private event Action OnClientReadyEvent;
 
     public DiscordClientService(IOptions<AppSettings> options, DiscordSocketClient client, IVariablesService variablesService, IUksfLogger logger)
     {
@@ -52,6 +54,8 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
             return Task.CompletedTask;
         };
     }
+
+    public event Action OnClientReady { add => OnClientReadyEvent += value; remove => OnClientReadyEvent -= value; }
 
     public async Task Connect()
     {
@@ -140,6 +144,7 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
     private Task OnClientOnReady()
     {
         _guild = _client.GetGuild(_variablesService.GetVariable("DID_SERVER").AsUlong());
+        OnClientReadyEvent?.Invoke();
 
         ConnectionLog("Discord ready");
         return Task.CompletedTask;

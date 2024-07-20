@@ -1,4 +1,5 @@
 ﻿using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.EventHandlers;
 using UKSF.Api.Modpack.ScheduledActions;
@@ -28,7 +29,9 @@ public static class ApiModpackExtensions
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
         return services.AddSingleton<IBuildsService, BuildsService>()
+                       .AddSingleton<IGithubClientService, GithubClientService>()
                        .AddTransient<IGithubService, GithubService>()
+                       .AddSingleton<IGithubIssuesService, GithubIssuesService>()
                        .AddTransient<IModpackService, ModpackService>()
                        .AddTransient<IReleaseService, ReleaseService>()
                        .AddSingleton<IBuildStepService, BuildStepService>()

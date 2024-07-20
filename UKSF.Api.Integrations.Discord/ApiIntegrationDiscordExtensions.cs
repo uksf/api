@@ -1,5 +1,4 @@
 ﻿using Discord;
-using Discord.Interactions;
 using Discord.WebSocket;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Integrations.Discord.EventHandlers;
@@ -39,11 +38,11 @@ public static class ApiIntegrationDiscordExtensions
 
         return services.AddSingleton(config)
                        .AddSingleton<DiscordSocketClient>()
-                       .AddSingleton<InteractionService>()
                        .AddDiscordService<IDiscordMessageService, DiscordMessageService>()
                        .AddDiscordService<IDiscordMembersService, DiscordMembersService>()
                        .AddDiscordService<IDiscordAdminService, DiscordAdminService>()
-                       .AddDiscordService<IDiscordRecruitmentService, DiscordRecruitmentService>();
+                       .AddDiscordService<IDiscordRecruitmentService, DiscordRecruitmentService>()
+                       .AddDiscordService<IDiscordGithubService, DiscordGithubService>();
     }
 
     private static IServiceCollection AddDiscordService<TService, TImplementation>(this IServiceCollection collection) where TService : IDiscordService

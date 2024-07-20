@@ -12,28 +12,17 @@ namespace UKSF.Api.Integrations.Discord.Services;
 
 public interface IDiscordAdminService : IDiscordService { }
 
-public class DiscordAdminService : DiscordBaseService, IDiscordAdminService
+public class DiscordAdminService(
+    IDiscordClientService discordClientService,
+    IHttpContextService httpContextService,
+    IVariablesService variablesService,
+    IAccountContext accountContext,
+    IDisplayNameService displayNameService,
+    IEventBus eventBus,
+    IUksfLogger logger
+) : DiscordBaseService(discordClientService, accountContext, httpContextService, variablesService, logger), IDiscordAdminService
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IEventBus _eventBus;
-    private readonly IUksfLogger _logger;
-
-    public DiscordAdminService(
-        IDiscordClientService discordClientService,
-        IHttpContextService httpContextService,
-        IVariablesService variablesService,
-        IAccountContext accountContext,
-        IDisplayNameService displayNameService,
-        IEventBus eventBus,
-        IUksfLogger logger
-    ) : base(discordClientService, httpContextService, variablesService, logger)
-    {
-        _accountContext = accountContext;
-        _displayNameService = displayNameService;
-        _eventBus = eventBus;
-        _logger = logger;
-    }
+    private readonly IUksfLogger _logger = logger;
 
     public void Activate()
     {
@@ -44,6 +33,11 @@ public class DiscordAdminService : DiscordBaseService, IDiscordAdminService
         client.UserUnbanned += ClientOnUserUnbanned;
         client.MessageDeleted += ClientOnMessageDeleted;
         client.MessagesBulkDeleted += ClientOnMessagesBulkDeleted;
+    }
+
+    public Task CreateCommands()
+    {
+        return Task.CompletedTask;
     }
 
     private Task ClientOnUserJoined(SocketGuildUser user)
@@ -64,7 +58,7 @@ public class DiscordAdminService : DiscordBaseService, IDiscordAdminService
         return WrapAdminEventTask(
             () =>
             {
-                var domainAccount = _accountContext.GetSingle(x => x.DiscordId == user.Id.ToString());
+                var domainAccount = GetAccountForDiscordUser(user.Id);
                 var connectedAccountMessage = GetConnectedAccountMessage(domainAccount);
                 _logger.LogDiscordEvent(
                     DiscordUserEventType.LEFT,
@@ -76,7 +70,7 @@ public class DiscordAdminService : DiscordBaseService, IDiscordAdminService
                 );
                 if (domainAccount != null)
                 {
-                    _eventBus.Send(new DiscordEventData(DiscordUserEventType.LEFT, domainAccount.Id));
+                    eventBus.Send(new DiscordEventData(DiscordUserEventType.LEFT, domainAccount.Id));
                 }
 
                 return Task.CompletedTask;
@@ -218,7 +212,7 @@ public class DiscordAdminService : DiscordBaseService, IDiscordAdminService
 
     private string GetConnectedAccountMessageFromUserId(ulong userId)
     {
-        var domainAccount = _accountContext.GetSingle(x => x.DiscordId == userId.ToString());
+        var domainAccount = GetAccountForDiscordUser(userId);
         return GetConnectedAccountMessage(domainAccount);
     }
 
@@ -226,7 +220,7 @@ public class DiscordAdminService : DiscordBaseService, IDiscordAdminService
     {
         return domainAccount == null
             ? "(No connected account)"
-            : $"(Connected account - {domainAccount.Id}, {_displayNameService.GetDisplayName(domainAccount)}, {domainAccount.MembershipState.ToString()})";
+            : $"(Connected account - {domainAccount.Id}, {displayNameService.GetDisplayName(domainAccount)}, {domainAccount.MembershipState.ToString()})";
     }
 
     private async Task<ulong> GetBannedAuditLogInstigator(ulong userId)
@@ -286,14 +280,14 @@ public class DiscordAdminService : DiscordBaseService, IDiscordAdminService
         var message = await cacheable.GetOrDownloadAsync();
         if (message == null)
         {
-            return new(0, null, null, null);
+            return new DiscordDeletedMessageResult(0, null, null, null);
         }
 
         var userId = message.Author.Id;
         var instigatorId = await GetMessageDeletedAuditLogInstigator(channel.Id, userId);
         if (instigatorId == 0 || instigatorId == userId)
         {
-            return new(ulong.MaxValue, null, null, null);
+            return new DiscordDeletedMessageResult(ulong.MaxValue, null, null, null);
         }
 
         var guild = GetGuild();
@@ -301,7 +295,7 @@ public class DiscordAdminService : DiscordBaseService, IDiscordAdminService
         var instigatorName = GetUserNickname(guild.GetUser(instigatorId));
         var messageString = message.Content;
 
-        return new(instigatorId, instigatorName, name, messageString);
+        return new DiscordDeletedMessageResult(instigatorId, instigatorName, name, messageString);
     }
 
     private async Task<ulong> GetMessageDeletedAuditLogInstigator(ulong channelId, ulong authorId)

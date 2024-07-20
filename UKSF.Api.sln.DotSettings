@@ -254,7 +254,6 @@
         &lt;Kind Order="Constructor" /&gt;
       &lt;/Entry.SortBy&gt;
     &lt;/Entry&gt;
-    &lt;Entry DisplayName="All other members" /&gt;
     &lt;Entry Priority="100" DisplayName="Test Methods"&gt;
       &lt;Entry.Match&gt;
         &lt;And&gt;
@@ -266,6 +265,7 @@
         &lt;Name /&gt;
       &lt;/Entry.SortBy&gt;
     &lt;/Entry&gt;
+      &lt;Entry DisplayName="All other members" /&gt;
   &lt;/TypePattern&gt;
   &lt;TypePattern DisplayName="NUnit Test Fixtures" RemoveRegions="All"&gt;
     &lt;TypePattern.Match&gt;
@@ -351,6 +351,19 @@
         &lt;Name /&gt;
       &lt;/Entry.SortBy&gt;
     &lt;/Entry&gt;
+      &lt;Entry DisplayName="Events"&gt;
+          &lt;Entry.Match&gt;
+              &lt;And&gt;
+                  &lt;Kind Is="Event" /&gt;
+                  &lt;Not&gt;
+                      &lt;Static /&gt;
+                  &lt;/Not&gt;
+              &lt;/And&gt;
+          &lt;/Entry.Match&gt;
+          &lt;Entry.SortBy&gt;
+              &lt;Name /&gt;
+          &lt;/Entry.SortBy&gt;
+      &lt;/Entry&gt;
     &lt;Entry DisplayName="Constructors"&gt;
       &lt;Entry.Match&gt;
         &lt;Kind Is="Constructor" /&gt;
@@ -536,6 +549,8 @@ namespace $NAMESPACE$
 </s:String>
     <s:String x:Key="/Default/SnapshotsStore/CurrentStore/@EntryValue">C:\Users\Tim\AppData\Local\JetBrains\Shared\vAny\Sessions</s:String>
     <s:Double x:Key="/Default/TimelineLayout/MethodsPanelHeight/@EntryValue">303</s:Double>
+    <s:Boolean x:Key="/Default/UserDictionary/Words/=modpack/@EntryIndexedValue">True</s:Boolean>
+    <s:Boolean x:Key="/Default/UserDictionary/Words/=uksf/@EntryIndexedValue">True</s:Boolean>
 
 
 

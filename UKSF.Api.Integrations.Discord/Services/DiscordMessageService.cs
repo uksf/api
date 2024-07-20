@@ -2,6 +2,7 @@
 using Discord;
 using Discord.WebSocket;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
 
@@ -13,41 +14,36 @@ public interface IDiscordMessageService : IDiscordService
     Task SendMessage(ulong channelId, string message);
 }
 
-public class DiscordMessageService : DiscordBaseService, IDiscordMessageService
+public class DiscordMessageService(
+    IDiscordClientService discordClientService,
+    IAccountContext accountContext,
+    IHttpContextService httpContextService,
+    IVariablesService variablesService,
+    IUksfLogger logger
+) : DiscordBaseService(discordClientService, accountContext, httpContextService, variablesService, logger), IDiscordMessageService
 {
     private static readonly string[] OwnerReplies =
-    {
+    [
         "Why thank you {0} owo", "Thank you {0}, you're too kind", "Thank you so much {0} uwu", "Aw shucks {0} you're embarrassing me"
-    };
+    ];
 
     private static readonly string[] Replies =
-    {
+    [
         "Why thank you {0}", "Thank you {0}, you're too kind", "Thank you so much {0}", "Aw shucks {0} you're embarrassing me"
-    };
+    ];
 
-    private static readonly string[] Triggers = { "thank you", "thank", "best", "mvp", "love you", "appreciate you", "good" };
+    private static readonly string[] Triggers = ["thank you", "thank", "best", "mvp", "love you", "appreciate you", "good"];
 
-    private static readonly List<Emote> Emotes = new()
-    {
+    private static readonly List<Emote> Emotes =
+    [
         Emote.Parse("<:Tuesday:732349730809708564>"),
         Emote.Parse("<:Thursday:732349755816149062>"),
         Emote.Parse("<:Friday:732349765060395029>"),
         Emote.Parse("<:Sunday:732349782541991957>")
-    };
+    ];
 
-    private readonly IDiscordClientService _discordClientService;
-    private readonly IVariablesService _variablesService;
-
-    public DiscordMessageService(
-        IDiscordClientService discordClientService,
-        IHttpContextService httpContextService,
-        IVariablesService variablesService,
-        IUksfLogger logger
-    ) : base(discordClientService, httpContextService, variablesService, logger)
-    {
-        _discordClientService = discordClientService;
-        _variablesService = variablesService;
-    }
+    private readonly IDiscordClientService _discordClientService = discordClientService;
+    private readonly IVariablesService _variablesService = variablesService;
 
     public void Activate()
     {
@@ -55,6 +51,11 @@ public class DiscordMessageService : DiscordBaseService, IDiscordMessageService
         client.MessageReceived += ClientOnMessageReceived;
         client.ReactionAdded += ClientOnReactionAdded;
         client.ReactionRemoved += ClientOnReactionRemoved;
+    }
+
+    public Task CreateCommands()
+    {
+        return Task.CompletedTask;
     }
 
     public async Task SendMessage(ulong channelId, string message)

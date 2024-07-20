@@ -6,36 +6,29 @@ public interface IDiscordActivationService
     Task Deactivate();
 }
 
-public class DiscordActivationService : IDiscordActivationService
+public class DiscordActivationService(IDiscordClientService discordClientService, IEnumerable<IDiscordService> discordServices) : IDiscordActivationService
 {
-    private readonly IDiscordClientService _discordClientService;
-
-    private readonly IEnumerable<IDiscordService> _discordServices;
-    // private readonly InteractionService _interactionService;
-    // private readonly IServiceProvider _serviceProvider;
-
-    public DiscordActivationService(IDiscordClientService discordClientService, IEnumerable<IDiscordService> discordServices)
-    {
-        _discordClientService = discordClientService;
-        _discordServices = discordServices;
-        // _interactionService = interactionService;
-        // _serviceProvider = serviceProvider;
-    }
-
     public async Task Activate()
     {
-        // await _interactionService.AddModulesAsync(Assembly.GetExecutingAssembly(), _serviceProvider);
+        discordClientService.OnClientReady += OnClientReady;
 
-        await _discordClientService.Connect();
-
-        foreach (var discordService in _discordServices)
+        await discordClientService.Connect();
+        foreach (var discordService in discordServices)
         {
             discordService.Activate();
         }
     }
 
+    private void OnClientReady()
+    {
+        foreach (var discordService in discordServices)
+        {
+            discordService.CreateCommands();
+        }
+    }
+
     public async Task Deactivate()
     {
-        await _discordClientService.Disconnect();
+        await discordClientService.Disconnect();
     }
 }
