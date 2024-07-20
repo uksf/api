@@ -30,7 +30,7 @@ public class DiscordController(IDiscordMembersService discordMembersService, IDi
         return discordMembersService.GetOnlineUserDetails(accountId);
     }
 
-    [HttpDelete("command")]
+    [HttpDelete("commands/newGithubIssue")]
     [Permissions(Permissions.Admin)]
     public Task DeleteNewGithubIssueCommand()
     {
