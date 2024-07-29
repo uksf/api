@@ -29,9 +29,9 @@ public class DiscordMembersService(
     IUksfLogger logger
 ) : DiscordBaseService(discordClientService, accountContext, httpContextService, variablesService, logger), IDiscordMembersService
 {
-    private readonly IUksfLogger _logger = logger;
     private readonly IVariablesService _variablesService = variablesService;
     private readonly IAccountContext _accountContext = accountContext;
+    private readonly IUksfLogger _logger = logger;
 
     public void Activate()
     {
@@ -95,7 +95,6 @@ public class DiscordMembersService(
         }
 
         await AssertOnline();
-        var guild = GetGuild();
 
         if (domainAccount is null)
         {
@@ -106,6 +105,7 @@ public class DiscordMembersService(
         var discordId = ulong.Parse(domainAccount.DiscordId);
         if (discordId == 0)
         {
+            _logger.LogError($"Tried to update a Discord user without a discord ID, {domainAccount.Id}");
             return;
         }
 
@@ -114,9 +114,11 @@ public class DiscordMembersService(
             return;
         }
 
+        var guild = GetGuild();
         var user = guild.GetUser(discordId);
         if (user == null)
         {
+            _logger.LogWarning($"Tried to update a Discord user but couldn't find user, {discordId}");
             return;
         }
 
@@ -132,7 +134,6 @@ public class DiscordMembersService(
         }
 
         await AssertOnline();
-        var guild = GetGuild();
 
         if (discordId == 0)
         {
@@ -145,9 +146,11 @@ public class DiscordMembersService(
             return;
         }
 
+        var guild = GetGuild();
         var user = guild.GetUser(discordId);
         if (user == null)
         {
+            _logger.LogWarning($"Tried to update a Discord user but couldn't find user, {discordId}");
             return;
         }
 
@@ -163,6 +166,7 @@ public class DiscordMembersService(
         var domainAccount = domainAccounts.SingleOrDefault();
         if (domainAccount is null)
         {
+            _logger.LogWarning($"Tried to update a Discord user but found no account, {discordId}");
             return;
         }
 
@@ -223,7 +227,7 @@ public class DiscordMembersService(
         }
     }
 
-    private void UpdateAccountRanks(DomainAccount domainAccount, ISet<string> allowedRoles)
+    private void UpdateAccountRanks(DomainAccount domainAccount, HashSet<string> allowedRoles)
     {
         var rank = domainAccount.Rank;
         foreach (var x in ranksContext.Get().Where(x => rank == x.Name))
@@ -232,7 +236,7 @@ public class DiscordMembersService(
         }
     }
 
-    private void UpdateAccountUnits(DomainAccount domainAccount, ISet<string> allowedRoles)
+    private void UpdateAccountUnits(DomainAccount domainAccount, HashSet<string> allowedRoles)
     {
         var accountUnit = unitsContext.GetSingle(x => x.Name == domainAccount.UnitAssignment);
         var accountUnits = unitsContext.Get(x => x.Members.Contains(domainAccount.Id)).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();

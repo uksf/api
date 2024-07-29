@@ -16,11 +16,16 @@ public class DiscordAccountEventHandler(IEventBus eventBus, IUksfLogger logger, 
 
     public void Init()
     {
-        eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainAccount>>(HandleAccountEvent, logger.LogError);
+        eventBus.AsObservable()
+                .SubscribeWithAsyncNext<ContextEventData<DomainAccount>>(
+                    HandleAccountEvent,
+                    exception => { logger.LogError("Failed to handle account event in discord", exception); }
+                );
     }
 
     private async Task HandleAccountEvent(EventModel _, ContextEventData<DomainAccount> contextEventData)
     {
+        logger.LogInfo($"Discord Account Event Handler, id: {contextEventData.Id}, data: {contextEventData.Data?.Id}");
         var domainAccount = contextEventData.Data ?? accountContext.GetSingle(contextEventData.Id);
         await discordMembersService.UpdateUserByAccount(domainAccount);
     }
