@@ -51,7 +51,7 @@ public class UksfLoggerEventHandler(
             log = auditLog;
         }
 
-        log.Message = objectIdConversionService.ConvertObjectIds(log.Message);
+        log.Message = objectIdConversionService.ConvertObjectIds(log.Message).UnescapeForLogging();
         await LogToStorageAsync(log);
     }
 

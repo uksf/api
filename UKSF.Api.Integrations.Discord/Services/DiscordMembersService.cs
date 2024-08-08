@@ -98,14 +98,19 @@ public class DiscordMembersService(
 
         if (domainAccount is null)
         {
-            _logger.LogError("Tried to update a Discord user without an account specified");
+            _logger.LogError("Tried to update Discord for an unspecified account");
             return;
         }
 
-        var discordId = ulong.Parse(domainAccount.DiscordId);
-        if (discordId == 0)
+        if (domainAccount.DiscordId is null)
         {
-            _logger.LogError($"Tried to update a Discord user without a discord ID, {domainAccount.Id}");
+            _logger.LogWarning($"Tried to update Discord for account {domainAccount.Id}, but no DiscordId is linked");
+            return;
+        }
+
+        if (!ulong.TryParse(domainAccount.DiscordId, out var discordId))
+        {
+            _logger.LogError($"Tried to update Discord for account {domainAccount.Id}, but DiscordId {domainAccount.DiscordId} did not parse correctly");
             return;
         }
 
@@ -118,7 +123,7 @@ public class DiscordMembersService(
         var user = guild.GetUser(discordId);
         if (user == null)
         {
-            _logger.LogWarning($"Tried to update a Discord user but couldn't find user, {discordId}");
+            _logger.LogWarning($"Tried to update Discord for account {{domainAccount.Id}}, but couldn't find user with DiscordId {discordId} in server");
             return;
         }
 
@@ -137,7 +142,7 @@ public class DiscordMembersService(
 
         if (discordId == 0)
         {
-            _logger.LogError("Tried to update a Discord user without an ID specified");
+            _logger.LogError("Tried to update a Discord user without a DiscordID specified");
             return;
         }
 
@@ -150,7 +155,7 @@ public class DiscordMembersService(
         var user = guild.GetUser(discordId);
         if (user == null)
         {
-            _logger.LogWarning($"Tried to update a Discord user but couldn't find user, {discordId}");
+            _logger.LogWarning($"Tried to update a Discord user, but couldn't find user with DiscordId {discordId} in server");
             return;
         }
 
@@ -158,7 +163,7 @@ public class DiscordMembersService(
         if (domainAccounts.Count > 1)
         {
             _logger.LogError(
-                $"Tried to update a Discord user by ID ({discordId}), but more than 1 account was found. Account IDs: {string.Join(",", domainAccounts.Select(x => x.Id))}"
+                $"Tried to update a Discord user with DiscordId {discordId}, but more than 1 account was found: {string.Join(",", domainAccounts.Select(x => x.Id.EscapeForLogging()))}"
             );
             return;
         }
@@ -166,7 +171,6 @@ public class DiscordMembersService(
         var domainAccount = domainAccounts.SingleOrDefault();
         if (domainAccount is null)
         {
-            _logger.LogWarning($"Tried to update a Discord user but found no account, {discordId}");
             return;
         }
 
@@ -177,7 +181,7 @@ public class DiscordMembersService(
     private async Task UpdateAccountRoles(SocketGuildUser user, DomainAccount domainAccount)
     {
         var userRoles = user.Roles;
-        HashSet<string> allowedRoles = new();
+        HashSet<string> allowedRoles = [];
 
         if (domainAccount != null)
         {

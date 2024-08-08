@@ -65,7 +65,27 @@ public static class StringExtensions
 
     public static IEnumerable<string> ExtractObjectIds(this string text)
     {
-        return Regex.Matches(text, "[{(]?[0-9a-fA-F]{24}[)}]?").Where(x => IsObjectId(x.Value)).Select(x => x.Value);
+        return Regex.Matches(text, "(?<!\\$)[{(]?[0-9a-fA-F]{24}[)}]?").Where(x => IsObjectId(x.Value)).Select(x => x.Value);
+    }
+
+    /// <summary>
+    ///     Escapes an ID with a $ for logging the raw ID
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns>Escaped ID</returns>
+    public static string EscapeForLogging(this string id)
+    {
+        return Regex.Match(id, "[0-9a-fA-F]{24}").Success ? $"${id}" : id;
+    }
+
+    /// <summary>
+    ///     Removes the $ for escaping IDs in logs
+    /// </summary>
+    /// <param name="text"></param>
+    /// <returns>Unescaped text</returns>
+    public static string UnescapeForLogging(this string text)
+    {
+        return Regex.Replace(text, "\\$([0-9a-fA-F]{24})", "$1");
     }
 
     public static string TruncateObjectIds(this string text)

@@ -9,17 +9,8 @@ public interface IObjectIdConversionService
     string ConvertObjectId(string id);
 }
 
-public class ObjectIdConversionService : IObjectIdConversionService
+public class ObjectIdConversionService(IUnitsContext unitsContext, IDisplayNameService displayNameService) : IObjectIdConversionService
 {
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IUnitsContext _unitsContext;
-
-    public ObjectIdConversionService(IUnitsContext unitsContext, IDisplayNameService displayNameService)
-    {
-        _unitsContext = unitsContext;
-        _displayNameService = displayNameService;
-    }
-
     public string ConvertObjectIds(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -29,10 +20,10 @@ public class ObjectIdConversionService : IObjectIdConversionService
 
         foreach (var objectId in text.ExtractObjectIds())
         {
-            var displayString = _displayNameService.GetDisplayName(objectId);
+            var displayString = displayNameService.GetDisplayName(objectId);
             if (displayString == objectId)
             {
-                var unit = _unitsContext.GetSingle(x => x.Id == objectId);
+                var unit = unitsContext.GetSingle(x => x.Id == objectId);
                 if (unit != null)
                 {
                     displayString = unit.Name;
@@ -47,6 +38,6 @@ public class ObjectIdConversionService : IObjectIdConversionService
 
     public string ConvertObjectId(string id)
     {
-        return string.IsNullOrEmpty(id) ? id : _displayNameService.GetDisplayName(id);
+        return string.IsNullOrEmpty(id) ? id : displayNameService.GetDisplayName(id);
     }
 }
