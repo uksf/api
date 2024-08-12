@@ -67,7 +67,12 @@ public class DiscordEventhandler : IDiscordEventhandler
         var name = _displayNameService.GetDisplayName(domainAccount);
         await _commentThreadService.InsertComment(
             domainAccount.Application.RecruiterCommentThread,
-            new() { Author = ObjectId.Empty.ToString(), Content = $"{name} left Discord", Timestamp = DateTime.UtcNow }
+            new Comment
+            {
+                Author = ObjectId.Empty.ToString(),
+                Content = $"{name} left Discord",
+                Timestamp = DateTime.UtcNow
+            }
         );
     }
 }

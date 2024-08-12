@@ -6,7 +6,7 @@ public class BuildStepBuildAcre : ModBuildStep
     public const string Name = "Build ACRE";
     private const string ModName = "acre";
 
-    private readonly List<string> _errorExclusions = new() { "Found DirectX", "Linking statically", "Visual Studio 16", "INFO: Building", "Build Type" };
+    private readonly List<string> _errorExclusions = ["Found DirectX", "Linking statically", "Visual Studio 16", "INFO: Building", "Build Type"];
 
     protected override async Task ProcessExecute()
     {

@@ -96,11 +96,12 @@ public class RecruitmentController : ControllerBase
                                           )
                                           .ToList();
 
-        return new()
+        return new RecruitmentStatsDataset
         {
             Activity = activity,
-            YourStats = new() { LastMonth = _recruitmentService.GetStats(account, true), Overall = _recruitmentService.GetStats(account, false) },
-            Sr1Stats = new() { LastMonth = _recruitmentService.GetStats("", true), Overall = _recruitmentService.GetStats("", false) }
+            YourStats =
+                new RecruitmentStats { LastMonth = _recruitmentService.GetStats(account, true), Overall = _recruitmentService.GetStats(account, false) },
+            Sr1Stats = new RecruitmentStats { LastMonth = _recruitmentService.GetStats("", true), Overall = _recruitmentService.GetStats("", false) }
         };
     }
 
@@ -135,7 +136,7 @@ public class RecruitmentController : ControllerBase
     {
         if (!_httpContextService.UserHasPermission(Permissions.Admin) && !_recruitmentService.IsRecruiterLead())
         {
-            throw new($"attempted to assign recruiter to {assignRecruiterRequest.NewRecruiter}. Context is not recruitment lead.");
+            throw new Exception($"attempted to assign recruiter to {assignRecruiterRequest.NewRecruiter}. Context is not recruitment lead.");
         }
 
         await _recruitmentService.SetRecruiter(id, assignRecruiterRequest.NewRecruiter);
@@ -143,7 +144,7 @@ public class RecruitmentController : ControllerBase
         if (domainAccount.Application.State == ApplicationState.WAITING)
         {
             _notificationsService.Add(
-                new()
+                new Notification
                 {
                     Owner = assignRecruiterRequest.NewRecruiter,
                     Icon = NotificationIcons.Application,

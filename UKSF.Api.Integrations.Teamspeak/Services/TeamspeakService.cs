@@ -30,7 +30,7 @@ public class TeamspeakService : ITeamspeakService
     private readonly IHostEnvironment _environment;
     private readonly IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> _teamspeakClientsHub;
     private readonly ITeamspeakManagerService _teamspeakManagerService;
-    private HashSet<TeamspeakClient> _clients = new();
+    private HashSet<TeamspeakClient> _clients = [];
 
     public TeamspeakService(
         IAccountContext accountContext,
@@ -115,10 +115,11 @@ public class TeamspeakService : ITeamspeakService
         var clients = _clients;
         if (_environment.IsDevelopment())
         {
-            clients = new HashSet<TeamspeakClient>
-            {
-                new() { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 }, new() { ClientName = "Dummy Client", ClientDbId = 999999 }
-            };
+            clients =
+            [
+                new TeamspeakClient { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 },
+                new TeamspeakClient { ClientName = "Dummy Client", ClientDbId = 999999 }
+            ];
         }
 
         return clients.Where(x => x != null)
@@ -145,7 +146,7 @@ public class TeamspeakService : ITeamspeakService
     {
         if (_environment.IsDevelopment())
         {
-            _clients = new HashSet<TeamspeakClient> { new() { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 } };
+            _clients = [new TeamspeakClient { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 }];
         }
 
         if (_clients.Count == 0)

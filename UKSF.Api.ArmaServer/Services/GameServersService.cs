@@ -87,7 +87,7 @@ public class GameServersService : IGameServersService
         }
 
         using HttpClient client = new();
-        client.DefaultRequestHeaders.Accept.Add(new("application/json"));
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         try
         {
             var response = await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server");
@@ -169,7 +169,7 @@ public class GameServersService : IGameServersService
         try
         {
             using HttpClient client = new();
-            client.DefaultRequestHeaders.Accept.Add(new("application/json"));
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server/stop");
         }
         catch (Exception)
@@ -184,7 +184,7 @@ public class GameServersService : IGameServersService
                 try
                 {
                     using HttpClient client = new();
-                    client.DefaultRequestHeaders.Accept.Add(new("application/json"));
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                     await client.GetAsync($"http://localhost:{gameServer.ApiPort + index + 1}/server/stop");
                 }
                 catch (Exception)
@@ -248,14 +248,14 @@ public class GameServersService : IGameServersService
         var gameServer = _gameServersContext.GetSingle(id);
         Uri serverExecutable = new(_gameServerHelpers.GetGameServerExecutablePath(gameServer));
 
-        IEnumerable<string> availableModsFolders = new[] { _gameServerHelpers.GetGameServerModsPaths(gameServer.Environment) };
+        IEnumerable<string> availableModsFolders = [_gameServerHelpers.GetGameServerModsPaths(gameServer.Environment)];
         availableModsFolders = availableModsFolders.Concat(_gameServerHelpers.GetGameServerExtraModsPaths());
 
         var dlcModFoldersRegexString = _gameServerHelpers.GetDlcModFoldersRegexString();
         Regex allowedPaths = new($"@.*|{dlcModFoldersRegexString}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         Regex allowedExtensions = new("[ep]bo", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        List<GameServerMod> mods = new();
+        List<GameServerMod> mods = [];
         foreach (var modsPath in availableModsFolders)
         {
             var modFolders = new DirectoryInfo(modsPath).EnumerateDirectories("*.*", SearchOption.AllDirectories).Where(x => allowedPaths.IsMatch(x.Name));

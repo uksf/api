@@ -21,12 +21,12 @@ public class CommandRequestEventHandlerTests
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IUksfLogger> mockLoggingService = new();
-        _mockHub = new();
+        _mockHub = new Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>>();
         _eventBus = new EventBus();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommandRequest>(It.IsAny<string>()));
 
-        _commandRequestEventHandler = new(_eventBus, _mockHub.Object, mockLoggingService.Object);
+        _commandRequestEventHandler = new CommandRequestEventHandler(_eventBus, _mockHub.Object, mockLoggingService.Object);
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class CommandRequestEventHandlerTests
 
         _commandRequestEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Delete, new ContextEventData<CommandRequest>(null, null)));
+        _eventBus.Send(new EventModel(EventType.Delete, new ContextEventData<CommandRequest>(null, null), ""));
 
         mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Never);
     }
@@ -58,8 +58,8 @@ public class CommandRequestEventHandlerTests
 
         _commandRequestEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<CommandRequest>(null, null)));
-        _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<CommandRequest>(null, null)));
+        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<CommandRequest>(null, null), ""));
+        _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<CommandRequest>(null, null), ""));
 
         mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Exactly(2));
     }

@@ -32,7 +32,7 @@ public class BuildUrlQuery : IBuildUrlQuery
 
     private static string BuildUri(string baseUri, string path)
     {
-        return new Uri(new(baseUri), path).ToString();
+        return new Uri(new Uri(baseUri), path).ToString();
     }
 
     private static string BuildUriWithQueryParams(string uri, IDictionary<string, string> query)

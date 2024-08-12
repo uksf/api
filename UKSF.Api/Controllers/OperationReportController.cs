@@ -32,7 +32,7 @@ public class OperationReportController : ControllerBase
     public OprepDataset Get([FromRoute] string id)
     {
         var oprep = _operationReportContext.GetSingle(id);
-        return new() { OperationEntity = oprep, GroupedAttendance = oprep.AttendanceReport.Users.GroupBy(x => x.GroupName) };
+        return new OprepDataset { OperationEntity = oprep, GroupedAttendance = oprep.AttendanceReport.Users.GroupBy(x => x.GroupName) };
     }
 
     [HttpPost]

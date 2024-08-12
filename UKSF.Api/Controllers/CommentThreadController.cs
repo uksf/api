@@ -51,7 +51,7 @@ public class CommentThreadController : ControllerBase
     public CommentThreadsDataset Get([FromRoute] string id)
     {
         var comments = _commentThreadService.GetCommentThreadComments(id);
-        return new()
+        return new CommentThreadsDataset
         {
             Comments = comments.Select(
                 comment => new CommentThreadDataset
@@ -108,7 +108,7 @@ public class CommentThreadController : ControllerBase
         {
             var link = applicationAccount.Id != participant ? $"/recruitment/{applicationAccount.Id}" : "/application";
             _notificationsService.Add(
-                new()
+                new Notification
                 {
                     Owner = participant,
                     Icon = NotificationIcons.Comment,

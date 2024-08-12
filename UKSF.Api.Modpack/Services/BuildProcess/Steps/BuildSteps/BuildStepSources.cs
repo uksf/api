@@ -23,7 +23,7 @@ public class BuildStepSources : GitBuildStep
         DirectoryInfo directory = new(path);
         if (!directory.Exists)
         {
-            throw new($"{displayName} source directory does not exist. {displayName} should be cloned before running a build.");
+            throw new Exception($"{displayName} source directory does not exist. {displayName} should be cloned before running a build.");
         }
 
         var releasePath = Path.Join(GetBuildSourcesPath(), modName, "release", releaseName);
@@ -71,7 +71,7 @@ public class BuildStepSources : GitBuildStep
         DirectoryInfo modpack = new(modpackPath);
         if (!modpack.Exists)
         {
-            throw new("Modpack source directory does not exist. Modpack should be cloned before running a build.");
+            throw new Exception("Modpack source directory does not exist. Modpack should be cloned before running a build.");
         }
 
         StepLogger.Log($"Checking out {referenceName}");

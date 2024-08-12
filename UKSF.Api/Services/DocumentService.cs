@@ -159,7 +159,7 @@ public class DocumentService : IDocumentService
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
         var documentPath = ValidateAndGetDocumentPath(documentMetadata.Id);
         var text = await _fileContext.ReadAllText(documentPath);
-        return new() { Text = text, LastUpdated = documentMetadata.LastUpdated };
+        return new DocumentContentResponse { Text = text, LastUpdated = documentMetadata.LastUpdated };
     }
 
     public async Task<DocumentContentResponse> UpdateDocumentContent(string folderId, string documentId, UpdateDocumentContentRequest updateDocumentContent)
@@ -191,7 +191,7 @@ public class DocumentService : IDocumentService
         await _fileContext.WriteTextToFile(documentPath, updateDocumentContent.NewText);
 
         _logger.LogAudit($"Updated document at {documentMetadata.FullPath}");
-        return new() { Text = updateDocumentContent.NewText, LastUpdated = updated };
+        return new DocumentContentResponse { Text = updateDocumentContent.NewText, LastUpdated = updated };
     }
 
     private DomainDocumentFolderMetadata ValidateAndGetFolder(string folderId)
@@ -259,7 +259,7 @@ public class DocumentService : IDocumentService
 
     private DocumentMetadataResponse MapDocument(DomainDocumentMetadata documentMetadata)
     {
-        return new()
+        return new DocumentMetadataResponse
         {
             Id = documentMetadata.Id,
             Folder = documentMetadata.Folder,

@@ -45,7 +45,7 @@ public class ApplicationsController : ControllerBase
         );
 
         _notificationsService.Add(
-            new()
+            new Notification
             {
                 Owner = domainAccount.Application.Recruiter,
                 Icon = NotificationIcons.Application,

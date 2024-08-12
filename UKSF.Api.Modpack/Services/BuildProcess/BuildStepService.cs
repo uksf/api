@@ -45,7 +45,7 @@ public class BuildStepService : IBuildStepService
 
     public List<ModpackBuildStep> GetStepsForReleaseRestore()
     {
-        return new() { new(BuildStepRestore.Name), new(BuildStepUnlockServerControl.Name) };
+        return [new ModpackBuildStep(BuildStepRestore.Name), new ModpackBuildStep(BuildStepUnlockServerControl.Name)];
     }
 
     public IBuildStep ResolveBuildStep(string buildStepName)
@@ -62,8 +62,8 @@ public class BuildStepService : IBuildStepService
 
     private static List<ModpackBuildStep> GetStepsForBuild()
     {
-        return new()
-        {
+        return
+        [
             new(BuildStepPrep.Name),
             new(BuildStepClean.Name),
             new(BuildStepSources.Name),
@@ -78,13 +78,13 @@ public class BuildStepService : IBuildStepService
             new(BuildStepKeys.Name),
             new(BuildStepCbaSettings.Name),
             new(BuildStepBuildRepo.Name)
-        };
+        ];
     }
 
     private static List<ModpackBuildStep> GetStepsForRc()
     {
-        return new()
-        {
+        return
+        [
             new(BuildStepPrep.Name),
             new(BuildStepClean.Name),
             new(BuildStepSources.Name),
@@ -98,14 +98,14 @@ public class BuildStepService : IBuildStepService
             new(BuildStepDeploy.Name),
             new(BuildStepKeys.Name),
             new(BuildStepCbaSettings.Name),
-            new(BuildStepBuildRepo.Name),
-        };
+            new ModpackBuildStep(BuildStepBuildRepo.Name)
+        ];
     }
 
     private static List<ModpackBuildStep> GetStepsForRelease()
     {
-        return new()
-        {
+        return
+        [
             new(BuildStepClean.Name),
             new(BuildStepLockServerControl.Name),
             new(BuildStepBackup.Name),
@@ -117,7 +117,7 @@ public class BuildStepService : IBuildStepService
             new(BuildStepNotify.Name),
             new(BuildStepMerge.Name),
             new(BuildStepUnlockServerControl.Name)
-        };
+        ];
     }
 
     private static void ResolveIndices(IReadOnlyList<ModpackBuildStep> steps)

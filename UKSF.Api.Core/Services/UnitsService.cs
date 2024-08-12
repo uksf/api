@@ -229,7 +229,7 @@ public class UnitsService(
             return new List<DomainUnit>();
         }
 
-        List<DomainUnit> parentUnits = new();
+        List<DomainUnit> parentUnits = [];
         do
         {
             parentUnits.Add(unit);
@@ -252,7 +252,7 @@ public class UnitsService(
 
     public IEnumerable<DomainUnit> GetAllChildren(DomainUnit parent, bool includeParent = false)
     {
-        var children = includeParent ? new() { parent } : new List<DomainUnit>();
+        var children = includeParent ? [parent] : new List<DomainUnit>();
         foreach (var unit in unitsContext.Get(x => x.Parent == parent.Id))
         {
             children.Add(unit);

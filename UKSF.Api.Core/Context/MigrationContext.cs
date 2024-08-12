@@ -4,7 +4,7 @@ using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Core.Context;
 
-public interface IMigrationContext : IMongoContext<Migration> { }
+public interface IMigrationContext : IMongoContext<Migration>;
 
 public class MigrationContext : MongoContext<Migration>, IMigrationContext
 {

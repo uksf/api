@@ -40,7 +40,7 @@ public class TeamspeakManagerService : ITeamspeakManagerService
         }
 
         _runTeamspeak = true;
-        _token = new();
+        _token = new CancellationTokenSource();
         Task.Run(KeepOnline);
     }
 

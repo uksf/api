@@ -27,7 +27,7 @@ public class BuildStepCbaSettings : FileBuildStep
         FileInfo cbaSettingsFile = new(Path.Join(sourceUserconfigPath, "cba_settings.sqf"));
 
         StepLogger.LogSurround("\nCopying cba_settings.sqf...");
-        await CopyFiles(new DirectoryInfo(sourceUserconfigPath), new DirectoryInfo(targetUserconfigPath), new() { cbaSettingsFile });
+        await CopyFiles(new DirectoryInfo(sourceUserconfigPath), new DirectoryInfo(targetUserconfigPath), [cbaSettingsFile]);
         StepLogger.LogSurround("Copied cba_settings.sqf");
     }
 }

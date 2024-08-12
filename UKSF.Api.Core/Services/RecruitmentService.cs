@@ -73,9 +73,9 @@ public class RecruitmentService : IRecruitmentService
 
     public ApplicationsOverview GetAllApplications()
     {
-        List<WaitingApplication> waiting = new();
-        List<WaitingApplication> allWaiting = new();
-        List<CompletedApplication> complete = new();
+        List<WaitingApplication> waiting = [];
+        List<WaitingApplication> allWaiting = [];
+        List<CompletedApplication> complete = [];
         var recruiters = GetRecruiters(true).Select(account => _displayNameService.GetDisplayName(account)).ToList();
 
         var me = _httpContextService.GetUserId();
@@ -99,7 +99,13 @@ public class RecruitmentService : IRecruitmentService
             }
         }
 
-        return new() { Waiting = waiting, AllWaiting = allWaiting, Complete = complete, Recruiters = recruiters };
+        return new ApplicationsOverview
+        {
+            Waiting = waiting,
+            AllWaiting = allWaiting,
+            Complete = complete,
+            Recruiters = recruiters
+        };
     }
 
     public DetailedApplication GetApplication(DomainAccount domainAccount)
@@ -108,7 +114,7 @@ public class RecruitmentService : IRecruitmentService
         var age = domainAccount.Dob.ToAge();
         var acceptableAge = _variablesService.GetVariable("RECRUITMENT_ENTRY_AGE");
 
-        return new()
+        return new DetailedApplication
         {
             Account = _accountMapper.MapToAccount(domainAccount),
             DisplayName = _displayNameService.GetDisplayName(domainAccount),
@@ -164,14 +170,14 @@ public class RecruitmentService : IRecruitmentService
         var averageProcessingTime = totalProcessingTime > 0 ? Math.Round(totalProcessingTime / processedApplications.Count, 1) : 0;
         var enlistmentRate = acceptedApps != 0 || rejectedApps != 0 ? Math.Round((double)acceptedApps / (acceptedApps + rejectedApps) * 100, 1) : 0;
 
-        return new RecruitmentStat[]
-        {
+        return
+        [
             new() { FieldName = "Accepted applications", FieldValue = acceptedApps.ToString() },
             new() { FieldName = "Rejected applications", FieldValue = rejectedApps.ToString() },
             new() { FieldName = "Waiting applications", FieldValue = waitingApps.ToString() },
             new() { FieldName = "Average processing time", FieldValue = averageProcessingTime + " Days" },
             new() { FieldName = "Enlistment Rate", FieldValue = enlistmentRate + "%" }
-        };
+        ];
     }
 
     public string GetRecruiter()
@@ -197,7 +203,7 @@ public class RecruitmentService : IRecruitmentService
 
     private CompletedApplication GetCompletedApplication(DomainAccount domainAccount)
     {
-        return new()
+        return new CompletedApplication
         {
             Account = _accountMapper.MapToAccount(domainAccount),
             DisplayName = _displayNameService.GetDisplayNameWithoutRank(domainAccount),
@@ -211,7 +217,7 @@ public class RecruitmentService : IRecruitmentService
         var averageProcessingTime = GetAverageProcessingTime();
         var daysProcessing = Math.Ceiling((DateTime.UtcNow - domainAccount.Application.DateCreated).TotalDays);
         var processingDifference = daysProcessing - averageProcessingTime;
-        return new()
+        return new WaitingApplication
         {
             Account = _accountMapper.MapToAccount(domainAccount),
             SteamProfile = "https://steamcommunity.com/profiles/" + domainAccount.Steamname,

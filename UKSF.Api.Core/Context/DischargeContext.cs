@@ -5,7 +5,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context;
 
-public interface IDischargeContext : IMongoContext<DischargeCollection>, ICachedMongoContext { }
+public interface IDischargeContext : IMongoContext<DischargeCollection>, ICachedMongoContext;
 
 public class DischargeContext : CachedMongoContext<DischargeCollection>, IDischargeContext
 {

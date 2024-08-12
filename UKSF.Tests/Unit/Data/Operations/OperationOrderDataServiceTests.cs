@@ -21,12 +21,12 @@ public class OperationOrderDataServiceTests
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
         Mock<IVariablesService> mockVariablesService = new();
-        _mockDataCollection = new();
+        _mockDataCollection = new Mock<IMongoCollection<Opord>>();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<Opord>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
         mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        _operationOrderContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
+        _operationOrderContext = new OperationOrderContext(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
     }
 
     [Fact]

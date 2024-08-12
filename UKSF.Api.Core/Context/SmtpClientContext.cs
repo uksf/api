@@ -29,7 +29,7 @@ public class SmtpClientContext : ISmtpClientContext
             return;
         }
 
-        mailMessage.From = new(_username, "UKSF");
+        mailMessage.From = new MailAddress(_username, "UKSF");
 
         using SmtpClient smtp = new("smtp.gmail.com", 587);
         smtp.Credentials = new NetworkCredential(_username, _password);

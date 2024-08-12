@@ -9,7 +9,7 @@ public static class VariablesExtensions
     {
         if (variableItem.Item == null)
         {
-            throw new($"Variable {variableItem.Key} has no item");
+            throw new Exception($"Variable {variableItem.Key} has no item");
         }
 
         return variableItem;

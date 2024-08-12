@@ -4,7 +4,7 @@ namespace UKSF.Api.Core;
 
 public static class Permissions
 {
-    public static readonly HashSet<string> All = new() { Member, Admin, Command, Nco, Recruiter, RecruiterLead, Personnel, Servers, Tester };
+    public static readonly HashSet<string> All = [Member, Admin, Command, Nco, Recruiter, RecruiterLead, Personnel, Servers, Tester];
 
     #region MemberStates
 

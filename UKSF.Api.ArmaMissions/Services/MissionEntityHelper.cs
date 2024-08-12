@@ -56,7 +56,7 @@ public static class MissionEntityHelper
     public static IEnumerable<string> Serialize(this MissionEntity missionEntity)
     {
         missionEntity.ItemsCount = missionEntity.MissionEntityItems.Count;
-        List<string> serialized = new() { "class Entities", "{", $"items = {missionEntity.ItemsCount};" };
+        List<string> serialized = ["class Entities", "{", $"items = {missionEntity.ItemsCount};"];
         foreach (var item in missionEntity.MissionEntityItems)
         {
             serialized.AddRange(item.Serialize());

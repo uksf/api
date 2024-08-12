@@ -65,7 +65,7 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
         if (sessionId != updatedDomainAccount.Application.Recruiter)
         {
             _notificationsService.Add(
-                new()
+                new Notification
                 {
                     Owner = updatedDomainAccount.Application.Recruiter,
                     Icon = NotificationIcons.Application,
@@ -79,7 +79,7 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
         foreach (var value in otherRecruiters)
         {
             _notificationsService.Add(
-                new()
+                new Notification
                 {
                     Owner = value,
                     Icon = NotificationIcons.Application,

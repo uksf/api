@@ -5,7 +5,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.DataContext;
 
-public interface IGameServersContext : IMongoContext<GameServer>, ICachedMongoContext { }
+public interface IGameServersContext : IMongoContext<GameServer>, ICachedMongoContext;
 
 public class GameServersContext : CachedMongoContext<GameServer>, IGameServersContext
 {

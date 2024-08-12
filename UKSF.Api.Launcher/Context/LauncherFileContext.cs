@@ -5,7 +5,7 @@ using UKSF.Api.Launcher.Models;
 
 namespace UKSF.Api.Launcher.Context;
 
-public interface ILauncherFileContext : IMongoContext<LauncherFile>, ICachedMongoContext { }
+public interface ILauncherFileContext : IMongoContext<LauncherFile>, ICachedMongoContext;
 
 public class LauncherFileContext : CachedMongoContext<LauncherFile>, ILauncherFileContext
 {

@@ -17,7 +17,7 @@ public class CreateApplicationCommand : ICreateApplicationCommand
 {
     private readonly IAccountContext _accountContext;
 
-    private readonly List<MembershipState> _allowedMembershipStates = new() { MembershipState.CONFIRMED, MembershipState.MEMBER, MembershipState.DISCHARGED };
+    private readonly List<MembershipState> _allowedMembershipStates = [MembershipState.CONFIRMED, MembershipState.MEMBER, MembershipState.DISCHARGED];
 
     private readonly IAssignmentService _assignmentService;
     private readonly ICommentThreadService _commentThreadService;
@@ -65,7 +65,7 @@ public class CreateApplicationCommand : ICreateApplicationCommand
             _recruitmentService.GetRecruiterLeads().Values.ToArray(),
             ThreadMode.RECRUITER
         );
-        var applicationCommentThread = await _createCommentThreadCommand.ExecuteAsync(new[] { accountId }, ThreadMode.RECRUITER);
+        var applicationCommentThread = await _createCommentThreadCommand.ExecuteAsync([accountId], ThreadMode.RECRUITER);
 
         Application application = new()
         {
@@ -107,7 +107,7 @@ public class CreateApplicationCommand : ICreateApplicationCommand
 
         _notificationsService.Add(notification);
         _notificationsService.Add(
-            new()
+            new Notification
             {
                 Owner = application.Recruiter,
                 Icon = NotificationIcons.Application,
@@ -119,7 +119,7 @@ public class CreateApplicationCommand : ICreateApplicationCommand
         foreach (var id in _recruitmentService.GetRecruiterLeads().Values.Where(x => domainAccount.Application.Recruiter != x))
         {
             _notificationsService.Add(
-                new()
+                new Notification
                 {
                     Owner = id,
                     Icon = NotificationIcons.Application,
@@ -155,7 +155,7 @@ public class CreateApplicationCommand : ICreateApplicationCommand
         {
             await _commentThreadService.InsertComment(
                 domainAccount.Application.RecruiterCommentThread,
-                new()
+                new Comment
                 {
                     Author = ObjectId.Empty.ToString(),
                     Content = $"{accountName} has the same Steam account as {accountsWithSameSteamConnection.Aggregate((a, b) => $"{a}, {b}")}",
@@ -168,7 +168,7 @@ public class CreateApplicationCommand : ICreateApplicationCommand
         {
             await _commentThreadService.InsertComment(
                 domainAccount.Application.RecruiterCommentThread,
-                new()
+                new Comment
                 {
                     Author = ObjectId.Empty.ToString(),
                     Content = $"{accountName} has the same Discord account as {accountsWithSameDiscordConnection.Aggregate((a, b) => $"{a}, {b}")}",

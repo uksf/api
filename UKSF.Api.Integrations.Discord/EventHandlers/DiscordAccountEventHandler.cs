@@ -23,9 +23,9 @@ public class DiscordAccountEventHandler(IEventBus eventBus, IUksfLogger logger, 
                 );
     }
 
-    private async Task HandleAccountEvent(EventModel _, ContextEventData<DomainAccount> contextEventData)
+    private async Task HandleAccountEvent(EventModel eventModel, ContextEventData<DomainAccount> contextEventData)
     {
-        logger.LogInfo($"Discord Account Event Handler, id: {contextEventData.Id}, data: {contextEventData.Data?.Id}");
+        logger.LogInfo($"Discord Account Event Handler from {eventModel.EventSource}, id: {contextEventData.Id}, data: {contextEventData.Data?.Id}");
         var domainAccount = contextEventData.Data ?? accountContext.GetSingle(contextEventData.Id);
         await discordMembersService.UpdateUserByAccount(domainAccount);
     }

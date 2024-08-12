@@ -15,7 +15,6 @@ public interface IConnectTeamspeakIdToAccountCommand
 }
 
 public class ConnectTeamspeakIdToAccountCommand(
-    IEventBus eventBus,
     IUksfLogger logger,
     IAccountContext accountContext,
     IConfirmationCodeService confirmationCodeService,
@@ -36,7 +35,6 @@ public class ConnectTeamspeakIdToAccountCommand(
         await accountContext.Update(domainAccount.Id, Builders<DomainAccount>.Update.Set(x => x.TeamspeakIdentities, domainAccount.TeamspeakIdentities));
 
         var updatedAccount = accountContext.GetSingle(domainAccount.Id);
-        eventBus.Send(new ContextEventData<DomainAccount>(accountId, updatedAccount));
         notificationsService.SendTeamspeakNotification(
             new HashSet<int> { teamspeakId.ToInt() },
             $"This teamspeak identity has been linked to the account with email '{updatedAccount.Email}'\nIf this was not done by you, please contact an admin"

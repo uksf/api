@@ -9,6 +9,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
+using UKSF.Api.Models.Request;
 using UKSF.Api.Services;
 using UKSF.Api.Tests.Common;
 using Xunit;
@@ -38,7 +39,7 @@ public class DocumentFolderServiceTests
         _mockIClock.Setup(x => x.UtcNow()).Returns(_utcNow);
         _mockIHttpContextService.Setup(x => x.GetUserId()).Returns(_memberId);
 
-        _subject = new(
+        _subject = new DocumentFolderService(
             _mockIDocumentPermissionsService.Object,
             _mockIDocumentMetadataContext.Object,
             _mockIFileContext.Object,
@@ -54,7 +55,7 @@ public class DocumentFolderServiceTests
     {
         _mockIDocumentMetadataContext.Setup(x => x.Get()).Returns(new List<DomainDocumentFolderMetadata>());
 
-        await _subject.CreateFolder(new() { Parent = ObjectId.Empty.ToString(), Name = "About" });
+        await _subject.CreateFolder(new CreateFolderRequest { Parent = ObjectId.Empty.ToString(), Name = "About" });
 
         _mockIDocumentMetadataContext.Verify(x => x.Add(It.IsAny<DomainDocumentFolderMetadata>()), Times.Once());
     }
@@ -64,7 +65,7 @@ public class DocumentFolderServiceTests
     {
         Given_folder_metadata();
 
-        var act = async () => await _subject.CreateFolder(new() { Parent = ObjectId.Empty.ToString(), Name = "UKSF" });
+        var act = async () => await _subject.CreateFolder(new CreateFolderRequest { Parent = ObjectId.Empty.ToString(), Name = "UKSF" });
 
         await act.Should().ThrowAsync<FolderException>().WithMessageAndStatusCode("A folder already exists at path 'UKSF'", 400);
     }
@@ -74,7 +75,7 @@ public class DocumentFolderServiceTests
     {
         Given_folder_metadata();
 
-        var act = async () => await _subject.CreateFolder(new() { Parent = "2", Name = "Training" });
+        var act = async () => await _subject.CreateFolder(new CreateFolderRequest { Parent = "2", Name = "Training" });
 
         await act.Should().ThrowAsync<FolderException>().WithMessageAndStatusCode("A folder already exists at path 'UKSF\\JSFAW\\Training'", 400);
     }
@@ -84,7 +85,7 @@ public class DocumentFolderServiceTests
     {
         Given_folder_metadata();
 
-        await _subject.CreateFolder(new() { Parent = "2", Name = "SOPs" });
+        await _subject.CreateFolder(new CreateFolderRequest { Parent = "2", Name = "SOPs" });
 
         _mockIDocumentMetadataContext.Verify(x => x.Add(It.IsAny<DomainDocumentFolderMetadata>()), Times.Once());
     }
@@ -95,7 +96,7 @@ public class DocumentFolderServiceTests
         Given_folder_metadata();
         _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
 
-        var act = async () => await _subject.CreateFolder(new() { Parent = "2", Name = "SOPs" });
+        var act = async () => await _subject.CreateFolder(new CreateFolderRequest { Parent = "2", Name = "SOPs" });
 
         await act.Should().ThrowAsync<FolderException>().WithMessageAndStatusCode("Cannot create folder", 400);
     }
@@ -107,7 +108,7 @@ public class DocumentFolderServiceTests
     {
         Given_folder_metadata();
 
-        await _subject.CreateFolder(new() { Parent = parent, Name = name });
+        await _subject.CreateFolder(new CreateFolderRequest { Parent = parent, Name = name });
 
         _mockIDocumentMetadataContext.Verify(x => x.Add(It.IsAny<DomainDocumentFolderMetadata>()), Times.Once());
     }

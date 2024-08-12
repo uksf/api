@@ -20,12 +20,12 @@ public class ReleasesDataServiceTests
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
         Mock<IVariablesService> mockVariablesService = new();
-        _mockDataCollection = new();
+        _mockDataCollection = new Mock<IMongoCollection<ModpackRelease>>();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<ModpackRelease>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
         mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        _releasesContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
+        _releasesContext = new ReleasesContext(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
     }
 
     [Fact]

@@ -5,7 +5,7 @@ using UKSF.Api.Modpack.Models;
 
 namespace UKSF.Api.Modpack.Context;
 
-public interface IReleasesContext : IMongoContext<ModpackRelease>, ICachedMongoContext { }
+public interface IReleasesContext : IMongoContext<ModpackRelease>, ICachedMongoContext;
 
 public class ReleasesContext : CachedMongoContext<ModpackRelease>, IReleasesContext
 {

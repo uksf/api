@@ -16,7 +16,10 @@ public class JsonUtilitiesTests
         TestDataModel testDataModel3 = new() { Name = "3" };
         TestComplexDataModel testComplexDataModel = new()
         {
-            Name = "Test", Data = testDataModel1, List = new() { "a", "b", "c" }, DataList = new() { testDataModel1, testDataModel2, testDataModel3 }
+            Name = "Test",
+            Data = testDataModel1,
+            List = ["a", "b", "c"],
+            DataList = [testDataModel1, testDataModel2, testDataModel3]
         };
 
         var subject = testComplexDataModel.Copy<TestComplexDataModel>();

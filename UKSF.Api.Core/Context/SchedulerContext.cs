@@ -4,7 +4,7 @@ using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Core.Context;
 
-public interface ISchedulerContext : IMongoContext<ScheduledJob> { }
+public interface ISchedulerContext : IMongoContext<ScheduledJob>;
 
 public class SchedulerContext : MongoContext<ScheduledJob>, ISchedulerContext
 {

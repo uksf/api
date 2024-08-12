@@ -10,19 +10,13 @@ public static class TeamspeakHubState
     public static bool Connected;
 }
 
-public class TeamspeakHub : Hub<ITeamspeakClient>
+public class TeamspeakHub(IEventBus eventBus) : Hub<ITeamspeakClient>
 {
     public const string EndPoint = "teamspeak";
-    private readonly IEventBus _eventBus;
-
-    public TeamspeakHub(IEventBus eventBus)
-    {
-        _eventBus = eventBus;
-    }
 
     public void Invoke(int procedure, object args)
     {
-        _eventBus.Send(new SignalrEventData { Procedure = (TeamspeakEventType)procedure, Args = args });
+        eventBus.Send(new SignalrEventData { Procedure = (TeamspeakEventType)procedure, Args = args }, nameof(TeamspeakHub));
     }
 
     public override Task OnConnectedAsync()

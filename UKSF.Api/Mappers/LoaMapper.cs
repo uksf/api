@@ -24,7 +24,7 @@ public class LoaMapper : ILoaMapper
     {
         var displayName = _displayNameService.GetDisplayName(domainLoa.Account);
         var inContextChainOfCommand = _chainOfCommandService.InContextChainOfCommand(domainLoa.Recipient);
-        return new()
+        return new Loa
         {
             Id = domainLoa.Id,
             Submitted = domainLoa.Submitted,

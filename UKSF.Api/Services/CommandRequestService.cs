@@ -72,7 +72,9 @@ public class CommandRequestService : ICommandRequestService
         );
         if (ids.Count == 0)
         {
-            throw new($"Failed to get any commanders for review for {request.Type.ToLower()} request for {request.DisplayRecipient}.\nContact an admin");
+            throw new Exception(
+                $"Failed to get any commanders for review for {request.Type.ToLower()} request for {request.DisplayRecipient}.\nContact an admin"
+            );
         }
 
         var accounts = ids.Select(x => _accountContext.GetSingle(x))
@@ -96,7 +98,13 @@ public class CommandRequestService : ICommandRequestService
         foreach (var account in accounts.Where(x => x.Id != requesterDomainAccount.Id))
         {
             _notificationsService.Add(
-                new() { Owner = account.Id, Icon = NotificationIcons.Request, Message = notificationMessage, Link = "/command/requests" }
+                new Notification
+                {
+                    Owner = account.Id,
+                    Icon = NotificationIcons.Request,
+                    Message = notificationMessage,
+                    Link = "/command/requests"
+                }
             );
         }
     }
@@ -115,7 +123,7 @@ public class CommandRequestService : ICommandRequestService
 
     public async Task SetRequestAllReviewStates(CommandRequest request, ReviewState newState)
     {
-        List<string> keys = new(request.Reviews.Keys);
+        List<string> keys = [..request.Reviews.Keys];
         foreach (var key in keys)
         {
             request.Reviews[key] = newState;

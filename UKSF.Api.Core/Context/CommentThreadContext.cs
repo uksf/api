@@ -19,20 +19,20 @@ public class CommentThreadContext(IMongoCollectionFactory mongoCollectionFactory
     {
         var updateDefinition = Builders<CommentThread>.Update.Push(x => x.Comments, comment);
         await base.Update(commentThreadId, updateDefinition);
-        CommentThreadDataEvent(new EventModel(EventType.Add, new CommentThreadEventData(commentThreadId, comment)));
+        CommentThreadDataEvent(EventType.Add, new CommentThreadEventData(commentThreadId, comment));
     }
 
     public async Task RemoveCommentFromThread(string commentThreadId, Comment comment)
     {
         var updateDefinition = Builders<CommentThread>.Update.Pull(x => x.Comments, comment);
         await base.Update(commentThreadId, updateDefinition);
-        CommentThreadDataEvent(new EventModel(EventType.Delete, new CommentThreadEventData(commentThreadId, comment)));
+        CommentThreadDataEvent(EventType.Delete, new CommentThreadEventData(commentThreadId, comment));
     }
 
-    private void CommentThreadDataEvent(EventModel eventModel)
+    private void CommentThreadDataEvent(EventType eventType, EventData eventData)
     {
-        base.DataEvent(eventModel);
+        base.DataEvent(eventType, eventData);
     }
 
-    protected override void DataEvent(EventModel eventModel) { }
+    protected override void DataEvent(EventType eventType, EventData eventData) { }
 }

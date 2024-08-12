@@ -7,7 +7,7 @@ public static class MissionUtilities
 {
     public static List<string> ReadDataFromIndex(List<string> source, ref int index)
     {
-        List<string> data = new() { source[index] };
+        List<string> data = [source[index]];
         index += 1;
         var opening = source[index];
         Stack<string> stack = new();
@@ -18,7 +18,7 @@ public static class MissionUtilities
         {
             if (index >= source.Count)
             {
-                return new();
+                return [];
             }
 
             var line = source[index];
@@ -62,7 +62,7 @@ public static class MissionUtilities
     public static List<string> ReadDataByKey(List<string> source, string key)
     {
         var index = GetIndexByKey(source, key);
-        return index == -1 ? new() : ReadDataFromIndex(source, ref index);
+        return index == -1 ? [] : ReadDataFromIndex(source, ref index);
     }
 
     public static object ReadSingleDataByKey(List<string> source, string key)

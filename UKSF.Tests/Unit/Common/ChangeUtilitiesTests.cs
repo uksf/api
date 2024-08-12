@@ -25,11 +25,14 @@ public class ChangeUtilitiesTests
             Background = "I like trains",
             Dob = dobBefore,
             Rank = "Private",
-            Application = new()
+            Application = new Application
             {
-                State = ApplicationState.WAITING, Recruiter = "Bob", ApplicationCommentThread = "thread1", DateCreated = new(2020, 5, 2, 10, 34, 39)
+                State = ApplicationState.WAITING,
+                Recruiter = "Bob",
+                ApplicationCommentThread = "thread1",
+                DateCreated = new DateTime(2020, 5, 2, 10, 34, 39)
             },
-            RolePreferences = new() { "Aviatin", "NCO" }
+            RolePreferences = ["Aviatin", "NCO"]
         };
         DomainAccount updated = new()
         {
@@ -38,11 +41,14 @@ public class ChangeUtilitiesTests
             Lastname = "Bob",
             Background = "I like planes",
             Dob = dobAfter,
-            Application = new()
+            Application = new Application
             {
-                State = ApplicationState.ACCEPTED, Recruiter = "Bob", DateCreated = new(2020, 5, 2, 10, 34, 39), DateAccepted = dateAccepted
+                State = ApplicationState.ACCEPTED,
+                Recruiter = "Bob",
+                DateCreated = new DateTime(2020, 5, 2, 10, 34, 39),
+                DateAccepted = dateAccepted
             },
-            RolePreferences = new() { "Aviation", "Officer" }
+            RolePreferences = ["Aviation", "Officer"]
         };
 
         var subject = original.Changes(updated);
@@ -84,8 +90,17 @@ public class ChangeUtilitiesTests
     public void Should_detect_changes_for_dictionary()
     {
         var id = ObjectId.GenerateNewId().ToString();
-        TestDataModel original = new() { Id = id, Dictionary = new() { { "0", "variable0" }, { "1", "variable0" } } };
-        TestDataModel updated = new() { Id = id, Dictionary = new() { { "0", "variable0" }, { "1", "variable1" }, { "2", "variable2" } } };
+        TestDataModel original = new() { Id = id, Dictionary = new Dictionary<string, object> { { "0", "variable0" }, { "1", "variable0" } } };
+        TestDataModel updated = new()
+        {
+            Id = id,
+            Dictionary = new Dictionary<string, object>
+            {
+                { "0", "variable0" },
+                { "1", "variable1" },
+                { "2", "variable2" }
+            }
+        };
 
         var subject = original.Changes(updated);
 
@@ -109,8 +124,8 @@ public class ChangeUtilitiesTests
     public void Should_detect_changes_for_hashset()
     {
         var id = ObjectId.GenerateNewId().ToString();
-        DomainAccount original = new() { Id = id, TeamspeakIdentities = new() { 0 } };
-        DomainAccount updated = new() { Id = id, TeamspeakIdentities = new() { 0, 1, 2, 2 } };
+        DomainAccount original = new() { Id = id, TeamspeakIdentities = [0] };
+        DomainAccount updated = new() { Id = id, TeamspeakIdentities = [0, 1, 2, 2] };
 
         var subject = original.Changes(updated);
 
@@ -121,8 +136,11 @@ public class ChangeUtilitiesTests
     public void Should_detect_changes_for_object_list()
     {
         var id = ObjectId.GenerateNewId().ToString();
-        DomainAccount original = new() { Id = id, ServiceRecord = new() { new() { Occurence = "Event" } } };
-        DomainAccount updated = new() { Id = id, ServiceRecord = new() { new() { Occurence = "Event" }, new() { Occurence = "Another Event" } } };
+        DomainAccount original = new() { Id = id, ServiceRecord = [new ServiceRecordEntry { Occurence = "Event" }] };
+        DomainAccount updated = new()
+        {
+            Id = id, ServiceRecord = [new ServiceRecordEntry { Occurence = "Event" }, new ServiceRecordEntry { Occurence = "Another Event" }]
+        };
 
         var subject = original.Changes(updated);
 
@@ -132,8 +150,8 @@ public class ChangeUtilitiesTests
     [Fact]
     public void Should_detect_changes_for_simple_list()
     {
-        List<string> original = new() { "Aviatin", "NCO" };
-        List<string> updated = new() { "Aviation", "NCO", "Officer" };
+        List<string> original = ["Aviatin", "NCO"];
+        List<string> updated = ["Aviation", "NCO", "Officer"];
 
         var subject = original.Changes(updated);
 
@@ -162,8 +180,8 @@ public class ChangeUtilitiesTests
     public void Should_detect_changes_for_simple_object_with_list()
     {
         var id = ObjectId.GenerateNewId().ToString();
-        DomainAccount original = new() { Id = id, RolePreferences = new() { "Aviatin", "NCO" } };
-        DomainAccount updated = new() { Id = id, RolePreferences = new() { "Aviation", "NCO", "Officer" } };
+        DomainAccount original = new() { Id = id, RolePreferences = ["Aviatin", "NCO"] };
+        DomainAccount updated = new() { Id = id, RolePreferences = ["Aviation", "NCO", "Officer"] };
 
         var subject = original.Changes(updated);
 

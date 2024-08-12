@@ -41,7 +41,7 @@ public class LauncherFileService : ILauncherFileService
             var storedFile = storedVersions.FirstOrDefault(x => x.FileName == fileName);
             if (storedFile == null)
             {
-                await _launcherFileContext.Add(new() { FileName = fileName, Version = version });
+                await _launcherFileContext.Add(new LauncherFile { FileName = fileName, Version = version });
                 continue;
             }
 

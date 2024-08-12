@@ -156,7 +156,7 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
             var dischargeCollection = _dischargeContext.GetSingle(x => x.AccountId == domainAccount.Id);
             if (dischargeCollection == null)
             {
-                dischargeCollection = new() { AccountId = domainAccount.Id, Name = $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}" };
+                dischargeCollection = new DischargeCollection { AccountId = domainAccount.Id, Name = $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}" };
                 dischargeCollection.Discharges.Add(discharge);
                 await _dischargeContext.Add(dischargeCollection);
             }
@@ -228,14 +228,19 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
                 {
                     await _assignmentService.UnassignAllUnitRoles(request.Recipient);
                     _notificationsService.Add(
-                        new() { Owner = request.Recipient, Message = "You have been unassigned from all roles in all units", Icon = NotificationIcons.Demotion }
+                        new Notification
+                        {
+                            Owner = request.Recipient,
+                            Message = "You have been unassigned from all roles in all units",
+                            Icon = NotificationIcons.Demotion
+                        }
                     );
                 }
                 else
                 {
                     var role = await _assignmentService.UnassignUnitRole(request.Recipient, request.Value);
                     _notificationsService.Add(
-                        new()
+                        new Notification
                         {
                             Owner = request.Recipient,
                             Message =
@@ -249,7 +254,7 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
             {
                 await _assignmentService.AssignUnitRole(request.Recipient, request.Value, request.SecondaryValue);
                 _notificationsService.Add(
-                    new()
+                    new Notification
                     {
                         Owner = request.Recipient,
                         Message =
@@ -278,7 +283,7 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
             var unit = _unitsContext.GetSingle(request.Value);
             await _assignmentService.UnassignUnit(request.Recipient, unit.Id);
             _notificationsService.Add(
-                new()
+                new Notification
                 {
                     Owner = request.Recipient,
                     Message = $"You have been removed from {_unitsService.GetChainString(unit)}",

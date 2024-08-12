@@ -77,27 +77,26 @@ public static class MissionDataResolver
 
     public static void ResolveSpecialUnits(List<MissionUnit> orderedUnits)
     {
-        List<string> ids = new()
-        {
-            // "5a42835b55d6109bf0b081bd", // "UKSF"
+        List<string> ids =
+        [
             "5fe39de7815f5f03801134f7", // "Combat Ready"
-            "5a848590eab14d12cc7fa618" // "RAF Cranwell"
-        };
+            "5a848590eab14d12cc7fa618"
+        ];
         orderedUnits.RemoveAll(x => ids.Contains(x.SourceUnit.Id));
     }
 
     public static List<MissionPlayer> ResolveUnitSlots(MissionUnit unit)
     {
-        List<MissionPlayer> slots = new();
+        List<MissionPlayer> slots = [];
         var max = 12;
         int fillerCount;
         switch (unit.SourceUnit.Id)
         {
             case "5a435eea905d47336442c75a": // "Joint Special Forces Aviation Wing"
                 // slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a42835b55d6109bf0b081bd")?.Members ?? new List<MissionPlayer>());
-                slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a435eea905d47336442c75a")?.Members ?? new List<MissionPlayer>());
-                slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5fe39de7815f5f03801134f7")?.Members ?? new List<MissionPlayer>());
-                slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a848590eab14d12cc7fa618")?.Members ?? new List<MissionPlayer>());
+                slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a435eea905d47336442c75a")?.Members ?? []);
+                slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5fe39de7815f5f03801134f7")?.Members ?? []);
+                slots.AddRange(MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Id == "5a848590eab14d12cc7fa618")?.Members ?? []);
                 break;
             case "5a68b28e196530164c9b4fed": // "Sniper Platoon"
                 max = 3;

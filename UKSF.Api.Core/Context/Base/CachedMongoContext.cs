@@ -161,21 +161,21 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
 
     private void DataAddEvent(T item)
     {
-        DataEvent(new EventModel(EventType.Add, new ContextEventData<T>(string.Empty, item)));
+        DataEvent(EventType.Add, new ContextEventData<T>(string.Empty, item));
     }
 
     private void DataUpdateEvent(string id)
     {
-        DataEvent(new EventModel(EventType.Update, new ContextEventData<T>(id, null)));
+        DataEvent(EventType.Update, new ContextEventData<T>(id, null));
     }
 
     private void DataDeleteEvent(string id)
     {
-        DataEvent(new EventModel(EventType.Delete, new ContextEventData<T>(id, null)));
+        DataEvent(EventType.Delete, new ContextEventData<T>(id, null));
     }
 
-    protected virtual void DataEvent(EventModel eventModel)
+    protected virtual void DataEvent(EventType eventType, EventData eventData)
     {
-        _eventBus.Send(eventModel);
+        _eventBus.Send(new EventModel(eventType, eventData, $"{CollectionName}.{eventType}"));
     }
 }

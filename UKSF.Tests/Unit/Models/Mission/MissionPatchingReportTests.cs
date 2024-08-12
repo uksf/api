@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System;
+using FluentAssertions;
 using UKSF.Api.Core.Models;
 using Xunit;
 
@@ -29,7 +30,7 @@ public class MissionPatchingReportTests
     [Fact]
     public void ShouldSetFieldsFromException()
     {
-        ValidationReport subject = new(new("An error occured"));
+        ValidationReport subject = new(new Exception("An error occured"));
 
         subject.Title.Should().Be("An error occured");
         subject.Detail.Should().Be("System.Exception: An error occured");

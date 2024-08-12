@@ -28,7 +28,7 @@ public class PruneDataActionTests
         Mock<IHostEnvironment> mockHostEnvironment = new();
         Mock<ISchedulerService> mockSchedulerService = new();
 
-        _now = new(2020, 11, 14);
+        _now = new DateTime(2020, 11, 14);
         mockClock.Setup(x => x.UtcNow()).Returns(_now);
 
         _actionPruneLogs = new ActionPruneLogs(
@@ -52,12 +52,11 @@ public class PruneDataActionTests
     [Fact]
     public async Task When_pruning_logs()
     {
-        List<BasicLog> basicLogs = new() { new("test1") { Timestamp = _now.AddDays(-8) }, new("test2") { Timestamp = _now.AddDays(-6) } };
-        List<AuditLog> auditLogs = new()
-        {
-            new("server", "audit1") { Timestamp = _now.AddMonths(-4) }, new("server", "audit2") { Timestamp = _now.AddMonths(-2) }
-        };
-        List<ErrorLog> errorLogs = new() { new(new("error1")) { Timestamp = _now.AddDays(-8) }, new(new("error2")) { Timestamp = _now.AddDays(-6) } };
+        List<BasicLog> basicLogs = [new BasicLog("test1") { Timestamp = _now.AddDays(-8) }, new BasicLog("test2") { Timestamp = _now.AddDays(-6) }];
+        List<AuditLog> auditLogs =
+            [new AuditLog("server", "audit1") { Timestamp = _now.AddMonths(-4) }, new AuditLog("server", "audit2") { Timestamp = _now.AddMonths(-2) }];
+        List<ErrorLog> errorLogs =
+            [new ErrorLog(new Exception("error1")) { Timestamp = _now.AddDays(-8) }, new ErrorLog(new Exception("error2")) { Timestamp = _now.AddDays(-6) }];
 
         _mockLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<BasicLog, bool>>>()))
                        .Returns(Task.CompletedTask)

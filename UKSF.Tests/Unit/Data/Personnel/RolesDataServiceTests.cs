@@ -20,12 +20,12 @@ public class RolesDataServiceTests
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
         Mock<IVariablesService> mockVariablesService = new();
-        _mockDataCollection = new();
+        _mockDataCollection = new Mock<IMongoCollection<DomainRole>>();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainRole>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
         mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        _rolesContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
+        _rolesContext = new RolesContext(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
     }
 
     [Fact]

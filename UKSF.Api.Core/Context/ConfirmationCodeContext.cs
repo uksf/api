@@ -4,7 +4,7 @@ using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Core.Context;
 
-public interface IConfirmationCodeContext : IMongoContext<ConfirmationCode> { }
+public interface IConfirmationCodeContext : IMongoContext<ConfirmationCode>;
 
 public class ConfirmationCodeContext : MongoContext<ConfirmationCode>, IConfirmationCodeContext
 {

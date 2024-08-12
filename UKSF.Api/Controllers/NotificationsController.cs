@@ -48,7 +48,7 @@ public class NotificationsController : ControllerBase
     public void TestNotification()
     {
         _notificationsService.Add(
-            new()
+            new Notification
             {
                 Owner = _httpContextService.GetUserId(),
                 Icon = NotificationIcons.Comment,

@@ -20,12 +20,12 @@ public class GameServersContextTests
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
         Mock<IVariablesService> mockVariablesService = new();
-        _mockDataCollection = new();
+        _mockDataCollection = new Mock<IMongoCollection<GameServer>>();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<GameServer>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
         mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        _gameServersContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
+        _gameServersContext = new GameServersContext(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
     }
 
     [Fact]

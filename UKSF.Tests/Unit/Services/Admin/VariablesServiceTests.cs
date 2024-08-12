@@ -18,7 +18,7 @@ public class VariablesServiceTests
         var subject = variableItem.AsArray();
 
         subject.Should().HaveCount(3);
-        subject.Should().Contain(new[] { "item1", "item2", "item3" });
+        subject.Should().Contain(["item1", "item2", "item3"]);
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public class VariablesServiceTests
         var subject = variableItem.AsArray(x => x.RemoveQuotes());
 
         subject.Should().HaveCount(2);
-        subject.Should().Contain(new[] { "item1", "item2" });
+        subject.Should().Contain(["item1", "item2"]);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class VariablesServiceTests
         var subject = variableItem.AsDoublesArray().ToList();
 
         subject.Should().HaveCount(3);
-        subject.Should().Contain(new[] { 1.5, 1.67845567657, -0.000000456 });
+        subject.Should().Contain([1.5, 1.67845567657, -0.000000456]);
     }
 
     // ReSharper disable PossibleMultipleEnumeration
@@ -83,7 +83,7 @@ public class VariablesServiceTests
 
         subject.Should().BeAssignableTo<IEnumerable<string>>();
         subject.Should().HaveCount(3);
-        subject.Should().Contain(new[] { "item1", "item2", "item3" });
+        subject.Should().Contain(["item1", "item2", "item3"]);
     }
     // ReSharper restore PossibleMultipleEnumeration
 

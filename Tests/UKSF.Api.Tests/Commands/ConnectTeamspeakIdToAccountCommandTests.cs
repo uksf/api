@@ -9,7 +9,6 @@ using Moq;
 using UKSF.Api.Commands;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
@@ -24,7 +23,6 @@ public class ConnectTeamspeakIdToAccountCommandTests
     private readonly string _confirmationCode = ObjectId.GenerateNewId().ToString();
     private readonly Mock<IAccountContext> _mockAccountContext;
     private readonly Mock<IConfirmationCodeService> _mockConfirmationCodeService;
-    private readonly Mock<IEventBus> _mockEventBus;
     private readonly Mock<IUksfLogger> _mockLogger;
     private readonly Mock<INotificationsService> _mockNotificationsService;
     private readonly ConnectTeamspeakIdToAccountCommand _subject;
@@ -32,14 +30,12 @@ public class ConnectTeamspeakIdToAccountCommandTests
 
     public ConnectTeamspeakIdToAccountCommandTests()
     {
-        _mockEventBus = new();
-        _mockLogger = new();
-        _mockAccountContext = new();
-        _mockConfirmationCodeService = new();
-        _mockNotificationsService = new();
+        _mockLogger = new Mock<IUksfLogger>();
+        _mockAccountContext = new Mock<IAccountContext>();
+        _mockConfirmationCodeService = new Mock<IConfirmationCodeService>();
+        _mockNotificationsService = new Mock<INotificationsService>();
 
-        _subject = new(
-            _mockEventBus.Object,
+        _subject = new ConnectTeamspeakIdToAccountCommand(
             _mockLogger.Object,
             _mockAccountContext.Object,
             _mockConfirmationCodeService.Object,
@@ -52,7 +48,7 @@ public class ConnectTeamspeakIdToAccountCommandTests
     {
         _mockConfirmationCodeService.Setup(x => x.GetConfirmationCodeValue(_confirmationCode)).ReturnsAsync(TeamspeakId);
 
-        var expectedUpdate = Builders<DomainAccount>.Update.Set(x => x.TeamspeakIdentities, new() { 2 }).RenderUpdate();
+        var expectedUpdate = Builders<DomainAccount>.Update.Set(x => x.TeamspeakIdentities, [2]).RenderUpdate();
         BsonValue createdUpdate = null;
         _mockAccountContext.Setup(x => x.Update(_accountId, It.IsAny<UpdateDefinition<DomainAccount>>()))
                            .Callback((string _, UpdateDefinition<DomainAccount> update) => createdUpdate = update.RenderUpdate());
@@ -63,7 +59,7 @@ public class ConnectTeamspeakIdToAccountCommandTests
                                    DomainAccount domainAccount = new() { Id = _accountId };
                                    if (createdUpdate != null)
                                    {
-                                       domainAccount.TeamspeakIdentities = new() { 2 };
+                                       domainAccount.TeamspeakIdentities = [2];
                                        domainAccount.Email = "test@test.com";
                                    }
 
@@ -77,7 +73,6 @@ public class ConnectTeamspeakIdToAccountCommandTests
         createdUpdate.Should().BeEquivalentTo(expectedUpdate);
 
         _mockConfirmationCodeService.Verify(x => x.ClearConfirmationCodes(It.IsAny<Func<ConfirmationCode, bool>>()), Times.Never);
-        _mockEventBus.Verify(x => x.Send(It.Is<ContextEventData<DomainAccount>>(m => m.Data.TeamspeakIdentities.Single() == 2)), Times.Once);
         _mockNotificationsService.Verify(
             x => x.SendTeamspeakNotification(
                 It.Is<HashSet<int>>(m => m.Single() == 2),
@@ -100,7 +95,7 @@ public class ConnectTeamspeakIdToAccountCommandTests
                  .ThrowAsync<InvalidConfirmationCodeException>()
                  .WithMessageAndStatusCode("Confirmation code was invalid or expired. Please try again", 400);
         _mockConfirmationCodeService.Verify(
-            x => x.ClearConfirmationCodes(It.Is<Func<ConfirmationCode, bool>>(m => m(new() { Value = TeamspeakId }))),
+            x => x.ClearConfirmationCodes(It.Is<Func<ConfirmationCode, bool>>(m => m(new ConfirmationCode { Value = TeamspeakId }))),
             Times.Once
         );
     }

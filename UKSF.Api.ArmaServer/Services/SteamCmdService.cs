@@ -57,7 +57,7 @@ public class SteamCmdService : ISteamCmdService
         var steamPath = _variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
         var cmdPath = Path.Combine(steamPath, "steamcmd.exe");
 
-        return new()
+        return new Process
         {
             StartInfo =
             {

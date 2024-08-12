@@ -79,7 +79,7 @@ public class CommandRequestsController : ControllerBase
             }
         }
 
-        return new()
+        return new CommandRequestsDataset
         {
             MyRequests = GetMyRequests(myRequests, contextId, canOverride, superAdmin, now),
             OtherRequests = GetOtherRequests(otherRequests, canOverride, superAdmin, now)
@@ -106,7 +106,7 @@ public class CommandRequestsController : ControllerBase
             foreach (var reviewerId in request.Reviews.Select(x => x.Key).Where(x => x != sessionDomainAccount.Id))
             {
                 _notificationsService.Add(
-                    new()
+                    new Notification
                     {
                         Owner = reviewerId,
                         Icon = NotificationIcons.Request,

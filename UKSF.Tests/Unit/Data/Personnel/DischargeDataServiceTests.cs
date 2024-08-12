@@ -21,14 +21,14 @@ public class DischargeDataServiceTests
         Mock<IMongoCollection<DischargeCollection>> mockDataCollection = new();
         Mock<IVariablesService> mockVariablesService = new();
 
-        DischargeCollection item1 = new() { Discharges = new() { new() { Timestamp = DateTime.UtcNow.AddDays(-3) } } };
+        DischargeCollection item1 = new() { Discharges = [new Discharge { Timestamp = DateTime.UtcNow.AddDays(-3) }] };
         DischargeCollection item2 = new()
         {
-            Discharges = new() { new() { Timestamp = DateTime.UtcNow.AddDays(-10) }, new() { Timestamp = DateTime.UtcNow.AddDays(-1) } }
+            Discharges = [new Discharge { Timestamp = DateTime.UtcNow.AddDays(-10) }, new Discharge { Timestamp = DateTime.UtcNow.AddDays(-1) }]
         };
         DischargeCollection item3 = new()
         {
-            Discharges = new() { new() { Timestamp = DateTime.UtcNow.AddDays(-5) }, new() { Timestamp = DateTime.UtcNow.AddDays(-2) } }
+            Discharges = [new Discharge { Timestamp = DateTime.UtcNow.AddDays(-5) }, new Discharge { Timestamp = DateTime.UtcNow.AddDays(-2) }]
         };
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DischargeCollection>(It.IsAny<string>())).Returns(mockDataCollection.Object);

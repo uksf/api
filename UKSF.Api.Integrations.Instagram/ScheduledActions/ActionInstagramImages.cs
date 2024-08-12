@@ -4,7 +4,7 @@ using UKSF.Api.Integrations.Instagram.Services;
 
 namespace UKSF.Api.Integrations.Instagram.ScheduledActions;
 
-public interface IActionInstagramImages : ISelfCreatingScheduledAction { }
+public interface IActionInstagramImages : ISelfCreatingScheduledAction;
 
 public class ActionInstagramImages : SelfCreatingScheduledAction, IActionInstagramImages
 {

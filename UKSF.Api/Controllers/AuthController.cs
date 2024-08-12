@@ -65,13 +65,13 @@ public class AuthController : ControllerBase
     [HttpPost("passwordReset")]
     public async Task RequestPasswordReset([FromBody] RequestPasswordReset requestPasswordReset)
     {
-        await _requestPasswordResetCommand.ExecuteAsync(new(requestPasswordReset.Email));
+        await _requestPasswordResetCommand.ExecuteAsync(new RequestPasswordResetCommandArgs(requestPasswordReset.Email));
     }
 
     [HttpPost("passwordReset/{code}")]
     public async Task<TokenResponse> ResetPassword([FromRoute] string code, [FromBody] LoginCredentials credentials)
     {
-        await _resetPasswordCommand.ExecuteAsync(new(credentials.Email, credentials.Password, code));
+        await _resetPasswordCommand.ExecuteAsync(new ResetPasswordCommandArgs(credentials.Email, credentials.Password, code));
         return _loginService.LoginForPasswordReset(credentials.Email);
     }
 

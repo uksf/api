@@ -26,17 +26,17 @@ public class GetInstalledServerInfrastructureQuery : IGetInstalledServerInfrastr
 
         if (!File.Exists(exePath))
         {
-            return Task.FromResult<ServerInfrastructureInstalled>(new() { InstalledVersion = "0" });
+            return Task.FromResult(new ServerInfrastructureInstalled { InstalledVersion = "0" });
         }
 
         var fileVersion = FileVersionInfo.GetVersionInfo(exePath).ProductVersion;
         if (fileVersion == null)
         {
-            return Task.FromResult<ServerInfrastructureInstalled>(new() { InstalledVersion = "0" });
+            return Task.FromResult(new ServerInfrastructureInstalled { InstalledVersion = "0" });
         }
 
         var gameVersion = string.Join('.', fileVersion.Split('.').Take(2));
 
-        return Task.FromResult<ServerInfrastructureInstalled>(new() { InstalledVersion = gameVersion });
+        return Task.FromResult(new ServerInfrastructureInstalled { InstalledVersion = gameVersion });
     }
 }

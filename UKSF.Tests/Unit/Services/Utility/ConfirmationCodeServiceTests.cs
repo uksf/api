@@ -22,24 +22,24 @@ public class ConfirmationCodeServiceTests
 
     public ConfirmationCodeServiceTests()
     {
-        _mockConfirmationCodeDataService = new();
-        _mockSchedulerService = new();
+        _mockConfirmationCodeDataService = new Mock<IConfirmationCodeContext>();
+        _mockSchedulerService = new Mock<ISchedulerService>();
 
         var mockClock = new Mock<IClock>();
         mockClock.Setup(x => x.UtcNow()).Returns(DateTime.UtcNow);
 
-        _confirmationCodeService = new(_mockConfirmationCodeDataService.Object, _mockSchedulerService.Object, mockClock.Object);
+        _confirmationCodeService = new ConfirmationCodeService(_mockConfirmationCodeDataService.Object, _mockSchedulerService.Object, mockClock.Object);
     }
 
     [Fact]
     public async Task ShouldCancelScheduledJob()
     {
         ConfirmationCode confirmationCode = new() { Value = "test" };
-        List<ConfirmationCode> confirmationCodeData = new() { confirmationCode };
+        List<ConfirmationCode> confirmationCodeData = [confirmationCode];
         var actionParameters = JsonSerializer.Serialize(new object[] { confirmationCode.Id }, DefaultJsonSerializerOptions.Options);
 
         ScheduledJob scheduledJob = new() { ActionParameters = actionParameters };
-        List<ScheduledJob> subject = new() { scheduledJob };
+        List<ScheduledJob> subject = [scheduledJob];
 
         _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => confirmationCodeData.FirstOrDefault(y => y.Id == x));
         _mockConfirmationCodeDataService.Setup(x => x.Delete(It.IsAny<string>())).Returns(Task.CompletedTask);
@@ -74,7 +74,7 @@ public class ConfirmationCodeServiceTests
     {
         ConfirmationCode confirmationCode1 = new() { Value = "test1" };
         ConfirmationCode confirmationCode2 = new() { Value = "test2" };
-        List<ConfirmationCode> confirmationCodeData = new() { confirmationCode1, confirmationCode2 };
+        List<ConfirmationCode> confirmationCodeData = [confirmationCode1, confirmationCode2];
 
         _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => confirmationCodeData.FirstOrDefault(y => y.Id == x));
         _mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<ScheduledJob, bool>>()))
@@ -89,7 +89,7 @@ public class ConfirmationCodeServiceTests
     public async Task ShouldReturnCodeValue()
     {
         ConfirmationCode confirmationCode = new() { Value = "test" };
-        List<ConfirmationCode> confirmationCodeData = new() { confirmationCode };
+        List<ConfirmationCode> confirmationCodeData = [confirmationCode];
 
         _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => confirmationCodeData.FirstOrDefault(y => y.Id == x));
         _mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<ScheduledJob, bool>>()))

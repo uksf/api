@@ -28,7 +28,7 @@ public interface IGameServerHelpers
 public class GameServerHelpers : IGameServerHelpers
 {
     private static readonly string[] BaseConfig =
-    {
+    [
         "hostname = \"{0}\";",
         "password = \"{1}\";",
         "passwordAdmin = \"{2}\";",
@@ -72,7 +72,7 @@ public class GameServerHelpers : IGameServerHelpers
         "class AdvancedOptions {{",
         "    LogObjectNotFound = false;",
         "}};"
-    };
+    ];
 
     private readonly IUksfLogger _logger;
     private readonly IVariablesService _variablesService;
@@ -186,7 +186,7 @@ public class GameServerHelpers : IGameServerHelpers
 
     public TimeSpan StripMilliseconds(TimeSpan time)
     {
-        return new(time.Hours, time.Minutes, time.Seconds);
+        return new TimeSpan(time.Hours, time.Minutes, time.Seconds);
     }
 
     public IEnumerable<Process> GetArmaProcesses()

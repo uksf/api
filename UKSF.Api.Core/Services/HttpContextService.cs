@@ -47,7 +47,7 @@ public class HttpContextService : IHttpContextService
         var expiry = _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == UksfClaimTypes.Expiry)?.Value;
         if (string.IsNullOrEmpty(expiry))
         {
-            throw new("Token has no expiry");
+            throw new Exception("Token has no expiry");
         }
 
         return _clock.UtcNow() > DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiry)).UtcDateTime;
@@ -80,11 +80,12 @@ public class HttpContextService : IHttpContextService
         var currentId = _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Sid)?.Value;
         if (string.IsNullOrEmpty(currentId) || currentId == id)
         {
-            _httpContextAccessor.HttpContext = new DefaultHttpContext { User = new(new ClaimsIdentity(new List<Claim> { new(ClaimTypes.Sid, id) })) };
+            _httpContextAccessor.HttpContext =
+                new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new(ClaimTypes.Sid, id) })) };
             return;
         }
 
-        throw new($"Tried to overwrite user ID ({currentId})");
+        throw new Exception($"Tried to overwrite user ID ({currentId})");
     }
 }
 

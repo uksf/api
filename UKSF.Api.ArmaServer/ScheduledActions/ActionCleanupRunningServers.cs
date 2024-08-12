@@ -7,7 +7,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.ScheduledActions;
 
-public interface IActionCleanupRunningServers : ISelfCreatingScheduledAction { }
+public interface IActionCleanupRunningServers : ISelfCreatingScheduledAction;
 
 public class ActionCleanupRunningServers : SelfCreatingScheduledAction, IActionCleanupRunningServers
 {

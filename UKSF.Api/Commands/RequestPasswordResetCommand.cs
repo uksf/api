@@ -55,7 +55,12 @@ public class RequestPasswordResetCommand : IRequestPasswordResetCommand
         var code = await _confirmationCodeService.CreateConfirmationCode(domainAccount.Id);
         var url = BuildResetUrl(code);
         await _sendTemplatedEmailCommand.ExecuteAsync(
-            new(domainAccount.Email, "UKSF Password Reset", TemplatedEmailNames.ResetPasswordTemplate, new() { { "reset", url } })
+            new SendTemplatedEmailCommandArgs(
+                domainAccount.Email,
+                "UKSF Password Reset",
+                TemplatedEmailNames.ResetPasswordTemplate,
+                new Dictionary<string, string> { { "reset", url } }
+            )
         );
 
         _logger.LogAudit($"Password reset request made for {domainAccount.Id}", domainAccount.Id);

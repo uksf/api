@@ -9,6 +9,7 @@ using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Core.Models.Request;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -25,7 +26,12 @@ public class GameServersServiceOrderTests
 
     public GameServersServiceOrderTests()
     {
-        _subject = new(_mockIGameServersContext.Object, _mockIMissionPatchingService.Object, _mockIGameServerHelpers.Object, _mockIVariablesService.Object);
+        _subject = new GameServersService(
+            _mockIGameServersContext.Object,
+            _mockIMissionPatchingService.Object,
+            _mockIGameServerHelpers.Object,
+            _mockIVariablesService.Object
+        );
     }
 
     public static IEnumerable<object[]> Data =>
@@ -115,7 +121,7 @@ public class GameServersServiceOrderTests
         var gameServers = Given_game_servers();
         When_updating_game_server_order(gameServers);
 
-        await _subject.UpdateGameServerOrder(new() { PreviousIndex = previousIndex, NewIndex = newIndex });
+        await _subject.UpdateGameServerOrder(new OrderUpdateRequest { PreviousIndex = previousIndex, NewIndex = newIndex });
 
         gameServers.Should().BeEquivalentTo(expected);
     }

@@ -3,4 +3,4 @@
 namespace UKSF.Api.Controllers;
 
 [Route("users/{userid}/[controller]")]
-public class ServiceRecordsController : Controller { }
+public class ServiceRecordsController : Controller;

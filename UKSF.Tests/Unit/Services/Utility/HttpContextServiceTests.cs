@@ -23,16 +23,16 @@ public class HttpContextServiceTests
 
         mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(() => _httpContext);
 
-        _httpContextService = new(mockHttpContextAccessor.Object, mockClock.Object, mockDisplayNameService.Object);
+        _httpContextService = new HttpContextService(mockHttpContextAccessor.Object, mockClock.Object, mockDisplayNameService.Object);
     }
 
     [Fact]
     public void ShouldGetContextEmail()
     {
         DomainAccount domainAccount = new() { Email = "contact.tim.here@gmail.com" };
-        List<Claim> claims = new() { new(ClaimTypes.Email, domainAccount.Email) };
+        List<Claim> claims = [new Claim(ClaimTypes.Email, domainAccount.Email)];
         ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
-        _httpContext = new() { User = contextUser };
+        _httpContext = new DefaultHttpContext { User = contextUser };
 
         var subject = _httpContextService.GetUserEmail();
 
@@ -43,9 +43,9 @@ public class HttpContextServiceTests
     public void ShouldGetContextId()
     {
         DomainAccount domainAccount = new();
-        List<Claim> claims = new() { new(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String) };
+        List<Claim> claims = [new Claim(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String)];
         ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
-        _httpContext = new() { User = contextUser };
+        _httpContext = new DefaultHttpContext { User = contextUser };
 
         var subject = _httpContextService.GetUserId();
 
@@ -55,9 +55,9 @@ public class HttpContextServiceTests
     [Fact]
     public void ShouldReturnFalseForInvalidRole()
     {
-        List<Claim> claims = new() { new(ClaimTypes.Role, Permissions.Admin) };
+        List<Claim> claims = [new Claim(ClaimTypes.Role, Permissions.Admin)];
         ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
-        _httpContext = new() { User = contextUser };
+        _httpContext = new DefaultHttpContext { User = contextUser };
 
         var subject = _httpContextService.UserHasPermission(Permissions.Command);
 
@@ -67,9 +67,9 @@ public class HttpContextServiceTests
     [Fact]
     public void ShouldReturnTrueForValidRole()
     {
-        List<Claim> claims = new() { new(ClaimTypes.Role, Permissions.Admin) };
+        List<Claim> claims = [new Claim(ClaimTypes.Role, Permissions.Admin)];
         ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
-        _httpContext = new() { User = contextUser };
+        _httpContext = new DefaultHttpContext { User = contextUser };
 
         var subject = _httpContextService.UserHasPermission(Permissions.Admin);
 

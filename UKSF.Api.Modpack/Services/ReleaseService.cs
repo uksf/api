@@ -39,7 +39,16 @@ public class ReleaseService : IReleaseService
     {
         var changelog = await _githubService.GenerateChangelog(version);
         var creatorId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
-        await _releasesContext.Add(new() { Timestamp = DateTime.UtcNow, Version = version, Changelog = changelog, IsDraft = true, CreatorId = creatorId });
+        await _releasesContext.Add(
+            new ModpackRelease
+            {
+                Timestamp = DateTime.UtcNow,
+                Version = version,
+                Changelog = changelog,
+                IsDraft = true,
+                CreatorId = creatorId
+            }
+        );
     }
 
     public async Task UpdateDraft(ModpackRelease release)

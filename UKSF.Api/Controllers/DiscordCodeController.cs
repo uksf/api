@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
@@ -16,7 +15,6 @@ public class DiscordCodeController(
     IAccountContext accountContext,
     IConfirmationCodeService confirmationCodeService,
     IHttpContextService httpContextService,
-    IEventBus eventBus,
     IUksfLogger logger
 ) : ControllerBase
 {
@@ -32,7 +30,7 @@ public class DiscordCodeController(
 
         var id = httpContextService.GetUserId();
         var otherAccounts = accountContext.Get(x => x.Id != id && x.DiscordId == discordId).ToList();
-        if (otherAccounts.Any())
+        if (otherAccounts.Count != 0)
         {
             logger.LogWarning(
                 $"The Discord ID ({discordId}) was found on other accounts during linking. These accounts will be unlinked: {string.Join(",", otherAccounts.Select(x => x.Id))}"
@@ -42,7 +40,6 @@ public class DiscordCodeController(
 
         await accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.DiscordId, discordId));
         var domainAccount = accountContext.GetSingle(id);
-        eventBus.Send(new ContextEventData<DomainAccount>(id, domainAccount));
         logger.LogAudit($"Discord ID ({discordId}) linked to account {domainAccount.Id}");
     }
 }

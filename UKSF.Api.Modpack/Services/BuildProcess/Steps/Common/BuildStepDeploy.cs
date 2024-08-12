@@ -51,7 +51,7 @@ public class BuildStepDeploy : FileBuildStep
     private Task RemoveRcOptional(string repoPath)
     {
         var addonsPath = Path.Join(repoPath, "@uksf", "addons");
-        return DeleteFiles(GetDirectoryContents(new(addonsPath), "uksf_rc.*"));
+        return DeleteFiles(GetDirectoryContents(new DirectoryInfo(addonsPath), "uksf_rc.*"));
     }
 
     private Task RemoveUksfOptionalsFolder(string repoPath)

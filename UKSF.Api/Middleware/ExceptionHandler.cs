@@ -48,7 +48,7 @@ public class ExceptionHandler : IExceptionHandler
 
         context.Response.ContentType = "application/json";
         var message = exception?.GetCompleteMessage() ?? ((HttpStatusCode)context.Response.StatusCode).ToString();
-        return SerializeToStream(context.Response.BodyWriter, new(context.Response.StatusCode, 0, message, null));
+        return SerializeToStream(context.Response.BodyWriter, new UksfErrorMessage(context.Response.StatusCode, 0, message, null));
     }
 
     private static Task HandleUksfException(UksfException uksfException, HttpContext context)
@@ -58,7 +58,7 @@ public class ExceptionHandler : IExceptionHandler
 
         return SerializeToStream(
             context.Response.BodyWriter,
-            new(uksfException.StatusCode, uksfException.DetailCode, uksfException.Message, uksfException.Validation)
+            new UksfErrorMessage(uksfException.StatusCode, uksfException.DetailCode, uksfException.Message, uksfException.Validation)
         );
     }
 

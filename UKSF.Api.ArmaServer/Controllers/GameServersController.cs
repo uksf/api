@@ -55,7 +55,7 @@ public class GameServersController : ControllerBase
     [Authorize]
     public GameServersDataset GetGameServers()
     {
-        return new()
+        return new GameServersDataset
         {
             Servers = _gameServersContext.Get(),
             Missions = _gameServersService.GetMissionFiles(),
@@ -69,7 +69,7 @@ public class GameServersController : ControllerBase
     {
         var gameServer = _gameServersContext.GetSingle(id);
         await _gameServersService.GetGameServerStatus(gameServer);
-        return new() { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
+        return new GameServerDataset { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
     }
 
     [HttpPost("{check}")]
@@ -107,7 +107,7 @@ public class GameServersController : ControllerBase
         {
             environmentChanged = true;
             gameServer.Mods = _gameServersService.GetEnvironmentMods(gameServer.Environment);
-            gameServer.ServerMods = new();
+            gameServer.ServerMods = new List<GameServerMod>();
         }
 
         await _gameServersContext.Update(
@@ -165,7 +165,7 @@ public class GameServersController : ControllerBase
                 await _gameServersService.UploadMissionFile(file);
                 var missionPatchingResult = await _gameServersService.PatchMissionFile(file.Name);
                 missionPatchingResult.Reports = missionPatchingResult.Reports.OrderByDescending(x => x.Error).ToList();
-                missionReports.Add(new() { Mission = file.Name, Reports = missionPatchingResult.Reports });
+                missionReports.Add(new MissionReportDataset { Mission = file.Name, Reports = missionPatchingResult.Reports });
                 _logger.LogAudit($"Uploaded mission '{file.Name}'");
             }
         }
@@ -177,7 +177,7 @@ public class GameServersController : ControllerBase
 
         var missions = _gameServersService.GetMissionFiles();
         SendMissionsUpdateIfNotCaller(missions);
-        return new() { Missions = missions, MissionReports = missionReports };
+        return new MissionsDataset { Missions = missions, MissionReports = missionReports };
     }
 
     [HttpPost("launch/{id}")]
@@ -218,7 +218,7 @@ public class GameServersController : ControllerBase
             patchingResult.Reports = patchingResult.Reports.OrderByDescending(x => x.Error).ToList();
             var error =
                 $"{(patchingResult.Reports.Count > 0 ? "Failed to patch mission for the reasons detailed below" : "Failed to patch mission for an unknown reason")}.\n\nContact an admin for help";
-            throw new MissionPatchingFailedException(error, new() { Reports = patchingResult.Reports });
+            throw new MissionPatchingFailedException(error, new ValidationReportDataset { Reports = patchingResult.Reports });
         }
 
         _gameServersService.WriteServerConfig(gameServer, patchingResult.PlayerCount, launchServerRequest.MissionName);
@@ -246,7 +246,7 @@ public class GameServersController : ControllerBase
         SendServerUpdateIfNotCaller(gameServer.Id);
         await _gameServersService.StopGameServer(gameServer);
         await _gameServersService.GetGameServerStatus(gameServer);
-        return new() { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
+        return new GameServerDataset { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
     }
 
     [HttpGet("kill/{id}")]
@@ -272,7 +272,7 @@ public class GameServersController : ControllerBase
 
         await _gameServersService.GetGameServerStatus(gameServer);
         SendServerUpdateIfNotCaller(gameServer.Id);
-        return new() { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
+        return new GameServerDataset { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
     }
 
     [HttpGet("killall")]
@@ -307,11 +307,11 @@ public class GameServersController : ControllerBase
     public GameServerModsDataset ResetGameServerMods(string id)
     {
         var gameServer = _gameServersContext.GetSingle(id);
-        return new()
+        return new GameServerModsDataset
         {
             AvailableMods = _gameServersService.GetAvailableMods(id),
             Mods = _gameServersService.GetEnvironmentMods(gameServer.Environment),
-            ServerMods = new()
+            ServerMods = new List<GameServerMod>()
         };
     }
 

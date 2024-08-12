@@ -6,7 +6,7 @@ using UKSF.Api.Launcher.Signalr.Hubs;
 
 namespace UKSF.Api.Launcher.Services;
 
-public interface ILauncherService { }
+public interface ILauncherService;
 
 public class LauncherService : ILauncherService
 {

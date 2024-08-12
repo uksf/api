@@ -1,5 +1,6 @@
 ﻿using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Services;
 
@@ -27,7 +28,7 @@ public class MigrationUtility
         try
         {
             ExecuteMigration();
-            _migrationContext.Add(new() { Version = Version });
+            _migrationContext.Add(new Migration { Version = Version });
             _logger.LogInfo($"Migration version {Version} executed successfully");
         }
         catch (Exception e)
@@ -42,7 +43,7 @@ public class MigrationUtility
         var accounts = _accountContext.Get();
         foreach (var account in accounts)
         {
-            account.Qualifications = new();
+            account.Qualifications = new Qualifications();
             _accountContext.Replace(account);
         }
     }

@@ -28,15 +28,15 @@ public class DataServiceEventTests
     public DataServiceEventTests()
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-        _mockEventBus = new();
-        _mockDataCollection = new();
+        _mockEventBus = new Mock<IEventBus>();
+        _mockDataCollection = new Mock<Api.Core.Context.Base.IMongoCollection<TestDataModel>>();
         _id1 = ObjectId.GenerateNewId().ToString();
         _id2 = ObjectId.GenerateNewId().ToString();
         _id3 = ObjectId.GenerateNewId().ToString();
-        _item1 = new() { Id = _id1, Name = "1" };
+        _item1 = new TestDataModel { Id = _id1, Name = "1" };
         TestDataModel item2 = new() { Id = _id2, Name = "1" };
         TestDataModel item3 = new() { Id = _id3, Name = "3" };
-        List<TestDataModel> mockCollection = new() { _item1, item2, item3 };
+        List<TestDataModel> mockCollection = [_item1, item2, item3];
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
         _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>()))
@@ -44,7 +44,7 @@ public class DataServiceEventTests
         _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<TestDataModel, bool>>()))
                            .Returns<Func<TestDataModel, bool>>(predicate => mockCollection.FirstOrDefault(predicate));
 
-        _testContext = new(mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
+        _testContext = new TestContext(mockDataCollectionFactory.Object, _mockEventBus.Object, "test");
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class DataServiceEventTests
         await _testContext.Add(_item1);
 
         _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Once);
-        subject.Should().BeEquivalentTo(new EventModel(EventType.Add, new ContextEventData<TestDataModel>(string.Empty, _item1)));
+        subject.Should().BeEquivalentTo(new EventModel(EventType.Add, new ContextEventData<TestDataModel>(string.Empty, _item1), "test.Add"));
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class DataServiceEventTests
         await _testContext.Delete(new TestDataModel { Id = _id1 });
 
         _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Once);
-        subject.Should().BeEquivalentTo(new EventModel(EventType.Delete, new ContextEventData<TestDataModel>(_id1, null)));
+        subject.Should().BeEquivalentTo(new EventModel(EventType.Delete, new ContextEventData<TestDataModel>(_id1, null), "test.Delete"));
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public class DataServiceEventTests
         await _testContext.Delete(_id1);
 
         _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Once);
-        subject.Should().BeEquivalentTo(new EventModel(EventType.Delete, new ContextEventData<TestDataModel>(_id1, null)));
+        subject.Should().BeEquivalentTo(new EventModel(EventType.Delete, new ContextEventData<TestDataModel>(_id1, null), "test.Delete"));
     }
 
     [Fact]
@@ -104,8 +104,8 @@ public class DataServiceEventTests
                 .BeEquivalentTo(
                     new List<EventModel>
                     {
-                        new(EventType.Delete, new ContextEventData<TestDataModel>(_id1, null)),
-                        new(EventType.Delete, new ContextEventData<TestDataModel>(_id2, null))
+                        new(EventType.Delete, new ContextEventData<TestDataModel>(_id1, null), "test.Delete"),
+                        new(EventType.Delete, new ContextEventData<TestDataModel>(_id2, null), "test.Delete")
                     }
                 );
     }
@@ -121,7 +121,7 @@ public class DataServiceEventTests
         await _testContext.Replace(_item1);
 
         _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Once);
-        subject.Should().BeEquivalentTo(new EventModel(EventType.Update, new ContextEventData<TestDataModel>(_id1, null)));
+        subject.Should().BeEquivalentTo(new EventModel(EventType.Update, new ContextEventData<TestDataModel>(_id1, null), "test.Update"));
     }
 
     [Fact]
@@ -140,8 +140,8 @@ public class DataServiceEventTests
                 .BeEquivalentTo(
                     new List<EventModel>
                     {
-                        new(EventType.Update, new ContextEventData<TestDataModel>(_id1, null)),
-                        new(EventType.Update, new ContextEventData<TestDataModel>(_id2, null))
+                        new(EventType.Update, new ContextEventData<TestDataModel>(_id1, null), "test.Update"),
+                        new(EventType.Update, new ContextEventData<TestDataModel>(_id2, null), "test.Update")
                     }
                 );
     }
@@ -165,9 +165,9 @@ public class DataServiceEventTests
                 .BeEquivalentTo(
                     new List<EventModel>
                     {
-                        new(EventType.Update, new ContextEventData<TestDataModel>(_id1, null)),
-                        new(EventType.Update, new ContextEventData<TestDataModel>(_id2, null)),
-                        new(EventType.Update, new ContextEventData<TestDataModel>(_id3, null))
+                        new(EventType.Update, new ContextEventData<TestDataModel>(_id1, null), "test.Update"),
+                        new(EventType.Update, new ContextEventData<TestDataModel>(_id2, null), "test.Update"),
+                        new(EventType.Update, new ContextEventData<TestDataModel>(_id3, null), "test.Update")
                     }
                 );
     }

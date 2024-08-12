@@ -53,7 +53,13 @@ public class DischargesController : ControllerBase
         foreach (var discharge in discharges)
         {
             discharge.RequestExists = _commandRequestService.DoesEquivalentRequestExist(
-                new() { Recipient = discharge.AccountId, Type = CommandRequestType.ReinstateMember, DisplayValue = "Member", DisplayFrom = "Discharged" }
+                new CommandRequest
+                {
+                    Recipient = discharge.AccountId,
+                    Type = CommandRequestType.ReinstateMember,
+                    DisplayValue = "Member",
+                    DisplayFrom = "Discharged"
+                }
             );
         }
 
@@ -82,7 +88,7 @@ public class DischargesController : ControllerBase
         foreach (var member in _unitsContext.GetSingle(personnelId).Members.Where(x => x != _httpContextService.GetUserId()))
         {
             _notificationsService.Add(
-                new()
+                new Notification
                 {
                     Owner = member,
                     Icon = NotificationIcons.Promotion,

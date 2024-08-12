@@ -16,9 +16,9 @@ public class AccountMapperTests
 
     public AccountMapperTests()
     {
-        _mockDisplayNameService = new();
+        _mockDisplayNameService = new Mock<IDisplayNameService>();
 
-        _subject = new(_mockDisplayNameService.Object);
+        _subject = new AccountMapper(_mockDisplayNameService.Object);
     }
 
     [Fact]
@@ -32,9 +32,9 @@ public class AccountMapperTests
             Firstname = "Bob",
             Lastname = "McTest",
             MembershipState = MembershipState.MEMBER,
-            TeamspeakIdentities = new() { 4, 4 },
-            ServiceRecord = new() { new() { Occurence = "Test", Timestamp = timestamp } },
-            RolePreferences = new() { "Aviation" },
+            TeamspeakIdentities = [4, 4],
+            ServiceRecord = [new ServiceRecordEntry { Occurence = "Test", Timestamp = timestamp }],
+            RolePreferences = ["Aviation"],
             MilitaryExperience = false
         };
 

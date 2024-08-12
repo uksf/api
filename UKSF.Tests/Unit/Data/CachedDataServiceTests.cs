@@ -22,13 +22,13 @@ public class CachedDataServiceTests
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
-        _mockDataCollection = new();
+        _mockDataCollection = new Mock<Api.Core.Context.Base.IMongoCollection<TestDataModel>>();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
         _mockDataCollection.Setup(x => x.Get()).Returns(() => new List<TestDataModel>());
         _mockIVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        _testCachedContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, _mockIVariablesService.Object, "test");
+        _testCachedContext = new TestCachedContext(mockDataCollectionFactory.Object, mockEventBus.Object, _mockIVariablesService.Object, "test");
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class CachedDataServiceTests
     {
         _mockDataCollection.Setup(x => x.AddAsync(It.IsAny<TestDataModel>())).Returns(Task.CompletedTask);
 
-        await _testCachedContext.Add(new() { Name = "1" });
+        await _testCachedContext.Add(new TestDataModel { Name = "1" });
 
         _mockDataCollection.Verify(x => x.Get(), Times.Once);
     }
@@ -46,7 +46,7 @@ public class CachedDataServiceTests
     {
         _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
 
-        await _testCachedContext.Delete((TestDataModel)new() { Name = "1" });
+        await _testCachedContext.Delete(new TestDataModel { Name = "1" });
 
         _mockDataCollection.Verify(x => x.Get(), Times.Once);
     }
@@ -78,7 +78,7 @@ public class CachedDataServiceTests
     {
         _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<TestDataModel>())).Returns(Task.CompletedTask);
 
-        await _testCachedContext.Replace(new() { Name = "1" });
+        await _testCachedContext.Replace(new TestDataModel { Name = "1" });
 
         _mockDataCollection.Verify(x => x.Get(), Times.Once);
     }

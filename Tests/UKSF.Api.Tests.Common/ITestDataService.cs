@@ -2,4 +2,4 @@
 
 namespace UKSF.Api.Tests.Common;
 
-public interface ITestContext : IMongoContext<TestDataModel> { }
+public interface ITestContext : IMongoContext<TestDataModel>;

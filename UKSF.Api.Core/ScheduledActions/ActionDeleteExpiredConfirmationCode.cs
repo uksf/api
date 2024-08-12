@@ -2,7 +2,7 @@
 
 namespace UKSF.Api.Core.ScheduledActions;
 
-public interface IActionDeleteExpiredConfirmationCode : IScheduledAction { }
+public interface IActionDeleteExpiredConfirmationCode : IScheduledAction;
 
 public class ActionDeleteExpiredConfirmationCode : IActionDeleteExpiredConfirmationCode
 {

@@ -65,7 +65,7 @@ public class BuildsDataServiceTests
         {
             Id = id,
             BuildNumber = 1,
-            Steps = new List<ModpackBuildStep> { modpackBuildStep }
+            Steps = [modpackBuildStep]
         };
         EventModel subject = null;
 

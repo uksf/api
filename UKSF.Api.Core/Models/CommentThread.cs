@@ -17,6 +17,6 @@ public class CommentThread : MongoObject
     [BsonRepresentation(BsonType.ObjectId)]
     public string[] Authors { get; set; }
 
-    public Comment[] Comments { get; set; } = Array.Empty<Comment>();
+    public Comment[] Comments { get; set; } = [];
     public ThreadMode Mode { get; set; }
 }

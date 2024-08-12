@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System;
+using FluentAssertions;
 using UKSF.Api.Core.Models;
 using Xunit;
 
@@ -9,7 +10,7 @@ public class WebLogMessageTests
     [Fact]
     public void ShouldCreateFromException()
     {
-        ErrorLog subject = new(new("test"), "url", "method", "endpoint", 500, "userId", "userName");
+        ErrorLog subject = new(new Exception("test"), "url", "method", "endpoint", 500, "userId", "userName");
 
         subject.Message.Should().Be("test");
         subject.Exception.Should().Be("System.Exception: test");

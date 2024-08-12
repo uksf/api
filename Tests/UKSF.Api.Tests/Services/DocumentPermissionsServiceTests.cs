@@ -26,13 +26,18 @@ public class DocumentPermissionsServiceTests
         _mockIHttpContextService.Setup(x => x.UserHasPermission(Permissions.Superadmin)).Returns(false);
         _mockIAccountService.Setup(x => x.GetUserAccount()).Returns(new DomainAccount { Rank = "rank" });
 
-        _subject = new(_mockIHttpContextService.Object, _mockIUnitsService.Object, _mockIRanksService.Object, _mockIAccountService.Object);
+        _subject = new DocumentPermissionsService(
+            _mockIHttpContextService.Object,
+            _mockIUnitsService.Object,
+            _mockIRanksService.Object,
+            _mockIAccountService.Object
+        );
     }
 
     [Fact]
     public void When_read_permissions_are_empty()
     {
-        var result = _subject.DoesContextHaveReadPermission(new());
+        var result = _subject.DoesContextHaveReadPermission(new DomainMetadataWithPermissions());
 
         result.Should().Be(true);
     }
@@ -42,7 +47,7 @@ public class DocumentPermissionsServiceTests
     {
         _mockIHttpContextService.Setup(x => x.UserHasPermission(Permissions.Superadmin)).Returns(true);
 
-        var result = _subject.DoesContextHaveWritePermission(new());
+        var result = _subject.DoesContextHaveWritePermission(new DomainMetadataWithPermissions());
 
         result.Should().Be(true);
     }
@@ -50,7 +55,7 @@ public class DocumentPermissionsServiceTests
     [Fact]
     public void When_write_permissions_are_empty()
     {
-        var result = _subject.DoesContextHaveWritePermission(new());
+        var result = _subject.DoesContextHaveWritePermission(new DomainMetadataWithPermissions());
 
         result.Should().Be(false);
     }
@@ -66,7 +71,15 @@ public class DocumentPermissionsServiceTests
         Given_rank_permission(hasRankPermission);
 
         var result = _subject.DoesContextHaveWritePermission(
-            new() { WritePermissions = new() { Units = new() { _writeUnitId }, Rank = "permissionsRank", SelectedUnitsOnly = false } }
+            new DomainMetadataWithPermissions
+            {
+                WritePermissions = new DocumentPermissions
+                {
+                    Units = [_writeUnitId],
+                    Rank = "permissionsRank",
+                    SelectedUnitsOnly = false
+                }
+            }
         );
 
         result.Should().Be(hasPermission);
@@ -85,11 +98,11 @@ public class DocumentPermissionsServiceTests
         Given_rank_permission(true);
 
         var result = _subject.DoesContextHaveWritePermission(
-            new()
+            new DomainMetadataWithPermissions
             {
-                WritePermissions = new()
+                WritePermissions = new DocumentPermissions
                 {
-                    Units = hasUnits ? new() { _writeUnitId } : new(),
+                    Units = hasUnits ? [_writeUnitId] : [],
                     Rank = hasRank ? "permissionsRank" : string.Empty,
                     SelectedUnitsOnly = selectedUnitsOnly
                 }
@@ -105,7 +118,9 @@ public class DocumentPermissionsServiceTests
         Given_unit_write_permissions(false);
         Given_unit_write_permissions_for_selected_units_only(true);
 
-        var result = _subject.DoesContextHaveWritePermission(new() { WritePermissions = new() { Units = new() { _writeUnitId }, SelectedUnitsOnly = true } });
+        var result = _subject.DoesContextHaveWritePermission(
+            new DomainMetadataWithPermissions { WritePermissions = new DocumentPermissions { Units = [_writeUnitId], SelectedUnitsOnly = true } }
+        );
 
         result.Should().Be(true);
         Units_tree_is_not_checked(_writeUnitId);
@@ -123,7 +138,15 @@ public class DocumentPermissionsServiceTests
         Given_rank_permission(hasRankPermission);
 
         var result = _subject.DoesContextHaveReadPermission(
-            new() { ReadPermissions = new() { Units = new() { _readUnitId }, Rank = "permissionsRank", SelectedUnitsOnly = false } }
+            new DomainMetadataWithPermissions
+            {
+                ReadPermissions = new DocumentPermissions
+                {
+                    Units = [_readUnitId],
+                    Rank = "permissionsRank",
+                    SelectedUnitsOnly = false
+                }
+            }
         );
 
         result.Should().Be(hasPermission);
@@ -142,11 +165,11 @@ public class DocumentPermissionsServiceTests
         Given_rank_permission(true);
 
         var result = _subject.DoesContextHaveReadPermission(
-            new()
+            new DomainMetadataWithPermissions
             {
                 ReadPermissions =
                 {
-                    Units = hasUnits ? new() { _readUnitId } : new(),
+                    Units = hasUnits ? [_readUnitId] : [],
                     Rank = hasRank ? "permissionsRank" : string.Empty,
                     SelectedUnitsOnly = selectedUnitsOnly
                 }
@@ -162,7 +185,9 @@ public class DocumentPermissionsServiceTests
         Given_unit_read_permissions(false);
         Given_unit_read_permissions_for_selected_units_only(true);
 
-        var result = _subject.DoesContextHaveReadPermission(new() { ReadPermissions = new() { Units = new() { _readUnitId }, SelectedUnitsOnly = true } });
+        var result = _subject.DoesContextHaveReadPermission(
+            new DomainMetadataWithPermissions { ReadPermissions = new DocumentPermissions { Units = [_readUnitId], SelectedUnitsOnly = true } }
+        );
 
         result.Should().Be(true);
         Units_tree_is_not_checked(_readUnitId);

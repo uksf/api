@@ -5,7 +5,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context;
 
-public interface IOperationOrderContext : IMongoContext<Opord>, ICachedMongoContext { }
+public interface IOperationOrderContext : IMongoContext<Opord>, ICachedMongoContext;
 
 public class OperationOrderContext : CachedMongoContext<Opord>, IOperationOrderContext
 {

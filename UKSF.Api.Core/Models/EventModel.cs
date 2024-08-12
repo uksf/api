@@ -8,16 +8,11 @@ public enum EventType
     Delete
 }
 
-public class EventModel
+public record EventModel(EventType EventType, EventData Data, string EventSource)
 {
-    public EventModel(EventType eventType, EventData data)
-    {
-        Data = data;
-        EventType = eventType;
-    }
-
-    public EventData Data { get; }
-    public EventType EventType { get; }
+    public EventData Data { get; } = Data;
+    public EventType EventType { get; } = EventType;
+    public string EventSource { get; } = EventSource;
 }
 
-public class EventData { }
+public class EventData;

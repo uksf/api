@@ -4,7 +4,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ScheduledActions;
 
-public interface IActionPruneLogs : ISelfCreatingScheduledAction { }
+public interface IActionPruneLogs : ISelfCreatingScheduledAction;
 
 public class ActionPruneLogs : SelfCreatingScheduledAction, IActionPruneLogs
 {

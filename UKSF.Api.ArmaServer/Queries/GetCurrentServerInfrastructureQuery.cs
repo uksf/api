@@ -26,25 +26,25 @@ public class GetCurrentServerInfrastructureQuery : IGetCurrentServerInfrastructu
         var manifest = await File.ReadAllTextAsync(manifestPath);
         if (manifest.Length == 0)
         {
-            return new() { CurrentBuild = "0" };
+            return new ServerInfrastructureCurrent { CurrentBuild = "0" };
         }
 
         var buildIdMatch = new Regex(@"""buildid""\s+""(\d*)""").Match(manifest);
         if (!buildIdMatch.Success)
         {
-            return new() { CurrentBuild = "0" };
+            return new ServerInfrastructureCurrent { CurrentBuild = "0" };
         }
 
         var lastUpdatedMatch = new Regex(@"""LastUpdated""\s+""(\d*)""").Match(manifest);
         if (!lastUpdatedMatch.Success)
         {
-            return new() { CurrentBuild = "0" };
+            return new ServerInfrastructureCurrent { CurrentBuild = "0" };
         }
 
         var buildId = buildIdMatch.Groups[1].Value;
         var lastUpdatedUnix = long.Parse(lastUpdatedMatch.Groups[1].Value);
         var lastUpdated = DateTimeOffset.FromUnixTimeSeconds(lastUpdatedUnix);
 
-        return new() { CurrentBuild = buildId, CurrentUpdated = lastUpdated.UtcDateTime };
+        return new ServerInfrastructureCurrent { CurrentBuild = buildId, CurrentUpdated = lastUpdated.UtcDateTime };
     }
 }

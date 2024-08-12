@@ -7,7 +7,7 @@ namespace UKSF.Api.Core.Events;
 public interface IEventBus
 {
     void Send(EventModel eventModel);
-    void Send(EventData data);
+    void Send(EventData data, string eventSource);
     IObservable<EventModel> AsObservable();
 }
 
@@ -20,9 +20,9 @@ public class EventBus : IEventBus
         _subject.OnNext(eventModel);
     }
 
-    public void Send(EventData data)
+    public void Send(EventData data, string eventSource)
     {
-        Send(new EventModel(EventType.None, data));
+        Send(new EventModel(EventType.None, data, eventSource));
     }
 
     public IObservable<EventModel> AsObservable()

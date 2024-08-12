@@ -5,7 +5,7 @@ using UKSF.Api.Modpack.Context;
 
 namespace UKSF.Api.Modpack.ScheduledActions;
 
-public interface IActionPruneBuilds : ISelfCreatingScheduledAction { }
+public interface IActionPruneBuilds : ISelfCreatingScheduledAction;
 
 public class ActionPruneBuilds : SelfCreatingScheduledAction, IActionPruneBuilds
 {

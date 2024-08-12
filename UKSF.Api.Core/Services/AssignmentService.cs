@@ -139,7 +139,7 @@ public class AssignmentService(
     public void UpdateGroupsAndRoles(string id)
     {
         var domainAccount = accountContext.GetSingle(id);
-        eventBus.Send(new ContextEventData<DomainAccount>(id, domainAccount));
+        eventBus.Send(new ContextEventData<DomainAccount>(id, domainAccount), nameof(AssignmentService));
     }
 
     private async Task<Tuple<bool, bool>> UpdateUnit(string id, string unitString, StringBuilder notificationMessage)

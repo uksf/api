@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json.Nodes;
 using System.Web;
 using Microsoft.AspNetCore.Mvc;
@@ -102,7 +103,7 @@ public class DiscordConnectionController : ControllerBase
             return "discordid=fail";
         }
 
-        client.DefaultRequestHeaders.Authorization = new("Bearer", token);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var userResponse = await client.GetAsync("https://discord.com/api/users/@me");
         var userResult = await userResponse.Content.ReadAsStringAsync();
         var userResultJson = JsonNode.Parse(userResult);
@@ -114,7 +115,7 @@ public class DiscordConnectionController : ControllerBase
             return "discordid=fail";
         }
 
-        client.DefaultRequestHeaders.Authorization = new("Bot", _botToken);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", _botToken);
         var addToServerResponse = await client.PutAsync(
             $"https://discord.com/api/guilds/{_variablesService.GetVariable("DID_SERVER").AsUlong()}/members/{id}",
             new StringContent($"{{\"access_token\":\"{token}\"}}", Encoding.UTF8, "application/json")

@@ -25,12 +25,12 @@ public class BuildsContext(IMongoCollectionFactory mongoCollectionFactory, IEven
     {
         var updateDefinition = Builders<ModpackBuild>.Update.Set(x => x.Steps[buildStep.Index], buildStep);
         await base.Update(build.Id, updateDefinition);
-        DataEvent(new EventModel(EventType.Update, new ModpackBuildStepEventData(build.Id, buildStep)));
+        DataEvent(EventType.Update, new ModpackBuildStepEventData(build.Id, buildStep));
     }
 
     public async Task Update(ModpackBuild build, UpdateDefinition<ModpackBuild> updateDefinition)
     {
         await base.Update(build.Id, updateDefinition);
-        DataEvent(new EventModel(EventType.Update, new ModpackBuildEventData(build)));
+        DataEvent(EventType.Update, new ModpackBuildEventData(build));
     }
 }

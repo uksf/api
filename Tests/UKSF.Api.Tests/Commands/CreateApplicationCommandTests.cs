@@ -31,19 +31,19 @@ public class CreateApplicationCommandTests
 
     public CreateApplicationCommandTests()
     {
-        _mockAccountContext = new();
-        _mockAssignmentService = new();
-        _mockDisplayNameService = new();
-        _mockCommentThreadService = new();
-        _mockLogger = new();
-        _mockNotificationsService = new();
-        _mockRecruitmentService = new();
-        _mockCreateCommentThreadCommand = new();
+        _mockAccountContext = new Mock<IAccountContext>();
+        _mockAssignmentService = new Mock<IAssignmentService>();
+        _mockDisplayNameService = new Mock<IDisplayNameService>();
+        _mockCommentThreadService = new Mock<ICommentThreadService>();
+        _mockLogger = new Mock<IUksfLogger>();
+        _mockNotificationsService = new Mock<INotificationsService>();
+        _mockRecruitmentService = new Mock<IRecruitmentService>();
+        _mockCreateCommentThreadCommand = new Mock<ICreateCommentThreadCommand>();
 
         _mockRecruitmentService.Setup(x => x.GetRecruiterLeads()).Returns(new Dictionary<string, string>());
         _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Id == AccountId))).Returns("Last.F");
 
-        _subject = new(
+        _subject = new CreateApplicationCommand(
             _mockAccountContext.Object,
             _mockRecruitmentService.Object,
             _mockAssignmentService.Object,
@@ -76,7 +76,7 @@ public class CreateApplicationCommandTests
                            );
         _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Lastname == "Match"))).Returns("Match.1");
 
-        await _subject.ExecuteAsync(AccountId, new());
+        await _subject.ExecuteAsync(AccountId, new Account());
 
         _mockCommentThreadService.Verify(
             x => x.InsertComment(RecruiterCommentThreadId, It.Is<Comment>(m => m.Content == "Last.F has the same Steam account as Match.1")),
@@ -118,7 +118,7 @@ public class CreateApplicationCommandTests
         _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Firstname == "1"))).Returns("Match.1");
         _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Firstname == "2"))).Returns("Match.2");
 
-        await _subject.ExecuteAsync(AccountId, new());
+        await _subject.ExecuteAsync(AccountId, new Account());
 
         _mockCommentThreadService.Verify(
             x => x.InsertComment(RecruiterCommentThreadId, It.Is<Comment>(m => m.Content == "Last.F has the same Steam account as Match.1, Match.2")),
@@ -137,7 +137,7 @@ public class CreateApplicationCommandTests
         Given_an_account_with_application();
         _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount>());
 
-        await _subject.ExecuteAsync(AccountId, new());
+        await _subject.ExecuteAsync(AccountId, new Account());
 
         _mockCommentThreadService.Verify(x => x.InsertComment(RecruiterCommentThreadId, It.IsAny<Comment>()), Times.Never);
     }
@@ -154,12 +154,12 @@ public class CreateApplicationCommandTests
     {
         _mockAccountContext.Setup(x => x.GetSingle(AccountId))
                            .Returns(
-                               () => new()
+                               () => new DomainAccount
                                {
                                    Id = AccountId,
                                    Lastname = "Last",
                                    Firstname = "First",
-                                   Application = new()
+                                   Application = new Application
                                    {
                                        RecruiterCommentThread = RecruiterCommentThreadId, ApplicationCommentThread = ApplicationCommentThreadId
                                    },

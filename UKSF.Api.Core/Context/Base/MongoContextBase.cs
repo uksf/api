@@ -1,19 +1,16 @@
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Core.Models;
 using SortDirection = UKSF.Api.Core.Models.SortDirection;
 
 namespace UKSF.Api.Core.Context.Base;
 
-public abstract class MongoContextBase<T> where T : MongoObject
+public abstract class MongoContextBase<T>(IMongoCollectionFactory mongoCollectionFactory, string collectionName) where T : MongoObject
 {
-    private readonly IMongoCollection<T> _mongoCollection;
-
-    protected MongoContextBase(IMongoCollectionFactory mongoCollectionFactory, string collectionName)
-    {
-        _mongoCollection = mongoCollectionFactory.CreateMongoCollection<T>(collectionName);
-    }
+    public string CollectionName { get; } = collectionName;
+    private readonly IMongoCollection<T> _mongoCollection = mongoCollectionFactory.CreateMongoCollection<T>(collectionName);
 
     public virtual IEnumerable<T> Get()
     {
@@ -30,14 +27,16 @@ public abstract class MongoContextBase<T> where T : MongoObject
         int pageSize,
         SortDirection sortDirection,
         string sortField,
-        IEnumerable<Expression<Func<T, object>>> filterPropertSelectors,
+        IEnumerable<Expression<Func<T, object>>> filterPropertySelectors,
         string filter
     )
     {
         var sortDefinition = sortDirection == SortDirection.ASCENDING ? Builders<T>.Sort.Ascending(sortField) : Builders<T>.Sort.Descending(sortField);
         var filterDefinition = string.IsNullOrEmpty(filter)
             ? Builders<T>.Filter.Empty
-            : Builders<T>.Filter.Or(filterPropertSelectors.Select(x => Builders<T>.Filter.Regex(x, new(new Regex(filter, RegexOptions.IgnoreCase)))));
+            : Builders<T>.Filter.Or(
+                filterPropertySelectors.Select(x => Builders<T>.Filter.Regex(x, new BsonRegularExpression(new Regex(filter, RegexOptions.IgnoreCase))))
+            );
         return GetPaged(page, pageSize, collection => collection.Aggregate(), sortDefinition, filterDefinition);
     }
 
@@ -128,7 +127,7 @@ public abstract class MongoContextBase<T> where T : MongoObject
 
     public FilterDefinition<TFilter> BuildPagedComplexQuery<TFilter>(string query, Func<string, FilterDefinition<TFilter>> filter)
     {
-        if (string.IsNullOrWhiteSpace(query) || !query.Split(new[] { "&&", "||" }, StringSplitOptions.RemoveEmptyEntries).Any())
+        if (string.IsNullOrWhiteSpace(query) || query.Split(["&&", "||"], StringSplitOptions.RemoveEmptyEntries).Length == 0)
         {
             return Builders<TFilter>.Filter.Empty;
         }

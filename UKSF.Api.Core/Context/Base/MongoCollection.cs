@@ -61,18 +61,17 @@ public class MongoCollection<T> : IMongoCollection<T> where T : MongoObject
     {
         var countFacet = AggregateFacet.Create(
             "count",
-            PipelineDefinition<TOut, AggregateCountResult>.Create(new[] { PipelineStageDefinitionBuilder.Count<TOut>() })
+            PipelineDefinition<TOut, AggregateCountResult>.Create([PipelineStageDefinitionBuilder.Count<TOut>()])
         );
 
         var dataFacet = AggregateFacet.Create(
             "data",
             PipelineDefinition<TOut, TOut>.Create(
-                new[]
-                {
+                [
                     PipelineStageDefinitionBuilder.Sort(sortDefinition),
                     PipelineStageDefinitionBuilder.Skip<TOut>((page - 1) * pageSize),
                     PipelineStageDefinitionBuilder.Limit<TOut>(pageSize)
-                }
+                ]
             )
         );
 
@@ -82,7 +81,7 @@ public class MongoCollection<T> : IMongoCollection<T> where T : MongoObject
 
         var data = aggregation.First().Facets.First(x => x.Name == "data").Output<TOut>();
 
-        return new(count, data);
+        return new PagedResult<TOut>(count, data);
     }
 
     public T GetSingle(string id)

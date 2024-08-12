@@ -5,7 +5,7 @@ using UKSF.Api.Integrations.Teamspeak.Services;
 
 namespace UKSF.Api.Integrations.Teamspeak.ScheduledActions;
 
-public interface IActionTeamspeakSnapshot : ISelfCreatingScheduledAction { }
+public interface IActionTeamspeakSnapshot : ISelfCreatingScheduledAction;
 
 public class ActionTeamspeakSnapshot : SelfCreatingScheduledAction, IActionTeamspeakSnapshot
 {

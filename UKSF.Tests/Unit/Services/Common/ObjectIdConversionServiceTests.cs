@@ -18,10 +18,10 @@ public class ObjectIdConversionServiceTests
 
     public ObjectIdConversionServiceTests()
     {
-        _mockDisplayNameService = new();
-        _mockUnitsContext = new();
+        _mockDisplayNameService = new Mock<IDisplayNameService>();
+        _mockUnitsContext = new Mock<IUnitsContext>();
 
-        _objectIdConversionService = new(_mockUnitsContext.Object, _mockDisplayNameService.Object);
+        _objectIdConversionService = new ObjectIdConversionService(_mockUnitsContext.Object, _mockDisplayNameService.Object);
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public class ObjectIdConversionServiceTests
     {
         DomainUnit unit1 = new() { Name = "7 Squadron" };
         DomainUnit unit2 = new() { Name = "656 Squadron" };
-        List<DomainUnit> collection = new() { unit1, unit2 };
+        List<DomainUnit> collection = [unit1, unit2];
 
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(x => collection.FirstOrDefault(x));
         _mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(x => x);

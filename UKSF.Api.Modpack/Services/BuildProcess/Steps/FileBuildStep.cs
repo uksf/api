@@ -64,7 +64,7 @@ public class FileBuildStep : BuildStep
                                    }
 
                                    var sourceSubdirectoryPath = x.sourceFile.FullName.Replace(sourcePath, "")
-                                                                 .Split(new[] { Path.DirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries)
+                                                                 .Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries)
                                                                  .First();
                                    DirectoryInfo sourceSubdirectory = new(Path.Join(sourcePath, sourceSubdirectoryPath));
                                    return sourceSubdirectory.Exists;
@@ -189,7 +189,7 @@ public class FileBuildStep : BuildStep
                         }
                         catch (Exception exception)
                         {
-                            throw new($"{error} '{file}'\n{exception.GetCompleteMessage()}", exception);
+                            throw new Exception($"{error} '{file}'\n{exception.GetCompleteMessage()}", exception);
                         }
                         finally
                         {
@@ -233,7 +233,7 @@ public class FileBuildStep : BuildStep
                                   catch (Exception exception)
                                   {
                                       CancellationTokenSource.Cancel();
-                                      throw new($"{error} '{fileInfo}'\n{exception.GetCompleteMessage()}", exception);
+                                      throw new Exception($"{error} '{fileInfo}'\n{exception.GetCompleteMessage()}", exception);
                                   }
                               }
                           )

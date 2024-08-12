@@ -26,10 +26,10 @@ public class TeamspeakServiceTests
         Mock<IMongoDatabase> mockMongoDatabase = new();
         Mock<IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient>> mockHubContext = new();
         Mock<ITeamspeakManagerService> mockTeamspeakManagerService = new();
-        _mockAccountContext = new();
-        _mockHostEnvironment = new();
+        _mockAccountContext = new Mock<IAccountContext>();
+        _mockHostEnvironment = new Mock<IHostEnvironment>();
 
-        _subject = new(
+        _subject = new TeamspeakService(
             _mockAccountContext.Object,
             mockMongoDatabase.Object,
             mockHubContext.Object,
@@ -41,7 +41,7 @@ public class TeamspeakServiceTests
     [Fact]
     public void When_getting_formatted_clients()
     {
-        var accounts = new List<DomainAccount> { new() { TeamspeakIdentities = new() { 2 } } };
+        var accounts = new List<DomainAccount> { new() { TeamspeakIdentities = [2] } };
 
         _mockHostEnvironment.Setup(x => x.EnvironmentName).Returns(Environments.Development);
         _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>()))

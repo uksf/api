@@ -94,10 +94,8 @@ public class LoginService : ILoginService
 
     private TokenResponse GenerateBearerToken(DomainAccount domainAccount, bool impersonating = false)
     {
-        List<Claim> claims = new()
-        {
-            new Claim(ClaimTypes.Email, domainAccount.Email, ClaimValueTypes.String), new Claim(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String)
-        };
+        List<Claim> claims =
+            [new Claim(ClaimTypes.Email, domainAccount.Email, ClaimValueTypes.String), new Claim(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String)];
         claims.AddRange(_permissionsService.GrantPermissions(domainAccount).Select(x => new Claim(ClaimTypes.Role, x)));
 
         if (impersonating)

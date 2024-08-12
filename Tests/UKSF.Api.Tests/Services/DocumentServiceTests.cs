@@ -10,6 +10,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
+using UKSF.Api.Models.Request;
 using UKSF.Api.Services;
 using UKSF.Api.Tests.Common;
 using Xunit;
@@ -39,7 +40,7 @@ public class DocumentServiceTests
         _mockIClock.Setup(x => x.UtcNow()).Returns(_utcNow);
         _mockIHttpContextService.Setup(x => x.GetUserId()).Returns(_memberId);
 
-        _subject = new(
+        _subject = new DocumentService(
             _mockIDocumentPermissionsService.Object,
             _mockIDocumentMetadataContext.Object,
             _mockIFileContext.Object,
@@ -55,7 +56,7 @@ public class DocumentServiceTests
     {
         Given_folder_metadata();
 
-        await _subject.CreateDocument("2", new() { Name = "About.json" });
+        await _subject.CreateDocument("2", new CreateDocumentRequest { Name = "About.json" });
 
         _mockIDocumentMetadataContext.Verify(x => x.Update("2", It.IsAny<UpdateDefinition<DomainDocumentFolderMetadata>>()), Times.Once());
     }
@@ -65,7 +66,7 @@ public class DocumentServiceTests
     {
         Given_folder_metadata();
 
-        var act = async () => await _subject.CreateDocument("2", new() { Name = "Training1.json" });
+        var act = async () => await _subject.CreateDocument("2", new CreateDocumentRequest { Name = "Training1.json" });
 
         await act.Should().ThrowAsync<DocumentException>().WithMessageAndStatusCode("A document already exists at path 'UKSF\\JSFAW\\Training1.json'", 400);
     }
@@ -76,7 +77,7 @@ public class DocumentServiceTests
         Given_folder_metadata();
         _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
 
-        var act = async () => await _subject.CreateDocument("2", new() { Name = "Training2.json" });
+        var act = async () => await _subject.CreateDocument("2", new CreateDocumentRequest { Name = "Training2.json" });
 
         await act.Should().ThrowAsync<FolderException>().WithMessageAndStatusCode("Cannot create documents in this folder", 400);
     }
@@ -87,7 +88,11 @@ public class DocumentServiceTests
         Given_folder_metadata();
         _mockIFileContext.Setup(x => x.Exists("1.json")).Returns(true);
 
-        var result = await _subject.UpdateDocumentContent("2", "1", new() { NewText = "New text", LastKnownUpdated = _utcNow.AddDays(-1) });
+        var result = await _subject.UpdateDocumentContent(
+            "2",
+            "1",
+            new UpdateDocumentContentRequest { NewText = "New text", LastKnownUpdated = _utcNow.AddDays(-1) }
+        );
 
         _mockIDocumentMetadataContext.Verify(
             x => x.FindAndUpdate(It.IsAny<Expression<Func<DomainDocumentFolderMetadata, bool>>>(), It.IsAny<UpdateDefinition<DomainDocumentFolderMetadata>>()),
@@ -102,7 +107,11 @@ public class DocumentServiceTests
     {
         Given_folder_metadata();
 
-        var act = async () => await _subject.UpdateDocumentContent("2", "1", new() { NewText = "New text", LastKnownUpdated = _utcNow.AddDays(-3) });
+        var act = async () => await _subject.UpdateDocumentContent(
+            "2",
+            "1",
+            new UpdateDocumentContentRequest { NewText = "New text", LastKnownUpdated = _utcNow.AddDays(-3) }
+        );
 
         await act.Should()
                  .ThrowAsync<DocumentException>()
@@ -119,10 +128,16 @@ public class DocumentServiceTests
                                              Parent = "1",
                                              Name = "JSFAW",
                                              FullPath = "UKSF\\JSFAW",
-                                             Documents = new()
-                                             {
-                                                 new() { Id = "1", Folder = "2", Name = "Training1.json", LastUpdated = _utcNow.AddDays(-2) }
-                                             }
+                                             Documents =
+                                             [
+                                                 new DomainDocumentMetadata
+                                                 {
+                                                     Id = "1",
+                                                     Folder = "2",
+                                                     Name = "Training1.json",
+                                                     LastUpdated = _utcNow.AddDays(-2)
+                                                 }
+                                             ]
                                          }
                                      );
     }

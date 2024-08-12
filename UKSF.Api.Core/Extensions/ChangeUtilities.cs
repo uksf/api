@@ -41,7 +41,14 @@ public static class ChangeUtilities
 
             if (propertyInfo.PropertyType.IsClass && !propertyInfo.PropertyType.IsSerializable)
             {
-                changes.Add(new() { Type = ChangeType.CLASS, Name = name, InnerChanges = GetChanges(originalValue, updatedValue) });
+                changes.Add(
+                    new Change
+                    {
+                        Type = ChangeType.CLASS,
+                        Name = name,
+                        InnerChanges = GetChanges(originalValue, updatedValue)
+                    }
+                );
             }
             else
             {
@@ -56,7 +63,7 @@ public static class ChangeUtilities
     {
         if (type != typeof(string) && updated is IEnumerable originalListValue && original is IEnumerable updatedListValue)
         {
-            return new()
+            return new Change
             {
                 Type = ChangeType.LIST, Name = name == string.Empty ? "List" : name, InnerChanges = GetListChanges(originalListValue, updatedListValue)
             };
@@ -64,21 +71,37 @@ public static class ChangeUtilities
 
         if (original == null)
         {
-            return new() { Type = ChangeType.ADDITION, Name = name, Updated = updated.ToString() };
+            return new Change
+            {
+                Type = ChangeType.ADDITION,
+                Name = name,
+                Updated = updated.ToString()
+            };
         }
 
         if (updated == null)
         {
-            return new() { Type = ChangeType.REMOVAL, Name = name, Original = original.ToString() };
+            return new Change
+            {
+                Type = ChangeType.REMOVAL,
+                Name = name,
+                Original = original.ToString()
+            };
         }
 
-        return new() { Type = ChangeType.CHANGE, Name = name, Original = original.ToString(), Updated = updated.ToString() };
+        return new Change
+        {
+            Type = ChangeType.CHANGE,
+            Name = name,
+            Original = original.ToString(),
+            Updated = updated.ToString()
+        };
     }
 
     private static List<Change> GetListChanges(this IEnumerable original, IEnumerable updated)
     {
-        var originalObjects = original == null ? new() : original.Cast<object>().ToList();
-        var updatedObjects = updated == null ? new() : updated.Cast<object>().ToList();
+        var originalObjects = original == null ? new List<object>() : original.Cast<object>().ToList();
+        var updatedObjects = updated == null ? new List<object>() : updated.Cast<object>().ToList();
         var changes = originalObjects.Where(originalObject => !updatedObjects.Any(updatedObject => DeepEquals(originalObject, updatedObject)))
                                      .Select(x => new Change { Type = ChangeType.ADDITION, Updated = x.ToString() })
                                      .ToList();

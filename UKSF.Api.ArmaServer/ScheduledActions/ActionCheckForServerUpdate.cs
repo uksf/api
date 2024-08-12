@@ -7,7 +7,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.ScheduledActions;
 
-public interface IActionCheckForServerUpdate : ISelfCreatingScheduledAction { }
+public interface IActionCheckForServerUpdate : ISelfCreatingScheduledAction;
 
 public class ActionCheckForServerUpdate : SelfCreatingScheduledAction, IActionCheckForServerUpdate
 {

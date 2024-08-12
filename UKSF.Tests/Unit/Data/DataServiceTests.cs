@@ -23,18 +23,18 @@ public class DataServiceTests
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
-        _mockDataCollection = new();
+        _mockDataCollection = new Mock<Api.Core.Context.Base.IMongoCollection<TestDataModel>>();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
-        _testContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, "test");
+        _testContext = new TestContext(mockDataCollectionFactory.Object, mockEventBus.Object, "test");
     }
 
     [Fact]
     public async Task Should_add_single_item()
     {
         TestDataModel item1 = new() { Name = "1" };
-        _mockCollection = new();
+        _mockCollection = [];
 
         _mockDataCollection.Setup(x => x.AddAsync(It.IsAny<TestDataModel>())).Callback<TestDataModel>(x => _mockCollection.Add(x));
 
@@ -48,7 +48,7 @@ public class DataServiceTests
     {
         TestDataModel item1 = new() { Name = "1" };
         TestDataModel item2 = new() { Name = "1" };
-        _mockCollection = new() { item1, item2 };
+        _mockCollection = [item1, item2];
 
         _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns(() => _mockCollection);
         _mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>()))
@@ -68,7 +68,7 @@ public class DataServiceTests
     {
         TestDataModel item1 = new() { Name = "1" };
         TestDataModel item2 = new() { Name = "2" };
-        _mockCollection = new() { item1, item2 };
+        _mockCollection = [item1, item2];
 
         _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => _mockCollection.RemoveAll(x => x.Id == id));
 
@@ -82,7 +82,7 @@ public class DataServiceTests
     {
         TestDataModel item1 = new() { Name = "1" };
         TestDataModel item2 = new() { Name = "2" };
-        _mockCollection = new() { item1, item2 };
+        _mockCollection = [item1, item2];
 
         _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => _mockCollection.RemoveAll(x => x.Id == id));
 
@@ -106,7 +106,7 @@ public class DataServiceTests
     {
         TestDataModel item1 = new() { Name = "1" };
         TestDataModel item2 = new() { Name = "2" };
-        _mockCollection = new() { item1, item2 };
+        _mockCollection = [item1, item2];
 
         _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(x => _mockCollection.Where(x).ToList());
 
@@ -132,7 +132,7 @@ public class DataServiceTests
     {
         TestDataModel item1 = new() { Name = "1" };
         TestDataModel item2 = new() { Name = "2" };
-        _mockCollection = new() { item1, item2 };
+        _mockCollection = [item1, item2];
 
         _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(x => _mockCollection.First(x));
 
@@ -146,7 +146,7 @@ public class DataServiceTests
     {
         TestDataModel item1 = new() { Name = "1" };
         TestDataModel item2 = new() { Id = item1.Id, Name = "2" };
-        _mockCollection = new() { item1 };
+        _mockCollection = [item1];
 
         _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(item1);
         _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<TestDataModel>()))
@@ -171,7 +171,7 @@ public class DataServiceTests
     public async Task Should_update_item_by_filter_and_update_definition()
     {
         TestDataModel item1 = new() { Id = "1", Name = "1" };
-        _mockCollection = new() { item1 };
+        _mockCollection = [item1];
         var expectedFilter = Builders<TestDataModel>.Filter.Where(x => x.Name == "1").RenderFilter();
         var expectedUpdate = Builders<TestDataModel>.Update.Set(x => x.Name, "2").RenderUpdate();
         FilterDefinition<TestDataModel> subjectFilter = null;
@@ -198,7 +198,7 @@ public class DataServiceTests
     public async Task Should_update_item_by_id()
     {
         TestDataModel item1 = new() { Name = "1" };
-        _mockCollection = new() { item1 };
+        _mockCollection = [item1];
 
         _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                            .Returns(Task.CompletedTask)
@@ -213,7 +213,7 @@ public class DataServiceTests
     public async Task Should_update_item_by_update_definition()
     {
         TestDataModel item1 = new() { Name = "1" };
-        _mockCollection = new() { item1 };
+        _mockCollection = [item1];
 
         _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
                            .Returns(Task.CompletedTask)
@@ -228,7 +228,7 @@ public class DataServiceTests
     public async Task Should_update_item_with_set()
     {
         TestDataModel item1 = new() { Name = "1" };
-        _mockCollection = new() { item1 };
+        _mockCollection = [item1];
         var expected = Builders<TestDataModel>.Update.Set(x => x.Name, "2").RenderUpdate();
         UpdateDefinition<TestDataModel> subject = null;
 
@@ -245,7 +245,7 @@ public class DataServiceTests
     public async Task Should_update_item_with_unset()
     {
         TestDataModel item1 = new() { Name = "1" };
-        _mockCollection = new() { item1 };
+        _mockCollection = [item1];
         var expected = Builders<TestDataModel>.Update.Unset(x => x.Name).RenderUpdate();
         UpdateDefinition<TestDataModel> subject = null;
 
@@ -263,7 +263,7 @@ public class DataServiceTests
     {
         TestDataModel item1 = new() { Name = "1" };
         TestDataModel item2 = new() { Name = "1" };
-        _mockCollection = new() { item1, item2 };
+        _mockCollection = [item1, item2];
 
         _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns(() => _mockCollection);
         _mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>(), It.IsAny<UpdateDefinition<TestDataModel>>()))

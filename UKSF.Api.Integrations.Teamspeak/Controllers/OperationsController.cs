@@ -26,12 +26,12 @@ public class OperationsController : ControllerBase
                                          .ToList();
         TeampseakReportDataset acreData = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, true) };
         TeampseakReportDataset data = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, false) };
-        return new() { AcreData = acreData, Data = data };
+        return new TeampseakReportsDataset { AcreData = acreData, Data = data };
     }
 
     private static int[] GetReportData(IReadOnlyCollection<TeamspeakServerSnapshot> serverSnapshots, DateTime day, bool acre)
     {
-        List<int> dataset = new();
+        List<int> dataset = [];
         for (var i = 0; i < 48; i++)
         {
             var startdate = DateTime.UtcNow.Date.AddMinutes(30 * i);
@@ -61,7 +61,7 @@ public class OperationsController : ControllerBase
 
     private static List<string> GetLabels()
     {
-        List<string> labels = new();
+        List<string> labels = [];
 
         for (var i = 0; i < 48; i++)
         {
@@ -75,13 +75,13 @@ public class OperationsController : ControllerBase
 
     private static List<TeampseakReport> GetReports(IReadOnlyCollection<TeamspeakServerSnapshot> tsServerSnapshots, bool acre)
     {
-        List<TeampseakReport> datasets = new();
-        string[] colors = { "#4bc0c0", "#3992e6", "#a539e6", "#42e639", "#aae639", "#e6d239", "#e63939" };
+        List<TeampseakReport> datasets = [];
+        string[] colors = ["#4bc0c0", "#3992e6", "#a539e6", "#42e639", "#aae639", "#e6d239", "#e63939"];
 
         for (var i = 0; i < 7; i++)
         {
             datasets.Add(
-                new()
+                new TeampseakReport
                 {
                     Label = $"{DateTime.UtcNow.AddDays(-i).DayOfWeek} - {DateTime.UtcNow.AddDays(-i).ToShortDateString()}",
                     Data = GetReportData(tsServerSnapshots, DateTime.UtcNow.AddDays(-i).Date, acre),

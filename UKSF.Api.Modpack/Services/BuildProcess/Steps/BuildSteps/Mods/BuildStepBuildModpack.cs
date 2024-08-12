@@ -19,7 +19,7 @@ public class BuildStepBuildModpack : ModBuildStep
         var configuration = GetEnvironmentVariable<string>("configuration");
         if (string.IsNullOrEmpty(configuration))
         {
-            throw new("Configuration not set for build");
+            throw new Exception("Configuration not set for build");
         }
 
         StepLogger.Log($"\nConfiguration set to '{configuration}'");

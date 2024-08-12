@@ -27,17 +27,8 @@ public interface IUksfLogger
     );
 }
 
-public class UksfLogger : IUksfLogger
+public class UksfLogger(IHttpContextService httpContextService, IEventBus eventBus) : IUksfLogger
 {
-    private readonly IEventBus _eventBus;
-    private readonly IHttpContextService _httpContextService;
-
-    public UksfLogger(IHttpContextService httpContextService, IEventBus eventBus)
-    {
-        _httpContextService = httpContextService;
-        _eventBus = eventBus;
-    }
-
     public void LogDebug(string message)
     {
         Log(new BasicLog(message, UksfLogLevel.Debug));
@@ -70,7 +61,7 @@ public class UksfLogger : IUksfLogger
 
     public void LogAudit(string message, string userId = null)
     {
-        userId = string.IsNullOrEmpty(userId) ? _httpContextService.GetUserId() ?? "Server" : userId;
+        userId = string.IsNullOrEmpty(userId) ? httpContextService.GetUserId() ?? "Server" : userId;
         Log(new AuditLog(userId, message));
     }
 
@@ -106,6 +97,6 @@ public class UksfLogger : IUksfLogger
 
     private void Log(BasicLog log)
     {
-        _eventBus.Send(new LoggerEventData(log));
+        eventBus.Send(new LoggerEventData(log), "Logger");
     }
 }

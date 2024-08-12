@@ -17,8 +17,8 @@ public class RolesServiceTests
 
     public RolesServiceTests()
     {
-        _mockRolesDataService = new();
-        _rolesService = new(_mockRolesDataService.Object);
+        _mockRolesDataService = new Mock<IRolesContext>();
+        _rolesService = new RolesService(_mockRolesDataService.Object);
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class RolesServiceTests
     {
         DomainRole role1 = new() { Name = "Rifleman", Order = 0 };
         DomainRole role2 = new() { Name = "Trainee", Order = 1 };
-        List<DomainRole> mockCollection = new() { role1, role2 };
+        List<DomainRole> mockCollection = [role1, role2];
 
         _mockRolesDataService.Setup(x => x.Get()).Returns(mockCollection);
         _mockRolesDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
@@ -69,7 +69,7 @@ public class RolesServiceTests
         DomainRole role3 = new() { Name = "Marksman", Order = 0, RoleType = RoleType.UNIT };
         DomainRole role4 = new() { Name = "Trainee", Order = 3, RoleType = RoleType.UNIT };
         DomainRole role5 = new() { Name = "Gunner", Order = 2, RoleType = RoleType.INDIVIDUAL };
-        List<DomainRole> mockCollection = new() { role1, role2, role3, role4, role5 };
+        List<DomainRole> mockCollection = [role1, role2, role3, role4, role5];
 
         _mockRolesDataService.Setup(x => x.Get()).Returns(mockCollection);
         _mockRolesDataService.Setup(x => x.GetSingle(It.IsAny<Func<DomainRole, bool>>()))

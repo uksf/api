@@ -35,7 +35,7 @@ public class BuildStepSignDependencies : FileBuildStep
         BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, true);
         processHelper.Run(keygenPath, _dsCreateKey, _keyName, (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
         StepLogger.Log($"Created {_keyName}");
-        await CopyFiles(keygen, keys, new() { new(Path.Join(keygenPath, $"{_keyName}.bikey")) });
+        await CopyFiles(keygen, keys, [new FileInfo(Path.Join(keygenPath, $"{_keyName}.bikey"))]);
         StepLogger.LogSurround("Created key");
     }
 

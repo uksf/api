@@ -30,22 +30,22 @@ public class CachedDataServiceEventTests
     public CachedDataServiceEventTests()
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
-        _mockEventBus = new();
-        _mockDataCollection = new();
+        _mockEventBus = new Mock<IEventBus>();
+        _mockDataCollection = new Mock<Api.Core.Context.Base.IMongoCollection<TestDataModel>>();
         _id1 = ObjectId.GenerateNewId().ToString();
         _id2 = ObjectId.GenerateNewId().ToString();
         _id3 = ObjectId.GenerateNewId().ToString();
-        _item1 = new() { Id = _id1, Name = "1" };
+        _item1 = new TestDataModel { Id = _id1, Name = "1" };
         TestDataModel item2 = new() { Id = _id2, Name = "1" };
         TestDataModel item3 = new() { Id = _id3, Name = "3" };
-        List<TestDataModel> mockCollection = new() { _item1, item2, item3 };
+        List<TestDataModel> mockCollection = [_item1, item2, item3];
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
         _mockDataCollection.Setup(x => x.Get()).Returns(() => mockCollection);
 
         _mockIVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
-        _testCachedContext = new(mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
+        _testCachedContext = new TestCachedContext(mockDataCollectionFactory.Object, _mockEventBus.Object, _mockIVariablesService.Object, "test");
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public class CachedDataServiceEventTests
         await _testCachedContext.Add(_item1);
 
         _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Once);
-        subject.Should().BeEquivalentTo(new EventModel(EventType.Add, new ContextEventData<TestDataModel>(string.Empty, _item1)));
+        subject.Should().BeEquivalentTo(new EventModel(EventType.Add, new ContextEventData<TestDataModel>(string.Empty, _item1), "test.Add"));
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class CachedDataServiceEventTests
         await _testCachedContext.Delete(_id1);
 
         _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Once);
-        subject.Should().BeEquivalentTo(new EventModel(EventType.Delete, new ContextEventData<TestDataModel>(_id1, null)));
+        subject.Should().BeEquivalentTo(new EventModel(EventType.Delete, new ContextEventData<TestDataModel>(_id1, null), "test.Delete"));
     }
 
     [Fact]
@@ -91,8 +91,8 @@ public class CachedDataServiceEventTests
                 .BeEquivalentTo(
                     new List<EventModel>
                     {
-                        new(EventType.Delete, new ContextEventData<TestDataModel>(_id1, null)),
-                        new(EventType.Delete, new ContextEventData<TestDataModel>(_id2, null))
+                        new(EventType.Delete, new ContextEventData<TestDataModel>(_id1, null), "test.Delete"),
+                        new(EventType.Delete, new ContextEventData<TestDataModel>(_id2, null), "test.Delete")
                     }
                 );
     }
@@ -108,7 +108,7 @@ public class CachedDataServiceEventTests
         await _testCachedContext.Replace(_item1);
 
         _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Once);
-        subject.Should().BeEquivalentTo(new EventModel(EventType.Update, new ContextEventData<TestDataModel>(_id1, null)));
+        subject.Should().BeEquivalentTo(new EventModel(EventType.Update, new ContextEventData<TestDataModel>(_id1, null), "test.Update"));
     }
 
     [Fact]
@@ -127,8 +127,8 @@ public class CachedDataServiceEventTests
                 .BeEquivalentTo(
                     new List<EventModel>
                     {
-                        new(EventType.Update, new ContextEventData<TestDataModel>(_id1, null)),
-                        new(EventType.Update, new ContextEventData<TestDataModel>(_id2, null))
+                        new(EventType.Update, new ContextEventData<TestDataModel>(_id1, null), "test.Update"),
+                        new(EventType.Update, new ContextEventData<TestDataModel>(_id2, null), "test.Update")
                     }
                 );
     }
@@ -152,9 +152,9 @@ public class CachedDataServiceEventTests
                 .BeEquivalentTo(
                     new List<EventModel>
                     {
-                        new(EventType.Update, new ContextEventData<TestDataModel>(_id1, null)),
-                        new(EventType.Update, new ContextEventData<TestDataModel>(_id2, null)),
-                        new(EventType.Update, new ContextEventData<TestDataModel>(_id3, null))
+                        new(EventType.Update, new ContextEventData<TestDataModel>(_id1, null), "test.Update"),
+                        new(EventType.Update, new ContextEventData<TestDataModel>(_id2, null), "test.Update"),
+                        new(EventType.Update, new ContextEventData<TestDataModel>(_id3, null), "test.Update")
                     }
                 );
     }

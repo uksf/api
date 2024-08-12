@@ -16,7 +16,7 @@ public class UnitTreeMapper : IUnitTreeMapper
 
     private static UnitTreeNodeDto MapUnit(DomainUnit domainUnit)
     {
-        return new()
+        return new UnitTreeNodeDto
         {
             Id = domainUnit.Id,
             Order = domainUnit.Order,

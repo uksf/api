@@ -47,19 +47,19 @@ public class RolesController : ControllerBase
             var unitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order);
             var existingPairs = unit.Roles.Where(x => x.Value == id);
             var filteredRoles = unitRoles.Where(x => existingPairs.All(y => y.Key != x.Name));
-            return new() { UnitRoles = filteredRoles };
+            return new RolesDataset { UnitRoles = filteredRoles };
         }
 
         if (!string.IsNullOrEmpty(id))
         {
             var domainAccount = _accountContext.GetSingle(id);
-            return new()
+            return new RolesDataset
             {
                 IndividualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL && x.Name != domainAccount.RoleAssignment).OrderBy(x => x.Order)
             };
         }
 
-        return new()
+        return new RolesDataset
         {
             IndividualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL),
             UnitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order)
@@ -90,7 +90,7 @@ public class RolesController : ControllerBase
     {
         await _rolesContext.Add(role);
         _logger.LogAudit($"Role added '{role.Name}'");
-        return new()
+        return new RolesDataset
         {
             IndividualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL),
             UnitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order)
@@ -110,7 +110,7 @@ public class RolesController : ControllerBase
         }
 
         await _unitsService.RenameRole(oldRole.Name, role.Name);
-        return new()
+        return new RolesDataset
         {
             IndividualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL),
             UnitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order)
@@ -135,7 +135,7 @@ public class RolesController : ControllerBase
         }
 
         await _unitsService.DeleteRole(role.Name);
-        return new()
+        return new RolesDataset
         {
             IndividualRoles = _rolesContext.Get(x => x.RoleType == RoleType.INDIVIDUAL),
             UnitRoles = _rolesContext.Get(x => x.RoleType == RoleType.UNIT).OrderBy(x => x.Order)

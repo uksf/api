@@ -5,7 +5,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context;
 
-public interface IOperationReportContext : IMongoContext<Oprep>, ICachedMongoContext { }
+public interface IOperationReportContext : IMongoContext<Oprep>, ICachedMongoContext;
 
 public class OperationReportContext : CachedMongoContext<Oprep>, IOperationReportContext
 {

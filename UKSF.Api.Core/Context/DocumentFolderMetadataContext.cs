@@ -4,7 +4,7 @@ using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Core.Context;
 
-public interface IDocumentFolderMetadataContext : IMongoContext<DomainDocumentFolderMetadata> { }
+public interface IDocumentFolderMetadataContext : IMongoContext<DomainDocumentFolderMetadata>;
 
 public class DocumentFolderMetadataContext : MongoContext<DomainDocumentFolderMetadata>, IDocumentFolderMetadataContext
 {

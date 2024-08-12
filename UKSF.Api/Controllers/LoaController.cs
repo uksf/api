@@ -54,9 +54,10 @@ public class LoaController : ControllerBase
         [FromQuery] LoaViewMode viewMode = default
     )
     {
-        var pagedResult = await _getPagedLoasQuery.ExecuteAsync(new(page, pageSize, query, selectionMode, dateMode, selectedDate, viewMode));
+        var pagedResult =
+            await _getPagedLoasQuery.ExecuteAsync(new GetPagedLoasQueryArgs(page, pageSize, query, selectionMode, dateMode, selectedDate, viewMode));
 
-        return new(pagedResult.TotalCount, pagedResult.Data.Select(_loaMapper.MapToLoa).ToList());
+        return new PagedResult<Loa>(pagedResult.TotalCount, pagedResult.Data.Select(_loaMapper.MapToLoa).ToList());
     }
 
     [HttpDelete("{id}")]
@@ -71,7 +72,7 @@ public class LoaController : ControllerBase
             foreach (var reviewerId in request.Reviews.Keys.Where(x => x != request.Requester))
             {
                 _notificationsService.Add(
-                    new()
+                    new Notification
                     {
                         Owner = reviewerId,
                         Icon = NotificationIcons.Request,

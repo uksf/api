@@ -133,12 +133,12 @@ public static class ApiSharedExtensions
 
     private static IMongoDatabase GetDatabase(string connectionString)
     {
-        ConventionPack conventionPack = new()
-        {
+        ConventionPack conventionPack =
+        [
             new IgnoreExtraElementsConvention(true),
             new IgnoreIfNullConvention(true),
             new CamelCaseElementNameConvention()
-        };
+        ];
         ConventionRegistry.Register("DefaultConventions", conventionPack, _ => true);
 
         var database = MongoUrl.Create(connectionString).DatabaseName;

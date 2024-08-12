@@ -93,7 +93,7 @@ public class BuildsService : IBuildsService
             Commit = commit,
             BuilderId = builderId,
             Steps = _buildStepService.GetSteps(GameEnvironment.DEVELOPMENT),
-            EnvironmentVariables = new() { { "configuration", newBuild?.Configuration ?? "development" } }
+            EnvironmentVariables = new Dictionary<string, object> { { "configuration", newBuild?.Configuration ?? "development" } }
         };
 
         if (previousBuild != null)
@@ -117,7 +117,7 @@ public class BuildsService : IBuildsService
             Commit = commit,
             BuilderId = builderId,
             Steps = _buildStepService.GetSteps(GameEnvironment.RC),
-            EnvironmentVariables = new() { { "configuration", "release" } }
+            EnvironmentVariables = new Dictionary<string, object> { { "configuration", "release" } }
         };
 
         if (previousBuild != null)
@@ -146,7 +146,7 @@ public class BuildsService : IBuildsService
             Commit = previousBuild.Commit,
             BuilderId = _httpContextService.GetUserId(),
             Steps = _buildStepService.GetSteps(GameEnvironment.RELEASE),
-            EnvironmentVariables = new() { { "configuration", "release" } }
+            EnvironmentVariables = new Dictionary<string, object> { { "configuration", "release" } }
         };
         build.Commit.Message = "Release deployment (no content changes)";
         await _buildsContext.Add(build);
@@ -219,7 +219,7 @@ public class BuildsService : IBuildsService
                     runningStep.Finished = true;
                     runningStep.EndTime = DateTime.UtcNow;
                     runningStep.BuildResult = ModpackBuildResult.CANCELLED;
-                    runningStep.Logs.Add(new() { Text = "\nBuild was interrupted", Colour = "goldenrod" });
+                    runningStep.Logs.Add(new ModpackBuildStepLogItem { Text = "\nBuild was interrupted", Colour = "goldenrod" });
                     await _buildsContext.Update(build, runningStep);
                 }
 

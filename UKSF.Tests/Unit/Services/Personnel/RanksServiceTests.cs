@@ -16,8 +16,8 @@ public class RanksServiceTests
 
     public RanksServiceTests()
     {
-        _mockRanksDataService = new();
-        _ranksService = new(_mockRanksDataService.Object);
+        _mockRanksDataService = new Mock<IRanksContext>();
+        _ranksService = new RanksService(_mockRanksDataService.Object);
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public class RanksServiceTests
     {
         DomainRank rank1 = new() { Name = "Private" };
         DomainRank rank2 = new() { Name = "Recruit" };
-        List<DomainRank> mockCollection = new() { rank1, rank2 };
+        List<DomainRank> mockCollection = [rank1, rank2];
 
         _mockRanksDataService.Setup(x => x.Get()).Returns(mockCollection);
         _mockRanksDataService.Setup(x => x.GetSingle("Private")).Returns(rank1);
@@ -40,7 +40,7 @@ public class RanksServiceTests
     {
         DomainRank rank1 = new() { Name = "Private", Order = 0 };
         DomainRank rank2 = new() { Name = "Recruit", Order = 1 };
-        List<DomainRank> mockCollection = new() { rank1, rank2 };
+        List<DomainRank> mockCollection = [rank1, rank2];
 
         _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
@@ -87,12 +87,12 @@ public class RanksServiceTests
         DomainAccount account2 = new() { Rank = "Candidate" };
         DomainAccount account3 = new() { Rank = "Recruit" };
         DomainAccount account4 = new() { Rank = "Private" };
-        List<DomainAccount> subject = new() { account1, account2, account3, account4 };
+        List<DomainAccount> subject = [account1, account2, account3, account4];
 
         DomainRank rank1 = new() { Name = "Private", Order = 0 };
         DomainRank rank2 = new() { Name = "Recruit", Order = 1 };
         DomainRank rank3 = new() { Name = "Candidate", Order = 2 };
-        List<DomainRank> mockCollection = new() { rank1, rank2, rank3 };
+        List<DomainRank> mockCollection = [rank1, rank2, rank3];
 
         _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
@@ -111,7 +111,7 @@ public class RanksServiceTests
         DomainRank rank1 = new() { Name = "Private", Order = 0 };
         DomainRank rank2 = new() { Name = "Recruit", Order = 1 };
         DomainRank rank3 = new() { Name = "Candidate", Order = 2 };
-        List<DomainRank> mockCollection = new() { rank1, rank2, rank3 };
+        List<DomainRank> mockCollection = [rank1, rank2, rank3];
 
         _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
@@ -129,7 +129,7 @@ public class RanksServiceTests
         DomainRank rank1 = new() { Name = "Private", Order = 0 };
         DomainRank rank2 = new() { Name = "Recruit", Order = 1 };
         DomainRank rank3 = new() { Name = "Candidate", Order = 2 };
-        List<DomainRank> mockCollection = new() { rank1, rank2, rank3 };
+        List<DomainRank> mockCollection = [rank1, rank2, rank3];
 
         _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 
@@ -148,7 +148,7 @@ public class RanksServiceTests
         DomainRank rank1 = new() { Name = "Private", Order = 0 };
         DomainRank rank2 = new() { Name = "Recruit", Order = 1 };
         DomainRank rank3 = new() { Name = "Candidate", Order = 2 };
-        List<DomainRank> mockCollection = new() { rank1, rank2, rank3 };
+        List<DomainRank> mockCollection = [rank1, rank2, rank3];
 
         _mockRanksDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => mockCollection.FirstOrDefault(y => y.Name == x));
 

@@ -21,7 +21,7 @@ public static class ApplicationExtensions
             months += 12;
         }
 
-        return new() { Years = years, Months = months };
+        return new ApplicationAge { Years = years, Months = months };
     }
 
     public static bool IsAcceptableAge(this ApplicationAge age, int acceptableAge)

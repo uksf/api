@@ -83,10 +83,10 @@ builder.Services.AddCors(
        .AddSwaggerGen(
            options =>
            {
-               options.SwaggerDoc("v1", new() { Title = "UKSF API", Version = "v1" });
+               options.SwaggerDoc("v1", new OpenApiInfo { Title = "UKSF API", Version = "v1" });
                options.AddSecurityDefinition(
                    "Bearer",
-                   new()
+                   new OpenApiSecurityScheme
                    {
                        Name = "Authorization",
                        Type = SecuritySchemeType.Http,
@@ -96,12 +96,12 @@ builder.Services.AddCors(
                    }
                );
                options.AddSecurityRequirement(
-                   new()
+                   new OpenApiSecurityRequirement
                    {
                        {
                            new()
                            {
-                               Reference = new() { Type = ReferenceType.SecurityScheme, Id = "Bearer" },
+                               Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" },
                                Scheme = "oauth2",
                                Name = "Bearer",
                                In = ParameterLocation.Header
@@ -136,7 +136,7 @@ app.Lifetime.ApplicationStopping.Register(
     }
 );
 
-app.UseCookiePolicy(new() { MinimumSameSitePolicy = SameSiteMode.Lax })
+app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMode.Lax })
    .UseSwagger()
    .UseSwaggerUI(
        options =>
@@ -152,7 +152,7 @@ app.UseCookiePolicy(new() { MinimumSameSitePolicy = SameSiteMode.Lax })
    .UseAuthentication()
    .UseAuthorization()
    .UseHsts()
-   .UseForwardedHeaders(new() { ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto })
+   .UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto })
    .UseEndpoints(
        endpoints =>
        {

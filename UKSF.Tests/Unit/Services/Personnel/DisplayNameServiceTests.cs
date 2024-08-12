@@ -15,10 +15,10 @@ public class DisplayNameServiceTests
 
     public DisplayNameServiceTests()
     {
-        _mockRanksContext = new();
-        _mockAccountContext = new();
+        _mockRanksContext = new Mock<IRanksContext>();
+        _mockAccountContext = new Mock<IAccountContext>();
 
-        _displayNameService = new(_mockAccountContext.Object, _mockRanksContext.Object);
+        _displayNameService = new DisplayNameService(_mockAccountContext.Object, _mockRanksContext.Object);
     }
 
     [Fact]

@@ -25,13 +25,19 @@ public class BuildsServiceTests
 
     public BuildsServiceTests()
     {
-        _mockBuildsContext = new();
-        _mockBuildStepService = new();
-        _mockAccountContext = new();
+        _mockBuildsContext = new Mock<IBuildsContext>();
+        _mockBuildStepService = new Mock<IBuildStepService>();
+        _mockAccountContext = new Mock<IAccountContext>();
         Mock<IHttpContextService> mockHttpContextService = new();
         Mock<IUksfLogger> mockLogger = new();
 
-        _subject = new(_mockBuildsContext.Object, _mockBuildStepService.Object, _mockAccountContext.Object, mockHttpContextService.Object, mockLogger.Object);
+        _subject = new BuildsService(
+            _mockBuildsContext.Object,
+            _mockBuildStepService.Object,
+            _mockAccountContext.Object,
+            mockHttpContextService.Object,
+            mockLogger.Object
+        );
     }
 
     [Fact]
@@ -40,7 +46,7 @@ public class BuildsServiceTests
         const string Version = "1.1.0";
         _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<ModpackBuild, bool>>())).Returns(new List<ModpackBuild>());
         _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns(new DomainAccount { Id = "accountId" });
-        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.RC)).Returns(new List<ModpackBuildStep>());
+        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.RC)).Returns([]);
 
         GithubCommit githubCommit = new() { Author = "author" };
         var result = await _subject.CreateRcBuild(Version, githubCommit);
@@ -64,32 +70,26 @@ public class BuildsServiceTests
                 {
                     Version = Version,
                     BuildNumber = 1,
-                    EnvironmentVariables = new()
+                    EnvironmentVariables = new Dictionary<string, object>
                     {
                         { "configuration", "release" },
                         { "ace_updated", true },
                         { "acre_updated", true },
                         { "uksf_air_updated", true }
                     },
-                    Steps = new()
-                    {
-                        new("Build ACE")
-                        {
-                            Finished = true,
-                            BuildResult = ModpackBuildResult.FAILED
-                        },
-                        new("Build ACRE")
-                        {
-                            Finished = true,
-                            BuildResult = ModpackBuildResult.CANCELLED
-                        },
+                    Steps =
+                    [
+                        new ModpackBuildStep("Build ACE") { Finished = true, BuildResult = ModpackBuildResult.FAILED },
+
+                        new ModpackBuildStep("Build ACRE") { Finished = true, BuildResult = ModpackBuildResult.CANCELLED },
+
                         new("Build Air") { Finished = false }
-                    }
+                    ]
                 }
             }
         );
         _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns(new DomainAccount { Id = "accountId" });
-        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.RC)).Returns(new List<ModpackBuildStep>());
+        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.RC)).Returns([]);
 
         GithubCommit githubCommit = new() { Author = "author" };
         var result = await _subject.CreateRcBuild(Version, githubCommit);
@@ -114,7 +114,7 @@ public class BuildsServiceTests
                 {
                     Version = Version,
                     BuildNumber = 1,
-                    EnvironmentVariables = new()
+                    EnvironmentVariables = new Dictionary<string, object>
                     {
                         { "configuration", "release" },
                         { "ace_updated", true },
@@ -125,7 +125,7 @@ public class BuildsServiceTests
             }
         );
         _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns(new DomainAccount { Id = "accountId" });
-        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.RC)).Returns(new List<ModpackBuildStep>());
+        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.RC)).Returns([]);
 
         GithubCommit githubCommit = new() { Author = "author" };
         var result = await _subject.CreateRcBuild(Version, githubCommit);

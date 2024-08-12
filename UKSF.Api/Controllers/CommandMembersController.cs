@@ -29,8 +29,9 @@ public class CommandMembersController : ControllerBase
         [FromQuery] CommandMemberViewMode viewMode = default
     )
     {
-        var pagedResult = await _getCommandMembersPagedQuery.ExecuteAsync(new(page, pageSize, query, sortMode, sortDirection, viewMode));
+        var pagedResult =
+            await _getCommandMembersPagedQuery.ExecuteAsync(new GetCommandMembersPagedQueryArgs(page, pageSize, query, sortMode, sortDirection, viewMode));
 
-        return new(pagedResult.TotalCount, pagedResult.Data.Select(_commandMemberMapper.MapCommandMemberToAccount).ToList());
+        return new PagedResult<Account>(pagedResult.TotalCount, pagedResult.Data.Select(_commandMemberMapper.MapCommandMemberToAccount).ToList());
     }
 }

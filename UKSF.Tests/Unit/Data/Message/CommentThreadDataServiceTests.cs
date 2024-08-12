@@ -25,20 +25,20 @@ public class CommentThreadDataServiceTests
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
         Mock<IVariablesService> mockVariablesService = new();
-        _mockDataCollection = new();
+        _mockDataCollection = new Mock<Api.Core.Context.Base.IMongoCollection<CommentThread>>();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommentThread>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
         mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
         _mockDataCollection.Setup(x => x.Get()).Returns(() => _mockCollection);
 
-        _commentThreadContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
+        _commentThreadContext = new CommentThreadContext(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
     }
 
     [Fact]
     public async Task ShouldCreateCorrectUdpateDefinitionForAdd()
     {
         CommentThread commentThread = new();
-        _mockCollection = new() { commentThread };
+        _mockCollection = [commentThread];
 
         Comment comment = new() { Author = ObjectId.GenerateNewId().ToString(), Content = "Hello there" };
         var expected = Builders<CommentThread>.Update.Push(x => x.Comments, comment).RenderUpdate();
@@ -57,7 +57,7 @@ public class CommentThreadDataServiceTests
     public async Task ShouldCreateCorrectUdpateDefinitionForDelete()
     {
         CommentThread commentThread = new();
-        _mockCollection = new() { commentThread };
+        _mockCollection = [commentThread];
 
         Comment comment = new() { Author = ObjectId.GenerateNewId().ToString(), Content = "Hello there" };
         var expected = Builders<CommentThread>.Update.Pull(x => x.Comments, comment).RenderUpdate();

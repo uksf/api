@@ -82,6 +82,6 @@ public class DependencyInjectionTestHelper : IServiceProvider
 
     public static DependencyInjectionTestHelper FromServiceCollection(Func<IServiceCollection, IServiceCollection> registerServices)
     {
-        return new(registerServices);
+        return new DependencyInjectionTestHelper(registerServices);
     }
 }

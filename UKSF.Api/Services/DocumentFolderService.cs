@@ -183,7 +183,7 @@ public class DocumentFolderService : IDocumentFolderService
 
     private FolderMetadataResponse MapFolder(DomainDocumentFolderMetadata folderMetadata)
     {
-        return new()
+        return new FolderMetadataResponse
         {
             Id = folderMetadata.Id,
             Parent = folderMetadata.Parent,
@@ -200,7 +200,7 @@ public class DocumentFolderService : IDocumentFolderService
 
     private DocumentMetadataResponse MapDocument(DomainDocumentMetadata documentMetadata)
     {
-        return new()
+        return new DocumentMetadataResponse
         {
             Id = documentMetadata.Id,
             Folder = documentMetadata.Folder,

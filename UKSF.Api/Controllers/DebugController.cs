@@ -10,6 +10,6 @@ public class DebugController : ControllerBase
     [Authorize]
     public void Throw500()
     {
-        throw new("This is a random error");
+        throw new Exception("This is a random error");
     }
 }

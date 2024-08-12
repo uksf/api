@@ -11,7 +11,7 @@ using UKSF.Api.Integrations.Teamspeak.Services;
 
 namespace UKSF.Api.Integrations.Teamspeak.EventHandlers;
 
-public interface ITeamspeakServerEventHandler : IEventHandler { }
+public interface ITeamspeakServerEventHandler : IEventHandler;
 
 public class TeamspeakServerEventHandler : ITeamspeakServerEventHandler
 {
@@ -79,10 +79,10 @@ public class TeamspeakServerEventHandler : ITeamspeakServerEventHandler
         var serverGroupId = int.Parse(updateObject.GetValueFromObject("serverGroupId"));
         await Console.Out.WriteLineAsync($"Server group for {clientDbId}: {serverGroupId}");
 
-        var update = _serverGroupUpdates.GetOrAdd(clientDbId, _ => new());
+        var update = _serverGroupUpdates.GetOrAdd(clientDbId, _ => new TeamspeakServerGroupUpdate());
         update.ServerGroups.Add(serverGroupId);
         update.CancellationTokenSource?.Cancel();
-        update.CancellationTokenSource = new();
+        update.CancellationTokenSource = new CancellationTokenSource();
         _ = TaskUtilities.DelayWithCallback(
             TimeSpan.FromMilliseconds(500),
             update.CancellationTokenSource.Token,

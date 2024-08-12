@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaMissions.Services;
@@ -68,7 +69,7 @@ public class MissionPatchingService : IMissionPatchingService
                 catch (Exception exception)
                 {
                     _logger.LogError(exception);
-                    result.Reports = new() { new(exception) };
+                    result.Reports = [new ValidationReport(exception)];
                     result.Success = false;
                 }
                 finally
@@ -154,7 +155,7 @@ public class MissionPatchingService : IMissionPatchingService
 
         var outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
         output = outputLines.Where(x => !string.IsNullOrEmpty(x) && !x.ContainsIgnoreCase("compressing")).Aggregate((x, y) => $"{x}\n{y}");
-        throw new(output);
+        throw new Exception(output);
     }
 
     private async Task SimplePackPbo()
@@ -190,7 +191,7 @@ public class MissionPatchingService : IMissionPatchingService
 
         var outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
         output = outputLines.Where(x => !string.IsNullOrEmpty(x)).Aggregate((x, y) => $"{x}\n{y}");
-        throw new(output);
+        throw new Exception(output);
     }
 
     private void Cleanup()

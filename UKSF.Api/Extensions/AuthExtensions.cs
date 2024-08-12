@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using AspNet.Security.OpenId;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -16,7 +17,7 @@ public static class AuthExtensions
     {
         var appSettings = new AppSettings();
         configuration.GetSection(nameof(AppSettings)).Bind(appSettings);
-        SecurityKey = new(Encoding.UTF8.GetBytes(appSettings.Secrets.TokenKey));
+        SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(appSettings.Secrets.TokenKey));
 
         services.AddAuthentication(
                     options =>
@@ -29,7 +30,7 @@ public static class AuthExtensions
                 .AddJwtBearer(
                     options =>
                     {
-                        options.TokenValidationParameters = new()
+                        options.TokenValidationParameters = new TokenValidationParameters
                         {
                             RequireExpirationTime = true,
                             RequireSignedTokens = true,
@@ -45,7 +46,7 @@ public static class AuthExtensions
                         options.Audience = TokenAudience;
                         options.ClaimsIssuer = TokenIssuer;
                         options.SaveToken = true;
-                        options.Events = new()
+                        options.Events = new JwtBearerEvents
                         {
                             OnAuthenticationFailed = context =>
                             {
@@ -71,7 +72,7 @@ public static class AuthExtensions
                     options =>
                     {
                         options.ForwardAuthenticate = JwtBearerDefaults.AuthenticationScheme;
-                        options.Events = new()
+                        options.Events = new OpenIdAuthenticationEvents
                         {
                             OnAccessDenied = context =>
                             {

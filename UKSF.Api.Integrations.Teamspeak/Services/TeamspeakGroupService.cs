@@ -142,11 +142,17 @@ public class TeamspeakGroupService : ITeamspeakGroupService
 
     private async Task AddServerGroup(int clientDbId, int serverGroup)
     {
-        await _teamspeakManagerService.SendGroupProcedure(TeamspeakProcedureType.ASSIGN, new() { ClientDbId = clientDbId, ServerGroup = serverGroup });
+        await _teamspeakManagerService.SendGroupProcedure(
+            TeamspeakProcedureType.ASSIGN,
+            new TeamspeakGroupProcedure { ClientDbId = clientDbId, ServerGroup = serverGroup }
+        );
     }
 
     private async Task RemoveServerGroup(int clientDbId, int serverGroup)
     {
-        await _teamspeakManagerService.SendGroupProcedure(TeamspeakProcedureType.UNASSIGN, new() { ClientDbId = clientDbId, ServerGroup = serverGroup });
+        await _teamspeakManagerService.SendGroupProcedure(
+            TeamspeakProcedureType.UNASSIGN,
+            new TeamspeakGroupProcedure { ClientDbId = clientDbId, ServerGroup = serverGroup }
+        );
     }
 }

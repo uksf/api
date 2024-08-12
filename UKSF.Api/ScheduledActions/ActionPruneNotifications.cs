@@ -4,7 +4,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ScheduledActions;
 
-public interface IActionPruneNotifications : ISelfCreatingScheduledAction { }
+public interface IActionPruneNotifications : ISelfCreatingScheduledAction;
 
 public class ActionPruneNotifications : SelfCreatingScheduledAction, IActionPruneNotifications
 {

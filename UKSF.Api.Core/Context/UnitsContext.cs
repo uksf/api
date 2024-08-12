@@ -5,7 +5,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context;
 
-public interface IUnitsContext : IMongoContext<DomainUnit>, ICachedMongoContext { }
+public interface IUnitsContext : IMongoContext<DomainUnit>, ICachedMongoContext;
 
 public class UnitsContext : CachedMongoContext<DomainUnit>, IUnitsContext
 {

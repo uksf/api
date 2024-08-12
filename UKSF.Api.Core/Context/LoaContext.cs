@@ -5,7 +5,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context;
 
-public interface ILoaContext : IMongoContext<DomainLoa>, ICachedMongoContext { }
+public interface ILoaContext : IMongoContext<DomainLoa>, ICachedMongoContext;
 
 public class LoaContext : CachedMongoContext<DomainLoa>, ILoaContext
 {

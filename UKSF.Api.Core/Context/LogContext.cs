@@ -4,15 +4,15 @@ using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Core.Context;
 
-public interface ILogContext : IMongoContext<BasicLog> { }
+public interface ILogContext : IMongoContext<BasicLog>;
 
-public interface IAuditLogContext : IMongoContext<AuditLog> { }
+public interface IAuditLogContext : IMongoContext<AuditLog>;
 
-public interface IErrorLogContext : IMongoContext<ErrorLog> { }
+public interface IErrorLogContext : IMongoContext<ErrorLog>;
 
-public interface ILauncherLogContext : IMongoContext<LauncherLog> { }
+public interface ILauncherLogContext : IMongoContext<LauncherLog>;
 
-public interface IDiscordLogContext : IMongoContext<DiscordLog> { }
+public interface IDiscordLogContext : IMongoContext<DiscordLog>;
 
 public class LogContext : MongoContext<BasicLog>, ILogContext
 {

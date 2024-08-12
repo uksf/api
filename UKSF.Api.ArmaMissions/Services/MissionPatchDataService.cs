@@ -31,17 +31,28 @@ public class MissionPatchDataService
 
     public void UpdatePatchData()
     {
-        MissionPatchData.Instance = new() { Units = new(), Ranks = _ranksContext.Get().ToList(), Players = new(), OrderedUnits = new() };
+        MissionPatchData.Instance = new MissionPatchData
+        {
+            Units = new List<MissionUnit>(),
+            Ranks = _ranksContext.Get().ToList(),
+            Players = new List<MissionPlayer>(),
+            OrderedUnits = new List<MissionUnit>()
+        };
 
         foreach (var unit in _unitContext.Get(x => x.Branch == UnitBranch.COMBAT).ToList())
         {
-            MissionPatchData.Instance.Units.Add(new() { SourceUnit = unit });
+            MissionPatchData.Instance.Units.Add(new MissionUnit { SourceUnit = unit });
         }
 
         foreach (var account in _accountContext.Get().Where(x => !string.IsNullOrEmpty(x.Rank) && _ranksService.IsSuperiorOrEqual(x.Rank, "Recruit")))
         {
             MissionPatchData.Instance.Players.Add(
-                new() { DomainAccount = account, Rank = _ranksContext.GetSingle(account.Rank), Name = _displayNameService.GetDisplayName(account) }
+                new MissionPlayer
+                {
+                    DomainAccount = account,
+                    Rank = _ranksContext.GetSingle(account.Rank),
+                    Name = _displayNameService.GetDisplayName(account)
+                }
             );
         }
 

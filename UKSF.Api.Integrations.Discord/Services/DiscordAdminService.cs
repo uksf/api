@@ -10,7 +10,7 @@ using UKSF.Api.Integrations.Discord.Models;
 
 namespace UKSF.Api.Integrations.Discord.Services;
 
-public interface IDiscordAdminService : IDiscordService { }
+public interface IDiscordAdminService : IDiscordService;
 
 public class DiscordAdminService(
     IDiscordClientService discordClientService,
@@ -70,7 +70,7 @@ public class DiscordAdminService(
                 );
                 if (domainAccount != null)
                 {
-                    eventBus.Send(new DiscordEventData(DiscordUserEventType.LEFT, domainAccount.Id));
+                    eventBus.Send(new DiscordEventData(DiscordUserEventType.LEFT, domainAccount.Id), nameof(DiscordAdminService));
                 }
 
                 return Task.CompletedTask;

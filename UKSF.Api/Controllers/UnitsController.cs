@@ -119,23 +119,14 @@ public class UnitsController(
             foreach (var account in accountContext.Get(x => x.UnitAssignment == oldUnit.Name))
             {
                 await accountContext.Update(account.Id, x => x.UnitAssignment, unit.Name);
-                eventBus.Send(new ContextEventData<DomainAccount>(id, account));
             }
         }
 
-        if (unit.TeamspeakGroup != oldUnit.TeamspeakGroup)
+        if (unit.TeamspeakGroup != oldUnit.TeamspeakGroup || unit.DiscordRoleId != oldUnit.DiscordRoleId)
         {
             foreach (var account in unit.Members.Select(accountContext.GetSingle))
             {
-                eventBus.Send(new ContextEventData<DomainAccount>(id, account));
-            }
-        }
-
-        if (unit.DiscordRoleId != oldUnit.DiscordRoleId)
-        {
-            foreach (var account in unit.Members.Select(accountContext.GetSingle))
-            {
-                eventBus.Send(new ContextEventData<DomainAccount>(id, account));
+                eventBus.Send(new ContextEventData<DomainAccount>(id, account), nameof(EditUnit));
             }
         }
     }

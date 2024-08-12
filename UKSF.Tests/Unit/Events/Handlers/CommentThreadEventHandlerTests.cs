@@ -23,13 +23,13 @@ public class CommentThreadEventHandlerTests
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<ICommentThreadService> mockCommentThreadService = new();
         Mock<IUksfLogger> mockLoggingService = new();
-        _mockHub = new();
+        _mockHub = new Mock<IHubContext<CommentThreadHub, ICommentThreadClient>>();
         _eventBus = new EventBus();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommentThread>(It.IsAny<string>()));
         mockCommentThreadService.Setup(x => x.FormatComment(It.IsAny<Comment>())).Returns(null);
 
-        _commentThreadEventHandler = new(_eventBus, _mockHub.Object, mockCommentThreadService.Object, mockLoggingService.Object);
+        _commentThreadEventHandler = new CommentThreadEventHandler(_eventBus, _mockHub.Object, mockCommentThreadService.Object, mockLoggingService.Object);
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class CommentThreadEventHandlerTests
 
         _commentThreadEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Update, new CommentThreadEventData(string.Empty, new Comment())));
+        _eventBus.Send(new EventModel(EventType.Update, new CommentThreadEventData(string.Empty, new Comment()), ""));
 
         mockClient.Verify(x => x.ReceiveComment(It.IsAny<object>()), Times.Never);
         mockClient.Verify(x => x.DeleteComment(It.IsAny<string>()), Times.Never);
@@ -64,7 +64,7 @@ public class CommentThreadEventHandlerTests
 
         _commentThreadEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Add, new CommentThreadEventData(string.Empty, new Comment())));
+        _eventBus.Send(new EventModel(EventType.Add, new CommentThreadEventData(string.Empty, new Comment()), ""));
 
         mockClient.Verify(x => x.ReceiveComment(It.IsAny<object>()), Times.Once);
         mockClient.Verify(x => x.DeleteComment(It.IsAny<string>()), Times.Never);
@@ -83,7 +83,7 @@ public class CommentThreadEventHandlerTests
 
         _commentThreadEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Delete, new CommentThreadEventData(string.Empty, new Comment())));
+        _eventBus.Send(new EventModel(EventType.Delete, new CommentThreadEventData(string.Empty, new Comment()), ""));
 
         mockClient.Verify(x => x.ReceiveComment(It.IsAny<object>()), Times.Never);
         mockClient.Verify(x => x.DeleteComment(It.IsAny<string>()), Times.Once);

@@ -76,6 +76,6 @@ public class InfrastructureController : ControllerBase
             $"Server infrastructure updated from version {beforeVersion.InstalledVersion}.{beforeBuild.CurrentBuild} to {afterVersion.InstalledVersion}.{afterBuild.CurrentBuild}"
         );
 
-        return new() { NewVersion = afterVersion.InstalledVersion, UpdateOutput = result };
+        return new ServerInfrastructureUpdate { NewVersion = afterVersion.InstalledVersion, UpdateOutput = result };
     }
 }

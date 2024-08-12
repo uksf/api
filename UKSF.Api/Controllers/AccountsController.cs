@@ -31,7 +31,6 @@ public class AccountsController(
     ISendTemplatedEmailCommand sendTemplatedEmailCommand,
     IAccountMapper accountMapper,
     ILoginService loginService,
-    IEventBus eventBus,
     IUksfLogger logger
 ) : ControllerBase
 {
@@ -194,7 +193,6 @@ public class AccountsController(
 
         await accountContext.Update(domainAccount.Id, Builders<DomainAccount>.Update.Set(x => x.Firstname, firstName).Set(x => x.Lastname, lastName));
         logger.LogAudit($"{domainAccount.Lastname}, {domainAccount.Firstname} changed their name to {lastName}, {firstName}");
-        eventBus.Send(new ContextEventData<DomainAccount>(domainAccount.Id, accountContext.GetSingle(domainAccount.Id)));
     }
 
     [HttpPut("password")]

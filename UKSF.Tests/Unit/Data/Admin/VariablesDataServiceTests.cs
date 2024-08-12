@@ -26,7 +26,7 @@ public class VariablesDataServiceTests
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<VariableItem>(It.IsAny<string>())).Returns(mockDataCollection.Object);
         mockDataCollection.Setup(x => x.Get()).Returns(() => _mockCollection);
 
-        _variablesContext = new(mockDataCollectionFactory.Object, mockEventBus.Object);
+        _variablesContext = new VariablesContext(mockDataCollectionFactory.Object, mockEventBus.Object);
     }
 
     [Fact]
@@ -35,12 +35,12 @@ public class VariablesDataServiceTests
         VariableItem item1 = new() { Key = "MISSIONS_PATH" };
         VariableItem item2 = new() { Key = "SERVER_PATH" };
         VariableItem item3 = new() { Key = "DISCORD_IDS" };
-        _mockCollection = new()
-        {
+        _mockCollection =
+        [
             item1,
             item2,
             item3
-        };
+        ];
 
         var subject = _variablesContext.Get();
 
@@ -55,12 +55,12 @@ public class VariablesDataServiceTests
         VariableItem item1 = new() { Key = "MISSIONS_PATH" };
         VariableItem item2 = new() { Key = "SERVER_PATH" };
         VariableItem item3 = new() { Key = "DISCORD_IDS" };
-        _mockCollection = new()
-        {
+        _mockCollection =
+        [
             item1,
             item2,
             item3
-        };
+        ];
 
         var subject = _variablesContext.GetSingle(key);
 
@@ -72,7 +72,7 @@ public class VariablesDataServiceTests
     [InlineData(null)]
     public async Task ShouldThrowForUpdateWhenNoKeyOrNull(string key)
     {
-        _mockCollection = new();
+        _mockCollection = [];
 
         var act = async () => await _variablesContext.Update(key, "75");
 
@@ -84,7 +84,7 @@ public class VariablesDataServiceTests
     [InlineData(null)]
     public async Task ShouldThrowForDeleteWhenNoKeyOrNull(string key)
     {
-        _mockCollection = new();
+        _mockCollection = [];
 
         var act = async () => await _variablesContext.Delete(key);
 

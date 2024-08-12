@@ -5,7 +5,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context;
 
-public interface INotificationsContext : IMongoContext<Notification>, ICachedMongoContext { }
+public interface INotificationsContext : IMongoContext<Notification>, ICachedMongoContext;
 
 public class NotificationsContext : CachedMongoContext<Notification>, INotificationsContext
 {

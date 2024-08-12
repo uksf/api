@@ -12,7 +12,7 @@ using MembershipState = UKSF.Api.Core.Models.MembershipState;
 
 namespace UKSF.Api.Integrations.Discord.Services;
 
-public interface IDiscordRecruitmentService : IDiscordService { }
+public interface IDiscordRecruitmentService : IDiscordService;
 
 public class DiscordRecruitmentService(
     IDiscordClientService discordClientService,

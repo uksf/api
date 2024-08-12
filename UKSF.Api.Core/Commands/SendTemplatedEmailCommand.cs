@@ -41,7 +41,7 @@ public class SendTemplatedEmailCommand : ISendTemplatedEmailCommand
         using MailMessage mail = new();
         mail.To.Add(args.Recipient);
         mail.Subject = args.Subject;
-        mail.Body = await _getEmailTemplateQuery.ExecuteAsync(new(args.TemplateName, args.Substitutions));
+        mail.Body = await _getEmailTemplateQuery.ExecuteAsync(new GetEmailTemplateQueryArgs(args.TemplateName, args.Substitutions));
         mail.IsBodyHtml = true;
 
         await _smtpClientContext.SendEmailAsync(mail);

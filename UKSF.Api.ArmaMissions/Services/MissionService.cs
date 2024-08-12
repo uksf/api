@@ -25,7 +25,7 @@ public class MissionService
         _armaServerDefaultMaxCurators = armaServerDefaultMaxCurators;
         _armaServerModsPath = armaServerModsPath;
         _mission = tempMission;
-        _reports = new();
+        _reports = new List<ValidationReport>();
 
         if (!AssertRequiredFiles())
         {
@@ -42,7 +42,7 @@ public class MissionService
         if (MissionUtilities.CheckFlag(_mission, "missionPatchingIgnore"))
         {
             _reports.Add(
-                new(
+                new ValidationReport(
                     "Mission Patching Ignored",
                     "Mission patching for this mission was ignored.\nThis means no changes to the mission.sqm were made." +
                     "This is not an error, however errors may occur in the mission as a result of this.\n" +
@@ -69,7 +69,7 @@ public class MissionService
         if (!File.Exists(_mission.DescriptionPath))
         {
             _reports.Add(
-                new(
+                new ValidationReport(
                     "Missing file: description.ext",
                     "The mission is missing a required file:\ndescription.ext\n\n" +
                     "It is advised to copy this file directly from the template mission to your mission\nUKSFTemplate.VR is located in the modpack files",
@@ -82,7 +82,7 @@ public class MissionService
         if (!File.Exists(Path.Combine(_mission.Path, "cba_settings.sqf")))
         {
             _reports.Add(
-                new(
+                new ValidationReport(
                     "Missing file: cba_settings.sqf",
                     "The mission is missing a required file:\ncba_settings.sqf\n\n" +
                     "It is advised to copy this file directly from the template mission to your mission and make changes according to the needs of the mission\n" +
@@ -164,7 +164,7 @@ public class MissionService
         {
             _mission.MaxCurators = _armaServerDefaultMaxCurators;
             _reports.Add(
-                new(
+                new ValidationReport(
                     "Using server setting 'uksf_curator_curatorsMax'",
                     "Could not find setting 'uksf_curator_curatorsMax' in cba_settings.sqf" +
                     "This is required to add the correct nubmer of pre-defined curator objects." +
@@ -178,7 +178,7 @@ public class MissionService
         if (!int.TryParse(curatorsMaxString, out var maxCurators))
         {
             _reports.Add(
-                new(
+                new ValidationReport(
                     "Using hardcoded setting 'uksf_curator_curatorsMax'",
                     $"Could not read malformed setting: '{curatorsMaxLine}' in cba_settings.sqf" +
                     "This is required to add the correct nubmer of pre-defined curator objects." +
@@ -205,7 +205,7 @@ public class MissionService
                 if (File.Exists(imagePath) && new FileInfo(imagePath).Length != new FileInfo(modpackImagePath).Length)
                 {
                     _reports.Add(
-                        new(
+                        new ValidationReport(
                             "Loading image was different",
                             "The mission loading image `uksf.paa` was found to be different from the default." +
                             "It has been replaced with the default UKSF image.\n\n" +
@@ -252,7 +252,7 @@ public class MissionService
         if (maxPlayersIndex == -1)
         {
             _reports.Add(
-                new(
+                new ValidationReport(
                     "<i>maxPlayers</i>  in description.ext is missing",
                     "<i>maxPlayers</i>  in description.ext is missing or malformed\nThis item is required for the mission to be launched",
                     true
@@ -303,7 +303,7 @@ public class MissionService
             {
                 case false when required:
                     _reports.Add(
-                        new(
+                        new ValidationReport(
                             $"Required description.ext item <i>{key}</i>  value is not default",
                             $"<i>{key}</i>  in description.ext is '{itemValue}'\nThe default value is '{defaultValue}'\n\nYou should only change this if you know what you're doing"
                         )
@@ -311,7 +311,7 @@ public class MissionService
                     break;
                 case true when !required:
                     _reports.Add(
-                        new(
+                        new ValidationReport(
                             $"Configurable description.ext item <i>{key}</i>  value is default",
                             $"<i>{key}</i>  in description.ext is the same as the default value '{itemValue}'\n\nThis should be changed based on your mission"
                         )
@@ -329,7 +329,7 @@ public class MissionService
         else
         {
             _reports.Add(
-                new(
+                new ValidationReport(
                     $"Configurable description.ext item <i>{key}</i>  is missing",
                     $"<i>{key}</i>  in description.ext is missing\nThis is required for the mission\n\n" +
                     "It is advised to copy the description.ext file directly from the template mission to your mission\nUKSFTemplate.VR is located in the modpack files",
