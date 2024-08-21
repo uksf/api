@@ -1,6 +1,8 @@
-﻿namespace UKSF.Api.Core.Models;
+﻿using UKSF.Api.Core.Models.Domain;
 
-public class AuditLog : BasicLog
+namespace UKSF.Api.Core.Models;
+
+public class AuditLog : DomainBasicLog
 {
     public AuditLog(string who, string message) : base(message)
     {

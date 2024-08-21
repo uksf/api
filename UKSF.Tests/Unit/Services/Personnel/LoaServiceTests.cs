@@ -4,7 +4,7 @@ using System.Linq;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Services;
 using Xunit;
 

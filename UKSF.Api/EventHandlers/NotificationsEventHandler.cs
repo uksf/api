@@ -3,6 +3,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Signalr.Clients;
 using UKSF.Api.Core.Signalr.Hubs;
 
@@ -27,10 +28,10 @@ public class NotificationsEventHandler : INotificationsEventHandler
 
     public void Init()
     {
-        _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<Notification>>(HandleEvent, _logger.LogError);
+        _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainNotification>>(HandleEvent, _logger.LogError);
     }
 
-    private async Task HandleEvent(EventModel eventModel, ContextEventData<Notification> contextEventData)
+    private async Task HandleEvent(EventModel eventModel, ContextEventData<DomainNotification> contextEventData)
     {
         if (eventModel.EventType == EventType.Add)
         {
@@ -38,7 +39,7 @@ public class NotificationsEventHandler : INotificationsEventHandler
         }
     }
 
-    private async Task AddedEvent(Notification notification)
+    private async Task AddedEvent(DomainNotification notification)
     {
         await _hub.Clients.Group(notification.Owner).ReceiveNotification(notification);
     }

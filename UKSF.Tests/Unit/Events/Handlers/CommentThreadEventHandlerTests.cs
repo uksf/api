@@ -4,6 +4,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.EventHandlers;
 using UKSF.Api.Services;
 using UKSF.Api.Signalr.Clients;
@@ -26,8 +27,8 @@ public class CommentThreadEventHandlerTests
         _mockHub = new Mock<IHubContext<CommentThreadHub, ICommentThreadClient>>();
         _eventBus = new EventBus();
 
-        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommentThread>(It.IsAny<string>()));
-        mockCommentThreadService.Setup(x => x.FormatComment(It.IsAny<Comment>())).Returns(null);
+        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainCommentThread>(It.IsAny<string>()));
+        mockCommentThreadService.Setup(x => x.FormatComment(It.IsAny<DomainComment>())).Returns(null);
 
         _commentThreadEventHandler = new CommentThreadEventHandler(_eventBus, _mockHub.Object, mockCommentThreadService.Object, mockLoggingService.Object);
     }
@@ -45,7 +46,7 @@ public class CommentThreadEventHandlerTests
 
         _commentThreadEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Update, new CommentThreadEventData(string.Empty, new Comment()), ""));
+        _eventBus.Send(new EventModel(EventType.Update, new CommentThreadEventData(string.Empty, new DomainComment()), ""));
 
         mockClient.Verify(x => x.ReceiveComment(It.IsAny<object>()), Times.Never);
         mockClient.Verify(x => x.DeleteComment(It.IsAny<string>()), Times.Never);
@@ -64,7 +65,7 @@ public class CommentThreadEventHandlerTests
 
         _commentThreadEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Add, new CommentThreadEventData(string.Empty, new Comment()), ""));
+        _eventBus.Send(new EventModel(EventType.Add, new CommentThreadEventData(string.Empty, new DomainComment()), ""));
 
         mockClient.Verify(x => x.ReceiveComment(It.IsAny<object>()), Times.Once);
         mockClient.Verify(x => x.DeleteComment(It.IsAny<string>()), Times.Never);
@@ -83,7 +84,7 @@ public class CommentThreadEventHandlerTests
 
         _commentThreadEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Delete, new CommentThreadEventData(string.Empty, new Comment()), ""));
+        _eventBus.Send(new EventModel(EventType.Delete, new CommentThreadEventData(string.Empty, new DomainComment()), ""));
 
         mockClient.Verify(x => x.ReceiveComment(It.IsAny<object>()), Times.Never);
         mockClient.Verify(x => x.DeleteComment(It.IsAny<string>()), Times.Once);

@@ -5,12 +5,12 @@ namespace UKSF.Api.ArmaServer.Models;
 
 public enum GameServerOption
 {
-    NONE,
-    SINGLETON,
-    DCG
+    None,
+    Singleton,
+    Dcg
 }
 
-public class GameServer : MongoObject
+public class DomainGameServer : MongoObject
 {
     public List<GameServerMod> Mods { get; set; } = new();
     public string AdminPassword { get; set; }

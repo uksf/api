@@ -4,36 +4,22 @@ using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Controllers;
 
 [Route("[controller]")]
 [Permissions(Permissions.Admin)]
-public class LoggingController : ControllerBase
+public class LoggingController(
+    ILogContext logContext,
+    IAuditLogContext auditLogContext,
+    IErrorLogContext errorLogContext,
+    ILauncherLogContext launcherLogContext,
+    IDiscordLogContext discordLogContext
+) : ControllerBase
 {
-    private readonly IAuditLogContext _auditLogContext;
-    private readonly IDiscordLogContext _discordLogContext;
-    private readonly IErrorLogContext _errorLogContext;
-    private readonly ILauncherLogContext _launcherLogContext;
-    private readonly ILogContext _logContext;
-
-    public LoggingController(
-        ILogContext logContext,
-        IAuditLogContext auditLogContext,
-        IErrorLogContext errorLogContext,
-        ILauncherLogContext launcherLogContext,
-        IDiscordLogContext discordLogContext
-    )
-    {
-        _logContext = logContext;
-        _auditLogContext = auditLogContext;
-        _errorLogContext = errorLogContext;
-        _launcherLogContext = launcherLogContext;
-        _discordLogContext = discordLogContext;
-    }
-
     [HttpGet("basic")]
-    public PagedResult<BasicLog> GetBasicLogs(
+    public PagedResult<DomainBasicLog> GetBasicLogs(
         [FromQuery] int page,
         [FromQuery] int pageSize,
         [FromQuery] SortDirection sortDirection,
@@ -42,7 +28,7 @@ public class LoggingController : ControllerBase
     )
     {
         var filterProperties = GetBasicLogFilterProperties();
-        return _logContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
+        return logContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
     }
 
     [HttpGet("error")]
@@ -55,7 +41,7 @@ public class LoggingController : ControllerBase
     )
     {
         var filterProperties = GetErrorLogFilterProperties();
-        return _errorLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
+        return errorLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
     }
 
     [HttpGet("audit")]
@@ -68,7 +54,7 @@ public class LoggingController : ControllerBase
     )
     {
         var filterProperties = GetAuditLogFilterProperties();
-        return _auditLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
+        return auditLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
     }
 
     [HttpGet("launcher")]
@@ -81,7 +67,7 @@ public class LoggingController : ControllerBase
     )
     {
         var filterProperties = GetLauncherLogFilterProperties();
-        return _launcherLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
+        return launcherLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
     }
 
     [HttpGet("discord")]
@@ -95,12 +81,12 @@ public class LoggingController : ControllerBase
     )
     {
         var filterProperties = GetDiscordLogFilterProperties();
-        return _discordLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
+        return discordLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
     }
 
-    private static IEnumerable<Expression<Func<BasicLog, object>>> GetBasicLogFilterProperties()
+    private static IEnumerable<Expression<Func<DomainBasicLog, object>>> GetBasicLogFilterProperties()
     {
-        return new List<Expression<Func<BasicLog, object>>> { x => x.Message, x => x.Level };
+        return new List<Expression<Func<DomainBasicLog, object>>> { x => x.Message, x => x.Level };
     }
 
     private static IEnumerable<Expression<Func<ErrorLog, object>>> GetErrorLogFilterProperties()

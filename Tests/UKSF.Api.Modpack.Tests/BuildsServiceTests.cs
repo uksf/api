@@ -6,7 +6,7 @@ using Moq;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
@@ -44,14 +44,14 @@ public class BuildsServiceTests
     public async Task When_creating_first_rc_build()
     {
         const string Version = "1.1.0";
-        _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<ModpackBuild, bool>>())).Returns(new List<ModpackBuild>());
+        _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>())).Returns(new List<DomainModpackBuild>());
         _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns(new DomainAccount { Id = "accountId" });
-        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.RC)).Returns([]);
+        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.Rc)).Returns([]);
 
         GithubCommit githubCommit = new() { Author = "author" };
         var result = await _subject.CreateRcBuild(Version, githubCommit);
 
-        result.Environment.Should().Be(GameEnvironment.RC);
+        result.Environment.Should().Be(GameEnvironment.Rc);
         result.BuildNumber.Should().Be(1);
         result.BuilderId.Should().Be("accountId");
         result.EnvironmentVariables.Should().Contain("configuration", "release");
@@ -62,39 +62,39 @@ public class BuildsServiceTests
     public async Task When_creating_rc_build_with_previous_failed_build()
     {
         const string Version = "1.1.0";
-        _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<ModpackBuild, bool>>()))
-        .Returns(
-            new List<ModpackBuild>
-            {
-                new()
-                {
-                    Version = Version,
-                    BuildNumber = 1,
-                    EnvironmentVariables = new Dictionary<string, object>
-                    {
-                        { "configuration", "release" },
-                        { "ace_updated", true },
-                        { "acre_updated", true },
-                        { "uksf_air_updated", true }
-                    },
-                    Steps =
-                    [
-                        new ModpackBuildStep("Build ACE") { Finished = true, BuildResult = ModpackBuildResult.FAILED },
+        _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>()))
+                          .Returns(
+                              new List<DomainModpackBuild>
+                              {
+                                  new()
+                                  {
+                                      Version = Version,
+                                      BuildNumber = 1,
+                                      EnvironmentVariables = new Dictionary<string, object>
+                                      {
+                                          { "configuration", "release" },
+                                          { "ace_updated", true },
+                                          { "acre_updated", true },
+                                          { "uksf_air_updated", true }
+                                      },
+                                      Steps =
+                                      [
+                                          new ModpackBuildStep("Build ACE") { Finished = true, BuildResult = ModpackBuildResult.Failed },
 
-                        new ModpackBuildStep("Build ACRE") { Finished = true, BuildResult = ModpackBuildResult.CANCELLED },
+                                          new ModpackBuildStep("Build ACRE") { Finished = true, BuildResult = ModpackBuildResult.Cancelled },
 
-                        new("Build Air") { Finished = false }
-                    ]
-                }
-            }
-        );
+                                          new("Build Air") { Finished = false }
+                                      ]
+                                  }
+                              }
+                          );
         _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns(new DomainAccount { Id = "accountId" });
-        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.RC)).Returns([]);
+        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.Rc)).Returns([]);
 
         GithubCommit githubCommit = new() { Author = "author" };
         var result = await _subject.CreateRcBuild(Version, githubCommit);
 
-        result.Environment.Should().Be(GameEnvironment.RC);
+        result.Environment.Should().Be(GameEnvironment.Rc);
         result.BuildNumber.Should().Be(2);
         result.BuilderId.Should().Be("accountId");
         result.EnvironmentVariables.Should().Contain("ace_updated", true);
@@ -106,31 +106,31 @@ public class BuildsServiceTests
     public async Task When_creating_rc_build_with_previous_successful_build()
     {
         const string Version = "1.1.0";
-        _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<ModpackBuild, bool>>()))
-        .Returns(
-            new List<ModpackBuild>
-            {
-                new()
-                {
-                    Version = Version,
-                    BuildNumber = 1,
-                    EnvironmentVariables = new Dictionary<string, object>
-                    {
-                        { "configuration", "release" },
-                        { "ace_updated", true },
-                        { "acre_updated", true },
-                        { "uksf_air_updated", true }
-                    }
-                }
-            }
-        );
+        _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>()))
+                          .Returns(
+                              new List<DomainModpackBuild>
+                              {
+                                  new()
+                                  {
+                                      Version = Version,
+                                      BuildNumber = 1,
+                                      EnvironmentVariables = new Dictionary<string, object>
+                                      {
+                                          { "configuration", "release" },
+                                          { "ace_updated", true },
+                                          { "acre_updated", true },
+                                          { "uksf_air_updated", true }
+                                      }
+                                  }
+                              }
+                          );
         _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns(new DomainAccount { Id = "accountId" });
-        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.RC)).Returns([]);
+        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.Rc)).Returns([]);
 
         GithubCommit githubCommit = new() { Author = "author" };
         var result = await _subject.CreateRcBuild(Version, githubCommit);
 
-        result.Environment.Should().Be(GameEnvironment.RC);
+        result.Environment.Should().Be(GameEnvironment.Rc);
         result.BuildNumber.Should().Be(2);
         result.BuilderId.Should().Be("accountId");
         result.EnvironmentVariables.Should().NotContainKeys("ace_updated", "acre_updated", "uksf_air_updated");

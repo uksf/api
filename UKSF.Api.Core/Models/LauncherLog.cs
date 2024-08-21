@@ -1,6 +1,8 @@
-﻿namespace UKSF.Api.Core.Models;
+﻿using UKSF.Api.Core.Models.Domain;
 
-public class LauncherLog : BasicLog
+namespace UKSF.Api.Core.Models;
+
+public class LauncherLog : DomainBasicLog
 {
     public LauncherLog(string version, string message) : base(message)
     {

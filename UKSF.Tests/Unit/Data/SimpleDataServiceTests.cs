@@ -2,7 +2,7 @@
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Launcher.Context;
 using UKSF.Api.Launcher.Models;
@@ -27,11 +27,11 @@ public class SimpleDataServiceTests
         SchedulerContext unused8 = new(mockDataCollectionFactory.Object, new Mock<IEventBus>().Object);
 
         mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<DomainAccount>(It.IsAny<string>()), Times.Once);
-        mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<CommandRequest>(It.IsAny<string>()), Times.Exactly(2));
-        mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<ConfirmationCode>(It.IsAny<string>()), Times.Once);
+        mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<DomainCommandRequest>(It.IsAny<string>()), Times.Exactly(2));
+        mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<DomainConfirmationCode>(It.IsAny<string>()), Times.Once);
         mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<LauncherFile>(It.IsAny<string>()), Times.Once);
         mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<DomainLoa>(It.IsAny<string>()), Times.Once);
-        mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<Notification>(It.IsAny<string>()), Times.Once);
-        mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<ScheduledJob>(It.IsAny<string>()), Times.Once);
+        mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<DomainNotification>(It.IsAny<string>()), Times.Once);
+        mockDataCollectionFactory.Verify(x => x.CreateMongoCollection<DomainScheduledJob>(It.IsAny<string>()), Times.Once);
     }
 }

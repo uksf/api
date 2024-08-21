@@ -5,13 +5,13 @@ using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Modpack.Models;
 
-public class ModpackBuild : MongoObject
+public class DomainModpackBuild : MongoObject
 {
     [BsonRepresentation(BsonType.ObjectId)]
     public string BuilderId { get; set; }
 
     public int BuildNumber { get; set; }
-    public ModpackBuildResult BuildResult { get; set; } = ModpackBuildResult.NONE;
+    public ModpackBuildResult BuildResult { get; set; } = ModpackBuildResult.None;
     public GithubCommit Commit { get; set; }
     public GameEnvironment Environment { get; set; }
     public Dictionary<string, object> EnvironmentVariables { get; set; } = new();

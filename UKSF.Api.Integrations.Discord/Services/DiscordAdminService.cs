@@ -5,6 +5,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Integrations.Discord.Models;
 
@@ -47,7 +48,7 @@ public class DiscordAdminService(
             {
                 var name = GetUserNickname(user);
                 var connectedAccountMessage = GetConnectedAccountMessageFromUserId(user.Id);
-                _logger.LogDiscordEvent(DiscordUserEventType.JOINED, user.Id.ToString(), name, string.Empty, name, $"Joined {connectedAccountMessage}");
+                _logger.LogDiscordEvent(DiscordUserEventType.Joined, user.Id.ToString(), name, string.Empty, name, $"Joined {connectedAccountMessage}");
                 return Task.CompletedTask;
             }
         );
@@ -58,19 +59,19 @@ public class DiscordAdminService(
         return WrapAdminEventTask(
             () =>
             {
-                var domainAccount = GetAccountForDiscordUser(user.Id);
-                var connectedAccountMessage = GetConnectedAccountMessage(domainAccount);
+                var account = GetAccountForDiscordUser(user.Id);
+                var connectedAccountMessage = GetConnectedAccountMessage(account);
                 _logger.LogDiscordEvent(
-                    DiscordUserEventType.LEFT,
+                    DiscordUserEventType.Left,
                     user.Id.ToString(),
                     user.Username,
                     string.Empty,
                     user.Username,
                     $"Left {connectedAccountMessage}"
                 );
-                if (domainAccount != null)
+                if (account != null)
                 {
-                    eventBus.Send(new DiscordEventData(DiscordUserEventType.LEFT, domainAccount.Id), nameof(DiscordAdminService));
+                    eventBus.Send(new DiscordEventData(DiscordUserEventType.Left, account.Id), nameof(DiscordAdminService));
                 }
 
                 return Task.CompletedTask;
@@ -88,7 +89,7 @@ public class DiscordAdminService(
                 var guild = GetGuild();
                 var instigatorName = GetUserNickname(guild.GetUser(instigatorId));
                 _logger.LogDiscordEvent(
-                    DiscordUserEventType.BANNED,
+                    DiscordUserEventType.Banned,
                     instigatorId.ToString(),
                     instigatorName,
                     string.Empty,
@@ -109,7 +110,7 @@ public class DiscordAdminService(
                 var guild = GetGuild();
                 var instigatorName = GetUserNickname(guild.GetUser(instigatorId));
                 _logger.LogDiscordEvent(
-                    DiscordUserEventType.UNBANNED,
+                    DiscordUserEventType.Unbanned,
                     instigatorId.ToString(),
                     instigatorName,
                     string.Empty,
@@ -132,7 +133,7 @@ public class DiscordAdminService(
                     case ulong.MaxValue: return;
                     case 0:
                         _logger.LogDiscordEvent(
-                            DiscordUserEventType.MESSAGE_DELETED,
+                            DiscordUserEventType.Message_Deleted,
                             "0",
                             "NO INSTIGATOR",
                             channel.Name,
@@ -142,7 +143,7 @@ public class DiscordAdminService(
                         return;
                     default:
                         _logger.LogDiscordEvent(
-                            DiscordUserEventType.MESSAGE_DELETED,
+                            DiscordUserEventType.Message_Deleted,
                             result.InstigatorId.ToString(),
                             result.InstigatorName,
                             channel.Name,
@@ -182,7 +183,7 @@ public class DiscordAdminService(
                 if (irretrievableMessageCount > 0)
                 {
                     _logger.LogDiscordEvent(
-                        DiscordUserEventType.MESSAGE_DELETED,
+                        DiscordUserEventType.Message_Deleted,
                         "0",
                         "NO INSTIGATOR",
                         channel.Name,
@@ -197,7 +198,7 @@ public class DiscordAdminService(
                     foreach (var result in groupedMessage)
                     {
                         _logger.LogDiscordEvent(
-                            DiscordUserEventType.MESSAGE_DELETED,
+                            DiscordUserEventType.Message_Deleted,
                             result.InstigatorId.ToString(),
                             result.InstigatorName,
                             channel.Name,
@@ -212,15 +213,15 @@ public class DiscordAdminService(
 
     private string GetConnectedAccountMessageFromUserId(ulong userId)
     {
-        var domainAccount = GetAccountForDiscordUser(userId);
-        return GetConnectedAccountMessage(domainAccount);
+        var account = GetAccountForDiscordUser(userId);
+        return GetConnectedAccountMessage(account);
     }
 
-    private string GetConnectedAccountMessage(DomainAccount domainAccount)
+    private string GetConnectedAccountMessage(DomainAccount account)
     {
-        return domainAccount == null
+        return account == null
             ? "(No connected account)"
-            : $"(Connected account - {domainAccount.Id}, {displayNameService.GetDisplayName(domainAccount)}, {domainAccount.MembershipState.ToString()})";
+            : $"(Connected account - {account.Id}, {displayNameService.GetDisplayName(account)}, {account.MembershipState.ToString()})";
     }
 
     private async Task<ulong> GetBannedAuditLogInstigator(ulong userId)

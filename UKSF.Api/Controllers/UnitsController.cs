@@ -7,6 +7,7 @@ using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Mappers;
 using UKSF.Api.Queries;
@@ -34,7 +35,7 @@ public class UnitsController(
         {
             var response = filter switch
             {
-                "auxiliary" => unitsService.GetSortedUnits(x => x.Branch == UnitBranch.AUXILIARY && x.Members.Contains(accountId)),
+                "auxiliary" => unitsService.GetSortedUnits(x => x.Branch == UnitBranch.Auxiliary && x.Members.Contains(accountId)),
                 "available" => unitsService.GetSortedUnits(x => !x.Members.Contains(accountId)),
                 _           => unitsService.GetSortedUnits(x => x.Members.Contains(accountId))
             };
@@ -45,8 +46,8 @@ public class UnitsController(
         {
             var response = filter switch
             {
-                "auxiliary" => unitsService.GetSortedUnits(x => x.Branch == UnitBranch.AUXILIARY),
-                "combat"    => unitsService.GetSortedUnits(x => x.Branch == UnitBranch.COMBAT),
+                "auxiliary" => unitsService.GetSortedUnits(x => x.Branch == UnitBranch.Auxiliary),
+                "combat"    => unitsService.GetSortedUnits(x => x.Branch == UnitBranch.Combat),
                 _           => unitsService.GetSortedUnits()
             };
             return response;
@@ -87,8 +88,8 @@ public class UnitsController(
     [Authorize]
     public async Task<UnitTreeDto> GetTree()
     {
-        var combatTree = await getUnitTreeQuery.ExecuteAsync(new GetUnitTreeQueryArgs(UnitBranch.COMBAT));
-        var auxiliaryTree = await getUnitTreeQuery.ExecuteAsync(new GetUnitTreeQueryArgs(UnitBranch.AUXILIARY));
+        var combatTree = await getUnitTreeQuery.ExecuteAsync(new GetUnitTreeQueryArgs(UnitBranch.Combat));
+        var auxiliaryTree = await getUnitTreeQuery.ExecuteAsync(new GetUnitTreeQueryArgs(UnitBranch.Auxiliary));
         return new UnitTreeDto
         {
             CombatNodes = new List<UnitTreeNodeDto> { unitTreeMapper.MapUnitTree(combatTree) },
@@ -203,7 +204,7 @@ public class UnitsController(
         switch (type)
         {
             case "combat":
-                var combatRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.COMBAT);
+                var combatRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Combat);
                 return new UnitChartNodeDto
                 {
                     Id = combatRoot.Id,
@@ -212,7 +213,7 @@ public class UnitsController(
                     Children = GetUnitChartChildren(combatRoot.Id)
                 };
             case "auxiliary":
-                var auxiliaryRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY);
+                var auxiliaryRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Auxiliary);
                 return new UnitChartNodeDto
                 {
                     Id = auxiliaryRoot.Id,

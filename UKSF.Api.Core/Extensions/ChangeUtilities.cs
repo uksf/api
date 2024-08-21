@@ -44,7 +44,7 @@ public static class ChangeUtilities
                 changes.Add(
                     new Change
                     {
-                        Type = ChangeType.CLASS,
+                        Type = ChangeType.Class,
                         Name = name,
                         InnerChanges = GetChanges(originalValue, updatedValue)
                     }
@@ -65,7 +65,9 @@ public static class ChangeUtilities
         {
             return new Change
             {
-                Type = ChangeType.LIST, Name = name == string.Empty ? "List" : name, InnerChanges = GetListChanges(originalListValue, updatedListValue)
+                Type = ChangeType.List,
+                Name = name == string.Empty ? "List" : name,
+                InnerChanges = GetListChanges(originalListValue, updatedListValue)
             };
         }
 
@@ -73,7 +75,7 @@ public static class ChangeUtilities
         {
             return new Change
             {
-                Type = ChangeType.ADDITION,
+                Type = ChangeType.Addition,
                 Name = name,
                 Updated = updated.ToString()
             };
@@ -83,7 +85,7 @@ public static class ChangeUtilities
         {
             return new Change
             {
-                Type = ChangeType.REMOVAL,
+                Type = ChangeType.Removal,
                 Name = name,
                 Original = original.ToString()
             };
@@ -91,7 +93,7 @@ public static class ChangeUtilities
 
         return new Change
         {
-            Type = ChangeType.CHANGE,
+            Type = ChangeType.Change,
             Name = name,
             Original = original.ToString(),
             Updated = updated.ToString()
@@ -103,11 +105,11 @@ public static class ChangeUtilities
         var originalObjects = original == null ? new List<object>() : original.Cast<object>().ToList();
         var updatedObjects = updated == null ? new List<object>() : updated.Cast<object>().ToList();
         var changes = originalObjects.Where(originalObject => !updatedObjects.Any(updatedObject => DeepEquals(originalObject, updatedObject)))
-                                     .Select(x => new Change { Type = ChangeType.ADDITION, Updated = x.ToString() })
+                                     .Select(x => new Change { Type = ChangeType.Addition, Updated = x.ToString() })
                                      .ToList();
         changes.AddRange(
             updatedObjects.Where(updatedObject => !originalObjects.Any(originalObject => DeepEquals(originalObject, updatedObject)))
-                          .Select(x => new Change { Type = ChangeType.REMOVAL, Original = x.ToString() })
+                          .Select(x => new Change { Type = ChangeType.Removal, Original = x.ToString() })
         );
         return changes;
     }
@@ -145,10 +147,10 @@ public static class ChangeUtilities
                                                " " +
                                                change.Type switch
                                                {
-                                                   ChangeType.ADDITION => $"added as '{change.Updated}'",
-                                                   ChangeType.REMOVAL  => $"as '{change.Original}' removed",
-                                                   ChangeType.CLASS    => $"changed:{FormatChanges(change.InnerChanges, indentation + "\t")}",
-                                                   ChangeType.LIST     => $"changed:{FormatListChanges(change.InnerChanges, indentation + "\t")}",
+                                                   ChangeType.Addition => $"added as '{change.Updated}'",
+                                                   ChangeType.Removal  => $"as '{change.Original}' removed",
+                                                   ChangeType.Class    => $"changed:{FormatChanges(change.InnerChanges, indentation + "\t")}",
+                                                   ChangeType.List     => $"changed:{FormatListChanges(change.InnerChanges, indentation + "\t")}",
                                                    _                   => $"changed from '{change.Original}' to '{change.Updated}'"
                                                }
                       );
@@ -159,11 +161,11 @@ public static class ChangeUtilities
         var changesString = "";
         foreach (var change in changes.OrderBy(x => x.Type).ThenBy(x => x.Name))
         {
-            if (change.Type == ChangeType.ADDITION)
+            if (change.Type == ChangeType.Addition)
             {
                 changesString += $"\n\t{indentation}added: '{change.Updated}'";
             }
-            else if (change.Type == ChangeType.REMOVAL)
+            else if (change.Type == ChangeType.Removal)
             {
                 changesString += $"\n\t{indentation}removed: '{change.Original}'";
             }
@@ -184,9 +186,9 @@ public class Change
 
 public enum ChangeType
 {
-    ADDITION,
-    CHANGE,
-    LIST,
-    REMOVAL,
-    CLASS
+    Addition,
+    Change,
+    List,
+    Removal,
+    Class
 }

@@ -1,9 +1,10 @@
-﻿namespace UKSF.Api.Core.Models;
+﻿using UKSF.Api.Core.Models;
 
-public class Oprep : MongoObject
+namespace UKSF.Api.Integrations.Teamspeak.Models;
+
+public class DomainOperation : MongoObject
 {
     public AttendanceReport AttendanceReport { get; set; }
-    public string Description { get; set; }
     public DateTime End { get; set; }
     public string Map { get; set; }
     public string Name { get; set; }

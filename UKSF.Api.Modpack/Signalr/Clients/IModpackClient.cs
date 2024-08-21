@@ -4,7 +4,7 @@ namespace UKSF.Api.Modpack.Signalr.Clients;
 
 public interface IModpackClient
 {
-    Task ReceiveReleaseCandidateBuild(ModpackBuild build);
-    Task ReceiveBuild(ModpackBuild build);
+    Task ReceiveReleaseCandidateBuild(DomainModpackBuild build);
+    Task ReceiveBuild(DomainModpackBuild build);
     Task ReceiveBuildStep(ModpackBuildStep step);
 }

@@ -66,9 +66,9 @@ public class BuildStepSignDependencies : FileBuildStep
     {
         return Build.Environment switch
         {
-            GameEnvironment.RELEASE     => $"uksf_dependencies_{Build.Version}",
-            GameEnvironment.RC          => $"uksf_dependencies_{Build.Version}_rc{Build.BuildNumber}",
-            GameEnvironment.DEVELOPMENT => $"uksf_dependencies_dev_{Build.BuildNumber}",
+            GameEnvironment.Release     => $"uksf_dependencies_{Build.Version}",
+            GameEnvironment.Rc          => $"uksf_dependencies_{Build.Version}_rc{Build.BuildNumber}",
+            GameEnvironment.Development => $"uksf_dependencies_dev_{Build.BuildNumber}",
             _                           => throw new ArgumentException("Invalid build environment")
         };
     }

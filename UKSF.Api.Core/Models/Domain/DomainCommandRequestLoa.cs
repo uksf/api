@@ -1,6 +1,6 @@
-﻿namespace UKSF.Api.Core.Models;
+﻿namespace UKSF.Api.Core.Models.Domain;
 
-public class CommandRequestLoa : CommandRequest
+public class DomainCommandRequestLoa : DomainCommandRequest
 {
     public bool Emergency { get; set; }
     public DateTime End { get; set; }

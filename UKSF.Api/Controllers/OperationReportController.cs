@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Services;
 
 namespace UKSF.Api.Controllers;
@@ -22,7 +23,7 @@ public class OperationReportController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public IEnumerable<Oprep> Get()
+    public IEnumerable<DomainOprep> Get()
     {
         return _operationReportContext.Get();
     }
@@ -44,7 +45,7 @@ public class OperationReportController : ControllerBase
 
     [HttpPut]
     [Authorize]
-    public async Task Put([FromBody] Oprep request)
+    public async Task Put([FromBody] DomainOprep request)
     {
         await _operationReportContext.Replace(request);
     }

@@ -6,6 +6,7 @@ using UKSF.Api.Commands;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Services;
 using Xunit;
@@ -70,7 +71,7 @@ public class CreateApplicationCommandTests
                                        Firstname = "1",
                                        Steamname = SteamName,
                                        DiscordId = DiscordId,
-                                       MembershipState = MembershipState.MEMBER
+                                       MembershipState = MembershipState.Member
                                    }
                                }
                            );
@@ -79,11 +80,11 @@ public class CreateApplicationCommandTests
         await _subject.ExecuteAsync(AccountId, new Account());
 
         _mockCommentThreadService.Verify(
-            x => x.InsertComment(RecruiterCommentThreadId, It.Is<Comment>(m => m.Content == "Last.F has the same Steam account as Match.1")),
+            x => x.InsertComment(RecruiterCommentThreadId, It.Is<DomainComment>(m => m.Content == "Last.F has the same Steam account as Match.1")),
             Times.Once
         );
         _mockCommentThreadService.Verify(
-            x => x.InsertComment(RecruiterCommentThreadId, It.Is<Comment>(m => m.Content == "Last.F has the same Discord account as Match.1")),
+            x => x.InsertComment(RecruiterCommentThreadId, It.Is<DomainComment>(m => m.Content == "Last.F has the same Discord account as Match.1")),
             Times.Once
         );
     }
@@ -103,7 +104,7 @@ public class CreateApplicationCommandTests
                                        Firstname = "1",
                                        Steamname = SteamName,
                                        DiscordId = DiscordId,
-                                       MembershipState = MembershipState.CONFIRMED
+                                       MembershipState = MembershipState.Confirmed
                                    },
                                    new()
                                    {
@@ -111,7 +112,7 @@ public class CreateApplicationCommandTests
                                        Firstname = "2",
                                        Steamname = SteamName,
                                        DiscordId = DiscordId,
-                                       MembershipState = MembershipState.DISCHARGED
+                                       MembershipState = MembershipState.Discharged
                                    }
                                }
                            );
@@ -121,11 +122,11 @@ public class CreateApplicationCommandTests
         await _subject.ExecuteAsync(AccountId, new Account());
 
         _mockCommentThreadService.Verify(
-            x => x.InsertComment(RecruiterCommentThreadId, It.Is<Comment>(m => m.Content == "Last.F has the same Steam account as Match.1, Match.2")),
+            x => x.InsertComment(RecruiterCommentThreadId, It.Is<DomainComment>(m => m.Content == "Last.F has the same Steam account as Match.1, Match.2")),
             Times.Once
         );
         _mockCommentThreadService.Verify(
-            x => x.InsertComment(RecruiterCommentThreadId, It.Is<Comment>(m => m.Content == "Last.F has the same Discord account as Match.1, Match.2")),
+            x => x.InsertComment(RecruiterCommentThreadId, It.Is<DomainComment>(m => m.Content == "Last.F has the same Discord account as Match.1, Match.2")),
             Times.Once
         );
     }
@@ -139,15 +140,15 @@ public class CreateApplicationCommandTests
 
         await _subject.ExecuteAsync(AccountId, new Account());
 
-        _mockCommentThreadService.Verify(x => x.InsertComment(RecruiterCommentThreadId, It.IsAny<Comment>()), Times.Never);
+        _mockCommentThreadService.Verify(x => x.InsertComment(RecruiterCommentThreadId, It.IsAny<DomainComment>()), Times.Never);
     }
 
     private void Given_application_comment_threads()
     {
-        _mockCreateCommentThreadCommand.Setup(x => x.ExecuteAsync(It.Is<string[]>(m => m.Length == 0), ThreadMode.RECRUITER))
-                                       .ReturnsAsync(new CommentThread { Id = RecruiterCommentThreadId });
-        _mockCreateCommentThreadCommand.Setup(x => x.ExecuteAsync(It.Is<string[]>(m => m.Length == 1), ThreadMode.RECRUITER))
-                                       .ReturnsAsync(new CommentThread { Id = ApplicationCommentThreadId });
+        _mockCreateCommentThreadCommand.Setup(x => x.ExecuteAsync(It.Is<string[]>(m => m.Length == 0), ThreadMode.Recruiter))
+                                       .ReturnsAsync(new DomainCommentThread { Id = RecruiterCommentThreadId });
+        _mockCreateCommentThreadCommand.Setup(x => x.ExecuteAsync(It.Is<string[]>(m => m.Length == 1), ThreadMode.Recruiter))
+                                       .ReturnsAsync(new DomainCommentThread { Id = ApplicationCommentThreadId });
     }
 
     private void Given_an_account_with_application()
@@ -159,7 +160,7 @@ public class CreateApplicationCommandTests
                                    Id = AccountId,
                                    Lastname = "Last",
                                    Firstname = "First",
-                                   Application = new Application
+                                   Application = new DomainApplication
                                    {
                                        RecruiterCommentThread = RecruiterCommentThreadId, ApplicationCommentThread = ApplicationCommentThreadId
                                    },

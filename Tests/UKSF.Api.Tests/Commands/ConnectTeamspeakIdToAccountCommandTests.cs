@@ -9,7 +9,7 @@ using Moq;
 using UKSF.Api.Commands;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
 using UKSF.Api.Tests.Common;
@@ -56,14 +56,14 @@ public class ConnectTeamspeakIdToAccountCommandTests
                            .Returns(
                                () =>
                                {
-                                   DomainAccount domainAccount = new() { Id = _accountId };
+                                   DomainAccount account = new() { Id = _accountId };
                                    if (createdUpdate != null)
                                    {
-                                       domainAccount.TeamspeakIdentities = [2];
-                                       domainAccount.Email = "test@test.com";
+                                       account.TeamspeakIdentities = [2];
+                                       account.Email = "test@test.com";
                                    }
 
-                                   return domainAccount;
+                                   return account;
                                }
                            );
 
@@ -72,7 +72,7 @@ public class ConnectTeamspeakIdToAccountCommandTests
         result.TeamspeakIdentities.Single().Should().Be(2);
         createdUpdate.Should().BeEquivalentTo(expectedUpdate);
 
-        _mockConfirmationCodeService.Verify(x => x.ClearConfirmationCodes(It.IsAny<Func<ConfirmationCode, bool>>()), Times.Never);
+        _mockConfirmationCodeService.Verify(x => x.ClearConfirmationCodes(It.IsAny<Func<DomainConfirmationCode, bool>>()), Times.Never);
         _mockNotificationsService.Verify(
             x => x.SendTeamspeakNotification(
                 It.Is<HashSet<int>>(m => m.Single() == 2),
@@ -95,7 +95,7 @@ public class ConnectTeamspeakIdToAccountCommandTests
                  .ThrowAsync<InvalidConfirmationCodeException>()
                  .WithMessageAndStatusCode("Confirmation code was invalid or expired. Please try again", 400);
         _mockConfirmationCodeService.Verify(
-            x => x.ClearConfirmationCodes(It.Is<Func<ConfirmationCode, bool>>(m => m(new ConfirmationCode { Value = TeamspeakId }))),
+            x => x.ClearConfirmationCodes(It.Is<Func<DomainConfirmationCode, bool>>(m => m(new DomainConfirmationCode { Value = TeamspeakId }))),
             Times.Once
         );
     }

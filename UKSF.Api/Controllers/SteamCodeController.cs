@@ -41,7 +41,7 @@ public class SteamCodeController : ControllerBase
 
         var id = _httpContextService.GetUserId();
         await _accountContext.Update(id, x => x.Steamname, steamId);
-        var domainAccount = _accountContext.GetSingle(id);
-        _logger.LogAudit($"SteamID updated for {domainAccount.Id} to {steamId}");
+        var account = _accountContext.GetSingle(id);
+        _logger.LogAudit($"SteamID updated for {account.Id} to {steamId}");
     }
 }

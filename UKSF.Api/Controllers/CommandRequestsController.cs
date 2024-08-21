@@ -7,6 +7,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Models.Request;
 using UKSF.Api.Services;
@@ -59,8 +60,8 @@ public class CommandRequestsController : ControllerBase
     public CommandRequestsDataset Get()
     {
         var allRequests = _commandRequestContext.Get();
-        List<CommandRequest> myRequests = new();
-        List<CommandRequest> otherRequests = new();
+        List<DomainCommandRequest> myRequests = new();
+        List<DomainCommandRequest> otherRequests = new();
         var contextId = _httpContextService.GetUserId();
         var id = _variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
         var canOverride = _unitsContext.GetSingle(id).Members.Any(x => x == contextId);
@@ -106,7 +107,7 @@ public class CommandRequestsController : ControllerBase
             foreach (var reviewerId in request.Reviews.Select(x => x.Key).Where(x => x != sessionDomainAccount.Id))
             {
                 _notificationsService.Add(
-                    new Notification
+                    new DomainNotification
                     {
                         Owner = reviewerId,
                         Icon = NotificationIcons.Request,
@@ -119,7 +120,7 @@ public class CommandRequestsController : ControllerBase
         else
         {
             var currentState = _commandRequestService.GetReviewState(request.Id, sessionDomainAccount.Id);
-            if (currentState == ReviewState.ERROR)
+            if (currentState == ReviewState.Error)
             {
                 throw new BadRequestException(
                     $"Getting review state for {sessionDomainAccount} from {request.Id} failed. Reviews: \n{request.Reviews.Select(x => $"{x.Key}: {x.Value}").Aggregate((x, y) => $"{x}\n{y}")}"
@@ -145,11 +146,11 @@ public class CommandRequestsController : ControllerBase
         {
             if (updateCommandReviewRequest.Overriden)
             {
-                await _commandRequestService.SetRequestAllReviewStates(request, ReviewState.PENDING);
+                await _commandRequestService.SetRequestAllReviewStates(request, ReviewState.Pending);
             }
             else
             {
-                await _commandRequestService.SetRequestReviewState(request, sessionDomainAccount.Id, ReviewState.PENDING);
+                await _commandRequestService.SetRequestReviewState(request, sessionDomainAccount.Id, ReviewState.Pending);
             }
 
             throw new BadRequestException(exception.Message);
@@ -158,13 +159,13 @@ public class CommandRequestsController : ControllerBase
 
     [HttpPost("exists")]
     [Authorize]
-    public bool RequestExists([FromBody] CommandRequest request)
+    public bool RequestExists([FromBody] DomainCommandRequest request)
     {
         return _commandRequestService.DoesEquivalentRequestExist(request);
     }
 
     private IEnumerable<CommandRequestDataset> GetMyRequests(
-        IEnumerable<CommandRequest> myRequests,
+        IEnumerable<DomainCommandRequest> myRequests,
         string contextId,
         bool canOverride,
         bool superAdmin,
@@ -188,7 +189,7 @@ public class CommandRequestsController : ControllerBase
                         (canOverride &&
                          x.Reviews.Count > 1 &&
                          x.DateCreated.AddDays(1) < now &&
-                         x.Reviews.Any(y => y.Value == ReviewState.PENDING && y.Key != contextId)),
+                         x.Reviews.Any(y => y.Value == ReviewState.Pending && y.Key != contextId)),
                     Reviews = x.Reviews.Select(
                         y => new CommandRequestReviewDataset { Id = y.Key, Name = _displayNameService.GetDisplayName(y.Key), State = y.Value }
                     )
@@ -197,7 +198,12 @@ public class CommandRequestsController : ControllerBase
         );
     }
 
-    private IEnumerable<CommandRequestDataset> GetOtherRequests(IEnumerable<CommandRequest> otherRequests, bool canOverride, bool superAdmin, DateTime now)
+    private IEnumerable<CommandRequestDataset> GetOtherRequests(
+        IEnumerable<DomainCommandRequest> otherRequests,
+        bool canOverride,
+        bool superAdmin,
+        DateTime now
+    )
     {
         return otherRequests.Select(
             x =>

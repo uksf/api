@@ -4,7 +4,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Moq;
 using UKSF.Api.Core;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -29,27 +29,27 @@ public class HttpContextServiceTests
     [Fact]
     public void ShouldGetContextEmail()
     {
-        DomainAccount domainAccount = new() { Email = "contact.tim.here@gmail.com" };
-        List<Claim> claims = [new Claim(ClaimTypes.Email, domainAccount.Email)];
+        DomainAccount account = new() { Email = "contact.tim.here@gmail.com" };
+        List<Claim> claims = [new Claim(ClaimTypes.Email, account.Email)];
         ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
         _httpContext = new DefaultHttpContext { User = contextUser };
 
         var subject = _httpContextService.GetUserEmail();
 
-        subject.Should().Be(domainAccount.Email);
+        subject.Should().Be(account.Email);
     }
 
     [Fact]
     public void ShouldGetContextId()
     {
-        DomainAccount domainAccount = new();
-        List<Claim> claims = [new Claim(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String)];
+        DomainAccount account = new();
+        List<Claim> claims = [new Claim(ClaimTypes.Sid, account.Id, ClaimValueTypes.String)];
         ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
         _httpContext = new DefaultHttpContext { User = contextUser };
 
         var subject = _httpContextService.GetUserId();
 
-        subject.Should().Be(domainAccount.Id);
+        subject.Should().Be(account.Id);
     }
 
     [Fact]

@@ -3,6 +3,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Queries;
@@ -148,7 +149,7 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
         {
             case LoaViewMode.All:
             {
-                var memberIds = _accountContext.Get(x => x.MembershipState == MembershipState.MEMBER).Select(x => x.Id).ToList();
+                var memberIds = _accountContext.Get(x => x.MembershipState == MembershipState.Member).Select(x => x.Id).ToList();
                 return Builders<DomainLoaWithAccount>.Filter.In(x => x.Recipient, memberIds);
             }
             case LoaViewMode.Coc:

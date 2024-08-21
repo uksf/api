@@ -14,14 +14,14 @@ namespace UKSF.Api.Modpack.Services;
 public interface IGithubService
 {
     Task<List<string>> GetBranches();
-    Task<List<ModpackRelease>> GetHistoricReleases();
+    Task<List<DomainModpackRelease>> GetHistoricReleases();
     Task<string> GetReferenceVersion(string reference);
     Task<GithubCommit> GetLatestReferenceCommit(string reference);
     Task<GithubCommit> GetPushEvent(PushWebhookPayload payload, string latestCommit = "");
     bool VerifySignature(string signature, string body);
     Task<bool> IsReferenceValid(string reference);
     Task<string> GenerateChangelog(string version);
-    Task PublishRelease(ModpackRelease release);
+    Task PublishRelease(DomainModpackRelease release);
 }
 
 public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings, IGithubClientService githubClientService) : IGithubService
@@ -140,7 +140,7 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
         return changelog;
     }
 
-    public async Task PublishRelease(ModpackRelease release)
+    public async Task PublishRelease(DomainModpackRelease release)
     {
         var client = await githubClientService.GetAuthenticatedClient();
 
@@ -192,13 +192,18 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
         return validBranches;
     }
 
-    public async Task<List<ModpackRelease>> GetHistoricReleases()
+    public async Task<List<DomainModpackRelease>> GetHistoricReleases()
     {
         var client = await githubClientService.GetAuthenticatedClient();
 
         var releases = await client.Repository.Release.GetAll(RepoOrg, RepoName);
         return releases.Select(
-                           x => new ModpackRelease { Version = x.Name.Split(" ")[^1], Timestamp = x.CreatedAt.DateTime, Changelog = FormatChangelog(x.Body) }
+                           x => new DomainModpackRelease
+                           {
+                               Version = x.Name.Split(" ")[^1],
+                               Timestamp = x.CreatedAt.DateTime,
+                               Changelog = FormatChangelog(x.Body)
+                           }
                        )
                        .ToList();
     }

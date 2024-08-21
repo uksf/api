@@ -10,7 +10,7 @@ public class BuildStepClean : FileBuildStep
     protected override async Task ProcessExecute()
     {
         var environmentPath = GetBuildEnvironmentPath();
-        if (Build.Environment == GameEnvironment.RELEASE)
+        if (Build.Environment == GameEnvironment.Release)
         {
             var keysPath = Path.Join(environmentPath, "Backup", "Keys");
 

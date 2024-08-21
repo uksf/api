@@ -102,7 +102,7 @@ public class TeamspeakController : ControllerBase
                                           }
                                       )
                                       .ToList();
-        var clientAccounts = clients.Where(x => x.account is { MembershipState: MembershipState.MEMBER })
+        var clientAccounts = clients.Where(x => x.account is { MembershipState: MembershipState.Member })
                                     .OrderBy(x => x.account.Rank, new RankComparer(_ranksService))
                                     .ThenBy(x => x.account.Lastname)
                                     .ThenBy(x => x.account.Firstname)
@@ -128,7 +128,7 @@ public class TeamspeakController : ControllerBase
             }
         }
 
-        var guests = clients.Where(x => x.account is not { MembershipState: MembershipState.MEMBER })
+        var guests = clients.Where(x => x.account is not { MembershipState: MembershipState.Member })
                             .Select(client => new TeamspeakAccountDataset { DisplayName = client.client.ClientName })
                             .ToList();
 

@@ -53,9 +53,9 @@ public class BuildsEventHandler(IEventBus eventBus, IHubContext<BuildsHub, IModp
         }
     }
 
-    private async Task AddedEvent(ModpackBuild build)
+    private async Task AddedEvent(DomainModpackBuild build)
     {
-        if (build.Environment == GameEnvironment.DEVELOPMENT)
+        if (build.Environment == GameEnvironment.Development)
         {
             await hub.Clients.All.ReceiveBuild(build);
         }
@@ -65,9 +65,9 @@ public class BuildsEventHandler(IEventBus eventBus, IHubContext<BuildsHub, IModp
         }
     }
 
-    private async Task UpdatedEvent(ModpackBuild build)
+    private async Task UpdatedEvent(DomainModpackBuild build)
     {
-        if (build.Environment == GameEnvironment.DEVELOPMENT)
+        if (build.Environment == GameEnvironment.Development)
         {
             await hub.Clients.All.ReceiveBuild(build);
         }

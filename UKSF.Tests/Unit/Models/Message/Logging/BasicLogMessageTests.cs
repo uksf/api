@@ -1,6 +1,6 @@
 ﻿using System;
 using FluentAssertions;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Models.Message.Logging;
@@ -10,7 +10,7 @@ public class BasicLogMessageTests
     [Fact]
     public void ShouldSetText()
     {
-        BasicLog subject = new("test");
+        DomainBasicLog subject = new("test");
 
         subject.Message.Should().Be("test");
     }
@@ -18,7 +18,7 @@ public class BasicLogMessageTests
     [Fact]
     public void ShouldSetTextAndLogLevel()
     {
-        BasicLog subject = new("test", UksfLogLevel.Debug);
+        DomainBasicLog subject = new("test", UksfLogLevel.Debug);
 
         subject.Message.Should().Be("test");
         subject.Level.Should().Be(UksfLogLevel.Debug);
@@ -27,7 +27,7 @@ public class BasicLogMessageTests
     [Fact]
     public void ShouldSetTextAndLogLevelFromException()
     {
-        BasicLog subject = new(new Exception("test"));
+        DomainBasicLog subject = new(new Exception("test"));
 
         subject.Message.Should().Be("System.Exception: test");
         subject.Level.Should().Be(UksfLogLevel.Error);

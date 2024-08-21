@@ -6,6 +6,7 @@ using UKSF.Api.Core.Commands;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
 using UKSF.Api.Models.Request;
@@ -56,8 +57,8 @@ public class RecruitmentController : ControllerBase
     [Authorize]
     public DetailedApplication GetSingle([FromRoute] string id)
     {
-        var domainAccount = _accountContext.GetSingle(id);
-        return _recruitmentService.GetApplication(domainAccount);
+        var account = _accountContext.GetSingle(id);
+        return _recruitmentService.GetApplication(account);
     }
 
     [HttpGet("isrecruiter")]
@@ -89,9 +90,9 @@ public class RecruitmentController : ControllerBase
                                               {
                                                   Account = new { id = x.recruiterAccount.Id, settings = x.recruiterAccount.Settings },
                                                   Name = _displayNameService.GetDisplayName(x.recruiterAccount),
-                                                  Active = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.WAITING),
-                                                  Accepted = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.ACCEPTED),
-                                                  Rejected = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.REJECTED)
+                                                  Active = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.Waiting),
+                                                  Accepted = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.Accepted),
+                                                  Rejected = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.Rejected)
                                               }
                                           )
                                           .ToList();
@@ -114,15 +115,15 @@ public class RecruitmentController : ControllerBase
     )
     {
         var updatedState = updateApplicationStateRequest.UpdatedState;
-        var domainAccount = _accountContext.GetSingle(id);
-        if (updatedState == domainAccount.Application.State)
+        var account = _accountContext.GetSingle(id);
+        if (updatedState == account.Application.State)
         {
             return;
         }
 
-        var age = domainAccount.Dob.ToAge();
+        var age = account.Dob.ToAge();
         var acceptableAge = _variablesService.GetVariable("RECRUITMENT_ENTRY_AGE").AsInt();
-        if (updatedState == ApplicationState.ACCEPTED && !age.IsAcceptableAge(acceptableAge) && !_httpContextService.UserHasPermission(Permissions.Superadmin))
+        if (updatedState == ApplicationState.Accepted && !age.IsAcceptableAge(acceptableAge) && !_httpContextService.UserHasPermission(Permissions.Superadmin))
         {
             throw new AgeNotAllowedException();
         }
@@ -140,16 +141,16 @@ public class RecruitmentController : ControllerBase
         }
 
         await _recruitmentService.SetRecruiter(id, assignRecruiterRequest.NewRecruiter);
-        var domainAccount = _accountContext.GetSingle(id);
-        if (domainAccount.Application.State == ApplicationState.WAITING)
+        var account = _accountContext.GetSingle(id);
+        if (account.Application.State == ApplicationState.Waiting)
         {
             _notificationsService.Add(
-                new Notification
+                new DomainNotification
                 {
                     Owner = assignRecruiterRequest.NewRecruiter,
                     Icon = NotificationIcons.Application,
-                    Message = $"{domainAccount.Firstname} {domainAccount.Lastname}'s application has been transferred to you",
-                    Link = $"/recruitment/{domainAccount.Id}"
+                    Message = $"{account.Firstname} {account.Lastname}'s application has been transferred to you",
+                    Link = $"/recruitment/{account.Id}"
                 }
             );
         }

@@ -3,6 +3,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Signalr.Clients;
 using UKSF.Api.Signalr.Hubs;
 
@@ -27,10 +28,10 @@ public class CommandRequestEventHandler : ICommandRequestEventHandler
 
     public void Init()
     {
-        _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<CommandRequest>>(HandleEvent, _logger.LogError);
+        _eventBus.AsObservable().SubscribeWithAsyncNext<ContextEventData<DomainCommandRequest>>(HandleEvent, _logger.LogError);
     }
 
-    private async Task HandleEvent(EventModel eventModel, ContextEventData<CommandRequest> _)
+    private async Task HandleEvent(EventModel eventModel, ContextEventData<DomainCommandRequest> _)
     {
         switch (eventModel.EventType)
         {

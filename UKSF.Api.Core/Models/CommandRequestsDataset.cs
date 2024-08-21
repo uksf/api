@@ -1,4 +1,6 @@
-﻿namespace UKSF.Api.Core.Models;
+﻿using UKSF.Api.Core.Models.Domain;
+
+namespace UKSF.Api.Core.Models;
 
 public class CommandRequestsDataset
 {
@@ -9,7 +11,7 @@ public class CommandRequestsDataset
 public class CommandRequestDataset
 {
     public bool CanOverride { get; set; }
-    public CommandRequest Data { get; set; }
+    public DomainCommandRequest Data { get; set; }
     public IEnumerable<CommandRequestReviewDataset> Reviews { get; set; }
 }
 

@@ -21,7 +21,7 @@ public class BuildStepReleaseKeys : FileBuildStep
         StepLogger.Log("Copy RC keys to release keys folder");
 
         var keysPath = Path.Join(GetBuildEnvironmentPath(), "Keys");
-        var rcKeysPath = Path.Join(GetEnvironmentPath(GameEnvironment.RC), "Keys");
+        var rcKeysPath = Path.Join(GetEnvironmentPath(GameEnvironment.Rc), "Keys");
 
         StepLogger.LogSurround("\nCopying keys...");
         await CopyDirectory(rcKeysPath, keysPath);

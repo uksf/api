@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Integrations.Teamspeak.Services;
 using UKSF.Api.Integrations.Teamspeak.Signalr.Clients;
 using UKSF.Api.Integrations.Teamspeak.Signalr.Hubs;

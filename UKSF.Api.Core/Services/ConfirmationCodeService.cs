@@ -1,6 +1,6 @@
 using System.Text.Json;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.ScheduledActions;
 
 namespace UKSF.Api.Core.Services;
@@ -9,7 +9,7 @@ public interface IConfirmationCodeService
 {
     Task<string> CreateConfirmationCode(string value);
     Task<string> GetConfirmationCodeValue(string id);
-    Task ClearConfirmationCodes(Func<ConfirmationCode, bool> predicate);
+    Task ClearConfirmationCodes(Func<DomainConfirmationCode, bool> predicate);
 }
 
 public class ConfirmationCodeService : IConfirmationCodeService
@@ -32,7 +32,7 @@ public class ConfirmationCodeService : IConfirmationCodeService
             throw new ArgumentNullException(nameof(value), "Value for confirmation code cannot be null or empty");
         }
 
-        ConfirmationCode code = new() { Value = value };
+        DomainConfirmationCode code = new() { Value = value };
         await _confirmationCodeContext.Add(code);
         await _schedulerService.CreateAndScheduleJob(ActionDeleteExpiredConfirmationCode.ActionName, _clock.UtcNow().AddMinutes(30), TimeSpan.Zero, code.Id);
         return code.Id;
@@ -53,7 +53,7 @@ public class ConfirmationCodeService : IConfirmationCodeService
         return confirmationCode.Value;
     }
 
-    public async Task ClearConfirmationCodes(Func<ConfirmationCode, bool> predicate)
+    public async Task ClearConfirmationCodes(Func<DomainConfirmationCode, bool> predicate)
     {
         var codes = _confirmationCodeContext.Get(predicate);
         foreach (var confirmationCode in codes)

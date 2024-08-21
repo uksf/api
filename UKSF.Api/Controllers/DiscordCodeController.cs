@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
 using UKSF.Api.Models.Request;
@@ -39,7 +39,7 @@ public class DiscordCodeController(
         }
 
         await accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.DiscordId, discordId));
-        var domainAccount = accountContext.GetSingle(id);
-        logger.LogAudit($"Discord ID ({discordId}) linked to account {domainAccount.Id}");
+        var account = accountContext.GetSingle(id);
+        logger.LogAudit($"Discord ID ({discordId}) linked to account {account.Id}");
     }
 }

@@ -7,7 +7,7 @@ namespace UKSF.Api.Modpack.Services.BuildProcess;
 
 public interface IBuildQueueService
 {
-    void QueueBuild(ModpackBuild build);
+    void QueueBuild(DomainModpackBuild build);
     bool CancelQueued(string id);
     void Cancel(string id);
     void CancelAll();
@@ -21,7 +21,7 @@ public class BuildQueueService : IBuildQueueService
     private readonly IGameServersService _gameServersService;
     private readonly IUksfLogger _logger;
     private bool _processing;
-    private ConcurrentQueue<ModpackBuild> _queue = new();
+    private ConcurrentQueue<DomainModpackBuild> _queue = new();
 
     public BuildQueueService(IBuildProcessorService buildProcessorService, IGameServersService gameServersService, IUksfLogger logger)
     {
@@ -30,7 +30,7 @@ public class BuildQueueService : IBuildQueueService
         _logger = logger;
     }
 
-    public void QueueBuild(ModpackBuild build)
+    public void QueueBuild(DomainModpackBuild build)
     {
         _queue.Enqueue(build);
         if (!_processing)
@@ -44,7 +44,7 @@ public class BuildQueueService : IBuildQueueService
     {
         if (_queue.Any(x => x.Id == id))
         {
-            _queue = new ConcurrentQueue<ModpackBuild>(_queue.Where(x => x.Id != id));
+            _queue = new ConcurrentQueue<DomainModpackBuild>(_queue.Where(x => x.Id != id));
             return true;
         }
 

@@ -3,6 +3,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Integrations.Teamspeak.Services;
 
 namespace UKSF.Api.Integrations.Teamspeak.EventHandlers;
@@ -22,8 +23,8 @@ public class TeamspeakEventHandler(IEventBus eventBus, IUksfLogger logger, IAcco
 
     private async Task HandleAccountEvent(EventModel eventModel, ContextEventData<DomainAccount> contextEventData)
     {
-        var domainAccount = contextEventData.Data ?? accountContext.GetSingle(contextEventData.Id);
-        await teamspeakService.UpdateAccountTeamspeakGroups(domainAccount);
+        var account = contextEventData.Data ?? accountContext.GetSingle(contextEventData.Id);
+        await teamspeakService.UpdateAccountTeamspeakGroups(account);
     }
 
     private async Task HandleTeamspeakMessageEvent(EventModel eventModel, TeamspeakMessageEventData messageEvent)

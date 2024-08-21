@@ -3,7 +3,7 @@ using Discord.WebSocket;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Integrations.Discord.Models;
 
@@ -102,8 +102,8 @@ public class DiscordBaseService(
 
     protected void SetUserContextByDiscordUser(ulong userId)
     {
-        var domainAccount = GetAccountForDiscordUser(userId);
-        httpContextService.SetContextId(domainAccount.Id);
+        var account = GetAccountForDiscordUser(userId);
+        httpContextService.SetContextId(account.Id);
     }
 
     private async Task RunEventTask(Func<Task> actionTask)

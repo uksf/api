@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Models;
+﻿using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Mappers;
 
@@ -14,17 +14,17 @@ public class UnitTreeMapper : IUnitTreeMapper
         return MapUnit(rootUnit);
     }
 
-    private static UnitTreeNodeDto MapUnit(DomainUnit domainUnit)
+    private static UnitTreeNodeDto MapUnit(DomainUnit unit)
     {
         return new UnitTreeNodeDto
         {
-            Id = domainUnit.Id,
-            Order = domainUnit.Order,
-            Name = domainUnit.Name,
-            Shortname = domainUnit.Shortname,
-            PreferShortname = domainUnit.PreferShortname,
-            MemberIds = domainUnit.Members,
-            Children = domainUnit.Children.Select(MapUnit).ToList()
+            Id = unit.Id,
+            Order = unit.Order,
+            Name = unit.Name,
+            Shortname = unit.Shortname,
+            PreferShortname = unit.PreferShortname,
+            MemberIds = unit.Members,
+            Children = unit.Children.Select(MapUnit).ToList()
         };
     }
 }

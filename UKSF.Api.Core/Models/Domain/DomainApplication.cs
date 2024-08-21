@@ -1,16 +1,16 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace UKSF.Api.Core.Models;
+namespace UKSF.Api.Core.Models.Domain;
 
 public enum ApplicationState
 {
-    ACCEPTED = 0,
-    REJECTED = 1,
-    WAITING = 2
+    Accepted = 0,
+    Rejected = 1,
+    Waiting = 2
 }
 
-public class Application
+public class DomainApplication
 {
     [BsonRepresentation(BsonType.ObjectId)]
     public string ApplicationCommentThread { get; set; }
@@ -25,7 +25,7 @@ public class Application
     [BsonRepresentation(BsonType.ObjectId)]
     public string RecruiterCommentThread { get; set; }
 
-    public ApplicationState State { get; set; } = ApplicationState.WAITING;
+    public ApplicationState State { get; set; } = ApplicationState.Waiting;
 }
 
 public class DetailedApplication

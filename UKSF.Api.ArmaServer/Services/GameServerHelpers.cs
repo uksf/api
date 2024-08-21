@@ -8,16 +8,16 @@ namespace UKSF.Api.ArmaServer.Services;
 
 public interface IGameServerHelpers
 {
-    string GetGameServerExecutablePath(GameServer gameServer);
+    string GetGameServerExecutablePath(DomainGameServer gameServer);
     string GetGameServerSettingsPath();
     string GetGameServerMissionsPath();
-    string GetGameServerConfigPath(GameServer gameServer);
+    string GetGameServerConfigPath(DomainGameServer gameServer);
     string GetGameServerModsPaths(GameEnvironment environment);
     IEnumerable<string> GetGameServerExtraModsPaths();
-    string FormatGameServerConfig(GameServer gameServer, int playerCount, string missionSelection);
-    string FormatGameServerLaunchArguments(GameServer gameServer);
-    string FormatHeadlessClientLaunchArguments(GameServer gameServer, int index);
-    string GetMaxPlayerCountFromConfig(GameServer gameServer);
+    string FormatGameServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection);
+    string FormatGameServerLaunchArguments(DomainGameServer gameServer);
+    string FormatHeadlessClientLaunchArguments(DomainGameServer gameServer, int index);
+    string GetMaxPlayerCountFromConfig(DomainGameServer gameServer);
     int GetMaxCuratorCountFromSettings();
     TimeSpan StripMilliseconds(TimeSpan time);
     IEnumerable<Process> GetArmaProcesses();
@@ -83,13 +83,13 @@ public class GameServerHelpers : IGameServerHelpers
         _logger = logger;
     }
 
-    public string GetGameServerExecutablePath(GameServer gameServer)
+    public string GetGameServerExecutablePath(DomainGameServer gameServer)
     {
         var variableKey = gameServer.Environment switch
         {
-            GameEnvironment.RELEASE     => "SERVER_PATH_RELEASE",
-            GameEnvironment.RC          => "SERVER_PATH_RC",
-            GameEnvironment.DEVELOPMENT => "SERVER_PATH_DEV",
+            GameEnvironment.Release     => "SERVER_PATH_RELEASE",
+            GameEnvironment.Rc          => "SERVER_PATH_RC",
+            GameEnvironment.Development => "SERVER_PATH_DEV",
             _                           => throw new ArgumentException("Server environment is invalid")
         };
         return Path.Join(_variablesService.GetVariable(variableKey).AsString(), "arma3server_x64.exe");
@@ -105,7 +105,7 @@ public class GameServerHelpers : IGameServerHelpers
         return _variablesService.GetVariable("MISSIONS_PATH").AsString();
     }
 
-    public string GetGameServerConfigPath(GameServer gameServer)
+    public string GetGameServerConfigPath(DomainGameServer gameServer)
     {
         return Path.Combine(_variablesService.GetVariable("SERVER_PATH_CONFIGS").AsString(), $"{gameServer.ProfileName}.cfg");
     }
@@ -114,9 +114,9 @@ public class GameServerHelpers : IGameServerHelpers
     {
         var variableKey = environment switch
         {
-            GameEnvironment.RELEASE     => "MODPACK_PATH_RELEASE",
-            GameEnvironment.RC          => "MODPACK_PATH_RC",
-            GameEnvironment.DEVELOPMENT => "MODPACK_PATH_DEV",
+            GameEnvironment.Release     => "MODPACK_PATH_RELEASE",
+            GameEnvironment.Rc          => "MODPACK_PATH_RC",
+            GameEnvironment.Development => "MODPACK_PATH_DEV",
             _                           => throw new ArgumentException("Server environment is invalid")
         };
         return Path.Join(_variablesService.GetVariable(variableKey).AsString(), "Repo");
@@ -127,7 +127,7 @@ public class GameServerHelpers : IGameServerHelpers
         return _variablesService.GetVariable("SERVER_PATH_MODS").AsArray(x => x.RemoveQuotes());
     }
 
-    public string FormatGameServerConfig(GameServer gameServer, int playerCount, string missionSelection)
+    public string FormatGameServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection)
     {
         return string.Format(
             string.Join("\n", BaseConfig),
@@ -139,7 +139,7 @@ public class GameServerHelpers : IGameServerHelpers
         );
     }
 
-    public string FormatGameServerLaunchArguments(GameServer gameServer)
+    public string FormatGameServerLaunchArguments(DomainGameServer gameServer)
     {
         return $"-config={GetGameServerConfigPath(gameServer)}" +
                $" -profiles={GetGameServerProfilesPath(gameServer.Name)}" +
@@ -152,7 +152,7 @@ public class GameServerHelpers : IGameServerHelpers
                " -bandwidthAlg=2 -hugepages -loadMissionToMemory -filePatching -limitFPS=200";
     }
 
-    public string FormatHeadlessClientLaunchArguments(GameServer gameServer, int index)
+    public string FormatHeadlessClientLaunchArguments(DomainGameServer gameServer, int index)
     {
         return $"-profiles={GetGameServerProfilesPath($"{gameServer.Name}{GetHeadlessClientName(index)}")}" +
                $" -name={GetHeadlessClientName(index)}" +
@@ -163,7 +163,7 @@ public class GameServerHelpers : IGameServerHelpers
                " -localhost=127.0.0.1 -connect=localhost -client -hugepages -filePatching -limitFPS=200";
     }
 
-    public string GetMaxPlayerCountFromConfig(GameServer gameServer)
+    public string GetMaxPlayerCountFromConfig(DomainGameServer gameServer)
     {
         var maxPlayers = File.ReadAllLines(GetGameServerConfigPath(gameServer)).First(x => x.Contains("maxPlayers"));
         maxPlayers = maxPlayers.RemoveSpaces().Replace(";", "");
@@ -206,12 +206,12 @@ public class GameServerHelpers : IGameServerHelpers
         return dlcModFolders.Select(x => $"(?<!.)({x})(?!.)").Aggregate((a, b) => $"{a}|{b}");
     }
 
-    private static string FormatGameServerMods(GameServer gameServer)
+    private static string FormatGameServerMods(DomainGameServer gameServer)
     {
         return gameServer.Mods.Count > 0 ? $"{string.Join(";", gameServer.Mods.Select(x => x.PathRelativeToServerExecutable ?? x.Path))};" : string.Empty;
     }
 
-    private static string FormatGameServerServerMods(GameServer gameServer)
+    private static string FormatGameServerServerMods(DomainGameServer gameServer)
     {
         return gameServer.ServerMods.Count > 0 ? $"{string.Join(";", gameServer.ServerMods.Select(x => x.Name))};" : string.Empty;
     }

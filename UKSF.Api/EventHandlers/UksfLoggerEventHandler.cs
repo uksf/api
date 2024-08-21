@@ -4,6 +4,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.EventHandlers;
@@ -21,7 +22,7 @@ public class UksfLoggerEventHandler(
     IObjectIdConversionService objectIdConversionService
 ) : IUksfLoggerEventHandler
 {
-    private readonly ConcurrentQueue<BasicLog> _logQueue = new();
+    private readonly ConcurrentQueue<DomainBasicLog> _logQueue = new();
 
     public void EarlyInit()
     {
@@ -55,7 +56,7 @@ public class UksfLoggerEventHandler(
         await LogToStorageAsync(log);
     }
 
-    private Task LogToStorageAsync(BasicLog log)
+    private Task LogToStorageAsync(DomainBasicLog log)
     {
         return log switch
         {

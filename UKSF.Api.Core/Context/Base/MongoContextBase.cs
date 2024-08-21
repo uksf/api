@@ -31,7 +31,7 @@ public abstract class MongoContextBase<T>(IMongoCollectionFactory mongoCollectio
         string filter
     )
     {
-        var sortDefinition = sortDirection == SortDirection.ASCENDING ? Builders<T>.Sort.Ascending(sortField) : Builders<T>.Sort.Descending(sortField);
+        var sortDefinition = sortDirection == SortDirection.Ascending ? Builders<T>.Sort.Ascending(sortField) : Builders<T>.Sort.Descending(sortField);
         var filterDefinition = string.IsNullOrEmpty(filter)
             ? Builders<T>.Filter.Empty
             : Builders<T>.Filter.Or(

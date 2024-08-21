@@ -5,7 +5,7 @@ using Moq;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -13,7 +13,7 @@ namespace UKSF.Tests.Unit.Data.Operations;
 
 public class OperationOrderDataServiceTests
 {
-    private readonly Mock<IMongoCollection<Opord>> _mockDataCollection;
+    private readonly Mock<IMongoCollection<DomainOpord>> _mockDataCollection;
     private readonly OperationOrderContext _operationOrderContext;
 
     public OperationOrderDataServiceTests()
@@ -21,9 +21,9 @@ public class OperationOrderDataServiceTests
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
         Mock<IVariablesService> mockVariablesService = new();
-        _mockDataCollection = new Mock<IMongoCollection<Opord>>();
+        _mockDataCollection = new Mock<IMongoCollection<DomainOpord>>();
 
-        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<Opord>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
+        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainOpord>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
         mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
         _operationOrderContext = new OperationOrderContext(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
@@ -32,11 +32,19 @@ public class OperationOrderDataServiceTests
     [Fact]
     public void Should_get_collection_in_order()
     {
-        Opord item1 = new() { Start = DateTime.UtcNow.AddDays(-1) };
-        Opord item2 = new() { Start = DateTime.UtcNow.AddDays(-2) };
-        Opord item3 = new() { Start = DateTime.UtcNow.AddDays(-3) };
+        DomainOpord item1 = new() { Start = DateTime.UtcNow.AddDays(-1) };
+        DomainOpord item2 = new() { Start = DateTime.UtcNow.AddDays(-2) };
+        DomainOpord item3 = new() { Start = DateTime.UtcNow.AddDays(-3) };
 
-        _mockDataCollection.Setup(x => x.Get()).Returns(new List<Opord> { item1, item2, item3 });
+        _mockDataCollection.Setup(x => x.Get())
+        .Returns(
+            new List<DomainOpord>
+            {
+                item1,
+                item2,
+                item3
+            }
+        );
 
         var subject = _operationOrderContext.Get();
 
@@ -46,11 +54,19 @@ public class OperationOrderDataServiceTests
     [Fact]
     public void ShouldGetOrderedCollectionByPredicate()
     {
-        Opord item1 = new() { Description = "1", Start = DateTime.UtcNow.AddDays(-1) };
-        Opord item2 = new() { Description = "2", Start = DateTime.UtcNow.AddDays(-2) };
-        Opord item3 = new() { Description = "1", Start = DateTime.UtcNow.AddDays(-3) };
+        DomainOpord item1 = new() { Description = "1", Start = DateTime.UtcNow.AddDays(-1) };
+        DomainOpord item2 = new() { Description = "2", Start = DateTime.UtcNow.AddDays(-2) };
+        DomainOpord item3 = new() { Description = "1", Start = DateTime.UtcNow.AddDays(-3) };
 
-        _mockDataCollection.Setup(x => x.Get()).Returns(new List<Opord> { item1, item2, item3 });
+        _mockDataCollection.Setup(x => x.Get())
+        .Returns(
+            new List<DomainOpord>
+            {
+                item1,
+                item2,
+                item3
+            }
+        );
 
         var subject = _operationOrderContext.Get(x => x.Description == "1");
 

@@ -5,6 +5,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Signalr.Clients;
 using UKSF.Api.Signalr.Hubs;
@@ -101,7 +102,7 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
         await _commandRequestsHub.Clients.All.ReceiveRequestUpdate();
     }
 
-    private async Task Rank(CommandRequest request)
+    private async Task Rank(DomainCommandRequest request)
     {
         if (_commandRequestService.IsRequestApproved(request.Id))
         {
@@ -120,11 +121,11 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
         }
     }
 
-    private async Task Loa(CommandRequest request)
+    private async Task Loa(DomainCommandRequest request)
     {
         if (_commandRequestService.IsRequestApproved(request.Id))
         {
-            await _loaService.SetLoaState(request.Value, LoaReviewState.APPROVED);
+            await _loaService.SetLoaState(request.Value, LoaReviewState.Approved);
             await _commandRequestService.ArchiveRequest(request.Id);
             _logger.LogAudit(
                 $"{request.Type} request approved for {request.DisplayRecipient} from {FormatDate(request.DisplayFrom)} to {FormatDate(request.DisplayValue)} because '{request.Reason}'"
@@ -132,7 +133,7 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
         }
         else if (_commandRequestService.IsRequestRejected(request.Id))
         {
-            await _loaService.SetLoaState(request.Value, LoaReviewState.REJECTED);
+            await _loaService.SetLoaState(request.Value, LoaReviewState.Rejected);
             await _commandRequestService.ArchiveRequest(request.Id);
             _logger.LogAudit(
                 $"{request.Type} request rejected for {request.DisplayRecipient} from {FormatDate(request.DisplayFrom)} to {FormatDate(request.DisplayValue)}"
@@ -140,23 +141,23 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
         }
     }
 
-    private async Task Discharge(CommandRequest request)
+    private async Task Discharge(DomainCommandRequest request)
     {
         if (_commandRequestService.IsRequestApproved(request.Id))
         {
-            var domainAccount = _accountContext.GetSingle(request.Recipient);
-            Discharge discharge = new()
+            var account = _accountContext.GetSingle(request.Recipient);
+            DomainDischarge discharge = new()
             {
-                Rank = domainAccount.Rank,
-                Unit = domainAccount.UnitAssignment,
-                Role = domainAccount.RoleAssignment,
+                Rank = account.Rank,
+                Unit = account.UnitAssignment,
+                Role = account.RoleAssignment,
                 DischargedBy = request.DisplayRequester,
                 Reason = request.Reason
             };
-            var dischargeCollection = _dischargeContext.GetSingle(x => x.AccountId == domainAccount.Id);
+            var dischargeCollection = _dischargeContext.GetSingle(x => x.AccountId == account.Id);
             if (dischargeCollection == null)
             {
-                dischargeCollection = new DischargeCollection { AccountId = domainAccount.Id, Name = $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}" };
+                dischargeCollection = new DomainDischargeCollection { AccountId = account.Id, Name = $"{account.Lastname}.{account.Firstname[0]}" };
                 dischargeCollection.Discharges.Add(discharge);
                 await _dischargeContext.Add(dischargeCollection);
             }
@@ -165,16 +166,16 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
                 dischargeCollection.Discharges.Add(discharge);
                 await _dischargeContext.Update(
                     dischargeCollection.Id,
-                    Builders<DischargeCollection>.Update.Set(x => x.Reinstated, false)
-                                                 .Set(x => x.Name, $"{domainAccount.Lastname}.{domainAccount.Firstname[0]}")
-                                                 .Set(x => x.Discharges, dischargeCollection.Discharges)
+                    Builders<DomainDischargeCollection>.Update.Set(x => x.Reinstated, false)
+                                                       .Set(x => x.Name, $"{account.Lastname}.{account.Firstname[0]}")
+                                                       .Set(x => x.Discharges, dischargeCollection.Discharges)
                 );
             }
 
-            await _accountContext.Update(domainAccount.Id, x => x.MembershipState, MembershipState.DISCHARGED);
+            await _accountContext.Update(account.Id, x => x.MembershipState, MembershipState.Discharged);
 
             var notification = await _assignmentService.UpdateUnitRankAndRole(
-                domainAccount.Id,
+                account.Id,
                 AssignmentService.RemoveFlag,
                 AssignmentService.RemoveFlag,
                 AssignmentService.RemoveFlag,
@@ -183,7 +184,7 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
                 AssignmentService.RemoveFlag
             );
             _notificationsService.Add(notification);
-            await _assignmentService.UnassignAllUnits(domainAccount.Id);
+            await _assignmentService.UnassignAllUnits(account.Id);
             await _commandRequestService.ArchiveRequest(request.Id);
             _logger.LogAudit(
                 $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
@@ -196,7 +197,7 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
         }
     }
 
-    private async Task IndividualRole(CommandRequest request)
+    private async Task IndividualRole(DomainCommandRequest request)
     {
         if (_commandRequestService.IsRequestApproved(request.Id))
         {
@@ -218,7 +219,7 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
         }
     }
 
-    private async Task UnitRole(CommandRequest request)
+    private async Task UnitRole(DomainCommandRequest request)
     {
         if (_commandRequestService.IsRequestApproved(request.Id))
         {
@@ -228,7 +229,7 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
                 {
                     await _assignmentService.UnassignAllUnitRoles(request.Recipient);
                     _notificationsService.Add(
-                        new Notification
+                        new DomainNotification
                         {
                             Owner = request.Recipient,
                             Message = "You have been unassigned from all roles in all units",
@@ -240,7 +241,7 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
                 {
                     var role = await _assignmentService.UnassignUnitRole(request.Recipient, request.Value);
                     _notificationsService.Add(
-                        new Notification
+                        new DomainNotification
                         {
                             Owner = request.Recipient,
                             Message =
@@ -254,7 +255,7 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
             {
                 await _assignmentService.AssignUnitRole(request.Recipient, request.Value, request.SecondaryValue);
                 _notificationsService.Add(
-                    new Notification
+                    new DomainNotification
                     {
                         Owner = request.Recipient,
                         Message =
@@ -276,14 +277,14 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
         }
     }
 
-    private async Task UnitRemoval(CommandRequest request)
+    private async Task UnitRemoval(DomainCommandRequest request)
     {
         if (_commandRequestService.IsRequestApproved(request.Id))
         {
             var unit = _unitsContext.GetSingle(request.Value);
             await _assignmentService.UnassignUnit(request.Recipient, unit.Id);
             _notificationsService.Add(
-                new Notification
+                new DomainNotification
                 {
                     Owner = request.Recipient,
                     Message = $"You have been removed from {_unitsService.GetChainString(unit)}",
@@ -300,7 +301,7 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
         }
     }
 
-    private async Task Transfer(CommandRequest request)
+    private async Task Transfer(DomainCommandRequest request)
     {
         if (_commandRequestService.IsRequestApproved(request.Id))
         {
@@ -319,13 +320,13 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
         }
     }
 
-    private async Task Reinstate(CommandRequest request)
+    private async Task Reinstate(DomainCommandRequest request)
     {
         if (_commandRequestService.IsRequestApproved(request.Id))
         {
             var dischargeCollection = _dischargeContext.GetSingle(x => x.AccountId == request.Recipient);
             await _dischargeContext.Update(dischargeCollection.Id, x => x.Reinstated, true);
-            await _accountContext.Update(dischargeCollection.AccountId, x => x.MembershipState, MembershipState.MEMBER);
+            await _accountContext.Update(dischargeCollection.AccountId, x => x.MembershipState, MembershipState.Member);
             var notification = await _assignmentService.UpdateUnitRankAndRole(
                 dischargeCollection.AccountId,
                 "Basic Training Unit",
@@ -352,8 +353,8 @@ public class CommandRequestCompletionService : ICommandRequestCompletionService
 
     private string HandleRecruitToPrivate(string id, string targetRank)
     {
-        var domainAccount = _accountContext.GetSingle(id);
-        return domainAccount.Rank == "Recruit" && targetRank == "Private" ? "Rifleman" : domainAccount.RoleAssignment;
+        var account = _accountContext.GetSingle(id);
+        return account.Rank == "Recruit" && targetRank == "Private" ? "Rifleman" : account.RoleAssignment;
     }
 
     private static string FormatDate(string input)

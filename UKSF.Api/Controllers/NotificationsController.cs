@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Models.Request;
 
@@ -21,7 +22,7 @@ public class NotificationsController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public IOrderedEnumerable<Notification> Get()
+    public IOrderedEnumerable<DomainNotification> Get()
     {
         return _notificationsService.GetNotificationsForContext().OrderByDescending(x => x.Timestamp);
     }
@@ -48,7 +49,7 @@ public class NotificationsController : ControllerBase
     public void TestNotification()
     {
         _notificationsService.Add(
-            new Notification
+            new DomainNotification
             {
                 Owner = _httpContextService.GetUserId(),
                 Icon = NotificationIcons.Comment,

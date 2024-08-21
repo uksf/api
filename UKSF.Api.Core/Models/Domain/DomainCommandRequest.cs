@@ -1,14 +1,14 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace UKSF.Api.Core.Models;
+namespace UKSF.Api.Core.Models.Domain;
 
 public enum ReviewState
 {
-    APPROVED,
-    REJECTED,
-    PENDING,
-    ERROR
+    Approved,
+    Rejected,
+    Pending,
+    Error
 }
 
 public static class CommandRequestType
@@ -25,9 +25,9 @@ public static class CommandRequestType
     public const string UnitRole = "Unit Role";
 }
 
-public class CommandRequest : MongoObject
+public class DomainCommandRequest : MongoObject
 {
-    public CommandRequest()
+    public DomainCommandRequest()
     {
         DateCreated = DateTime.UtcNow;
     }

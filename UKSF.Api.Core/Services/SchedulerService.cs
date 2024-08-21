@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Services;
 
@@ -9,8 +10,8 @@ public interface ISchedulerService
 {
     void Load();
     Task CreateAndScheduleJob(string actionName, DateTime next, TimeSpan interval, params object[] actionParameters);
-    Task<ScheduledJob> CreateScheduledJob(string actionName, DateTime next, TimeSpan interval, params object[] actionParameters);
-    Task Cancel(Func<ScheduledJob, bool> predicate);
+    Task<DomainScheduledJob> CreateScheduledJob(string actionName, DateTime next, TimeSpan interval, params object[] actionParameters);
+    Task Cancel(Func<DomainScheduledJob, bool> predicate);
 }
 
 public class SchedulerService : ISchedulerService
@@ -40,7 +41,7 @@ public class SchedulerService : ISchedulerService
         Schedule(job);
     }
 
-    public async Task Cancel(Func<ScheduledJob, bool> predicate)
+    public async Task Cancel(Func<DomainScheduledJob, bool> predicate)
     {
         var job = _context.GetSingle(predicate);
         if (job == null)
@@ -57,7 +58,7 @@ public class SchedulerService : ISchedulerService
         await _context.Delete(job);
     }
 
-    public async Task<ScheduledJob> CreateScheduledJob(string actionName, DateTime next, TimeSpan interval, params object[] actionParameters)
+    public async Task<DomainScheduledJob> CreateScheduledJob(string actionName, DateTime next, TimeSpan interval, params object[] actionParameters)
     {
         var job = _context.GetSingle(x => x.Action == actionName);
         if (job is not null)
@@ -70,7 +71,7 @@ public class SchedulerService : ISchedulerService
             return job;
         }
 
-        job = new ScheduledJob { Next = next, Action = actionName };
+        job = new DomainScheduledJob { Next = next, Action = actionName };
         if (actionParameters.Length > 0)
         {
             job.ActionParameters = JsonSerializer.Serialize(actionParameters, DefaultJsonSerializerOptions.Options);
@@ -86,7 +87,7 @@ public class SchedulerService : ISchedulerService
         return job;
     }
 
-    private void Schedule(ScheduledJob job)
+    private void Schedule(DomainScheduledJob job)
     {
         CancellationTokenSource token = new();
         _ = Task.Run(
@@ -140,7 +141,7 @@ public class SchedulerService : ISchedulerService
         ActiveTasks[job.Id] = token;
     }
 
-    private async Task SetNext(ScheduledJob job)
+    private async Task SetNext(DomainScheduledJob job)
     {
         await _context.Update(job.Id, x => x.Next, job.Next);
     }
@@ -155,7 +156,7 @@ public class SchedulerService : ISchedulerService
         return _context.GetSingle(job.Id) == null;
     }
 
-    private async Task ExecuteAction(ScheduledJob job)
+    private async Task ExecuteAction(DomainScheduledJob job)
     {
         var action = _scheduledActionFactory.GetScheduledAction(job.Action);
         var parameters = job.ActionParameters == null ? null : JsonSerializer.Deserialize<object[]>(job.ActionParameters, DefaultJsonSerializerOptions.Options);

@@ -2,6 +2,7 @@
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Commands;
@@ -39,33 +40,33 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
 
     public async Task ExecuteAsync(string accountId, ApplicationState updatedState)
     {
-        var domainAccount = _accountContext.GetSingle(accountId);
+        var account = _accountContext.GetSingle(accountId);
 
         await _accountContext.Update(accountId, Builders<DomainAccount>.Update.Set(x => x.Application.State, updatedState));
-        _logger.LogAudit($"Application state changed for {accountId} from {domainAccount.Application.State} to {updatedState}");
+        _logger.LogAudit($"Application state changed for {accountId} from {account.Application.State} to {updatedState}");
 
         switch (updatedState)
         {
-            case ApplicationState.ACCEPTED:
+            case ApplicationState.Accepted:
                 await Accept(accountId);
                 break;
-            case ApplicationState.REJECTED:
+            case ApplicationState.Rejected:
                 await Reject(accountId);
                 break;
-            case ApplicationState.WAITING:
-                await Reactivate(accountId, domainAccount);
+            case ApplicationState.Waiting:
+                await Reactivate(accountId, account);
                 break;
             default: throw new BadRequestException($"New state {updatedState} is invalid");
         }
 
         var updatedDomainAccount = _accountContext.GetSingle(accountId);
-        var message = updatedState == ApplicationState.WAITING ? "was reactivated" : $"was {updatedState}";
+        var message = updatedState == ApplicationState.Waiting ? "was reactivated" : $"was {updatedState}";
         var sessionId = _httpContextService.GetUserId();
         var instigatorName = _httpContextService.GetUserDisplayName();
         if (sessionId != updatedDomainAccount.Application.Recruiter)
         {
             _notificationsService.Add(
-                new Notification
+                new DomainNotification
                 {
                     Owner = updatedDomainAccount.Application.Recruiter,
                     Icon = NotificationIcons.Application,
@@ -79,7 +80,7 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
         foreach (var value in otherRecruiters)
         {
             _notificationsService.Add(
-                new Notification
+                new DomainNotification
                 {
                     Owner = value,
                     Icon = NotificationIcons.Application,
@@ -94,7 +95,7 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
     {
         await _accountContext.Update(
             accountId,
-            Builders<DomainAccount>.Update.Set(x => x.Application.DateAccepted, DateTime.UtcNow).Set(x => x.MembershipState, MembershipState.MEMBER)
+            Builders<DomainAccount>.Update.Set(x => x.Application.DateAccepted, DateTime.UtcNow).Set(x => x.MembershipState, MembershipState.Member)
         );
         var notification = await _assignmentService.UpdateUnitRankAndRole(
             accountId,
@@ -110,7 +111,7 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
     {
         await _accountContext.Update(
             accountId,
-            Builders<DomainAccount>.Update.Set(x => x.Application.DateAccepted, DateTime.UtcNow).Set(x => x.MembershipState, MembershipState.CONFIRMED)
+            Builders<DomainAccount>.Update.Set(x => x.Application.DateAccepted, DateTime.UtcNow).Set(x => x.MembershipState, MembershipState.Confirmed)
         );
         var notification = await _assignmentService.UpdateUnitRankAndRole(
             accountId,
@@ -124,13 +125,13 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
         _notificationsService.Add(notification);
     }
 
-    private async Task Reactivate(string accountId, DomainAccount domainAccount)
+    private async Task Reactivate(string accountId, DomainAccount account)
     {
         await _accountContext.Update(
             accountId,
             Builders<DomainAccount>.Update.Set(x => x.Application.DateCreated, DateTime.UtcNow)
                                    .Unset(x => x.Application.DateAccepted)
-                                   .Set(x => x.MembershipState, MembershipState.CONFIRMED)
+                                   .Set(x => x.MembershipState, MembershipState.Confirmed)
         );
         var notification = await _assignmentService.UpdateUnitRankAndRole(
             accountId,
@@ -140,11 +141,11 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
             reason: "your application was reactivated"
         );
         _notificationsService.Add(notification);
-        if (_recruitmentService.GetRecruiters().All(x => x.Id != domainAccount.Application.Recruiter))
+        if (_recruitmentService.GetRecruiters().All(x => x.Id != account.Application.Recruiter))
         {
             var newRecruiterId = _recruitmentService.GetRecruiter();
             _logger.LogAudit(
-                $"Application recruiter for {accountId} is no longer SR1, reassigning from {domainAccount.Application.Recruiter} to {newRecruiterId}"
+                $"Application recruiter for {accountId} is no longer SR1, reassigning from {account.Application.Recruiter} to {newRecruiterId}"
             );
             await _accountContext.Update(accountId, Builders<DomainAccount>.Update.Set(x => x.Application.Recruiter, newRecruiterId));
         }

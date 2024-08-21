@@ -2,10 +2,10 @@
 
 public enum MembershipState
 {
-    UNCONFIRMED = 0,
-    CONFIRMED = 1,
-    MEMBER = 2,
-    DISCHARGED = 3,
-    SERVER = 4,
-    EMPTY = 5
+    Unconfirmed = 0,
+    Confirmed = 1,
+    Member = 2,
+    Discharged = 3,
+    Server = 4,
+    Empty = 5
 }

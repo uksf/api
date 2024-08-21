@@ -42,7 +42,7 @@ public class BuildStepNotify : BuildStep
         StepLogger.Log("Notifications sent");
     }
 
-    private string GetDiscordMessage(ModpackRelease release)
+    private string GetDiscordMessage(DomainModpackRelease release)
     {
         var changelogText = _discordTextService.FromMarkdown(release.Changelog);
         var changelog = _discordTextService.ToQuote(changelogText);

@@ -18,13 +18,13 @@ public interface IGameServersService
     int GetGameInstanceCount();
     Task UploadMissionFile(IFormFile file);
     List<MissionFile> GetMissionFiles();
-    Task GetGameServerStatus(GameServer gameServer);
-    Task<List<GameServer>> GetAllGameServerStatuses();
+    Task GetGameServerStatus(DomainGameServer gameServer);
+    Task<List<DomainGameServer>> GetAllGameServerStatuses();
     Task<MissionPatchingResult> PatchMissionFile(string missionName);
-    void WriteServerConfig(GameServer gameServer, int playerCount, string missionSelection);
-    Task LaunchGameServer(GameServer gameServer);
-    Task StopGameServer(GameServer gameServer);
-    void KillGameServer(GameServer gameServer);
+    void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection);
+    Task LaunchGameServer(DomainGameServer gameServer);
+    Task StopGameServer(DomainGameServer gameServer);
+    void KillGameServer(DomainGameServer gameServer);
     int KillAllArmaProcesses();
     List<GameServerMod> GetAvailableMods(string id);
     List<GameServerMod> GetEnvironmentMods(GameEnvironment environment);
@@ -70,7 +70,7 @@ public class GameServersService : IGameServersService
         return files.Select(fileInfo => new MissionFile(fileInfo)).OrderBy(x => x.Map).ThenBy(x => x.Name).ToList();
     }
 
-    public async Task GetGameServerStatus(GameServer gameServer)
+    public async Task GetGameServerStatus(DomainGameServer gameServer)
     {
         if (_variablesService.GetFeatureState("SKIP_SERVER_STATUS"))
         {
@@ -109,7 +109,7 @@ public class GameServersService : IGameServersService
         }
     }
 
-    public async Task<List<GameServer>> GetAllGameServerStatuses()
+    public async Task<List<DomainGameServer>> GetAllGameServerStatuses()
     {
         var gameServers = _gameServersContext.Get().ToList();
         await Task.WhenAll(gameServers.Select(GetGameServerStatus));
@@ -128,13 +128,13 @@ public class GameServersService : IGameServersService
         var missionPath = Path.Combine(_gameServerHelpers.GetGameServerMissionsPath(), missionName);
         var result = await _missionPatchingService.PatchMission(
             missionPath,
-            _gameServerHelpers.GetGameServerModsPaths(GameEnvironment.RELEASE),
+            _gameServerHelpers.GetGameServerModsPaths(GameEnvironment.Release),
             _gameServerHelpers.GetMaxCuratorCountFromSettings()
         );
         return result;
     }
 
-    public void WriteServerConfig(GameServer gameServer, int playerCount, string missionSelection)
+    public void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection)
     {
         File.WriteAllText(
             _gameServerHelpers.GetGameServerConfigPath(gameServer),
@@ -142,7 +142,7 @@ public class GameServersService : IGameServersService
         );
     }
 
-    public async Task LaunchGameServer(GameServer gameServer)
+    public async Task LaunchGameServer(DomainGameServer gameServer)
     {
         var launchArguments = _gameServerHelpers.FormatGameServerLaunchArguments(gameServer);
         gameServer.ProcessId = ProcessUtilities.LaunchManagedProcess(_gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments);
@@ -164,7 +164,7 @@ public class GameServersService : IGameServersService
         }
     }
 
-    public async Task StopGameServer(GameServer gameServer)
+    public async Task StopGameServer(DomainGameServer gameServer)
     {
         try
         {
@@ -195,7 +195,7 @@ public class GameServersService : IGameServersService
         }
     }
 
-    public void KillGameServer(GameServer gameServer)
+    public void KillGameServer(DomainGameServer gameServer)
     {
         if (gameServer.ProcessId is null or 0)
         {

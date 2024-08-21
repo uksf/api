@@ -2,7 +2,7 @@
 using MongoDB.Bson;
 using Moq;
 using UKSF.Api.Core;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Services;
 using Xunit;

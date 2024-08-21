@@ -62,12 +62,12 @@ public static class MissionDataResolver
 
     private static bool IsMedic(MissionPlayer player)
     {
-        return player.DomainAccount?.Qualifications?.Medic ?? false;
+        return player.Account?.Qualifications?.Medic ?? false;
     }
 
     public static bool IsEngineer(MissionPlayer player)
     {
-        return player.DomainAccount?.Qualifications?.Engineer ?? false;
+        return player.Account?.Qualifications?.Engineer ?? false;
     }
 
     public static string ResolveCallsign(MissionUnit unit, string defaultCallsign)

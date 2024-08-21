@@ -39,20 +39,20 @@ public class ResetPasswordCommand : IResetPasswordCommand
 
     public async Task ExecuteAsync(ResetPasswordCommandArgs args)
     {
-        var domainAccount = _accountContext.GetSingle(x => string.Equals(x.Email, args.Email, StringComparison.InvariantCultureIgnoreCase));
-        if (domainAccount == null)
+        var account = _accountContext.GetSingle(x => string.Equals(x.Email, args.Email, StringComparison.InvariantCultureIgnoreCase));
+        if (account == null)
         {
             throw new BadRequestException("No user found with that email");
         }
 
         var codeValue = await _confirmationCodeService.GetConfirmationCodeValue(args.Code);
-        if (codeValue != domainAccount.Id)
+        if (codeValue != account.Id)
         {
             throw new BadRequestException("Password reset failed (Invalid code)");
         }
 
-        await _accountContext.Update(domainAccount.Id, x => x.Password, BCrypt.Net.BCrypt.HashPassword(args.Password));
+        await _accountContext.Update(account.Id, x => x.Password, BCrypt.Net.BCrypt.HashPassword(args.Password));
 
-        _logger.LogAudit($"Password changed for {domainAccount.Id}", domainAccount.Id);
+        _logger.LogAudit($"Password changed for {account.Id}", account.Id);
     }
 }

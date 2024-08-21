@@ -4,6 +4,7 @@ using FluentAssertions;
 using MongoDB.Bson;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
@@ -25,9 +26,9 @@ public class ChangeUtilitiesTests
             Background = "I like trains",
             Dob = dobBefore,
             Rank = "Private",
-            Application = new Application
+            Application = new DomainApplication
             {
-                State = ApplicationState.WAITING,
+                State = ApplicationState.Waiting,
                 Recruiter = "Bob",
                 ApplicationCommentThread = "thread1",
                 DateCreated = new DateTime(2020, 5, 2, 10, 34, 39)
@@ -41,9 +42,9 @@ public class ChangeUtilitiesTests
             Lastname = "Bob",
             Background = "I like planes",
             Dob = dobAfter,
-            Application = new Application
+            Application = new DomainApplication
             {
-                State = ApplicationState.ACCEPTED,
+                State = ApplicationState.Accepted,
                 Recruiter = "Bob",
                 DateCreated = new DateTime(2020, 5, 2, 10, 34, 39),
                 DateAccepted = dateAccepted
@@ -90,8 +91,8 @@ public class ChangeUtilitiesTests
     public void Should_detect_changes_for_dictionary()
     {
         var id = ObjectId.GenerateNewId().ToString();
-        TestDataModel original = new() { Id = id, Dictionary = new Dictionary<string, object> { { "0", "variable0" }, { "1", "variable0" } } };
-        TestDataModel updated = new()
+        DomainTestModel original = new() { Id = id, Dictionary = new Dictionary<string, object> { { "0", "variable0" }, { "1", "variable0" } } };
+        DomainTestModel updated = new()
         {
             Id = id,
             Dictionary = new Dictionary<string, object>
@@ -112,8 +113,8 @@ public class ChangeUtilitiesTests
     public void Should_detect_changes_for_enum()
     {
         var id = ObjectId.GenerateNewId().ToString();
-        DomainAccount original = new() { Id = id, MembershipState = MembershipState.UNCONFIRMED };
-        DomainAccount updated = new() { Id = id, MembershipState = MembershipState.MEMBER };
+        DomainAccount original = new() { Id = id, MembershipState = MembershipState.Unconfirmed };
+        DomainAccount updated = new() { Id = id, MembershipState = MembershipState.Member };
 
         var subject = original.Changes(updated);
 

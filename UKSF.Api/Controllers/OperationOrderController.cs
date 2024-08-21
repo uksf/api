@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Services;
 
 namespace UKSF.Api.Controllers;
@@ -22,14 +23,14 @@ public class OperationOrderController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public IEnumerable<Opord> Get()
+    public IEnumerable<DomainOpord> Get()
     {
         return _operationOrderContext.Get();
     }
 
     [HttpGet("{id}")]
     [Authorize]
-    public Opord Get([FromRoute] string id)
+    public DomainOpord Get([FromRoute] string id)
     {
         return _operationOrderContext.GetSingle(id);
     }
@@ -43,7 +44,7 @@ public class OperationOrderController : ControllerBase
 
     [HttpPut]
     [Authorize]
-    public async Task Put([FromBody] Opord request)
+    public async Task Put([FromBody] DomainOpord request)
     {
         await _operationOrderContext.Replace(request);
     }

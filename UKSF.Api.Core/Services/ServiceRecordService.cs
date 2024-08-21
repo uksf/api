@@ -1,6 +1,7 @@
 ﻿using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Services;
 

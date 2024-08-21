@@ -9,13 +9,13 @@ namespace UKSF.Api.Modpack.Services.BuildProcess;
 
 public interface IBuildProcessorService
 {
-    Task ProcessBuildWithErrorHandling(ModpackBuild build, CancellationTokenSource cancellationTokenSource);
+    Task ProcessBuildWithErrorHandling(DomainModpackBuild build, CancellationTokenSource cancellationTokenSource);
 }
 
 public class BuildProcessorService(IServiceProvider serviceProvider, IBuildStepService buildStepService, IBuildsService buildsService, IUksfLogger logger)
     : IBuildProcessorService
 {
-    public async Task ProcessBuildWithErrorHandling(ModpackBuild build, CancellationTokenSource cancellationTokenSource)
+    public async Task ProcessBuildWithErrorHandling(DomainModpackBuild build, CancellationTokenSource cancellationTokenSource)
     {
         try
         {
@@ -28,7 +28,7 @@ public class BuildProcessorService(IServiceProvider serviceProvider, IBuildStepS
         }
     }
 
-    private async Task ProcessBuild(ModpackBuild build, CancellationTokenSource cancellationTokenSource)
+    private async Task ProcessBuild(DomainModpackBuild build, CancellationTokenSource cancellationTokenSource)
     {
         await buildsService.SetBuildRunning(build);
 
@@ -84,9 +84,9 @@ public class BuildProcessorService(IServiceProvider serviceProvider, IBuildStepS
         await buildsService.SucceedBuild(build);
     }
 
-    private async Task ProcessRestore(IBuildStep runningStep, ModpackBuild build)
+    private async Task ProcessRestore(IBuildStep runningStep, DomainModpackBuild build)
     {
-        if (build.Environment != GameEnvironment.RELEASE || runningStep is BuildStepClean || runningStep is BuildStepBackup)
+        if (build.Environment != GameEnvironment.Release || runningStep is BuildStepClean || runningStep is BuildStepBackup)
         {
             return;
         }
@@ -107,7 +107,7 @@ public class BuildProcessorService(IServiceProvider serviceProvider, IBuildStepS
         }
     }
 
-    private async Task ExecuteRestoreStep(ModpackBuild build, ModpackBuildStep restoreStep)
+    private async Task ExecuteRestoreStep(DomainModpackBuild build, ModpackBuildStep restoreStep)
     {
         var step = buildStepService.ResolveBuildStep(restoreStep.Name);
         step.Init(

@@ -5,6 +5,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Queries;
 using UKSF.Api.Core.Signalr.Clients;
 using UKSF.Api.Core.Signalr.Hubs;
@@ -13,9 +14,9 @@ namespace UKSF.Api.Core.Services;
 
 public interface INotificationsService
 {
-    void Add(Notification notification);
+    void Add(DomainNotification notification);
     void SendTeamspeakNotification(IEnumerable<int> clientDbIds, string rawMessage);
-    IEnumerable<Notification> GetNotificationsForContext();
+    IEnumerable<DomainNotification> GetNotificationsForContext();
     Task MarkNotificationsAsRead(List<string> ids);
     Task Delete(List<string> ids);
 }
@@ -42,13 +43,13 @@ public class NotificationsService(
         eventBus.Send(new TeamspeakMessageEventData(clientDbIds, rawMessage), nameof(SendTeamspeakNotification));
     }
 
-    public IEnumerable<Notification> GetNotificationsForContext()
+    public IEnumerable<DomainNotification> GetNotificationsForContext()
     {
         var contextId = httpContextService.GetUserId();
         return notificationsContext.Get(x => x.Owner == contextId);
     }
 
-    public void Add(Notification notification)
+    public void Add(DomainNotification notification)
     {
         if (notification == null)
         {
@@ -61,7 +62,7 @@ public class NotificationsService(
     public async Task MarkNotificationsAsRead(List<string> ids)
     {
         var contextId = httpContextService.GetUserId();
-        await notificationsContext.UpdateMany(x => x.Owner == contextId && ids.Contains(x.Id), Builders<Notification>.Update.Set(x => x.Read, true));
+        await notificationsContext.UpdateMany(x => x.Owner == contextId && ids.Contains(x.Id), Builders<DomainNotification>.Update.Set(x => x.Read, true));
         await notificationsHub.Clients.Group(contextId).ReceiveRead(ids);
     }
 
@@ -73,37 +74,37 @@ public class NotificationsService(
         await notificationsHub.Clients.Group(contextId).ReceiveClear(ids);
     }
 
-    private async Task AddNotificationAsync(Notification notification)
+    private async Task AddNotificationAsync(DomainNotification notification)
     {
         notification.Message = objectIdConversionService.ConvertObjectIds(notification.Message);
-        var domainAccount = accountContext.GetSingle(notification.Owner);
-        if (domainAccount.MembershipState == MembershipState.DISCHARGED)
+        var account = accountContext.GetSingle(notification.Owner);
+        if (account.MembershipState == MembershipState.Discharged)
         {
             return;
         }
 
         await notificationsContext.Add(notification);
         await SendEmailNotification(
-            domainAccount,
+            account,
             $"{notification.Message}{(notification.Link != null ? $"<br><a href='https://uk-sf.co.uk{notification.Link}'>https://uk-sf.co.uk{notification.Link}</a>" : "")}"
         );
 
         SendTeamspeakNotification(
-            domainAccount,
+            account,
             $"{notification.Message}{(notification.Link != null ? $"\n[url]https://uk-sf.co.uk{notification.Link}[/url]" : "")}"
         );
     }
 
-    private async Task SendEmailNotification(DomainAccount domainAccount, string message)
+    private async Task SendEmailNotification(DomainAccount account, string message)
     {
-        if (NotificationsGloballyDisabled() || !domainAccount.Settings.NotificationsEmail)
+        if (NotificationsGloballyDisabled() || !account.Settings.NotificationsEmail)
         {
             return;
         }
 
         await sendTemplatedEmailCommand.ExecuteAsync(
             new SendTemplatedEmailCommandArgs(
-                domainAccount.Email,
+                account.Email,
                 "UKSF Notification",
                 TemplatedEmailNames.NotificationTemplate,
                 new Dictionary<string, string> { { "message", message } }
@@ -111,14 +112,14 @@ public class NotificationsService(
         );
     }
 
-    private void SendTeamspeakNotification(DomainAccount domainAccount, string rawMessage)
+    private void SendTeamspeakNotification(DomainAccount account, string rawMessage)
     {
-        if (NotificationsGloballyDisabled() || !domainAccount.Settings.NotificationsTeamspeak || domainAccount.TeamspeakIdentities.IsNullOrEmpty())
+        if (NotificationsGloballyDisabled() || !account.Settings.NotificationsTeamspeak || account.TeamspeakIdentities.IsNullOrEmpty())
         {
             return;
         }
 
-        SendTeamspeakNotification(domainAccount.TeamspeakIdentities, rawMessage);
+        SendTeamspeakNotification(account.TeamspeakIdentities, rawMessage);
     }
 
     private bool NotificationsGloballyDisabled()

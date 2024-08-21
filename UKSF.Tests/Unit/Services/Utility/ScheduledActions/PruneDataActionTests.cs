@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Moq;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.ScheduledActions;
 using Xunit;
@@ -52,15 +53,16 @@ public class PruneDataActionTests
     [Fact]
     public async Task When_pruning_logs()
     {
-        List<BasicLog> basicLogs = [new BasicLog("test1") { Timestamp = _now.AddDays(-8) }, new BasicLog("test2") { Timestamp = _now.AddDays(-6) }];
+        List<DomainBasicLog> basicLogs =
+            [new DomainBasicLog("test1") { Timestamp = _now.AddDays(-8) }, new DomainBasicLog("test2") { Timestamp = _now.AddDays(-6) }];
         List<AuditLog> auditLogs =
             [new AuditLog("server", "audit1") { Timestamp = _now.AddMonths(-4) }, new AuditLog("server", "audit2") { Timestamp = _now.AddMonths(-2) }];
         List<ErrorLog> errorLogs =
             [new ErrorLog(new Exception("error1")) { Timestamp = _now.AddDays(-8) }, new ErrorLog(new Exception("error2")) { Timestamp = _now.AddDays(-6) }];
 
-        _mockLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<BasicLog, bool>>>()))
+        _mockLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<DomainBasicLog, bool>>>()))
                        .Returns(Task.CompletedTask)
-                       .Callback<Expression<Func<BasicLog, bool>>>(x => basicLogs.RemoveAll(y => x.Compile()(y)));
+                       .Callback<Expression<Func<DomainBasicLog, bool>>>(x => basicLogs.RemoveAll(y => x.Compile()(y)));
         _mockAuditLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<AuditLog, bool>>>()))
                             .Returns(Task.CompletedTask)
                             .Callback<Expression<Func<AuditLog, bool>>>(x => auditLogs.RemoveAll(y => x.Compile()(y)));

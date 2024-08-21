@@ -3,20 +3,21 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Mappers;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Services;
 
 public interface IRecruitmentService
 {
     ApplicationsOverview GetAllApplications();
-    DetailedApplication GetApplication(DomainAccount domainAccount);
+    DetailedApplication GetApplication(DomainAccount account);
     IEnumerable<Recruiter> GetActiveRecruiters();
     IEnumerable<DomainAccount> GetRecruiters(bool skipSort = false);
     Dictionary<string, string> GetRecruiterLeads();
     IEnumerable<RecruitmentStat> GetStats(string account, bool monthly);
     string GetRecruiter();
-    bool IsRecruiterLead(DomainAccount domainAccount = null);
-    bool IsRecruiter(DomainAccount domainAccount);
+    bool IsRecruiterLead(DomainAccount account = null);
+    bool IsRecruiter(DomainAccount account);
     Task SetRecruiter(string id, string newRecruiter);
 }
 
@@ -49,9 +50,9 @@ public class RecruitmentService : IRecruitmentService
         _accountMapper = accountMapper;
     }
 
-    public bool IsRecruiter(DomainAccount domainAccount)
+    public bool IsRecruiter(DomainAccount account)
     {
-        return GetRecruiters(true).Any(x => x.Id == domainAccount.Id);
+        return GetRecruiters(true).Any(x => x.Id == account.Id);
     }
 
     public Dictionary<string, string> GetRecruiterLeads()
@@ -82,7 +83,7 @@ public class RecruitmentService : IRecruitmentService
         var accounts = _accountContext.Get(x => x.Application != null);
         foreach (var account in accounts)
         {
-            if (account.Application.State == ApplicationState.WAITING)
+            if (account.Application.State == ApplicationState.Waiting)
             {
                 if (account.Application.Recruiter == me)
                 {
@@ -108,23 +109,23 @@ public class RecruitmentService : IRecruitmentService
         };
     }
 
-    public DetailedApplication GetApplication(DomainAccount domainAccount)
+    public DetailedApplication GetApplication(DomainAccount account)
     {
-        var recruiterAccount = _accountContext.GetSingle(domainAccount.Application.Recruiter);
-        var age = domainAccount.Dob.ToAge();
+        var recruiterAccount = _accountContext.GetSingle(account.Application.Recruiter);
+        var age = account.Dob.ToAge();
         var acceptableAge = _variablesService.GetVariable("RECRUITMENT_ENTRY_AGE");
 
         return new DetailedApplication
         {
-            Account = _accountMapper.MapToAccount(domainAccount),
-            DisplayName = _displayNameService.GetDisplayName(domainAccount),
+            Account = _accountMapper.MapToAccount(account),
+            DisplayName = _displayNameService.GetDisplayName(account),
             Age = age,
             AcceptableAge = acceptableAge.AsInt(),
-            DaysProcessing = Math.Ceiling((DateTime.UtcNow - domainAccount.Application.DateCreated).TotalDays),
-            DaysProcessed = Math.Ceiling((domainAccount.Application.DateAccepted - domainAccount.Application.DateCreated).TotalDays),
+            DaysProcessing = Math.Ceiling((DateTime.UtcNow - account.Application.DateCreated).TotalDays),
+            DaysProcessed = Math.Ceiling((account.Application.DateAccepted - account.Application.DateCreated).TotalDays),
             NextCandidateOp = GetNextCandidateOp(),
             AverageProcessingTime = GetAverageProcessingTime(),
-            SteamProfile = "https://steamcommunity.com/profiles/" + domainAccount.Steamname,
+            SteamProfile = "https://steamcommunity.com/profiles/" + account.Steamname,
             Recruiter = _displayNameService.GetDisplayName(recruiterAccount),
             RecruiterId = recruiterAccount.Id
         };
@@ -135,10 +136,10 @@ public class RecruitmentService : IRecruitmentService
         return GetRecruiters().Where(x => x.Settings.Sr1Enabled).Select(x => new Recruiter { Id = x.Id, Name = _displayNameService.GetDisplayName(x) });
     }
 
-    public bool IsRecruiterLead(DomainAccount domainAccount = null)
+    public bool IsRecruiterLead(DomainAccount account = null)
     {
-        return domainAccount != null
-            ? GetRecruiterUnit().Roles.ContainsValue(domainAccount.Id)
+        return account != null
+            ? GetRecruiterUnit().Roles.ContainsValue(account.Id)
             : GetRecruiterUnit().Roles.ContainsValue(_httpContextService.GetUserId());
     }
 
@@ -161,11 +162,11 @@ public class RecruitmentService : IRecruitmentService
         }
 
         var accountsList = accounts.ToList();
-        var acceptedApps = accountsList.Count(x => x.Application.State == ApplicationState.ACCEPTED);
-        var rejectedApps = accountsList.Count(x => x.Application.State == ApplicationState.REJECTED);
-        var waitingApps = accountsList.Count(x => x.Application.State == ApplicationState.WAITING);
+        var acceptedApps = accountsList.Count(x => x.Application.State == ApplicationState.Accepted);
+        var rejectedApps = accountsList.Count(x => x.Application.State == ApplicationState.Rejected);
+        var waitingApps = accountsList.Count(x => x.Application.State == ApplicationState.Waiting);
 
-        var processedApplications = accountsList.Where(x => x.Application.State != ApplicationState.WAITING).ToList();
+        var processedApplications = accountsList.Where(x => x.Application.State != ApplicationState.Waiting).ToList();
         var totalProcessingTime = processedApplications.Sum(x => (x.Application.DateAccepted - x.Application.DateCreated).TotalDays);
         var averageProcessingTime = totalProcessingTime > 0 ? Math.Round(totalProcessingTime / processedApplications.Count, 1) : 0;
         var enlistmentRate = acceptedApps != 0 || rejectedApps != 0 ? Math.Round((double)acceptedApps / (acceptedApps + rejectedApps) * 100, 1) : 0;
@@ -183,8 +184,8 @@ public class RecruitmentService : IRecruitmentService
     public string GetRecruiter()
     {
         var recruiters = GetRecruiters().Where(x => x.Settings.Sr1Enabled);
-        var waiting = _accountContext.Get(x => x.Application is { State: ApplicationState.WAITING }).ToList();
-        var complete = _accountContext.Get(x => x.Application is { State: not ApplicationState.WAITING }).ToList();
+        var waiting = _accountContext.Get(x => x.Application is { State: ApplicationState.Waiting }).ToList();
+        var complete = _accountContext.Get(x => x.Application is { State: not ApplicationState.Waiting }).ToList();
         var unsorted = recruiters.Select(
             x => new
             {
@@ -201,29 +202,29 @@ public class RecruitmentService : IRecruitmentService
         return _unitsContext.GetSingle(id);
     }
 
-    private CompletedApplication GetCompletedApplication(DomainAccount domainAccount)
+    private CompletedApplication GetCompletedApplication(DomainAccount account)
     {
         return new CompletedApplication
         {
-            Account = _accountMapper.MapToAccount(domainAccount),
-            DisplayName = _displayNameService.GetDisplayNameWithoutRank(domainAccount),
-            DaysProcessed = Math.Ceiling((domainAccount.Application.DateAccepted - domainAccount.Application.DateCreated).TotalDays),
-            Recruiter = _displayNameService.GetDisplayName(domainAccount.Application.Recruiter)
+            Account = _accountMapper.MapToAccount(account),
+            DisplayName = _displayNameService.GetDisplayNameWithoutRank(account),
+            DaysProcessed = Math.Ceiling((account.Application.DateAccepted - account.Application.DateCreated).TotalDays),
+            Recruiter = _displayNameService.GetDisplayName(account.Application.Recruiter)
         };
     }
 
-    private WaitingApplication GetWaitingApplication(DomainAccount domainAccount)
+    private WaitingApplication GetWaitingApplication(DomainAccount account)
     {
         var averageProcessingTime = GetAverageProcessingTime();
-        var daysProcessing = Math.Ceiling((DateTime.UtcNow - domainAccount.Application.DateCreated).TotalDays);
+        var daysProcessing = Math.Ceiling((DateTime.UtcNow - account.Application.DateCreated).TotalDays);
         var processingDifference = daysProcessing - averageProcessingTime;
         return new WaitingApplication
         {
-            Account = _accountMapper.MapToAccount(domainAccount),
-            SteamProfile = "https://steamcommunity.com/profiles/" + domainAccount.Steamname,
+            Account = _accountMapper.MapToAccount(account),
+            SteamProfile = "https://steamcommunity.com/profiles/" + account.Steamname,
             DaysProcessing = daysProcessing,
             ProcessingDifference = processingDifference,
-            Recruiter = _displayNameService.GetDisplayName(domainAccount.Application.Recruiter)
+            Recruiter = _displayNameService.GetDisplayName(account.Application.Recruiter)
         };
     }
 
@@ -244,7 +245,7 @@ public class RecruitmentService : IRecruitmentService
 
     private double GetAverageProcessingTime()
     {
-        var waitingApplications = _accountContext.Get(x => x.Application != null && x.Application.State != ApplicationState.WAITING).ToList();
+        var waitingApplications = _accountContext.Get(x => x.Application != null && x.Application.State != ApplicationState.Waiting).ToList();
         var days = waitingApplications.Sum(x => (x.Application.DateAccepted - x.Application.DateCreated).TotalDays);
         var time = Math.Round(days / waitingApplications.Count, 1);
         return time;

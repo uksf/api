@@ -2,7 +2,7 @@
 using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Core.Extensions;
 
-namespace UKSF.Api.Core.Models;
+namespace UKSF.Api.Core.Models.Domain;
 
 public enum UksfLogLevel
 {
@@ -12,32 +12,32 @@ public enum UksfLogLevel
     Warning
 }
 
-public class BasicLog : MongoObject
+public class DomainBasicLog : MongoObject
 {
-    protected BasicLog()
+    protected DomainBasicLog()
     {
         Level = UksfLogLevel.Info;
         Timestamp = DateTime.UtcNow;
     }
 
-    public BasicLog(string text) : this()
+    public DomainBasicLog(string text) : this()
     {
         Message = text;
     }
 
-    public BasicLog(string text, UksfLogLevel uksfLogLevel) : this()
+    public DomainBasicLog(string text, UksfLogLevel uksfLogLevel) : this()
     {
         Message = text;
         Level = uksfLogLevel;
     }
 
-    public BasicLog(Exception exception) : this()
+    public DomainBasicLog(Exception exception) : this()
     {
         Message = exception.GetCompleteString();
         Level = UksfLogLevel.Error;
     }
 
-    public BasicLog(string message, Exception exception) : this()
+    public DomainBasicLog(string message, Exception exception) : this()
     {
         Message = $"{message}:\n{exception.GetCompleteString()}";
         Level = UksfLogLevel.Error;

@@ -4,6 +4,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.EventHandlers;
 using UKSF.Api.Signalr.Clients;
 using UKSF.Api.Signalr.Hubs;
@@ -24,7 +25,7 @@ public class CommandRequestEventHandlerTests
         _mockHub = new Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>>();
         _eventBus = new EventBus();
 
-        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<CommandRequest>(It.IsAny<string>()));
+        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainCommandRequest>(It.IsAny<string>()));
 
         _commandRequestEventHandler = new CommandRequestEventHandler(_eventBus, _mockHub.Object, mockLoggingService.Object);
     }
@@ -41,7 +42,7 @@ public class CommandRequestEventHandlerTests
 
         _commandRequestEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Delete, new ContextEventData<CommandRequest>(null, null), ""));
+        _eventBus.Send(new EventModel(EventType.Delete, new ContextEventData<DomainCommandRequest>(null, null), ""));
 
         mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Never);
     }
@@ -58,8 +59,8 @@ public class CommandRequestEventHandlerTests
 
         _commandRequestEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<CommandRequest>(null, null), ""));
-        _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<CommandRequest>(null, null), ""));
+        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<DomainCommandRequest>(null, null), ""));
+        _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<DomainCommandRequest>(null, null), ""));
 
         mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Exactly(2));
     }

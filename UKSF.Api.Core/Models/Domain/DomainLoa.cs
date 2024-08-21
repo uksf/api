@@ -1,13 +1,13 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace UKSF.Api.Core.Models;
+namespace UKSF.Api.Core.Models.Domain;
 
 public enum LoaReviewState
 {
-    PENDING,
-    APPROVED,
-    REJECTED
+    Pending,
+    Approved,
+    Rejected
 }
 
 public class DomainLoa : MongoObject

@@ -9,7 +9,7 @@ public class ModpackBuildStep
         Name = name;
     }
 
-    public ModpackBuildResult BuildResult { get; set; } = ModpackBuildResult.NONE;
+    public ModpackBuildResult BuildResult { get; set; } = ModpackBuildResult.None;
     public DateTime EndTime { get; set; } = DateTime.ParseExact("20000101", "yyyyMMdd", CultureInfo.InvariantCulture);
     public bool Finished { get; set; }
     public int Index { get; set; }

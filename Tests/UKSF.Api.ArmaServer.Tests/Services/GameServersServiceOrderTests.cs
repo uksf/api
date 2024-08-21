@@ -41,7 +41,7 @@ public class GameServersServiceOrderTests
             {
                 3,
                 5,
-                new List<GameServer>
+                new List<DomainGameServer>
                 {
                     new() { Id = "A", Order = 0 },
                     new() { Id = "B", Order = 1 },
@@ -56,7 +56,7 @@ public class GameServersServiceOrderTests
             {
                 0,
                 3,
-                new List<GameServer>
+                new List<DomainGameServer>
                 {
                     new() { Id = "B", Order = 0 },
                     new() { Id = "C", Order = 1 },
@@ -71,7 +71,7 @@ public class GameServersServiceOrderTests
             {
                 0,
                 6,
-                new List<GameServer>
+                new List<DomainGameServer>
                 {
                     new() { Id = "B", Order = 0 },
                     new() { Id = "C", Order = 1 },
@@ -86,7 +86,7 @@ public class GameServersServiceOrderTests
             {
                 6,
                 0,
-                new List<GameServer>
+                new List<DomainGameServer>
                 {
                     new() { Id = "G", Order = 0 },
                     new() { Id = "A", Order = 1 },
@@ -101,7 +101,7 @@ public class GameServersServiceOrderTests
             {
                 5,
                 3,
-                new List<GameServer>
+                new List<DomainGameServer>
                 {
                     new() { Id = "A", Order = 0 },
                     new() { Id = "B", Order = 1 },
@@ -116,7 +116,7 @@ public class GameServersServiceOrderTests
 
     [Theory]
     [MemberData(nameof(Data))]
-    public async Task When_setting_server_order(int previousIndex, int newIndex, List<GameServer> expected)
+    public async Task When_setting_server_order(int previousIndex, int newIndex, List<DomainGameServer> expected)
     {
         var gameServers = Given_game_servers();
         When_updating_game_server_order(gameServers);
@@ -126,9 +126,9 @@ public class GameServersServiceOrderTests
         gameServers.Should().BeEquivalentTo(expected);
     }
 
-    private List<GameServer> Given_game_servers()
+    private List<DomainGameServer> Given_game_servers()
     {
-        var gameServers = new List<GameServer>
+        var gameServers = new List<DomainGameServer>
         {
             new() { Id = "A", Order = 0 },
             new() { Id = "B", Order = 1 },
@@ -142,9 +142,11 @@ public class GameServersServiceOrderTests
         return gameServers;
     }
 
-    private void When_updating_game_server_order(IReadOnlyCollection<GameServer> gameServers)
+    private void When_updating_game_server_order(IReadOnlyCollection<DomainGameServer> gameServers)
     {
-        _mockIGameServersContext.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<Expression<Func<GameServer, int>>>(), It.IsAny<int>()))
-                                .Callback((string id, Expression<Func<GameServer, int>> _, int index) => { gameServers.First(x => x.Id == id).Order = index; });
+        _mockIGameServersContext.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<Expression<Func<DomainGameServer, int>>>(), It.IsAny<int>()))
+                                .Callback(
+                                    (string id, Expression<Func<DomainGameServer, int>> _, int index) => { gameServers.First(x => x.Id == id).Order = index; }
+                                );
     }
 }

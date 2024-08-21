@@ -1,7 +1,7 @@
 using MongoDB.Bson;
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaMissions.Services;
@@ -39,7 +39,7 @@ public class MissionPatchDataService
             OrderedUnits = new List<MissionUnit>()
         };
 
-        foreach (var unit in _unitContext.Get(x => x.Branch == UnitBranch.COMBAT).ToList())
+        foreach (var unit in _unitContext.Get(x => x.Branch == UnitBranch.Combat).ToList())
         {
             MissionPatchData.Instance.Units.Add(new MissionUnit { SourceUnit = unit });
         }
@@ -49,7 +49,7 @@ public class MissionPatchDataService
             MissionPatchData.Instance.Players.Add(
                 new MissionPlayer
                 {
-                    DomainAccount = account,
+                    Account = account,
                     Rank = _ranksContext.GetSingle(account.Rank),
                     Name = _displayNameService.GetDisplayName(account)
                 }
@@ -59,20 +59,20 @@ public class MissionPatchDataService
         foreach (var missionUnit in MissionPatchData.Instance.Units)
         {
             missionUnit.Callsign = MissionDataResolver.ResolveCallsign(missionUnit, missionUnit.SourceUnit.Callsign);
-            missionUnit.Members = missionUnit.SourceUnit.Members.Select(x => MissionPatchData.Instance.Players.FirstOrDefault(y => y.DomainAccount.Id == x))
+            missionUnit.Members = missionUnit.SourceUnit.Members.Select(x => MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == x))
                                              .ToList();
             if (missionUnit.SourceUnit.Roles.Count > 0)
             {
                 missionUnit.Roles = missionUnit.SourceUnit.Roles.ToDictionary(
                     pair => pair.Key,
-                    pair => MissionPatchData.Instance.Players.FirstOrDefault(y => y.DomainAccount.Id == pair.Value)
+                    pair => MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == pair.Value)
                 );
             }
         }
 
         foreach (var missionPlayer in MissionPatchData.Instance.Players)
         {
-            missionPlayer.Unit = MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Name == missionPlayer.DomainAccount.UnitAssignment);
+            missionPlayer.Unit = MissionPatchData.Instance.Units.Find(x => x.SourceUnit.Name == missionPlayer.Account.UnitAssignment);
             missionPlayer.ObjectClass = MissionDataResolver.ResolveObjectClass(missionPlayer);
         }
 

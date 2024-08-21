@@ -1,6 +1,6 @@
-namespace UKSF.Api.Core.Models;
+namespace UKSF.Api.Core.Models.Domain;
 
-public class ScheduledJob : MongoObject
+public class DomainScheduledJob : MongoObject
 {
     public string Action { get; set; }
     public string ActionParameters { get; set; }

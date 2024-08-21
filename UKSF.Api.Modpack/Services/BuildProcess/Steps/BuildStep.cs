@@ -13,9 +13,9 @@ public interface IBuildStep
     void Init(
         IServiceProvider serviceProvider,
         IUksfLogger logger,
-        ModpackBuild modpackBuild,
+        DomainModpackBuild modpackBuild,
         ModpackBuildStep modpackBuildStep,
-        Func<UpdateDefinition<ModpackBuild>, Task> buildUpdateCallback,
+        Func<UpdateDefinition<DomainModpackBuild>, Task> buildUpdateCallback,
         Func<Task> stepUpdateCallback,
         CancellationTokenSource cancellationTokenSource
     );
@@ -37,10 +37,10 @@ public class BuildStep : IBuildStep
     private readonly CancellationTokenSource _updatePusherCancellationTokenSource = new();
     private readonly SemaphoreSlim _updateSemaphore = new(1);
     private ModpackBuildStep _buildStep;
-    private Func<UpdateDefinition<ModpackBuild>, Task> _updateBuildCallback;
+    private Func<UpdateDefinition<DomainModpackBuild>, Task> _updateBuildCallback;
     private TimeSpan _updateInterval;
     private Func<Task> _updateStepCallback;
-    protected ModpackBuild Build;
+    protected DomainModpackBuild Build;
     protected CancellationTokenSource CancellationTokenSource;
     protected IServiceProvider ServiceProvider;
     protected IUksfLogger Logger;
@@ -50,9 +50,9 @@ public class BuildStep : IBuildStep
     public void Init(
         IServiceProvider newServiceProvider,
         IUksfLogger logger,
-        ModpackBuild modpackBuild,
+        DomainModpackBuild modpackBuild,
         ModpackBuildStep modpackBuildStep,
-        Func<UpdateDefinition<ModpackBuild>, Task> buildUpdateCallback,
+        Func<UpdateDefinition<DomainModpackBuild>, Task> buildUpdateCallback,
         Func<Task> stepUpdateCallback,
         CancellationTokenSource newCancellationTokenSource
     )
@@ -105,9 +105,9 @@ public class BuildStep : IBuildStep
     public async Task Succeed()
     {
         StepLogger.LogSuccess();
-        if (_buildStep.BuildResult != ModpackBuildResult.WARNING)
+        if (_buildStep.BuildResult != ModpackBuildResult.Warning)
         {
-            _buildStep.BuildResult = ModpackBuildResult.SUCCESS;
+            _buildStep.BuildResult = ModpackBuildResult.Success;
         }
 
         await Stop();
@@ -116,27 +116,27 @@ public class BuildStep : IBuildStep
     public async Task Fail(Exception exception)
     {
         StepLogger.LogError(exception);
-        _buildStep.BuildResult = ModpackBuildResult.FAILED;
+        _buildStep.BuildResult = ModpackBuildResult.Failed;
         await Stop();
     }
 
     public async Task Cancel()
     {
         StepLogger.LogCancelled();
-        _buildStep.BuildResult = ModpackBuildResult.CANCELLED;
+        _buildStep.BuildResult = ModpackBuildResult.Cancelled;
         await Stop();
     }
 
     public void Warning(string message)
     {
         StepLogger.LogWarning(message);
-        _buildStep.BuildResult = ModpackBuildResult.WARNING;
+        _buildStep.BuildResult = ModpackBuildResult.Warning;
     }
 
     public async Task Skip()
     {
         StepLogger.LogSkipped();
-        _buildStep.BuildResult = ModpackBuildResult.SKIPPED;
+        _buildStep.BuildResult = ModpackBuildResult.Skipped;
         await Stop();
     }
 
@@ -161,9 +161,9 @@ public class BuildStep : IBuildStep
     {
         return environment switch
         {
-            GameEnvironment.RELEASE     => VariablesService.GetVariable("MODPACK_PATH_RELEASE").AsString(),
-            GameEnvironment.RC          => VariablesService.GetVariable("MODPACK_PATH_RC").AsString(),
-            GameEnvironment.DEVELOPMENT => VariablesService.GetVariable("MODPACK_PATH_DEV").AsString(),
+            GameEnvironment.Release     => VariablesService.GetVariable("MODPACK_PATH_RELEASE").AsString(),
+            GameEnvironment.Rc          => VariablesService.GetVariable("MODPACK_PATH_RC").AsString(),
+            GameEnvironment.Development => VariablesService.GetVariable("MODPACK_PATH_DEV").AsString(),
             _                           => throw new ArgumentException("Invalid build environment")
         };
     }
@@ -172,9 +172,9 @@ public class BuildStep : IBuildStep
     {
         return environment switch
         {
-            GameEnvironment.RELEASE     => VariablesService.GetVariable("SERVER_PATH_RELEASE").AsString(),
-            GameEnvironment.RC          => VariablesService.GetVariable("SERVER_PATH_RC").AsString(),
-            GameEnvironment.DEVELOPMENT => VariablesService.GetVariable("SERVER_PATH_DEV").AsString(),
+            GameEnvironment.Release     => VariablesService.GetVariable("SERVER_PATH_RELEASE").AsString(),
+            GameEnvironment.Rc          => VariablesService.GetVariable("SERVER_PATH_RC").AsString(),
+            GameEnvironment.Development => VariablesService.GetVariable("SERVER_PATH_DEV").AsString(),
             _                           => throw new ArgumentException("Invalid build environment")
         };
     }
@@ -183,9 +183,9 @@ public class BuildStep : IBuildStep
     {
         return Build.Environment switch
         {
-            GameEnvironment.RELEASE     => "UKSF",
-            GameEnvironment.RC          => "UKSF-Rc",
-            GameEnvironment.DEVELOPMENT => "UKSF-Dev",
+            GameEnvironment.Release     => "UKSF",
+            GameEnvironment.Rc          => "UKSF-Rc",
+            GameEnvironment.Development => "UKSF-Dev",
             _                           => throw new ArgumentException("Invalid build environment")
         };
     }
@@ -198,7 +198,7 @@ public class BuildStep : IBuildStep
     internal void SetEnvironmentVariable(string key, object value)
     {
         Build.EnvironmentVariables[key] = value;
-        _updateBuildCallback(Builders<ModpackBuild>.Update.Set(x => x.EnvironmentVariables, Build.EnvironmentVariables));
+        _updateBuildCallback(Builders<DomainModpackBuild>.Update.Set(x => x.EnvironmentVariables, Build.EnvironmentVariables));
     }
 
     internal T GetEnvironmentVariable<T>(string key)

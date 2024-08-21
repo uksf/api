@@ -1,7 +1,7 @@
 ﻿using FluentAssertions;
 using Moq;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -24,9 +24,9 @@ public class DisplayNameServiceTests
     [Fact]
     public void ShouldGetDisplayNameByAccount()
     {
-        DomainAccount domainAccount = new() { Lastname = "Beswick", Firstname = "Tim" };
+        DomainAccount account = new() { Lastname = "Beswick", Firstname = "Tim" };
 
-        var subject = _displayNameService.GetDisplayName(domainAccount);
+        var subject = _displayNameService.GetDisplayName(account);
 
         subject.Should().Be("Beswick.T");
     }
@@ -34,11 +34,11 @@ public class DisplayNameServiceTests
     [Fact]
     public void ShouldGetDisplayNameById()
     {
-        DomainAccount domainAccount = new() { Lastname = "Beswick", Firstname = "Tim" };
+        DomainAccount account = new() { Lastname = "Beswick", Firstname = "Tim" };
 
-        _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(domainAccount);
+        _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(account);
 
-        var subject = _displayNameService.GetDisplayName(domainAccount.Id);
+        var subject = _displayNameService.GetDisplayName(account.Id);
 
         subject.Should().Be("Beswick.T");
     }
@@ -46,9 +46,9 @@ public class DisplayNameServiceTests
     [Fact]
     public void ShouldGetDisplayNameWithoutRank()
     {
-        DomainAccount domainAccount = new() { Lastname = "Beswick", Firstname = "Tim" };
+        DomainAccount account = new() { Lastname = "Beswick", Firstname = "Tim" };
 
-        var subject = _displayNameService.GetDisplayNameWithoutRank(domainAccount);
+        var subject = _displayNameService.GetDisplayNameWithoutRank(account);
 
         subject.Should().Be("Beswick.T");
     }
@@ -56,12 +56,17 @@ public class DisplayNameServiceTests
     [Fact]
     public void ShouldGetDisplayNameWithRank()
     {
-        DomainAccount domainAccount = new() { Lastname = "Beswick", Firstname = "Tim", Rank = "Squadron Leader" };
+        DomainAccount account = new()
+        {
+            Lastname = "Beswick",
+            Firstname = "Tim",
+            Rank = "Squadron Leader"
+        };
         DomainRank rank = new() { Abbreviation = "SqnLdr" };
 
         _mockRanksContext.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(rank);
 
-        var subject = _displayNameService.GetDisplayName(domainAccount);
+        var subject = _displayNameService.GetDisplayName(account);
 
         subject.Should().Be("SqnLdr.Beswick.T");
     }
@@ -69,9 +74,9 @@ public class DisplayNameServiceTests
     [Fact]
     public void ShouldGetGuestWhenAccountHasNoName()
     {
-        DomainAccount domainAccount = new();
+        DomainAccount account = new();
 
-        var subject = _displayNameService.GetDisplayNameWithoutRank(domainAccount);
+        var subject = _displayNameService.GetDisplayNameWithoutRank(account);
 
         subject.Should().Be("Guest");
     }

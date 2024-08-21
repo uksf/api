@@ -3,13 +3,14 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Queries;
 
 public interface IGetCommandMembersPagedQuery
 {
-    Task<PagedResult<DomainCommandMember>> ExecuteAsync(GetCommandMembersPagedQueryArgs args);
+    Task<PagedResult<CommandMemberAccount>> ExecuteAsync(GetCommandMembersPagedQueryArgs args);
 }
 
 public record GetCommandMembersPagedQueryArgs(
@@ -23,28 +24,28 @@ public record GetCommandMembersPagedQueryArgs(
 
 public class GetCommandMembersPagedQuery(IAccountContext accountContext, IHttpContextService httpContextService) : IGetCommandMembersPagedQuery
 {
-    public async Task<PagedResult<DomainCommandMember>> ExecuteAsync(GetCommandMembersPagedQueryArgs args)
+    public async Task<PagedResult<CommandMemberAccount>> ExecuteAsync(GetCommandMembersPagedQueryArgs args)
     {
         var sortDefinition = BuildSortDefinition(args.SortMode, args.SortDirection);
         var viewModeFilterDefinition = BuildViewModeFilterDefinition(args.ViewMode);
         var queryFilterDefinition = accountContext.BuildPagedComplexQuery(args.Query, BuildFiltersFromQueryPart);
-        var filterDefinition = Builders<DomainCommandMember>.Filter.And(viewModeFilterDefinition, queryFilterDefinition);
+        var filterDefinition = Builders<CommandMemberAccount>.Filter.And(viewModeFilterDefinition, queryFilterDefinition);
 
         var pagedResult = accountContext.GetPaged(args.Page, args.PageSize, BuildAggregator, sortDefinition, filterDefinition);
         return await Task.FromResult(pagedResult);
     }
 
-    private static SortDefinition<DomainCommandMember> BuildSortDefinition(CommandMemberSortMode sortMode, int sortDirection)
+    private static SortDefinition<CommandMemberAccount> BuildSortDefinition(CommandMemberSortMode sortMode, int sortDirection)
     {
         var sortDocument = sortMode switch
         {
-            CommandMemberSortMode.RANK => new BsonDocument
+            CommandMemberSortMode.Rank => new BsonDocument
             {
                 { "rank.order", sortDirection },
                 { "lastname", sortDirection },
                 { "firstname", sortDirection }
             },
-            CommandMemberSortMode.ROLE => new BsonDocument
+            CommandMemberSortMode.Role => new BsonDocument
             {
                 { "role.name", sortDirection },
                 { "lastname", sortDirection },
@@ -52,51 +53,53 @@ public class GetCommandMembersPagedQuery(IAccountContext accountContext, IHttpCo
             },
             _                          => new BsonDocument { { "lastname", sortDirection }, { "firstname", sortDirection } }
         };
-        return new BsonDocumentSortDefinition<DomainCommandMember>(sortDocument);
+        return new BsonDocumentSortDefinition<CommandMemberAccount>(sortDocument);
     }
 
-    private FilterDefinition<DomainCommandMember> BuildViewModeFilterDefinition(CommandMemberViewMode viewMode)
+    private FilterDefinition<CommandMemberAccount> BuildViewModeFilterDefinition(CommandMemberViewMode viewMode)
     {
-        if (viewMode == CommandMemberViewMode.ALL)
+        if (viewMode == CommandMemberViewMode.All)
         {
-            return Builders<DomainCommandMember>.Filter.Empty;
+            return Builders<CommandMemberAccount>.Filter.Empty;
         }
 
         var currentAccount = accountContext.GetSingle(httpContextService.GetUserId());
-        var unitFilter = Builders<DomainCommandMember>.Filter.Eq(x => x.Unit.Name, currentAccount.UnitAssignment);
+        var unitFilter = Builders<CommandMemberAccount>.Filter.Eq(x => x.Unit.Name, currentAccount.UnitAssignment);
 
-        if (viewMode == CommandMemberViewMode.COC)
+        if (viewMode == CommandMemberViewMode.Coc)
         {
-            var unitsFilter = Builders<DomainCommandMember>.Filter.ElemMatch(x => x.ParentUnits, x => x.Name == currentAccount.UnitAssignment);
-            return Builders<DomainCommandMember>.Filter.Or(unitFilter, unitsFilter);
+            var unitsFilter = Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.ParentUnits, x => x.Name == currentAccount.UnitAssignment);
+            return Builders<CommandMemberAccount>.Filter.Or(unitFilter, unitsFilter);
         }
 
         return unitFilter;
     }
 
-    private static FilterDefinition<DomainCommandMember> BuildFiltersFromQueryPart(string queryPart)
+    private static FilterDefinition<CommandMemberAccount> BuildFiltersFromQueryPart(string queryPart)
     {
         var regex = new BsonRegularExpression(new Regex(queryPart, RegexOptions.IgnoreCase));
-        var filters = new List<FilterDefinition<DomainCommandMember>>
+        var filters = new List<FilterDefinition<CommandMemberAccount>>
         {
-            Builders<DomainCommandMember>.Filter.Regex(x => x.Id, regex),
-            Builders<DomainCommandMember>.Filter.Regex(x => x.Lastname, regex),
-            Builders<DomainCommandMember>.Filter.Regex(x => x.Firstname, regex),
-            Builders<DomainCommandMember>.Filter.Regex(x => x.Rank.Name, regex),
-            Builders<DomainCommandMember>.Filter.Regex(x => x.Rank.Abbreviation, regex),
-            Builders<DomainCommandMember>.Filter.Regex(x => x.Role.Name, regex),
-            Builders<DomainCommandMember>.Filter.ElemMatch(x => x.Units, x => Regex.IsMatch(x.Name, queryPart, RegexOptions.IgnoreCase)),
-            Builders<DomainCommandMember>.Filter.ElemMatch(x => x.Units, x => Regex.IsMatch(x.Shortname, queryPart, RegexOptions.IgnoreCase)),
-            Builders<DomainCommandMember>.Filter.ElemMatch(x => x.ParentUnits, x => Regex.IsMatch(x.Name, queryPart, RegexOptions.IgnoreCase)),
-            Builders<DomainCommandMember>.Filter.ElemMatch(x => x.ParentUnits, x => Regex.IsMatch(x.Shortname, queryPart, RegexOptions.IgnoreCase))
+            Builders<CommandMemberAccount>.Filter.Regex(x => x.Id, regex),
+            Builders<CommandMemberAccount>.Filter.Regex(x => x.Lastname, regex),
+            Builders<CommandMemberAccount>.Filter.Regex(x => x.Firstname, regex),
+            Builders<CommandMemberAccount>.Filter.Regex(x => x.Rank.Name, regex),
+            Builders<CommandMemberAccount>.Filter.Regex(x => x.Rank.Abbreviation, regex),
+            Builders<CommandMemberAccount>.Filter.Regex(x => x.Role.Name, regex),
+            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Units, x => Regex.IsMatch(x.Name, queryPart, RegexOptions.IgnoreCase)),
+            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Units, x => Regex.IsMatch(x.Shortname, queryPart, RegexOptions.IgnoreCase)),
+            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.ParentUnits, x => Regex.IsMatch(x.Name, queryPart, RegexOptions.IgnoreCase)),
+            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.ParentUnits, x => Regex.IsMatch(x.Shortname, queryPart, RegexOptions.IgnoreCase)),
+            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Trainings, x => Regex.IsMatch(x.Name, queryPart, RegexOptions.IgnoreCase)),
+            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Trainings, x => Regex.IsMatch(x.ShortName, queryPart, RegexOptions.IgnoreCase))
         };
-        return Builders<DomainCommandMember>.Filter.Or(filters);
+        return Builders<CommandMemberAccount>.Filter.Or(filters);
     }
 
-    private static IAggregateFluent<DomainCommandMember> BuildAggregator(IMongoCollection<DomainAccount> collection)
+    private static IAggregateFluent<CommandMemberAccount> BuildAggregator(IMongoCollection<DomainAccount> collection)
     {
         return collection.Aggregate()
-                         .Match(x => x.MembershipState == MembershipState.MEMBER)
+                         .Match(x => x.MembershipState == MembershipState.Member)
                          .Lookup("ranks", "rank", "name", "rank")
                          .Unwind("rank")
                          .Lookup("roles", "roleAssignment", "name", "role")
@@ -119,21 +122,22 @@ public class GetCommandMembersPagedQuery(IAccountContext accountContext, IHttpCo
                                  }
                              )
                          )
-                         .As<DomainCommandMember>();
+                         .Lookup("training", "trainings", "_id", "trainings")
+                         .As<CommandMemberAccount>();
     }
 }
 
 public enum CommandMemberSortMode
 {
-    NAME,
-    RANK,
-    ROLE,
-    UNIT
+    Name,
+    Rank,
+    Role,
+    Unit
 }
 
 public enum CommandMemberViewMode
 {
-    ALL,
-    COC,
-    UNIT
+    All,
+    Coc,
+    Unit
 }

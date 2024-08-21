@@ -3,21 +3,22 @@ using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Services;
 
 public interface ICommandRequestService
 {
-    Task Add(CommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE);
+    Task Add(DomainCommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.Commander_And_One_Above);
     Task ArchiveRequest(string id);
-    Task SetRequestReviewState(CommandRequest request, string reviewerId, ReviewState newState);
-    Task SetRequestAllReviewStates(CommandRequest request, ReviewState newState);
+    Task SetRequestReviewState(DomainCommandRequest request, string reviewerId, ReviewState newState);
+    Task SetRequestAllReviewStates(DomainCommandRequest request, ReviewState newState);
     ReviewState GetReviewState(string id, string reviewer);
     bool IsRequestApproved(string id);
     bool IsRequestRejected(string id);
-    bool DoesEquivalentRequestExist(CommandRequest request);
-    bool DoesEquivalentRequestExist(CommandRequest request, Func<CommandRequest, bool> filter);
+    bool DoesEquivalentRequestExist(DomainCommandRequest request);
+    bool DoesEquivalentRequestExist(DomainCommandRequest request, Func<DomainCommandRequest, bool> filter);
 }
 
 public class CommandRequestService : ICommandRequestService
@@ -58,7 +59,7 @@ public class CommandRequestService : ICommandRequestService
         _logger = logger;
     }
 
-    public async Task Add(CommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE)
+    public async Task Add(DomainCommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.Commander_And_One_Above)
     {
         var requesterDomainAccount = _accountService.GetUserAccount();
         var recipientDomainAccount = _accountContext.GetSingle(request.Recipient);
@@ -84,7 +85,7 @@ public class CommandRequestService : ICommandRequestService
                           .ToList();
         foreach (var account in accounts)
         {
-            request.Reviews.Add(account.Id, ReviewState.PENDING);
+            request.Reviews.Add(account.Id, ReviewState.Pending);
         }
 
         await _commandRequestContext.Add(request);
@@ -98,7 +99,7 @@ public class CommandRequestService : ICommandRequestService
         foreach (var account in accounts.Where(x => x.Id != requesterDomainAccount.Id))
         {
             _notificationsService.Add(
-                new Notification
+                new DomainNotification
                 {
                     Owner = account.Id,
                     Icon = NotificationIcons.Request,
@@ -116,12 +117,12 @@ public class CommandRequestService : ICommandRequestService
         await _commandRequestContext.Delete(id);
     }
 
-    public async Task SetRequestReviewState(CommandRequest request, string reviewerId, ReviewState newState)
+    public async Task SetRequestReviewState(DomainCommandRequest request, string reviewerId, ReviewState newState)
     {
-        await _commandRequestContext.Update(request.Id, Builders<CommandRequest>.Update.Set($"reviews.{reviewerId}", newState));
+        await _commandRequestContext.Update(request.Id, Builders<DomainCommandRequest>.Update.Set($"reviews.{reviewerId}", newState));
     }
 
-    public async Task SetRequestAllReviewStates(CommandRequest request, ReviewState newState)
+    public async Task SetRequestAllReviewStates(DomainCommandRequest request, ReviewState newState)
     {
         List<string> keys = [..request.Reviews.Keys];
         foreach (var key in keys)
@@ -129,27 +130,27 @@ public class CommandRequestService : ICommandRequestService
             request.Reviews[key] = newState;
         }
 
-        await _commandRequestContext.Update(request.Id, Builders<CommandRequest>.Update.Set(x => x.Reviews, request.Reviews));
+        await _commandRequestContext.Update(request.Id, Builders<DomainCommandRequest>.Update.Set(x => x.Reviews, request.Reviews));
     }
 
     public ReviewState GetReviewState(string id, string reviewer)
     {
         var request = _commandRequestContext.GetSingle(id);
-        return request == null                     ? ReviewState.ERROR :
-            !request.Reviews.ContainsKey(reviewer) ? ReviewState.ERROR : request.Reviews[reviewer];
+        return request == null                     ? ReviewState.Error :
+            !request.Reviews.ContainsKey(reviewer) ? ReviewState.Error : request.Reviews[reviewer];
     }
 
     public bool IsRequestApproved(string id)
     {
-        return _commandRequestContext.GetSingle(id).Reviews.All(x => x.Value == ReviewState.APPROVED);
+        return _commandRequestContext.GetSingle(id).Reviews.All(x => x.Value == ReviewState.Approved);
     }
 
     public bool IsRequestRejected(string id)
     {
-        return _commandRequestContext.GetSingle(id).Reviews.Any(x => x.Value == ReviewState.REJECTED);
+        return _commandRequestContext.GetSingle(id).Reviews.Any(x => x.Value == ReviewState.Rejected);
     }
 
-    public bool DoesEquivalentRequestExist(CommandRequest request)
+    public bool DoesEquivalentRequestExist(DomainCommandRequest request)
     {
         return DoesEquivalentRequestExist(
             request,
@@ -159,7 +160,7 @@ public class CommandRequestService : ICommandRequestService
                                      );
     }
 
-    public bool DoesEquivalentRequestExist(CommandRequest request, Func<CommandRequest, bool> filter)
+    public bool DoesEquivalentRequestExist(DomainCommandRequest request, Func<DomainCommandRequest, bool> filter)
     {
         return _commandRequestContext.Get().Any(x => x.Recipient == request.Recipient && x.Type == request.Type && filter(x));
     }

@@ -5,25 +5,15 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Controllers;
 
 [Route("accounts/{id}/application")]
 [Permissions(Permissions.Confirmed)]
-public class ApplicationsController : ControllerBase
+public class ApplicationsController(IAccountContext accountContext, INotificationsService notificationsService, IUksfLogger logger) : ControllerBase
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IUksfLogger _logger;
-    private readonly INotificationsService _notificationsService;
-
-    public ApplicationsController(IAccountContext accountContext, INotificationsService notificationsService, IUksfLogger logger)
-    {
-        _accountContext = accountContext;
-        _notificationsService = notificationsService;
-        _logger = logger;
-    }
-
     [HttpPost]
     public async Task Post([FromServices] ICreateApplicationCommand createApplicationCommand, [FromRoute] string id, [FromBody] Account account)
     {
@@ -33,8 +23,8 @@ public class ApplicationsController : ControllerBase
     [HttpPut]
     public async Task Update([FromRoute] string id, [FromBody] Account account)
     {
-        var domainAccount = _accountContext.GetSingle(id);
-        await _accountContext.Update(
+        var oldAccount = accountContext.GetSingle(id);
+        await accountContext.Update(
             id,
             Builders<DomainAccount>.Update.Set(x => x.ArmaExperience, account.ArmaExperience)
                                    .Set(x => x.UnitsExperience, account.UnitsExperience)
@@ -44,17 +34,17 @@ public class ApplicationsController : ControllerBase
                                    .Set(x => x.Reference, account.Reference)
         );
 
-        _notificationsService.Add(
-            new Notification
+        notificationsService.Add(
+            new DomainNotification
             {
-                Owner = domainAccount.Application.Recruiter,
+                Owner = oldAccount.Application.Recruiter,
                 Icon = NotificationIcons.Application,
-                Message = $"{domainAccount.Firstname} {domainAccount.Lastname} updated their application",
+                Message = $"{oldAccount.Firstname} {oldAccount.Lastname} updated their application",
                 Link = $"/recruitment/{id}"
             }
         );
 
-        var difference = domainAccount.Changes(_accountContext.GetSingle(id));
-        _logger.LogAudit($"Application updated for {id}: {difference}");
+        var difference = oldAccount.Changes(accountContext.GetSingle(id));
+        logger.LogAudit($"Application updated for {id}: {difference}");
     }
 }

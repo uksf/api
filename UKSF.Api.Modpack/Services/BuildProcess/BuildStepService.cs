@@ -34,9 +34,9 @@ public class BuildStepService : IBuildStepService
     {
         var steps = environment switch
         {
-            GameEnvironment.RELEASE     => GetStepsForRelease(),
-            GameEnvironment.RC          => GetStepsForRc(),
-            GameEnvironment.DEVELOPMENT => GetStepsForBuild(),
+            GameEnvironment.Release     => GetStepsForRelease(),
+            GameEnvironment.Rc          => GetStepsForRc(),
+            GameEnvironment.Development => GetStepsForBuild(),
             _                           => throw new ArgumentException("Invalid build environment")
         };
         ResolveIndices(steps);

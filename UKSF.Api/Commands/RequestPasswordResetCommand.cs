@@ -46,24 +46,24 @@ public class RequestPasswordResetCommand : IRequestPasswordResetCommand
 
     public async Task ExecuteAsync(RequestPasswordResetCommandArgs args)
     {
-        var domainAccount = _accountContext.GetSingle(x => string.Equals(x.Email, args.Email, StringComparison.InvariantCultureIgnoreCase));
-        if (domainAccount == null)
+        var account = _accountContext.GetSingle(x => string.Equals(x.Email, args.Email, StringComparison.InvariantCultureIgnoreCase));
+        if (account == null)
         {
             return;
         }
 
-        var code = await _confirmationCodeService.CreateConfirmationCode(domainAccount.Id);
+        var code = await _confirmationCodeService.CreateConfirmationCode(account.Id);
         var url = BuildResetUrl(code);
         await _sendTemplatedEmailCommand.ExecuteAsync(
             new SendTemplatedEmailCommandArgs(
-                domainAccount.Email,
+                account.Email,
                 "UKSF Password Reset",
                 TemplatedEmailNames.ResetPasswordTemplate,
                 new Dictionary<string, string> { { "reset", url } }
             )
         );
 
-        _logger.LogAudit($"Password reset request made for {domainAccount.Id}", domainAccount.Id);
+        _logger.LogAudit($"Password reset request made for {account.Id}", account.Id);
     }
 
     private string BuildResetUrl(string code)

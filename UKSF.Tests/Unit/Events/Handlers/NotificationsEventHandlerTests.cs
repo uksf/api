@@ -6,6 +6,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Signalr.Clients;
 using UKSF.Api.Core.Signalr.Hubs;
 using UKSF.Api.EventHandlers;
@@ -28,7 +29,7 @@ public class NotificationsEventHandlerTests
 
         _eventBus = new EventBus();
 
-        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<Notification>(It.IsAny<string>()));
+        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainNotification>(It.IsAny<string>()));
 
         _notificationsEventHandler = new NotificationsEventHandler(_eventBus, _mockHub.Object, _mockLoggingService.Object);
     }
@@ -41,12 +42,12 @@ public class NotificationsEventHandlerTests
 
         _mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
         mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockClient.Object);
-        mockClient.Setup(x => x.ReceiveNotification(It.IsAny<Notification>())).Throws(new Exception());
+        mockClient.Setup(x => x.ReceiveNotification(It.IsAny<DomainNotification>())).Throws(new Exception());
         _mockLoggingService.Setup(x => x.LogError(It.IsAny<Exception>()));
 
         _notificationsEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<Notification>(string.Empty, null), ""));
+        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<DomainNotification>(string.Empty, null), ""));
 
         _mockLoggingService.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Once);
     }
@@ -59,14 +60,14 @@ public class NotificationsEventHandlerTests
 
         _mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
         mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockClient.Object);
-        mockClient.Setup(x => x.ReceiveNotification(It.IsAny<Notification>()));
+        mockClient.Setup(x => x.ReceiveNotification(It.IsAny<DomainNotification>()));
 
         _notificationsEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<Notification>(string.Empty, null), ""));
-        _eventBus.Send(new EventModel(EventType.Delete, new ContextEventData<Notification>(string.Empty, null), ""));
+        _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<DomainNotification>(string.Empty, null), ""));
+        _eventBus.Send(new EventModel(EventType.Delete, new ContextEventData<DomainNotification>(string.Empty, null), ""));
 
-        mockClient.Verify(x => x.ReceiveNotification(It.IsAny<Notification>()), Times.Never);
+        mockClient.Verify(x => x.ReceiveNotification(It.IsAny<DomainNotification>()), Times.Never);
     }
 
     [Fact]
@@ -77,13 +78,13 @@ public class NotificationsEventHandlerTests
 
         _mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
         mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockClient.Object);
-        mockClient.Setup(x => x.ReceiveNotification(It.IsAny<Notification>()));
+        mockClient.Setup(x => x.ReceiveNotification(It.IsAny<DomainNotification>()));
 
         _notificationsEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<Notification>(string.Empty, new Notification()), ""));
+        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<DomainNotification>(string.Empty, new DomainNotification()), ""));
 
-        mockClient.Verify(x => x.ReceiveNotification(It.IsAny<Notification>()), Times.Once);
+        mockClient.Verify(x => x.ReceiveNotification(It.IsAny<DomainNotification>()), Times.Once);
     }
 
     [Fact]
@@ -95,11 +96,11 @@ public class NotificationsEventHandlerTests
         var subject = "";
         _mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
         mockHubClients.Setup(x => x.Group("1")).Returns(mockClient.Object).Callback((string x) => subject = x);
-        mockClient.Setup(x => x.ReceiveNotification(It.IsAny<Notification>()));
+        mockClient.Setup(x => x.ReceiveNotification(It.IsAny<DomainNotification>()));
 
         _notificationsEventHandler.Init();
 
-        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<Notification>(string.Empty, new Notification { Owner = "1" }), ""));
+        _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<DomainNotification>(string.Empty, new DomainNotification { Owner = "1" }), ""));
 
         subject.Should().Be("1");
     }

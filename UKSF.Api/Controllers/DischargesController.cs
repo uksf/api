@@ -4,6 +4,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Services;
 
@@ -47,13 +48,13 @@ public class DischargesController : ControllerBase
     }
 
     [HttpGet]
-    public IEnumerable<DischargeCollection> Get()
+    public IEnumerable<DomainDischargeCollection> Get()
     {
-        IEnumerable<DischargeCollection> discharges = _dischargeContext.Get().ToList();
+        IEnumerable<DomainDischargeCollection> discharges = _dischargeContext.Get().ToList();
         foreach (var discharge in discharges)
         {
             discharge.RequestExists = _commandRequestService.DoesEquivalentRequestExist(
-                new CommandRequest
+                new DomainCommandRequest
                 {
                     Recipient = discharge.AccountId,
                     Type = CommandRequestType.ReinstateMember,
@@ -67,11 +68,11 @@ public class DischargesController : ControllerBase
     }
 
     [HttpGet("reinstate/{id}")]
-    public async Task<IEnumerable<DischargeCollection>> Reinstate([FromRoute] string id)
+    public async Task<IEnumerable<DomainDischargeCollection>> Reinstate([FromRoute] string id)
     {
         var dischargeCollection = _dischargeContext.GetSingle(id);
-        await _dischargeContext.Update(dischargeCollection.Id, Builders<DischargeCollection>.Update.Set(x => x.Reinstated, true));
-        await _accountContext.Update(dischargeCollection.AccountId, x => x.MembershipState, MembershipState.MEMBER);
+        await _dischargeContext.Update(dischargeCollection.Id, Builders<DomainDischargeCollection>.Update.Set(x => x.Reinstated, true));
+        await _accountContext.Update(dischargeCollection.AccountId, x => x.MembershipState, MembershipState.Member);
         var notification = await _assignmentService.UpdateUnitRankAndRole(
             dischargeCollection.AccountId,
             "Basic Training Unit",
@@ -88,7 +89,7 @@ public class DischargesController : ControllerBase
         foreach (var member in _unitsContext.GetSingle(personnelId).Members.Where(x => x != _httpContextService.GetUserId()))
         {
             _notificationsService.Add(
-                new Notification
+                new DomainNotification
                 {
                     Owner = member,
                     Icon = NotificationIcons.Promotion,

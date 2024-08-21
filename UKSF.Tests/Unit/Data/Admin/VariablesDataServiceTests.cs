@@ -5,7 +5,7 @@ using Moq;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -14,16 +14,16 @@ namespace UKSF.Tests.Unit.Data.Admin;
 public class VariablesDataServiceTests
 {
     private readonly VariablesContext _variablesContext;
-    private List<VariableItem> _mockCollection;
+    private List<DomainVariableItem> _mockCollection;
 
     public VariablesDataServiceTests()
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
         Mock<IVariablesService> mockVariablesService = new();
-        Mock<IMongoCollection<VariableItem>> mockDataCollection = new();
+        Mock<IMongoCollection<DomainVariableItem>> mockDataCollection = new();
 
-        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<VariableItem>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainVariableItem>(It.IsAny<string>())).Returns(mockDataCollection.Object);
         mockDataCollection.Setup(x => x.Get()).Returns(() => _mockCollection);
 
         _variablesContext = new VariablesContext(mockDataCollectionFactory.Object, mockEventBus.Object);
@@ -32,9 +32,9 @@ public class VariablesDataServiceTests
     [Fact]
     public void Should_get_collection_in_order()
     {
-        VariableItem item1 = new() { Key = "MISSIONS_PATH" };
-        VariableItem item2 = new() { Key = "SERVER_PATH" };
-        VariableItem item3 = new() { Key = "DISCORD_IDS" };
+        DomainVariableItem item1 = new() { Key = "MISSIONS_PATH" };
+        DomainVariableItem item2 = new() { Key = "SERVER_PATH" };
+        DomainVariableItem item3 = new() { Key = "DISCORD_IDS" };
         _mockCollection =
         [
             item1,
@@ -52,9 +52,9 @@ public class VariablesDataServiceTests
     [InlineData("game path")]
     public void ShouldGetNothingWhenNoKeyOrNotFound(string key)
     {
-        VariableItem item1 = new() { Key = "MISSIONS_PATH" };
-        VariableItem item2 = new() { Key = "SERVER_PATH" };
-        VariableItem item3 = new() { Key = "DISCORD_IDS" };
+        DomainVariableItem item1 = new() { Key = "MISSIONS_PATH" };
+        DomainVariableItem item2 = new() { Key = "SERVER_PATH" };
+        DomainVariableItem item3 = new() { Key = "DISCORD_IDS" };
         _mockCollection =
         [
             item1,

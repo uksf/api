@@ -4,7 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Extensions;
 using UKSF.Api.Models.Response;
@@ -34,31 +34,31 @@ public class LoginService : ILoginService
 
     public TokenResponse Login(string email, string password)
     {
-        var domainAccount = AuthenticateAccount(email, password);
-        return GenerateBearerToken(domainAccount);
+        var account = AuthenticateAccount(email, password);
+        return GenerateBearerToken(account);
     }
 
     public TokenResponse LoginForPasswordReset(string email)
     {
-        var domainAccount = AuthenticateAccount(email, "", true);
-        return GenerateBearerToken(domainAccount);
+        var account = AuthenticateAccount(email, "", true);
+        return GenerateBearerToken(account);
     }
 
     public TokenResponse LoginForImpersonate(string accountId)
     {
-        var domainAccount = _accountContext.GetSingle(accountId);
-        if (domainAccount == null)
+        var account = _accountContext.GetSingle(accountId);
+        if (account == null)
         {
             throw new BadRequestException($"No user found with id {accountId}");
         }
 
-        return GenerateBearerToken(domainAccount, true);
+        return GenerateBearerToken(account, true);
     }
 
     public TokenResponse RegenerateBearerToken()
     {
-        var domainAccount = _accountContext.GetSingle(_httpContextService.GetUserId());
-        if (domainAccount == null)
+        var account = _accountContext.GetSingle(_httpContextService.GetUserId());
+        if (account == null)
         {
             throw new BadRequestException("No user found with that email");
         }
@@ -68,35 +68,35 @@ public class LoginService : ILoginService
             throw new TokenRefreshFailedException("Impersonation session expired");
         }
 
-        return GenerateBearerToken(domainAccount);
+        return GenerateBearerToken(account);
     }
 
     private DomainAccount AuthenticateAccount(string email, string password, bool passwordReset = false)
     {
-        var domainAccount = _accountContext.GetSingle(x => string.Equals(x.Email, email, StringComparison.InvariantCultureIgnoreCase));
-        if (domainAccount == null)
+        var account = _accountContext.GetSingle(x => string.Equals(x.Email, email, StringComparison.InvariantCultureIgnoreCase));
+        if (account == null)
         {
             throw new BadRequestException("No user found with that email");
         }
 
         if (passwordReset)
         {
-            return domainAccount;
+            return account;
         }
 
-        if (!BCrypt.Net.BCrypt.Verify(password, domainAccount.Password))
+        if (!BCrypt.Net.BCrypt.Verify(password, account.Password))
         {
             throw new BadRequestException("Password or email did not match");
         }
 
-        return domainAccount;
+        return account;
     }
 
-    private TokenResponse GenerateBearerToken(DomainAccount domainAccount, bool impersonating = false)
+    private TokenResponse GenerateBearerToken(DomainAccount account, bool impersonating = false)
     {
         List<Claim> claims =
-            [new Claim(ClaimTypes.Email, domainAccount.Email, ClaimValueTypes.String), new Claim(ClaimTypes.Sid, domainAccount.Id, ClaimValueTypes.String)];
-        claims.AddRange(_permissionsService.GrantPermissions(domainAccount).Select(x => new Claim(ClaimTypes.Role, x)));
+            [new Claim(ClaimTypes.Email, account.Email, ClaimValueTypes.String), new Claim(ClaimTypes.Sid, account.Id, ClaimValueTypes.String)];
+        claims.AddRange(_permissionsService.GrantPermissions(account).Select(x => new Claim(ClaimTypes.Role, x)));
 
         if (impersonating)
         {

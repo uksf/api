@@ -1,22 +1,22 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace UKSF.Api.Core.Models;
+namespace UKSF.Api.Core.Models.Domain;
 
 public enum ThreadMode
 {
-    ALL,
-    RECRUITER,
-    RANKSUPERIOR,
-    RANKEQUAL,
-    RANKSUPERIOROREQUAL
+    All,
+    Recruiter,
+    Ranksuperior,
+    Rankequal,
+    Ranksuperiororequal
 }
 
-public class CommentThread : MongoObject
+public class DomainCommentThread : MongoObject
 {
     [BsonRepresentation(BsonType.ObjectId)]
     public string[] Authors { get; set; }
 
-    public Comment[] Comments { get; set; } = [];
+    public DomainComment[] Comments { get; set; } = [];
     public ThreadMode Mode { get; set; }
 }

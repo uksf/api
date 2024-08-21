@@ -59,7 +59,7 @@ public class ActionCleanupRunningServers : SelfCreatingScheduledAction, IActionC
         KillRemainingProcesses();
     }
 
-    private void KillOrphanedServers(List<GameServer> runningServers)
+    private void KillOrphanedServers(List<DomainGameServer> runningServers)
     {
         var killedCount = 0;
         foreach (var runningServer in runningServers)

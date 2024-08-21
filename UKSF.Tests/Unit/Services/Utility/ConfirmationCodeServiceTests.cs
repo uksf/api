@@ -8,7 +8,7 @@ using MongoDB.Bson;
 using Moq;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -34,18 +34,18 @@ public class ConfirmationCodeServiceTests
     [Fact]
     public async Task ShouldCancelScheduledJob()
     {
-        ConfirmationCode confirmationCode = new() { Value = "test" };
-        List<ConfirmationCode> confirmationCodeData = [confirmationCode];
+        DomainConfirmationCode confirmationCode = new() { Value = "test" };
+        List<DomainConfirmationCode> confirmationCodeData = [confirmationCode];
         var actionParameters = JsonSerializer.Serialize(new object[] { confirmationCode.Id }, DefaultJsonSerializerOptions.Options);
 
-        ScheduledJob scheduledJob = new() { ActionParameters = actionParameters };
-        List<ScheduledJob> subject = [scheduledJob];
+        DomainScheduledJob scheduledJob = new() { ActionParameters = actionParameters };
+        List<DomainScheduledJob> subject = [scheduledJob];
 
         _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => confirmationCodeData.FirstOrDefault(y => y.Id == x));
         _mockConfirmationCodeDataService.Setup(x => x.Delete(It.IsAny<string>())).Returns(Task.CompletedTask);
-        _mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<ScheduledJob, bool>>()))
+        _mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<DomainScheduledJob, bool>>()))
                              .Returns(Task.CompletedTask)
-                             .Callback<Func<ScheduledJob, bool>>(x => subject.Remove(subject.FirstOrDefault(x)));
+                             .Callback<Func<DomainScheduledJob, bool>>(x => subject.Remove(subject.FirstOrDefault(x)));
 
         await _confirmationCodeService.GetConfirmationCodeValue(confirmationCode.Id);
 
@@ -55,11 +55,11 @@ public class ConfirmationCodeServiceTests
     [Fact]
     public async Task ShouldCreateConfirmationCode()
     {
-        ConfirmationCode subject = null;
+        DomainConfirmationCode subject = null;
 
-        _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>()))
+        _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<DomainConfirmationCode>()))
                                         .Returns(Task.CompletedTask)
-                                        .Callback<ConfirmationCode>(x => subject = x);
+                                        .Callback<DomainConfirmationCode>(x => subject = x);
         _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<object[]>()))
                              .Returns(Task.CompletedTask);
 
@@ -72,13 +72,13 @@ public class ConfirmationCodeServiceTests
     [Fact]
     public async Task ShouldGetCorrectConfirmationCode()
     {
-        ConfirmationCode confirmationCode1 = new() { Value = "test1" };
-        ConfirmationCode confirmationCode2 = new() { Value = "test2" };
-        List<ConfirmationCode> confirmationCodeData = [confirmationCode1, confirmationCode2];
+        DomainConfirmationCode confirmationCode1 = new() { Value = "test1" };
+        DomainConfirmationCode confirmationCode2 = new() { Value = "test2" };
+        List<DomainConfirmationCode> confirmationCodeData = [confirmationCode1, confirmationCode2];
 
         _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => confirmationCodeData.FirstOrDefault(y => y.Id == x));
-        _mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<ScheduledJob, bool>>()))
-                             .Returns<Func<ScheduledJob, bool>>(x => Task.FromResult(new List<ScheduledJob>().FirstOrDefault(x)));
+        _mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<DomainScheduledJob, bool>>()))
+                             .Returns<Func<DomainScheduledJob, bool>>(x => Task.FromResult(new List<DomainScheduledJob>().FirstOrDefault(x)));
 
         var subject = await _confirmationCodeService.GetConfirmationCodeValue(confirmationCode2.Id);
 
@@ -88,12 +88,12 @@ public class ConfirmationCodeServiceTests
     [Fact]
     public async Task ShouldReturnCodeValue()
     {
-        ConfirmationCode confirmationCode = new() { Value = "test" };
-        List<ConfirmationCode> confirmationCodeData = [confirmationCode];
+        DomainConfirmationCode confirmationCode = new() { Value = "test" };
+        List<DomainConfirmationCode> confirmationCodeData = [confirmationCode];
 
         _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<string>(x => confirmationCodeData.FirstOrDefault(y => y.Id == x));
-        _mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<ScheduledJob, bool>>()))
-                             .Returns<Func<ScheduledJob, bool>>(x => Task.FromResult(new List<ScheduledJob>().FirstOrDefault(x)));
+        _mockSchedulerService.Setup(x => x.Cancel(It.IsAny<Func<DomainScheduledJob, bool>>()))
+                             .Returns<Func<DomainScheduledJob, bool>>(x => Task.FromResult(new List<DomainScheduledJob>().FirstOrDefault(x)));
 
         var subject = await _confirmationCodeService.GetConfirmationCodeValue(confirmationCode.Id);
 
@@ -103,7 +103,7 @@ public class ConfirmationCodeServiceTests
     [Fact]
     public async Task ShouldReturnValidCodeId()
     {
-        _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>())).Returns(Task.CompletedTask);
+        _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<DomainConfirmationCode>())).Returns(Task.CompletedTask);
         _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<object[]>()))
                              .Returns(Task.CompletedTask);
 
@@ -116,11 +116,11 @@ public class ConfirmationCodeServiceTests
     [Fact]
     public async Task ShouldSetConfirmationCodeValue()
     {
-        ConfirmationCode subject = null;
+        DomainConfirmationCode subject = null;
 
-        _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>()))
+        _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<DomainConfirmationCode>()))
                                         .Returns(Task.CompletedTask)
-                                        .Callback<ConfirmationCode>(x => subject = x);
+                                        .Callback<DomainConfirmationCode>(x => subject = x);
         _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<object[]>()))
                              .Returns(Task.CompletedTask);
 
@@ -136,7 +136,7 @@ public class ConfirmationCodeServiceTests
     [InlineData(null)]
     public async Task ShouldReturnEmptyStringWhenBadIdOrNull(string id)
     {
-        _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<ConfirmationCode>(null);
+        _mockConfirmationCodeDataService.Setup(x => x.GetSingle(It.IsAny<string>())).Returns<DomainConfirmationCode>(null);
 
         var subject = await _confirmationCodeService.GetConfirmationCodeValue(id);
 
@@ -148,7 +148,7 @@ public class ConfirmationCodeServiceTests
     [InlineData("")]
     public async Task ShouldThrowForCreateWhenValueNullOrEmpty(string value)
     {
-        _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<ConfirmationCode>())).Returns(Task.CompletedTask);
+        _mockConfirmationCodeDataService.Setup(x => x.Add(It.IsAny<DomainConfirmationCode>())).Returns(Task.CompletedTask);
         _mockSchedulerService.Setup(x => x.CreateAndScheduleJob(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<object[]>()))
                              .Returns(Task.CompletedTask);
 

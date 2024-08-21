@@ -2,10 +2,10 @@
 
 public enum ModpackBuildResult
 {
-    NONE,
-    SUCCESS,
-    FAILED,
-    CANCELLED,
-    WARNING,
-    SKIPPED
+    None,
+    Success,
+    Failed,
+    Cancelled,
+    Warning,
+    Skipped
 }

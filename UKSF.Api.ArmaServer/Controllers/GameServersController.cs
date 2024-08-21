@@ -69,12 +69,12 @@ public class GameServersController : ControllerBase
     {
         var gameServer = _gameServersContext.GetSingle(id);
         await _gameServersService.GetGameServerStatus(gameServer);
-        return new GameServerDataset { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
+        return new GameServerDataset { DomainGameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
     }
 
     [HttpPost("{check}")]
     [Authorize]
-    public GameServer CheckGameServers(string check, [FromBody] GameServer gameServer = null)
+    public DomainGameServer CheckGameServers(string check, [FromBody] DomainGameServer gameServer = null)
     {
         if (gameServer != null)
         {
@@ -87,7 +87,7 @@ public class GameServersController : ControllerBase
 
     [HttpPut]
     [Authorize]
-    public async Task AddServer([FromBody] GameServer gameServer)
+    public async Task AddServer([FromBody] DomainGameServer gameServer)
     {
         gameServer.Order = _gameServersContext.Get().Count();
         await _gameServersContext.Add(gameServer);
@@ -98,7 +98,7 @@ public class GameServersController : ControllerBase
 
     [HttpPatch]
     [Authorize]
-    public async Task<bool> EditGameServer([FromBody] GameServer gameServer)
+    public async Task<bool> EditGameServer([FromBody] DomainGameServer gameServer)
     {
         var oldGameServer = _gameServersContext.GetSingle(gameServer.Id);
         _logger.LogAudit($"Game server '{gameServer.Name}' updated:{oldGameServer.Changes(gameServer)}");
@@ -112,18 +112,18 @@ public class GameServersController : ControllerBase
 
         await _gameServersContext.Update(
             gameServer.Id,
-            Builders<GameServer>.Update.Set(x => x.Name, gameServer.Name)
-                                .Set(x => x.Port, gameServer.Port)
-                                .Set(x => x.ApiPort, gameServer.ApiPort)
-                                .Set(x => x.NumberHeadlessClients, gameServer.NumberHeadlessClients)
-                                .Set(x => x.ProfileName, gameServer.ProfileName)
-                                .Set(x => x.HostName, gameServer.HostName)
-                                .Set(x => x.Password, gameServer.Password)
-                                .Set(x => x.AdminPassword, gameServer.AdminPassword)
-                                .Set(x => x.Environment, gameServer.Environment)
-                                .Set(x => x.ServerOption, gameServer.ServerOption)
-                                .Set(x => x.Mods, gameServer.Mods)
-                                .Set(x => x.ServerMods, gameServer.ServerMods)
+            Builders<DomainGameServer>.Update.Set(x => x.Name, gameServer.Name)
+                                      .Set(x => x.Port, gameServer.Port)
+                                      .Set(x => x.ApiPort, gameServer.ApiPort)
+                                      .Set(x => x.NumberHeadlessClients, gameServer.NumberHeadlessClients)
+                                      .Set(x => x.ProfileName, gameServer.ProfileName)
+                                      .Set(x => x.HostName, gameServer.HostName)
+                                      .Set(x => x.Password, gameServer.Password)
+                                      .Set(x => x.AdminPassword, gameServer.AdminPassword)
+                                      .Set(x => x.Environment, gameServer.Environment)
+                                      .Set(x => x.ServerOption, gameServer.ServerOption)
+                                      .Set(x => x.Mods, gameServer.Mods)
+                                      .Set(x => x.ServerMods, gameServer.ServerMods)
         );
 
         SendServerUpdateIfNotCaller(gameServer.Id);
@@ -132,7 +132,7 @@ public class GameServersController : ControllerBase
 
     [HttpDelete("{id}")]
     [Authorize]
-    public async Task<IEnumerable<GameServer>> DeleteGameServer(string id)
+    public async Task<IEnumerable<DomainGameServer>> DeleteGameServer(string id)
     {
         var gameServer = _gameServersContext.GetSingle(id);
         _logger.LogAudit($"Game server deleted '{gameServer.Name}'");
@@ -144,7 +144,7 @@ public class GameServersController : ControllerBase
 
     [HttpPatch("order")]
     [Authorize]
-    public async Task<IEnumerable<GameServer>> UpdateOrder([FromBody] OrderUpdateRequest orderUpdate)
+    public async Task<IEnumerable<DomainGameServer>> UpdateOrder([FromBody] OrderUpdateRequest orderUpdate)
     {
         await _gameServersService.UpdateGameServerOrder(orderUpdate);
         SendAnyUpdateIfNotCaller(true);
@@ -193,15 +193,15 @@ public class GameServersController : ControllerBase
 
         if (_gameServerHelpers.IsMainOpTime())
         {
-            if (gameServer.ServerOption == GameServerOption.SINGLETON)
+            if (gameServer.ServerOption == GameServerOption.Singleton)
             {
-                if (_gameServersContext.Get(x => x.ServerOption != GameServerOption.SINGLETON).Any(x => x.Status.Started || x.Status.Running))
+                if (_gameServersContext.Get(x => x.ServerOption != GameServerOption.Singleton).Any(x => x.Status.Started || x.Status.Running))
                 {
                     throw new BadRequestException("Server must be launched on its own. Stop the other running servers first");
                 }
             }
 
-            if (_gameServersContext.Get(x => x.ServerOption == GameServerOption.SINGLETON).Any(x => x.Status.Started || x.Status.Running))
+            if (_gameServersContext.Get(x => x.ServerOption == GameServerOption.Singleton).Any(x => x.Status.Started || x.Status.Running))
             {
                 throw new BadRequestException("Server cannot be launched whilst main server is running at this time");
             }
@@ -246,7 +246,7 @@ public class GameServersController : ControllerBase
         SendServerUpdateIfNotCaller(gameServer.Id);
         await _gameServersService.StopGameServer(gameServer);
         await _gameServersService.GetGameServerStatus(gameServer);
-        return new GameServerDataset { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
+        return new GameServerDataset { DomainGameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
     }
 
     [HttpGet("kill/{id}")]
@@ -272,7 +272,7 @@ public class GameServersController : ControllerBase
 
         await _gameServersService.GetGameServerStatus(gameServer);
         SendServerUpdateIfNotCaller(gameServer.Id);
-        return new GameServerDataset { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
+        return new GameServerDataset { DomainGameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
     }
 
     [HttpGet("killall")]
@@ -293,11 +293,11 @@ public class GameServersController : ControllerBase
 
     [HttpPost("{id}/mods")]
     [Authorize]
-    public async Task<List<GameServerMod>> SetGameServerMods(string id, [FromBody] GameServer gameServer)
+    public async Task<List<GameServerMod>> SetGameServerMods(string id, [FromBody] DomainGameServer gameServer)
     {
         var oldGameServer = _gameServersContext.GetSingle(id);
-        await _gameServersContext.Update(id, Builders<GameServer>.Update.Unset(x => x.Mods).Unset(x => x.ServerMods));
-        await _gameServersContext.Update(id, Builders<GameServer>.Update.Set(x => x.Mods, gameServer.Mods).Set(x => x.ServerMods, gameServer.ServerMods));
+        await _gameServersContext.Update(id, Builders<DomainGameServer>.Update.Unset(x => x.Mods).Unset(x => x.ServerMods));
+        await _gameServersContext.Update(id, Builders<DomainGameServer>.Update.Set(x => x.Mods, gameServer.Mods).Set(x => x.ServerMods, gameServer.ServerMods));
         _logger.LogAudit($"Game server '{gameServer.Name}' updated:{oldGameServer.Changes(gameServer)}");
         return _gameServersService.GetAvailableMods(id);
     }

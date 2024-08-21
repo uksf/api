@@ -58,18 +58,23 @@ public class DiscordGithubService(
         }
     }
 
-    private async Task OnSlashCommand(SocketSlashCommand command)
+    private Task OnSlashCommand(SocketSlashCommand command)
     {
-        if (command.Data.Name == NewGithubIssueCommandName)
-        {
-            await OnNewGithubIssueCommand(command);
-        }
+        return WrapEventTask(
+            async () =>
+            {
+                if (command.Data.Name == NewGithubIssueCommandName)
+                {
+                    await OnNewGithubIssueCommand(command);
+                }
+            }
+        );
     }
 
     private async Task OnNewGithubIssueCommand(SocketSlashCommand command)
     {
-        var domainAccount = GetAccountForDiscordUser(command.User.Id);
-        if (domainAccount is not { MembershipState: MembershipState.MEMBER })
+        var account = GetAccountForDiscordUser(command.User.Id);
+        if (account is not { MembershipState: MembershipState.Member })
         {
             await command.RespondAsync("You do not have permission to use that command", ephemeral: true);
             return;
@@ -86,89 +91,99 @@ public class DiscordGithubService(
         await command.RespondAsync("Select an issue template", components: componentBuilder.Build());
     }
 
-    private async Task OnSelectMenu(SocketMessageComponent message)
+    private Task OnSelectMenu(SocketMessageComponent message)
     {
-        var issueTemplates = await githubIssuesService.GetIssueTemplates();
-        var issueTemplateName = string.Join("", message.Data.Values);
-        var issueTemplate = issueTemplates.FirstOrDefault(x => x.Name == issueTemplateName);
-        if (issueTemplate is null)
-        {
-            _logger.LogError($"Failed to find issue template with name {issueTemplateName}");
-            await message.UpdateAsync(
-                properties =>
-                {
-                    properties.Components = null;
-                    properties.Content = "Something went wrong, couldn't find the issue template";
-                }
-            );
-            return;
-        }
-
-        var modalBuilder = new ModalBuilder().WithTitle($"New {issueTemplate.Name} Issue")
-                                             .WithCustomId(issueTemplate.Name)
-                                             .AddTextInput("Issue Title", "issue-title", value: issueTemplate.Title, required: true)
-                                             .AddTextInput(
-                                                 "Issue Description",
-                                                 "issue-description",
-                                                 TextInputStyle.Paragraph,
-                                                 value: issueTemplate.Body,
-                                                 required: true
-                                             );
-        await message.RespondWithModalAsync(modalBuilder.Build());
-        await message.ModifyOriginalResponseAsync(
-            properties =>
+        return WrapEventTask(
+            async () =>
             {
-                properties.Components = null;
-                properties.Content = $"Creating new {issueTemplate.Name} issue";
+                var issueTemplates = await githubIssuesService.GetIssueTemplates();
+                var issueTemplateName = string.Join("", message.Data.Values);
+                var issueTemplate = issueTemplates.FirstOrDefault(x => x.Name == issueTemplateName);
+                if (issueTemplate is null)
+                {
+                    _logger.LogError($"Failed to find issue template with name {issueTemplateName}");
+                    await message.UpdateAsync(
+                        properties =>
+                        {
+                            properties.Components = null;
+                            properties.Content = "Something went wrong, couldn't find the issue template";
+                        }
+                    );
+                    return;
+                }
+
+                var modalBuilder = new ModalBuilder().WithTitle($"New {issueTemplate.Name} Issue")
+                                                     .WithCustomId(issueTemplate.Name)
+                                                     .AddTextInput("Issue Title", "issue-title", value: issueTemplate.Title, required: true)
+                                                     .AddTextInput(
+                                                         "Issue Description",
+                                                         "issue-description",
+                                                         TextInputStyle.Paragraph,
+                                                         value: issueTemplate.Body,
+                                                         required: true
+                                                     );
+                await message.RespondWithModalAsync(modalBuilder.Build());
+                await message.ModifyOriginalResponseAsync(
+                    properties =>
+                    {
+                        properties.Components = null;
+                        properties.Content = $"Creating new {issueTemplate.Name} issue";
+                    }
+                );
             }
         );
     }
 
-    private async Task OnModalSubmitted(SocketModal modal)
+    private Task OnModalSubmitted(SocketModal modal)
     {
-        SetUserContextByDiscordUser(modal.User.Id);
+        return WrapEventTask(
+            async () =>
+            {
+                SetUserContextByDiscordUser(modal.User.Id);
 
-        var issueTemplates = await githubIssuesService.GetIssueTemplates();
-        var issueTemplateName = modal.Data.CustomId;
-        var issueTemplate = issueTemplates.FirstOrDefault(x => x.Name == issueTemplateName);
-        if (issueTemplate is null)
-        {
-            _logger.LogError($"Failed to find issue template with name {issueTemplateName}");
-            await modal.UpdateAsync(
-                properties =>
+                var issueTemplates = await githubIssuesService.GetIssueTemplates();
+                var issueTemplateName = modal.Data.CustomId;
+                var issueTemplate = issueTemplates.FirstOrDefault(x => x.Name == issueTemplateName);
+                if (issueTemplate is null)
                 {
-                    properties.Components = null;
-                    properties.Content = "Something went wrong, couldn't find the issue template";
+                    _logger.LogError($"Failed to find issue template with name {issueTemplateName}");
+                    await modal.UpdateAsync(
+                        properties =>
+                        {
+                            properties.Components = null;
+                            properties.Content = "Something went wrong, couldn't find the issue template";
+                        }
+                    );
+                    return;
                 }
-            );
-            return;
-        }
 
-        var issueTitle = modal.Data.Components.First(x => x.CustomId == "issue-title").Value;
-        var issueBody = modal.Data.Components.First(x => x.CustomId == "issue-description").Value;
-        try
-        {
-            var issue = await githubIssuesService.CreateIssue(new NewIssueRequest(issueTitle, issueTemplate.Labels, issueBody));
+                var issueTitle = modal.Data.Components.First(x => x.CustomId == "issue-title").Value;
+                var issueBody = modal.Data.Components.First(x => x.CustomId == "issue-description").Value;
+                try
+                {
+                    var issue = await githubIssuesService.CreateIssue(new NewIssueRequest(issueTitle, issueTemplate.Labels, issueBody));
 
-            _logger.LogAudit($"Created new github issue {issue.HtmlUrl}");
-            await modal.UpdateAsync(
-                properties =>
-                {
-                    properties.Components = null;
-                    properties.Content = $"New Github issue created: [{issue.Title}]({issue.HtmlUrl})";
+                    _logger.LogAudit($"Created new github issue {issue.HtmlUrl}");
+                    await modal.UpdateAsync(
+                        properties =>
+                        {
+                            properties.Components = null;
+                            properties.Content = $"New Github issue created: [{issue.Title}]({issue.HtmlUrl})";
+                        }
+                    );
                 }
-            );
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError("Failed to create issue", exception);
-            await modal.UpdateAsync(
-                properties =>
+                catch (Exception exception)
                 {
-                    properties.Components = null;
-                    properties.Content = "Failed to create issue";
+                    _logger.LogError("Failed to create issue", exception);
+                    await modal.UpdateAsync(
+                        properties =>
+                        {
+                            properties.Components = null;
+                            properties.Content = "Failed to create issue";
+                        }
+                    );
                 }
-            );
-        }
+            }
+        );
     }
 }

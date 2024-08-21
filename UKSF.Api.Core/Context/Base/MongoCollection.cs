@@ -30,17 +30,8 @@ public interface IMongoCollection<T> where T : MongoObject
     Task DeleteManyAsync(Expression<Func<T, bool>> predicate);
 }
 
-public class MongoCollection<T> : IMongoCollection<T> where T : MongoObject
+public class MongoCollection<T>(IMongoDatabase database, string collectionName) : IMongoCollection<T> where T : MongoObject
 {
-    private readonly string _collectionName;
-    private readonly IMongoDatabase _database;
-
-    public MongoCollection(IMongoDatabase database, string collectionName)
-    {
-        _database = database;
-        _collectionName = collectionName;
-    }
-
     public IEnumerable<T> Get()
     {
         return GetCollection().AsQueryable();
@@ -144,17 +135,17 @@ public class MongoCollection<T> : IMongoCollection<T> where T : MongoObject
     {
         if (!await CollectionExistsAsync())
         {
-            await _database.CreateCollectionAsync(_collectionName);
+            await database.CreateCollectionAsync(collectionName);
         }
     }
 
     private MongoDB.Driver.IMongoCollection<T> GetCollection()
     {
-        return _database.GetCollection<T>(_collectionName);
+        return database.GetCollection<T>(collectionName);
     }
 
     private async Task<bool> CollectionExistsAsync()
     {
-        return await (await _database.ListCollectionsAsync(new ListCollectionsOptions { Filter = new BsonDocument("name", _collectionName) })).AnyAsync();
+        return await (await database.ListCollectionsAsync(new ListCollectionsOptions { Filter = new BsonDocument("name", collectionName) })).AnyAsync();
     }
 }

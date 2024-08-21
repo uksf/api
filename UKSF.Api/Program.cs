@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Hosting.WindowsServices;
-using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.SwaggerUI;
 using UKSF.Api.AppStart;
 using UKSF.Api.ArmaServer;
 using UKSF.Api.Core;
@@ -11,32 +9,6 @@ using UKSF.Api.Extensions;
 using UKSF.Api.Integrations.Teamspeak;
 using UKSF.Api.Middleware;
 using UKSF.Api.Modpack;
-
-void InitServiceLogging(AppSettings appSettings)
-{
-    var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), appSettings.LogsPath);
-    Directory.CreateDirectory(appData);
-    var logFiles = new DirectoryInfo(appData).EnumerateFiles("*.log").OrderByDescending(file => file.LastWriteTime).Select(file => file.Name).ToArray();
-    if (logFiles.Length > 9)
-    {
-        File.Delete(Path.Combine(appData, logFiles.Last()));
-    }
-
-    var logFile = Path.Combine(appData, $"LOG__{DateTime.UtcNow:yyyy-MM-dd__HH-mm}.log");
-    try
-    {
-        File.Create(logFile).Close();
-    }
-    catch (Exception e)
-    {
-        Console.Out.WriteLine($"Log file not created: {logFile}. {e.Message}");
-    }
-
-    FileStream fileStream = new(logFile, FileMode.Create);
-    StreamWriter streamWriter = new(fileStream) { AutoFlush = true };
-    Console.SetOut(streamWriter);
-    Console.SetError(streamWriter);
-}
 
 var developmentOrigins = new[] { "http://localhost:4200", "http://localhost:4300", "https://dev.uk-sf.co.uk", "https://api-dev.uk-sf.co.uk" };
 var productionOrigins = new[] { "https://uk-sf.co.uk", "https://api.uk-sf.co.uk" };
@@ -80,38 +52,6 @@ builder.Services.AddCors(
        )
        .AddRouting()
        .AddLogging(options => { options.ClearProviders().AddConsole(); })
-       .AddSwaggerGen(
-           options =>
-           {
-               options.SwaggerDoc("v1", new OpenApiInfo { Title = "UKSF API", Version = "v1" });
-               options.AddSecurityDefinition(
-                   "Bearer",
-                   new OpenApiSecurityScheme
-                   {
-                       Name = "Authorization",
-                       Type = SecuritySchemeType.Http,
-                       Scheme = "Bearer",
-                       In = ParameterLocation.Header,
-                       Description = "JSON Web Token based security"
-                   }
-               );
-               options.AddSecurityRequirement(
-                   new OpenApiSecurityRequirement
-                   {
-                       {
-                           new()
-                           {
-                               Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" },
-                               Scheme = "oauth2",
-                               Name = "Bearer",
-                               In = ParameterLocation.Header
-                           },
-                           new List<string>()
-                       }
-                   }
-               );
-           }
-       )
        .AddControllers()
        .AddJsonOptions(
            options =>
@@ -137,14 +77,6 @@ app.Lifetime.ApplicationStopping.Register(
 );
 
 app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMode.Lax })
-   .UseSwagger()
-   .UseSwaggerUI(
-       options =>
-       {
-           options.SwaggerEndpoint("/swagger/v1/swagger.json", "UKSF API v1");
-           options.DocExpansion(DocExpansion.None);
-       }
-   )
    .UseRouting()
    .UseCors("CorsPolicy")
    .UseMiddleware<CorsMiddleware>()
@@ -169,85 +101,30 @@ app.Services.StartUksfServices();
 logger.LogInfo("Services started");
 
 app.Run();
+return;
 
-/*
-public static class Program
+void InitServiceLogging(AppSettings appSettings)
 {
-    private static IConfigurationRoot _config;
-
-    public static void Main(string[] args)
+    var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), appSettings.LogsPath);
+    Directory.CreateDirectory(appData);
+    var logFiles = new DirectoryInfo(appData).EnumerateFiles("*.log").OrderByDescending(file => file.LastWriteTime).Select(file => file.Name).ToArray();
+    if (logFiles.Length > 9)
     {
-        if (!OperatingSystem.IsWindows())
-        {
-            Console.Out.WriteLine("Not running on windows, shutting down.");
-            return;
-        }
-
-        // AppDomain.CurrentDomain.GetAssemblies()
-        //          .ToList()
-        //          .SelectMany(x => x.GetReferencedAssemblies())
-        //          .Distinct()
-        //          .Where(y => AppDomain.CurrentDomain.GetAssemblies().ToList().Any(a => a.FullName == y.FullName) == false)
-        //          .ToList()
-        //          .ForEach(x => AppDomain.CurrentDomain.GetAssemblies().ToList().Add(AppDomain.CurrentDomain.Load(x)));
-
-        _config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-
-        var runAsService = bool.Parse(_config.GetSection("appSettings")["runAsService"]);
-        if (runAsService)
-        {
-            InitServiceLogging();
-            BuildProductionWebHost(args).RunAsService();
-        }
-        else
-        {
-            BuildDebugWebHost(args).Run();
-        }
+        File.Delete(Path.Combine(appData, logFiles.Last()));
     }
 
-    private static IWebHost BuildDebugWebHost(string[] args)
+    var logFile = Path.Combine(appData, $"LOG__{DateTime.UtcNow:yyyy-MM-dd__HH-mm}.log");
+    try
     {
-        return WebHost.CreateDefaultBuilder(args)
-                      .UseStartup<Startup>()
-                      .UseKestrel()
-                      // .UseContentRoot(Directory.GetCurrentDirectory())
-                      .Build();
+        File.Create(logFile).Close();
+    }
+    catch (Exception e)
+    {
+        Console.Out.WriteLine($"Log file not created: {logFile}. {e.Message}");
     }
 
-    private static IWebHost BuildProductionWebHost(string[] args)
-    {
-        return WebHost.CreateDefaultBuilder(args)
-                      .UseStartup<Startup>()
-                      .UseKestrel()
-                      // .UseContentRoot(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName))
-                      .Build();
-    }
-
-    private static void InitServiceLogging()
-    {
-        var logsPath = _config.GetSection("appSettings")["logsPath"];
-        var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), logsPath);
-        Directory.CreateDirectory(appData);
-        var logFiles = new DirectoryInfo(appData).EnumerateFiles("*.log").OrderByDescending(file => file.LastWriteTime).Select(file => file.Name).ToArray();
-        if (logFiles.Length > 9)
-        {
-            File.Delete(Path.Combine(appData, logFiles.Last()));
-        }
-
-        var logFile = Path.Combine(appData, $"LOG__{DateTime.UtcNow:yyyy-MM-dd__HH-mm}.log");
-        try
-        {
-            File.Create(logFile).Close();
-        }
-        catch (Exception e)
-        {
-            Console.Out.WriteLine($"Log file not created: {logFile}. {e.Message}");
-        }
-
-        FileStream fileStream = new(logFile, FileMode.Create);
-        StreamWriter streamWriter = new(fileStream) { AutoFlush = true };
-        Console.SetOut(streamWriter);
-        Console.SetError(streamWriter);
-    }
+    FileStream fileStream = new(logFile, FileMode.Create);
+    StreamWriter streamWriter = new(fileStream) { AutoFlush = true };
+    Console.SetOut(streamWriter);
+    Console.SetError(streamWriter);
 }
-*/

@@ -2,7 +2,7 @@
 
 public enum GameEnvironment
 {
-    RELEASE,
-    RC,
-    DEVELOPMENT
+    Release,
+    Rc,
+    Development
 }

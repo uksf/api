@@ -13,10 +13,10 @@ public class BuildStepCbaSettings : FileBuildStep
 
         string sourceUserconfigPath;
         string targetUserconfigPath;
-        if (Build.Environment == GameEnvironment.RELEASE)
+        if (Build.Environment == GameEnvironment.Release)
         {
-            sourceUserconfigPath = Path.Join(GetServerEnvironmentPath(GameEnvironment.RC), "userconfig");
-            targetUserconfigPath = Path.Join(GetServerEnvironmentPath(GameEnvironment.RELEASE), "userconfig");
+            sourceUserconfigPath = Path.Join(GetServerEnvironmentPath(GameEnvironment.Rc), "userconfig");
+            targetUserconfigPath = Path.Join(GetServerEnvironmentPath(GameEnvironment.Release), "userconfig");
         }
         else
         {

@@ -20,28 +20,28 @@ public class ModpackController : ControllerBase
 
     [HttpGet("releases")]
     [Permissions(Permissions.Member)]
-    public IEnumerable<ModpackRelease> GetReleases()
+    public IEnumerable<DomainModpackRelease> GetReleases()
     {
         return _modpackService.GetReleases();
     }
 
     [HttpGet("rcs")]
     [Permissions(Permissions.Member)]
-    public IEnumerable<ModpackBuild> GetReleaseCandidates()
+    public IEnumerable<DomainModpackBuild> GetReleaseCandidates()
     {
         return _modpackService.GetRcBuilds();
     }
 
     [HttpGet("builds")]
     [Permissions(Permissions.Member)]
-    public IEnumerable<ModpackBuild> GetBuilds()
+    public IEnumerable<DomainModpackBuild> GetBuilds()
     {
         return _modpackService.GetDevBuilds();
     }
 
     [HttpGet("builds/{id}")]
     [Permissions(Permissions.Member)]
-    public ModpackBuild GetBuild([FromRoute] string id)
+    public DomainModpackBuild GetBuild([FromRoute] string id)
     {
         var build = _modpackService.GetBuild(id);
         if (build == null)
@@ -98,7 +98,7 @@ public class ModpackController : ControllerBase
 
     [HttpPatch("release/{version}")]
     [Permissions(Permissions.Admin)]
-    public async Task UpdateRelease([FromRoute] string version, [FromBody] ModpackRelease release)
+    public async Task UpdateRelease([FromRoute] string version, [FromBody] DomainModpackRelease release)
     {
         if (!release.IsDraft)
         {
@@ -117,7 +117,7 @@ public class ModpackController : ControllerBase
 
     [HttpGet("release/{version}/changelog")]
     [Permissions(Permissions.Admin)]
-    public async Task<ModpackRelease> RegenerateChangelog([FromRoute] string version)
+    public async Task<DomainModpackRelease> RegenerateChangelog([FromRoute] string version)
     {
         await _modpackService.RegnerateReleaseDraftChangelog(version);
         return _modpackService.GetRelease(version);

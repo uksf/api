@@ -1,13 +1,13 @@
 ﻿using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context;
 
-public interface IOperationOrderContext : IMongoContext<Opord>, ICachedMongoContext;
+public interface IOperationOrderContext : IMongoContext<DomainOpord>, ICachedMongoContext;
 
-public class OperationOrderContext : CachedMongoContext<Opord>, IOperationOrderContext
+public class OperationOrderContext : CachedMongoContext<DomainOpord>, IOperationOrderContext
 {
     public OperationOrderContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
         mongoCollectionFactory,
@@ -16,7 +16,7 @@ public class OperationOrderContext : CachedMongoContext<Opord>, IOperationOrderC
         "opord"
     ) { }
 
-    protected override IEnumerable<Opord> OrderCollection(IEnumerable<Opord> collection)
+    protected override IEnumerable<DomainOpord> OrderCollection(IEnumerable<DomainOpord> collection)
     {
         return collection.OrderBy(x => x.Start);
     }

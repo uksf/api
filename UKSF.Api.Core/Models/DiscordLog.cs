@@ -1,18 +1,19 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Models;
 
 public enum DiscordUserEventType
 {
-    JOINED,
-    LEFT,
-    BANNED,
-    UNBANNED,
-    MESSAGE_DELETED
+    Joined,
+    Left,
+    Banned,
+    Unbanned,
+    Message_Deleted
 }
 
-public class DiscordLog : BasicLog
+public class DiscordLog : DomainBasicLog
 {
     public DiscordLog(
         DiscordUserEventType discordUserEventType,

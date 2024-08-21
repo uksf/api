@@ -16,7 +16,7 @@ public class DataCollectionFactoryTests
 
         MongoCollectionFactory mongoCollectionFactory = new(mockMongoDatabase.Object);
 
-        var subject = mongoCollectionFactory.CreateMongoCollection<TestDataModel>("test");
+        var subject = mongoCollectionFactory.CreateMongoCollection<DomainTestModel>("test");
 
         subject.Should().NotBeNull();
     }

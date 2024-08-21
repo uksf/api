@@ -1,14 +1,15 @@
 ﻿using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Services;
 
 public interface IDisplayNameService
 {
     string GetDisplayName(string id);
-    string GetDisplayName(DomainAccount domainAccount);
+    string GetDisplayName(DomainAccount account);
     string GetDisplayNameWithoutRank(string id);
-    string GetDisplayNameWithoutRank(DomainAccount domainAccount);
+    string GetDisplayNameWithoutRank(DomainAccount account);
 }
 
 public class DisplayNameService : IDisplayNameService
@@ -24,43 +25,43 @@ public class DisplayNameService : IDisplayNameService
 
     public string GetDisplayName(string id)
     {
-        var domainAccount = _accountContext.GetSingle(id);
+        var account = _accountContext.GetSingle(id);
 
-        return domainAccount switch
+        return account switch
         {
             null => id,
-            _    => GetDisplayName(domainAccount)
+            _    => GetDisplayName(account)
         };
     }
 
-    public string GetDisplayName(DomainAccount domainAccount)
+    public string GetDisplayName(DomainAccount account)
     {
-        return domainAccount switch
+        return account switch
         {
-            _ when string.IsNullOrEmpty(domainAccount?.Lastname) => "Guest",
-            { MembershipState: MembershipState.SERVER }          => FormatDisplayName(domainAccount.Lastname, domainAccount.Firstname),
-            _                                                    => FormatDisplayName(domainAccount.Lastname, domainAccount.Firstname, domainAccount.Rank)
+            _ when string.IsNullOrEmpty(account?.Lastname) => "Guest",
+            { MembershipState: MembershipState.Server }    => FormatDisplayName(account.Lastname, account.Firstname),
+            _                                              => FormatDisplayName(account.Lastname, account.Firstname, account.Rank)
         };
     }
 
     public string GetDisplayNameWithoutRank(string id)
     {
-        var domainAccount = _accountContext.GetSingle(id);
+        var account = _accountContext.GetSingle(id);
 
-        return domainAccount switch
+        return account switch
         {
             null => id,
-            _    => GetDisplayNameWithoutRank(domainAccount)
+            _    => GetDisplayNameWithoutRank(account)
         };
     }
 
-    public string GetDisplayNameWithoutRank(DomainAccount domainAccount)
+    public string GetDisplayNameWithoutRank(DomainAccount account)
     {
-        return domainAccount switch
+        return account switch
         {
-            _ when string.IsNullOrEmpty(domainAccount?.Lastname) => "Guest",
-            { MembershipState: MembershipState.SERVER }          => FormatDisplayName(domainAccount.Lastname, domainAccount.Firstname),
-            _                                                    => FormatDisplayName(domainAccount.Lastname, domainAccount.Firstname)
+            _ when string.IsNullOrEmpty(account?.Lastname) => "Guest",
+            { MembershipState: MembershipState.Server }    => FormatDisplayName(account.Lastname, account.Firstname),
+            _                                              => FormatDisplayName(account.Lastname, account.Firstname)
         };
     }
 

@@ -48,13 +48,13 @@ public class TeamspeakServerEventHandler : ITeamspeakServerEventHandler
     {
         switch (signalrEventData.Procedure)
         {
-            case TeamspeakEventType.CLIENTS:
+            case TeamspeakEventType.Clients:
                 await UpdateClients(signalrEventData.Args.ToString());
                 break;
-            case TeamspeakEventType.CLIENT_SERVER_GROUPS:
+            case TeamspeakEventType.Client_Server_Groups:
                 await UpdateClientServerGroups(signalrEventData.Args.ToString());
                 break;
-            case TeamspeakEventType.EMPTY: break;
+            case TeamspeakEventType.Empty: break;
             default:                       throw new ArgumentException("Invalid teamspeak event type");
         }
     }
@@ -106,8 +106,8 @@ public class TeamspeakServerEventHandler : ITeamspeakServerEventHandler
     private async Task ProcessAccountData(int clientDbId, ICollection<int> serverGroups)
     {
         await Console.Out.WriteLineAsync($"Processing server groups for {clientDbId}");
-        var domainAccounts = _accountContext.Get(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
-        var domainAccount = domainAccounts.MaxBy(x => x.MembershipState);
-        await _teamspeakGroupService.UpdateAccountGroups(domainAccount, serverGroups, clientDbId);
+        var accounts = _accountContext.Get(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
+        var account = accounts.MaxBy(x => x.MembershipState);
+        await _teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
     }
 }

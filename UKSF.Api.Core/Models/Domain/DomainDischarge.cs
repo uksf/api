@@ -1,14 +1,14 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace UKSF.Api.Core.Models;
+namespace UKSF.Api.Core.Models.Domain;
 
-public class DischargeCollection : MongoObject
+public class DomainDischargeCollection : MongoObject
 {
     [BsonRepresentation(BsonType.ObjectId)]
     public string AccountId { get; set; }
 
-    public List<Discharge> Discharges { get; set; } = new();
+    public List<DomainDischarge> Discharges { get; set; } = new();
     public string Name { get; set; }
     public bool Reinstated { get; set; }
 
@@ -16,7 +16,7 @@ public class DischargeCollection : MongoObject
     public bool RequestExists { get; set; }
 }
 
-public class Discharge : MongoObject
+public class DomainDischarge : MongoObject
 {
     public string DischargedBy { get; set; }
     public string Rank { get; set; }

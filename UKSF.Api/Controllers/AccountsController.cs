@@ -6,11 +6,11 @@ using NameCase;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Commands;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Mappers;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Queries;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
@@ -38,16 +38,16 @@ public class AccountsController(
     [Authorize]
     public Account Get()
     {
-        var domainAccount = accountService.GetUserAccount();
-        return accountMapper.MapToAccount(domainAccount);
+        var account = accountService.GetUserAccount();
+        return accountMapper.MapToAccount(account);
     }
 
     [HttpGet("{id}")]
     [Authorize]
     public Account GetById([FromRoute] string id)
     {
-        var domainAccount = accountContext.GetSingle(id);
-        return accountMapper.MapToAccount(domainAccount);
+        var account = accountContext.GetSingle(id);
+        return accountMapper.MapToAccount(account);
     }
 
     [HttpPost("create")]
@@ -58,7 +58,7 @@ public class AccountsController(
             throw new AccountAlreadyExistsException();
         }
 
-        DomainAccount domainAccount = new()
+        DomainAccount account = new()
         {
             Email = createAccount.Email,
             Password = BCrypt.Net.BCrypt.HashPassword(createAccount.Password),
@@ -66,13 +66,13 @@ public class AccountsController(
             Lastname = createAccount.LastName.Trim().ToNameCase(),
             Dob = DateTime.ParseExact($"{createAccount.DobYear}-{createAccount.DobMonth}-{createAccount.DobDay}", "yyyy-M-d", CultureInfo.InvariantCulture),
             Nation = createAccount.Nation,
-            MembershipState = MembershipState.UNCONFIRMED
+            MembershipState = MembershipState.Unconfirmed
         };
-        await accountContext.Add(domainAccount);
-        await SendConfirmationCode(domainAccount);
+        await accountContext.Add(account);
+        await SendConfirmationCode(account);
 
-        var createdAccount = accountContext.GetSingle(x => x.Email == domainAccount.Email);
-        logger.LogAudit($"New account created: '{domainAccount.Firstname} {domainAccount.Lastname}, {domainAccount.Email}'", createdAccount.Id);
+        var createdAccount = accountContext.GetSingle(x => x.Email == account.Email);
+        logger.LogAudit($"New account created: '{account.Firstname} {account.Lastname}, {account.Email}'", createdAccount.Id);
 
         return loginService.Login(createAccount.Email, createAccount.Password);
     }
@@ -94,8 +94,8 @@ public class AccountsController(
             throw new BadRequestException(exception.Message);
         }
 
-        var domainAccount = accountContext.GetSingle(x => x.Email == email);
-        if (domainAccount == null)
+        var account = accountContext.GetSingle(x => x.Email == email);
+        if (account == null)
         {
             throw new BadRequestException($"An account with the email '{email}' doesn't exist. This should be impossible so please contact an admin for help");
         }
@@ -103,28 +103,28 @@ public class AccountsController(
         var value = await confirmationCodeService.GetConfirmationCodeValue(code);
         if (value == email)
         {
-            await accountContext.Update(domainAccount.Id, x => x.MembershipState, MembershipState.CONFIRMED);
-            logger.LogAudit($"Email address confirmed for {domainAccount.Id}");
+            await accountContext.Update(account.Id, x => x.MembershipState, MembershipState.Confirmed);
+            logger.LogAudit($"Email address confirmed for {account.Id}");
             return;
         }
 
         await confirmationCodeService.ClearConfirmationCodes(x => x.Value == email);
-        await SendConfirmationCode(domainAccount);
-        throw new BadRequestException($"The confirmation code was invalid or expired. A new code has been sent to '{domainAccount.Email}'");
+        await SendConfirmationCode(account);
+        throw new BadRequestException($"The confirmation code was invalid or expired. A new code has been sent to '{account.Email}'");
     }
 
     [HttpPost("resend-email-code")]
     [Authorize]
     public async Task ResendConfirmationCode()
     {
-        var domainAccount = accountService.GetUserAccount();
-        if (domainAccount.MembershipState != MembershipState.UNCONFIRMED)
+        var account = accountService.GetUserAccount();
+        if (account.MembershipState != MembershipState.Unconfirmed)
         {
             throw new AccountAlreadyConfirmedException();
         }
 
-        await confirmationCodeService.ClearConfirmationCodes(x => x.Value == domainAccount.Email);
-        await SendConfirmationCode(domainAccount);
+        await confirmationCodeService.ClearConfirmationCodes(x => x.Value == account.Email);
+        await SendConfirmationCode(account);
     }
 
     [HttpGet("members")]
@@ -187,12 +187,12 @@ public class AccountsController(
     [Authorize]
     public async Task ChangeName([FromBody] ChangeName changeName)
     {
-        var domainAccount = accountService.GetUserAccount();
+        var account = accountService.GetUserAccount();
         var firstName = changeName.FirstName.Trim().ToTitleCase();
         var lastName = changeName.LastName.Trim().ToNameCase();
 
-        await accountContext.Update(domainAccount.Id, Builders<DomainAccount>.Update.Set(x => x.Firstname, firstName).Set(x => x.Lastname, lastName));
-        logger.LogAudit($"{domainAccount.Lastname}, {domainAccount.Firstname} changed their name to {lastName}, {firstName}");
+        await accountContext.Update(account.Id, Builders<DomainAccount>.Update.Set(x => x.Firstname, firstName).Set(x => x.Lastname, lastName));
+        logger.LogAudit($"{account.Lastname}, {account.Firstname} changed their name to {lastName}, {firstName}");
     }
 
     [HttpPut("password")]
@@ -208,11 +208,11 @@ public class AccountsController(
     [Authorize]
     public async Task<AccountSettings> UpdateSetting([FromRoute] string id, [FromBody] AccountSettings settings)
     {
-        var domainAccount = string.IsNullOrEmpty(id) ? accountService.GetUserAccount() : accountContext.GetSingle(id);
-        await accountContext.Update(domainAccount.Id, Builders<DomainAccount>.Update.Set(x => x.Settings, settings));
-        logger.LogAudit($"Account settings updated: {domainAccount.Settings.Changes(settings)}");
+        var account = string.IsNullOrEmpty(id) ? accountService.GetUserAccount() : accountContext.GetSingle(id);
+        await accountContext.Update(account.Id, Builders<DomainAccount>.Update.Set(x => x.Settings, settings));
+        logger.LogAudit($"Account settings updated: {account.Settings.Changes(settings)}");
 
-        return accountContext.GetSingle(domainAccount.Id).Settings;
+        return accountContext.GetSingle(account.Id).Settings;
     }
 
     [HttpGet("test")]
@@ -222,12 +222,12 @@ public class AccountsController(
         return DateTime.UtcNow.ToLongTimeString();
     }
 
-    private async Task SendConfirmationCode(DomainAccount domainAccount)
+    private async Task SendConfirmationCode(DomainAccount account)
     {
-        var code = await confirmationCodeService.CreateConfirmationCode(domainAccount.Email);
+        var code = await confirmationCodeService.CreateConfirmationCode(account.Email);
         await sendTemplatedEmailCommand.ExecuteAsync(
             new SendTemplatedEmailCommandArgs(
-                domainAccount.Email,
+                account.Email,
                 "UKSF Account Confirmation",
                 TemplatedEmailNames.AccountConfirmationTemplate,
                 new Dictionary<string, string> { { "code", code } }

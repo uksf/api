@@ -3,6 +3,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Services;
 
@@ -43,7 +44,7 @@ public class CommandRequestsCreationController : ControllerBase
 
     [HttpPut("rank")]
     [Permissions(Permissions.Command)]
-    public async Task CreateRequestRank([FromBody] CommandRequest request)
+    public async Task CreateRequestRank([FromBody] DomainCommandRequest request)
     {
         request.Requester = _httpContextService.GetUserId();
         request.DisplayValue = request.Value;
@@ -66,7 +67,7 @@ public class CommandRequestsCreationController : ControllerBase
 
     [HttpPut("loa")]
     [Permissions(Permissions.Member)]
-    public async Task CreateRequestLoa([FromBody] CommandRequestLoa request)
+    public async Task CreateRequestLoa([FromBody] DomainCommandRequestLoa request)
     {
         var now = DateTime.UtcNow;
         if (request.Start <= now.AddDays(-1))
@@ -103,12 +104,12 @@ public class CommandRequestsCreationController : ControllerBase
         }
 
         request.Value = await _loaService.Add(request);
-        await _commandRequestService.Add(request, ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF);
+        await _commandRequestService.Add(request, ChainOfCommandMode.Next_Commander_Exclude_Self);
     }
 
     [HttpPut("discharge")]
     [Permissions(Permissions.Command)]
-    public async Task CreateRequestDischarge([FromBody] CommandRequest request)
+    public async Task CreateRequestDischarge([FromBody] DomainCommandRequest request)
     {
         request.Requester = _httpContextService.GetUserId();
         request.DisplayValue = "Discharged";
@@ -119,12 +120,12 @@ public class CommandRequestsCreationController : ControllerBase
             throw new BadRequestException("An equivalent request already exists");
         }
 
-        await _commandRequestService.Add(request, ChainOfCommandMode.COMMANDER_AND_PERSONNEL);
+        await _commandRequestService.Add(request, ChainOfCommandMode.Commander_And_Personnel);
     }
 
     [HttpPut("role")]
     [Permissions(Permissions.Command)]
-    public async Task CreateRequestIndividualRole([FromBody] CommandRequest request)
+    public async Task CreateRequestIndividualRole([FromBody] DomainCommandRequest request)
     {
         request.Requester = _httpContextService.GetUserId();
         request.DisplayValue = request.Value;
@@ -135,12 +136,12 @@ public class CommandRequestsCreationController : ControllerBase
             throw new BadRequestException("An equivalent request already exists");
         }
 
-        await _commandRequestService.Add(request, ChainOfCommandMode.NEXT_COMMANDER);
+        await _commandRequestService.Add(request, ChainOfCommandMode.Next_Commander);
     }
 
     [HttpPut("unitrole")]
     [Permissions(Permissions.Command)]
-    public async Task CreateRequestUnitRole([FromBody] CommandRequest request)
+    public async Task CreateRequestUnitRole([FromBody] DomainCommandRequest request)
     {
         var unit = _unitsContext.GetSingle(request.Value);
         var recipientHasUnitRole = _unitsService.RolesHasMember(unit, request.Recipient);
@@ -174,10 +175,10 @@ public class CommandRequestsCreationController : ControllerBase
 
     [HttpPut("unitremoval")]
     [Permissions(Permissions.Command)]
-    public async Task CreateRequestUnitRemoval([FromBody] CommandRequest request)
+    public async Task CreateRequestUnitRemoval([FromBody] DomainCommandRequest request)
     {
         var removeUnit = _unitsContext.GetSingle(request.Value);
-        if (removeUnit.Branch == UnitBranch.COMBAT)
+        if (removeUnit.Branch == UnitBranch.Combat)
         {
             throw new BadRequestException("To remove from a combat unit, use a Transfer request");
         }
@@ -191,17 +192,17 @@ public class CommandRequestsCreationController : ControllerBase
             throw new BadRequestException("An equivalent request already exists");
         }
 
-        await _commandRequestService.Add(request, ChainOfCommandMode.TARGET_COMMANDER);
+        await _commandRequestService.Add(request, ChainOfCommandMode.Target_Commander);
     }
 
     [HttpPut("transfer")]
     [Permissions(Permissions.Command)]
-    public async Task CreateRequestTransfer([FromBody] CommandRequest request)
+    public async Task CreateRequestTransfer([FromBody] DomainCommandRequest request)
     {
         var toUnit = _unitsContext.GetSingle(request.Value);
         request.Requester = _httpContextService.GetUserId();
         request.DisplayValue = toUnit.Name;
-        if (toUnit.Branch == UnitBranch.AUXILIARY)
+        if (toUnit.Branch == UnitBranch.Auxiliary)
         {
             request.DisplayFrom = "N/A";
             request.Type = CommandRequestType.AuxiliaryTransfer;
@@ -210,7 +211,7 @@ public class CommandRequestsCreationController : ControllerBase
                 throw new BadRequestException("An equivalent request already exists");
             }
 
-            await _commandRequestService.Add(request, ChainOfCommandMode.TARGET_COMMANDER);
+            await _commandRequestService.Add(request, ChainOfCommandMode.Target_Commander);
         }
         else
         {
@@ -221,13 +222,13 @@ public class CommandRequestsCreationController : ControllerBase
                 throw new BadRequestException("An equivalent request already exists");
             }
 
-            await _commandRequestService.Add(request, ChainOfCommandMode.COMMANDER_AND_TARGET_COMMANDER);
+            await _commandRequestService.Add(request, ChainOfCommandMode.Commander_And_Target_Commander);
         }
     }
 
     [HttpPut("reinstate")]
     [Permissions(Permissions.Command, Permissions.Recruiter, Permissions.Nco)]
-    public async Task CreateRequestReinstateMember([FromBody] CommandRequest request)
+    public async Task CreateRequestReinstateMember([FromBody] DomainCommandRequest request)
     {
         request.Requester = _httpContextService.GetUserId();
         request.DisplayValue = "Member";
@@ -238,7 +239,7 @@ public class CommandRequestsCreationController : ControllerBase
             throw new BadRequestException("An equivalent request already exists");
         }
 
-        await _commandRequestService.Add(request, ChainOfCommandMode.PERSONNEL);
+        await _commandRequestService.Add(request, ChainOfCommandMode.Personnel);
     }
 }
 

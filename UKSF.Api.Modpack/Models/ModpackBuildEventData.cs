@@ -2,7 +2,7 @@
 
 namespace UKSF.Api.Modpack.Models;
 
-public class ModpackBuildEventData(ModpackBuild build) : EventData
+public class ModpackBuildEventData(DomainModpackBuild build) : EventData
 {
-    public ModpackBuild Build { get; } = build;
+    public DomainModpackBuild Build { get; } = build;
 }

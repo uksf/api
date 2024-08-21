@@ -4,6 +4,7 @@ using MongoDB.Bson;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Services;
 
@@ -71,17 +72,17 @@ public class CommentThreadController : ControllerBase
     public bool GetCanPostComment([FromRoute] string id)
     {
         var commentThread = _commentThreadContext.GetSingle(id);
-        var domainAccount = _accountService.GetUserAccount();
+        var account = _accountService.GetUserAccount();
         var admin = _httpContextService.UserHasPermission(Permissions.Admin);
         var canPost = commentThread.Mode switch
         {
-            ThreadMode.RECRUITER => commentThread.Authors.Any(x => x == _httpContextService.GetUserId()) ||
+            ThreadMode.Recruiter => commentThread.Authors.Any(x => x == _httpContextService.GetUserId()) ||
                                     admin ||
                                     _recruitmentService.IsRecruiter(_accountService.GetUserAccount()),
-            ThreadMode.RANKSUPERIOR => commentThread.Authors.Any(x => admin || _ranksService.IsSuperior(domainAccount.Rank, _accountContext.GetSingle(x).Rank)),
-            ThreadMode.RANKEQUAL    => commentThread.Authors.Any(x => admin || _ranksService.IsEqual(domainAccount.Rank, _accountContext.GetSingle(x).Rank)),
-            ThreadMode.RANKSUPERIOROREQUAL => commentThread.Authors.Any(
-                x => admin || _ranksService.IsSuperiorOrEqual(domainAccount.Rank, _accountContext.GetSingle(x).Rank)
+            ThreadMode.Ranksuperior => commentThread.Authors.Any(x => admin || _ranksService.IsSuperior(account.Rank, _accountContext.GetSingle(x).Rank)),
+            ThreadMode.Rankequal    => commentThread.Authors.Any(x => admin || _ranksService.IsEqual(account.Rank, _accountContext.GetSingle(x).Rank)),
+            ThreadMode.Ranksuperiororequal => commentThread.Authors.Any(
+                x => admin || _ranksService.IsSuperiorOrEqual(account.Rank, _accountContext.GetSingle(x).Rank)
             ),
             _ => true
         };
@@ -91,7 +92,7 @@ public class CommentThreadController : ControllerBase
 
     [HttpPut("{commentThreadId}")]
     [Authorize]
-    public async Task AddComment([FromRoute] string commentThreadId, [FromBody] Comment comment)
+    public async Task AddComment([FromRoute] string commentThreadId, [FromBody] DomainComment comment)
     {
         comment.Id = ObjectId.GenerateNewId().ToString();
         comment.Timestamp = DateTime.UtcNow;
@@ -108,7 +109,7 @@ public class CommentThreadController : ControllerBase
         {
             var link = applicationAccount.Id != participant ? $"/recruitment/{applicationAccount.Id}" : "/application";
             _notificationsService.Add(
-                new Notification
+                new DomainNotification
                 {
                     Owner = participant,
                     Icon = NotificationIcons.Comment,

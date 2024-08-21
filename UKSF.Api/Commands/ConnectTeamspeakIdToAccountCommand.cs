@@ -1,9 +1,8 @@
 ﻿using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
 
@@ -23,18 +22,18 @@ public class ConnectTeamspeakIdToAccountCommand(
 {
     public async Task<DomainAccount> ExecuteAsync(string accountId, string teamspeakId, string code)
     {
-        var domainAccount = accountContext.GetSingle(accountId);
+        var account = accountContext.GetSingle(accountId);
         if (await confirmationCodeService.GetConfirmationCodeValue(code) != teamspeakId)
         {
             await confirmationCodeService.ClearConfirmationCodes(x => x.Value == teamspeakId);
             throw new InvalidConfirmationCodeException();
         }
 
-        domainAccount.TeamspeakIdentities ??= new HashSet<int>();
-        domainAccount.TeamspeakIdentities.Add(int.Parse(teamspeakId));
-        await accountContext.Update(domainAccount.Id, Builders<DomainAccount>.Update.Set(x => x.TeamspeakIdentities, domainAccount.TeamspeakIdentities));
+        account.TeamspeakIdentities ??= new HashSet<int>();
+        account.TeamspeakIdentities.Add(int.Parse(teamspeakId));
+        await accountContext.Update(account.Id, Builders<DomainAccount>.Update.Set(x => x.TeamspeakIdentities, account.TeamspeakIdentities));
 
-        var updatedAccount = accountContext.GetSingle(domainAccount.Id);
+        var updatedAccount = accountContext.GetSingle(account.Id);
         notificationsService.SendTeamspeakNotification(
             new HashSet<int> { teamspeakId.ToInt() },
             $"This teamspeak identity has been linked to the account with email '{updatedAccount.Email}'\nIf this was not done by you, please contact an admin"

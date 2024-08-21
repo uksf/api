@@ -8,6 +8,7 @@ using Moq;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Mappers;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Integrations.Teamspeak.Models;
 using UKSF.Api.Integrations.Teamspeak.Services;
@@ -17,17 +18,20 @@ namespace UKSF.Tests.Unit.Services.Integrations.Teamspeak;
 
 public class TeamspeakGroupServiceTests
 {
-    private static readonly VariableItem TeamspeakGidUnverified = new() { Key = "TEAMSPEAK_GID_UNVERIFIED", Item = "1" };
-    private static readonly VariableItem TeamspeakGidDischarged = new() { Key = "TEAMSPEAK_GID_DISCHARGED", Item = "2" };
-    private static readonly VariableItem TeamspeakGidRoot = new() { Key = "TEAMSPEAK_GID_ROOT", Item = "3" };
-    private static readonly VariableItem TeamspeakGidElcom = new() { Key = "TEAMSPEAK_GID_ELCOM", Item = "4" };
-    private static readonly VariableItem TeamspeakGidBlacklist = new() { Key = "TEAMSPEAK_GID_BLACKLIST", Item = "99,100" };
+    private static readonly DomainVariableItem TeamspeakGidUnverified = new() { Key = "TEAMSPEAK_GID_UNVERIFIED", Item = "1" };
+    private static readonly DomainVariableItem TeamspeakGidDischarged = new() { Key = "TEAMSPEAK_GID_DISCHARGED", Item = "2" };
+    private static readonly DomainVariableItem TeamspeakGidRoot = new() { Key = "TEAMSPEAK_GID_ROOT", Item = "3" };
+    private static readonly DomainVariableItem TeamspeakGidElcom = new() { Key = "TEAMSPEAK_GID_ELCOM", Item = "4" };
+    private static readonly DomainVariableItem TeamspeakGidBlacklist = new() { Key = "TEAMSPEAK_GID_BLACKLIST", Item = "99,100" };
 
     private readonly List<int> _addedGroups = [];
 
     private readonly DomainUnit _elcomUnit = new()
     {
-        Id = ObjectId.GenerateNewId().ToString(), Name = "ELCOM", Branch = UnitBranch.AUXILIARY, Parent = ObjectId.Empty.ToString()
+        Id = ObjectId.GenerateNewId().ToString(),
+        Name = "ELCOM",
+        Branch = UnitBranch.Auxiliary,
+        Parent = ObjectId.Empty.ToString()
     };
 
     private readonly Mock<IRanksContext> _mockRanksContext = new();
@@ -46,12 +50,12 @@ public class TeamspeakGroupServiceTests
         _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_GID_ELCOM")).Returns(TeamspeakGidElcom);
         _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_GID_BLACKLIST")).Returns(TeamspeakGidBlacklist);
 
-        _mockTeamspeakManagerService.Setup(x => x.SendGroupProcedure(TeamspeakProcedureType.ASSIGN, It.IsAny<TeamspeakGroupProcedure>()))
+        _mockTeamspeakManagerService.Setup(x => x.SendGroupProcedure(TeamspeakProcedureType.Assign, It.IsAny<TeamspeakGroupProcedure>()))
                                     .Returns(Task.CompletedTask)
                                     .Callback(
                                         (TeamspeakProcedureType _, TeamspeakGroupProcedure groupProcedure) => _addedGroups.Add(groupProcedure.ServerGroup)
                                     );
-        _mockTeamspeakManagerService.Setup(x => x.SendGroupProcedure(TeamspeakProcedureType.UNASSIGN, It.IsAny<TeamspeakGroupProcedure>()))
+        _mockTeamspeakManagerService.Setup(x => x.SendGroupProcedure(TeamspeakProcedureType.Unassign, It.IsAny<TeamspeakGroupProcedure>()))
                                     .Returns(Task.CompletedTask)
                                     .Callback(
                                         (TeamspeakProcedureType _, TeamspeakGroupProcedure groupProcedure) => _removedGroups.Add(groupProcedure.ServerGroup)
@@ -86,7 +90,7 @@ public class TeamspeakGroupServiceTests
             new DomainAccount
             {
                 Id = id,
-                MembershipState = MembershipState.CONFIRMED,
+                MembershipState = MembershipState.Confirmed,
                 Rank = "Candidate"
             },
             new List<int>(),
@@ -100,7 +104,7 @@ public class TeamspeakGroupServiceTests
     [Fact]
     public async Task Should_add_correct_groups_for_confirmed_non_member()
     {
-        await _teamspeakGroupService.UpdateAccountGroups(new DomainAccount { MembershipState = MembershipState.CONFIRMED }, new List<int>(), 2);
+        await _teamspeakGroupService.UpdateAccountGroups(new DomainAccount { MembershipState = MembershipState.Confirmed }, new List<int>(), 2);
 
         _addedGroups.Should().BeEquivalentTo(new List<int>());
         _removedGroups.Should().BeEmpty();
@@ -109,7 +113,7 @@ public class TeamspeakGroupServiceTests
     [Fact]
     public async Task Should_add_correct_groups_for_discharged()
     {
-        await _teamspeakGroupService.UpdateAccountGroups(new DomainAccount { MembershipState = MembershipState.DISCHARGED }, new List<int>(), 2);
+        await _teamspeakGroupService.UpdateAccountGroups(new DomainAccount { MembershipState = MembershipState.Discharged }, new List<int>(), 2);
 
         _addedGroups.Should().BeEquivalentTo(new List<int> { 2 });
         _removedGroups.Should().BeEmpty();
@@ -132,7 +136,7 @@ public class TeamspeakGroupServiceTests
         DomainUnit unitParentParent = new() { Id = parentParentId, Name = "UKSF", TeamspeakGroup = "8" };
         DomainUnit auxiliaryUnit = new()
         {
-            Branch = UnitBranch.AUXILIARY,
+            Branch = UnitBranch.Auxiliary,
             Name = "SR1",
             TeamspeakGroup = "9",
             Parent = _elcomUnit.Id,
@@ -151,7 +155,7 @@ public class TeamspeakGroupServiceTests
             new DomainAccount
             {
                 Id = id,
-                MembershipState = MembershipState.MEMBER,
+                MembershipState = MembershipState.Member,
                 Rank = "Private",
                 UnitAssignment = "1 Section"
             },
@@ -178,7 +182,7 @@ public class TeamspeakGroupServiceTests
         };
         DomainUnit auxiliaryUnit = new()
         {
-            Branch = UnitBranch.AUXILIARY,
+            Branch = UnitBranch.Auxiliary,
             Name = "SR1",
             TeamspeakGroup = "9",
             Parent = _elcomUnit.Id,
@@ -196,7 +200,7 @@ public class TeamspeakGroupServiceTests
             new DomainAccount
             {
                 Id = id,
-                MembershipState = MembershipState.MEMBER,
+                MembershipState = MembershipState.Member,
                 Rank = "Private",
                 UnitAssignment = "JSFAW"
             },
@@ -223,7 +227,7 @@ public class TeamspeakGroupServiceTests
         };
         DomainUnit auxiliaryUnit = new()
         {
-            Branch = UnitBranch.AUXILIARY,
+            Branch = UnitBranch.Auxiliary,
             Name = "SR1",
             TeamspeakGroup = "9",
             Parent = _elcomUnit.Id,
@@ -242,7 +246,7 @@ public class TeamspeakGroupServiceTests
             new DomainAccount
             {
                 Id = id,
-                MembershipState = MembershipState.MEMBER,
+                MembershipState = MembershipState.Member,
                 Rank = "Private",
                 UnitAssignment = "JSFAW"
             },
@@ -271,7 +275,7 @@ public class TeamspeakGroupServiceTests
         DomainUnit unitParentParent = new() { Id = parentParentId, Name = "UKSF", TeamspeakGroup = "8" };
         DomainUnit auxiliaryUnit = new()
         {
-            Branch = UnitBranch.AUXILIARY,
+            Branch = UnitBranch.Auxiliary,
             Name = "SR1",
             TeamspeakGroup = "9",
             Parent = _elcomUnit.Id,
@@ -289,7 +293,7 @@ public class TeamspeakGroupServiceTests
             new DomainAccount
             {
                 Id = id,
-                MembershipState = MembershipState.MEMBER,
+                MembershipState = MembershipState.Member,
                 Rank = "Private",
                 UnitAssignment = "1 Section"
             },
@@ -330,7 +334,7 @@ public class TeamspeakGroupServiceTests
             new DomainAccount
             {
                 Id = id,
-                MembershipState = MembershipState.MEMBER,
+                MembershipState = MembershipState.Member,
                 Rank = "Private",
                 UnitAssignment = "1 Section"
             },
@@ -346,7 +350,7 @@ public class TeamspeakGroupServiceTests
     [Fact]
     public async Task Should_add_correct_groups_for_non_member()
     {
-        await _teamspeakGroupService.UpdateAccountGroups(new DomainAccount { MembershipState = MembershipState.UNCONFIRMED }, new List<int>(), 2);
+        await _teamspeakGroupService.UpdateAccountGroups(new DomainAccount { MembershipState = MembershipState.Unconfirmed }, new List<int>(), 2);
 
         _addedGroups.Should().BeEquivalentTo(new List<int> { 1 });
         _removedGroups.Should().BeEmpty();
@@ -374,7 +378,7 @@ public class TeamspeakGroupServiceTests
         };
         DomainUnit auxiliaryUnit = new()
         {
-            Branch = UnitBranch.AUXILIARY,
+            Branch = UnitBranch.Auxiliary,
             Name = "SR1",
             TeamspeakGroup = "9",
             Parent = _elcomUnit.Id,
@@ -393,7 +397,7 @@ public class TeamspeakGroupServiceTests
             new DomainAccount
             {
                 Id = id,
-                MembershipState = MembershipState.MEMBER,
+                MembershipState = MembershipState.Member,
                 Rank = "Private",
                 UnitAssignment = "UKSF"
             },
@@ -422,7 +426,7 @@ public class TeamspeakGroupServiceTests
         DomainUnit unitParentParent = new() { Id = parentParentId, Name = "UKSF", TeamspeakGroup = "8" };
         DomainUnit auxiliaryUnit = new()
         {
-            Branch = UnitBranch.AUXILIARY,
+            Branch = UnitBranch.Auxiliary,
             Name = "SR1",
             TeamspeakGroup = "9",
             Parent = _elcomUnit.Id,
@@ -440,7 +444,7 @@ public class TeamspeakGroupServiceTests
             new DomainAccount
             {
                 Id = id,
-                MembershipState = MembershipState.MEMBER,
+                MembershipState = MembershipState.Member,
                 Rank = "Private",
                 UnitAssignment = "1 Section"
             },
@@ -469,7 +473,7 @@ public class TeamspeakGroupServiceTests
         DomainUnit unitParentParent = new() { Id = parentParentId, Name = "UKSF", TeamspeakGroup = "8" };
         DomainUnit auxiliaryUnit = new()
         {
-            Branch = UnitBranch.AUXILIARY,
+            Branch = UnitBranch.Auxiliary,
             Name = "SR1",
             TeamspeakGroup = "9",
             Parent = _elcomUnit.Id,
@@ -487,7 +491,7 @@ public class TeamspeakGroupServiceTests
             new DomainAccount
             {
                 Id = id,
-                MembershipState = MembershipState.MEMBER,
+                MembershipState = MembershipState.Member,
                 Rank = "Private",
                 UnitAssignment = "1 Section"
             },

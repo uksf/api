@@ -1,6 +1,8 @@
-﻿namespace UKSF.Api.Core.Models;
+﻿using UKSF.Api.Core.Models.Domain;
 
-public class LoggerEventData(BasicLog log) : EventData
+namespace UKSF.Api.Core.Models;
+
+public class LoggerEventData(DomainBasicLog log) : EventData
 {
-    public BasicLog Log { get; } = log;
+    public DomainBasicLog Log { get; } = log;
 }

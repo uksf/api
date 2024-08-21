@@ -1,5 +1,5 @@
 ﻿using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Services;
 
@@ -24,7 +24,7 @@ public class RolesService(IRolesContext rolesContext) : IRolesService
 
     public DomainRole GetUnitRoleByOrder(int order)
     {
-        return rolesContext.GetSingle(x => x.RoleType == RoleType.UNIT && x.Order == order);
+        return rolesContext.GetSingle(x => x.RoleType == RoleType.Unit && x.Order == order);
     }
 
     public string GetCommanderRoleName()

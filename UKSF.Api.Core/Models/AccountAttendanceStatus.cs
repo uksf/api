@@ -20,9 +20,9 @@ public class AccountAttendanceStatus
 
 public enum AttendanceState
 {
-    FULL,
-    PARTIAL,
-    MIA,
-    AWOL,
-    LOA
+    Full,
+    Partial,
+    Mia,
+    Awol,
+    Loa
 }

@@ -4,6 +4,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.EventHandlers;
 using Xunit;
@@ -49,7 +50,7 @@ public class LogEventHandlerTests
     [Fact]
     public void When_handling_a_basic_log()
     {
-        BasicLog basicLog = new("test");
+        DomainBasicLog basicLog = new("test");
 
         _eventBus.Send(new LoggerEventData(basicLog), "");
 
@@ -60,7 +61,7 @@ public class LogEventHandlerTests
     [Fact]
     public void When_handling_a_discord_log()
     {
-        DiscordLog discordLog = new(DiscordUserEventType.JOINED, "12345", "SqnLdr.Beswick.T", "", "", "SqnLdr.Beswick.T joined");
+        DiscordLog discordLog = new(DiscordUserEventType.Joined, "12345", "SqnLdr.Beswick.T", "", "", "SqnLdr.Beswick.T joined");
 
         _eventBus.Send(new LoggerEventData(discordLog), "");
 

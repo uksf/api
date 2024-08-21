@@ -9,10 +9,10 @@ namespace UKSF.Api.Modpack.Services;
 public interface IReleaseService
 {
     Task MakeDraftRelease(string version, GithubCommit commit);
-    Task UpdateDraft(ModpackRelease release);
+    Task UpdateDraft(DomainModpackRelease release);
     Task PublishRelease(string version);
-    ModpackRelease GetRelease(string version);
-    Task AddHistoricReleases(IEnumerable<ModpackRelease> releases);
+    DomainModpackRelease GetRelease(string version);
+    Task AddHistoricReleases(IEnumerable<DomainModpackRelease> releases);
 }
 
 public class ReleaseService : IReleaseService
@@ -30,7 +30,7 @@ public class ReleaseService : IReleaseService
         _logger = logger;
     }
 
-    public ModpackRelease GetRelease(string version)
+    public DomainModpackRelease GetRelease(string version)
     {
         return _releasesContext.GetSingle(x => x.Version == version);
     }
@@ -40,7 +40,7 @@ public class ReleaseService : IReleaseService
         var changelog = await _githubService.GenerateChangelog(version);
         var creatorId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
         await _releasesContext.Add(
-            new ModpackRelease
+            new DomainModpackRelease
             {
                 Timestamp = DateTime.UtcNow,
                 Version = version,
@@ -51,11 +51,11 @@ public class ReleaseService : IReleaseService
         );
     }
 
-    public async Task UpdateDraft(ModpackRelease release)
+    public async Task UpdateDraft(DomainModpackRelease release)
     {
         await _releasesContext.Update(
             release.Id,
-            Builders<ModpackRelease>.Update.Set(x => x.Changelog, release.Changelog)
+            Builders<DomainModpackRelease>.Update.Set(x => x.Changelog, release.Changelog)
         );
     }
 
@@ -77,12 +77,12 @@ public class ReleaseService : IReleaseService
 
         await _releasesContext.Update(
             release.Id,
-            Builders<ModpackRelease>.Update.Set(x => x.Timestamp, DateTime.UtcNow).Set(x => x.IsDraft, false).Set(x => x.Changelog, release.Changelog)
+            Builders<DomainModpackRelease>.Update.Set(x => x.Timestamp, DateTime.UtcNow).Set(x => x.IsDraft, false).Set(x => x.Changelog, release.Changelog)
         );
         await _githubService.PublishRelease(release);
     }
 
-    public async Task AddHistoricReleases(IEnumerable<ModpackRelease> releases)
+    public async Task AddHistoricReleases(IEnumerable<DomainModpackRelease> releases)
     {
         var existingReleases = _releasesContext.Get();
         foreach (var release in releases.Where(x => existingReleases.All(y => y.Version != x.Version)))

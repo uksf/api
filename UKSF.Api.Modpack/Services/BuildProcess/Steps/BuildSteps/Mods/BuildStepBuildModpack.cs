@@ -33,7 +33,7 @@ public class BuildStepBuildModpack : ModBuildStep
         await CopyDirectory(releasePath, buildPath);
         StepLogger.LogSurround("Moved UKSF release to build");
 
-        if (Build.Environment == GameEnvironment.RC)
+        if (Build.Environment == GameEnvironment.Rc)
         {
             StepLogger.LogSurround("\nMoving RC optional...");
             await MoveRcOptional(buildPath);

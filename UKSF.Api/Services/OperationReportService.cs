@@ -1,5 +1,6 @@
 ﻿using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Services;
 
@@ -19,7 +20,7 @@ public class OperationReportService : IOperationReportService
 
     public async Task Create(CreateOperationReportRequest request)
     {
-        Oprep operation = new()
+        DomainOprep operation = new()
         {
             Name = request.Name,
             Map = request.Map,

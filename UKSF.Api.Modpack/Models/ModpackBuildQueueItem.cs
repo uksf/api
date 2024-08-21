@@ -2,6 +2,6 @@
 
 public class ModpackBuildQueueItem
 {
-    public ModpackBuild Build { get; set; }
+    public DomainModpackBuild Build { get; set; }
     public string Id { get; set; }
 }

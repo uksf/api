@@ -3,6 +3,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Integrations.Discord.Services;
 
 namespace UKSF.Api.Integrations.Discord.EventHandlers;
@@ -26,7 +27,7 @@ public class DiscordAccountEventHandler(IEventBus eventBus, IUksfLogger logger, 
     private async Task HandleAccountEvent(EventModel eventModel, ContextEventData<DomainAccount> contextEventData)
     {
         logger.LogInfo($"Discord Account Event Handler from {eventModel.EventSource}, id: {contextEventData.Id}, data: {contextEventData.Data?.Id}");
-        var domainAccount = contextEventData.Data ?? accountContext.GetSingle(contextEventData.Id);
-        await discordMembersService.UpdateUserByAccount(domainAccount);
+        var account = contextEventData.Data ?? accountContext.GetSingle(contextEventData.Id);
+        await discordMembersService.UpdateUserByAccount(account);
     }
 }

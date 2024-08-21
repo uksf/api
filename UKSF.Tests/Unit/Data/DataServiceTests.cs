@@ -15,17 +15,17 @@ namespace UKSF.Tests.Unit.Data;
 
 public class DataServiceTests
 {
-    private readonly Mock<Api.Core.Context.Base.IMongoCollection<TestDataModel>> _mockDataCollection;
+    private readonly Mock<Api.Core.Context.Base.IMongoCollection<DomainTestModel>> _mockDataCollection;
     private readonly TestContext _testContext;
-    private List<TestDataModel> _mockCollection;
+    private List<DomainTestModel> _mockCollection;
 
     public DataServiceTests()
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
-        _mockDataCollection = new Mock<Api.Core.Context.Base.IMongoCollection<TestDataModel>>();
+        _mockDataCollection = new Mock<Api.Core.Context.Base.IMongoCollection<DomainTestModel>>();
 
-        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<TestDataModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
+        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainTestModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
 
         _testContext = new TestContext(mockDataCollectionFactory.Object, mockEventBus.Object, "test");
     }
@@ -33,10 +33,10 @@ public class DataServiceTests
     [Fact]
     public async Task Should_add_single_item()
     {
-        TestDataModel item1 = new() { Name = "1" };
+        DomainTestModel item1 = new() { Name = "1" };
         _mockCollection = [];
 
-        _mockDataCollection.Setup(x => x.AddAsync(It.IsAny<TestDataModel>())).Callback<TestDataModel>(x => _mockCollection.Add(x));
+        _mockDataCollection.Setup(x => x.AddAsync(It.IsAny<DomainTestModel>())).Callback<DomainTestModel>(x => _mockCollection.Add(x));
 
         await _testContext.Add(item1);
 
@@ -46,15 +46,15 @@ public class DataServiceTests
     [Fact]
     public async Task Should_delete_many_items()
     {
-        TestDataModel item1 = new() { Name = "1" };
-        TestDataModel item2 = new() { Name = "1" };
+        DomainTestModel item1 = new() { Name = "1" };
+        DomainTestModel item2 = new() { Name = "1" };
         _mockCollection = [item1, item2];
 
-        _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns(() => _mockCollection);
-        _mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>()))
+        _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<DomainTestModel, bool>>())).Returns(() => _mockCollection);
+        _mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<DomainTestModel, bool>>>()))
                            .Returns(Task.CompletedTask)
                            .Callback(
-                               (Expression<Func<TestDataModel, bool>> expression) =>
+                               (Expression<Func<DomainTestModel, bool>> expression) =>
                                    _mockCollection.RemoveAll(x => _mockCollection.Where(expression.Compile()).Contains(x))
                            );
 
@@ -66,8 +66,8 @@ public class DataServiceTests
     [Fact]
     public async Task Should_delete_single_item()
     {
-        TestDataModel item1 = new() { Name = "1" };
-        TestDataModel item2 = new() { Name = "2" };
+        DomainTestModel item1 = new() { Name = "1" };
+        DomainTestModel item2 = new() { Name = "2" };
         _mockCollection = [item1, item2];
 
         _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => _mockCollection.RemoveAll(x => x.Id == id));
@@ -80,8 +80,8 @@ public class DataServiceTests
     [Fact]
     public async Task Should_delete_single_item_by_id()
     {
-        TestDataModel item1 = new() { Name = "1" };
-        TestDataModel item2 = new() { Name = "2" };
+        DomainTestModel item1 = new() { Name = "1" };
+        DomainTestModel item2 = new() { Name = "2" };
         _mockCollection = [item1, item2];
 
         _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Callback((string id) => _mockCollection.RemoveAll(x => x.Id == id));
@@ -104,11 +104,12 @@ public class DataServiceTests
     [Fact]
     public void Should_get_items_matching_predicate()
     {
-        TestDataModel item1 = new() { Name = "1" };
-        TestDataModel item2 = new() { Name = "2" };
+        DomainTestModel item1 = new() { Name = "1" };
+        DomainTestModel item2 = new() { Name = "2" };
         _mockCollection = [item1, item2];
 
-        _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(x => _mockCollection.Where(x).ToList());
+        _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<DomainTestModel, bool>>()))
+                           .Returns<Func<DomainTestModel, bool>>(x => _mockCollection.Where(x).ToList());
 
         var subject = _testContext.Get(x => x.Id == item1.Id);
 
@@ -118,7 +119,7 @@ public class DataServiceTests
     [Fact]
     public void Should_get_single_item_by_id()
     {
-        TestDataModel item1 = new() { Name = "1" };
+        DomainTestModel item1 = new() { Name = "1" };
 
         _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(item1);
 
@@ -130,11 +131,12 @@ public class DataServiceTests
     [Fact]
     public void Should_get_single_item_matching_predicate()
     {
-        TestDataModel item1 = new() { Name = "1" };
-        TestDataModel item2 = new() { Name = "2" };
+        DomainTestModel item1 = new() { Name = "1" };
+        DomainTestModel item2 = new() { Name = "2" };
         _mockCollection = [item1, item2];
 
-        _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<TestDataModel, bool>>())).Returns<Func<TestDataModel, bool>>(x => _mockCollection.First(x));
+        _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<DomainTestModel, bool>>()))
+                           .Returns<Func<DomainTestModel, bool>>(x => _mockCollection.First(x));
 
         var subject = _testContext.GetSingle(x => x.Id == item1.Id);
 
@@ -144,14 +146,14 @@ public class DataServiceTests
     [Fact]
     public async Task Should_replace_item()
     {
-        TestDataModel item1 = new() { Name = "1" };
-        TestDataModel item2 = new() { Id = item1.Id, Name = "2" };
+        DomainTestModel item1 = new() { Name = "1" };
+        DomainTestModel item2 = new() { Id = item1.Id, Name = "2" };
         _mockCollection = [item1];
 
         _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(item1);
-        _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<TestDataModel>()))
+        _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<DomainTestModel>()))
                            .Returns(Task.CompletedTask)
-                           .Callback((string id, TestDataModel item) => _mockCollection[_mockCollection.FindIndex(x => x.Id == id)] = item);
+                           .Callback((string id, DomainTestModel item) => _mockCollection[_mockCollection.FindIndex(x => x.Id == id)] = item);
 
         await _testContext.Replace(item2);
 
@@ -170,25 +172,25 @@ public class DataServiceTests
     [Fact]
     public async Task Should_update_item_by_filter_and_update_definition()
     {
-        TestDataModel item1 = new() { Id = "1", Name = "1" };
+        DomainTestModel item1 = new() { Id = "1", Name = "1" };
         _mockCollection = [item1];
-        var expectedFilter = Builders<TestDataModel>.Filter.Where(x => x.Name == "1").RenderFilter();
-        var expectedUpdate = Builders<TestDataModel>.Update.Set(x => x.Name, "2").RenderUpdate();
-        FilterDefinition<TestDataModel> subjectFilter = null;
-        UpdateDefinition<TestDataModel> subjectUpdate = null;
+        var expectedFilter = Builders<DomainTestModel>.Filter.Where(x => x.Name == "1").RenderFilter();
+        var expectedUpdate = Builders<DomainTestModel>.Update.Set(x => x.Name, "2").RenderUpdate();
+        FilterDefinition<DomainTestModel> subjectFilter = null;
+        UpdateDefinition<DomainTestModel> subjectUpdate = null;
 
-        _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<TestDataModel, bool>>())).Returns(item1);
-        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<TestDataModel>>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
+        _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<DomainTestModel, bool>>())).Returns(item1);
+        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
                            .Returns(Task.CompletedTask)
                            .Callback(
-                               (FilterDefinition<TestDataModel> filter, UpdateDefinition<TestDataModel> update) =>
+                               (FilterDefinition<DomainTestModel> filter, UpdateDefinition<DomainTestModel> update) =>
                                {
                                    subjectFilter = filter;
                                    subjectUpdate = update;
                                }
                            );
 
-        await _testContext.Update(x => x.Name == "1", Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
+        await _testContext.Update(x => x.Name == "1", Builders<DomainTestModel>.Update.Set(x => x.Name, "2"));
 
         subjectFilter.RenderFilter().Should().BeEquivalentTo(expectedFilter);
         subjectUpdate.RenderUpdate().Should().BeEquivalentTo(expectedUpdate);
@@ -197,12 +199,12 @@ public class DataServiceTests
     [Fact]
     public async Task Should_update_item_by_id()
     {
-        TestDataModel item1 = new() { Name = "1" };
+        DomainTestModel item1 = new() { Name = "1" };
         _mockCollection = [item1];
 
-        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
+        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
                            .Returns(Task.CompletedTask)
-                           .Callback((string id, UpdateDefinition<TestDataModel> _) => _mockCollection.First(x => x.Id == id).Name = "2");
+                           .Callback((string id, UpdateDefinition<DomainTestModel> _) => _mockCollection.First(x => x.Id == id).Name = "2");
 
         await _testContext.Update(item1.Id, x => x.Name, "2");
 
@@ -212,14 +214,14 @@ public class DataServiceTests
     [Fact]
     public async Task Should_update_item_by_update_definition()
     {
-        TestDataModel item1 = new() { Name = "1" };
+        DomainTestModel item1 = new() { Name = "1" };
         _mockCollection = [item1];
 
-        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
+        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
                            .Returns(Task.CompletedTask)
-                           .Callback((string id, UpdateDefinition<TestDataModel> _) => _mockCollection.First(x => x.Id == id).Name = "2");
+                           .Callback((string id, UpdateDefinition<DomainTestModel> _) => _mockCollection.First(x => x.Id == id).Name = "2");
 
-        await _testContext.Update(item1.Id, Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
+        await _testContext.Update(item1.Id, Builders<DomainTestModel>.Update.Set(x => x.Name, "2"));
 
         item1.Name.Should().Be("2");
     }
@@ -227,14 +229,14 @@ public class DataServiceTests
     [Fact]
     public async Task Should_update_item_with_set()
     {
-        TestDataModel item1 = new() { Name = "1" };
+        DomainTestModel item1 = new() { Name = "1" };
         _mockCollection = [item1];
-        var expected = Builders<TestDataModel>.Update.Set(x => x.Name, "2").RenderUpdate();
-        UpdateDefinition<TestDataModel> subject = null;
+        var expected = Builders<DomainTestModel>.Update.Set(x => x.Name, "2").RenderUpdate();
+        UpdateDefinition<DomainTestModel> subject = null;
 
-        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
+        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
                            .Returns(Task.CompletedTask)
-                           .Callback((string _, UpdateDefinition<TestDataModel> y) => subject = y);
+                           .Callback((string _, UpdateDefinition<DomainTestModel> y) => subject = y);
 
         await _testContext.Update(item1.Id, x => x.Name, "2");
 
@@ -244,14 +246,14 @@ public class DataServiceTests
     [Fact]
     public async Task Should_update_item_with_unset()
     {
-        TestDataModel item1 = new() { Name = "1" };
+        DomainTestModel item1 = new() { Name = "1" };
         _mockCollection = [item1];
-        var expected = Builders<TestDataModel>.Update.Unset(x => x.Name).RenderUpdate();
-        UpdateDefinition<TestDataModel> subject = null;
+        var expected = Builders<DomainTestModel>.Update.Unset(x => x.Name).RenderUpdate();
+        UpdateDefinition<DomainTestModel> subject = null;
 
-        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
+        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
                            .Returns(Task.CompletedTask)
-                           .Callback((string _, UpdateDefinition<TestDataModel> y) => subject = y);
+                           .Callback((string _, UpdateDefinition<DomainTestModel> y) => subject = y);
 
         await _testContext.Update(item1.Id, x => x.Name, null);
 
@@ -261,19 +263,19 @@ public class DataServiceTests
     [Fact]
     public async Task Should_update_many_items()
     {
-        TestDataModel item1 = new() { Name = "1" };
-        TestDataModel item2 = new() { Name = "1" };
+        DomainTestModel item1 = new() { Name = "1" };
+        DomainTestModel item2 = new() { Name = "1" };
         _mockCollection = [item1, item2];
 
-        _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<TestDataModel, bool>>())).Returns(() => _mockCollection);
-        _mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<TestDataModel, bool>>>(), It.IsAny<UpdateDefinition<TestDataModel>>()))
+        _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<DomainTestModel, bool>>())).Returns(() => _mockCollection);
+        _mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<DomainTestModel, bool>>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
                            .Returns(Task.CompletedTask)
                            .Callback(
-                               (Expression<Func<TestDataModel, bool>> expression, UpdateDefinition<TestDataModel> _) =>
+                               (Expression<Func<DomainTestModel, bool>> expression, UpdateDefinition<DomainTestModel> _) =>
                                    _mockCollection.Where(expression.Compile()).ToList().ForEach(y => y.Name = "2")
                            );
 
-        await _testContext.UpdateMany(x => x.Name == "1", Builders<TestDataModel>.Update.Set(x => x.Name, "2"));
+        await _testContext.UpdateMany(x => x.Name == "1", Builders<DomainTestModel>.Update.Set(x => x.Name, "2"));
 
         item1.Name.Should().Be("2");
         item2.Name.Should().Be("2");

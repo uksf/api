@@ -5,9 +5,9 @@ using UKSF.Api.Modpack.Models;
 
 namespace UKSF.Api.Modpack.Context;
 
-public interface IReleasesContext : IMongoContext<ModpackRelease>, ICachedMongoContext;
+public interface IReleasesContext : IMongoContext<DomainModpackRelease>, ICachedMongoContext;
 
-public class ReleasesContext : CachedMongoContext<ModpackRelease>, IReleasesContext
+public class ReleasesContext : CachedMongoContext<DomainModpackRelease>, IReleasesContext
 {
     public ReleasesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
         mongoCollectionFactory,
@@ -16,7 +16,7 @@ public class ReleasesContext : CachedMongoContext<ModpackRelease>, IReleasesCont
         "modpackReleases"
     ) { }
 
-    protected override IEnumerable<ModpackRelease> OrderCollection(IEnumerable<ModpackRelease> collection)
+    protected override IEnumerable<DomainModpackRelease> OrderCollection(IEnumerable<DomainModpackRelease> collection)
     {
         return collection.Select(
                              x =>

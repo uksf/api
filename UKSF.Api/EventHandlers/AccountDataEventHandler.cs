@@ -3,6 +3,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Signalr.Clients;
 using UKSF.Api.Core.Signalr.Hubs;
 

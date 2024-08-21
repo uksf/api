@@ -1,6 +1,7 @@
 ﻿using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Services;
@@ -40,7 +41,7 @@ public class ChainOfCommandService : IChainOfCommandService
         chain.CleanHashset();
 
         // If no chain, and mode is not next commander, get next commander
-        if (chain.Count == 0 && mode != ChainOfCommandMode.NEXT_COMMANDER && mode != ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF)
+        if (chain.Count == 0 && mode != ChainOfCommandMode.Next_Commander && mode != ChainOfCommandMode.Next_Commander_Exclude_Self)
         {
             chain = GetNextCommander(start).Where(x => x != recipient).ToHashSet();
             chain.CleanHashset();
@@ -92,14 +93,14 @@ public class ChainOfCommandService : IChainOfCommandService
     {
         return mode switch
         {
-            ChainOfCommandMode.FULL                           => Full(start),
-            ChainOfCommandMode.NEXT_COMMANDER                 => GetNextCommander(start),
-            ChainOfCommandMode.NEXT_COMMANDER_EXCLUDE_SELF    => GetNextCommanderExcludeSelf(start),
-            ChainOfCommandMode.COMMANDER_AND_ONE_ABOVE        => CommanderAndOneAbove(start),
-            ChainOfCommandMode.COMMANDER_AND_PERSONNEL        => GetCommanderAndPersonnel(start),
-            ChainOfCommandMode.COMMANDER_AND_TARGET_COMMANDER => GetCommanderAndTargetCommander(start, target),
-            ChainOfCommandMode.PERSONNEL                      => GetPersonnel(),
-            ChainOfCommandMode.TARGET_COMMANDER               => GetNextCommander(target),
+            ChainOfCommandMode.Full                           => Full(start),
+            ChainOfCommandMode.Next_Commander                 => GetNextCommander(start),
+            ChainOfCommandMode.Next_Commander_Exclude_Self    => GetNextCommanderExcludeSelf(start),
+            ChainOfCommandMode.Commander_And_One_Above        => CommanderAndOneAbove(start),
+            ChainOfCommandMode.Commander_And_Personnel        => GetCommanderAndPersonnel(start),
+            ChainOfCommandMode.Commander_And_Target_Commander => GetCommanderAndTargetCommander(start, target),
+            ChainOfCommandMode.Personnel                      => GetPersonnel(),
+            ChainOfCommandMode.Target_Commander               => GetNextCommander(target),
             _                                                 => throw new InvalidOperationException("Chain of command mode not recognized")
         };
     }

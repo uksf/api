@@ -4,7 +4,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Commands;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Queries;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Integrations.Discord.Models;
@@ -50,27 +50,27 @@ public class DiscordRecruitmentService(
             {
                 try
                 {
-                    var domainAccount = GetAccountForDiscordUser(user.Id);
-                    if (domainAccount is { MembershipState: MembershipState.CONFIRMED, Application.State: ApplicationState.WAITING })
+                    var account = GetAccountForDiscordUser(user.Id);
+                    if (account is { MembershipState: MembershipState.Confirmed, Application.State: ApplicationState.Waiting })
                     {
-                        _logger.LogInfo($"User left discord, ({domainAccount.Id}) is a candidate");
+                        _logger.LogInfo($"User left discord, ({account.Id}) is a candidate");
                         var guild = GetGuild();
                         var channelId = _variablesService.GetVariable("DID_C_SR1").AsUlong();
                         var channel = guild.GetTextChannel(channelId);
 
-                        var name = displayNameService.GetDisplayName(domainAccount);
-                        var applicationUrl = buildUrlQuery.Web($"recruitment/{domainAccount.Id}");
+                        var name = displayNameService.GetDisplayName(account);
+                        var applicationUrl = buildUrlQuery.Web($"recruitment/{account.Id}");
                         var message = $"{name} left Discord\nWould you like me to reject their application?";
                         var builder = new ComponentBuilder().WithButton("View application", style: ButtonStyle.Link, url: applicationUrl)
-                                                            .WithButton("Reject", BuildButtonData(ButtonIdReject, domainAccount.Id), ButtonStyle.Danger)
-                                                            .WithButton("Dismiss", BuildButtonData(ButtonIdDismissRejection, domainAccount.Id));
+                                                            .WithButton("Reject", BuildButtonData(ButtonIdReject, account.Id), ButtonStyle.Danger)
+                                                            .WithButton("Dismiss", BuildButtonData(ButtonIdDismissRejection, account.Id));
                         _logger.LogInfo($"User left discord, name ({name})");
                         await channel.SendMessageAsync(message, components: builder.Build());
                         _logger.LogInfo("User left discord, message sent");
                     }
                     else
                     {
-                        _logger.LogInfo($"User left discord, ({domainAccount?.Id ?? user.Username}) was not a candidate");
+                        _logger.LogInfo($"User left discord, ({account?.Id ?? user.Username}) was not a candidate");
                     }
                 }
                 catch (Exception exception)
@@ -124,23 +124,23 @@ public class DiscordRecruitmentService(
         var updatedComponent = new ComponentBuilder().WithButton("View application", style: ButtonStyle.Link, url: applicationUrl).Build();
         await component.Message.ModifyAsync(properties => properties.Components = updatedComponent);
 
-        var domainAccount = _accountContext.GetSingle(accountId);
-        if (domainAccount == null)
+        var account = _accountContext.GetSingle(accountId);
+        if (account == null)
         {
             _logger.LogError($"Discord application rejection button tried to reject a null account ({accountId})");
             await component.RespondAsync("Hmmmmmmmmmmm, that didn't work. Bes broke something but it's probably still your fault", ephemeral: true);
             return;
         }
 
-        var name = displayNameService.GetDisplayName(domainAccount);
-        if (domainAccount is { Application.State: ApplicationState.ACCEPTED } or { Application.State: ApplicationState.REJECTED })
+        var name = displayNameService.GetDisplayName(account);
+        if (account is { Application.State: ApplicationState.Accepted } or { Application.State: ApplicationState.Rejected })
         {
             _logger.LogError($"Discord application rejection button tried to reject an already accepted/rejected account ({accountId})");
             await component.RespondAsync($"Hmmmm, that didn't work. It looks like {name}'s application has already been accepted or rejected", ephemeral: true);
             return;
         }
 
-        await updateApplicationCommand.ExecuteAsync(accountId, ApplicationState.REJECTED);
+        await updateApplicationCommand.ExecuteAsync(accountId, ApplicationState.Rejected);
         await component.RespondAsync($"Ok, I've rejected {name}'s application");
     }
 

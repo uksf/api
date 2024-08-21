@@ -2,7 +2,7 @@
 using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Mappers;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Services;
 
@@ -27,7 +27,7 @@ public interface IUnitsService
     bool MemberHasRole(string id, string unitId, string role);
     bool MemberHasRole(string id, DomainUnit unit, string role);
     bool MemberHasAnyRole(string id);
-    int GetMemberRoleOrder(DomainAccount domainAccount, DomainUnit unit);
+    int GetMemberRoleOrder(DomainAccount account, DomainUnit unit);
     DomainUnit GetRoot();
     DomainUnit GetAuxiliaryRoot();
     DomainUnit GetParent(DomainUnit unit);
@@ -51,16 +51,16 @@ public class UnitsService(
 {
     public UnitDto GetSingle(string id)
     {
-        var domainUnit = unitsContext.GetSingle(id);
-        var parent = GetParent(domainUnit);
-        return unitMapper.Map(domainUnit, GetChainString(domainUnit), parent?.Name, MapUnitMembers(domainUnit));
+        var unit = unitsContext.GetSingle(id);
+        var parent = GetParent(unit);
+        return unitMapper.Map(unit, GetChainString(unit), parent?.Name, MapUnitMembers(unit));
     }
 
     public IEnumerable<DomainUnit> GetSortedUnits(Func<DomainUnit, bool> predicate = null)
     {
         List<DomainUnit> sortedUnits = [];
-        var combatRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.COMBAT);
-        var auxiliaryRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY);
+        var combatRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Combat);
+        var auxiliaryRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Auxiliary);
         sortedUnits.Add(combatRoot);
         sortedUnits.AddRange(GetAllChildren(combatRoot));
         sortedUnits.Add(auxiliaryRoot);
@@ -196,11 +196,11 @@ public class UnitsService(
         return unitsContext.Get().Any(x => RolesHasMember(x, id));
     }
 
-    public int GetMemberRoleOrder(DomainAccount domainAccount, DomainUnit unit)
+    public int GetMemberRoleOrder(DomainAccount account, DomainUnit unit)
     {
-        if (RolesHasMember(unit, domainAccount.Id))
+        if (RolesHasMember(unit, account.Id))
         {
-            return int.MaxValue - rolesContext.GetSingle(x => x.Name == unit.Roles.FirstOrDefault(y => y.Value == domainAccount.Id).Key).Order;
+            return int.MaxValue - rolesContext.GetSingle(x => x.Name == unit.Roles.FirstOrDefault(y => y.Value == account.Id).Key).Order;
         }
 
         return -1;
@@ -208,12 +208,12 @@ public class UnitsService(
 
     public DomainUnit GetRoot()
     {
-        return unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.COMBAT);
+        return unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Combat);
     }
 
     public DomainUnit GetAuxiliaryRoot()
     {
-        return unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.AUXILIARY);
+        return unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Auxiliary);
     }
 
     public DomainUnit GetParent(DomainUnit unit)
@@ -323,12 +323,12 @@ public class UnitsService(
         return members.Select(
                           x =>
                           {
-                              var domainAccount = accountContext.GetSingle(x);
+                              var account = accountContext.GetSingle(x);
                               return new
                               {
-                                  account = domainAccount,
-                                  rankIndex = ranksService.GetRankOrder(domainAccount.Rank),
-                                  roleIndex = GetMemberRoleOrder(domainAccount, unit)
+                                  account,
+                                  rankIndex = ranksService.GetRankOrder(account.Rank),
+                                  roleIndex = GetMemberRoleOrder(account, unit)
                               };
                           }
                       )

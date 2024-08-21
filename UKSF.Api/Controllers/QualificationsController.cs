@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Commands;
 using UKSF.Api.Core;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Controllers;
 

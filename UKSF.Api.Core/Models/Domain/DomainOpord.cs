@@ -1,6 +1,6 @@
-﻿namespace UKSF.Api.Core.Models;
+﻿namespace UKSF.Api.Core.Models.Domain;
 
-public class Opord : MongoObject
+public class DomainOpord : MongoObject
 {
     public string Description { get; set; }
     public DateTime End { get; set; }

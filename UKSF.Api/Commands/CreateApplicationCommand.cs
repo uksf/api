@@ -3,6 +3,7 @@ using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Services;
 
@@ -13,65 +14,43 @@ public interface ICreateApplicationCommand
     Task ExecuteAsync(string id, Account account);
 }
 
-public class CreateApplicationCommand : ICreateApplicationCommand
+public class CreateApplicationCommand(
+    IAccountContext accountContext,
+    IRecruitmentService recruitmentService,
+    IAssignmentService assignmentService,
+    INotificationsService notificationsService,
+    IDisplayNameService displayNameService,
+    ICommentThreadService commentThreadService,
+    ICreateCommentThreadCommand createCommentThreadCommand,
+    IUksfLogger logger
+) : ICreateApplicationCommand
 {
-    private readonly IAccountContext _accountContext;
-
-    private readonly List<MembershipState> _allowedMembershipStates = [MembershipState.CONFIRMED, MembershipState.MEMBER, MembershipState.DISCHARGED];
-
-    private readonly IAssignmentService _assignmentService;
-    private readonly ICommentThreadService _commentThreadService;
-    private readonly ICreateCommentThreadCommand _createCommentThreadCommand;
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IUksfLogger _logger;
-    private readonly INotificationsService _notificationsService;
-    private readonly IRecruitmentService _recruitmentService;
-
-    public CreateApplicationCommand(
-        IAccountContext accountContext,
-        IRecruitmentService recruitmentService,
-        IAssignmentService assignmentService,
-        INotificationsService notificationsService,
-        IDisplayNameService displayNameService,
-        ICommentThreadService commentThreadService,
-        ICreateCommentThreadCommand createCommentThreadCommand,
-        IUksfLogger logger
-    )
-    {
-        _accountContext = accountContext;
-        _recruitmentService = recruitmentService;
-        _assignmentService = assignmentService;
-        _notificationsService = notificationsService;
-        _displayNameService = displayNameService;
-        _commentThreadService = commentThreadService;
-        _createCommentThreadCommand = createCommentThreadCommand;
-        _logger = logger;
-    }
+    private readonly List<MembershipState> _allowedMembershipStates = [MembershipState.Confirmed, MembershipState.Member, MembershipState.Discharged];
 
     public async Task ExecuteAsync(string id, Account account)
     {
         var application = await CreateApplication(id);
-        var domainAccount = await UpdateDomainAccount(id, account, application);
+        var updatedAccount = await UpdateDomainAccount(id, account, application);
 
-        await AssignAndNotify(domainAccount, application);
-        await CheckExistingSteamAndDiscordConnections(domainAccount);
+        await AssignAndNotify(updatedAccount, application);
+        await CheckExistingSteamAndDiscordConnections(updatedAccount);
 
-        _logger.LogAudit($"Application submitted for {id}. Assigned to {_displayNameService.GetDisplayName(domainAccount.Application.Recruiter)}");
+        logger.LogAudit($"Application submitted for {id}. Assigned to {displayNameService.GetDisplayName(updatedAccount.Application.Recruiter)}");
     }
 
-    private async Task<Application> CreateApplication(string accountId)
+    private async Task<DomainApplication> CreateApplication(string accountId)
     {
-        var recruiterCommentThread = await _createCommentThreadCommand.ExecuteAsync(
-            _recruitmentService.GetRecruiterLeads().Values.ToArray(),
-            ThreadMode.RECRUITER
+        var recruiterCommentThread = await createCommentThreadCommand.ExecuteAsync(
+            recruitmentService.GetRecruiterLeads().Values.ToArray(),
+            ThreadMode.Recruiter
         );
-        var applicationCommentThread = await _createCommentThreadCommand.ExecuteAsync([accountId], ThreadMode.RECRUITER);
+        var applicationCommentThread = await createCommentThreadCommand.ExecuteAsync([accountId], ThreadMode.Recruiter);
 
-        Application application = new()
+        DomainApplication application = new()
         {
             DateCreated = DateTime.UtcNow,
-            State = ApplicationState.WAITING,
-            Recruiter = _recruitmentService.GetRecruiter(),
+            State = ApplicationState.Waiting,
+            Recruiter = recruitmentService.GetRecruiter(),
             RecruiterCommentThread = recruiterCommentThread.Id,
             ApplicationCommentThread = applicationCommentThread.Id
         };
@@ -79,9 +58,9 @@ public class CreateApplicationCommand : ICreateApplicationCommand
         return application;
     }
 
-    private async Task<DomainAccount> UpdateDomainAccount(string id, Account account, Application application)
+    private async Task<DomainAccount> UpdateDomainAccount(string id, Account account, DomainApplication application)
     {
-        await _accountContext.Update(
+        await accountContext.Update(
             id,
             Builders<DomainAccount>.Update.Set(x => x.ArmaExperience, account.ArmaExperience)
                                    .Set(x => x.UnitsExperience, account.UnitsExperience)
@@ -92,70 +71,70 @@ public class CreateApplicationCommand : ICreateApplicationCommand
                                    .Set(x => x.Application, application)
         );
 
-        return _accountContext.GetSingle(id);
+        return accountContext.GetSingle(id);
     }
 
-    private async Task AssignAndNotify(DomainAccount domainAccount, Application application)
+    private async Task AssignAndNotify(DomainAccount account, DomainApplication application)
     {
-        var notification = await _assignmentService.UpdateUnitRankAndRole(
-            domainAccount.Id,
+        var notification = await assignmentService.UpdateUnitRankAndRole(
+            account.Id,
             "",
             "Applicant",
             "Candidate",
             reason: "you were entered into the recruitment process"
         );
 
-        _notificationsService.Add(notification);
-        _notificationsService.Add(
-            new Notification
+        notificationsService.Add(notification);
+        notificationsService.Add(
+            new DomainNotification
             {
                 Owner = application.Recruiter,
                 Icon = NotificationIcons.Application,
-                Message = $"You have been assigned {domainAccount.Firstname} {domainAccount.Lastname}'s application",
-                Link = $"/recruitment/{domainAccount.Id}"
+                Message = $"You have been assigned {account.Firstname} {account.Lastname}'s application",
+                Link = $"/recruitment/{account.Id}"
             }
         );
 
-        foreach (var id in _recruitmentService.GetRecruiterLeads().Values.Where(x => domainAccount.Application.Recruiter != x))
+        foreach (var id in recruitmentService.GetRecruiterLeads().Values.Where(x => account.Application.Recruiter != x))
         {
-            _notificationsService.Add(
-                new Notification
+            notificationsService.Add(
+                new DomainNotification
                 {
                     Owner = id,
                     Icon = NotificationIcons.Application,
                     Message =
-                        $"{_displayNameService.GetDisplayName(domainAccount.Application.Recruiter)} has been assigned {domainAccount.Firstname} {domainAccount.Lastname}'s application",
-                    Link = $"/recruitment/{domainAccount.Id}"
+                        $"{displayNameService.GetDisplayName(account.Application.Recruiter)} has been assigned {account.Firstname} {account.Lastname}'s application",
+                    Link = $"/recruitment/{account.Id}"
                 }
             );
         }
     }
 
-    private async Task CheckExistingSteamAndDiscordConnections(DomainAccount domainAccount)
+    private async Task CheckExistingSteamAndDiscordConnections(DomainAccount account)
     {
-        var accountName = _displayNameService.GetDisplayNameWithoutRank(domainAccount);
-        var accountsWithSameSteamConnection = _accountContext
+        var accountName = displayNameService.GetDisplayNameWithoutRank(account);
+        var accountsWithSameSteamConnection = accountContext
                                               .Get(
-                                                  x => x.Id != domainAccount.Id &&
-                                                       x.Steamname == domainAccount.Steamname &&
+                                                  x => x.Id != account.Id &&
+                                                       x.Steamname == account.Steamname &&
                                                        _allowedMembershipStates.Contains(x.MembershipState)
                                               )
-                                              .Select(x => _displayNameService.GetDisplayNameWithoutRank(x))
+                                              .Select(x => displayNameService.GetDisplayNameWithoutRank(x))
                                               .ToList();
-        var accountsWithSameDiscordConnection = _accountContext
+        var accountsWithSameDiscordConnection = accountContext
                                                 .Get(
-                                                    x => x.Id != domainAccount.Id &&
-                                                         x.DiscordId == domainAccount.DiscordId &&
+                                                    x => x.Id != account.Id &&
+                                                         x.DiscordId == account.DiscordId &&
                                                          _allowedMembershipStates.Contains(x.MembershipState)
                                                 )
-                                                .Select(x => _displayNameService.GetDisplayNameWithoutRank(x))
+                                                .Select(x => displayNameService.GetDisplayNameWithoutRank(x))
                                                 .ToList();
 
         if (accountsWithSameSteamConnection.Any())
         {
-            await _commentThreadService.InsertComment(
-                domainAccount.Application.RecruiterCommentThread,
-                new Comment
+            await commentThreadService.InsertComment(
+                account.Application.RecruiterCommentThread,
+                new DomainComment
                 {
                     Author = ObjectId.Empty.ToString(),
                     Content = $"{accountName} has the same Steam account as {accountsWithSameSteamConnection.Aggregate((a, b) => $"{a}, {b}")}",
@@ -166,9 +145,9 @@ public class CreateApplicationCommand : ICreateApplicationCommand
 
         if (accountsWithSameDiscordConnection.Any())
         {
-            await _commentThreadService.InsertComment(
-                domainAccount.Application.RecruiterCommentThread,
-                new Comment
+            await commentThreadService.InsertComment(
+                account.Application.RecruiterCommentThread,
+                new DomainComment
                 {
                     Author = ObjectId.Empty.ToString(),
                     Content = $"{accountName} has the same Discord account as {accountsWithSameDiscordConnection.Aggregate((a, b) => $"{a}, {b}")}",

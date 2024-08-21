@@ -5,6 +5,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Signalr.Clients;
 using UKSF.Api.Core.Signalr.Hubs;
 using UKSF.Api.EventHandlers;

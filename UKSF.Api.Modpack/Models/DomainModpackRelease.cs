@@ -4,7 +4,7 @@ using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Modpack.Models;
 
-public class ModpackRelease : MongoObject
+public class DomainModpackRelease : MongoObject
 {
     public string Changelog { get; set; }
 

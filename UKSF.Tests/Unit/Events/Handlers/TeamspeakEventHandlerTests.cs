@@ -8,6 +8,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Integrations.Teamspeak.EventHandlers;
 using UKSF.Api.Integrations.Teamspeak.Models;
 using UKSF.Api.Integrations.Teamspeak.Services;
@@ -62,7 +63,7 @@ public class TeamspeakEventHandlerTests
         _eventBus.Send(
             new SignalrEventData
             {
-                Procedure = TeamspeakEventType.CLIENTS,
+                Procedure = TeamspeakEventType.Clients,
                 Args = "[{\"channelId\": 1, \"channelName\": \"Test Channel 1\", \"clientDbId\": 5, \"clientName\": \"Test Name 1\"}," +
                        "{\"channelId\": 2, \"channelName\": \"Test Channel 2\", \"clientDbId\": 10, \"clientName\": \"Test Name 2\"}]"
             },
@@ -95,8 +96,8 @@ public class TeamspeakEventHandlerTests
     [Fact]
     public async Task ShouldGetCorrectAccount()
     {
-        DomainAccount account1 = new() { TeamspeakIdentities = [1], MembershipState = MembershipState.UNCONFIRMED };
-        DomainAccount account2 = new() { TeamspeakIdentities = [1], MembershipState = MembershipState.MEMBER };
+        DomainAccount account1 = new() { TeamspeakIdentities = [1], MembershipState = MembershipState.Unconfirmed };
+        DomainAccount account2 = new() { TeamspeakIdentities = [1], MembershipState = MembershipState.Member };
         List<DomainAccount> mockAccountCollection = [account1, account2];
 
         _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns<Func<DomainAccount, bool>>(_ => mockAccountCollection);
@@ -104,7 +105,7 @@ public class TeamspeakEventHandlerTests
 
         _teamspeakServerEventHandler.Init();
 
-        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
+        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.Client_Server_Groups, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
         await Task.Delay(TimeSpan.FromMilliseconds(750));
 
         _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(account2, new List<int> { 5 }, 1), Times.Once);
@@ -113,8 +114,8 @@ public class TeamspeakEventHandlerTests
     [Fact]
     public async Task ShouldGetNoAccountForNoMatchingId()
     {
-        DomainAccount domainAccount = new() { TeamspeakIdentities = [2] };
-        List<DomainAccount> mockCollection = [domainAccount];
+        DomainAccount account = new() { TeamspeakIdentities = [2] };
+        List<DomainAccount> mockCollection = [account];
 
         _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns<Func<DomainAccount, bool>>(x => mockCollection.Where(x));
         _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(It.IsAny<DomainAccount>(), It.IsAny<ICollection<int>>(), It.IsAny<int>()))
@@ -122,7 +123,7 @@ public class TeamspeakEventHandlerTests
 
         _teamspeakServerEventHandler.Init();
 
-        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
+        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.Client_Server_Groups, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
         await Task.Delay(TimeSpan.FromMilliseconds(750));
 
         _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(null, new List<int> { 5 }, 1), Times.Once);
@@ -136,7 +137,7 @@ public class TeamspeakEventHandlerTests
 
         _teamspeakServerEventHandler.Init();
 
-        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.EMPTY }, "");
+        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.Empty }, "");
 
         _mockTeamspeakService.Verify(x => x.UpdateClients(It.IsAny<HashSet<TeamspeakClient>>()), Times.Never);
         _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(It.IsAny<DomainAccount>(), It.IsAny<ICollection<int>>(), It.IsAny<int>()), Times.Never);
@@ -149,7 +150,7 @@ public class TeamspeakEventHandlerTests
 
         _teamspeakServerEventHandler.Init();
 
-        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENTS, Args = "[]" }, "");
+        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.Clients, Args = "[]" }, "");
 
         _mockTeamspeakService.Verify(x => x.UpdateClients(It.IsAny<HashSet<TeamspeakClient>>()), Times.Never);
     }
@@ -157,36 +158,36 @@ public class TeamspeakEventHandlerTests
     [Fact]
     public async Task ShouldRunClientGroupsUpdate()
     {
-        DomainAccount domainAccount = new() { TeamspeakIdentities = [1] };
+        DomainAccount account = new() { TeamspeakIdentities = [1] };
 
-        _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount> { domainAccount });
-        _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(domainAccount, It.IsAny<ICollection<int>>(), 1)).Returns(Task.CompletedTask);
+        _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount> { account });
+        _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(account, It.IsAny<ICollection<int>>(), 1)).Returns(Task.CompletedTask);
 
         _teamspeakServerEventHandler.Init();
 
-        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
+        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.Client_Server_Groups, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
         await Task.Delay(TimeSpan.FromMilliseconds(750));
 
-        _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(domainAccount, new List<int> { 5 }, 1), Times.Once);
+        _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(account, new List<int> { 5 }, 1), Times.Once);
     }
 
     [Fact]
     public async Task ShouldRunClientGroupsUpdateTwiceForTwoEventsWithDelay()
     {
-        DomainAccount domainAccount = new() { TeamspeakIdentities = [1] };
+        DomainAccount account = new() { TeamspeakIdentities = [1] };
 
-        _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount> { domainAccount });
+        _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount> { account });
         _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(It.IsAny<DomainAccount>(), It.IsAny<ICollection<int>>(), It.IsAny<int>()));
 
         _teamspeakServerEventHandler.Init();
 
-        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
+        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.Client_Server_Groups, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
         await Task.Delay(TimeSpan.FromMilliseconds(750));
-        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 10}" }, "");
+        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.Client_Server_Groups, Args = "{\"clientDbid\": 1, \"serverGroupId\": 10}" }, "");
         await Task.Delay(TimeSpan.FromMilliseconds(750));
 
-        _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(domainAccount, new List<int> { 5 }, 1), Times.Once);
-        _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(domainAccount, new List<int> { 10 }, 1), Times.Once);
+        _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(account, new List<int> { 5 }, 1), Times.Once);
+        _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(account, new List<int> { 10 }, 1), Times.Once);
     }
 
     [Fact]
@@ -201,8 +202,8 @@ public class TeamspeakEventHandlerTests
 
         _teamspeakServerEventHandler.Init();
 
-        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
-        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 2, \"serverGroupId\": 10}" }, "");
+        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.Client_Server_Groups, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
+        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.Client_Server_Groups, Args = "{\"clientDbid\": 2, \"serverGroupId\": 10}" }, "");
         await Task.Delay(TimeSpan.FromMilliseconds(750 * 2));
 
         _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(account1, new List<int> { 5 }, 1), Times.Once);
@@ -212,18 +213,18 @@ public class TeamspeakEventHandlerTests
     [Fact]
     public async Task ShouldRunSingleClientGroupsUpdateForMultipleEventsWithOneClient()
     {
-        DomainAccount domainAccount = new() { TeamspeakIdentities = [1] };
+        DomainAccount account = new() { TeamspeakIdentities = [1] };
 
-        _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount> { domainAccount });
+        _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount> { account });
         _mockTeamspeakGroupService.Setup(x => x.UpdateAccountGroups(It.IsAny<DomainAccount>(), It.IsAny<ICollection<int>>(), It.IsAny<int>()));
 
         _teamspeakServerEventHandler.Init();
 
-        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
-        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.CLIENT_SERVER_GROUPS, Args = "{\"clientDbid\": 1, \"serverGroupId\": 10}" }, "");
+        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.Client_Server_Groups, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
+        _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.Client_Server_Groups, Args = "{\"clientDbid\": 1, \"serverGroupId\": 10}" }, "");
         await Task.Delay(TimeSpan.FromMilliseconds(750 * 2));
 
-        _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(domainAccount, new List<int> { 5, 10 }, 1), Times.Once);
+        _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(account, new List<int> { 5, 10 }, 1), Times.Once);
     }
 
     [Fact]
@@ -236,7 +237,7 @@ public class TeamspeakEventHandlerTests
         _eventBus.Send(
             new SignalrEventData
             {
-                Procedure = TeamspeakEventType.CLIENTS,
+                Procedure = TeamspeakEventType.Clients,
                 Args = "[{\"channelId\": 1, \"channelName\": \"Test Channel\", \"clientDbId\": 5, \"clientName\": \"Test Name\"}]"
             },
             ""

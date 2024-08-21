@@ -11,10 +11,10 @@ public class BuildStepDeploy : FileBuildStep
     {
         string sourcePath;
         string targetPath;
-        if (Build.Environment == GameEnvironment.RELEASE)
+        if (Build.Environment == GameEnvironment.Release)
         {
             StepLogger.Log("Deploying files from RC to release");
-            sourcePath = Path.Join(GetEnvironmentPath(GameEnvironment.RC), "Repo");
+            sourcePath = Path.Join(GetEnvironmentPath(GameEnvironment.Rc), "Repo");
             targetPath = Path.Join(GetBuildEnvironmentPath(), "Repo");
         }
         else
@@ -33,10 +33,10 @@ public class BuildStepDeploy : FileBuildStep
         StepLogger.LogSurround("Copied updated files");
 
         StepLogger.LogSurround("\nDeleting removed files...");
-        await DeleteFiles(sourcePath, targetPath, Build.Environment != GameEnvironment.RELEASE);
+        await DeleteFiles(sourcePath, targetPath, Build.Environment != GameEnvironment.Release);
         StepLogger.LogSurround("Deleted removed files");
 
-        if (Build.Environment != GameEnvironment.RC)
+        if (Build.Environment != GameEnvironment.Rc)
         {
             StepLogger.LogSurround("\nRemoving RC optional...");
             await RemoveRcOptional(targetPath);

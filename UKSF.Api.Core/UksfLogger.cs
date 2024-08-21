@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Controllers;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core;
@@ -31,32 +32,32 @@ public class UksfLogger(IHttpContextService httpContextService, IEventBus eventB
 {
     public void LogDebug(string message)
     {
-        Log(new BasicLog(message, UksfLogLevel.Debug));
+        Log(new DomainBasicLog(message, UksfLogLevel.Debug));
     }
 
     public void LogInfo(string message)
     {
-        Log(new BasicLog(message, UksfLogLevel.Info));
+        Log(new DomainBasicLog(message, UksfLogLevel.Info));
     }
 
     public void LogWarning(string message)
     {
-        Log(new BasicLog(message, UksfLogLevel.Warning));
+        Log(new DomainBasicLog(message, UksfLogLevel.Warning));
     }
 
     public void LogError(string message)
     {
-        Log(new BasicLog(message, UksfLogLevel.Error));
+        Log(new DomainBasicLog(message, UksfLogLevel.Error));
     }
 
     public void LogError(Exception exception)
     {
-        Log(new BasicLog(exception));
+        Log(new DomainBasicLog(exception));
     }
 
     public void LogError(string message, Exception exception)
     {
-        Log(new BasicLog(message, exception));
+        Log(new DomainBasicLog(message, exception));
     }
 
     public void LogAudit(string message, string userId = null)
@@ -95,7 +96,7 @@ public class UksfLogger(IHttpContextService httpContextService, IEventBus eventB
         );
     }
 
-    private void Log(BasicLog log)
+    private void Log(DomainBasicLog log)
     {
         eventBus.Send(new LoggerEventData(log), "Logger");
     }

@@ -4,6 +4,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Services;
 
@@ -45,29 +46,28 @@ public class DiscordEventhandler : IDiscordEventhandler
     {
         switch (discordEventData.EventType)
         {
-            case DiscordUserEventType.JOINED: break;
-            case DiscordUserEventType.LEFT:
+            case DiscordUserEventType.Joined: break;
+            case DiscordUserEventType.Left:
                 await LeftEvent(discordEventData.EventData);
                 break;
-            case DiscordUserEventType.BANNED:          break;
-            case DiscordUserEventType.UNBANNED:        break;
-            case DiscordUserEventType.MESSAGE_DELETED: break;
+            case DiscordUserEventType.Banned:          break;
+            case DiscordUserEventType.Unbanned:        break;
+            case DiscordUserEventType.Message_Deleted: break;
         }
     }
 
     private async Task LeftEvent(string accountId)
     {
-        var domainAccount = _accountContext.GetSingle(accountId);
-        if (domainAccount.MembershipState is MembershipState.DISCHARGED or MembershipState.UNCONFIRMED ||
-            domainAccount.Application?.State is not ApplicationState.REJECTED)
+        var account = _accountContext.GetSingle(accountId);
+        if (account.MembershipState is MembershipState.Discharged or MembershipState.Unconfirmed || account.Application?.State is not ApplicationState.Rejected)
         {
             return;
         }
 
-        var name = _displayNameService.GetDisplayName(domainAccount);
+        var name = _displayNameService.GetDisplayName(account);
         await _commentThreadService.InsertComment(
-            domainAccount.Application.RecruiterCommentThread,
-            new Comment
+            account.Application.RecruiterCommentThread,
+            new DomainComment
             {
                 Author = ObjectId.Empty.ToString(),
                 Content = $"{name} left Discord",

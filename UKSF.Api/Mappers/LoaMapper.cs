@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Models;
+﻿using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Services;
 
@@ -6,7 +6,7 @@ namespace UKSF.Api.Mappers;
 
 public interface ILoaMapper
 {
-    Loa MapToLoa(DomainLoaWithAccount domainLoa);
+    Loa MapToLoa(DomainLoaWithAccount loa);
 }
 
 public class LoaMapper : ILoaMapper
@@ -20,21 +20,21 @@ public class LoaMapper : ILoaMapper
         _chainOfCommandService = chainOfCommandService;
     }
 
-    public Loa MapToLoa(DomainLoaWithAccount domainLoa)
+    public Loa MapToLoa(DomainLoaWithAccount loa)
     {
-        var displayName = _displayNameService.GetDisplayName(domainLoa.Account);
-        var inContextChainOfCommand = _chainOfCommandService.InContextChainOfCommand(domainLoa.Recipient);
+        var displayName = _displayNameService.GetDisplayName(loa.Account);
+        var inContextChainOfCommand = _chainOfCommandService.InContextChainOfCommand(loa.Recipient);
         return new Loa
         {
-            Id = domainLoa.Id,
-            Submitted = domainLoa.Submitted,
-            Start = domainLoa.Start,
-            End = domainLoa.End,
-            State = domainLoa.State,
-            Emergency = domainLoa.Emergency,
-            Late = domainLoa.Late,
-            Reason = domainLoa.Reason,
-            LongTerm = (domainLoa.End - domainLoa.Start).Days > 21,
+            Id = loa.Id,
+            Submitted = loa.Submitted,
+            Start = loa.Start,
+            End = loa.End,
+            State = loa.State,
+            Emergency = loa.Emergency,
+            Late = loa.Late,
+            Reason = loa.Reason,
+            LongTerm = (loa.End - loa.Start).Days > 21,
             Name = displayName,
             InChainOfCommand = inContextChainOfCommand
         };

@@ -7,7 +7,7 @@ using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
 using UKSF.Api.Models.Request;
@@ -34,7 +34,7 @@ public class DocumentServiceTests
 
     public DocumentServiceTests()
     {
-        _mockIVariablesService.Setup(x => x.GetVariable("DOCUMENTS_PATH")).Returns(new VariableItem { Item = "" });
+        _mockIVariablesService.Setup(x => x.GetVariable("DOCUMENTS_PATH")).Returns(new DomainVariableItem { Item = "" });
         _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
         _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
         _mockIClock.Setup(x => x.UtcNow()).Returns(_utcNow);

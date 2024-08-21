@@ -10,15 +10,15 @@ namespace UKSF.Api.Modpack.Services;
 
 public interface IModpackService
 {
-    IEnumerable<ModpackRelease> GetReleases();
-    IEnumerable<ModpackBuild> GetRcBuilds();
-    IEnumerable<ModpackBuild> GetDevBuilds();
-    ModpackRelease GetRelease(string version);
-    ModpackBuild GetBuild(string id);
+    IEnumerable<DomainModpackRelease> GetReleases();
+    IEnumerable<DomainModpackBuild> GetRcBuilds();
+    IEnumerable<DomainModpackBuild> GetDevBuilds();
+    DomainModpackRelease GetRelease(string version);
+    DomainModpackBuild GetBuild(string id);
     Task NewBuild(NewBuild newBuild);
-    Task Rebuild(ModpackBuild build);
-    Task CancelBuild(ModpackBuild build);
-    Task UpdateReleaseDraft(ModpackRelease release);
+    Task Rebuild(DomainModpackBuild build);
+    Task CancelBuild(DomainModpackBuild build);
+    Task UpdateReleaseDraft(DomainModpackRelease release);
     Task Release(string version);
     Task RegnerateReleaseDraftChangelog(string version);
     Task CreateDevBuildFromPush(PushWebhookPayload payload);
@@ -58,27 +58,27 @@ public class ModpackService : IModpackService
         _logger = logger;
     }
 
-    public IEnumerable<ModpackRelease> GetReleases()
+    public IEnumerable<DomainModpackRelease> GetReleases()
     {
         return _releasesContext.Get();
     }
 
-    public IEnumerable<ModpackBuild> GetRcBuilds()
+    public IEnumerable<DomainModpackBuild> GetRcBuilds()
     {
         return _buildsService.GetRcBuilds();
     }
 
-    public IEnumerable<ModpackBuild> GetDevBuilds()
+    public IEnumerable<DomainModpackBuild> GetDevBuilds()
     {
         return _buildsService.GetDevBuilds();
     }
 
-    public ModpackRelease GetRelease(string version)
+    public DomainModpackRelease GetRelease(string version)
     {
         return _releaseService.GetRelease(version);
     }
 
-    public ModpackBuild GetBuild(string id)
+    public DomainModpackBuild GetBuild(string id)
     {
         return _buildsContext.GetSingle(x => x.Id == id);
     }
@@ -97,7 +97,7 @@ public class ModpackService : IModpackService
         _buildQueueService.QueueBuild(build);
     }
 
-    public async Task Rebuild(ModpackBuild build)
+    public async Task Rebuild(DomainModpackBuild build)
     {
         _logger.LogAudit($"Rebuild triggered for {GetBuildName(build)}.");
         var rebuild = await _buildsService.CreateRebuild(
@@ -108,7 +108,7 @@ public class ModpackService : IModpackService
         _buildQueueService.QueueBuild(rebuild);
     }
 
-    public async Task CancelBuild(ModpackBuild build)
+    public async Task CancelBuild(DomainModpackBuild build)
     {
         _logger.LogAudit($"Build {GetBuildName(build)} cancelled");
 
@@ -122,7 +122,7 @@ public class ModpackService : IModpackService
         }
     }
 
-    public async Task UpdateReleaseDraft(ModpackRelease release)
+    public async Task UpdateReleaseDraft(DomainModpackRelease release)
     {
         _logger.LogAudit($"Release {release.Version} draft updated");
         await _releaseService.UpdateDraft(release);
@@ -190,13 +190,13 @@ public class ModpackService : IModpackService
         }
     }
 
-    private static string GetBuildName(ModpackBuild build)
+    private static string GetBuildName(DomainModpackBuild build)
     {
         return build.Environment switch
         {
-            GameEnvironment.RELEASE     => $"release {build.Version}",
-            GameEnvironment.RC          => $"{build.Version} RC# {build.BuildNumber}",
-            GameEnvironment.DEVELOPMENT => $"#{build.BuildNumber}",
+            GameEnvironment.Release     => $"release {build.Version}",
+            GameEnvironment.Rc          => $"{build.Version} RC# {build.BuildNumber}",
+            GameEnvironment.Development => $"#{build.BuildNumber}",
             _                           => throw new ArgumentException("Invalid build environment")
         };
     }

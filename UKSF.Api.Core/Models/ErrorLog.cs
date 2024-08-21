@@ -1,8 +1,9 @@
 ﻿using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Models;
 
-public class ErrorLog : BasicLog
+public class ErrorLog : DomainBasicLog
 {
     public ErrorLog(Exception exception, string url, string method, string endpointName, int statusCode, string userId, string name)
     {

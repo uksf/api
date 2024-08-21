@@ -1,6 +1,6 @@
 ﻿using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Services;
@@ -108,8 +108,8 @@ public class DocumentPermissionsService : IDocumentPermissionsService
 
     private bool ValidateRankPermissions(DocumentPermissions permissions)
     {
-        var domainAccount = _accountService.GetUserAccount();
-        var memberRank = domainAccount.Rank;
+        var account = _accountService.GetUserAccount();
+        var memberRank = account.Rank;
         return _ranksService.IsSuperiorOrEqual(memberRank, permissions.Rank);
     }
 }

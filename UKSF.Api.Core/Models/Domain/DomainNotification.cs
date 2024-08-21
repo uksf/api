@@ -1,9 +1,9 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace UKSF.Api.Core.Models;
+namespace UKSF.Api.Core.Models.Domain;
 
-public class Notification : MongoObject
+public class DomainNotification : MongoObject
 {
     public string Icon { get; set; }
     public string Link { get; set; }

@@ -3,6 +3,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Services;
 using UKSF.Api.Signalr.Clients;
 using UKSF.Api.Signalr.Hubs;
@@ -52,7 +53,7 @@ public class CommentThreadEventHandler : ICommentThreadEventHandler
         }
     }
 
-    private Task AddedEvent(string id, Comment comment)
+    private Task AddedEvent(string id, DomainComment comment)
     {
         return _hub.Clients.Group(id).ReceiveComment(_commentThreadService.FormatComment(comment));
     }

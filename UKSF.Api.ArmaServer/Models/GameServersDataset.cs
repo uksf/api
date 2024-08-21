@@ -4,11 +4,11 @@ public class GameServersDataset
 {
     public int InstanceCount { get; set; }
     public List<MissionFile> Missions { get; set; }
-    public IEnumerable<GameServer> Servers { get; set; }
+    public IEnumerable<DomainGameServer> Servers { get; set; }
 }
 
 public class GameServerDataset
 {
-    public GameServer GameServer { get; set; }
+    public DomainGameServer DomainGameServer { get; set; }
     public int InstanceCount { get; set; }
 }

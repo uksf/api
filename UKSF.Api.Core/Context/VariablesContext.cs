@@ -1,16 +1,16 @@
 ﻿using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Context;
 
-public interface IVariablesContext : IMongoContext<VariableItem>
+public interface IVariablesContext : IMongoContext<DomainVariableItem>
 {
     Task Update(string key, object value);
 }
 
-public class VariablesContext : MongoContext<VariableItem>, IVariablesContext
+public class VariablesContext : MongoContext<DomainVariableItem>, IVariablesContext
 {
     public VariablesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "variables") { }
 
@@ -25,17 +25,17 @@ public class VariablesContext : MongoContext<VariableItem>, IVariablesContext
         await base.Update(variableItem.Id, x => x.Item, value);
     }
 
-    public override IEnumerable<VariableItem> Get()
+    public override IEnumerable<DomainVariableItem> Get()
     {
         return base.Get().OrderBy(x => x.Key);
     }
 
-    public override IEnumerable<VariableItem> Get(Func<VariableItem, bool> predicate)
+    public override IEnumerable<DomainVariableItem> Get(Func<DomainVariableItem, bool> predicate)
     {
         return base.Get(predicate).OrderBy(x => x.Key);
     }
 
-    public override VariableItem GetSingle(string idOrKey)
+    public override DomainVariableItem GetSingle(string idOrKey)
     {
         return base.GetSingle(x => x.Id == idOrKey || x.Key == idOrKey.Keyify());
     }

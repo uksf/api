@@ -1,10 +1,11 @@
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Context;
 
-public interface ILogContext : IMongoContext<BasicLog>;
+public interface ILogContext : IMongoContext<DomainBasicLog>;
 
 public interface IAuditLogContext : IMongoContext<AuditLog>;
 
@@ -14,7 +15,7 @@ public interface ILauncherLogContext : IMongoContext<LauncherLog>;
 
 public interface IDiscordLogContext : IMongoContext<DiscordLog>;
 
-public class LogContext : MongoContext<BasicLog>, ILogContext
+public class LogContext : MongoContext<DomainBasicLog>, ILogContext
 {
     public LogContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "logs") { }
 }

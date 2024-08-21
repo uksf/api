@@ -32,8 +32,8 @@ public class StepLogger : IStepLogger
     public void LogSuccess()
     {
         LogLines(
-            $"\nFinished{(_buildStep.BuildResult == ModpackBuildResult.WARNING ? " with warning" : "")}: {_buildStep.Name}",
-            _buildStep.BuildResult == ModpackBuildResult.WARNING ? "orangered" : "green"
+            $"\nFinished{(_buildStep.BuildResult == ModpackBuildResult.Warning ? " with warning" : "")}: {_buildStep.Name}",
+            _buildStep.BuildResult == ModpackBuildResult.Warning ? "orangered" : "green"
         );
     }
 

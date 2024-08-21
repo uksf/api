@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using UKSF.Api.Core.Extensions;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Services.Admin;
@@ -13,7 +13,7 @@ public class VariablesServiceTests
     [Fact]
     public void ShouldGetVariableAsArray()
     {
-        VariableItem variableItem = new() { Key = "Test", Item = "item1,item2, item3" };
+        DomainVariableItem variableItem = new() { Key = "Test", Item = "item1,item2, item3" };
 
         var subject = variableItem.AsArray();
 
@@ -24,7 +24,7 @@ public class VariablesServiceTests
     [Fact]
     public void ShouldGetVariableAsArrayWithPredicate()
     {
-        VariableItem variableItem = new() { Key = "Test", Item = "\"item1\",item2" };
+        DomainVariableItem variableItem = new() { Key = "Test", Item = "\"item1\",item2" };
 
         var subject = variableItem.AsArray(x => x.RemoveQuotes());
 
@@ -36,7 +36,7 @@ public class VariablesServiceTests
     public void ShouldGetVariableAsBool()
     {
         const bool Expected = true;
-        VariableItem variableItem = new()
+        DomainVariableItem variableItem = new()
         {
             Key = "Test",
             Item = Expected
@@ -51,7 +51,7 @@ public class VariablesServiceTests
     public void ShouldGetVariableAsDouble()
     {
         const double Expected = 1.5;
-        VariableItem variableItem = new()
+        DomainVariableItem variableItem = new()
         {
             Key = "Test",
             Item = Expected
@@ -65,7 +65,7 @@ public class VariablesServiceTests
     [Fact]
     public void ShouldGetVariableAsDoublesArray()
     {
-        VariableItem variableItem = new() { Key = "Test", Item = "1.5,1.67845567657, -0.000000456" };
+        DomainVariableItem variableItem = new() { Key = "Test", Item = "1.5,1.67845567657, -0.000000456" };
 
         var subject = variableItem.AsDoublesArray().ToList();
 
@@ -77,7 +77,7 @@ public class VariablesServiceTests
     [Fact]
     public void ShouldGetVariableAsEnumerable()
     {
-        VariableItem variableItem = new() { Key = "Test", Item = "item1,item2, item3" };
+        DomainVariableItem variableItem = new() { Key = "Test", Item = "item1,item2, item3" };
 
         var subject = variableItem.AsEnumerable();
 
@@ -91,7 +91,7 @@ public class VariablesServiceTests
     public void ShouldGetVariableAsString()
     {
         const string Expected = "Value";
-        VariableItem variableItem = new()
+        DomainVariableItem variableItem = new()
         {
             Key = "Test",
             Item = Expected
@@ -106,7 +106,7 @@ public class VariablesServiceTests
     public void ShouldGetVariableAsUlong()
     {
         const ulong Expected = ulong.MaxValue;
-        VariableItem variableItem = new()
+        DomainVariableItem variableItem = new()
         {
             Key = "Test",
             Item = Expected
@@ -120,7 +120,7 @@ public class VariablesServiceTests
     [Fact]
     public void ShouldHaveItem()
     {
-        VariableItem variableItem = new() { Key = "Test", Item = "test" };
+        DomainVariableItem variableItem = new() { Key = "Test", Item = "test" };
 
         Action act = () => variableItem.AssertHasItem();
 
@@ -130,7 +130,7 @@ public class VariablesServiceTests
     [Fact]
     public void ShouldThrowWithInvalidBool()
     {
-        VariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
+        DomainVariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
 
         Action act = () => variableItem.AsBool();
 
@@ -140,7 +140,7 @@ public class VariablesServiceTests
     [Fact]
     public void ShouldThrowWithInvalidDouble()
     {
-        VariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
+        DomainVariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
 
         Action act = () => variableItem.AsDouble();
 
@@ -150,7 +150,7 @@ public class VariablesServiceTests
     [Fact]
     public void ShouldThrowWithInvalidUlong()
     {
-        VariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
+        DomainVariableItem variableItem = new() { Key = "Test", Item = "wontwork" };
 
         Action act = () => variableItem.AsUlong();
 
@@ -160,7 +160,7 @@ public class VariablesServiceTests
     [Fact]
     public void ShouldThrowWithNoItem()
     {
-        VariableItem variableItem = new() { Key = "Test" };
+        DomainVariableItem variableItem = new() { Key = "Test" };
 
         Action act = () => variableItem.AssertHasItem();
 

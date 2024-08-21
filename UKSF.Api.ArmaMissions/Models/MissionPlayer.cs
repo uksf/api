@@ -1,10 +1,10 @@
-﻿using UKSF.Api.Core.Models;
+﻿using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.ArmaMissions.Models;
 
 public class MissionPlayer
 {
-    public DomainAccount DomainAccount { get; set; }
+    public DomainAccount Account { get; set; }
     public string Name { get; set; }
     public string ObjectClass { get; set; }
     public DomainRank Rank { get; set; }

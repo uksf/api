@@ -1,5 +1,6 @@
 ﻿using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Services;
 
@@ -19,7 +20,7 @@ public class OperationOrderService : IOperationOrderService
 
     public async Task Add(CreateOperationOrderRequest request)
     {
-        Opord operation = new()
+        DomainOpord operation = new()
         {
             Name = request.Name,
             Map = request.Map,

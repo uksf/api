@@ -1,13 +1,7 @@
 ﻿namespace UKSF.Api.Core.Models;
 
-public class PagedResult<T>
+public class PagedResult<T>(int totalCount, IEnumerable<T> data)
 {
-    public PagedResult(int totalCount, IEnumerable<T> data)
-    {
-        TotalCount = totalCount;
-        Data = data;
-    }
-
-    public IEnumerable<T> Data { get; set; }
-    public int TotalCount { get; set; }
+    public IEnumerable<T> Data { get; set; } = data;
+    public int TotalCount { get; set; } = totalCount;
 }

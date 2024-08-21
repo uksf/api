@@ -1,17 +1,17 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace UKSF.Api.Core.Models;
+namespace UKSF.Api.Core.Models.Domain;
 
 public enum UnitBranch
 {
-    COMBAT,
-    AUXILIARY
+    Combat,
+    Auxiliary
 }
 
 public class DomainUnit : MongoObject
 {
-    public UnitBranch Branch = UnitBranch.COMBAT;
+    public UnitBranch Branch = UnitBranch.Combat;
     public string Callsign { get; set; }
 
     [BsonIgnore]

@@ -1,6 +1,7 @@
 ﻿using System;
 using FluentAssertions;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Models.Message.Logging;

@@ -4,7 +4,7 @@ using System.Linq;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -64,11 +64,36 @@ public class RolesServiceTests
     [InlineData(0, "Marksman")]
     public void ShouldGetUnitRoleByOrder(int order, string expected)
     {
-        DomainRole role1 = new() { Name = "Rifleman", Order = 0, RoleType = RoleType.INDIVIDUAL };
-        DomainRole role2 = new() { Name = "Gunner", Order = 3, RoleType = RoleType.INDIVIDUAL };
-        DomainRole role3 = new() { Name = "Marksman", Order = 0, RoleType = RoleType.UNIT };
-        DomainRole role4 = new() { Name = "Trainee", Order = 3, RoleType = RoleType.UNIT };
-        DomainRole role5 = new() { Name = "Gunner", Order = 2, RoleType = RoleType.INDIVIDUAL };
+        DomainRole role1 = new()
+        {
+            Name = "Rifleman",
+            Order = 0,
+            RoleType = RoleType.Individual
+        };
+        DomainRole role2 = new()
+        {
+            Name = "Gunner",
+            Order = 3,
+            RoleType = RoleType.Individual
+        };
+        DomainRole role3 = new()
+        {
+            Name = "Marksman",
+            Order = 0,
+            RoleType = RoleType.Unit
+        };
+        DomainRole role4 = new()
+        {
+            Name = "Trainee",
+            Order = 3,
+            RoleType = RoleType.Unit
+        };
+        DomainRole role5 = new()
+        {
+            Name = "Gunner",
+            Order = 2,
+            RoleType = RoleType.Individual
+        };
         List<DomainRole> mockCollection = [role1, role2, role3, role4, role5];
 
         _mockRolesDataService.Setup(x => x.Get()).Returns(mockCollection);

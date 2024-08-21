@@ -1,14 +1,14 @@
 ﻿using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Services;
 
 public interface ILoaService
 {
     IEnumerable<DomainLoa> Get(List<string> ids);
-    Task<string> Add(CommandRequestLoa requestBase);
+    Task<string> Add(DomainCommandRequestLoa requestBase);
     Task SetLoaState(string id, LoaReviewState state);
     bool IsLoaCovered(string id, DateTime eventStart);
 }
@@ -27,15 +27,15 @@ public class LoaService : ILoaService
         return _loaContext.Get(x => ids.Contains(x.Recipient));
     }
 
-    public async Task<string> Add(CommandRequestLoa requestBase)
+    public async Task<string> Add(DomainCommandRequestLoa requestBase)
     {
-        if (_loaContext.Get(x => x.Recipient == requestBase.Recipient && x.State != LoaReviewState.REJECTED)
+        if (_loaContext.Get(x => x.Recipient == requestBase.Recipient && x.State != LoaReviewState.Rejected)
                        .Any(x => requestBase.Start >= x.Start && requestBase.End <= x.End))
         {
             throw new BadRequestException("An LOA covering the same date range already exists");
         }
 
-        DomainLoa domainLoa = new()
+        DomainLoa loa = new()
         {
             Submitted = DateTime.UtcNow,
             Recipient = requestBase.Recipient,
@@ -45,8 +45,8 @@ public class LoaService : ILoaService
             Emergency = requestBase.Emergency,
             Late = requestBase.Late
         };
-        await _loaContext.Add(domainLoa);
-        return domainLoa.Id;
+        await _loaContext.Add(loa);
+        return loa.Id;
     }
 
     public async Task SetLoaState(string id, LoaReviewState state)

@@ -4,6 +4,7 @@ using MongoDB.Bson;
 using Moq;
 using UKSF.Api.Core.Mappers;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -26,27 +27,27 @@ public class AccountMapperTests
     {
         var id = ObjectId.GenerateNewId().ToString();
         var timestamp = DateTime.UtcNow.AddDays(-1);
-        DomainAccount domainAccount = new()
+        DomainAccount account = new()
         {
             Id = id,
             Firstname = "Bob",
             Lastname = "McTest",
-            MembershipState = MembershipState.MEMBER,
+            MembershipState = MembershipState.Member,
             TeamspeakIdentities = [4, 4],
             ServiceRecord = [new ServiceRecordEntry { Occurence = "Test", Timestamp = timestamp }],
             RolePreferences = ["Aviation"],
             MilitaryExperience = false
         };
 
-        _mockDisplayNameService.Setup(x => x.GetDisplayName(domainAccount)).Returns("Cdt.McTest.B");
+        _mockDisplayNameService.Setup(x => x.GetDisplayName(account)).Returns("Cdt.McTest.B");
 
-        var subject = _subject.MapToAccount(domainAccount);
+        var subject = _subject.MapToAccount(account);
 
         subject.Id.Should().Be(id);
         subject.DisplayName.Should().Be("Cdt.McTest.B");
         subject.Firstname.Should().Be("Bob");
         subject.Lastname.Should().Be("McTest");
-        subject.MembershipState.Should().Be(MembershipState.MEMBER);
+        subject.MembershipState.Should().Be(MembershipState.Member);
         subject.TeamspeakIdentities.Should().NotBeEmpty().And.HaveCount(1).And.ContainInOrder(4);
         subject.ServiceRecord.Should().NotBeEmpty().And.HaveCount(1).And.OnlyContain(x => x.Occurence == "Test" && x.Timestamp == timestamp);
         subject.RolePreferences.Should().Contain("Aviation");

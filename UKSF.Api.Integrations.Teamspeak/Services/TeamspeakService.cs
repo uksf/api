@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Integrations.Teamspeak.Models;
 using UKSF.Api.Integrations.Teamspeak.Signalr.Clients;
 using UKSF.Api.Integrations.Teamspeak.Signalr.Hubs;
@@ -14,8 +15,8 @@ public interface ITeamspeakService
     OnlineState GetOnlineUserDetails(string accountId);
     List<TeamspeakConnectClient> GetFormattedClients();
     Task UpdateClients(HashSet<TeamspeakClient> newClients);
-    Task UpdateAccountTeamspeakGroups(DomainAccount domainAccount);
-    Task SendTeamspeakMessageToClient(DomainAccount domainAccount, string message);
+    Task UpdateAccountTeamspeakGroups(DomainAccount account);
+    Task SendTeamspeakMessageToClient(DomainAccount account, string message);
     Task SendTeamspeakMessageToClient(IEnumerable<int> clientDbIds, string message);
     Task Reload();
     Task Shutdown();
@@ -60,22 +61,22 @@ public class TeamspeakService : ITeamspeakService
         await _teamspeakClientsHub.Clients.All.ReceiveClients(GetFormattedClients());
     }
 
-    public async Task UpdateAccountTeamspeakGroups(DomainAccount domainAccount)
+    public async Task UpdateAccountTeamspeakGroups(DomainAccount account)
     {
-        if (domainAccount?.TeamspeakIdentities == null)
+        if (account?.TeamspeakIdentities == null)
         {
             return;
         }
 
-        foreach (var clientDbId in domainAccount.TeamspeakIdentities)
+        foreach (var clientDbId in account.TeamspeakIdentities)
         {
-            await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.GROUPS, new { clientDbId });
+            await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Groups, new { clientDbId });
         }
     }
 
-    public async Task SendTeamspeakMessageToClient(DomainAccount domainAccount, string message)
+    public async Task SendTeamspeakMessageToClient(DomainAccount account, string message)
     {
-        await SendTeamspeakMessageToClient(domainAccount.TeamspeakIdentities, message);
+        await SendTeamspeakMessageToClient(account.TeamspeakIdentities, message);
     }
 
     public async Task SendTeamspeakMessageToClient(IEnumerable<int> clientDbIds, string message)
@@ -83,7 +84,7 @@ public class TeamspeakService : ITeamspeakService
         message = FormatTeamspeakMessage(message);
         foreach (var clientDbId in clientDbIds)
         {
-            await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.MESSAGE, new { clientDbId, message });
+            await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Message, new { clientDbId, message });
         }
     }
 
@@ -102,12 +103,12 @@ public class TeamspeakService : ITeamspeakService
 
     public async Task Reload()
     {
-        await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.RELOAD, new { });
+        await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Reload, new { });
     }
 
     public async Task Shutdown()
     {
-        await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.SHUTDOWN, new { });
+        await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Shutdown, new { });
     }
 
     public List<TeamspeakConnectClient> GetFormattedClients()
@@ -154,18 +155,18 @@ public class TeamspeakService : ITeamspeakService
             return null;
         }
 
-        var domainAccount = _accountContext.GetSingle(accountId);
-        if (domainAccount?.TeamspeakIdentities == null)
+        var account = _accountContext.GetSingle(accountId);
+        if (account?.TeamspeakIdentities == null)
         {
             return null;
         }
 
         if (_environment.IsDevelopment())
         {
-            _clients.First().ClientDbId = domainAccount.TeamspeakIdentities.First();
+            _clients.First().ClientDbId = account.TeamspeakIdentities.First();
         }
 
-        return _clients.Where(client => client != null && domainAccount.TeamspeakIdentities.Any(clientDbId => clientDbId.Equals(client.ClientDbId)))
+        return _clients.Where(client => client != null && account.TeamspeakIdentities.Any(clientDbId => clientDbId.Equals(client.ClientDbId)))
                        .Select(client => new OnlineState { Online = true, Nickname = client.ClientName })
                        .FirstOrDefault();
     }

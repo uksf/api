@@ -1,18 +1,18 @@
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
-using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Services;
 
 public interface IVariablesService
 {
-    VariableItem GetVariable(string key);
+    DomainVariableItem GetVariable(string key);
     bool GetFeatureState(string featureKey);
 }
 
 public class VariablesService(IVariablesContext context) : IVariablesService
 {
-    public VariableItem GetVariable(string key)
+    public DomainVariableItem GetVariable(string key)
     {
         return context.GetSingle(key);
     }

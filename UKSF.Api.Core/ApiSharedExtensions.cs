@@ -76,7 +76,8 @@ public static class ApiSharedExtensions
                        .AddCachedContext<IRanksContext, RanksContext>()
                        .AddCachedContext<IRolesContext, RolesContext>()
                        .AddCachedContext<IUnitsContext, UnitsContext>()
-                       .AddCachedContext<INotificationsContext, NotificationsContext>();
+                       .AddCachedContext<INotificationsContext, NotificationsContext>()
+                       .AddCachedContext<ITrainingsContext, TrainingsContext>();
     }
 
     private static IServiceCollection AddEventHandlers(this IServiceCollection services)

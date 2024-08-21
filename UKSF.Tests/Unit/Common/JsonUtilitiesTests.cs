@@ -11,35 +11,44 @@ public class JsonUtilitiesTests
     [Fact]
     public void ShouldCopyComplexObject()
     {
-        TestDataModel testDataModel1 = new() { Name = "1" };
-        TestDataModel testDataModel2 = new() { Name = "2" };
-        TestDataModel testDataModel3 = new() { Name = "3" };
-        TestComplexDataModel testComplexDataModel = new()
+        DomainTestModel testModel1 = new() { Name = "1" };
+        DomainTestModel testModel2 = new() { Name = "2" };
+        DomainTestModel testModel3 = new() { Name = "3" };
+        DomainTestComplexModel testComplexModel = new()
         {
             Name = "Test",
-            Data = testDataModel1,
+            Data = testModel1,
             List = ["a", "b", "c"],
-            DataList = [testDataModel1, testDataModel2, testDataModel3]
+            DataList = [testModel1, testModel2, testModel3]
         };
 
-        var subject = testComplexDataModel.Copy<TestComplexDataModel>();
+        var subject = testComplexModel.Copy<DomainTestComplexModel>();
 
-        subject.Id.Should().Be(testComplexDataModel.Id);
-        subject.Name.Should().Be(testComplexDataModel.Name);
-        subject.Data.Should().NotBe(testDataModel1);
+        subject.Id.Should().Be(testComplexModel.Id);
+        subject.Name.Should().Be(testComplexModel.Name);
+        subject.Data.Should().NotBe(testModel1);
         subject.List.Should().HaveCount(3).And.Contain(new List<string> { "a", "b", "c" });
-        subject.DataList.Should().HaveCount(3).And.NotContain(new List<TestDataModel> { testDataModel1, testDataModel2, testDataModel3 });
+        subject.DataList.Should()
+        .HaveCount(3)
+        .And.NotContain(
+            new List<DomainTestModel>
+            {
+                testModel1,
+                testModel2,
+                testModel3
+            }
+        );
     }
 
     [Fact]
     public void ShouldCopyObject()
     {
-        TestDataModel testDataModel = new() { Name = "Test" };
+        DomainTestModel testModel = new() { Name = "Test" };
 
-        var subject = testDataModel.Copy<TestDataModel>();
+        var subject = testModel.Copy<DomainTestModel>();
 
-        subject.Id.Should().Be(testDataModel.Id);
-        subject.Name.Should().Be(testDataModel.Name);
+        subject.Id.Should().Be(testModel.Id);
+        subject.Name.Should().Be(testModel.Name);
     }
 
     [Fact]

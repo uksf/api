@@ -3,6 +3,7 @@ using AvsAnLib;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Services;
 
@@ -12,7 +13,7 @@ public interface IAssignmentService
     Task UnassignAllUnits(string id);
     Task UnassignAllUnitRoles(string id);
 
-    Task<Notification> UpdateUnitRankAndRole(
+    Task<DomainNotification> UpdateUnitRankAndRole(
         string id,
         string unitString = "",
         string role = "",
@@ -39,7 +40,7 @@ public class AssignmentService(
 {
     public const string RemoveFlag = "REMOVE";
 
-    public async Task<Notification> UpdateUnitRankAndRole(
+    public async Task<DomainNotification> UpdateUnitRankAndRole(
         string id,
         string unitString = "",
         string role = "",
@@ -86,7 +87,12 @@ public class AssignmentService(
         serviceRecordService.AddServiceRecord(id, message, notes);
         UpdateGroupsAndRoles(id);
         return message != RemoveFlag
-            ? new Notification { Owner = id, Message = message, Icon = positive ? NotificationIcons.Promotion : NotificationIcons.Demotion }
+            ? new DomainNotification
+            {
+                Owner = id,
+                Message = message,
+                Icon = positive ? NotificationIcons.Promotion : NotificationIcons.Demotion
+            }
             : null;
     }
 
@@ -138,8 +144,8 @@ public class AssignmentService(
 
     public void UpdateGroupsAndRoles(string id)
     {
-        var domainAccount = accountContext.GetSingle(id);
-        eventBus.Send(new ContextEventData<DomainAccount>(id, domainAccount), nameof(AssignmentService));
+        var account = accountContext.GetSingle(id);
+        eventBus.Send(new ContextEventData<DomainAccount>(id, account), nameof(AssignmentService));
     }
 
     private async Task<Tuple<bool, bool>> UpdateUnit(string id, string unitString, StringBuilder notificationMessage)
@@ -149,7 +155,7 @@ public class AssignmentService(
         var unit = unitsContext.GetSingle(x => x.Name == unitString);
         if (unit != null)
         {
-            if (unit.Branch == UnitBranch.COMBAT)
+            if (unit.Branch == UnitBranch.Combat)
             {
                 await unitsService.RemoveMember(id, accountContext.GetSingle(id).UnitAssignment);
                 await accountContext.Update(id, x => x.UnitAssignment, unit.Name);
