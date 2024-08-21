@@ -68,7 +68,7 @@ public class ChangeUtilitiesTests
                    "\n\t'Rank' as 'Private' removed" +
                    "\n\t'Application' changed:" +
                    $"\n\t\t'DateAccepted' changed from '{new DateTime()}' to '{dateAccepted}'" +
-                   "\n\t\t'State' changed from 'WAITING' to 'ACCEPTED'" +
+                   "\n\t\t'State' changed from 'Waiting' to 'Accepted'" +
                    "\n\t\t'ApplicationCommentThread' as 'thread1' removed"
                );
     }
@@ -118,7 +118,7 @@ public class ChangeUtilitiesTests
 
         var subject = original.Changes(updated);
 
-        subject.Should().Be("\n\t'MembershipState' changed from 'UNCONFIRMED' to 'MEMBER'");
+        subject.Should().Be("\n\t'MembershipState' changed from 'Unconfirmed' to 'Member'");
     }
 
     [Fact]
