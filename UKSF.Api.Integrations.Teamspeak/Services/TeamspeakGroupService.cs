@@ -77,7 +77,8 @@ public class TeamspeakGroupService(
                                                       .Select(x => x.Id)
                                                       .Where(x => !account.Trainings.Contains(x))
                                                       .ToList();
-            await updateAccountTrainingCommandHandler.ExecuteAsync(new UpdateAccountTrainingCommand(account.Id, missingAccountTrainings));
+            var allAccountTrainings = account.Trainings.Concat(missingAccountTrainings).Distinct().ToList();
+            await updateAccountTrainingCommandHandler.ExecuteAsync(new UpdateAccountTrainingCommand(account.Id, allAccountTrainings));
         }
     }
 
