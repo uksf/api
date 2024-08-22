@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using UKSF.Api.Commands;
+using UKSF.Api.Core.Commands;
 
 namespace UKSF.Api.Controllers;
 

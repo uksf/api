@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
 using Moq;
+using UKSF.Api.Core.Commands;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Mappers;
 using UKSF.Api.Core.Models;
@@ -75,7 +76,9 @@ public class TeamspeakGroupServiceTests
             _mockUnitsContext.Object,
             unitsService,
             _mockTeamspeakManagerService.Object,
-            _mockVariablesService.Object
+            _mockVariablesService.Object,
+            new Mock<ITrainingsContext>().Object,
+            new Mock<IUpdateAccountTrainingCommandHandler>().Object
         );
     }
 

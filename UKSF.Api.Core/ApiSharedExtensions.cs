@@ -106,7 +106,8 @@ public static class ApiSharedExtensions
     {
         return services.AddSingleton<ISendTemplatedEmailCommand, SendTemplatedEmailCommand>()
                        .AddSingleton<ISendBasicEmailCommand, SendBasicEmailCommand>()
-                       .AddSingleton<IUpdateApplicationCommand, UpdateApplicationCommand>();
+                       .AddSingleton<IUpdateApplicationCommand, UpdateApplicationCommand>()
+                       .AddSingleton<IUpdateAccountTrainingCommandHandler, UpdateAccountTrainingCommandHandler>();
     }
 
     private static IServiceCollection AddQueries(this IServiceCollection services)

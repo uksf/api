@@ -13,35 +13,21 @@ namespace UKSF.Api.Integrations.Teamspeak.EventHandlers;
 
 public interface ITeamspeakServerEventHandler : IEventHandler;
 
-public class TeamspeakServerEventHandler : ITeamspeakServerEventHandler
+public class TeamspeakServerEventHandler(
+    IAccountContext accountContext,
+    IEventBus eventBus,
+    ITeamspeakService teamspeakService,
+    ITeamspeakGroupService teamspeakGroupService,
+    IUksfLogger logger
+) : ITeamspeakServerEventHandler
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IEventBus _eventBus;
-    private readonly IUksfLogger _logger;
     private readonly ConcurrentDictionary<int, TeamspeakServerGroupUpdate> _serverGroupUpdates = new();
-    private readonly ITeamspeakGroupService _teamspeakGroupService;
-    private readonly ITeamspeakService _teamspeakService;
-
-    public TeamspeakServerEventHandler(
-        IAccountContext accountContext,
-        IEventBus eventBus,
-        ITeamspeakService teamspeakService,
-        ITeamspeakGroupService teamspeakGroupService,
-        IUksfLogger logger
-    )
-    {
-        _accountContext = accountContext;
-        _eventBus = eventBus;
-        _teamspeakService = teamspeakService;
-        _teamspeakGroupService = teamspeakGroupService;
-        _logger = logger;
-    }
 
     public void EarlyInit() { }
 
     public void Init()
     {
-        _eventBus.AsObservable().SubscribeWithAsyncNext<SignalrEventData>(HandleEvent, _logger.LogError);
+        eventBus.AsObservable().SubscribeWithAsyncNext<SignalrEventData>(HandleEvent, logger.LogError);
     }
 
     private async Task HandleEvent(EventModel eventModel, SignalrEventData signalrEventData)
@@ -69,7 +55,7 @@ public class TeamspeakServerEventHandler : ITeamspeakServerEventHandler
         }
 
         await Console.Out.WriteLineAsync("Updating online clients");
-        await _teamspeakService.UpdateClients(clients.ToHashSet());
+        await teamspeakService.UpdateClients(clients.ToHashSet());
     }
 
     private async Task UpdateClientServerGroups(string args)
@@ -81,14 +67,18 @@ public class TeamspeakServerEventHandler : ITeamspeakServerEventHandler
 
         var update = _serverGroupUpdates.GetOrAdd(clientDbId, _ => new TeamspeakServerGroupUpdate());
         update.ServerGroups.Add(serverGroupId);
-        update.CancellationTokenSource?.Cancel();
+        if (update.CancellationTokenSource is not null)
+        {
+            await update.CancellationTokenSource.CancelAsync();
+        }
+
         update.CancellationTokenSource = new CancellationTokenSource();
         _ = TaskUtilities.DelayWithCallback(
             TimeSpan.FromMilliseconds(500),
             update.CancellationTokenSource.Token,
             async () =>
             {
-                update.CancellationTokenSource.Cancel();
+                await update.CancellationTokenSource.CancelAsync();
                 _serverGroupUpdates.TryRemove(clientDbId, out _);
 
                 try
@@ -97,7 +87,7 @@ public class TeamspeakServerEventHandler : ITeamspeakServerEventHandler
                 }
                 catch (Exception exception)
                 {
-                    _logger.LogError(exception);
+                    logger.LogError(exception);
                 }
             }
         );
@@ -106,8 +96,8 @@ public class TeamspeakServerEventHandler : ITeamspeakServerEventHandler
     private async Task ProcessAccountData(int clientDbId, ICollection<int> serverGroups)
     {
         await Console.Out.WriteLineAsync($"Processing server groups for {clientDbId}");
-        var accounts = _accountContext.Get(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
+        var accounts = accountContext.Get(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
         var account = accounts.MaxBy(x => x.MembershipState);
-        await _teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
+        await teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
     }
 }

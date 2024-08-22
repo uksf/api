@@ -84,8 +84,7 @@ public static class ServiceExtensions
                        .AddSingleton<IConnectTeamspeakIdToAccountCommand, ConnectTeamspeakIdToAccountCommand>()
                        .AddSingleton<ICreateApplicationCommand, CreateApplicationCommand>()
                        .AddSingleton<ICreateCommentThreadCommand, CreateCommentThreadCommand>()
-                       .AddSingleton<IQualificationsUpdateCommand, QualificationsUpdateCommand>()
-                       .AddSingleton<IUpdateAccountTrainingCommandHandler, UpdateAccountTrainingCommandHandler>();
+                       .AddSingleton<IQualificationsUpdateCommand, QualificationsUpdateCommand>();
     }
 
     private static IServiceCollection AddQueries(this IServiceCollection services)
