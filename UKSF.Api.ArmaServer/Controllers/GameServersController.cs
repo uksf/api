@@ -69,7 +69,7 @@ public class GameServersController : ControllerBase
     {
         var gameServer = _gameServersContext.GetSingle(id);
         await _gameServersService.GetGameServerStatus(gameServer);
-        return new GameServerDataset { DomainGameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
+        return new GameServerDataset { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
     }
 
     [HttpPost("{check}")]
@@ -246,7 +246,7 @@ public class GameServersController : ControllerBase
         SendServerUpdateIfNotCaller(gameServer.Id);
         await _gameServersService.StopGameServer(gameServer);
         await _gameServersService.GetGameServerStatus(gameServer);
-        return new GameServerDataset { DomainGameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
+        return new GameServerDataset { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
     }
 
     [HttpGet("kill/{id}")]
@@ -272,7 +272,7 @@ public class GameServersController : ControllerBase
 
         await _gameServersService.GetGameServerStatus(gameServer);
         SendServerUpdateIfNotCaller(gameServer.Id);
-        return new GameServerDataset { DomainGameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
+        return new GameServerDataset { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
     }
 
     [HttpGet("killall")]

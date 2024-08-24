@@ -9,6 +9,6 @@ public class GameServersDataset
 
 public class GameServerDataset
 {
-    public DomainGameServer DomainGameServer { get; set; }
+    public DomainGameServer GameServer { get; set; }
     public int InstanceCount { get; set; }
 }
