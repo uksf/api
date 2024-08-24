@@ -27,12 +27,7 @@ public static class CommandRequestType
 
 public class DomainCommandRequest : MongoObject
 {
-    public DomainCommandRequest()
-    {
-        DateCreated = DateTime.UtcNow;
-    }
-
-    public DateTime DateCreated { get; set; }
+    public DateTime DateCreated { get; set; } = DateTime.UtcNow;
     public string DisplayFrom { get; set; }
     public string DisplayRecipient { get; set; }
     public string DisplayRequester { get; set; }

@@ -17,34 +17,20 @@ namespace UKSF.Api.Launcher.Controllers;
 
 [Route("[controller]")]
 [Permissions(Permissions.Confirmed, Permissions.Member)]
-public class LauncherController : ControllerBase
+public class LauncherController(
+    IVariablesContext variablesContext,
+    IHubContext<LauncherHub, ILauncherClient> launcherHub,
+    ILauncherService launcherService,
+    ILauncherFileService launcherFileService,
+    IHttpContextService httpContextService,
+    IDisplayNameService displayNameService,
+    IVariablesService variablesService
+) : ControllerBase
 {
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IHttpContextService _httpContextService;
-    private readonly ILauncherFileService _launcherFileService;
-    private readonly IHubContext<LauncherHub, ILauncherClient> _launcherHub;
-    private readonly ILauncherService _launcherService;
-    private readonly IVariablesContext _variablesContext;
-    private readonly IVariablesService _variablesService;
-
-    public LauncherController(
-        IVariablesContext variablesContext,
-        IHubContext<LauncherHub, ILauncherClient> launcherHub,
-        ILauncherService launcherService,
-        ILauncherFileService launcherFileService,
-        IHttpContextService httpContextService,
-        IDisplayNameService displayNameService,
-        IVariablesService variablesService
-    )
-    {
-        _variablesContext = variablesContext;
-        _launcherHub = launcherHub;
-        _launcherService = launcherService;
-        _launcherFileService = launcherFileService;
-        _httpContextService = httpContextService;
-        _displayNameService = displayNameService;
-        _variablesService = variablesService;
-    }
+    private readonly IDisplayNameService _displayNameService = displayNameService;
+    private readonly IHttpContextService _httpContextService = httpContextService;
+    private readonly ILauncherService _launcherService = launcherService;
+    private readonly IVariablesService _variablesService = variablesService;
 
     [HttpGet("update/{platform}/{version}")]
     public void GetUpdate(string platform, string version) { }
@@ -52,34 +38,34 @@ public class LauncherController : ControllerBase
     [HttpGet("version")]
     public string GetVersion()
     {
-        return _variablesContext.GetSingle("LAUNCHER_VERSION").AsString();
+        return variablesContext.GetSingle("LAUNCHER_VERSION").AsString();
     }
 
     [HttpPost("version")]
     [Permissions(Permissions.Admin)]
     public async Task UpdateVersion([FromBody] UpdateVersionRequest updateVersionRequest)
     {
-        await _variablesContext.Update("LAUNCHER_VERSION", updateVersionRequest.Version);
-        await _launcherFileService.UpdateAllVersions();
-        await _launcherHub.Clients.All.ReceiveLauncherVersion(updateVersionRequest.Version);
+        await variablesContext.Update("LAUNCHER_VERSION", updateVersionRequest.Version);
+        await launcherFileService.UpdateAllVersions();
+        await launcherHub.Clients.All.ReceiveLauncherVersion(updateVersionRequest.Version);
     }
 
     [HttpGet("download/setup")]
     public FileStreamResult GetLauncher()
     {
-        return _launcherFileService.GetLauncherFile("UKSF Launcher Setup.msi");
+        return launcherFileService.GetLauncherFile("UKSF Launcher Setup.msi");
     }
 
     [HttpGet("download/updater")]
     public FileStreamResult GetUpdater()
     {
-        return _launcherFileService.GetLauncherFile("Updater", "UKSF.Launcher.Updater.exe");
+        return launcherFileService.GetLauncherFile("Updater", "UKSF.Launcher.Updater.exe");
     }
 
     [HttpPost("download/update")]
     public async Task<FileStreamResult> GetUpdatedFiles([FromBody] GetUpdateFilesRequest getUpdateFilesRequest)
     {
-        var updatedFiles = await _launcherFileService.GetUpdatedFiles(getUpdateFilesRequest.Files);
+        var updatedFiles = await launcherFileService.GetUpdatedFiles(getUpdateFilesRequest.Files);
         FileStreamResult stream = new(updatedFiles, "application/octet-stream");
         return stream;
     }

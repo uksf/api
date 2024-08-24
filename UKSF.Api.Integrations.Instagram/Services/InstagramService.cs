@@ -16,51 +16,41 @@ public interface IInstagramService
     IEnumerable<InstagramImage> GetImages();
 }
 
-public class InstagramService : IInstagramService
+public class InstagramService(IVariablesContext variablesContext, IVariablesService variablesService, IUksfLogger logger) : IInstagramService
 {
-    private readonly IUksfLogger _logger;
-    private readonly IVariablesContext _variablesContext;
-    private readonly IVariablesService _variablesService;
     private List<InstagramImage> _images = new();
-
-    public InstagramService(IVariablesContext variablesContext, IVariablesService variablesService, IUksfLogger logger)
-    {
-        _variablesContext = variablesContext;
-        _variablesService = variablesService;
-        _logger = logger;
-    }
 
     public async Task RefreshAccessToken()
     {
         try
         {
-            var accessToken = _variablesService.GetVariable("INSTAGRAM_ACCESS_TOKEN").AsString();
+            var accessToken = variablesService.GetVariable("INSTAGRAM_ACCESS_TOKEN").AsString();
 
             using HttpClient client = new();
             var response = await client.GetAsync($"https://graph.instagram.com/refresh_access_token?access_token={accessToken}&grant_type=ig_refresh_token");
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError($"Failed to get instagram access token, error: {response}");
+                logger.LogError($"Failed to get instagram access token, error: {response}");
                 return;
             }
 
             var contentString = await response.Content.ReadAsStringAsync();
-            _logger.LogInfo($"Instagram response: {contentString}");
+            logger.LogInfo($"Instagram response: {contentString}");
             var content = JsonNode.Parse(contentString);
             var newAccessToken = content.GetValueFromObject("access_token");
 
             if (string.IsNullOrEmpty(newAccessToken))
             {
-                _logger.LogError($"Failed to get instagram access token from response: {contentString}");
+                logger.LogError($"Failed to get instagram access token from response: {contentString}");
                 return;
             }
 
-            await _variablesContext.Update("INSTAGRAM_ACCESS_TOKEN", newAccessToken);
-            _logger.LogInfo("Updated Instagram access token");
+            await variablesContext.Update("INSTAGRAM_ACCESS_TOKEN", newAccessToken);
+            logger.LogInfo("Updated Instagram access token");
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception);
+            logger.LogError(exception);
         }
     }
 
@@ -68,8 +58,8 @@ public class InstagramService : IInstagramService
     {
         try
         {
-            var userId = _variablesService.GetVariable("INSTAGRAM_USER_ID").AsString();
-            var accessToken = _variablesService.GetVariable("INSTAGRAM_ACCESS_TOKEN").AsString();
+            var userId = variablesService.GetVariable("INSTAGRAM_USER_ID").AsString();
+            var accessToken = variablesService.GetVariable("INSTAGRAM_ACCESS_TOKEN").AsString();
 
             using HttpClient client = new();
             var response = await client.GetAsync(
@@ -77,7 +67,7 @@ public class InstagramService : IInstagramService
             );
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError($"Failed to get instagram images, error: {response}");
+                logger.LogError($"Failed to get instagram images, error: {response}");
                 return;
             }
 
@@ -88,7 +78,7 @@ public class InstagramService : IInstagramService
 
             if (allMedia.Count == 0)
             {
-                _logger.LogWarning($"Instagram response contains no images: {content}");
+                logger.LogWarning($"Instagram response contains no images: {content}");
                 return;
             }
 
@@ -105,7 +95,7 @@ public class InstagramService : IInstagramService
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception);
+            logger.LogError(exception);
         }
         finally
         {
@@ -128,7 +118,7 @@ public class InstagramService : IInstagramService
         }
         catch (Exception exception)
         {
-            _logger.LogError("Failed to get image data", exception);
+            logger.LogError("Failed to get image data", exception);
         }
 
         return string.Empty;

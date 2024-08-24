@@ -14,25 +14,14 @@ public interface ISchedulerService
     Task Cancel(Func<DomainScheduledJob, bool> predicate);
 }
 
-public class SchedulerService : ISchedulerService
+public class SchedulerService(ISchedulerContext context, IScheduledActionFactory scheduledActionFactory, IClock clock, IUksfLogger uksfLogger)
+    : ISchedulerService
 {
     private static readonly ConcurrentDictionary<string, CancellationTokenSource> ActiveTasks = new();
-    private readonly IClock _clock;
-    private readonly ISchedulerContext _context;
-    private readonly IScheduledActionFactory _scheduledActionFactory;
-    private readonly IUksfLogger _uksfLogger;
-
-    public SchedulerService(ISchedulerContext context, IScheduledActionFactory scheduledActionFactory, IClock clock, IUksfLogger uksfLogger)
-    {
-        _context = context;
-        _scheduledActionFactory = scheduledActionFactory;
-        _clock = clock;
-        _uksfLogger = uksfLogger;
-    }
 
     public void Load()
     {
-        _context.Get().ToList().ForEach(Schedule);
+        context.Get().ToList().ForEach(Schedule);
     }
 
     public async Task CreateAndScheduleJob(string actionName, DateTime next, TimeSpan interval, params object[] actionParameters)
@@ -43,7 +32,7 @@ public class SchedulerService : ISchedulerService
 
     public async Task Cancel(Func<DomainScheduledJob, bool> predicate)
     {
-        var job = _context.GetSingle(predicate);
+        var job = context.GetSingle(predicate);
         if (job == null)
         {
             return;
@@ -55,17 +44,17 @@ public class SchedulerService : ISchedulerService
             ActiveTasks.TryRemove(job.Id, out var _);
         }
 
-        await _context.Delete(job);
+        await context.Delete(job);
     }
 
     public async Task<DomainScheduledJob> CreateScheduledJob(string actionName, DateTime next, TimeSpan interval, params object[] actionParameters)
     {
-        var job = _context.GetSingle(x => x.Action == actionName);
+        var job = context.GetSingle(x => x.Action == actionName);
         if (job is not null)
         {
             if (job.Interval != interval)
             {
-                await _context.Update(job.Id, x => x.Interval, interval);
+                await context.Update(job.Id, x => x.Interval, interval);
             }
 
             return job;
@@ -83,7 +72,7 @@ public class SchedulerService : ISchedulerService
             job.Repeat = true;
         }
 
-        await _context.Add(job);
+        await context.Add(job);
         return job;
     }
 
@@ -93,7 +82,7 @@ public class SchedulerService : ISchedulerService
         _ = Task.Run(
             async () =>
             {
-                var now = _clock.UtcNow();
+                var now = clock.UtcNow();
                 if (now < job.Next)
                 {
                     var delay = job.Next - now;
@@ -121,7 +110,7 @@ public class SchedulerService : ISchedulerService
                 }
                 catch (Exception exception)
                 {
-                    _uksfLogger.LogError(exception);
+                    uksfLogger.LogError(exception);
                 }
 
                 if (job.Repeat)
@@ -132,7 +121,7 @@ public class SchedulerService : ISchedulerService
                 }
                 else
                 {
-                    await _context.Delete(job);
+                    await context.Delete(job);
                     ActiveTasks.TryRemove(job.Id, out _);
                 }
             },
@@ -143,7 +132,7 @@ public class SchedulerService : ISchedulerService
 
     private async Task SetNext(DomainScheduledJob job)
     {
-        await _context.Update(job.Id, x => x.Next, job.Next);
+        await context.Update(job.Id, x => x.Next, job.Next);
     }
 
     private bool IsCancelled(MongoObject job, CancellationTokenSource token)
@@ -153,12 +142,12 @@ public class SchedulerService : ISchedulerService
             return true;
         }
 
-        return _context.GetSingle(job.Id) == null;
+        return context.GetSingle(job.Id) == null;
     }
 
     private async Task ExecuteAction(DomainScheduledJob job)
     {
-        var action = _scheduledActionFactory.GetScheduledAction(job.Action);
+        var action = scheduledActionFactory.GetScheduledAction(job.Action);
         var parameters = job.ActionParameters == null ? null : JsonSerializer.Deserialize<object[]>(job.ActionParameters, DefaultJsonSerializerOptions.Options);
         await action.Run(parameters);
     }

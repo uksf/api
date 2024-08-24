@@ -12,48 +12,25 @@ namespace UKSF.Api.Controllers;
 
 [Route("[controller]")]
 [Permissions(Permissions.Personnel, Permissions.Nco, Permissions.Recruiter)]
-public class DischargesController : ControllerBase
+public class DischargesController(
+    IDischargeContext dischargeContext,
+    IAccountContext accountContext,
+    IUnitsContext unitsContext,
+    IAssignmentService assignmentService,
+    ICommandRequestService commandRequestService,
+    INotificationsService notificationsService,
+    IHttpContextService httpContextService,
+    IVariablesContext variablesContext,
+    IUksfLogger logger
+) : ControllerBase
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IAssignmentService _assignmentService;
-    private readonly ICommandRequestService _commandRequestService;
-    private readonly IDischargeContext _dischargeContext;
-    private readonly IHttpContextService _httpContextService;
-    private readonly IUksfLogger _logger;
-    private readonly INotificationsService _notificationsService;
-    private readonly IUnitsContext _unitsContext;
-    private readonly IVariablesContext _variablesContext;
-
-    public DischargesController(
-        IDischargeContext dischargeContext,
-        IAccountContext accountContext,
-        IUnitsContext unitsContext,
-        IAssignmentService assignmentService,
-        ICommandRequestService commandRequestService,
-        INotificationsService notificationsService,
-        IHttpContextService httpContextService,
-        IVariablesContext variablesContext,
-        IUksfLogger logger
-    )
-    {
-        _dischargeContext = dischargeContext;
-        _accountContext = accountContext;
-        _unitsContext = unitsContext;
-        _assignmentService = assignmentService;
-        _commandRequestService = commandRequestService;
-        _notificationsService = notificationsService;
-        _httpContextService = httpContextService;
-        _variablesContext = variablesContext;
-        _logger = logger;
-    }
-
     [HttpGet]
     public IEnumerable<DomainDischargeCollection> Get()
     {
-        IEnumerable<DomainDischargeCollection> discharges = _dischargeContext.Get().ToList();
+        IEnumerable<DomainDischargeCollection> discharges = dischargeContext.Get().ToList();
         foreach (var discharge in discharges)
         {
-            discharge.RequestExists = _commandRequestService.DoesEquivalentRequestExist(
+            discharge.RequestExists = commandRequestService.DoesEquivalentRequestExist(
                 new DomainCommandRequest
                 {
                     Recipient = discharge.AccountId,
@@ -70,10 +47,10 @@ public class DischargesController : ControllerBase
     [HttpGet("reinstate/{id}")]
     public async Task<IEnumerable<DomainDischargeCollection>> Reinstate([FromRoute] string id)
     {
-        var dischargeCollection = _dischargeContext.GetSingle(id);
-        await _dischargeContext.Update(dischargeCollection.Id, Builders<DomainDischargeCollection>.Update.Set(x => x.Reinstated, true));
-        await _accountContext.Update(dischargeCollection.AccountId, x => x.MembershipState, MembershipState.Member);
-        var notification = await _assignmentService.UpdateUnitRankAndRole(
+        var dischargeCollection = dischargeContext.GetSingle(id);
+        await dischargeContext.Update(dischargeCollection.Id, Builders<DomainDischargeCollection>.Update.Set(x => x.Reinstated, true));
+        await accountContext.Update(dischargeCollection.AccountId, x => x.MembershipState, MembershipState.Member);
+        var notification = await assignmentService.UpdateUnitRankAndRole(
             dischargeCollection.AccountId,
             "Basic Training Unit",
             "Trainee",
@@ -82,22 +59,22 @@ public class DischargesController : ControllerBase
             "",
             "your membership was reinstated"
         );
-        _notificationsService.Add(notification);
+        notificationsService.Add(notification);
 
-        _logger.LogAudit($"{_httpContextService.GetUserId()} reinstated {dischargeCollection.Name}'s membership", _httpContextService.GetUserId());
-        var personnelId = _variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
-        foreach (var member in _unitsContext.GetSingle(personnelId).Members.Where(x => x != _httpContextService.GetUserId()))
+        logger.LogAudit($"{httpContextService.GetUserId()} reinstated {dischargeCollection.Name}'s membership", httpContextService.GetUserId());
+        var personnelId = variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
+        foreach (var member in unitsContext.GetSingle(personnelId).Members.Where(x => x != httpContextService.GetUserId()))
         {
-            _notificationsService.Add(
+            notificationsService.Add(
                 new DomainNotification
                 {
                     Owner = member,
                     Icon = NotificationIcons.Promotion,
-                    Message = $"{dischargeCollection.Name}'s membership was reinstated by {_httpContextService.GetUserId()}"
+                    Message = $"{dischargeCollection.Name}'s membership was reinstated by {httpContextService.GetUserId()}"
                 }
             );
         }
 
-        return _dischargeContext.Get();
+        return dischargeContext.Get();
     }
 }

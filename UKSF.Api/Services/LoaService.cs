@@ -2,35 +2,29 @@
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Models.Domain;
+using UKSF.Api.Models.Request;
 
 namespace UKSF.Api.Services;
 
 public interface ILoaService
 {
     IEnumerable<DomainLoa> Get(List<string> ids);
-    Task<string> Add(DomainCommandRequestLoa requestBase);
+    Task<string> Add(CreateLoaRequest createLoaRequest, string recipient, string reason);
     Task SetLoaState(string id, LoaReviewState state);
     bool IsLoaCovered(string id, DateTime eventStart);
 }
 
-public class LoaService : ILoaService
+public class LoaService(ILoaContext loaContext) : ILoaService
 {
-    private readonly ILoaContext _loaContext;
-
-    public LoaService(ILoaContext loaContext)
-    {
-        _loaContext = loaContext;
-    }
-
     public IEnumerable<DomainLoa> Get(List<string> ids)
     {
-        return _loaContext.Get(x => ids.Contains(x.Recipient));
+        return loaContext.Get(x => ids.Contains(x.Recipient));
     }
 
-    public async Task<string> Add(DomainCommandRequestLoa requestBase)
+    public async Task<string> Add(CreateLoaRequest createLoaRequest, string recipient, string reason)
     {
-        if (_loaContext.Get(x => x.Recipient == requestBase.Recipient && x.State != LoaReviewState.Rejected)
-                       .Any(x => requestBase.Start >= x.Start && requestBase.End <= x.End))
+        if (loaContext.Get(x => x.Recipient == recipient && x.State != LoaReviewState.Rejected)
+                      .Any(x => createLoaRequest.Start >= x.Start && createLoaRequest.End <= x.End))
         {
             throw new BadRequestException("An LOA covering the same date range already exists");
         }
@@ -38,25 +32,25 @@ public class LoaService : ILoaService
         DomainLoa loa = new()
         {
             Submitted = DateTime.UtcNow,
-            Recipient = requestBase.Recipient,
-            Start = requestBase.Start,
-            End = requestBase.End,
-            Reason = requestBase.Reason,
-            Emergency = requestBase.Emergency,
-            Late = requestBase.Late
+            Recipient = recipient,
+            Start = createLoaRequest.Start,
+            End = createLoaRequest.End,
+            Reason = reason,
+            Emergency = createLoaRequest.Emergency,
+            Late = createLoaRequest.Late
         };
-        await _loaContext.Add(loa);
+        await loaContext.Add(loa);
         return loa.Id;
     }
 
     public async Task SetLoaState(string id, LoaReviewState state)
     {
-        await _loaContext.Update(id, Builders<DomainLoa>.Update.Set(x => x.State, state));
+        await loaContext.Update(id, Builders<DomainLoa>.Update.Set(x => x.State, state));
     }
 
     public bool IsLoaCovered(string id, DateTime eventStart)
     {
-        return _loaContext.Get(loa => loa.Recipient == id && loa.Start < eventStart && loa.End > eventStart).Any();
+        return loaContext.Get(loa => loa.Recipient == id && loa.Start < eventStart && loa.End > eventStart).Any();
     }
 }
 

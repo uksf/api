@@ -16,77 +16,60 @@ public interface IUpdateServerInfrastructureCommand
     Task<string> ExecuteAsync();
 }
 
-public class UpdateServerInfrastructureCommand : IUpdateServerInfrastructureCommand
+public class UpdateServerInfrastructureCommand(
+    ISteamCmdService steamCmdService,
+    IVariablesContext variablesContext,
+    IVariablesService variablesService,
+    IGameServersService gameServersService,
+    IHubContext<ServersHub, IServersClient> serversHub,
+    IUksfLogger logger
+) : IUpdateServerInfrastructureCommand
 {
-    private readonly IGameServersService _gameServersService;
-    private readonly IHubContext<ServersHub, IServersClient> _serversHub;
-    private readonly IUksfLogger _logger;
-    private readonly ISteamCmdService _steamCmdService;
-    private readonly IVariablesContext _variablesContext;
-    private readonly IVariablesService _variablesService;
-
-    public UpdateServerInfrastructureCommand(
-        ISteamCmdService steamCmdService,
-        IVariablesContext variablesContext,
-        IVariablesService variablesService,
-        IGameServersService gameServersService,
-        IHubContext<ServersHub, IServersClient> serversHub,
-        IUksfLogger logger
-    )
-    {
-        _steamCmdService = steamCmdService;
-        _variablesContext = variablesContext;
-        _variablesService = variablesService;
-        _gameServersService = gameServersService;
-        _serversHub = serversHub;
-        _logger = logger;
-    }
-
     public async Task<string> ExecuteAsync()
     {
-        if (_variablesService.GetVariable("SERVER_INFRA_UPDATING").AsBool())
+        if (variablesService.GetVariable("SERVER_INFRA_UPDATING").AsBool())
         {
             throw new BadRequestException("Server infrastructure is already updating");
         }
 
-        var instances = _gameServersService.GetGameInstanceCount();
+        var instances = gameServersService.GetGameInstanceCount();
         if (instances != 0)
         {
             throw new BadRequestException("There are servers running, cannot update infrastructure at this time");
         }
 
-        await _variablesContext.Update("SERVER_INFRA_UPDATING", true);
-        await _variablesContext.Update("SERVER_CONTROL_DISABLED", true);
-        await _serversHub.Clients.All.ReceiveDisabledState(true);
-        _logger.LogInfo("Server infrastructure update starting");
+        await variablesContext.Update("SERVER_INFRA_UPDATING", true);
+        await variablesContext.Update("SERVER_CONTROL_DISABLED", true);
+        await serversHub.Clients.All.ReceiveDisabledState(true);
+        logger.LogInfo("Server infrastructure update starting");
 
         try
         {
-            var result = await _steamCmdService.UpdateServer();
+            var result = await steamCmdService.UpdateServer();
             CopyFiles();
 
             return result;
         }
         finally
         {
-            await _variablesContext.Update("SERVER_INFRA_UPDATING", false);
-            await _variablesContext.Update("SERVER_CONTROL_DISABLED", false);
-            await _serversHub.Clients.All.ReceiveDisabledState(false);
-            _logger.LogInfo("Server infrastructure update finished");
+            await variablesContext.Update("SERVER_INFRA_UPDATING", false);
+            await variablesContext.Update("SERVER_CONTROL_DISABLED", false);
+            await serversHub.Clients.All.ReceiveDisabledState(false);
+            logger.LogInfo("Server infrastructure update finished");
         }
     }
 
     private void CopyFiles()
     {
-        var serverPath = _variablesService.GetVariable("SERVER_INFRA_PATH").AsString();
+        var serverPath = variablesService.GetVariable("SERVER_INFRA_PATH").AsString();
         var allowedExtensions = new Regex("exe|dll", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         var serverFiles = new DirectoryInfo(serverPath).EnumerateFiles("*.*", SearchOption.TopDirectoryOnly)
                                                        .Where(x => allowedExtensions.IsMatch(x.Extension))
                                                        .ToList();
 
-        var releasePath = _variablesService.GetVariable("SERVER_PATH_RELEASE").AsString();
-        var rcPath = _variablesService.GetVariable("SERVER_PATH_RC").AsString();
-        var devPath = _variablesService.GetVariable("SERVER_PATH_DEV").AsString();
+        var releasePath = variablesService.GetVariable("SERVER_PATH_RELEASE").AsString();
+        var rcPath = variablesService.GetVariable("SERVER_PATH_RC").AsString();
+        var devPath = variablesService.GetVariable("SERVER_PATH_DEV").AsString();
         foreach (var serverFile in serverFiles)
         {
             var releaseFile = Path.Join(releasePath, serverFile.Name);

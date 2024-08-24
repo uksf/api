@@ -7,12 +7,5 @@ namespace UKSF.Api.Core.Context;
 
 public interface ICommandRequestContext : IMongoContext<DomainCommandRequest>, ICachedMongoContext;
 
-public class CommandRequestContext : CachedMongoContext<DomainCommandRequest>, ICommandRequestContext
-{
-    public CommandRequestContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
-        mongoCollectionFactory,
-        eventBus,
-        variablesService,
-        "commandRequests"
-    ) { }
-}
+public class CommandRequestContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService)
+    : CachedMongoContext<DomainCommandRequest>(mongoCollectionFactory, eventBus, variablesService, "commandRequests"), ICommandRequestContext;

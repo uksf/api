@@ -16,55 +16,31 @@ namespace UKSF.Api.Controllers;
 
 [Route("[controller]")]
 [Permissions(Permissions.Command)]
-public class CommandRequestsController : ControllerBase
+public class CommandRequestsController(
+    ICommandRequestService commandRequestService,
+    ICommandRequestCompletionService commandRequestCompletionService,
+    IHttpContextService httpContextService,
+    IUnitsContext unitsContext,
+    ICommandRequestContext commandRequestContext,
+    IDisplayNameService displayNameService,
+    INotificationsService notificationsService,
+    IVariablesContext variablesContext,
+    IAccountService accountService,
+    IUksfLogger logger
+) : ControllerBase
 {
     private const string SuperAdmin = "59e38f10594c603b78aa9dbd";
-    private readonly IAccountService _accountService;
-    private readonly ICommandRequestCompletionService _commandRequestCompletionService;
-    private readonly ICommandRequestContext _commandRequestContext;
-    private readonly ICommandRequestService _commandRequestService;
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IHttpContextService _httpContextService;
-    private readonly IUksfLogger _logger;
-    private readonly INotificationsService _notificationsService;
-    private readonly IUnitsContext _unitsContext;
-    private readonly IVariablesContext _variablesContext;
-
-    public CommandRequestsController(
-        ICommandRequestService commandRequestService,
-        ICommandRequestCompletionService commandRequestCompletionService,
-        IHttpContextService httpContextService,
-        IUnitsContext unitsContext,
-        ICommandRequestContext commandRequestContext,
-        IDisplayNameService displayNameService,
-        INotificationsService notificationsService,
-        IVariablesContext variablesContext,
-        IAccountService accountService,
-        IUksfLogger logger
-    )
-    {
-        _commandRequestService = commandRequestService;
-        _commandRequestCompletionService = commandRequestCompletionService;
-        _httpContextService = httpContextService;
-        _unitsContext = unitsContext;
-        _commandRequestContext = commandRequestContext;
-        _displayNameService = displayNameService;
-        _notificationsService = notificationsService;
-        _variablesContext = variablesContext;
-        _accountService = accountService;
-        _logger = logger;
-    }
 
     [HttpGet]
     [Authorize]
     public CommandRequestsDataset Get()
     {
-        var allRequests = _commandRequestContext.Get();
+        var allRequests = commandRequestContext.Get();
         List<DomainCommandRequest> myRequests = new();
         List<DomainCommandRequest> otherRequests = new();
-        var contextId = _httpContextService.GetUserId();
-        var id = _variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
-        var canOverride = _unitsContext.GetSingle(id).Members.Any(x => x == contextId);
+        var contextId = httpContextService.GetUserId();
+        var id = variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
+        var canOverride = unitsContext.GetSingle(id).Members.Any(x => x == contextId);
         var superAdmin = contextId == SuperAdmin;
         var now = DateTime.UtcNow;
         foreach (var commandRequest in allRequests)
@@ -91,8 +67,8 @@ public class CommandRequestsController : ControllerBase
     [Authorize]
     public async Task UpdateRequestReview([FromRoute] string id, [FromBody] UpdateCommandReviewRequest updateCommandReviewRequest)
     {
-        var sessionDomainAccount = _accountService.GetUserAccount();
-        var request = _commandRequestContext.GetSingle(id);
+        var sessionDomainAccount = accountService.GetUserAccount();
+        var request = commandRequestContext.GetSingle(id);
         if (request == null)
         {
             throw new NotFoundException($"Request with id {id} not found");
@@ -101,12 +77,12 @@ public class CommandRequestsController : ControllerBase
         var state = updateCommandReviewRequest.ReviewState;
         if (updateCommandReviewRequest.Overriden)
         {
-            _logger.LogAudit($"Review state of {request.Type.ToLower()} request for {request.DisplayRecipient} overriden to {state}");
-            await _commandRequestService.SetRequestAllReviewStates(request, state);
+            logger.LogAudit($"Review state of {request.Type.ToLower()} request for {request.DisplayRecipient} overriden to {state}");
+            await commandRequestService.SetRequestAllReviewStates(request, state);
 
             foreach (var reviewerId in request.Reviews.Select(x => x.Key).Where(x => x != sessionDomainAccount.Id))
             {
-                _notificationsService.Add(
+                notificationsService.Add(
                     new DomainNotification
                     {
                         Owner = reviewerId,
@@ -119,7 +95,7 @@ public class CommandRequestsController : ControllerBase
         }
         else
         {
-            var currentState = _commandRequestService.GetReviewState(request.Id, sessionDomainAccount.Id);
+            var currentState = commandRequestService.GetReviewState(request.Id, sessionDomainAccount.Id);
             if (currentState == ReviewState.Error)
             {
                 throw new BadRequestException(
@@ -132,25 +108,25 @@ public class CommandRequestsController : ControllerBase
                 return;
             }
 
-            _logger.LogAudit(
-                $"Review state of {_displayNameService.GetDisplayName(sessionDomainAccount)} for {request.Type.ToLower()} request for {request.DisplayRecipient} updated to {state}"
+            logger.LogAudit(
+                $"Review state of {displayNameService.GetDisplayName(sessionDomainAccount)} for {request.Type.ToLower()} request for {request.DisplayRecipient} updated to {state}"
             );
-            await _commandRequestService.SetRequestReviewState(request, sessionDomainAccount.Id, state);
+            await commandRequestService.SetRequestReviewState(request, sessionDomainAccount.Id, state);
         }
 
         try
         {
-            await _commandRequestCompletionService.Resolve(request.Id);
+            await commandRequestCompletionService.Resolve(request.Id);
         }
         catch (Exception exception)
         {
             if (updateCommandReviewRequest.Overriden)
             {
-                await _commandRequestService.SetRequestAllReviewStates(request, ReviewState.Pending);
+                await commandRequestService.SetRequestAllReviewStates(request, ReviewState.Pending);
             }
             else
             {
-                await _commandRequestService.SetRequestReviewState(request, sessionDomainAccount.Id, ReviewState.Pending);
+                await commandRequestService.SetRequestReviewState(request, sessionDomainAccount.Id, ReviewState.Pending);
             }
 
             throw new BadRequestException(exception.Message);
@@ -161,7 +137,7 @@ public class CommandRequestsController : ControllerBase
     [Authorize]
     public bool RequestExists([FromBody] DomainCommandRequest request)
     {
-        return _commandRequestService.DoesEquivalentRequestExist(request);
+        return commandRequestService.DoesEquivalentRequestExist(request);
     }
 
     private IEnumerable<CommandRequestDataset> GetMyRequests(
@@ -191,7 +167,12 @@ public class CommandRequestsController : ControllerBase
                          x.DateCreated.AddDays(1) < now &&
                          x.Reviews.Any(y => y.Value == ReviewState.Pending && y.Key != contextId)),
                     Reviews = x.Reviews.Select(
-                        y => new CommandRequestReviewDataset { Id = y.Key, Name = _displayNameService.GetDisplayName(y.Key), State = y.Value }
+                        y => new CommandRequestReviewDataset
+                        {
+                            Id = y.Key,
+                            Name = displayNameService.GetDisplayName(y.Key),
+                            State = y.Value
+                        }
                     )
                 };
             }
@@ -219,7 +200,12 @@ public class CommandRequestsController : ControllerBase
                     Data = x,
                     CanOverride = superAdmin || (canOverride && x.DateCreated.AddDays(1) < now),
                     Reviews = x.Reviews.Select(
-                        y => new CommandRequestReviewDataset { Id = y.Key, Name = _displayNameService.GetDisplayName(y.Key), State = y.Value }
+                        y => new CommandRequestReviewDataset
+                        {
+                            Id = y.Key,
+                            Name = displayNameService.GetDisplayName(y.Key),
+                            State = y.Value
+                        }
                     )
                 };
             }

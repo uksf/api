@@ -8,18 +8,11 @@ public interface IMongoCollectionFactory
     IMongoCollection<T> CreateMongoCollection<T>(string collectionName) where T : MongoObject;
 }
 
-public class MongoCollectionFactory : IMongoCollectionFactory
+public class MongoCollectionFactory(IMongoDatabase database) : IMongoCollectionFactory
 {
-    private readonly IMongoDatabase _database;
-
-    public MongoCollectionFactory(IMongoDatabase database)
-    {
-        _database = database;
-    }
-
     public IMongoCollection<T> CreateMongoCollection<T>(string collectionName) where T : MongoObject
     {
-        IMongoCollection<T> mongoCollection = new MongoCollection<T>(_database, collectionName);
+        IMongoCollection<T> mongoCollection = new MongoCollection<T>(database, collectionName);
         return mongoCollection;
     }
 }
