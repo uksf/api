@@ -71,13 +71,13 @@ public static class ApiSharedExtensions
                        .AddContext<IMigrationContext, MigrationContext>()
                        .AddContext<IConfirmationCodeContext, ConfirmationCodeContext>()
                        .AddContext<IDocumentFolderMetadataContext, DocumentFolderMetadataContext>()
-                       .AddContext<IVariablesContext, VariablesContext>()
                        .AddCachedContext<IAccountContext, AccountContext>()
                        .AddCachedContext<IRanksContext, RanksContext>()
                        .AddCachedContext<IRolesContext, RolesContext>()
                        .AddCachedContext<IUnitsContext, UnitsContext>()
                        .AddCachedContext<INotificationsContext, NotificationsContext>()
-                       .AddCachedContext<ITrainingsContext, TrainingsContext>();
+                       .AddCachedContext<ITrainingsContext, TrainingsContext>()
+                       .AddCachedContext<IVariablesContext, VariablesContext>();
     }
 
     private static IServiceCollection AddEventHandlers(this IServiceCollection services)
@@ -90,6 +90,7 @@ public static class ApiSharedExtensions
         return services.AddSingleton<IScheduledActionFactory, ScheduledActionFactory>()
                        .AddTransient<ISchedulerService, SchedulerService>()
                        .AddSingleton<IVariablesService, VariablesService>()
+                       .AddSingleton<IStaticVariablesService, StaticVariablesService>()
                        .AddSingleton<IDisplayNameService, DisplayNameService>()
                        .AddSingleton<IRanksService, RanksService>()
                        .AddSingleton<IUnitsService, UnitsService>()

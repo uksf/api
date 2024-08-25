@@ -1,22 +1,19 @@
-﻿using Microsoft.Extensions.Caching.Memory;
-using UKSF.Api.Core.Context.Base;
+﻿using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models.Domain;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.Context;
 
-public interface IVariablesContext : IMongoContext<DomainVariableItem>
+public interface IVariablesContext : IMongoContext<DomainVariableItem>, ICachedMongoContext
 {
     Task Update(string key, object value);
 }
 
 public class VariablesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus)
-    : MongoContext<DomainVariableItem>(mongoCollectionFactory, eventBus, "variables"), IVariablesContext
+    : CachedMongoContext<DomainVariableItem>(mongoCollectionFactory, eventBus, new StaticVariablesService(), "variables"), IVariablesContext
 {
-    private readonly MemoryCache _cache = new(new MemoryCacheOptions());
-    private const double CacheLifetimeSeconds = 5;
-
     public override IEnumerable<DomainVariableItem> Get()
     {
         return base.Get().OrderBy(x => x.Key);
@@ -29,15 +26,7 @@ public class VariablesContext(IMongoCollectionFactory mongoCollectionFactory, IE
 
     public override DomainVariableItem GetSingle(string idOrKey)
     {
-        if (_cache.TryGetValue(idOrKey, out var result))
-        {
-            return result as DomainVariableItem;
-        }
-
-        result = base.GetSingle(x => x.Id == idOrKey || x.Key == idOrKey.Keyify());
-        _cache.Set(idOrKey, result, TimeSpan.FromSeconds(CacheLifetimeSeconds));
-
-        return (DomainVariableItem)result;
+        return base.GetSingle(x => x.Id == idOrKey || x.Key == idOrKey.Keyify());
     }
 
     public async Task Update(string key, object value)
@@ -49,7 +38,6 @@ public class VariablesContext(IMongoCollectionFactory mongoCollectionFactory, IE
         }
 
         await base.Update(variableItem.Id, x => x.Item, value);
-        _cache.Remove(key);
     }
 
     public override async Task Delete(string key)
@@ -61,6 +49,5 @@ public class VariablesContext(IMongoCollectionFactory mongoCollectionFactory, IE
         }
 
         await base.Delete(variableItem);
-        _cache.Remove(key);
     }
 }
