@@ -92,14 +92,16 @@ public static class ServiceExtensions
         return services.AddSingleton<IGetCommandMembersPagedQuery, GetCommandMembersPagedQuery>()
                        .AddSingleton<IGetPagedLoasQuery, GetPagedLoasQuery>()
                        .AddSingleton<IAllNationsByAccountQuery, AllNationsByAccountQuery>()
-                       .AddSingleton<IGetUnitTreeQuery, GetUnitTreeQuery>();
+                       .AddSingleton<IGetUnitTreeQuery, GetUnitTreeQuery>()
+                       .AddSingleton<IGetCompletedApplicationsPagedQueryHandler, GetCompletedApplicationsPagedQueryHandler>();
     }
 
     private static IServiceCollection AddMappers(this IServiceCollection services)
     {
         return services.AddSingleton<ICommandMemberMapper, CommandMemberMapper>()
                        .AddSingleton<ILoaMapper, LoaMapper>()
-                       .AddSingleton<IUnitTreeMapper, UnitTreeMapper>();
+                       .AddSingleton<IUnitTreeMapper, UnitTreeMapper>()
+                       .AddSingleton<ICompletedApplicationMapper, CompletedApplicationMapper>();
     }
 
     private static IServiceCollection AddMiddlewares(this IServiceCollection services)

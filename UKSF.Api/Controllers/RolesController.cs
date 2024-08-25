@@ -57,7 +57,7 @@ public class RolesController(
             return null;
         }
 
-        if (role != null)
+        if (role is not null)
         {
             var safeRole = role;
             return rolesContext.GetSingle(x => x.Id != safeRole.Id && x.RoleType == roleType && x.Name == check);

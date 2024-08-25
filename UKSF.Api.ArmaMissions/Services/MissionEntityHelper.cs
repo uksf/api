@@ -32,7 +32,7 @@ public static class MissionEntityHelper
     {
         MissionEntityItem.Position = 10;
         missionEntity.MissionEntityItems.RemoveAll(
-            x => x.DataType.Equals("Group") && x.MissionEntity != null && x.MissionEntity.MissionEntityItems.All(y => y.IsPlayable && !y.Ignored())
+            x => x.DataType.Equals("Group") && x.MissionEntity is not null && x.MissionEntity.MissionEntityItems.All(y => y.IsPlayable && !y.Ignored())
         );
         foreach (var unit in MissionPatchData.Instance.OrderedUnits)
         {

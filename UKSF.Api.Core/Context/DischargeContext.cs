@@ -7,15 +7,9 @@ namespace UKSF.Api.Core.Context;
 
 public interface IDischargeContext : IMongoContext<DomainDischargeCollection>, ICachedMongoContext;
 
-public class DischargeContext : CachedMongoContext<DomainDischargeCollection>, IDischargeContext
+public class DischargeContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService)
+    : CachedMongoContext<DomainDischargeCollection>(mongoCollectionFactory, eventBus, variablesService, "discharges"), IDischargeContext
 {
-    public DischargeContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
-        mongoCollectionFactory,
-        eventBus,
-        variablesService,
-        "discharges"
-    ) { }
-
     protected override IEnumerable<DomainDischargeCollection> OrderCollection(IEnumerable<DomainDischargeCollection> collection)
     {
         return collection.OrderByDescending(x => x.Discharges.Last().Timestamp);

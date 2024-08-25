@@ -52,7 +52,7 @@ public class ExceptionMiddleware : IMiddleware
             {
                 await HandleError(context, uksfException);
             }
-            else if (exception != null)
+            else if (exception is not null)
             {
                 await HandleError(context, exception);
             }

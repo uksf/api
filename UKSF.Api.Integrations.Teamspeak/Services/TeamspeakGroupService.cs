@@ -124,7 +124,7 @@ public class TeamspeakGroupService(
         var parentUnit = unitsService.GetParents(accountUnit)
                                      .Skip(1)
                                      .FirstOrDefault(x => !string.IsNullOrEmpty(x.TeamspeakGroup) && !memberGroups.Contains(x.TeamspeakGroup.ToInt()));
-        if (parentUnit != null && parentUnit.Parent != ObjectId.Empty.ToString())
+        if (parentUnit is not null && parentUnit.Parent != ObjectId.Empty.ToString())
         {
             memberGroups.Add(parentUnit.TeamspeakGroup.ToInt());
         }

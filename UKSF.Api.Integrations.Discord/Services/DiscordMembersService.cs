@@ -184,7 +184,7 @@ public class DiscordMembersService(
         var userRoles = user.Roles;
         HashSet<string> allowedRoles = [];
 
-        if (account != null)
+        if (account is not null)
         {
             UpdateAccountRanks(account, allowedRoles);
             UpdateAccountUnits(account, allowedRoles);

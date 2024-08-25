@@ -29,7 +29,7 @@ public static class ProcessUtilities
         inParameters["ProcessStartupInformation"] = processInfo;
 
         var result = managementClass.InvokeMethod("Create", inParameters, null);
-        if (result != null && (uint)result.Properties["ReturnValue"].Value == 0)
+        if (result is not null && (uint)result.Properties["ReturnValue"].Value == 0)
         {
             processId = Convert.ToInt32(result.Properties["ProcessId"].Value.ToString());
         }

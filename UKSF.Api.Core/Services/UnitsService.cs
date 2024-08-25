@@ -66,12 +66,12 @@ public class UnitsService(
         sortedUnits.Add(auxiliaryRoot);
         sortedUnits.AddRange(GetAllChildren(auxiliaryRoot));
 
-        return predicate != null ? sortedUnits.Where(predicate) : sortedUnits;
+        return predicate is not null ? sortedUnits.Where(predicate) : sortedUnits;
     }
 
     public async Task AddMember(string id, string unitId)
     {
-        if (unitsContext.GetSingle(x => x.Id == unitId && x.Members.Contains(id)) != null)
+        if (unitsContext.GetSingle(x => x.Id == unitId && x.Members.Contains(id)) is not null)
         {
             return;
         }
@@ -240,7 +240,7 @@ public class UnitsService(
                 break;
             }
         }
-        while (unit != null);
+        while (unit is not null);
 
         return parentUnits;
     }
@@ -271,7 +271,7 @@ public class UnitsService(
 
         var depth = 0;
         var parent = unitsContext.GetSingle(unit.Parent);
-        while (parent != null)
+        while (parent is not null)
         {
             depth++;
             parent = unitsContext.GetSingle(parent.Parent);

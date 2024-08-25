@@ -76,7 +76,7 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
             );
         }
 
-        var otherRecruiters = _recruitmentService.GetRecruiterLeads().Values.Where(x => sessionId != x && updatedDomainAccount.Application.Recruiter != x);
+        var otherRecruiters = _recruitmentService.GetRecruiterLeadAccountIds().Where(x => sessionId != x && updatedDomainAccount.Application.Recruiter != x);
         foreach (var value in otherRecruiters)
         {
             _notificationsService.Add(
@@ -141,9 +141,9 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
             reason: "your application was reactivated"
         );
         _notificationsService.Add(notification);
-        if (_recruitmentService.GetRecruiters().All(x => x.Id != account.Application.Recruiter))
+        if (_recruitmentService.GetRecruiterAccounts().All(x => x.Id != account.Application.Recruiter))
         {
-            var newRecruiterId = _recruitmentService.GetRecruiter();
+            var newRecruiterId = _recruitmentService.GetNextRecruiterForApplication();
             _logger.LogAudit(
                 $"Application recruiter for {accountId} is no longer SR1, reassigning from {account.Application.Recruiter} to {newRecruiterId}"
             );

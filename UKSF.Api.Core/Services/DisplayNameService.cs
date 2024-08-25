@@ -12,20 +12,11 @@ public interface IDisplayNameService
     string GetDisplayNameWithoutRank(DomainAccount account);
 }
 
-public class DisplayNameService : IDisplayNameService
+public class DisplayNameService(IAccountContext accountContext, IRanksContext ranksContext) : IDisplayNameService
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IRanksContext _ranksContext;
-
-    public DisplayNameService(IAccountContext accountContext, IRanksContext ranksContext)
-    {
-        _accountContext = accountContext;
-        _ranksContext = ranksContext;
-    }
-
     public string GetDisplayName(string id)
     {
-        var account = _accountContext.GetSingle(id);
+        var account = accountContext.GetSingle(id);
 
         return account switch
         {
@@ -46,7 +37,7 @@ public class DisplayNameService : IDisplayNameService
 
     public string GetDisplayNameWithoutRank(string id)
     {
-        var account = _accountContext.GetSingle(id);
+        var account = accountContext.GetSingle(id);
 
         return account switch
         {
@@ -69,7 +60,7 @@ public class DisplayNameService : IDisplayNameService
     {
         if (!string.IsNullOrEmpty(rank))
         {
-            var rankAbbreviation = _ranksContext.GetSingle(rank).Abbreviation;
+            var rankAbbreviation = ranksContext.GetSingle(rank).Abbreviation;
             return $"{rankAbbreviation}.{lastName}.{firstName[0]}";
         }
 

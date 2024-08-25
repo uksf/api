@@ -46,7 +46,7 @@ public class LoaController(
     {
         var loa = loaContext.GetSingle(id);
         var request = commandRequestContext.GetSingle(x => x.Value == id);
-        if (request != null)
+        if (request is not null)
         {
             await commandRequestContext.Delete(request);
             foreach (var reviewerId in request.Reviews.Keys.Where(x => x != request.Requester))

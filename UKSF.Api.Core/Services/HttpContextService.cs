@@ -14,27 +14,16 @@ public interface IHttpContextService
     void SetContextId(string id);
 }
 
-public class HttpContextService : IHttpContextService
+public class HttpContextService(IHttpContextAccessor httpContextAccessor, IClock clock, IDisplayNameService displayNameService) : IHttpContextService
 {
-    private readonly IClock _clock;
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IHttpContextAccessor _httpContextAccessor;
-
-    public HttpContextService(IHttpContextAccessor httpContextAccessor, IClock clock, IDisplayNameService displayNameService)
-    {
-        _httpContextAccessor = httpContextAccessor;
-        _clock = clock;
-        _displayNameService = displayNameService;
-    }
-
     public bool IsUserAuthenticated()
     {
-        return _httpContextAccessor.HttpContext?.User.Identity != null && _httpContextAccessor.HttpContext.User.Identity.IsAuthenticated;
+        return httpContextAccessor.HttpContext?.User.Identity is not null && httpContextAccessor.HttpContext.User.Identity.IsAuthenticated;
     }
 
     public string GetImpersonatingUserId()
     {
-        return _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == UksfClaimTypes.ImpersonatingUserId)?.Value;
+        return httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == UksfClaimTypes.ImpersonatingUserId)?.Value;
     }
 
     public bool HasImpersonationExpired()
@@ -44,43 +33,43 @@ public class HttpContextService : IHttpContextService
             return false;
         }
 
-        var expiry = _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == UksfClaimTypes.Expiry)?.Value;
+        var expiry = httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == UksfClaimTypes.Expiry)?.Value;
         if (string.IsNullOrEmpty(expiry))
         {
             throw new Exception("Token has no expiry");
         }
 
-        return _clock.UtcNow() > DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiry)).UtcDateTime;
+        return clock.UtcNow() > DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiry)).UtcDateTime;
     }
 
     public string GetUserId()
     {
-        return _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Sid)?.Value;
+        return httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Sid)?.Value;
     }
 
     public string GetUserEmail()
     {
-        return _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
+        return httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
     }
 
     public string GetUserDisplayName(bool withRank = false)
     {
         var userId = GetUserId();
-        return withRank ? _displayNameService.GetDisplayName(userId) : _displayNameService.GetDisplayNameWithoutRank(userId);
+        return withRank ? displayNameService.GetDisplayName(userId) : displayNameService.GetDisplayNameWithoutRank(userId);
     }
 
     public bool UserHasPermission(string permission)
     {
-        return _httpContextAccessor.HttpContext != null &&
-               _httpContextAccessor.HttpContext.User.Claims.Any(x => x.Type == ClaimTypes.Role && x.Value == permission);
+        return httpContextAccessor.HttpContext is not null &&
+               httpContextAccessor.HttpContext.User.Claims.Any(x => x.Type == ClaimTypes.Role && x.Value == permission);
     }
 
     public void SetContextId(string id)
     {
-        var currentId = _httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Sid)?.Value;
+        var currentId = httpContextAccessor.HttpContext?.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.Sid)?.Value;
         if (string.IsNullOrEmpty(currentId) || currentId == id)
         {
-            _httpContextAccessor.HttpContext =
+            httpContextAccessor.HttpContext =
                 new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(new List<Claim> { new(ClaimTypes.Sid, id) })) };
             return;
         }

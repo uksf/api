@@ -41,7 +41,7 @@ public class RanksController(
             return null;
         }
 
-        if (rank != null)
+        if (rank is not null)
         {
             var safeRank = rank;
             return ranksContext.GetSingle(x => x.Id != safeRank.Id && (x.Name == check || x.TeamspeakGroup == check));

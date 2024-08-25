@@ -24,14 +24,45 @@ public record GetCommandMembersPagedQueryArgs(
 
 public class GetCommandMembersPagedQuery(IAccountContext accountContext, IHttpContextService httpContextService) : IGetCommandMembersPagedQuery
 {
+    private static IAggregateFluent<CommandMemberAccount> BuildAggregator(IMongoCollection<DomainAccount> collection)
+    {
+        return collection.Aggregate()
+                         .Match(x => x.MembershipState == MembershipState.Member)
+                         .Lookup("ranks", "rank", "name", "rank")
+                         .Unwind("rank")
+                         .Lookup("roles", "roleAssignment", "name", "role")
+                         .Unwind("role")
+                         .Lookup("units", "unitAssignment", "name", "unit")
+                         .Unwind("unit")
+                         .Lookup("units", "_id", "members", "units")
+                         .AppendStage<BsonDocument>(
+                             new BsonDocument(
+                                 "$graphLookup",
+                                 new BsonDocument
+                                 {
+                                     { "from", "units" },
+                                     { "startWith", "$units.parent" },
+                                     { "connectFromField", "parent" },
+                                     { "connectToField", "_id" },
+                                     { "as", "parentUnits" },
+                                     { "maxDepth", 50 },
+                                     { "depthField", "depthField" }
+                                 }
+                             )
+                         )
+                         .Lookup("training", "trainings", "_id", "trainings")
+                         .As<CommandMemberAccount>();
+    }
+
     public async Task<PagedResult<CommandMemberAccount>> ExecuteAsync(GetCommandMembersPagedQueryArgs args)
     {
+        var aggregator = BuildAggregator;
         var sortDefinition = BuildSortDefinition(args.SortMode, args.SortDirection);
         var viewModeFilterDefinition = BuildViewModeFilterDefinition(args.ViewMode);
         var queryFilterDefinition = accountContext.BuildPagedComplexQuery(args.Query, BuildFiltersFromQueryPart);
         var filterDefinition = Builders<CommandMemberAccount>.Filter.And(viewModeFilterDefinition, queryFilterDefinition);
 
-        var pagedResult = accountContext.GetPaged(args.Page, args.PageSize, BuildAggregator, sortDefinition, filterDefinition);
+        var pagedResult = accountContext.GetPaged(args.Page, args.PageSize, aggregator, sortDefinition, filterDefinition);
         return await Task.FromResult(pagedResult);
     }
 
@@ -94,36 +125,6 @@ public class GetCommandMembersPagedQuery(IAccountContext accountContext, IHttpCo
             Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Trainings, x => Regex.IsMatch(x.ShortName, queryPart, RegexOptions.IgnoreCase))
         };
         return Builders<CommandMemberAccount>.Filter.Or(filters);
-    }
-
-    private static IAggregateFluent<CommandMemberAccount> BuildAggregator(IMongoCollection<DomainAccount> collection)
-    {
-        return collection.Aggregate()
-                         .Match(x => x.MembershipState == MembershipState.Member)
-                         .Lookup("ranks", "rank", "name", "rank")
-                         .Unwind("rank")
-                         .Lookup("roles", "roleAssignment", "name", "role")
-                         .Unwind("role")
-                         .Lookup("units", "unitAssignment", "name", "unit")
-                         .Unwind("unit")
-                         .Lookup("units", "_id", "members", "units")
-                         .AppendStage<BsonDocument>(
-                             new BsonDocument(
-                                 "$graphLookup",
-                                 new BsonDocument
-                                 {
-                                     { "from", "units" },
-                                     { "startWith", "$units.parent" },
-                                     { "connectFromField", "parent" },
-                                     { "connectToField", "_id" },
-                                     { "as", "parentUnits" },
-                                     { "maxDepth", 50 },
-                                     { "depthField", "depthField" }
-                                 }
-                             )
-                         )
-                         .Lookup("training", "trainings", "_id", "trainings")
-                         .As<CommandMemberAccount>();
     }
 }
 

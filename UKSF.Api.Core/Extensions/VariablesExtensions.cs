@@ -80,13 +80,13 @@ public static class VariablesExtensions
         var itemString = variable.AsString();
         itemString = Regex.Replace(itemString, "\\s*,\\s*", ",");
         var items = itemString.Split(",");
-        return predicate != null ? items.Select(predicate).ToArray() : items;
+        return predicate is not null ? items.Select(predicate).ToArray() : items;
     }
 
     public static IEnumerable<string> AsEnumerable(this DomainVariableItem variable, Func<string, string> predicate = null)
     {
         var items = variable.AsArray();
-        return predicate != null ? items.Select(predicate) : items.AsEnumerable();
+        return predicate is not null ? items.Select(predicate) : items.AsEnumerable();
     }
 
     public static IEnumerable<int> AsIntArray(this DomainVariableItem variable)

@@ -96,7 +96,7 @@ public class BuildsService : IBuildsService
             EnvironmentVariables = new Dictionary<string, object> { { "configuration", newBuild?.Configuration ?? "development" } }
         };
 
-        if (previousBuild != null)
+        if (previousBuild is not null)
         {
             SetEnvironmentVariables(build, previousBuild, newBuild);
         }
@@ -120,7 +120,7 @@ public class BuildsService : IBuildsService
             EnvironmentVariables = new Dictionary<string, object> { { "configuration", "release" } }
         };
 
-        if (previousBuild != null)
+        if (previousBuild is not null)
         {
             SetEnvironmentVariables(build, previousBuild);
         }
@@ -213,7 +213,7 @@ public class BuildsService : IBuildsService
             async build =>
             {
                 var runningStep = build.Steps.FirstOrDefault(x => x.Running);
-                if (runningStep != null)
+                if (runningStep is not null)
                 {
                     runningStep.Running = false;
                     runningStep.Finished = true;
@@ -268,7 +268,7 @@ public class BuildsService : IBuildsService
             {
                 // We only want to try it again due to a failed/cancelled or unfinished step
                 var step = previousBuild.Steps.FirstOrDefault(x => x.Name == stepName);
-                if (step != null && (!step.Finished || step.BuildResult is ModpackBuildResult.Failed or ModpackBuildResult.Cancelled))
+                if (step is not null && (!step.Finished || step.BuildResult is ModpackBuildResult.Failed or ModpackBuildResult.Cancelled))
                 {
                     build.EnvironmentVariables[key] = true;
                 }

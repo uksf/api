@@ -165,7 +165,7 @@ public class ModpackService : IModpackService
         }
 
         var previousBuild = _buildsService.GetLatestRcBuild(rcVersion);
-        var rcCommit = await _githubService.GetPushEvent(payload, previousBuild != null ? previousBuild.Commit.After : string.Empty);
+        var rcCommit = await _githubService.GetPushEvent(payload, previousBuild is not null ? previousBuild.Commit.After : string.Empty);
         if (previousBuild == null)
         {
             await _releaseService.MakeDraftRelease(rcVersion, rcCommit);

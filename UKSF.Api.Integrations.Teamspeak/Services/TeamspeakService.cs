@@ -123,18 +123,18 @@ public class TeamspeakService : ITeamspeakService
             ];
         }
 
-        return clients.Where(x => x != null)
+        return clients.Where(x => x is not null)
                       .Select(
                           client =>
                           {
                               var account = _accountContext.GetSingle(
-                                  account => account.TeamspeakIdentities != null && account.TeamspeakIdentities.Contains(client.ClientDbId)
+                                  account => account.TeamspeakIdentities is not null && account.TeamspeakIdentities.Contains(client.ClientDbId)
                               );
                               return new TeamspeakConnectClient
                               {
                                   ClientName = client.ClientName,
                                   ClientDbId = client.ClientDbId,
-                                  Connected = account != null,
+                                  Connected = account is not null
                               };
                           }
                       )
@@ -166,7 +166,7 @@ public class TeamspeakService : ITeamspeakService
             _clients.First().ClientDbId = account.TeamspeakIdentities.First();
         }
 
-        return _clients.Where(client => client != null && account.TeamspeakIdentities.Any(clientDbId => clientDbId.Equals(client.ClientDbId)))
+        return _clients.Where(client => client is not null && account.TeamspeakIdentities.Any(clientDbId => clientDbId.Equals(client.ClientDbId)))
                        .Select(client => new OnlineState { Online = true, Nickname = client.ClientName })
                        .FirstOrDefault();
     }

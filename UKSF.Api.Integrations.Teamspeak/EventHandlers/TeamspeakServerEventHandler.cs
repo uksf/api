@@ -96,7 +96,7 @@ public class TeamspeakServerEventHandler(
     private async Task ProcessAccountData(int clientDbId, ICollection<int> serverGroups)
     {
         await Console.Out.WriteLineAsync($"Processing server groups for {clientDbId}");
-        var accounts = accountContext.Get(x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
+        var accounts = accountContext.Get(x => x.TeamspeakIdentities is not null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
         var account = accounts.MaxBy(x => x.MembershipState);
         await teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
     }

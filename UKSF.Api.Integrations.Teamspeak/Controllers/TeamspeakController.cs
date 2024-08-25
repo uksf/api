@@ -91,12 +91,12 @@ public class TeamspeakController : ControllerBase
     {
         var teamspeakClients = _teamspeakService.GetOnlineTeamspeakClients().ToList();
         var allAccounts = _accountContext.Get().ToList();
-        var clients = teamspeakClients.Where(x => x != null)
+        var clients = teamspeakClients.Where(x => x is not null)
                                       .Select(
                                           client =>
                                           {
                                               var account = allAccounts.FirstOrDefault(
-                                                  x => x.TeamspeakIdentities != null && x.TeamspeakIdentities.Any(tsDbId => tsDbId == client.ClientDbId)
+                                                  x => x.TeamspeakIdentities is not null && x.TeamspeakIdentities.Any(tsDbId => tsDbId == client.ClientDbId)
                                               );
                                               return new { account, client };
                                           }

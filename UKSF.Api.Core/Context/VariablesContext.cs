@@ -1,4 +1,5 @@
-﻿using UKSF.Api.Core.Context.Base;
+﻿using Microsoft.Extensions.Caching.Memory;
+using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models.Domain;
@@ -10,20 +11,11 @@ public interface IVariablesContext : IMongoContext<DomainVariableItem>
     Task Update(string key, object value);
 }
 
-public class VariablesContext : MongoContext<DomainVariableItem>, IVariablesContext
+public class VariablesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus)
+    : MongoContext<DomainVariableItem>(mongoCollectionFactory, eventBus, "variables"), IVariablesContext
 {
-    public VariablesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus) : base(mongoCollectionFactory, eventBus, "variables") { }
-
-    public async Task Update(string key, object value)
-    {
-        var variableItem = GetSingle(key);
-        if (variableItem == null)
-        {
-            throw new KeyNotFoundException($"VariableItem with key '{key}' does not exist");
-        }
-
-        await base.Update(variableItem.Id, x => x.Item, value);
-    }
+    private readonly MemoryCache _cache = new(new MemoryCacheOptions());
+    private const double CacheLifetimeSeconds = 5;
 
     public override IEnumerable<DomainVariableItem> Get()
     {
@@ -37,7 +29,27 @@ public class VariablesContext : MongoContext<DomainVariableItem>, IVariablesCont
 
     public override DomainVariableItem GetSingle(string idOrKey)
     {
-        return base.GetSingle(x => x.Id == idOrKey || x.Key == idOrKey.Keyify());
+        if (_cache.TryGetValue(idOrKey, out var result))
+        {
+            return result as DomainVariableItem;
+        }
+
+        result = base.GetSingle(x => x.Id == idOrKey || x.Key == idOrKey.Keyify());
+        _cache.Set(idOrKey, result, TimeSpan.FromSeconds(CacheLifetimeSeconds));
+
+        return (DomainVariableItem)result;
+    }
+
+    public async Task Update(string key, object value)
+    {
+        var variableItem = GetSingle(key);
+        if (variableItem == null)
+        {
+            throw new KeyNotFoundException($"VariableItem with key '{key}' does not exist");
+        }
+
+        await base.Update(variableItem.Id, x => x.Item, value);
+        _cache.Remove(key);
     }
 
     public override async Task Delete(string key)
@@ -49,5 +61,6 @@ public class VariablesContext : MongoContext<DomainVariableItem>, IVariablesCont
         }
 
         await base.Delete(variableItem);
+        _cache.Remove(key);
     }
 }

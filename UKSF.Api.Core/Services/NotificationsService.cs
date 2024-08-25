@@ -86,12 +86,12 @@ public class NotificationsService(
         await notificationsContext.Add(notification);
         await SendEmailNotification(
             account,
-            $"{notification.Message}{(notification.Link != null ? $"<br><a href='https://uk-sf.co.uk{notification.Link}'>https://uk-sf.co.uk{notification.Link}</a>" : "")}"
+            $"{notification.Message}{(notification.Link is not null ? $"<br><a href='https://uk-sf.co.uk{notification.Link}'>https://uk-sf.co.uk{notification.Link}</a>" : "")}"
         );
 
         SendTeamspeakNotification(
             account,
-            $"{notification.Message}{(notification.Link != null ? $"\n[url]https://uk-sf.co.uk{notification.Link}[/url]" : "")}"
+            $"{notification.Message}{(notification.Link is not null ? $"\n[url]https://uk-sf.co.uk{notification.Link}[/url]" : "")}"
         );
     }
 

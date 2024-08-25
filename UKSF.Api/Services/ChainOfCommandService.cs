@@ -108,7 +108,7 @@ public class ChainOfCommandService : IChainOfCommandService
     private IEnumerable<string> Full(DomainUnit unit)
     {
         HashSet<string> chain = new();
-        while (unit != null)
+        while (unit is not null)
         {
             if (UnitHasCommander(unit))
             {
@@ -134,7 +134,7 @@ public class ChainOfCommandService : IChainOfCommandService
     private IEnumerable<string> CommanderAndOneAbove(DomainUnit unit)
     {
         HashSet<string> chain = new();
-        if (unit != null)
+        if (unit is not null)
         {
             if (UnitHasCommander(unit))
             {
@@ -142,7 +142,7 @@ public class ChainOfCommandService : IChainOfCommandService
             }
 
             var parentUnit = _unitsService.GetParent(unit);
-            if (parentUnit != null && UnitHasCommander(parentUnit))
+            if (parentUnit is not null && UnitHasCommander(parentUnit))
             {
                 chain.Add(GetCommander(parentUnit));
             }
@@ -175,7 +175,7 @@ public class ChainOfCommandService : IChainOfCommandService
 
     private string GetNextUnitCommander(DomainUnit unit)
     {
-        while (unit != null)
+        while (unit is not null)
         {
             if (UnitHasCommander(unit))
             {
@@ -190,7 +190,7 @@ public class ChainOfCommandService : IChainOfCommandService
 
     private string GetNextUnitCommanderExcludeSelf(DomainUnit unit)
     {
-        while (unit != null)
+        while (unit is not null)
         {
             if (UnitHasCommander(unit))
             {

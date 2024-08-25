@@ -9,116 +9,46 @@ namespace UKSF.Api.Core.Services;
 
 public interface IRecruitmentService
 {
-    ApplicationsOverview GetAllApplications();
+    List<ActiveApplication> GetActiveApplications();
     DetailedApplication GetApplication(DomainAccount account);
-    IEnumerable<Recruiter> GetActiveRecruiters();
-    IEnumerable<DomainAccount> GetRecruiters(bool skipSort = false);
-    Dictionary<string, string> GetRecruiterLeads();
-    IEnumerable<RecruitmentStat> GetStats(string account, bool monthly);
-    string GetRecruiter();
-    bool IsRecruiterLead(DomainAccount account = null);
+    IEnumerable<DomainAccount> GetRecruiterAccounts(bool skipSortByRank = false);
+    List<string> GetRecruiterLeadAccountIds();
     bool IsRecruiter(DomainAccount account);
-    Task SetRecruiter(string id, string newRecruiter);
+    bool IsRecruiterLead(DomainAccount account = null);
+    string GetNextRecruiterForApplication();
+    Task SetApplicationRecruiter(string id, string newRecruiter);
+    IEnumerable<RecruitmentStat> GetStats(string account, bool monthly);
 }
 
-public class RecruitmentService : IRecruitmentService
+public class RecruitmentService(
+    IAccountContext accountContext,
+    IUnitsContext unitsContext,
+    IHttpContextService httpContextService,
+    IDisplayNameService displayNameService,
+    IRanksService ranksService,
+    IVariablesService variablesService,
+    IAccountMapper accountMapper
+) : IRecruitmentService
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IAccountMapper _accountMapper;
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IHttpContextService _httpContextService;
-    private readonly IRanksService _ranksService;
-    private readonly IUnitsContext _unitsContext;
-    private readonly IVariablesService _variablesService;
-
-    public RecruitmentService(
-        IAccountContext accountContext,
-        IUnitsContext unitsContext,
-        IHttpContextService httpContextService,
-        IDisplayNameService displayNameService,
-        IRanksService ranksService,
-        IVariablesService variablesService,
-        IAccountMapper accountMapper
-    )
+    public List<ActiveApplication> GetActiveApplications()
     {
-        _accountContext = accountContext;
-        _unitsContext = unitsContext;
-        _httpContextService = httpContextService;
-        _displayNameService = displayNameService;
-        _ranksService = ranksService;
-        _variablesService = variablesService;
-        _accountMapper = accountMapper;
-    }
+        var averageProcessingTime = GetAverageProcessingTime();
 
-    public bool IsRecruiter(DomainAccount account)
-    {
-        return GetRecruiters(true).Any(x => x.Id == account.Id);
-    }
-
-    public Dictionary<string, string> GetRecruiterLeads()
-    {
-        return GetRecruiterUnit().Roles;
-    }
-
-    public IEnumerable<DomainAccount> GetRecruiters(bool skipSort = false)
-    {
-        IEnumerable<string> members = GetRecruiterUnit().Members;
-        var accounts = members.Select(x => _accountContext.GetSingle(x)).ToList();
-        if (skipSort)
-        {
-            return accounts;
-        }
-
-        return accounts.OrderBy(x => x.Rank, new RankComparer(_ranksService)).ThenBy(x => x.Lastname);
-    }
-
-    public ApplicationsOverview GetAllApplications()
-    {
-        List<WaitingApplication> waiting = [];
-        List<WaitingApplication> allWaiting = [];
-        List<CompletedApplication> complete = [];
-        var recruiters = GetRecruiters(true).Select(account => _displayNameService.GetDisplayName(account)).ToList();
-
-        var me = _httpContextService.GetUserId();
-        var accounts = _accountContext.Get(x => x.Application != null);
-        foreach (var account in accounts)
-        {
-            if (account.Application.State == ApplicationState.Waiting)
-            {
-                if (account.Application.Recruiter == me)
-                {
-                    waiting.Add(GetWaitingApplication(account));
-                }
-                else
-                {
-                    allWaiting.Add(GetWaitingApplication(account));
-                }
-            }
-            else
-            {
-                complete.Add(GetCompletedApplication(account));
-            }
-        }
-
-        return new ApplicationsOverview
-        {
-            Waiting = waiting,
-            AllWaiting = allWaiting,
-            Complete = complete,
-            Recruiters = recruiters
-        };
+        return accountContext.Get(x => x.Application is not null && x.Application.State == ApplicationState.Waiting)
+                             .Select(x => MapToActiveApplication(x, averageProcessingTime))
+                             .ToList();
     }
 
     public DetailedApplication GetApplication(DomainAccount account)
     {
-        var recruiterAccount = _accountContext.GetSingle(account.Application.Recruiter);
+        var recruiterAccount = accountContext.GetSingle(account.Application.Recruiter);
         var age = account.Dob.ToAge();
-        var acceptableAge = _variablesService.GetVariable("RECRUITMENT_ENTRY_AGE");
+        var acceptableAge = variablesService.GetVariable("RECRUITMENT_ENTRY_AGE");
 
         return new DetailedApplication
         {
-            Account = _accountMapper.MapToAccount(account),
-            DisplayName = _displayNameService.GetDisplayName(account),
+            Account = accountMapper.MapToAccount(account),
+            DisplayName = displayNameService.GetDisplayName(account),
             Age = age,
             AcceptableAge = acceptableAge.AsInt(),
             DaysProcessing = Math.Ceiling((DateTime.UtcNow - account.Application.DateCreated).TotalDays),
@@ -126,31 +56,65 @@ public class RecruitmentService : IRecruitmentService
             NextCandidateOp = GetNextCandidateOp(),
             AverageProcessingTime = GetAverageProcessingTime(),
             SteamProfile = "https://steamcommunity.com/profiles/" + account.Steamname,
-            Recruiter = _displayNameService.GetDisplayName(recruiterAccount),
+            Recruiter = displayNameService.GetDisplayName(recruiterAccount),
             RecruiterId = recruiterAccount.Id
         };
     }
 
-    public IEnumerable<Recruiter> GetActiveRecruiters()
+    public IEnumerable<DomainAccount> GetRecruiterAccounts(bool skipSortByRank = false)
     {
-        return GetRecruiters().Where(x => x.Settings.Sr1Enabled).Select(x => new Recruiter { Id = x.Id, Name = _displayNameService.GetDisplayName(x) });
+        IEnumerable<string> members = GetRecruiterUnit().Members;
+        var accounts = members.Select(accountContext.GetSingle).ToList();
+        if (skipSortByRank)
+        {
+            return accounts;
+        }
+
+        return accounts.OrderBy(x => x.Rank, new RankComparer(ranksService)).ThenBy(x => x.Lastname).ThenBy(x => x.Firstname);
+    }
+
+    public List<string> GetRecruiterLeadAccountIds()
+    {
+        return GetRecruiterUnit().Roles.Values.ToList();
+    }
+
+    public bool IsRecruiter(DomainAccount account)
+    {
+        return GetRecruiterAccounts(true).Any(x => x.Id == account.Id);
     }
 
     public bool IsRecruiterLead(DomainAccount account = null)
     {
-        return account != null
+        return account is not null
             ? GetRecruiterUnit().Roles.ContainsValue(account.Id)
-            : GetRecruiterUnit().Roles.ContainsValue(_httpContextService.GetUserId());
+            : GetRecruiterUnit().Roles.ContainsValue(httpContextService.GetUserId());
     }
 
-    public async Task SetRecruiter(string id, string newRecruiter)
+    public string GetNextRecruiterForApplication()
     {
-        await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.Recruiter, newRecruiter));
+        var recruiters = GetRecruiterAccounts().Where(x => x.Settings.Sr1Enabled);
+        var waiting = accountContext.Get(x => x.Application is { State: ApplicationState.Waiting }).ToList();
+        var complete = accountContext.Get(x => x.Application is { State: not ApplicationState.Waiting }).ToList();
+        var unsorted = recruiters.Select(
+            x => new
+            {
+                id = x.Id,
+                complete = complete.Count(y => y.Application.Recruiter == x.Id),
+                waiting = waiting.Count(y => y.Application.Recruiter == x.Id)
+            }
+        );
+        var sorted = unsorted.OrderBy(x => x.waiting).ThenBy(x => x.complete);
+        return sorted.First().id;
+    }
+
+    public async Task SetApplicationRecruiter(string id, string newRecruiter)
+    {
+        await accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.Recruiter, newRecruiter));
     }
 
     public IEnumerable<RecruitmentStat> GetStats(string account, bool monthly)
     {
-        var accounts = _accountContext.Get(x => x.Application != null);
+        var accounts = accountContext.Get(x => x.Application is not null);
         if (account != string.Empty)
         {
             accounts = accounts.Where(x => x.Application.Recruiter == account);
@@ -162,9 +126,9 @@ public class RecruitmentService : IRecruitmentService
         }
 
         var accountsList = accounts.ToList();
-        var acceptedApps = accountsList.Count(x => x.Application.State == ApplicationState.Accepted);
-        var rejectedApps = accountsList.Count(x => x.Application.State == ApplicationState.Rejected);
-        var waitingApps = accountsList.Count(x => x.Application.State == ApplicationState.Waiting);
+        var acceptedApps = accountsList.Count(x => x.Application.State is ApplicationState.Accepted);
+        var rejectedApps = accountsList.Count(x => x.Application.State is ApplicationState.Rejected);
+        var waitingApps = accountsList.Count(x => x.Application.State is ApplicationState.Waiting);
 
         var processedApplications = accountsList.Where(x => x.Application.State != ApplicationState.Waiting).ToList();
         var totalProcessingTime = processedApplications.Sum(x => (x.Application.DateAccepted - x.Application.DateCreated).TotalDays);
@@ -173,64 +137,38 @@ public class RecruitmentService : IRecruitmentService
 
         return
         [
-            new() { FieldName = "Accepted applications", FieldValue = acceptedApps.ToString() },
-            new() { FieldName = "Rejected applications", FieldValue = rejectedApps.ToString() },
-            new() { FieldName = "Waiting applications", FieldValue = waitingApps.ToString() },
-            new() { FieldName = "Average processing time", FieldValue = averageProcessingTime + " Days" },
-            new() { FieldName = "Enlistment Rate", FieldValue = enlistmentRate + "%" }
+            new RecruitmentStat { FieldName = "Accepted applications", FieldValue = acceptedApps.ToString() },
+            new RecruitmentStat { FieldName = "Rejected applications", FieldValue = rejectedApps.ToString() },
+            new RecruitmentStat { FieldName = "Waiting applications", FieldValue = waitingApps.ToString() },
+            new RecruitmentStat { FieldName = "Average processing time", FieldValue = averageProcessingTime + " Days" },
+            new RecruitmentStat { FieldName = "Enlistment Rate", FieldValue = enlistmentRate + "%" }
         ];
-    }
-
-    public string GetRecruiter()
-    {
-        var recruiters = GetRecruiters().Where(x => x.Settings.Sr1Enabled);
-        var waiting = _accountContext.Get(x => x.Application is { State: ApplicationState.Waiting }).ToList();
-        var complete = _accountContext.Get(x => x.Application is { State: not ApplicationState.Waiting }).ToList();
-        var unsorted = recruiters.Select(
-            x => new
-            {
-                id = x.Id, complete = complete.Count(y => y.Application.Recruiter == x.Id), waiting = waiting.Count(y => y.Application.Recruiter == x.Id)
-            }
-        );
-        var sorted = unsorted.OrderBy(x => x.waiting).ThenBy(x => x.complete);
-        return sorted.First().id;
     }
 
     private DomainUnit GetRecruiterUnit()
     {
-        var id = _variablesService.GetVariable("UNIT_ID_RECRUITMENT").AsString();
-        return _unitsContext.GetSingle(id);
+        var id = variablesService.GetVariable("UNIT_ID_RECRUITMENT").AsString();
+        return unitsContext.GetSingle(id);
     }
 
-    private CompletedApplication GetCompletedApplication(DomainAccount account)
+    private ActiveApplication MapToActiveApplication(DomainAccount account, double averageProcessingTime)
     {
-        return new CompletedApplication
-        {
-            Account = _accountMapper.MapToAccount(account),
-            DisplayName = _displayNameService.GetDisplayNameWithoutRank(account),
-            DaysProcessed = Math.Ceiling((account.Application.DateAccepted - account.Application.DateCreated).TotalDays),
-            Recruiter = _displayNameService.GetDisplayName(account.Application.Recruiter)
-        };
-    }
-
-    private WaitingApplication GetWaitingApplication(DomainAccount account)
-    {
-        var averageProcessingTime = GetAverageProcessingTime();
         var daysProcessing = Math.Ceiling((DateTime.UtcNow - account.Application.DateCreated).TotalDays);
         var processingDifference = daysProcessing - averageProcessingTime;
-        return new WaitingApplication
+        return new ActiveApplication
         {
-            Account = _accountMapper.MapToAccount(account),
+            Account = accountMapper.MapToAccount(account),
             SteamProfile = "https://steamcommunity.com/profiles/" + account.Steamname,
             DaysProcessing = daysProcessing,
             ProcessingDifference = processingDifference,
-            Recruiter = _displayNameService.GetDisplayName(account.Application.Recruiter)
+            Recruiter = displayNameService.GetDisplayName(account.Application.Recruiter)
         };
     }
 
     private static string GetNextCandidateOp()
     {
-        var nextDate = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
+        var nextDate = now;
         while (nextDate.DayOfWeek != DayOfWeek.Tuesday &&
                nextDate.DayOfWeek != DayOfWeek.Thursday &&
                nextDate.DayOfWeek != DayOfWeek.Friday &&
@@ -239,13 +177,13 @@ public class RecruitmentService : IRecruitmentService
             nextDate = nextDate.AddDays(1);
         }
 
-        return nextDate.Day == DateTime.UtcNow.Date.Day         ? "Today" :
-            nextDate.Day == DateTime.UtcNow.Date.AddDays(1).Day ? "Tomorrow" : nextDate.ToString("dddd");
+        return nextDate.Day == now.Date.Day         ? "Today" :
+            nextDate.Day == now.Date.AddDays(1).Day ? "Tomorrow" : nextDate.ToString("dddd");
     }
 
     private double GetAverageProcessingTime()
     {
-        var waitingApplications = _accountContext.Get(x => x.Application != null && x.Application.State != ApplicationState.Waiting).ToList();
+        var waitingApplications = accountContext.Get(x => x.Application is not null && x.Application.State != ApplicationState.Waiting).ToList();
         var days = waitingApplications.Sum(x => (x.Application.DateAccepted - x.Application.DateCreated).TotalDays);
         var time = Math.Round(days / waitingApplications.Count, 1);
         return time;

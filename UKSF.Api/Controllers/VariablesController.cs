@@ -35,7 +35,7 @@ public class VariablesController(IVariablesContext variablesContext, IUksfLogger
             throw new BadRequestException("No key given");
         }
 
-        if (variableItem != null)
+        if (variableItem is not null)
         {
             var safeVariableItem = variableItem;
             return variablesContext.GetSingle(x => x.Id != safeVariableItem.Id && x.Key == key.Keyify());

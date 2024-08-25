@@ -69,7 +69,7 @@ public class DiscordAdminService(
                     user.Username,
                     $"Left {connectedAccountMessage}"
                 );
-                if (account != null)
+                if (account is not null)
                 {
                     eventBus.Send(new DiscordEventData(DiscordUserEventType.Left, account.Id), nameof(DiscordAdminService));
                 }
@@ -236,7 +236,7 @@ public class DiscordAdminService(
                 var auditUser = auditLogs.Where(x => x.Data is BanAuditLogData)
                                          .Select(x => new { Data = x.Data as BanAuditLogData, x.User })
                                          .FirstOrDefault(x => x.Data.Target.Id == userId);
-                if (auditUser != null)
+                if (auditUser is { })
                 {
                     return auditUser.User.Id;
                 }
@@ -262,7 +262,7 @@ public class DiscordAdminService(
                 var auditUser = auditLogs.Where(x => x.Data is UnbanAuditLogData)
                                          .Select(x => new { Data = x.Data as UnbanAuditLogData, x.User })
                                          .FirstOrDefault(x => x.Data.Target.Id == userId);
-                if (auditUser != null)
+                if (auditUser is { })
                 {
                     return auditUser.User.Id;
                 }
@@ -311,7 +311,7 @@ public class DiscordAdminService(
                 var auditUser = auditLogs.Where(x => x.Data is MessageDeleteAuditLogData)
                                          .Select(x => new { Data = x.Data as MessageDeleteAuditLogData, x.User })
                                          .FirstOrDefault(x => x.Data.ChannelId == channelId && x.Data.Target.Id == authorId);
-                if (auditUser != null)
+                if (auditUser is { })
                 {
                     return auditUser.User.Id;
                 }

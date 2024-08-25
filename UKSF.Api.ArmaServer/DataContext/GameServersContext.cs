@@ -7,15 +7,9 @@ namespace UKSF.Api.ArmaServer.DataContext;
 
 public interface IGameServersContext : IMongoContext<DomainGameServer>, ICachedMongoContext;
 
-public class GameServersContext : CachedMongoContext<DomainGameServer>, IGameServersContext
+public class GameServersContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService)
+    : CachedMongoContext<DomainGameServer>(mongoCollectionFactory, eventBus, variablesService, "gameServers"), IGameServersContext
 {
-    public GameServersContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
-        mongoCollectionFactory,
-        eventBus,
-        variablesService,
-        "gameServers"
-    ) { }
-
     protected override IEnumerable<DomainGameServer> OrderCollection(IEnumerable<DomainGameServer> collection)
     {
         return collection.OrderBy(x => x.Order);

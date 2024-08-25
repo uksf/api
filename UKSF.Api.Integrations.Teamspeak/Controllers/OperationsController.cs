@@ -41,7 +41,7 @@ public class OperationsController : ControllerBase
                 var serverSnapshot = serverSnapshots.FirstOrDefault(
                     x => x.Timestamp.TimeOfDay > startdate.TimeOfDay && x.Timestamp.TimeOfDay < enddate.TimeOfDay && x.Timestamp.Date == day
                 );
-                if (serverSnapshot != null)
+                if (serverSnapshot is not null)
                 {
                     dataset.Add(acre ? serverSnapshot.Users.Where(x => x.ChannelName == "ACRE").ToArray().Length : serverSnapshot.Users.Count);
                 }

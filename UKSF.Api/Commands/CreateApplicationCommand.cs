@@ -41,7 +41,7 @@ public class CreateApplicationCommand(
     private async Task<DomainApplication> CreateApplication(string accountId)
     {
         var recruiterCommentThread = await createCommentThreadCommand.ExecuteAsync(
-            recruitmentService.GetRecruiterLeads().Values.ToArray(),
+            recruitmentService.GetRecruiterLeadAccountIds().ToArray(),
             ThreadMode.Recruiter
         );
         var applicationCommentThread = await createCommentThreadCommand.ExecuteAsync([accountId], ThreadMode.Recruiter);
@@ -50,7 +50,7 @@ public class CreateApplicationCommand(
         {
             DateCreated = DateTime.UtcNow,
             State = ApplicationState.Waiting,
-            Recruiter = recruitmentService.GetRecruiter(),
+            Recruiter = recruitmentService.GetNextRecruiterForApplication(),
             RecruiterCommentThread = recruiterCommentThread.Id,
             ApplicationCommentThread = applicationCommentThread.Id
         };
@@ -95,7 +95,7 @@ public class CreateApplicationCommand(
             }
         );
 
-        foreach (var id in recruitmentService.GetRecruiterLeads().Values.Where(x => account.Application.Recruiter != x))
+        foreach (var id in recruitmentService.GetRecruiterLeadAccountIds().Where(x => account.Application.Recruiter != x))
         {
             notificationsService.Add(
                 new DomainNotification
@@ -119,7 +119,7 @@ public class CreateApplicationCommand(
                                                        x.Steamname == account.Steamname &&
                                                        _allowedMembershipStates.Contains(x.MembershipState)
                                               )
-                                              .Select(x => displayNameService.GetDisplayNameWithoutRank(x))
+                                              .Select(displayNameService.GetDisplayNameWithoutRank)
                                               .ToList();
         var accountsWithSameDiscordConnection = accountContext
                                                 .Get(
@@ -127,7 +127,7 @@ public class CreateApplicationCommand(
                                                          x.DiscordId == account.DiscordId &&
                                                          _allowedMembershipStates.Contains(x.MembershipState)
                                                 )
-                                                .Select(x => displayNameService.GetDisplayNameWithoutRank(x))
+                                                .Select(displayNameService.GetDisplayNameWithoutRank)
                                                 .ToList();
 
         if (accountsWithSameSteamConnection.Any())

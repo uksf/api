@@ -57,17 +57,17 @@ public class DependencyInjectionTestHelper : IServiceProvider
 
             static IEnumerable<object> GetImplementations(ServiceDescriptor x)
             {
-                if (x.ImplementationType != null)
+                if (x.ImplementationType is not null)
                 {
                     yield return x.ImplementationType;
                 }
 
-                if (x.ImplementationFactory != null)
+                if (x.ImplementationFactory is not null)
                 {
                     yield return x.ImplementationFactory;
                 }
 
-                if (x.ImplementationInstance != null)
+                if (x.ImplementationInstance is not null)
                 {
                     yield return x.ImplementationInstance;
                 }

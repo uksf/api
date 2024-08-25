@@ -24,7 +24,7 @@ public class ObjectIdConversionService(IUnitsContext unitsContext, IDisplayNameS
             if (displayString == objectId)
             {
                 var unit = unitsContext.GetSingle(x => x.Id == objectId);
-                if (unit != null)
+                if (unit is not null)
                 {
                     displayString = unit.Name;
                 }

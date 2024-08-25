@@ -86,7 +86,7 @@ public class BuildProcessHelper(
 
             cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
-            if (_capturedException != null)
+            if (_capturedException is not null)
             {
                 if (_useLogger)
                 {
@@ -214,7 +214,7 @@ public class BuildProcessHelper(
             return;
         }
 
-        if (errorExclusions != null && errorExclusions.Any(x => data.ContainsIgnoreCase(x)))
+        if (errorExclusions is not null && errorExclusions.Any(x => data.ContainsIgnoreCase(x)))
         {
             return;
         }

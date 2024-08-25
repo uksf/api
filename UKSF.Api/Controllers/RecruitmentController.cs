@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Commands;
 using UKSF.Api.Core.Context;
@@ -9,142 +8,98 @@ using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Exceptions;
+using UKSF.Api.Mappers;
 using UKSF.Api.Models.Request;
+using UKSF.Api.Queries;
 
 namespace UKSF.Api.Controllers;
 
-[Route("[controller]")]
-public class RecruitmentController : ControllerBase
+[Route("recruitment")]
+public class RecruitmentController(
+    IAccountContext accountContext,
+    IRecruitmentService recruitmentService,
+    IDisplayNameService displayNameService,
+    INotificationsService notificationsService,
+    IHttpContextService httpContextService,
+    IVariablesService variablesService,
+    IGetCompletedApplicationsPagedQueryHandler getCompletedApplicationsPagedQueryHandler,
+    ICompletedApplicationMapper completedApplicationMapper,
+    IUksfLogger logger
+) : ControllerBase
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IAccountService _accountService;
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IHttpContextService _httpContextService;
-    private readonly IUksfLogger _logger;
-    private readonly INotificationsService _notificationsService;
-    private readonly IRecruitmentService _recruitmentService;
-    private readonly IVariablesService _variablesService;
-
-    public RecruitmentController(
-        IAccountContext accountContext,
-        IAccountService accountService,
-        IRecruitmentService recruitmentService,
-        IDisplayNameService displayNameService,
-        INotificationsService notificationsService,
-        IHttpContextService httpContextService,
-        IVariablesService variablesService,
-        IUksfLogger logger
+    [HttpGet("applications/completed")]
+    [Permissions(Permissions.Recruiter)]
+    public async Task<PagedResult<CompletedApplication>> GetCompletedApplicationsPaged(
+        [FromQuery] int page,
+        [FromQuery] int pageSize = 15,
+        [FromQuery] string query = null,
+        [FromQuery] ApplicationSortMode sortMode = default,
+        [FromQuery] int sortDirection = -1,
+        [FromQuery] string recruiterId = default
     )
     {
-        _accountContext = accountContext;
-        _accountService = accountService;
-        _recruitmentService = recruitmentService;
-        _displayNameService = displayNameService;
-        _notificationsService = notificationsService;
-        _httpContextService = httpContextService;
-        _variablesService = variablesService;
-        _logger = logger;
+        var pagedResult = await getCompletedApplicationsPagedQueryHandler.ExecuteAsync(
+            new GetCompletedApplicationsPagedQuery(page, pageSize, query, sortMode, sortDirection, recruiterId)
+        );
+
+        var completedApplications = pagedResult.Data.Select(completedApplicationMapper.MapToCompletedApplication);
+        return new PagedResult<CompletedApplication>(pagedResult.TotalCount, completedApplications);
     }
 
-    [HttpGet]
+    [HttpGet("applications/active")]
     [Permissions(Permissions.Recruiter)]
-    public ApplicationsOverview GetAll()
+    public List<ActiveApplication> GetActiveApplications()
     {
-        return _recruitmentService.GetAllApplications();
+        return recruitmentService.GetActiveApplications();
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("applications/{accountId}")]
     [Authorize]
-    public DetailedApplication GetSingle([FromRoute] string id)
+    public DetailedApplication GetSingle([FromRoute] string accountId)
     {
-        var account = _accountContext.GetSingle(id);
-        return _recruitmentService.GetApplication(account);
+        var account = accountContext.GetSingle(accountId);
+        return recruitmentService.GetApplication(account);
     }
 
-    [HttpGet("isrecruiter")]
-    [Permissions(Permissions.Recruiter)]
-    public bool GetIsRecruiter()
-    {
-        return _recruitmentService.IsRecruiter(_accountService.GetUserAccount());
-    }
-
-    [HttpGet("stats")]
-    [Permissions(Permissions.Recruiter)]
-    public RecruitmentStatsDataset GetRecruitmentStats()
-    {
-        var account = _httpContextService.GetUserId();
-        var activity = _recruitmentService.GetRecruiters()
-                                          .Select(
-                                              recruiterAccount => new
-                                              {
-                                                  recruiterAccount,
-                                                  recruiterApplications = _accountContext.Get(
-                                                                                             x => x.Application != null &&
-                                                                                                  x.Application.Recruiter == recruiterAccount.Id
-                                                                                         )
-                                                                                         .ToList()
-                                              }
-                                          )
-                                          .Select(
-                                              x => new RecruitmentActivityDataset
-                                              {
-                                                  Account = new { id = x.recruiterAccount.Id, settings = x.recruiterAccount.Settings },
-                                                  Name = _displayNameService.GetDisplayName(x.recruiterAccount),
-                                                  Active = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.Waiting),
-                                                  Accepted = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.Accepted),
-                                                  Rejected = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.Rejected)
-                                              }
-                                          )
-                                          .ToList();
-
-        return new RecruitmentStatsDataset
-        {
-            Activity = activity,
-            YourStats =
-                new RecruitmentStats { LastMonth = _recruitmentService.GetStats(account, true), Overall = _recruitmentService.GetStats(account, false) },
-            Sr1Stats = new RecruitmentStats { LastMonth = _recruitmentService.GetStats("", true), Overall = _recruitmentService.GetStats("", false) }
-        };
-    }
-
-    [HttpPost("{id}")]
+    [HttpPost("applications/{accountId}")]
     [Permissions(Permissions.Recruiter)]
     public async Task UpdateState(
         [FromServices] IUpdateApplicationCommand updateApplicationCommand,
-        [FromRoute] string id,
+        [FromRoute] string accountId,
         [FromBody] UpdateApplicationStateRequest updateApplicationStateRequest
     )
     {
         var updatedState = updateApplicationStateRequest.UpdatedState;
-        var account = _accountContext.GetSingle(id);
+        var account = accountContext.GetSingle(accountId);
         if (updatedState == account.Application.State)
         {
             return;
         }
 
         var age = account.Dob.ToAge();
-        var acceptableAge = _variablesService.GetVariable("RECRUITMENT_ENTRY_AGE").AsInt();
-        if (updatedState == ApplicationState.Accepted && !age.IsAcceptableAge(acceptableAge) && !_httpContextService.UserHasPermission(Permissions.Superadmin))
+        var acceptableAge = variablesService.GetVariable("RECRUITMENT_ENTRY_AGE").AsInt();
+        if (updatedState == ApplicationState.Accepted && !age.IsAcceptableAge(acceptableAge) && !httpContextService.UserHasPermission(Permissions.Superadmin))
         {
             throw new AgeNotAllowedException();
         }
 
-        await updateApplicationCommand.ExecuteAsync(id, updatedState);
+        await updateApplicationCommand.ExecuteAsync(accountId, updatedState);
     }
 
-    [HttpPost("recruiter/{id}")]
+    [HttpPost("applications/{accountId}/recruiter")]
     [Permissions(Permissions.RecruiterLead)]
-    public async Task PostReassignment([FromBody] AssignRecruiterRequest assignRecruiterRequest, [FromRoute] string id)
+    public async Task PostReassignment([FromRoute] string accountId, [FromBody] AssignRecruiterRequest assignRecruiterRequest)
     {
-        if (!_httpContextService.UserHasPermission(Permissions.Admin) && !_recruitmentService.IsRecruiterLead())
+        if (!httpContextService.UserHasPermission(Permissions.Admin) && !recruitmentService.IsRecruiterLead())
         {
-            throw new Exception($"attempted to assign recruiter to {assignRecruiterRequest.NewRecruiter}. Context is not recruitment lead.");
+            throw new Exception($"Attempted to assign recruiter to {assignRecruiterRequest.NewRecruiter}. Context is not recruitment lead.");
         }
 
-        await _recruitmentService.SetRecruiter(id, assignRecruiterRequest.NewRecruiter);
-        var account = _accountContext.GetSingle(id);
+        await recruitmentService.SetApplicationRecruiter(accountId, assignRecruiterRequest.NewRecruiter);
+        var account = accountContext.GetSingle(accountId);
         if (account.Application.State == ApplicationState.Waiting)
         {
-            _notificationsService.Add(
+            notificationsService.Add(
                 new DomainNotification
                 {
                     Owner = assignRecruiterRequest.NewRecruiter,
@@ -155,26 +110,57 @@ public class RecruitmentController : ControllerBase
             );
         }
 
-        _logger.LogAudit($"Application recruiter changed for {id} to {assignRecruiterRequest.NewRecruiter}");
-    }
-
-    [HttpPost("ratings/{id}")]
-    [Permissions(Permissions.Recruiter)]
-    public async Task<Dictionary<string, uint>> Ratings([FromRoute] string id, [FromBody] KeyValuePair<string, uint> value)
-    {
-        var ratings = _accountContext.GetSingle(id).Application.Ratings;
-
-        var (key, rating) = value;
-        ratings[key] = rating;
-
-        await _accountContext.Update(id, Builders<DomainAccount>.Update.Set(x => x.Application.Ratings, ratings));
-        return ratings;
+        logger.LogAudit($"Application recruiter changed for {accountId} to {assignRecruiterRequest.NewRecruiter}");
     }
 
     [HttpGet("recruiters")]
-    [Permissions(Permissions.RecruiterLead)]
+    [Permissions(Permissions.Recruiter)]
     public IEnumerable<Recruiter> GetRecruiters()
     {
-        return _recruitmentService.GetActiveRecruiters();
+        return recruitmentService.GetRecruiterAccounts()
+        .Select(
+            x => new Recruiter
+            {
+                Id = x.Id,
+                Name = displayNameService.GetDisplayName(x),
+                Active = x.Settings.Sr1Enabled
+            }
+        );
+    }
+
+    [HttpGet("stats")]
+    [Permissions(Permissions.Recruiter)]
+    public RecruitmentStatsDataset GetRecruitmentStats()
+    {
+        var account = httpContextService.GetUserId();
+        var activity = recruitmentService.GetRecruiterAccounts()
+                                         .Select(
+                                             recruiterAccount => new
+                                             {
+                                                 recruiterAccount,
+                                                 recruiterApplications =
+                                                     accountContext.Get(x => x.Application is not null && x.Application.Recruiter == recruiterAccount.Id)
+                                                                   .ToList()
+                                             }
+                                         )
+                                         .Select(
+                                             x => new RecruitmentActivityDataset
+                                             {
+                                                 Account = new { id = x.recruiterAccount.Id, settings = x.recruiterAccount.Settings },
+                                                 Name = displayNameService.GetDisplayName(x.recruiterAccount),
+                                                 Active = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.Waiting),
+                                                 Accepted = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.Accepted),
+                                                 Rejected = x.recruiterApplications.Count(y => y.Application.State == ApplicationState.Rejected)
+                                             }
+                                         )
+                                         .ToList();
+
+        return new RecruitmentStatsDataset
+        {
+            Activity = activity,
+            YourStats =
+                new RecruitmentStats { LastMonth = recruitmentService.GetStats(account, true), Overall = recruitmentService.GetStats(account, false) },
+            Sr1Stats = new RecruitmentStats { LastMonth = recruitmentService.GetStats("", true), Overall = recruitmentService.GetStats("", false) }
+        };
     }
 }

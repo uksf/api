@@ -156,7 +156,7 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
             );
 
             var milestone = await GetOpenMilestone(release.Version);
-            if (milestone != null)
+            if (milestone is not null)
             {
                 await client.Issue.Milestone.Update(RepoOrg, RepoName, milestone.Number, new MilestoneUpdate { State = ItemState.Closed });
             }

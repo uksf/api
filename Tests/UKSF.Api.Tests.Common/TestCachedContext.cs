@@ -4,17 +4,5 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Tests.Common;
 
-public class TestCachedContext : CachedMongoContext<DomainTestModel>, ITestCachedContext
-{
-    public TestCachedContext(
-        IMongoCollectionFactory mongoCollectionFactory,
-        IEventBus eventBus,
-        IVariablesService variablesService,
-        string collectionName
-    ) : base(
-        mongoCollectionFactory,
-        eventBus,
-        variablesService,
-        collectionName
-    ) { }
-}
+public class TestCachedContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService, string collectionName)
+    : CachedMongoContext<DomainTestModel>(mongoCollectionFactory, eventBus, variablesService, collectionName), ITestCachedContext;

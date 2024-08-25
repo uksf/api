@@ -66,7 +66,9 @@ public class MongoCollection<T>(IMongoDatabase database, string collectionName) 
             )
         );
 
-        var aggregation = aggregator(GetCollection()).Match(filterDefinition).Facet(countFacet, dataFacet);
+        var aggregateFluent = aggregator(GetCollection());
+        var filter = aggregateFluent.Match(filterDefinition);
+        var aggregation = filter.Facet(countFacet, dataFacet);
         var aggregateCountResults = aggregation.First().Facets.First(x => x.Name == "count").Output<AggregateCountResult>();
         var count = (int)(aggregateCountResults.FirstOrDefault()?.Count ?? 0);
 

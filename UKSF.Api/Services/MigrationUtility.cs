@@ -12,7 +12,7 @@ public class MigrationUtility(IMigrationContext migrationContext, IUksfLogger lo
 
     public void Migrate()
     {
-        if (migrationContext.GetSingle(x => x.Version == Version) != null)
+        if (migrationContext.GetSingle(x => x.Version == Version) is not null)
         {
             return;
         }

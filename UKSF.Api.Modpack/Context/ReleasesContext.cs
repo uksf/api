@@ -7,15 +7,9 @@ namespace UKSF.Api.Modpack.Context;
 
 public interface IReleasesContext : IMongoContext<DomainModpackRelease>, ICachedMongoContext;
 
-public class ReleasesContext : CachedMongoContext<DomainModpackRelease>, IReleasesContext
+public class ReleasesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService)
+    : CachedMongoContext<DomainModpackRelease>(mongoCollectionFactory, eventBus, variablesService, "modpackReleases"), IReleasesContext
 {
-    public ReleasesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService) : base(
-        mongoCollectionFactory,
-        eventBus,
-        variablesService,
-        "modpackReleases"
-    ) { }
-
     protected override IEnumerable<DomainModpackRelease> OrderCollection(IEnumerable<DomainModpackRelease> collection)
     {
         return collection.Select(

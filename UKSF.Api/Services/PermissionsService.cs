@@ -64,7 +64,7 @@ public class PermissionsService : IPermissionsService
                 }
 
                 var ncoRank = _variablesService.GetVariable("PERMISSIONS_NCO_RANK").AsString();
-                if (account.Rank != null && _ranksService.IsSuperiorOrEqual(account.Rank, ncoRank))
+                if (account.Rank is not null && _ranksService.IsSuperiorOrEqual(account.Rank, ncoRank))
                 {
                     permissions.Add(Permissions.Nco);
                 }

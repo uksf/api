@@ -132,11 +132,11 @@ public abstract class MongoContextBase<T>(IMongoCollectionFactory mongoCollectio
             return Builders<TFilter>.Filter.Empty;
         }
 
-        var andQueryParts = query.Split("&&", StringSplitOptions.RemoveEmptyEntries);
-        var andFilters = andQueryParts.Select(andQueryPart => andQueryPart.Split("||", StringSplitOptions.RemoveEmptyEntries))
-                                      .Select(orQueryParts => orQueryParts.Select(filter).ToList())
-                                      .Select(orFilters => Builders<TFilter>.Filter.Or(orFilters))
-                                      .ToList();
-        return Builders<TFilter>.Filter.And(andFilters);
+        var queryFilter = query.Split("&&", StringSplitOptions.RemoveEmptyEntries)
+                               .Select(andQueryPart => andQueryPart.Split("||", StringSplitOptions.RemoveEmptyEntries))
+                               .Select(orQueryParts => orQueryParts.Select(filter).ToList())
+                               .Select(orFilters => Builders<TFilter>.Filter.Or(orFilters))
+                               .ToList();
+        return Builders<TFilter>.Filter.And(queryFilter);
     }
 }

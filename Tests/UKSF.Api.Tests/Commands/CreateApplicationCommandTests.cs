@@ -41,7 +41,7 @@ public class CreateApplicationCommandTests
         _mockRecruitmentService = new Mock<IRecruitmentService>();
         _mockCreateCommentThreadCommand = new Mock<ICreateCommentThreadCommand>();
 
-        _mockRecruitmentService.Setup(x => x.GetRecruiterLeads()).Returns(new Dictionary<string, string>());
+        _mockRecruitmentService.Setup(x => x.GetRecruiterLeadAccountIds()).Returns(new List<string>());
         _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Id == AccountId))).Returns("Last.F");
 
         _subject = new CreateApplicationCommand(

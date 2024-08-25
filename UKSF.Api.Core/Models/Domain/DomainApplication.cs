@@ -49,7 +49,7 @@ public class ApplicationAge
     public int Years { get; set; }
 }
 
-public class WaitingApplication
+public class ActiveApplication
 {
     public Account Account { get; set; }
     public double DaysProcessing { get; set; }
@@ -66,16 +66,9 @@ public class CompletedApplication
     public string Recruiter { get; set; }
 }
 
-public class ApplicationsOverview
-{
-    public List<WaitingApplication> AllWaiting { get; set; }
-    public List<CompletedApplication> Complete { get; set; }
-    public List<string> Recruiters { get; set; }
-    public List<WaitingApplication> Waiting { get; set; }
-}
-
 public class Recruiter
 {
     public string Id { get; set; }
     public string Name { get; set; }
+    public bool Active { get; set; }
 }

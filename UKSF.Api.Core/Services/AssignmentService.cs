@@ -153,7 +153,7 @@ public class AssignmentService(
         var unitUpdate = false;
         var positive = true;
         var unit = unitsContext.GetSingle(x => x.Name == unitString);
-        if (unit != null)
+        if (unit is not null)
         {
             if (unit.Branch == UnitBranch.Combat)
             {

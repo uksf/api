@@ -76,7 +76,7 @@ public class GameServersController : ControllerBase
     [Authorize]
     public DomainGameServer CheckGameServers(string check, [FromBody] DomainGameServer gameServer = null)
     {
-        if (gameServer != null)
+        if (gameServer is not null)
         {
             var safeGameServer = gameServer;
             return _gameServersContext.GetSingle(x => x.Id != safeGameServer.Id && (x.Name == check || x.ApiPort.ToString() == check));

@@ -17,6 +17,6 @@ public static class JsonExtensions
 
     public static string GetValueFromObject(this JsonNode jsonNode, string key)
     {
-        return jsonNode[key] != null ? jsonNode[key].ToString() : string.Empty;
+        return jsonNode[key] is not null ? jsonNode[key].ToString() : string.Empty;
     }
 }

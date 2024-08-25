@@ -45,42 +45,26 @@ public record GetPagedLoasQueryArgs(
     LoaViewMode ViewMode
 );
 
-public class GetPagedLoasQuery : IGetPagedLoasQuery
+public class GetPagedLoasQuery(
+    ILoaContext loaContext,
+    IAccountContext accountContext,
+    IUnitsContext unitsContext,
+    IHttpContextService httpContextService,
+    IUnitsService unitsService,
+    IClock clock
+) : IGetPagedLoasQuery
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IHttpContextService _httpContextService;
-    private readonly ILoaContext _loaContext;
-    private readonly IUnitsContext _unitsContext;
-    private readonly IUnitsService _unitsService;
-    private readonly IClock _clock;
-
-    public GetPagedLoasQuery(
-        ILoaContext loaContext,
-        IAccountContext accountContext,
-        IUnitsContext unitsContext,
-        IHttpContextService httpContextService,
-        IUnitsService unitsService,
-        IClock clock
-    )
-    {
-        _loaContext = loaContext;
-        _accountContext = accountContext;
-        _unitsContext = unitsContext;
-        _httpContextService = httpContextService;
-        _unitsService = unitsService;
-        _clock = clock;
-    }
-
     public async Task<PagedResult<DomainLoaWithAccount>> ExecuteAsync(GetPagedLoasQueryArgs args)
     {
+        var aggregator = BuildAggregator;
         var sorting = BuildSorting(args.SelectionMode);
         var selectionModeFilter = BuildSelectionModeFilter(args.SelectionMode);
         var dateModeFilter = BuildDateModeFilter(args.DateMode, args.SelectedDate);
         var viewModeFilter = BuildViewModeFilter(args.ViewMode);
-        var queryFilter = _loaContext.BuildPagedComplexQuery(args.Query, BuildFiltersFromQueryPart);
+        var queryFilter = loaContext.BuildPagedComplexQuery(args.Query, BuildFiltersFromQueryPart);
         var filter = Builders<DomainLoaWithAccount>.Filter.And(selectionModeFilter, dateModeFilter, viewModeFilter, queryFilter);
 
-        var pagedResult = _loaContext.GetPaged(args.Page, args.PageSize, BuildAggregator, sorting, filter);
+        var pagedResult = loaContext.GetPaged(args.Page, args.PageSize, aggregator, sorting, filter);
         return await Task.FromResult(pagedResult);
     }
 
@@ -104,7 +88,7 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
 
     private FilterDefinition<DomainLoaWithAccount> BuildSelectionModeFilter(LoaSelectionMode selectionMode)
     {
-        var today = _clock.Today();
+        var today = clock.Today();
 
         return selectionMode switch
         {
@@ -149,18 +133,18 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
         {
             case LoaViewMode.All:
             {
-                var memberIds = _accountContext.Get(x => x.MembershipState == MembershipState.Member).Select(x => x.Id).ToList();
+                var memberIds = accountContext.Get(x => x.MembershipState == MembershipState.Member).Select(x => x.Id).ToList();
                 return Builders<DomainLoaWithAccount>.Filter.In(x => x.Recipient, memberIds);
             }
             case LoaViewMode.Coc:
             {
-                var currentAccount = _accountContext.GetSingle(_httpContextService.GetUserId());
-                var parentUnit = _unitsContext.GetSingle(x => x.Name == currentAccount.UnitAssignment);
-                var cocUnits = _unitsService.GetAllChildren(parentUnit, true).ToList();
+                var currentAccount = accountContext.GetSingle(httpContextService.GetUserId());
+                var parentUnit = unitsContext.GetSingle(x => x.Name == currentAccount.UnitAssignment);
+                var cocUnits = unitsService.GetAllChildren(parentUnit, true).ToList();
                 var memberIds = cocUnits.SelectMany(x => x.Members).ToList();
                 return Builders<DomainLoaWithAccount>.Filter.In(x => x.Recipient, memberIds);
             }
-            case LoaViewMode.Mine: return Builders<DomainLoaWithAccount>.Filter.Eq(x => x.Recipient, _httpContextService.GetUserId());
+            case LoaViewMode.Mine: return Builders<DomainLoaWithAccount>.Filter.Eq(x => x.Recipient, httpContextService.GetUserId());
             default:               throw new ArgumentOutOfRangeException(nameof(viewMode));
         }
     }
@@ -195,7 +179,7 @@ public class GetPagedLoasQuery : IGetPagedLoasQuery
 
     private DateTime GetNextDayOfWeek(DayOfWeek dayOfWeek)
     {
-        var today = _clock.Today();
+        var today = clock.Today();
         var daysToAdd = ((int)dayOfWeek - (int)today.DayOfWeek + 7) % 7;
         return today.AddDays(daysToAdd);
     }
