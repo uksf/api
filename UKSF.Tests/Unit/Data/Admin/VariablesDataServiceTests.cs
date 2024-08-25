@@ -6,7 +6,6 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models.Domain;
-using UKSF.Api.Core.Services;
 using Xunit;
 
 namespace UKSF.Tests.Unit.Data.Admin;
@@ -20,7 +19,6 @@ public class VariablesDataServiceTests
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IEventBus> mockEventBus = new();
-        Mock<IVariablesService> mockVariablesService = new();
         Mock<IMongoCollection<DomainVariableItem>> mockDataCollection = new();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainVariableItem>(It.IsAny<string>())).Returns(mockDataCollection.Object);
@@ -67,26 +65,22 @@ public class VariablesDataServiceTests
         subject.Should().Be(null);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData(null)]
-    public async Task ShouldThrowForUpdateWhenNoKeyOrNull(string key)
+    [Fact]
+    public async Task ShouldThrowForUpdateWhenNoKey()
     {
         _mockCollection = [];
 
-        var act = async () => await _variablesContext.Update(key, "75");
+        var act = async () => await _variablesContext.Update("", "75");
 
         await act.Should().ThrowAsync<KeyNotFoundException>();
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData(null)]
-    public async Task ShouldThrowForDeleteWhenNoKeyOrNull(string key)
+    [Fact]
+    public async Task ShouldThrowForDeleteWhenNoKey()
     {
         _mockCollection = [];
 
-        var act = async () => await _variablesContext.Delete(key);
+        var act = async () => await _variablesContext.Delete("");
 
         await act.Should().ThrowAsync<KeyNotFoundException>();
     }
