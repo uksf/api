@@ -1,10 +1,15 @@
-﻿using Octokit;
+﻿using Microsoft.AspNetCore.SignalR;
+using Octokit;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
+using UKSF.Api.Modpack.BuildProcess;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
-using UKSF.Api.Modpack.Services.BuildProcess;
+using UKSF.Api.Modpack.Signalr.Clients;
+using UKSF.Api.Modpack.Signalr.Hubs;
 
 namespace UKSF.Api.Modpack.Services;
 
@@ -20,173 +25,188 @@ public interface IModpackService
     Task CancelBuild(DomainModpackBuild build);
     Task UpdateReleaseDraft(DomainModpackRelease release);
     Task Release(string version);
-    Task RegnerateReleaseDraftChangelog(string version);
+    Task RegenerateReleaseDraftChangelog(string version);
     Task CreateDevBuildFromPush(PushWebhookPayload payload);
     Task CreateRcBuildFromPush(PushWebhookPayload payload);
+    Task CreateReleaseForVersion(string version);
     void RunQueuedBuilds();
 }
 
-public class ModpackService : IModpackService
+public class ModpackService(
+    IReleasesContext releasesContext,
+    IBuildsContext buildsContext,
+    IReleaseService releaseService,
+    IBuildsService buildsService,
+    IBuildQueueService buildQueueService,
+    IGithubService githubService,
+    IVersionService versionService,
+    IVariablesService variablesService,
+    IHubContext<ModpackHub, IModpackClient> modpackHub,
+    IHttpContextService httpContextService,
+    IUksfLogger logger
+) : IModpackService
 {
-    private readonly IBuildQueueService _buildQueueService;
-    private readonly IBuildsContext _buildsContext;
-    private readonly IBuildsService _buildsService;
-    private readonly IGithubService _githubService;
-    private readonly IHttpContextService _httpContextService;
-    private readonly IUksfLogger _logger;
-    private readonly IReleasesContext _releasesContext;
-    private readonly IReleaseService _releaseService;
-
-    public ModpackService(
-        IReleasesContext releasesContext,
-        IBuildsContext buildsContext,
-        IReleaseService releaseService,
-        IBuildsService buildsService,
-        IBuildQueueService buildQueueService,
-        IGithubService githubService,
-        IHttpContextService httpContextService,
-        IUksfLogger logger
-    )
-    {
-        _releasesContext = releasesContext;
-        _buildsContext = buildsContext;
-        _releaseService = releaseService;
-        _buildsService = buildsService;
-        _buildQueueService = buildQueueService;
-        _githubService = githubService;
-        _httpContextService = httpContextService;
-        _logger = logger;
-    }
+    private const string VersionFile = "addons/main/script_version.hpp";
 
     public IEnumerable<DomainModpackRelease> GetReleases()
     {
-        return _releasesContext.Get();
+        return releasesContext.Get();
     }
 
     public IEnumerable<DomainModpackBuild> GetRcBuilds()
     {
-        return _buildsService.GetRcBuilds();
+        return buildsService.GetRcBuilds();
     }
 
     public IEnumerable<DomainModpackBuild> GetDevBuilds()
     {
-        return _buildsService.GetDevBuilds();
+        return buildsService.GetDevBuilds();
     }
 
     public DomainModpackRelease GetRelease(string version)
     {
-        return _releaseService.GetRelease(version);
+        return releaseService.GetRelease(version);
     }
 
     public DomainModpackBuild GetBuild(string id)
     {
-        return _buildsContext.GetSingle(x => x.Id == id);
+        return buildsContext.GetSingle(x => x.Id == id);
     }
 
     public async Task NewBuild(NewBuild newBuild)
     {
-        var commit = await _githubService.GetLatestReferenceCommit(newBuild.Reference);
-        if (!string.IsNullOrEmpty(_httpContextService.GetUserId()))
+        var commit = await githubService.GetLatestReferenceCommit(newBuild.Reference);
+        if (!string.IsNullOrEmpty(httpContextService.GetUserId()))
         {
-            commit.Author = _httpContextService.GetUserEmail();
+            commit.Author = httpContextService.GetUserEmail();
         }
 
-        var version = await _githubService.GetReferenceVersion(newBuild.Reference);
-        var build = await _buildsService.CreateDevBuild(version, commit, newBuild);
-        _logger.LogAudit($"New build created ({GetBuildName(build)})");
-        _buildQueueService.QueueBuild(build);
+        var version = await githubService.GetReferenceVersion(newBuild.Reference);
+        var build = await buildsService.CreateDevBuild(version, commit, newBuild);
+        logger.LogAudit($"New build created ({GetBuildName(build)})");
+        buildQueueService.QueueBuild(build);
     }
 
     public async Task Rebuild(DomainModpackBuild build)
     {
-        _logger.LogAudit($"Rebuild triggered for {GetBuildName(build)}.");
-        var rebuild = await _buildsService.CreateRebuild(
+        logger.LogAudit($"Rebuild triggered for {GetBuildName(build)}.");
+        var rebuild = await buildsService.CreateRebuild(
             build,
-            build.Commit.Branch == "None" ? string.Empty : (await _githubService.GetLatestReferenceCommit(build.Commit.Branch)).After
+            build.Commit.Branch == "None" ? string.Empty : (await githubService.GetLatestReferenceCommit(build.Commit.Branch)).After
         );
 
-        _buildQueueService.QueueBuild(rebuild);
+        buildQueueService.QueueBuild(rebuild);
     }
 
     public async Task CancelBuild(DomainModpackBuild build)
     {
-        _logger.LogAudit($"Build {GetBuildName(build)} cancelled");
+        logger.LogAudit($"Build {GetBuildName(build)} cancelled");
 
-        if (_buildQueueService.CancelQueued(build.Id))
+        if (buildQueueService.CancelQueued(build.Id))
         {
-            await _buildsService.CancelBuild(build);
+            await buildsService.CancelBuild(build);
         }
         else
         {
-            _buildQueueService.Cancel(build.Id);
+            buildQueueService.Cancel(build.Id);
         }
     }
 
     public async Task UpdateReleaseDraft(DomainModpackRelease release)
     {
-        _logger.LogAudit($"Release {release.Version} draft updated");
-        await _releaseService.UpdateDraft(release);
+        logger.LogAudit($"Release {release.Version} draft updated");
+        await releaseService.UpdateDraft(release);
     }
 
     public async Task Release(string version)
     {
-        var releaseBuild = await _buildsService.CreateReleaseBuild(version);
-        _buildQueueService.QueueBuild(releaseBuild);
+        var releaseBuild = await buildsService.CreateReleaseBuild(version);
+        buildQueueService.QueueBuild(releaseBuild);
 
-        _logger.LogAudit($"{version} released");
+        logger.LogAudit($"{version} released");
     }
 
-    public async Task RegnerateReleaseDraftChangelog(string version)
+    public async Task RegenerateReleaseDraftChangelog(string version)
     {
-        var release = _releaseService.GetRelease(version);
-        var newChangelog = await _githubService.GenerateChangelog(version);
+        var release = releaseService.GetRelease(version);
+        var newChangelog = await githubService.GenerateChangelog(version);
         release.Changelog = newChangelog;
 
-        _logger.LogAudit($"Release {version} draft changelog regenerated from github");
-        await _releaseService.UpdateDraft(release);
+        logger.LogAudit($"Release {version} draft changelog regenerated from github");
+        await releaseService.UpdateDraft(release);
     }
 
     public async Task CreateDevBuildFromPush(PushWebhookPayload payload)
     {
-        var devCommit = await _githubService.GetPushEvent(payload);
-        var version = await _githubService.GetReferenceVersion(payload.Ref.Split('/')[^1]);
-        var devBuild = await _buildsService.CreateDevBuild(version, devCommit);
-        _buildQueueService.QueueBuild(devBuild);
+        var devCommit = await githubService.GetPushEvent(payload);
+        var version = await githubService.GetReferenceVersion(payload.Ref.Split('/')[^1]);
+        var devBuild = await buildsService.CreateDevBuild(version, devCommit);
+        buildQueueService.QueueBuild(devBuild);
     }
 
     public async Task CreateRcBuildFromPush(PushWebhookPayload payload)
     {
-        var rcVersion = await _githubService.GetReferenceVersion(payload.Ref.Split('/')[^1]);
-        var release = _releaseService.GetRelease(rcVersion);
+        var rcVersion = await githubService.GetReferenceVersion(payload.Ref.Split('/')[^1]);
+        var release = releaseService.GetRelease(rcVersion);
         if (release is { IsDraft: false })
         {
-            _logger.LogWarning($"An attempt to build a release candidate for version {rcVersion} failed because the version has already been released.");
+            logger.LogWarning($"An attempt to build a release candidate for version {rcVersion} failed because the version has already been released.");
             return;
         }
 
-        var previousBuild = _buildsService.GetLatestRcBuild(rcVersion);
-        var rcCommit = await _githubService.GetPushEvent(payload, previousBuild is not null ? previousBuild.Commit.After : string.Empty);
+        var previousBuild = buildsService.GetLatestRcBuild(rcVersion);
+        var rcCommit = await githubService.GetPushEvent(payload, previousBuild is not null ? previousBuild.Commit.After : string.Empty);
         if (previousBuild == null)
         {
-            await _releaseService.MakeDraftRelease(rcVersion, rcCommit);
+            release = await releaseService.MakeDraftRelease(rcVersion, rcCommit);
+            await modpackHub.Clients.All.ReceiveRelease(release);
         }
 
-        var rcBuild = await _buildsService.CreateRcBuild(rcVersion, rcCommit);
-        _buildQueueService.QueueBuild(rcBuild);
+        var rcBuild = await buildsService.CreateRcBuild(rcVersion, rcCommit);
+        buildQueueService.QueueBuild(rcBuild);
+    }
+
+    public async Task CreateReleaseForVersion(string version)
+    {
+        var latestVersion = await githubService.GetReferenceVersion("main");
+        if (!versionService.IsVersionIncremental(version, latestVersion))
+        {
+            throw new BadRequestException($"New version is not a valid increment from {latestVersion}");
+        }
+
+        var latestRelease = releaseService.GetRelease(latestVersion);
+        if (latestRelease is { IsDraft: true })
+        {
+            throw new BadRequestException($"Cannot create a release for version {version} because the previous version {latestVersion} has not been released.");
+        }
+
+        var sourcesPath = variablesService.GetVariable("BUILD_PATH_SOURCES").AsString();
+        var modpackSourcePath = Path.Join(sourcesPath, "modpack");
+        var gitCommand = new GitCommand(modpackSourcePath, logger);
+
+        gitCommand.Fetch().Checkout("-t origin/main").Checkout("main").Pull();
+        gitCommand.Checkout("-t origin/release").Checkout("release").Pull();
+
+        var versionFileContent = versionService.GetVersionFileContentFromVersion(version);
+        await File.WriteAllTextAsync(Path.Join(modpackSourcePath, VersionFile), versionFileContent);
+
+        gitCommand.Commit($"Version {version}").Merge("main").Push("release");
+
+        logger.LogAudit($"New release version {version} created");
     }
 
     public void RunQueuedBuilds()
     {
-        var builds = _buildsService.GetDevBuilds().Where(x => !x.Finished && !x.Running).ToList();
-        builds = builds.Concat(_buildsService.GetRcBuilds().Where(x => !x.Finished && !x.Running)).ToList();
-        if (!builds.Any())
+        var builds = buildsService.GetDevBuilds().Where(x => !x.Finished && !x.Running).ToList();
+        builds = builds.Concat(buildsService.GetRcBuilds().Where(x => !x.Finished && !x.Running)).ToList();
+        if (builds.Count == 0)
         {
             return;
         }
 
         foreach (var build in builds)
         {
-            _buildQueueService.QueueBuild(build);
+            buildQueueService.QueueBuild(build);
         }
     }
 

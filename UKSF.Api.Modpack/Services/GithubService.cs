@@ -24,7 +24,8 @@ public interface IGithubService
     Task PublishRelease(DomainModpackRelease release);
 }
 
-public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings, IGithubClientService githubClientService) : IGithubService
+public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings, IGithubClientService githubClientService, IVersionService versionService)
+    : IGithubService
 {
     private const string VersionFile = "addons/main/script_version.hpp";
     private static readonly string[] LabelsAdded = ["type/feature", "type/mod addition"];
@@ -58,18 +59,16 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
         }
 
         var content = Encoding.UTF8.GetString(contentBytes);
-        var versionParts = content.Split("\n").Take(3).Select(x => x.Split(' ')[^1]);
-        var version = string.Join('.', versionParts);
-        return version;
+        return versionService.GetVersionFromVersionFileContent(content);
     }
 
     public async Task<bool> IsReferenceValid(string reference)
     {
         var version = await GetReferenceVersion(reference);
-        var versionParts = version.Split('.').Select(int.Parse).ToArray();
+        // Version when make.py was changed to accommodate building with the API
+        const string ReferenceVersion = "5.17.19";
 
-        // Version when make.py was changed to accommodate this system
-        return versionParts[0] == 5 ? versionParts[1] == 17 ? versionParts[2] >= 19 : versionParts[1] > 17 : versionParts[0] > 5;
+        return versionService.IsVersionNewer(version, ReferenceVersion);
     }
 
     public async Task<GithubCommit> GetLatestReferenceCommit(string reference)

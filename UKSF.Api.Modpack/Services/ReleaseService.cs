@@ -8,38 +8,26 @@ namespace UKSF.Api.Modpack.Services;
 
 public interface IReleaseService
 {
-    Task MakeDraftRelease(string version, GithubCommit commit);
+    Task<DomainModpackRelease> MakeDraftRelease(string version, GithubCommit commit);
     Task UpdateDraft(DomainModpackRelease release);
     Task PublishRelease(string version);
     DomainModpackRelease GetRelease(string version);
     Task AddHistoricReleases(IEnumerable<DomainModpackRelease> releases);
 }
 
-public class ReleaseService : IReleaseService
+public class ReleaseService(IReleasesContext releasesContext, IAccountContext accountContext, IGithubService githubService, IUksfLogger logger)
+    : IReleaseService
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IGithubService _githubService;
-    private readonly IUksfLogger _logger;
-    private readonly IReleasesContext _releasesContext;
-
-    public ReleaseService(IReleasesContext releasesContext, IAccountContext accountContext, IGithubService githubService, IUksfLogger logger)
-    {
-        _releasesContext = releasesContext;
-        _accountContext = accountContext;
-        _githubService = githubService;
-        _logger = logger;
-    }
-
     public DomainModpackRelease GetRelease(string version)
     {
-        return _releasesContext.GetSingle(x => x.Version == version);
+        return releasesContext.GetSingle(x => x.Version == version);
     }
 
-    public async Task MakeDraftRelease(string version, GithubCommit commit)
+    public async Task<DomainModpackRelease> MakeDraftRelease(string version, GithubCommit commit)
     {
-        var changelog = await _githubService.GenerateChangelog(version);
-        var creatorId = _accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
-        await _releasesContext.Add(
+        var changelog = await githubService.GenerateChangelog(version);
+        var creatorId = accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
+        await releasesContext.Add(
             new DomainModpackRelease
             {
                 Timestamp = DateTime.UtcNow,
@@ -49,11 +37,12 @@ public class ReleaseService : IReleaseService
                 CreatorId = creatorId
             }
         );
+        return GetRelease(version);
     }
 
     public async Task UpdateDraft(DomainModpackRelease release)
     {
-        await _releasesContext.Update(
+        await releasesContext.Update(
             release.Id,
             Builders<DomainModpackRelease>.Update.Set(x => x.Changelog, release.Changelog)
         );
@@ -69,25 +58,25 @@ public class ReleaseService : IReleaseService
 
         if (!release.IsDraft)
         {
-            _logger.LogWarning($"Attempted to release {version} again. Halting publish");
+            logger.LogWarning($"Attempted to release {version} again. Halting publish");
         }
 
         release.Changelog += release.Changelog.EndsWith("\n\n") ? "<br>" : "\n\n<br>";
         release.Changelog += "SR3 - Development Team<br>[Report and track issues here](https://github.com/uksf/modpack/issues)";
 
-        await _releasesContext.Update(
+        await releasesContext.Update(
             release.Id,
             Builders<DomainModpackRelease>.Update.Set(x => x.Timestamp, DateTime.UtcNow).Set(x => x.IsDraft, false).Set(x => x.Changelog, release.Changelog)
         );
-        await _githubService.PublishRelease(release);
+        await githubService.PublishRelease(release);
     }
 
     public async Task AddHistoricReleases(IEnumerable<DomainModpackRelease> releases)
     {
-        var existingReleases = _releasesContext.Get();
+        var existingReleases = releasesContext.Get();
         foreach (var release in releases.Where(x => existingReleases.All(y => y.Version != x.Version)))
         {
-            await _releasesContext.Add(release);
+            await releasesContext.Add(release);
         }
     }
 }

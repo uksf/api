@@ -12,7 +12,7 @@ namespace UKSF.Api.Modpack.EventHandlers;
 
 public interface IBuildsEventHandler : IEventHandler;
 
-public class BuildsEventHandler(IEventBus eventBus, IHubContext<BuildsHub, IModpackClient> hub, IUksfLogger logger) : IBuildsEventHandler
+public class BuildsEventHandler(IEventBus eventBus, IHubContext<ModpackHub, IModpackClient> hub, IUksfLogger logger) : IBuildsEventHandler
 {
     public void EarlyInit() { }
 

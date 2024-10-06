@@ -1,10 +1,10 @@
 ﻿using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
+using UKSF.Api.Modpack.BuildProcess;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.EventHandlers;
 using UKSF.Api.Modpack.ScheduledActions;
 using UKSF.Api.Modpack.Services;
-using UKSF.Api.Modpack.Services.BuildProcess;
 using UKSF.Api.Modpack.Signalr.Hubs;
 
 namespace UKSF.Api.Modpack;
@@ -36,7 +36,8 @@ public static class ApiModpackExtensions
                        .AddTransient<IReleaseService, ReleaseService>()
                        .AddSingleton<IBuildStepService, BuildStepService>()
                        .AddSingleton<IBuildProcessorService, BuildProcessorService>()
-                       .AddSingleton<IBuildQueueService, BuildQueueService>();
+                       .AddSingleton<IBuildQueueService, BuildQueueService>()
+                       .AddSingleton<IVersionService, VersionService>();
     }
 
     private static IServiceCollection AddActions(this IServiceCollection services)
@@ -46,6 +47,6 @@ public static class ApiModpackExtensions
 
     public static void AddUksfModpackSignalr(this IEndpointRouteBuilder builder)
     {
-        builder.MapHub<BuildsHub>($"/hub/{BuildsHub.EndPoint}");
+        builder.MapHub<ModpackHub>($"/hub/{ModpackHub.EndPoint}");
     }
 }
