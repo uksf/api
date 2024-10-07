@@ -39,7 +39,7 @@ public class GitCommand(string workingDirectory, IUksfLogger logger)
 
     public GitCommand Commit(string message)
     {
-        return Execute($"commit -m {message}");
+        return Execute($"commit -m \"{message}\"");
     }
 
     public GitCommand Merge(string reference)
