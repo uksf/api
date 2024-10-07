@@ -5,7 +5,7 @@ namespace UKSF.Api.Modpack.Models;
 
 public class GitCommand(string workingDirectory, IUksfLogger logger)
 {
-    private GitCommand Execute(string command)
+    public GitCommand Execute(string command)
     {
         var processHelper = new ProcessRunner(logger, new CancellationTokenSource());
         processHelper.Run(workingDirectory, "cmd.exe", $"/c \"git {command}\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds);

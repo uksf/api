@@ -184,6 +184,7 @@ public class ModpackService(
         var modpackSourcePath = Path.Join(sourcesPath, "modpack");
         var gitCommand = new GitCommand(modpackSourcePath, logger);
 
+        gitCommand.Execute("reset --hard HEAD && git clean -d -f && git fetch");
         gitCommand.Fetch().Checkout("-t origin/main").Checkout("main").Pull();
         gitCommand.Checkout("-t origin/release").Checkout("release").Pull();
 
