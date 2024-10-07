@@ -185,8 +185,8 @@ public class ModpackService(
         var gitCommand = new GitCommand(modpackSourcePath, logger);
 
         gitCommand.Execute("reset --hard HEAD && git clean -d -f").Fetch();
-        gitCommand.TryCheckout("-t origin/main").Checkout("main").Pull();
-        gitCommand.TryCheckout("-t origin/release").Checkout("release").Pull();
+        gitCommand.TryCheckout("-t origin/main").TryCheckout("main").Pull();
+        gitCommand.TryCheckout("-t origin/release").TryCheckout("release").Pull();
 
         var versionFileContent = versionService.GetVersionFileContentFromVersion(version);
         await File.WriteAllTextAsync(Path.Join(modpackSourcePath, VersionFile), versionFileContent);
