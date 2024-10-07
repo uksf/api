@@ -5,9 +5,9 @@ namespace UKSF.Api.Modpack.Models;
 
 public class GitCommand(string workingDirectory, IUksfLogger logger)
 {
-    public GitCommand Execute(string command)
+    public GitCommand Execute(string command, bool raiseErrors = true)
     {
-        var processHelper = new ProcessRunner(logger, new CancellationTokenSource());
+        var processHelper = new ProcessRunner(logger, new CancellationTokenSource(), raiseErrors);
         processHelper.Run(workingDirectory, "cmd.exe", $"/c \"git {command}\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
         return this;
     }
@@ -20,6 +20,11 @@ public class GitCommand(string workingDirectory, IUksfLogger logger)
     public GitCommand Checkout(string reference)
     {
         return Execute($"checkout {reference}");
+    }
+
+    public GitCommand TryCheckout(string reference)
+    {
+        return Execute($"checkout {reference}", false);
     }
 
     public GitCommand Pull()
