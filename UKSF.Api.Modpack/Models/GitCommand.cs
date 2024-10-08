@@ -5,11 +5,16 @@ namespace UKSF.Api.Modpack.Models;
 
 public class GitCommand(string workingDirectory, IUksfLogger logger)
 {
-    public GitCommand Execute(string command, bool raiseErrors = true)
+    public GitCommand Execute(string command)
     {
-        var processHelper = new ProcessRunner(logger, new CancellationTokenSource(), raiseErrors);
+        var processHelper = new ProcessRunner(logger, new CancellationTokenSource(), false);
         processHelper.Run(workingDirectory, "cmd.exe", $"/c \"git {command}\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds, true);
         return this;
+    }
+
+    public GitCommand ResetAndClean()
+    {
+        return Execute("reset --hard HEAD").Execute("clean -d -f");
     }
 
     public GitCommand Fetch()
@@ -19,12 +24,7 @@ public class GitCommand(string workingDirectory, IUksfLogger logger)
 
     public GitCommand Checkout(string reference)
     {
-        return Execute($"checkout {reference}");
-    }
-
-    public GitCommand TryCheckout(string reference)
-    {
-        return Execute($"checkout {reference}", false);
+        return Execute($"checkout -t origin/{reference}").Execute($"checkout {reference}");
     }
 
     public GitCommand Pull()
