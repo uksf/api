@@ -106,7 +106,7 @@ public class MongoCollection<T>(IMongoDatabase database, string collectionName) 
     public async Task UpdateManyAsync(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update)
     {
         // Getting ids by the filter predicate is necessary to cover filtering items by a default model value
-        // (e.g Role order default 0, may not be stored in document, and is thus not filterable)
+        // (e.g. Role order default 0, may not be stored in document, and is thus not filterable)
         var ids = Get(predicate.Compile()).Select(x => x.Id);
         await GetCollection().UpdateManyAsync(Builders<T>.Filter.In(x => x.Id, ids), update);
     }

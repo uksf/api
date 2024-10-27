@@ -8,7 +8,7 @@ namespace UKSF.Api.Core.Context.Base;
 
 public class ContextCache<T> where T : MongoObject
 {
-    private List<T> _data = new();
+    private List<T> _data = [];
     public bool DataInitialized { get; private set; }
     public List<T> Data => _data;
 
@@ -50,11 +50,6 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     public void Refresh()
     {
         _cache.SetData(OrderCollection(base.Get()));
-    }
-
-    protected virtual IEnumerable<T> OrderCollection(IEnumerable<T> collection)
-    {
-        return collection;
     }
 
     public override IEnumerable<T> Get()
@@ -152,6 +147,11 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         await base.DeleteMany(filterExpression);
         Refresh();
         ids.ForEach(x => DataDeleteEvent(x.Id));
+    }
+
+    protected virtual IEnumerable<T> OrderCollection(IEnumerable<T> collection)
+    {
+        return collection;
     }
 
     private bool UseCache()

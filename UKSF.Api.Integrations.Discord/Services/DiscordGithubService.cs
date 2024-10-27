@@ -88,7 +88,7 @@ public class DiscordGithubService(
         }
 
         var componentBuilder = new ComponentBuilder().WithSelectMenu(selectBuilder);
-        await command.RespondAsync("Select an issue template", components: componentBuilder.Build());
+        await command.RespondAsync("Select an issue template", components: componentBuilder.Build(), ephemeral: true);
     }
 
     private Task OnSelectMenu(SocketMessageComponent message)
