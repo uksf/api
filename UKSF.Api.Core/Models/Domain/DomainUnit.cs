@@ -11,7 +11,7 @@ public enum UnitBranch
 
 public class DomainUnit : MongoObject
 {
-    public UnitBranch Branch = UnitBranch.Combat;
+    public UnitBranch Branch { get; set; } = UnitBranch.Combat;
     public string Callsign { get; set; }
 
     [BsonIgnore]
