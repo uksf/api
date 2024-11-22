@@ -9,15 +9,8 @@ public interface IOperationReportService
     Task Create(CreateOperationReportRequest request);
 }
 
-public class OperationReportService : IOperationReportService
+public class OperationReportService(IOperationReportContext operationReportContext) : IOperationReportService
 {
-    private readonly IOperationReportContext _operationReportContext;
-
-    public OperationReportService(IOperationReportContext operationReportContext)
-    {
-        _operationReportContext = operationReportContext;
-    }
-
     public async Task Create(CreateOperationReportRequest request)
     {
         DomainOprep operation = new()
@@ -30,6 +23,6 @@ public class OperationReportService : IOperationReportService
             Result = request.Result
         };
         // operation.AttendanceReport = await _attendanceService.GenerateAttendanceReport(operation.Start, operation.End);
-        await _operationReportContext.Add(operation);
+        await operationReportContext.Add(operation);
     }
 }

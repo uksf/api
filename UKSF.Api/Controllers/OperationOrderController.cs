@@ -10,42 +10,33 @@ namespace UKSF.Api.Controllers;
 
 [Route("[controller]")]
 [Permissions(Permissions.Member)]
-public class OperationOrderController : ControllerBase
+public class OperationOrderController(IOperationOrderService operationOrderService, IOperationOrderContext operationOrderContext) : ControllerBase
 {
-    private readonly IOperationOrderContext _operationOrderContext;
-    private readonly IOperationOrderService _operationOrderService;
-
-    public OperationOrderController(IOperationOrderService operationOrderService, IOperationOrderContext operationOrderContext)
-    {
-        _operationOrderService = operationOrderService;
-        _operationOrderContext = operationOrderContext;
-    }
-
     [HttpGet]
     [Authorize]
     public IEnumerable<DomainOpord> Get()
     {
-        return _operationOrderContext.Get();
+        return operationOrderContext.Get();
     }
 
     [HttpGet("{id}")]
     [Authorize]
     public DomainOpord Get([FromRoute] string id)
     {
-        return _operationOrderContext.GetSingle(id);
+        return operationOrderContext.GetSingle(id);
     }
 
     [HttpPost]
     [Authorize]
     public async Task Post([FromBody] CreateOperationOrderRequest request)
     {
-        await _operationOrderService.Add(request);
+        await operationOrderService.Add(request);
     }
 
     [HttpPut]
     [Authorize]
     public async Task Put([FromBody] DomainOpord request)
     {
-        await _operationOrderContext.Replace(request);
+        await operationOrderContext.Replace(request);
     }
 }

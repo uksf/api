@@ -9,15 +9,8 @@ public interface IOperationOrderService
     Task Add(CreateOperationOrderRequest request);
 }
 
-public class OperationOrderService : IOperationOrderService
+public class OperationOrderService(IOperationOrderContext operationOrderContext) : IOperationOrderService
 {
-    private readonly IOperationOrderContext _operationOrderContext;
-
-    public OperationOrderService(IOperationOrderContext operationOrderContext)
-    {
-        _operationOrderContext = operationOrderContext;
-    }
-
     public async Task Add(CreateOperationOrderRequest request)
     {
         DomainOpord operation = new()
@@ -28,6 +21,6 @@ public class OperationOrderService : IOperationOrderService
             End = request.End.AddHours((double)request.Endtime / 100),
             Type = request.Type
         };
-        await _operationOrderContext.Add(operation);
+        await operationOrderContext.Add(operation);
     }
 }

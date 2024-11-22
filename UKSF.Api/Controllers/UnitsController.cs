@@ -1,12 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
+using UKSF.Api.Commands;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Exceptions;
-using UKSF.Api.Core.Extensions;
-using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Mappers;
@@ -21,7 +19,6 @@ public class UnitsController(
     IUnitsService unitsService,
     IAssignmentService assignmentService,
     INotificationsService notificationsService,
-    IEventBus eventBus,
     IUksfLogger logger,
     IGetUnitTreeQuery getUnitTreeQuery,
     IUnitTreeMapper unitTreeMapper
@@ -106,29 +103,9 @@ public class UnitsController(
 
     [HttpPut("{id}")]
     [Authorize]
-    public async Task EditUnit([FromRoute] string id, [FromBody] DomainUnit unit)
+    public Task EditUnit([FromRoute] string id, [FromBody] DomainUnit unit, [FromServices] IUpdateUnitCommandHandler handler)
     {
-        var oldUnit = unitsContext.GetSingle(x => x.Id == id);
-        await unitsContext.Replace(unit);
-        logger.LogAudit($"Unit '{unit.Shortname}' updated: {oldUnit.Changes(unit)}");
-
-        // TODO: Move this elsewhere
-        unit = unitsContext.GetSingle(unit.Id);
-        if (unit.Name != oldUnit.Name)
-        {
-            foreach (var account in accountContext.Get(x => x.UnitAssignment == oldUnit.Name))
-            {
-                await accountContext.Update(account.Id, x => x.UnitAssignment, unit.Name);
-            }
-        }
-
-        if (unit.TeamspeakGroup != oldUnit.TeamspeakGroup || unit.DiscordRoleId != oldUnit.DiscordRoleId)
-        {
-            foreach (var account in unit.Members.Select(accountContext.GetSingle))
-            {
-                eventBus.Send(new ContextEventData<DomainAccount>(id, account), nameof(EditUnit));
-            }
-        }
+        return handler.ExecuteAsync(new UpdateUnitCommand(id, unit));
     }
 
     [HttpDelete("{id}")]
@@ -148,7 +125,7 @@ public class UnitsController(
 
     [HttpPatch("{id}/parent")]
     [Authorize]
-    public async Task UpdateParent([FromRoute] string id, [FromBody] UnitUpdateParentDto unitUpdate)
+    public async Task UpdateParent([FromRoute] string id, [FromBody] UnitUpdateParentRequest unitUpdate)
     {
         var unit = unitsContext.GetSingle(id);
         var parentUnit = unitsContext.GetSingle(unitUpdate.ParentId);
@@ -172,18 +149,15 @@ public class UnitsController(
         }
 
         unit = unitsContext.GetSingle(unit.Id);
-        foreach (var child in unitsService.GetAllChildren(unit, true))
+        foreach (var accountId in unitsService.GetAllChildren(unit, true).SelectMany(x => x.Members))
         {
-            foreach (var accountId in child.Members)
-            {
-                assignmentService.UpdateGroupsAndRoles(accountId);
-            }
+            assignmentService.UpdateGroupsAndRoles(accountId);
         }
     }
 
     [HttpPatch("{id}/order")]
     [Authorize]
-    public void UpdateSortOrder([FromRoute] string id, [FromBody] UnitUpdateOrderDto unitUpdate)
+    public void UpdateSortOrder([FromRoute] string id, [FromBody] UnitUpdateOrderRequest unitUpdate)
     {
         var unit = unitsContext.GetSingle(id);
         var parentUnit = unitsContext.GetSingle(x => x.Id == unit.Parent);

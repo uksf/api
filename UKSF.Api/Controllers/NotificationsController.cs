@@ -9,22 +9,13 @@ using UKSF.Api.Models.Request;
 namespace UKSF.Api.Controllers;
 
 [Route("[controller]")]
-public class NotificationsController : ControllerBase
+public class NotificationsController(INotificationsService notificationsService, IHttpContextService httpContextService) : ControllerBase
 {
-    private readonly IHttpContextService _httpContextService;
-    private readonly INotificationsService _notificationsService;
-
-    public NotificationsController(INotificationsService notificationsService, IHttpContextService httpContextService)
-    {
-        _notificationsService = notificationsService;
-        _httpContextService = httpContextService;
-    }
-
     [HttpGet]
     [Authorize]
     public IOrderedEnumerable<DomainNotification> Get()
     {
-        return _notificationsService.GetNotificationsForContext().OrderByDescending(x => x.Timestamp);
+        return notificationsService.GetNotificationsForContext().OrderByDescending(x => x.Timestamp);
     }
 
     [HttpPost("read")]
@@ -32,7 +23,7 @@ public class NotificationsController : ControllerBase
     public async Task MarkAsRead([FromBody] NotificationsRequest notificationsRequest)
     {
         var ids = notificationsRequest.Notifications.Select(x => x.Id).ToList();
-        await _notificationsService.MarkNotificationsAsRead(ids);
+        await notificationsService.MarkNotificationsAsRead(ids);
     }
 
     [HttpPost("clear")]
@@ -40,7 +31,7 @@ public class NotificationsController : ControllerBase
     public async Task Clear([FromBody] NotificationsRequest notificationsRequest)
     {
         var ids = notificationsRequest.Notifications.Select(x => x.Id).ToList();
-        await _notificationsService.Delete(ids);
+        await notificationsService.Delete(ids);
     }
 
     [HttpPost("test")]
@@ -48,13 +39,13 @@ public class NotificationsController : ControllerBase
     [Permissions(Permissions.Admin)]
     public void TestNotification()
     {
-        _notificationsService.Add(
+        notificationsService.Add(
             new DomainNotification
             {
-                Owner = _httpContextService.GetUserId(),
+                Owner = httpContextService.GetUserId(),
                 Icon = NotificationIcons.Comment,
                 Message = "This comment is a test:\n\"Many things were said that day but none greater than the declaration of autodefenstration\"",
-                Link = $"/recruitment/{_httpContextService.GetUserId()}"
+                Link = $"/recruitment/{httpContextService.GetUserId()}"
             }
         );
     }

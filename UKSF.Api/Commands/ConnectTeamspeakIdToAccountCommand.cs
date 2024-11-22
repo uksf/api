@@ -29,7 +29,7 @@ public class ConnectTeamspeakIdToAccountCommand(
             throw new InvalidConfirmationCodeException();
         }
 
-        account.TeamspeakIdentities ??= new HashSet<int>();
+        account.TeamspeakIdentities ??= [];
         account.TeamspeakIdentities.Add(int.Parse(teamspeakId));
         await accountContext.Update(account.Id, Builders<DomainAccount>.Update.Set(x => x.TeamspeakIdentities, account.TeamspeakIdentities));
 

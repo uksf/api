@@ -130,7 +130,7 @@ public class CreateApplicationCommand(
                                                 .Select(displayNameService.GetDisplayNameWithoutRank)
                                                 .ToList();
 
-        if (accountsWithSameSteamConnection.Any())
+        if (accountsWithSameSteamConnection.Count != 0)
         {
             await commentThreadService.InsertComment(
                 account.Application.RecruiterCommentThread,
@@ -143,7 +143,7 @@ public class CreateApplicationCommand(
             );
         }
 
-        if (accountsWithSameDiscordConnection.Any())
+        if (accountsWithSameDiscordConnection.Count != 0)
         {
             await commentThreadService.InsertComment(
                 account.Application.RecruiterCommentThread,

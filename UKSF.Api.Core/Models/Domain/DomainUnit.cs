@@ -85,13 +85,13 @@ public class UnitChartNodeDto
     public bool PreferShortname { get; set; }
 }
 
-public class UnitUpdateParentDto
+public class UnitUpdateParentRequest
 {
     public int Index { get; set; }
     public string ParentId { get; set; }
 }
 
-public class UnitUpdateOrderDto
+public class UnitUpdateOrderRequest
 {
     public int Index { get; set; }
 }

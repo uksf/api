@@ -1,7 +1,5 @@
 ﻿using System.Text;
-using Microsoft.Extensions.Options;
 using Octokit;
-using UKSF.Api.Core.Configuration;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Request;
 
@@ -16,12 +14,10 @@ public interface IGithubIssuesService
 public class GithubIssuesService(
     IGithubClientService githubClientService,
     IDisplayNameService displayNameService,
-    IHttpContextService httpContextService,
-    IOptions<AppSettings> appSettings
+    IHttpContextService httpContextService
 ) : IGithubIssuesService
 {
     private readonly List<IssueTemplate> _issueTemplates = [];
-    private readonly string _githubToken = appSettings.Value.Secrets.Github.Token;
     private string RepoOrg => githubClientService.RepoOrg;
     private string RepoName => githubClientService.RepoName;
 

@@ -7,19 +7,12 @@ namespace UKSF.Api.Controllers;
 
 [Route("[controller]")]
 [Permissions(Permissions.Admin)]
-public class DataController : ControllerBase
+public class DataController(IDataCacheService dataCacheService) : ControllerBase
 {
-    private readonly IDataCacheService _dataCacheService;
-
-    public DataController(IDataCacheService dataCacheService)
-    {
-        _dataCacheService = dataCacheService;
-    }
-
     [HttpGet("invalidate")]
     [Authorize]
     public void Invalidate()
     {
-        _dataCacheService.RefreshCachedData();
+        dataCacheService.RefreshCachedData();
     }
 }

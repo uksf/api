@@ -4,18 +4,11 @@ using UKSF.Api.Core.Services;
 namespace UKSF.Api.Controllers;
 
 [Route("[controller]")]
-public class DisplayNameController : ControllerBase
+public class DisplayNameController(IDisplayNameService displayNameService) : ControllerBase
 {
-    private readonly IDisplayNameService _displayNameService;
-
-    public DisplayNameController(IDisplayNameService displayNameService)
-    {
-        _displayNameService = displayNameService;
-    }
-
     [HttpGet("{id}")]
     public string GetName([FromRoute] string id)
     {
-        return _displayNameService.GetDisplayName(id);
+        return displayNameService.GetDisplayName(id);
     }
 }

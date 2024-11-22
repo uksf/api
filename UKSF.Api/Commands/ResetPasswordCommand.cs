@@ -10,49 +10,31 @@ public interface IResetPasswordCommand
     Task ExecuteAsync(ResetPasswordCommandArgs args);
 }
 
-public class ResetPasswordCommandArgs
+public class ResetPasswordCommandArgs(string email, string password, string code)
 {
-    public ResetPasswordCommandArgs(string email, string password, string code)
-    {
-        Email = email;
-        Password = password;
-        Code = code;
-    }
-
-    public string Email { get; }
-    public string Password { get; }
-    public string Code { get; }
+    public string Email { get; } = email;
+    public string Password { get; } = password;
+    public string Code { get; } = code;
 }
 
-public class ResetPasswordCommand : IResetPasswordCommand
+public class ResetPasswordCommand(IAccountContext accountContext, IConfirmationCodeService confirmationCodeService, IUksfLogger logger) : IResetPasswordCommand
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IConfirmationCodeService _confirmationCodeService;
-    private readonly IUksfLogger _logger;
-
-    public ResetPasswordCommand(IAccountContext accountContext, IConfirmationCodeService confirmationCodeService, IUksfLogger logger)
-    {
-        _accountContext = accountContext;
-        _confirmationCodeService = confirmationCodeService;
-        _logger = logger;
-    }
-
     public async Task ExecuteAsync(ResetPasswordCommandArgs args)
     {
-        var account = _accountContext.GetSingle(x => string.Equals(x.Email, args.Email, StringComparison.InvariantCultureIgnoreCase));
+        var account = accountContext.GetSingle(x => string.Equals(x.Email, args.Email, StringComparison.InvariantCultureIgnoreCase));
         if (account == null)
         {
             throw new BadRequestException("No user found with that email");
         }
 
-        var codeValue = await _confirmationCodeService.GetConfirmationCodeValue(args.Code);
+        var codeValue = await confirmationCodeService.GetConfirmationCodeValue(args.Code);
         if (codeValue != account.Id)
         {
             throw new BadRequestException("Password reset failed (Invalid code)");
         }
 
-        await _accountContext.Update(account.Id, x => x.Password, BCrypt.Net.BCrypt.HashPassword(args.Password));
+        await accountContext.Update(account.Id, x => x.Password, BCrypt.Net.BCrypt.HashPassword(args.Password));
 
-        _logger.LogAudit($"Password changed for {account.Id}", account.Id);
+        logger.LogAudit($"Password changed for {account.Id}", account.Id);
     }
 }

@@ -9,7 +9,7 @@ namespace UKSF.Api.Core.Services;
 
 public interface IAssignmentService
 {
-    Task AssignUnitRole(string id, string unitId, string role);
+    Task AssignUnitRole(string roleId, string unitId, string role);
     Task UnassignAllUnits(string id);
     Task UnassignAllUnitRoles(string id);
 
@@ -23,7 +23,7 @@ public interface IAssignmentService
         string reason = ""
     );
 
-    Task<string> UnassignUnitRole(string id, string unitId);
+    Task<string> UnassignUnitRole(string roleId, string unitId);
     Task UnassignUnit(string id, string unitId);
     void UpdateGroupsAndRoles(string id);
 }
@@ -96,10 +96,10 @@ public class AssignmentService(
             : null;
     }
 
-    public async Task AssignUnitRole(string id, string unitId, string role)
+    public async Task AssignUnitRole(string roleId, string unitId, string role)
     {
-        await unitsService.SetMemberRole(id, unitId, role);
-        UpdateGroupsAndRoles(id);
+        await unitsService.SetMemberRole(roleId, unitId, role);
+        UpdateGroupsAndRoles(roleId);
     }
 
     public async Task UnassignAllUnits(string id)
@@ -122,14 +122,14 @@ public class AssignmentService(
         UpdateGroupsAndRoles(id);
     }
 
-    public async Task<string> UnassignUnitRole(string id, string unitId)
+    public async Task<string> UnassignUnitRole(string roleId, string unitId)
     {
         var unit = unitsContext.GetSingle(unitId);
-        var role = unit.Roles.FirstOrDefault(x => x.Value == id).Key;
-        if (unitsService.RolesHasMember(unit, id))
+        var role = unit.Roles.FirstOrDefault(x => x.Value == roleId).Key;
+        if (unitsService.RolesHasMember(unit, roleId))
         {
-            await unitsService.SetMemberRole(id, unitId);
-            UpdateGroupsAndRoles(id);
+            await unitsService.SetMemberRole(roleId, unitId);
+            UpdateGroupsAndRoles(roleId);
         }
 
         return role;

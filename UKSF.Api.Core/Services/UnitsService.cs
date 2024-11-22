@@ -13,8 +13,8 @@ public interface IUnitsService
     Task AddMember(string id, string unitId);
     Task RemoveMember(string id, string unitName);
     Task RemoveMember(string id, DomainUnit unit);
-    Task SetMemberRole(string id, string unitId, string role = "");
-    Task SetMemberRole(string id, DomainUnit unit, string role = "");
+    Task SetMemberRole(string roleId, string unitId, string role = "");
+    Task SetMemberRole(string roleId, DomainUnit unit, string role = "");
     Task RenameRole(string oldName, string newName);
     Task DeleteRole(string role);
     bool HasRole(string unitId, string role);
@@ -100,7 +100,7 @@ public class UnitsService(
         await RemoveMemberRoles(id, unit);
     }
 
-    public async Task SetMemberRole(string id, string unitId, string role = "")
+    public async Task SetMemberRole(string roleId, string unitId, string role = "")
     {
         var unit = unitsContext.GetSingle(x => x.Id == unitId);
         if (unit == null)
@@ -108,15 +108,15 @@ public class UnitsService(
             return;
         }
 
-        await SetMemberRole(id, unit, role);
+        await SetMemberRole(roleId, unit, role);
     }
 
-    public async Task SetMemberRole(string id, DomainUnit unit, string role = "")
+    public async Task SetMemberRole(string roleId, DomainUnit unit, string role = "")
     {
-        await RemoveMemberRoles(id, unit);
+        await RemoveMemberRoles(roleId, unit);
         if (!string.IsNullOrEmpty(role))
         {
-            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set($"roles.{role}", id));
+            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set($"roles.{role}", roleId));
         }
     }
 
@@ -200,7 +200,14 @@ public class UnitsService(
     {
         if (RolesHasMember(unit, account.Id))
         {
-            return int.MaxValue - rolesContext.GetSingle(x => x.Name == unit.Roles.FirstOrDefault(y => y.Value == account.Id).Key).Order;
+            var role = rolesContext.GetSingle(
+                x =>
+                {
+                    var accountRole = unit.Roles.FirstOrDefault(y => y.Value == account.Id);
+                    return x.Name == accountRole.Key;
+                }
+            );
+            return int.MaxValue - role.Order;
         }
 
         return -1;
@@ -288,11 +295,11 @@ public class UnitsService(
         return unitNames;
     }
 
-    private async Task RemoveMemberRoles(string id, DomainUnit unit)
+    private async Task RemoveMemberRoles(string roleId, DomainUnit unit)
     {
         var roles = unit.Roles;
         var originalCount = unit.Roles.Count;
-        foreach (var (key, _) in roles.Where(x => x.Value == id).ToList())
+        foreach (var (key, _) in roles.Where(x => x.Value == roleId).ToList())
         {
             roles.Remove(key);
         }

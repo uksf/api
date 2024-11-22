@@ -9,31 +9,22 @@ using UKSF.Api.Signalr.Hubs;
 namespace UKSF.Api.Controllers;
 
 [Route("version")]
-public class VersionController : ControllerBase
+public class VersionController(IVariablesContext variablesContext, IHubContext<UtilityHub, IUtilityClient> utilityHub) : ControllerBase
 {
-    private readonly IHubContext<UtilityHub, IUtilityClient> _utilityHub;
-    private readonly IVariablesContext _variablesContext;
-
-    public VersionController(IVariablesContext variablesContext, IHubContext<UtilityHub, IUtilityClient> utilityHub)
-    {
-        _variablesContext = variablesContext;
-        _utilityHub = utilityHub;
-    }
-
     [HttpGet]
     public string GetFrontendVersion()
     {
-        return _variablesContext.GetSingle("FRONTEND_VERSION").AsString();
+        return variablesContext.GetSingle("FRONTEND_VERSION").AsString();
     }
 
     [HttpGet("update")]
     [Authorize]
     public async Task UpdateFrontendVersion()
     {
-        var version = _variablesContext.GetSingle("FRONTEND_VERSION").AsInt();
+        var version = variablesContext.GetSingle("FRONTEND_VERSION").AsInt();
         var newVersion = version + 1;
 
-        await _variablesContext.Update("FRONTEND_VERSION", newVersion);
-        await _utilityHub.Clients.All.ReceiveFrontendUpdate(newVersion.ToString());
+        await variablesContext.Update("FRONTEND_VERSION", newVersion);
+        await utilityHub.Clients.All.ReceiveFrontendUpdate(newVersion.ToString());
     }
 }

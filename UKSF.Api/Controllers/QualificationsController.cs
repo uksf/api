@@ -8,19 +8,12 @@ namespace UKSF.Api.Controllers;
 
 [Route("accounts/{id}/qualifications")]
 [Authorize]
-public class QualificationsController : ControllerBase
+public class QualificationsController(IQualificationsUpdateCommand qualificationsUpdateCommand) : ControllerBase
 {
-    private readonly IQualificationsUpdateCommand _qualificationsUpdateCommand;
-
-    public QualificationsController(IQualificationsUpdateCommand qualificationsUpdateCommand)
-    {
-        _qualificationsUpdateCommand = qualificationsUpdateCommand;
-    }
-
     [HttpPut]
     [Permissions(Permissions.Command)]
     public async Task UpdateQualifications([FromRoute] string id, [FromBody] Qualifications qualifications)
     {
-        await _qualificationsUpdateCommand.ExecuteAsync(id, qualifications);
+        await qualificationsUpdateCommand.ExecuteAsync(id, qualifications);
     }
 }

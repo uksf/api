@@ -13,41 +13,39 @@ public interface ICommentThreadService
     object FormatComment(DomainComment comment);
 }
 
-public class CommentThreadService : ICommentThreadService
+public class CommentThreadService(ICommentThreadContext commentThreadContext, IDisplayNameService displayNameService) : ICommentThreadService
 {
-    private readonly ICommentThreadContext _commentThreadContext;
-    private readonly IDisplayNameService _displayNameService;
-
-    public CommentThreadService(ICommentThreadContext commentThreadContext, IDisplayNameService displayNameService)
-    {
-        _commentThreadContext = commentThreadContext;
-        _displayNameService = displayNameService;
-    }
-
     public IEnumerable<DomainComment> GetCommentThreadComments(string commentThreadId)
     {
-        return _commentThreadContext.GetSingle(commentThreadId).Comments.Reverse();
+        return commentThreadContext.GetSingle(commentThreadId).Comments.Reverse();
     }
 
     public async Task InsertComment(string commentThreadId, DomainComment comment)
     {
-        await _commentThreadContext.AddCommentToThread(commentThreadId, comment);
+        await commentThreadContext.AddCommentToThread(commentThreadId, comment);
     }
 
     public async Task RemoveComment(string commentThreadId, DomainComment comment)
     {
-        await _commentThreadContext.RemoveCommentFromThread(commentThreadId, comment);
+        await commentThreadContext.RemoveCommentFromThread(commentThreadId, comment);
     }
 
     public IEnumerable<string> GetCommentThreadParticipants(string commentThreadId)
     {
         var participants = GetCommentThreadComments(commentThreadId).Select(x => x.Author).ToHashSet();
-        participants.UnionWith(_commentThreadContext.GetSingle(commentThreadId).Authors);
+        participants.UnionWith(commentThreadContext.GetSingle(commentThreadId).Authors);
         return participants;
     }
 
     public object FormatComment(DomainComment comment)
     {
-        return new { comment.Id, comment.Author, comment.Content, DisplayName = _displayNameService.GetDisplayName(comment.Author), comment.Timestamp };
+        return new
+        {
+            comment.Id,
+            comment.Author,
+            comment.Content,
+            DisplayName = displayNameService.GetDisplayName(comment.Author),
+            comment.Timestamp
+        };
     }
 }

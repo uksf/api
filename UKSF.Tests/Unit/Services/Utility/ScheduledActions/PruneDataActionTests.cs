@@ -20,7 +20,6 @@ public class PruneDataActionTests
     private readonly Mock<IAuditLogContext> _mockAuditLogContext = new();
     private readonly Mock<IErrorLogContext> _mockErrorLogContext = new();
     private readonly Mock<ILogContext> _mockLogContext = new();
-    private readonly Mock<ISchedulerContext> _mockSchedulerContext = new();
     private readonly DateTime _now;
 
     public PruneDataActionTests()

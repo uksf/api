@@ -6,6 +6,7 @@ using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
+using UKSF.Api.Exceptions;
 using UKSF.Api.Extensions;
 using UKSF.Api.Models.Response;
 
@@ -19,19 +20,8 @@ public interface ILoginService
     TokenResponse RegenerateBearerToken();
 }
 
-public class LoginService : ILoginService
+public class LoginService(IAccountContext accountContext, IPermissionsService permissionsService, IHttpContextService httpContextService) : ILoginService
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IHttpContextService _httpContextService;
-    private readonly IPermissionsService _permissionsService;
-
-    public LoginService(IAccountContext accountContext, IPermissionsService permissionsService, IHttpContextService httpContextService)
-    {
-        _accountContext = accountContext;
-        _permissionsService = permissionsService;
-        _httpContextService = httpContextService;
-    }
-
     public TokenResponse Login(string email, string password)
     {
         var account = AuthenticateAccount(email, password);
@@ -46,7 +36,7 @@ public class LoginService : ILoginService
 
     public TokenResponse LoginForImpersonate(string accountId)
     {
-        var account = _accountContext.GetSingle(accountId);
+        var account = accountContext.GetSingle(accountId);
         if (account == null)
         {
             throw new BadRequestException($"No user found with id {accountId}");
@@ -57,13 +47,13 @@ public class LoginService : ILoginService
 
     public TokenResponse RegenerateBearerToken()
     {
-        var account = _accountContext.GetSingle(_httpContextService.GetUserId());
+        var account = accountContext.GetSingle(httpContextService.GetUserId());
         if (account == null)
         {
             throw new BadRequestException("No user found with that email");
         }
 
-        if (_httpContextService.HasImpersonationExpired())
+        if (httpContextService.HasImpersonationExpired())
         {
             throw new TokenRefreshFailedException("Impersonation session expired");
         }
@@ -73,7 +63,7 @@ public class LoginService : ILoginService
 
     private DomainAccount AuthenticateAccount(string email, string password, bool passwordReset = false)
     {
-        var account = _accountContext.GetSingle(x => string.Equals(x.Email, email, StringComparison.InvariantCultureIgnoreCase));
+        var account = accountContext.GetSingle(x => string.Equals(x.Email, email, StringComparison.InvariantCultureIgnoreCase));
         if (account == null)
         {
             throw new BadRequestException("No user found with that email");
@@ -96,15 +86,15 @@ public class LoginService : ILoginService
     {
         List<Claim> claims =
             [new Claim(ClaimTypes.Email, account.Email, ClaimValueTypes.String), new Claim(ClaimTypes.Sid, account.Id, ClaimValueTypes.String)];
-        claims.AddRange(_permissionsService.GrantPermissions(account).Select(x => new Claim(ClaimTypes.Role, x)));
+        claims.AddRange(permissionsService.GrantPermissions(account).Select(x => new Claim(ClaimTypes.Role, x)));
 
         if (impersonating)
         {
-            claims.Add(new Claim(UksfClaimTypes.ImpersonatingUserId, _httpContextService.GetUserId()));
+            claims.Add(new Claim(UksfClaimTypes.ImpersonatingUserId, httpContextService.GetUserId()));
         }
         else
         {
-            var impersonatingUserId = _httpContextService.GetImpersonatingUserId();
+            var impersonatingUserId = httpContextService.GetImpersonatingUserId();
             if (!string.IsNullOrEmpty(impersonatingUserId))
             {
                 impersonating = true;

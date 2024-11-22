@@ -12,29 +12,14 @@ public interface IChainOfCommandService
     bool InContextChainOfCommand(string id);
 }
 
-public class ChainOfCommandService : IChainOfCommandService
+public class ChainOfCommandService(
+    IUnitsContext unitsContext,
+    IUnitsService unitsService,
+    IRolesService rolesService,
+    IHttpContextService httpContextService,
+    IAccountService accountService
+) : IChainOfCommandService
 {
-    private readonly IAccountService _accountService;
-    private readonly IHttpContextService _httpContextService;
-    private readonly IRolesService _rolesService;
-    private readonly IUnitsContext _unitsContext;
-    private readonly IUnitsService _unitsService;
-
-    public ChainOfCommandService(
-        IUnitsContext unitsContext,
-        IUnitsService unitsService,
-        IRolesService rolesService,
-        IHttpContextService httpContextService,
-        IAccountService accountService
-    )
-    {
-        _unitsContext = unitsContext;
-        _unitsService = unitsService;
-        _rolesService = rolesService;
-        _httpContextService = httpContextService;
-        _accountService = accountService;
-    }
-
     public HashSet<string> ResolveChain(ChainOfCommandMode mode, string recipient, DomainUnit start, DomainUnit target)
     {
         var chain = ResolveMode(mode, start, target).Where(x => x != recipient).ToHashSet();
@@ -50,15 +35,15 @@ public class ChainOfCommandService : IChainOfCommandService
         // If no chain, get root unit commander
         if (chain.Count == 0)
         {
-            chain.Add(GetCommander(_unitsService.GetRoot()));
+            chain.Add(GetCommander(unitsService.GetRoot()));
             chain.CleanHashset();
         }
 
         // If no chain, get root unit child commanders
         if (chain.Count == 0)
         {
-            foreach (var unit in _unitsContext.Get(x => x.Parent == _unitsService.GetRoot().Id)
-                                              .Where(unit => UnitHasCommander(unit) && GetCommander(unit) != recipient))
+            foreach (var unit in unitsContext.Get(x => x.Parent == unitsService.GetRoot().Id)
+                                             .Where(unit => UnitHasCommander(unit) && GetCommander(unit) != recipient))
             {
                 chain.Add(GetCommander(unit));
             }
@@ -78,15 +63,15 @@ public class ChainOfCommandService : IChainOfCommandService
 
     public bool InContextChainOfCommand(string id)
     {
-        var contextDomainAccount = _accountService.GetUserAccount();
+        var contextDomainAccount = accountService.GetUserAccount();
         if (id == contextDomainAccount.Id)
         {
             return true;
         }
 
-        var unit = _unitsContext.GetSingle(x => x.Name == contextDomainAccount.UnitAssignment);
-        return _unitsService.RolesHasMember(unit, contextDomainAccount.Id) &&
-               (unit.Members.Contains(id) || _unitsService.GetAllChildren(unit, true).Any(unitChild => unitChild.Members.Contains(id)));
+        var unit = unitsContext.GetSingle(x => x.Name == contextDomainAccount.UnitAssignment);
+        return unitsService.RolesHasMember(unit, contextDomainAccount.Id) &&
+               (unit.Members.Contains(id) || unitsService.GetAllChildren(unit, true).Any(unitChild => unitChild.Members.Contains(id)));
     }
 
     private IEnumerable<string> ResolveMode(ChainOfCommandMode mode, DomainUnit start, DomainUnit target)
@@ -115,7 +100,7 @@ public class ChainOfCommandService : IChainOfCommandService
                 chain.Add(GetCommander(unit));
             }
 
-            unit = _unitsService.GetParent(unit);
+            unit = unitsService.GetParent(unit);
         }
 
         return chain;
@@ -141,7 +126,7 @@ public class ChainOfCommandService : IChainOfCommandService
                 chain.Add(GetCommander(unit));
             }
 
-            var parentUnit = _unitsService.GetParent(unit);
+            var parentUnit = unitsService.GetParent(unit);
             if (parentUnit is not null && UnitHasCommander(parentUnit))
             {
                 chain.Add(GetCommander(parentUnit));
@@ -165,7 +150,7 @@ public class ChainOfCommandService : IChainOfCommandService
 
     private IEnumerable<string> GetPersonnel()
     {
-        return _unitsContext.GetSingle(x => x.Shortname == "SR7").Members.ToHashSet();
+        return unitsContext.GetSingle(x => x.Shortname == "SR7").Members.ToHashSet();
     }
 
     private IEnumerable<string> GetCommanderAndTargetCommander(DomainUnit unit, DomainUnit targetUnit)
@@ -182,7 +167,7 @@ public class ChainOfCommandService : IChainOfCommandService
                 return GetCommander(unit);
             }
 
-            unit = _unitsService.GetParent(unit);
+            unit = unitsService.GetParent(unit);
         }
 
         return string.Empty;
@@ -195,13 +180,13 @@ public class ChainOfCommandService : IChainOfCommandService
             if (UnitHasCommander(unit))
             {
                 var commander = GetCommander(unit);
-                if (commander != _httpContextService.GetUserId())
+                if (commander != httpContextService.GetUserId())
                 {
                     return commander;
                 }
             }
 
-            unit = _unitsService.GetParent(unit);
+            unit = unitsService.GetParent(unit);
         }
 
         return string.Empty;
@@ -209,11 +194,11 @@ public class ChainOfCommandService : IChainOfCommandService
 
     private bool UnitHasCommander(DomainUnit unit)
     {
-        return _unitsService.HasRole(unit, _rolesService.GetCommanderRoleName());
+        return unitsService.HasRole(unit, rolesService.GetCommanderRoleName());
     }
 
     private string GetCommander(DomainUnit unit)
     {
-        return unit.Roles.GetValueOrDefault(_rolesService.GetCommanderRoleName(), string.Empty);
+        return unit.Roles.GetValueOrDefault(rolesService.GetCommanderRoleName(), string.Empty);
     }
 }

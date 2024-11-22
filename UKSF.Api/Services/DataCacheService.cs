@@ -7,18 +7,11 @@ public interface IDataCacheService
     void RefreshCachedData();
 }
 
-public class DataCacheService : IDataCacheService
+public class DataCacheService(IServiceProvider serviceProvider) : IDataCacheService
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    public DataCacheService(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
     public void RefreshCachedData()
     {
-        var cachedContexts = _serviceProvider.GetRequiredService<IEnumerable<ICachedMongoContext>>();
+        var cachedContexts = serviceProvider.GetRequiredService<IEnumerable<ICachedMongoContext>>();
         foreach (var cachedDataService in cachedContexts)
         {
             cachedDataService.Refresh();

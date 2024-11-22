@@ -12,46 +12,23 @@ namespace UKSF.Api.Controllers;
 
 [Route("commentthread")]
 [Permissions(Permissions.Confirmed, Permissions.Member, Permissions.Discharged)]
-public class CommentThreadController : ControllerBase
+public class CommentThreadController(
+    IAccountContext accountContext,
+    ICommentThreadContext commentThreadContext,
+    ICommentThreadService commentThreadService,
+    IRanksService ranksService,
+    IAccountService accountService,
+    IDisplayNameService displayNameService,
+    IRecruitmentService recruitmentService,
+    INotificationsService notificationsService,
+    IHttpContextService httpContextService
+) : ControllerBase
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IAccountService _accountService;
-    private readonly ICommentThreadContext _commentThreadContext;
-    private readonly ICommentThreadService _commentThreadService;
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IHttpContextService _httpContextService;
-    private readonly INotificationsService _notificationsService;
-    private readonly IRanksService _ranksService;
-    private readonly IRecruitmentService _recruitmentService;
-
-    public CommentThreadController(
-        IAccountContext accountContext,
-        ICommentThreadContext commentThreadContext,
-        ICommentThreadService commentThreadService,
-        IRanksService ranksService,
-        IAccountService accountService,
-        IDisplayNameService displayNameService,
-        IRecruitmentService recruitmentService,
-        INotificationsService notificationsService,
-        IHttpContextService httpContextService
-    )
-    {
-        _accountContext = accountContext;
-        _commentThreadContext = commentThreadContext;
-        _commentThreadService = commentThreadService;
-        _ranksService = ranksService;
-        _accountService = accountService;
-        _displayNameService = displayNameService;
-        _recruitmentService = recruitmentService;
-        _notificationsService = notificationsService;
-        _httpContextService = httpContextService;
-    }
-
     [HttpGet("{id}")]
     [Authorize]
     public CommentThreadsDataset Get([FromRoute] string id)
     {
-        var comments = _commentThreadService.GetCommentThreadComments(id);
+        var comments = commentThreadService.GetCommentThreadComments(id);
         return new CommentThreadsDataset
         {
             Comments = comments.Select(
@@ -59,7 +36,7 @@ public class CommentThreadController : ControllerBase
                 {
                     Id = comment.Id.ToString(),
                     Author = comment.Author.ToString(),
-                    DisplayName = _displayNameService.GetDisplayName(comment.Author),
+                    DisplayName = displayNameService.GetDisplayName(comment.Author),
                     Content = comment.Content,
                     Timestamp = comment.Timestamp
                 }
@@ -71,18 +48,18 @@ public class CommentThreadController : ControllerBase
     [Authorize]
     public bool GetCanPostComment([FromRoute] string id)
     {
-        var commentThread = _commentThreadContext.GetSingle(id);
-        var account = _accountService.GetUserAccount();
-        var admin = _httpContextService.UserHasPermission(Permissions.Admin);
+        var commentThread = commentThreadContext.GetSingle(id);
+        var account = accountService.GetUserAccount();
+        var admin = httpContextService.UserHasPermission(Permissions.Admin);
         var canPost = commentThread.Mode switch
         {
-            ThreadMode.Recruiter => commentThread.Authors.Any(x => x == _httpContextService.GetUserId()) ||
+            ThreadMode.Recruiter => commentThread.Authors.Any(x => x == httpContextService.GetUserId()) ||
                                     admin ||
-                                    _recruitmentService.IsRecruiter(_accountService.GetUserAccount()),
-            ThreadMode.Ranksuperior => commentThread.Authors.Any(x => admin || _ranksService.IsSuperior(account.Rank, _accountContext.GetSingle(x).Rank)),
-            ThreadMode.Rankequal    => commentThread.Authors.Any(x => admin || _ranksService.IsEqual(account.Rank, _accountContext.GetSingle(x).Rank)),
+                                    recruitmentService.IsRecruiter(accountService.GetUserAccount()),
+            ThreadMode.Ranksuperior => commentThread.Authors.Any(x => admin || ranksService.IsSuperior(account.Rank, accountContext.GetSingle(x).Rank)),
+            ThreadMode.Rankequal    => commentThread.Authors.Any(x => admin || ranksService.IsEqual(account.Rank, accountContext.GetSingle(x).Rank)),
             ThreadMode.Ranksuperiororequal => commentThread.Authors.Any(
-                x => admin || _ranksService.IsSuperiorOrEqual(account.Rank, _accountContext.GetSingle(x).Rank)
+                x => admin || ranksService.IsSuperiorOrEqual(account.Rank, accountContext.GetSingle(x).Rank)
             ),
             _ => true
         };
@@ -96,24 +73,24 @@ public class CommentThreadController : ControllerBase
     {
         comment.Id = ObjectId.GenerateNewId().ToString();
         comment.Timestamp = DateTime.UtcNow;
-        comment.Author = _httpContextService.GetUserId();
-        await _commentThreadService.InsertComment(commentThreadId, comment);
+        comment.Author = httpContextService.GetUserId();
+        await commentThreadService.InsertComment(commentThreadId, comment);
 
-        var thread = _commentThreadContext.GetSingle(commentThreadId);
-        var participants = _commentThreadService.GetCommentThreadParticipants(thread.Id);
-        var applicationAccount = _accountContext.GetSingle(
+        var thread = commentThreadContext.GetSingle(commentThreadId);
+        var participants = commentThreadService.GetCommentThreadParticipants(thread.Id);
+        var applicationAccount = accountContext.GetSingle(
             x => x.Application?.ApplicationCommentThread == commentThreadId || x.Application?.RecruiterCommentThread == commentThreadId
         );
 
         foreach (var participant in participants.Where(x => x != comment.Author))
         {
             var link = applicationAccount.Id != participant ? $"/recruitment/{applicationAccount.Id}" : "/application";
-            _notificationsService.Add(
+            notificationsService.Add(
                 new DomainNotification
                 {
                     Owner = participant,
                     Icon = NotificationIcons.Comment,
-                    Message = $"{_displayNameService.GetDisplayName(comment.Author)} replied to a comment:\n\"{comment.Content}\"",
+                    Message = $"{displayNameService.GetDisplayName(comment.Author)} replied to a comment:\n\"{comment.Content}\"",
                     Link = link
                 }
             );
@@ -124,8 +101,8 @@ public class CommentThreadController : ControllerBase
     [Authorize]
     public async Task DeleteComment([FromRoute] string id, [FromRoute] string commentId)
     {
-        var comments = _commentThreadService.GetCommentThreadComments(id).ToList();
+        var comments = commentThreadService.GetCommentThreadComments(id).ToList();
         var comment = comments.FirstOrDefault(x => x.Id == commentId);
-        await _commentThreadService.RemoveComment(id, comment);
+        await commentThreadService.RemoveComment(id, comment);
     }
 }
