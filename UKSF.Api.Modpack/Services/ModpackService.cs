@@ -191,7 +191,7 @@ public class ModpackService(
         var versionFileContent = versionService.GetVersionFileContentFromVersion(version);
         await File.WriteAllTextAsync(Path.Join(modpackSourcePath, VersionFile), versionFileContent);
 
-        gitCommand.Commit($"Version {version}").Merge("main").Push("release");
+        await gitCommand.Commit($"Version {version}").Merge("main").Push("release");
 
         logger.LogAudit($"New release version {version} created");
     }

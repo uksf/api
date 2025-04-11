@@ -32,8 +32,9 @@ public class GitCommand(string workingDirectory, IUksfLogger logger)
         return Execute("pull");
     }
 
-    public GitCommand Push(string reference)
+    public async Task<GitCommand> Push(string reference)
     {
+        await Task.Delay(TimeSpan.FromSeconds(5));
         return Execute($"push -u origin {reference}");
     }
 
