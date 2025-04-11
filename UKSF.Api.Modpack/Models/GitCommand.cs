@@ -8,7 +8,7 @@ public class GitCommand(string workingDirectory, IUksfLogger logger)
     public GitCommand Execute(string command)
     {
         var processHelper = new ProcessRunner(logger, new CancellationTokenSource(), false);
-        processHelper.Run(workingDirectory, "cmd.exe", $"/c \"git {command}\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds, true);
+        processHelper.Run(workingDirectory, "cmd.exe", $"/c \"git {command}\"", (int)TimeSpan.FromSeconds(30).TotalMilliseconds, true);
         return this;
     }
 
