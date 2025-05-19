@@ -249,3 +249,4 @@ coverage.xml
 # Specific
 appsettings.*.json
 *.info
+.vscode/**

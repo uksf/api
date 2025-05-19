@@ -13,22 +13,13 @@ public interface IBuildQueueService
     void CancelAll();
 }
 
-public class BuildQueueService : IBuildQueueService
+public class BuildQueueService(IBuildProcessorService buildProcessorService, IGameServersService gameServersService, IUksfLogger logger) : IBuildQueueService
 {
-    private readonly IBuildProcessorService _buildProcessorService;
     private readonly ConcurrentDictionary<string, Task> _buildTasks = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokenSources = new();
-    private readonly IGameServersService _gameServersService;
-    private readonly IUksfLogger _logger;
+    private readonly IGameServersService _gameServersService = gameServersService;
     private bool _processing;
     private ConcurrentQueue<DomainModpackBuild> _queue = new();
-
-    public BuildQueueService(IBuildProcessorService buildProcessorService, IGameServersService gameServersService, IUksfLogger logger)
-    {
-        _buildProcessorService = buildProcessorService;
-        _gameServersService = gameServersService;
-        _logger = logger;
-    }
 
     public void QueueBuild(DomainModpackBuild build)
     {
@@ -73,7 +64,7 @@ public class BuildQueueService : IBuildQueueService
                         }
                         else
                         {
-                            _logger.LogWarning($"Build {id} was cancelled but has not completed within 1 minute of cancelling");
+                            logger.LogWarning($"Build {id} was cancelled but has not completed within 1 minute of cancelling");
                         }
                     }
                 }
@@ -109,7 +100,7 @@ public class BuildQueueService : IBuildQueueService
             CancellationTokenSource cancellationTokenSource = new();
             _cancellationTokenSources.TryAdd(build.Id, cancellationTokenSource);
 
-            var buildTask = _buildProcessorService.ProcessBuildWithErrorHandling(build, cancellationTokenSource);
+            var buildTask = buildProcessorService.ProcessBuildWithErrorHandling(build, cancellationTokenSource);
             _buildTasks.TryAdd(build.Id, buildTask);
 
             await buildTask;

@@ -49,6 +49,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Tests.Common", "Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Integrations.Discord.Tests", "Tests\UKSF.Api.Integrations.Discord.Tests\UKSF.Api.Integrations.Discord.Tests.csproj", "{443D2FDD-BA12-461F-8D54-287891F95E49}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UKSF.Api.Core.Tests", "Tests\UKSF.Api.Core.Tests\UKSF.Api.Core.Tests.csproj", "{0DD52DC1-0440-45EE-91A2-A880556495B4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -193,6 +195,14 @@ Global
 		{443D2FDD-BA12-461F-8D54-287891F95E49}.Release|x64.Build.0 = Release|Any CPU
 		{443D2FDD-BA12-461F-8D54-287891F95E49}.Release|x86.ActiveCfg = Release|Any CPU
 		{443D2FDD-BA12-461F-8D54-287891F95E49}.Release|x86.Build.0 = Release|Any CPU
+		{0DD52DC1-0440-45EE-91A2-A880556495B4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0DD52DC1-0440-45EE-91A2-A880556495B4}.Debug|x64.Build.0 = Debug|Any CPU
+		{0DD52DC1-0440-45EE-91A2-A880556495B4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0DD52DC1-0440-45EE-91A2-A880556495B4}.Debug|x86.Build.0 = Debug|Any CPU
+		{0DD52DC1-0440-45EE-91A2-A880556495B4}.Release|x64.ActiveCfg = Release|Any CPU
+		{0DD52DC1-0440-45EE-91A2-A880556495B4}.Release|x64.Build.0 = Release|Any CPU
+		{0DD52DC1-0440-45EE-91A2-A880556495B4}.Release|x86.ActiveCfg = Release|Any CPU
+		{0DD52DC1-0440-45EE-91A2-A880556495B4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -208,5 +218,6 @@ Global
 		{A14C3385-FFD7-417D-9D49-D9953774F21C} = {CC667E2D-8CA8-44C6-8459-A4EE9A4DE234}
 		{09946FE7-A65D-483E-8B5A-ADE729760375} = {CC667E2D-8CA8-44C6-8459-A4EE9A4DE234}
 		{443D2FDD-BA12-461F-8D54-287891F95E49} = {CC667E2D-8CA8-44C6-8459-A4EE9A4DE234}
+		{0DD52DC1-0440-45EE-91A2-A880556495B4} = {CC667E2D-8CA8-44C6-8459-A4EE9A4DE234}
 	EndGlobalSection
 EndGlobal
