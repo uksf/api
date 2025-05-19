@@ -72,6 +72,7 @@ public static class ApiSharedExtensions
                        .AddContext<IConfirmationCodeContext, ConfirmationCodeContext>()
                        .AddContext<IDocumentFolderMetadataContext, DocumentFolderMetadataContext>()
                        .AddCachedContext<IAccountContext, AccountContext>()
+                       .AddCachedContext<IArtilleryContext, ArtilleryContext>()
                        .AddCachedContext<IRanksContext, RanksContext>()
                        .AddCachedContext<IRolesContext, RolesContext>()
                        .AddCachedContext<IUnitsContext, UnitsContext>()

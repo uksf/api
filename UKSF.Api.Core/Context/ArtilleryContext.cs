@@ -10,13 +10,13 @@ public interface IArtilleryContext : IMongoContext<DomainArtillery>, ICachedMong
 public class ArtilleryContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService)
     : CachedMongoContext<DomainArtillery>(mongoCollectionFactory, eventBus, variablesService, "artillery"), IArtilleryContext
 {
-    protected override IEnumerable<DomainArtillery> OrderCollection(IEnumerable<DomainArtillery> collection)
-    {
-        return collection.OrderBy(x => x.Key);
-    }
-
     public override DomainArtillery GetSingle(string idOrKey)
     {
         return GetSingle(x => x.Id == idOrKey || x.Key == idOrKey);
+    }
+
+    protected override IEnumerable<DomainArtillery> OrderCollection(IEnumerable<DomainArtillery> collection)
+    {
+        return collection.OrderBy(x => x.Key);
     }
 }

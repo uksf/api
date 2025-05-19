@@ -7,6 +7,7 @@ using Moq;
 using UKSF.Api.Controllers;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models.Domain;
+using UKSF.Api.Core.Models.Request;
 using Xunit;
 
 namespace UKSF.Api.Tests.Controllers;
@@ -69,7 +70,7 @@ public class ArtilleryControllerTests
         _mockArtilleryContext.Setup(x => x.GetSingle(Key)).Returns((DomainArtillery)null);
 
         // Act
-        var result = await _sut.Put(Key, Data);
+        var result = await _sut.Put(Key, new UpdateArtilleryRequest { Data = Data });
 
         // Assert
         result.Should().BeOfType<OkResult>();
@@ -88,7 +89,7 @@ public class ArtilleryControllerTests
         _mockArtilleryContext.Setup(x => x.GetSingle(Key)).Returns(existingArtillery);
 
         // Act
-        var result = await _sut.Put(Key, Data);
+        var result = await _sut.Put(Key, new UpdateArtilleryRequest { Data = Data });
 
         // Assert
         result.Should().BeOfType<OkResult>();

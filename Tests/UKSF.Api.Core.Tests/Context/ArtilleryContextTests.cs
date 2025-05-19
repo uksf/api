@@ -59,13 +59,13 @@ public class ArtilleryContextTests
         public void Should_ReturnMatchingArtillery_When_SearchingById()
         {
             // Arrange
-            const string targetId = "test-id";
-            var expectedArtillery = new DomainArtillery { Id = targetId, Key = "test-key" };
+            const string TargetId = "test-id";
+            var expectedArtillery = new DomainArtillery { Id = TargetId, Key = "test-key" };
 
             _mockCollection.Setup(x => x.Get()).Returns([expectedArtillery]);
 
             // Act
-            var result = _sut.GetSingle(targetId);
+            var result = _sut.GetSingle(TargetId);
 
             // Assert
             result.Should().BeEquivalentTo(expectedArtillery);
@@ -75,13 +75,13 @@ public class ArtilleryContextTests
         public void Should_ReturnMatchingArtillery_When_SearchingByKey()
         {
             // Arrange
-            const string targetKey = "test-key";
-            var expectedArtillery = new DomainArtillery { Id = "test-id", Key = targetKey };
+            const string TargetKey = "test-key";
+            var expectedArtillery = new DomainArtillery { Id = "test-id", Key = TargetKey };
 
             _mockCollection.Setup(x => x.Get()).Returns([expectedArtillery]);
 
             // Act
-            var result = _sut.GetSingle(targetKey);
+            var result = _sut.GetSingle(TargetKey);
 
             // Assert
             result.Should().BeEquivalentTo(expectedArtillery);
