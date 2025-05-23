@@ -32,6 +32,7 @@ public class BuildProcessHelper(
     private string _logInfo;
     private Process _process;
     private bool _useLogger;
+    private bool _externalCancellationRequested;
 
     public void Dispose()
     {
@@ -61,6 +62,7 @@ public class BuildProcessHelper(
         _cancellationTokenRegistration = cancellationTokenSource.Token.Register(() =>
             {
                 Log("Build process cancelled via token");
+                _externalCancellationRequested = true;
                 Kill();
             }
         );
@@ -131,10 +133,10 @@ public class BuildProcessHelper(
     {
         Log("Process finished successfully");
 
-        // Check if cancellation was requested and handle gracefully
-        if (cancellationTokenSource.Token.IsCancellationRequested)
+        // Only exit early if cancellation was explicitly requested externally, not due to internal cleanup
+        if (_externalCancellationRequested)
         {
-            Log("Process was cancelled but completed successfully");
+            Log("Process was cancelled externally but completed successfully");
             return _results;
         }
 
@@ -167,9 +169,9 @@ public class BuildProcessHelper(
     private List<string> HandleTimeout(bool processExited, bool outputProcessed, bool errorProcessed, int timeout)
     {
         // Check if cancellation was requested and handle gracefully
-        if (cancellationTokenSource.Token.IsCancellationRequested)
+        if (_externalCancellationRequested)
         {
-            Log("Process was cancelled during timeout handling");
+            Log("Process was cancelled externally during timeout handling");
             return _results;
         }
 

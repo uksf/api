@@ -1,0 +1,795 @@
+﻿# UKSF API
+
+###
+# group: Login
+# @name Login
+POST {{url}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {% client.global.set("token", response.body.token); %}
+
+###
+# group: Login
+# @name Password Reset Request
+GET
+Authorization: Bearer {{token}}
+
+###
+# group: Accounts
+# @name Get Context
+GET {{url}}/accounts
+Authorization: Bearer {{token}}
+
+###
+# group: Accounts
+# @name Get Single
+GET {{url}}/accounts/63448106b5144bddde925066
+Authorization: Bearer {{token}}
+
+#### group: Accounts
+# @name Exists
+GET {{url}}/discord/onlineUserDetails/59e38f10594c603b78aa9dbd
+Authorization: Bearer {{token}}
+
+###
+# group: Accounts
+# @name Get Roster
+GET {{local-url}}/accounts/roster
+Authorization: Bearer {{token}}
+
+###
+# group: Accounts
+# @name Update name
+GET {{url}}/accounts/63448106b5144bddde925066
+Authorization: Bearer {{token}}
+
+###
+# group: Units
+# @name Get
+GET {{url}}/units?
+    filter=available&
+    accountId=59e38f10594c603b78aa9dbd
+Authorization: Bearer {{token}}
+
+###
+# group: Units
+# @name Get Tree
+GET {{local-url}}/units/tree
+Authorization: Bearer {{token}}
+
+###
+# group: Units
+# @name Get Chart
+GET {{local-url}}/units/chart/auxiliary
+Authorization: Bearer {{token}}
+
+###
+# group: Units
+# @name Get Single
+GET {{url}}/units/5a42875912dbfabb38d0c172
+Authorization: Bearer {{token}}
+
+###
+# group: Units
+# @name Exists
+GET {{local-url}}/units/exists/SR1?
+    id=5a121a2e56134f4654eecee8
+Authorization: Bearer {{token}}
+
+###
+# group: Units
+# @name Patch Parent
+PATCH {{local-url}}/units/5a42875912dbfabb38d0c172/parent
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "index": 1,
+  "parent": ""
+}
+
+###
+# group: Command
+# @name Get members
+GET {{url}}/command/members?
+    page=1&
+    pageSize=5&
+    query=sfsg&&
+lcpl &
+sortMode = unit &
+sortDirection = -1
+Authorization: Bearer {{token}}
+
+###
+# group: Command
+# @name Get loas
+GET {{url}}/loa?
+    page=1&
+    pageSize=15&
+    query=rock&
+    selectionMode=past&
+    viewMode=all
+Authorization: Bearer {{token}}
+
+###
+# group: Discord
+# @name Test
+GET {{url}}/discord/test
+Authorization: Bearer {{token}}
+
+###
+# group: Discord
+# @name Test Copy
+GET {{url}}/discord/test
+Authorization: Bearer {{token}}
+
+###
+# group: Discord
+# @name Delete new issue command
+GET {{url}}/discord/test
+Authorization: Bearer {{token}}
+
+###
+# group: Documents
+# @name Get All Folders
+GET {{url}}/docs/folders
+Authorization: Bearer {{token}}
+
+###
+# group: Documents
+# @name Get Single Folder
+GET {{url}}/docs/folders/{{folderId}}
+Authorization: Bearer {{token}}
+
+###
+# group: Documents
+# @name Create Folder
+POST {{url}}/docs/folders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "parent": "000000000000000000000000",
+    "name": "{{$randomAlphaNumeric}}{{$randomAlphaNumeric}}{{$randomAlphaNumeric}}{{$randomAlphaNumeric}}"
+}
+
+###
+# group: Documents
+# @name Update Folder Perms
+PUT {{url}}/docs/folders/{{folderId_1}}/permissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "readPermissions": {
+    "units": [],
+    "rank": null
+  },
+  "writePermissions": {
+    "units": [],
+    "rank": "5b72fb462d54990cec7c4b1c"
+  }
+}
+
+###
+# group: Documents
+# @name Delete Folder
+DELETE {{url}}/docs/folders/{{folderId_2}}
+Authorization: Bearer {{token}}
+
+###
+# group: Documents
+# @name Get Single Doc
+GET {{url}}/docs/folders/{{folderId_3}}/documents/{{documentId}}
+Authorization: Bearer {{token}}
+
+###
+# group: Documents
+# @name Create Doc
+POST {{url}}/docs/folders/{{folderId_4}}/documents
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Interviews"
+}
+
+###
+# group: Documents
+# @name Delete Doc
+DELETE {{url}}/docs/folders/{{folderId_5}}/documents/{{documentId_1}}
+Authorization: Bearer {{token}}
+
+###
+# group: Documents
+# @name Get Doc Content
+GET {{url}}/docs/folders/{{folderId_6}}/documents/{{documentId_2}}/content
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+"spkioghdgiujhniufjnijhfngjihnjokfgnhfghfghfghfgh"
+
+###
+# group: Documents
+# @name Update Doc Content
+PUT {{url}}/docs/folders/{{folderId_7}}/documents/{{documentId_3}}/content
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "newText": "spkioghdgiujhniufjnijhfngjihnjokfgnhfghfghfghfgh",
+  "lastKnownUpdated": "2023-02-07T00:19:32.7763103Z"
+}
+
+###
+# group: Instagram
+# @name Refresh Token
+GET {{url}}/instagram/refreshToken
+Authorization: Bearer {{token}}
+
+###
+# group: Instagram
+# @name Test
+GET {{url}}/instagram/test
+Authorization: Bearer {{token}}
+
+###
+# group: Game Servers
+# @name Get Servers
+GET {{url}}/gameservers/5f26ec369512b723700b2f21/mods
+Authorization: Bearer {{token}}
+
+###
+# group: Game Servers
+# @name Get Available Mods
+GET {{url}}/gameservers/5bd9daa3b1c98150403bccf6/mods
+Authorization: Bearer {{token}}
+
+###
+# group: Admin
+# @name Increment version
+GET {{url}}/version
+Authorization: Bearer {{token}}
+
+###
+# group: Debug
+# @name Throw 500
+GET {{url}}/debug/500
+Authorization: Bearer {{token}}
+
+###
+# group: Github
+# @name Branches
+GET {{url}}/github/branches
+Authorization: Bearer {{token}}
+
+###
+# group: Github
+# @name Issues
+GET {{url}}/github/branches
+Authorization: Bearer {{token}}
+
+###
+# group: Server Infra
+# @name Latest
+GET {{url}}/servers/infrastructure/latest
+Authorization: Bearer {{token}}
+
+###
+# group: Logging
+# @name Error logs
+GET {{url}}/logging/error
+Authorization: Bearer {{token}}
+
+###
+# group: Instagram
+# @name Refresh token
+GET {{url}}/instagram/refreshToken
+Authorization: Bearer {{token}}
+
+###
+# group: Instagram
+# @name Cache
+GET {{url}}/instagram/cache
+Authorization: Bearer {{token}}
+
+###
+# group: Artilery
+# @name Get
+GET {{url}}/artillery/shots
+Authorization: Bearer {{token}}
+
+###
+# group: Artilery
+# @name Update
+PUT {{url}}/artillery/shots
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "data": "log/nlogg"
+}
+
+###
+# @name http://localhost:5000/modpack/testRelease
+POST http://localhost:5000/modpack/testRelease
+Authorization: Bearer {{token}}
+
+###
+# @name http://localhost:5000/modpack/testRelease
+POST http://localhost:5000/modpack/testBuild
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "buildNumber": 0,
+  "commit": {
+    "message": "This is a test build"
+  }
+}
+
+###
+# @name http://localhost:5000/github
+POST http://localhost:5000/github
+Authorization: Bearer {{token}}
+x-github-delivery: bbf4c374-bafc-11ea-934c-34ef209cad20
+x-github-event: push
+x-hub-signature: sha1=06c297332af0b221b9603ad03744007ef918ced4
+Content-Type: application/json
+
+{
+  "ref": "refs/heads/dev",
+  "before": "7c82fc3e1e37d152062da0b6e9df6081d973d3f2",
+  "after": "f5d9622c12b9b8189adbe4b91f63ec52f1cc513d",
+  "repository": {
+    "id": 276162537,
+    "node_id": "MDEwOlJlcG9zaXRvcnkyNzYxNjI1Mzc=",
+    "name": "BuildTest",
+    "full_name": "uksf/BuildTest",
+    "private": true,
+    "owner": {
+      "name": "uksf",
+      "email": "uksfelcom@gmail.com",
+      "login": "uksf",
+      "id": 25962679,
+      "node_id": "MDEyOk9yZ2FuaXphdGlvbjI1OTYyNjc5",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/25962679?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/uksf",
+      "html_url": "https://github.com/uksf",
+      "followers_url": "https://api.github.com/users/uksf/followers",
+      "following_url": "https://api.github.com/users/uksf/following{/other_user}",
+      "gists_url": "https://api.github.com/users/uksf/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/uksf/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/uksf/subscriptions",
+      "organizations_url": "https://api.github.com/users/uksf/orgs",
+      "repos_url": "https://api.github.com/users/uksf/repos",
+      "events_url": "https://api.github.com/users/uksf/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/uksf/received_events",
+      "type": "Organization",
+      "site_admin": false
+    },
+    "html_url": "https://github.com/uksf/BuildTest",
+    "description": null,
+    "fork": false,
+    "url": "https://github.com/uksf/BuildTest",
+    "forks_url": "https://api.github.com/repos/uksf/BuildTest/forks",
+    "keys_url": "https://api.github.com/repos/uksf/BuildTest/keys{/key_id}",
+    "collaborators_url": "https://api.github.com/repos/uksf/BuildTest/collaborators{/collaborator}",
+    "teams_url": "https://api.github.com/repos/uksf/BuildTest/teams",
+    "hooks_url": "https://api.github.com/repos/uksf/BuildTest/hooks",
+    "issue_events_url": "https://api.github.com/repos/uksf/BuildTest/issues/events{/number}",
+    "events_url": "https://api.github.com/repos/uksf/BuildTest/events",
+    "assignees_url": "https://api.github.com/repos/uksf/BuildTest/assignees{/user}",
+    "branches_url": "https://api.github.com/repos/uksf/BuildTest/branches{/branch}",
+    "tags_url": "https://api.github.com/repos/uksf/BuildTest/tags",
+    "blobs_url": "https://api.github.com/repos/uksf/BuildTest/git/blobs{/sha}",
+    "git_tags_url": "https://api.github.com/repos/uksf/BuildTest/git/tags{/sha}",
+    "git_refs_url": "https://api.github.com/repos/uksf/BuildTest/git/refs{/sha}",
+    "trees_url": "https://api.github.com/repos/uksf/BuildTest/git/trees{/sha}",
+    "statuses_url": "https://api.github.com/repos/uksf/BuildTest/statuses/{sha}",
+    "languages_url": "https://api.github.com/repos/uksf/BuildTest/languages",
+    "stargazers_url": "https://api.github.com/repos/uksf/BuildTest/stargazers",
+    "contributors_url": "https://api.github.com/repos/uksf/BuildTest/contributors",
+    "subscribers_url": "https://api.github.com/repos/uksf/BuildTest/subscribers",
+    "subscription_url": "https://api.github.com/repos/uksf/BuildTest/subscription",
+    "commits_url": "https://api.github.com/repos/uksf/BuildTest/commits{/sha}",
+    "git_commits_url": "https://api.github.com/repos/uksf/BuildTest/git/commits{/sha}",
+    "comments_url": "https://api.github.com/repos/uksf/BuildTest/comments{/number}",
+    "issue_comment_url": "https://api.github.com/repos/uksf/BuildTest/issues/comments{/number}",
+    "contents_url": "https://api.github.com/repos/uksf/BuildTest/contents/{+path}",
+    "compare_url": "https://api.github.com/repos/uksf/BuildTest/compare/{base}...{head}",
+    "merges_url": "https://api.github.com/repos/uksf/BuildTest/merges",
+    "archive_url": "https://api.github.com/repos/uksf/BuildTest/{archive_format}{/ref}",
+    "downloads_url": "https://api.github.com/repos/uksf/BuildTest/downloads",
+    "issues_url": "https://api.github.com/repos/uksf/BuildTest/issues{/number}",
+    "pulls_url": "https://api.github.com/repos/uksf/BuildTest/pulls{/number}",
+    "milestones_url": "https://api.github.com/repos/uksf/BuildTest/milestones{/number}",
+    "notifications_url": "https://api.github.com/repos/uksf/BuildTest/notifications{?since,all,participating}",
+    "labels_url": "https://api.github.com/repos/uksf/BuildTest/labels{/name}",
+    "releases_url": "https://api.github.com/repos/uksf/BuildTest/releases{/id}",
+    "deployments_url": "https://api.github.com/repos/uksf/BuildTest/deployments",
+    "created_at": 1593537048,
+    "updated_at": "2020-07-04T15:28:40Z",
+    "pushed_at": 1593876550,
+    "git_url": "git://github.com/uksf/BuildTest.git",
+    "ssh_url": "git@github.com:uksf/BuildTest.git",
+    "clone_url": "https://github.com/uksf/BuildTest.git",
+    "svn_url": "https://github.com/uksf/BuildTest",
+    "homepage": null,
+    "size": 9,
+    "stargazers_count": 0,
+    "watchers_count": 0,
+    "language": "C++",
+    "has_issues": true,
+    "has_projects": true,
+    "has_downloads": true,
+    "has_wiki": true,
+    "has_pages": false,
+    "forks_count": 0,
+    "mirror_url": null,
+    "archived": false,
+    "disabled": false,
+    "open_issues_count": 0,
+    "license": null,
+    "forks": 0,
+    "open_issues": 0,
+    "watchers": 0,
+    "default_branch": "master",
+    "stargazers": 0,
+    "master_branch": "master",
+    "organization": "uksf"
+  },
+  "pusher": {
+    "name": "tbeswick96",
+    "email": "contact.tim.here@gmail.com"
+  },
+  "organization": {
+    "login": "uksf",
+    "id": 25962679,
+    "node_id": "MDEyOk9yZ2FuaXphdGlvbjI1OTYyNjc5",
+    "url": "https://api.github.com/orgs/uksf",
+    "repos_url": "https://api.github.com/orgs/uksf/repos",
+    "events_url": "https://api.github.com/orgs/uksf/events",
+    "hooks_url": "https://api.github.com/orgs/uksf/hooks",
+    "issues_url": "https://api.github.com/orgs/uksf/issues",
+    "members_url": "https://api.github.com/orgs/uksf/members{/member}",
+    "public_members_url": "https://api.github.com/orgs/uksf/public_members{/member}",
+    "avatar_url": "https://avatars3.githubusercontent.com/u/25962679?v=4",
+    "description": "UKSF Arma 3 Milsim Community"
+  },
+  "sender": {
+    "login": "tbeswick96",
+    "id": 11049179,
+    "node_id": "MDQ6VXNlcjExMDQ5MTc5",
+    "avatar_url": "https://avatars1.githubusercontent.com/u/11049179?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/tbeswick96",
+    "html_url": "https://github.com/tbeswick96",
+    "followers_url": "https://api.github.com/users/tbeswick96/followers",
+    "following_url": "https://api.github.com/users/tbeswick96/following{/other_user}",
+    "gists_url": "https://api.github.com/users/tbeswick96/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/tbeswick96/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/tbeswick96/subscriptions",
+    "organizations_url": "https://api.github.com/users/tbeswick96/orgs",
+    "repos_url": "https://api.github.com/users/tbeswick96/repos",
+    "events_url": "https://api.github.com/users/tbeswick96/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/tbeswick96/received_events",
+    "type": "User",
+    "site_admin": false
+  },
+  "installation": {
+    "id": 6681715,
+    "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uNjY4MTcxNQ=="
+  },
+  "created": false,
+  "deleted": false,
+  "forced": false,
+  "base_ref": "refs/heads/master",
+  "compare": "https://github.com/uksf/BuildTest/compare/7c82fc3e1e37...f5d9622c12b9",
+  "commits": [
+    {
+      "id": "7a4e127c3a8c6a65dca717467eb2664844c51d38",
+      "tree_id": "26e877d69290a719557f2d4ec71546bde1dc7f11",
+      "distinct": false,
+      "message": "Version file for testing",
+      "timestamp": "2020-07-01T18:10:13+01:00",
+      "url": "https://github.com/uksf/BuildTest/commit/7a4e127c3a8c6a65dca717467eb2664844c51d38",
+      "author": {
+        "name": "Tim Beswick",
+        "email": "contact.tim.here@gmail.com",
+        "username": "tbeswick96"
+      },
+      "committer": {
+        "name": "Tim Beswick",
+        "email": "contact.tim.here@gmail.com",
+        "username": "tbeswick96"
+      },
+      "added": [
+        "addons/main/script_version.hpp"
+      ],
+      "removed": [],
+      "modified": []
+    },
+    {
+      "id": "f5d9622c12b9b8189adbe4b91f63ec52f1cc513d",
+      "tree_id": "41930537e17a1245ba29dcad1e45736587691480",
+      "distinct": false,
+      "message": "30",
+      "timestamp": "2020-07-04T16:28:30+01:00",
+      "url": "https://github.com/uksf/BuildTest/commit/f5d9622c12b9b8189adbe4b91f63ec52f1cc513d",
+      "author": {
+        "name": "Tim Beswick",
+        "email": "contact.tim.here@gmail.com",
+        "username": "tbeswick96"
+      },
+      "committer": {
+        "name": "Tim Beswick",
+        "email": "contact.tim.here@gmail.com",
+        "username": "tbeswick96"
+      },
+      "added": [],
+      "removed": [],
+      "modified": [
+        "test"
+      ]
+    }
+  ],
+  "head_commit": {
+    "id": "f5d9622c12b9b8189adbe4b91f63ec52f1cc513d",
+    "tree_id": "41930537e17a1245ba29dcad1e45736587691480",
+    "distinct": false,
+    "message": "30",
+    "timestamp": "2020-07-04T16:28:30+01:00",
+    "url": "https://github.com/uksf/BuildTest/commit/f5d9622c12b9b8189adbe4b91f63ec52f1cc513d",
+    "author": {
+      "name": "Tim Beswick",
+      "email": "contact.tim.here@gmail.com",
+      "username": "tbeswick96"
+    },
+    "committer": {
+      "name": "Tim Beswick",
+      "email": "contact.tim.here@gmail.com",
+      "username": "tbeswick96"
+    },
+    "added": [],
+    "removed": [],
+    "modified": [
+      "test"
+    ]
+  }
+}
+
+###
+# @name http://localhost:5000/github merge
+POST http://localhost:5000/github
+Authorization: Bearer {{token}}
+x-github-delivery: bbf4c374-bafc-11ea-934c-34ef209cad20
+x-github-event: push
+x-hub-signature: sha1=190999f510b995ee9f8ffa7886c6c57d9dc417d5
+Content-Type: application/json
+
+{
+  "ref": "refs/heads/dev",
+  "before": "a0acde0432c9577c10bfd3e1769fd775f6c8ad5b",
+  "after": "9e689b4c2b46ba4e76ffb04249c14ef74fa5647d",
+  "repository": {
+    "id": 276162537,
+    "node_id": "MDEwOlJlcG9zaXRvcnkyNzYxNjI1Mzc=",
+    "name": "BuildTest",
+    "full_name": "uksf/BuildTest",
+    "private": true,
+    "owner": {
+      "name": "uksf",
+      "email": "uksfelcom@gmail.com",
+      "login": "uksf",
+      "id": 25962679,
+      "node_id": "MDEyOk9yZ2FuaXphdGlvbjI1OTYyNjc5",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/25962679?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/uksf",
+      "html_url": "https://github.com/uksf",
+      "followers_url": "https://api.github.com/users/uksf/followers",
+      "following_url": "https://api.github.com/users/uksf/following{/other_user}",
+      "gists_url": "https://api.github.com/users/uksf/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/uksf/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/uksf/subscriptions",
+      "organizations_url": "https://api.github.com/users/uksf/orgs",
+      "repos_url": "https://api.github.com/users/uksf/repos",
+      "events_url": "https://api.github.com/users/uksf/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/uksf/received_events",
+      "type": "Organization",
+      "site_admin": false
+    },
+    "html_url": "https://github.com/uksf/BuildTest",
+    "description": null,
+    "fork": false,
+    "url": "https://github.com/uksf/BuildTest",
+    "forks_url": "https://api.github.com/repos/uksf/BuildTest/forks",
+    "keys_url": "https://api.github.com/repos/uksf/BuildTest/keys{/key_id}",
+    "collaborators_url": "https://api.github.com/repos/uksf/BuildTest/collaborators{/collaborator}",
+    "teams_url": "https://api.github.com/repos/uksf/BuildTest/teams",
+    "hooks_url": "https://api.github.com/repos/uksf/BuildTest/hooks",
+    "issue_events_url": "https://api.github.com/repos/uksf/BuildTest/issues/events{/number}",
+    "events_url": "https://api.github.com/repos/uksf/BuildTest/events",
+    "assignees_url": "https://api.github.com/repos/uksf/BuildTest/assignees{/user}",
+    "branches_url": "https://api.github.com/repos/uksf/BuildTest/branches{/branch}",
+    "tags_url": "https://api.github.com/repos/uksf/BuildTest/tags",
+    "blobs_url": "https://api.github.com/repos/uksf/BuildTest/git/blobs{/sha}",
+    "git_tags_url": "https://api.github.com/repos/uksf/BuildTest/git/tags{/sha}",
+    "git_refs_url": "https://api.github.com/repos/uksf/BuildTest/git/refs{/sha}",
+    "trees_url": "https://api.github.com/repos/uksf/BuildTest/git/trees{/sha}",
+    "statuses_url": "https://api.github.com/repos/uksf/BuildTest/statuses/{sha}",
+    "languages_url": "https://api.github.com/repos/uksf/BuildTest/languages",
+    "stargazers_url": "https://api.github.com/repos/uksf/BuildTest/stargazers",
+    "contributors_url": "https://api.github.com/repos/uksf/BuildTest/contributors",
+    "subscribers_url": "https://api.github.com/repos/uksf/BuildTest/subscribers",
+    "subscription_url": "https://api.github.com/repos/uksf/BuildTest/subscription",
+    "commits_url": "https://api.github.com/repos/uksf/BuildTest/commits{/sha}",
+    "git_commits_url": "https://api.github.com/repos/uksf/BuildTest/git/commits{/sha}",
+    "comments_url": "https://api.github.com/repos/uksf/BuildTest/comments{/number}",
+    "issue_comment_url": "https://api.github.com/repos/uksf/BuildTest/issues/comments{/number}",
+    "contents_url": "https://api.github.com/repos/uksf/BuildTest/contents/{+path}",
+    "compare_url": "https://api.github.com/repos/uksf/BuildTest/compare/{base}...{head}",
+    "merges_url": "https://api.github.com/repos/uksf/BuildTest/merges",
+    "archive_url": "https://api.github.com/repos/uksf/BuildTest/{archive_format}{/ref}",
+    "downloads_url": "https://api.github.com/repos/uksf/BuildTest/downloads",
+    "issues_url": "https://api.github.com/repos/uksf/BuildTest/issues{/number}",
+    "pulls_url": "https://api.github.com/repos/uksf/BuildTest/pulls{/number}",
+    "milestones_url": "https://api.github.com/repos/uksf/BuildTest/milestones{/number}",
+    "notifications_url": "https://api.github.com/repos/uksf/BuildTest/notifications{?since,all,participating}",
+    "labels_url": "https://api.github.com/repos/uksf/BuildTest/labels{/name}",
+    "releases_url": "https://api.github.com/repos/uksf/BuildTest/releases{/id}",
+    "deployments_url": "https://api.github.com/repos/uksf/BuildTest/deployments",
+    "created_at": 1593537048,
+    "updated_at": "2020-06-30T18:25:55Z",
+    "pushed_at": 1593541626,
+    "git_url": "git://github.com/uksf/BuildTest.git",
+    "ssh_url": "git@github.com:uksf/BuildTest.git",
+    "clone_url": "https://github.com/uksf/BuildTest.git",
+    "svn_url": "https://github.com/uksf/BuildTest",
+    "homepage": null,
+    "size": 3,
+    "stargazers_count": 0,
+    "watchers_count": 0,
+    "language": null,
+    "has_issues": true,
+    "has_projects": true,
+    "has_downloads": true,
+    "has_wiki": true,
+    "has_pages": false,
+    "forks_count": 0,
+    "mirror_url": null,
+    "archived": false,
+    "disabled": false,
+    "open_issues_count": 0,
+    "license": null,
+    "forks": 0,
+    "open_issues": 0,
+    "watchers": 0,
+    "default_branch": "master",
+    "stargazers": 0,
+    "master_branch": "master",
+    "organization": "uksf"
+  },
+  "pusher": {
+    "name": "tbeswick96",
+    "email": "contact.tim.here@gmail.com"
+  },
+  "organization": {
+    "login": "uksf",
+    "id": 25962679,
+    "node_id": "MDEyOk9yZ2FuaXphdGlvbjI1OTYyNjc5",
+    "url": "https://api.github.com/orgs/uksf",
+    "repos_url": "https://api.github.com/orgs/uksf/repos",
+    "events_url": "https://api.github.com/orgs/uksf/events",
+    "hooks_url": "https://api.github.com/orgs/uksf/hooks",
+    "issues_url": "https://api.github.com/orgs/uksf/issues",
+    "members_url": "https://api.github.com/orgs/uksf/members{/member}",
+    "public_members_url": "https://api.github.com/orgs/uksf/public_members{/member}",
+    "avatar_url": "https://avatars3.githubusercontent.com/u/25962679?v=4",
+    "description": "UKSF Arma 3 Milsim Community"
+  },
+  "sender": {
+    "login": "tbeswick96",
+    "id": 11049179,
+    "node_id": "MDQ6VXNlcjExMDQ5MTc5",
+    "avatar_url": "https://avatars1.githubusercontent.com/u/11049179?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/tbeswick96",
+    "html_url": "https://github.com/tbeswick96",
+    "followers_url": "https://api.github.com/users/tbeswick96/followers",
+    "following_url": "https://api.github.com/users/tbeswick96/following{/other_user}",
+    "gists_url": "https://api.github.com/users/tbeswick96/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/tbeswick96/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/tbeswick96/subscriptions",
+    "organizations_url": "https://api.github.com/users/tbeswick96/orgs",
+    "repos_url": "https://api.github.com/users/tbeswick96/repos",
+    "events_url": "https://api.github.com/users/tbeswick96/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/tbeswick96/received_events",
+    "type": "User",
+    "site_admin": false
+  },
+  "installation": {
+    "id": 6681715,
+    "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uNjY4MTcxNQ=="
+  },
+  "created": false,
+  "deleted": false,
+  "forced": false,
+  "base_ref": "refs/heads/master",
+  "compare": "https://github.com/uksf/BuildTest/compare/a0acde0432c9...9e689b4c2b46",
+  "commits": [
+    {
+      "id": "9e689b4c2b46ba4e76ffb04249c14ef74fa5647d",
+      "tree_id": "df0c73b8de3c5329162915cf9755df7d2653e8f2",
+      "distinct": false,
+      "message": "17",
+      "timestamp": "2020-06-30T19:25:46+01:00",
+      "url": "https://github.com/uksf/BuildTest/commit/9e689b4c2b46ba4e76ffb04249c14ef74fa5647d",
+      "author": {
+        "name": "Tim Beswick",
+        "email": "contact.tim.here@gmail.com",
+        "username": "tbeswick96"
+      },
+      "committer": {
+        "name": "Tim Beswick",
+        "email": "contact.tim.here@gmail.com",
+        "username": "tbeswick96"
+      },
+      "added": [],
+      "removed": [],
+      "modified": [
+        "test"
+      ]
+    }
+  ],
+  "head_commit": {
+    "id": "9e689b4c2b46ba4e76ffb04249c14ef74fa5647d",
+    "tree_id": "df0c73b8de3c5329162915cf9755df7d2653e8f2",
+    "distinct": false,
+    "message": "17",
+    "timestamp": "2020-06-30T19:25:46+01:00",
+    "url": "https://github.com/uksf/BuildTest/commit/9e689b4c2b46ba4e76ffb04249c14ef74fa5647d",
+    "author": {
+      "name": "Tim Beswick",
+      "email": "contact.tim.here@gmail.com",
+      "username": "tbeswick96"
+    },
+    "committer": {
+      "name": "Tim Beswick",
+      "email": "contact.tim.here@gmail.com",
+      "username": "tbeswick96"
+    },
+    "added": [],
+    "removed": [],
+    "modified": [
+      "test"
+    ]
+  }
+}
+
+###
+# @name Test notif
+POST {{url}}/notifications/test
+Authorization: Bearer {{token}}
+
+###
+# @name Invalidate
+GET {{url}}/data/invalidate
+Authorization: Bearer {{token}}
+
+###
+# @name Teamspeak online
+GET {{url}}/data/invalidate
+Authorization: Bearer {{token}}
+
+###
+# @name Cleanup builds
+POST {{url}}/modpack/builds/emergency-cleanup
+Authorization: Bearer {{token}}

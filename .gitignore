@@ -250,3 +250,6 @@ coverage.xml
 appsettings.*.json
 *.info
 .vscode/**
+
+# Http
+*.private.env.json
