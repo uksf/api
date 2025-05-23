@@ -25,7 +25,7 @@ public class BuildProcessHelperFactoryTests
         var buildForceLogsVariable = new DomainVariableItem { Key = "BUILD_FORCE_LOGS", Item = false };
         _mockVariablesService.Setup(x => x.GetVariable("BUILD_FORCE_LOGS")).Returns(buildForceLogsVariable);
 
-        var factory = new BuildProcessHelperFactory(_mockVariablesService.Object);
+        var factory = new BuildProcessHelperFactory(_mockVariablesService.Object, _mockProcessTracker.Object);
 
         string executable;
         string args;
@@ -58,7 +58,7 @@ public class BuildProcessHelperFactoryTests
         var buildForceLogsVariable = new DomainVariableItem { Key = "BUILD_FORCE_LOGS", Item = true };
         _mockVariablesService.Setup(x => x.GetVariable("BUILD_FORCE_LOGS")).Returns(buildForceLogsVariable);
 
-        var factory = new BuildProcessHelperFactory(_mockVariablesService.Object);
+        var factory = new BuildProcessHelperFactory(_mockVariablesService.Object, _mockProcessTracker.Object);
 
         string executable;
         string args;
@@ -82,21 +82,6 @@ public class BuildProcessHelperFactoryTests
         result.Should().NotBeNull();
         // Verify that logging occurred even though log parameter was false
         _mockUksfLogger.Verify(x => x.LogInfo(It.IsAny<string>()), Times.AtLeastOnce);
-    }
-
-    [Fact]
-    public void Create_Should_HandleNullProcessTracker()
-    {
-        // Arrange
-        var buildForceLogsVariable = new DomainVariableItem { Key = "BUILD_FORCE_LOGS", Item = false };
-        _mockVariablesService.Setup(x => x.GetVariable("BUILD_FORCE_LOGS")).Returns(buildForceLogsVariable);
-
-        var factory = new BuildProcessHelperFactory(_mockVariablesService.Object);
-
-        // Act & Assert - Should not throw
-        using var helper = factory.Create(_mockStepLogger.Object, _mockUksfLogger.Object, _cancellationTokenSource);
-
-        helper.Should().NotBeNull();
     }
 
     [Fact]

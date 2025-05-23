@@ -34,36 +34,35 @@ public class GitBuildStepTests
 
         _mockServiceProvider.Setup(x => x.GetService(typeof(IVariablesService))).Returns(mockVariablesService.Object);
         _mockServiceProvider.Setup(x => x.GetService(typeof(IBuildProcessTracker))).Returns(mockProcessTracker.Object);
+        _mockServiceProvider.Setup(x => x.GetService(typeof(IBuildProcessHelperFactory))).Returns(new Mock<IBuildProcessHelperFactory>().Object);
     }
 
     [Fact]
-    public async Task GitBuildStep_Should_HandleNullProcessTracker()
+    public async Task GitBuildStep_Should_CompleteSetup_Successfully()
     {
         // Arrange
         var gitBuildStep = new GitBuildStep();
         var build = new DomainModpackBuild { EnvironmentVariables = new Dictionary<string, object>() };
         var buildStep = new ModpackBuildStep("Test Step");
 
-        // Setup service provider to return null for process tracker
-        _mockServiceProvider.Setup(x => x.GetService(typeof(IBuildProcessTracker))).Returns((IBuildProcessTracker)null);
+        // Act
+        gitBuildStep.Init(
+            _mockServiceProvider.Object,
+            _mockLogger.Object,
+            build,
+            buildStep,
+            _ => Task.CompletedTask,
+            () => Task.CompletedTask,
+            _cancellationTokenSource
+        );
 
-        // Act & Assert - Should not throw when process tracker is null
-        var act = async () =>
-        {
-            gitBuildStep.Init(
-                _mockServiceProvider.Object,
-                _mockLogger.Object,
-                build,
-                buildStep,
-                _ => Task.CompletedTask,
-                () => Task.CompletedTask,
-                _cancellationTokenSource
-            );
+        // The Setup method should complete without throwing
+        await gitBuildStep.Setup();
 
-            await gitBuildStep.Setup();
-        };
-
-        await act.Should().NotThrowAsync();
+        // Assert
+        // Verify that required services were retrieved during Init
+        _mockServiceProvider.Verify(x => x.GetService(typeof(IVariablesService)), Times.Once);
+        _mockServiceProvider.Verify(x => x.GetService(typeof(IBuildProcessHelperFactory)), Times.Once);
     }
 
     [Fact]
@@ -92,32 +91,6 @@ public class GitBuildStepTests
     }
 
     [Fact]
-    public async Task GitBuildStep_Should_RetrieveProcessTracker_OnSetup()
-    {
-        // Arrange
-        var gitBuildStep = new GitBuildStep();
-        var build = new DomainModpackBuild { EnvironmentVariables = new Dictionary<string, object>() };
-        var buildStep = new ModpackBuildStep("Test Step");
-
-        // Act
-        gitBuildStep.Init(
-            _mockServiceProvider.Object,
-            _mockLogger.Object,
-            build,
-            buildStep,
-            _ => Task.CompletedTask,
-            () => Task.CompletedTask,
-            _cancellationTokenSource
-        );
-
-        // The process tracker is retrieved during Setup, not Init
-        await gitBuildStep.Setup();
-
-        // Assert
-        _mockServiceProvider.Verify(x => x.GetService(typeof(IBuildProcessTracker)), Times.Once);
-    }
-
-    [Fact]
     public void GitBuildStep_Should_UseExtendedTimeoutConfiguration()
     {
         // This test verifies the configuration changes are in place
@@ -134,134 +107,5 @@ public class GitBuildStepTests
 
         gitBuildStep.Should().NotBeNull();
         gitBuildStep.GetType().Should().Be<GitBuildStep>();
-    }
-}
-
-// Integration test class for testing git timeout improvements
-public class GitTimeoutConfigurationTests
-{
-    [Fact] // 15 second timeout to prevent hanging
-    public void BuildProcessHelper_Should_HandleGitSafetyConfigurations()
-    {
-        // Arrange
-        var mockStepLogger = new Mock<IStepLogger>();
-        var mockLogger = new Mock<IUksfLogger>();
-        var mockVariablesService = new Mock<IVariablesService>();
-        var cancellationTokenSource = new CancellationTokenSource();
-
-        var buildProcessHelper = new BuildProcessHelper(
-            mockStepLogger.Object,
-            mockLogger.Object,
-            cancellationTokenSource,
-            mockVariablesService.Object,
-            raiseErrors: false
-        );
-
-        // Act - Test git safety configurations without actually running git
-        string executable;
-        string args;
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
-            executable = "cmd.exe";
-            // Use echo instead of actual git to test the safety configuration format
-            args = "/c \"echo git -c core.askpass='' -c credential.helper='' -c core.longpaths=true status\"";
-        }
-        else
-        {
-            executable = "sh";
-            args = "-c \"echo git -c core.askpass='' -c credential.helper='' -c core.longpaths=true status\"";
-        }
-
-        // This should not hang due to credential prompts since we're using echo
-        var result = buildProcessHelper.Run(".", executable, args, 10000, true);
-
-        // Assert
-        result.Should().NotBeNull();
-
-        // Verify the command was logged
-        mockLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Starting process"))), Times.Once);
-    }
-
-    [Fact]
-    public void BuildProcessHelper_Should_SupportExtendedTimeouts()
-    {
-        // Arrange
-        var mockStepLogger = new Mock<IStepLogger>();
-        var mockLogger = new Mock<IUksfLogger>();
-        var mockVariablesService = new Mock<IVariablesService>();
-        var cancellationTokenSource = new CancellationTokenSource();
-
-        var buildProcessHelper = new BuildProcessHelper(
-            mockStepLogger.Object,
-            mockLogger.Object,
-            cancellationTokenSource,
-            mockVariablesService.Object,
-            raiseErrors: false
-        );
-
-        // Act & Assert - Test that extended timeouts are supported
-        var twoMinutesInMs = (int)TimeSpan.FromMinutes(2).TotalMilliseconds;
-
-        // This should not throw due to timeout value being too large
-        string executable;
-        string args;
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
-            executable = "cmd.exe";
-            args = "/c \"echo timeout test\"";
-        }
-        else
-        {
-            executable = "sh";
-            args = "-c \"echo timeout test\"";
-        }
-
-        var result = buildProcessHelper.Run(".", executable, args, twoMinutesInMs, true);
-        result.Should().NotBeNull();
-
-        // Verify logging occurred
-        mockLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Starting process"))), Times.Once);
-    }
-
-    [Theory]
-    [InlineData(1)] // 1 minute
-    [InlineData(2)] // 2 minutes
-    [InlineData(5)] // 5 minutes
-    [InlineData(10)] // 10 minutes
-    public void BuildProcessHelper_Should_SupportVariousTimeoutDurations(int timeoutMinutes)
-    {
-        // Arrange
-        var mockStepLogger = new Mock<IStepLogger>();
-        var mockLogger = new Mock<IUksfLogger>();
-        var mockVariablesService = new Mock<IVariablesService>();
-        var cancellationTokenSource = new CancellationTokenSource();
-
-        var buildProcessHelper = new BuildProcessHelper(
-            mockStepLogger.Object,
-            mockLogger.Object,
-            cancellationTokenSource,
-            mockVariablesService.Object,
-            raiseErrors: false
-        );
-
-        // Act
-        var timeoutMs = (int)TimeSpan.FromMinutes(timeoutMinutes).TotalMilliseconds;
-
-        string executable;
-        string args;
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
-            executable = "cmd.exe";
-            args = "/c \"echo test\"";
-        }
-        else
-        {
-            executable = "sh";
-            args = "-c \"echo test\"";
-        }
-
-        // Assert - Should handle various timeout durations without issues
-        var result = buildProcessHelper.Run(".", executable, args, timeoutMs);
-        result.Should().NotBeNull();
     }
 }

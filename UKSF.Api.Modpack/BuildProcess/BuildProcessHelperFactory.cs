@@ -3,7 +3,7 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Modpack.BuildProcess;
 
-public class BuildProcessHelperFactory(IVariablesService variablesService, IBuildProcessTracker processTracker = null) : IBuildProcessHelperFactory
+public class BuildProcessHelperFactory(IVariablesService variablesService, IBuildProcessTracker processTracker) : IBuildProcessHelperFactory
 {
     public BuildProcessHelper Create(
         IStepLogger stepLogger,
@@ -23,13 +23,13 @@ public class BuildProcessHelperFactory(IVariablesService variablesService, IBuil
             logger,
             cancellationTokenSource,
             variablesService,
+            processTracker,
             suppressOutput,
             raiseErrors,
             errorSilently,
             errorExclusions,
             ignoreErrorGateClose,
             ignoreErrorGateOpen,
-            processTracker,
             buildId
         );
     }

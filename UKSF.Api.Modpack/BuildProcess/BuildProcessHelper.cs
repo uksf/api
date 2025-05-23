@@ -11,13 +11,13 @@ public class BuildProcessHelper(
     IUksfLogger logger,
     CancellationTokenSource cancellationTokenSource,
     IVariablesService variablesService,
+    IBuildProcessTracker processTracker,
     bool suppressOutput = false,
     bool raiseErrors = true,
     bool errorSilently = false,
     List<string> errorExclusions = null,
     string ignoreErrorGateClose = "",
     string ignoreErrorGateOpen = "",
-    IBuildProcessTracker processTracker = null,
     string buildId = null
 ) : IDisposable
 {
@@ -103,7 +103,7 @@ public class BuildProcessHelper(
 
     private void RegisterProcessForTracking()
     {
-        if (processTracker != null && !string.IsNullOrEmpty(buildId))
+        if (!string.IsNullOrEmpty(buildId))
         {
             processTracker.RegisterProcess(_process.Id, buildId, _process.StartInfo.Arguments);
         }
@@ -339,7 +339,7 @@ public class BuildProcessHelper(
 
     private void UnregisterProcessFromTracking()
     {
-        processTracker?.UnregisterProcess(_process.Id);
+        processTracker.UnregisterProcess(_process.Id);
     }
 
     private void DisposeProcess()
