@@ -108,7 +108,7 @@ public class ModpackService(
         }
         else
         {
-            buildQueueService.Cancel(build.Id);
+            buildQueueService.CancelRunning(build.Id);
         }
     }
 

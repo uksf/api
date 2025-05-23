@@ -1,5 +1,5 @@
 ﻿using System.Collections.Concurrent;
-using UKSF.Api.ArmaServer.Services;
+using System.Threading.Channels;
 using UKSF.Api.Core;
 using UKSF.Api.Modpack.Models;
 
@@ -8,63 +8,67 @@ namespace UKSF.Api.Modpack.BuildProcess;
 public interface IBuildQueueService
 {
     void QueueBuild(DomainModpackBuild build);
-    bool CancelQueued(string id);
-    void Cancel(string id);
+    bool CancelQueued(string buildId);
+    void CancelRunning(string buildId);
     void CancelAll();
 }
 
-public class BuildQueueService(IBuildProcessorService buildProcessorService, IGameServersService gameServersService, IUksfLogger logger) : IBuildQueueService
+public class BuildQueueService : IBuildQueueService
 {
+    private readonly IBuildProcessorService _buildProcessorService;
+    private readonly IUksfLogger _logger;
+    private readonly int _cleanupDelaySeconds;
     private readonly ConcurrentDictionary<string, Task> _buildTasks = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokenSources = new();
-    private readonly IGameServersService _gameServersService = gameServersService;
-    private bool _processing;
-    private ConcurrentQueue<DomainModpackBuild> _queue = new();
+
+    private readonly Channel<DomainModpackBuild> _channel =
+        Channel.CreateUnbounded<DomainModpackBuild>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+
+    private readonly ConcurrentDictionary<string, DomainModpackBuild> _queuedBuilds = new();
+
+    public BuildQueueService(IBuildProcessorService buildProcessorService, IUksfLogger logger, int cleanupDelaySeconds = 60)
+    {
+        _buildProcessorService = buildProcessorService;
+        _logger = logger;
+        _cleanupDelaySeconds = cleanupDelaySeconds;
+
+        _ = ProcessQueueAsync();
+    }
 
     public void QueueBuild(DomainModpackBuild build)
     {
-        _queue.Enqueue(build);
-        if (!_processing)
-        {
-            // Processor not running, process as separate task
-            _ = ProcessQueue();
-        }
+        _queuedBuilds.TryAdd(build.Id, build);
+        _channel.Writer.TryWrite(build);
     }
 
-    public bool CancelQueued(string id)
+    public bool CancelQueued(string buildId)
     {
-        if (_queue.Any(x => x.Id == id))
-        {
-            _queue = new ConcurrentQueue<DomainModpackBuild>(_queue.Where(x => x.Id != id));
-            return true;
-        }
-
-        return false;
+        return _queuedBuilds.TryRemove(buildId, out _);
     }
 
-    public void Cancel(string id)
+    public void CancelRunning(string buildId)
     {
-        if (_cancellationTokenSources.TryGetValue(id, out var source))
+        if (_cancellationTokenSources.TryGetValue(buildId, out var source))
         {
             source.Cancel();
-            _cancellationTokenSources.TryRemove(id, out _);
+            _cancellationTokenSources.TryRemove(buildId, out _);
         }
 
-        if (_buildTasks.ContainsKey(id))
+        if (_buildTasks.ContainsKey(buildId))
         {
             _ = Task.Run(
                 async () =>
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(1));
-                    if (_buildTasks.TryGetValue(id, out var task))
+                    await Task.Delay(TimeSpan.FromSeconds(_cleanupDelaySeconds));
+                    if (_buildTasks.TryGetValue(buildId, out var task))
                     {
                         if (task.IsCompleted)
                         {
-                            _buildTasks.TryRemove(id, out _);
+                            _buildTasks.TryRemove(buildId, out _);
                         }
                         else
                         {
-                            logger.LogWarning($"Build {id} was cancelled but has not completed within 1 minute of cancelling");
+                            _logger.LogWarning($"Build {buildId} was cancelled but has not completed within {_cleanupDelaySeconds} seconds of cancelling");
                         }
                     }
                 }
@@ -74,7 +78,7 @@ public class BuildQueueService(IBuildProcessorService buildProcessorService, IGa
 
     public void CancelAll()
     {
-        _queue.Clear();
+        _queuedBuilds.Clear();
 
         foreach (var (_, cancellationTokenSource) in _cancellationTokenSources)
         {
@@ -84,30 +88,21 @@ public class BuildQueueService(IBuildProcessorService buildProcessorService, IGa
         _cancellationTokenSources.Clear();
     }
 
-    private async Task ProcessQueue()
+    private async Task ProcessQueueAsync()
     {
-        _processing = true;
-        while (_queue.TryDequeue(out var build))
+        await foreach (var build in _channel.Reader.ReadAllAsync())
         {
-            // TODO: Expand this to check if a server is running using the repo for this build. If no servers are running but there are processes, don't build at all.
-            // Will require better game <-> api interaction to communicate with servers and headless clients properly
-            // if (_gameServersService.GetGameInstanceCount() > 0) {
-            //     _queue.Enqueue(build);
-            //     await Task.Delay(TimeSpan.FromMinutes(5));
-            //     continue;
-            // }
+            _queuedBuilds.TryRemove(build.Id, out _);
 
             CancellationTokenSource cancellationTokenSource = new();
             _cancellationTokenSources.TryAdd(build.Id, cancellationTokenSource);
 
-            var buildTask = buildProcessorService.ProcessBuildWithErrorHandling(build, cancellationTokenSource);
+            var buildTask = _buildProcessorService.ProcessBuildWithErrorHandling(build, cancellationTokenSource);
             _buildTasks.TryAdd(build.Id, buildTask);
 
             await buildTask;
 
             _cancellationTokenSources.TryRemove(build.Id, out _);
         }
-
-        _processing = false;
     }
 }
