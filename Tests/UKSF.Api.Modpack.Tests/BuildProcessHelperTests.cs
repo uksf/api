@@ -436,6 +436,41 @@ public class BuildProcessHelperTests
         Assert.Throws<ObjectDisposedException>(() => buildProcessHelper.Run(".", "cmd.exe", "/c \"echo test\"", 5000));
     }
 
+    [Fact]
+    public void Run_Should_WaitForOutputProcessingAfterProcessExit()
+    {
+        // Arrange
+        var buildProcessHelper = new BuildProcessHelper(_mockStepLogger.Object, _mockUksfLogger.Object, _cancellationTokenSource, raiseErrors: false);
+
+        string executable;
+        string args;
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        {
+            // Use a command that generates output and exits quickly
+            executable = "cmd.exe";
+            args = "/c \"echo Starting && echo Processing && echo Complete\"";
+        }
+        else
+        {
+            executable = "sh";
+            args = "-c \"echo Starting && echo Processing && echo Complete\"";
+        }
+
+        const string WorkingDirectory = ".";
+        const int Timeout = 5000;
+
+        // Act
+        var result = buildProcessHelper.Run(WorkingDirectory, executable, args, Timeout, true);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().HaveCountGreaterOrEqualTo(3); // Should capture all echo outputs
+
+        // Verify logging was called for process lifecycle
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Output stream closed"))), Times.Once);
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process finished successfully"))), Times.Once);
+    }
+
     [Theory]
     [InlineData("error1", "error2")]
     [InlineData("warning", "critical")]

@@ -28,11 +28,11 @@ public class BuildProcessHelper(
     private bool _disposed;
     private CancellationTokenRegistration _errorCancellationTokenRegistration;
     private int _exitCode = int.MinValue;
+    private bool _externalCancellationRequested;
     private bool _ignoreErrors;
     private string _logInfo;
     private Process _process;
     private bool _useLogger;
-    private bool _externalCancellationRequested;
 
     public void Dispose()
     {
@@ -121,6 +121,24 @@ public class BuildProcessHelper(
 
         Log($"Process status - Exited: {processExited}, OutputProcessed: {outputProcessed}, ErrorProcessed: {errorProcessed}");
 
+        // Even if process exited, ensure all async output is processed
+        if (processExited)
+        {
+            // Give additional time for async output processing to complete
+            var additionalWaitTime = Math.Min(timeout / 10, 2000); // Up to 2 seconds additional wait
+            if (!outputProcessed)
+            {
+                Log($"Process exited but output not fully processed, waiting additional {additionalWaitTime}ms");
+                outputProcessed = _outputWaitHandle.WaitOne(additionalWaitTime);
+            }
+
+            if (!errorProcessed)
+            {
+                Log($"Process exited but error output not fully processed, waiting additional {additionalWaitTime}ms");
+                errorProcessed = _errorWaitHandle.WaitOne(additionalWaitTime);
+            }
+        }
+
         if (processExited && outputProcessed && errorProcessed)
         {
             return HandleSuccessfulCompletion();
@@ -160,6 +178,13 @@ public class BuildProcessHelper(
             var errorMessage = GetErrorMessageFromResults();
             LogError($"Process exit code was non-zero ({_exitCode})");
             throw new Exception(errorMessage);
+        }
+
+        // Give a brief moment for any final log processing to complete
+        if (!suppressOutput && _results.Count > 0)
+        {
+            Log("Allowing final log processing to complete");
+            Thread.Sleep(100); // Brief pause for log processing
         }
 
         Log("Process reached successful return");
@@ -327,6 +352,7 @@ public class BuildProcessHelper(
     {
         if (receivedEventArgs.Data == null)
         {
+            Log("Output stream closed, setting output wait handle");
             _outputWaitHandle.Set();
             return;
         }
@@ -347,6 +373,7 @@ public class BuildProcessHelper(
     {
         if (receivedEventArgs.Data == null)
         {
+            Log("Error stream closed, setting error wait handle");
             _errorWaitHandle.Set();
             return;
         }

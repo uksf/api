@@ -42,8 +42,8 @@ public class BuildStep : IBuildStep
     private Func<Task> _updateStepCallback;
     protected DomainModpackBuild Build;
     protected CancellationTokenSource CancellationTokenSource;
-    protected IServiceProvider ServiceProvider;
     protected IUksfLogger Logger;
+    protected IServiceProvider ServiceProvider;
     protected IStepLogger StepLogger;
     protected IVariablesService VariablesService;
 
@@ -99,7 +99,10 @@ public class BuildStep : IBuildStep
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
         StepLogger.Log("\nProcess", ColourBlue);
         await ProcessExecute();
-        await Update();
+
+        // Ensure all logs from the process execution are captured and persisted
+        await Task.Delay(500, CancellationTokenSource.Token); // Give time for any async logging to complete
+        await Update(); // Force an update to persist any pending logs
     }
 
     public async Task Succeed()
@@ -270,7 +273,12 @@ public class BuildStep : IBuildStep
         _buildStep.Running = false;
         _buildStep.Finished = true;
         _buildStep.EndTime = DateTime.UtcNow;
+
+        // Ensure final state is persisted before stopping update pusher
+        await Update();
         StopUpdatePusher();
+
+        // One final update after stopping the pusher to ensure completion state is saved
         await Update();
     }
 }

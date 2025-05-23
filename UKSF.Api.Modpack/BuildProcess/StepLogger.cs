@@ -85,13 +85,26 @@ public class StepLogger : IStepLogger
 
     private void PushLogUpdate(IEnumerable<ModpackBuildStepLogItem> logs, bool inline = false)
     {
+        var logList = logs.ToList();
+        if (logList.Count == 0)
+        {
+            return;
+        }
+
         if (inline)
         {
-            _buildStep.Logs[^1] = logs.First();
+            if (_buildStep.Logs.Count > 0)
+            {
+                _buildStep.Logs[^1] = logList.First();
+            }
+            else
+            {
+                _buildStep.Logs.AddRange(logList);
+            }
         }
         else
         {
-            _buildStep.Logs.AddRange(logs);
+            _buildStep.Logs.AddRange(logList);
         }
     }
 }
