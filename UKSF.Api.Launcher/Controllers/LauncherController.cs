@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
-using UKSF.Api.Core.Services;
 using UKSF.Api.Launcher.Models.Parameters;
 using UKSF.Api.Launcher.Services;
 using UKSF.Api.Launcher.Signalr.Clients;
@@ -20,18 +19,9 @@ namespace UKSF.Api.Launcher.Controllers;
 public class LauncherController(
     IVariablesContext variablesContext,
     IHubContext<LauncherHub, ILauncherClient> launcherHub,
-    ILauncherService launcherService,
-    ILauncherFileService launcherFileService,
-    IHttpContextService httpContextService,
-    IDisplayNameService displayNameService,
-    IVariablesService variablesService
+    ILauncherFileService launcherFileService
 ) : ControllerBase
 {
-    private readonly IDisplayNameService _displayNameService = displayNameService;
-    private readonly IHttpContextService _httpContextService = httpContextService;
-    private readonly ILauncherService _launcherService = launcherService;
-    private readonly IVariablesService _variablesService = variablesService;
-
     [HttpGet("update/{platform}/{version}")]
     public void GetUpdate(string platform, string version) { }
 

@@ -3,7 +3,4 @@
 namespace UKSF.Api.Exceptions;
 
 [Serializable]
-public class InvalidLoaScopeException : UksfException
-{
-    public InvalidLoaScopeException(string scope) : base($"'{scope}' is an invalid LOA scope", 400) { }
-}
+public class InvalidLoaScopeException(string scope) : UksfException($"'{scope}' is an invalid LOA scope", 400);

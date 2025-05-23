@@ -126,7 +126,7 @@ public class ChangeUtilitiesTests
     {
         var id = ObjectId.GenerateNewId().ToString();
         DomainAccount original = new() { Id = id, TeamspeakIdentities = [0] };
-        DomainAccount updated = new() { Id = id, TeamspeakIdentities = [0, 1, 2, 2] };
+        DomainAccount updated = new() { Id = id, TeamspeakIdentities = [0, 1, 2] };
 
         var subject = original.Changes(updated);
 
@@ -163,8 +163,20 @@ public class ChangeUtilitiesTests
     public void Should_detect_changes_for_simple_object()
     {
         var id = ObjectId.GenerateNewId().ToString();
-        DomainRank original = new() { Id = id, Abbreviation = "Pte", Name = "Privte", Order = 1 };
-        DomainRank updated = new() { Id = id, Name = "Private", Order = 5, TeamspeakGroup = "4" };
+        DomainRank original = new()
+        {
+            Id = id,
+            Abbreviation = "Pte",
+            Name = "Privte",
+            Order = 1
+        };
+        DomainRank updated = new()
+        {
+            Id = id,
+            Name = "Private",
+            Order = 5,
+            TeamspeakGroup = "4"
+        };
 
         var subject = original.Changes(updated);
 

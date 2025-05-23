@@ -74,6 +74,14 @@ public class ModpackController(IModpackService modpackService, IGithubService gi
         await modpackService.CancelBuild(build);
     }
 
+    [HttpPost("builds/emergency-cleanup")]
+    [Permissions(Permissions.Admin)]
+    public async Task<object> EmergencyCleanupStuckBuilds()
+    {
+        var cleanedProcesses = await modpackService.EmergencyCleanupStuckBuilds();
+        return new { message = $"Emergency cleanup completed. Killed {cleanedProcesses} processes", processesKilled = cleanedProcesses };
+    }
+
     [HttpGet("rcs")]
     [Permissions(Permissions.Member)]
     public IEnumerable<DomainModpackBuild> GetReleaseCandidates()

@@ -6,6 +6,14 @@ public class BuildStepBuildAce : ModBuildStep
     public const string Name = "Build ACE";
     private const string ModName = "ace";
     private readonly List<string> _allowedOptionals = ["ace_nouniformrestrictions"];
+    private IBuildProcessTracker _processTracker;
+
+    protected override Task SetupExecute()
+    {
+        _processTracker = ServiceProvider?.GetService<IBuildProcessTracker>();
+        StepLogger.Log("Retrieved services");
+        return base.SetupExecute();
+    }
 
     protected override async Task ProcessExecute()
     {
@@ -23,7 +31,9 @@ public class BuildStepBuildAce : ModBuildStep
                 Logger,
                 CancellationTokenSource,
                 ignoreErrorGateClose: "File written to",
-                ignoreErrorGateOpen: "MakePbo Version"
+                ignoreErrorGateOpen: "MakePbo Version",
+                processTracker: _processTracker,
+                buildId: Build?.Id
             );
             processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int)TimeSpan.FromMinutes(10).TotalMilliseconds, true);
             StepLogger.LogSurround("Make.py complete");

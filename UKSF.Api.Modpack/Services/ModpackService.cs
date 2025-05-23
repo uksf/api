@@ -29,6 +29,7 @@ public interface IModpackService
     Task CreateDevBuildFromPush(PushWebhookPayload payload);
     Task CreateRcBuildFromPush(PushWebhookPayload payload);
     Task CreateReleaseForVersion(string version);
+    Task<int> EmergencyCleanupStuckBuilds();
     void RunQueuedBuilds();
 }
 
@@ -194,6 +195,11 @@ public class ModpackService(
         await gitCommand.Commit($"Version {version}").Merge("main").Push("release");
 
         logger.LogAudit($"New release version {version} created");
+    }
+
+    public Task<int> EmergencyCleanupStuckBuilds()
+    {
+        return buildsService.EmergencyCleanupStuckBuilds();
     }
 
     public void RunQueuedBuilds()

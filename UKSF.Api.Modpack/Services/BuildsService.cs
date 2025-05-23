@@ -25,7 +25,8 @@ public interface IBuildsService
     Task FailBuild(DomainModpackBuild build);
     Task CancelBuild(DomainModpackBuild build);
     Task<DomainModpackBuild> CreateRebuild(DomainModpackBuild build, string newSha = "");
-    void CancelInterruptedBuilds();
+    Task CancelInterruptedBuilds();
+    Task<int> EmergencyCleanupStuckBuilds();
 }
 
 public class BuildsService(
@@ -33,6 +34,7 @@ public class BuildsService(
     IBuildStepService buildStepService,
     IAccountContext accountContext,
     IHttpContextService httpContextService,
+    IBuildProcessTracker processTracker,
     IUksfLogger logger
 ) : IBuildsService
 {
@@ -186,33 +188,76 @@ public class BuildsService(
         await FinishBuild(build, build.Steps.Any(x => x.BuildResult == ModpackBuildResult.Warning) ? ModpackBuildResult.Warning : ModpackBuildResult.Cancelled);
     }
 
-    public void CancelInterruptedBuilds()
+    public Task CancelInterruptedBuilds()
     {
         var builds = buildsContext.Get(x => x.Running || x.Steps.Any(y => y.Running)).ToList();
         if (!builds.Any())
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        var tasks = builds.Select(
-            async build =>
+        return Task.Run(() =>
             {
-                var runningStep = build.Steps.FirstOrDefault(x => x.Running);
-                if (runningStep is not null)
-                {
-                    runningStep.Running = false;
-                    runningStep.Finished = true;
-                    runningStep.EndTime = DateTime.UtcNow;
-                    runningStep.BuildResult = ModpackBuildResult.Cancelled;
-                    runningStep.Logs.Add(new ModpackBuildStepLogItem { Text = "\nBuild was interrupted", Colour = "goldenrod" });
-                    await buildsContext.Update(build, runningStep);
-                }
+                var tasks = builds.Select(async build =>
+                    {
+                        var runningStep = build.Steps.FirstOrDefault(x => x.Running);
+                        if (runningStep is not null)
+                        {
+                            runningStep.Running = false;
+                            runningStep.Finished = true;
+                            runningStep.EndTime = DateTime.UtcNow;
+                            runningStep.BuildResult = ModpackBuildResult.Cancelled;
+                            runningStep.Logs.Add(new ModpackBuildStepLogItem { Text = "\nBuild was interrupted", Colour = "goldenrod" });
+                            await buildsContext.Update(build, runningStep);
+                        }
 
-                await FinishBuild(build, ModpackBuildResult.Cancelled);
+                        await FinishBuild(build, ModpackBuildResult.Cancelled);
+                    }
+                );
+                _ = Task.WhenAll(tasks);
+                logger.LogAudit($"Marked {builds.Count} interrupted builds as cancelled", "SERVER");
             }
         );
-        _ = Task.WhenAll(tasks);
-        logger.LogAudit($"Marked {builds.Count} interrupted builds as cancelled", "SERVER");
+    }
+
+    /// <summary>
+    ///     Emergency method to forcibly clean up builds that may be stuck in git operations.
+    ///     This method kills only processes created by the build system and cleans up stuck builds.
+    /// </summary>
+    public async Task<int> EmergencyCleanupStuckBuilds()
+    {
+        logger.LogWarning("Emergency cleanup of stuck builds initiated");
+
+        try
+        {
+            // Get all tracked processes
+            var trackedProcesses = processTracker.GetTrackedProcesses().ToList();
+            logger.LogInfo($"Found {trackedProcesses.Count} tracked build processes to evaluate for cleanup");
+
+            // Kill tracked processes that have been running too long (>5 minutes)
+            var cutoffTime = DateTime.UtcNow.AddMinutes(-5);
+
+            foreach (var trackedProcess in trackedProcesses.Where(p => p.StartTime < cutoffTime))
+            {
+                logger.LogWarning(
+                    $"Killing long-running tracked process {trackedProcess.ProcessId} (running for {(DateTime.UtcNow - trackedProcess.StartTime).TotalMinutes:F1} minutes): {trackedProcess.Description}"
+                );
+            }
+
+            // Use the process tracker to kill long-running processes
+            var killedCount = processTracker.KillTrackedProcesses();
+
+            // Clean up any stuck builds in the database
+            await CancelInterruptedBuilds();
+
+            logger.LogAudit($"Emergency cleanup completed. Killed {killedCount} tracked build processes.", "SERVER");
+            return killedCount;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("Emergency cleanup failed", ex);
+            throw;
+        }
     }
 
     private async Task FinishBuild(DomainModpackBuild build, ModpackBuildResult result)

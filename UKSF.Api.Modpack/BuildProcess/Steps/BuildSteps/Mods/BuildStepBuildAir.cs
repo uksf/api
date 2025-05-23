@@ -5,6 +5,14 @@ public class BuildStepBuildAir : ModBuildStep
 {
     public const string Name = "Build Air";
     private const string ModName = "uksf_air";
+    private IBuildProcessTracker _processTracker;
+
+    protected override Task SetupExecute()
+    {
+        _processTracker = ServiceProvider?.GetService<IBuildProcessTracker>();
+        StepLogger.Log("Retrieved services");
+        return base.SetupExecute();
+    }
 
     protected override async Task ProcessExecute()
     {
@@ -17,7 +25,7 @@ public class BuildStepBuildAir : ModBuildStep
         if (IsBuildNeeded(ModName))
         {
             StepLogger.LogSurround("\nRunning make.py...");
-            using BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource);
+            using BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, processTracker: _processTracker, buildId: Build?.Id);
             processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect"), (int)TimeSpan.FromMinutes(1).TotalMilliseconds, true);
             StepLogger.LogSurround("Make.py complete");
         }

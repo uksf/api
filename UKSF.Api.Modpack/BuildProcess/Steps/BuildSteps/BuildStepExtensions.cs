@@ -6,6 +6,15 @@ namespace UKSF.Api.Modpack.BuildProcess.Steps.BuildSteps;
 public class BuildStepExtensions : FileBuildStep
 {
     public const string Name = "Extensions";
+    private IBuildProcessTracker _processTracker;
+
+    protected override Task SetupExecute()
+    {
+        _processTracker = ServiceProvider?.GetService<IBuildProcessTracker>();
+
+        StepLogger.Log("Retrieved services");
+        return Task.CompletedTask;
+    }
 
     protected override async Task ProcessExecute()
     {
@@ -31,7 +40,16 @@ public class BuildStepExtensions : FileBuildStep
             2,
             file =>
             {
-                using BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, true, false, true);
+                using BuildProcessHelper processHelper = new(
+                    StepLogger,
+                    Logger,
+                    CancellationTokenSource,
+                    true,
+                    false,
+                    true,
+                    processTracker: _processTracker,
+                    buildId: Build?.Id
+                );
                 processHelper.Run(file.DirectoryName, signTool, $"sign /f \"{certPath}\" \"{file.FullName}\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
                 Interlocked.Increment(ref signed);
                 return Task.CompletedTask;

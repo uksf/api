@@ -7,13 +7,17 @@ namespace UKSF.Api.Modpack.BuildProcess.Steps.BuildSteps;
 public class BuildStepSignDependencies : FileBuildStep
 {
     public const string Name = "Signatures";
+    private int _batchSize = 10;
     private string _dsCreateKey;
     private string _dsSignFile;
     private string _keyName;
-    private int _batchSize = 10;
+    private IBuildProcessTracker _processTracker;
 
     protected override async Task SetupExecute()
     {
+        _processTracker = ServiceProvider?.GetService<IBuildProcessTracker>();
+        StepLogger.Log("Retrieved services");
+
         _dsSignFile = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSSignFile.exe");
         _dsCreateKey = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSCreateKey.exe");
         _batchSize = VariablesService.GetVariable("BUILD_SIGNATURES_BATCH_SIZE").AsInt();
@@ -32,7 +36,7 @@ public class BuildStepSignDependencies : FileBuildStep
         StepLogger.LogSurround("Cleared keys directories");
 
         StepLogger.LogSurround("\nCreating key...");
-        using BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, true);
+        using BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, true, processTracker: _processTracker, buildId: Build?.Id);
         processHelper.Run(keygenPath, _dsCreateKey, _keyName, (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
         StepLogger.Log($"Created {_keyName}");
         await CopyFiles(keygen, keys, [new FileInfo(Path.Join(keygenPath, $"{_keyName}.bikey"))]);
@@ -84,7 +88,14 @@ public class BuildStepSignDependencies : FileBuildStep
             _batchSize,
             file =>
             {
-                using BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, true);
+                using BuildProcessHelper processHelper = new(
+                    StepLogger,
+                    Logger,
+                    CancellationTokenSource,
+                    true,
+                    processTracker: _processTracker,
+                    buildId: Build?.Id
+                );
                 processHelper.Run(addonsPath, _dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
                 Interlocked.Increment(ref signed);
                 return Task.CompletedTask;

@@ -33,7 +33,7 @@ public class AccountMapperTests
             Firstname = "Bob",
             Lastname = "McTest",
             MembershipState = MembershipState.Member,
-            TeamspeakIdentities = [4, 4],
+            TeamspeakIdentities = [4],
             ServiceRecord = [new ServiceRecordEntry { Occurence = "Test", Timestamp = timestamp }],
             RolePreferences = ["Aviation"],
             MilitaryExperience = false

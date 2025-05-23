@@ -7,6 +7,14 @@ public class BuildStepBuildModpack : ModBuildStep
 {
     public const string Name = "Build UKSF";
     private const string ModName = "modpack";
+    private IBuildProcessTracker _processTracker;
+
+    protected override Task SetupExecute()
+    {
+        _processTracker = ServiceProvider?.GetService<IBuildProcessTracker>();
+        StepLogger.Log("Retrieved services");
+        return base.SetupExecute();
+    }
 
     protected override async Task ProcessExecute()
     {
@@ -25,7 +33,7 @@ public class BuildStepBuildModpack : ModBuildStep
         StepLogger.Log($"\nConfiguration set to '{configuration}'");
 
         StepLogger.LogSurround("\nRunning make.py...");
-        using var processHelper = new BuildProcessHelper(StepLogger, Logger, CancellationTokenSource);
+        using var processHelper = new BuildProcessHelper(StepLogger, Logger, CancellationTokenSource, processTracker: _processTracker, buildId: Build?.Id);
         processHelper.Run(toolsPath, PythonPath, MakeCommand($"redirect configuration {configuration}"), (int)TimeSpan.FromMinutes(5).TotalMilliseconds, true);
         StepLogger.LogSurround("Make.py complete");
 
