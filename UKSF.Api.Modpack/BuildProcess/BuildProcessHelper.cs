@@ -76,12 +76,13 @@ public class BuildProcessHelper(
             Kill();
         };
 
+        _process.Start();
+
         if (_useLogger)
         {
-            logger.LogInfo($"{_logInfo}: Starting process with ID {_process.Id}");
+            logger.LogInfo($"{_logInfo}: Started process with ID {_process.Id}");
         }
 
-        _process.Start();
         _process.BeginOutputReadLine();
         _process.BeginErrorReadLine();
 
