@@ -29,6 +29,7 @@ public class BuildProcessHelper(
     private Process _process;
     private bool _useLogger;
     private bool _disposed;
+    private int _exitCode = int.MinValue;
 
     public List<string> Run(string workingDirectory, string executable, string args, int timeout, bool log = false)
     {
@@ -61,7 +62,7 @@ public class BuildProcessHelper(
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             },
-            EnableRaisingEvents = false
+            EnableRaisingEvents = true // Ensures the Exited event fires
         };
 
         _process.OutputDataReceived += OnOutputDataReceived;
@@ -118,11 +119,12 @@ public class BuildProcessHelper(
                 }
             }
 
-            if (_process.ExitCode != 0 && raiseErrors)
+            if (_exitCode != 0 && _exitCode != int.MinValue && raiseErrors)
             {
                 if (_useLogger)
                 {
-                    logger.LogError($"{_logInfo}: Build process exit code was non-zero ({_process.ExitCode})");
+                    logger.LogInfo($"{_logInfo}: Using stored exit code {_exitCode}");
+                    logger.LogError($"{_logInfo}: Build process exit code was non-zero ({_exitCode})");
                 }
 
                 var json = "";
@@ -135,7 +137,7 @@ public class BuildProcessHelper(
                     }
                 }
 
-                throw new Exception($"Process failed with exit code {_process.ExitCode}");
+                throw new Exception($"Process failed with exit code {_exitCode}");
             }
         }
         else
@@ -155,12 +157,13 @@ public class BuildProcessHelper(
             // Log detailed information about what failed
             if (_useLogger)
             {
+                logger.LogInfo($"{_logInfo}: Using stored exit code {_exitCode}");
                 logger.LogWarning(
-                    $"{_logInfo}: Process exited={_process.HasExited}, ExitCode={_process.ExitCode}, OutputProcessed={_outputWaitHandle.WaitOne(0)}, ErrorProcessed={_errorWaitHandle.WaitOne(0)}"
+                    $"{_logInfo}: Process exited={_process is null || _process.HasExited}, ExitCode={_exitCode}, OutputProcessed={_outputWaitHandle.WaitOne(0)}, ErrorProcessed={_errorWaitHandle.WaitOne(0)}"
                 );
             }
 
-            var exception = new Exception($"Process timed out and exited with non-zero code ({_process.ExitCode}) and last message ({lastMessage})");
+            var exception = new Exception($"Process timed out and exited with non-zero code ({_exitCode}) and last message ({lastMessage})");
             if (_useLogger)
             {
                 logger.LogError($"{_logInfo}: Build process bombed out", exception);
@@ -221,6 +224,14 @@ public class BuildProcessHelper(
 
             if (_process != null)
             {
+                if (_process.HasExited)
+                {
+                    _exitCode = _process.ExitCode;
+                    if (_useLogger)
+                    {
+                        logger.LogInfo($"{_logInfo}: Stored exit code {_exitCode}");
+                    }
+                }
                 _process.OutputDataReceived -= OnOutputDataReceived;
                 _process.ErrorDataReceived -= OnErrorDataReceived;
                 _process.Dispose();
