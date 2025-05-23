@@ -31,7 +31,7 @@ public class BuildStepExtensions : FileBuildStep
             2,
             file =>
             {
-                BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, true, false, true);
+                using BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, true, false, true);
                 processHelper.Run(file.DirectoryName, signTool, $"sign /f \"{certPath}\" \"{file.FullName}\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
                 Interlocked.Increment(ref signed);
                 return Task.CompletedTask;

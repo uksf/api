@@ -8,18 +8,18 @@ using UKSF.Api.Modpack.BuildProcess;
 using UKSF.Api.Modpack.Models;
 using Xunit;
 
-namespace UKSF.Tests.Unit.Modpack.BuildProcess;
+namespace UKSF.Api.Modpack.Tests;
 
 public class BuildQueueServiceTests
 {
     private readonly BuildQueueService _buildQueueService;
     private readonly Mock<IBuildProcessorService> _mockBuildProcessorService = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
-    private const int CLEANUP_DELAY_SECONDS = 1; // Use a short delay for tests
+    private const int CleanupDelaySeconds = 1; // Use a short delay for tests
 
     public BuildQueueServiceTests()
     {
-        _buildQueueService = new BuildQueueService(_mockBuildProcessorService.Object, _mockLogger.Object, CLEANUP_DELAY_SECONDS);
+        _buildQueueService = new BuildQueueService(_mockBuildProcessorService.Object, _mockLogger.Object, CleanupDelaySeconds);
     }
 
     [Fact]
@@ -180,7 +180,7 @@ public class BuildQueueServiceTests
         tcs.Task.IsCompleted.Should().BeTrue("the cancellation token should be triggered");
 
         // Wait for the cleanup to occur - using our custom short delay
-        await Task.Delay(TimeSpan.FromSeconds(CLEANUP_DELAY_SECONDS).Add(TimeSpan.FromMilliseconds(200)));
+        await Task.Delay(TimeSpan.FromSeconds(CleanupDelaySeconds).Add(TimeSpan.FromMilliseconds(200)));
 
         // Queue a new build to check if the service continues to work properly
         var newBuild = new DomainModpackBuild { Id = "testId2" };
@@ -219,7 +219,7 @@ public class BuildQueueServiceTests
         _buildQueueService.CancelRunning("testId");
 
         // Assert
-        await Task.Delay(TimeSpan.FromSeconds(CLEANUP_DELAY_SECONDS).Add(TimeSpan.FromSeconds(1)));
+        await Task.Delay(TimeSpan.FromSeconds(CleanupDelaySeconds).Add(TimeSpan.FromSeconds(1)));
 
         _mockLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("testId") && s.Contains("cancelled") && s.Contains("not completed"))), Times.Once);
     }

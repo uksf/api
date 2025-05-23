@@ -18,7 +18,7 @@ public class BuildStepBuildAce : ModBuildStep
         if (IsBuildNeeded(ModName))
         {
             StepLogger.LogSurround("\nRunning make.py...");
-            BuildProcessHelper processHelper = new(
+            using BuildProcessHelper processHelper = new(
                 StepLogger,
                 Logger,
                 CancellationTokenSource,

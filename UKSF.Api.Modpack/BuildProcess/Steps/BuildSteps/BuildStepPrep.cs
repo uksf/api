@@ -12,11 +12,11 @@ public class BuildStepPrep : BuildStep
         StepLogger.Log("Mounting build environment");
 
         var projectsPath = VariablesService.GetVariable("BUILD_PATH_PROJECTS").AsString();
-        BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, raiseErrors: false);
+        using BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, raiseErrors: false);
         processHelper.Run("C:/", "cmd.exe", $"/c \"subst P: \"{projectsPath}\"\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
 
-        processHelper = new BuildProcessHelper(StepLogger, Logger, CancellationTokenSource, raiseErrors: false);
-        processHelper.Run("C:/", "cmd.exe", "/c \"subst\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
+        using BuildProcessHelper delayProcessHelper = new(StepLogger, Logger, CancellationTokenSource, raiseErrors: false);
+        delayProcessHelper.Run("C:/", "cmd.exe", "/c \"subst\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
 
         return Task.CompletedTask;
     }

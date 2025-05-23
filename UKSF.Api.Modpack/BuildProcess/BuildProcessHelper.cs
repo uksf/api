@@ -15,7 +15,7 @@ public class BuildProcessHelper(
     List<string> errorExclusions = null,
     string ignoreErrorGateClose = "",
     string ignoreErrorGateOpen = ""
-)
+) : IDisposable
 {
     private readonly CancellationTokenSource _errorCancellationTokenSource = new();
     private readonly ManualResetEvent _errorWaitHandle = new(false);
@@ -25,17 +25,19 @@ public class BuildProcessHelper(
     private Exception _capturedException;
     private CancellationTokenRegistration _errorCancellationTokenRegistration;
     private bool _ignoreErrors;
-    private Process _process;
     private string _logInfo;
+    private Process _process;
     private bool _useLogger;
+    private bool _disposed;
 
     public List<string> Run(string workingDirectory, string executable, string args, int timeout, bool log = false)
     {
+        ObjectDisposedException.ThrowIf(_disposed, nameof(BuildProcessHelper));
+
         _logInfo = $"'{executable}' in '{workingDirectory}' with '{args}'";
         _useLogger = log;
 
-        _cancellationTokenRegistration = cancellationTokenSource.Token.Register(
-            () =>
+        _cancellationTokenRegistration = cancellationTokenSource.Token.Register(() =>
             {
                 if (_useLogger)
                 {
@@ -74,11 +76,21 @@ public class BuildProcessHelper(
             Kill();
         };
 
+        if (_useLogger)
+        {
+            logger.LogInfo($"{_logInfo}: Starting process with ID {_process.Id}");
+        }
+
         _process.Start();
         _process.BeginOutputReadLine();
         _process.BeginErrorReadLine();
 
-        if (_process.WaitForExit(timeout) && _outputWaitHandle.WaitOne(timeout) && _errorWaitHandle.WaitOne(timeout))
+        // Wait for process to exit first, then wait for all output to be processed
+        var processExited = _process.WaitForExit(timeout);
+        var outputProcessed = _outputWaitHandle.WaitOne(timeout);
+        var errorProcessed = _errorWaitHandle.WaitOne(timeout);
+
+        if (processExited && outputProcessed && errorProcessed)
         {
             if (_useLogger)
             {
@@ -96,7 +108,6 @@ public class BuildProcessHelper(
 
                 if (raiseErrors)
                 {
-
                     throw _capturedException;
                 }
 
@@ -114,13 +125,16 @@ public class BuildProcessHelper(
                 }
 
                 var json = "";
-                var messages = ExtractMessages(_results.Last(), ref json);
-                if (messages.Count != 0)
+                if (_results.Count > 0)
                 {
-                    throw new Exception(messages.First().Item1);
+                    var messages = ExtractMessages(_results.Last(), ref json);
+                    if (messages.Count != 0)
+                    {
+                        throw new Exception(messages.First().Item1);
+                    }
                 }
 
-                throw new Exception();
+                throw new Exception($"Process failed with exit code {_process.ExitCode}");
             }
         }
         else
@@ -129,10 +143,23 @@ public class BuildProcessHelper(
             cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
             var json = "";
-            var messages = ExtractMessages(_results.Last(), ref json);
-            var lastMessage = messages.FirstOrDefault()?.Item1 ?? "Woopsy Poospy the program made an Oopsy";
+            var lastMessage = "No output received";
 
-            Exception exception = new($"Process timed out and exited with non-zero code ({_process.ExitCode}) and last message ({lastMessage})");
+            if (_results.Count > 0)
+            {
+                var messages = ExtractMessages(_results.Last(), ref json);
+                lastMessage = messages.FirstOrDefault()?.Item1 ?? "Woopsy Poospy the program made an Oopsy";
+            }
+
+            // Log detailed information about what failed
+            if (_useLogger)
+            {
+                logger.LogWarning(
+                    $"{_logInfo}: Process exited={_process.HasExited}, ExitCode={_process.ExitCode}, OutputProcessed={_outputWaitHandle.WaitOne(0)}, ErrorProcessed={_errorWaitHandle.WaitOne(0)}"
+                );
+            }
+
+            var exception = new Exception($"Process timed out and exited with non-zero code ({_process.ExitCode}) and last message ({lastMessage})");
             if (_useLogger)
             {
                 logger.LogError($"{_logInfo}: Build process bombed out", exception);
@@ -159,21 +186,46 @@ public class BuildProcessHelper(
 
     private void Kill()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         if (_useLogger)
         {
             logger.LogWarning($"{_logInfo}: Build process kill instructed");
         }
 
-        if (_process is { HasExited: false })
+        try
         {
-            _process?.Kill();
+            if (_process is { HasExited: false })
+            {
+                _process.Kill(true); // Ensure process tree is killed
+            }
         }
+        catch (Exception ex)
+        {
+            if (_useLogger)
+            {
+                logger.LogError($"{_logInfo}: Error killing process", ex);
+            }
+        }
+        finally
+        {
+            _outputWaitHandle?.Set();
+            _errorWaitHandle?.Set();
 
-        _outputWaitHandle?.Set();
-        _errorWaitHandle?.Set();
+            _cancellationTokenRegistration.Dispose();
+            _errorCancellationTokenRegistration.Dispose();
 
-        _cancellationTokenRegistration.Dispose();
-        _errorCancellationTokenRegistration.Dispose();
+            if (_process != null)
+            {
+                _process.OutputDataReceived -= OnOutputDataReceived;
+                _process.ErrorDataReceived -= OnErrorDataReceived;
+                _process.Dispose();
+                _process = null;
+            }
+        }
     }
 
     private void OnOutputDataReceived(object sender, DataReceivedEventArgs receivedEventArgs)
@@ -205,18 +257,28 @@ public class BuildProcessHelper(
         }
 
         var data = receivedEventArgs.Data;
-        if (string.IsNullOrEmpty(data) || SkipForIgnoreErrorGate(data))
+        if (string.IsNullOrEmpty(data))
         {
-            if (_useLogger)
-            {
-                logger.LogWarning($"{_logInfo}: Build process received error: {data}");
-            }
+            return;
+        }
 
+        if (_useLogger)
+        {
+            logger.LogWarning($"{_logInfo}: Build process received error data: {data}");
+        }
+
+        if (SkipForIgnoreErrorGate(data))
+        {
             return;
         }
 
         if (errorExclusions is not null && errorExclusions.Any(x => data.ContainsIgnoreCase(x)))
         {
+            if (_useLogger)
+            {
+                logger.LogInfo($"{_logInfo}: Ignoring excluded error: {data}");
+            }
+
             return;
         }
 
@@ -248,6 +310,11 @@ public class BuildProcessHelper(
 
     private void LogMessagesFromData(string message)
     {
+        if (string.IsNullOrEmpty(message))
+        {
+            return;
+        }
+
         var json = "";
         try
         {
@@ -259,7 +326,7 @@ public class BuildProcessHelper(
         }
         catch (Exception exception)
         {
-            _capturedException = new Exception($"Json failed: {json}\n\n{exception}");
+            _capturedException = new Exception($"Json failed: {json}\n\nMessage: {message}\n\n{exception}");
             if (_useLogger)
             {
                 logger.LogError($"{_logInfo}: Build process failed to process json", _capturedException);
@@ -287,4 +354,32 @@ public class BuildProcessHelper(
 
         return messages;
     }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (disposing)
+        {
+            // Dispose managed resources
+            Kill();
+            _errorCancellationTokenSource.Dispose();
+            _errorWaitHandle.Dispose();
+            _outputWaitHandle.Dispose();
+            _cancellationTokenRegistration.Dispose();
+            _errorCancellationTokenRegistration.Dispose();
+        }
+
+        _disposed = true;
+    }
+
 }
