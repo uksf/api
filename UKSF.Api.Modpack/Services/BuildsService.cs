@@ -25,8 +25,8 @@ public interface IBuildsService
     Task FailBuild(DomainModpackBuild build);
     Task CancelBuild(DomainModpackBuild build);
     Task<DomainModpackBuild> CreateRebuild(DomainModpackBuild build, string newSha = "");
-    Task CancelInterruptedBuilds();
-    Task<int> EmergencyCleanupStuckBuilds();
+    Task<int> CancelInterruptedBuilds();
+    Task<EmergencyCleanupResult> EmergencyCleanupStuckBuilds();
 }
 
 public class BuildsService(
@@ -188,43 +188,41 @@ public class BuildsService(
         await FinishBuild(build, build.Steps.Any(x => x.BuildResult == ModpackBuildResult.Warning) ? ModpackBuildResult.Warning : ModpackBuildResult.Cancelled);
     }
 
-    public Task CancelInterruptedBuilds()
+    public async Task<int> CancelInterruptedBuilds()
     {
         var builds = buildsContext.Get(x => x.Running || x.Steps.Any(y => y.Running)).ToList();
         if (!builds.Any())
         {
-            return Task.CompletedTask;
+            return 0;
         }
 
-        return Task.Run(() =>
+        var tasks = builds.Select(async build =>
             {
-                var tasks = builds.Select(async build =>
-                    {
-                        var runningStep = build.Steps.FirstOrDefault(x => x.Running);
-                        if (runningStep is not null)
-                        {
-                            runningStep.Running = false;
-                            runningStep.Finished = true;
-                            runningStep.EndTime = DateTime.UtcNow;
-                            runningStep.BuildResult = ModpackBuildResult.Cancelled;
-                            runningStep.Logs.Add(new ModpackBuildStepLogItem { Text = "\nBuild was interrupted", Colour = "goldenrod" });
-                            await buildsContext.Update(build, runningStep);
-                        }
+                var runningStep = build.Steps.FirstOrDefault(x => x.Running);
+                if (runningStep is not null)
+                {
+                    runningStep.Running = false;
+                    runningStep.Finished = true;
+                    runningStep.EndTime = DateTime.UtcNow;
+                    runningStep.BuildResult = ModpackBuildResult.Cancelled;
+                    runningStep.Logs.Add(new ModpackBuildStepLogItem { Text = "\nBuild was interrupted", Colour = "goldenrod" });
+                    await buildsContext.Update(build, runningStep);
+                }
 
-                        await FinishBuild(build, ModpackBuildResult.Cancelled);
-                    }
-                );
-                _ = Task.WhenAll(tasks);
-                logger.LogAudit($"Marked {builds.Count} interrupted builds as cancelled", "SERVER");
+                await FinishBuild(build, ModpackBuildResult.Cancelled);
             }
         );
+
+        await Task.WhenAll(tasks);
+        logger.LogAudit($"Marked {builds.Count} interrupted builds as cancelled", "SERVER");
+        return builds.Count;
     }
 
     /// <summary>
     ///     Emergency method to forcibly clean up builds that may be stuck in git operations.
     ///     This method kills only processes created by the build system and cleans up stuck builds.
     /// </summary>
-    public async Task<int> EmergencyCleanupStuckBuilds()
+    public async Task<EmergencyCleanupResult> EmergencyCleanupStuckBuilds()
     {
         logger.LogWarning("Emergency cleanup of stuck builds initiated");
 
@@ -247,11 +245,16 @@ public class BuildsService(
             // Use the process tracker to kill long-running processes
             var killedCount = processTracker.KillTrackedProcesses();
 
-            // Clean up any stuck builds in the database
-            await CancelInterruptedBuilds();
+            // Clean up any stuck builds in the database and get the count of cancelled builds
+            var cancelledCount = await CancelInterruptedBuilds();
 
-            logger.LogAudit($"Emergency cleanup completed. Killed {killedCount} tracked build processes.", "SERVER");
-            return killedCount;
+            var result = new EmergencyCleanupResult { ProcessesKilled = killedCount, BuildsCancelled = cancelledCount };
+
+            logger.LogAudit(
+                $"Emergency cleanup completed. Killed {killedCount} tracked build processes and cancelled {cancelledCount} stuck builds.",
+                "SERVER"
+            );
+            return result;
         }
         catch (Exception ex)
         {

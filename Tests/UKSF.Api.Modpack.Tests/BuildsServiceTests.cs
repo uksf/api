@@ -45,6 +45,60 @@ public class BuildsServiceTests
     }
 
     [Fact]
+    public async Task CancelInterruptedBuilds_Should_ReturnCountOfCancelledBuilds()
+    {
+        // Arrange
+        var runningBuilds = new List<DomainModpackBuild>
+        {
+            new()
+            {
+                Id = "build1",
+                Running = true,
+                Steps = [new ModpackBuildStep("Step 1") { Running = true }]
+            },
+            new()
+            {
+                Id = "build2",
+                Running = true,
+                Steps = [new ModpackBuildStep("Step 2") { Running = true }]
+            }
+        };
+
+        _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>())).Returns(runningBuilds);
+
+        // Act
+        var result = await _subject.CancelInterruptedBuilds();
+
+        // Assert
+        result.Should().Be(2);
+
+        foreach (var build in runningBuilds)
+        {
+            build.Running.Should().BeFalse();
+            build.Finished.Should().BeTrue();
+            build.BuildResult.Should().Be(ModpackBuildResult.Cancelled);
+
+            var runningStep = build.Steps.First();
+            runningStep.Running.Should().BeFalse();
+            runningStep.Finished.Should().BeTrue();
+            runningStep.BuildResult.Should().Be(ModpackBuildResult.Cancelled);
+        }
+    }
+
+    [Fact]
+    public async Task CancelInterruptedBuilds_Should_ReturnZero_WhenNoRunningBuilds()
+    {
+        // Arrange
+        _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>())).Returns(new List<DomainModpackBuild>());
+
+        // Act
+        var result = await _subject.CancelInterruptedBuilds();
+
+        // Assert
+        result.Should().Be(0);
+    }
+
+    [Fact]
     public async Task EmergencyCleanupStuckBuilds_Should_MarkBuildsAsCancelled()
     {
         // Arrange
@@ -60,9 +114,12 @@ public class BuildsServiceTests
         _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>())).Returns(new List<DomainModpackBuild> { runningBuild });
 
         // Act
-        await _subject.EmergencyCleanupStuckBuilds();
+        var result = await _subject.EmergencyCleanupStuckBuilds();
 
         // Assert
+        result.ProcessesKilled.Should().Be(2);
+        result.BuildsCancelled.Should().Be(1);
+
         runningBuild.Running.Should().BeFalse();
         runningBuild.Finished.Should().BeTrue();
         runningBuild.BuildResult.Should().Be(ModpackBuildResult.Cancelled);
@@ -81,10 +138,11 @@ public class BuildsServiceTests
         _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>())).Returns(new List<DomainModpackBuild>());
 
         // Act
-        var killedCount = await _subject.EmergencyCleanupStuckBuilds();
+        var result = await _subject.EmergencyCleanupStuckBuilds();
 
         // Assert
-        killedCount.Should().Be(0);
+        result.ProcessesKilled.Should().Be(0);
+        result.BuildsCancelled.Should().Be(0);
         _mockProcessTracker.Verify(x => x.KillTrackedProcesses(null), Times.Once);
     }
 
@@ -104,10 +162,11 @@ public class BuildsServiceTests
         _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>())).Returns(new List<DomainModpackBuild> { runningBuild });
 
         // Act
-        var killedCount = await _subject.EmergencyCleanupStuckBuilds();
+        var result = await _subject.EmergencyCleanupStuckBuilds();
 
         // Assert
-        killedCount.Should().Be(3);
+        result.ProcessesKilled.Should().Be(3);
+        result.BuildsCancelled.Should().Be(1);
         _mockProcessTracker.Verify(x => x.KillTrackedProcesses(null), Times.Once);
     }
 

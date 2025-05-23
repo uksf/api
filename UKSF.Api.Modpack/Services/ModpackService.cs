@@ -29,7 +29,7 @@ public interface IModpackService
     Task CreateDevBuildFromPush(PushWebhookPayload payload);
     Task CreateRcBuildFromPush(PushWebhookPayload payload);
     Task CreateReleaseForVersion(string version);
-    Task<int> EmergencyCleanupStuckBuilds();
+    Task<EmergencyCleanupResult> EmergencyCleanupStuckBuilds();
     void RunQueuedBuilds();
 }
 
@@ -197,7 +197,7 @@ public class ModpackService(
         logger.LogAudit($"New release version {version} created");
     }
 
-    public Task<int> EmergencyCleanupStuckBuilds()
+    public Task<EmergencyCleanupResult> EmergencyCleanupStuckBuilds()
     {
         return buildsService.EmergencyCleanupStuckBuilds();
     }

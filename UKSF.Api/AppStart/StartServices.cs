@@ -50,13 +50,13 @@ public static class StartServices
         serviceProvider.GetRequiredService<ISchedulerService>().Load();
 
         // Mark running builds as cancelled & run queued builds
-        serviceProvider.GetRequiredService<IBuildsService>().CancelInterruptedBuilds();
+        serviceProvider.GetRequiredService<IBuildsService>().CancelInterruptedBuilds().Wait(TimeSpan.FromSeconds(30));
         serviceProvider.GetRequiredService<IModpackService>().RunQueuedBuilds();
     }
 
     public static void StopUksfServices(this IServiceProvider serviceProvider)
     {
-        // Cancel any running builds
+        // Cancel any running builds in the queue
         serviceProvider.GetRequiredService<IBuildQueueService>().CancelAll();
 
         // Stop teamspeak
