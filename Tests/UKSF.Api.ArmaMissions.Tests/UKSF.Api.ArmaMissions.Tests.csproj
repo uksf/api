@@ -1,7 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
+
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
@@ -19,8 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\UKSF.Api.Core\UKSF.Api.Core.csproj"/>
-        <ProjectReference Include="..\..\UKSF.Api.Launcher\UKSF.Api.Launcher.csproj"/>
+        <ProjectReference Include="..\..\UKSF.Api.ArmaMissions\UKSF.Api.ArmaMissions.csproj"/>
         <ProjectReference Include="..\UKSF.Api.Tests.Common\UKSF.Api.Tests.Common.csproj"/>
     </ItemGroup>
 
