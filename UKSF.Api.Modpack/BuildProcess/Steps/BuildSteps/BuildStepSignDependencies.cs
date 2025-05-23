@@ -11,13 +11,9 @@ public class BuildStepSignDependencies : FileBuildStep
     private string _dsCreateKey;
     private string _dsSignFile;
     private string _keyName;
-    private IBuildProcessTracker _processTracker;
 
     protected override async Task SetupExecute()
     {
-        _processTracker = ServiceProvider?.GetService<IBuildProcessTracker>();
-        StepLogger.Log("Retrieved services");
-
         _dsSignFile = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSSignFile.exe");
         _dsCreateKey = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSCreateKey.exe");
         _batchSize = VariablesService.GetVariable("BUILD_SIGNATURES_BATCH_SIZE").AsInt();
@@ -36,8 +32,7 @@ public class BuildStepSignDependencies : FileBuildStep
         StepLogger.LogSurround("Cleared keys directories");
 
         StepLogger.LogSurround("\nCreating key...");
-        using BuildProcessHelper processHelper = new(StepLogger, Logger, CancellationTokenSource, true, processTracker: _processTracker, buildId: Build?.Id);
-        processHelper.Run(keygenPath, _dsCreateKey, _keyName, (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
+        RunProcess(keygenPath, _dsCreateKey, _keyName, (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, true);
         StepLogger.Log($"Created {_keyName}");
         await CopyFiles(keygen, keys, [new FileInfo(Path.Join(keygenPath, $"{_keyName}.bikey"))]);
         StepLogger.LogSurround("Created key");
@@ -88,15 +83,7 @@ public class BuildStepSignDependencies : FileBuildStep
             _batchSize,
             file =>
             {
-                using BuildProcessHelper processHelper = new(
-                    StepLogger,
-                    Logger,
-                    CancellationTokenSource,
-                    true,
-                    processTracker: _processTracker,
-                    buildId: Build?.Id
-                );
-                processHelper.Run(addonsPath, _dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds);
+                RunProcess(addonsPath, _dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, true);
                 Interlocked.Increment(ref signed);
                 return Task.CompletedTask;
             },

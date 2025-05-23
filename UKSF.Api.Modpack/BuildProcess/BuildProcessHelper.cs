@@ -2,6 +2,7 @@
 using System.Text.Json.Nodes;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Modpack.BuildProcess;
 
@@ -9,6 +10,7 @@ public class BuildProcessHelper(
     IStepLogger stepLogger,
     IUksfLogger logger,
     CancellationTokenSource cancellationTokenSource,
+    IVariablesService variablesService,
     bool suppressOutput = false,
     bool raiseErrors = true,
     bool errorSilently = false,
@@ -479,7 +481,7 @@ public class BuildProcessHelper(
     // Centralized logging methods
     private void Log(string message)
     {
-        if (_useLogger)
+        if (ShouldLog())
         {
             logger.LogInfo($"{_logInfo}: {message}");
         }
@@ -487,7 +489,7 @@ public class BuildProcessHelper(
 
     private void LogWarning(string message)
     {
-        if (_useLogger)
+        if (ShouldLog())
         {
             logger.LogWarning($"{_logInfo}: {message}");
         }
@@ -495,7 +497,7 @@ public class BuildProcessHelper(
 
     private void LogError(string message, Exception exception = null)
     {
-        if (_useLogger)
+        if (ShouldLog())
         {
             if (exception != null)
             {
@@ -506,6 +508,13 @@ public class BuildProcessHelper(
                 logger.LogError($"{_logInfo}: {message}");
             }
         }
+    }
+
+    private bool ShouldLog()
+    {
+        var forceLogsVariable = variablesService.GetVariable("BUILD_FORCE_LOGS");
+        var forceLogs = forceLogsVariable?.AsBoolWithDefault(false) ?? false;
+        return _useLogger || forceLogs;
     }
 
     protected virtual void Dispose(bool disposing)

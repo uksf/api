@@ -7,14 +7,6 @@ public class BuildStepBuildAcre : ModBuildStep
     private const string ModName = "acre";
 
     private readonly List<string> _errorExclusions = ["Found DirectX", "Linking statically", "Visual Studio 16", "INFO: Building", "Build Type"];
-    private IBuildProcessTracker _processTracker;
-
-    protected override Task SetupExecute()
-    {
-        _processTracker = ServiceProvider?.GetService<IBuildProcessTracker>();
-        StepLogger.Log("Retrieved services");
-        return base.SetupExecute();
-    }
 
     protected override async Task ProcessExecute()
     {
@@ -27,17 +19,19 @@ public class BuildStepBuildAcre : ModBuildStep
         if (IsBuildNeeded(ModName))
         {
             StepLogger.LogSurround("\nRunning make.py...");
-            using BuildProcessHelper processHelper = new(
-                StepLogger,
-                Logger,
-                CancellationTokenSource,
-                errorExclusions: _errorExclusions,
-                ignoreErrorGateClose: "File written to",
-                ignoreErrorGateOpen: "MakePbo Version",
-                processTracker: _processTracker,
-                buildId: Build?.Id
+            RunProcess(
+                toolsPath,
+                PythonPath,
+                MakeCommand("redirect compile"),
+                (int)TimeSpan.FromMinutes(10).TotalMilliseconds,
+                true,
+                false,
+                true,
+                false,
+                _errorExclusions,
+                "File written to",
+                "MakePbo Version"
             );
-            processHelper.Run(toolsPath, PythonPath, MakeCommand("redirect compile"), (int)TimeSpan.FromMinutes(10).TotalMilliseconds, true);
             StepLogger.LogSurround("Make.py complete");
         }
 

@@ -2,28 +2,14 @@
 
 public class GitBuildStep : BuildStep
 {
-    private IBuildProcessTracker _processTracker;
-
     protected override Task SetupExecute()
     {
-        _processTracker = ServiceProvider?.GetService<IBuildProcessTracker>();
-
         StepLogger.Log("Retrieved services");
         return Task.CompletedTask;
     }
 
     internal string GitCommand(string workingDirectory, string command)
     {
-        using var processHelper = new BuildProcessHelper(
-            StepLogger,
-            Logger,
-            CancellationTokenSource,
-            false,
-            false,
-            true,
-            processTracker: _processTracker,
-            buildId: Build?.Id
-        );
         var timeoutMinutes = 2; // Increased from 10 seconds to 2 minutes for git operations
         var timeoutMs = (int)TimeSpan.FromMinutes(timeoutMinutes).TotalMilliseconds;
 
@@ -32,7 +18,7 @@ public class GitBuildStep : BuildStep
         var fullCommand = $"{gitConfigPrefix} {command}";
 
         StepLogger.Log($"Executing git command: {command} (timeout: {timeoutMinutes} minutes)");
-        var results = processHelper.Run(workingDirectory, "cmd.exe", $"/c \"{fullCommand}\"", timeoutMs);
+        var results = RunProcess(workingDirectory, "cmd.exe", $"/c \"{fullCommand}\"", timeoutMs, false, false, false, true);
         return results.Count > 0 ? results.Last() : string.Empty;
     }
 

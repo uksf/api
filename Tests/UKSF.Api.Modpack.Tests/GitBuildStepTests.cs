@@ -146,9 +146,16 @@ public class GitTimeoutConfigurationTests
         // Arrange
         var mockStepLogger = new Mock<IStepLogger>();
         var mockLogger = new Mock<IUksfLogger>();
+        var mockVariablesService = new Mock<IVariablesService>();
         var cancellationTokenSource = new CancellationTokenSource();
 
-        var buildProcessHelper = new BuildProcessHelper(mockStepLogger.Object, mockLogger.Object, cancellationTokenSource, raiseErrors: false);
+        var buildProcessHelper = new BuildProcessHelper(
+            mockStepLogger.Object,
+            mockLogger.Object,
+            cancellationTokenSource,
+            mockVariablesService.Object,
+            raiseErrors: false
+        );
 
         // Act - Test git safety configurations without actually running git
         string executable;
@@ -181,9 +188,16 @@ public class GitTimeoutConfigurationTests
         // Arrange
         var mockStepLogger = new Mock<IStepLogger>();
         var mockLogger = new Mock<IUksfLogger>();
+        var mockVariablesService = new Mock<IVariablesService>();
         var cancellationTokenSource = new CancellationTokenSource();
 
-        var buildProcessHelper = new BuildProcessHelper(mockStepLogger.Object, mockLogger.Object, cancellationTokenSource, raiseErrors: false);
+        var buildProcessHelper = new BuildProcessHelper(
+            mockStepLogger.Object,
+            mockLogger.Object,
+            cancellationTokenSource,
+            mockVariablesService.Object,
+            raiseErrors: false
+        );
 
         // Act & Assert - Test that extended timeouts are supported
         var twoMinutesInMs = (int)TimeSpan.FromMinutes(2).TotalMilliseconds;
@@ -219,9 +233,16 @@ public class GitTimeoutConfigurationTests
         // Arrange
         var mockStepLogger = new Mock<IStepLogger>();
         var mockLogger = new Mock<IUksfLogger>();
+        var mockVariablesService = new Mock<IVariablesService>();
         var cancellationTokenSource = new CancellationTokenSource();
 
-        var buildProcessHelper = new BuildProcessHelper(mockStepLogger.Object, mockLogger.Object, cancellationTokenSource, raiseErrors: false);
+        var buildProcessHelper = new BuildProcessHelper(
+            mockStepLogger.Object,
+            mockLogger.Object,
+            cancellationTokenSource,
+            mockVariablesService.Object,
+            raiseErrors: false
+        );
 
         // Act
         var timeoutMs = (int)TimeSpan.FromMinutes(timeoutMinutes).TotalMilliseconds;

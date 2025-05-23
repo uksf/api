@@ -4,6 +4,8 @@ using System.Threading;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Models.Domain;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.BuildProcess;
 using Xunit;
 
@@ -15,12 +17,26 @@ public class BuildProcessHelperTests
     private readonly Mock<IBuildProcessTracker> _mockProcessTracker = new();
     private readonly Mock<IStepLogger> _mockStepLogger = new();
     private readonly Mock<IUksfLogger> _mockUksfLogger = new();
+    private readonly Mock<IVariablesService> _mockVariablesService = new();
+
+    public BuildProcessHelperTests()
+    {
+        // Setup default behavior for BUILD_FORCE_LOGS variable
+        var buildForceLogsVariable = new DomainVariableItem { Key = "BUILD_FORCE_LOGS", Item = false };
+        _mockVariablesService.Setup(x => x.GetVariable("BUILD_FORCE_LOGS")).Returns(buildForceLogsVariable);
+    }
 
     [Fact]
     public void Dispose_Should_CleanUpResources()
     {
         // Arrange
-        var buildProcessHelper = new BuildProcessHelper(_mockStepLogger.Object, _mockUksfLogger.Object, _cancellationTokenSource, raiseErrors: false);
+        var buildProcessHelper = new BuildProcessHelper(
+            _mockStepLogger.Object,
+            _mockUksfLogger.Object,
+            _cancellationTokenSource,
+            _mockVariablesService.Object,
+            raiseErrors: false
+        );
 
         // Act & Assert - Should not throw
         buildProcessHelper.Dispose();
@@ -36,7 +52,13 @@ public class BuildProcessHelperTests
         var preCancelledTokenSource = new CancellationTokenSource();
         preCancelledTokenSource.Cancel(); // Pre-cancel the token
 
-        var buildProcessHelper = new BuildProcessHelper(_mockStepLogger.Object, _mockUksfLogger.Object, preCancelledTokenSource, raiseErrors: false);
+        var buildProcessHelper = new BuildProcessHelper(
+            _mockStepLogger.Object,
+            _mockUksfLogger.Object,
+            preCancelledTokenSource,
+            _mockVariablesService.Object,
+            raiseErrors: false
+        );
 
         string executable;
         string args;
@@ -71,6 +93,7 @@ public class BuildProcessHelperTests
             _mockStepLogger.Object,
             _mockUksfLogger.Object,
             _cancellationTokenSource,
+            _mockVariablesService.Object,
             raiseErrors: false,
             errorSilently: true
         );
@@ -107,9 +130,10 @@ public class BuildProcessHelperTests
             _mockStepLogger.Object,
             _mockUksfLogger.Object,
             _cancellationTokenSource,
+            _mockVariablesService.Object,
             raiseErrors: false,
-            ignoreErrorGateOpen: "START_IGNORE",
-            ignoreErrorGateClose: "END_IGNORE"
+            ignoreErrorGateClose: "END_IGNORE",
+            ignoreErrorGateOpen: "START_IGNORE"
         );
 
         string executable;
@@ -137,7 +161,14 @@ public class BuildProcessHelperTests
     public void Run_Should_HandleSuppressOutput()
     {
         // Arrange
-        var buildProcessHelper = new BuildProcessHelper(_mockStepLogger.Object, _mockUksfLogger.Object, _cancellationTokenSource, true, false);
+        var buildProcessHelper = new BuildProcessHelper(
+            _mockStepLogger.Object,
+            _mockUksfLogger.Object,
+            _cancellationTokenSource,
+            _mockVariablesService.Object,
+            true,
+            false
+        );
 
         string executable;
         string args;
@@ -167,7 +198,13 @@ public class BuildProcessHelperTests
     public void Run_Should_HandleTimeout_Gracefully()
     {
         // Arrange
-        var buildProcessHelper = new BuildProcessHelper(_mockStepLogger.Object, _mockUksfLogger.Object, _cancellationTokenSource, raiseErrors: false);
+        var buildProcessHelper = new BuildProcessHelper(
+            _mockStepLogger.Object,
+            _mockUksfLogger.Object,
+            _cancellationTokenSource,
+            _mockVariablesService.Object,
+            raiseErrors: false
+        );
 
         // Use a command that will finish quickly to simulate timeout behavior
         string executable;
@@ -199,7 +236,13 @@ public class BuildProcessHelperTests
     public void Run_Should_LogProcessInformation()
     {
         // Arrange
-        var buildProcessHelper = new BuildProcessHelper(_mockStepLogger.Object, _mockUksfLogger.Object, _cancellationTokenSource, raiseErrors: false);
+        var buildProcessHelper = new BuildProcessHelper(
+            _mockStepLogger.Object,
+            _mockUksfLogger.Object,
+            _cancellationTokenSource,
+            _mockVariablesService.Object,
+            raiseErrors: false
+        );
 
         string executable;
         string args;
@@ -234,6 +277,7 @@ public class BuildProcessHelperTests
             _mockStepLogger.Object,
             _mockUksfLogger.Object,
             _cancellationTokenSource,
+            _mockVariablesService.Object,
             raiseErrors: false,
             processTracker: _mockProcessTracker.Object,
             buildId: null
@@ -270,6 +314,7 @@ public class BuildProcessHelperTests
             _mockStepLogger.Object,
             _mockUksfLogger.Object,
             _cancellationTokenSource,
+            _mockVariablesService.Object,
             raiseErrors: false,
             processTracker: null,
             buildId: "test-build"
@@ -299,7 +344,13 @@ public class BuildProcessHelperTests
     public void Run_Should_NotThrowException_When_RaiseErrorsIsFalse()
     {
         // Arrange
-        var buildProcessHelper = new BuildProcessHelper(_mockStepLogger.Object, _mockUksfLogger.Object, _cancellationTokenSource, raiseErrors: false);
+        var buildProcessHelper = new BuildProcessHelper(
+            _mockStepLogger.Object,
+            _mockUksfLogger.Object,
+            _cancellationTokenSource,
+            _mockVariablesService.Object,
+            raiseErrors: false
+        );
 
         string executable;
         string args;
@@ -331,6 +382,7 @@ public class BuildProcessHelperTests
             _mockStepLogger.Object,
             _mockUksfLogger.Object,
             _cancellationTokenSource,
+            _mockVariablesService.Object,
             raiseErrors: false,
             processTracker: _mockProcessTracker.Object,
             buildId: BuildId
@@ -365,7 +417,13 @@ public class BuildProcessHelperTests
     public void Run_Should_SupportExtendedTimeouts()
     {
         // Arrange
-        var buildProcessHelper = new BuildProcessHelper(_mockStepLogger.Object, _mockUksfLogger.Object, _cancellationTokenSource, raiseErrors: false);
+        var buildProcessHelper = new BuildProcessHelper(
+            _mockStepLogger.Object,
+            _mockUksfLogger.Object,
+            _cancellationTokenSource,
+            _mockVariablesService.Object,
+            raiseErrors: false
+        );
 
         // Test that extended timeouts (like 2 minutes for git operations) are supported
         var twoMinutesInMs = (int)TimeSpan.FromMinutes(2).TotalMilliseconds;
@@ -395,7 +453,13 @@ public class BuildProcessHelperTests
     public void Run_Should_ThrowException_WithCorrectExitCode_When_ProcessExitsWithNonZeroCode()
     {
         // Arrange
-        var buildProcessHelper = new BuildProcessHelper(_mockStepLogger.Object, _mockUksfLogger.Object, _cancellationTokenSource, raiseErrors: true);
+        var buildProcessHelper = new BuildProcessHelper(
+            _mockStepLogger.Object,
+            _mockUksfLogger.Object,
+            _cancellationTokenSource,
+            _mockVariablesService.Object,
+            raiseErrors: true
+        );
 
         string executable;
         string args;
@@ -428,7 +492,13 @@ public class BuildProcessHelperTests
     public void Run_Should_ThrowObjectDisposedException_When_AlreadyDisposed()
     {
         // Arrange
-        var buildProcessHelper = new BuildProcessHelper(_mockStepLogger.Object, _mockUksfLogger.Object, _cancellationTokenSource, raiseErrors: false);
+        var buildProcessHelper = new BuildProcessHelper(
+            _mockStepLogger.Object,
+            _mockUksfLogger.Object,
+            _cancellationTokenSource,
+            _mockVariablesService.Object,
+            raiseErrors: false
+        );
 
         buildProcessHelper.Dispose();
 
@@ -440,7 +510,13 @@ public class BuildProcessHelperTests
     public void Run_Should_WaitForOutputProcessingAfterProcessExit()
     {
         // Arrange
-        var buildProcessHelper = new BuildProcessHelper(_mockStepLogger.Object, _mockUksfLogger.Object, _cancellationTokenSource, raiseErrors: false);
+        var buildProcessHelper = new BuildProcessHelper(
+            _mockStepLogger.Object,
+            _mockUksfLogger.Object,
+            _cancellationTokenSource,
+            _mockVariablesService.Object,
+            raiseErrors: false
+        );
 
         string executable;
         string args;
@@ -471,6 +547,34 @@ public class BuildProcessHelperTests
         _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process finished successfully"))), Times.Once);
     }
 
+    private BuildProcessHelper CreateBuildProcessHelper(
+        bool suppressOutput = false,
+        bool raiseErrors = true,
+        bool errorSilently = false,
+        List<string> errorExclusions = null,
+        string ignoreErrorGateClose = "",
+        string ignoreErrorGateOpen = "",
+        IBuildProcessTracker processTracker = null,
+        string buildId = null,
+        CancellationTokenSource cancellationTokenSource = null
+    )
+    {
+        return new BuildProcessHelper(
+            _mockStepLogger.Object,
+            _mockUksfLogger.Object,
+            cancellationTokenSource ?? _cancellationTokenSource,
+            _mockVariablesService.Object,
+            suppressOutput,
+            raiseErrors,
+            errorSilently,
+            errorExclusions,
+            ignoreErrorGateClose,
+            ignoreErrorGateOpen,
+            processTracker,
+            buildId
+        );
+    }
+
     [Theory]
     [InlineData("error1", "error2")]
     [InlineData("warning", "critical")]
@@ -482,6 +586,7 @@ public class BuildProcessHelperTests
             _mockStepLogger.Object,
             _mockUksfLogger.Object,
             _cancellationTokenSource,
+            _mockVariablesService.Object,
             raiseErrors: false,
             errorExclusions: errorExclusions
         );

@@ -37,12 +37,13 @@ public class BuildStep : IBuildStep
     private readonly CancellationTokenSource _updatePusherCancellationTokenSource = new();
     private readonly SemaphoreSlim _updateSemaphore = new(1);
     private ModpackBuildStep _buildStep;
+    private IUksfLogger _logger;
+    private IBuildProcessHelperFactory _processHelperFactory;
     private Func<UpdateDefinition<DomainModpackBuild>, Task> _updateBuildCallback;
     private TimeSpan _updateInterval;
     private Func<Task> _updateStepCallback;
     protected DomainModpackBuild Build;
     protected CancellationTokenSource CancellationTokenSource;
-    protected IUksfLogger Logger;
     protected IServiceProvider ServiceProvider;
     protected IStepLogger StepLogger;
     protected IVariablesService VariablesService;
@@ -58,8 +59,9 @@ public class BuildStep : IBuildStep
     )
     {
         ServiceProvider = newServiceProvider;
-        Logger = logger;
+        _logger = logger;
         VariablesService = ServiceProvider.GetService<IVariablesService>();
+        _processHelperFactory = ServiceProvider.GetService<IBuildProcessHelperFactory>();
         Build = modpackBuild;
         _buildStep = modpackBuildStep;
         _updateBuildCallback = buildUpdateCallback;
@@ -196,6 +198,35 @@ public class BuildStep : IBuildStep
     internal string GetBuildSourcesPath()
     {
         return VariablesService.GetVariable("BUILD_PATH_SOURCES").AsString();
+    }
+
+    protected List<string> RunProcess(
+        string workingDirectory,
+        string executable,
+        string args,
+        int timeout,
+        bool log = false,
+        bool suppressOutput = false,
+        bool raiseErrors = true,
+        bool errorSilently = false,
+        List<string> errorExclusions = null,
+        string ignoreErrorGateClose = "",
+        string ignoreErrorGateOpen = ""
+    )
+    {
+        using var processHelper = _processHelperFactory.Create(
+            StepLogger,
+            _logger,
+            CancellationTokenSource,
+            suppressOutput,
+            raiseErrors,
+            errorSilently,
+            errorExclusions,
+            ignoreErrorGateClose,
+            ignoreErrorGateOpen,
+            Build?.Id
+        );
+        return processHelper.Run(workingDirectory, executable, args, timeout, log);
     }
 
     internal void SetEnvironmentVariable(string key, object value)

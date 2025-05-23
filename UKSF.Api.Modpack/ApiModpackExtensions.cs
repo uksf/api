@@ -38,7 +38,8 @@ public static class ApiModpackExtensions
                        .AddSingleton<IBuildProcessorService, BuildProcessorService>()
                        .AddSingleton<IBuildQueueService, BuildQueueService>()
                        .AddSingleton<IVersionService, VersionService>()
-                       .AddSingleton<IBuildProcessTracker, BuildProcessTracker>();
+                       .AddSingleton<IBuildProcessTracker, BuildProcessTracker>()
+                       .AddTransient<IBuildProcessHelperFactory, BuildProcessHelperFactory>();
     }
 
     private static IServiceCollection AddActions(this IServiceCollection services)
