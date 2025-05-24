@@ -153,13 +153,19 @@ public class BuildProcessHelperTests
 
         // Verify that proper logging occurred for the lifecycle
         _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Starting process"))), Times.Once);
-        _mockUksfLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("Kill process instructed"))), Times.AtMostOnce);
+        _mockUksfLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("Kill process instructed"))), Times.Once);
         _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Stored exit code 1"))), Times.Once);
         _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process reached successful return"))), Times.Once);
 
         // Verify that stream closure was handled properly (no hanging on stream wait)
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Output stream closed"))), Times.Once);
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Error stream closed") || s.Contains("forcing completion"))), Times.AtLeastOnce);
+        _mockUksfLogger.Verify(
+            x => x.LogInfo(It.Is<string>(s => s.Contains("Output stream closed") || s.Contains("Output stream not closed naturally"))),
+            Times.Once
+        );
+        _mockUksfLogger.Verify(
+            x => x.LogInfo(It.Is<string>(s => s.Contains("Error stream closed") || s.Contains("Error stream not closed naturally"))),
+            Times.Once
+        );
     }
 
     [Fact]
