@@ -15,25 +15,18 @@ public interface IStepLogger
     void LogInline(string log);
 }
 
-public class StepLogger : IStepLogger
+public class StepLogger(ModpackBuildStep buildStep) : IStepLogger
 {
-    private readonly ModpackBuildStep _buildStep;
-
-    public StepLogger(ModpackBuildStep buildStep)
-    {
-        _buildStep = buildStep;
-    }
-
     public void LogStart()
     {
-        LogLines($"Starting: {_buildStep.Name}", string.Empty);
+        LogLines($"Starting: {buildStep.Name}", string.Empty);
     }
 
     public void LogSuccess()
     {
         LogLines(
-            $"\nFinished{(_buildStep.BuildResult == ModpackBuildResult.Warning ? " with warning" : "")}: {_buildStep.Name}",
-            _buildStep.BuildResult == ModpackBuildResult.Warning ? "orangered" : "green"
+            $"\nFinished{(buildStep.BuildResult == ModpackBuildResult.Warning ? " with warning" : "")}: {buildStep.Name}",
+            buildStep.BuildResult == ModpackBuildResult.Warning ? "orangered" : "green"
         );
     }
 
@@ -44,7 +37,7 @@ public class StepLogger : IStepLogger
 
     public void LogSkipped()
     {
-        LogLines($"\nSkipped: {_buildStep.Name}", "gray");
+        LogLines($"\nSkipped: {buildStep.Name}", "gray");
     }
 
     public void LogWarning(string message)
@@ -54,7 +47,7 @@ public class StepLogger : IStepLogger
 
     public void LogError(Exception exception)
     {
-        LogLines($"Error\n{exception.Message}\n{exception.StackTrace}\n\nFailed: {_buildStep.Name}", "red");
+        LogLines($"Error\n{exception.Message}\n{exception.StackTrace}\n\nFailed: {buildStep.Name}", "red");
     }
 
     public void LogSurround(string log)
@@ -93,18 +86,18 @@ public class StepLogger : IStepLogger
 
         if (inline)
         {
-            if (_buildStep.Logs.Count > 0)
+            if (buildStep.Logs.Count > 0)
             {
-                _buildStep.Logs[^1] = logList.First();
+                buildStep.Logs[^1] = logList.First();
             }
             else
             {
-                _buildStep.Logs.AddRange(logList);
+                buildStep.Logs.AddRange(logList);
             }
         }
         else
         {
-            _buildStep.Logs.AddRange(logList);
+            buildStep.Logs.AddRange(logList);
         }
     }
 }

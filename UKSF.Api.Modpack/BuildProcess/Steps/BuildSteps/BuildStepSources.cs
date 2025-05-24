@@ -33,20 +33,20 @@ public class BuildStepSources : GitBuildStep
 
         // Break up the complex git command chain and add cancellation checks
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        SafeGitCommand(path, "git reset --hard HEAD");
+        GitCommand(path, "git reset --hard HEAD");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        SafeGitCommand(path, "git clean -d -f");
+        GitCommand(path, "git clean -d -f");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        SafeGitCommand(path, "git fetch");
+        GitCommand(path, "git fetch");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
         // Handle potential branch creation errors gracefully
         try
         {
-            SafeGitCommand(path, $"git checkout -t origin/{branchName}");
+            GitCommand(path, $"git checkout -t origin/{branchName}");
         }
         catch (Exception ex)
         {
@@ -55,16 +55,16 @@ public class BuildStepSources : GitBuildStep
         }
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        SafeGitCommand(path, $"git checkout {branchName}");
+        GitCommand(path, $"git checkout {branchName}");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        var before = SafeGitCommand(path, "git rev-parse HEAD");
+        var before = GitCommand(path, "git rev-parse HEAD");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        SafeGitCommand(path, "git pull");
+        GitCommand(path, "git pull");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        var after = SafeGitCommand(path, "git rev-parse HEAD");
+        var after = GitCommand(path, "git rev-parse HEAD");
 
         var forceBuild = GetEnvironmentVariable<bool>($"{modName}_updated");
         bool updated;
@@ -106,20 +106,20 @@ public class BuildStepSources : GitBuildStep
 
         // Break up the complex git command chain and add cancellation checks
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        SafeGitCommand(modpackPath, "git reset --hard HEAD");
+        GitCommand(modpackPath, "git reset --hard HEAD");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        SafeGitCommand(modpackPath, "git clean -d -f");
+        GitCommand(modpackPath, "git clean -d -f");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        SafeGitCommand(modpackPath, "git fetch");
+        GitCommand(modpackPath, "git fetch");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
         // Handle potential branch creation errors gracefully
         try
         {
-            SafeGitCommand(modpackPath, $"git checkout -t origin/{reference}");
+            GitCommand(modpackPath, $"git checkout -t origin/{reference}");
         }
         catch (Exception ex)
         {
@@ -128,10 +128,10 @@ public class BuildStepSources : GitBuildStep
         }
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        SafeGitCommand(modpackPath, $"git checkout {reference}");
+        GitCommand(modpackPath, $"git checkout {reference}");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        SafeGitCommand(modpackPath, "git pull");
+        GitCommand(modpackPath, "git pull");
 
         StepLogger.LogSurround("Checked out modpack");
 
