@@ -25,6 +25,7 @@ public class BuildProcessHelper(
     private readonly ManualResetEvent _errorWaitHandle = new(false);
     private readonly ManualResetEvent _outputWaitHandle = new(false);
     private readonly List<string> _results = [];
+    private readonly object _killLock = new();
     private CancellationTokenRegistration _cancellationTokenRegistration;
     private Exception _capturedException;
     private bool _disposed;
@@ -32,9 +33,12 @@ public class BuildProcessHelper(
     private int _exitCode = int.MinValue;
     private bool _externalCancellationRequested;
     private bool _ignoreErrors;
+    private bool _isKilling;
     private string _logInfo;
     private Process _process;
     private bool _useLogger;
+    private volatile bool _outputStreamClosed;
+    private volatile bool _errorStreamClosed;
 
     public void Dispose()
     {
@@ -139,6 +143,16 @@ public class BuildProcessHelper(
                 Log($"Process exited but error output not fully processed, waiting additional {additionalWaitTime}ms");
                 errorProcessed = _errorWaitHandle.WaitOne(additionalWaitTime);
             }
+
+            // Final fallback: if streams still haven't closed naturally but process has exited, 
+            // force completion to prevent deadlocks
+            if (!outputProcessed || !errorProcessed)
+            {
+                Log($"Process exited but streams not closed (Output: {_outputStreamClosed}, Error: {_errorStreamClosed}), forcing completion");
+                ForceStreamCompletion();
+                outputProcessed = true;
+                errorProcessed = true;
+            }
         }
 
         if (processExited && outputProcessed && errorProcessed)
@@ -147,6 +161,25 @@ public class BuildProcessHelper(
         }
 
         return HandleTimeout(processExited, outputProcessed, errorProcessed, timeout);
+    }
+
+    private void ForceStreamCompletion()
+    {
+        Log("Forcing stream completion to prevent deadlock");
+        
+        if (!_outputStreamClosed)
+        {
+            Log("Output stream not closed naturally, forcing completion");
+            _outputStreamClosed = true;
+            _outputWaitHandle.Set();
+        }
+
+        if (!_errorStreamClosed)
+        {
+            Log("Error stream not closed naturally, forcing completion");
+            _errorStreamClosed = true;
+            _errorWaitHandle.Set();
+        }
     }
 
     private List<string> HandleSuccessfulCompletion()
@@ -264,6 +297,17 @@ public class BuildProcessHelper(
             return;
         }
 
+        lock (_killLock)
+        {
+            if (_isKilling)
+            {
+                Log("Kill already in progress, skipping duplicate call");
+                return;
+            }
+
+            _isKilling = true;
+        }
+
         LogWarning("Kill process instructed");
 
         try
@@ -286,7 +330,16 @@ public class BuildProcessHelper(
         {
             LogWarning($"Attempting to kill process {_process.Id} and its children");
 
-            _process.Kill(true);
+            try
+            {
+                _process.Kill(true);
+                Log($"Kill command sent to process {_process.Id}");
+            }
+            catch (Exception killEx)
+            {
+                LogError($"Failed to send kill command to process {_process.Id}", killEx);
+                return;
+            }
 
             if (!_process.WaitForExit(5000))
             {
@@ -295,6 +348,12 @@ public class BuildProcessHelper(
                 try
                 {
                     _process.Kill(true);
+                    Log("Second kill attempt made");
+                    
+                    if (!_process.WaitForExit(3000))
+                    {
+                        LogError($"Process {_process.Id} still not exited after second kill attempt");
+                    }
                 }
                 catch (Exception ex2)
                 {
@@ -306,12 +365,22 @@ public class BuildProcessHelper(
                 Log($"Process {_process.Id} killed successfully");
             }
         }
+        else if (_process?.HasExited == true)
+        {
+            Log($"Process {_process.Id} has already exited");
+        }
+        else
+        {
+            Log("No process to kill");
+        }
     }
 
     private void CleanupResources()
     {
-        _outputWaitHandle?.Set();
-        _errorWaitHandle?.Set();
+        Log("Starting cleanup resources");
+        
+        // Ensure streams are marked as closed and wait handles are set
+        ForceStreamCompletion();
 
         _cancellationTokenRegistration.Dispose();
         _errorCancellationTokenRegistration.Dispose();
@@ -322,6 +391,8 @@ public class BuildProcessHelper(
             UnregisterProcessFromTracking();
             DisposeProcess();
         }
+        
+        Log("Cleanup resources completed");
     }
 
     private void StoreExitCode()
@@ -355,6 +426,7 @@ public class BuildProcessHelper(
         if (receivedEventArgs.Data == null)
         {
             Log("Output stream closed, setting output wait handle");
+            _outputStreamClosed = true;
             _outputWaitHandle.Set();
             return;
         }
@@ -376,6 +448,7 @@ public class BuildProcessHelper(
         if (receivedEventArgs.Data == null)
         {
             Log("Error stream closed, setting error wait handle");
+            _errorStreamClosed = true;
             _errorWaitHandle.Set();
             return;
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Core;
@@ -104,6 +105,64 @@ public class BuildProcessHelperTests
     }
 
     [Fact]
+    public void Run_Should_HandleFailingCommandWithErrorOutput_WithoutHanging()
+    {
+        // Arrange
+        // This test replicates the hanging issue encountered with the git command that failed
+        // The key is to have a command that:
+        // 1. Fails with a non-zero exit code
+        // 2. Outputs to stderr (which triggers error handling)
+        // 3. Tests the race condition fix where multiple Kill() calls were causing deadlocks
+
+        var buildProcessHelper = CreateBuildProcessHelper(raiseErrors: false, buildId: "test-hanging-fix");
+
+        string executable;
+        string args;
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        {
+            // Use a command that will fail and output to stderr
+            // This simulates the "git: 'git' is not a git command" error
+            executable = "cmd.exe";
+            args = "/c \"echo Error output to stderr >&2 && exit 1\"";
+        }
+        else
+        {
+            executable = "sh";
+            args = "-c \"echo 'Error output to stderr' >&2 && exit 1\"";
+        }
+
+        const string WorkingDirectory = ".";
+        const int Timeout = 10000; // 10 seconds timeout - should complete much faster
+
+        var startTime = DateTime.UtcNow;
+
+        // Act
+        var result = buildProcessHelper.Run(WorkingDirectory, executable, args, Timeout, true);
+
+        // Assert
+        var duration = DateTime.UtcNow - startTime;
+
+        // The process should complete without hanging (much faster than timeout)
+        duration.Should().BeLessThan(TimeSpan.FromSeconds(5), "Process should not hang and should complete quickly");
+
+        result.Should().NotBeNull("Result should not be null even when process fails");
+
+        // Verify that the process was properly tracked and cleaned up
+        _mockProcessTracker.Verify(x => x.RegisterProcess(It.IsAny<int>(), "test-hanging-fix", args), Times.Once);
+        _mockProcessTracker.Verify(x => x.UnregisterProcess(It.IsAny<int>()), Times.Once);
+
+        // Verify that proper logging occurred for the lifecycle
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Starting process"))), Times.Once);
+        _mockUksfLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("Kill process instructed"))), Times.AtMostOnce);
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Stored exit code 1"))), Times.Once);
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process reached successful return"))), Times.Once);
+
+        // Verify that stream closure was handled properly (no hanging on stream wait)
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Output stream closed"))), Times.Once);
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Error stream closed") || s.Contains("forcing completion"))), Times.AtLeastOnce);
+    }
+
+    [Fact]
     public void Run_Should_HandleIgnoreErrorGates()
     {
         // Arrange
@@ -128,6 +187,67 @@ public class BuildProcessHelperTests
         // Act & Assert - Should not throw
         var result = buildProcessHelper.Run(WorkingDirectory, executable, args, Timeout);
         result.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Run_Should_HandleMultipleConcurrentKillCalls_WithoutRaceCondition()
+    {
+        // Arrange
+        // This test specifically targets the race condition where multiple Kill() calls
+        // were being made simultaneously from different threads
+        var cancellationTokenSource = new CancellationTokenSource();
+        var buildProcessHelper = CreateBuildProcessHelper(
+            raiseErrors: false,
+            buildId: "test-concurrent-kill",
+            cancellationTokenSource: cancellationTokenSource
+        );
+
+        string executable;
+        string args;
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        {
+            // Use a command that will run for a bit and output to stderr
+            executable = "cmd.exe";
+            args = "/c \"timeout /t 2 >nul && echo Error output >&2 && exit 1\"";
+        }
+        else
+        {
+            executable = "sh";
+            args = "-c \"sleep 2 && echo 'Error output' >&2 && exit 1\"";
+        }
+
+        const string WorkingDirectory = ".";
+        const int Timeout = 10000;
+
+        // Start the process in a separate task
+        // ReSharper disable once MethodSupportsCancellation
+        var processTask = Task.Run(() => buildProcessHelper.Run(WorkingDirectory, executable, args, Timeout, true));
+
+        // Give the process a moment to start
+        Thread.Sleep(500);
+
+        // Trigger cancellation to cause Kill() to be called from cancellation token
+        // This should trigger multiple kill attempts that were causing the race condition
+        await cancellationTokenSource.CancelAsync();
+
+        var startTime = DateTime.UtcNow;
+
+        // Act & Assert
+        var result = await processTask; // This should not hang
+
+        var duration = DateTime.UtcNow - startTime;
+        duration.Should().BeLessThan(TimeSpan.FromSeconds(5), "Process should handle concurrent kill calls without hanging");
+
+        result.Should().NotBeNull();
+
+        // Verify that kill operations were logged but didn't cause issues
+        _mockUksfLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("Kill process instructed"))), Times.AtMostOnce);
+
+        // Should see the "duplicate call" log if multiple kills were attempted
+        _mockUksfLogger.Verify(
+            x => x.LogInfo(It.Is<string>(s => s.Contains("Kill already in progress") || s.Contains("Process reached successful return"))),
+            Times.AtLeastOnce
+        );
     }
 
     [Fact]
