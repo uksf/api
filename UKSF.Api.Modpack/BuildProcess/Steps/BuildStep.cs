@@ -4,6 +4,7 @@ using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
+using UKSF.Api.Modpack.BuildProcess.Modern;
 using UKSF.Api.Modpack.Models;
 
 namespace UKSF.Api.Modpack.BuildProcess.Steps;
@@ -15,8 +16,8 @@ public interface IBuildStep
         IUksfLogger logger,
         DomainModpackBuild modpackBuild,
         ModpackBuildStep modpackBuildStep,
-        Func<UpdateDefinition<DomainModpackBuild>, Task> buildUpdateCallback,
-        Func<Task> stepUpdateCallback,
+        Func<UpdateDefinition<DomainModpackBuild>, Task> buildUpdatedCallback,
+        Func<Task> stepUpdatedCallback,
         CancellationTokenSource cancellationTokenSource
     );
 
@@ -37,11 +38,12 @@ public class BuildStep : IBuildStep
     private readonly CancellationTokenSource _updatePusherCancellationTokenSource = new();
     private readonly SemaphoreSlim _updateSemaphore = new(1);
     private ModpackBuildStep _buildStep;
+    private Func<UpdateDefinition<DomainModpackBuild>, Task> _buildUpdatedCallback;
     private IUksfLogger _logger;
+    private BuilderProcessExecutor _processExecutor;
     private IBuildProcessHelperFactory _processHelperFactory;
-    private Func<UpdateDefinition<DomainModpackBuild>, Task> _updateBuildCallback;
+    private Func<Task> _stepUpdatedCallback;
     private TimeSpan _updateInterval;
-    private Func<Task> _updateStepCallback;
     protected DomainModpackBuild Build;
     protected CancellationTokenSource CancellationTokenSource;
     protected IServiceProvider ServiceProvider;
@@ -53,8 +55,8 @@ public class BuildStep : IBuildStep
         IUksfLogger logger,
         DomainModpackBuild modpackBuild,
         ModpackBuildStep modpackBuildStep,
-        Func<UpdateDefinition<DomainModpackBuild>, Task> buildUpdateCallback,
-        Func<Task> stepUpdateCallback,
+        Func<UpdateDefinition<DomainModpackBuild>, Task> buildUpdatedCallback,
+        Func<Task> stepUpdatedCallback,
         CancellationTokenSource newCancellationTokenSource
     )
     {
@@ -62,10 +64,11 @@ public class BuildStep : IBuildStep
         _logger = logger;
         VariablesService = ServiceProvider.GetService<IVariablesService>();
         _processHelperFactory = ServiceProvider.GetService<IBuildProcessHelperFactory>();
+        _processExecutor = ServiceProvider.GetService<BuilderProcessExecutor>();
         Build = modpackBuild;
         _buildStep = modpackBuildStep;
-        _updateBuildCallback = buildUpdateCallback;
-        _updateStepCallback = stepUpdateCallback;
+        _buildUpdatedCallback = buildUpdatedCallback;
+        _stepUpdatedCallback = stepUpdatedCallback;
         CancellationTokenSource = newCancellationTokenSource;
         StepLogger = new StepLogger(_buildStep);
 
@@ -229,10 +232,97 @@ public class BuildStep : IBuildStep
         return processHelper.Run(workingDirectory, executable, args, timeout, log);
     }
 
+    protected async Task<List<string>> RunProcessModern(
+        string workingDirectory,
+        string executable,
+        string args,
+        int timeout,
+        bool log = false,
+        bool suppressOutput = false,
+        bool raiseErrors = true,
+        bool errorSilently = false,
+        List<string> errorExclusions = null,
+        string ignoreErrorGateClose = "",
+        string ignoreErrorGateOpen = ""
+    )
+    {
+        var results = new List<string>();
+        var errorFilter = new ErrorFilter(
+            new ProcessErrorHandlingConfig
+            {
+                ErrorExclusions = errorExclusions?.AsReadOnly() ?? (IReadOnlyList<string>)[],
+                IgnoreErrorGateOpen = ignoreErrorGateOpen,
+                IgnoreErrorGateClose = ignoreErrorGateClose
+            }
+        );
+
+        var command = _processExecutor.CreateCommand(executable, workingDirectory, args)
+                                      .WithBuildId(Build?.Id)
+                                      .WithTimeout(TimeSpan.FromMilliseconds(timeout))
+                                      .WithLogging(log);
+
+        Exception delayedException = null;
+
+        await foreach (var outputLine in command.ExecuteAsync(CancellationTokenSource.Token))
+        {
+            // Collect all output for return value
+            results.Add(outputLine.Content);
+
+            // Handle output logging based on type and configuration
+            switch (outputLine.Type)
+            {
+                case ProcessOutputType.Output:
+                    // Only log standard output if not suppressed
+                    if (!suppressOutput)
+                    {
+                        if (outputLine.IsJson && !string.IsNullOrEmpty(outputLine.Color))
+                        {
+                            StepLogger.Log(outputLine.Content, outputLine.Color);
+                        }
+                        else
+                        {
+                            StepLogger.Log(outputLine.Content);
+                        }
+                    }
+
+                    break;
+
+                case ProcessOutputType.Error:
+                    // Always log error content, regardless of suppressOutput
+                    var shouldIgnoreError = errorFilter.ShouldIgnoreError(outputLine.Content);
+
+                    if (!shouldIgnoreError)
+                    {
+                        // Log the error content if not silently handling errors
+                        if (!errorSilently)
+                        {
+                            StepLogger.LogError(outputLine.Exception ?? new Exception(outputLine.Content));
+                        }
+
+                        // Store exception for later throwing if raiseErrors is true
+                        if (raiseErrors && outputLine.Exception != null)
+                        {
+                            delayedException = outputLine.Exception;
+                        }
+                    }
+
+                    break;
+            }
+        }
+
+        // Throw delayed exception after all output has been collected and logged
+        if (delayedException != null)
+        {
+            throw delayedException;
+        }
+
+        return results;
+    }
+
     internal void SetEnvironmentVariable(string key, object value)
     {
         Build.EnvironmentVariables[key] = value;
-        _updateBuildCallback(Builders<DomainModpackBuild>.Update.Set(x => x.EnvironmentVariables, Build.EnvironmentVariables));
+        _buildUpdatedCallback(Builders<DomainModpackBuild>.Update.Set(x => x.EnvironmentVariables, Build.EnvironmentVariables));
     }
 
     internal T GetEnvironmentVariable<T>(string key)
@@ -295,7 +385,7 @@ public class BuildStep : IBuildStep
     private async Task Update()
     {
         await _updateSemaphore.WaitAsync();
-        await _updateStepCallback();
+        await _stepUpdatedCallback();
         _updateSemaphore.Release();
     }
 

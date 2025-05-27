@@ -1,6 +1,7 @@
 ﻿using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.BuildProcess;
+using UKSF.Api.Modpack.BuildProcess.Modern;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.EventHandlers;
 using UKSF.Api.Modpack.ScheduledActions;
@@ -39,7 +40,8 @@ public static class ApiModpackExtensions
                        .AddSingleton<IBuildQueueService, BuildQueueService>()
                        .AddSingleton<IVersionService, VersionService>()
                        .AddSingleton<IBuildProcessTracker, BuildProcessTracker>()
-                       .AddTransient<IBuildProcessHelperFactory, BuildProcessHelperFactory>();
+                       .AddTransient<IBuildProcessHelperFactory, BuildProcessHelperFactory>()
+                       .AddTransient<BuilderProcessExecutor>();
     }
 
     private static IServiceCollection AddActions(this IServiceCollection services)

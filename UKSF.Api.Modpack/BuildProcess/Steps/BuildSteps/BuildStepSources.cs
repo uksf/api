@@ -15,7 +15,7 @@ public class BuildStepSources : GitBuildStep
         await CheckoutModpack();
     }
 
-    private Task CheckoutStaticSource(string displayName, string modName, string releaseName, string repoName, string branchName)
+    private async Task CheckoutStaticSource(string displayName, string modName, string releaseName, string repoName, string branchName)
     {
         StepLogger.LogSurround($"\nChecking out latest {displayName}...");
 
@@ -33,20 +33,20 @@ public class BuildStepSources : GitBuildStep
 
         // Break up the complex git command chain and add cancellation checks
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        GitCommand(path, "git reset --hard HEAD");
+        await GitCommand(path, "git reset --hard HEAD");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        GitCommand(path, "git clean -d -f");
+        await GitCommand(path, "git clean -d -f");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        GitCommand(path, "git fetch");
+        await GitCommand(path, "git fetch");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
         // Handle potential branch creation errors gracefully
         try
         {
-            GitCommand(path, $"git checkout -t origin/{branchName}");
+            await GitCommand(path, $"git checkout -t origin/{branchName}");
         }
         catch (Exception ex)
         {
@@ -55,16 +55,16 @@ public class BuildStepSources : GitBuildStep
         }
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        GitCommand(path, $"git checkout {branchName}");
+        await GitCommand(path, $"git checkout {branchName}");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        var before = GitCommand(path, "git rev-parse HEAD");
+        var before = await GitCommand(path, "git rev-parse HEAD");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        GitCommand(path, "git pull");
+        await GitCommand(path, "git pull");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        var after = GitCommand(path, "git rev-parse HEAD");
+        var after = await GitCommand(path, "git rev-parse HEAD");
 
         var forceBuild = GetEnvironmentVariable<bool>($"{modName}_updated");
         bool updated;
@@ -86,11 +86,9 @@ public class BuildStepSources : GitBuildStep
 
         SetEnvironmentVariable($"{modName}_updated", updated);
         StepLogger.LogSurround($"Checked out latest {displayName}{(updated ? "" : " (No Changes)")}");
-
-        return Task.CompletedTask;
     }
 
-    private Task CheckoutModpack()
+    private async Task CheckoutModpack()
     {
         var reference = string.Equals(Build.Commit.Branch, "None") ? Build.Commit.After : Build.Commit.Branch.Replace("refs/heads/", "");
         var referenceName = string.Equals(Build.Commit.Branch, "None") ? reference : $"latest {reference}";
@@ -106,20 +104,20 @@ public class BuildStepSources : GitBuildStep
 
         // Break up the complex git command chain and add cancellation checks
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        GitCommand(modpackPath, "git reset --hard HEAD");
+        await GitCommand(modpackPath, "git reset --hard HEAD");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        GitCommand(modpackPath, "git clean -d -f");
+        await GitCommand(modpackPath, "git clean -d -f");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        GitCommand(modpackPath, "git fetch");
+        await GitCommand(modpackPath, "git fetch");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
         // Handle potential branch creation errors gracefully
         try
         {
-            GitCommand(modpackPath, $"git checkout -t origin/{reference}");
+            await GitCommand(modpackPath, $"git checkout -t origin/{reference}");
         }
         catch (Exception ex)
         {
@@ -128,13 +126,11 @@ public class BuildStepSources : GitBuildStep
         }
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        GitCommand(modpackPath, $"git checkout {reference}");
+        await GitCommand(modpackPath, $"git checkout {reference}");
 
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        GitCommand(modpackPath, "git pull");
+        await GitCommand(modpackPath, "git pull");
 
         StepLogger.LogSurround("Checked out modpack");
-
-        return Task.CompletedTask;
     }
 }

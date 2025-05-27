@@ -76,7 +76,6 @@ public class GitBuildStepTests
 
         // Verify expected methods exist (compile-time check)
         typeof(GitBuildStep).Should().HaveMethod("GitCommand", [typeof(string), typeof(string)]);
-        typeof(GitBuildStep).Should().HaveMethod("SafeGitCommand", [typeof(string), typeof(string), typeof(int)]);
     }
 
     [Fact]

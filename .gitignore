@@ -251,5 +251,8 @@ appsettings.*.json
 *.info
 .vscode/**
 
+# Cursor IDE
+.cursor/**
+
 # Http
 *.private.env.json

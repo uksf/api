@@ -2,7 +2,7 @@
 
 public class GitBuildStep : BuildStep
 {
-    internal string GitCommand(string workingDirectory, string command)
+    internal async Task<string> GitCommand(string workingDirectory, string command)
     {
         try
         {
@@ -12,7 +12,7 @@ public class GitBuildStep : BuildStep
             const string GitConfig = "git -c core.askpass='' -c credential.helper='' -c core.longpaths=true";
             var fullCommand = command.Replace("git", GitConfig);
 
-            var results = RunProcess(workingDirectory, "cmd.exe", $"/c \"{fullCommand}\"", timeoutMs, false, false, false, true);
+            var results = await RunProcessModern(workingDirectory, "cmd.exe", $"/c \"{fullCommand}\"", timeoutMs, false, false, false, true);
             return results.Count > 0 ? results.Last() : string.Empty;
         }
         catch (Exception ex)
