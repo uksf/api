@@ -30,8 +30,7 @@ else
 }
 
 builder.Services.AddUksf(builder.Configuration, builder.Environment);
-builder.Services.AddCors(
-           options =>
+builder.Services.AddCors(options =>
            {
                options.AddPolicy(
                    "CorsPolicy",
@@ -53,8 +52,7 @@ builder.Services.AddCors(
        .AddRouting()
        .AddLogging(options => { options.ClearProviders().AddConsole(); })
        .AddControllers()
-       .AddJsonOptions(
-           options =>
+       .AddJsonOptions(options =>
            {
                options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
                options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
@@ -65,8 +63,7 @@ builder.Services.AddCors(
 var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<IUksfLogger>();
-app.Lifetime.ApplicationStopping.Register(
-    () =>
+app.Lifetime.ApplicationStopping.Register(() =>
     {
         using var scope = app.Services.CreateScope();
 
@@ -85,8 +82,7 @@ app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMo
    .UseAuthorization()
    .UseHsts()
    .UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto })
-   .UseEndpoints(
-       endpoints =>
+   .UseEndpoints(endpoints =>
        {
            endpoints.MapControllers().RequireCors("CorsPolicy");
            endpoints.AddUksfSharedSignalr();
