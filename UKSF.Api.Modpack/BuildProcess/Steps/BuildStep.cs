@@ -106,8 +106,11 @@ public class BuildStep : IBuildStep
         await ProcessExecute();
 
         // Ensure all logs from the process execution are captured and persisted
-        await Task.Delay(500, CancellationTokenSource.Token); // Give time for any async logging to complete
+        await Task.Delay(500, CancellationToken.None); // Give time for any async logging to complete
         await Update(); // Force an update to persist any pending logs
+        
+        // Re-check cancellation after update
+        CancellationTokenSource.Token.ThrowIfCancellationRequested();
     }
 
     public async Task Succeed()
@@ -337,44 +340,67 @@ public class BuildStep : IBuildStep
 
     private void StartUpdatePusher()
     {
-        try
-        {
-            _ = Task.Run(
-                async () =>
+        _ = Task.Run(
+            async () =>
+            {
+                try
                 {
                     var previousBuildStepState = JsonSerializer.Serialize(_buildStep, DefaultJsonSerializerOptions.Options);
 
-                    do
+                    while (!_updatePusherCancellationTokenSource.IsCancellationRequested)
                     {
-                        await Task.Delay(_updateInterval, _updatePusherCancellationTokenSource.Token);
-
-                        if (_updatePusherCancellationTokenSource.IsCancellationRequested)
+                        try
                         {
+                            await Task.Delay(_updateInterval, _updatePusherCancellationTokenSource.Token);
+
+                            if (_updatePusherCancellationTokenSource.IsCancellationRequested)
+                            {
+                                return;
+                            }
+
+                            var newBuildStepState = JsonSerializer.Serialize(_buildStep, DefaultJsonSerializerOptions.Options);
+                            if (newBuildStepState != previousBuildStepState)
+                            {
+                                await Update();
+                                previousBuildStepState = newBuildStepState;
+                            }
+
+                            await Task.Yield();
+                        }
+                        catch (OperationCanceledException) when (_updatePusherCancellationTokenSource.IsCancellationRequested)
+                        {
+                            // Expected cancellation - exit gracefully
                             return;
                         }
-
-                        var newBuildStepState = JsonSerializer.Serialize(_buildStep, DefaultJsonSerializerOptions.Options);
-                        if (newBuildStepState != previousBuildStepState)
+                        catch (Exception ex)
                         {
-                            await Update();
-                            previousBuildStepState = newBuildStepState;
+                            // Log error but continue the update loop
+                            _logger?.LogWarning($"Update pusher encountered error: {ex.Message}");
+                            
+                            // Wait a bit before retrying to avoid tight error loops
+                            try
+                            {
+                                await Task.Delay(TimeSpan.FromSeconds(5), _updatePusherCancellationTokenSource.Token);
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                return;
+                            }
                         }
-
-                        await Task.Yield();
                     }
-                    while (!_updatePusherCancellationTokenSource.IsCancellationRequested);
-                },
-                _updatePusherCancellationTokenSource.Token
-            );
-        }
-        catch (OperationCanceledException)
-        {
-            Console.Out.WriteLine("cancelled");
-        }
-        catch (Exception exception)
-        {
-            Console.Out.WriteLine(exception);
-        }
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected cancellation - exit gracefully
+                }
+                catch (Exception ex)
+                {
+                    // Log unexpected errors
+                    _logger?.LogError($"Update pusher failed unexpectedly: {ex.Message}", ex);
+                }
+            },
+            CancellationToken.None // Don't use the cancellation token for Task.Run itself
+        );
     }
 
     private void StopUpdatePusher()
@@ -384,9 +410,40 @@ public class BuildStep : IBuildStep
 
     private async Task Update()
     {
-        await _updateSemaphore.WaitAsync();
-        await _stepUpdatedCallback();
-        _updateSemaphore.Release();
+        try
+        {
+            // Use a timeout to prevent hanging indefinitely
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                CancellationTokenSource.Token, 
+                timeoutCts.Token
+            );
+
+            await _updateSemaphore.WaitAsync(combinedCts.Token);
+            try
+            {
+                await _stepUpdatedCallback();
+            }
+            finally
+            {
+                _updateSemaphore.Release();
+            }
+        }
+        catch (OperationCanceledException) when (CancellationTokenSource.Token.IsCancellationRequested)
+        {
+            // Build was cancelled - this is expected, don't log as error
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            // Timeout occurred - log warning but don't fail the build
+            _logger?.LogWarning("Build step update timed out after 30 seconds - continuing with build");
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't fail the build for update issues
+            _logger?.LogWarning($"Build step update failed: {ex.Message}");
+        }
     }
 
     private async Task Stop()
@@ -395,11 +452,26 @@ public class BuildStep : IBuildStep
         _buildStep.Finished = true;
         _buildStep.EndTime = DateTime.UtcNow;
 
-        // Ensure final state is persisted before stopping update pusher
-        await Update();
+        try
+        {
+            // Ensure final state is persisted before stopping update pusher
+            await Update();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning($"Failed to update build step during stop: {ex.Message}");
+        }
+
         StopUpdatePusher();
 
-        // One final update after stopping the pusher to ensure completion state is saved
-        await Update();
+        try
+        {
+            // One final update after stopping the pusher to ensure completion state is saved
+            await Update();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning($"Failed final update during build step stop: {ex.Message}");
+        }
     }
 }
