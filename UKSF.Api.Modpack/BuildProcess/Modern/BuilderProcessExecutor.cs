@@ -151,8 +151,10 @@ public class ProcessCommandBuilder
             CancellationToken.None // Don't cancel the task itself, let it handle cancellation internally
         );
 
-        // Stream output as it becomes available - use combined token that includes timeout
-        await foreach (var outputLine in reader.ReadAllAsync(combinedToken))
+        // Stream output as it becomes available - use only external cancellation token
+        // Don't use timeout token here as timeout is handled in the background task
+        // ReSharper disable once PossiblyMistakenUseOfCancellationToken
+        await foreach (var outputLine in reader.ReadAllAsync(cancellationToken))
         {
             yield return outputLine;
         }
@@ -272,6 +274,7 @@ public class ProcessCommandBuilder
         if (!string.IsNullOrEmpty(buildId))
         {
             _processTracker.RegisterProcess(processId, buildId, arguments);
+            LogInformation($"Registered build process {processId} for build {buildId}: {arguments}");
         }
     }
 
@@ -280,6 +283,7 @@ public class ProcessCommandBuilder
         if (processId > 0)
         {
             _processTracker.UnregisterProcess(processId);
+            LogInformation($"Unregistered build process {processId}");
         }
     }
 

@@ -84,11 +84,9 @@ public class BuildProcessTrackerTests
 
         // Assert
         // We can't actually verify processes were killed without creating real processes
-        // but we can verify the correct logging occurred
-        _mockLogger.Verify(
-            x => x.LogWarning(It.Is<string>(s => s.Contains("build-123"))),
-            Times.AtMost(1) // Might be 0 if process doesn't exist
-        );
+        // but we can verify that the method completes without throwing
+        var remainingProcesses = _tracker.GetTrackedProcesses();
+        remainingProcesses.Should().NotBeNull();
     }
 
     [Fact]
@@ -107,7 +105,7 @@ public class BuildProcessTrackerTests
     }
 
     [Fact]
-    public void KillTrackedProcesses_Should_LogWarningWhenKillingProcess()
+    public void KillTrackedProcesses_Should_CleanupProcessesWhenKilling()
     {
         // Arrange - Use a process ID that's likely to not exist
         const int ProcessId = 999999;
@@ -151,8 +149,6 @@ public class BuildProcessTrackerTests
         trackedProcess.BuildId.Should().Be(BuildId);
         trackedProcess.Description.Should().Be(Description);
         trackedProcess.StartTime.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-
-        _mockLogger.Verify(x => x.LogInfo($"Registered build process {processId} for build {BuildId}: {Description}"), Times.Once);
     }
 
     [Fact]
@@ -177,11 +173,6 @@ public class BuildProcessTrackerTests
         process.ProcessId.Should().Be(processId1);
         process.BuildId.Should().Be("build-456"); // Last registration wins
         process.Description.Should().Be("python make.py");
-
-        // Verify all three log messages occurred
-        _mockLogger.Verify(x => x.LogInfo($"Registered build process {processId1} for build {BuildId}: git fetch"), Times.Once);
-        _mockLogger.Verify(x => x.LogInfo($"Updated build process {processId1} for build {BuildId}: git checkout"), Times.Once);
-        _mockLogger.Verify(x => x.LogInfo($"Updated build process {processId1} for build build-456: python make.py"), Times.Once);
     }
 
     [Fact]
@@ -250,8 +241,6 @@ public class BuildProcessTrackerTests
         // Assert
         var trackedProcesses = _tracker.GetTrackedProcesses();
         trackedProcesses.Should().BeEmpty();
-
-        _mockLogger.Verify(x => x.LogInfo($"Unregistered build process {processId} for build {BuildId}"), Times.Once);
     }
 
     [Theory]

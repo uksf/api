@@ -19,7 +19,7 @@ public class BuildStepBuildAcre : ModBuildStep
         if (IsBuildNeeded(ModName))
         {
             StepLogger.LogSurround("\nRunning make.py...");
-            RunProcess(
+            await RunProcessModern(
                 toolsPath,
                 PythonPath,
                 MakeCommand("redirect compile"),

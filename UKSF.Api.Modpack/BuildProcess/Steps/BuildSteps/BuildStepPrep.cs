@@ -7,14 +7,12 @@ public class BuildStepPrep : BuildStep
 {
     public const string Name = "Prep";
 
-    protected override Task ProcessExecute()
+    protected override async Task ProcessExecute()
     {
         StepLogger.Log("Mounting build environment");
 
         var projectsPath = VariablesService.GetVariable("BUILD_PATH_PROJECTS").AsString();
-        RunProcess("C:/", "cmd.exe", $"/c \"subst P: \"{projectsPath}\"\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, false, false);
-        RunProcess("C:/", "cmd.exe", "/c \"subst\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, false, false);
-
-        return Task.CompletedTask;
+        await RunProcessModern("C:/", "cmd.exe", $"/c \"subst P: \"{projectsPath}\"\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, false, false);
+        await RunProcessModern("C:/", "cmd.exe", "/c \"subst\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, false, false);
     }
 }

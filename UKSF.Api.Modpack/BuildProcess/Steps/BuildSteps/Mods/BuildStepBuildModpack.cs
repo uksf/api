@@ -25,7 +25,13 @@ public class BuildStepBuildModpack : ModBuildStep
         StepLogger.Log($"\nConfiguration set to '{configuration}'");
 
         StepLogger.LogSurround("\nRunning make.py...");
-        RunProcess(toolsPath, PythonPath, MakeCommand($"redirect configuration {configuration}"), (int)TimeSpan.FromMinutes(5).TotalMilliseconds, true);
+        await RunProcessModern(
+            toolsPath,
+            PythonPath,
+            MakeCommand($"redirect configuration {configuration}"),
+            (int)TimeSpan.FromMinutes(5).TotalMilliseconds,
+            true
+        );
         StepLogger.LogSurround("Make.py complete");
 
         StepLogger.LogSurround("\nMoving UKSF release to build...");

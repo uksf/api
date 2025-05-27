@@ -17,7 +17,7 @@ public class BuildStepBuildAir : ModBuildStep
         if (IsBuildNeeded(ModName))
         {
             StepLogger.LogSurround("\nRunning make.py...");
-            RunProcess(toolsPath, PythonPath, MakeCommand("redirect"), (int)TimeSpan.FromMinutes(1).TotalMilliseconds, true);
+            await RunProcessModern(toolsPath, PythonPath, MakeCommand("redirect"), (int)TimeSpan.FromMinutes(1).TotalMilliseconds, true);
             StepLogger.LogSurround("Make.py complete");
         }
 

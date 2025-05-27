@@ -29,9 +29,9 @@ public class BuildStepExtensions : FileBuildStep
         await BatchProcessFiles(
             files,
             2,
-            file =>
+            async file =>
             {
-                RunProcess(
+                await RunProcessModern(
                     file.DirectoryName,
                     signTool,
                     $"sign /f \"{certPath}\" \"{file.FullName}\"",
@@ -42,7 +42,6 @@ public class BuildStepExtensions : FileBuildStep
                     true
                 );
                 Interlocked.Increment(ref signed);
-                return Task.CompletedTask;
             },
             () => $"Signed {signed} of {total} extensions",
             "Failed to sign extension"

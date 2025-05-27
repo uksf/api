@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using UKSF.Api.Core;
 
@@ -15,40 +16,21 @@ public interface IBuildProcessTracker
 
 public record TrackedProcess(int ProcessId, string BuildId, string Description, DateTime StartTime);
 
-public class BuildProcessTracker : IBuildProcessTracker
+public class BuildProcessTracker(IUksfLogger logger) : IBuildProcessTracker
 {
-    private readonly IUksfLogger _logger;
     private readonly ConcurrentDictionary<int, TrackedProcess> _trackedProcesses = new();
-
-    public BuildProcessTracker(IUksfLogger logger)
-    {
-        _logger = logger;
-    }
 
     public void RegisterProcess(int processId, string buildId, string description)
     {
         var trackedProcess = new TrackedProcess(processId, buildId, description, DateTime.UtcNow);
-        var wasAlreadyTracked = _trackedProcesses.ContainsKey(processId);
 
         // Use indexer to allow updates (last registration wins)
         _trackedProcesses[processId] = trackedProcess;
-
-        if (wasAlreadyTracked)
-        {
-            _logger.LogInfo($"Updated build process {processId} for build {buildId}: {description}");
-        }
-        else
-        {
-            _logger.LogInfo($"Registered build process {processId} for build {buildId}: {description}");
-        }
     }
 
     public void UnregisterProcess(int processId)
     {
-        if (_trackedProcesses.TryRemove(processId, out var process))
-        {
-            _logger.LogInfo($"Unregistered build process {processId} for build {process.BuildId}");
-        }
+        _trackedProcesses.TryRemove(processId, out _);
     }
 
     public IEnumerable<TrackedProcess> GetTrackedProcesses()
@@ -76,9 +58,6 @@ public class BuildProcessTracker : IBuildProcessTracker
                 var process = Process.GetProcessById(trackedProcess.ProcessId);
                 if (!process.HasExited)
                 {
-                    _logger.LogWarning(
-                        $"Killing tracked build process {trackedProcess.ProcessId} ({trackedProcess.Description}) for build {trackedProcess.BuildId}"
-                    );
                     process.Kill(true); // Kill entire process tree
                     killedCount++;
                 }
@@ -92,7 +71,7 @@ public class BuildProcessTracker : IBuildProcessTracker
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to kill tracked process {trackedProcess.ProcessId}", ex);
+                logger.LogError($"Failed to kill tracked process {trackedProcess.ProcessId}", ex);
             }
         }
 
@@ -117,6 +96,12 @@ public class BuildProcessTracker : IBuildProcessTracker
             {
                 // Process no longer exists
                 deadProcesses.Add(processId);
+            }
+            catch (Win32Exception)
+            {
+                // Access denied - process exists but we can't access it
+                // This can happen when trying to access system processes or processes owned by other users
+                // We'll leave it in tracking since we can't determine if it's dead
             }
         }
 

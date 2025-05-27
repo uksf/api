@@ -110,6 +110,7 @@ public class BuildProcessHelper(
         if (!string.IsNullOrEmpty(buildId))
         {
             processTracker.RegisterProcess(_process.Id, buildId, _process.StartInfo.Arguments);
+            Log($"Registered build process {_process.Id} for build {buildId}: {_process.StartInfo.Arguments}");
         }
     }
 
@@ -411,6 +412,7 @@ public class BuildProcessHelper(
     private void UnregisterProcessFromTracking()
     {
         processTracker.UnregisterProcess(_process.Id);
+        Log($"Unregistered build process {_process.Id}");
     }
 
     private void DisposeProcess()
