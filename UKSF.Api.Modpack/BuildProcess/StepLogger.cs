@@ -17,6 +17,8 @@ public interface IStepLogger
 
 public class StepLogger(ModpackBuildStep buildStep) : IStepLogger
 {
+    private readonly object _logLock = new();
+
     public void LogStart()
     {
         LogLines($"Starting: {buildStep.Name}", string.Empty);
@@ -84,20 +86,23 @@ public class StepLogger(ModpackBuildStep buildStep) : IStepLogger
             return;
         }
 
-        if (inline)
+        lock (_logLock)
         {
-            if (buildStep.Logs.Count > 0)
+            if (inline)
             {
-                buildStep.Logs[^1] = logList.First();
+                if (buildStep.Logs.Count > 0)
+                {
+                    buildStep.Logs[^1] = logList.First();
+                }
+                else
+                {
+                    buildStep.Logs.AddRange(logList);
+                }
             }
             else
             {
                 buildStep.Logs.AddRange(logList);
             }
-        }
-        else
-        {
-            buildStep.Logs.AddRange(logList);
         }
     }
 }

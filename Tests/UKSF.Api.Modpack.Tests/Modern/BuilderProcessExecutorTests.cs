@@ -40,25 +40,83 @@ public class BuilderProcessExecutorTests
         string executable, args;
         GetPlatformCommand(out executable, out args, "echo cancellation test");
 
-        var command = executor.CreateCommand(executable, ".", args)
-            .WithBuildId("test-build")
-            .WithTimeout(TimeSpan.FromSeconds(5));
+        var command = executor.CreateCommand(executable, ".", args).WithBuildId("test-build").WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act & Assert
         var results = new List<ProcessOutputLine>();
-        
+
         // With a pre-cancelled token, we expect a TaskCanceledException
         await Assert.ThrowsAsync<TaskCanceledException>(async () =>
-        {
-            await foreach (var outputLine in command.ExecuteAsync(preCancelledTokenSource.Token))
             {
-                results.Add(outputLine);
+                await foreach (var outputLine in command.ExecuteAsync(preCancelledTokenSource.Token))
+                {
+                    results.Add(outputLine);
+                }
             }
-        });
+        );
     }
 
     [Fact]
-    public async Task ExecuteAsync_Should_ReportNonZeroExitCodes_AsErrors()
+    public async Task ExecuteAsync_Should_NotProduceErrorOutputLines_When_CancelledDuringExecution()
+    {
+        // Arrange
+        var cancellationTokenSource = new CancellationTokenSource();
+        var executor = CreateBuilderProcessExecutor();
+
+        string executable, args;
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        {
+            executable = "powershell.exe";
+            args = "-Command \"Start-Sleep 5\""; // 5 second delay to allow cancellation
+        }
+        else
+        {
+            executable = "sh";
+            args = "-c \"sleep 5\""; // 5 second delay to allow cancellation
+        }
+
+        var command = executor.CreateCommand(executable, ".", args).WithBuildId("test-cancellation").WithTimeout(TimeSpan.FromSeconds(30));
+
+        // Act
+        var results = new List<ProcessOutputLine>();
+        var operationCancelledExceptionThrown = false;
+
+        var collectTask = Task.Run(async () =>
+            {
+                try
+                {
+                    await foreach (var outputLine in command.ExecuteAsync(cancellationTokenSource.Token))
+                    {
+                        results.Add(outputLine);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    operationCancelledExceptionThrown = true;
+                }
+            }
+        );
+
+        // Cancel after a short delay to simulate user cancellation during execution
+        await Task.Delay(100);
+        cancellationTokenSource.Cancel();
+
+        await collectTask;
+
+        // Assert
+        // When a process is cancelled, it should throw OperationCanceledException
+        // and not produce error output lines that would cause build failure
+        operationCancelledExceptionThrown.Should().BeTrue("Cancellation should throw OperationCanceledException");
+
+        var errorLines = results.Where(r => r.Type == ProcessOutputType.Error).ToList();
+        var cancellationErrorLines = errorLines.Where(r => r.Exception is OperationCanceledException).ToList();
+
+        // This should now pass - cancellation should not produce error output lines
+        cancellationErrorLines.Should().BeEmpty("Cancellation should not be treated as an error that would cause build failure");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Should_ReportNonZeroExitCodes_AsProcessCompleted()
     {
         // Arrange
         var executor = CreateBuilderProcessExecutor();
@@ -66,8 +124,7 @@ public class BuilderProcessExecutorTests
         string executable, args;
         GetPlatformCommand(out executable, out args, "exit 1");
 
-        var command = executor.CreateCommand(executable, ".", args)
-            .WithTimeout(TimeSpan.FromSeconds(5));
+        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -78,8 +135,8 @@ public class BuilderProcessExecutorTests
 
         // Assert
         results.Should().NotBeNull();
-        results.Should().Contain(r => r.Type == ProcessOutputType.Error && r.Content.Contains("Process failed with exit code 1"));
-        results.Where(r => r.Type == ProcessOutputType.Error && r.Exception != null).Should().NotBeEmpty();
+        results.Should().Contain(r => r.Type == ProcessOutputType.ProcessCompleted && r.ExitCode == 1);
+        results.Should().Contain(r => r.Type == ProcessOutputType.ProcessCompleted && r.Content.Contains("Process exited with code 1"));
     }
 
     [Fact]
@@ -92,9 +149,9 @@ public class BuilderProcessExecutorTests
         GetPlatformCommand(out executable, out args, "echo Error output to stderr >&2 && exit 1");
 
         var command = executor.CreateCommand(executable, ".", args)
-            .WithBuildId("test-hanging-fix")
-            .WithTimeout(TimeSpan.FromSeconds(10))
-            .WithLogging(enableInternalLogging: true);
+                              .WithBuildId("test-hanging-fix")
+                              .WithTimeout(TimeSpan.FromSeconds(10))
+                              .WithLogging(enableInternalLogging: true);
 
         var startTime = DateTime.UtcNow;
 
@@ -130,8 +187,7 @@ public class BuilderProcessExecutorTests
         string executable, args;
         GetPlatformCommand(out executable, out args, "echo test output");
 
-        var command = executor.CreateCommand(executable, ".", args)
-            .WithTimeout(TimeSpan.FromSeconds(5));
+        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -164,8 +220,7 @@ public class BuilderProcessExecutorTests
             args = "-c \"sleep 15\""; // 15 second delay
         }
 
-        var command = executor.CreateCommand(executable, ".", args)
-            .WithTimeout(TimeSpan.FromSeconds(1)); // 1 second timeout
+        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(1)); // 1 second timeout
 
         var startTime = DateTime.UtcNow;
 
@@ -179,7 +234,7 @@ public class BuilderProcessExecutorTests
         // Assert
         var duration = DateTime.UtcNow - startTime;
         duration.Should().BeLessThan(TimeSpan.FromSeconds(3), "Should timeout quickly");
-        
+
         // Should report timeout as an error
         results.Should().Contain(r => r.Type == ProcessOutputType.Error && r.Content.Contains("timed out"));
         results.Should().Contain(r => r.Exception is TimeoutException);
@@ -194,8 +249,7 @@ public class BuilderProcessExecutorTests
         string executable, args;
         GetPlatformCommand(out executable, out args, "echo test");
 
-        var command = executor.CreateCommand(executable, ".", args)
-            .WithTimeout(TimeSpan.FromSeconds(5));
+        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
         // Note: Not setting BuildId
 
         // Act
@@ -220,8 +274,7 @@ public class BuilderProcessExecutorTests
         string executable, args;
         GetPlatformCommand(out executable, out args, "echo test output && echo error output >&2");
 
-        var command = executor.CreateCommand(executable, ".", args)
-            .WithTimeout(TimeSpan.FromSeconds(5));
+        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -246,9 +299,7 @@ public class BuilderProcessExecutorTests
         string executable, args;
         GetPlatformCommand(out executable, out args, "echo test");
 
-        var command = executor.CreateCommand(executable, ".", args)
-            .WithBuildId("test-build-456")
-            .WithTimeout(TimeSpan.FromSeconds(5));
+        var command = executor.CreateCommand(executable, ".", args).WithBuildId("test-build-456").WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -273,8 +324,8 @@ public class BuilderProcessExecutorTests
         GetPlatformCommand(out executable, out args, "echo extended timeout test");
 
         var command = executor.CreateCommand(executable, ".", args)
-            .WithTimeout(TimeSpan.FromMinutes(2)) // 2 minute timeout
-            .WithLogging(enableInternalLogging: true); // Enable logging to verify it works
+                              .WithTimeout(TimeSpan.FromMinutes(2)) // 2 minute timeout
+                              .WithLogging(enableInternalLogging: true); // Enable logging to verify it works
 
         // Act & Assert - Should handle large timeout values without issues
         var results = new List<ProcessOutputLine>();
@@ -290,7 +341,7 @@ public class BuilderProcessExecutorTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_Should_ReportExitCodeFailures_WithExceptions()
+    public async Task ExecuteAsync_Should_ReportExitCodeInformation_WithProcessCompleted()
     {
         // Arrange
         var executor = CreateBuilderProcessExecutor();
@@ -298,8 +349,7 @@ public class BuilderProcessExecutorTests
         string executable, args;
         GetPlatformCommand(out executable, out args, "exit 42");
 
-        var command = executor.CreateCommand(executable, ".", args)
-            .WithTimeout(TimeSpan.FromSeconds(5));
+        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -310,9 +360,10 @@ public class BuilderProcessExecutorTests
 
         // Assert
         results.Should().NotBeEmpty();
-        var errorResults = results.Where(r => r.Type == ProcessOutputType.Error && r.Exception != null).ToList();
-        errorResults.Should().NotBeEmpty();
-        errorResults.Should().Contain(r => r.Exception.Message.Contains("Process failed with exit code 42"));
+        var completedResults = results.Where(r => r.Type == ProcessOutputType.ProcessCompleted).ToList();
+        completedResults.Should().NotBeEmpty();
+        completedResults.Should().Contain(r => r.ExitCode == 42);
+        completedResults.Should().Contain(r => r.Content.Contains("Process exited with code 42"));
     }
 
     [Fact]
@@ -324,9 +375,7 @@ public class BuilderProcessExecutorTests
         string executable, args;
         GetPlatformCommand(out executable, out args, "echo Output Line");
 
-        var command = executor.CreateCommand(executable, ".", args)
-            .WithTimeout(TimeSpan.FromSeconds(5))
-            .WithLogging(enableInternalLogging: true);
+        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5)).WithLogging(enableInternalLogging: true);
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -363,8 +412,7 @@ public class BuilderProcessExecutorTests
             args = "-c \"sleep 10\""; // 10 second delay
         }
 
-        var command = executor.CreateCommand(executable, ".", args)
-            .WithTimeout(TimeSpan.FromSeconds(1)); // 1 second timeout
+        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(1)); // 1 second timeout
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -389,8 +437,7 @@ public class BuilderProcessExecutorTests
         string executable, args;
         GetPlatformCommand(out executable, out args, "echo line1 && echo line2 && echo line3");
 
-        var command = executor.CreateCommand(executable, ".", args)
-            .WithTimeout(TimeSpan.FromSeconds(5));
+        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -403,7 +450,7 @@ public class BuilderProcessExecutorTests
         // Assert
         results.Should().NotBeEmpty();
         results.Where(r => r.Type == ProcessOutputType.Output).Should().HaveCountGreaterOrEqualTo(3);
-        
+
         // Verify we get multiple distinct output lines
         var outputLines = results.Where(r => r.Type == ProcessOutputType.Output).Select(r => r.Content).ToList();
         outputLines.Should().Contain(line => line.Contains("line1"));
@@ -413,11 +460,7 @@ public class BuilderProcessExecutorTests
 
     private BuilderProcessExecutor CreateBuilderProcessExecutor()
     {
-        return new BuilderProcessExecutor(
-            _mockUksfLogger.Object,
-            _mockVariablesService.Object,
-            _mockProcessTracker.Object
-        );
+        return new BuilderProcessExecutor(_mockUksfLogger.Object, _mockVariablesService.Object, _mockProcessTracker.Object);
     }
 
     private static void GetPlatformCommand(out string executable, out string args, string command)
@@ -433,4 +476,4 @@ public class BuilderProcessExecutorTests
             args = $"-c \"{command}\"";
         }
     }
-} 
+}

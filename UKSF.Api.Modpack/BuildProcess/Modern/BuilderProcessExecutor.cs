@@ -124,7 +124,7 @@ public class ProcessCommandBuilder
                         new ProcessOutputLine
                         {
                             Content = "Process execution was cancelled",
-                            Type = ProcessOutputType.Error,
+                            Type = ProcessOutputType.ProcessCancelled,
                             Exception = new OperationCanceledException("Process execution was cancelled")
                         },
                         CancellationToken.None
@@ -196,20 +196,16 @@ public class ProcessCommandBuilder
                         exitCode = exited.ExitCode;
                         LogInformation($"Process exited with code {exited.ExitCode}");
 
-                        // Always report non-zero exit codes as errors
-                        if (exited.ExitCode != 0)
-                        {
-                            await writer.WriteAsync(
-                                new ProcessOutputLine
-                                {
-                                    Content = $"Process failed with exit code {exited.ExitCode}",
-                                    Type = ProcessOutputType.Error,
-                                    Exception = new Exception($"Process failed with exit code {exited.ExitCode}")
-                                },
-                                cancellationToken
-                            );
-                        }
-
+                        // Send process completion information to the caller
+                        await writer.WriteAsync(
+                            new ProcessOutputLine
+                            {
+                                Content = $"Process exited with code {exited.ExitCode}",
+                                Type = ProcessOutputType.ProcessCompleted,
+                                ExitCode = exited.ExitCode
+                            },
+                            cancellationToken
+                        );
                         break;
                 }
             }
@@ -340,6 +336,7 @@ public class ProcessOutputLine
     public string Color { get; init; }
     public bool IsJson { get; init; }
     public Exception Exception { get; set; }
+    public int ExitCode { get; init; }
 }
 
 /// <summary>
@@ -348,5 +345,7 @@ public class ProcessOutputLine
 public enum ProcessOutputType
 {
     Output,
-    Error
+    Error,
+    ProcessCompleted,
+    ProcessCancelled
 }

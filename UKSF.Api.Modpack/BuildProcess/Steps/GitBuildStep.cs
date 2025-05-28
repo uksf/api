@@ -15,6 +15,11 @@ public class GitBuildStep : BuildStep
             var results = await RunProcessModern(workingDirectory, "cmd.exe", $"/c \"{fullCommand}\"", timeoutMs, false, false, false, true);
             return results.Count > 0 ? results.Last() : string.Empty;
         }
+        catch (OperationCanceledException)
+        {
+            // Re-throw cancellation exceptions to preserve cancellation behavior
+            throw;
+        }
         catch (Exception ex)
         {
             StepLogger.LogWarning($"Git command failed: {command}. Error: {ex.Message}");

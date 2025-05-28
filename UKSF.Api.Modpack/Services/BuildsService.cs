@@ -191,7 +191,7 @@ public class BuildsService(
     public async Task<int> CancelInterruptedBuilds()
     {
         var builds = buildsContext.Get(x => x.Running || x.Steps.Any(y => y.Running)).ToList();
-        if (!builds.Any())
+        if (builds.Count == 0)
         {
             return 0;
         }
@@ -205,7 +205,7 @@ public class BuildsService(
                     runningStep.Finished = true;
                     runningStep.EndTime = DateTime.UtcNow;
                     runningStep.BuildResult = ModpackBuildResult.Cancelled;
-                    runningStep.Logs.Add(new ModpackBuildStepLogItem { Text = "\nBuild was interrupted", Colour = "goldenrod" });
+                    runningStep.Logs.Add(new ModpackBuildStepLogItem { Text = "Build was interrupted", Colour = "goldenrod" });
                     await buildsContext.Update(build, runningStep);
                 }
 

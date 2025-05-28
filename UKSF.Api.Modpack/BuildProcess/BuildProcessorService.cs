@@ -49,6 +49,7 @@ public class BuildProcessorService(IServiceProvider serviceProvider, IBuildStepS
             if (cancellationTokenSource.IsCancellationRequested)
             {
                 await step.Cancel();
+                await buildsService.UpdateBuildStep(build, buildStep);
                 await buildsService.CancelBuild(build);
                 return;
             }
@@ -69,6 +70,7 @@ public class BuildProcessorService(IServiceProvider serviceProvider, IBuildStepS
             catch (OperationCanceledException)
             {
                 await step.Cancel();
+                await buildsService.UpdateBuildStep(build, buildStep);
                 await ProcessRestore(step, build);
                 await buildsService.CancelBuild(build);
                 return;

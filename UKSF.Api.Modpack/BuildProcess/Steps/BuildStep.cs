@@ -108,7 +108,7 @@ public class BuildStep : IBuildStep
         // Ensure all logs from the process execution are captured and persisted
         await Task.Delay(500, CancellationToken.None); // Give time for any async logging to complete
         await Update(); // Force an update to persist any pending logs
-        
+
         // Re-check cancellation after update
         CancellationTokenSource.Token.ThrowIfCancellationRequested();
     }
@@ -253,7 +253,7 @@ public class BuildStep : IBuildStep
         var errorFilter = new ErrorFilter(
             new ProcessErrorHandlingConfig
             {
-                ErrorExclusions = errorExclusions?.AsReadOnly() ?? (IReadOnlyList<string>)[],
+                ErrorExclusions = errorExclusions?.AsReadOnly() ?? (IReadOnlyList<string>) [],
                 IgnoreErrorGateOpen = ignoreErrorGateOpen,
                 IgnoreErrorGateClose = ignoreErrorGateClose
             }
@@ -265,6 +265,7 @@ public class BuildStep : IBuildStep
                                       .WithLogging(log);
 
         Exception delayedException = null;
+        var processExitCode = 0;
 
         await foreach (var outputLine in command.ExecuteAsync(CancellationTokenSource.Token))
         {
@@ -310,7 +311,28 @@ public class BuildStep : IBuildStep
                     }
 
                     break;
+
+                case ProcessOutputType.ProcessCompleted:
+                    // Capture the exit code for later processing
+                    processExitCode = outputLine.ExitCode; break;
+
+                case ProcessOutputType.ProcessCancelled:
+                    // Process was cancelled - this should trigger an OperationCanceledException
+                    // to be handled by the BuildProcessorService's cancellation logic
+                    throw new OperationCanceledException("Process execution was cancelled", outputLine.Exception);
             }
+        }
+
+        // Apply the same exit code logic as the old process helper
+        if (processExitCode != 0 && raiseErrors)
+        {
+            var exitCodeException = new Exception($"Process failed with exit code {processExitCode}");
+            if (!errorSilently)
+            {
+                StepLogger.LogError(exitCodeException);
+            }
+
+            throw exitCodeException;
         }
 
         // Throw delayed exception after all output has been collected and logged
@@ -345,7 +367,7 @@ public class BuildStep : IBuildStep
             {
                 try
                 {
-                    var previousBuildStepState = JsonSerializer.Serialize(_buildStep, DefaultJsonSerializerOptions.Options);
+                    var previousBuildStepState = CreateBuildStepSnapshot();
 
                     while (!_updatePusherCancellationTokenSource.IsCancellationRequested)
                     {
@@ -358,7 +380,7 @@ public class BuildStep : IBuildStep
                                 return;
                             }
 
-                            var newBuildStepState = JsonSerializer.Serialize(_buildStep, DefaultJsonSerializerOptions.Options);
+                            var newBuildStepState = CreateBuildStepSnapshot();
                             if (newBuildStepState != previousBuildStepState)
                             {
                                 await Update();
@@ -376,7 +398,7 @@ public class BuildStep : IBuildStep
                         {
                             // Log error but continue the update loop
                             _logger?.LogWarning($"Update pusher encountered error: {ex.Message}");
-                            
+
                             // Wait a bit before retrying to avoid tight error loops
                             try
                             {
@@ -403,6 +425,34 @@ public class BuildStep : IBuildStep
         );
     }
 
+    private string CreateBuildStepSnapshot()
+    {
+        try
+        {
+            // Create a snapshot of the build step to avoid collection modification during serialization
+            var snapshot = new
+            {
+                _buildStep.BuildResult,
+                _buildStep.EndTime,
+                _buildStep.Finished,
+                _buildStep.Index,
+                _buildStep.Name,
+                _buildStep.Running,
+                _buildStep.StartTime,
+                LogsCount = _buildStep.Logs?.Count ?? 0,
+                LastLogText = _buildStep.Logs?.LastOrDefault()?.Text ?? ""
+            };
+
+            return JsonSerializer.Serialize(snapshot, DefaultJsonSerializerOptions.Options);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning($"Failed to create build step snapshot: {ex.Message}");
+            // Return a simple state representation as fallback
+            return $"{_buildStep.Running}_{_buildStep.Finished}_{_buildStep.BuildResult}_{_buildStep.Logs?.Count ?? 0}";
+        }
+    }
+
     private void StopUpdatePusher()
     {
         _updatePusherCancellationTokenSource.Cancel();
@@ -414,10 +464,7 @@ public class BuildStep : IBuildStep
         {
             // Use a timeout to prevent hanging indefinitely
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(
-                CancellationTokenSource.Token, 
-                timeoutCts.Token
-            );
+            using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(CancellationTokenSource.Token, timeoutCts.Token);
 
             await _updateSemaphore.WaitAsync(combinedCts.Token);
             try
@@ -431,8 +478,8 @@ public class BuildStep : IBuildStep
         }
         catch (OperationCanceledException) when (CancellationTokenSource.Token.IsCancellationRequested)
         {
-            // Build was cancelled - this is expected, don't log as error
-            throw;
+            // Build was cancelled - log warning but don't re-throw to allow final state persistence
+            _logger?.LogWarning("Build step update was cancelled - this may be expected during build cancellation");
         }
         catch (OperationCanceledException)
         {
@@ -452,26 +499,47 @@ public class BuildStep : IBuildStep
         _buildStep.Finished = true;
         _buildStep.EndTime = DateTime.UtcNow;
 
-        try
-        {
-            // Ensure final state is persisted before stopping update pusher
-            await Update();
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogWarning($"Failed to update build step during stop: {ex.Message}");
-        }
-
         StopUpdatePusher();
 
+        // Force a final update to ensure the step state is persisted
         try
         {
-            // One final update after stopping the pusher to ensure completion state is saved
-            await Update();
+            await FinalUpdate();
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning($"Failed final update during build step stop: {ex.Message}");
+            // Log but don't fail the step for update issues
+            _logger?.LogWarning($"Failed to update step state during stop: {ex.Message}");
+        }
+    }
+
+    private async Task FinalUpdate()
+    {
+        try
+        {
+            // Use a timeout to prevent hanging indefinitely, but don't use cancellation token
+            // This ensures final state is always persisted even during cancellation
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+            await _updateSemaphore.WaitAsync(timeoutCts.Token);
+            try
+            {
+                await _stepUpdatedCallback();
+            }
+            finally
+            {
+                _updateSemaphore.Release();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Timeout occurred - log warning but don't fail the build
+            _logger?.LogWarning("Final build step update timed out after 30 seconds");
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't fail the build for update issues
+            _logger?.LogWarning($"Final build step update failed: {ex.Message}");
         }
     }
 }

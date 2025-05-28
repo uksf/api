@@ -100,8 +100,10 @@ public class BuildQueueService : IBuildQueueService
 
     public void CancelAll()
     {
+        _logger.LogInfo($"Cancelling {_queuedBuilds.Count} builds");
         _queuedBuilds.Clear();
 
+        _logger.LogInfo($"Cancelling {_cancellationTokenSources.Count} build process tokens");
         foreach (var (_, cancellationTokenSource) in _cancellationTokenSources)
         {
             cancellationTokenSource.Cancel();
