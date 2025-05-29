@@ -30,6 +30,7 @@ public interface IUnitsService
     int GetMemberRoleOrder(DomainAccount account, DomainUnit unit);
     DomainUnit GetRoot();
     DomainUnit GetAuxiliaryRoot();
+    DomainUnit GetSecondaryRoot();
     DomainUnit GetParent(DomainUnit unit);
     IEnumerable<DomainUnit> GetParents(DomainUnit unit);
     IEnumerable<DomainUnit> GetChildren(DomainUnit parent);
@@ -61,10 +62,14 @@ public class UnitsService(
         List<DomainUnit> sortedUnits = [];
         var combatRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Combat);
         var auxiliaryRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Auxiliary);
+        var secondaryRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Secondary);
+        
         sortedUnits.Add(combatRoot);
         sortedUnits.AddRange(GetAllChildren(combatRoot));
         sortedUnits.Add(auxiliaryRoot);
         sortedUnits.AddRange(GetAllChildren(auxiliaryRoot));
+        sortedUnits.Add(secondaryRoot);
+        sortedUnits.AddRange(GetAllChildren(secondaryRoot));
 
         return predicate is not null ? sortedUnits.Where(predicate) : sortedUnits;
     }
@@ -221,6 +226,11 @@ public class UnitsService(
     public DomainUnit GetAuxiliaryRoot()
     {
         return unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Auxiliary);
+    }
+
+    public DomainUnit GetSecondaryRoot()
+    {
+        return unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Secondary);
     }
 
     public DomainUnit GetParent(DomainUnit unit)

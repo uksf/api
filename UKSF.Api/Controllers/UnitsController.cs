@@ -33,6 +33,7 @@ public class UnitsController(
             var response = filter switch
             {
                 "auxiliary" => unitsService.GetSortedUnits(x => x.Branch == UnitBranch.Auxiliary && x.Members.Contains(accountId)),
+                "secondary" => unitsService.GetSortedUnits(x => x.Branch == UnitBranch.Secondary && x.Members.Contains(accountId)),
                 "available" => unitsService.GetSortedUnits(x => !x.Members.Contains(accountId)),
                 _           => unitsService.GetSortedUnits(x => x.Members.Contains(accountId))
             };
@@ -44,6 +45,7 @@ public class UnitsController(
             var response = filter switch
             {
                 "auxiliary" => unitsService.GetSortedUnits(x => x.Branch == UnitBranch.Auxiliary),
+                "secondary" => unitsService.GetSortedUnits(x => x.Branch == UnitBranch.Secondary),
                 "combat"    => unitsService.GetSortedUnits(x => x.Branch == UnitBranch.Combat),
                 _           => unitsService.GetSortedUnits()
             };
@@ -86,10 +88,12 @@ public class UnitsController(
     {
         var combatTree = await getUnitTreeQuery.ExecuteAsync(new GetUnitTreeQueryArgs(UnitBranch.Combat));
         var auxiliaryTree = await getUnitTreeQuery.ExecuteAsync(new GetUnitTreeQueryArgs(UnitBranch.Auxiliary));
+        var secondaryTree = await getUnitTreeQuery.ExecuteAsync(new GetUnitTreeQueryArgs(UnitBranch.Secondary));
         return new UnitTreeDto
         {
             CombatNodes = new List<UnitTreeNodeDto> { unitTreeMapper.MapUnitTree(combatTree) },
-            AuxiliaryNodes = new List<UnitTreeNodeDto> { unitTreeMapper.MapUnitTree(auxiliaryTree) }
+            AuxiliaryNodes = new List<UnitTreeNodeDto> { unitTreeMapper.MapUnitTree(auxiliaryTree) },
+            SecondaryNodes = new List<UnitTreeNodeDto> { unitTreeMapper.MapUnitTree(secondaryTree) }
         };
     }
 
@@ -193,6 +197,15 @@ public class UnitsController(
                     Name = auxiliaryRoot.PreferShortname ? auxiliaryRoot.Shortname : auxiliaryRoot.Name,
                     Members = unitsService.MapUnitMembers(auxiliaryRoot),
                     Children = GetUnitChartChildren(auxiliaryRoot.Id)
+                };
+            case "secondary":
+                var secondaryRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Secondary);
+                return new UnitChartNodeDto
+                {
+                    Id = secondaryRoot.Id,
+                    Name = secondaryRoot.PreferShortname ? secondaryRoot.Shortname : secondaryRoot.Name,
+                    Members = unitsService.MapUnitMembers(secondaryRoot),
+                    Children = GetUnitChartChildren(secondaryRoot.Id)
                 };
             default: throw new BadRequestException("Invalid chart type");
         }

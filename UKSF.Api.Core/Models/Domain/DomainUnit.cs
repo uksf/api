@@ -6,7 +6,8 @@ namespace UKSF.Api.Core.Models.Domain;
 public enum UnitBranch
 {
     Combat,
-    Auxiliary
+    Auxiliary,
+    Secondary
 }
 
 public class DomainUnit : MongoObject
@@ -61,6 +62,7 @@ public class UnitTreeDto
 {
     public IEnumerable<UnitTreeNodeDto> AuxiliaryNodes { get; set; }
     public IEnumerable<UnitTreeNodeDto> CombatNodes { get; set; }
+    public IEnumerable<UnitTreeNodeDto> SecondaryNodes { get; set; }
 }
 
 public class UnitTreeNodeDto

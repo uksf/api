@@ -49,7 +49,7 @@ public class TeamspeakGroupService(
                     ResolveRankGroup(account, memberGroups);
                     ResolveUnitGroup(account, memberGroups);
                     ResolveParentUnitGroup(account, memberGroups);
-                    ResolveAuxiliaryUnitGroups(account, memberGroups);
+                    ResolveNonCombatUnitGroups(account, memberGroups);
                     memberGroups.Add(variablesService.GetVariable("TEAMSPEAK_GID_ROOT").AsInt());
                     break;
             }
@@ -134,9 +134,11 @@ public class TeamspeakGroupService(
         }
     }
 
-    private void ResolveAuxiliaryUnitGroups(MongoObject account, HashSet<int> memberGroups)
+    private void ResolveNonCombatUnitGroups(MongoObject account, HashSet<int> memberGroups)
     {
-        var accountUnits = unitsContext.Get(x => x.Parent != ObjectId.Empty.ToString() && x.Branch == UnitBranch.Auxiliary && x.Members.Contains(account.Id))
+        var accountUnits = unitsContext.Get(x => x.Parent != ObjectId.Empty.ToString() && 
+                                                (x.Branch == UnitBranch.Auxiliary || x.Branch == UnitBranch.Secondary) && 
+                                                x.Members.Contains(account.Id))
                                        .Where(x => !string.IsNullOrEmpty(x.TeamspeakGroup));
         foreach (var unit in accountUnits)
         {

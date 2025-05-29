@@ -523,4 +523,60 @@ public class TeamspeakGroupServiceTests
         _addedGroups.Should().BeEmpty();
         _removedGroups.Should().BeEquivalentTo(new List<int> { 3, 4 });
     }
+
+    [Fact]
+    public async Task Should_add_correct_groups_for_secondary_units()
+    {
+        var id = ObjectId.GenerateNewId().ToString();
+        var parentId = ObjectId.GenerateNewId().ToString();
+        DomainUnit unit = new()
+        {
+            Name = "Combat Unit",
+            TeamspeakGroup = "6",
+            Members = [id],
+            Parent = parentId,
+            Branch = UnitBranch.Combat
+        };
+        DomainUnit auxiliaryUnit = new()
+        {
+            Branch = UnitBranch.Auxiliary,
+            Name = "Auxiliary Unit",
+            TeamspeakGroup = "9",
+            Parent = _elcomUnit.Id,
+            Members = [id]
+        };
+        DomainUnit secondaryUnit = new()
+        {
+            Branch = UnitBranch.Secondary,
+            Name = "Secondary Unit",
+            TeamspeakGroup = "11",
+            Parent = ObjectId.GenerateNewId().ToString(),
+            Members = [id]
+        };
+        List<DomainUnit> units = [unit, _elcomUnit, auxiliaryUnit, secondaryUnit];
+
+        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
+        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
+                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
+        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+
+        await _teamspeakGroupService.UpdateAccountGroups(
+            new DomainAccount
+            {
+                Id = id,
+                MembershipState = MembershipState.Member,
+                Rank = "Private",
+                UnitAssignment = "Combat Unit"
+            },
+            new List<int>(),
+            2
+        );
+
+        // Should include both auxiliary (9) and secondary (11) unit groups
+        _addedGroups.Should().Contain(new List<int> { 9, 11 });
+        _addedGroups.Should().Contain(3); // Root group
+        _addedGroups.Should().Contain(5); // Rank group
+        _removedGroups.Should().BeEmpty();
+    }
 }

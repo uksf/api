@@ -197,6 +197,17 @@ public class CommandRequestsCreationController(
 
             await commandRequestService.Add(request, ChainOfCommandMode.Target_Commander);
         }
+        else if (toUnit.Branch == UnitBranch.Secondary)
+        {
+            request.DisplayFrom = "N/A";
+            request.Type = CommandRequestType.SecondaryTransfer;
+            if (commandRequestService.DoesEquivalentRequestExist(request))
+            {
+                throw new BadRequestException("An equivalent request already exists");
+            }
+
+            await commandRequestService.Add(request, ChainOfCommandMode.Target_Commander);
+        }
         else
         {
             request.DisplayFrom = accountContext.GetSingle(request.Recipient).UnitAssignment;

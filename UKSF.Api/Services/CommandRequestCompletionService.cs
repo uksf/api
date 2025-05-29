@@ -57,6 +57,7 @@ public class CommandRequestCompletionService(
                     break;
                 case CommandRequestType.Transfer:
                 case CommandRequestType.AuxiliaryTransfer:
+                case CommandRequestType.SecondaryTransfer:
                     await Transfer(request);
                     break;
                 case CommandRequestType.UnitRemoval:
