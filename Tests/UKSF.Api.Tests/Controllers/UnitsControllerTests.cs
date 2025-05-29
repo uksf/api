@@ -58,12 +58,22 @@ public class UnitsControllerTests
         // Arrange
         var secondaryUnits = new List<DomainUnit>
         {
-            new() { Id = ObjectId.GenerateNewId().ToString(), Name = "Secondary Unit 1", Branch = UnitBranch.Secondary },
-            new() { Id = ObjectId.GenerateNewId().ToString(), Name = "Secondary Unit 2", Branch = UnitBranch.Secondary }
+            new()
+            {
+                Id = ObjectId.GenerateNewId().ToString(),
+                Name = "Secondary Unit 1",
+                Branch = UnitBranch.Secondary
+            },
+            new()
+            {
+                Id = ObjectId.GenerateNewId().ToString(),
+                Name = "Secondary Unit 2",
+                Branch = UnitBranch.Secondary
+            }
         };
 
         _mockUnitsService.Setup(x => x.GetSortedUnits(It.IsAny<System.Func<DomainUnit, bool>>()))
-                        .Returns<System.Func<DomainUnit, bool>>(predicate => secondaryUnits.Where(predicate));
+                         .Returns<System.Func<DomainUnit, bool>>(predicate => secondaryUnits.Where(predicate));
 
         // Act
         var result = _controller.Get("secondary", _accountId);
@@ -79,12 +89,22 @@ public class UnitsControllerTests
         // Arrange
         var secondaryUnits = new List<DomainUnit>
         {
-            new() { Id = ObjectId.GenerateNewId().ToString(), Name = "Secondary Unit 1", Branch = UnitBranch.Secondary },
-            new() { Id = ObjectId.GenerateNewId().ToString(), Name = "Secondary Unit 2", Branch = UnitBranch.Secondary }
+            new()
+            {
+                Id = ObjectId.GenerateNewId().ToString(),
+                Name = "Secondary Unit 1",
+                Branch = UnitBranch.Secondary
+            },
+            new()
+            {
+                Id = ObjectId.GenerateNewId().ToString(),
+                Name = "Secondary Unit 2",
+                Branch = UnitBranch.Secondary
+            }
         };
 
         _mockUnitsService.Setup(x => x.GetSortedUnits(It.IsAny<System.Func<DomainUnit, bool>>()))
-                        .Returns<System.Func<DomainUnit, bool>>(predicate => secondaryUnits.Where(predicate));
+                         .Returns<System.Func<DomainUnit, bool>>(predicate => secondaryUnits.Where(predicate));
 
         // Act
         var result = _controller.Get("secondary");
@@ -98,9 +118,9 @@ public class UnitsControllerTests
     public void GetUnitsChart_Should_Support_Secondary_Type()
     {
         // Arrange
-        var secondaryRoot = new DomainUnit 
-        { 
-            Id = ObjectId.GenerateNewId().ToString(), 
+        var secondaryRoot = new DomainUnit
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
             Name = "Secondary Root",
             Shortname = "SEC",
             Branch = UnitBranch.Secondary,
@@ -108,14 +128,11 @@ public class UnitsControllerTests
             PreferShortname = false
         };
 
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainUnit, bool>>()))
-                        .Returns(secondaryRoot);
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainUnit, bool>>())).Returns(secondaryRoot);
 
-        _mockUnitsService.Setup(x => x.MapUnitMembers(It.IsAny<DomainUnit>()))
-                        .Returns(new List<UnitMemberDto>());
+        _mockUnitsService.Setup(x => x.MapUnitMembers(It.IsAny<DomainUnit>())).Returns(new List<UnitMemberDto>());
 
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<System.Func<DomainUnit, bool>>()))
-                        .Returns(new List<DomainUnit>());
+        _mockUnitsContext.Setup(x => x.Get(It.IsAny<System.Func<DomainUnit, bool>>())).Returns(new List<DomainUnit>());
 
         // Act
         var result = _controller.GetUnitsChart("secondary");
@@ -138,12 +155,11 @@ public class UnitsControllerTests
         var auxiliaryTreeNode = new UnitTreeNodeDto { Name = "Auxiliary Node" };
         var secondaryTreeNode = new UnitTreeNodeDto { Name = "Secondary Node" };
 
-        _mockGetUnitTreeQuery.Setup(x => x.ExecuteAsync(It.Is<GetUnitTreeQueryArgs>(args => args.UnitBranch == UnitBranch.Combat)))
-                           .ReturnsAsync(combatTree);
+        _mockGetUnitTreeQuery.Setup(x => x.ExecuteAsync(It.Is<GetUnitTreeQueryArgs>(args => args.UnitBranch == UnitBranch.Combat))).ReturnsAsync(combatTree);
         _mockGetUnitTreeQuery.Setup(x => x.ExecuteAsync(It.Is<GetUnitTreeQueryArgs>(args => args.UnitBranch == UnitBranch.Auxiliary)))
-                           .ReturnsAsync(auxiliaryTree);
+                             .ReturnsAsync(auxiliaryTree);
         _mockGetUnitTreeQuery.Setup(x => x.ExecuteAsync(It.Is<GetUnitTreeQueryArgs>(args => args.UnitBranch == UnitBranch.Secondary)))
-                           .ReturnsAsync(secondaryTree);
+                             .ReturnsAsync(secondaryTree);
 
         _mockUnitTreeMapper.Setup(x => x.MapUnitTree(combatTree)).Returns(combatTreeNode);
         _mockUnitTreeMapper.Setup(x => x.MapUnitTree(auxiliaryTree)).Returns(auxiliaryTreeNode);
@@ -162,4 +178,4 @@ public class UnitsControllerTests
         _mockGetUnitTreeQuery.Verify(x => x.ExecuteAsync(It.Is<GetUnitTreeQueryArgs>(args => args.UnitBranch == UnitBranch.Auxiliary)), Times.Once);
         _mockGetUnitTreeQuery.Verify(x => x.ExecuteAsync(It.Is<GetUnitTreeQueryArgs>(args => args.UnitBranch == UnitBranch.Secondary)), Times.Once);
     }
-} 
+}

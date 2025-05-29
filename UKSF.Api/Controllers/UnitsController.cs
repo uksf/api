@@ -71,13 +71,12 @@ public class UnitsController(
             return false;
         }
 
-        var exists = unitsContext.GetSingle(
-            x => (string.IsNullOrEmpty(id) || x.Id != id) &&
-                 (string.Equals(x.Name, check, StringComparison.InvariantCultureIgnoreCase) ||
-                  string.Equals(x.Shortname, check, StringComparison.InvariantCultureIgnoreCase) ||
-                  string.Equals(x.TeamspeakGroup, check, StringComparison.InvariantCultureIgnoreCase) ||
-                  string.Equals(x.DiscordRoleId, check, StringComparison.InvariantCultureIgnoreCase) ||
-                  string.Equals(x.Callsign, check, StringComparison.InvariantCultureIgnoreCase))
+        var exists = unitsContext.GetSingle(x => (string.IsNullOrEmpty(id) || x.Id != id) &&
+                                                 (string.Equals(x.Name, check, StringComparison.InvariantCultureIgnoreCase) ||
+                                                  string.Equals(x.Shortname, check, StringComparison.InvariantCultureIgnoreCase) ||
+                                                  string.Equals(x.TeamspeakGroup, check, StringComparison.InvariantCultureIgnoreCase) ||
+                                                  string.Equals(x.DiscordRoleId, check, StringComparison.InvariantCultureIgnoreCase) ||
+                                                  string.Equals(x.Callsign, check, StringComparison.InvariantCultureIgnoreCase))
         ) is not null;
         return exists;
     }
@@ -214,8 +213,7 @@ public class UnitsController(
     private IEnumerable<UnitChartNodeDto> GetUnitChartChildren(string parent)
     {
         return unitsContext.Get(x => x.Parent == parent)
-                           .Select(
-                               unit => new UnitChartNodeDto
+                           .Select(unit => new UnitChartNodeDto
                                {
                                    Id = unit.Id,
                                    Name = unit.PreferShortname ? unit.Shortname : unit.Name,

@@ -63,7 +63,7 @@ public class UnitsService(
         var combatRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Combat);
         var auxiliaryRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Auxiliary);
         var secondaryRoot = unitsContext.GetSingle(x => x.Parent == ObjectId.Empty.ToString() && x.Branch == UnitBranch.Secondary);
-        
+
         sortedUnits.Add(combatRoot);
         sortedUnits.AddRange(GetAllChildren(combatRoot));
         sortedUnits.Add(auxiliaryRoot);
@@ -205,8 +205,7 @@ public class UnitsService(
     {
         if (RolesHasMember(unit, account.Id))
         {
-            var role = rolesContext.GetSingle(
-                x =>
+            var role = rolesContext.GetSingle(x =>
                 {
                     var accountRole = unit.Roles.FirstOrDefault(y => y.Value == account.Id);
                     return x.Name == accountRole.Key;
@@ -337,8 +336,7 @@ public class UnitsService(
 
     private IEnumerable<DomainAccount> SortMembers(IEnumerable<string> members, DomainUnit unit)
     {
-        return members.Select(
-                          x =>
+        return members.Select(x =>
                           {
                               var account = accountContext.GetSingle(x);
                               return new

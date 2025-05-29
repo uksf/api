@@ -53,13 +53,12 @@ public class TeamspeakGroupServiceTests
 
         _mockTeamspeakManagerService.Setup(x => x.SendGroupProcedure(TeamspeakProcedureType.Assign, It.IsAny<TeamspeakGroupProcedure>()))
                                     .Returns(Task.CompletedTask)
-                                    .Callback(
-                                        (TeamspeakProcedureType _, TeamspeakGroupProcedure groupProcedure) => _addedGroups.Add(groupProcedure.ServerGroup)
+                                    .Callback((TeamspeakProcedureType _, TeamspeakGroupProcedure groupProcedure) => _addedGroups.Add(groupProcedure.ServerGroup)
                                     );
         _mockTeamspeakManagerService.Setup(x => x.SendGroupProcedure(TeamspeakProcedureType.Unassign, It.IsAny<TeamspeakGroupProcedure>()))
                                     .Returns(Task.CompletedTask)
-                                    .Callback(
-                                        (TeamspeakProcedureType _, TeamspeakGroupProcedure groupProcedure) => _removedGroups.Add(groupProcedure.ServerGroup)
+                                    .Callback((TeamspeakProcedureType _, TeamspeakGroupProcedure groupProcedure) =>
+                                                  _removedGroups.Add(groupProcedure.ServerGroup)
                                     );
 
         IUnitsService unitsService = new UnitsService(
@@ -135,8 +134,19 @@ public class TeamspeakGroupServiceTests
             Members = [id],
             Parent = parentId
         };
-        DomainUnit unitParent = new() { Id = parentId, Name = "SFSG", TeamspeakGroup = "7", Parent = parentParentId };
-        DomainUnit unitParentParent = new() { Id = parentParentId, Name = "UKSF", TeamspeakGroup = "8" };
+        DomainUnit unitParent = new()
+        {
+            Id = parentId,
+            Name = "SFSG",
+            TeamspeakGroup = "7",
+            Parent = parentParentId
+        };
+        DomainUnit unitParentParent = new()
+        {
+            Id = parentParentId,
+            Name = "UKSF",
+            TeamspeakGroup = "8"
+        };
         DomainUnit auxiliaryUnit = new()
         {
             Branch = UnitBranch.Auxiliary,
@@ -166,7 +176,17 @@ public class TeamspeakGroupServiceTests
             2
         );
 
-        _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 4, 5, 7, 9 });
+        _addedGroups.Should()
+        .BeEquivalentTo(
+            new List<int>
+            {
+                3,
+                4,
+                5,
+                7,
+                9
+            }
+        );
         _removedGroups.Should().BeEmpty();
     }
 
@@ -175,7 +195,13 @@ public class TeamspeakGroupServiceTests
     {
         var id = ObjectId.GenerateNewId().ToString();
         var rootId = ObjectId.GenerateNewId().ToString();
-        DomainUnit rootUnit = new() { Id = rootId, Name = "UKSF", TeamspeakGroup = "10", Parent = ObjectId.Empty.ToString() };
+        DomainUnit rootUnit = new()
+        {
+            Id = rootId,
+            Name = "UKSF",
+            TeamspeakGroup = "10",
+            Parent = ObjectId.Empty.ToString()
+        };
         DomainUnit unit = new()
         {
             Name = "JSFAW",
@@ -211,7 +237,16 @@ public class TeamspeakGroupServiceTests
             2
         );
 
-        _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 5, 6, 9 });
+        _addedGroups.Should()
+        .BeEquivalentTo(
+            new List<int>
+            {
+                3,
+                5,
+                6,
+                9
+            }
+        );
         _removedGroups.Should().BeEmpty();
     }
 
@@ -220,7 +255,13 @@ public class TeamspeakGroupServiceTests
     {
         var id = ObjectId.GenerateNewId().ToString();
         var rootId = ObjectId.GenerateNewId().ToString();
-        DomainUnit rootUnit = new() { Id = rootId, Name = "UKSF", TeamspeakGroup = "10", Parent = ObjectId.Empty.ToString() };
+        DomainUnit rootUnit = new()
+        {
+            Id = rootId,
+            Name = "UKSF",
+            TeamspeakGroup = "10",
+            Parent = ObjectId.Empty.ToString()
+        };
         DomainUnit unit = new()
         {
             Name = "JSFAW",
@@ -257,7 +298,17 @@ public class TeamspeakGroupServiceTests
             2
         );
 
-        _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 5, 4, 6, 9 });
+        _addedGroups.Should()
+        .BeEquivalentTo(
+            new List<int>
+            {
+                3,
+                5,
+                4,
+                6,
+                9
+            }
+        );
         _removedGroups.Should().BeEmpty();
     }
 
@@ -274,8 +325,19 @@ public class TeamspeakGroupServiceTests
             Members = [id],
             Parent = parentId
         };
-        DomainUnit unitParent = new() { Id = parentId, Name = "SFSG", TeamspeakGroup = "7", Parent = parentParentId };
-        DomainUnit unitParentParent = new() { Id = parentParentId, Name = "UKSF", TeamspeakGroup = "8" };
+        DomainUnit unitParent = new()
+        {
+            Id = parentId,
+            Name = "SFSG",
+            TeamspeakGroup = "7",
+            Parent = parentParentId
+        };
+        DomainUnit unitParentParent = new()
+        {
+            Id = parentParentId,
+            Name = "UKSF",
+            TeamspeakGroup = "8"
+        };
         DomainUnit auxiliaryUnit = new()
         {
             Branch = UnitBranch.Auxiliary,
@@ -304,7 +366,17 @@ public class TeamspeakGroupServiceTests
             2
         );
 
-        _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 5, 6, 7, 9 });
+        _addedGroups.Should()
+        .BeEquivalentTo(
+            new List<int>
+            {
+                3,
+                5,
+                6,
+                7,
+                9
+            }
+        );
 
         _removedGroups.Should().BeEmpty();
     }
@@ -322,9 +394,25 @@ public class TeamspeakGroupServiceTests
             Members = [id],
             Parent = parentId
         };
-        DomainUnit unitParent = new() { Id = parentId, Name = "1 Platoon", TeamspeakGroup = "7", Parent = parentParentId };
-        DomainUnit unitParentParent = new() { Id = parentParentId, Name = "A Company", Parent = parentParentParentId };
-        DomainUnit unitParentParentParent = new() { Id = parentParentParentId, Name = "SFSG", TeamspeakGroup = "8" };
+        DomainUnit unitParent = new()
+        {
+            Id = parentId,
+            Name = "1 Platoon",
+            TeamspeakGroup = "7",
+            Parent = parentParentId
+        };
+        DomainUnit unitParentParent = new()
+        {
+            Id = parentParentId,
+            Name = "A Company",
+            Parent = parentParentParentId
+        };
+        DomainUnit unitParentParentParent = new()
+        {
+            Id = parentParentParentId,
+            Name = "SFSG",
+            TeamspeakGroup = "8"
+        };
         List<DomainUnit> units = [unit, unitParent, unitParentParent, unitParentParentParent, _elcomUnit];
 
         _mockUnitsContext.Setup(x => x.Get()).Returns(units);
@@ -345,7 +433,16 @@ public class TeamspeakGroupServiceTests
             2
         );
 
-        _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 5, 7, 8 });
+        _addedGroups.Should()
+        .BeEquivalentTo(
+            new List<int>
+            {
+                3,
+                5,
+                7,
+                8
+            }
+        );
 
         _removedGroups.Should().BeEmpty();
     }
@@ -408,7 +505,17 @@ public class TeamspeakGroupServiceTests
             2
         );
 
-        _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 4, 5, 10, 9 });
+        _addedGroups.Should()
+        .BeEquivalentTo(
+            new List<int>
+            {
+                3,
+                4,
+                5,
+                10,
+                9
+            }
+        );
         _removedGroups.Should().BeEmpty();
     }
 
@@ -425,8 +532,19 @@ public class TeamspeakGroupServiceTests
             Members = [id],
             Parent = parentId
         };
-        DomainUnit unitParent = new() { Id = parentId, Name = "SFSG", TeamspeakGroup = "7", Parent = parentParentId };
-        DomainUnit unitParentParent = new() { Id = parentParentId, Name = "UKSF", TeamspeakGroup = "8" };
+        DomainUnit unitParent = new()
+        {
+            Id = parentId,
+            Name = "SFSG",
+            TeamspeakGroup = "7",
+            Parent = parentParentId
+        };
+        DomainUnit unitParentParent = new()
+        {
+            Id = parentParentId,
+            Name = "UKSF",
+            TeamspeakGroup = "8"
+        };
         DomainUnit auxiliaryUnit = new()
         {
             Branch = UnitBranch.Auxiliary,
@@ -455,7 +573,15 @@ public class TeamspeakGroupServiceTests
             2
         );
 
-        _addedGroups.Should().BeEquivalentTo(new List<int> { 6, 7, 9 });
+        _addedGroups.Should()
+        .BeEquivalentTo(
+            new List<int>
+            {
+                6,
+                7,
+                9
+            }
+        );
         _removedGroups.Should().BeEmpty();
     }
 
@@ -472,8 +598,19 @@ public class TeamspeakGroupServiceTests
             Members = [id],
             Parent = parentId
         };
-        DomainUnit unitParent = new() { Id = parentId, Name = "SFSG", TeamspeakGroup = "7", Parent = parentParentId };
-        DomainUnit unitParentParent = new() { Id = parentParentId, Name = "UKSF", TeamspeakGroup = "8" };
+        DomainUnit unitParent = new()
+        {
+            Id = parentId,
+            Name = "SFSG",
+            TeamspeakGroup = "7",
+            Parent = parentParentId
+        };
+        DomainUnit unitParentParent = new()
+        {
+            Id = parentParentId,
+            Name = "UKSF",
+            TeamspeakGroup = "8"
+        };
         DomainUnit auxiliaryUnit = new()
         {
             Branch = UnitBranch.Auxiliary,
@@ -502,14 +639,33 @@ public class TeamspeakGroupServiceTests
             2
         );
 
-        _addedGroups.Should().BeEquivalentTo(new List<int> { 3, 5, 6, 7, 9 });
+        _addedGroups.Should()
+        .BeEquivalentTo(
+            new List<int>
+            {
+                3,
+                5,
+                6,
+                7,
+                9
+            }
+        );
         _removedGroups.Should().BeEquivalentTo(new List<int> { 1, 10 });
     }
 
     [Fact]
     public async Task Should_remove_groups()
     {
-        await _teamspeakGroupService.UpdateAccountGroups(null, new List<int> { 1, 3, 4 }, 2);
+        await _teamspeakGroupService.UpdateAccountGroups(
+            null,
+            new List<int>
+            {
+                1,
+                3,
+                4
+            },
+            2
+        );
 
         _addedGroups.Should().BeEmpty();
         _removedGroups.Should().BeEquivalentTo(new List<int> { 3, 4 });
@@ -518,7 +674,18 @@ public class TeamspeakGroupServiceTests
     [Fact]
     public async Task Should_remove_groups_except_blacklisted()
     {
-        await _teamspeakGroupService.UpdateAccountGroups(null, new List<int> { 1, 3, 4, 99, 100 }, 2);
+        await _teamspeakGroupService.UpdateAccountGroups(
+            null,
+            new List<int>
+            {
+                1,
+                3,
+                4,
+                99,
+                100
+            },
+            2
+        );
 
         _addedGroups.Should().BeEmpty();
         _removedGroups.Should().BeEquivalentTo(new List<int> { 3, 4 });

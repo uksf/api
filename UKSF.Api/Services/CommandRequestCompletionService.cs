@@ -40,33 +40,17 @@ public class CommandRequestCompletionService(
             switch (request.Type)
             {
                 case CommandRequestType.Promotion:
-                case CommandRequestType.Demotion:
-                    await Rank(request);
-                    break;
-                case CommandRequestType.Loa:
-                    await Loa(request);
-                    break;
-                case CommandRequestType.Discharge:
-                    await Discharge(request);
-                    break;
-                case CommandRequestType.IndividualRole:
-                    await IndividualRole(request);
-                    break;
-                case CommandRequestType.UnitRole:
-                    await UnitRole(request);
-                    break;
+                case CommandRequestType.Demotion: await Rank(request); break;
+                case CommandRequestType.Loa:            await Loa(request); break;
+                case CommandRequestType.Discharge:      await Discharge(request); break;
+                case CommandRequestType.IndividualRole: await IndividualRole(request); break;
+                case CommandRequestType.UnitRole:       await UnitRole(request); break;
                 case CommandRequestType.Transfer:
                 case CommandRequestType.AuxiliaryTransfer:
-                case CommandRequestType.SecondaryTransfer:
-                    await Transfer(request);
-                    break;
-                case CommandRequestType.UnitRemoval:
-                    await UnitRemoval(request);
-                    break;
-                case CommandRequestType.ReinstateMember:
-                    await Reinstate(request);
-                    break;
-                default: throw new BadRequestException($"Request type not recognized: '{request.Type}'");
+                case CommandRequestType.SecondaryTransfer: await Transfer(request); break;
+                case CommandRequestType.UnitRemoval:     await UnitRemoval(request); break;
+                case CommandRequestType.ReinstateMember: await Reinstate(request); break;
+                default:                                 throw new BadRequestException($"Request type not recognized: '{request.Type}'");
             }
         }
 

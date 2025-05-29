@@ -58,10 +58,7 @@ public class ChainOfCommandServiceTests
         var parentUnit = CreateUnit(_parentUnitId, "Parent Unit", hasCommander: true, parent: _rootUnitId);
         var rootUnit = CreateUnit(_rootUnitId, "Root Unit", hasCommander: true);
 
-        _mockUnitsService.SetupSequence(x => x.GetParent(It.IsAny<DomainUnit>()))
-            .Returns(parentUnit)
-            .Returns(rootUnit)
-            .Returns((DomainUnit)null);
+        _mockUnitsService.SetupSequence(x => x.GetParent(It.IsAny<DomainUnit>())).Returns(parentUnit).Returns(rootUnit).Returns((DomainUnit)null);
 
         // Act
         var result = _chainOfCommandService.ResolveChain(ChainOfCommandMode.Full, _recipientId, unit, null);
@@ -340,4 +337,4 @@ public class ChainOfCommandServiceTests
 
         return unit;
     }
-} 
+}

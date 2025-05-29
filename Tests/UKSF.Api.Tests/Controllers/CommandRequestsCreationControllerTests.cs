@@ -73,14 +73,16 @@ public class CommandRequestsCreationControllerTests
         await _controller.CreateRequestTransfer(request);
 
         // Assert
-        _mockCommandRequestService.Verify(x => x.Add(
-            It.Is<DomainCommandRequest>(r => 
-                r.Type == CommandRequestType.Transfer &&
-                r.DisplayValue == combatUnit.Name &&
-                r.DisplayFrom == recipient.UnitAssignment
+        _mockCommandRequestService.Verify(
+            x => x.Add(
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.Transfer &&
+                                                 r.DisplayValue == combatUnit.Name &&
+                                                 r.DisplayFrom == recipient.UnitAssignment
+                ),
+                ChainOfCommandMode.Commander_And_Target_Commander
             ),
-            ChainOfCommandMode.Commander_And_Target_Commander
-        ), Times.Once);
+            Times.Once
+        );
     }
 
     [Fact]
@@ -97,14 +99,16 @@ public class CommandRequestsCreationControllerTests
         await _controller.CreateRequestTransfer(request);
 
         // Assert
-        _mockCommandRequestService.Verify(x => x.Add(
-            It.Is<DomainCommandRequest>(r => 
-                r.Type == CommandRequestType.AuxiliaryTransfer &&
-                r.DisplayValue == auxiliaryUnit.Name &&
-                r.DisplayFrom == "N/A"
+        _mockCommandRequestService.Verify(
+            x => x.Add(
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.AuxiliaryTransfer &&
+                                                 r.DisplayValue == auxiliaryUnit.Name &&
+                                                 r.DisplayFrom == "N/A"
+                ),
+                ChainOfCommandMode.Target_Commander
             ),
-            ChainOfCommandMode.Target_Commander
-        ), Times.Once);
+            Times.Once
+        );
     }
 
     [Fact]
@@ -121,14 +125,16 @@ public class CommandRequestsCreationControllerTests
         await _controller.CreateRequestTransfer(request);
 
         // Assert
-        _mockCommandRequestService.Verify(x => x.Add(
-            It.Is<DomainCommandRequest>(r => 
-                r.Type == CommandRequestType.SecondaryTransfer &&
-                r.DisplayValue == secondaryUnit.Name &&
-                r.DisplayFrom == "N/A"
+        _mockCommandRequestService.Verify(
+            x => x.Add(
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.SecondaryTransfer &&
+                                                 r.DisplayValue == secondaryUnit.Name &&
+                                                 r.DisplayFrom == "N/A"
+                ),
+                ChainOfCommandMode.Target_Commander
             ),
-            ChainOfCommandMode.Target_Commander
-        ), Times.Once);
+            Times.Once
+        );
     }
 
     [Fact]
@@ -162,14 +168,13 @@ public class CommandRequestsCreationControllerTests
         await _controller.CreateRequestUnitRemoval(request);
 
         // Assert
-        _mockCommandRequestService.Verify(x => x.Add(
-            It.Is<DomainCommandRequest>(r => 
-                r.Type == CommandRequestType.UnitRemoval &&
-                r.DisplayValue == "N/A" &&
-                r.DisplayFrom == auxiliaryUnit.Name
+        _mockCommandRequestService.Verify(
+            x => x.Add(
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.UnitRemoval && r.DisplayValue == "N/A" && r.DisplayFrom == auxiliaryUnit.Name),
+                ChainOfCommandMode.Target_Commander
             ),
-            ChainOfCommandMode.Target_Commander
-        ), Times.Once);
+            Times.Once
+        );
     }
 
     [Fact]
@@ -201,14 +206,16 @@ public class CommandRequestsCreationControllerTests
         await _controller.CreateRequestUnitRole(request);
 
         // Assert
-        _mockCommandRequestService.Verify(x => x.Add(
-            It.Is<DomainCommandRequest>(r => 
-                r.Type == CommandRequestType.UnitRole &&
-                r.DisplayValue.Contains("Commander") &&
-                r.DisplayValue.Contains(unit.Name)
+        _mockCommandRequestService.Verify(
+            x => x.Add(
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.UnitRole &&
+                                                 r.DisplayValue.Contains("Commander") &&
+                                                 r.DisplayValue.Contains(unit.Name)
+                ),
+                It.IsAny<ChainOfCommandMode>()
             ),
-            It.IsAny<ChainOfCommandMode>()
-        ), Times.Once);
+            Times.Once
+        );
     }
 
     [Fact]
@@ -244,14 +251,13 @@ public class CommandRequestsCreationControllerTests
         await _controller.CreateRequestRank(request);
 
         // Assert
-        _mockCommandRequestService.Verify(x => x.Add(
-            It.Is<DomainCommandRequest>(r => 
-                r.Type == CommandRequestType.Promotion &&
-                r.DisplayValue == request.Value &&
-                r.DisplayFrom == recipient.Rank
+        _mockCommandRequestService.Verify(
+            x => x.Add(
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.Promotion && r.DisplayValue == request.Value && r.DisplayFrom == recipient.Rank),
+                It.IsAny<ChainOfCommandMode>()
             ),
-            It.IsAny<ChainOfCommandMode>()
-        ), Times.Once);
+            Times.Once
+        );
     }
 
     [Fact]
@@ -269,14 +275,13 @@ public class CommandRequestsCreationControllerTests
         await _controller.CreateRequestRank(request);
 
         // Assert
-        _mockCommandRequestService.Verify(x => x.Add(
-            It.Is<DomainCommandRequest>(r => 
-                r.Type == CommandRequestType.Demotion &&
-                r.DisplayValue == request.Value &&
-                r.DisplayFrom == recipient.Rank
+        _mockCommandRequestService.Verify(
+            x => x.Add(
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.Demotion && r.DisplayValue == request.Value && r.DisplayFrom == recipient.Rank),
+                It.IsAny<ChainOfCommandMode>()
             ),
-            It.IsAny<ChainOfCommandMode>()
-        ), Times.Once);
+            Times.Once
+        );
     }
 
     [Fact]
@@ -304,14 +309,13 @@ public class CommandRequestsCreationControllerTests
         await _controller.CreateRequestDischarge(request);
 
         // Assert
-        _mockCommandRequestService.Verify(x => x.Add(
-            It.Is<DomainCommandRequest>(r => 
-                r.Type == CommandRequestType.Discharge &&
-                r.DisplayValue == "Discharged" &&
-                r.DisplayFrom == "Member"
+        _mockCommandRequestService.Verify(
+            x => x.Add(
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.Discharge && r.DisplayValue == "Discharged" && r.DisplayFrom == "Member"),
+                ChainOfCommandMode.Commander_And_Personnel
             ),
-            ChainOfCommandMode.Commander_And_Personnel
-        ), Times.Once);
+            Times.Once
+        );
     }
 
     [Fact]
@@ -328,14 +332,16 @@ public class CommandRequestsCreationControllerTests
         await _controller.CreateRequestIndividualRole(request);
 
         // Assert
-        _mockCommandRequestService.Verify(x => x.Add(
-            It.Is<DomainCommandRequest>(r => 
-                r.Type == CommandRequestType.IndividualRole &&
-                r.DisplayValue == request.Value &&
-                r.DisplayFrom == recipient.RoleAssignment
+        _mockCommandRequestService.Verify(
+            x => x.Add(
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.IndividualRole &&
+                                                 r.DisplayValue == request.Value &&
+                                                 r.DisplayFrom == recipient.RoleAssignment
+                ),
+                ChainOfCommandMode.Next_Commander
             ),
-            ChainOfCommandMode.Next_Commander
-        ), Times.Once);
+            Times.Once
+        );
     }
 
     [Fact]
@@ -349,14 +355,13 @@ public class CommandRequestsCreationControllerTests
         await _controller.CreateRequestReinstateMember(request);
 
         // Assert
-        _mockCommandRequestService.Verify(x => x.Add(
-            It.Is<DomainCommandRequest>(r => 
-                r.Type == CommandRequestType.ReinstateMember &&
-                r.DisplayValue == "Member" &&
-                r.DisplayFrom == "Discharged"
+        _mockCommandRequestService.Verify(
+            x => x.Add(
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.ReinstateMember && r.DisplayValue == "Member" && r.DisplayFrom == "Discharged"),
+                ChainOfCommandMode.Personnel
             ),
-            ChainOfCommandMode.Personnel
-        ), Times.Once);
+            Times.Once
+        );
     }
 
     private void SetupCommonMocks()
@@ -407,11 +412,7 @@ public class CommandRequestsCreationControllerTests
 
     private DomainCommandRequest CreateDischargeRequest()
     {
-        return new DomainCommandRequest
-        {
-            Recipient = _recipientId,
-            Reason = "Test discharge"
-        };
+        return new DomainCommandRequest { Recipient = _recipientId, Reason = "Test discharge" };
     }
 
     private DomainCommandRequest CreateIndividualRoleRequest()
@@ -426,11 +427,7 @@ public class CommandRequestsCreationControllerTests
 
     private DomainCommandRequest CreateReinstateRequest()
     {
-        return new DomainCommandRequest
-        {
-            Recipient = _recipientId,
-            Reason = "Test reinstatement"
-        };
+        return new DomainCommandRequest { Recipient = _recipientId, Reason = "Test reinstatement" };
     }
 
     private DomainUnit CreateUnit(string id, string name, UnitBranch branch)
@@ -444,4 +441,4 @@ public class CommandRequestsCreationControllerTests
             Roles = new Dictionary<string, string>()
         };
     }
-} 
+}

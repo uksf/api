@@ -36,15 +36,9 @@ public class TeamspeakGroupService(
         {
             switch (account.MembershipState)
             {
-                case MembershipState.Unconfirmed:
-                    memberGroups.Add(variablesService.GetVariable("TEAMSPEAK_GID_UNVERIFIED").AsInt());
-                    break;
-                case MembershipState.Discharged:
-                    memberGroups.Add(variablesService.GetVariable("TEAMSPEAK_GID_DISCHARGED").AsInt());
-                    break;
-                case MembershipState.Confirmed:
-                    ResolveRankGroup(account, memberGroups);
-                    break;
+                case MembershipState.Unconfirmed: memberGroups.Add(variablesService.GetVariable("TEAMSPEAK_GID_UNVERIFIED").AsInt()); break;
+                case MembershipState.Discharged:  memberGroups.Add(variablesService.GetVariable("TEAMSPEAK_GID_DISCHARGED").AsInt()); break;
+                case MembershipState.Confirmed:   ResolveRankGroup(account, memberGroups); break;
                 case MembershipState.Member:
                     ResolveRankGroup(account, memberGroups);
                     ResolveUnitGroup(account, memberGroups);
@@ -105,9 +99,7 @@ public class TeamspeakGroupService(
             memberGroups.Add(accountUnit.TeamspeakGroup.ToInt());
         }
 
-        var group = elcom.Members.Contains(account.Id)
-            ? variablesService.GetVariable("TEAMSPEAK_GID_ELCOM").AsInt()
-            : accountUnit.TeamspeakGroup.ToInt();
+        var group = elcom.Members.Contains(account.Id) ? variablesService.GetVariable("TEAMSPEAK_GID_ELCOM").AsInt() : accountUnit.TeamspeakGroup.ToInt();
         if (group == 0)
         {
             ResolveParentUnitGroup(account, memberGroups);
@@ -136,9 +128,10 @@ public class TeamspeakGroupService(
 
     private void ResolveNonCombatUnitGroups(MongoObject account, HashSet<int> memberGroups)
     {
-        var accountUnits = unitsContext.Get(x => x.Parent != ObjectId.Empty.ToString() && 
-                                                (x.Branch == UnitBranch.Auxiliary || x.Branch == UnitBranch.Secondary) && 
-                                                x.Members.Contains(account.Id))
+        var accountUnits = unitsContext.Get(x => x.Parent != ObjectId.Empty.ToString() &&
+                                                 (x.Branch == UnitBranch.Auxiliary || x.Branch == UnitBranch.Secondary) &&
+                                                 x.Members.Contains(account.Id)
+                                       )
                                        .Where(x => !string.IsNullOrEmpty(x.TeamspeakGroup));
         foreach (var unit in accountUnits)
         {
