@@ -204,7 +204,7 @@ public class ChainOfCommandService(
         {
             return string.Empty;
         }
-        
+
         return unit.Roles.GetValueOrDefault(rolesService.GetCommanderRoleName(), string.Empty);
     }
 }

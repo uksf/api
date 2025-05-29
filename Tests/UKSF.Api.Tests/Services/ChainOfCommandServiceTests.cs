@@ -57,7 +57,7 @@ public class ChainOfCommandServiceTests
         var commanderId1 = ObjectId.GenerateNewId().ToString();
         var commanderId2 = ObjectId.GenerateNewId().ToString();
         var commanderId3 = ObjectId.GenerateNewId().ToString();
-        
+
         var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true, commanderId: commanderId1);
         var parentUnit = CreateUnit(_parentUnitId, "Parent Unit", hasCommander: true, parent: _rootUnitId, commanderId: commanderId2);
         var rootUnit = CreateUnit(_rootUnitId, "Root Unit", hasCommander: true, commanderId: commanderId3);
@@ -107,7 +107,7 @@ public class ChainOfCommandServiceTests
         // Arrange
         var commanderId1 = ObjectId.GenerateNewId().ToString();
         var commanderId2 = ObjectId.GenerateNewId().ToString();
-        
+
         var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true, commanderId: commanderId1);
         var parentUnit = CreateUnit(_parentUnitId, "Parent Unit", hasCommander: true, commanderId: commanderId2);
 
@@ -327,7 +327,7 @@ public class ChainOfCommandServiceTests
     {
         // Arrange
         var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true);
-        
+
         // Act & Assert - This should not throw a NullReferenceException
         var result = _chainOfCommandService.ResolveChain(ChainOfCommandMode.Full, _recipientId, unit, null);
         result.Should().NotBeNull();

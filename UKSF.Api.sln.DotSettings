@@ -487,8 +487,6 @@
 
 
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=9BAB922B5BA29443A4455CD928E43031/@KeyIndexDefined">True</s:Boolean>
-	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=9BAB922B5BA29443A4455CD928E43031/AbsolutePath/@EntryValue">E:\Workspace\UKSF\api\UKSF.Tests\UKSF.Tests.csproj.DotSettings</s:String>
-	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=9BAB922B5BA29443A4455CD928E43031/RelativePath/@EntryValue">..\UKSF.Tests\UKSF.Tests.csproj.DotSettings</s:String>
 
 
 	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File9BAB922B5BA29443A4455CD928E43031/@KeyIndexDefined">True</s:Boolean>
