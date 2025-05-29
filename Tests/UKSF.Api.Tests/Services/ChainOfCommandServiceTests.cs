@@ -54,9 +54,13 @@ public class ChainOfCommandServiceTests
     public void ResolveChain_Full_Mode_Should_Return_All_Commanders_Up_Chain()
     {
         // Arrange
-        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true);
-        var parentUnit = CreateUnit(_parentUnitId, "Parent Unit", hasCommander: true, parent: _rootUnitId);
-        var rootUnit = CreateUnit(_rootUnitId, "Root Unit", hasCommander: true);
+        var commanderId1 = ObjectId.GenerateNewId().ToString();
+        var commanderId2 = ObjectId.GenerateNewId().ToString();
+        var commanderId3 = ObjectId.GenerateNewId().ToString();
+        
+        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true, commanderId: commanderId1);
+        var parentUnit = CreateUnit(_parentUnitId, "Parent Unit", hasCommander: true, parent: _rootUnitId, commanderId: commanderId2);
+        var rootUnit = CreateUnit(_rootUnitId, "Root Unit", hasCommander: true, commanderId: commanderId3);
 
         _mockUnitsService.SetupSequence(x => x.GetParent(It.IsAny<DomainUnit>())).Returns(parentUnit).Returns(rootUnit).Returns((DomainUnit)null);
 
@@ -65,7 +69,9 @@ public class ChainOfCommandServiceTests
 
         // Assert
         result.Should().HaveCount(3);
-        result.Should().Contain(_commanderId);
+        result.Should().Contain(commanderId1);
+        result.Should().Contain(commanderId2);
+        result.Should().Contain(commanderId3);
     }
 
     [Fact]
@@ -99,8 +105,11 @@ public class ChainOfCommandServiceTests
     public void ResolveChain_Commander_And_One_Above_Should_Return_Unit_And_Parent_Commanders()
     {
         // Arrange
-        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true);
-        var parentUnit = CreateUnit(_parentUnitId, "Parent Unit", hasCommander: true);
+        var commanderId1 = ObjectId.GenerateNewId().ToString();
+        var commanderId2 = ObjectId.GenerateNewId().ToString();
+        
+        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true, commanderId: commanderId1);
+        var parentUnit = CreateUnit(_parentUnitId, "Parent Unit", hasCommander: true, commanderId: commanderId2);
 
         _mockUnitsService.Setup(x => x.GetParent(unit)).Returns(parentUnit);
 
@@ -109,7 +118,8 @@ public class ChainOfCommandServiceTests
 
         // Assert
         result.Should().HaveCount(2);
-        result.Should().Contain(_commanderId);
+        result.Should().Contain(commanderId1);
+        result.Should().Contain(commanderId2);
     }
 
     [Fact]
@@ -309,6 +319,17 @@ public class ChainOfCommandServiceTests
 
         // Act & Assert - Should not throw
         var result = _chainOfCommandService.ResolveChain(mode, _recipientId, unit, targetUnit);
+        result.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void GetCommander_Should_Handle_Null_Unit_Gracefully()
+    {
+        // Arrange
+        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true);
+        
+        // Act & Assert - This should not throw a NullReferenceException
+        var result = _chainOfCommandService.ResolveChain(ChainOfCommandMode.Full, _recipientId, unit, null);
         result.Should().NotBeNull();
     }
 

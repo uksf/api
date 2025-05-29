@@ -150,7 +150,8 @@ public class ChainOfCommandService(
 
     private IEnumerable<string> GetPersonnel()
     {
-        return unitsContext.GetSingle(x => x.Shortname == "SR7").Members.ToHashSet();
+        var unit = unitsContext.GetSingle(x => x.Shortname == "SR7");
+        return unit?.Members.ToHashSet() ?? new HashSet<string>();
     }
 
     private IEnumerable<string> GetCommanderAndTargetCommander(DomainUnit unit, DomainUnit targetUnit)
@@ -199,6 +200,11 @@ public class ChainOfCommandService(
 
     private string GetCommander(DomainUnit unit)
     {
+        if (unit == null)
+        {
+            return string.Empty;
+        }
+        
         return unit.Roles.GetValueOrDefault(rolesService.GetCommanderRoleName(), string.Empty);
     }
 }

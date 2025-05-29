@@ -151,7 +151,7 @@ public class UnitsService(
 
     public bool HasRole(DomainUnit unit, string role)
     {
-        return unit.Roles.ContainsKey(role);
+        return unit?.Roles.ContainsKey(role) ?? false;
     }
 
     public bool HasMember(string unitId, string memberId)
@@ -182,7 +182,7 @@ public class UnitsService(
 
     public bool RolesHasMember(DomainUnit unit, string id)
     {
-        return unit.Roles.ContainsValue(id);
+        return unit?.Roles.ContainsValue(id) ?? false;
     }
 
     public bool MemberHasRole(string id, string unitId, string role)
@@ -193,7 +193,7 @@ public class UnitsService(
 
     public bool MemberHasRole(string id, DomainUnit unit, string role)
     {
-        return unit.Roles.GetValueOrDefault(role, string.Empty) == id;
+        return unit?.Roles.GetValueOrDefault(role, string.Empty) == id;
     }
 
     public bool MemberHasAnyRole(string id)
@@ -234,7 +234,7 @@ public class UnitsService(
 
     public DomainUnit GetParent(DomainUnit unit)
     {
-        return unit.Parent != string.Empty ? unitsContext.GetSingle(x => x.Id == unit.Parent) : null;
+        return unit != null && unit.Parent != string.Empty ? unitsContext.GetSingle(x => x.Id == unit.Parent) : null;
     }
 
     // TODO: Change this to not add the child unit to the return
@@ -263,11 +263,16 @@ public class UnitsService(
 
     public IEnumerable<DomainUnit> GetChildren(DomainUnit parent)
     {
-        return unitsContext.Get(x => x.Parent == parent.Id).ToList();
+        return parent != null ? unitsContext.Get(x => x.Parent == parent.Id).ToList() : new List<DomainUnit>();
     }
 
     public IEnumerable<DomainUnit> GetAllChildren(DomainUnit parent, bool includeParent = false)
     {
+        if (parent == null)
+        {
+            return new List<DomainUnit>();
+        }
+
         var children = includeParent ? [parent] : new List<DomainUnit>();
         foreach (var unit in unitsContext.Get(x => x.Parent == parent.Id))
         {
@@ -280,13 +285,13 @@ public class UnitsService(
 
     public int GetUnitDepth(DomainUnit unit)
     {
-        if (unit.Parent == ObjectId.Empty.ToString())
+        if (unit?.Parent == ObjectId.Empty.ToString())
         {
             return 0;
         }
 
         var depth = 0;
-        var parent = unitsContext.GetSingle(unit.Parent);
+        var parent = unit != null ? unitsContext.GetSingle(unit.Parent) : null;
         while (parent is not null)
         {
             depth++;
@@ -298,6 +303,11 @@ public class UnitsService(
 
     public string GetChainString(DomainUnit unit)
     {
+        if (unit == null)
+        {
+            return string.Empty;
+        }
+
         var parentUnits = GetParents(unit).Skip(1).ToList();
         var unitNames = unit.Name;
         parentUnits.ForEach(x => unitNames += $", {x.Name}");
