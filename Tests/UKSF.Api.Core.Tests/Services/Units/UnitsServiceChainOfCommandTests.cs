@@ -59,7 +59,7 @@ public class UnitsServiceChainOfCommandTests
     public async Task SetMemberChainOfCommandPosition_Should_Remove_Position_When_Position_Is_Empty()
     {
         // Arrange
-        var chainOfCommand = new ChainOfCommand { OneIC = _memberId };
+        var chainOfCommand = new ChainOfCommand { First = _memberId };
         var unit = new DomainUnit { Id = _unitId, ChainOfCommand = chainOfCommand };
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
 
@@ -74,7 +74,7 @@ public class UnitsServiceChainOfCommandTests
     public void HasChainOfCommandPosition_Should_Return_True_When_Unit_Has_Position()
     {
         // Arrange
-        var chainOfCommand = new ChainOfCommand { OneIC = _memberId };
+        var chainOfCommand = new ChainOfCommand { First = _memberId };
         var unit = new DomainUnit { Id = _unitId, ChainOfCommand = chainOfCommand };
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
 
@@ -103,7 +103,7 @@ public class UnitsServiceChainOfCommandTests
     public void ChainOfCommandHasMember_Should_Return_True_When_Member_Has_Position()
     {
         // Arrange
-        var chainOfCommand = new ChainOfCommand { OneIC = _memberId };
+        var chainOfCommand = new ChainOfCommand { First = _memberId };
         var unit = new DomainUnit { Id = _unitId, ChainOfCommand = chainOfCommand };
 
         // Act
@@ -130,7 +130,7 @@ public class UnitsServiceChainOfCommandTests
     public void MemberHasChainOfCommandPosition_Should_Return_True_When_Member_Has_Specific_Position()
     {
         // Arrange
-        var chainOfCommand = new ChainOfCommand { OneIC = _memberId };
+        var chainOfCommand = new ChainOfCommand { First = _memberId };
         var unit = new DomainUnit { Id = _unitId, ChainOfCommand = chainOfCommand };
 
         // Act
@@ -144,7 +144,7 @@ public class UnitsServiceChainOfCommandTests
     public void MemberHasChainOfCommandPosition_Should_Return_False_When_Member_Does_Not_Have_Specific_Position()
     {
         // Arrange
-        var chainOfCommand = new ChainOfCommand { OneIC = "other-member" };
+        var chainOfCommand = new ChainOfCommand { First = "other-member" };
         var unit = new DomainUnit { Id = _unitId, ChainOfCommand = chainOfCommand };
 
         // Act
@@ -158,7 +158,7 @@ public class UnitsServiceChainOfCommandTests
     public void GetMemberChainOfCommandOrder_Should_Return_Correct_Order()
     {
         // Arrange
-        var chainOfCommand = new ChainOfCommand { TwoIC = _memberId }; // Should be order 1
+        var chainOfCommand = new ChainOfCommand { Second = _memberId }; // Should be order 1
         var unit = new DomainUnit { Id = _unitId, ChainOfCommand = chainOfCommand };
         var account = new DomainAccount { Id = _memberId };
 

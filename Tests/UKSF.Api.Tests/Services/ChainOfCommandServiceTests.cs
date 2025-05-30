@@ -345,7 +345,7 @@ public class ChainOfCommandServiceTests
         if (hasCommander)
         {
             var actualCommanderId = commanderId ?? _commanderId;
-            unit.ChainOfCommand.OneIC = actualCommanderId;
+            unit.ChainOfCommand.First = actualCommanderId;
             _mockUnitsService.Setup(x => x.HasChainOfCommandPosition(unit, "1iC")).Returns(true);
         }
         else

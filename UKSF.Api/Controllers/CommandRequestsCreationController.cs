@@ -178,10 +178,10 @@ public class CommandRequestsCreationController(
 
     private string GetCurrentChainOfCommandPosition(DomainUnit unit, string memberId)
     {
-        if (unit.ChainOfCommand?.OneIC == memberId) return "1iC";
-        if (unit.ChainOfCommand?.TwoIC == memberId) return "2iC";
-        if (unit.ChainOfCommand?.ThreeIC == memberId) return "3iC";
-        if (unit.ChainOfCommand?.NCOIC == memberId) return "NCOiC";
+        if (unit.ChainOfCommand?.First == memberId) return "1iC";
+        if (unit.ChainOfCommand?.Second == memberId) return "2iC";
+        if (unit.ChainOfCommand?.Third == memberId) return "3iC";
+        if (unit.ChainOfCommand?.Nco == memberId) return "NCOiC";
         return "Member";
     }
 

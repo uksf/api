@@ -86,10 +86,10 @@ public class RolesController(
             {
                 return position.Name switch
                 {
-                    "1iC"   => string.IsNullOrEmpty(chainOfCommand.OneIC),
-                    "2iC"   => string.IsNullOrEmpty(chainOfCommand.TwoIC),
-                    "3iC"   => string.IsNullOrEmpty(chainOfCommand.ThreeIC),
-                    "NCOiC" => string.IsNullOrEmpty(chainOfCommand.NCOIC),
+                    "1iC"   => string.IsNullOrEmpty(chainOfCommand.First),
+                    "2iC"   => string.IsNullOrEmpty(chainOfCommand.Second),
+                    "3iC"   => string.IsNullOrEmpty(chainOfCommand.Third),
+                    "NCOiC" => string.IsNullOrEmpty(chainOfCommand.Nco),
                     _       => false
                 };
             }

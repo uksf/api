@@ -285,7 +285,7 @@ public class CommandRequestsCreationControllerTests
             Name = "Test Unit",
             ChainOfCommand = new ChainOfCommand
             {
-                OneIC = request.Recipient // Member is already 1iC
+                First = request.Recipient // Member is already 1iC
             },
             Members = new List<string> { request.Recipient }
         };
@@ -314,7 +314,7 @@ public class CommandRequestsCreationControllerTests
             Name = "Test Unit",
             ChainOfCommand = new ChainOfCommand
             {
-                OneIC = request.Recipient // Member is currently 1iC, being reassigned to 2iC
+                First = request.Recipient // Member is currently 1iC, being reassigned to 2iC
             },
             Members = new List<string> { request.Recipient }
         };

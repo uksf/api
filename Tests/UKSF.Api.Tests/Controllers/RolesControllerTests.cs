@@ -56,8 +56,8 @@ public class RolesControllerTests
             Name = "Test Unit",
             ChainOfCommand = new ChainOfCommand
             {
-                OneIC = _memberId, // Member holds 1iC position
-                TwoIC = _otherMemberId, // Other member holds 2iC position
+                First = _memberId, // Member holds 1iC position
+                Second = _otherMemberId, // Other member holds 2iC position
                 // ThreeIC and NCOIC are empty
             }
         };
@@ -91,7 +91,7 @@ public class RolesControllerTests
             Name = "Test Unit",
             ChainOfCommand = new ChainOfCommand
             {
-                OneIC = _otherMemberId, // Other member holds 1iC position
+                First = _otherMemberId, // Other member holds 1iC position
                 // All other positions are empty
             }
         };
@@ -184,8 +184,8 @@ public class RolesControllerTests
             Name = "Test Unit",
             ChainOfCommand = new ChainOfCommand
             {
-                OneIC = memberId, // Member is 1iC
-                TwoIC = "other_member", // 2iC is taken by someone else
+                First = memberId, // Member is 1iC
+                Second = "other_member", // 2iC is taken by someone else
                 // ThreeIC and NCOIC are empty - should be available
             }
         };

@@ -17,10 +17,10 @@ public class ChainOfCommandTests
         // Arrange
         var chainOfCommand = new ChainOfCommand
         {
-            OneIC = MemberId1,
-            TwoIC = MemberId2,
-            ThreeIC = MemberId3,
-            NCOIC = MemberId4
+            First = MemberId1,
+            Second = MemberId2,
+            Third = MemberId3,
+            Nco = MemberId4
         };
 
         // Act & Assert
@@ -37,20 +37,20 @@ public class ChainOfCommandTests
         // Arrange
         var chainOfCommand = new ChainOfCommand
         {
-            OneIC = MemberId1,
-            TwoIC = MemberId1, // Same member in multiple positions
-            ThreeIC = MemberId2,
-            NCOIC = MemberId3
+            First = MemberId1,
+            Second = MemberId1, // Same member in multiple positions
+            Third = MemberId2,
+            Nco = MemberId3
         };
 
         // Act
         chainOfCommand.RemoveMember(MemberId1);
 
         // Assert
-        chainOfCommand.OneIC.Should().BeNull();
-        chainOfCommand.TwoIC.Should().BeNull();
-        chainOfCommand.ThreeIC.Should().Be(MemberId2);
-        chainOfCommand.NCOIC.Should().Be(MemberId3);
+        chainOfCommand.First.Should().BeNull();
+        chainOfCommand.Second.Should().BeNull();
+        chainOfCommand.Third.Should().Be(MemberId2);
+        chainOfCommand.Nco.Should().Be(MemberId3);
         chainOfCommand.HasMember(MemberId1).Should().BeFalse();
     }
 
@@ -64,10 +64,10 @@ public class ChainOfCommandTests
         // Arrange
         var chainOfCommand = new ChainOfCommand
         {
-            OneIC = MemberId1,
-            TwoIC = MemberId2,
-            ThreeIC = MemberId3,
-            NCOIC = MemberId4
+            First = MemberId1,
+            Second = MemberId2,
+            Third = MemberId3,
+            Nco = MemberId4
         };
 
         // Act
@@ -117,10 +117,10 @@ public class ChainOfCommandTests
         chainOfCommand.SetMemberAtPosition("InvalidPosition", MemberId1);
 
         // Assert
-        chainOfCommand.OneIC.Should().BeNull();
-        chainOfCommand.TwoIC.Should().BeNull();
-        chainOfCommand.ThreeIC.Should().BeNull();
-        chainOfCommand.NCOIC.Should().BeNull();
+        chainOfCommand.First.Should().BeNull();
+        chainOfCommand.Second.Should().BeNull();
+        chainOfCommand.Third.Should().BeNull();
+        chainOfCommand.Nco.Should().BeNull();
     }
 
     [Theory]
@@ -133,7 +133,7 @@ public class ChainOfCommandTests
         // Arrange
         var chainOfCommand = new ChainOfCommand
         {
-            OneIC = MemberId1, TwoIC = MemberId2
+            First = MemberId1, Second = MemberId2
             // ThreeIC and NCOIC are null
         };
 
@@ -156,7 +156,7 @@ public class ChainOfCommandTests
         var chainOfCommand = new ChainOfCommand();
 
         // Act
-        var result = chainOfCommand.GetPositionOrder(position);
+        var result = ChainOfCommand.GetPositionOrder(position);
 
         // Assert
         result.Should().Be(expectedOrder);
@@ -168,7 +168,7 @@ public class ChainOfCommandTests
         // Arrange
         var chainOfCommand = new ChainOfCommand
         {
-            OneIC = MemberId1, ThreeIC = MemberId3
+            First = MemberId1, Third = MemberId3
             // TwoIC and NCOIC are null
         };
 

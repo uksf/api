@@ -16,6 +16,7 @@ public class UnitMapper : IUnitMapper
             Id = unit.Id,
             Branch = unit.Branch,
             Callsign = unit.Callsign,
+            ChainOfCommand = unit.ChainOfCommand,
             DiscordRoleId = unit.DiscordRoleId,
             Icon = unit.Icon,
             Members = unit.Members,

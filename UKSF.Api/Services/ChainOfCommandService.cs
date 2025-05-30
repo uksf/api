@@ -204,6 +204,6 @@ public class ChainOfCommandService(
             return string.Empty;
         }
 
-        return unit.ChainOfCommand?.OneIC ?? string.Empty;
+        return unit.ChainOfCommand?.First ?? string.Empty;
     }
 }

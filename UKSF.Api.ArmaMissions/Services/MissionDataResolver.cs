@@ -32,22 +32,22 @@ public static class MissionDataResolver
         var chainOfCommand = player.Unit.SourceUnit.ChainOfCommand;
         if (chainOfCommand == null) return -1;
 
-        if (chainOfCommand.OneIC == player.Account?.Id)
+        if (chainOfCommand.First == player.Account?.Id)
         {
             return 3;
         }
 
-        if (chainOfCommand.TwoIC == player.Account?.Id)
+        if (chainOfCommand.Second == player.Account?.Id)
         {
             return 2;
         }
 
-        if (chainOfCommand.ThreeIC == player.Account?.Id)
+        if (chainOfCommand.Third == player.Account?.Id)
         {
             return 1;
         }
 
-        if (chainOfCommand.NCOIC == player.Account?.Id)
+        if (chainOfCommand.Nco == player.Account?.Id)
         {
             return 0;
         }
