@@ -15,19 +15,29 @@ public interface IUnitsService
     Task RemoveMember(string id, DomainUnit unit);
     Task SetMemberRole(string roleId, string unitId, string role = "");
     Task SetMemberRole(string roleId, DomainUnit unit, string role = "");
+    Task SetMemberChainOfCommandPosition(string memberId, string unitId, string position = "");
+    Task SetMemberChainOfCommandPosition(string memberId, DomainUnit unit, string position = "");
     Task RenameRole(string oldName, string newName);
     Task DeleteRole(string role);
     bool HasRole(string unitId, string role);
     bool HasRole(DomainUnit unit, string role);
+    bool HasChainOfCommandPosition(string unitId, string position);
+    bool HasChainOfCommandPosition(DomainUnit unit, string position);
     bool HasMember(string unitId, string memberId);
     bool AnyChildHasMember(string unitId, string memberId);
     bool AnyParentHasMember(string unitId, string memberId);
     bool RolesHasMember(string unitId, string id);
     bool RolesHasMember(DomainUnit unit, string id);
+    bool ChainOfCommandHasMember(string unitId, string id);
+    bool ChainOfCommandHasMember(DomainUnit unit, string id);
     bool MemberHasRole(string id, string unitId, string role);
     bool MemberHasRole(string id, DomainUnit unit, string role);
+    bool MemberHasChainOfCommandPosition(string id, string unitId, string position);
+    bool MemberHasChainOfCommandPosition(string id, DomainUnit unit, string position);
     bool MemberHasAnyRole(string id);
+    bool MemberHasAnyChainOfCommandPosition(string id);
     int GetMemberRoleOrder(DomainAccount account, DomainUnit unit);
+    int GetMemberChainOfCommandOrder(DomainAccount account, DomainUnit unit);
     DomainUnit GetRoot();
     DomainUnit GetAuxiliaryRoot();
     DomainUnit GetSecondaryRoot();
@@ -103,6 +113,7 @@ public class UnitsService(
         }
 
         await RemoveMemberRoles(id, unit);
+        await RemoveMemberFromChainOfCommand(id, unit);
     }
 
     public async Task SetMemberRole(string roleId, string unitId, string role = "")
@@ -125,22 +136,43 @@ public class UnitsService(
         }
     }
 
+    public async Task SetMemberChainOfCommandPosition(string memberId, string unitId, string position = "")
+    {
+        var unit = unitsContext.GetSingle(x => x.Id == unitId);
+        if (unit == null)
+        {
+            return;
+        }
+
+        await SetMemberChainOfCommandPosition(memberId, unit, position);
+    }
+
+    public async Task SetMemberChainOfCommandPosition(string memberId, DomainUnit unit, string position = "")
+    {
+        // Remove member from all current positions
+        await RemoveMemberFromChainOfCommand(memberId, unit);
+
+        // Set new position if provided
+        if (!string.IsNullOrEmpty(position))
+        {
+            var updatedChainOfCommand = unit.ChainOfCommand ?? new ChainOfCommand();
+            updatedChainOfCommand.SetMemberAtPosition(position, memberId);
+            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set(x => x.ChainOfCommand, updatedChainOfCommand));
+        }
+    }
+
     public async Task RenameRole(string oldName, string newName)
     {
-        foreach (var unit in unitsContext.Get(x => x.Roles.ContainsKey(oldName)))
-        {
-            var id = unit.Roles[oldName];
-            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Unset($"roles.{oldName}"));
-            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set($"roles.{newName}", id));
-        }
+        // Legacy method - unit roles are now handled by chain of command
+        // This method is kept for backwards compatibility but does nothing
+        await Task.CompletedTask;
     }
 
     public async Task DeleteRole(string role)
     {
-        foreach (var unit in from unit in unitsContext.Get(x => x.Roles.ContainsKey(role)) let id = unit.Roles[role] select unit)
-        {
-            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Unset($"roles.{role}"));
-        }
+        // Legacy method - unit roles are now handled by chain of command
+        // This method is kept for backwards compatibility but does nothing
+        await Task.CompletedTask;
     }
 
     public bool HasRole(string unitId, string role)
@@ -152,6 +184,17 @@ public class UnitsService(
     public bool HasRole(DomainUnit unit, string role)
     {
         return unit?.Roles.ContainsKey(role) ?? false;
+    }
+
+    public bool HasChainOfCommandPosition(string unitId, string position)
+    {
+        var unit = unitsContext.GetSingle(x => x.Id == unitId);
+        return HasChainOfCommandPosition(unit, position);
+    }
+
+    public bool HasChainOfCommandPosition(DomainUnit unit, string position)
+    {
+        return unit?.ChainOfCommand?.HasPosition(position) ?? false;
     }
 
     public bool HasMember(string unitId, string memberId)
@@ -185,6 +228,17 @@ public class UnitsService(
         return unit?.Roles.ContainsValue(id) ?? false;
     }
 
+    public bool ChainOfCommandHasMember(string unitId, string id)
+    {
+        var unit = unitsContext.GetSingle(x => x.Id == unitId);
+        return ChainOfCommandHasMember(unit, id);
+    }
+
+    public bool ChainOfCommandHasMember(DomainUnit unit, string id)
+    {
+        return unit?.ChainOfCommand?.HasMember(id) ?? false;
+    }
+
     public bool MemberHasRole(string id, string unitId, string role)
     {
         var unit = unitsContext.GetSingle(x => x.Id == unitId);
@@ -196,9 +250,25 @@ public class UnitsService(
         return unit?.Roles.GetValueOrDefault(role, string.Empty) == id;
     }
 
+    public bool MemberHasChainOfCommandPosition(string id, string unitId, string position)
+    {
+        var unit = unitsContext.GetSingle(x => x.Id == unitId);
+        return MemberHasChainOfCommandPosition(id, unit, position);
+    }
+
+    public bool MemberHasChainOfCommandPosition(string id, DomainUnit unit, string position)
+    {
+        return unit?.ChainOfCommand?.GetMemberAtPosition(position) == id;
+    }
+
     public bool MemberHasAnyRole(string id)
     {
         return unitsContext.Get().Any(x => RolesHasMember(x, id));
+    }
+
+    public bool MemberHasAnyChainOfCommandPosition(string id)
+    {
+        return unitsContext.Get().Any(x => ChainOfCommandHasMember(x, id));
     }
 
     public int GetMemberRoleOrder(DomainAccount account, DomainUnit unit)
@@ -212,6 +282,23 @@ public class UnitsService(
                 }
             );
             return int.MaxValue - role.Order;
+        }
+
+        return -1;
+    }
+
+    public int GetMemberChainOfCommandOrder(DomainAccount account, DomainUnit unit)
+    {
+        if (ChainOfCommandHasMember(unit, account.Id))
+        {
+            // Find which position the member holds
+            var assignedPositions = unit.ChainOfCommand.GetAssignedPositions();
+            var memberPosition = assignedPositions.FirstOrDefault(x => x.MemberId == account.Id);
+            if (!string.IsNullOrEmpty(memberPosition.Position))
+            {
+                var order = rolesService.GetUnitRoleOrderByName(memberPosition.Position);
+                return int.MaxValue - order;
+            }
         }
 
         return -1;
@@ -237,7 +324,6 @@ public class UnitsService(
         return unit != null && unit.Parent != string.Empty ? unitsContext.GetSingle(x => x.Id == unit.Parent) : null;
     }
 
-    // TODO: Change this to not add the child unit to the return
     public IEnumerable<DomainUnit> GetParents(DomainUnit unit)
     {
         if (unit == null)
@@ -263,7 +349,7 @@ public class UnitsService(
 
     public IEnumerable<DomainUnit> GetChildren(DomainUnit parent)
     {
-        return parent != null ? unitsContext.Get(x => x.Parent == parent.Id).ToList() : new List<DomainUnit>();
+        return parent != null ? unitsContext.Get(x => x.Parent == parent.Id).ToList() : [];
     }
 
     public IEnumerable<DomainUnit> GetAllChildren(DomainUnit parent, bool includeParent = false)
@@ -329,6 +415,16 @@ public class UnitsService(
         }
     }
 
+    private async Task RemoveMemberFromChainOfCommand(string memberId, DomainUnit unit)
+    {
+        if (unit.ChainOfCommand?.HasMember(memberId) == true)
+        {
+            var updatedChainOfCommand = unit.ChainOfCommand;
+            updatedChainOfCommand.RemoveMember(memberId);
+            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set(x => x.ChainOfCommand, updatedChainOfCommand));
+        }
+    }
+
     public IEnumerable<UnitMemberDto> MapUnitMembers(DomainUnit unit)
     {
         return SortMembers(unit.Members, unit).Select(x => MapUnitMember(x, unit));
@@ -340,7 +436,7 @@ public class UnitsService(
         {
             Name = displayNameService.GetDisplayName(member),
             Role = member.RoleAssignment,
-            UnitRole = GetRole(unit, member.Id)
+            UnitRole = GetChainOfCommandRole(unit, member.Id)
         };
     }
 
@@ -353,7 +449,7 @@ public class UnitsService(
                               {
                                   account,
                                   rankIndex = ranksService.GetRankOrder(account.Rank),
-                                  roleIndex = GetMemberRoleOrder(account, unit)
+                                  roleIndex = GetMemberChainOfCommandOrder(account, unit)
                               };
                           }
                       )
@@ -364,11 +460,12 @@ public class UnitsService(
                       .Select(x => x.account);
     }
 
-    private string GetRole(DomainUnit unit, string accountId)
+    private string GetChainOfCommandRole(DomainUnit unit, string accountId)
     {
-        return MemberHasRole(accountId, unit, rolesService.GetUnitRoleByOrder(0).Name) ? "1" :
-            MemberHasRole(accountId, unit, rolesService.GetUnitRoleByOrder(1).Name)    ? "2" :
-            MemberHasRole(accountId, unit, rolesService.GetUnitRoleByOrder(2).Name)    ? "3" :
-            MemberHasRole(accountId, unit, rolesService.GetUnitRoleByOrder(3).Name)    ? "N" : "";
+        if (MemberHasChainOfCommandPosition(accountId, unit, "1iC")) return "1";
+        if (MemberHasChainOfCommandPosition(accountId, unit, "2iC")) return "2";
+        if (MemberHasChainOfCommandPosition(accountId, unit, "3iC")) return "3";
+        if (MemberHasChainOfCommandPosition(accountId, unit, "NCOiC")) return "N";
+        return "";
     }
 }

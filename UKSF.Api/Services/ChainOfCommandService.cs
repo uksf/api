@@ -15,14 +15,13 @@ public interface IChainOfCommandService
 public class ChainOfCommandService(
     IUnitsContext unitsContext,
     IUnitsService unitsService,
-    IRolesService rolesService,
     IHttpContextService httpContextService,
     IAccountService accountService
 ) : IChainOfCommandService
 {
     public HashSet<string> ResolveChain(ChainOfCommandMode mode, string recipient, DomainUnit start, DomainUnit target)
     {
-        var chain = ResolveMode(mode, start, target).Where(x => x != recipient).ToHashSet();
+        var chain = ResolveMode(mode, recipient, start, target).Where(x => x != recipient).ToHashSet();
         chain.CleanHashset();
 
         // If no chain, and mode is not next commander, get next commander
@@ -70,11 +69,11 @@ public class ChainOfCommandService(
         }
 
         var unit = unitsContext.GetSingle(x => x.Name == contextDomainAccount.UnitAssignment);
-        return unitsService.RolesHasMember(unit, contextDomainAccount.Id) &&
+        return unitsService.ChainOfCommandHasMember(unit, contextDomainAccount.Id) &&
                (unit.Members.Contains(id) || unitsService.GetAllChildren(unit, true).Any(unitChild => unitChild.Members.Contains(id)));
     }
 
-    private IEnumerable<string> ResolveMode(ChainOfCommandMode mode, DomainUnit start, DomainUnit target)
+    private IEnumerable<string> ResolveMode(ChainOfCommandMode mode, string recipient, DomainUnit start, DomainUnit target)
     {
         return mode switch
         {
@@ -195,7 +194,7 @@ public class ChainOfCommandService(
 
     private bool UnitHasCommander(DomainUnit unit)
     {
-        return unitsService.HasRole(unit, rolesService.GetCommanderRoleName());
+        return unitsService.HasChainOfCommandPosition(unit, "1iC");
     }
 
     private string GetCommander(DomainUnit unit)
@@ -205,6 +204,6 @@ public class ChainOfCommandService(
             return string.Empty;
         }
 
-        return unit.Roles.GetValueOrDefault(rolesService.GetCommanderRoleName(), string.Empty);
+        return unit.ChainOfCommand?.OneIC ?? string.Empty;
     }
 }

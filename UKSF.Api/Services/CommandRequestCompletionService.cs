@@ -182,25 +182,25 @@ public class CommandRequestCompletionService(
             {
                 if (string.IsNullOrEmpty(request.Value))
                 {
-                    await assignmentService.UnassignAllUnitRoles(request.Recipient);
+                    await assignmentService.UnassignAllUnitChainOfCommandPositions(request.Recipient);
                     notificationsService.Add(
                         new DomainNotification
                         {
                             Owner = request.Recipient,
-                            Message = "You have been unassigned from all roles in all units",
+                            Message = "You have been unassigned from all chain of command positions in all units",
                             Icon = NotificationIcons.Demotion
                         }
                     );
                 }
                 else
                 {
-                    var role = await assignmentService.UnassignUnitRole(request.Recipient, request.Value);
+                    var position = await assignmentService.UnassignUnitChainOfCommandPosition(request.Recipient, request.Value);
                     notificationsService.Add(
                         new DomainNotification
                         {
                             Owner = request.Recipient,
                             Message =
-                                $"You have been unassigned as {AvsAn.Query(role).Article} {role} in {unitsService.GetChainString(unitsContext.GetSingle(request.Value))}",
+                                $"You have been unassigned as {AvsAn.Query(position).Article} {position} in {unitsService.GetChainString(unitsContext.GetSingle(request.Value))}",
                             Icon = NotificationIcons.Demotion
                         }
                     );
@@ -208,7 +208,7 @@ public class CommandRequestCompletionService(
             }
             else
             {
-                await assignmentService.AssignUnitRole(request.Recipient, request.Value, request.SecondaryValue);
+                await assignmentService.AssignUnitChainOfCommandPosition(request.Recipient, request.Value, request.SecondaryValue);
                 notificationsService.Add(
                     new DomainNotification
                     {

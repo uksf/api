@@ -8,10 +8,20 @@ public interface IRolesService
     int Sort(string nameA, string nameB);
     DomainRole GetUnitRoleByOrder(int order);
     string GetCommanderRoleName();
+    string GetUnitRoleNameByOrder(int order);
+    int GetUnitRoleOrderByName(string roleName);
 }
 
 public class RolesService(IRolesContext rolesContext) : IRolesService
 {
+    private static readonly Dictionary<int, string> ChainOfCommandPositions = new()
+    {
+        { 0, "1iC" },
+        { 1, "2iC" },
+        { 2, "3iC" },
+        { 3, "NCOiC" }
+    };
+
     public int Sort(string nameA, string nameB)
     {
         var roleA = rolesContext.GetSingle(nameA);
@@ -29,6 +39,16 @@ public class RolesService(IRolesContext rolesContext) : IRolesService
 
     public string GetCommanderRoleName()
     {
-        return GetUnitRoleByOrder(0).Name;
+        return GetUnitRoleNameByOrder(0);
+    }
+
+    public string GetUnitRoleNameByOrder(int order)
+    {
+        return ChainOfCommandPositions.GetValueOrDefault(order, string.Empty);
+    }
+
+    public int GetUnitRoleOrderByName(string roleName)
+    {
+        return ChainOfCommandPositions.FirstOrDefault(x => x.Value == roleName).Key;
     }
 }

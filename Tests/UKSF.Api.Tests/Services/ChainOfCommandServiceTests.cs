@@ -17,7 +17,6 @@ public class ChainOfCommandServiceTests
 {
     private readonly Mock<IUnitsContext> _mockUnitsContext;
     private readonly Mock<IUnitsService> _mockUnitsService;
-    private readonly Mock<IRolesService> _mockRolesService;
     private readonly Mock<IHttpContextService> _mockHttpContextService;
     private readonly Mock<IAccountService> _mockAccountService;
     private readonly ChainOfCommandService _chainOfCommandService;
@@ -33,20 +32,17 @@ public class ChainOfCommandServiceTests
     {
         _mockUnitsContext = new Mock<IUnitsContext>();
         _mockUnitsService = new Mock<IUnitsService>();
-        _mockRolesService = new Mock<IRolesService>();
         _mockHttpContextService = new Mock<IHttpContextService>();
         _mockAccountService = new Mock<IAccountService>();
 
         _chainOfCommandService = new ChainOfCommandService(
             _mockUnitsContext.Object,
             _mockUnitsService.Object,
-            _mockRolesService.Object,
             _mockHttpContextService.Object,
             _mockAccountService.Object
         );
 
         // Setup common mocks
-        _mockRolesService.Setup(x => x.GetCommanderRoleName()).Returns("1iC");
         _mockHttpContextService.Setup(x => x.GetUserId()).Returns(_contextUserId);
     }
 
@@ -248,7 +244,7 @@ public class ChainOfCommandServiceTests
 
         _mockAccountService.Setup(x => x.GetUserAccount()).Returns(account);
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
-        _mockUnitsService.Setup(x => x.RolesHasMember(unit, _contextUserId)).Returns(true);
+        _mockUnitsService.Setup(x => x.ChainOfCommandHasMember(unit, _contextUserId)).Returns(true);
         _mockUnitsService.Setup(x => x.GetAllChildren(unit, true)).Returns(new List<DomainUnit>());
 
         // Act
@@ -269,7 +265,7 @@ public class ChainOfCommandServiceTests
 
         _mockAccountService.Setup(x => x.GetUserAccount()).Returns(account);
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
-        _mockUnitsService.Setup(x => x.RolesHasMember(unit, _contextUserId)).Returns(true);
+        _mockUnitsService.Setup(x => x.ChainOfCommandHasMember(unit, _contextUserId)).Returns(true);
         _mockUnitsService.Setup(x => x.GetAllChildren(unit, true)).Returns(new List<DomainUnit> { childUnit });
 
         // Act
@@ -288,7 +284,7 @@ public class ChainOfCommandServiceTests
 
         _mockAccountService.Setup(x => x.GetUserAccount()).Returns(account);
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
-        _mockUnitsService.Setup(x => x.RolesHasMember(unit, _contextUserId)).Returns(false);
+        _mockUnitsService.Setup(x => x.ChainOfCommandHasMember(unit, _contextUserId)).Returns(false);
 
         // Act
         var result = _chainOfCommandService.InContextChainOfCommand(_recipientId);
@@ -342,18 +338,19 @@ public class ChainOfCommandServiceTests
             Shortname = shortname ?? name,
             Parent = parent,
             Members = new List<string>(),
-            Roles = new Dictionary<string, string>()
+            Roles = new Dictionary<string, string>(),
+            ChainOfCommand = new ChainOfCommand()
         };
 
         if (hasCommander)
         {
             var actualCommanderId = commanderId ?? _commanderId;
-            unit.Roles["1iC"] = actualCommanderId;
-            _mockUnitsService.Setup(x => x.HasRole(unit, "1iC")).Returns(true);
+            unit.ChainOfCommand.OneIC = actualCommanderId;
+            _mockUnitsService.Setup(x => x.HasChainOfCommandPosition(unit, "1iC")).Returns(true);
         }
         else
         {
-            _mockUnitsService.Setup(x => x.HasRole(unit, "1iC")).Returns(false);
+            _mockUnitsService.Setup(x => x.HasChainOfCommandPosition(unit, "1iC")).Returns(false);
         }
 
         return unit;

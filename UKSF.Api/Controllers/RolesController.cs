@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
@@ -14,11 +15,42 @@ public class RolesController(
     IRolesContext rolesContext,
     IAccountContext accountContext,
     IAssignmentService assignmentService,
-    IUnitsService unitsService,
     INotificationsService notificationsService,
     IUksfLogger logger
 ) : ControllerBase
 {
+    private static readonly List<DomainRole> ChainOfCommandPositions = new()
+    {
+        new DomainRole
+        {
+            Id = "chain-1ic",
+            Name = "1iC",
+            Order = 0,
+            RoleType = RoleType.Unit
+        },
+        new DomainRole
+        {
+            Id = "chain-2ic",
+            Name = "2iC",
+            Order = 1,
+            RoleType = RoleType.Unit
+        },
+        new DomainRole
+        {
+            Id = "chain-3ic",
+            Name = "3iC",
+            Order = 2,
+            RoleType = RoleType.Unit
+        },
+        new DomainRole
+        {
+            Id = "chain-ncoic",
+            Name = "NCOiC",
+            Order = 3,
+            RoleType = RoleType.Unit
+        }
+    };
+
     [HttpGet]
     [Authorize]
     public RolesDataset GetRoles([FromQuery] string id = "", [FromQuery] string unitId = "")
@@ -26,10 +58,8 @@ public class RolesController(
         if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(unitId))
         {
             var unit = unitsContext.GetSingle(unitId);
-            var unitRoles = rolesContext.Get(x => x.RoleType == RoleType.Unit).OrderBy(x => x.Order);
-            var existingPairs = unit.Roles.Where(x => x.Value == id);
-            var filteredRoles = unitRoles.Where(x => existingPairs.All(y => y.Key != x.Name));
-            return new RolesDataset { UnitRoles = filteredRoles };
+            var availablePositions = GetAvailableChainOfCommandPositions(unit, id);
+            return new RolesDataset { UnitRoles = availablePositions };
         }
 
         if (!string.IsNullOrEmpty(id))
@@ -43,9 +73,27 @@ public class RolesController(
 
         return new RolesDataset
         {
-            IndividualRoles = rolesContext.Get(x => x.RoleType == RoleType.Individual),
-            UnitRoles = rolesContext.Get(x => x.RoleType == RoleType.Unit).OrderBy(x => x.Order)
+            IndividualRoles = rolesContext.Get(x => x.RoleType == RoleType.Individual), UnitRoles = ChainOfCommandPositions.OrderBy(x => x.Order)
         };
+    }
+
+    private IEnumerable<DomainRole> GetAvailableChainOfCommandPositions(DomainUnit unit, string memberId)
+    {
+        var chainOfCommand = unit.ChainOfCommand ?? new ChainOfCommand();
+
+        // Return positions that are empty (not the member's current position)
+        return ChainOfCommandPositions.Where(position =>
+            {
+                return position.Name switch
+                {
+                    "1iC"   => string.IsNullOrEmpty(chainOfCommand.OneIC),
+                    "2iC"   => string.IsNullOrEmpty(chainOfCommand.TwoIC),
+                    "3iC"   => string.IsNullOrEmpty(chainOfCommand.ThreeIC),
+                    "NCOiC" => string.IsNullOrEmpty(chainOfCommand.NCOIC),
+                    _       => false
+                };
+            }
+        );
     }
 
     [HttpPost("{roleType}/{check}")]
@@ -54,6 +102,18 @@ public class RolesController(
     {
         if (string.IsNullOrEmpty(check))
         {
+            return null;
+        }
+
+        // For unit roles, check against hardcoded chain of command positions
+        if (roleType == RoleType.Unit)
+        {
+            var chainPosition = ChainOfCommandPositions.FirstOrDefault(x => x.Name == check);
+            if (chainPosition != null && role?.Id != chainPosition.Id)
+            {
+                return chainPosition;
+            }
+
             return null;
         }
 
@@ -70,12 +130,17 @@ public class RolesController(
     [Authorize]
     public async Task<RolesDataset> AddRole([FromBody] DomainRole role)
     {
+        // Don't allow adding unit roles as they are hardcoded chain of command positions
+        if (role.RoleType == RoleType.Unit)
+        {
+            throw new BadRequestException("Unit roles are managed through the chain of command system");
+        }
+
         await rolesContext.Add(role);
         logger.LogAudit($"Role added '{role.Name}'");
         return new RolesDataset
         {
-            IndividualRoles = rolesContext.Get(x => x.RoleType == RoleType.Individual),
-            UnitRoles = rolesContext.Get(x => x.RoleType == RoleType.Unit).OrderBy(x => x.Order)
+            IndividualRoles = rolesContext.Get(x => x.RoleType == RoleType.Individual), UnitRoles = ChainOfCommandPositions.OrderBy(x => x.Order)
         };
     }
 
@@ -83,6 +148,12 @@ public class RolesController(
     [Authorize]
     public async Task<RolesDataset> EditRole([FromBody] DomainRole role)
     {
+        // Don't allow editing unit roles as they are hardcoded chain of command positions
+        if (role.RoleType == RoleType.Unit)
+        {
+            throw new BadRequestException("Unit roles are managed through the chain of command system");
+        }
+
         var oldRole = rolesContext.GetSingle(x => x.Id == role.Id);
         logger.LogAudit($"Role updated from '{oldRole.Name}' to '{role.Name}'");
         await rolesContext.Update(role.Id, x => x.Name, role.Name);
@@ -91,11 +162,9 @@ public class RolesController(
             await accountContext.Update(account.Id, x => x.RoleAssignment, role.Name);
         }
 
-        await unitsService.RenameRole(oldRole.Name, role.Name);
         return new RolesDataset
         {
-            IndividualRoles = rolesContext.Get(x => x.RoleType == RoleType.Individual),
-            UnitRoles = rolesContext.Get(x => x.RoleType == RoleType.Unit).OrderBy(x => x.Order)
+            IndividualRoles = rolesContext.Get(x => x.RoleType == RoleType.Individual), UnitRoles = ChainOfCommandPositions.OrderBy(x => x.Order)
         };
     }
 
@@ -103,6 +172,13 @@ public class RolesController(
     [Authorize]
     public async Task<RolesDataset> DeleteRole([FromRoute] string id)
     {
+        // Don't allow deleting unit roles as they are hardcoded chain of command positions
+        var chainPosition = ChainOfCommandPositions.FirstOrDefault(x => x.Id == id);
+        if (chainPosition != null)
+        {
+            throw new BadRequestException("Unit roles are managed through the chain of command system");
+        }
+
         var role = rolesContext.GetSingle(x => x.Id == id);
         logger.LogAudit($"Role deleted '{role.Name}'");
         await rolesContext.Delete(id);
@@ -116,11 +192,9 @@ public class RolesController(
             notificationsService.Add(notification);
         }
 
-        await unitsService.DeleteRole(role.Name);
         return new RolesDataset
         {
-            IndividualRoles = rolesContext.Get(x => x.RoleType == RoleType.Individual),
-            UnitRoles = rolesContext.Get(x => x.RoleType == RoleType.Unit).OrderBy(x => x.Order)
+            IndividualRoles = rolesContext.Get(x => x.RoleType == RoleType.Individual), UnitRoles = ChainOfCommandPositions.OrderBy(x => x.Order)
         };
     }
 
@@ -128,16 +202,17 @@ public class RolesController(
     [Authorize]
     public async Task<IOrderedEnumerable<DomainRole>> UpdateOrder([FromBody] List<DomainRole> newRoleOrder)
     {
-        for (var index = 0; index < newRoleOrder.Count; index++)
+        // Unit roles have fixed order in chain of command, only allow reordering individual roles
+        var individualRoles = newRoleOrder.Where(x => x.RoleType == RoleType.Individual).ToList();
+        for (var index = 0; index < individualRoles.Count; index++)
         {
-            var role = newRoleOrder[index];
+            var role = individualRoles[index];
             if (rolesContext.GetSingle(role.Name).Order != index)
             {
                 await rolesContext.Update(role.Id, x => x.Order, index);
-
             }
         }
 
-        return rolesContext.Get(x => x.RoleType == RoleType.Unit).OrderBy(x => x.Order);
+        return ChainOfCommandPositions.OrderBy(x => x.Order);
     }
 }

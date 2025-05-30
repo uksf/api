@@ -128,20 +128,39 @@ public class CommandRequestsCreationController(
     public async Task CreateRequestUnitRole([FromBody] DomainCommandRequest request)
     {
         var unit = unitsContext.GetSingle(request.Value);
-        var recipientHasUnitRole = unitsService.RolesHasMember(unit, request.Recipient);
-        if (!recipientHasUnitRole && request.SecondaryValue == "None")
+        var recipientHasChainOfCommandRole = unitsService.ChainOfCommandHasMember(unit, request.Recipient);
+
+        if (!recipientHasChainOfCommandRole && request.SecondaryValue == "None")
         {
             throw new BadRequestException(
-                $"{displayNameService.GetDisplayName(request.Recipient)} has no unit role in {unit.Name}. If you are trying to remove them from the unit, use a Unit Removal request"
+                $"{displayNameService.GetDisplayName(request.Recipient)} has no chain of command position in {unit.Name}. If you are trying to remove them from the unit, use a Unit Removal request"
+            );
+        }
+
+        // Validate that member is in unit when assigning a chain of command position
+        if (request.SecondaryValue != "None" && !unit.Members.Contains(request.Recipient))
+        {
+            throw new BadRequestException(
+                $"{displayNameService.GetDisplayName(request.Recipient)} is not a member of {unit.Name}. They must be a unit member before being assigned to a chain of command position"
+            );
+        }
+
+        // Validate that member is not already assigned to the requested position
+        if (request.SecondaryValue != "None" && unitsService.MemberHasChainOfCommandPosition(request.Recipient, unit, request.SecondaryValue))
+        {
+            throw new BadRequestException(
+                $"{displayNameService.GetDisplayName(request.Recipient)} is already assigned to {request.SecondaryValue} in {unit.Name}"
             );
         }
 
         request.Requester = httpContextService.GetUserId();
-        request.DisplayValue = request.SecondaryValue == "None" ? $"Remove role from {unit.Name}" : $"{request.SecondaryValue} of {unit.Name}";
-        if (recipientHasUnitRole)
+        request.DisplayValue = request.SecondaryValue == "None"
+            ? $"Remove chain of command position from {unit.Name}"
+            : $"{request.SecondaryValue} of {unit.Name}";
+        if (recipientHasChainOfCommandRole)
         {
-            var role = unit.Roles.FirstOrDefault(x => x.Value == request.Recipient).Key;
-            request.DisplayFrom = $"{role} of {unit.Name}";
+            var currentPosition = GetCurrentChainOfCommandPosition(unit, request.Recipient);
+            request.DisplayFrom = $"{currentPosition} of {unit.Name}";
         }
         else
         {
@@ -155,6 +174,15 @@ public class CommandRequestsCreationController(
         }
 
         await commandRequestService.Add(request);
+    }
+
+    private string GetCurrentChainOfCommandPosition(DomainUnit unit, string memberId)
+    {
+        if (unit.ChainOfCommand?.OneIC == memberId) return "1iC";
+        if (unit.ChainOfCommand?.TwoIC == memberId) return "2iC";
+        if (unit.ChainOfCommand?.ThreeIC == memberId) return "3iC";
+        if (unit.ChainOfCommand?.NCOIC == memberId) return "NCOiC";
+        return "Member";
     }
 
     [HttpPut("unitremoval")]

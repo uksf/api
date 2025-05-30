@@ -104,4 +104,44 @@ public class RolesServiceTests
 
         subject.Name.Should().Be(expected);
     }
+
+    [Theory]
+    [InlineData(0, "1iC")]
+    [InlineData(1, "2iC")]
+    [InlineData(2, "3iC")]
+    [InlineData(3, "NCOiC")]
+    [InlineData(999, "")]
+    public void GetUnitRoleNameByOrder_Should_Return_Correct_Role_Name(int order, string expected)
+    {
+        // Act
+        var result = _rolesService.GetUnitRoleNameByOrder(order);
+
+        // Assert
+        result.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("1iC", 0)]
+    [InlineData("2iC", 1)]
+    [InlineData("3iC", 2)]
+    [InlineData("NCOiC", 3)]
+    [InlineData("NonExistent", 0)] // Default value for key not found
+    public void GetUnitRoleOrderByName_Should_Return_Correct_Order(string roleName, int expected)
+    {
+        // Act
+        var result = _rolesService.GetUnitRoleOrderByName(roleName);
+
+        // Assert
+        result.Should().Be(expected);
+    }
+
+    [Fact]
+    public void GetCommanderRoleName_Should_Return_1iC()
+    {
+        // Act
+        var result = _rolesService.GetCommanderRoleName();
+
+        // Assert
+        result.Should().Be("1iC");
+    }
 }

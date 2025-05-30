@@ -14,6 +14,7 @@ public class DomainUnit : MongoObject
 {
     public UnitBranch Branch { get; set; } = UnitBranch.Combat;
     public string Callsign { get; set; }
+    public ChainOfCommand ChainOfCommand { get; set; } = new();
 
     [BsonIgnore]
     public List<DomainUnit> Children { get; set; }

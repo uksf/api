@@ -10,8 +10,10 @@ namespace UKSF.Api.Core.Services;
 public interface IAssignmentService
 {
     Task AssignUnitRole(string roleId, string unitId, string role);
+    Task AssignUnitChainOfCommandPosition(string memberId, string unitId, string position);
     Task UnassignAllUnits(string id);
     Task UnassignAllUnitRoles(string id);
+    Task UnassignAllUnitChainOfCommandPositions(string id);
 
     Task<DomainNotification> UpdateUnitRankAndRole(
         string id,
@@ -24,6 +26,7 @@ public interface IAssignmentService
     );
 
     Task<string> UnassignUnitRole(string roleId, string unitId);
+    Task<string> UnassignUnitChainOfCommandPosition(string memberId, string unitId);
     Task UnassignUnit(string id, string unitId);
     void UpdateGroupsAndRoles(string id);
 }
@@ -102,6 +105,12 @@ public class AssignmentService(
         UpdateGroupsAndRoles(roleId);
     }
 
+    public async Task AssignUnitChainOfCommandPosition(string memberId, string unitId, string position)
+    {
+        await unitsService.SetMemberChainOfCommandPosition(memberId, unitId, position);
+        UpdateGroupsAndRoles(memberId);
+    }
+
     public async Task UnassignAllUnits(string id)
     {
         foreach (var unit in unitsContext.Get())
@@ -122,6 +131,16 @@ public class AssignmentService(
         UpdateGroupsAndRoles(id);
     }
 
+    public async Task UnassignAllUnitChainOfCommandPositions(string id)
+    {
+        foreach (var unit in unitsContext.Get())
+        {
+            await unitsService.SetMemberChainOfCommandPosition(id, unit);
+        }
+
+        UpdateGroupsAndRoles(id);
+    }
+
     public async Task<string> UnassignUnitRole(string roleId, string unitId)
     {
         var unit = unitsContext.GetSingle(unitId);
@@ -133,6 +152,22 @@ public class AssignmentService(
         }
 
         return role;
+    }
+
+    public async Task<string> UnassignUnitChainOfCommandPosition(string memberId, string unitId)
+    {
+        var unit = unitsContext.GetSingle(unitId);
+        var assignedPositions = unit.ChainOfCommand?.GetAssignedPositions();
+        var memberPosition = assignedPositions?.FirstOrDefault(x => x.MemberId == memberId);
+        var position = memberPosition?.Position ?? string.Empty;
+
+        if (unitsService.ChainOfCommandHasMember(unit, memberId))
+        {
+            await unitsService.SetMemberChainOfCommandPosition(memberId, unitId);
+            UpdateGroupsAndRoles(memberId);
+        }
+
+        return position;
     }
 
     public async Task UnassignUnit(string id, string unitId)

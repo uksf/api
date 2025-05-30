@@ -29,22 +29,25 @@ public static class MissionDataResolver
 
     private static int ResolvePlayerUnitRole(MissionPlayer player)
     {
-        if (player.Unit.Roles.ContainsKey("1iC") && player.Unit.Roles["1iC"] == player)
+        var chainOfCommand = player.Unit.SourceUnit.ChainOfCommand;
+        if (chainOfCommand == null) return -1;
+
+        if (chainOfCommand.OneIC == player.Account?.Id)
         {
             return 3;
         }
 
-        if (player.Unit.Roles.ContainsKey("2iC") && player.Unit.Roles["2iC"] == player)
+        if (chainOfCommand.TwoIC == player.Account?.Id)
         {
             return 2;
         }
 
-        if (player.Unit.Roles.ContainsKey("3iC") && player.Unit.Roles["3iC"] == player)
+        if (chainOfCommand.ThreeIC == player.Account?.Id)
         {
             return 1;
         }
 
-        if (player.Unit.Roles.ContainsKey("NCOiC") && player.Unit.Roles["NCOiC"] == player)
+        if (chainOfCommand.NCOIC == player.Account?.Id)
         {
             return 0;
         }
@@ -104,7 +107,12 @@ public static class MissionDataResolver
                 fillerCount = max - slots.Count;
                 for (var i = 0; i < fillerCount; i++)
                 {
-                    MissionPlayer player = new() { Name = "Sniper", Unit = unit, Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Private") };
+                    MissionPlayer player = new()
+                    {
+                        Name = "Sniper",
+                        Unit = unit,
+                        Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Private")
+                    };
                     player.ObjectClass = ResolveObjectClass(player);
                     slots.Add(player);
                 }
@@ -117,7 +125,12 @@ public static class MissionDataResolver
                 fillerCount = max - slots.Count;
                 for (var i = 0; i < fillerCount; i++)
                 {
-                    MissionPlayer player = new() { Name = "Reserve", Unit = unit, Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Recruit") };
+                    MissionPlayer player = new()
+                    {
+                        Name = "Reserve",
+                        Unit = unit,
+                        Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Recruit")
+                    };
                     player.ObjectClass = ResolveObjectClass(player);
                     slots.Add(player);
                 }
@@ -126,19 +139,21 @@ public static class MissionDataResolver
             case "5ad748e0de5d414f4c4055e0": // "Guardian 1-R"
                 for (var i = 0; i < 10; i++)
                 {
-                    MissionPlayer player = new() { Name = "Reserve", Unit = unit, Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Recruit") };
+                    MissionPlayer player = new()
+                    {
+                        Name = "Reserve",
+                        Unit = unit,
+                        Rank = MissionPatchData.Instance.Ranks.Find(x => x.Name == "Recruit")
+                    };
                     player.ObjectClass = ResolveObjectClass(player);
                     slots.Add(player);
                 }
 
                 break;
-            default:
-                slots = unit.Members;
-                break;
+            default: slots = unit.Members; break;
         }
 
-        slots.Sort(
-            (a, b) =>
+        slots.Sort((a, b) =>
             {
                 var roleA = ResolvePlayerUnitRole(a);
                 var roleB = ResolvePlayerUnitRole(b);
