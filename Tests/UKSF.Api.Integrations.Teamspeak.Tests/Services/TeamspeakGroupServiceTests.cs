@@ -61,9 +61,8 @@ public class TeamspeakGroupServiceTests
                                                   _removedGroups.Add(groupProcedure.ServerGroup)
                                     );
 
-        IUnitsService unitsService = new UnitsService(
+        var unitsService = new UnitsService(
             _mockUnitsContext.Object,
-            _mockRolesContext.Object,
             new Mock<IRanksService>().Object,
             new Mock<IRolesService>().Object,
             new Mock<IDisplayNameService>().Object,

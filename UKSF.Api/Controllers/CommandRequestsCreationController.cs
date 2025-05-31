@@ -155,16 +155,16 @@ public class CommandRequestsCreationController(
 
         request.Requester = httpContextService.GetUserId();
         request.DisplayValue = request.SecondaryValue == "None"
-            ? $"Remove chain of command position from {unit.Name}"
-            : $"{request.SecondaryValue} of {unit.Name}";
+            ? $"Remove chain of command position from {unit.Shortname}"
+            : $"{request.SecondaryValue} of {unit.Shortname}";
         if (recipientHasChainOfCommandRole)
         {
             var currentPosition = GetCurrentChainOfCommandPosition(unit, request.Recipient);
-            request.DisplayFrom = $"{currentPosition} of {unit.Name}";
+            request.DisplayFrom = $"{currentPosition} of {unit.Shortname}";
         }
         else
         {
-            request.DisplayFrom = $"Member of {unit.Name}";
+            request.DisplayFrom = $"Member of {unit.Shortname}";
         }
 
         request.Type = CommandRequestType.UnitRole;

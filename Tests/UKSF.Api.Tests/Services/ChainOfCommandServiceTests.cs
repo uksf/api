@@ -338,7 +338,6 @@ public class ChainOfCommandServiceTests
             Shortname = shortname ?? name,
             Parent = parent,
             Members = new List<string>(),
-            Roles = new Dictionary<string, string>(),
             ChainOfCommand = new ChainOfCommand()
         };
 

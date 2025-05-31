@@ -75,7 +75,16 @@ public class RecruitmentService(
 
     public List<string> GetRecruiterLeadAccountIds()
     {
-        return GetRecruiterUnit().Roles.Values.ToList();
+        var recruiterUnit = GetRecruiterUnit();
+        var chainOfCommand = recruiterUnit.ChainOfCommand;
+        var leadIds = new List<string>();
+
+        if (!string.IsNullOrEmpty(chainOfCommand?.First)) leadIds.Add(chainOfCommand.First);
+        if (!string.IsNullOrEmpty(chainOfCommand?.Second)) leadIds.Add(chainOfCommand.Second);
+        if (!string.IsNullOrEmpty(chainOfCommand?.Third)) leadIds.Add(chainOfCommand.Third);
+        if (!string.IsNullOrEmpty(chainOfCommand?.Nco)) leadIds.Add(chainOfCommand.Nco);
+
+        return leadIds;
     }
 
     public bool IsRecruiter(DomainAccount account)
@@ -85,9 +94,8 @@ public class RecruitmentService(
 
     public bool IsRecruiterLead(DomainAccount account = null)
     {
-        return account is not null
-            ? GetRecruiterUnit().Roles.ContainsValue(account.Id)
-            : GetRecruiterUnit().Roles.ContainsValue(httpContextService.GetUserId());
+        var accountId = account?.Id ?? httpContextService.GetUserId();
+        return GetRecruiterLeadAccountIds().Contains(accountId);
     }
 
     public string GetNextRecruiterForApplication()
@@ -95,8 +103,7 @@ public class RecruitmentService(
         var recruiters = GetRecruiterAccounts().Where(x => x.Settings.Sr1Enabled);
         var waiting = accountContext.Get(x => x.Application is { State: ApplicationState.Waiting }).ToList();
         var complete = accountContext.Get(x => x.Application is { State: not ApplicationState.Waiting }).ToList();
-        var unsorted = recruiters.Select(
-            x => new
+        var unsorted = recruiters.Select(x => new
             {
                 id = x.Id,
                 complete = complete.Count(y => y.Application.Recruiter == x.Id),

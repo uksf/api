@@ -42,7 +42,6 @@ public class UnitsServiceTests
 
         _unitsService = new UnitsService(
             _mockUnitsContext.Object,
-            _mockRolesContext.Object,
             _mockRanksService.Object,
             _mockRolesService.Object,
             _mockDisplayNameService.Object,
@@ -234,69 +233,13 @@ public class UnitsServiceTests
     public async Task RemoveMember_By_UnitName_Should_Not_Remove_If_Unit_Not_Found()
     {
         // Arrange
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns((DomainUnit)null);
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(null);
 
         // Act
-        await _unitsService.RemoveMember(_memberId, "Nonexistent Unit");
+        await _unitsService.RemoveMember(_memberId, "NonExistentUnit");
 
         // Assert
         _mockUnitsContext.Verify(x => x.Update(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainUnit>>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task SetMemberRole_Should_Set_Role_For_Member()
-    {
-        // Arrange
-        var unit = new DomainUnit { Id = _unitId, Roles = new Dictionary<string, string>() };
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
-
-        // Act
-        await _unitsService.SetMemberRole(_memberId, _unitId, "Commander");
-
-        // Assert - Should verify update for role removal (RemoveMemberRoles) and role setting
-        _mockUnitsContext.Verify(x => x.Update(_unitId, It.IsAny<UpdateDefinition<DomainUnit>>()), Times.AtLeast(1));
-    }
-
-    [Fact]
-    public async Task SetMemberRole_Should_Remove_Role_When_Role_Is_Empty()
-    {
-        // Arrange
-        var unit = new DomainUnit { Id = _unitId, Roles = new Dictionary<string, string> { { "Commander", _memberId } } };
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
-
-        // Act
-        await _unitsService.SetMemberRole(_memberId, _unitId, "");
-
-        // Assert - Should only call RemoveMemberRoles (which will call Update if there were roles to remove)
-        _mockUnitsContext.Verify(x => x.Update(_unitId, It.IsAny<UpdateDefinition<DomainUnit>>()), Times.Once);
-    }
-
-    [Fact]
-    public void HasRole_Should_Return_True_When_Unit_Has_Role()
-    {
-        // Arrange
-        var unit = new DomainUnit { Id = _unitId, Roles = new Dictionary<string, string> { { "Commander", _memberId } } };
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
-
-        // Act
-        var result = _unitsService.HasRole(_unitId, "Commander");
-
-        // Assert
-        result.Should().BeTrue();
-    }
-
-    [Fact]
-    public void HasRole_Should_Return_False_When_Unit_Does_Not_Have_Role()
-    {
-        // Arrange
-        var unit = new DomainUnit { Id = _unitId, Roles = new Dictionary<string, string>() };
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
-
-        // Act
-        var result = _unitsService.HasRole(_unitId, "Commander");
-
-        // Assert
-        result.Should().BeFalse();
     }
 
     [Fact]
@@ -322,58 +265,6 @@ public class UnitsServiceTests
 
         // Act
         var result = _unitsService.HasMember(_unitId, _memberId);
-
-        // Assert
-        result.Should().BeFalse();
-    }
-
-    [Fact]
-    public void RolesHasMember_Should_Return_True_When_Member_Has_Role()
-    {
-        // Arrange
-        var unit = new DomainUnit { Id = _unitId, Roles = new Dictionary<string, string> { { "Commander", _memberId } } };
-
-        // Act
-        var result = _unitsService.RolesHasMember(unit, _memberId);
-
-        // Assert
-        result.Should().BeTrue();
-    }
-
-    [Fact]
-    public void RolesHasMember_Should_Return_False_When_Member_Has_No_Role()
-    {
-        // Arrange
-        var unit = new DomainUnit { Id = _unitId, Roles = new Dictionary<string, string>() };
-
-        // Act
-        var result = _unitsService.RolesHasMember(unit, _memberId);
-
-        // Assert
-        result.Should().BeFalse();
-    }
-
-    [Fact]
-    public void MemberHasRole_Should_Return_True_When_Member_Has_Specific_Role()
-    {
-        // Arrange
-        var unit = new DomainUnit { Id = _unitId, Roles = new Dictionary<string, string> { { "Commander", _memberId } } };
-
-        // Act
-        var result = _unitsService.MemberHasRole(_memberId, unit, "Commander");
-
-        // Assert
-        result.Should().BeTrue();
-    }
-
-    [Fact]
-    public void MemberHasRole_Should_Return_False_When_Member_Does_Not_Have_Specific_Role()
-    {
-        // Arrange
-        var unit = new DomainUnit { Id = _unitId, Roles = new Dictionary<string, string> { { "Commander", "other-member" } } };
-
-        // Act
-        var result = _unitsService.MemberHasRole(_memberId, unit, "Commander");
 
         // Assert
         result.Should().BeFalse();

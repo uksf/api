@@ -32,10 +32,6 @@ public class DomainUnit : MongoObject
     public string Parent { get; set; }
 
     public bool PreferShortname { get; set; }
-
-    [BsonRepresentation(BsonType.ObjectId)]
-    public Dictionary<string, string> Roles { get; set; } = new();
-
     public string Shortname { get; set; }
     public string TeamspeakGroup { get; set; }
 

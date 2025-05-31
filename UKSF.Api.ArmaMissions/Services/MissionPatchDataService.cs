@@ -59,14 +59,20 @@ public class MissionPatchDataService
         foreach (var missionUnit in MissionPatchData.Instance.Units)
         {
             missionUnit.Callsign = MissionDataResolver.ResolveCallsign(missionUnit, missionUnit.SourceUnit.Callsign);
-            missionUnit.Members = missionUnit.SourceUnit.Members.Select(x => MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == x))
-                                             .ToList();
-            if (missionUnit.SourceUnit.Roles.Count > 0)
+            missionUnit.Members = missionUnit.SourceUnit.Members.Select(x => MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == x)).ToList();
+            if (missionUnit.SourceUnit.ChainOfCommand != null)
             {
-                missionUnit.Roles = missionUnit.SourceUnit.Roles.ToDictionary(
-                    pair => pair.Key,
-                    pair => MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == pair.Value)
-                );
+                missionUnit.Roles = new Dictionary<string, MissionPlayer>();
+                var chainOfCommand = missionUnit.SourceUnit.ChainOfCommand;
+
+                if (!string.IsNullOrEmpty(chainOfCommand.First))
+                    missionUnit.Roles["1iC"] = MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == chainOfCommand.First);
+                if (!string.IsNullOrEmpty(chainOfCommand.Second))
+                    missionUnit.Roles["2iC"] = MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == chainOfCommand.Second);
+                if (!string.IsNullOrEmpty(chainOfCommand.Third))
+                    missionUnit.Roles["3iC"] = MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == chainOfCommand.Third);
+                if (!string.IsNullOrEmpty(chainOfCommand.Nco))
+                    missionUnit.Roles["NCOiC"] = MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == chainOfCommand.Nco);
             }
         }
 
@@ -79,8 +85,8 @@ public class MissionPatchDataService
         var parent = MissionPatchData.Instance.Units.First(x => x.SourceUnit.Parent == ObjectId.Empty.ToString());
         MissionPatchData.Instance.OrderedUnits.Add(parent);
         InsertUnitChildren(MissionPatchData.Instance.OrderedUnits, parent);
-        MissionPatchData.Instance.OrderedUnits.RemoveAll(
-            x => (!MissionDataResolver.IsUnitPermanent(x) && x.Members.Count == 0) || string.IsNullOrEmpty(x.Callsign)
+        MissionPatchData.Instance.OrderedUnits.RemoveAll(x => (!MissionDataResolver.IsUnitPermanent(x) && x.Members.Count == 0) ||
+                                                              string.IsNullOrEmpty(x.Callsign)
         );
         MissionDataResolver.ResolveSpecialUnits(MissionPatchData.Instance.OrderedUnits);
     }

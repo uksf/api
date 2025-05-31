@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Context.Base;
@@ -8,11 +9,11 @@ using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Services;
 
-public class MigrationUtility(IMigrationContext migrationContext, IUksfLogger logger, IServiceProvider serviceProvider)
+public class MigrationUtility(IMigrationContext migrationContext, IServiceProvider serviceProvider, IUksfLogger logger)
 {
-    private const int Version = 2;
+    private const int Version = 3;
 
-    public void Migrate()
+    public async Task RunMigrations()
     {
         if (migrationContext.GetSingle(x => x.Version == Version) is not null)
         {
@@ -21,8 +22,8 @@ public class MigrationUtility(IMigrationContext migrationContext, IUksfLogger lo
 
         try
         {
-            ExecuteMigration();
-            migrationContext.Add(new Migration { Version = Version });
+            await ExecuteMigrations();
+            await migrationContext.Add(new Migration { Version = Version });
             logger.LogInfo($"Migration version {Version} executed successfully");
         }
         catch (Exception e)
@@ -32,49 +33,45 @@ public class MigrationUtility(IMigrationContext migrationContext, IUksfLogger lo
         }
     }
 
-    private void ExecuteMigration()
+    private async Task ExecuteMigrations()
     {
-        MigrateChainOfCommand();
+        await RemoveUnitRolesData();
+        await RemoveRoleTypeProperty();
+        logger.LogInfo("All migrations completed successfully");
     }
 
-    private void MigrateChainOfCommand()
+    private async Task RemoveUnitRolesData()
     {
-        logger.LogInfo("Starting chain of command migration");
+        logger.LogInfo("Starting removal of unit roles data");
 
-        var legacyUnitsCollection = serviceProvider.GetRequiredService<IMongoCollectionFactory>().CreateMongoCollection<DomainUnitLegacy>("units");
-        var unitsContext = serviceProvider.GetRequiredService<IUnitsContext>();
+        var unitsCollection = serviceProvider.GetRequiredService<IMongoCollectionFactory>().CreateMongoCollection<OldDomainUnit>("units");
 
-        var legacyUnits = legacyUnitsCollection.Get().ToList();
-        var migratedCount = 0;
+        // Remove the Roles field from all units using the IMongoCollection interface
+        var update = Builders<OldDomainUnit>.Update.Unset("roles");
+        await unitsCollection.UpdateManyAsync(x => true, update); // Update all documents
 
-        foreach (var legacyUnit in legacyUnits)
-        {
-            var chainOfCommand = new ChainOfCommand();
+        logger.LogInfo("Removed Roles field from all units");
+    }
 
-            // Migrate from legacy Roles dictionary to ChainOfCommand
-            if (legacyUnit.Roles?.Count > 0)
-            {
-                foreach (var role in legacyUnit.Roles)
-                {
-                    chainOfCommand.SetMemberAtPosition(role.Key, role.Value);
-                }
+    private async Task RemoveRoleTypeProperty()
+    {
+        logger.LogInfo("Starting removal of RoleType property from roles");
 
-                migratedCount++;
-            }
+        var rolesCollection = serviceProvider.GetRequiredService<IMongoCollectionFactory>().CreateMongoCollection<DomainRole>("roles");
 
-            // Update the unit with the new ChainOfCommand
-            unitsContext.Update(legacyUnit.Id, unit => unit.ChainOfCommand, chainOfCommand).GetAwaiter().GetResult();
-        }
+        // Remove the RoleType field from all roles using the IMongoCollection interface
+        var update = Builders<DomainRole>.Update.Unset("roleType");
+        await rolesCollection.UpdateManyAsync(x => true, update); // Update all documents
 
-        logger.LogInfo($"Chain of command migration completed. Migrated {migratedCount} units with roles.");
+        logger.LogInfo("Removed RoleType property from all roles");
     }
 }
 
-// Temporary legacy model for migration
-public class DomainUnitLegacy : MongoObject
+public class OldDomainUnit : MongoObject
 {
     public UnitBranch Branch { get; set; } = UnitBranch.Combat;
     public string Callsign { get; set; }
+    public ChainOfCommand ChainOfCommand { get; set; } = new();
 
     [BsonIgnore]
     public List<DomainUnit> Children { get; set; }
@@ -92,10 +89,9 @@ public class DomainUnitLegacy : MongoObject
     public string Parent { get; set; }
 
     public bool PreferShortname { get; set; }
+    public string Shortname { get; set; }
+    public string TeamspeakGroup { get; set; }
 
     [BsonRepresentation(BsonType.ObjectId)]
     public Dictionary<string, string> Roles { get; set; } = new();
-
-    public string Shortname { get; set; }
-    public string TeamspeakGroup { get; set; }
 }

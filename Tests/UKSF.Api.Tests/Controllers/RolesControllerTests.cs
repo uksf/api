@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc;
 using Moq;
 using UKSF.Api.Controllers;
 using UKSF.Api.Core;
@@ -15,7 +15,6 @@ namespace UKSF.Api.Tests.Controllers;
 
 public class RolesControllerTests
 {
-    private readonly Mock<IUnitsContext> _mockUnitsContext;
     private readonly Mock<IRolesContext> _mockRolesContext;
     private readonly Mock<IAccountContext> _mockAccountContext;
     private readonly Mock<IAssignmentService> _mockAssignmentService;
@@ -23,13 +22,8 @@ public class RolesControllerTests
     private readonly Mock<IUksfLogger> _mockLogger;
     private readonly RolesController _controller;
 
-    private readonly string _unitId = "unit123";
-    private readonly string _memberId = "member123";
-    private readonly string _otherMemberId = "other-member";
-
     public RolesControllerTests()
     {
-        _mockUnitsContext = new Mock<IUnitsContext>();
         _mockRolesContext = new Mock<IRolesContext>();
         _mockAccountContext = new Mock<IAccountContext>();
         _mockAssignmentService = new Mock<IAssignmentService>();
@@ -37,7 +31,6 @@ public class RolesControllerTests
         _mockLogger = new Mock<IUksfLogger>();
 
         _controller = new RolesController(
-            _mockUnitsContext.Object,
             _mockRolesContext.Object,
             _mockAccountContext.Object,
             _mockAssignmentService.Object,
@@ -47,162 +40,168 @@ public class RolesControllerTests
     }
 
     [Fact]
-    public void GetRoles_Should_Return_Only_Empty_Positions_When_Member_Has_Position()
+    public void GetRoles_Should_Return_All_Roles_When_No_Id_Provided()
     {
         // Arrange
-        var unit = new DomainUnit
+        var roles = new List<DomainRole>
         {
-            Id = _unitId,
-            Name = "Test Unit",
-            ChainOfCommand = new ChainOfCommand
-            {
-                First = _memberId, // Member holds 1iC position
-                Second = _otherMemberId, // Other member holds 2iC position
-                // ThreeIC and NCOIC are empty
-            }
+            new() { Id = "1", Name = "Rifleman" },
+            new() { Id = "2", Name = "Marksman" },
+            new() { Id = "3", Name = "Medic" }
         };
 
-        _mockUnitsContext.Setup(x => x.GetSingle(_unitId)).Returns(unit);
+        _mockRolesContext.Setup(x => x.Get()).Returns(roles);
 
         // Act
-        var result = _controller.GetRoles(_memberId, _unitId) as RolesDataset;
+        var result = _controller.GetRoles();
 
         // Assert
         result.Should().NotBeNull();
-        result.UnitRoles.Should().NotBeNull();
-
-        // Should only return empty positions (3iC and NCOiC)
-        var availablePositions = result.UnitRoles.Select(x => x.Name).ToList();
-        availablePositions.Should().Contain("3iC");
-        availablePositions.Should().Contain("NCOiC");
-
-        // Should NOT return positions that are already filled (1iC, 2iC)
-        availablePositions.Should().NotContain("1iC"); // Member's current position
-        availablePositions.Should().NotContain("2iC"); // Other member's position
+        result.Roles.Should().HaveCount(3);
+        result.Roles.Should().Contain(x => x.Name == "Rifleman");
+        result.Roles.Should().Contain(x => x.Name == "Marksman");
+        result.Roles.Should().Contain(x => x.Name == "Medic");
     }
 
     [Fact]
-    public void GetRoles_Should_Return_All_Empty_Positions_When_Member_Has_No_Position()
+    public void GetRoles_Should_Return_Roles_Excluding_Account_Role_When_Id_Provided()
     {
         // Arrange
-        var unit = new DomainUnit
-        {
-            Id = _unitId,
-            Name = "Test Unit",
-            ChainOfCommand = new ChainOfCommand
-            {
-                First = _otherMemberId, // Other member holds 1iC position
-                // All other positions are empty
-            }
-        };
+        var accountId = "account123";
+        var account = new DomainAccount { Id = accountId, RoleAssignment = "Rifleman" };
+        var filteredRoles = new List<DomainRole> { new() { Id = "2", Name = "Marksman" }, new() { Id = "3", Name = "Medic" } };
 
-        _mockUnitsContext.Setup(x => x.GetSingle(_unitId)).Returns(unit);
+        _mockAccountContext.Setup(x => x.GetSingle(accountId)).Returns(account);
+        _mockRolesContext.Setup(x => x.Get(It.IsAny<System.Func<DomainRole, bool>>())).Returns(filteredRoles);
 
         // Act
-        var result = _controller.GetRoles(_memberId, _unitId) as RolesDataset;
+        var result = _controller.GetRoles(accountId);
 
         // Assert
         result.Should().NotBeNull();
-        result.UnitRoles.Should().NotBeNull();
-
-        // Should return all empty positions (2iC, 3iC, NCOiC)
-        var availablePositions = result.UnitRoles.Select(x => x.Name).ToList();
-        availablePositions.Should().Contain("2iC");
-        availablePositions.Should().Contain("3iC");
-        availablePositions.Should().Contain("NCOiC");
-
-        // Should NOT return occupied position
-        availablePositions.Should().NotContain("1iC"); // Other member's position
+        result.Roles.Should().HaveCount(2);
+        result.Roles.Should().NotContain(x => x.Name == "Rifleman");
+        result.Roles.Should().Contain(x => x.Name == "Marksman");
+        result.Roles.Should().Contain(x => x.Name == "Medic");
     }
 
     [Fact]
-    public void GetRoles_Should_Return_All_Positions_When_Unit_Has_No_Chain_Of_Command()
+    public void CheckRole_Should_Return_Null_When_Check_Is_Empty()
     {
-        // Arrange
-        var unit = new DomainUnit
-        {
-            Id = _unitId,
-            Name = "Test Unit",
-            ChainOfCommand = null // No chain of command set
-        };
-
-        _mockUnitsContext.Setup(x => x.GetSingle(_unitId)).Returns(unit);
-
         // Act
-        var result = _controller.GetRoles(_memberId, _unitId) as RolesDataset;
+        var result = _controller.CheckRole("");
 
         // Assert
-        result.Should().NotBeNull();
-        result.UnitRoles.Should().NotBeNull();
-
-        // Should return all positions since none are occupied
-        var availablePositions = result.UnitRoles.Select(x => x.Name).ToList();
-        availablePositions.Should().Contain("1iC");
-        availablePositions.Should().Contain("2iC");
-        availablePositions.Should().Contain("3iC");
-        availablePositions.Should().Contain("NCOiC");
+        result.Should().BeNull();
     }
 
     [Fact]
-    public void GetRoles_Should_Return_All_Positions_When_Unit_Has_Empty_Chain_Of_Command()
+    public void CheckRole_Should_Return_Role_With_Same_Name_When_No_Role_Provided()
     {
         // Arrange
-        var unit = new DomainUnit
-        {
-            Id = _unitId,
-            Name = "Test Unit",
-            ChainOfCommand = new ChainOfCommand() // Empty chain of command
-        };
+        var roleName = "Rifleman";
+        var expectedRole = new DomainRole { Id = "1", Name = roleName };
 
-        _mockUnitsContext.Setup(x => x.GetSingle(_unitId)).Returns(unit);
+        _mockRolesContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainRole, bool>>())).Returns(expectedRole);
 
         // Act
-        var result = _controller.GetRoles(_memberId, _unitId) as RolesDataset;
+        var result = _controller.CheckRole(roleName);
 
         // Assert
-        result.Should().NotBeNull();
-        result.UnitRoles.Should().NotBeNull();
-
-        // Should return all positions since none are occupied
-        var availablePositions = result.UnitRoles.Select(x => x.Name).ToList();
-        availablePositions.Should().Contain("1iC");
-        availablePositions.Should().Contain("2iC");
-        availablePositions.Should().Contain("3iC");
-        availablePositions.Should().Contain("NCOiC");
+        result.Should().Be(expectedRole);
     }
 
     [Fact]
-    public void GetRoles_Should_Return_Empty_Positions_When_Requesting_Available_Roles()
+    public void CheckRole_Should_Return_Role_With_Same_Name_Excluding_Given_Role_When_Role_Provided()
     {
         // Arrange
-        var memberId = "member123";
-        var unitId = "unit456";
+        var roleName = "Rifleman";
+        var existingRole = new DomainRole { Id = "1", Name = "Marksman" };
+        var expectedRole = new DomainRole { Id = "2", Name = roleName };
 
-        var unit = new DomainUnit
-        {
-            Id = unitId,
-            Name = "Test Unit",
-            ChainOfCommand = new ChainOfCommand
-            {
-                First = memberId, // Member is 1iC
-                Second = "other_member", // 2iC is taken by someone else
-                // ThreeIC and NCOIC are empty - should be available
-            }
-        };
-
-        _mockUnitsContext.Setup(x => x.GetSingle(unitId)).Returns(unit);
+        _mockRolesContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainRole, bool>>())).Returns(expectedRole);
 
         // Act
-        var result = _controller.GetRoles(memberId, unitId);
+        var result = _controller.CheckRole(roleName, existingRole);
+
+        // Assert
+        result.Should().Be(expectedRole);
+    }
+
+    [Fact]
+    public async Task AddRole_Should_Add_Role_And_Return_All_Roles()
+    {
+        // Arrange
+        var newRole = new DomainRole { Id = "1", Name = "Engineer" };
+        var allRoles = new List<DomainRole>
+        {
+            newRole,
+            new() { Id = "2", Name = "Rifleman" },
+            new() { Id = "3", Name = "Marksman" }
+        };
+
+        _mockRolesContext.Setup(x => x.Get()).Returns(allRoles);
+
+        // Act
+        var result = await _controller.AddRole(newRole);
 
         // Assert
         result.Should().NotBeNull();
-        result.UnitRoles.Should().NotBeNull();
+        result.Roles.Should().HaveCount(3);
+        result.Roles.Should().Contain(x => x.Name == "Engineer");
 
-        var availablePositions = result.UnitRoles.Select(r => r.Name).ToList();
-        availablePositions.Should().NotContain("1iC", "because the member already has this position");
-        availablePositions.Should().NotContain("2iC", "because someone else has this position");
-        availablePositions.Should().Contain("3iC", "because this position is empty");
-        availablePositions.Should().Contain("NCOiC", "because this position is empty");
+        _mockRolesContext.Verify(x => x.Add(newRole), Times.Once);
+    }
+
+    [Fact]
+    public async Task EditRole_Should_Update_Role_And_Account_Assignments()
+    {
+        // Arrange
+        var roleId = "role123";
+        var oldRole = new DomainRole { Id = roleId, Name = "OldRoleName" };
+        var updatedRole = new DomainRole { Id = roleId, Name = "NewRoleName" };
+        var accounts = new List<DomainAccount>
+        {
+            new() { Id = "account1", RoleAssignment = "OldRoleName" }, new() { Id = "account2", RoleAssignment = "OldRoleName" }
+        };
+        var allRoles = new List<DomainRole> { updatedRole };
+
+        _mockRolesContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainRole, bool>>())).Returns(oldRole);
+        _mockAccountContext.Setup(x => x.Get(It.IsAny<System.Func<DomainAccount, bool>>())).Returns(accounts);
+        _mockRolesContext.Setup(x => x.Get()).Returns(allRoles);
+
+        // Act
+        var result = await _controller.EditRole(updatedRole);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Roles.Should().HaveCount(1);
+        result.Roles.Should().Contain(x => x.Name == "NewRoleName");
+    }
+
+    [Fact]
+    public async Task DeleteRole_Should_Delete_Role_And_Update_Account_Assignments()
+    {
+        // Arrange
+        var roleId = "role123";
+        var roleToDelete = new DomainRole { Id = roleId, Name = "RoleToDelete" };
+        var accounts = new List<DomainAccount>
+        {
+            new() { Id = "account1", RoleAssignment = "RoleToDelete" }, new() { Id = "account2", RoleAssignment = "RoleToDelete" }
+        };
+        var remainingRoles = new List<DomainRole>();
+
+        _mockRolesContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainRole, bool>>())).Returns(roleToDelete);
+        _mockAccountContext.Setup(x => x.Get(It.IsAny<System.Func<DomainAccount, bool>>())).Returns(accounts);
+        _mockRolesContext.Setup(x => x.Get()).Returns(remainingRoles);
+
+        // Act
+        var result = await _controller.DeleteRole(roleId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Roles.Should().BeEmpty();
+
+        _mockRolesContext.Verify(x => x.Delete(roleId), Times.Once);
     }
 }

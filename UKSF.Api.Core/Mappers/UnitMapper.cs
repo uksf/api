@@ -24,7 +24,6 @@ public class UnitMapper : IUnitMapper
             Order = unit.Order,
             Parent = unit.Parent,
             PreferShortname = unit.PreferShortname,
-            Roles = unit.Roles,
             Shortname = unit.Shortname,
             TeamspeakGroup = unit.TeamspeakGroup,
             Code = code,

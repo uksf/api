@@ -24,7 +24,7 @@ public static class StartServices
         serviceProvider.GetRequiredService<IEnumerable<IEventHandler>>().ForEach(x => x.EarlyInit());
 
         // Execute any DB migration
-        serviceProvider.GetRequiredService<MigrationUtility>().Migrate();
+        serviceProvider.GetRequiredService<MigrationUtility>().RunMigrations().GetAwaiter().GetResult();
 
         // Warm cached data services
         serviceProvider.GetRequiredService<IDataCacheService>().RefreshCachedData();

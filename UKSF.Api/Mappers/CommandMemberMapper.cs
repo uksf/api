@@ -61,7 +61,7 @@ public class CommandMemberMapper : ICommandMemberMapper
             Name = unit.Name,
             Shortname = unit.Shortname,
             PreferShortname = unit.PreferShortname,
-            MemberRole = unit.Roles.GetKeyFromValue(memberId)
+            MemberRole = GetMemberChainOfCommandPosition(unit, memberId)
         };
     }
 
@@ -78,5 +78,17 @@ public class CommandMemberMapper : ICommandMemberMapper
             PreferShortname = unit.PreferShortname,
             ParentUnit = parentNode
         };
+    }
+
+    private static string GetMemberChainOfCommandPosition(DomainUnit unit, string memberId)
+    {
+        if (unit.ChainOfCommand == null)
+        {
+            return string.Empty;
+        }
+
+        var assignedPositions = unit.ChainOfCommand.GetAssignedPositions();
+        var memberPosition = assignedPositions.FirstOrDefault(x => x.MemberId == memberId);
+        return memberPosition.Position ?? string.Empty;
     }
 }

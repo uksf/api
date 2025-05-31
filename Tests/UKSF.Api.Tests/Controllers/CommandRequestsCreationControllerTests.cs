@@ -543,8 +543,7 @@ public class CommandRequestsCreationControllerTests
             Id = id,
             Name = name,
             Branch = branch,
-            Members = new List<string>(),
-            Roles = new Dictionary<string, string>()
+            Members = new List<string>()
         };
     }
 }

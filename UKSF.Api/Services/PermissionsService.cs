@@ -43,7 +43,7 @@ public class PermissionsService(
                     break;
                 }
 
-                if (unitsService.MemberHasAnyRole(account.Id))
+                if (unitsService.MemberHasAnyChainOfCommandPosition(account.Id))
                 {
                     permissions.Add(Permissions.Command);
                 }
@@ -85,18 +85,10 @@ public class PermissionsService(
                 break;
             }
 
-            case MembershipState.Server:
-                permissions.Add(Permissions.Admin);
-                break;
-            case MembershipState.Confirmed:
-                permissions.Add(Permissions.Confirmed);
-                break;
-            case MembershipState.Discharged:
-                permissions.Add(Permissions.Discharged);
-                break;
-            default:
-                permissions.Add(Permissions.Unconfirmed);
-                break;
+            case MembershipState.Server:     permissions.Add(Permissions.Admin); break;
+            case MembershipState.Confirmed:  permissions.Add(Permissions.Confirmed); break;
+            case MembershipState.Discharged: permissions.Add(Permissions.Discharged); break;
+            default:                         permissions.Add(Permissions.Unconfirmed); break;
         }
 
         return permissions;

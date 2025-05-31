@@ -32,7 +32,6 @@ public class UnitsServiceChainOfCommandTests
 
         _unitsService = new UnitsService(
             _mockUnitsContext.Object,
-            mockRolesContext.Object,
             mockRanksService.Object,
             _mockRolesService.Object,
             mockDisplayNameService.Object,
