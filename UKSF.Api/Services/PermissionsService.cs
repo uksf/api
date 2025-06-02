@@ -10,22 +10,18 @@ namespace UKSF.Api.Services;
 
 public interface IPermissionsService
 {
-    IEnumerable<string> GrantPermissions(DomainAccount account);
+    HashSet<string> GrantPermissions(DomainAccount account);
 }
 
 public class PermissionsService(
-    IAccountContext accountContext,
     IRanksService ranksService,
-    IRolesContext rolesContext,
     IUnitsContext unitsContext,
-    IUnitsService unitsService,
     IChainOfCommandService chainOfCommandService,
     IRecruitmentService recruitmentService,
-    IVariablesService variablesService,
-    IHttpContextService httpContextService
+    IVariablesService variablesService
 ) : IPermissionsService
 {
-    public IEnumerable<string> GrantPermissions(DomainAccount account)
+    public HashSet<string> GrantPermissions(DomainAccount account)
     {
         HashSet<string> permissions = [];
 
@@ -47,7 +43,6 @@ public class PermissionsService(
                     break;
                 }
 
-                // Exclude non-combat
                 if (chainOfCommandService.MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits(account.Id))
                 {
                     permissions.Add(Permissions.Command);
