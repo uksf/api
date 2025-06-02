@@ -18,20 +18,11 @@ public interface ITeamspeakManagerService
     Task SendProcedure(TeamspeakProcedureType procedure, object args);
 }
 
-public class TeamspeakManagerService : ITeamspeakManagerService
+public class TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient> hub, IVariablesService variablesService, IUksfLogger logger)
+    : ITeamspeakManagerService
 {
-    private readonly IHubContext<TeamspeakHub, ITeamspeakClient> _hub;
-    private readonly IUksfLogger _logger;
-    private readonly IVariablesService _variablesService;
     private bool _runTeamspeak;
     private CancellationTokenSource _token;
-
-    public TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient> hub, IVariablesService variablesService, IUksfLogger logger)
-    {
-        _hub = hub;
-        _variablesService = variablesService;
-        _logger = logger;
-    }
 
     public void Start()
     {
@@ -65,7 +56,7 @@ public class TeamspeakManagerService : ITeamspeakManagerService
             return;
         }
 
-        await _hub.Clients.All.Receive(procedure, groupProcedure);
+        await hub.Clients.All.Receive(procedure, groupProcedure);
     }
 
     public async Task SendProcedure(TeamspeakProcedureType procedure, object args)
@@ -75,7 +66,7 @@ public class TeamspeakManagerService : ITeamspeakManagerService
             return;
         }
 
-        await _hub.Clients.All.Receive(procedure, args);
+        await hub.Clients.All.Receive(procedure, args);
     }
 
     private async void KeepOnline()
@@ -83,7 +74,7 @@ public class TeamspeakManagerService : ITeamspeakManagerService
         await TaskUtilities.Delay(TimeSpan.FromSeconds(2), _token.Token);
         while (_runTeamspeak)
         {
-            if (_variablesService.GetVariable("TEAMSPEAK_SERVER_RUN").AsBool())
+            if (variablesService.GetVariable("TEAMSPEAK_SERVER_RUN").AsBool())
             {
                 if (Process.GetProcessesByName("ts3server").Length == 0)
                 {
@@ -91,7 +82,7 @@ public class TeamspeakManagerService : ITeamspeakManagerService
                 }
             }
 
-            if (_variablesService.GetVariable("TEAMSPEAK_RUN").AsBool())
+            if (variablesService.GetVariable("TEAMSPEAK_RUN").AsBool())
             {
                 if (!TeamspeakHubState.Connected)
                 {
@@ -113,23 +104,23 @@ public class TeamspeakManagerService : ITeamspeakManagerService
 
     private async Task LaunchTeamspeakServer()
     {
-        var serverPath = _variablesService.GetVariable("TEAMSPEAK_SERVER_PATH").AsString();
+        var serverPath = variablesService.GetVariable("TEAMSPEAK_SERVER_PATH").AsString();
         var serverDirectory = Path.GetDirectoryName(serverPath);
         await ProcessUtilities.LaunchExternalProcess("TeamspeakServer", $"start \"\" \"{serverPath}\"", serverDirectory);
     }
 
     private async Task LaunchTeamspeak()
     {
-        await ProcessUtilities.LaunchExternalProcess("Teamspeak", $"start \"\" \"{_variablesService.GetVariable("TEAMSPEAK_PATH").AsString()}\"");
+        await ProcessUtilities.LaunchExternalProcess("Teamspeak", $"start \"\" \"{variablesService.GetVariable("TEAMSPEAK_PATH").AsString()}\"");
     }
 
     private async Task ShutTeamspeak()
     {
-        _logger.LogInfo("Teampseak shutdown via process");
+        logger.LogInfo("Teampseak shutdown via process");
         var process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == "ts3client_win64");
         if (process == null)
         {
-            _logger.LogInfo("Teampseak process not found");
+            logger.LogInfo("Teampseak process not found");
             return;
         }
 
@@ -139,16 +130,16 @@ public class TeamspeakManagerService : ITeamspeakManagerService
         process.Refresh();
         if (!process.HasExited)
         {
-            _logger.LogInfo("Teamspeak process not shutdown, trying to kill");
+            logger.LogInfo("Teamspeak process not shutdown, trying to kill");
             process.Kill();
             await TaskUtilities.Delay(TimeSpan.FromMilliseconds(100), _token.Token);
         }
 
-        _logger.LogInfo("Teampseak process should be closed");
+        logger.LogInfo("Teampseak process should be closed");
     }
 
     private bool IsTeamspeakDisabled()
     {
-        return !_variablesService.GetFeatureState("TEAMSPEAK");
+        return !variablesService.GetFeatureState("TEAMSPEAK");
     }
 }

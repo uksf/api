@@ -7,32 +7,22 @@ namespace UKSF.Api.Integrations.Teamspeak.ScheduledActions;
 
 public interface IActionTeamspeakSnapshot : ISelfCreatingScheduledAction;
 
-public class ActionTeamspeakSnapshot : SelfCreatingScheduledAction, IActionTeamspeakSnapshot
+public class ActionTeamspeakSnapshot(
+    ISchedulerContext schedulerContext,
+    ITeamspeakService teamspeakService,
+    ISchedulerService schedulerService,
+    IHostEnvironment currentEnvironment,
+    IClock clock
+) : SelfCreatingScheduledAction(schedulerService, currentEnvironment), IActionTeamspeakSnapshot
 {
     private const string ActionName = nameof(ActionTeamspeakSnapshot);
 
-    private readonly IClock _clock;
-    private readonly IHostEnvironment _currentEnvironment;
-    private readonly ISchedulerContext _schedulerContext;
-    private readonly ISchedulerService _schedulerService;
-    private readonly ITeamspeakService _teamspeakService;
+    private readonly IHostEnvironment _currentEnvironment = currentEnvironment;
+    private readonly ISchedulerContext _schedulerContext = schedulerContext;
+    private readonly ISchedulerService _schedulerService = schedulerService;
+    private readonly ITeamspeakService _teamspeakService = teamspeakService;
 
-    public ActionTeamspeakSnapshot(
-        ISchedulerContext schedulerContext,
-        ITeamspeakService teamspeakService,
-        ISchedulerService schedulerService,
-        IHostEnvironment currentEnvironment,
-        IClock clock
-    ) : base(schedulerService, currentEnvironment)
-    {
-        _schedulerContext = schedulerContext;
-        _teamspeakService = teamspeakService;
-        _schedulerService = schedulerService;
-        _currentEnvironment = currentEnvironment;
-        _clock = clock;
-    }
-
-    public override DateTime NextRun => _clock.Today();
+    public override DateTime NextRun => clock.Today();
     public override TimeSpan RunInterval => TimeSpan.FromMinutes(5);
     public override string Name => ActionName;
 

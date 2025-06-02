@@ -23,30 +23,16 @@ public interface ITeamspeakService
     Task StoreTeamspeakServerSnapshot();
 }
 
-public class TeamspeakService : ITeamspeakService
+public class TeamspeakService(
+    IAccountContext accountContext,
+    IMongoDatabase database,
+    IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub,
+    ITeamspeakManagerService teamspeakManagerService,
+    IHostEnvironment environment
+) : ITeamspeakService
 {
-    private readonly IAccountContext _accountContext;
     private readonly SemaphoreSlim _clientsSemaphore = new(1);
-    private readonly IMongoDatabase _database;
-    private readonly IHostEnvironment _environment;
-    private readonly IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> _teamspeakClientsHub;
-    private readonly ITeamspeakManagerService _teamspeakManagerService;
     private HashSet<TeamspeakClient> _clients = [];
-
-    public TeamspeakService(
-        IAccountContext accountContext,
-        IMongoDatabase database,
-        IHubContext<TeamspeakClientsHub, ITeamspeakClientsClient> teamspeakClientsHub,
-        ITeamspeakManagerService teamspeakManagerService,
-        IHostEnvironment environment
-    )
-    {
-        _accountContext = accountContext;
-        _database = database;
-        _teamspeakClientsHub = teamspeakClientsHub;
-        _teamspeakManagerService = teamspeakManagerService;
-        _environment = environment;
-    }
 
     public IEnumerable<TeamspeakClient> GetOnlineTeamspeakClients()
     {
@@ -58,7 +44,7 @@ public class TeamspeakService : ITeamspeakService
         await _clientsSemaphore.WaitAsync();
         _clients = newClients;
         _clientsSemaphore.Release();
-        await _teamspeakClientsHub.Clients.All.ReceiveClients(GetFormattedClients());
+        await teamspeakClientsHub.Clients.All.ReceiveClients(GetFormattedClients());
     }
 
     public async Task UpdateAccountTeamspeakGroups(DomainAccount account)
@@ -70,7 +56,7 @@ public class TeamspeakService : ITeamspeakService
 
         foreach (var clientDbId in account.TeamspeakIdentities)
         {
-            await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Groups, new { clientDbId });
+            await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Groups, new { clientDbId });
         }
     }
 
@@ -84,7 +70,7 @@ public class TeamspeakService : ITeamspeakService
         message = FormatTeamspeakMessage(message);
         foreach (var clientDbId in clientDbIds)
         {
-            await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Message, new { clientDbId, message });
+            await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Message, new { clientDbId, message });
         }
     }
 
@@ -98,23 +84,23 @@ public class TeamspeakService : ITeamspeakService
 
         // TODO: Remove direct db call
         TeamspeakServerSnapshot teamspeakServerSnapshot = new() { Timestamp = DateTime.UtcNow, Users = _clients };
-        await _database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots").InsertOneAsync(teamspeakServerSnapshot);
+        await database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots").InsertOneAsync(teamspeakServerSnapshot);
     }
 
     public async Task Reload()
     {
-        await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Reload, new { });
+        await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Reload, new { });
     }
 
     public async Task Shutdown()
     {
-        await _teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Shutdown, new { });
+        await teamspeakManagerService.SendProcedure(TeamspeakProcedureType.Shutdown, new { });
     }
 
     public List<TeamspeakConnectClient> GetFormattedClients()
     {
         var clients = _clients;
-        if (_environment.IsDevelopment())
+        if (environment.IsDevelopment())
         {
             clients =
             [
@@ -124,11 +110,10 @@ public class TeamspeakService : ITeamspeakService
         }
 
         return clients.Where(x => x is not null)
-                      .Select(
-                          client =>
+                      .Select(client =>
                           {
-                              var account = _accountContext.GetSingle(
-                                  account => account.TeamspeakIdentities is not null && account.TeamspeakIdentities.Contains(client.ClientDbId)
+                              var account = accountContext.GetSingle(account => account.TeamspeakIdentities is not null &&
+                                                                                account.TeamspeakIdentities.Contains(client.ClientDbId)
                               );
                               return new TeamspeakConnectClient
                               {
@@ -145,7 +130,7 @@ public class TeamspeakService : ITeamspeakService
     // TODO: Change to use signalr (or hook into existing _teamspeakClientsHub)
     public OnlineState GetOnlineUserDetails(string accountId)
     {
-        if (_environment.IsDevelopment())
+        if (environment.IsDevelopment())
         {
             _clients = [new TeamspeakClient { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 }];
         }
@@ -155,13 +140,13 @@ public class TeamspeakService : ITeamspeakService
             return null;
         }
 
-        var account = _accountContext.GetSingle(accountId);
+        var account = accountContext.GetSingle(accountId);
         if (account?.TeamspeakIdentities == null)
         {
             return null;
         }
 
-        if (_environment.IsDevelopment())
+        if (environment.IsDevelopment())
         {
             _clients.First().ClientDbId = account.TeamspeakIdentities.First();
         }
