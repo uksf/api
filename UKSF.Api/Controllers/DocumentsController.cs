@@ -6,53 +6,53 @@ using UKSF.Api.Services;
 
 namespace UKSF.Api.Controllers;
 
-[Route("docs")]
+[Route("docs/folders")]
 [Permissions(Permissions.Member)]
 public class DocsController(IDocumentFolderService documentFolderService, IDocumentService documentService) : ControllerBase
 {
-    [HttpGet("folders")]
+    [HttpGet]
     public List<FolderMetadataResponse> GetAllFolders()
     {
         return documentFolderService.GetAllFolders();
     }
 
-    [HttpGet("folders/{folderId}")]
+    [HttpGet("{folderId}")]
     public Task<FolderMetadataResponse> GetFolder([FromRoute] string folderId)
     {
         return documentFolderService.GetFolder(folderId);
     }
 
-    [HttpPost("folders")]
+    [HttpPost]
     public Task<FolderMetadataResponse> CreateFolder([FromBody] CreateFolderRequest createFolder)
     {
         return documentFolderService.CreateFolder(createFolder);
     }
 
-    [HttpPut("folders/{folderId}")]
+    [HttpPut("{folderId}")]
     public Task<FolderMetadataResponse> UpdateFolder([FromRoute] string folderId, [FromBody] CreateFolderRequest createFolderRequest)
     {
         return documentFolderService.UpdateFolder(folderId, createFolderRequest);
     }
 
-    [HttpDelete("folders/{folderId}")]
+    [HttpDelete("{folderId}")]
     public Task DeleteFolder([FromRoute] string folderId)
     {
         return documentFolderService.DeleteFolder(folderId);
     }
 
-    [HttpGet("folders/{folderId}/documents/{documentId}")]
+    [HttpGet("{folderId}/documents/{documentId}")]
     public Task<DocumentMetadataResponse> GetDocument([FromRoute] string folderId, [FromRoute] string documentId)
     {
         return documentService.GetDocument(folderId, documentId);
     }
 
-    [HttpPost("folders/{folderId}/documents")]
+    [HttpPost("{folderId}/documents")]
     public Task<DocumentMetadataResponse> CreateDocument([FromRoute] string folderId, [FromBody] CreateDocumentRequest createDocument)
     {
         return documentService.CreateDocument(folderId, createDocument);
     }
 
-    [HttpPut("folders/{folderId}/documents/{documentId}")]
+    [HttpPut("{folderId}/documents/{documentId}")]
     public Task<DocumentMetadataResponse> UpdateDocument(
         [FromRoute] string folderId,
         [FromRoute] string documentId,
@@ -62,19 +62,19 @@ public class DocsController(IDocumentFolderService documentFolderService, IDocum
         return documentService.UpdateDocument(folderId, documentId, createDocumentRequest);
     }
 
-    [HttpDelete("folders/{folderId}/documents/{documentId}")]
+    [HttpDelete("{folderId}/documents/{documentId}")]
     public Task DeleteDocument([FromRoute] string folderId, [FromRoute] string documentId)
     {
         return documentService.DeleteDocument(folderId, documentId);
     }
 
-    [HttpGet("folders/{folderId}/documents/{documentId}/content")]
+    [HttpGet("{folderId}/documents/{documentId}/content")]
     public Task<DocumentContentResponse> GetDocumentContent([FromRoute] string folderId, [FromRoute] string documentId)
     {
         return documentService.GetDocumentContent(folderId, documentId);
     }
 
-    [HttpPut("folders/{folderId}/documents/{documentId}/content")]
+    [HttpPut("{folderId}/documents/{documentId}/content")]
     public Task<DocumentContentResponse> UpdateDocumentContent(
         [FromRoute] string folderId,
         [FromRoute] string documentId,

@@ -32,7 +32,7 @@ public class DocumentFolderService(
 {
     public List<FolderMetadataResponse> GetAllFolders()
     {
-        return documentFolderMetadataContext.Get(x => documentPermissionsService.DoesContextHaveReadPermission(x)).Select(MapFolder).ToList();
+        return documentFolderMetadataContext.Get(documentPermissionsService.DoesContextHaveReadPermission).Select(MapFolder).ToList();
     }
 
     public Task<FolderMetadataResponse> GetFolder(string folderId)
