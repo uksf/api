@@ -27,8 +27,8 @@ public class TrainingsController(ITrainingsContext trainingsContext, IAccountCon
             return true;
         }
 
-        var existingTraining = trainingsContext.GetSingle(
-            x => (string.IsNullOrEmpty(ignoreId) || x.Id != ignoreId) && (x.Name == check || x.ShortName == check || x.TeamspeakGroup == check)
+        var existingTraining = trainingsContext.GetSingle(x => (string.IsNullOrEmpty(ignoreId) || x.Id != ignoreId) &&
+                                                               (x.Name == check || x.ShortName == check || x.TeamspeakGroup == check)
         );
         return existingTraining is null;
     }
@@ -47,7 +47,7 @@ public class TrainingsController(ITrainingsContext trainingsContext, IAccountCon
     {
         var oldTraining = trainingsContext.GetSingle(x => x.Id == training.Id);
         logger.LogAudit(
-            $"Rank updated from '{oldTraining.Name}, {oldTraining.ShortName}, {oldTraining.TeamspeakGroup}' to '{training.Name}, {training.ShortName}, {training.TeamspeakGroup}'"
+            $"Training updated from '{oldTraining.Name}, {oldTraining.ShortName}, {oldTraining.TeamspeakGroup}' to '{training.Name}, {training.ShortName}, {training.TeamspeakGroup}'"
         );
         await trainingsContext.Update(
             training.Id,
