@@ -22,33 +22,59 @@ public class TeamspeakGroupService(
     ITrainingsContext trainingsContext
 ) : ITeamspeakGroupService
 {
+    private const string TeamspeakGidUnverified = "TEAMSPEAK_GID_UNVERIFIED";
+    private const string TeamspeakGidDischarged = "TEAMSPEAK_GID_DISCHARGED";
+    private const string TeamspeakGidRoot = "TEAMSPEAK_GID_ROOT";
+    private const string TeamspeakGidElcom = "TEAMSPEAK_GID_ELCOM";
+    private const string TeamspeakGidBlacklist = "TEAMSPEAK_GID_BLACKLIST";
+
     public async Task UpdateAccountGroups(DomainAccount account, ICollection<int> assignedGroupIds, int clientDbId)
+    {
+        var groupIdsToAssign = ResolveMembershipGroups(account);
+        await ApplyGroupChanges(groupIdsToAssign, assignedGroupIds, clientDbId);
+    }
+
+    private HashSet<int> ResolveMembershipGroups(DomainAccount account)
     {
         HashSet<int> groupIdsToAssign = [];
 
         if (account is null)
         {
-            groupIdsToAssign.Add(variablesService.GetVariable("TEAMSPEAK_GID_UNVERIFIED").AsInt());
-        }
-        else
-        {
-            switch (account.MembershipState)
-            {
-                case MembershipState.Unconfirmed: groupIdsToAssign.Add(variablesService.GetVariable("TEAMSPEAK_GID_UNVERIFIED").AsInt()); break;
-                case MembershipState.Discharged:  groupIdsToAssign.Add(variablesService.GetVariable("TEAMSPEAK_GID_DISCHARGED").AsInt()); break;
-                case MembershipState.Confirmed:   ResolveRankGroup(account, groupIdsToAssign); break;
-                case MembershipState.Member:
-                    ResolveRankGroup(account, groupIdsToAssign);
-                    ResolveUnitGroup(account, groupIdsToAssign);
-                    ResolveParentUnitGroup(account, groupIdsToAssign);
-                    ResolveNonCombatUnitGroups(account, groupIdsToAssign);
-                    ResolveTrainingGroups(account, groupIdsToAssign);
-                    groupIdsToAssign.Add(variablesService.GetVariable("TEAMSPEAK_GID_ROOT").AsInt());
-                    break;
-            }
+            AddGroup(groupIdsToAssign, TeamspeakGidUnverified);
+            return groupIdsToAssign;
         }
 
-        var groupIdBlacklist = variablesService.GetVariable("TEAMSPEAK_GID_BLACKLIST").AsIntArray().ToList();
+        switch (account.MembershipState)
+        {
+            case MembershipState.Unconfirmed: AddGroup(groupIdsToAssign, TeamspeakGidUnverified); break;
+            case MembershipState.Discharged:  AddGroup(groupIdsToAssign, TeamspeakGidDischarged); break;
+            case MembershipState.Confirmed:   ResolveRankGroup(account, groupIdsToAssign); break;
+            case MembershipState.Member:      ResolveMemberGroups(account, groupIdsToAssign); break;
+        }
+
+        return groupIdsToAssign;
+    }
+
+    private void ResolveMemberGroups(DomainAccount account, HashSet<int> groupIdsToAssign)
+    {
+        ResolveRankGroup(account, groupIdsToAssign);
+        ResolveUnitGroup(account, groupIdsToAssign);
+        ResolveParentUnitGroup(account, groupIdsToAssign);
+        ResolveNonCombatUnitGroups(account, groupIdsToAssign);
+        ResolveTrainingGroups(account, groupIdsToAssign);
+        AddGroup(groupIdsToAssign, TeamspeakGidRoot);
+    }
+
+    private async Task ApplyGroupChanges(HashSet<int> groupIdsToAssign, ICollection<int> assignedGroupIds, int clientDbId)
+    {
+        var groupIdBlacklist = variablesService.GetVariable(TeamspeakGidBlacklist).AsIntArray().ToList();
+
+        await RemoveUnwantedGroups(assignedGroupIds, groupIdsToAssign, groupIdBlacklist, clientDbId);
+        await AddMissingGroups(groupIdsToAssign, assignedGroupIds, clientDbId);
+    }
+
+    private async Task RemoveUnwantedGroups(ICollection<int> assignedGroupIds, HashSet<int> groupIdsToAssign, List<int> groupIdBlacklist, int clientDbId)
+    {
         foreach (var assignedGroupId in assignedGroupIds)
         {
             if (!groupIdsToAssign.Contains(assignedGroupId) && !groupIdBlacklist.Contains(assignedGroupId))
@@ -56,11 +82,19 @@ public class TeamspeakGroupService(
                 await RemoveServerGroup(clientDbId, assignedGroupId);
             }
         }
+    }
 
+    private async Task AddMissingGroups(HashSet<int> groupIdsToAssign, ICollection<int> assignedGroupIds, int clientDbId)
+    {
         foreach (var serverGroup in groupIdsToAssign.Where(serverGroup => !assignedGroupIds.Contains(serverGroup)))
         {
             await AddServerGroup(clientDbId, serverGroup);
         }
+    }
+
+    private void AddGroup(HashSet<int> groupIdsToAssign, string variableKey)
+    {
+        groupIdsToAssign.Add(variablesService.GetVariable(variableKey).AsInt());
     }
 
     private void ResolveRankGroup(DomainAccount account, HashSet<int> groupIdsToAssign)
@@ -80,26 +114,32 @@ public class TeamspeakGroupService(
 
         if (accountUnit.Parent == ObjectId.Empty.ToString())
         {
-            groupIdsToAssign.Add(accountUnit.TeamspeakGroup.ToInt());
+            var groupId = GetUnitGroupId(account, accountUnit, elcom);
+            groupIdsToAssign.Add(groupId);
+            return;
         }
 
-        var group = elcom.Members.Contains(account.Id) ? variablesService.GetVariable("TEAMSPEAK_GID_ELCOM").AsInt() : accountUnit.TeamspeakGroup.ToInt();
-        if (group == 0)
+        var unitGroupId = GetUnitGroupId(account, accountUnit, elcom);
+        if (unitGroupId == 0)
         {
             ResolveParentUnitGroup(account, groupIdsToAssign);
         }
         else
         {
-            groupIdsToAssign.Add(group);
+            groupIdsToAssign.Add(unitGroupId);
         }
+    }
+
+    private int GetUnitGroupId(DomainAccount account, DomainUnit accountUnit, DomainUnit elcom)
+    {
+        return elcom.Members.Contains(account.Id) ? variablesService.GetVariable(TeamspeakGidElcom).AsInt() : accountUnit.TeamspeakGroup.ToInt();
     }
 
     private void ResolveParentUnitGroup(DomainAccount account, HashSet<int> groupIdsToAssign)
     {
         var accountUnit = unitsContext.GetSingle(x => x.Name == account.UnitAssignment);
-        var parentUnit = unitsService.GetParents(accountUnit)
-                                     .Skip(1)
-                                     .FirstOrDefault(x => !string.IsNullOrEmpty(x.TeamspeakGroup) && !groupIdsToAssign.Contains(x.TeamspeakGroup.ToInt()));
+        var parentUnit = FindValidParentUnit(accountUnit, groupIdsToAssign);
+
         if (parentUnit is not null && parentUnit.Parent != ObjectId.Empty.ToString())
         {
             groupIdsToAssign.Add(parentUnit.TeamspeakGroup.ToInt());
@@ -110,24 +150,42 @@ public class TeamspeakGroupService(
         }
     }
 
+    private DomainUnit FindValidParentUnit(DomainUnit accountUnit, HashSet<int> groupIdsToAssign)
+    {
+        return unitsService.GetParents(accountUnit)
+                           .Skip(1)
+                           .FirstOrDefault(x => !string.IsNullOrEmpty(x.TeamspeakGroup) && !groupIdsToAssign.Contains(x.TeamspeakGroup.ToInt()));
+    }
+
     private void ResolveNonCombatUnitGroups(MongoObject account, HashSet<int> groupIdsToAssign)
     {
-        var accountUnits = unitsContext.Get(x => x.Parent != ObjectId.Empty.ToString() && x.Branch is UnitBranch.Auxiliary && x.Members.Contains(account.Id))
-                                       .Where(x => !string.IsNullOrEmpty(x.TeamspeakGroup));
+        var accountUnits = GetNonCombatUnits(account);
         foreach (var unit in accountUnits)
         {
             groupIdsToAssign.Add(unit.TeamspeakGroup.ToInt());
         }
     }
 
+    private IEnumerable<DomainUnit> GetNonCombatUnits(MongoObject account)
+    {
+        return unitsContext.Get(x => x.Parent != ObjectId.Empty.ToString() && x.Branch is UnitBranch.Auxiliary && x.Members.Contains(account.Id))
+                           .Where(x => !string.IsNullOrEmpty(x.TeamspeakGroup));
+    }
+
     private void ResolveTrainingGroups(DomainAccount account, HashSet<int> groupIdsToAssign)
     {
-        foreach (var accountTrainingGroupId in account.Trainings.Select(x => trainingsContext.GetSingle(y => y.TeamspeakGroup == x.ToString()))
-                                                      .Where(x => x is not null)
-                                                      .Select(x => x.TeamspeakGroup.ToInt()))
+        var trainingGroupIds = GetTrainingGroupIds(account);
+        foreach (var groupId in trainingGroupIds)
         {
-            groupIdsToAssign.Add(accountTrainingGroupId);
+            groupIdsToAssign.Add(groupId);
         }
+    }
+
+    private IEnumerable<int> GetTrainingGroupIds(DomainAccount account)
+    {
+        return account.Trainings.Select(trainingId => trainingsContext.GetSingle(y => y.TeamspeakGroup == trainingId.ToString()))
+                      .Where(training => training is not null)
+                      .Select(training => training.TeamspeakGroup.ToInt());
     }
 
     private Task AddServerGroup(int clientDbId, int serverGroup)
