@@ -23,6 +23,7 @@ public interface IChainOfCommandService
     bool MemberHasChainOfCommandPosition(string id, string unitId, string position);
     bool MemberHasChainOfCommandPosition(string id, DomainUnit unit, string position);
     bool MemberHasAnyChainOfCommandPosition(string id);
+    bool MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits(string id);
     int GetMemberChainOfCommandOrder(DomainAccount account, DomainUnit unit);
     string GetChainOfCommandPosition(DomainUnit unit, string accountId);
 }
@@ -301,6 +302,11 @@ public class ChainOfCommandService(IUnitsContext unitsContext, IHttpContextServi
     public bool MemberHasAnyChainOfCommandPosition(string id)
     {
         return unitsContext.Get().Any(x => ChainOfCommandHasMember(x, id));
+    }
+
+    public bool MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits(string id)
+    {
+        return unitsContext.Get(x => x.Branch == UnitBranch.Combat || x.Branch == UnitBranch.Auxiliary).Any(x => ChainOfCommandHasMember(x, id));
     }
 
     public int GetMemberChainOfCommandOrder(DomainAccount account, DomainUnit unit)

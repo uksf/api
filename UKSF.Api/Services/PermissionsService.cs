@@ -18,6 +18,7 @@ public class PermissionsService(
     IRanksService ranksService,
     IRolesContext rolesContext,
     IUnitsContext unitsContext,
+    IUnitsService unitsService,
     IChainOfCommandService chainOfCommandService,
     IRecruitmentService recruitmentService,
     IVariablesService variablesService,
@@ -26,7 +27,7 @@ public class PermissionsService(
 {
     public IEnumerable<string> GrantPermissions(DomainAccount account)
     {
-        HashSet<string> permissions = new();
+        HashSet<string> permissions = [];
 
         switch (account.MembershipState)
         {
@@ -47,7 +48,7 @@ public class PermissionsService(
                 }
 
                 // Exclude non-combat
-                if (chainOfCommandService.MemberHasAnyChainOfCommandPosition(account.Id))
+                if (chainOfCommandService.MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits(account.Id))
                 {
                     permissions.Add(Permissions.Command);
                 }

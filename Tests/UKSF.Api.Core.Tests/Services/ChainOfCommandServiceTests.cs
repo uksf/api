@@ -187,6 +187,114 @@ public class ChainOfCommandServiceTests
         result.Should().BeFalse();
     }
 
+    [Fact]
+    public void MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits_Should_Return_True_For_Combat_Unit()
+    {
+        // Arrange
+        var combatUnit = CreateUnit(_unitId, "Combat Unit", hasCommander: true, commanderId: _recipientId);
+        combatUnit.Branch = UnitBranch.Combat;
+        combatUnit.ChainOfCommand.First = _recipientId;
+
+        var units = new List<DomainUnit> { combatUnit };
+        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
+
+        // Act
+        var result = _chainOfCommandService.MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits(_recipientId);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits_Should_Return_True_For_Auxiliary_Unit()
+    {
+        // Arrange
+        var auxiliaryUnit = CreateUnit(_unitId, "Auxiliary Unit", hasCommander: true, commanderId: _recipientId);
+        auxiliaryUnit.Branch = UnitBranch.Auxiliary;
+        auxiliaryUnit.ChainOfCommand.First = _recipientId;
+
+        var units = new List<DomainUnit> { auxiliaryUnit };
+        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
+
+        // Act
+        var result = _chainOfCommandService.MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits(_recipientId);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits_Should_Return_False_For_Secondary_Unit()
+    {
+        // Arrange
+        var secondaryUnit = CreateUnit(_unitId, "Secondary Unit", hasCommander: true, commanderId: _recipientId);
+        secondaryUnit.Branch = UnitBranch.Secondary;
+        secondaryUnit.ChainOfCommand.First = _recipientId;
+
+        var units = new List<DomainUnit> { secondaryUnit };
+        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
+
+        // Act
+        var result = _chainOfCommandService.MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits(_recipientId);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits_Should_Return_True_When_Member_In_Both_Combat_And_Secondary()
+    {
+        // Arrange
+        var combatUnit = CreateUnit("combat-unit-id", "Combat Unit", hasCommander: true, commanderId: _recipientId);
+        combatUnit.Branch = UnitBranch.Combat;
+        combatUnit.ChainOfCommand.First = _recipientId;
+
+        var secondaryUnit = CreateUnit("secondary-unit-id", "Secondary Unit", hasCommander: true, commanderId: _recipientId);
+        secondaryUnit.Branch = UnitBranch.Secondary;
+        secondaryUnit.ChainOfCommand.First = _recipientId;
+
+        var units = new List<DomainUnit> { combatUnit, secondaryUnit };
+        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
+
+        // Act
+        var result = _chainOfCommandService.MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits(_recipientId);
+
+        // Assert
+        result.Should().BeTrue(); // Should return true because member has position in combat unit
+    }
+
+    [Fact]
+    public void MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits_Should_Return_False_When_No_Units()
+    {
+        // Arrange
+        var units = new List<DomainUnit>();
+        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
+
+        // Act
+        var result = _chainOfCommandService.MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits(_recipientId);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits_Should_Return_False_When_Member_Has_No_Chain_Of_Command_Position()
+    {
+        // Arrange
+        var combatUnit = CreateUnit(_unitId, "Combat Unit", hasCommander: false);
+        combatUnit.Branch = UnitBranch.Combat;
+        // No chain of command position for the member
+
+        var units = new List<DomainUnit> { combatUnit };
+        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
+
+        // Act
+        var result = _chainOfCommandService.MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits(_recipientId);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
     private DomainUnit CreateUnit(string id, string name, bool hasCommander = false, string commanderId = null, string parent = "", string shortname = null)
     {
         var unit = new DomainUnit
@@ -196,7 +304,8 @@ public class ChainOfCommandServiceTests
             Shortname = shortname ?? name,
             Parent = parent,
             Members = new List<string>(),
-            ChainOfCommand = new ChainOfCommand()
+            ChainOfCommand = new ChainOfCommand(),
+            Branch = UnitBranch.Combat // Default to Combat for existing tests
         };
 
         if (hasCommander)
