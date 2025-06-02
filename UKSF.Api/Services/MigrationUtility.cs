@@ -61,7 +61,7 @@ public class MigrationUtility(IMigrationContext migrationContext, IServiceProvid
         var rolesCollection = serviceProvider.GetRequiredService<IMongoCollectionFactory>().CreateMongoCollection<DomainRole>("roles");
 
         // Remove the RoleType field from all roles using the IMongoCollection interface
-        var update = Builders<DomainRole>.Update.Unset("roleType");
+        var update = Builders<DomainRole>.Update.Unset("roleType").Unset("order");
         await rolesCollection.UpdateManyAsync(x => true, update); // Update all documents
 
         logger.LogInfo("Removed RoleType property from all roles");
@@ -79,8 +79,8 @@ public class MigrationUtility(IMigrationContext migrationContext, IServiceProvid
         // Update UnitRole to ChainOfCommandPosition
         var unitRoleUpdate = Builders<DomainCommandRequest>.Update.Set(x => x.Type, CommandRequestType.ChainOfCommandPosition);
 
-        await commandRequestsCollection.UpdateManyAsync(x => x.Type == "UnitRole", unitRoleUpdate);
-        await commandRequestsArchiveCollection.UpdateManyAsync(x => x.Type == "UnitRole", unitRoleUpdate);
+        await commandRequestsCollection.UpdateManyAsync(x => x.Type == "Unit Role", unitRoleUpdate);
+        await commandRequestsArchiveCollection.UpdateManyAsync(x => x.Type == "Unit Role", unitRoleUpdate);
 
         logger.LogInfo("Updated command requests from UnitRole to ChainOfCommandPosition");
         logger.LogInfo("Updated archived command requests from UnitRole to ChainOfCommandPosition");
@@ -88,8 +88,8 @@ public class MigrationUtility(IMigrationContext migrationContext, IServiceProvid
         // Update IndividualRole to Role
         var individualRoleUpdate = Builders<DomainCommandRequest>.Update.Set(x => x.Type, CommandRequestType.Role);
 
-        await commandRequestsCollection.UpdateManyAsync(x => x.Type == "IndividualRole", individualRoleUpdate);
-        await commandRequestsArchiveCollection.UpdateManyAsync(x => x.Type == "IndividualRole", individualRoleUpdate);
+        await commandRequestsCollection.UpdateManyAsync(x => x.Type == "Individual Role", individualRoleUpdate);
+        await commandRequestsArchiveCollection.UpdateManyAsync(x => x.Type == "Individual Role", individualRoleUpdate);
 
         logger.LogInfo("Updated command requests from IndividualRole to Role");
         logger.LogInfo("Updated archived command requests from IndividualRole to Role");
