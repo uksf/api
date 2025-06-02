@@ -981,11 +981,9 @@ public class TeamspeakGroupServiceTests
         };
         List<DomainUnit> units = [unit, _elcomUnit];
 
-        _mockTrainingsContext.Setup(x => x.GetSingle(It.Is<Func<DomainTraining, bool>>(f => f(new DomainTraining { TeamspeakGroup = trainingId1 }))))
-                             .Returns(new DomainTraining { Id = trainingId1, TeamspeakGroup = "12" });
-        _mockTrainingsContext.Setup(x => x.GetSingle(It.Is<Func<DomainTraining, bool>>(f => f(new DomainTraining { TeamspeakGroup = trainingId2 }))))
-                             .Returns(new DomainTraining { Id = trainingId2, TeamspeakGroup = "13" });
+        var trainings = new List<DomainTraining> { new() { Id = trainingId1, TeamspeakGroup = "12" }, new() { Id = trainingId2, TeamspeakGroup = "13" } };
 
+        _mockTrainingsContext.Setup(x => x.Get()).Returns(trainings);
         _mockUnitsContext.Setup(x => x.Get()).Returns(units);
         _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
@@ -1031,11 +1029,13 @@ public class TeamspeakGroupServiceTests
         };
         List<DomainUnit> units = [unit, _elcomUnit];
 
-        _mockTrainingsContext.Setup(x => x.GetSingle(It.Is<Func<DomainTraining, bool>>(f => f(new DomainTraining { TeamspeakGroup = trainingId1 }))))
-                             .Returns(new DomainTraining { Id = trainingId1, TeamspeakGroup = "12" });
-        _mockTrainingsContext.Setup(x => x.GetSingle(It.Is<Func<DomainTraining, bool>>(f => f(new DomainTraining { TeamspeakGroup = trainingId2 }))))
-                             .Returns((DomainTraining)null); // Training doesn't exist
+        var trainings = new List<DomainTraining>
+        {
+            new() { Id = trainingId1, TeamspeakGroup = "12" }
+            // trainingId2 doesn't exist in the training list
+        };
 
+        _mockTrainingsContext.Setup(x => x.Get()).Returns(trainings);
         _mockUnitsContext.Setup(x => x.Get()).Returns(units);
         _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
@@ -1079,6 +1079,9 @@ public class TeamspeakGroupServiceTests
         };
         List<DomainUnit> units = [unit, _elcomUnit];
 
+        var trainings = new List<DomainTraining>(); // Empty trainings list
+
+        _mockTrainingsContext.Setup(x => x.Get()).Returns(trainings);
         _mockUnitsContext.Setup(x => x.Get()).Returns(units);
         _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))

@@ -183,9 +183,7 @@ public class TeamspeakGroupService(
 
     private IEnumerable<int> GetTrainingGroupIds(DomainAccount account)
     {
-        return account.Trainings.Select(trainingId => trainingsContext.GetSingle(y => y.TeamspeakGroup == trainingId.ToString()))
-                      .Where(training => training is not null)
-                      .Select(training => training.TeamspeakGroup.ToInt());
+        return trainingsContext.Get().Where(x => account.Trainings.Contains(x.Id)).Select(training => training.TeamspeakGroup.ToInt());
     }
 
     private Task AddServerGroup(int clientDbId, int serverGroup)
