@@ -14,11 +14,14 @@ public interface IPermissionsService
 }
 
 public class PermissionsService(
+    IAccountContext accountContext,
     IRanksService ranksService,
+    IRolesContext rolesContext,
     IUnitsContext unitsContext,
-    IUnitsService unitsService,
+    IChainOfCommandService chainOfCommandService,
     IRecruitmentService recruitmentService,
-    IVariablesService variablesService
+    IVariablesService variablesService,
+    IHttpContextService httpContextService
 ) : IPermissionsService
 {
     public IEnumerable<string> GrantPermissions(DomainAccount account)
@@ -43,7 +46,8 @@ public class PermissionsService(
                     break;
                 }
 
-                if (unitsService.MemberHasAnyChainOfCommandPosition(account.Id))
+                // Exclude non-combat
+                if (chainOfCommandService.MemberHasAnyChainOfCommandPosition(account.Id))
                 {
                     permissions.Add(Permissions.Command);
                 }

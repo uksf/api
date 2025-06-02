@@ -87,27 +87,8 @@ public class ChainOfCommand
 
     public IEnumerable<(string Position, string MemberId)> GetAssignedPositions()
     {
-        var positions = new List<(string, string)>();
-        if (!string.IsNullOrEmpty(First))
-        {
-            positions.Add(("1iC", First));
-        }
+        var positions = new[] { "1iC", "2iC", "3iC", "NCOiC" };
 
-        if (!string.IsNullOrEmpty(Second))
-        {
-            positions.Add(("2iC", Second));
-        }
-
-        if (!string.IsNullOrEmpty(Third))
-        {
-            positions.Add(("3iC", Third));
-        }
-
-        if (!string.IsNullOrEmpty(Nco))
-        {
-            positions.Add(("NCOiC", Nco));
-        }
-
-        return positions;
+        return positions.Select(position => (position, GetMemberAtPosition(position))).Where(x => !string.IsNullOrEmpty(x.Item2));
     }
 }

@@ -36,7 +36,6 @@ public class TeamspeakGroupServiceTests
     };
 
     private readonly Mock<IRanksContext> _mockRanksContext = new();
-    private readonly Mock<IRolesContext> _mockRolesContext = new();
     private readonly Mock<ITeamspeakManagerService> _mockTeamspeakManagerService = new();
     private readonly Mock<IUnitsContext> _mockUnitsContext = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
@@ -64,7 +63,7 @@ public class TeamspeakGroupServiceTests
         var unitsService = new UnitsService(
             _mockUnitsContext.Object,
             new Mock<IRanksService>().Object,
-            new Mock<IRolesService>().Object,
+            new Mock<IChainOfCommandService>().Object,
             new Mock<IDisplayNameService>().Object,
             new Mock<IAccountContext>().Object,
             new UnitMapper()

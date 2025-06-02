@@ -19,7 +19,7 @@ public class UnitsServiceTests
     private readonly Mock<IUnitsContext> _mockUnitsContext;
     private readonly Mock<IRolesContext> _mockRolesContext;
     private readonly Mock<IRanksService> _mockRanksService;
-    private readonly Mock<IRolesService> _mockRolesService;
+    private readonly Mock<IChainOfCommandService> _mockChainOfCommandService;
     private readonly Mock<IDisplayNameService> _mockDisplayNameService;
     private readonly Mock<IAccountContext> _mockAccountContext;
     private readonly Mock<IUnitMapper> _mockUnitMapper;
@@ -35,7 +35,7 @@ public class UnitsServiceTests
         _mockUnitsContext = new Mock<IUnitsContext>();
         _mockRolesContext = new Mock<IRolesContext>();
         _mockRanksService = new Mock<IRanksService>();
-        _mockRolesService = new Mock<IRolesService>();
+        _mockChainOfCommandService = new Mock<IChainOfCommandService>();
         _mockDisplayNameService = new Mock<IDisplayNameService>();
         _mockAccountContext = new Mock<IAccountContext>();
         _mockUnitMapper = new Mock<IUnitMapper>();
@@ -43,7 +43,7 @@ public class UnitsServiceTests
         _unitsService = new UnitsService(
             _mockUnitsContext.Object,
             _mockRanksService.Object,
-            _mockRolesService.Object,
+            _mockChainOfCommandService.Object,
             _mockDisplayNameService.Object,
             _mockAccountContext.Object,
             _mockUnitMapper.Object

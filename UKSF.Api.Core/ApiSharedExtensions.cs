@@ -42,8 +42,7 @@ public static class ApiSharedExtensions
                 .AddSingleton<IClock, Clock>();
 
         services.AddSignalR()
-                .AddJsonProtocol(
-                    options =>
+                .AddJsonProtocol(options =>
                     {
                         options.PayloadSerializerOptions.PropertyNameCaseInsensitive = true;
                         options.PayloadSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
@@ -94,6 +93,7 @@ public static class ApiSharedExtensions
                        .AddSingleton<IStaticVariablesService, StaticVariablesService>()
                        .AddSingleton<IDisplayNameService, DisplayNameService>()
                        .AddSingleton<IRanksService, RanksService>()
+                       .AddSingleton<IChainOfCommandService, ChainOfCommandService>()
                        .AddSingleton<IUnitsService, UnitsService>()
                        .AddSingleton<IConfirmationCodeService, ConfirmationCodeService>()
                        .AddSingleton<INotificationsService, NotificationsService>()

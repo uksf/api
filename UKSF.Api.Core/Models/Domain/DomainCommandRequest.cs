@@ -16,14 +16,14 @@ public static class CommandRequestType
     public const string AuxiliaryTransfer = "Auxiliary Transfer";
     public const string Demotion = "Demotion";
     public const string Discharge = "Discharge";
-    public const string IndividualRole = "Individual Role";
+    public const string Role = "Role";
     public const string Loa = "Loa";
     public const string Promotion = "Promotion";
     public const string ReinstateMember = "Reinstate Member";
     public const string SecondaryTransfer = "Secondary Transfer";
     public const string Transfer = "Transfer";
     public const string UnitRemoval = "Unit Removal";
-    public const string UnitRole = "Unit Role";
+    public const string ChainOfCommandPosition = "Chain of Command Position";
 }
 
 public class DomainCommandRequest : MongoObject

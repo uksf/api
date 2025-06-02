@@ -62,7 +62,6 @@ public static class ServiceExtensions
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
         return services.AddSingleton<IDataCacheService, DataCacheService>()
-                       .AddSingleton<IChainOfCommandService, ChainOfCommandService>()
                        .AddTransient<ICommandRequestCompletionService, CommandRequestCompletionService>()
                        .AddTransient<ICommandRequestService, CommandRequestService>()
                        .AddTransient<ILoaService, LoaService>()
@@ -71,7 +70,6 @@ public static class ServiceExtensions
                        .AddSingleton<ILoginService, LoginService>()
                        .AddSingleton<IPermissionsService, PermissionsService>()
                        .AddSingleton<ICommentThreadService, CommentThreadService>()
-                       .AddSingleton<IRolesService, RolesService>()
                        .AddSingleton<IDocumentFolderService, DocumentFolderService>()
                        .AddSingleton<IDocumentService, DocumentService>()
                        .AddSingleton<IDocumentPermissionsService, DocumentPermissionsService>();

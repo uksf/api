@@ -41,10 +41,10 @@ public class CommandRequestCompletionService(
             {
                 case CommandRequestType.Promotion:
                 case CommandRequestType.Demotion: await Rank(request); break;
-                case CommandRequestType.Loa:            await Loa(request); break;
-                case CommandRequestType.Discharge:      await Discharge(request); break;
-                case CommandRequestType.IndividualRole: await IndividualRole(request); break;
-                case CommandRequestType.UnitRole:       await UnitRole(request); break;
+                case CommandRequestType.Loa:                    await Loa(request); break;
+                case CommandRequestType.Discharge:              await Discharge(request); break;
+                case CommandRequestType.Role:                   await IndividualRole(request); break;
+                case CommandRequestType.ChainOfCommandPosition: await ChainOfCommandPosition(request); break;
                 case CommandRequestType.Transfer:
                 case CommandRequestType.AuxiliaryTransfer:
                 case CommandRequestType.SecondaryTransfer: await Transfer(request); break;
@@ -174,7 +174,7 @@ public class CommandRequestCompletionService(
         }
     }
 
-    private async Task UnitRole(DomainCommandRequest request)
+    private async Task ChainOfCommandPosition(DomainCommandRequest request)
     {
         if (commandRequestService.IsRequestApproved(request.Id))
         {

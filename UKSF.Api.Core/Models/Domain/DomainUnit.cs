@@ -52,7 +52,7 @@ public class UnitMemberDto
 {
     public string Name { get; set; }
     public string Role { get; set; }
-    public string UnitRole { get; set; }
+    public string ChainOfCommandPosition { get; set; }
 }
 
 public class UnitTreeDto

@@ -34,6 +34,7 @@ public class AssignmentService(
     IServiceRecordService serviceRecordService,
     IRanksService ranksService,
     IUnitsService unitsService,
+    IChainOfCommandService chainOfCommandService,
     IDisplayNameService displayNameService,
     IEventBus eventBus
 ) : IAssignmentService
@@ -98,7 +99,7 @@ public class AssignmentService(
 
     public async Task AssignUnitChainOfCommandPosition(string memberId, string unitId, string position)
     {
-        await unitsService.SetMemberChainOfCommandPosition(memberId, unitId, position);
+        await chainOfCommandService.SetMemberChainOfCommandPosition(memberId, unitId, position);
         UpdateGroupsAndRoles(memberId);
     }
 
@@ -116,7 +117,7 @@ public class AssignmentService(
     {
         foreach (var unit in unitsContext.Get())
         {
-            await unitsService.SetMemberChainOfCommandPosition(id, unit);
+            await chainOfCommandService.SetMemberChainOfCommandPosition(id, unit);
         }
 
         UpdateGroupsAndRoles(id);
@@ -129,9 +130,9 @@ public class AssignmentService(
         var memberPosition = assignedPositions?.FirstOrDefault(x => x.MemberId == memberId);
         var position = memberPosition?.Position ?? string.Empty;
 
-        if (unitsService.ChainOfCommandHasMember(unit, memberId))
+        if (chainOfCommandService.ChainOfCommandHasMember(unit, memberId))
         {
-            await unitsService.SetMemberChainOfCommandPosition(memberId, unitId);
+            await chainOfCommandService.SetMemberChainOfCommandPosition(memberId, unitId);
             UpdateGroupsAndRoles(memberId);
         }
 

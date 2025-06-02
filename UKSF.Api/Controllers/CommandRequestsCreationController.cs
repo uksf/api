@@ -17,12 +17,12 @@ public class CommandRequestsCreationController(
     ICommandRequestService commandRequestService,
     IRanksService ranksService,
     ILoaService loaService,
-    IUnitsService unitsService,
+    IChainOfCommandService chainOfCommandService,
     IDisplayNameService displayNameService,
     IHttpContextService httpContextService
 ) : ControllerBase
 {
-    [HttpPut("rank")]
+    [HttpPost("rank")]
     [Permissions(Permissions.Command)]
     public async Task CreateRequestRank([FromBody] DomainCommandRequest request)
     {
@@ -45,7 +45,7 @@ public class CommandRequestsCreationController(
         await commandRequestService.Add(request);
     }
 
-    [HttpPut("loa")]
+    [HttpPost("loa")]
     [Permissions(Permissions.Member)]
     public async Task CreateRequestLoa([FromBody] CreateLoaRequest request)
     {
@@ -91,7 +91,7 @@ public class CommandRequestsCreationController(
         await commandRequestService.Add(commandRequest, ChainOfCommandMode.Next_Commander_Exclude_Self);
     }
 
-    [HttpPut("discharge")]
+    [HttpPost("discharge")]
     [Permissions(Permissions.Command)]
     public async Task CreateRequestDischarge([FromBody] DomainCommandRequest request)
     {
@@ -107,14 +107,14 @@ public class CommandRequestsCreationController(
         await commandRequestService.Add(request, ChainOfCommandMode.Commander_And_Personnel);
     }
 
-    [HttpPut("role")]
+    [HttpPost("role")]
     [Permissions(Permissions.Command)]
     public async Task CreateRequestIndividualRole([FromBody] DomainCommandRequest request)
     {
         request.Requester = httpContextService.GetUserId();
         request.DisplayValue = request.Value;
         request.DisplayFrom = accountContext.GetSingle(request.Recipient).RoleAssignment;
-        request.Type = CommandRequestType.IndividualRole;
+        request.Type = CommandRequestType.Role;
         if (commandRequestService.DoesEquivalentRequestExist(request))
         {
             throw new BadRequestException("An equivalent request already exists");
@@ -123,12 +123,12 @@ public class CommandRequestsCreationController(
         await commandRequestService.Add(request, ChainOfCommandMode.Next_Commander);
     }
 
-    [HttpPut("unitrole")]
+    [HttpPost("chainofcommandposition")]
     [Permissions(Permissions.Command)]
-    public async Task CreateRequestUnitRole([FromBody] DomainCommandRequest request)
+    public async Task CreateRequestChainOfCommandPosition([FromBody] DomainCommandRequest request)
     {
         var unit = unitsContext.GetSingle(request.Value);
-        var recipientHasChainOfCommandRole = unitsService.ChainOfCommandHasMember(unit, request.Recipient);
+        var recipientHasChainOfCommandRole = chainOfCommandService.ChainOfCommandHasMember(unit, request.Recipient);
 
         if (!recipientHasChainOfCommandRole && request.SecondaryValue == "None")
         {
@@ -146,7 +146,7 @@ public class CommandRequestsCreationController(
         }
 
         // Validate that member is not already assigned to the requested position
-        if (request.SecondaryValue != "None" && unitsService.MemberHasChainOfCommandPosition(request.Recipient, unit, request.SecondaryValue))
+        if (request.SecondaryValue != "None" && chainOfCommandService.MemberHasChainOfCommandPosition(request.Recipient, unit, request.SecondaryValue))
         {
             throw new BadRequestException(
                 $"{displayNameService.GetDisplayName(request.Recipient)} is already assigned to {request.SecondaryValue} in {unit.Name}"
@@ -167,7 +167,7 @@ public class CommandRequestsCreationController(
             request.DisplayFrom = $"Member of {unit.Shortname}";
         }
 
-        request.Type = CommandRequestType.UnitRole;
+        request.Type = CommandRequestType.ChainOfCommandPosition;
         if (commandRequestService.DoesEquivalentRequestExist(request))
         {
             throw new BadRequestException("An equivalent request already exists");
@@ -185,7 +185,7 @@ public class CommandRequestsCreationController(
         return "Member";
     }
 
-    [HttpPut("unitremoval")]
+    [HttpPost("unitremoval")]
     [Permissions(Permissions.Command)]
     public async Task CreateRequestUnitRemoval([FromBody] DomainCommandRequest request)
     {
@@ -207,7 +207,7 @@ public class CommandRequestsCreationController(
         await commandRequestService.Add(request, ChainOfCommandMode.Target_Commander);
     }
 
-    [HttpPut("transfer")]
+    [HttpPost("transfer")]
     [Permissions(Permissions.Command)]
     public async Task CreateRequestTransfer([FromBody] DomainCommandRequest request)
     {
@@ -249,7 +249,7 @@ public class CommandRequestsCreationController(
         }
     }
 
-    [HttpPut("reinstate")]
+    [HttpPost("reinstate")]
     [Permissions(Permissions.Command, Permissions.Recruiter, Permissions.Nco)]
     public async Task CreateRequestReinstateMember([FromBody] DomainCommandRequest request)
     {

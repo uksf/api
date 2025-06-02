@@ -3,7 +3,6 @@
 public class DomainRole : MongoObject
 {
     public string Name { get; set; }
-    public int Order { get; set; } = 0;
 }
 
 public class Role

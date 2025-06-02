@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using Moq;
 using UKSF.Api.Controllers;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Models;
@@ -23,7 +24,7 @@ public class CommandRequestsCreationControllerTests
     private readonly Mock<ICommandRequestService> _mockCommandRequestService;
     private readonly Mock<IRanksService> _mockRanksService;
     private readonly Mock<ILoaService> _mockLoaService;
-    private readonly Mock<IUnitsService> _mockUnitsService;
+    private readonly Mock<IChainOfCommandService> _mockChainOfCommandService;
     private readonly Mock<IDisplayNameService> _mockDisplayNameService;
     private readonly Mock<IHttpContextService> _mockHttpContextService;
     private readonly CommandRequestsCreationController _controller;
@@ -39,7 +40,7 @@ public class CommandRequestsCreationControllerTests
         _mockCommandRequestService = new Mock<ICommandRequestService>();
         _mockRanksService = new Mock<IRanksService>();
         _mockLoaService = new Mock<ILoaService>();
-        _mockUnitsService = new Mock<IUnitsService>();
+        _mockChainOfCommandService = new Mock<IChainOfCommandService>();
         _mockDisplayNameService = new Mock<IDisplayNameService>();
         _mockHttpContextService = new Mock<IHttpContextService>();
 
@@ -49,7 +50,7 @@ public class CommandRequestsCreationControllerTests
             _mockCommandRequestService.Object,
             _mockRanksService.Object,
             _mockLoaService.Object,
-            _mockUnitsService.Object,
+            _mockChainOfCommandService.Object,
             _mockDisplayNameService.Object,
             _mockHttpContextService.Object
         );
@@ -192,7 +193,7 @@ public class CommandRequestsCreationControllerTests
     }
 
     [Fact]
-    public async Task CreateRequestUnitRole_Should_Create_Unit_Role_Request()
+    public async Task CreateRequestChainOfCommandPosition_Should_Create_Unit_Role_Request()
     {
         // Arrange
         var request = CreateUnitRoleRequest();
@@ -205,16 +206,16 @@ public class CommandRequestsCreationControllerTests
         };
 
         _mockUnitsContext.Setup(x => x.GetSingle(request.Value)).Returns(unit);
-        _mockUnitsService.Setup(x => x.ChainOfCommandHasMember(It.IsAny<DomainUnit>(), request.Recipient)).Returns(true);
+        _mockChainOfCommandService.Setup(x => x.ChainOfCommandHasMember(It.IsAny<DomainUnit>(), request.Recipient)).Returns(true);
         _mockCommandRequestService.Setup(x => x.DoesEquivalentRequestExist(It.IsAny<DomainCommandRequest>())).Returns(false);
 
         // Act
-        await _controller.CreateRequestUnitRole(request);
+        await _controller.CreateRequestChainOfCommandPosition(request);
 
         // Assert
         _mockCommandRequestService.Verify(
             x => x.Add(
-                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.UnitRole &&
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.ChainOfCommandPosition &&
                                                  r.Recipient == request.Recipient &&
                                                  r.Value == request.Value &&
                                                  r.SecondaryValue == request.SecondaryValue
@@ -226,11 +227,10 @@ public class CommandRequestsCreationControllerTests
     }
 
     [Fact]
-    public async Task CreateRequestUnitRole_Should_Throw_When_No_Role_And_Removing()
+    public async Task CreateRequestChainOfCommandPosition_Should_Throw_When_No_Role_And_Removing()
     {
         // Arrange
-        var request = CreateUnitRoleRequest();
-        request.SecondaryValue = "None";
+        var request = CreateUnitRoleRequest("None");
         var unit = new DomainUnit
         {
             Id = request.Value,
@@ -240,101 +240,88 @@ public class CommandRequestsCreationControllerTests
         };
 
         _mockUnitsContext.Setup(x => x.GetSingle(request.Value)).Returns(unit);
-        _mockUnitsService.Setup(x => x.ChainOfCommandHasMember(It.IsAny<DomainUnit>(), request.Recipient)).Returns(false);
-        _mockDisplayNameService.Setup(x => x.GetDisplayName(request.Recipient)).Returns("Test User");
+        _mockChainOfCommandService.Setup(x => x.ChainOfCommandHasMember(It.IsAny<DomainUnit>(), request.Recipient)).Returns(false);
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<BadRequestException>(() => _controller.CreateRequestUnitRole(request));
-        exception.Message.Should().Contain("has no chain of command position in");
+        var action = async () => await _controller.CreateRequestChainOfCommandPosition(request);
+        var exception = await action.Should().ThrowAsync<BadRequestException>();
+        exception.Which.Message.Should()
+                 .Be(" has no chain of command position in Test Unit. If you are trying to remove them from the unit, use a Unit Removal request");
     }
 
     [Fact]
-    public async Task CreateRequestUnitRole_Should_Throw_When_Member_Not_In_Unit()
+    public async Task CreateRequestChainOfCommandPosition_Should_Throw_When_Member_Not_In_Unit()
     {
         // Arrange
         var request = CreateUnitRoleRequest();
-        request.SecondaryValue = "1iC"; // Assigning a position, not removing
+        var unit = new DomainUnit
+        {
+            Id = request.Value,
+            Name = "Test Unit",
+            ChainOfCommand = new ChainOfCommand()
+        };
 
+        _mockUnitsContext.Setup(x => x.GetSingle(request.Value)).Returns(unit);
+
+        // Act & Assert
+        var action = async () => await _controller.CreateRequestChainOfCommandPosition(request);
+        var exception = await action.Should().ThrowAsync<BadRequestException>();
+        exception.Which.Message.Should().Be(" is not a member of Test Unit. They must be a unit member before being assigned to a chain of command position");
+    }
+
+    [Fact]
+    public async Task CreateRequestChainOfCommandPosition_Should_Throw_When_Assigning_To_Current_Position()
+    {
+        // Arrange
+        var request = CreateUnitRoleRequest();
         var unit = new DomainUnit
         {
             Id = request.Value,
             Name = "Test Unit",
             ChainOfCommand = new ChainOfCommand(),
-            Members = new List<string>() // Empty members list - recipient is not a member
+            Members = new List<string> { request.Recipient } // Add recipient to members
         };
+        unit.ChainOfCommand.First = request.Recipient;
 
         _mockUnitsContext.Setup(x => x.GetSingle(request.Value)).Returns(unit);
-        _mockUnitsService.Setup(x => x.ChainOfCommandHasMember(It.IsAny<DomainUnit>(), request.Recipient)).Returns(false);
-        _mockDisplayNameService.Setup(x => x.GetDisplayName(request.Recipient)).Returns("Test User");
+        _mockChainOfCommandService.Setup(x => x.ChainOfCommandHasMember(It.IsAny<DomainUnit>(), request.Recipient)).Returns(true);
+        _mockChainOfCommandService.Setup(x => x.MemberHasChainOfCommandPosition(request.Recipient, It.IsAny<DomainUnit>(), "1iC")).Returns(true);
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<BadRequestException>(() => _controller.CreateRequestUnitRole(request));
-        exception.Message.Should().Contain("They must be a unit member before being assigned to a chain of command position");
+        var action = async () => await _controller.CreateRequestChainOfCommandPosition(request);
+        var exception = await action.Should().ThrowAsync<BadRequestException>();
+        exception.Which.Message.Should().Be(" is already assigned to 1iC in Test Unit");
     }
 
     [Fact]
-    public async Task CreateRequestUnitRole_Should_Throw_When_Assigning_To_Current_Position()
+    public async Task CreateRequestChainOfCommandPosition_Should_Allow_Reassigning_To_Different_Position()
     {
         // Arrange
         var request = CreateUnitRoleRequest();
-        request.SecondaryValue = "1iC"; // Assigning to 1iC position
-
         var unit = new DomainUnit
         {
             Id = request.Value,
             Name = "Test Unit",
-            ChainOfCommand = new ChainOfCommand
-            {
-                First = request.Recipient // Member is already 1iC
-            },
-            Members = new List<string> { request.Recipient }
+            ChainOfCommand = new ChainOfCommand(),
+            Members = new List<string> { request.Recipient } // Add recipient to members
         };
 
         _mockUnitsContext.Setup(x => x.GetSingle(request.Value)).Returns(unit);
-        _mockUnitsService.Setup(x => x.ChainOfCommandHasMember(It.IsAny<DomainUnit>(), request.Recipient)).Returns(true);
-        _mockUnitsService.Setup(x => x.MemberHasChainOfCommandPosition(request.Recipient, It.IsAny<DomainUnit>(), "1iC")).Returns(true);
-        _mockDisplayNameService.Setup(x => x.GetDisplayName(request.Recipient)).Returns("Test User");
-        _mockCommandRequestService.Setup(x => x.DoesEquivalentRequestExist(It.IsAny<DomainCommandRequest>())).Returns(false);
-
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<BadRequestException>(() => _controller.CreateRequestUnitRole(request));
-        exception.Message.Should().Contain("Test User is already assigned to 1iC in Test Unit");
-    }
-
-    [Fact]
-    public async Task CreateRequestUnitRole_Should_Allow_Reassigning_To_Different_Position()
-    {
-        // Arrange
-        var request = CreateUnitRoleRequest();
-        request.SecondaryValue = "2iC"; // Assigning to 2iC position
-
-        var unit = new DomainUnit
-        {
-            Id = request.Value,
-            Name = "Test Unit",
-            ChainOfCommand = new ChainOfCommand
-            {
-                First = request.Recipient // Member is currently 1iC, being reassigned to 2iC
-            },
-            Members = new List<string> { request.Recipient }
-        };
-
-        _mockUnitsContext.Setup(x => x.GetSingle(request.Value)).Returns(unit);
-        _mockUnitsService.Setup(x => x.ChainOfCommandHasMember(It.IsAny<DomainUnit>(), request.Recipient)).Returns(true);
-        _mockUnitsService.Setup(x => x.MemberHasChainOfCommandPosition(request.Recipient, It.IsAny<DomainUnit>(), "1iC")).Returns(true);
-        _mockUnitsService.Setup(x => x.MemberHasChainOfCommandPosition(request.Recipient, It.IsAny<DomainUnit>(), "2iC")).Returns(false);
+        _mockChainOfCommandService.Setup(x => x.ChainOfCommandHasMember(It.IsAny<DomainUnit>(), request.Recipient)).Returns(true);
+        _mockChainOfCommandService.Setup(x => x.MemberHasChainOfCommandPosition(request.Recipient, It.IsAny<DomainUnit>(), request.SecondaryValue))
+                                  .Returns(false);
         _mockCommandRequestService.Setup(x => x.DoesEquivalentRequestExist(It.IsAny<DomainCommandRequest>())).Returns(false);
 
         // Act
-        await _controller.CreateRequestUnitRole(request);
+        await _controller.CreateRequestChainOfCommandPosition(request);
 
         // Assert
         _mockCommandRequestService.Verify(
             x => x.Add(
-                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.UnitRole &&
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.ChainOfCommandPosition &&
                                                  r.Recipient == request.Recipient &&
                                                  r.Value == request.Value &&
-                                                 r.SecondaryValue == "2iC"
+                                                 r.SecondaryValue == request.SecondaryValue
                 ),
                 It.IsAny<ChainOfCommandMode>()
             ),
@@ -440,8 +427,9 @@ public class CommandRequestsCreationControllerTests
         // Assert
         _mockCommandRequestService.Verify(
             x => x.Add(
-                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.IndividualRole &&
-                                                 r.DisplayValue == request.Value &&
+                It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.Role &&
+                                                 r.Recipient == request.Recipient &&
+                                                 r.Value == request.Value &&
                                                  r.DisplayFrom == recipient.RoleAssignment
                 ),
                 ChainOfCommandMode.Next_Commander
@@ -495,13 +483,13 @@ public class CommandRequestsCreationControllerTests
         };
     }
 
-    private DomainCommandRequest CreateUnitRoleRequest()
+    private DomainCommandRequest CreateUnitRoleRequest(string position = "1iC")
     {
         return new DomainCommandRequest
         {
             Recipient = _recipientId,
             Value = _unitId,
-            SecondaryValue = "Commander",
+            SecondaryValue = position,
             Reason = "Test role assignment"
         };
     }
