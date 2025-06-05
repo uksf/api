@@ -1,4 +1,5 @@
-﻿using MongoDB.Driver;
+﻿using MongoDB.Bson;
+using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
@@ -8,7 +9,7 @@ namespace UKSF.Api.Services;
 
 public class MigrationUtility(IMigrationContext migrationContext, IDocumentFolderMetadataContext documentFolderMetadataContext, IUksfLogger logger)
 {
-    private const int Version = 5;
+    private const int Version = 6;
 
     public async Task RunMigrations()
     {
@@ -32,90 +33,74 @@ public class MigrationUtility(IMigrationContext migrationContext, IDocumentFolde
 
     private async Task ExecuteMigrations()
     {
-        await MigrateDocumentPermissions();
+        await FixDocumentOwnerObjectIdTypes();
         logger.LogInfo("All migrations completed successfully");
     }
 
-    private async Task MigrateDocumentPermissions()
+    private async Task FixDocumentOwnerObjectIdTypes()
     {
-        logger.LogInfo("Starting document permissions migration to role-based system");
+        logger.LogInfo("Starting migration to fix document owner ObjectId storage types");
 
-        // Get ALL documents to ensure RoleBasedPermissions is added to every entry
+        // Get ALL documents to fix owner field storage types
         var allDocuments = documentFolderMetadataContext.Get().ToList();
 
-        logger.LogInfo($"Found {allDocuments.Count} document folders to migrate");
+        logger.LogInfo($"Found {allDocuments.Count} document folders to check for owner field fixes");
 
         foreach (var folder in allDocuments)
         {
             var updates = new List<UpdateDefinition<DomainDocumentFolderMetadata>>();
 
-            // Set Owner to Creator if not already set
-            if (string.IsNullOrEmpty(folder.Owner) && !string.IsNullOrEmpty(folder.Creator))
-            {
-                updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Owner, folder.Creator));
-            }
-
-            // Convert legacy permissions to role-based permissions for folders
-            var folderRoleBasedPermissions = new RoleBasedDocumentPermissions
-            {
-                Viewers = new PermissionRole { Units = folder.ReadPermissions.Units ?? [], Rank = folder.ReadPermissions.Rank ?? string.Empty }
-            };
-
-            // Migrate WritePermissions to Collaborators
-            if (folder.WritePermissions != null)
-            {
-                folderRoleBasedPermissions.Collaborators = new PermissionRole
-                {
-                    Units = folder.WritePermissions.Units ?? [], Rank = folder.WritePermissions.Rank ?? string.Empty
-                };
-            }
-
-            updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.RoleBasedPermissions, folderRoleBasedPermissions));
-
-            // Migrate documents within folders
+            // Fix documents within folders where owner might be stored as string instead of ObjectId
             for (var i = 0; i < folder.Documents.Count; i++)
             {
                 var document = folder.Documents[i];
 
-                // Set Owner to Creator if not already set for documents
-                if (string.IsNullOrEmpty(document.Owner) && !string.IsNullOrEmpty(document.Creator))
+                // Fix owner field - ensure it's stored as ObjectId type in MongoDB
+                if (!string.IsNullOrEmpty(document.Owner))
                 {
-                    updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Set($"documents.{i}.owner", document.Creator));
-                }
-
-                // Convert legacy permissions to role-based permissions for documents
-                var documentRoleBasedPermissions = new RoleBasedDocumentPermissions();
-
-                // Migrate ReadPermissions to Viewers
-                if (document.ReadPermissions != null)
-                {
-                    documentRoleBasedPermissions.Viewers = new PermissionRole
+                    // Convert string to ObjectId to ensure proper BSON storage
+                    if (ObjectId.TryParse(document.Owner, out var ownerObjectId))
                     {
-                        Units = document.ReadPermissions.Units ?? [], Rank = document.ReadPermissions.Rank ?? string.Empty
-                    };
+                        updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Set($"documents.{i}.owner", ownerObjectId));
+                    }
                 }
 
-                // Migrate WritePermissions to Collaborators
-                if (document.WritePermissions != null)
+                // Also fix creator field if needed
+                if (!string.IsNullOrEmpty(document.Creator))
                 {
-                    documentRoleBasedPermissions.Collaborators = new PermissionRole
+                    if (ObjectId.TryParse(document.Creator, out var creatorObjectId))
                     {
-                        Units = document.WritePermissions.Units ?? [], Rank = document.WritePermissions.Rank ?? string.Empty
-                    };
+                        updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Set($"documents.{i}.creator", creatorObjectId));
+                    }
                 }
+            }
 
-                updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Set($"documents.{i}.roleBasedPermissions", documentRoleBasedPermissions));
+            // Fix folder-level owner and creator fields as well
+            if (!string.IsNullOrEmpty(folder.Owner))
+            {
+                if (ObjectId.TryParse(folder.Owner, out var folderOwnerObjectId))
+                {
+                    updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Set("owner", folderOwnerObjectId));
+                }
+            }
+
+            if (!string.IsNullOrEmpty(folder.Creator))
+            {
+                if (ObjectId.TryParse(folder.Creator, out var folderCreatorObjectId))
+                {
+                    updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Set("creator", folderCreatorObjectId));
+                }
             }
 
             if (updates.Count != 0)
             {
                 var combinedUpdate = Builders<DomainDocumentFolderMetadata>.Update.Combine(updates);
                 await documentFolderMetadataContext.Update(folder.Id, combinedUpdate);
-                logger.LogInfo($"Updated document folder: {folder.Name} (ID: {folder.Id}) - Migrated {folder.Documents.Count} documents");
+                logger.LogInfo($"Fixed ObjectId types for document folder: {folder.Name} (ID: {folder.Id}) - Fixed {folder.Documents.Count} documents");
             }
         }
 
-        logger.LogInfo($"Successfully migrated {allDocuments.Count} document folders to role-based permission system");
-        logger.LogInfo("Document permissions migration completed - legacy permissions fields retained for backwards compatibility");
+        logger.LogInfo($"Successfully fixed ObjectId storage types for {allDocuments.Count} document folders");
+        logger.LogInfo("Document owner ObjectId type fix migration completed");
     }
 }
