@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
@@ -153,6 +154,122 @@ public class DocumentFolderServiceTests
         );
     }
 
+    [Fact]
+    public async Task GetFolder_WithDocumentsAndNoReadPermission_ShouldFilterOutDocuments()
+    {
+        // Arrange
+        Given_folder_metadata_with_documents_having_different_permissions();
+
+        // Setup permission service to deny read permission for specific documents
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc1"))).Returns(true);
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc2")))
+                                                 .Returns(false); // No read permission for doc2
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc3"))).Returns(true);
+
+        // Act
+        var result = await _subject.GetFolder("2");
+
+        // Assert
+        result.Documents.Should().HaveCount(2);
+        result.Documents.Should().Contain(d => d.Id == "doc1");
+        result.Documents.Should().Contain(d => d.Id == "doc3");
+        result.Documents.Should().NotContain(d => d.Id == "doc2");
+    }
+
+    [Fact]
+    public async Task GetFolder_WithAllDocumentsHavingNoReadPermission_ShouldReturnEmptyDocumentsList()
+    {
+        // Arrange
+        Given_folder_metadata_with_documents_having_different_permissions();
+
+        // Setup permission service to deny read permission for all documents
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainDocumentMetadata>())).Returns(false);
+
+        // Act
+        var result = await _subject.GetFolder("2");
+
+        // Assert
+        result.Documents.Should().BeEmpty();
+        _mockIRoleBasedDocumentPermissionsService.Verify(
+            x => x.DoesContextHaveReadPermission(It.IsAny<DomainDocumentMetadata>()),
+            Times.Exactly(3)
+        ); // Should check all 3 documents
+    }
+
+    [Fact]
+    public async Task GetFolder_WithAllDocumentsHavingReadPermission_ShouldReturnAllDocuments()
+    {
+        // Arrange
+        Given_folder_metadata_with_documents_having_different_permissions();
+
+        // Setup permission service to allow read permission for all documents
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainDocumentMetadata>())).Returns(true);
+
+        // Act
+        var result = await _subject.GetFolder("2");
+
+        // Assert
+        result.Documents.Should().HaveCount(3);
+        result.Documents.Should().Contain(d => d.Id == "doc1");
+        result.Documents.Should().Contain(d => d.Id == "doc2");
+        result.Documents.Should().Contain(d => d.Id == "doc3");
+    }
+
+    [Fact]
+    public void GetAllFolders_WithDocumentsInMultipleFolders_ShouldFilterDocumentsByPermission()
+    {
+        // Arrange
+        Given_multiple_folders_with_documents();
+
+        // Setup permission service - allow folder access but selective document access
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainDocumentFolderMetadata>())).Returns(true);
+
+        // Document permissions - deny access to some documents
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc_folder2_1")))
+                                                 .Returns(false); // No access to first doc in folder 2
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc_folder2_2")))
+                                                 .Returns(true); // Allow access to second doc in folder 2
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc_folder3_1")))
+                                                 .Returns(true); // Allow access to first doc in folder 3
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc_folder3_2")))
+                                                 .Returns(false); // No access to second doc in folder 3
+
+        // Act
+        var result = _subject.GetAllFolders();
+
+        // Assert
+        var folder2 = result.First(f => f.Id == "2");
+        var folder3 = result.First(f => f.Id == "3");
+
+        folder2.Documents.Should().HaveCount(1); // Should only have doc_folder2_2
+        folder2.Documents.Should().Contain(d => d.Id == "doc_folder2_2");
+        folder2.Documents.Should().NotContain(d => d.Id == "doc_folder2_1");
+
+        folder3.Documents.Should().HaveCount(1); // Should only have doc_folder3_1
+        folder3.Documents.Should().Contain(d => d.Id == "doc_folder3_1");
+        folder3.Documents.Should().NotContain(d => d.Id == "doc_folder3_2");
+    }
+
+    [Fact]
+    public async Task GetFolder_WhenUserCanSeeFolderButNoDocuments_ShouldReturnFolderWithEmptyDocuments()
+    {
+        // Arrange
+        Given_folder_metadata_with_documents_having_different_permissions();
+
+        // User can access folder but not any documents
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainDocumentFolderMetadata>())).Returns(true);
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainDocumentMetadata>())).Returns(false);
+
+        // Act
+        var result = await _subject.GetFolder("2");
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be("2");
+        result.Name.Should().Be("JSFAW");
+        result.Documents.Should().BeEmpty();
+    }
+
     private void Given_folder_metadata()
     {
         _mockIDocumentFolderMetadataContext.Setup(x => x.Get())
@@ -216,5 +333,114 @@ public class DocumentFolderServiceTests
                 FullPath = "UKSF\\SFSG"
             }
         );
+    }
+
+    private void Given_folder_metadata_with_documents_having_different_permissions()
+    {
+        var folderWithDocuments = new DomainDocumentFolderMetadata
+        {
+            Id = "2",
+            Parent = "1",
+            Name = "JSFAW",
+            FullPath = "UKSF\\JSFAW",
+            Documents = new List<DomainDocumentMetadata>
+            {
+                new()
+                {
+                    Id = "doc1",
+                    Folder = "2",
+                    Name = "Training.json",
+                    FullPath = "UKSF\\JSFAW\\Training.json",
+                    Created = _utcNow.AddDays(-3),
+                    LastUpdated = _utcNow.AddDays(-1)
+                },
+                new()
+                {
+                    Id = "doc2",
+                    Folder = "2",
+                    Name = "Secret.json",
+                    FullPath = "UKSF\\JSFAW\\Secret.json",
+                    Created = _utcNow.AddDays(-2),
+                    LastUpdated = _utcNow.AddDays(-1)
+                },
+                new()
+                {
+                    Id = "doc3",
+                    Folder = "2",
+                    Name = "Public.json",
+                    FullPath = "UKSF\\JSFAW\\Public.json",
+                    Created = _utcNow.AddDays(-1),
+                    LastUpdated = _utcNow
+                }
+            }
+        };
+
+        _mockIDocumentFolderMetadataContext.Setup(x => x.GetSingle("2")).Returns(folderWithDocuments);
+    }
+
+    private void Given_multiple_folders_with_documents()
+    {
+        var folders = new List<DomainDocumentFolderMetadata>
+        {
+            new()
+            {
+                Id = "1",
+                Parent = ObjectId.Empty.ToString(),
+                Name = "UKSF",
+                FullPath = "UKSF",
+                Documents = new List<DomainDocumentMetadata>()
+            },
+            new()
+            {
+                Id = "2",
+                Parent = "1",
+                Name = "JSFAW",
+                FullPath = "UKSF\\JSFAW",
+                Documents = new List<DomainDocumentMetadata>
+                {
+                    new()
+                    {
+                        Id = "doc_folder2_1",
+                        Folder = "2",
+                        Name = "Restricted.json",
+                        FullPath = "UKSF\\JSFAW\\Restricted.json"
+                    },
+                    new()
+                    {
+                        Id = "doc_folder2_2",
+                        Folder = "2",
+                        Name = "Open.json",
+                        FullPath = "UKSF\\JSFAW\\Open.json"
+                    }
+                }
+            },
+            new()
+            {
+                Id = "3",
+                Parent = "1",
+                Name = "SFSG",
+                FullPath = "UKSF\\SFSG",
+                Documents = new List<DomainDocumentMetadata>
+                {
+                    new()
+                    {
+                        Id = "doc_folder3_1",
+                        Folder = "3",
+                        Name = "Mission.json",
+                        FullPath = "UKSF\\SFSG\\Mission.json"
+                    },
+                    new()
+                    {
+                        Id = "doc_folder3_2",
+                        Folder = "3",
+                        Name = "Classified.json",
+                        FullPath = "UKSF\\SFSG\\Classified.json"
+                    }
+                }
+            }
+        };
+
+        _mockIDocumentFolderMetadataContext.Setup(x => x.Get(It.IsAny<Func<DomainDocumentFolderMetadata, bool>>()))
+                                           .Returns((Func<DomainDocumentFolderMetadata, bool> filter) => folders.Where(filter).ToList());
     }
 }

@@ -250,7 +250,7 @@ public class DocumentFolderService(
             RoleBasedPermissions = folderMetadata.RoleBasedPermissions,
             EffectivePermissions = effectivePermissions,
             InheritedPermissions = inheritedPermissions,
-            Documents = folderMetadata.Documents.Select(MapDocument),
+            Documents = folderMetadata.Documents.Where(roleBasedDocumentPermissionsService.DoesContextHaveReadPermission).Select(MapDocument),
             CanWrite = roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata)
         };
     }
