@@ -22,9 +22,9 @@ public class DocumentServiceTests
     private readonly string _memberId = ObjectId.GenerateNewId().ToString();
     private readonly Mock<IClock> _mockIClock = new();
     private readonly Mock<IDocumentFolderMetadataContext> _mockIDocumentMetadataContext = new();
-    private readonly Mock<IHybridDocumentPermissionsService> _mockIHybridDocumentPermissionsService = new();
     private readonly Mock<IFileContext> _mockIFileContext = new();
     private readonly Mock<IHttpContextService> _mockIHttpContextService = new();
+    private readonly Mock<IRoleBasedDocumentPermissionsService> _mockIRoleBasedDocumentPermissionsService = new();
     private readonly Mock<IUksfLogger> _mockIUksfLogger = new();
     private readonly Mock<IVariablesService> _mockIVariablesService = new();
 
@@ -35,18 +35,18 @@ public class DocumentServiceTests
     public DocumentServiceTests()
     {
         _mockIVariablesService.Setup(x => x.GetVariable("DOCUMENTS_PATH")).Returns(new DomainVariableItem { Item = "" });
-        _mockIHybridDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
-        _mockIHybridDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
         _mockIClock.Setup(x => x.UtcNow()).Returns(_utcNow);
         _mockIHttpContextService.Setup(x => x.GetUserId()).Returns(_memberId);
 
         _subject = new DocumentService(
-            _mockIHybridDocumentPermissionsService.Object,
             _mockIDocumentMetadataContext.Object,
-            _mockIFileContext.Object,
-            _mockIVariablesService.Object,
-            _mockIClock.Object,
             _mockIHttpContextService.Object,
+            _mockIRoleBasedDocumentPermissionsService.Object,
+            _mockIVariablesService.Object,
+            _mockIFileContext.Object,
+            _mockIClock.Object,
             _mockIUksfLogger.Object
         );
     }
@@ -75,7 +75,7 @@ public class DocumentServiceTests
     public async Task When_creating_a_document_without_permission()
     {
         Given_folder_metadata();
-        _mockIHybridDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
+        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
 
         var act = async () => await _subject.CreateDocument("2", new CreateDocumentRequest { Name = "Training2.json" });
 

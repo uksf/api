@@ -72,9 +72,7 @@ public static class ServiceExtensions
                        .AddSingleton<ICommentThreadService, CommentThreadService>()
                        .AddSingleton<IDocumentFolderService, DocumentFolderService>()
                        .AddSingleton<IDocumentService, DocumentService>()
-                       .AddSingleton<IDocumentPermissionsService, DocumentPermissionsService>()
-                       .AddSingleton<IRoleBasedDocumentPermissionsService, RoleBasedDocumentPermissionsService>()
-                       .AddSingleton<IHybridDocumentPermissionsService, HybridDocumentPermissionsService>();
+                       .AddSingleton<IRoleBasedDocumentPermissionsService, RoleBasedDocumentPermissionsService>();
     }
 
     private static IServiceCollection AddCommands(this IServiceCollection services)

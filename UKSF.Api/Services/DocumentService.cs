@@ -23,12 +23,12 @@ public interface IDocumentService
 }
 
 public class DocumentService(
-    IHybridDocumentPermissionsService hybridDocumentPermissionsService,
     IDocumentFolderMetadataContext documentFolderMetadataContext,
-    IFileContext fileContext,
-    IVariablesService variablesService,
-    IClock clock,
     IHttpContextService httpContextService,
+    IRoleBasedDocumentPermissionsService roleBasedDocumentPermissionsService,
+    IVariablesService variablesService,
+    IFileContext fileContext,
+    IClock clock,
     IUksfLogger logger
 ) : IDocumentService
 {
@@ -43,7 +43,7 @@ public class DocumentService(
     public async Task<DocumentMetadataResponse> CreateDocument(string folderId, CreateDocumentRequest createDocument)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!hybridDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
+        if (!roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
             throw new FolderException("Cannot create documents in this folder");
         }
@@ -64,7 +64,7 @@ public class DocumentService(
             RoleBasedPermissions = createDocument.RoleBasedPermissions
         };
 
-        if (!hybridDocumentPermissionsService.DoesContextHaveReadPermission(documentMetadata))
+        if (!roleBasedDocumentPermissionsService.DoesContextHaveReadPermission(documentMetadata))
         {
             throw new DocumentException("Cannot create document you won't be able to view");
         }
@@ -84,13 +84,13 @@ public class DocumentService(
     public async Task<DocumentMetadataResponse> UpdateDocument(string folderId, string documentId, CreateDocumentRequest newPermissions)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!hybridDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
+        if (!roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
             throw new FolderException($"Cannot edit documents in this folder '{folderMetadata.Name}'");
         }
 
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
-        if (!hybridDocumentPermissionsService.DoesContextHaveWritePermission(documentMetadata))
+        if (!roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(documentMetadata))
         {
             throw new DocumentException($"Cannot edit document '{folderMetadata.Name}/{documentMetadata.Name}'");
         }
@@ -122,13 +122,13 @@ public class DocumentService(
     public async Task DeleteDocument(string folderId, string documentId)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!hybridDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
+        if (!roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
             throw new FolderException($"Cannot delete documents from this folder '{folderMetadata.Name}'");
         }
 
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
-        if (!hybridDocumentPermissionsService.DoesContextHaveWritePermission(documentMetadata))
+        if (!roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(documentMetadata))
         {
             throw new DocumentException($"Cannot delete document '{folderMetadata.Name}/{documentMetadata.Name}'");
         }
@@ -156,13 +156,13 @@ public class DocumentService(
     public async Task<DocumentContentResponse> UpdateDocumentContent(string folderId, string documentId, UpdateDocumentContentRequest updateDocumentContent)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!hybridDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
+        if (!roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
             throw new FolderException($"Cannot edit documents in this folder '{folderMetadata.Name}'");
         }
 
         var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
-        if (!hybridDocumentPermissionsService.DoesContextHaveWritePermission(documentMetadata))
+        if (!roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(documentMetadata))
         {
             throw new DocumentException($"Cannot edit document '{folderMetadata.Name}/{documentMetadata.Name}'");
         }
@@ -193,7 +193,7 @@ public class DocumentService(
             throw new FolderNotFoundException($"Folder with ID '{folderId}' not found");
         }
 
-        if (!hybridDocumentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
+        if (!roleBasedDocumentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
         {
             throw new FolderException($"Cannot view folder '{folderMetadata.Name}'");
         }
@@ -209,7 +209,7 @@ public class DocumentService(
             throw new DocumentNotFoundException($"Document with ID '{documentId}' not found");
         }
 
-        if (!hybridDocumentPermissionsService.DoesContextHaveReadPermission(documentMetadata))
+        if (!roleBasedDocumentPermissionsService.DoesContextHaveReadPermission(documentMetadata))
         {
             throw new DocumentException($"Cannot view document '{folderMetadata.Name}/{documentMetadata.Name}'");
         }
@@ -250,8 +250,8 @@ public class DocumentService(
 
     private DocumentMetadataResponse MapDocument(DomainDocumentMetadata documentMetadata)
     {
-        var effectivePermissions = hybridDocumentPermissionsService.GetEffectivePermissions(documentMetadata);
-        var inheritedPermissions = hybridDocumentPermissionsService.GetInheritedPermissions(documentMetadata);
+        var effectivePermissions = roleBasedDocumentPermissionsService.GetEffectivePermissions(documentMetadata);
+        var inheritedPermissions = roleBasedDocumentPermissionsService.GetInheritedPermissions(documentMetadata);
 
         return new DocumentMetadataResponse
         {
@@ -270,7 +270,7 @@ public class DocumentService(
             RoleBasedPermissions = documentMetadata.RoleBasedPermissions,
             EffectivePermissions = effectivePermissions,
             InheritedPermissions = inheritedPermissions,
-            CanWrite = hybridDocumentPermissionsService.DoesContextHaveWritePermission(documentMetadata)
+            CanWrite = roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(documentMetadata)
         };
     }
 }
