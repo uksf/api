@@ -21,7 +21,7 @@ public interface IDocumentFolderService
 }
 
 public class DocumentFolderService(
-    IDocumentPermissionsService documentPermissionsService,
+    IHybridDocumentPermissionsService hybridDocumentPermissionsService,
     IDocumentFolderMetadataContext documentFolderMetadataContext,
     IFileContext fileContext,
     IVariablesService variablesService,
@@ -32,7 +32,7 @@ public class DocumentFolderService(
 {
     public List<FolderMetadataResponse> GetAllFolders()
     {
-        return documentFolderMetadataContext.Get(documentPermissionsService.DoesContextHaveReadPermission).Select(MapFolder).ToList();
+        return documentFolderMetadataContext.Get(hybridDocumentPermissionsService.DoesContextHaveReadPermission).Select(MapFolder).ToList();
     }
 
     public Task<FolderMetadataResponse> GetFolder(string folderId)
@@ -47,7 +47,7 @@ public class DocumentFolderService(
         if (createFolder.Parent != ObjectId.Empty.ToString())
         {
             var parentFolderMetadata = ValidateAndGetFolder(createFolder.Parent);
-            if (!documentPermissionsService.DoesContextHaveWritePermission(parentFolderMetadata))
+            if (!hybridDocumentPermissionsService.DoesContextHaveWritePermission(parentFolderMetadata))
             {
                 throw new FolderException("Cannot create folder");
             }
@@ -61,11 +61,15 @@ public class DocumentFolderService(
             FullPath = ResolveFullFolderPath(allFolders, createFolder.Parent, createFolder.Name),
             Created = clock.UtcNow(),
             Creator = httpContextService.GetUserId(),
+            // Legacy permissions (for backwards compatibility)
             ReadPermissions = createFolder.ReadPermissions,
-            WritePermissions = createFolder.WritePermissions
+            WritePermissions = createFolder.WritePermissions,
+            // New role-based permissions
+            Owner = createFolder.Owner ?? httpContextService.GetUserId(),
+            RoleBasedPermissions = createFolder.RoleBasedPermissions
         };
 
-        if (!documentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
+        if (!hybridDocumentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
         {
             throw new FolderException("Cannot create folder you won't be able to view");
         }
@@ -84,20 +88,23 @@ public class DocumentFolderService(
     public async Task<FolderMetadataResponse> UpdateFolder(string folderId, CreateFolderRequest newPermissions)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
+        if (!hybridDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
             throw new FolderException($"Cannot edit folder '{folderMetadata.Name}'");
         }
 
-        await documentFolderMetadataContext.Update(folderId, Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Name, newPermissions.Name));
-        await documentFolderMetadataContext.Update(
-            folderId,
-            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.WritePermissions, newPermissions.WritePermissions)
-        );
-        await documentFolderMetadataContext.Update(
-            folderId,
-            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.ReadPermissions, newPermissions.ReadPermissions)
-        );
+        // Update both legacy and new permission fields
+        var updates = new List<UpdateDefinition<DomainDocumentFolderMetadata>>
+        {
+            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Name, newPermissions.Name),
+            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.WritePermissions, newPermissions.WritePermissions),
+            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.ReadPermissions, newPermissions.ReadPermissions),
+            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Owner, newPermissions.Owner ?? folderMetadata.Owner),
+            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.RoleBasedPermissions, newPermissions.RoleBasedPermissions)
+        };
+
+        var combinedUpdate = Builders<DomainDocumentFolderMetadata>.Update.Combine(updates);
+        await documentFolderMetadataContext.Update(folderId, combinedUpdate);
 
         logger.LogAudit($"Updated folder for {folderMetadata.FullPath}");
         folderMetadata = ValidateAndGetFolder(folderId);
@@ -107,7 +114,7 @@ public class DocumentFolderService(
     public async Task DeleteFolder(string folderId)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!documentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
+        if (!hybridDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
         {
             throw new FolderException($"Cannot delete folder '{folderMetadata.Name}'");
         }
@@ -133,7 +140,7 @@ public class DocumentFolderService(
             throw new FolderNotFoundException($"Folder with ID '{folderId}' not found");
         }
 
-        if (!documentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
+        if (!hybridDocumentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
         {
             throw new FolderException($"Cannot view folder '{folderMetadata.Name}'");
         }
@@ -164,6 +171,9 @@ public class DocumentFolderService(
 
     private FolderMetadataResponse MapFolder(DomainDocumentFolderMetadata folderMetadata)
     {
+        var effectivePermissions = hybridDocumentPermissionsService.GetEffectivePermissions(folderMetadata);
+        var inheritedPermissions = hybridDocumentPermissionsService.GetInheritedPermissions(folderMetadata);
+
         return new FolderMetadataResponse
         {
             Id = folderMetadata.Id,
@@ -172,15 +182,24 @@ public class DocumentFolderService(
             FullPath = folderMetadata.FullPath,
             Created = folderMetadata.Created,
             Creator = folderMetadata.Creator,
+            // Legacy permissions (keep for backwards compatibility)
             ReadPermissions = folderMetadata.ReadPermissions,
             WritePermissions = folderMetadata.WritePermissions,
+            // NEW: Role-based permissions
+            Owner = folderMetadata.Owner,
+            RoleBasedPermissions = folderMetadata.RoleBasedPermissions,
+            EffectivePermissions = effectivePermissions,
+            InheritedPermissions = inheritedPermissions,
             Documents = folderMetadata.Documents.Select(MapDocument),
-            CanWrite = documentPermissionsService.DoesContextHaveWritePermission(folderMetadata)
+            CanWrite = hybridDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata)
         };
     }
 
     private DocumentMetadataResponse MapDocument(DomainDocumentMetadata documentMetadata)
     {
+        var effectivePermissions = hybridDocumentPermissionsService.GetEffectivePermissions(documentMetadata);
+        var inheritedPermissions = hybridDocumentPermissionsService.GetInheritedPermissions(documentMetadata);
+
         return new DocumentMetadataResponse
         {
             Id = documentMetadata.Id,
@@ -190,9 +209,15 @@ public class DocumentFolderService(
             Created = documentMetadata.Created,
             LastUpdated = documentMetadata.LastUpdated,
             Creator = documentMetadata.Creator,
+            // Legacy permissions (keep for backwards compatibility)
             ReadPermissions = documentMetadata.ReadPermissions,
             WritePermissions = documentMetadata.WritePermissions,
-            CanWrite = documentPermissionsService.DoesContextHaveWritePermission(documentMetadata)
+            // NEW: Role-based permissions
+            Owner = documentMetadata.Owner,
+            RoleBasedPermissions = documentMetadata.RoleBasedPermissions,
+            EffectivePermissions = effectivePermissions,
+            InheritedPermissions = inheritedPermissions,
+            CanWrite = hybridDocumentPermissionsService.DoesContextHaveWritePermission(documentMetadata)
         };
     }
 }

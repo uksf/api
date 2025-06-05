@@ -21,7 +21,7 @@ public class DocumentFolderServiceTests
     private readonly string _memberId = ObjectId.GenerateNewId().ToString();
     private readonly Mock<IClock> _mockIClock = new();
     private readonly Mock<IDocumentFolderMetadataContext> _mockIDocumentMetadataContext = new();
-    private readonly Mock<IDocumentPermissionsService> _mockIDocumentPermissionsService = new();
+    private readonly Mock<IHybridDocumentPermissionsService> _mockIHybridDocumentPermissionsService = new();
     private readonly Mock<IFileContext> _mockIFileContext = new();
     private readonly Mock<IHttpContextService> _mockIHttpContextService = new();
     private readonly Mock<IUksfLogger> _mockIUksfLogger = new();
@@ -34,13 +34,13 @@ public class DocumentFolderServiceTests
     public DocumentFolderServiceTests()
     {
         _mockIVariablesService.Setup(x => x.GetVariable("DOCUMENTS_PATH")).Returns(new DomainVariableItem { Item = "" });
-        _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
-        _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
+        _mockIHybridDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
+        _mockIHybridDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
         _mockIClock.Setup(x => x.UtcNow()).Returns(_utcNow);
         _mockIHttpContextService.Setup(x => x.GetUserId()).Returns(_memberId);
 
         _subject = new DocumentFolderService(
-            _mockIDocumentPermissionsService.Object,
+            _mockIHybridDocumentPermissionsService.Object,
             _mockIDocumentMetadataContext.Object,
             _mockIFileContext.Object,
             _mockIVariablesService.Object,
@@ -94,7 +94,7 @@ public class DocumentFolderServiceTests
     public async Task When_creating_a_folder_without_permission()
     {
         Given_folder_metadata();
-        _mockIDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
+        _mockIHybridDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
 
         var act = async () => await _subject.CreateFolder(new CreateFolderRequest { Parent = "2", Name = "SOPs" });
 
@@ -116,19 +116,65 @@ public class DocumentFolderServiceTests
     private void Given_folder_metadata()
     {
         _mockIDocumentMetadataContext.Setup(x => x.Get())
-                                     .Returns(
-                                         new List<DomainDocumentFolderMetadata>
-                                         {
-                                             new() { Id = "1", Parent = ObjectId.Empty.ToString(), Name = "UKSF", FullPath = "UKSF" },
-                                             new() { Id = "2", Parent = "1", Name = "JSFAW", FullPath = "UKSF\\JSFAW" },
-                                             new() { Id = "3", Parent = "1", Name = "SFSG", FullPath = "UKSF\\SFSG" },
-                                             new() { Id = "4", Parent = "2", Name = "Training", FullPath = "UKSF\\JSFAW\\Training" },
-                                             new() { Id = "5", Parent = "3", Name = "Training", FullPath = "UKSF\\SFSG\\Training" }
-                                         }
-                                     );
+        .Returns(
+            new List<DomainDocumentFolderMetadata>
+            {
+                new()
+                {
+                    Id = "1",
+                    Parent = ObjectId.Empty.ToString(),
+                    Name = "UKSF",
+                    FullPath = "UKSF"
+                },
+                new()
+                {
+                    Id = "2",
+                    Parent = "1",
+                    Name = "JSFAW",
+                    FullPath = "UKSF\\JSFAW"
+                },
+                new()
+                {
+                    Id = "3",
+                    Parent = "1",
+                    Name = "SFSG",
+                    FullPath = "UKSF\\SFSG"
+                },
+                new()
+                {
+                    Id = "4",
+                    Parent = "2",
+                    Name = "Training",
+                    FullPath = "UKSF\\JSFAW\\Training"
+                },
+                new()
+                {
+                    Id = "5",
+                    Parent = "3",
+                    Name = "Training",
+                    FullPath = "UKSF\\SFSG\\Training"
+                }
+            }
+        );
         _mockIDocumentMetadataContext.Setup(x => x.GetSingle("2"))
-                                     .Returns(new DomainDocumentFolderMetadata { Id = "2", Parent = "1", Name = "JSFAW", FullPath = "UKSF\\JSFAW" });
+        .Returns(
+            new DomainDocumentFolderMetadata
+            {
+                Id = "2",
+                Parent = "1",
+                Name = "JSFAW",
+                FullPath = "UKSF\\JSFAW"
+            }
+        );
         _mockIDocumentMetadataContext.Setup(x => x.GetSingle("3"))
-                                     .Returns(new DomainDocumentFolderMetadata { Id = "3", Parent = "1", Name = "SFSG", FullPath = "UKSF\\SFSG" });
+        .Returns(
+            new DomainDocumentFolderMetadata
+            {
+                Id = "3",
+                Parent = "1",
+                Name = "SFSG",
+                FullPath = "UKSF\\SFSG"
+            }
+        );
     }
 }

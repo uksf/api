@@ -11,8 +11,16 @@ public class FolderMetadataResponse
     public DateTime Created { get; set; }
     public string Creator { get; set; }
 
+    // Legacy permissions (keep for backwards compatibility)
     public DocumentPermissions ReadPermissions { get; set; } = new();
     public DocumentPermissions WritePermissions { get; set; } = new();
+
+    // NEW: Role-based permissions
+    public string Owner { get; set; }
+    public RoleBasedDocumentPermissions RoleBasedPermissions { get; set; } = new();
+    public RoleBasedDocumentPermissions EffectivePermissions { get; set; } = new();
+    public RoleBasedDocumentPermissions InheritedPermissions { get; set; } = new();
+
     public IEnumerable<DocumentMetadataResponse> Documents { get; set; }
 
     public bool CanWrite { get; set; }
@@ -28,9 +36,15 @@ public class DocumentMetadataResponse
     public DateTime LastUpdated { get; set; }
     public string Creator { get; set; }
 
+    // Legacy permissions (keep for backwards compatibility)
     public DocumentPermissions ReadPermissions { get; set; } = new();
     public DocumentPermissions WritePermissions { get; set; } = new();
 
-    public bool CanRead { get; set; }
+    // NEW: Role-based permissions
+    public string Owner { get; set; }
+    public RoleBasedDocumentPermissions RoleBasedPermissions { get; set; } = new();
+    public RoleBasedDocumentPermissions EffectivePermissions { get; set; } = new();
+    public RoleBasedDocumentPermissions InheritedPermissions { get; set; } = new();
+
     public bool CanWrite { get; set; }
 }
