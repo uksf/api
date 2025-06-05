@@ -56,7 +56,7 @@ public class BuildQueueServiceTests
         await Task.Delay(300);
 
         // Act
-        _buildQueueService.CancelAll();
+        await _buildQueueService.CancelAll();
 
         // Assert - verify queue is cleared by checking we can't cancel the queued items
         _buildQueueService.CancelQueued("testId2").Should().BeFalse("the queue should be cleared");

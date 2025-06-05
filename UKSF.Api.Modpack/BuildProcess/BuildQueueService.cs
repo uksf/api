@@ -10,7 +10,7 @@ public interface IBuildQueueService
     void QueueBuild(DomainModpackBuild build);
     bool CancelQueued(string buildId);
     void CancelRunning(string buildId);
-    void CancelAll();
+    Task CancelAll();
 }
 
 public class BuildQueueService : IBuildQueueService
@@ -98,16 +98,14 @@ public class BuildQueueService : IBuildQueueService
         }
     }
 
-    public void CancelAll()
+    public async Task CancelAll()
     {
         _logger.LogInfo($"Cancelling {_queuedBuilds.Count} builds");
         _queuedBuilds.Clear();
 
         _logger.LogInfo($"Cancelling {_cancellationTokenSources.Count} build process tokens");
-        foreach (var (_, cancellationTokenSource) in _cancellationTokenSources)
-        {
-            cancellationTokenSource.Cancel();
-        }
+        var cancelTasks = _cancellationTokenSources.Select(cancellationTokenSource => cancellationTokenSource.Value.CancelAsync());
+        await Task.WhenAll(cancelTasks);
 
         _cancellationTokenSources.Clear();
     }

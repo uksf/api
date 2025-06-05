@@ -57,12 +57,12 @@ public static class StartServices
     public static void StopUksfServices(this IServiceProvider serviceProvider)
     {
         // Cancel any running builds in the queue
-        serviceProvider.GetRequiredService<IBuildQueueService>().CancelAll();
+        serviceProvider.GetRequiredService<IBuildQueueService>().CancelAll().GetAwaiter().GetResult();
 
         // Stop teamspeak
         serviceProvider.GetRequiredService<ITeamspeakManagerService>().Stop();
 
         // Stop discord
-        serviceProvider.GetRequiredService<IDiscordActivationService>().Deactivate().Wait(TimeSpan.FromSeconds(10));
+        serviceProvider.GetRequiredService<IDiscordActivationService>().Deactivate().Wait(TimeSpan.FromSeconds(5));
     }
 }
