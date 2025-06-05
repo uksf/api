@@ -93,10 +93,21 @@ public class DocumentFolderService(
             throw new FolderException($"Cannot edit folder '{folderMetadata.Name}'");
         }
 
-        // Update both legacy and new permission fields
+        // Calculate new full path
+        var allFolders = documentFolderMetadataContext.Get().ToList();
+        var newFullPath = ResolveFullFolderPath(allFolders, folderMetadata.Parent, newPermissions.Name);
+
+        // Check for name collision
+        if (allFolders.Any(x => x.Id != folderId && x.FullPath.EqualsIgnoreCase(newFullPath)))
+        {
+            throw new FolderException($"A folder already exists at path '{newFullPath}'");
+        }
+
+        // Update both legacy and new permission fields, including FullPath
         var updates = new List<UpdateDefinition<DomainDocumentFolderMetadata>>
         {
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Name, newPermissions.Name),
+            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.FullPath, newFullPath),
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.WritePermissions, newPermissions.WritePermissions),
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.ReadPermissions, newPermissions.ReadPermissions),
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Owner, newPermissions.Owner ?? folderMetadata.Owner),
@@ -106,7 +117,13 @@ public class DocumentFolderService(
         var combinedUpdate = Builders<DomainDocumentFolderMetadata>.Update.Combine(updates);
         await documentFolderMetadataContext.Update(folderId, combinedUpdate);
 
-        logger.LogAudit($"Updated folder for {folderMetadata.FullPath}");
+        // If the folder name/path changed, update all child folders and documents
+        if (!folderMetadata.FullPath.EqualsIgnoreCase(newFullPath))
+        {
+            await UpdateChildFolderPaths(folderId, folderMetadata.FullPath, newFullPath);
+        }
+
+        logger.LogAudit($"Updated folder for {newFullPath}");
         folderMetadata = ValidateAndGetFolder(folderId);
         return MapFolder(folderMetadata);
     }
@@ -124,6 +141,49 @@ public class DocumentFolderService(
         await DeleteFolder(folderMetadata);
 
         logger.LogAudit($"Deleted folder at {folderMetadata.FullPath}");
+    }
+
+    private async Task UpdateChildFolderPaths(string parentFolderId, string oldParentPath, string newParentPath)
+    {
+        // Get all child folders of this parent
+        var childFolders = documentFolderMetadataContext.Get(x => x.Parent == parentFolderId).ToList();
+
+        if (childFolders.Count == 0)
+        {
+            return; // No child folders to update
+        }
+
+        var updateTasks = new List<Task>();
+
+        foreach (var childFolder in childFolders)
+        {
+            // Calculate new path for this child folder
+            var newChildPath = childFolder.FullPath.Replace(oldParentPath, newParentPath);
+
+            // Add folder update task
+            updateTasks.Add(
+                documentFolderMetadataContext.Update(childFolder.Id, Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.FullPath, newChildPath))
+            );
+
+            // Add document update tasks for this folder
+            foreach (var document in childFolder.Documents)
+            {
+                var newDocumentPath = document.FullPath.Replace(oldParentPath, newParentPath);
+                updateTasks.Add(
+                    documentFolderMetadataContext.FindAndUpdate(
+                        x => x.Id == childFolder.Id && x.Documents.Any(d => d.Id == document.Id),
+                        Builders<DomainDocumentFolderMetadata>.Update.Set("Documents.$.FullPath", newDocumentPath)
+                    )
+                );
+            }
+        }
+
+        // Execute all updates in parallel
+        await Task.WhenAll(updateTasks);
+
+        // Recursively update child folders (done after current level is complete)
+        var recursiveTasks = childFolders.Select(childFolder => UpdateChildFolderPaths(childFolder.Id, oldParentPath, newParentPath));
+        await Task.WhenAll(recursiveTasks);
     }
 
     private static string ResolveFullFolderPath(IEnumerable<DomainDocumentFolderMetadata> allFolders, string parent, string name)

@@ -48,6 +48,9 @@ public class PermissionRole
     [BsonRepresentation(BsonType.ObjectId)]
     public List<string> Units { get; set; } = new();
 
+    [BsonRepresentation(BsonType.ObjectId)]
+    public List<string> Users { get; set; } = new();
+
     public string Rank { get; set; } = string.Empty;
     public bool ExpandToSubUnits { get; set; } = true;
 }

@@ -162,16 +162,23 @@ public class RoleBasedDocumentPermissionsService(
 
     private bool HasRolePermission(PermissionRole role, string memberId, bool isCollaboratorRole)
     {
-        if (role == null || (!role.Units.Any() && string.IsNullOrEmpty(role.Rank)))
+        if (role == null || (role.Units.Count == 0 && string.IsNullOrEmpty(role.Rank) && role.Users.Count == 0))
         {
             return false;
         }
 
+        // Check if user is explicitly listed - immediate access
+        if (role.Users.Contains(memberId))
+        {
+            return true;
+        }
+
+        // If not in Users list, check (Units AND Rank) logic
         var hasUnitPermission = true;
         var hasRankPermission = true;
 
         // Check unit permission if units are specified
-        if (role.Units.Any())
+        if (role.Units.Count > 0)
         {
             if (role.ExpandToSubUnits)
             {
@@ -197,13 +204,13 @@ public class RoleBasedDocumentPermissionsService(
             hasRankPermission = ranksService.IsSuperiorOrEqual(memberRank, role.Rank);
         }
 
-        // Both conditions must be met if both are specified
+        // Both unit and rank conditions must be met if both are specified
         return hasUnitPermission && hasRankPermission;
     }
 
     private static bool HasPermissionRoleData(PermissionRole role)
     {
-        return role != null && (role.Units.Any() || !string.IsNullOrEmpty(role.Rank));
+        return role != null && (role.Units.Count > 0 || !string.IsNullOrEmpty(role.Rank) || role.Users.Count > 0);
     }
 
     private static PermissionRole ClonePermissionRole(PermissionRole role)
@@ -216,6 +223,7 @@ public class RoleBasedDocumentPermissionsService(
         return new PermissionRole
         {
             Units = [..role.Units],
+            Users = [..role.Users],
             Rank = role.Rank ?? string.Empty,
             ExpandToSubUnits = role.ExpandToSubUnits
         };

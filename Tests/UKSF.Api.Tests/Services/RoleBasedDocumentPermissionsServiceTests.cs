@@ -670,6 +670,216 @@ public class RoleBasedDocumentPermissionsServiceTests
         result.Collaborators.Rank.Should().Be("Lieutenant");
     }
 
+    [Fact]
+    public void DoesContextHaveReadPermission_WhenUserIsInUsersList_ShouldReturnTrue()
+    {
+        var metadata = new DomainDocumentMetadata
+        {
+            RoleBasedPermissions = new RoleBasedDocumentPermissions { Viewers = new PermissionRole { Users = [_memberId] } }
+        };
+
+        var result = _subject.DoesContextHaveReadPermission(metadata);
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void DoesContextHaveWritePermission_WhenUserIsInCollaboratorUsersList_ShouldReturnTrue()
+    {
+        var metadata = new DomainDocumentMetadata
+        {
+            RoleBasedPermissions = new RoleBasedDocumentPermissions { Collaborators = new PermissionRole { Users = [_memberId] } }
+        };
+
+        var result = _subject.DoesContextHaveWritePermission(metadata);
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void DoesContextHaveReadPermission_WhenUserIsInUsersListButLacksUnitAndRank_ShouldReturnTrue()
+    {
+        GivenUserIsNotInAnyUnit();
+        GivenUserLacksRankPermission();
+        var metadata = new DomainDocumentMetadata
+        {
+            RoleBasedPermissions = new RoleBasedDocumentPermissions
+            {
+                Viewers = new PermissionRole
+                {
+                    Users = [_memberId],
+                    Units = [_unitId],
+                    Rank = "requiredRank"
+                }
+            }
+        };
+
+        var result = _subject.DoesContextHaveReadPermission(metadata);
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void DoesContextHaveReadPermission_WhenUserNotInUsersListButHasUnitAndRank_ShouldReturnTrue()
+    {
+        var otherUserId = ObjectId.GenerateNewId().ToString();
+        GivenUserIsInChildUnit();
+        GivenUserHasRankPermission();
+        var metadata = new DomainDocumentMetadata
+        {
+            RoleBasedPermissions = new RoleBasedDocumentPermissions
+            {
+                Viewers = new PermissionRole
+                {
+                    Users = [otherUserId], // Different user
+                    Units = [_unitId],
+                    Rank = "requiredRank"
+                }
+            }
+        };
+
+        var result = _subject.DoesContextHaveReadPermission(metadata);
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void DoesContextHaveReadPermission_WhenUserNotInUsersListAndLacksUnitButHasRank_ShouldReturnFalse()
+    {
+        var otherUserId = ObjectId.GenerateNewId().ToString();
+        GivenUserIsNotInAnyUnit();
+        GivenUserHasRankPermission();
+        var metadata = new DomainDocumentMetadata
+        {
+            RoleBasedPermissions = new RoleBasedDocumentPermissions
+            {
+                Viewers = new PermissionRole
+                {
+                    Users = [otherUserId], // Different user
+                    Units = [_unitId],
+                    Rank = "requiredRank"
+                }
+            }
+        };
+
+        var result = _subject.DoesContextHaveReadPermission(metadata);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void DoesContextHaveReadPermission_WhenUserNotInUsersListAndHasUnitButLacksRank_ShouldReturnFalse()
+    {
+        var otherUserId = ObjectId.GenerateNewId().ToString();
+        GivenUserIsInChildUnit();
+        GivenUserLacksRankPermission();
+        var metadata = new DomainDocumentMetadata
+        {
+            RoleBasedPermissions = new RoleBasedDocumentPermissions
+            {
+                Viewers = new PermissionRole
+                {
+                    Users = [otherUserId], // Different user
+                    Units = [_unitId],
+                    Rank = "requiredRank"
+                }
+            }
+        };
+
+        var result = _subject.DoesContextHaveReadPermission(metadata);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void DoesContextHaveReadPermission_WhenOnlyUsersListSpecified_ShouldWorkCorrectly()
+    {
+        var metadata = new DomainDocumentMetadata
+        {
+            RoleBasedPermissions = new RoleBasedDocumentPermissions { Viewers = new PermissionRole { Users = [_memberId] } }
+        };
+
+        var result = _subject.DoesContextHaveReadPermission(metadata);
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void GetEffectivePermissions_WithInheritedUserPermissions_ShouldInheritUsersCorrectly()
+    {
+        var otherUserId = ObjectId.GenerateNewId().ToString();
+        var parentFolder = new DomainDocumentFolderMetadata
+        {
+            Id = "parent",
+            RoleBasedPermissions = new RoleBasedDocumentPermissions
+            {
+                Viewers = new PermissionRole
+                {
+                    Users = [_memberId],
+                    Units = [_parentUnitId],
+                    Rank = "parentRank"
+                },
+                Collaborators = new PermissionRole { Users = [otherUserId], Units = [_parentUnitId] }
+            }
+        };
+
+        var childFolder = new DomainDocumentFolderMetadata
+        {
+            Id = "child",
+            Parent = "parent",
+            RoleBasedPermissions = new RoleBasedDocumentPermissions
+            {
+                Viewers = new PermissionRole { Units = [_childUnitId] } // Completely replaces inherited Viewers role
+            }
+        };
+
+        _mockDocumentFolderMetadataContext.Setup(x => x.GetSingle("parent")).Returns(parentFolder);
+
+        var result = _subject.GetEffectivePermissions(childFolder);
+
+        result.Viewers.Units.Should().BeEquivalentTo([_childUnitId]); // Completely replaced
+        result.Viewers.Users.Should().BeEmpty(); // Completely replaced (child has no users)
+        result.Viewers.Rank.Should().Be(""); // Completely replaced (child has no rank)
+        result.Collaborators.Units.Should().BeEquivalentTo([_parentUnitId]); // Inherited
+        result.Collaborators.Users.Should().BeEquivalentTo([otherUserId]); // Inherited
+        result.Collaborators.Rank.Should().Be(""); // Inherited
+    }
+
+    [Fact]
+    public void ClonePermissionRole_WithUsers_ShouldCloneUsersCorrectly()
+    {
+        var otherUserId = ObjectId.GenerateNewId().ToString();
+        var originalRole = new PermissionRole
+        {
+            Units = [_unitId],
+            Users = [_memberId, otherUserId],
+            Rank = "TestRank",
+            ExpandToSubUnits = false
+        };
+
+        var clonedRole = CallClonePermissionRole(originalRole);
+
+        clonedRole.Should().NotBeSameAs(originalRole);
+        clonedRole.Units.Should().BeEquivalentTo(originalRole.Units);
+        clonedRole.Users.Should().BeEquivalentTo(originalRole.Users);
+        clonedRole.Rank.Should().Be(originalRole.Rank);
+        clonedRole.ExpandToSubUnits.Should().Be(originalRole.ExpandToSubUnits);
+
+        // Verify deep cloning
+        clonedRole.Users.Should().NotBeSameAs(originalRole.Users);
+        clonedRole.Units.Should().NotBeSameAs(originalRole.Units);
+    }
+
+    // Helper method to access private ClonePermissionRole method
+    private static PermissionRole CallClonePermissionRole(PermissionRole role)
+    {
+        var method = typeof(RoleBasedDocumentPermissionsService).GetMethod(
+            "ClonePermissionRole",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static
+        );
+        return (PermissionRole)method.Invoke(null, [role]);
+    }
+
     private void GivenUserIsInChildUnit()
     {
         _mockIUnitsService.Setup(x => x.AnyChildHasMember(_unitId, _memberId)).Returns(true);

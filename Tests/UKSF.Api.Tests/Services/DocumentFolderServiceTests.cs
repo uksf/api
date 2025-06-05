@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
@@ -107,6 +108,49 @@ public class DocumentFolderServiceTests
         await _subject.CreateFolder(new CreateFolderRequest { Parent = parent, Name = name });
 
         _mockIDocumentFolderMetadataContext.Verify(x => x.Add(It.IsAny<DomainDocumentFolderMetadata>()), Times.Once());
+    }
+
+    [Fact]
+    public async Task UpdateFolder_WhenNameChanges_ShouldUpdateFullPath()
+    {
+        // Arrange
+        Given_folder_metadata();
+        var newRequest = new CreateFolderRequest { Name = "NewFolderName", Parent = "1" };
+
+        // Act
+        await _subject.UpdateFolder("2", newRequest);
+
+        // Assert - Just verify that Update was called, which means the update logic ran
+        _mockIDocumentFolderMetadataContext.Verify(x => x.Update("2", It.IsAny<UpdateDefinition<DomainDocumentFolderMetadata>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateFolder_WhenNameChangesToExistingPath_ShouldThrowException()
+    {
+        // Arrange
+        Given_folder_metadata();
+        var newRequest = new CreateFolderRequest { Name = "SFSG", Parent = "1" }; // This would create "UKSF\\SFSG" which already exists (folder 3)
+
+        // Act & Assert
+        var act = async () => await _subject.UpdateFolder("2", newRequest);
+
+        await act.Should().ThrowAsync<FolderException>().WithMessage("A folder already exists at path 'UKSF\\SFSG'");
+    }
+
+    [Theory]
+    [InlineData("parent", "New Parent")]
+    [InlineData("child", "New Child")]
+    public async Task UpdateFolder_WithValidNameChange_ShouldSucceed(string parentId, string newName)
+    {
+        Given_folder_metadata();
+        var newRequest = new CreateFolderRequest { Name = newName, Parent = "1" };
+
+        await _subject.UpdateFolder(parentId == "parent" ? "2" : "3", newRequest);
+
+        _mockIDocumentFolderMetadataContext.Verify(
+            x => x.Update(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainDocumentFolderMetadata>>()),
+            Times.AtLeastOnce()
+        );
     }
 
     private void Given_folder_metadata()

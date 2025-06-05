@@ -95,10 +95,20 @@ public class DocumentService(
             throw new DocumentException($"Cannot edit document '{folderMetadata.Name}/{documentMetadata.Name}'");
         }
 
-        // Update both legacy and new permission fields
+        // Calculate new full path
+        var newFullPath = Path.Combine(folderMetadata.FullPath, newPermissions.Name);
+
+        // Check for name collision
+        if (folderMetadata.Documents.Any(x => x.Id != documentId && x.Name.EqualsIgnoreCase(newPermissions.Name)))
+        {
+            throw new DocumentException($"A document already exists at path '{newFullPath}'");
+        }
+
+        // Update both legacy and new permission fields, including FullPath
         var updates = new List<UpdateDefinition<DomainDocumentFolderMetadata>>
         {
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Documents.FirstMatchingElement().Name, newPermissions.Name),
+            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Documents.FirstMatchingElement().FullPath, newFullPath),
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Documents.FirstMatchingElement().WritePermissions, newPermissions.WritePermissions),
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Documents.FirstMatchingElement().ReadPermissions, newPermissions.ReadPermissions),
             Builders<DomainDocumentFolderMetadata>.Update.Set(
@@ -114,7 +124,7 @@ public class DocumentService(
         var combinedUpdate = Builders<DomainDocumentFolderMetadata>.Update.Combine(updates);
         await documentFolderMetadataContext.FindAndUpdate(x => x.Id == folderId && x.Documents.Any(y => y.Id == documentId), combinedUpdate);
 
-        logger.LogAudit($"Updated document for {documentMetadata.FullPath}");
+        logger.LogAudit($"Updated document for {newFullPath}");
         documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
         return MapDocument(documentMetadata);
     }
