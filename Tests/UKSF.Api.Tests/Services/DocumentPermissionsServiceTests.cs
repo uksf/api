@@ -10,7 +10,7 @@ using Xunit;
 
 namespace UKSF.Api.Tests.Services;
 
-public class RoleBasedDocumentPermissionsServiceTests
+public class DocumentPermissionsServiceTests
 {
     private readonly string _memberId = ObjectId.GenerateNewId().ToString();
     private readonly Mock<IAccountService> _mockIAccountService = new();
@@ -18,18 +18,18 @@ public class RoleBasedDocumentPermissionsServiceTests
     private readonly Mock<IRanksService> _mockIRanksService = new();
     private readonly Mock<IUnitsService> _mockIUnitsService = new();
     private readonly Mock<IDocumentFolderMetadataContext> _mockDocumentFolderMetadataContext = new();
-    private readonly RoleBasedDocumentPermissionsService _subject;
+    private readonly DocumentPermissionsService _subject;
     private readonly string _unitId = ObjectId.GenerateNewId().ToString();
     private readonly string _parentUnitId = ObjectId.GenerateNewId().ToString();
     private readonly string _childUnitId = ObjectId.GenerateNewId().ToString();
 
-    public RoleBasedDocumentPermissionsServiceTests()
+    public DocumentPermissionsServiceTests()
     {
         _mockIHttpContextService.Setup(x => x.GetUserId()).Returns(_memberId);
         _mockIHttpContextService.Setup(x => x.UserHasPermission(Permissions.Superadmin)).Returns(false);
         _mockIAccountService.Setup(x => x.GetUserAccount()).Returns(new DomainAccount { Rank = "userRank" });
 
-        _subject = new RoleBasedDocumentPermissionsService(
+        _subject = new DocumentPermissionsService(
             _mockIHttpContextService.Object,
             _mockIUnitsService.Object,
             _mockIRanksService.Object,
@@ -43,7 +43,7 @@ public class RoleBasedDocumentPermissionsServiceTests
     {
         var metadata = new DomainDocumentMetadata { Owner = _memberId };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeTrue();
     }
@@ -53,7 +53,7 @@ public class RoleBasedDocumentPermissionsServiceTests
     {
         var metadata = new DomainDocumentMetadata { Owner = _memberId };
 
-        var result = _subject.DoesContextHaveWritePermission(metadata);
+        var result = _subject.CanContextCollaborate(metadata);
 
         result.Should().BeTrue();
     }
@@ -64,7 +64,7 @@ public class RoleBasedDocumentPermissionsServiceTests
         _mockIHttpContextService.Setup(x => x.UserHasPermission(Permissions.Superadmin)).Returns(true);
         var metadata = new DomainDocumentMetadata();
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeTrue();
     }
@@ -75,7 +75,7 @@ public class RoleBasedDocumentPermissionsServiceTests
         _mockIHttpContextService.Setup(x => x.UserHasPermission(Permissions.Superadmin)).Returns(true);
         var metadata = new DomainDocumentMetadata();
 
-        var result = _subject.DoesContextHaveWritePermission(metadata);
+        var result = _subject.CanContextCollaborate(metadata);
 
         result.Should().BeTrue();
     }
@@ -90,7 +90,7 @@ public class RoleBasedDocumentPermissionsServiceTests
             RoleBasedPermissions = new RoleBasedDocumentPermissions { Viewers = new PermissionRole { Units = [_unitId], Rank = "requiredRank" } }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeTrue();
     }
@@ -105,7 +105,7 @@ public class RoleBasedDocumentPermissionsServiceTests
             RoleBasedPermissions = new RoleBasedDocumentPermissions { Collaborators = new PermissionRole { Units = [_unitId], Rank = "requiredRank" } }
         };
 
-        var result = _subject.DoesContextHaveWritePermission(metadata);
+        var result = _subject.CanContextCollaborate(metadata);
 
         result.Should().BeTrue();
     }
@@ -120,7 +120,7 @@ public class RoleBasedDocumentPermissionsServiceTests
             RoleBasedPermissions = new RoleBasedDocumentPermissions { Collaborators = new PermissionRole { Units = [_unitId], Rank = "requiredRank" } }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeTrue();
     }
@@ -135,7 +135,7 @@ public class RoleBasedDocumentPermissionsServiceTests
             RoleBasedPermissions = new RoleBasedDocumentPermissions { Viewers = new PermissionRole { Units = [_unitId], Rank = "requiredRank" } }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeFalse();
     }
@@ -150,7 +150,7 @@ public class RoleBasedDocumentPermissionsServiceTests
             RoleBasedPermissions = new RoleBasedDocumentPermissions { Viewers = new PermissionRole { Units = [_unitId], Rank = "requiredRank" } }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeFalse();
     }
@@ -172,7 +172,7 @@ public class RoleBasedDocumentPermissionsServiceTests
             RoleBasedPermissions = new RoleBasedDocumentPermissions { Viewers = new PermissionRole { Units = [_unitId], Rank = "requiredRank" } }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().Be(expectedResult);
     }
@@ -186,7 +186,7 @@ public class RoleBasedDocumentPermissionsServiceTests
             RoleBasedPermissions = new RoleBasedDocumentPermissions { Viewers = new PermissionRole { Rank = "requiredRank" } }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeTrue();
     }
@@ -200,7 +200,7 @@ public class RoleBasedDocumentPermissionsServiceTests
             RoleBasedPermissions = new RoleBasedDocumentPermissions { Viewers = new PermissionRole { Units = [_unitId] } }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeTrue();
     }
@@ -402,7 +402,7 @@ public class RoleBasedDocumentPermissionsServiceTests
         };
 
         // Act
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         // Assert
         result.Should().Be(expectedResult);
@@ -440,7 +440,7 @@ public class RoleBasedDocumentPermissionsServiceTests
         };
 
         // Act
-        var result = _subject.DoesContextHaveWritePermission(metadata);
+        var result = _subject.CanContextCollaborate(metadata);
 
         // Assert
         result.Should().Be(expectedResult);
@@ -468,7 +468,7 @@ public class RoleBasedDocumentPermissionsServiceTests
         };
 
         // Act
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         // Assert
         result.Should().BeTrue();
@@ -499,7 +499,7 @@ public class RoleBasedDocumentPermissionsServiceTests
         };
 
         // Act
-        var result = _subject.DoesContextHaveWritePermission(metadata);
+        var result = _subject.CanContextCollaborate(metadata);
 
         // Assert
         result.Should().BeTrue();
@@ -675,10 +675,10 @@ public class RoleBasedDocumentPermissionsServiceTests
     {
         var metadata = new DomainDocumentMetadata
         {
-            RoleBasedPermissions = new RoleBasedDocumentPermissions { Viewers = new PermissionRole { Users = [_memberId] } }
+            RoleBasedPermissions = new RoleBasedDocumentPermissions { Viewers = new PermissionRole { Members = [_memberId] } }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeTrue();
     }
@@ -688,10 +688,10 @@ public class RoleBasedDocumentPermissionsServiceTests
     {
         var metadata = new DomainDocumentMetadata
         {
-            RoleBasedPermissions = new RoleBasedDocumentPermissions { Collaborators = new PermissionRole { Users = [_memberId] } }
+            RoleBasedPermissions = new RoleBasedDocumentPermissions { Collaborators = new PermissionRole { Members = [_memberId] } }
         };
 
-        var result = _subject.DoesContextHaveWritePermission(metadata);
+        var result = _subject.CanContextCollaborate(metadata);
 
         result.Should().BeTrue();
     }
@@ -707,14 +707,14 @@ public class RoleBasedDocumentPermissionsServiceTests
             {
                 Viewers = new PermissionRole
                 {
-                    Users = [_memberId],
+                    Members = [_memberId],
                     Units = [_unitId],
                     Rank = "requiredRank"
                 }
             }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeTrue();
     }
@@ -731,14 +731,14 @@ public class RoleBasedDocumentPermissionsServiceTests
             {
                 Viewers = new PermissionRole
                 {
-                    Users = [otherUserId], // Different user
+                    Members = [otherUserId], // Different user
                     Units = [_unitId],
                     Rank = "requiredRank"
                 }
             }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeTrue();
     }
@@ -755,14 +755,14 @@ public class RoleBasedDocumentPermissionsServiceTests
             {
                 Viewers = new PermissionRole
                 {
-                    Users = [otherUserId], // Different user
+                    Members = [otherUserId], // Different user
                     Units = [_unitId],
                     Rank = "requiredRank"
                 }
             }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeFalse();
     }
@@ -779,14 +779,14 @@ public class RoleBasedDocumentPermissionsServiceTests
             {
                 Viewers = new PermissionRole
                 {
-                    Users = [otherUserId], // Different user
+                    Members = [otherUserId], // Different user
                     Units = [_unitId],
                     Rank = "requiredRank"
                 }
             }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeFalse();
     }
@@ -796,10 +796,10 @@ public class RoleBasedDocumentPermissionsServiceTests
     {
         var metadata = new DomainDocumentMetadata
         {
-            RoleBasedPermissions = new RoleBasedDocumentPermissions { Viewers = new PermissionRole { Users = [_memberId] } }
+            RoleBasedPermissions = new RoleBasedDocumentPermissions { Viewers = new PermissionRole { Members = [_memberId] } }
         };
 
-        var result = _subject.DoesContextHaveReadPermission(metadata);
+        var result = _subject.CanContextView(metadata);
 
         result.Should().BeTrue();
     }
@@ -815,11 +815,11 @@ public class RoleBasedDocumentPermissionsServiceTests
             {
                 Viewers = new PermissionRole
                 {
-                    Users = [_memberId],
+                    Members = [_memberId],
                     Units = [_parentUnitId],
                     Rank = "parentRank"
                 },
-                Collaborators = new PermissionRole { Users = [otherUserId], Units = [_parentUnitId] }
+                Collaborators = new PermissionRole { Members = [otherUserId], Units = [_parentUnitId] }
             }
         };
 
@@ -838,10 +838,10 @@ public class RoleBasedDocumentPermissionsServiceTests
         var result = _subject.GetEffectivePermissions(childFolder);
 
         result.Viewers.Units.Should().BeEquivalentTo([_childUnitId]); // Completely replaced
-        result.Viewers.Users.Should().BeEmpty(); // Completely replaced (child has no users)
+        result.Viewers.Members.Should().BeEmpty(); // Completely replaced (child has no members)
         result.Viewers.Rank.Should().Be(""); // Completely replaced (child has no rank)
         result.Collaborators.Units.Should().BeEquivalentTo([_parentUnitId]); // Inherited
-        result.Collaborators.Users.Should().BeEquivalentTo([otherUserId]); // Inherited
+        result.Collaborators.Members.Should().BeEquivalentTo([otherUserId]); // Inherited
         result.Collaborators.Rank.Should().Be(""); // Inherited
     }
 
@@ -852,7 +852,7 @@ public class RoleBasedDocumentPermissionsServiceTests
         var originalRole = new PermissionRole
         {
             Units = [_unitId],
-            Users = [_memberId, otherUserId],
+            Members = [_memberId, otherUserId],
             Rank = "TestRank",
             ExpandToSubUnits = false
         };
@@ -861,19 +861,19 @@ public class RoleBasedDocumentPermissionsServiceTests
 
         clonedRole.Should().NotBeSameAs(originalRole);
         clonedRole.Units.Should().BeEquivalentTo(originalRole.Units);
-        clonedRole.Users.Should().BeEquivalentTo(originalRole.Users);
+        clonedRole.Members.Should().BeEquivalentTo(originalRole.Members);
         clonedRole.Rank.Should().Be(originalRole.Rank);
         clonedRole.ExpandToSubUnits.Should().Be(originalRole.ExpandToSubUnits);
 
         // Verify deep cloning
-        clonedRole.Users.Should().NotBeSameAs(originalRole.Users);
+        clonedRole.Members.Should().NotBeSameAs(originalRole.Members);
         clonedRole.Units.Should().NotBeSameAs(originalRole.Units);
     }
 
     // Helper method to access private ClonePermissionRole method
     private static PermissionRole CallClonePermissionRole(PermissionRole role)
     {
-        var method = typeof(RoleBasedDocumentPermissionsService).GetMethod(
+        var method = typeof(DocumentPermissionsService).GetMethod(
             "ClonePermissionRole",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static
         );

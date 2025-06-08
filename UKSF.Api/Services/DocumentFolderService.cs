@@ -23,7 +23,7 @@ public interface IDocumentFolderService
 public class DocumentFolderService(
     IDocumentFolderMetadataContext documentFolderMetadataContext,
     IHttpContextService httpContextService,
-    IRoleBasedDocumentPermissionsService roleBasedDocumentPermissionsService,
+    IDocumentPermissionsService documentPermissionsService,
     IFileContext fileContext,
     IVariablesService variablesService,
     IClock clock,
@@ -32,13 +32,16 @@ public class DocumentFolderService(
 {
     public List<FolderMetadataResponse> GetAllFolders()
     {
-        return documentFolderMetadataContext.Get(roleBasedDocumentPermissionsService.DoesContextHaveReadPermission).Select(MapFolder).ToList();
+        // Get all folders that the user can read - this is already using the cached permissions service
+        var accessibleFolders = documentFolderMetadataContext.Get(documentPermissionsService.CanContextView).ToList();
+
+        // Batch process all folders with optimized mapping
+        return accessibleFolders.Select(MapFolder).ToList();
     }
 
     public Task<FolderMetadataResponse> GetFolder(string folderId)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-
         return Task.FromResult(MapFolder(folderMetadata));
     }
 
@@ -47,7 +50,7 @@ public class DocumentFolderService(
         if (createFolder.Parent != ObjectId.Empty.ToString())
         {
             var parentFolderMetadata = ValidateAndGetFolder(createFolder.Parent);
-            if (!roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(parentFolderMetadata))
+            if (!documentPermissionsService.CanContextCollaborate(parentFolderMetadata))
             {
                 throw new FolderException("Cannot create folder");
             }
@@ -69,7 +72,7 @@ public class DocumentFolderService(
             RoleBasedPermissions = createFolder.RoleBasedPermissions
         };
 
-        if (!roleBasedDocumentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
+        if (!documentPermissionsService.CanContextView(folderMetadata))
         {
             throw new FolderException("Cannot create folder you won't be able to view");
         }
@@ -88,7 +91,7 @@ public class DocumentFolderService(
     public async Task<FolderMetadataResponse> UpdateFolder(string folderId, CreateFolderRequest newPermissions)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
+        if (!documentPermissionsService.CanContextCollaborate(folderMetadata))
         {
             throw new FolderException($"Cannot edit folder '{folderMetadata.Name}'");
         }
@@ -131,7 +134,7 @@ public class DocumentFolderService(
     public async Task DeleteFolder(string folderId)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata))
+        if (!documentPermissionsService.CanContextCollaborate(folderMetadata))
         {
             throw new FolderException($"Cannot delete folder '{folderMetadata.Name}'");
         }
@@ -200,7 +203,7 @@ public class DocumentFolderService(
             throw new FolderNotFoundException($"Folder with ID '{folderId}' not found");
         }
 
-        if (!roleBasedDocumentPermissionsService.DoesContextHaveReadPermission(folderMetadata))
+        if (!documentPermissionsService.CanContextView(folderMetadata))
         {
             throw new FolderException($"Cannot view folder '{folderMetadata.Name}'");
         }
@@ -231,8 +234,17 @@ public class DocumentFolderService(
 
     private FolderMetadataResponse MapFolder(DomainDocumentFolderMetadata folderMetadata)
     {
-        var effectivePermissions = roleBasedDocumentPermissionsService.GetEffectivePermissions(folderMetadata);
-        var inheritedPermissions = roleBasedDocumentPermissionsService.GetInheritedPermissions(folderMetadata);
+        var effectivePermissions = documentPermissionsService.GetEffectivePermissions(folderMetadata);
+        var inheritedPermissions = documentPermissionsService.GetInheritedPermissions(folderMetadata);
+        var canWrite = documentPermissionsService.CanContextCollaborate(folderMetadata);
+
+        var documentsInheritedPermissions = folderMetadata.Documents.Count > 0
+            ? documentPermissionsService.GetInheritedPermissionsFromHierarchy(folderMetadata.Id)
+            : null;
+
+        var accessibleDocuments = folderMetadata.Documents.Where(documentPermissionsService.CanContextView)
+                                                .Select(doc => MapDocument(doc, documentsInheritedPermissions))
+                                                .ToList();
 
         return new FolderMetadataResponse
         {
@@ -250,15 +262,15 @@ public class DocumentFolderService(
             RoleBasedPermissions = folderMetadata.RoleBasedPermissions,
             EffectivePermissions = effectivePermissions,
             InheritedPermissions = inheritedPermissions,
-            Documents = folderMetadata.Documents.Where(roleBasedDocumentPermissionsService.DoesContextHaveReadPermission).Select(MapDocument),
-            CanWrite = roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(folderMetadata)
+            Documents = accessibleDocuments,
+            CanWrite = canWrite
         };
     }
 
-    private DocumentMetadataResponse MapDocument(DomainDocumentMetadata documentMetadata)
+    private DocumentMetadataResponse MapDocument(DomainDocumentMetadata documentMetadata, RoleBasedDocumentPermissions sharedInheritedPermissions)
     {
-        var effectivePermissions = roleBasedDocumentPermissionsService.GetEffectivePermissions(documentMetadata);
-        var inheritedPermissions = roleBasedDocumentPermissionsService.GetInheritedPermissions(documentMetadata);
+        var effectivePermissions = documentPermissionsService.GetEffectivePermissions(documentMetadata);
+        var canWrite = documentPermissionsService.CanContextCollaborate(documentMetadata);
 
         return new DocumentMetadataResponse
         {
@@ -276,8 +288,8 @@ public class DocumentFolderService(
             Owner = documentMetadata.Owner,
             RoleBasedPermissions = documentMetadata.RoleBasedPermissions,
             EffectivePermissions = effectivePermissions,
-            InheritedPermissions = inheritedPermissions,
-            CanWrite = roleBasedDocumentPermissionsService.DoesContextHaveWritePermission(documentMetadata)
+            InheritedPermissions = sharedInheritedPermissions,
+            CanWrite = canWrite
         };
     }
 }

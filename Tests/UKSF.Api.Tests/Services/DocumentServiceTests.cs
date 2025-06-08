@@ -24,7 +24,7 @@ public class DocumentServiceTests
     private readonly Mock<IDocumentFolderMetadataContext> _mockIDocumentMetadataContext = new();
     private readonly Mock<IFileContext> _mockIFileContext = new();
     private readonly Mock<IHttpContextService> _mockIHttpContextService = new();
-    private readonly Mock<IRoleBasedDocumentPermissionsService> _mockIRoleBasedDocumentPermissionsService = new();
+    private readonly Mock<IDocumentPermissionsService> _mockIDocumentPermissionsService = new();
     private readonly Mock<IUksfLogger> _mockIUksfLogger = new();
     private readonly Mock<IVariablesService> _mockIVariablesService = new();
 
@@ -35,15 +35,15 @@ public class DocumentServiceTests
     public DocumentServiceTests()
     {
         _mockIVariablesService.Setup(x => x.GetVariable("DOCUMENTS_PATH")).Returns(new DomainVariableItem { Item = "" });
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
         _mockIClock.Setup(x => x.UtcNow()).Returns(_utcNow);
         _mockIHttpContextService.Setup(x => x.GetUserId()).Returns(_memberId);
 
         _subject = new DocumentService(
             _mockIDocumentMetadataContext.Object,
             _mockIHttpContextService.Object,
-            _mockIRoleBasedDocumentPermissionsService.Object,
+            _mockIDocumentPermissionsService.Object,
             _mockIVariablesService.Object,
             _mockIFileContext.Object,
             _mockIClock.Object,
@@ -75,7 +75,7 @@ public class DocumentServiceTests
     public async Task When_creating_a_document_without_permission()
     {
         Given_folder_metadata();
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
 
         var act = async () => await _subject.CreateDocument("2", new CreateDocumentRequest { Name = "Training2.json" });
 
@@ -152,11 +152,22 @@ public class DocumentServiceTests
     public async Task When_creating_a_document_at_folder_without_permission_throws_exception()
     {
         Given_folder_metadata();
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
 
         var act = async () => await _subject.CreateDocument("2", new CreateDocumentRequest { Name = "Training2.json" });
 
         await act.Should().ThrowAsync<FolderException>().WithMessageAndStatusCode("Cannot create documents in this folder", 400);
+    }
+
+    [Fact]
+    public async Task When_updating_a_document_without_permission()
+    {
+        Given_folder_metadata();
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
+
+        var act = async () => await _subject.UpdateDocument("2", "1", new CreateDocumentRequest { Name = "Updated Document" });
+
+        await act.Should().ThrowAsync<FolderException>().WithMessage("Cannot edit documents in this folder 'JSFAW'");
     }
 
     private void Given_folder_metadata()

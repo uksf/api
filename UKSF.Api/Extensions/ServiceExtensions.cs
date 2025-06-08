@@ -70,9 +70,9 @@ public static class ServiceExtensions
                        .AddSingleton<ILoginService, LoginService>()
                        .AddSingleton<IPermissionsService, PermissionsService>()
                        .AddSingleton<ICommentThreadService, CommentThreadService>()
-                       .AddSingleton<IDocumentFolderService, DocumentFolderService>()
-                       .AddSingleton<IDocumentService, DocumentService>()
-                       .AddSingleton<IRoleBasedDocumentPermissionsService, RoleBasedDocumentPermissionsService>();
+                       .AddScoped<IDocumentFolderService, DocumentFolderService>()
+                       .AddScoped<IDocumentService, DocumentService>()
+                       .AddScoped<IDocumentPermissionsService, DocumentPermissionsService>();
     }
 
     private static IServiceCollection AddCommands(this IServiceCollection services)

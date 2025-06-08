@@ -26,7 +26,7 @@ public class DomainDocumentFolderMetadata : DomainMetadataWithPermissions
     [BsonRepresentation(BsonType.ObjectId)]
     public string Parent { get; set; }
 
-    public List<DomainDocumentMetadata> Documents { get; set; } = new();
+    public List<DomainDocumentMetadata> Documents { get; set; } = [];
 }
 
 public class DomainDocumentMetadata : DomainMetadataWithPermissions
@@ -46,10 +46,10 @@ public class RoleBasedDocumentPermissions
 public class PermissionRole
 {
     [BsonRepresentation(BsonType.ObjectId)]
-    public List<string> Units { get; set; } = new();
+    public List<string> Units { get; set; } = [];
 
     [BsonRepresentation(BsonType.ObjectId)]
-    public List<string> Users { get; set; } = new();
+    public List<string> Members { get; set; } = [];
 
     public string Rank { get; set; } = string.Empty;
     public bool ExpandToSubUnits { get; set; } = true;
@@ -58,7 +58,7 @@ public class PermissionRole
 public class DocumentPermissions
 {
     [BsonRepresentation(BsonType.ObjectId)]
-    public List<string> Units { get; set; } = new();
+    public List<string> Units { get; set; } = [];
 
     public string Rank { get; set; }
     public bool SelectedUnitsOnly { get; set; }

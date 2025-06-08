@@ -23,7 +23,7 @@ public class DocumentFolderServiceTests
     private readonly Mock<IDocumentFolderMetadataContext> _mockIDocumentFolderMetadataContext = new();
     private readonly Mock<IFileContext> _mockIFileContext = new();
     private readonly Mock<IHttpContextService> _mockIHttpContextService = new();
-    private readonly Mock<IRoleBasedDocumentPermissionsService> _mockIRoleBasedDocumentPermissionsService = new();
+    private readonly Mock<IDocumentPermissionsService> _mockIDocumentPermissionsService = new();
     private readonly Mock<IUksfLogger> _mockIUksfLogger = new();
     private readonly Mock<IVariablesService> _mockIVariablesService = new();
     private readonly Mock<IClock> _mockIClock = new();
@@ -33,14 +33,14 @@ public class DocumentFolderServiceTests
     public DocumentFolderServiceTests()
     {
         _mockIHttpContextService.Setup(x => x.GetUserId()).Returns(ObjectId.GenerateNewId().ToString());
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.IsAny<DomainMetadataWithPermissions>())).Returns(true);
         _mockIClock.Setup(x => x.UtcNow()).Returns(_utcNow);
 
         _subject = new DocumentFolderService(
             _mockIDocumentFolderMetadataContext.Object,
             _mockIHttpContextService.Object,
-            _mockIRoleBasedDocumentPermissionsService.Object,
+            _mockIDocumentPermissionsService.Object,
             _mockIFileContext.Object,
             _mockIVariablesService.Object,
             _mockIClock.Object,
@@ -92,7 +92,7 @@ public class DocumentFolderServiceTests
     public async Task When_creating_a_folder_without_permission()
     {
         Given_folder_metadata();
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveWritePermission(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.IsAny<DomainMetadataWithPermissions>())).Returns(false);
 
         var act = async () => await _subject.CreateFolder(new CreateFolderRequest { Parent = "2", Name = "SOPs" });
 
@@ -161,10 +161,10 @@ public class DocumentFolderServiceTests
         Given_folder_metadata_with_documents_having_different_permissions();
 
         // Setup permission service to deny read permission for specific documents
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc1"))).Returns(true);
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc2")))
-                                                 .Returns(false); // No read permission for doc2
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc3"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "doc1"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "doc2")))
+                                        .Returns(false); // No read permission for doc2
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "doc3"))).Returns(true);
 
         // Act
         var result = await _subject.GetFolder("2");
@@ -183,17 +183,14 @@ public class DocumentFolderServiceTests
         Given_folder_metadata_with_documents_having_different_permissions();
 
         // Setup permission service to deny read permission for all documents
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainDocumentMetadata>())).Returns(false);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.IsAny<DomainDocumentMetadata>())).Returns(false);
 
         // Act
         var result = await _subject.GetFolder("2");
 
         // Assert
         result.Documents.Should().BeEmpty();
-        _mockIRoleBasedDocumentPermissionsService.Verify(
-            x => x.DoesContextHaveReadPermission(It.IsAny<DomainDocumentMetadata>()),
-            Times.Exactly(3)
-        ); // Should check all 3 documents
+        _mockIDocumentPermissionsService.Verify(x => x.CanContextView(It.IsAny<DomainDocumentMetadata>()), Times.Exactly(3)); // Should check all 3 documents
     }
 
     [Fact]
@@ -203,7 +200,7 @@ public class DocumentFolderServiceTests
         Given_folder_metadata_with_documents_having_different_permissions();
 
         // Setup permission service to allow read permission for all documents
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainDocumentMetadata>())).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.IsAny<DomainDocumentMetadata>())).Returns(true);
 
         // Act
         var result = await _subject.GetFolder("2");
@@ -222,17 +219,17 @@ public class DocumentFolderServiceTests
         Given_multiple_folders_with_documents();
 
         // Setup permission service - allow folder access but selective document access
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainDocumentFolderMetadata>())).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.IsAny<DomainDocumentFolderMetadata>())).Returns(true);
 
         // Document permissions - deny access to some documents
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc_folder2_1")))
-                                                 .Returns(false); // No access to first doc in folder 2
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc_folder2_2")))
-                                                 .Returns(true); // Allow access to second doc in folder 2
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc_folder3_1")))
-                                                 .Returns(true); // Allow access to first doc in folder 3
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.Is<DomainDocumentMetadata>(d => d.Id == "doc_folder3_2")))
-                                                 .Returns(false); // No access to second doc in folder 3
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "doc_folder2_1")))
+                                        .Returns(false); // No access to first doc in folder 2
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "doc_folder2_2")))
+                                        .Returns(true); // Allow access to second doc in folder 2
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "doc_folder3_1")))
+                                        .Returns(true); // Allow access to first doc in folder 3
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "doc_folder3_2")))
+                                        .Returns(false); // No access to second doc in folder 3
 
         // Act
         var result = _subject.GetAllFolders();
@@ -257,8 +254,8 @@ public class DocumentFolderServiceTests
         Given_folder_metadata_with_documents_having_different_permissions();
 
         // User can access folder but not any documents
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainDocumentFolderMetadata>())).Returns(true);
-        _mockIRoleBasedDocumentPermissionsService.Setup(x => x.DoesContextHaveReadPermission(It.IsAny<DomainDocumentMetadata>())).Returns(false);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.IsAny<DomainDocumentFolderMetadata>())).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.IsAny<DomainDocumentMetadata>())).Returns(false);
 
         // Act
         var result = await _subject.GetFolder("2");
