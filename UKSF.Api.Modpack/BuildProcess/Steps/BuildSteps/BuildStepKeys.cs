@@ -4,6 +4,7 @@ namespace UKSF.Api.Modpack.BuildProcess.Steps.BuildSteps;
 public class BuildStepKeys : FileBuildStep
 {
     public const string Name = "Keys";
+    private readonly List<string> _allowedAceOptionalKeyNames = ["nouniformrestrictions"];
 
     protected override async Task SetupExecute()
     {
@@ -31,7 +32,9 @@ public class BuildStepKeys : FileBuildStep
         StepLogger.LogSurround("Copied base keys");
 
         StepLogger.LogSurround("\nCopying repo keys...");
-        var repoKeys = GetDirectoryContents(sourceRepo, "*.bikey");
+        var repoKeys = GetDirectoryContents(sourceRepo, "*.bikey")
+                       .Where(x => !x.Name.Contains("_ace_") || _allowedAceOptionalKeyNames.Any(y => x.Name.Contains(y)))
+                       .ToList();
         StepLogger.Log($"Found {repoKeys.Count} keys in repo");
         await CopyFiles(sourceRepo, target, repoKeys, true);
         StepLogger.LogSurround("Copied repo keys");
