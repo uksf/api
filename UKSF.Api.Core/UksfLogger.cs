@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;

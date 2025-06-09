@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using AvsAnLib;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -148,8 +148,7 @@ public class CommandRequestsController(
         DateTime now
     )
     {
-        return myRequests.Select(
-            x =>
+        return myRequests.Select(x =>
             {
                 if (string.IsNullOrEmpty(x.Reason))
                 {
@@ -166,8 +165,7 @@ public class CommandRequestsController(
                          x.Reviews.Count > 1 &&
                          x.DateCreated.AddDays(1) < now &&
                          x.Reviews.Any(y => y.Value == ReviewState.Pending && y.Key != contextId)),
-                    Reviews = x.Reviews.Select(
-                        y => new CommandRequestReviewDataset
+                    Reviews = x.Reviews.Select(y => new CommandRequestReviewDataset
                         {
                             Id = y.Key,
                             Name = displayNameService.GetDisplayName(y.Key),
@@ -186,8 +184,7 @@ public class CommandRequestsController(
         DateTime now
     )
     {
-        return otherRequests.Select(
-            x =>
+        return otherRequests.Select(x =>
             {
                 if (string.IsNullOrEmpty(x.Reason))
                 {
@@ -199,8 +196,7 @@ public class CommandRequestsController(
                 {
                     Data = x,
                     CanOverride = superAdmin || (canOverride && x.DateCreated.AddDays(1) < now),
-                    Reviews = x.Reviews.Select(
-                        y => new CommandRequestReviewDataset
+                    Reviews = x.Reviews.Select(y => new CommandRequestReviewDataset
                         {
                             Id = y.Key,
                             Name = displayNameService.GetDisplayName(y.Key),

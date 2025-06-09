@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Models.Request;
+namespace UKSF.Api.Models.Request;
 
 public class UpdateDocumentContentRequest
 {

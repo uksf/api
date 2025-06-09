@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -12,10 +12,10 @@ namespace UKSF.Api.Modpack.Tests;
 
 public class BuildQueueServiceTests
 {
+    private const int CleanupDelaySeconds = 1; // Use a short delay for tests
     private readonly BuildQueueService _buildQueueService;
     private readonly Mock<IBuildProcessorService> _mockBuildProcessorService = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
-    private const int CleanupDelaySeconds = 1; // Use a short delay for tests
 
     public BuildQueueServiceTests()
     {

@@ -1,4 +1,4 @@
-﻿using Moq;
+using Moq;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;

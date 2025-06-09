@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Context.Base;
+using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models.Domain;
 

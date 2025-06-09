@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Core;
+namespace UKSF.Api.Core;
 
 public static class UksfClaimTypes
 {

@@ -1,4 +1,4 @@
-﻿using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Modpack.BuildProcess.Steps;
 using UKSF.Api.Modpack.BuildProcess.Steps.BuildSteps;
 using UKSF.Api.Modpack.BuildProcess.Steps.BuildSteps.Mods;
@@ -64,20 +64,20 @@ public class BuildStepService : IBuildStepService
     {
         return
         [
-            new(BuildStepPrep.Name),
-            new(BuildStepClean.Name),
-            new(BuildStepSources.Name),
-            new(BuildStepBuildAce.Name),
-            new(BuildStepBuildAcre.Name),
-            new(BuildStepBuildAir.Name),
-            new(BuildStepBuildModpack.Name),
-            new(BuildStepIntercept.Name),
-            new(BuildStepExtensions.Name),
-            new(BuildStepSignDependencies.Name),
-            new(BuildStepDeploy.Name),
-            new(BuildStepKeys.Name),
-            new(BuildStepCbaSettings.Name),
-            new(BuildStepBuildRepo.Name)
+            new ModpackBuildStep(BuildStepPrep.Name),
+            new ModpackBuildStep(BuildStepClean.Name),
+            new ModpackBuildStep(BuildStepSources.Name),
+            new ModpackBuildStep(BuildStepBuildAce.Name),
+            new ModpackBuildStep(BuildStepBuildAcre.Name),
+            new ModpackBuildStep(BuildStepBuildAir.Name),
+            new ModpackBuildStep(BuildStepBuildModpack.Name),
+            new ModpackBuildStep(BuildStepIntercept.Name),
+            new ModpackBuildStep(BuildStepExtensions.Name),
+            new ModpackBuildStep(BuildStepSignDependencies.Name),
+            new ModpackBuildStep(BuildStepDeploy.Name),
+            new ModpackBuildStep(BuildStepKeys.Name),
+            new ModpackBuildStep(BuildStepCbaSettings.Name),
+            new ModpackBuildStep(BuildStepBuildRepo.Name)
         ];
     }
 
@@ -85,19 +85,19 @@ public class BuildStepService : IBuildStepService
     {
         return
         [
-            new(BuildStepPrep.Name),
-            new(BuildStepClean.Name),
-            new(BuildStepSources.Name),
-            new(BuildStepBuildAce.Name),
-            new(BuildStepBuildAcre.Name),
-            new(BuildStepBuildAir.Name),
-            new(BuildStepBuildModpack.Name),
-            new(BuildStepIntercept.Name),
-            new(BuildStepExtensions.Name),
-            new(BuildStepSignDependencies.Name),
-            new(BuildStepDeploy.Name),
-            new(BuildStepKeys.Name),
-            new(BuildStepCbaSettings.Name),
+            new ModpackBuildStep(BuildStepPrep.Name),
+            new ModpackBuildStep(BuildStepClean.Name),
+            new ModpackBuildStep(BuildStepSources.Name),
+            new ModpackBuildStep(BuildStepBuildAce.Name),
+            new ModpackBuildStep(BuildStepBuildAcre.Name),
+            new ModpackBuildStep(BuildStepBuildAir.Name),
+            new ModpackBuildStep(BuildStepBuildModpack.Name),
+            new ModpackBuildStep(BuildStepIntercept.Name),
+            new ModpackBuildStep(BuildStepExtensions.Name),
+            new ModpackBuildStep(BuildStepSignDependencies.Name),
+            new ModpackBuildStep(BuildStepDeploy.Name),
+            new ModpackBuildStep(BuildStepKeys.Name),
+            new ModpackBuildStep(BuildStepCbaSettings.Name),
             new ModpackBuildStep(BuildStepBuildRepo.Name)
         ];
     }
@@ -106,17 +106,17 @@ public class BuildStepService : IBuildStepService
     {
         return
         [
-            new(BuildStepClean.Name),
-            new(BuildStepLockServerControl.Name),
-            new(BuildStepBackup.Name),
-            new(BuildStepDeploy.Name),
-            new(BuildStepReleaseKeys.Name),
-            new(BuildStepCbaSettings.Name),
-            new(BuildStepBuildRepo.Name),
-            new(BuildStepPublish.Name),
-            new(BuildStepNotify.Name),
-            new(BuildStepMerge.Name),
-            new(BuildStepUnlockServerControl.Name)
+            new ModpackBuildStep(BuildStepClean.Name),
+            new ModpackBuildStep(BuildStepLockServerControl.Name),
+            new ModpackBuildStep(BuildStepBackup.Name),
+            new ModpackBuildStep(BuildStepDeploy.Name),
+            new ModpackBuildStep(BuildStepReleaseKeys.Name),
+            new ModpackBuildStep(BuildStepCbaSettings.Name),
+            new ModpackBuildStep(BuildStepBuildRepo.Name),
+            new ModpackBuildStep(BuildStepPublish.Name),
+            new ModpackBuildStep(BuildStepNotify.Name),
+            new ModpackBuildStep(BuildStepMerge.Name),
+            new ModpackBuildStep(BuildStepUnlockServerControl.Name)
         ];
     }
 

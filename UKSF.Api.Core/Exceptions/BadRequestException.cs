@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Core.Exceptions;
+namespace UKSF.Api.Core.Exceptions;
 
 [Serializable]
 public class BadRequestException : UksfException

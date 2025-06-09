@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using UKSF.Api.Core;
@@ -31,8 +31,7 @@ public class CommentThreadController(
         var comments = commentThreadService.GetCommentThreadComments(id);
         return new CommentThreadsDataset
         {
-            Comments = comments.Select(
-                comment => new CommentThreadDataset
+            Comments = comments.Select(comment => new CommentThreadDataset
                 {
                     Id = comment.Id.ToString(),
                     Author = comment.Author.ToString(),
@@ -58,8 +57,8 @@ public class CommentThreadController(
                                     recruitmentService.IsRecruiter(accountService.GetUserAccount()),
             ThreadMode.Ranksuperior => commentThread.Authors.Any(x => admin || ranksService.IsSuperior(account.Rank, accountContext.GetSingle(x).Rank)),
             ThreadMode.Rankequal    => commentThread.Authors.Any(x => admin || ranksService.IsEqual(account.Rank, accountContext.GetSingle(x).Rank)),
-            ThreadMode.Ranksuperiororequal => commentThread.Authors.Any(
-                x => admin || ranksService.IsSuperiorOrEqual(account.Rank, accountContext.GetSingle(x).Rank)
+            ThreadMode.Ranksuperiororequal => commentThread.Authors.Any(x => admin ||
+                                                                             ranksService.IsSuperiorOrEqual(account.Rank, accountContext.GetSingle(x).Rank)
             ),
             _ => true
         };
@@ -78,9 +77,9 @@ public class CommentThreadController(
 
         var thread = commentThreadContext.GetSingle(commentThreadId);
         var participants = commentThreadService.GetCommentThreadParticipants(thread.Id);
-        var applicationAccount = accountContext.GetSingle(
-            x => x.Application?.ApplicationCommentThread == commentThreadId || x.Application?.RecruiterCommentThread == commentThreadId
-        );
+        var applicationAccount =
+            accountContext.GetSingle(x => x.Application?.ApplicationCommentThread == commentThreadId || x.Application?.RecruiterCommentThread == commentThreadId
+            );
 
         foreach (var participant in participants.Where(x => x != comment.Author))
         {

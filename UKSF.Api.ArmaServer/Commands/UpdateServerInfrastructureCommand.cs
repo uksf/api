@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.ArmaServer.Signalr.Clients;

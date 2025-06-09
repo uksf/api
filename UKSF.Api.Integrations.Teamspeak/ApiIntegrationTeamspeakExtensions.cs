@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Integrations.Teamspeak.EventHandlers;
 using UKSF.Api.Integrations.Teamspeak.ScheduledActions;
 using UKSF.Api.Integrations.Teamspeak.Services;

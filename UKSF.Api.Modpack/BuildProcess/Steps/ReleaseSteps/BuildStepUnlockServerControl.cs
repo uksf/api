@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.ArmaServer.Signalr.Clients;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Core.Context;
@@ -9,8 +9,8 @@ namespace UKSF.Api.Modpack.BuildProcess.Steps.ReleaseSteps;
 public class BuildStepUnlockServerControl : BuildStep
 {
     public const string Name = "Unlock Servers";
-    private IVariablesContext _variablesContext;
     private IHubContext<ServersHub, IServersClient> _serversHub;
+    private IVariablesContext _variablesContext;
 
     protected override Task SetupExecute()
     {

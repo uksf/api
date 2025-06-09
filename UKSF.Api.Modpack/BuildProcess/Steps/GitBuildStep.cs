@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Modpack.BuildProcess.Steps;
+namespace UKSF.Api.Modpack.BuildProcess.Steps;
 
 public class GitBuildStep : BuildStep
 {

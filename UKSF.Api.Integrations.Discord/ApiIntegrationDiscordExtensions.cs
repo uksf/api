@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.WebSocket;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Integrations.Discord.EventHandlers;

@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.ScheduledActions;
+using UKSF.Api.Core.ScheduledActions;
 
 namespace UKSF.Api.Core.Services;
 

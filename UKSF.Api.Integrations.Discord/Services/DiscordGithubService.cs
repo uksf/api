@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.WebSocket;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
@@ -22,8 +22,8 @@ public class DiscordGithubService(
     IUksfLogger logger
 ) : DiscordBaseService(discordClientService, accountContext, httpContextService, variablesService, logger), IDiscordGithubService
 {
-    private readonly IUksfLogger _logger = logger;
     private const string NewGithubIssueCommandName = "new-github-issue";
+    private readonly IUksfLogger _logger = logger;
 
     public void Activate()
     {
@@ -60,8 +60,7 @@ public class DiscordGithubService(
 
     private Task OnSlashCommand(SocketSlashCommand command)
     {
-        return WrapEventTask(
-            async () =>
+        return WrapEventTask(async () =>
             {
                 if (command.Data.Name == NewGithubIssueCommandName)
                 {
@@ -93,8 +92,7 @@ public class DiscordGithubService(
 
     private Task OnSelectMenu(SocketMessageComponent message)
     {
-        return WrapEventTask(
-            async () =>
+        return WrapEventTask(async () =>
             {
                 var issueTemplates = await githubIssuesService.GetIssueTemplates();
                 var issueTemplateName = string.Join("", message.Data.Values);
@@ -102,8 +100,7 @@ public class DiscordGithubService(
                 if (issueTemplate is null)
                 {
                     _logger.LogError($"Failed to find issue template with name {issueTemplateName}");
-                    await message.UpdateAsync(
-                        properties =>
+                    await message.UpdateAsync(properties =>
                         {
                             properties.Components = null;
                             properties.Content = "Something went wrong, couldn't find the issue template";
@@ -123,8 +120,7 @@ public class DiscordGithubService(
                                                          required: true
                                                      );
                 await message.RespondWithModalAsync(modalBuilder.Build());
-                await message.ModifyOriginalResponseAsync(
-                    properties =>
+                await message.ModifyOriginalResponseAsync(properties =>
                     {
                         properties.Components = null;
                         properties.Content = $"Creating new {issueTemplate.Name} issue";
@@ -136,8 +132,7 @@ public class DiscordGithubService(
 
     private Task OnModalSubmitted(SocketModal modal)
     {
-        return WrapEventTask(
-            async () =>
+        return WrapEventTask(async () =>
             {
                 SetUserContextByDiscordUser(modal.User.Id);
 
@@ -147,8 +142,7 @@ public class DiscordGithubService(
                 if (issueTemplate is null)
                 {
                     _logger.LogError($"Failed to find issue template with name {issueTemplateName}");
-                    await modal.UpdateAsync(
-                        properties =>
+                    await modal.UpdateAsync(properties =>
                         {
                             properties.Components = null;
                             properties.Content = "Something went wrong, couldn't find the issue template";
@@ -164,8 +158,7 @@ public class DiscordGithubService(
                     var issue = await githubIssuesService.CreateIssue(new NewIssueRequest(issueTitle, issueTemplate.Labels, issueBody));
 
                     _logger.LogAudit($"Created new github issue {issue.HtmlUrl}");
-                    await modal.UpdateAsync(
-                        properties =>
+                    await modal.UpdateAsync(properties =>
                         {
                             properties.Components = null;
                             properties.Content = $"New Github issue created: [{issue.Title}]({issue.HtmlUrl})";
@@ -175,8 +168,7 @@ public class DiscordGithubService(
                 catch (Exception exception)
                 {
                     _logger.LogError("Failed to create issue", exception);
-                    await modal.UpdateAsync(
-                        properties =>
+                    await modal.UpdateAsync(properties =>
                         {
                             properties.Components = null;
                             properties.Content = "Failed to create issue";

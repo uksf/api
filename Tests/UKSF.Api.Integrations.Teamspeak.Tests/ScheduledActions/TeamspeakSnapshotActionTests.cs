@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.Extensions.Hosting;
 using Moq;
 using UKSF.Api.Core.Context;

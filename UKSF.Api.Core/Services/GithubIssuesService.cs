@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Octokit;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Request;
@@ -11,11 +11,8 @@ public interface IGithubIssuesService
     Task<Issue> CreateIssue(NewIssueRequest issueRequest);
 }
 
-public class GithubIssuesService(
-    IGithubClientService githubClientService,
-    IDisplayNameService displayNameService,
-    IHttpContextService httpContextService
-) : IGithubIssuesService
+public class GithubIssuesService(IGithubClientService githubClientService, IDisplayNameService displayNameService, IHttpContextService httpContextService)
+    : IGithubIssuesService
 {
     private readonly List<IssueTemplate> _issueTemplates = [];
     private string RepoOrg => githubClientService.RepoOrg;

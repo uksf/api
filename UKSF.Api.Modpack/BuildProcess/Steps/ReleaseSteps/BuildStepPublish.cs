@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Modpack.Services;
+using UKSF.Api.Modpack.Services;
 
 namespace UKSF.Api.Modpack.BuildProcess.Steps.ReleaseSteps;
 

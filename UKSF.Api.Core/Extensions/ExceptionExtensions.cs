@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Core.Extensions;
+namespace UKSF.Api.Core.Extensions;
 
 public static class ExceptionExtensions
 {

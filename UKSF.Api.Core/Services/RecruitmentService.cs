@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Mappers;
@@ -79,10 +79,25 @@ public class RecruitmentService(
         var chainOfCommand = recruiterUnit.ChainOfCommand;
         var leadIds = new List<string>();
 
-        if (!string.IsNullOrEmpty(chainOfCommand?.First)) leadIds.Add(chainOfCommand.First);
-        if (!string.IsNullOrEmpty(chainOfCommand?.Second)) leadIds.Add(chainOfCommand.Second);
-        if (!string.IsNullOrEmpty(chainOfCommand?.Third)) leadIds.Add(chainOfCommand.Third);
-        if (!string.IsNullOrEmpty(chainOfCommand?.Nco)) leadIds.Add(chainOfCommand.Nco);
+        if (!string.IsNullOrEmpty(chainOfCommand?.First))
+        {
+            leadIds.Add(chainOfCommand.First);
+        }
+
+        if (!string.IsNullOrEmpty(chainOfCommand?.Second))
+        {
+            leadIds.Add(chainOfCommand.Second);
+        }
+
+        if (!string.IsNullOrEmpty(chainOfCommand?.Third))
+        {
+            leadIds.Add(chainOfCommand.Third);
+        }
+
+        if (!string.IsNullOrEmpty(chainOfCommand?.Nco))
+        {
+            leadIds.Add(chainOfCommand.Nco);
+        }
 
         return leadIds;
     }

@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Core.ScheduledActions;
@@ -16,8 +16,8 @@ public class SelfCreatingScheduledAction : ISelfCreatingScheduledAction
 
     public virtual DateTime NextRun => throw new UksfException($"Undefined next run date for action {Name}", 500);
     public virtual TimeSpan RunInterval => throw new UksfException($"Undefined run interval for action {Name}", 500);
-    public virtual string Name => "UNNAMED ACTION";
     public virtual bool RunOnCreate => false;
+    public virtual string Name => "UNNAMED ACTION";
 
     public async Task CreateSelf()
     {

@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Services;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Integrations.Discord.Services;
 

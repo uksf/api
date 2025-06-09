@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
@@ -93,7 +93,14 @@ public class LoggingController(
     {
         return new List<Expression<Func<ErrorLog, object>>>
         {
-            x => x.Message, x => x.StatusCode, x => x.Url, x => x.Name, x => x.Exception, x => x.UserId, x => x.Method, x => x.EndpointName
+            x => x.Message,
+            x => x.StatusCode,
+            x => x.Url,
+            x => x.Name,
+            x => x.Exception,
+            x => x.UserId,
+            x => x.Method,
+            x => x.EndpointName
         };
     }
 
@@ -111,7 +118,12 @@ public class LoggingController(
     {
         return new List<Expression<Func<DiscordLog, object>>>
         {
-            x => x.Message, x => x.DiscordUserEventType, x => x.InstigatorId, x => x.InstigatorName, x => x.ChannelName, x => x.Name
+            x => x.Message,
+            x => x.DiscordUserEventType,
+            x => x.InstigatorId,
+            x => x.InstigatorName,
+            x => x.ChannelName,
+            x => x.Name
         };
     }
 }

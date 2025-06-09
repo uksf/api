@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Core.Models.Domain;
@@ -15,10 +15,7 @@ public class DomainMetadataWithPermissions : MongoObject
     [BsonRepresentation(BsonType.ObjectId)]
     public string Owner { get; set; }
 
-    public RoleBasedDocumentPermissions RoleBasedPermissions { get; set; } = new();
-
-    public DocumentPermissions ReadPermissions { get; set; } = new();
-    public DocumentPermissions WritePermissions { get; set; } = new();
+    public DocumentPermissions Permissions { get; set; } = new();
 }
 
 public class DomainDocumentFolderMetadata : DomainMetadataWithPermissions
@@ -37,7 +34,7 @@ public class DomainDocumentMetadata : DomainMetadataWithPermissions
     public DateTime LastUpdated { get; set; }
 }
 
-public class RoleBasedDocumentPermissions
+public class DocumentPermissions
 {
     public PermissionRole Viewers { get; set; } = new();
     public PermissionRole Collaborators { get; set; } = new();
@@ -53,13 +50,4 @@ public class PermissionRole
 
     public string Rank { get; set; } = string.Empty;
     public bool ExpandToSubUnits { get; set; } = true;
-}
-
-public class DocumentPermissions
-{
-    [BsonRepresentation(BsonType.ObjectId)]
-    public List<string> Units { get; set; } = [];
-
-    public string Rank { get; set; }
-    public bool SelectedUnitsOnly { get; set; }
 }

@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
@@ -64,12 +64,8 @@ public class DocumentFolderService(
             FullPath = ResolveFullFolderPath(allFolders, createFolder.Parent, createFolder.Name),
             Created = clock.UtcNow(),
             Creator = httpContextService.GetUserId(),
-            // Legacy permissions (for backwards compatibility)
-            ReadPermissions = createFolder.ReadPermissions,
-            WritePermissions = createFolder.WritePermissions,
-            // New role-based permissions
             Owner = createFolder.Owner ?? httpContextService.GetUserId(),
-            RoleBasedPermissions = createFolder.RoleBasedPermissions
+            Permissions = createFolder.Permissions
         };
 
         if (!documentPermissionsService.CanContextView(folderMetadata))
@@ -106,15 +102,13 @@ public class DocumentFolderService(
             throw new FolderException($"A folder already exists at path '{newFullPath}'");
         }
 
-        // Update both legacy and new permission fields, including FullPath
+        // Update permission fields, including FullPath
         var updates = new List<UpdateDefinition<DomainDocumentFolderMetadata>>
         {
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Name, newPermissions.Name),
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.FullPath, newFullPath),
-            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.WritePermissions, newPermissions.WritePermissions),
-            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.ReadPermissions, newPermissions.ReadPermissions),
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Owner, newPermissions.Owner ?? folderMetadata.Owner),
-            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.RoleBasedPermissions, newPermissions.RoleBasedPermissions)
+            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Permissions, newPermissions.Permissions)
         };
 
         var combinedUpdate = Builders<DomainDocumentFolderMetadata>.Update.Combine(updates);
@@ -254,12 +248,8 @@ public class DocumentFolderService(
             FullPath = folderMetadata.FullPath,
             Created = folderMetadata.Created,
             Creator = folderMetadata.Creator,
-            // Legacy permissions (keep for backwards compatibility)
-            ReadPermissions = folderMetadata.ReadPermissions,
-            WritePermissions = folderMetadata.WritePermissions,
-            // NEW: Role-based permissions
             Owner = folderMetadata.Owner,
-            RoleBasedPermissions = folderMetadata.RoleBasedPermissions,
+            Permissions = folderMetadata.Permissions,
             EffectivePermissions = effectivePermissions,
             InheritedPermissions = inheritedPermissions,
             Documents = accessibleDocuments,
@@ -267,7 +257,7 @@ public class DocumentFolderService(
         };
     }
 
-    private DocumentMetadataResponse MapDocument(DomainDocumentMetadata documentMetadata, RoleBasedDocumentPermissions sharedInheritedPermissions)
+    private DocumentMetadataResponse MapDocument(DomainDocumentMetadata documentMetadata, DocumentPermissions sharedInheritedPermissions)
     {
         var effectivePermissions = documentPermissionsService.GetEffectivePermissions(documentMetadata);
         var canWrite = documentPermissionsService.CanContextCollaborate(documentMetadata);
@@ -281,12 +271,8 @@ public class DocumentFolderService(
             Created = documentMetadata.Created,
             LastUpdated = documentMetadata.LastUpdated,
             Creator = documentMetadata.Creator,
-            // Legacy permissions (keep for backwards compatibility)
-            ReadPermissions = documentMetadata.ReadPermissions,
-            WritePermissions = documentMetadata.WritePermissions,
-            // NEW: Role-based permissions
             Owner = documentMetadata.Owner,
-            RoleBasedPermissions = documentMetadata.RoleBasedPermissions,
+            Permissions = documentMetadata.Permissions,
             EffectivePermissions = effectivePermissions,
             InheritedPermissions = sharedInheritedPermissions,
             CanWrite = canWrite

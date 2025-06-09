@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using UKSF.Api.Core.Converters;
 
 namespace UKSF.Api.Core;

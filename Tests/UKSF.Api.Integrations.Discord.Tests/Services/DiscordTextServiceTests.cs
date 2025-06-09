@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using UKSF.Api.Integrations.Discord.Services;
 using Xunit;
 

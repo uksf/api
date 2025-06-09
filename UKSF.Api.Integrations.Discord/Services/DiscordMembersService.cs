@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.WebSocket;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
@@ -30,9 +30,9 @@ public class DiscordMembersService(
     IUksfLogger logger
 ) : DiscordBaseService(discordClientService, accountContext, httpContextService, variablesService, logger), IDiscordMembersService
 {
-    private readonly IVariablesService _variablesService = variablesService;
     private readonly IAccountContext _accountContext = accountContext;
     private readonly IUksfLogger _logger = logger;
+    private readonly IVariablesService _variablesService = variablesService;
 
     public void Activate()
     {
@@ -77,8 +77,7 @@ public class DiscordMembersService(
 
         await AssertOnline();
         var guild = GetGuild();
-        await Task.Run(
-            () =>
+        await Task.Run(() =>
             {
                 foreach (var user in guild.Users)
                 {
@@ -252,8 +251,7 @@ public class DiscordMembersService(
 
     private Task ClientOnGuildMemberUpdated(Cacheable<SocketGuildUser, ulong> cachedOldUser, SocketGuildUser user)
     {
-        return WrapEventTask(
-            async () =>
+        return WrapEventTask(async () =>
             {
                 var oldUser = await cachedOldUser.GetOrDownloadAsync();
                 var oldRoles = oldUser.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}").Aggregate((x, y) => $"{x},{y}");
@@ -271,4 +269,3 @@ public class DiscordMembersService(
         return WrapEventTask(() => UpdateUserById(user.Id));
     }
 }
-

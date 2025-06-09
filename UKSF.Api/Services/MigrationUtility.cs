@@ -1,5 +1,4 @@
-﻿using MongoDB.Bson;
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
@@ -9,7 +8,7 @@ namespace UKSF.Api.Services;
 
 public class MigrationUtility(IMigrationContext migrationContext, IDocumentFolderMetadataContext documentFolderMetadataContext, IUksfLogger logger)
 {
-    private const int Version = 6;
+    private const int Version = 7;
 
     public async Task RunMigrations()
     {
@@ -33,74 +32,43 @@ public class MigrationUtility(IMigrationContext migrationContext, IDocumentFolde
 
     private async Task ExecuteMigrations()
     {
-        await FixDocumentOwnerObjectIdTypes();
+        await RemoveOldPermissionFields();
         logger.LogInfo("All migrations completed successfully");
     }
 
-    private async Task FixDocumentOwnerObjectIdTypes()
+    private async Task RemoveOldPermissionFields()
     {
-        logger.LogInfo("Starting migration to fix document owner ObjectId storage types");
+        logger.LogInfo("Starting migration to remove old permission fields (readPermissions, writePermissions)");
 
-        // Get ALL documents to fix owner field storage types
-        var allDocuments = documentFolderMetadataContext.Get().ToList();
+        // Get ALL document folders to remove old permission fields
+        var allFolders = documentFolderMetadataContext.Get().ToList();
 
-        logger.LogInfo($"Found {allDocuments.Count} document folders to check for owner field fixes");
+        logger.LogInfo($"Found {allFolders.Count} document folders to clean up");
 
-        foreach (var folder in allDocuments)
+        foreach (var folder in allFolders)
         {
             var updates = new List<UpdateDefinition<DomainDocumentFolderMetadata>>();
 
-            // Fix documents within folders where owner might be stored as string instead of ObjectId
+            // Remove old permission fields from the folder itself
+            updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Unset("readPermissions"));
+            updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Unset("writePermissions"));
+
+            // Remove old permission fields from documents within the folder
             for (var i = 0; i < folder.Documents.Count; i++)
             {
-                var document = folder.Documents[i];
-
-                // Fix owner field - ensure it's stored as ObjectId type in MongoDB
-                if (!string.IsNullOrEmpty(document.Owner))
-                {
-                    // Convert string to ObjectId to ensure proper BSON storage
-                    if (ObjectId.TryParse(document.Owner, out var ownerObjectId))
-                    {
-                        updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Set($"documents.{i}.owner", ownerObjectId));
-                    }
-                }
-
-                // Also fix creator field if needed
-                if (!string.IsNullOrEmpty(document.Creator))
-                {
-                    if (ObjectId.TryParse(document.Creator, out var creatorObjectId))
-                    {
-                        updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Set($"documents.{i}.creator", creatorObjectId));
-                    }
-                }
+                updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Unset($"documents.{i}.readPermissions"));
+                updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Unset($"documents.{i}.writePermissions"));
             }
 
-            // Fix folder-level owner and creator fields as well
-            if (!string.IsNullOrEmpty(folder.Owner))
-            {
-                if (ObjectId.TryParse(folder.Owner, out var folderOwnerObjectId))
-                {
-                    updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Set("owner", folderOwnerObjectId));
-                }
-            }
-
-            if (!string.IsNullOrEmpty(folder.Creator))
-            {
-                if (ObjectId.TryParse(folder.Creator, out var folderCreatorObjectId))
-                {
-                    updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Set("creator", folderCreatorObjectId));
-                }
-            }
-
-            if (updates.Count != 0)
+            if (updates.Count > 0)
             {
                 var combinedUpdate = Builders<DomainDocumentFolderMetadata>.Update.Combine(updates);
                 await documentFolderMetadataContext.Update(folder.Id, combinedUpdate);
-                logger.LogInfo($"Fixed ObjectId types for document folder: {folder.Name} (ID: {folder.Id}) - Fixed {folder.Documents.Count} documents");
+                logger.LogInfo($"Cleaned up old permission fields for folder: {folder.Name} (ID: {folder.Id}) - Cleaned {folder.Documents.Count} documents");
             }
         }
 
-        logger.LogInfo($"Successfully fixed ObjectId storage types for {allDocuments.Count} document folders");
-        logger.LogInfo("Document owner ObjectId type fix migration completed");
+        logger.LogInfo($"Successfully removed old permission fields from {allFolders.Count} document folders");
+        logger.LogInfo("Old permission fields removal migration completed");
     }
 }

@@ -1,4 +1,4 @@
-﻿using AvsAnLib;
+using AvsAnLib;
 using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;

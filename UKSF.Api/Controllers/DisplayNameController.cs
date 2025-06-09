@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Controllers;

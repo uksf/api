@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Modpack.Models;
+using UKSF.Api.Modpack.Models;
 
 namespace UKSF.Api.Modpack.BuildProcess;
 

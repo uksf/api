@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Exceptions;
@@ -10,11 +10,8 @@ namespace UKSF.Api.Modpack.Controllers;
 
 [Route("github/issues")]
 [Permissions(Permissions.Member)]
-public class GithubIssueController(
-    IDisplayNameService displayNameService,
-    IGithubIssuesService githubIssuesService,
-    IHttpContextService httpContextService
-) : ControllerBase
+public class GithubIssueController(IDisplayNameService displayNameService, IGithubIssuesService githubIssuesService, IHttpContextService httpContextService)
+    : ControllerBase
 {
     [HttpGet("templates")]
     [Authorize]

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using UKSF.Api.Core.Extensions;
 
 namespace UKSF.Api.Core.Processes;
@@ -12,8 +12,8 @@ public class ProcessRunner(IUksfLogger logger, CancellationTokenSource cancellat
     private CancellationTokenRegistration _cancellationTokenRegistration;
     private Exception _capturedException;
     private CancellationTokenRegistration _errorCancellationTokenRegistration;
-    private Process _process;
     private string _logInfo;
+    private Process _process;
     private bool _useLogger;
 
     public void Run(string workingDirectory, string executable, string args, int timeout, bool log = false)
@@ -21,8 +21,7 @@ public class ProcessRunner(IUksfLogger logger, CancellationTokenSource cancellat
         _logInfo = $"'{executable}' in '{workingDirectory}' with '{args}'";
         _useLogger = log;
 
-        _cancellationTokenRegistration = cancellationTokenSource.Token.Register(
-            () =>
+        _cancellationTokenRegistration = cancellationTokenSource.Token.Register(() =>
             {
                 if (_useLogger)
                 {

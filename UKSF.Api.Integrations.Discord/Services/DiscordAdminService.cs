@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
 using UKSF.Api.Core;
@@ -43,8 +43,7 @@ public class DiscordAdminService(
 
     private Task ClientOnUserJoined(SocketGuildUser user)
     {
-        return WrapAdminEventTask(
-            () =>
+        return WrapAdminEventTask(() =>
             {
                 var name = GetUserNickname(user);
                 var connectedAccountMessage = GetConnectedAccountMessageFromUserId(user.Id);
@@ -56,8 +55,7 @@ public class DiscordAdminService(
 
     private Task ClientOnUserLeft(SocketGuild _, SocketUser user)
     {
-        return WrapAdminEventTask(
-            () =>
+        return WrapAdminEventTask(() =>
             {
                 var account = GetAccountForDiscordUser(user.Id);
                 var connectedAccountMessage = GetConnectedAccountMessage(account);
@@ -81,8 +79,7 @@ public class DiscordAdminService(
 
     private Task ClientOnUserBanned(SocketUser user, SocketGuild _)
     {
-        return WrapAdminEventTask(
-            async () =>
+        return WrapAdminEventTask(async () =>
             {
                 var connectedAccountMessage = GetConnectedAccountMessageFromUserId(user.Id);
                 var instigatorId = await GetBannedAuditLogInstigator(user.Id);
@@ -102,8 +99,7 @@ public class DiscordAdminService(
 
     private Task ClientOnUserUnbanned(SocketUser user, SocketGuild _)
     {
-        return WrapAdminEventTask(
-            async () =>
+        return WrapAdminEventTask(async () =>
             {
                 var connectedAccountMessage = GetConnectedAccountMessageFromUserId(user.Id);
                 var instigatorId = await GetUnbannedAuditLogInstigator(user.Id);
@@ -123,8 +119,7 @@ public class DiscordAdminService(
 
     private Task ClientOnMessageDeleted(Cacheable<IMessage, ulong> cacheable, Cacheable<IMessageChannel, ulong> cachedChannel)
     {
-        return WrapAdminEventTask(
-            async () =>
+        return WrapAdminEventTask(async () =>
             {
                 var channel = await cachedChannel.GetOrDownloadAsync();
                 var result = await GetDeletedMessageDetails(cacheable, channel);
@@ -149,8 +144,7 @@ public class DiscordAdminService(
                             channel.Name,
                             result.Name,
                             result.Message
-                        );
-                        break;
+                        ); break;
                 }
             }
         );
@@ -158,8 +152,7 @@ public class DiscordAdminService(
 
     private Task ClientOnMessagesBulkDeleted(IReadOnlyCollection<Cacheable<IMessage, ulong>> cacheables, Cacheable<IMessageChannel, ulong> cachedChannel)
     {
-        return WrapAdminEventTask(
-            async () =>
+        return WrapAdminEventTask(async () =>
             {
                 var irretrievableMessageCount = 0;
                 List<DiscordDeletedMessageResult> messages = new();
@@ -174,9 +167,7 @@ public class DiscordAdminService(
                         case 0:
                             irretrievableMessageCount++;
                             continue;
-                        default:
-                            messages.Add(result);
-                            break;
+                        default: messages.Add(result); break;
                     }
                 }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Moq;
@@ -154,19 +154,19 @@ public class CreateApplicationCommandTests
     private void Given_an_account_with_application()
     {
         _mockAccountContext.Setup(x => x.GetSingle(AccountId))
-                           .Returns(
-                               () => new DomainAccount
-                               {
-                                   Id = AccountId,
-                                   Lastname = "Last",
-                                   Firstname = "First",
-                                   Application = new DomainApplication
-                                   {
-                                       RecruiterCommentThread = RecruiterCommentThreadId, ApplicationCommentThread = ApplicationCommentThreadId
-                                   },
-                                   Steamname = SteamName,
-                                   DiscordId = DiscordId
-                               }
-                           );
+        .Returns(() => new DomainAccount
+            {
+                Id = AccountId,
+                Lastname = "Last",
+                Firstname = "First",
+                Application = new DomainApplication
+                {
+                    RecruiterCommentThread = RecruiterCommentThreadId,
+                    ApplicationCommentThread = ApplicationCommentThreadId
+                },
+                Steamname = SteamName,
+                DiscordId = DiscordId
+            }
+        );
     }
 }

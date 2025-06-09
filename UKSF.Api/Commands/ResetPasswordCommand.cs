@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Services;

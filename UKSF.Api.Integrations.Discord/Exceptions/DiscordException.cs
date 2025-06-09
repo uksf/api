@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Exceptions;
 
 namespace UKSF.Api.Integrations.Discord.Exceptions;
 

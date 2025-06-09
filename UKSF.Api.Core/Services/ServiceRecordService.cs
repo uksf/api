@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Domain;
@@ -23,7 +23,15 @@ public class ServiceRecordService : IServiceRecordService
     {
         _accountContext.Update(
             id,
-            Builders<DomainAccount>.Update.Push("serviceRecord", new ServiceRecordEntry { Timestamp = DateTime.UtcNow, Occurence = occurence, Notes = notes })
+            Builders<DomainAccount>.Update.Push(
+                "serviceRecord",
+                new ServiceRecordEntry
+                {
+                    Timestamp = DateTime.UtcNow,
+                    Occurence = occurence,
+                    Notes = notes
+                }
+            )
         );
     }
 }

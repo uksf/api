@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using AspNet.Security.OpenId;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -19,16 +19,14 @@ public static class AuthExtensions
         configuration.GetSection(nameof(AppSettings)).Bind(appSettings);
         SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(appSettings.Secrets.TokenKey));
 
-        services.AddAuthentication(
-                    options =>
+        services.AddAuthentication(options =>
                     {
                         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                         options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                     }
                 )
-                .AddJwtBearer(
-                    options =>
+                .AddJwtBearer(options =>
                     {
                         options.TokenValidationParameters = new TokenValidationParameters
                         {
@@ -68,8 +66,7 @@ public static class AuthExtensions
                     }
                 )
                 .AddCookie()
-                .AddSteam(
-                    options =>
+                .AddSteam(options =>
                     {
                         options.ForwardAuthenticate = JwtBearerDefaults.AuthenticationScheme;
                         options.Events = new OpenIdAuthenticationEvents

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
@@ -44,11 +44,7 @@ public class ObjectIdConversionServiceTests
     {
         const string Input = "5e39336e1b92ee2d14b7fe08";
         const string Expected = "7 Squadron";
-        DomainUnit unit = new()
-        {
-            Name = Expected,
-            Id = Input
-        };
+        DomainUnit unit = new() { Name = Expected, Id = Input };
 
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
         _mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(x => x);

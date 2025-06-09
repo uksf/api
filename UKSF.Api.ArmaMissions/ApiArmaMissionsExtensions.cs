@@ -1,4 +1,4 @@
-﻿using UKSF.Api.ArmaMissions.Services;
+using UKSF.Api.ArmaMissions.Services;
 
 namespace UKSF.Api.ArmaMissions;
 

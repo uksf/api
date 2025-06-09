@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using UKSF.Api.Core.Commands;
 using UKSF.Api.Core.Context;

@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Core.ScheduledActions;
+namespace UKSF.Api.Core.ScheduledActions;
 
 public interface IScheduledAction
 {

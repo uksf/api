@@ -1,4 +1,4 @@
-﻿using GitHubJwt;
+using GitHubJwt;
 using Microsoft.Extensions.Options;
 using Octokit;
 using UKSF.Api.Core.Configuration;

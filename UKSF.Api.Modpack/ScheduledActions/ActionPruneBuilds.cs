@@ -1,4 +1,4 @@
-﻿using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.Context;
@@ -14,12 +14,10 @@ public class ActionPruneBuilds : SelfCreatingScheduledAction, IActionPruneBuilds
 
     private readonly IClock _clock;
 
-    public ActionPruneBuilds(
-        IBuildsContext buildsContext,
-        ISchedulerService schedulerService,
-        IHostEnvironment currentEnvironment,
-        IClock clock
-    ) : base(schedulerService, currentEnvironment)
+    public ActionPruneBuilds(IBuildsContext buildsContext, ISchedulerService schedulerService, IHostEnvironment currentEnvironment, IClock clock) : base(
+        schedulerService,
+        currentEnvironment
+    )
     {
         _buildsContext = buildsContext;
         _clock = clock;

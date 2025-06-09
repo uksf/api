@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Xunit;
 
 namespace UKSF.Api.Core.Tests.Services.Personnel;

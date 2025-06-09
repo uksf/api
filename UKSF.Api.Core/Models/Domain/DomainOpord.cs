@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Core.Models.Domain;
+namespace UKSF.Api.Core.Models.Domain;
 
 public class DomainOpord : MongoObject
 {

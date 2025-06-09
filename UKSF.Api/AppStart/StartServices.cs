@@ -1,4 +1,4 @@
-﻿using MoreLinq;
+using MoreLinq;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;

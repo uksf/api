@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;

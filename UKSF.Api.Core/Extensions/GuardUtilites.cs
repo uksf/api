@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 
 namespace UKSF.Api.Core.Extensions;
 
@@ -19,7 +19,7 @@ public static class GuardUtilites
             onInvalid(id);
         }
 
-        if (!ObjectId.TryParse(id, out var _))
+        if (!ObjectId.TryParse(id, out _))
         {
             onInvalid(id);
         }

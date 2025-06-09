@@ -1,4 +1,4 @@
-﻿using System.Net.Mail;
+using System.Net.Mail;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Queries;
 

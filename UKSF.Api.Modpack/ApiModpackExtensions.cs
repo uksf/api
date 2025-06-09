@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.BuildProcess;
 using UKSF.Api.Modpack.BuildProcess.Modern;

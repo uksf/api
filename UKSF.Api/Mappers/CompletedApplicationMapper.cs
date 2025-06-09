@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Mappers;
+using UKSF.Api.Core.Mappers;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 

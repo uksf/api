@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using Octokit;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;

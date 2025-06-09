@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.ArmaServer.Models;
+namespace UKSF.Api.ArmaServer.Models;
 
 public class GameServersDataset
 {

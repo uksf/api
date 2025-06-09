@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using FluentAssertions;
 using UKSF.Api.ArmaServer.Models;
 using Xunit;

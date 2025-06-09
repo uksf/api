@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Core.Services;
+namespace UKSF.Api.Core.Services;
 
 public interface IClock
 {

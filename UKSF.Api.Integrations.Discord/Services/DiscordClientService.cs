@@ -1,4 +1,4 @@
-﻿using System.Net.WebSockets;
+using System.Net.WebSockets;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
@@ -28,7 +28,6 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
     private readonly IVariablesService _variablesService;
     private bool _connected;
     private SocketGuild _guild;
-    private event Action OnClientReadyEvent;
 
     public DiscordClientService(IOptions<AppSettings> options, DiscordSocketClient client, IVariablesService variablesService, IUksfLogger logger)
     {
@@ -113,6 +112,8 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
     {
         Disconnect().Wait();
     }
+
+    private event Action OnClientReadyEvent;
 
     private Task OnClientLog(LogMessage logMessage)
     {

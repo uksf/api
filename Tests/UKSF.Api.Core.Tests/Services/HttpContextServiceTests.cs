@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -29,7 +29,7 @@ public class HttpContextServiceTests
     public void ShouldGetContextEmail()
     {
         DomainAccount account = new() { Email = "contact.tim.here@gmail.com" };
-        List<Claim> claims = [new Claim(ClaimTypes.Email, account.Email)];
+        List<Claim> claims = [new(ClaimTypes.Email, account.Email)];
         ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
         _httpContext = new DefaultHttpContext { User = contextUser };
 
@@ -42,7 +42,7 @@ public class HttpContextServiceTests
     public void ShouldGetContextId()
     {
         DomainAccount account = new();
-        List<Claim> claims = [new Claim(ClaimTypes.Sid, account.Id, ClaimValueTypes.String)];
+        List<Claim> claims = [new(ClaimTypes.Sid, account.Id, ClaimValueTypes.String)];
         ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
         _httpContext = new DefaultHttpContext { User = contextUser };
 
@@ -54,7 +54,7 @@ public class HttpContextServiceTests
     [Fact]
     public void ShouldReturnFalseForInvalidRole()
     {
-        List<Claim> claims = [new Claim(ClaimTypes.Role, Permissions.Admin)];
+        List<Claim> claims = [new(ClaimTypes.Role, Permissions.Admin)];
         ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
         _httpContext = new DefaultHttpContext { User = contextUser };
 
@@ -66,7 +66,7 @@ public class HttpContextServiceTests
     [Fact]
     public void ShouldReturnTrueForValidRole()
     {
-        List<Claim> claims = [new Claim(ClaimTypes.Role, Permissions.Admin)];
+        List<Claim> claims = [new(ClaimTypes.Role, Permissions.Admin)];
         ClaimsPrincipal contextUser = new(new ClaimsIdentity(claims));
         _httpContext = new DefaultHttpContext { User = contextUser };
 

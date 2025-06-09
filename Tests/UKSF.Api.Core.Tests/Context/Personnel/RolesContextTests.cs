@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Core.Context;
@@ -35,7 +35,15 @@ public class RolesContextTests
         DomainRole role2 = new() { Name = "Trainee" };
         DomainRole role3 = new() { Name = "Marksman" };
 
-        _mockDataCollection.Setup(x => x.Get()).Returns(new List<DomainRole> { role1, role2, role3 });
+        _mockDataCollection.Setup(x => x.Get())
+        .Returns(
+            new List<DomainRole>
+            {
+                role1,
+                role2,
+                role3
+            }
+        );
 
         var subject = _rolesContext.Get();
 
@@ -49,7 +57,15 @@ public class RolesContextTests
         DomainRole role2 = new() { Name = "Trainee" };
         DomainRole role3 = new() { Name = "Marksman" };
 
-        _mockDataCollection.Setup(x => x.Get()).Returns(new List<DomainRole> { role1, role2, role3 });
+        _mockDataCollection.Setup(x => x.Get())
+        .Returns(
+            new List<DomainRole>
+            {
+                role1,
+                role2,
+                role3
+            }
+        );
 
         var subject = _rolesContext.GetSingle("Trainee");
 

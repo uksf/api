@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 
 namespace UKSF.Api.Integrations.Discord.Services;
 
@@ -15,7 +15,7 @@ public class DiscordTextService : IDiscordTextService
         { "(#### )(.*)\n", "**$2**\n" },
         { "<br>", "\n" },
         { "\nSR3", "SR3" },
-        { @"(\[.*?\])\((.*?)\)", "$1(<$2>)" },
+        { @"(\[.*?\])\((.*?)\)", "$1(<$2>)" }
     };
 
     public string FromMarkdown(string markdown)

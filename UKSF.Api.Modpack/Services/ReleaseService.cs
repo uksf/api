@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Modpack.Context;
@@ -42,10 +42,7 @@ public class ReleaseService(IReleasesContext releasesContext, IAccountContext ac
 
     public async Task UpdateDraft(DomainModpackRelease release)
     {
-        await releasesContext.Update(
-            release.Id,
-            Builders<DomainModpackRelease>.Update.Set(x => x.Changelog, release.Changelog)
-        );
+        await releasesContext.Update(release.Id, Builders<DomainModpackRelease>.Update.Set(x => x.Changelog, release.Changelog));
     }
 
     public async Task PublishRelease(string version)

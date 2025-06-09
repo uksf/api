@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Models.Domain;
+using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Models.Response;
 
@@ -11,15 +11,10 @@ public class FolderMetadataResponse
     public DateTime Created { get; set; }
     public string Creator { get; set; }
 
-    // Legacy permissions (keep for backwards compatibility)
-    public DocumentPermissions ReadPermissions { get; set; } = new();
-    public DocumentPermissions WritePermissions { get; set; } = new();
-
-    // NEW: Role-based permissions
     public string Owner { get; set; }
-    public RoleBasedDocumentPermissions RoleBasedPermissions { get; set; } = new();
-    public RoleBasedDocumentPermissions EffectivePermissions { get; set; } = new();
-    public RoleBasedDocumentPermissions InheritedPermissions { get; set; } = new();
+    public DocumentPermissions Permissions { get; set; } = new();
+    public DocumentPermissions EffectivePermissions { get; set; } = new();
+    public DocumentPermissions InheritedPermissions { get; set; } = new();
 
     public IEnumerable<DocumentMetadataResponse> Documents { get; set; }
 
@@ -36,15 +31,10 @@ public class DocumentMetadataResponse
     public DateTime LastUpdated { get; set; }
     public string Creator { get; set; }
 
-    // Legacy permissions (keep for backwards compatibility)
-    public DocumentPermissions ReadPermissions { get; set; } = new();
-    public DocumentPermissions WritePermissions { get; set; } = new();
-
-    // NEW: Role-based permissions
     public string Owner { get; set; }
-    public RoleBasedDocumentPermissions RoleBasedPermissions { get; set; } = new();
-    public RoleBasedDocumentPermissions EffectivePermissions { get; set; } = new();
-    public RoleBasedDocumentPermissions InheritedPermissions { get; set; } = new();
+    public DocumentPermissions Permissions { get; set; } = new();
+    public DocumentPermissions EffectivePermissions { get; set; } = new();
+    public DocumentPermissions InheritedPermissions { get; set; } = new();
 
     public bool CanWrite { get; set; }
 }

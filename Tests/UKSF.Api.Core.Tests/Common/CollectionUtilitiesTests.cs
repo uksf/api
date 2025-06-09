@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using FluentAssertions;
 using UKSF.Api.Core.Extensions;
 using Xunit;

@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 
 namespace UKSF.Api.Core.Services;
 
@@ -77,4 +77,3 @@ public class HttpContextService(IHttpContextAccessor httpContextAccessor, IClock
         throw new Exception($"Tried to overwrite user ID ({currentId})");
     }
 }
-

@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Integrations.Teamspeak.Services;
+namespace UKSF.Api.Integrations.Teamspeak.Services;
 
 public interface ITeamspeakMetricsService
 {

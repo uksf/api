@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Core.Context;
@@ -25,7 +25,15 @@ public class UnitsDataServiceTests
         DomainUnit rank3 = new() { Name = "SAS", Order = 1 };
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainUnit>(It.IsAny<string>())).Returns(mockDataCollection.Object);
-        mockDataCollection.Setup(x => x.Get()).Returns(new List<DomainUnit> { rank1, rank2, rank3 });
+        mockDataCollection.Setup(x => x.Get())
+        .Returns(
+            new List<DomainUnit>
+            {
+                rank1,
+                rank2,
+                rank3
+            }
+        );
         mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
         UnitsContext unitsContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
@@ -69,7 +77,16 @@ public class UnitsDataServiceTests
         };
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainUnit>(It.IsAny<string>())).Returns(mockDataCollection.Object);
-        mockDataCollection.Setup(x => x.Get()).Returns(new List<DomainUnit> { rank1, rank2, rank3, rank4 });
+        mockDataCollection.Setup(x => x.Get())
+        .Returns(
+            new List<DomainUnit>
+            {
+                rank1,
+                rank2,
+                rank3,
+                rank4
+            }
+        );
         mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
 
         UnitsContext unitsContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);

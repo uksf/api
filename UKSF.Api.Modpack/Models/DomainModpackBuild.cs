@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Models;

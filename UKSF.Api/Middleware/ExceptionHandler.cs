@@ -1,4 +1,4 @@
-﻿using System.IO.Pipelines;
+using System.IO.Pipelines;
 using System.Net;
 using System.Text.Json.Serialization;
 using UKSF.Api.Core.Exceptions;
@@ -23,12 +23,8 @@ public class ExceptionHandler : IExceptionHandler
     {
         switch (exception)
         {
-            case UksfException uksfException:
-                await HandleUksfException(uksfException, context);
-                break;
-            default:
-                await HandleUnhandledException(exception, context);
-                break;
+            case UksfException uksfException: await HandleUksfException(uksfException, context); break;
+            default:                          await HandleUnhandledException(exception, context); break;
         }
 
         await context.Response.Body.FlushAsync();

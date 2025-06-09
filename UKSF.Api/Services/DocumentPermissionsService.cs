@@ -12,17 +12,17 @@ public interface IDocumentPermissionsService
     bool DoesContextHaveWritePermission(DomainMetadataWithPermissions metadataWithPermissions);
     bool CanContextView(DomainMetadataWithPermissions metadataWithPermissions);
     bool CanContextCollaborate(DomainMetadataWithPermissions metadataWithPermissions);
-    RoleBasedDocumentPermissions GetEffectivePermissions(DomainMetadataWithPermissions metadataWithPermissions);
-    RoleBasedDocumentPermissions GetInheritedPermissions(DomainMetadataWithPermissions metadataWithPermissions);
-    RoleBasedDocumentPermissions GetInheritedPermissionsFromHierarchy(string parentId);
+    DocumentPermissions GetEffectivePermissions(DomainMetadataWithPermissions metadataWithPermissions);
+    DocumentPermissions GetInheritedPermissions(DomainMetadataWithPermissions metadataWithPermissions);
+    DocumentPermissions GetInheritedPermissionsFromHierarchy(string parentId);
 }
 
 public class PermissionsCache
 {
     private readonly Dictionary<string, bool> _collaborateCache = new();
-    private readonly Dictionary<string, RoleBasedDocumentPermissions> _effectivePermissionsCache = new();
-    private readonly Dictionary<string, RoleBasedDocumentPermissions> _hierarchyCache = new();
-    private readonly Dictionary<string, RoleBasedDocumentPermissions> _inheritedPermissionsCache = new();
+    private readonly Dictionary<string, DocumentPermissions> _effectivePermissionsCache = new();
+    private readonly Dictionary<string, DocumentPermissions> _hierarchyCache = new();
+    private readonly Dictionary<string, DocumentPermissions> _inheritedPermissionsCache = new();
     private readonly Dictionary<string, bool> _viewCache = new();
 
     public bool TryGetReadPermission(string key, out bool hasPermission)
@@ -45,32 +45,32 @@ public class PermissionsCache
         _collaborateCache[key] = hasPermission;
     }
 
-    public bool TryGetEffectivePermissions(string key, out RoleBasedDocumentPermissions permissions)
+    public bool TryGetEffectivePermissions(string key, out DocumentPermissions permissions)
     {
         return _effectivePermissionsCache.TryGetValue(key, out permissions);
     }
 
-    public void SetEffectivePermissions(string key, RoleBasedDocumentPermissions permissions)
+    public void SetEffectivePermissions(string key, DocumentPermissions permissions)
     {
         _effectivePermissionsCache[key] = permissions;
     }
 
-    public bool TryGetInheritedPermissions(string key, out RoleBasedDocumentPermissions permissions)
+    public bool TryGetInheritedPermissions(string key, out DocumentPermissions permissions)
     {
         return _inheritedPermissionsCache.TryGetValue(key, out permissions);
     }
 
-    public void SetInheritedPermissions(string key, RoleBasedDocumentPermissions permissions)
+    public void SetInheritedPermissions(string key, DocumentPermissions permissions)
     {
         _inheritedPermissionsCache[key] = permissions;
     }
 
-    public bool TryGetHierarchyPermissions(string key, out RoleBasedDocumentPermissions permissions)
+    public bool TryGetHierarchyPermissions(string key, out DocumentPermissions permissions)
     {
         return _hierarchyCache.TryGetValue(key, out permissions);
     }
 
-    public void SetHierarchyPermissions(string key, RoleBasedDocumentPermissions permissions)
+    public void SetHierarchyPermissions(string key, DocumentPermissions permissions)
     {
         _hierarchyCache[key] = permissions;
     }
@@ -127,7 +127,7 @@ public class DocumentPermissionsService(
         return DoesContextHaveWritePermission(metadataWithPermissions);
     }
 
-    public RoleBasedDocumentPermissions GetEffectivePermissions(DomainMetadataWithPermissions metadataWithPermissions)
+    public DocumentPermissions GetEffectivePermissions(DomainMetadataWithPermissions metadataWithPermissions)
     {
         var cacheKey = $"effective:{metadataWithPermissions.Id}";
         if (_cache.TryGetEffectivePermissions(cacheKey, out var cachedResult))
@@ -140,7 +140,7 @@ public class DocumentPermissionsService(
         return result;
     }
 
-    public RoleBasedDocumentPermissions GetInheritedPermissions(DomainMetadataWithPermissions metadataWithPermissions)
+    public DocumentPermissions GetInheritedPermissions(DomainMetadataWithPermissions metadataWithPermissions)
     {
         var cacheKey = $"inherited:{metadataWithPermissions.Id}";
         if (_cache.TryGetInheritedPermissions(cacheKey, out var cachedResult))
@@ -153,7 +153,7 @@ public class DocumentPermissionsService(
         return result;
     }
 
-    public RoleBasedDocumentPermissions GetInheritedPermissionsFromHierarchy(string parentId)
+    public DocumentPermissions GetInheritedPermissionsFromHierarchy(string parentId)
     {
         var cacheKey = $"hierarchy:{parentId}";
         if (_cache.TryGetHierarchyPermissions(cacheKey, out var cachedResult))
@@ -210,9 +210,9 @@ public class DocumentPermissionsService(
         return HasRolePermission(effectivePermissions.Collaborators, CurrentUserId, true);
     }
 
-    private RoleBasedDocumentPermissions CalculateEffectivePermissions(DomainMetadataWithPermissions metadataWithPermissions)
+    private DocumentPermissions CalculateEffectivePermissions(DomainMetadataWithPermissions metadataWithPermissions)
     {
-        var effectivePermissions = new RoleBasedDocumentPermissions();
+        var effectivePermissions = new DocumentPermissions();
 
         // Start with inherited permissions (always returns a valid object now)
         var inheritedPermissions = GetInheritedPermissions(metadataWithPermissions);
@@ -220,7 +220,7 @@ public class DocumentPermissionsService(
         effectivePermissions.Collaborators = ClonePermissionRole(inheritedPermissions.Collaborators);
 
         // Override with custom permissions where they exist
-        var customPermissions = metadataWithPermissions.RoleBasedPermissions;
+        var customPermissions = metadataWithPermissions.Permissions;
         if (customPermissions != null)
         {
             if (HasPermissionRoleData(customPermissions.Viewers))
@@ -237,20 +237,20 @@ public class DocumentPermissionsService(
         return effectivePermissions;
     }
 
-    private RoleBasedDocumentPermissions CalculateInheritedPermissions(DomainMetadataWithPermissions metadataWithPermissions)
+    private DocumentPermissions CalculateInheritedPermissions(DomainMetadataWithPermissions metadataWithPermissions)
     {
         return metadataWithPermissions switch
         {
             // Only folders can have parents, documents inherit from their folder
             DomainDocumentFolderMetadata folderMetadata => GetInheritedPermissionsFromParentHierarchy(folderMetadata.Parent),
             DomainDocumentMetadata documentMetadata     => GetInheritedPermissionsFromParentHierarchy(documentMetadata.Folder),
-            _                                           => new RoleBasedDocumentPermissions()
+            _                                           => new DocumentPermissions()
         };
 
         // Return empty permissions for unknown types
     }
 
-    private RoleBasedDocumentPermissions GetInheritedPermissionsFromParentHierarchy(string parentId)
+    private DocumentPermissions GetInheritedPermissionsFromParentHierarchy(string parentId)
     {
         var cacheKey = $"hierarchy:{parentId}";
         if (_cache.TryGetHierarchyPermissions(cacheKey, out var cachedResult))
@@ -263,16 +263,13 @@ public class DocumentPermissionsService(
         return result;
     }
 
-    private RoleBasedDocumentPermissions CalculateInheritedPermissionsFromParentHierarchy(string parentId)
+    private DocumentPermissions CalculateInheritedPermissionsFromParentHierarchy(string parentId)
     {
         var viewerPermissions = GetInheritedRolePermissions(parentId, true);
         var collaboratorPermissions = GetInheritedRolePermissions(parentId, false);
 
         // Always return a permissions object to ensure consistent API responses
-        return new RoleBasedDocumentPermissions
-        {
-            Viewers = viewerPermissions ?? new PermissionRole(), Collaborators = collaboratorPermissions ?? new PermissionRole()
-        };
+        return new DocumentPermissions { Viewers = viewerPermissions ?? new PermissionRole(), Collaborators = collaboratorPermissions ?? new PermissionRole() };
     }
 
     private PermissionRole GetInheritedRolePermissions(string parentId, bool isViewerRole)
@@ -290,7 +287,7 @@ public class DocumentPermissionsService(
         }
 
         // Check if this parent has the specific role permissions set
-        var rolePermissions = isViewerRole ? parentFolder.RoleBasedPermissions?.Viewers : parentFolder.RoleBasedPermissions?.Collaborators;
+        var rolePermissions = isViewerRole ? parentFolder.Permissions?.Viewers : parentFolder.Permissions?.Collaborators;
 
         return HasPermissionRoleData(rolePermissions) ? ClonePermissionRole(rolePermissions) : GetInheritedRolePermissions(parentFolder.Parent, isViewerRole);
     }

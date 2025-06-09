@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Octokit;
 using Octokit.Internal;
 using UKSF.Api.Core;

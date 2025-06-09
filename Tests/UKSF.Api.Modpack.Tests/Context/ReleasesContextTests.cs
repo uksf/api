@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Core.Context.Base;

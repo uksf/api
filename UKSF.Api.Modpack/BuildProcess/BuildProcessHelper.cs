@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Text.Json.Nodes;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
@@ -23,22 +23,22 @@ public class BuildProcessHelper(
 {
     private readonly CancellationTokenSource _errorCancellationTokenSource = new();
     private readonly ManualResetEvent _errorWaitHandle = new(false);
+    private readonly object _killLock = new();
     private readonly ManualResetEvent _outputWaitHandle = new(false);
     private readonly List<string> _results = [];
-    private readonly object _killLock = new();
     private CancellationTokenRegistration _cancellationTokenRegistration;
     private Exception _capturedException;
     private bool _disposed;
     private CancellationTokenRegistration _errorCancellationTokenRegistration;
+    private volatile bool _errorStreamClosed;
     private int _exitCode = int.MinValue;
     private bool _externalCancellationRequested;
     private bool _ignoreErrors;
     private bool _isKilling;
     private string _logInfo;
+    private volatile bool _outputStreamClosed;
     private Process _process;
     private bool _useLogger;
-    private volatile bool _outputStreamClosed;
-    private volatile bool _errorStreamClosed;
 
     public void Dispose()
     {
@@ -167,7 +167,7 @@ public class BuildProcessHelper(
     private void ForceStreamCompletion()
     {
         Log("Forcing stream completion to prevent deadlock");
-        
+
         if (!_outputStreamClosed)
         {
             Log("Output stream not closed naturally, forcing completion");
@@ -350,7 +350,7 @@ public class BuildProcessHelper(
                 {
                     _process.Kill(true);
                     Log("Second kill attempt made");
-                    
+
                     if (!_process.WaitForExit(3000))
                     {
                         LogError($"Process {_process.Id} still not exited after second kill attempt");
@@ -379,7 +379,7 @@ public class BuildProcessHelper(
     private void CleanupResources()
     {
         Log("Starting cleanup resources");
-        
+
         // Ensure streams are marked as closed and wait handles are set
         ForceStreamCompletion();
 
@@ -392,7 +392,7 @@ public class BuildProcessHelper(
             UnregisterProcessFromTracking();
             DisposeProcess();
         }
-        
+
         Log("Cleanup resources completed");
     }
 

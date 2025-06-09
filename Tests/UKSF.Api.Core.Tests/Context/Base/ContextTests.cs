@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -53,9 +53,8 @@ public class ContextTests
         _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<DomainTestModel, bool>>())).Returns(() => _mockCollection);
         _mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<DomainTestModel, bool>>>()))
                            .Returns(Task.CompletedTask)
-                           .Callback(
-                               (Expression<Func<DomainTestModel, bool>> expression) =>
-                                   _mockCollection.RemoveAll(x => _mockCollection.Where(expression.Compile()).Contains(x))
+                           .Callback((Expression<Func<DomainTestModel, bool>> expression) =>
+                                         _mockCollection.RemoveAll(x => _mockCollection.Where(expression.Compile()).Contains(x))
                            );
 
         await _testContext.DeleteMany(x => x.Name == "1");
@@ -182,8 +181,7 @@ public class ContextTests
         _mockDataCollection.Setup(x => x.GetSingle(It.IsAny<Func<DomainTestModel, bool>>())).Returns(item1);
         _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
                            .Returns(Task.CompletedTask)
-                           .Callback(
-                               (FilterDefinition<DomainTestModel> filter, UpdateDefinition<DomainTestModel> update) =>
+                           .Callback((FilterDefinition<DomainTestModel> filter, UpdateDefinition<DomainTestModel> update) =>
                                {
                                    subjectFilter = filter;
                                    subjectUpdate = update;
@@ -270,9 +268,8 @@ public class ContextTests
         _mockDataCollection.Setup(x => x.Get(It.IsAny<Func<DomainTestModel, bool>>())).Returns(() => _mockCollection);
         _mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<DomainTestModel, bool>>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
                            .Returns(Task.CompletedTask)
-                           .Callback(
-                               (Expression<Func<DomainTestModel, bool>> expression, UpdateDefinition<DomainTestModel> _) =>
-                                   _mockCollection.Where(expression.Compile()).ToList().ForEach(y => y.Name = "2")
+                           .Callback((Expression<Func<DomainTestModel, bool>> expression, UpdateDefinition<DomainTestModel> _) =>
+                                         _mockCollection.Where(expression.Compile()).ToList().ForEach(y => y.Name = "2")
                            );
 
         await _testContext.UpdateMany(x => x.Name == "1", Builders<DomainTestModel>.Update.Set(x => x.Name, "2"));

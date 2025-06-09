@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Models;
@@ -47,16 +47,10 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
 
         switch (updatedState)
         {
-            case ApplicationState.Accepted:
-                await Accept(accountId);
-                break;
-            case ApplicationState.Rejected:
-                await Reject(accountId);
-                break;
-            case ApplicationState.Waiting:
-                await Reactivate(accountId, account);
-                break;
-            default: throw new BadRequestException($"New state {updatedState} is invalid");
+            case ApplicationState.Accepted: await Accept(accountId); break;
+            case ApplicationState.Rejected: await Reject(accountId); break;
+            case ApplicationState.Waiting:  await Reactivate(accountId, account); break;
+            default:                        throw new BadRequestException($"New state {updatedState} is invalid");
         }
 
         var updatedDomainAccount = _accountContext.GetSingle(accountId);
@@ -144,9 +138,7 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
         if (_recruitmentService.GetRecruiterAccounts().All(x => x.Id != account.Application.Recruiter))
         {
             var newRecruiterId = _recruitmentService.GetNextRecruiterForApplication();
-            _logger.LogAudit(
-                $"Application recruiter for {accountId} is no longer SR1, reassigning from {account.Application.Recruiter} to {newRecruiterId}"
-            );
+            _logger.LogAudit($"Application recruiter for {accountId} is no longer SR1, reassigning from {account.Application.Recruiter} to {newRecruiterId}");
             await _accountContext.Update(accountId, Builders<DomainAccount>.Update.Set(x => x.Application.Recruiter, newRecruiterId));
         }
     }

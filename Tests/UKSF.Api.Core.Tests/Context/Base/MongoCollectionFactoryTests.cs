@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Core.Context.Base;

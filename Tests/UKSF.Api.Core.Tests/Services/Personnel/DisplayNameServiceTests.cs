@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Moq;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models.Domain;

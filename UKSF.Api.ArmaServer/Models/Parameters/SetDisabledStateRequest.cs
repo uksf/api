@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.ArmaServer.Models.Parameters;
+namespace UKSF.Api.ArmaServer.Models.Parameters;
 
 public class SetDisabledStateRequest
 {

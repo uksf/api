@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Commands;
@@ -118,13 +118,12 @@ public class RecruitmentController(
     public IEnumerable<Recruiter> GetRecruiters()
     {
         return recruitmentService.GetRecruiterAccounts()
-        .Select(
-            x => new Recruiter
-            {
-                Id = x.Id,
-                Name = displayNameService.GetDisplayName(x),
-                Active = x.Settings.Sr1Enabled
-            }
+                                 .Select(x => new Recruiter
+                                     {
+                                         Id = x.Id,
+                                         Name = displayNameService.GetDisplayName(x),
+                                         Active = x.Settings.Sr1Enabled
+                                     }
         );
     }
 
@@ -134,17 +133,15 @@ public class RecruitmentController(
     {
         var account = httpContextService.GetUserId();
         var activity = recruitmentService.GetRecruiterAccounts()
-                                         .Select(
-                                             recruiterAccount => new
+                                         .Select(recruiterAccount => new
                                              {
                                                  recruiterAccount,
-                                                 recruiterApplications =
-                                                     accountContext.Get(x => x.Application is not null && x.Application.Recruiter == recruiterAccount.Id)
-                                                                   .ToList()
+                                                 recruiterApplications = accountContext
+                                                                         .Get(x => x.Application is not null && x.Application.Recruiter == recruiterAccount.Id)
+                                                                         .ToList()
                                              }
                                          )
-                                         .Select(
-                                             x => new RecruitmentActivityDataset
+                                         .Select(x => new RecruitmentActivityDataset
                                              {
                                                  Account = new { id = x.recruiterAccount.Id, settings = x.recruiterAccount.Settings },
                                                  Name = displayNameService.GetDisplayName(x.recruiterAccount),

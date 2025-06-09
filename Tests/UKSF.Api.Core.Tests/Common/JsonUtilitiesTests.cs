@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using FluentAssertions;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Tests.Common;
@@ -27,7 +27,16 @@ public class JsonUtilitiesTests
         subject.Id.Should().Be(testComplexModel.Id);
         subject.Name.Should().Be(testComplexModel.Name);
         subject.Data.Should().NotBe(testModel1);
-        subject.List.Should().HaveCount(3).And.Contain(new List<string> { "a", "b", "c" });
+        subject.List.Should()
+        .HaveCount(3)
+        .And.Contain(
+            new List<string>
+            {
+                "a",
+                "b",
+                "c"
+            }
+        );
         subject.DataList.Should()
         .HaveCount(3)
         .And.NotContain(

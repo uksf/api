@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.ScheduledActions;
+using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Integrations.Instagram.Services;
 
@@ -26,8 +26,8 @@ public class ActionInstagramImages : SelfCreatingScheduledAction, IActionInstagr
 
     public override DateTime NextRun => _clock.UkToday();
     public override TimeSpan RunInterval => TimeSpan.FromHours(12);
-    public override string Name => ActionName;
     public override bool RunOnCreate => true;
+    public override string Name => ActionName;
 
     public override Task Run(params object[] parameters)
     {

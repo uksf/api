@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context.Base;

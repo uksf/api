@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
@@ -114,18 +114,16 @@ public class CreateApplicationCommand(
     {
         var accountName = displayNameService.GetDisplayNameWithoutRank(account);
         var accountsWithSameSteamConnection = accountContext
-                                              .Get(
-                                                  x => x.Id != account.Id &&
-                                                       x.Steamname == account.Steamname &&
-                                                       _allowedMembershipStates.Contains(x.MembershipState)
+                                              .Get(x => x.Id != account.Id &&
+                                                        x.Steamname == account.Steamname &&
+                                                        _allowedMembershipStates.Contains(x.MembershipState)
                                               )
                                               .Select(displayNameService.GetDisplayNameWithoutRank)
                                               .ToList();
         var accountsWithSameDiscordConnection = accountContext
-                                                .Get(
-                                                    x => x.Id != account.Id &&
-                                                         x.DiscordId == account.DiscordId &&
-                                                         _allowedMembershipStates.Contains(x.MembershipState)
+                                                .Get(x => x.Id != account.Id &&
+                                                          x.DiscordId == account.DiscordId &&
+                                                          _allowedMembershipStates.Contains(x.MembershipState)
                                                 )
                                                 .Select(displayNameService.GetDisplayNameWithoutRank)
                                                 .ToList();

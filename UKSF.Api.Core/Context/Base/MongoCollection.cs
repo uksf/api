@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Core.Models;
@@ -50,10 +50,7 @@ public class MongoCollection<T>(IMongoDatabase database, string collectionName) 
         FilterDefinition<TOut> filterDefinition
     )
     {
-        var countFacet = AggregateFacet.Create(
-            "count",
-            PipelineDefinition<TOut, AggregateCountResult>.Create([PipelineStageDefinitionBuilder.Count<TOut>()])
-        );
+        var countFacet = AggregateFacet.Create("count", PipelineDefinition<TOut, AggregateCountResult>.Create([PipelineStageDefinitionBuilder.Count<TOut>()]));
 
         var dataFacet = AggregateFacet.Create(
             "data",

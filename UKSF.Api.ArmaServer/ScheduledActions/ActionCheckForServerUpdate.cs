@@ -1,4 +1,4 @@
-﻿using UKSF.Api.ArmaServer.Commands;
+using UKSF.Api.ArmaServer.Commands;
 using UKSF.Api.ArmaServer.Queries;
 using UKSF.Api.Core;
 using UKSF.Api.Core.ScheduledActions;

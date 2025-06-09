@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;

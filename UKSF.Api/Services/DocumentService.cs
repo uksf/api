@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
@@ -56,12 +56,8 @@ public class DocumentService(
             Created = clock.UtcNow(),
             LastUpdated = clock.UtcNow(),
             Creator = httpContextService.GetUserId(),
-            // Legacy permissions (for backwards compatibility)
-            ReadPermissions = createDocument.ReadPermissions,
-            WritePermissions = createDocument.WritePermissions,
-            // New role-based permissions
             Owner = createDocument.Owner ?? httpContextService.GetUserId(),
-            RoleBasedPermissions = createDocument.RoleBasedPermissions
+            Permissions = createDocument.Permissions
         };
 
         if (!documentPermissionsService.CanContextView(documentMetadata))
@@ -104,21 +100,16 @@ public class DocumentService(
             throw new DocumentException($"A document already exists at path '{newFullPath}'");
         }
 
-        // Update both legacy and new permission fields, including FullPath
+        // Update permission fields, including FullPath
         var updates = new List<UpdateDefinition<DomainDocumentFolderMetadata>>
         {
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Documents.FirstMatchingElement().Name, newPermissions.Name),
             Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Documents.FirstMatchingElement().FullPath, newFullPath),
-            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Documents.FirstMatchingElement().WritePermissions, newPermissions.WritePermissions),
-            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Documents.FirstMatchingElement().ReadPermissions, newPermissions.ReadPermissions),
             Builders<DomainDocumentFolderMetadata>.Update.Set(
                 x => x.Documents.FirstMatchingElement().Owner,
                 newPermissions.Owner ?? documentMetadata.Owner
             ),
-            Builders<DomainDocumentFolderMetadata>.Update.Set(
-                x => x.Documents.FirstMatchingElement().RoleBasedPermissions,
-                newPermissions.RoleBasedPermissions
-            )
+            Builders<DomainDocumentFolderMetadata>.Update.Set(x => x.Documents.FirstMatchingElement().Permissions, newPermissions.Permissions)
         };
 
         var combinedUpdate = Builders<DomainDocumentFolderMetadata>.Update.Combine(updates);
@@ -273,12 +264,8 @@ public class DocumentService(
             Created = documentMetadata.Created,
             LastUpdated = documentMetadata.LastUpdated,
             Creator = documentMetadata.Creator,
-            // Legacy permissions (keep for backwards compatibility)
-            ReadPermissions = documentMetadata.ReadPermissions,
-            WritePermissions = documentMetadata.WritePermissions,
-            // NEW: Role-based permissions
             Owner = documentMetadata.Owner,
-            RoleBasedPermissions = documentMetadata.RoleBasedPermissions,
+            Permissions = documentMetadata.Permissions,
             EffectivePermissions = effectivePermissions,
             InheritedPermissions = inheritedPermissions,
             CanWrite = canWrite

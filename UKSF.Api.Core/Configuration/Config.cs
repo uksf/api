@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Core.Configuration;
+namespace UKSF.Api.Core.Configuration;
 
 public class AppSettings
 {

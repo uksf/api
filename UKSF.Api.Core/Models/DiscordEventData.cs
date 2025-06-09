@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Core.Models;
+namespace UKSF.Api.Core.Models;
 
 public class DiscordEventData(DiscordUserEventType eventType, string eventData) : EventData
 {

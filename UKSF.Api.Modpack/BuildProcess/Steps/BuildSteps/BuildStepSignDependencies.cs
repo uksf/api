@@ -1,4 +1,4 @@
-﻿using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Extensions;
 
 namespace UKSF.Api.Modpack.BuildProcess.Steps.BuildSteps;

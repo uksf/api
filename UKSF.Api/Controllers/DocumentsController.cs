@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Models.Request;
 using UKSF.Api.Models.Response;

@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.WebSocket;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Commands;
@@ -27,9 +27,9 @@ public class DiscordRecruitmentService(
 {
     private const string ButtonIdReject = "reject";
     private const string ButtonIdDismissRejection = "dismissrejection";
+    private readonly IAccountContext _accountContext = accountContext;
     private readonly IUksfLogger _logger = logger;
     private readonly IVariablesService _variablesService = variablesService;
-    private readonly IAccountContext _accountContext = accountContext;
 
     public void Activate()
     {
@@ -45,8 +45,7 @@ public class DiscordRecruitmentService(
 
     private Task ClientOnUserLeft(SocketGuild _, SocketUser user)
     {
-        return WrapEventTask(
-            async () =>
+        return WrapEventTask(async () =>
             {
                 try
                 {
@@ -88,8 +87,7 @@ public class DiscordRecruitmentService(
 
     private Task ClientOnButtonExecuted(SocketMessageComponent component)
     {
-        return WrapEventTask(
-            async () =>
+        return WrapEventTask(async () =>
             {
                 var buttonData = GetButtonData(component.Data.CustomId);
                 await HandleButton(component, buttonData);

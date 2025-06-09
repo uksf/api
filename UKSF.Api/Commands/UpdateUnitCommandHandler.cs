@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.Core;

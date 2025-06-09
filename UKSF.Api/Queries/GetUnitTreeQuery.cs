@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Domain;
@@ -41,8 +41,7 @@ public class GetUnitTreeQuery : IGetUnitTreeQuery
     private List<DomainUnit> GetUnitChildren(MongoObject parentUnit)
     {
         return _unitsContext.Get(x => x.Parent == parentUnit.Id)
-                            .Select(
-                                x =>
+                            .Select(x =>
                                 {
                                     x.Children = GetUnitChildren(x);
                                     return x;

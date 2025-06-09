@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Core.Models;
 
@@ -10,6 +10,7 @@ public class DomainModpackRelease : MongoObject
 
     [BsonRepresentation(BsonType.ObjectId)]
     public string CreatorId { get; set; }
+
     public bool IsDraft { get; set; }
     public DateTime Timestamp { get; set; }
     public string Version { get; set; }

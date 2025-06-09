@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -145,8 +145,10 @@ public class GameServersServiceOrderTests
     private void When_updating_game_server_order(IReadOnlyCollection<DomainGameServer> gameServers)
     {
         _mockIGameServersContext.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<Expression<Func<DomainGameServer, int>>>(), It.IsAny<int>()))
-                                .Callback(
-                                    (string id, Expression<Func<DomainGameServer, int>> _, int index) => { gameServers.First(x => x.Id == id).Order = index; }
+                                .Callback((string id, Expression<Func<DomainGameServer, int>> _, int index) =>
+                                          {
+                                              gameServers.First(x => x.Id == id).Order = index;
+                                          }
                                 );
     }
 }

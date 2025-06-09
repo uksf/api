@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Modpack.BuildProcess.Steps.ReleaseSteps;
+namespace UKSF.Api.Modpack.BuildProcess.Steps.ReleaseSteps;
 
 [BuildStep(Name)]
 public class BuildStepBackup : FileBuildStep

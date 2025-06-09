@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using UKSF.Api.AppStart;
 using UKSF.Api.ArmaServer;

@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Commands;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Queries;

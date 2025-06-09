@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Events;
@@ -44,12 +44,8 @@ public class BuildsEventHandler(IEventBus eventBus, IHubContext<ModpackHub, IMod
 
         switch (eventModel.EventType)
         {
-            case EventType.Add:
-                await AddedEvent(data.Build);
-                break;
-            case EventType.Update:
-                await UpdatedEvent(data.Build);
-                break;
+            case EventType.Add:    await AddedEvent(data.Build); break;
+            case EventType.Update: await UpdatedEvent(data.Build); break;
         }
     }
 

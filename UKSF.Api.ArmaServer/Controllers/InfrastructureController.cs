@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.ArmaServer.Commands;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Queries;

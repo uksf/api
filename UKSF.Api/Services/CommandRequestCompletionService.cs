@@ -1,4 +1,4 @@
-﻿using AvsAnLib;
+using AvsAnLib;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Driver;
 using UKSF.Api.Core;

@@ -1,4 +1,4 @@
-﻿using Humanizer;
+using Humanizer;
 using UKSF.Api.Core.Extensions;
 
 namespace UKSF.Api.Modpack.BuildProcess.Steps;
@@ -34,9 +34,8 @@ public class FileBuildStep : BuildStep
         IEnumerable<FileInfo> sourceFiles = GetDirectoryContents(source);
         var updatedFiles = sourceFiles
                            .Select(sourceFile => new { sourceFile, targetFile = new FileInfo(sourceFile.FullName.Replace(source.FullName, target.FullName)) })
-                           .Where(
-                               x => x.targetFile.Exists &&
-                                    (x.targetFile.Length != x.sourceFile.Length || x.targetFile.LastWriteTime < x.sourceFile.LastWriteTime)
+                           .Where(x => x.targetFile.Exists &&
+                                       (x.targetFile.Length != x.sourceFile.Length || x.targetFile.LastWriteTime < x.sourceFile.LastWriteTime)
                            )
                            .Select(x => x.sourceFile)
                            .ToList();
@@ -50,8 +49,7 @@ public class FileBuildStep : BuildStep
         IEnumerable<FileInfo> targetFiles = GetDirectoryContents(target);
         var deletedFiles = targetFiles
                            .Select(targetFile => new { targetFile, sourceFile = new FileInfo(targetFile.FullName.Replace(target.FullName, source.FullName)) })
-                           .Where(
-                               x =>
+                           .Where(x =>
                                {
                                    if (x.sourceFile.Exists)
                                    {
@@ -167,8 +165,7 @@ public class FileBuildStep : BuildStep
     internal async Task ParallelProcessFiles(IEnumerable<FileInfo> files, int taskLimit, Func<FileInfo, Task> process, Func<string> getLog, string error)
     {
         SemaphoreSlim taskLimiter = new(taskLimit);
-        var tasks = files.Select(
-            file =>
+        var tasks = files.Select(file =>
             {
                 return Task.Run(
                     async () =>
@@ -217,27 +214,28 @@ public class FileBuildStep : BuildStep
         }
         while (filesList.Any());
 
-        var batchesTasks = fileBatches.Select(
-            batch => batch.Select(
-                              async fileInfo =>
-                              {
-                                  try
-                                  {
-                                      await process(fileInfo);
-                                      StepLogger.LogInline(getLog());
-                                  }
-                                  catch (OperationCanceledException)
-                                  {
-                                      throw;
-                                  }
-                                  catch (Exception exception)
-                                  {
-                                      CancellationTokenSource.Cancel();
-                                      throw new Exception($"{error} '{fileInfo}'\n{exception.GetCompleteMessage()}", exception);
-                                  }
-                              }
-                          )
-                          .ToList()
+        var batchesTasks = fileBatches.Select(batch => batch.Select(async fileInfo =>
+                                                                {
+                                                                    try
+                                                                    {
+                                                                        await process(fileInfo);
+                                                                        StepLogger.LogInline(getLog());
+                                                                    }
+                                                                    catch (OperationCanceledException)
+                                                                    {
+                                                                        throw;
+                                                                    }
+                                                                    catch (Exception exception)
+                                                                    {
+                                                                        CancellationTokenSource.Cancel();
+                                                                        throw new Exception(
+                                                                            $"{error} '{fileInfo}'\n{exception.GetCompleteMessage()}",
+                                                                            exception
+                                                                        );
+                                                                    }
+                                                                }
+                                                            )
+                                                            .ToList()
         );
         foreach (var batchTasks in batchesTasks)
         {

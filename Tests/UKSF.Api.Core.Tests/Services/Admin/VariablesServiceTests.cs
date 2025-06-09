@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
@@ -36,11 +36,7 @@ public class VariablesServiceTests
     public void ShouldGetVariableAsBool()
     {
         const bool Expected = true;
-        DomainVariableItem variableItem = new()
-        {
-            Key = "Test",
-            Item = Expected
-        };
+        DomainVariableItem variableItem = new() { Key = "Test", Item = Expected };
 
         var subject = variableItem.AsBool();
 
@@ -51,11 +47,7 @@ public class VariablesServiceTests
     public void ShouldGetVariableAsDouble()
     {
         const double Expected = 1.5;
-        DomainVariableItem variableItem = new()
-        {
-            Key = "Test",
-            Item = Expected
-        };
+        DomainVariableItem variableItem = new() { Key = "Test", Item = Expected };
 
         var subject = variableItem.AsDouble();
 
@@ -91,11 +83,7 @@ public class VariablesServiceTests
     public void ShouldGetVariableAsString()
     {
         const string Expected = "Value";
-        DomainVariableItem variableItem = new()
-        {
-            Key = "Test",
-            Item = Expected
-        };
+        DomainVariableItem variableItem = new() { Key = "Test", Item = Expected };
 
         var subject = variableItem.AsString();
 
@@ -106,11 +94,7 @@ public class VariablesServiceTests
     public void ShouldGetVariableAsUlong()
     {
         const ulong Expected = ulong.MaxValue;
-        DomainVariableItem variableItem = new()
-        {
-            Key = "Test",
-            Item = Expected
-        };
+        DomainVariableItem variableItem = new() { Key = "Test", Item = Expected };
 
         var subject = variableItem.AsUlong();
 

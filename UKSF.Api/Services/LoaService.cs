@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Models.Domain;
@@ -53,4 +53,3 @@ public class LoaService(ILoaContext loaContext) : ILoaService
         return loaContext.Get(loa => loa.Recipient == id && loa.Start < eventStart && loa.End > eventStart).Any();
     }
 }
-

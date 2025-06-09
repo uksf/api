@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;

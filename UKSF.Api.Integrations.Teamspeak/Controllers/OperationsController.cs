@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using UKSF.Api.Core;
@@ -38,8 +38,9 @@ public class OperationsController : ControllerBase
             var enddate = DateTime.UtcNow.Date.AddMinutes(30 * (i + 1));
             try
             {
-                var serverSnapshot = serverSnapshots.FirstOrDefault(
-                    x => x.Timestamp.TimeOfDay > startdate.TimeOfDay && x.Timestamp.TimeOfDay < enddate.TimeOfDay && x.Timestamp.Date == day
+                var serverSnapshot = serverSnapshots.FirstOrDefault(x => x.Timestamp.TimeOfDay > startdate.TimeOfDay &&
+                                                                         x.Timestamp.TimeOfDay < enddate.TimeOfDay &&
+                                                                         x.Timestamp.Date == day
                 );
                 if (serverSnapshot is not null)
                 {

@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Core.Context;
@@ -12,14 +12,14 @@ public enum LoaSelectionMode
 {
     Current,
     Future,
-    Past,
+    Past
 }
 
 public enum LoaViewMode
 {
     All,
     Coc,
-    Mine,
+    Mine
 }
 
 public enum LoaDateMode
@@ -27,7 +27,7 @@ public enum LoaDateMode
     All,
     NextOp,
     NextTraining,
-    Select,
+    Select
 }
 
 public interface IGetPagedLoasQuery
@@ -98,7 +98,7 @@ public class GetPagedLoasQuery(
             ),
             LoaSelectionMode.Future => Builders<DomainLoaWithAccount>.Filter.Gt(x => x.Start, today),
             LoaSelectionMode.Past   => Builders<DomainLoaWithAccount>.Filter.Lt(x => x.End, today),
-            _                       => throw new ArgumentOutOfRangeException(nameof(selectionMode)),
+            _                       => throw new ArgumentOutOfRangeException(nameof(selectionMode))
         };
     }
 
@@ -117,7 +117,7 @@ public class GetPagedLoasQuery(
             LoaDateMode.NextTraining => GetNextDayOfWeek(DayOfWeek.Wednesday),
             LoaDateMode.Select       => selectedDate ?? throw new ArgumentNullException(nameof(selectedDate), "Date must be selected"),
             LoaDateMode.All          => throw new ArgumentOutOfRangeException(nameof(dateMode)),
-            _                        => throw new ArgumentOutOfRangeException(nameof(dateMode)),
+            _                        => throw new ArgumentOutOfRangeException(nameof(dateMode))
         };
 
         filterDate = DateTime.SpecifyKind(filterDate, DateTimeKind.Utc);
@@ -160,7 +160,7 @@ public class GetPagedLoasQuery(
             Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Rank.Name, regex),
             Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Rank.Abbreviation, regex),
             Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Unit.Name, regex),
-            Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Unit.Shortname, regex),
+            Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Unit.Shortname, regex)
         };
         return Builders<DomainLoaWithAccount>.Filter.Or(filters);
     }

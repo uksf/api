@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Launcher.Models.Parameters;
+namespace UKSF.Api.Launcher.Models.Parameters;
 
 public class GetUpdateFilesRequest
 {

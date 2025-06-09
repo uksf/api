@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.Core.Context;
@@ -24,6 +24,18 @@ public record GetCommandMembersPagedQueryArgs(
 
 public class GetCommandMembersPagedQuery(IAccountContext accountContext, IHttpContextService httpContextService) : IGetCommandMembersPagedQuery
 {
+    public async Task<PagedResult<CommandMemberAccount>> ExecuteAsync(GetCommandMembersPagedQueryArgs args)
+    {
+        var aggregator = BuildAggregator;
+        var sortDefinition = BuildSortDefinition(args.SortMode, args.SortDirection);
+        var viewModeFilterDefinition = BuildViewModeFilterDefinition(args.ViewMode);
+        var queryFilterDefinition = accountContext.BuildPagedComplexQuery(args.Query, BuildFiltersFromQueryPart);
+        var filterDefinition = Builders<CommandMemberAccount>.Filter.And(viewModeFilterDefinition, queryFilterDefinition);
+
+        var pagedResult = accountContext.GetPaged(args.Page, args.PageSize, aggregator, sortDefinition, filterDefinition);
+        return await Task.FromResult(pagedResult);
+    }
+
     private static IAggregateFluent<CommandMemberAccount> BuildAggregator(IMongoCollection<DomainAccount> collection)
     {
         return collection.Aggregate()
@@ -54,18 +66,6 @@ public class GetCommandMembersPagedQuery(IAccountContext accountContext, IHttpCo
                          .As<CommandMemberAccount>();
     }
 
-    public async Task<PagedResult<CommandMemberAccount>> ExecuteAsync(GetCommandMembersPagedQueryArgs args)
-    {
-        var aggregator = BuildAggregator;
-        var sortDefinition = BuildSortDefinition(args.SortMode, args.SortDirection);
-        var viewModeFilterDefinition = BuildViewModeFilterDefinition(args.ViewMode);
-        var queryFilterDefinition = accountContext.BuildPagedComplexQuery(args.Query, BuildFiltersFromQueryPart);
-        var filterDefinition = Builders<CommandMemberAccount>.Filter.And(viewModeFilterDefinition, queryFilterDefinition);
-
-        var pagedResult = accountContext.GetPaged(args.Page, args.PageSize, aggregator, sortDefinition, filterDefinition);
-        return await Task.FromResult(pagedResult);
-    }
-
     private static SortDefinition<CommandMemberAccount> BuildSortDefinition(CommandMemberSortMode sortMode, int sortDirection)
     {
         var sortDocument = sortMode switch
@@ -82,7 +82,7 @@ public class GetCommandMembersPagedQuery(IAccountContext accountContext, IHttpCo
                 { "lastname", sortDirection },
                 { "firstname", sortDirection }
             },
-            _                          => new BsonDocument { { "lastname", sortDirection }, { "firstname", sortDirection } }
+            _ => new BsonDocument { { "lastname", sortDirection }, { "firstname", sortDirection } }
         };
         return new BsonDocumentSortDefinition<CommandMemberAccount>(sortDocument);
     }

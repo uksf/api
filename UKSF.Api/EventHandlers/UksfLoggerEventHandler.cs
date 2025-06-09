@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;

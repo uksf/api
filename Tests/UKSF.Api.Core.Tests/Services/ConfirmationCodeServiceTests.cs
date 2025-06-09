@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -109,7 +109,7 @@ public class ConfirmationCodeServiceTests
         var subject = await _confirmationCodeService.CreateConfirmationCode("test");
 
         subject.Should().HaveLength(24);
-        ObjectId.TryParse(subject, out var _).Should().BeTrue();
+        ObjectId.TryParse(subject, out _).Should().BeTrue();
     }
 
     [Fact]

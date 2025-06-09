@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Core.Context;
+namespace UKSF.Api.Core.Context;
 
 public interface IFileContext
 {

@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Context.Base;
+using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.Models;
@@ -12,8 +12,7 @@ public class ReleasesContext(IMongoCollectionFactory mongoCollectionFactory, IEv
 {
     protected override IEnumerable<DomainModpackRelease> OrderCollection(IEnumerable<DomainModpackRelease> collection)
     {
-        return collection.Select(
-                             x =>
+        return collection.Select(x =>
                              {
                                  var parts = x.Version.Split('.').Select(int.Parse).ToArray();
                                  return new

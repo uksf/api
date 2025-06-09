@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+using MongoDB.Driver;
 using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Core.Context.Base;

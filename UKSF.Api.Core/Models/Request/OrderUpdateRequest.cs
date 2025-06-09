@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Core.Models.Request;
+namespace UKSF.Api.Core.Models.Request;
 
 public class OrderUpdateRequest
 {

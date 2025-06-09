@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using AvsAnLib;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Events;

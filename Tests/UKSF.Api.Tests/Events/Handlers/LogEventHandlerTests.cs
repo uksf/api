@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Moq;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;

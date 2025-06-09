@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Exceptions;

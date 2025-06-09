@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Integrations.Instagram.ScheduledActions;
 using UKSF.Api.Integrations.Instagram.Services;
 

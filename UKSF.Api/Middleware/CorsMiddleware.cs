@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Middleware;
+namespace UKSF.Api.Middleware;
 
 public class CorsMiddleware : IMiddleware
 {

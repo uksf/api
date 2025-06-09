@@ -11,7 +11,9 @@ Content-Type: application/json
   "password": "{{password}}"
 }
 
-> {% client.global.set("token", response.body.token); %}
+> {%
+    client.global.set("token", response.body.token);
+%}
 
 ###
 # group: Login
@@ -166,13 +168,19 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "readPermissions": {
-    "units": [],
-    "rank": null
-  },
-  "writePermissions": {
-    "units": [],
-    "rank": "5b72fb462d54990cec7c4b1c"
+  "permissions": {
+    "viewers": {
+      "units": [],
+      "members": [],
+      "rank": "",
+      "expandToSubUnits": true
+    },
+    "collaborators": {
+      "units": [],
+      "members": [],
+      "rank": "5b72fb462d54990cec7c4b1c",
+      "expandToSubUnits": true
+    }
   }
 }
 

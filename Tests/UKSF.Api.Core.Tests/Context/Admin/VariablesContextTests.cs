@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -45,6 +45,26 @@ public class VariablesContextTests
         subject.Should().ContainInOrder(item3, item1, item2);
     }
 
+    [Fact]
+    public async Task ShouldThrowForDeleteWhenNoKey()
+    {
+        _mockCollection = [];
+
+        var act = async () => await _variablesContext.Delete("");
+
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
+    public async Task ShouldThrowForUpdateWhenNoKey()
+    {
+        _mockCollection = [];
+
+        var act = async () => await _variablesContext.Update("", "75");
+
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("game path")]
@@ -63,25 +83,5 @@ public class VariablesContextTests
         var subject = _variablesContext.GetSingle(key);
 
         subject.Should().Be(null);
-    }
-
-    [Fact]
-    public async Task ShouldThrowForUpdateWhenNoKey()
-    {
-        _mockCollection = [];
-
-        var act = async () => await _variablesContext.Update("", "75");
-
-        await act.Should().ThrowAsync<KeyNotFoundException>();
-    }
-
-    [Fact]
-    public async Task ShouldThrowForDeleteWhenNoKey()
-    {
-        _mockCollection = [];
-
-        var act = async () => await _variablesContext.Delete("");
-
-        await act.Should().ThrowAsync<KeyNotFoundException>();
     }
 }

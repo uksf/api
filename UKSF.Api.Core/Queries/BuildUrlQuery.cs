@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.AspNetCore.WebUtilities;
 using UKSF.Api.Core.Configuration;
 
 namespace UKSF.Api.Core.Queries;

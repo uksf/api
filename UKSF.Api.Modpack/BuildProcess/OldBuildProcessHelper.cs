@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Text.Json.Nodes;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
@@ -23,12 +23,18 @@ public class OldBuildProcessHelper(
     private readonly List<string> _results = [];
     private CancellationTokenRegistration _cancellationTokenRegistration;
     private Exception _capturedException;
+    private bool _disposed;
     private CancellationTokenRegistration _errorCancellationTokenRegistration;
     private bool _ignoreErrors;
     private string _logInfo;
     private Process _process;
     private bool _useLogger;
-    private bool _disposed;
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     public List<string> Run(string workingDirectory, string executable, string args, int timeout, bool log = false)
     {
@@ -353,12 +359,6 @@ public class OldBuildProcessHelper(
         }
 
         return messages;
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
     protected virtual void Dispose(bool disposing)

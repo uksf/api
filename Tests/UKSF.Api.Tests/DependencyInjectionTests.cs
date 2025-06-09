@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
@@ -28,8 +28,7 @@ public class DependencyInjectionTests
         var configuration = TestConfigurationProvider.GetTestConfiguration();
         var hostEnvironment = mockHostEnvironment.Object;
 
-        Setup = DependencyInjectionTestHelper.FromServiceCollection(
-            services =>
+        Setup = DependencyInjectionTestHelper.FromServiceCollection(services =>
             {
                 services.TryAddTransient(typeof(ILogger<>), typeof(Logger<>));
                 services.TryAddTransient(typeof(ILoggerFactory), typeof(LoggerFactory));

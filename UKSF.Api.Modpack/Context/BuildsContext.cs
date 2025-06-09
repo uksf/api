@@ -1,4 +1,4 @@
-﻿using MongoDB.Driver;
+using MongoDB.Driver;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.Models;
@@ -16,11 +16,6 @@ public interface IBuildsContext : IMongoContext<DomainModpackBuild>, ICachedMong
 public class BuildsContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService)
     : CachedMongoContext<DomainModpackBuild>(mongoCollectionFactory, eventBus, variablesService, "modpackBuilds"), IBuildsContext
 {
-    protected override IEnumerable<DomainModpackBuild> OrderCollection(IEnumerable<DomainModpackBuild> collection)
-    {
-        return collection.OrderByDescending(x => x.BuildNumber);
-    }
-
     public async Task Update(DomainModpackBuild build, ModpackBuildStep buildStep)
     {
         var updateDefinition = Builders<DomainModpackBuild>.Update.Set(x => x.Steps[buildStep.Index], buildStep);
@@ -32,5 +27,10 @@ public class BuildsContext(IMongoCollectionFactory mongoCollectionFactory, IEven
     {
         await base.Update(build.Id, updateDefinition);
         DataEvent(EventType.Update, new ModpackBuildEventData(build));
+    }
+
+    protected override IEnumerable<DomainModpackBuild> OrderCollection(IEnumerable<DomainModpackBuild> collection)
+    {
+        return collection.OrderByDescending(x => x.BuildNumber);
     }
 }

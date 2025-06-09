@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Launcher.Context;
 using UKSF.Api.Launcher.Services;
 using UKSF.Api.Launcher.Signalr.Hubs;

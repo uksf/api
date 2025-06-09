@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -52,12 +52,10 @@ public class PruneDataActionTests
     [Fact]
     public async Task When_pruning_logs()
     {
-        List<DomainBasicLog> basicLogs =
-            [new DomainBasicLog("test1") { Timestamp = _now.AddDays(-8) }, new DomainBasicLog("test2") { Timestamp = _now.AddDays(-6) }];
-        List<AuditLog> auditLogs =
-            [new AuditLog("server", "audit1") { Timestamp = _now.AddMonths(-4) }, new AuditLog("server", "audit2") { Timestamp = _now.AddMonths(-2) }];
+        List<DomainBasicLog> basicLogs = [new("test1") { Timestamp = _now.AddDays(-8) }, new("test2") { Timestamp = _now.AddDays(-6) }];
+        List<AuditLog> auditLogs = [new("server", "audit1") { Timestamp = _now.AddMonths(-4) }, new("server", "audit2") { Timestamp = _now.AddMonths(-2) }];
         List<ErrorLog> errorLogs =
-            [new ErrorLog(new Exception("error1")) { Timestamp = _now.AddDays(-8) }, new ErrorLog(new Exception("error2")) { Timestamp = _now.AddDays(-6) }];
+            [new(new Exception("error1")) { Timestamp = _now.AddDays(-8) }, new(new Exception("error2")) { Timestamp = _now.AddDays(-6) }];
 
         _mockLogContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<DomainBasicLog, bool>>>()))
                        .Returns(Task.CompletedTask)

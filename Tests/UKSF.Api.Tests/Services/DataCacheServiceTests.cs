@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Context.Base;

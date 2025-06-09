@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using MongoDB.Driver;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
@@ -253,7 +253,7 @@ public class BuildStep : IBuildStep
         var errorFilter = new ErrorFilter(
             new ProcessErrorHandlingConfig
             {
-                ErrorExclusions = errorExclusions?.AsReadOnly() ?? (IReadOnlyList<string>) [],
+                ErrorExclusions = errorExclusions?.AsReadOnly() ?? (IReadOnlyList<string>)[],
                 IgnoreErrorGateOpen = ignoreErrorGateOpen,
                 IgnoreErrorGateClose = ignoreErrorGateClose
             }

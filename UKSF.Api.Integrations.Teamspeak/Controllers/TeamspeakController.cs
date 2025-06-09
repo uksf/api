@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
@@ -92,11 +92,10 @@ public class TeamspeakController : ControllerBase
         var teamspeakClients = _teamspeakService.GetOnlineTeamspeakClients().ToList();
         var allAccounts = _accountContext.Get().ToList();
         var clients = teamspeakClients.Where(x => x is not null)
-                                      .Select(
-                                          client =>
+                                      .Select(client =>
                                           {
-                                              var account = allAccounts.FirstOrDefault(
-                                                  x => x.TeamspeakIdentities is not null && x.TeamspeakIdentities.Any(tsDbId => tsDbId == client.ClientDbId)
+                                              var account = allAccounts.FirstOrDefault(x => x.TeamspeakIdentities is not null &&
+                                                                                            x.TeamspeakIdentities.Any(tsDbId => tsDbId == client.ClientDbId)
                                               );
                                               return new { account, client };
                                           }
@@ -137,7 +136,7 @@ public class TeamspeakController : ControllerBase
             Commanders = commanders,
             Recruiters = recruiters,
             Members = members,
-            Guests = guests,
+            Guests = guests
         };
     }
 

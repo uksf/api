@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
@@ -81,8 +81,9 @@ public class AuthControllerTests
     [Fact]
     public async Task When_resetting_password()
     {
-        _mockResetPasswordCommand.Setup(
-            x => x.ExecuteAsync(It.Is<ResetPasswordCommandArgs>(m => m.Email == "email" && m.Password == "password" && m.Code == "code"))
+        _mockResetPasswordCommand.Setup(x => x.ExecuteAsync(
+                                            It.Is<ResetPasswordCommandArgs>(m => m.Email == "email" && m.Password == "password" && m.Code == "code")
+                                        )
         );
         _mockLoginService.Setup(x => x.LoginForPasswordReset("email")).Returns(new TokenResponse { Token = "token" });
 

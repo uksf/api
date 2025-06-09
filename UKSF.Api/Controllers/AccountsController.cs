@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
@@ -163,8 +163,7 @@ public class AccountsController(
         var accountObjects = accounts.OrderBy(x => x.Rank, new RankComparer(ranksService))
                                      .ThenBy(x => x.Lastname)
                                      .ThenBy(x => x.Firstname)
-                                     .Select(
-                                         x => new RosterAccount
+                                     .Select(x => new RosterAccount
                                          {
                                              Id = x.Id,
                                              Nation = x.Nation,

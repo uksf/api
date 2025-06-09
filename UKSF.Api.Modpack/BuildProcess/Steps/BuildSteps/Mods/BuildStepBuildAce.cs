@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Modpack.BuildProcess.Steps.BuildSteps.Mods;
+namespace UKSF.Api.Modpack.BuildProcess.Steps.BuildSteps.Mods;
 
 [BuildStep(Name)]
 public class BuildStepBuildAce : ModBuildStep

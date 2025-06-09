@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -150,7 +150,7 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
                 RepoName,
                 new NewRelease(release.Version)
                 {
-                    Name = $"Modpack Version {release.Version}", Body = $"## Changelog\n{release.Changelog.Replace("<br>", "\n")}",
+                    Name = $"Modpack Version {release.Version}", Body = $"## Changelog\n{release.Changelog.Replace("<br>", "\n")}"
                 }
             );
 
@@ -171,8 +171,7 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
         var client = await githubClientService.GetAuthenticatedClient();
         var branches = await client.Repository.Branch.GetAll(RepoOrg, RepoName);
         ConcurrentBag<string> validBranchesBag = [];
-        var task = branches.Select(
-            async branch =>
+        var task = branches.Select(async branch =>
             {
                 if (await IsReferenceValid(branch.Name))
                 {
@@ -196,8 +195,7 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
         var client = await githubClientService.GetAuthenticatedClient();
 
         var releases = await client.Repository.Release.GetAll(RepoOrg, RepoName);
-        return releases.Select(
-                           x => new DomainModpackRelease
+        return releases.Select(x => new DomainModpackRelease
                            {
                                Version = x.Name.Split(" ")[^1],
                                Timestamp = x.CreatedAt.DateTime,
@@ -244,8 +242,7 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
         if (issues.Count != 0)
         {
             changelog += $"#### {header}";
-            changelog += issues.Select(
-                                   x =>
+            changelog += issues.Select(x =>
                                    {
                                        var titleParts = x.Title.Split(" ");
                                        return $"\n- {titleParts[0]} to [{titleParts[1]}]({x.HtmlUrl})";

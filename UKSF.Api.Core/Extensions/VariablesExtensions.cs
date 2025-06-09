@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using UKSF.Api.Core.Models.Domain;
 
 namespace UKSF.Api.Core.Extensions;

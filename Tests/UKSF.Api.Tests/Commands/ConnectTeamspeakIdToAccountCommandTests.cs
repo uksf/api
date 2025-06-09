@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,6 +19,7 @@ namespace UKSF.Api.Tests.Commands;
 
 public class ConnectTeamspeakIdToAccountCommandTests
 {
+    private const string TeamspeakId = "2";
     private readonly string _accountId = ObjectId.GenerateNewId().ToString();
     private readonly string _confirmationCode = ObjectId.GenerateNewId().ToString();
     private readonly Mock<IAccountContext> _mockAccountContext;
@@ -26,7 +27,6 @@ public class ConnectTeamspeakIdToAccountCommandTests
     private readonly Mock<IUksfLogger> _mockLogger;
     private readonly Mock<INotificationsService> _mockNotificationsService;
     private readonly ConnectTeamspeakIdToAccountCommand _subject;
-    private const string TeamspeakId = "2";
 
     public ConnectTeamspeakIdToAccountCommandTests()
     {
@@ -53,8 +53,7 @@ public class ConnectTeamspeakIdToAccountCommandTests
         _mockAccountContext.Setup(x => x.Update(_accountId, It.IsAny<UpdateDefinition<DomainAccount>>()))
                            .Callback((string _, UpdateDefinition<DomainAccount> update) => createdUpdate = update.RenderUpdate());
         _mockAccountContext.Setup(x => x.GetSingle(_accountId))
-                           .Returns(
-                               () =>
+                           .Returns(() =>
                                {
                                    DomainAccount account = new() { Id = _accountId };
                                    if (createdUpdate != null)

@@ -1,4 +1,4 @@
-﻿using Gameloop.Vdf;
+using Gameloop.Vdf;
 using Gameloop.Vdf.JsonConverter;
 using Microsoft.Extensions.Options;
 using UKSF.Api.ArmaServer.Exceptions;
@@ -16,9 +16,9 @@ public interface IGetLatestServerInfrastructureQuery
 
 public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructureQuery
 {
-    private readonly ISteamCmdService _steamCmdService;
-    private readonly IUksfLogger _logger;
     private readonly AppSettings _appSettings;
+    private readonly IUksfLogger _logger;
+    private readonly ISteamCmdService _steamCmdService;
 
     public GetLatestServerInfrastructureQuery(ISteamCmdService steamCmdService, IOptions<AppSettings> options, IUksfLogger logger)
     {

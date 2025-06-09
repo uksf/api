@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using FluentAssertions;
 using UKSF.Api.Core.Services;
 using Xunit;

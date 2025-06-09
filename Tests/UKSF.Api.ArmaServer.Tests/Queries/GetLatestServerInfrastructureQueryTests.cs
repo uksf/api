@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -48,17 +48,6 @@ public class GetLatestServerInfrastructureQueryTests
     }
 
     [Fact]
-    public async Task When_getting_latest_server_info_from_steam_with_info_with_mixed_outputs()
-    {
-        Given_steam_cmd_returns_info_with_mixed_outputs();
-
-        var result = await _subject.ExecuteAsync(0);
-
-        result.LatestBuild.Should().Be("12403383");
-        result.LatestUpdate.Should().Be(new DateTime(2023, 10, 10, 12, 42, 30));
-    }
-
-    [Fact]
     public async Task When_getting_latest_server_info_from_steam_with_failed_info()
     {
         Given_steam_cmd_returns_failed_info();
@@ -87,6 +76,17 @@ public class GetLatestServerInfrastructureQueryTests
         result.LatestBuild.Should().Be("12403383");
         result.LatestUpdate.Should().Be(new DateTime(2023, 10, 10, 12, 42, 30));
         _mockSteamCmdService.Verify(x => x.GetServerInfo(), Times.Exactly(6));
+    }
+
+    [Fact]
+    public async Task When_getting_latest_server_info_from_steam_with_info_with_mixed_outputs()
+    {
+        Given_steam_cmd_returns_info_with_mixed_outputs();
+
+        var result = await _subject.ExecuteAsync(0);
+
+        result.LatestBuild.Should().Be("12403383");
+        result.LatestUpdate.Should().Be(new DateTime(2023, 10, 10, 12, 42, 30));
     }
 
     [Fact]

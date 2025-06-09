@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Models;
+using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Modpack.Models;
 

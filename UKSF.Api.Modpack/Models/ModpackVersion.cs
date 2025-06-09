@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Modpack.Models;
+namespace UKSF.Api.Modpack.Models;
 
 public readonly struct ModpackVersion : IComparable<ModpackVersion>
 {

@@ -1,4 +1,4 @@
-﻿using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;

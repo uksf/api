@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Models.Response;
+namespace UKSF.Api.Models.Response;
 
 public class DocumentContentResponse
 {

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.Tests.Common;

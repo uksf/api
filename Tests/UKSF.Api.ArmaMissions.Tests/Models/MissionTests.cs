@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using UKSF.Api.ArmaMissions.Models;
 using Xunit;
 

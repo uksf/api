@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Core.Context;
@@ -35,7 +35,15 @@ public class RanksContextTests
         DomainRank rank2 = new() { Order = 0 };
         DomainRank rank3 = new() { Order = 1 };
 
-        _mockDataCollection.Setup(x => x.Get()).Returns(new List<DomainRank> { rank1, rank2, rank3 });
+        _mockDataCollection.Setup(x => x.Get())
+        .Returns(
+            new List<DomainRank>
+            {
+                rank1,
+                rank2,
+                rank3
+            }
+        );
 
         var subject = _ranksContext.Get();
 
@@ -49,7 +57,15 @@ public class RanksContextTests
         DomainRank rank2 = new() { Name = "Recruit", Order = 1 };
         DomainRank rank3 = new() { Name = "Candidate", Order = 0 };
 
-        _mockDataCollection.Setup(x => x.Get()).Returns(new List<DomainRank> { rank1, rank2, rank3 });
+        _mockDataCollection.Setup(x => x.Get())
+        .Returns(
+            new List<DomainRank>
+            {
+                rank1,
+                rank2,
+                rank3
+            }
+        );
 
         var subject = _ranksContext.GetSingle("Recruit");
 

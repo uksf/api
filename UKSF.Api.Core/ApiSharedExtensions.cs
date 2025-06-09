@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using UKSF.Api.Core.Commands;

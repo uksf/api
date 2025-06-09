@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using MoreLinq;
 using UKSF.Api.Core;

@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using Discord;
 using Discord.WebSocket;
 using UKSF.Api.Core;
@@ -87,8 +87,7 @@ public class DiscordMessageService(
 
     private Task ClientOnMessageReceived(SocketMessage message)
     {
-        return WrapEventTask(
-            async () =>
+        return WrapEventTask(async () =>
             {
                 if (MessageIsWeeklyEventsMessage(message))
                 {
@@ -106,8 +105,7 @@ public class DiscordMessageService(
 
     private Task ClientOnReactionAdded(Cacheable<IUserMessage, ulong> cacheable, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
     {
-        return WrapEventTask(
-            async () =>
+        return WrapEventTask(async () =>
             {
                 var message = await cacheable.GetOrDownloadAsync();
                 if (!MessageIsWeeklyEventsMessage(message))
@@ -136,8 +134,7 @@ public class DiscordMessageService(
 
     private Task ClientOnReactionRemoved(Cacheable<IUserMessage, ulong> cacheable, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
     {
-        return WrapEventTask(
-            async () =>
+        return WrapEventTask(async () =>
             {
                 var message = await cacheable.GetOrDownloadAsync();
                 if (!MessageIsWeeklyEventsMessage(message))

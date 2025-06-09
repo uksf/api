@@ -1,4 +1,4 @@
-﻿using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Context;
 using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Integrations.Instagram.Services;

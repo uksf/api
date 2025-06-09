@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Integrations.Teamspeak.Models;
+namespace UKSF.Api.Integrations.Teamspeak.Models;
 
 public class TeamspeakGroupProcedure
 {
