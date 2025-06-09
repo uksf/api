@@ -23,9 +23,7 @@ public class BuilderProcessExecutorTests
 
     public BuilderProcessExecutorTests()
     {
-        // Setup default behavior for BUILD_FORCE_LOGS variable
-        var buildForceLogsVariable = new DomainVariableItem { Key = "BUILD_FORCE_LOGS", Item = false };
-        _mockVariablesService.Setup(x => x.GetVariable("BUILD_FORCE_LOGS")).Returns(buildForceLogsVariable);
+        _mockVariablesService.Setup(x => x.GetVariable("BUILD_FORCE_LOGS")).Returns(new DomainVariableItem { Key = "BUILD_FORCE_LOGS", Item = false });
     }
 
     [Fact]
@@ -37,21 +35,15 @@ public class BuilderProcessExecutorTests
 
         var executor = CreateBuilderProcessExecutor();
 
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo cancellation test");
+        GetPlatformCommand(out var executable, out var args, "echo cancellation test");
 
         var command = executor.CreateCommand(executable, ".", args).WithBuildId("test-build").WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act & Assert
-        var results = new List<ProcessOutputLine>();
-
         // With a pre-cancelled token, we expect a TaskCanceledException
         await Assert.ThrowsAsync<TaskCanceledException>(async () =>
             {
-                await foreach (var outputLine in command.ExecuteAsync(preCancelledTokenSource.Token))
-                {
-                    results.Add(outputLine);
-                }
+                await foreach (var _ in command.ExecuteAsync(preCancelledTokenSource.Token)) { }
             }
         );
     }

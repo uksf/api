@@ -108,7 +108,7 @@ public class BuildsServiceTests
         {
             Id = "running-build",
             Running = true,
-            Steps = new List<ModpackBuildStep> { new("Test Step") { Running = true } }
+            Steps = [new ModpackBuildStep("Test Step") { Running = true }]
         };
 
         _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>())).Returns(new List<DomainModpackBuild> { runningBuild });
@@ -156,7 +156,7 @@ public class BuildsServiceTests
         {
             Id = "running-build",
             Running = true,
-            Steps = new List<ModpackBuildStep> { new("Test Step") { Running = true } }
+            Steps = [new ModpackBuildStep("Test Step") { Running = true }]
         };
 
         _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>())).Returns(new List<DomainModpackBuild> { runningBuild });

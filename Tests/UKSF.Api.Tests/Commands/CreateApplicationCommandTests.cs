@@ -21,38 +21,34 @@ public class CreateApplicationCommandTests
     private const string RecruiterCommentThreadId = "recruiterCommentThreadId";
     private const string SteamName = "steam";
     private readonly Mock<IAccountContext> _mockAccountContext;
-    private readonly Mock<IAssignmentService> _mockAssignmentService;
     private readonly Mock<ICommentThreadService> _mockCommentThreadService;
     private readonly Mock<ICreateCommentThreadCommand> _mockCreateCommentThreadCommand;
     private readonly Mock<IDisplayNameService> _mockDisplayNameService;
-    private readonly Mock<IUksfLogger> _mockLogger;
-    private readonly Mock<INotificationsService> _mockNotificationsService;
-    private readonly Mock<IRecruitmentService> _mockRecruitmentService;
     private readonly CreateApplicationCommand _subject;
 
     public CreateApplicationCommandTests()
     {
         _mockAccountContext = new Mock<IAccountContext>();
-        _mockAssignmentService = new Mock<IAssignmentService>();
+        var mockAssignmentService = new Mock<IAssignmentService>();
         _mockDisplayNameService = new Mock<IDisplayNameService>();
         _mockCommentThreadService = new Mock<ICommentThreadService>();
-        _mockLogger = new Mock<IUksfLogger>();
-        _mockNotificationsService = new Mock<INotificationsService>();
-        _mockRecruitmentService = new Mock<IRecruitmentService>();
+        var mockLogger = new Mock<IUksfLogger>();
+        var mockNotificationsService = new Mock<INotificationsService>();
+        var mockRecruitmentService = new Mock<IRecruitmentService>();
         _mockCreateCommentThreadCommand = new Mock<ICreateCommentThreadCommand>();
 
-        _mockRecruitmentService.Setup(x => x.GetRecruiterLeadAccountIds()).Returns(new List<string>());
+        mockRecruitmentService.Setup(x => x.GetRecruiterLeadAccountIds()).Returns(new List<string>());
         _mockDisplayNameService.Setup(x => x.GetDisplayNameWithoutRank(It.Is<DomainAccount>(m => m.Id == AccountId))).Returns("Last.F");
 
         _subject = new CreateApplicationCommand(
             _mockAccountContext.Object,
-            _mockRecruitmentService.Object,
-            _mockAssignmentService.Object,
-            _mockNotificationsService.Object,
+            mockRecruitmentService.Object,
+            mockAssignmentService.Object,
+            mockNotificationsService.Object,
             _mockDisplayNameService.Object,
             _mockCommentThreadService.Object,
             _mockCreateCommentThreadCommand.Object,
-            _mockLogger.Object
+            mockLogger.Object
         );
     }
 

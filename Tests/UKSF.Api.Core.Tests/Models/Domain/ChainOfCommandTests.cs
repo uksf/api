@@ -1,3 +1,4 @@
+using System.Linq;
 using FluentAssertions;
 using UKSF.Api.Core.Models.Domain;
 using Xunit;
@@ -153,7 +154,6 @@ public class ChainOfCommandTests
     public void GetPositionOrder_Should_Return_Correct_Order(string position, int expectedOrder)
     {
         // Arrange
-        var chainOfCommand = new ChainOfCommand();
 
         // Act
         var result = ChainOfCommand.GetPositionOrder(position);
@@ -173,7 +173,7 @@ public class ChainOfCommandTests
         };
 
         // Act
-        var result = chainOfCommand.GetAssignedPositions();
+        var result = chainOfCommand.GetAssignedPositions().ToList();
 
         // Assert
         result.Should().HaveCount(2);

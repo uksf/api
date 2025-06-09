@@ -726,9 +726,7 @@ public class TeamspeakGroupServiceTests
         };
         List<DomainUnit> units = [unit, _elcomUnit];
 
-        var trainings = new List<DomainTraining>(); // Empty trainings list
-
-        _mockTrainingsContext.Setup(x => x.Get()).Returns(trainings);
+        _mockTrainingsContext.Setup(x => x.Get()).Returns(new List<DomainTraining>());
         _mockUnitsContext.Setup(x => x.Get()).Returns(units);
         _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))

@@ -43,7 +43,7 @@ public class DocumentPermissionsServiceTests
     public void ClonePermissionRole_WithUsers_ShouldCloneUsersCorrectly()
     {
         var otherUserId = ObjectId.GenerateNewId().ToString();
-        var originalRole = new PermissionRole
+        var originalRole = new DocumentPermission
         {
             Units = [_unitId],
             Members = [_memberId, otherUserId],
@@ -67,7 +67,7 @@ public class DocumentPermissionsServiceTests
     [Fact]
     public void DoesContextHaveReadPermission_WhenOnlyUsersListSpecified_ShouldWorkCorrectly()
     {
-        var metadata = new DomainDocumentMetadata { Permissions = new DocumentPermissions { Viewers = new PermissionRole { Members = [_memberId] } } };
+        var metadata = new DomainDocumentMetadata { Permissions = new DocumentPermissions { Viewers = new DocumentPermission { Members = [_memberId] } } };
 
         var result = _subject.CanContextView(metadata);
 
@@ -81,7 +81,7 @@ public class DocumentPermissionsServiceTests
         GivenUserHasRankPermission();
         var metadata = new DomainDocumentMetadata
         {
-            Permissions = new DocumentPermissions { Collaborators = new PermissionRole { Units = [_unitId], Rank = "requiredRank" } }
+            Permissions = new DocumentPermissions { Collaborators = new DocumentPermission { Units = [_unitId], Rank = "requiredRank" } }
         };
 
         var result = _subject.CanContextView(metadata);
@@ -92,7 +92,7 @@ public class DocumentPermissionsServiceTests
     [Fact]
     public void DoesContextHaveReadPermission_WhenUserIsInUsersList_ShouldReturnTrue()
     {
-        var metadata = new DomainDocumentMetadata { Permissions = new DocumentPermissions { Viewers = new PermissionRole { Members = [_memberId] } } };
+        var metadata = new DomainDocumentMetadata { Permissions = new DocumentPermissions { Viewers = new DocumentPermission { Members = [_memberId] } } };
 
         var result = _subject.CanContextView(metadata);
 
@@ -108,7 +108,7 @@ public class DocumentPermissionsServiceTests
         {
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole
+                Viewers = new DocumentPermission
                 {
                     Members = [_memberId],
                     Units = [_unitId],
@@ -150,7 +150,7 @@ public class DocumentPermissionsServiceTests
         GivenUserHasRankPermission();
         var metadata = new DomainDocumentMetadata
         {
-            Permissions = new DocumentPermissions { Viewers = new PermissionRole { Units = [_unitId], Rank = "requiredRank" } }
+            Permissions = new DocumentPermissions { Viewers = new DocumentPermission { Units = [_unitId], Rank = "requiredRank" } }
         };
 
         var result = _subject.CanContextView(metadata);
@@ -165,7 +165,7 @@ public class DocumentPermissionsServiceTests
         GivenUserLacksRankPermission();
         var metadata = new DomainDocumentMetadata
         {
-            Permissions = new DocumentPermissions { Viewers = new PermissionRole { Units = [_unitId], Rank = "requiredRank" } }
+            Permissions = new DocumentPermissions { Viewers = new DocumentPermission { Units = [_unitId], Rank = "requiredRank" } }
         };
 
         var result = _subject.CanContextView(metadata);
@@ -180,7 +180,7 @@ public class DocumentPermissionsServiceTests
         GivenUserHasRankPermission();
         var metadata = new DomainDocumentMetadata
         {
-            Permissions = new DocumentPermissions { Viewers = new PermissionRole { Units = [_unitId], Rank = "requiredRank" } }
+            Permissions = new DocumentPermissions { Viewers = new DocumentPermission { Units = [_unitId], Rank = "requiredRank" } }
         };
 
         var result = _subject.CanContextView(metadata);
@@ -198,7 +198,7 @@ public class DocumentPermissionsServiceTests
         {
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole
+                Viewers = new DocumentPermission
                 {
                     Members = [otherUserId], // Different user
                     Units = [_unitId],
@@ -222,7 +222,7 @@ public class DocumentPermissionsServiceTests
         {
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole
+                Viewers = new DocumentPermission
                 {
                     Members = [otherUserId], // Different user
                     Units = [_unitId],
@@ -246,7 +246,7 @@ public class DocumentPermissionsServiceTests
         {
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole
+                Viewers = new DocumentPermission
                 {
                     Members = [otherUserId], // Different user
                     Units = [_unitId],
@@ -272,7 +272,7 @@ public class DocumentPermissionsServiceTests
         {
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole
+                Viewers = new DocumentPermission
                 {
                     Units = [_unitId],
                     Rank = "requiredRank",
@@ -294,7 +294,7 @@ public class DocumentPermissionsServiceTests
     public void DoesContextHaveReadPermission_WithOnlyRankRequirement_ShouldGrantAccessBasedOnRank()
     {
         GivenUserHasRankPermission();
-        var metadata = new DomainDocumentMetadata { Permissions = new DocumentPermissions { Viewers = new PermissionRole { Rank = "requiredRank" } } };
+        var metadata = new DomainDocumentMetadata { Permissions = new DocumentPermissions { Viewers = new DocumentPermission { Rank = "requiredRank" } } };
 
         var result = _subject.CanContextView(metadata);
 
@@ -305,7 +305,7 @@ public class DocumentPermissionsServiceTests
     public void DoesContextHaveReadPermission_WithOnlyUnitRequirement_ShouldGrantAccessBasedOnUnit()
     {
         GivenUserIsInChildUnit();
-        var metadata = new DomainDocumentMetadata { Permissions = new DocumentPermissions { Viewers = new PermissionRole { Units = [_unitId] } } };
+        var metadata = new DomainDocumentMetadata { Permissions = new DocumentPermissions { Viewers = new DocumentPermission { Units = [_unitId] } } };
 
         var result = _subject.CanContextView(metadata);
 
@@ -319,7 +319,7 @@ public class DocumentPermissionsServiceTests
         GivenUserHasRankPermission();
         var metadata = new DomainDocumentMetadata
         {
-            Permissions = new DocumentPermissions { Collaborators = new PermissionRole { Units = [_unitId], Rank = "requiredRank" } }
+            Permissions = new DocumentPermissions { Collaborators = new DocumentPermission { Units = [_unitId], Rank = "requiredRank" } }
         };
 
         var result = _subject.CanContextCollaborate(metadata);
@@ -330,7 +330,10 @@ public class DocumentPermissionsServiceTests
     [Fact]
     public void DoesContextHaveWritePermission_WhenUserIsInCollaboratorUsersList_ShouldReturnTrue()
     {
-        var metadata = new DomainDocumentMetadata { Permissions = new DocumentPermissions { Collaborators = new PermissionRole { Members = [_memberId] } } };
+        var metadata = new DomainDocumentMetadata
+        {
+            Permissions = new DocumentPermissions { Collaborators = new DocumentPermission { Members = [_memberId] } }
+        };
 
         var result = _subject.CanContextCollaborate(metadata);
 
@@ -371,7 +374,7 @@ public class DocumentPermissionsServiceTests
         {
             Permissions = new DocumentPermissions
             {
-                Collaborators = new PermissionRole
+                Collaborators = new DocumentPermission
                 {
                     Units = [_unitId],
                     Rank = "requiredRank",
@@ -398,13 +401,13 @@ public class DocumentPermissionsServiceTests
         {
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole
+                Viewers = new DocumentPermission
                 {
                     Units = [_unitId],
                     Rank = "testRank",
                     ExpandToSubUnits = false
                 },
-                Collaborators = new PermissionRole { Units = [_childUnitId], ExpandToSubUnits = true }
+                Collaborators = new DocumentPermission { Units = [_childUnitId], ExpandToSubUnits = true }
             }
         };
 
@@ -424,8 +427,8 @@ public class DocumentPermissionsServiceTests
             Id = "parent",
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole { Units = [_parentUnitId], Rank = "parentRank" },
-                Collaborators = new PermissionRole { Units = [_parentUnitId] }
+                Viewers = new DocumentPermission { Units = [_parentUnitId], Rank = "parentRank" },
+                Collaborators = new DocumentPermission { Units = [_parentUnitId] }
             }
         };
 
@@ -435,7 +438,7 @@ public class DocumentPermissionsServiceTests
             Parent = "parent",
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole { Units = [_childUnitId] } // Override units, inherit rank
+                Viewers = new DocumentPermission { Units = [_childUnitId] } // Override units, inherit rank
             }
         };
 
@@ -458,13 +461,13 @@ public class DocumentPermissionsServiceTests
             Id = "parent",
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole
+                Viewers = new DocumentPermission
                 {
                     Members = [_memberId],
                     Units = [_parentUnitId],
                     Rank = "parentRank"
                 },
-                Collaborators = new PermissionRole { Members = [otherUserId], Units = [_parentUnitId] }
+                Collaborators = new DocumentPermission { Members = [otherUserId], Units = [_parentUnitId] }
             }
         };
 
@@ -474,7 +477,7 @@ public class DocumentPermissionsServiceTests
             Parent = "parent",
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole { Units = [_childUnitId] } // Completely replaces inherited Viewers role
+                Viewers = new DocumentPermission { Units = [_childUnitId] } // Completely replaces inherited Viewers role
             }
         };
 
@@ -498,8 +501,8 @@ public class DocumentPermissionsServiceTests
             Id = "parent",
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole { Units = [_parentUnitId], Rank = "parentRank" },
-                Collaborators = new PermissionRole { Units = [_childUnitId], Rank = "collaboratorRank" }
+                Viewers = new DocumentPermission { Units = [_parentUnitId], Rank = "parentRank" },
+                Collaborators = new DocumentPermission { Units = [_childUnitId], Rank = "collaboratorRank" }
             }
         };
 
@@ -544,7 +547,7 @@ public class DocumentPermissionsServiceTests
         {
             Id = folderCId,
             Parent = folderDId,
-            Permissions = new DocumentPermissions { Collaborators = new PermissionRole { Rank = "Staff Sergeant" } }
+            Permissions = new DocumentPermissions { Collaborators = new DocumentPermission { Rank = "Staff Sergeant" } }
         };
 
         // Folder B (has viewer permissions only)
@@ -552,7 +555,7 @@ public class DocumentPermissionsServiceTests
         {
             Id = folderBId,
             Parent = folderCId,
-            Permissions = new DocumentPermissions { Viewers = new PermissionRole { Rank = "Sergeant" } }
+            Permissions = new DocumentPermissions { Viewers = new DocumentPermission { Rank = "Sergeant" } }
         };
 
         // Document A (in Folder B)
@@ -639,7 +642,7 @@ public class DocumentPermissionsServiceTests
             Parent = null, // Root folder
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole { Rank = "Sergeant" }, Collaborators = new PermissionRole { Rank = "Staff Sergeant" }
+                Viewers = new DocumentPermission { Rank = "Sergeant" }, Collaborators = new DocumentPermission { Rank = "Staff Sergeant" }
             }
         };
 
@@ -697,7 +700,7 @@ public class DocumentPermissionsServiceTests
             Permissions = new DocumentPermissions
             {
                 // No viewers defined
-                Collaborators = new PermissionRole { Rank = "Lieutenant" }
+                Collaborators = new DocumentPermission { Rank = "Lieutenant" }
             }
         };
 
@@ -738,7 +741,7 @@ public class DocumentPermissionsServiceTests
             Parent = null,
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole { Rank = "Corporal" }
+                Viewers = new DocumentPermission { Rank = "Corporal" }
                 // No collaborators defined
             }
         };
@@ -793,7 +796,7 @@ public class DocumentPermissionsServiceTests
 
         var metadata = new DomainDocumentMetadata
         {
-            Permissions = new DocumentPermissions { Viewers = new PermissionRole { Units = [_unitId], Rank = "requiredRank" } }
+            Permissions = new DocumentPermissions { Viewers = new DocumentPermission { Units = [_unitId], Rank = "requiredRank" } }
         };
 
         var result = _subject.CanContextView(metadata);
@@ -822,7 +825,7 @@ public class DocumentPermissionsServiceTests
         {
             Permissions = new DocumentPermissions
             {
-                Viewers = new PermissionRole
+                Viewers = new DocumentPermission
                 {
                     Units = [_unitId],
                     Rank = "requiredRank",
@@ -872,7 +875,7 @@ public class DocumentPermissionsServiceTests
         {
             Permissions = new DocumentPermissions
             {
-                Collaborators = new PermissionRole
+                Collaborators = new DocumentPermission
                 {
                     Units = [_unitId],
                     Rank = "requiredRank",
@@ -889,10 +892,10 @@ public class DocumentPermissionsServiceTests
     }
 
     // Helper method to access private ClonePermissionRole method
-    private static PermissionRole CallClonePermissionRole(PermissionRole role)
+    private static DocumentPermission CallClonePermissionRole(DocumentPermission role)
     {
         var method = typeof(DocumentPermissionsService).GetMethod("ClonePermissionRole", BindingFlags.NonPublic | BindingFlags.Static);
-        return (PermissionRole)method.Invoke(null, [role]);
+        return (DocumentPermission)method.Invoke(null, [role]);
     }
 
     private void GivenUserIsInChildUnit()

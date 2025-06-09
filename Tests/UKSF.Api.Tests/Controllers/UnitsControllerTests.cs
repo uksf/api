@@ -1,7 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using Moq;
 using UKSF.Api.Controllers;
@@ -17,12 +18,8 @@ namespace UKSF.Api.Tests.Controllers;
 
 public class UnitsControllerTests
 {
-    private readonly Mock<IAccountContext> _mockAccountContext;
     private readonly Mock<IUnitsContext> _mockUnitsContext;
     private readonly Mock<IUnitsService> _mockUnitsService;
-    private readonly Mock<IAssignmentService> _mockAssignmentService;
-    private readonly Mock<INotificationsService> _mockNotificationsService;
-    private readonly Mock<IUksfLogger> _mockLogger;
     private readonly Mock<IGetUnitTreeQuery> _mockGetUnitTreeQuery;
     private readonly Mock<IUnitTreeMapper> _mockUnitTreeMapper;
     private readonly UnitsController _controller;
@@ -31,22 +28,22 @@ public class UnitsControllerTests
 
     public UnitsControllerTests()
     {
-        _mockAccountContext = new Mock<IAccountContext>();
+        var mockAccountContext = new Mock<IAccountContext>();
         _mockUnitsContext = new Mock<IUnitsContext>();
         _mockUnitsService = new Mock<IUnitsService>();
-        _mockAssignmentService = new Mock<IAssignmentService>();
-        _mockNotificationsService = new Mock<INotificationsService>();
-        _mockLogger = new Mock<IUksfLogger>();
+        var mockAssignmentService = new Mock<IAssignmentService>();
+        var mockNotificationsService = new Mock<INotificationsService>();
+        var mockLogger = new Mock<IUksfLogger>();
         _mockGetUnitTreeQuery = new Mock<IGetUnitTreeQuery>();
         _mockUnitTreeMapper = new Mock<IUnitTreeMapper>();
 
         _controller = new UnitsController(
-            _mockAccountContext.Object,
+            mockAccountContext.Object,
             _mockUnitsContext.Object,
             _mockUnitsService.Object,
-            _mockAssignmentService.Object,
-            _mockNotificationsService.Object,
-            _mockLogger.Object,
+            mockAssignmentService.Object,
+            mockNotificationsService.Object,
+            mockLogger.Object,
             _mockGetUnitTreeQuery.Object,
             _mockUnitTreeMapper.Object
         );
@@ -72,14 +69,14 @@ public class UnitsControllerTests
             }
         };
 
-        _mockUnitsService.Setup(x => x.GetSortedUnits(It.IsAny<System.Func<DomainUnit, bool>>()))
-                         .Returns<System.Func<DomainUnit, bool>>(predicate => secondaryUnits.Where(predicate));
+        _mockUnitsService.Setup(x => x.GetSortedUnits(It.IsAny<Func<DomainUnit, bool>>()))
+                         .Returns<Func<DomainUnit, bool>>(predicate => secondaryUnits.Where(predicate));
 
         // Act
         var result = _controller.Get("secondary", _accountId);
 
         // Assert
-        _mockUnitsService.Verify(x => x.GetSortedUnits(It.IsAny<System.Func<DomainUnit, bool>>()), Times.Once);
+        _mockUnitsService.Verify(x => x.GetSortedUnits(It.IsAny<Func<DomainUnit, bool>>()), Times.Once);
         result.Should().NotBeNull();
     }
 
@@ -103,14 +100,14 @@ public class UnitsControllerTests
             }
         };
 
-        _mockUnitsService.Setup(x => x.GetSortedUnits(It.IsAny<System.Func<DomainUnit, bool>>()))
-                         .Returns<System.Func<DomainUnit, bool>>(predicate => secondaryUnits.Where(predicate));
+        _mockUnitsService.Setup(x => x.GetSortedUnits(It.IsAny<Func<DomainUnit, bool>>()))
+                         .Returns<Func<DomainUnit, bool>>(predicate => secondaryUnits.Where(predicate));
 
         // Act
         var result = _controller.Get("secondary");
 
         // Assert
-        _mockUnitsService.Verify(x => x.GetSortedUnits(It.IsAny<System.Func<DomainUnit, bool>>()), Times.Once);
+        _mockUnitsService.Verify(x => x.GetSortedUnits(It.IsAny<Func<DomainUnit, bool>>()), Times.Once);
         result.Should().NotBeNull();
     }
 
@@ -128,11 +125,11 @@ public class UnitsControllerTests
             PreferShortname = false
         };
 
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainUnit, bool>>())).Returns(secondaryRoot);
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(secondaryRoot);
 
         _mockUnitsService.Setup(x => x.MapUnitMembers(It.IsAny<DomainUnit>())).Returns(new List<UnitMemberDto>());
 
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<System.Func<DomainUnit, bool>>())).Returns(new List<DomainUnit>());
+        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns(new List<DomainUnit>());
 
         // Act
         var result = _controller.GetUnitsChart("secondary");
@@ -144,7 +141,7 @@ public class UnitsControllerTests
     }
 
     [Fact]
-    public async void GetTree_Should_Include_Secondary_Nodes()
+    public async Task GetTree_Should_Include_Secondary_Nodes()
     {
         // Arrange
         var combatTree = new DomainUnit { Name = "Combat Root", Branch = UnitBranch.Combat };

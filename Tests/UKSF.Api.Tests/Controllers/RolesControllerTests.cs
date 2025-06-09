@@ -1,12 +1,11 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.Controllers;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
-using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using Xunit;
@@ -17,25 +16,22 @@ public class RolesControllerTests
 {
     private readonly Mock<IRolesContext> _mockRolesContext;
     private readonly Mock<IAccountContext> _mockAccountContext;
-    private readonly Mock<IAssignmentService> _mockAssignmentService;
-    private readonly Mock<INotificationsService> _mockNotificationsService;
-    private readonly Mock<IUksfLogger> _mockLogger;
     private readonly RolesController _controller;
 
     public RolesControllerTests()
     {
         _mockRolesContext = new Mock<IRolesContext>();
         _mockAccountContext = new Mock<IAccountContext>();
-        _mockAssignmentService = new Mock<IAssignmentService>();
-        _mockNotificationsService = new Mock<INotificationsService>();
-        _mockLogger = new Mock<IUksfLogger>();
+        var mockAssignmentService = new Mock<IAssignmentService>();
+        var mockNotificationsService = new Mock<INotificationsService>();
+        var mockLogger = new Mock<IUksfLogger>();
 
         _controller = new RolesController(
             _mockRolesContext.Object,
             _mockAccountContext.Object,
-            _mockAssignmentService.Object,
-            _mockNotificationsService.Object,
-            _mockLogger.Object
+            mockAssignmentService.Object,
+            mockNotificationsService.Object,
+            mockLogger.Object
         );
     }
 
@@ -72,7 +68,7 @@ public class RolesControllerTests
         var filteredRoles = new List<DomainRole> { new() { Id = "2", Name = "Marksman" }, new() { Id = "3", Name = "Medic" } };
 
         _mockAccountContext.Setup(x => x.GetSingle(accountId)).Returns(account);
-        _mockRolesContext.Setup(x => x.Get(It.IsAny<System.Func<DomainRole, bool>>())).Returns(filteredRoles);
+        _mockRolesContext.Setup(x => x.Get(It.IsAny<Func<DomainRole, bool>>())).Returns(filteredRoles);
 
         // Act
         var result = _controller.GetRoles(accountId);
@@ -102,7 +98,7 @@ public class RolesControllerTests
         var roleName = "Rifleman";
         var expectedRole = new DomainRole { Id = "1", Name = roleName };
 
-        _mockRolesContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainRole, bool>>())).Returns(expectedRole);
+        _mockRolesContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainRole, bool>>())).Returns(expectedRole);
 
         // Act
         var result = _controller.CheckRole(roleName);
@@ -119,7 +115,7 @@ public class RolesControllerTests
         var existingRole = new DomainRole { Id = "1", Name = "Marksman" };
         var expectedRole = new DomainRole { Id = "2", Name = roleName };
 
-        _mockRolesContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainRole, bool>>())).Returns(expectedRole);
+        _mockRolesContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainRole, bool>>())).Returns(expectedRole);
 
         // Act
         var result = _controller.CheckRole(roleName, existingRole);
@@ -166,8 +162,8 @@ public class RolesControllerTests
         };
         var allRoles = new List<DomainRole> { updatedRole };
 
-        _mockRolesContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainRole, bool>>())).Returns(oldRole);
-        _mockAccountContext.Setup(x => x.Get(It.IsAny<System.Func<DomainAccount, bool>>())).Returns(accounts);
+        _mockRolesContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainRole, bool>>())).Returns(oldRole);
+        _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(accounts);
         _mockRolesContext.Setup(x => x.Get()).Returns(allRoles);
 
         // Act
@@ -189,11 +185,10 @@ public class RolesControllerTests
         {
             new() { Id = "account1", RoleAssignment = "RoleToDelete" }, new() { Id = "account2", RoleAssignment = "RoleToDelete" }
         };
-        var remainingRoles = new List<DomainRole>();
 
-        _mockRolesContext.Setup(x => x.GetSingle(It.IsAny<System.Func<DomainRole, bool>>())).Returns(roleToDelete);
-        _mockAccountContext.Setup(x => x.Get(It.IsAny<System.Func<DomainAccount, bool>>())).Returns(accounts);
-        _mockRolesContext.Setup(x => x.Get()).Returns(remainingRoles);
+        _mockRolesContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainRole, bool>>())).Returns(roleToDelete);
+        _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(accounts);
+        _mockRolesContext.Setup(x => x.Get()).Returns(new List<DomainRole>());
 
         // Act
         var result = await _controller.DeleteRole(roleId);

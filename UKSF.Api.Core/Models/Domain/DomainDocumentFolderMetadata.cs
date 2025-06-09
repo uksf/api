@@ -36,11 +36,11 @@ public class DomainDocumentMetadata : DomainMetadataWithPermissions
 
 public class DocumentPermissions
 {
-    public PermissionRole Viewers { get; set; } = new();
-    public PermissionRole Collaborators { get; set; } = new();
+    public DocumentPermission Viewers { get; set; } = new();
+    public DocumentPermission Collaborators { get; set; } = new();
 }
 
-public class PermissionRole
+public class DocumentPermission
 {
     [BsonRepresentation(BsonType.ObjectId)]
     public List<string> Units { get; set; } = [];

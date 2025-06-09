@@ -51,7 +51,6 @@ public class DisplayNameService(IAccountContext accountContext, IRanksContext ra
         return account switch
         {
             _ when string.IsNullOrEmpty(account?.Lastname) => "Guest",
-            { MembershipState: MembershipState.Server }    => FormatDisplayName(account.Lastname, account.Firstname),
             _                                              => FormatDisplayName(account.Lastname, account.Firstname)
         };
     }

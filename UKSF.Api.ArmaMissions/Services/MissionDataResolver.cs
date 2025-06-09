@@ -30,7 +30,10 @@ public static class MissionDataResolver
     private static int ResolvePlayerUnitRole(MissionPlayer player)
     {
         var chainOfCommand = player.Unit.SourceUnit.ChainOfCommand;
-        if (chainOfCommand == null) return -1;
+        if (chainOfCommand == null)
+        {
+            return -1;
+        }
 
         if (chainOfCommand.First == player.Account?.Id)
         {

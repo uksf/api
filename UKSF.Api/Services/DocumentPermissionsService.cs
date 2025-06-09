@@ -8,8 +8,6 @@ namespace UKSF.Api.Services;
 
 public interface IDocumentPermissionsService
 {
-    bool DoesContextHaveReadPermission(DomainMetadataWithPermissions metadataWithPermissions);
-    bool DoesContextHaveWritePermission(DomainMetadataWithPermissions metadataWithPermissions);
     bool CanContextView(DomainMetadataWithPermissions metadataWithPermissions);
     bool CanContextCollaborate(DomainMetadataWithPermissions metadataWithPermissions);
     DocumentPermissions GetEffectivePermissions(DomainMetadataWithPermissions metadataWithPermissions);
@@ -91,7 +89,7 @@ public class DocumentPermissionsService(
     private string CurrentUserId => _currentUserId ??= httpContextService.GetUserId();
     private bool IsSuperadmin => _isSuperadmin ??= httpContextService.UserHasPermission(Permissions.Superadmin);
 
-    public bool DoesContextHaveReadPermission(DomainMetadataWithPermissions metadataWithPermissions)
+    public bool CanContextView(DomainMetadataWithPermissions metadataWithPermissions)
     {
         var cacheKey = $"read:{metadataWithPermissions.Id}:{CurrentUserId}";
         if (_cache.TryGetReadPermission(cacheKey, out var cachedResult))
@@ -104,7 +102,7 @@ public class DocumentPermissionsService(
         return result;
     }
 
-    public bool DoesContextHaveWritePermission(DomainMetadataWithPermissions metadataWithPermissions)
+    public bool CanContextCollaborate(DomainMetadataWithPermissions metadataWithPermissions)
     {
         var cacheKey = $"write:{metadataWithPermissions.Id}:{CurrentUserId}";
         if (_cache.TryGetWritePermission(cacheKey, out var cachedResult))
@@ -115,16 +113,6 @@ public class DocumentPermissionsService(
         var result = CalculateCollaboratePermission(metadataWithPermissions);
         _cache.SetWritePermission(cacheKey, result);
         return result;
-    }
-
-    public bool CanContextView(DomainMetadataWithPermissions metadataWithPermissions)
-    {
-        return DoesContextHaveReadPermission(metadataWithPermissions);
-    }
-
-    public bool CanContextCollaborate(DomainMetadataWithPermissions metadataWithPermissions)
-    {
-        return DoesContextHaveWritePermission(metadataWithPermissions);
     }
 
     public DocumentPermissions GetEffectivePermissions(DomainMetadataWithPermissions metadataWithPermissions)
@@ -181,14 +169,14 @@ public class DocumentPermissionsService(
 
         var effectivePermissions = GetEffectivePermissions(metadataWithPermissions);
 
-        // Check collaborator role (has both read and write access)
-        if (HasRolePermission(effectivePermissions.Collaborators, CurrentUserId, true))
+        // Check collaborator (has both read and write access)
+        if (HasPermission(effectivePermissions.Collaborators, CurrentUserId, true))
         {
             return true;
         }
 
-        // Check viewer role (read-only access)
-        return HasRolePermission(effectivePermissions.Viewers, CurrentUserId, false);
+        // Check viewer (read-only access)
+        return HasPermission(effectivePermissions.Viewers, CurrentUserId, false);
     }
 
     private bool CalculateCollaboratePermission(DomainMetadataWithPermissions metadataWithPermissions)
@@ -207,7 +195,7 @@ public class DocumentPermissionsService(
         var effectivePermissions = GetEffectivePermissions(metadataWithPermissions);
 
         // Only collaborators have write access
-        return HasRolePermission(effectivePermissions.Collaborators, CurrentUserId, true);
+        return HasPermission(effectivePermissions.Collaborators, CurrentUserId, true);
     }
 
     private DocumentPermissions CalculateEffectivePermissions(DomainMetadataWithPermissions metadataWithPermissions)
@@ -216,21 +204,21 @@ public class DocumentPermissionsService(
 
         // Start with inherited permissions (always returns a valid object now)
         var inheritedPermissions = GetInheritedPermissions(metadataWithPermissions);
-        effectivePermissions.Viewers = ClonePermissionRole(inheritedPermissions.Viewers);
-        effectivePermissions.Collaborators = ClonePermissionRole(inheritedPermissions.Collaborators);
+        effectivePermissions.Viewers = ClonePermission(inheritedPermissions.Viewers);
+        effectivePermissions.Collaborators = ClonePermission(inheritedPermissions.Collaborators);
 
         // Override with custom permissions where they exist
         var customPermissions = metadataWithPermissions.Permissions;
         if (customPermissions != null)
         {
-            if (HasPermissionRoleData(customPermissions.Viewers))
+            if (HasPermissionsData(customPermissions.Viewers))
             {
-                effectivePermissions.Viewers = ClonePermissionRole(customPermissions.Viewers);
+                effectivePermissions.Viewers = ClonePermission(customPermissions.Viewers);
             }
 
-            if (HasPermissionRoleData(customPermissions.Collaborators))
+            if (HasPermissionsData(customPermissions.Collaborators))
             {
-                effectivePermissions.Collaborators = ClonePermissionRole(customPermissions.Collaborators);
+                effectivePermissions.Collaborators = ClonePermission(customPermissions.Collaborators);
             }
         }
 
@@ -265,14 +253,17 @@ public class DocumentPermissionsService(
 
     private DocumentPermissions CalculateInheritedPermissionsFromParentHierarchy(string parentId)
     {
-        var viewerPermissions = GetInheritedRolePermissions(parentId, true);
-        var collaboratorPermissions = GetInheritedRolePermissions(parentId, false);
+        var viewerPermissions = GetInheritedPermissions(parentId, true);
+        var collaboratorPermissions = GetInheritedPermissions(parentId, false);
 
         // Always return a permissions object to ensure consistent API responses
-        return new DocumentPermissions { Viewers = viewerPermissions ?? new PermissionRole(), Collaborators = collaboratorPermissions ?? new PermissionRole() };
+        return new DocumentPermissions
+        {
+            Viewers = viewerPermissions ?? new DocumentPermission(), Collaborators = collaboratorPermissions ?? new DocumentPermission()
+        };
     }
 
-    private PermissionRole GetInheritedRolePermissions(string parentId, bool isViewerRole)
+    private DocumentPermission GetInheritedPermissions(string parentId, bool isViewer)
     {
         // Base case: no parent or reached root
         if (string.IsNullOrEmpty(parentId) || parentId == ObjectId.Empty.ToString())
@@ -286,21 +277,21 @@ public class DocumentPermissionsService(
             return null; // Parent not found
         }
 
-        // Check if this parent has the specific role permissions set
-        var rolePermissions = isViewerRole ? parentFolder.Permissions?.Viewers : parentFolder.Permissions?.Collaborators;
+        // Check if this parent has the specific permissions set
+        var permission = isViewer ? parentFolder.Permissions?.Viewers : parentFolder.Permissions?.Collaborators;
 
-        return HasPermissionRoleData(rolePermissions) ? ClonePermissionRole(rolePermissions) : GetInheritedRolePermissions(parentFolder.Parent, isViewerRole);
+        return HasPermissionsData(permission) ? ClonePermission(permission) : GetInheritedPermissions(parentFolder.Parent, isViewer);
     }
 
-    private bool HasRolePermission(PermissionRole role, string memberId, bool isCollaboratorRole)
+    private bool HasPermission(DocumentPermission permission, string memberId, bool isCollaborator)
     {
-        if (role == null || (role.Units.Count == 0 && string.IsNullOrEmpty(role.Rank) && role.Members.Count == 0))
+        if (permission == null || (permission.Units.Count == 0 && string.IsNullOrEmpty(permission.Rank) && permission.Members.Count == 0))
         {
             return false;
         }
 
         // Check if user is explicitly listed - immediate access
-        if (role.Members.Contains(memberId))
+        if (permission.Members.Contains(memberId))
         {
             return true;
         }
@@ -310,54 +301,54 @@ public class DocumentPermissionsService(
         var hasRankPermission = true;
 
         // Check unit permission if units are specified
-        if (role.Units.Count > 0)
+        if (permission.Units.Count > 0)
         {
-            if (role.ExpandToSubUnits)
+            if (permission.ExpandToSubUnits)
             {
                 // When ExpandToSubUnits is true:
                 // - For viewers: check selected units + all child units (descendants)
                 // - For collaborators: check selected units + all parent units (ancestors) + all child units (descendants)
-                hasUnitPermission = isCollaboratorRole
-                    ? role.Units.Any(unitId => unitsService.AnyParentHasMember(unitId, memberId) || unitsService.AnyChildHasMember(unitId, memberId))
-                    : role.Units.Any(unitId => unitsService.AnyChildHasMember(unitId, memberId));
+                hasUnitPermission = isCollaborator
+                    ? permission.Units.Any(unitId => unitsService.AnyParentHasMember(unitId, memberId) || unitsService.AnyChildHasMember(unitId, memberId))
+                    : permission.Units.Any(unitId => unitsService.AnyChildHasMember(unitId, memberId));
             }
             else
             {
                 // When ExpandToSubUnits is false: check only the selected units (exact match)
-                hasUnitPermission = role.Units.Any(unitId => unitsService.HasMember(unitId, memberId));
+                hasUnitPermission = permission.Units.Any(unitId => unitsService.HasMember(unitId, memberId));
             }
         }
 
         // Check rank permission if rank is specified
-        if (!string.IsNullOrEmpty(role.Rank))
+        if (!string.IsNullOrEmpty(permission.Rank))
         {
             var account = accountService.GetUserAccount();
             var memberRank = account.Rank;
-            hasRankPermission = ranksService.IsSuperiorOrEqual(memberRank, role.Rank);
+            hasRankPermission = ranksService.IsSuperiorOrEqual(memberRank, permission.Rank);
         }
 
         // Both unit and rank conditions must be met if both are specified
         return hasUnitPermission && hasRankPermission;
     }
 
-    private static bool HasPermissionRoleData(PermissionRole role)
+    private static bool HasPermissionsData(DocumentPermission permission)
     {
-        return role != null && (role.Units.Count > 0 || !string.IsNullOrEmpty(role.Rank) || role.Members.Count > 0);
+        return permission != null && (permission.Units.Count > 0 || !string.IsNullOrEmpty(permission.Rank) || permission.Members.Count > 0);
     }
 
-    private static PermissionRole ClonePermissionRole(PermissionRole role)
+    private static DocumentPermission ClonePermission(DocumentPermission permission)
     {
-        if (role == null)
+        if (permission == null)
         {
-            return new PermissionRole();
+            return new DocumentPermission();
         }
 
-        return new PermissionRole
+        return new DocumentPermission
         {
-            Units = [..role.Units],
-            Members = [..role.Members],
-            Rank = role.Rank ?? string.Empty,
-            ExpandToSubUnits = role.ExpandToSubUnits
+            Units = [..permission.Units],
+            Members = [..permission.Members],
+            Rank = permission.Rank ?? string.Empty,
+            ExpandToSubUnits = permission.ExpandToSubUnits
         };
     }
 }

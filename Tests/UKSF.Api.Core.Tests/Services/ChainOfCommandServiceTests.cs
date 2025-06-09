@@ -15,7 +15,6 @@ namespace UKSF.Api.Core.Tests.Services;
 public class ChainOfCommandServiceTests
 {
     private readonly Mock<IUnitsContext> _mockUnitsContext;
-    private readonly Mock<IHttpContextService> _mockHttpContextService;
     private readonly Mock<IAccountService> _mockAccountService;
     private readonly ChainOfCommandService _chainOfCommandService;
 
@@ -29,13 +28,13 @@ public class ChainOfCommandServiceTests
     public ChainOfCommandServiceTests()
     {
         _mockUnitsContext = new Mock<IUnitsContext>();
-        _mockHttpContextService = new Mock<IHttpContextService>();
+        var mockHttpContextService = new Mock<IHttpContextService>();
         _mockAccountService = new Mock<IAccountService>();
 
-        _chainOfCommandService = new ChainOfCommandService(_mockUnitsContext.Object, _mockHttpContextService.Object, _mockAccountService.Object);
+        _chainOfCommandService = new ChainOfCommandService(_mockUnitsContext.Object, mockHttpContextService.Object, _mockAccountService.Object);
 
         // Setup common mocks
-        _mockHttpContextService.Setup(x => x.GetUserId()).Returns(_contextUserId);
+        mockHttpContextService.Setup(x => x.GetUserId()).Returns(_contextUserId);
     }
 
     [Theory]
@@ -97,13 +96,9 @@ public class ChainOfCommandServiceTests
 
         // Setup GetSingle with predicate to find units by ID for parent traversal
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate =>
-                             {
-                                 if (predicate(unit)) return unit;
-                                 if (predicate(parentUnit)) return parentUnit;
-                                 if (predicate(rootUnit)) return rootUnit;
-                                 return null;
-                             }
+                         .Returns<Func<DomainUnit, bool>>(predicate => predicate(unit) ? unit :
+                                                              predicate(parentUnit)    ? parentUnit :
+                                                              predicate(rootUnit)      ? rootUnit : null
                          );
 
         // Act
@@ -267,8 +262,8 @@ public class ChainOfCommandServiceTests
     public void MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits_Should_Return_False_When_No_Units()
     {
         // Arrange
-        var units = new List<DomainUnit>();
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
+        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>()))
+                         .Returns<Func<DomainUnit, bool>>(predicate => new List<DomainUnit>().Where(predicate));
 
         // Act
         var result = _chainOfCommandService.MemberHasChainOfCommandPositionInCombatOrAuxiliaryUnits(_recipientId);

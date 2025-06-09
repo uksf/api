@@ -396,8 +396,7 @@ public class BuildStepModernTests
         var buildStep = CreateTestBuildStep();
         InitializeBuildStep(buildStep);
 
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "exit 1");
+        GetPlatformCommand(out var executable, out var args, "exit 1");
 
         // Act & Assert - Should not throw when raiseErrors is false
         var result = await buildStep.RunProcessModern(
@@ -441,7 +440,7 @@ public class BuildStepModernTests
             _mockUksfLogger.Object,
             modpackBuild,
             _modpackBuildStep,
-            async updateDefinition => await Task.CompletedTask,
+            async _ => await Task.CompletedTask,
             async () => await Task.CompletedTask,
             cancellationTokenSource ?? _cancellationTokenSource
         );

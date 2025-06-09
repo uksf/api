@@ -17,12 +17,6 @@ namespace UKSF.Api.Core.Tests.Services.Units;
 public class UnitsServiceTests
 {
     private readonly Mock<IUnitsContext> _mockUnitsContext;
-    private readonly Mock<IRolesContext> _mockRolesContext;
-    private readonly Mock<IRanksService> _mockRanksService;
-    private readonly Mock<IChainOfCommandService> _mockChainOfCommandService;
-    private readonly Mock<IDisplayNameService> _mockDisplayNameService;
-    private readonly Mock<IAccountContext> _mockAccountContext;
-    private readonly Mock<IUnitMapper> _mockUnitMapper;
     private readonly UnitsService _unitsService;
 
     private readonly string _combatRootId = ObjectId.GenerateNewId().ToString();
@@ -33,20 +27,19 @@ public class UnitsServiceTests
     public UnitsServiceTests()
     {
         _mockUnitsContext = new Mock<IUnitsContext>();
-        _mockRolesContext = new Mock<IRolesContext>();
-        _mockRanksService = new Mock<IRanksService>();
-        _mockChainOfCommandService = new Mock<IChainOfCommandService>();
-        _mockDisplayNameService = new Mock<IDisplayNameService>();
-        _mockAccountContext = new Mock<IAccountContext>();
-        _mockUnitMapper = new Mock<IUnitMapper>();
+        var mockRanksService = new Mock<IRanksService>();
+        var mockChainOfCommandService = new Mock<IChainOfCommandService>();
+        var mockDisplayNameService = new Mock<IDisplayNameService>();
+        var mockAccountContext = new Mock<IAccountContext>();
+        var mockUnitMapper = new Mock<IUnitMapper>();
 
         _unitsService = new UnitsService(
             _mockUnitsContext.Object,
-            _mockRanksService.Object,
-            _mockChainOfCommandService.Object,
-            _mockDisplayNameService.Object,
-            _mockAccountContext.Object,
-            _mockUnitMapper.Object
+            mockRanksService.Object,
+            mockChainOfCommandService.Object,
+            mockDisplayNameService.Object,
+            mockAccountContext.Object,
+            mockUnitMapper.Object
         );
     }
 
@@ -103,16 +96,6 @@ public class UnitsServiceTests
             Branch = UnitBranch.Secondary,
             Parent = ObjectId.Empty.ToString(),
             Order = 0
-        };
-
-        var allUnits = new List<DomainUnit>
-        {
-            combatRoot,
-            combatChild1,
-            combatChild2,
-            auxiliaryRoot,
-            auxiliaryChild,
-            secondaryRoot
         };
 
         _mockUnitsContext.Setup(x => x.GetSingle(It.Is<Func<DomainUnit, bool>>(f => f(combatRoot) && !f(auxiliaryRoot) && !f(secondaryRoot))))
@@ -186,7 +169,6 @@ public class UnitsServiceTests
     public async Task AddMember_Should_Add_Member_To_Unit()
     {
         // Arrange
-        var unit = new DomainUnit { Id = _unitId, Members = new List<string>() };
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns((DomainUnit)null);
 
         // Act
@@ -200,7 +182,7 @@ public class UnitsServiceTests
     public async Task AddMember_Should_Not_Add_If_Already_Member()
     {
         // Arrange
-        var unit = new DomainUnit { Id = _unitId, Members = new List<string> { _memberId } };
+        var unit = new DomainUnit { Id = _unitId, Members = [_memberId] };
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
 
         // Act
@@ -218,7 +200,7 @@ public class UnitsServiceTests
         {
             Id = _unitId,
             Name = "Test Unit",
-            Members = new List<string> { _memberId }
+            Members = [_memberId]
         };
         _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
 
@@ -246,7 +228,7 @@ public class UnitsServiceTests
     public void HasMember_Should_Return_True_When_Unit_Has_Member()
     {
         // Arrange
-        var unit = new DomainUnit { Id = _unitId, Members = new List<string> { _memberId } };
+        var unit = new DomainUnit { Id = _unitId, Members = [_memberId] };
         _mockUnitsContext.Setup(x => x.GetSingle(_unitId)).Returns(unit);
 
         // Act
@@ -260,7 +242,7 @@ public class UnitsServiceTests
     public void HasMember_Should_Return_False_When_Unit_Does_Not_Have_Member()
     {
         // Arrange
-        var unit = new DomainUnit { Id = _unitId, Members = new List<string>() };
+        var unit = new DomainUnit { Id = _unitId, Members = [] };
         _mockUnitsContext.Setup(x => x.GetSingle(_unitId)).Returns(unit);
 
         // Act

@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using Moq;
 using UKSF.Api.Controllers;
-using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Models;
@@ -23,9 +19,7 @@ public class CommandRequestsCreationControllerTests
     private readonly Mock<IUnitsContext> _mockUnitsContext;
     private readonly Mock<ICommandRequestService> _mockCommandRequestService;
     private readonly Mock<IRanksService> _mockRanksService;
-    private readonly Mock<ILoaService> _mockLoaService;
     private readonly Mock<IChainOfCommandService> _mockChainOfCommandService;
-    private readonly Mock<IDisplayNameService> _mockDisplayNameService;
     private readonly Mock<IHttpContextService> _mockHttpContextService;
     private readonly CommandRequestsCreationController _controller;
 
@@ -39,9 +33,9 @@ public class CommandRequestsCreationControllerTests
         _mockUnitsContext = new Mock<IUnitsContext>();
         _mockCommandRequestService = new Mock<ICommandRequestService>();
         _mockRanksService = new Mock<IRanksService>();
-        _mockLoaService = new Mock<ILoaService>();
+        var mockLoaService = new Mock<ILoaService>();
         _mockChainOfCommandService = new Mock<IChainOfCommandService>();
-        _mockDisplayNameService = new Mock<IDisplayNameService>();
+        var mockDisplayNameService = new Mock<IDisplayNameService>();
         _mockHttpContextService = new Mock<IHttpContextService>();
 
         _controller = new CommandRequestsCreationController(
@@ -49,9 +43,9 @@ public class CommandRequestsCreationControllerTests
             _mockUnitsContext.Object,
             _mockCommandRequestService.Object,
             _mockRanksService.Object,
-            _mockLoaService.Object,
+            mockLoaService.Object,
             _mockChainOfCommandService.Object,
-            _mockDisplayNameService.Object,
+            mockDisplayNameService.Object,
             _mockHttpContextService.Object
         );
 
@@ -202,7 +196,7 @@ public class CommandRequestsCreationControllerTests
             Id = request.Value,
             Name = "Test Unit",
             ChainOfCommand = new ChainOfCommand(),
-            Members = new List<string> { request.Recipient } // Add recipient to members
+            Members = [request.Recipient] // Add recipient to members
         };
 
         _mockUnitsContext.Setup(x => x.GetSingle(request.Value)).Returns(unit);
@@ -236,7 +230,7 @@ public class CommandRequestsCreationControllerTests
             Id = request.Value,
             Name = "Test Unit",
             ChainOfCommand = new ChainOfCommand(),
-            Members = new List<string> { request.Recipient } // Add recipient to members
+            Members = [request.Recipient] // Add recipient to members
         };
 
         _mockUnitsContext.Setup(x => x.GetSingle(request.Value)).Returns(unit);
@@ -279,7 +273,7 @@ public class CommandRequestsCreationControllerTests
             Id = request.Value,
             Name = "Test Unit",
             ChainOfCommand = new ChainOfCommand(),
-            Members = new List<string> { request.Recipient } // Add recipient to members
+            Members = [request.Recipient] // Add recipient to members
         };
         unit.ChainOfCommand.First = request.Recipient;
 
@@ -303,7 +297,7 @@ public class CommandRequestsCreationControllerTests
             Id = request.Value,
             Name = "Test Unit",
             ChainOfCommand = new ChainOfCommand(),
-            Members = new List<string> { request.Recipient } // Add recipient to members
+            Members = [request.Recipient] // Add recipient to members
         };
 
         _mockUnitsContext.Setup(x => x.GetSingle(request.Value)).Returns(unit);
@@ -531,7 +525,7 @@ public class CommandRequestsCreationControllerTests
             Id = id,
             Name = name,
             Branch = branch,
-            Members = new List<string>()
+            Members = []
         };
     }
 }

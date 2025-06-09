@@ -57,7 +57,7 @@ public class ChainOfCommand
         };
     }
 
-    public void SetMemberAtPosition(string position, string? memberId)
+    public void SetMemberAtPosition(string position, string memberId)
     {
         switch (position)
         {

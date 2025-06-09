@@ -340,8 +340,8 @@ public class DocumentFolderServiceTests
             Parent = "1",
             Name = "JSFAW",
             FullPath = "UKSF\\JSFAW",
-            Documents = new List<DomainDocumentMetadata>
-            {
+            Documents =
+            [
                 new()
                 {
                     Id = "doc1",
@@ -351,6 +351,7 @@ public class DocumentFolderServiceTests
                     Created = _utcNow.AddDays(-3),
                     LastUpdated = _utcNow.AddDays(-1)
                 },
+
                 new()
                 {
                     Id = "doc2",
@@ -360,6 +361,7 @@ public class DocumentFolderServiceTests
                     Created = _utcNow.AddDays(-2),
                     LastUpdated = _utcNow.AddDays(-1)
                 },
+
                 new()
                 {
                     Id = "doc3",
@@ -369,7 +371,7 @@ public class DocumentFolderServiceTests
                     Created = _utcNow.AddDays(-1),
                     LastUpdated = _utcNow
                 }
-            }
+            ]
         };
 
         _mockIDocumentFolderMetadataContext.Setup(x => x.GetSingle("2")).Returns(folderWithDocuments);
@@ -385,7 +387,7 @@ public class DocumentFolderServiceTests
                 Parent = ObjectId.Empty.ToString(),
                 Name = "UKSF",
                 FullPath = "UKSF",
-                Documents = new List<DomainDocumentMetadata>()
+                Documents = []
             },
             new()
             {
@@ -393,8 +395,8 @@ public class DocumentFolderServiceTests
                 Parent = "1",
                 Name = "JSFAW",
                 FullPath = "UKSF\\JSFAW",
-                Documents = new List<DomainDocumentMetadata>
-                {
+                Documents =
+                [
                     new()
                     {
                         Id = "doc_folder2_1",
@@ -402,6 +404,7 @@ public class DocumentFolderServiceTests
                         Name = "Restricted.json",
                         FullPath = "UKSF\\JSFAW\\Restricted.json"
                     },
+
                     new()
                     {
                         Id = "doc_folder2_2",
@@ -409,7 +412,7 @@ public class DocumentFolderServiceTests
                         Name = "Open.json",
                         FullPath = "UKSF\\JSFAW\\Open.json"
                     }
-                }
+                ]
             },
             new()
             {
@@ -417,8 +420,8 @@ public class DocumentFolderServiceTests
                 Parent = "1",
                 Name = "SFSG",
                 FullPath = "UKSF\\SFSG",
-                Documents = new List<DomainDocumentMetadata>
-                {
+                Documents =
+                [
                     new()
                     {
                         Id = "doc_folder3_1",
@@ -426,6 +429,7 @@ public class DocumentFolderServiceTests
                         Name = "Mission.json",
                         FullPath = "UKSF\\SFSG\\Mission.json"
                     },
+
                     new()
                     {
                         Id = "doc_folder3_2",
@@ -433,7 +437,7 @@ public class DocumentFolderServiceTests
                         Name = "Classified.json",
                         FullPath = "UKSF\\SFSG\\Classified.json"
                     }
-                }
+                ]
             }
         };
 

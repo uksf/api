@@ -40,7 +40,7 @@ public class ChainOfCommandService(IUnitsContext unitsContext, IHttpContextServi
 
     public HashSet<string> ResolveChain(ChainOfCommandMode mode, string recipient, DomainUnit start, DomainUnit target)
     {
-        var chain = ResolveMode(mode, recipient, start, target).Where(x => x != recipient).ToHashSet();
+        var chain = ResolveMode(mode, start, target).Where(x => x != recipient).ToHashSet();
         chain.CleanHashset();
 
         // If no chain, and mode is not next commander, get next commander
@@ -107,7 +107,7 @@ public class ChainOfCommandService(IUnitsContext unitsContext, IHttpContextServi
         return position.Key;
     }
 
-    private IEnumerable<string> ResolveMode(ChainOfCommandMode mode, string recipient, DomainUnit start, DomainUnit target)
+    private IEnumerable<string> ResolveMode(ChainOfCommandMode mode, DomainUnit start, DomainUnit target)
     {
         return mode switch
         {

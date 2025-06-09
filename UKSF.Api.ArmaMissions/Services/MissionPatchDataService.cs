@@ -66,13 +66,24 @@ public class MissionPatchDataService
                 var chainOfCommand = missionUnit.SourceUnit.ChainOfCommand;
 
                 if (!string.IsNullOrEmpty(chainOfCommand.First))
+                {
                     missionUnit.Roles["1iC"] = MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == chainOfCommand.First);
+                }
+
                 if (!string.IsNullOrEmpty(chainOfCommand.Second))
+                {
                     missionUnit.Roles["2iC"] = MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == chainOfCommand.Second);
+                }
+
                 if (!string.IsNullOrEmpty(chainOfCommand.Third))
+                {
                     missionUnit.Roles["3iC"] = MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == chainOfCommand.Third);
+                }
+
                 if (!string.IsNullOrEmpty(chainOfCommand.Nco))
+                {
                     missionUnit.Roles["NCOiC"] = MissionPatchData.Instance.Players.FirstOrDefault(y => y.Account.Id == chainOfCommand.Nco);
+                }
             }
         }
 
