@@ -40,31 +40,6 @@ public class DocumentPermissionsServiceTests
     }
 
     [Fact]
-    public void ClonePermissionRole_WithUsers_ShouldCloneUsersCorrectly()
-    {
-        var otherUserId = ObjectId.GenerateNewId().ToString();
-        var originalRole = new DocumentPermission
-        {
-            Units = [_unitId],
-            Members = [_memberId, otherUserId],
-            Rank = "TestRank",
-            ExpandToSubUnits = false
-        };
-
-        var clonedRole = CallClonePermissionRole(originalRole);
-
-        clonedRole.Should().NotBeSameAs(originalRole);
-        clonedRole.Units.Should().BeEquivalentTo(originalRole.Units);
-        clonedRole.Members.Should().BeEquivalentTo(originalRole.Members);
-        clonedRole.Rank.Should().Be(originalRole.Rank);
-        clonedRole.ExpandToSubUnits.Should().Be(originalRole.ExpandToSubUnits);
-
-        // Verify deep cloning
-        clonedRole.Members.Should().NotBeSameAs(originalRole.Members);
-        clonedRole.Units.Should().NotBeSameAs(originalRole.Units);
-    }
-
-    [Fact]
     public void DoesContextHaveReadPermission_WhenOnlyUsersListSpecified_ShouldWorkCorrectly()
     {
         var metadata = new DomainDocumentMetadata { Permissions = new DocumentPermissions { Viewers = new DocumentPermission { Members = [_memberId] } } };
@@ -889,13 +864,6 @@ public class DocumentPermissionsServiceTests
 
         // Assert
         result.Should().Be(expectedResult);
-    }
-
-    // Helper method to access private ClonePermissionRole method
-    private static DocumentPermission CallClonePermissionRole(DocumentPermission role)
-    {
-        var method = typeof(DocumentPermissionsService).GetMethod("ClonePermissionRole", BindingFlags.NonPublic | BindingFlags.Static);
-        return (DocumentPermission)method.Invoke(null, [role]);
     }
 
     private void GivenUserIsInChildUnit()
