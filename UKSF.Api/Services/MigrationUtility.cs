@@ -1,4 +1,5 @@
-﻿using MongoDB.Driver;
+﻿using MongoDB.Bson;
+using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
@@ -38,37 +39,66 @@ public class MigrationUtility(IMigrationContext migrationContext, IDocumentFolde
 
     private async Task RemoveOldPermissionFields()
     {
-        logger.LogInfo("Starting migration to remove old permission fields (readPermissions, writePermissions)");
+        logger.LogInfo("Starting migration to remove old permission fields (readPermissions, writePermissions) and rename roleBasedPermissions to permissions");
 
-        // Get ALL document folders to remove old permission fields
-        var allFolders = documentFolderMetadataContext.Get().ToList();
+        // First, handle folder-level field renaming for all documents
+        await documentFolderMetadataContext.UpdateMany(
+            x => true, // Update all documents
+            Builders<DomainDocumentFolderMetadata>.Update.Combine(
+                Builders<DomainDocumentFolderMetadata>.Update.Rename("roleBasedPermissions", "permissions"),
+                Builders<DomainDocumentFolderMetadata>.Update.Unset("readPermissions"),
+                Builders<DomainDocumentFolderMetadata>.Update.Unset("writePermissions")
+            )
+        );
 
-        logger.LogInfo($"Found {allFolders.Count} document folders to clean up");
+        logger.LogInfo("Completed folder-level field operations");
 
-        foreach (var folder in allFolders)
+        // For documents array, we need to use aggregation pipeline updates since MongoDB doesn't support 
+        // rename operations on array elements. We'll use PipelineUpdateDefinition for this.
+        var pipelineStages = new[]
         {
-            var updates = new List<UpdateDefinition<DomainDocumentFolderMetadata>>();
+            new BsonDocument(
+                "$set",
+                new BsonDocument
+                {
+                    ["documents"] = new BsonDocument(
+                        "$map",
+                        new BsonDocument
+                        {
+                            ["input"] = "$documents",
+                            ["as"] = "doc",
+                            ["in"] = new BsonDocument
+                            {
+                                ["_id"] = "$$doc._id",
+                                ["name"] = "$$doc.name",
+                                ["fullPath"] = "$$doc.fullPath",
+                                ["created"] = "$$doc.created",
+                                ["lastUpdated"] = "$$doc.lastUpdated",
+                                ["creator"] = "$$doc.creator",
+                                ["owner"] = "$$doc.owner",
+                                ["folder"] = "$$doc.folder",
+                                ["permissions"] = new BsonDocument(
+                                    "$ifNull",
+                                    new BsonArray { "$$doc.permissions", "$$doc.roleBasedPermissions" }
+                                )
+                            }
+                        }
+                    )
+                }
+            )
+        };
 
-            // Remove old permission fields from the folder itself
-            updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Unset("readPermissions"));
-            updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Unset("writePermissions"));
+        var pipelineUpdate = Builders<DomainDocumentFolderMetadata>.Update.Pipeline(pipelineStages);
 
-            // Remove old permission fields from documents within the folder
-            for (var i = 0; i < folder.Documents.Count; i++)
-            {
-                updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Unset($"documents.{i}.readPermissions"));
-                updates.Add(Builders<DomainDocumentFolderMetadata>.Update.Unset($"documents.{i}.writePermissions"));
-            }
+        await documentFolderMetadataContext.UpdateMany(
+            x => true, // Update all documents  
+            pipelineUpdate
+        );
 
-            if (updates.Count > 0)
-            {
-                var combinedUpdate = Builders<DomainDocumentFolderMetadata>.Update.Combine(updates);
-                await documentFolderMetadataContext.Update(folder.Id, combinedUpdate);
-                logger.LogInfo($"Cleaned up old permission fields for folder: {folder.Name} (ID: {folder.Id}) - Cleaned {folder.Documents.Count} documents");
-            }
-        }
+        logger.LogInfo("Completed documents array field migration");
 
-        logger.LogInfo($"Successfully removed old permission fields from {allFolders.Count} document folders");
-        logger.LogInfo("Old permission fields removal migration completed");
+        var folderCount = documentFolderMetadataContext.Get().Count();
+        logger.LogInfo($"Successfully processed {folderCount} document folders");
+        logger.LogInfo("Old permission fields removal and roleBasedPermissions rename migration completed");
     }
 }
