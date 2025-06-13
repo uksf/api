@@ -198,7 +198,12 @@ public class ProcessCommandBuilder
 
                         // Send process completion information to the caller
                         await writer.WriteAsync(
-                            new ProcessOutputLine { Type = ProcessOutputType.ProcessCompleted, ExitCode = exited.ExitCode },
+                            new ProcessOutputLine
+                            {
+                                Content = $"Process exited with code {exited.ExitCode}",
+                                Type = ProcessOutputType.ProcessCompleted,
+                                ExitCode = exited.ExitCode
+                            },
                             cancellationToken
                         );
                         break;

@@ -13,7 +13,7 @@ public class GitBuildStep : BuildStep
             var fullCommand = command.Replace("git", GitConfig);
 
             var results = await RunProcessModern(workingDirectory, "cmd.exe", $"/c \"{fullCommand}\"", timeoutMs, false, false, false, true);
-            return results.Count > 0 ? results.Last() : string.Empty;
+            return results.Count > 0 ? results.Last(x => !x.Contains("Process exited")) : string.Empty;
         }
         catch (OperationCanceledException)
         {
