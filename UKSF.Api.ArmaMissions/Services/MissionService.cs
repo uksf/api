@@ -5,20 +5,14 @@ using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.ArmaMissions.Services;
 
-public class MissionService
+public class MissionService(MissionPatchDataService missionPatchDataService)
 {
     private const string Unbin = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\DeRapDos.exe";
 
-    private readonly MissionPatchDataService _missionPatchDataService;
     private int _armaServerDefaultMaxCurators;
     private string _armaServerModsPath;
     private Mission _mission;
     private List<ValidationReport> _reports;
-
-    public MissionService(MissionPatchDataService missionPatchDataService)
-    {
-        _missionPatchDataService = missionPatchDataService;
-    }
 
     public List<ValidationReport> ProcessMission(Mission tempMission, string armaServerModsPath, int armaServerDefaultMaxCurators)
     {
@@ -57,7 +51,7 @@ public class MissionService
             return _reports;
         }
 
-        _missionPatchDataService.UpdatePatchData();
+        missionPatchDataService.UpdatePatchData();
         Patch();
         Write();
         PatchDescription();
@@ -105,7 +99,13 @@ public class MissionService
     {
         Process process = new()
         {
-            StartInfo = { FileName = Unbin, Arguments = $"-p -q \"{_mission.SqmPath}\"", UseShellExecute = false, CreateNoWindow = true }
+            StartInfo =
+            {
+                FileName = Unbin,
+                Arguments = $"-p -q \"{_mission.SqmPath}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
         };
         process.Start();
         process.WaitForExit();
@@ -114,7 +114,16 @@ public class MissionService
 
     private void UnBin()
     {
-        Process process = new() { StartInfo = { FileName = Unbin, Arguments = $"-p \"{_mission.SqmPath}\"", UseShellExecute = false, CreateNoWindow = true } };
+        Process process = new()
+        {
+            StartInfo =
+            {
+                FileName = Unbin,
+                Arguments = $"-p \"{_mission.SqmPath}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
         process.Start();
         process.WaitForExit();
 
@@ -291,8 +300,10 @@ public class MissionService
 
     private void CheckDescriptionItem(string key, string defaultValue, bool required = true)
     {
-        var index = _mission.DescriptionLines.FindIndex(
-            x => x.Contains($"{key} = ") || x.Contains($"{key}=") || x.Contains($"{key}= ") || x.Contains($"{key} =")
+        var index = _mission.DescriptionLines.FindIndex(x => x.Contains($"{key} = ") ||
+                                                             x.Contains($"{key}=") ||
+                                                             x.Contains($"{key}= ") ||
+                                                             x.Contains($"{key} =")
         );
         if (index != -1)
         {
@@ -307,16 +318,14 @@ public class MissionService
                             $"Required description.ext item <i>{key}</i>  value is not default",
                             $"<i>{key}</i>  in description.ext is '{itemValue}'\nThe default value is '{defaultValue}'\n\nYou should only change this if you know what you're doing"
                         )
-                    );
-                    break;
+                    ); break;
                 case true when !required:
                     _reports.Add(
                         new ValidationReport(
                             $"Configurable description.ext item <i>{key}</i>  value is default",
                             $"<i>{key}</i>  in description.ext is the same as the default value '{itemValue}'\n\nThis should be changed based on your mission"
                         )
-                    );
-                    break;
+                    ); break;
             }
 
             return;

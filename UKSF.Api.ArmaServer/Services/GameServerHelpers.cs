@@ -25,7 +25,7 @@ public interface IGameServerHelpers
     string GetDlcModFoldersRegexString();
 }
 
-public class GameServerHelpers : IGameServerHelpers
+public class GameServerHelpers(IVariablesService variablesService, IUksfLogger logger) : IGameServerHelpers
 {
     private static readonly string[] BaseConfig =
     [
@@ -74,15 +74,6 @@ public class GameServerHelpers : IGameServerHelpers
         "}};"
     ];
 
-    private readonly IUksfLogger _logger;
-    private readonly IVariablesService _variablesService;
-
-    public GameServerHelpers(IVariablesService variablesService, IUksfLogger logger)
-    {
-        _variablesService = variablesService;
-        _logger = logger;
-    }
-
     public string GetGameServerExecutablePath(DomainGameServer gameServer)
     {
         var variableKey = gameServer.Environment switch
@@ -92,22 +83,22 @@ public class GameServerHelpers : IGameServerHelpers
             GameEnvironment.Development => "SERVER_PATH_DEV",
             _                           => throw new ArgumentException("Server environment is invalid")
         };
-        return Path.Join(_variablesService.GetVariable(variableKey).AsString(), "arma3server_x64.exe");
+        return Path.Join(variablesService.GetVariable(variableKey).AsString(), "arma3server_x64.exe");
     }
 
     public string GetGameServerSettingsPath()
     {
-        return Path.Join(_variablesService.GetVariable("SERVER_PATH_RELEASE").AsString(), "userconfig", "cba_settings.sqf");
+        return Path.Join(variablesService.GetVariable("SERVER_PATH_RELEASE").AsString(), "userconfig", "cba_settings.sqf");
     }
 
     public string GetGameServerMissionsPath()
     {
-        return _variablesService.GetVariable("MISSIONS_PATH").AsString();
+        return variablesService.GetVariable("MISSIONS_PATH").AsString();
     }
 
     public string GetGameServerConfigPath(DomainGameServer gameServer)
     {
-        return Path.Combine(_variablesService.GetVariable("SERVER_PATH_CONFIGS").AsString(), $"{gameServer.ProfileName}.cfg");
+        return Path.Combine(variablesService.GetVariable("SERVER_PATH_CONFIGS").AsString(), $"{gameServer.ProfileName}.cfg");
     }
 
     public string GetGameServerModsPaths(GameEnvironment environment)
@@ -119,12 +110,12 @@ public class GameServerHelpers : IGameServerHelpers
             GameEnvironment.Development => "MODPACK_PATH_DEV",
             _                           => throw new ArgumentException("Server environment is invalid")
         };
-        return Path.Join(_variablesService.GetVariable(variableKey).AsString(), "Repo");
+        return Path.Join(variablesService.GetVariable(variableKey).AsString(), "Repo");
     }
 
     public IEnumerable<string> GetGameServerExtraModsPaths()
     {
-        return _variablesService.GetVariable("SERVER_PATH_MODS").AsArray(x => x.RemoveQuotes());
+        return variablesService.GetVariable("SERVER_PATH_MODS").AsArray(x => x.RemoveQuotes());
     }
 
     public string FormatGameServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection)
@@ -176,7 +167,7 @@ public class GameServerHelpers : IGameServerHelpers
         var curatorsMaxString = lines.FirstOrDefault(x => x.Contains("uksf_curator_curatorsMax"));
         if (string.IsNullOrEmpty(curatorsMaxString))
         {
-            _logger.LogWarning("Could not find max curators in server settings file. Loading hardcoded deault '5'");
+            logger.LogWarning("Could not find max curators in server settings file. Loading hardcoded deault '5'");
             return 5;
         }
 
@@ -202,7 +193,7 @@ public class GameServerHelpers : IGameServerHelpers
 
     public string GetDlcModFoldersRegexString()
     {
-        var dlcModFolders = _variablesService.GetVariable("SERVER_DLC_MOD_FOLDERS").AsArray();
+        var dlcModFolders = variablesService.GetVariable("SERVER_DLC_MOD_FOLDERS").AsArray();
         return dlcModFolders.Select(x => $"(?<!.)({x})(?!.)").Aggregate((a, b) => $"{a}|{b}");
     }
 
@@ -218,16 +209,16 @@ public class GameServerHelpers : IGameServerHelpers
 
     private string GetGameServerProfilesPath(string profile)
     {
-        return Path.Combine(_variablesService.GetVariable("SERVER_PATH_PROFILES").AsString(), profile);
+        return Path.Combine(variablesService.GetVariable("SERVER_PATH_PROFILES").AsString(), profile);
     }
 
     private string GetGameServerPerfConfigPath()
     {
-        return _variablesService.GetVariable("SERVER_PATH_PERF").AsString();
+        return variablesService.GetVariable("SERVER_PATH_PERF").AsString();
     }
 
     private string GetHeadlessClientName(int index)
     {
-        return _variablesService.GetVariable("SERVER_HEADLESS_NAMES").AsArray()[index];
+        return variablesService.GetVariable("SERVER_HEADLESS_NAMES").AsArray()[index];
     }
 }

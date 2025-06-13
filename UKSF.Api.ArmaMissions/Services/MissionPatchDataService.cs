@@ -6,52 +6,37 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaMissions.Services;
 
-public class MissionPatchDataService
+public class MissionPatchDataService(
+    IRanksContext ranksContext,
+    IAccountContext accountContext,
+    IUnitsContext unitContext,
+    IRanksService ranksService,
+    IDisplayNameService displayNameService
+)
 {
-    private readonly IAccountContext _accountContext;
-    private readonly IDisplayNameService _displayNameService;
-    private readonly IRanksContext _ranksContext;
-    private readonly IRanksService _ranksService;
-    private readonly IUnitsContext _unitContext;
-
-    public MissionPatchDataService(
-        IRanksContext ranksContext,
-        IAccountContext accountContext,
-        IUnitsContext unitContext,
-        IRanksService ranksService,
-        IDisplayNameService displayNameService
-    )
-    {
-        _ranksContext = ranksContext;
-        _accountContext = accountContext;
-        _unitContext = unitContext;
-        _ranksService = ranksService;
-        _displayNameService = displayNameService;
-    }
-
     public void UpdatePatchData()
     {
         MissionPatchData.Instance = new MissionPatchData
         {
             Units = new List<MissionUnit>(),
-            Ranks = _ranksContext.Get().ToList(),
+            Ranks = ranksContext.Get().ToList(),
             Players = new List<MissionPlayer>(),
             OrderedUnits = new List<MissionUnit>()
         };
 
-        foreach (var unit in _unitContext.Get(x => x.Branch == UnitBranch.Combat).ToList())
+        foreach (var unit in unitContext.Get(x => x.Branch == UnitBranch.Combat).ToList())
         {
             MissionPatchData.Instance.Units.Add(new MissionUnit { SourceUnit = unit });
         }
 
-        foreach (var account in _accountContext.Get().Where(x => !string.IsNullOrEmpty(x.Rank) && _ranksService.IsSuperiorOrEqual(x.Rank, "Recruit")))
+        foreach (var account in accountContext.Get().Where(x => !string.IsNullOrEmpty(x.Rank) && ranksService.IsSuperiorOrEqual(x.Rank, "Recruit")))
         {
             MissionPatchData.Instance.Players.Add(
                 new MissionPlayer
                 {
                     Account = account,
-                    Rank = _ranksContext.GetSingle(account.Rank),
-                    Name = _displayNameService.GetDisplayName(account)
+                    Rank = ranksContext.GetSingle(account.Rank),
+                    Name = displayNameService.GetDisplayName(account)
                 }
             );
         }

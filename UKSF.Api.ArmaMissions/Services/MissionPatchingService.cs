@@ -13,30 +13,19 @@ public interface IMissionPatchingService
     Task<MissionPatchingResult> PatchMission(string path, string armaServerModsPath, int armaServerDefaultMaxCurators);
 }
 
-public class MissionPatchingService : IMissionPatchingService
+public class MissionPatchingService(MissionService missionService, IVariablesService variablesService, IUksfLogger logger) : IMissionPatchingService
 {
     private const string ExtractPboPath = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\ExtractPboDos.exe";
     private const string MakePboPath = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\MakePbo.exe";
     private const string SimplePackPboPath = "C:\\Program Files\\PBO Manager v.1.4 beta\\PBOConsole.exe";
-    private readonly IUksfLogger _logger;
 
-    private readonly MissionService _missionService;
-    private readonly IVariablesService _variablesService;
     private string _filePath;
     private string _folderPath;
     private string _parentFolderPath;
 
-    public MissionPatchingService(MissionService missionService, IVariablesService variablesService, IUksfLogger logger)
-    {
-        _missionService = missionService;
-        _variablesService = variablesService;
-        _logger = logger;
-    }
-
     public Task<MissionPatchingResult> PatchMission(string path, string armaServerModsPath, int armaServerDefaultMaxCurators)
     {
-        return Task.Run(
-            async () =>
+        return Task.Run(async () =>
             {
                 _filePath = path;
                 _parentFolderPath = Path.GetDirectoryName(_filePath);
@@ -47,7 +36,7 @@ public class MissionPatchingService : IMissionPatchingService
                     CreateBackup();
                     UnpackPbo();
                     Mission mission = new(_folderPath);
-                    result.Reports = _missionService.ProcessMission(mission, armaServerModsPath, armaServerDefaultMaxCurators);
+                    result.Reports = missionService.ProcessMission(mission, armaServerModsPath, armaServerDefaultMaxCurators);
                     result.PlayerCount = mission.PlayerCount;
                     result.Success = result.Reports.All(x => !x.Error);
 
@@ -58,7 +47,7 @@ public class MissionPatchingService : IMissionPatchingService
 
                     if (MissionUtilities.CheckFlag(mission, "missionUseSimplePack"))
                     {
-                        _logger.LogAudit($"Mission processed with simple packing enabled ({Path.GetFileName(path)})");
+                        logger.LogAudit($"Mission processed with simple packing enabled ({Path.GetFileName(path)})");
                         await SimplePackPbo();
                     }
                     else
@@ -68,7 +57,7 @@ public class MissionPatchingService : IMissionPatchingService
                 }
                 catch (Exception exception)
                 {
-                    _logger.LogError(exception);
+                    logger.LogError(exception);
                     result.Reports = [new ValidationReport(exception)];
                     result.Success = false;
                 }
@@ -85,7 +74,7 @@ public class MissionPatchingService : IMissionPatchingService
     private void CreateBackup()
     {
         var backupPath = Path.Combine(
-            _variablesService.GetVariable("MISSIONS_BACKUPS").AsString(),
+            variablesService.GetVariable("MISSIONS_BACKUPS").AsString(),
             Path.GetFileName(_filePath) ?? throw new FileNotFoundException()
         );
 
@@ -112,7 +101,13 @@ public class MissionPatchingService : IMissionPatchingService
 
         Process process = new()
         {
-            StartInfo = { FileName = ExtractPboPath, Arguments = $"-D -P \"{_filePath}\"", UseShellExecute = false, CreateNoWindow = true }
+            StartInfo =
+            {
+                FileName = ExtractPboPath,
+                Arguments = $"-D -P \"{_filePath}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
         };
         process.Start();
         process.WaitForExit();
@@ -135,7 +130,7 @@ public class MissionPatchingService : IMissionPatchingService
             StartInfo =
             {
                 FileName = MakePboPath,
-                WorkingDirectory = _variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
+                WorkingDirectory = variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
                 Arguments = $"-Z -BD -P -X=\"thumbs.db,*.txt,*.h,*.dep,*.cpp,*.bak,*.png,*.log,*.pew\" \"{_folderPath}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -170,7 +165,7 @@ public class MissionPatchingService : IMissionPatchingService
             StartInfo =
             {
                 FileName = SimplePackPboPath,
-                WorkingDirectory = _variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
+                WorkingDirectory = variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString(),
                 Arguments = $"-pack \"{_folderPath}\" \"{_filePath}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,

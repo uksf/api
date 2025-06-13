@@ -198,12 +198,7 @@ public class ProcessCommandBuilder
 
                         // Send process completion information to the caller
                         await writer.WriteAsync(
-                            new ProcessOutputLine
-                            {
-                                Content = $"Process exited with code {exited.ExitCode}",
-                                Type = ProcessOutputType.ProcessCompleted,
-                                ExitCode = exited.ExitCode
-                            },
+                            new ProcessOutputLine { Type = ProcessOutputType.ProcessCompleted, ExitCode = exited.ExitCode },
                             cancellationToken
                         );
                         break;
@@ -332,7 +327,7 @@ public class ProcessCommandBuilder
 public class ProcessOutputLine
 {
     public ProcessOutputType Type { get; init; } = ProcessOutputType.Output;
-    public required string Content { get; init; }
+    public string Content { get; init; }
     public string Color { get; init; }
     public bool IsJson { get; init; }
     public Exception Exception { get; set; }

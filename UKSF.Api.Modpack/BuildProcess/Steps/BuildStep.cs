@@ -253,7 +253,7 @@ public class BuildStep : IBuildStep
         var errorFilter = new ErrorFilter(
             new ProcessErrorHandlingConfig
             {
-                ErrorExclusions = errorExclusions?.AsReadOnly() ?? (IReadOnlyList<string>)[],
+                ErrorExclusions = errorExclusions?.AsReadOnly() ?? (IReadOnlyList<string>) [],
                 IgnoreErrorGateOpen = ignoreErrorGateOpen,
                 IgnoreErrorGateClose = ignoreErrorGateClose
             }
@@ -269,13 +269,12 @@ public class BuildStep : IBuildStep
 
         await foreach (var outputLine in command.ExecuteAsync(CancellationTokenSource.Token))
         {
-            // Collect all output for return value
-            results.Add(outputLine.Content);
-
             // Handle output logging based on type and configuration
             switch (outputLine.Type)
             {
                 case ProcessOutputType.Output:
+                    results.Add(outputLine.Content);
+
                     // Only log standard output if not suppressed
                     if (!suppressOutput)
                     {
@@ -292,6 +291,8 @@ public class BuildStep : IBuildStep
                     break;
 
                 case ProcessOutputType.Error:
+                    results.Add(outputLine.Content);
+
                     // Always log error content, regardless of suppressOutput
                     var shouldIgnoreError = errorFilter.ShouldIgnoreError(outputLine.Content);
 
@@ -317,13 +318,14 @@ public class BuildStep : IBuildStep
                     processExitCode = outputLine.ExitCode; break;
 
                 case ProcessOutputType.ProcessCancelled:
+                    results.Add(outputLine.Content);
+
                     // Process was cancelled - this should trigger an OperationCanceledException
                     // to be handled by the BuildProcessorService's cancellation logic
                     throw new OperationCanceledException("Process execution was cancelled", outputLine.Exception);
             }
         }
 
-        // Apply the same exit code logic as the old process helper
         if (processExitCode != 0 && raiseErrors)
         {
             var exitCodeException = new Exception($"Process failed with exit code {processExitCode}");

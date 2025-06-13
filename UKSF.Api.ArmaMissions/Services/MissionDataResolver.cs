@@ -86,7 +86,7 @@ public static class MissionDataResolver
         List<string> ids =
         [
             "5fe39de7815f5f03801134f7", // "Combat Ready"
-            "5a848590eab14d12cc7fa618"
+            "5a848590eab14d12cc7fa618" // "RAF Cranwell"
         ];
         orderedUnits.RemoveAll(x => ids.Contains(x.SourceUnit.Id));
     }
