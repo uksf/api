@@ -22,40 +22,30 @@ public static class MissionDataResolver
         {
             "5a68b28e196530164c9b4fed" => "UKSF_B_Sniper", // "Sniper Platoon"
             "5b9123ca7a6c1f0e9875601c" => "UKSF_B_Medic", // "3 Medical Regiment"
-            // "5a42835b55d6109bf0b081bd" => ResolvePlayerUnitRole(player) == 3 ? "UKSF_B_Officer" : "UKSF_B_Rifleman", // "UKSF"
-            _ => ResolvePlayerUnitRole(player) != -1 ? "UKSF_B_SectionLeader" : "UKSF_B_Rifleman"
+            // "5a42835b55d6109bf0b081bd" => GetChainOfCommandSortPriority(player) == 3 ? "UKSF_B_Officer" : "UKSF_B_Rifleman", // "UKSF"
+            _ => GetChainOfCommandSortPriority(player) != -1 ? "UKSF_B_SectionLeader" : "UKSF_B_Rifleman"
         };
     }
 
-    private static int ResolvePlayerUnitRole(MissionPlayer player)
+    private static int GetChainOfCommandSortPriority(MissionPlayer player)
     {
         var chainOfCommand = player.Unit.SourceUnit.ChainOfCommand;
-        if (chainOfCommand == null)
+        if (chainOfCommand == null || player.Account?.Id == null)
         {
             return -1;
         }
 
-        if (chainOfCommand.First == player.Account?.Id)
-        {
-            return 3;
-        }
+        var playerId = player.Account.Id;
+        var positionPriorities = new[]
+            {
+                new { Key = chainOfCommand.First, Value = 3 },
+                new { Key = chainOfCommand.Second, Value = 2 },
+                new { Key = chainOfCommand.Third, Value = 1 },
+                new { Key = chainOfCommand.Nco, Value = 0 }
+            }.Where(x => x.Key != null)
+             .ToDictionary(x => x.Key, x => x.Value);
 
-        if (chainOfCommand.Second == player.Account?.Id)
-        {
-            return 2;
-        }
-
-        if (chainOfCommand.Third == player.Account?.Id)
-        {
-            return 1;
-        }
-
-        if (chainOfCommand.Nco == player.Account?.Id)
-        {
-            return 0;
-        }
-
-        return -1;
+        return positionPriorities.TryGetValue(playerId, out var priority) ? priority : -1;
     }
 
     private static bool IsPilot(string id)
@@ -158,14 +148,14 @@ public static class MissionDataResolver
 
         slots.Sort((a, b) =>
             {
-                var roleA = ResolvePlayerUnitRole(a);
-                var roleB = ResolvePlayerUnitRole(b);
+                var priorityA = GetChainOfCommandSortPriority(a);
+                var priorityB = GetChainOfCommandSortPriority(b);
                 var rankA = MissionPatchData.Instance.Ranks.IndexOf(a.Rank);
                 var rankB = MissionPatchData.Instance.Ranks.IndexOf(b.Rank);
-                return roleA < roleB ? 1 :
-                    roleA > roleB    ? -1 :
-                    rankA < rankB    ? -1 :
-                    rankA > rankB    ? 1 : string.CompareOrdinal(a.Name, b.Name);
+                return priorityA < priorityB ? 1 :
+                    priorityA > priorityB    ? -1 :
+                    rankA < rankB            ? -1 :
+                    rankA > rankB            ? 1 : string.CompareOrdinal(a.Name, b.Name);
             }
         );
         return slots;

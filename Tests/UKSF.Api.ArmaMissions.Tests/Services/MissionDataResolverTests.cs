@@ -1,6 +1,7 @@
 using System;
 using FluentAssertions;
 using System.Collections.Generic;
+using System.Linq;
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.Core.Models.Domain;
@@ -301,6 +302,83 @@ public class MissionDataResolverTests
 
         // Assert
         result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ResolveUnitSlots_ShouldPlaceReserveSlotsAfterMembers_WhenChainOfCommandPositionsAreNull()
+    {
+        // Arrange
+        // Initialize MissionPatchData.Instance with required dependencies
+        MissionPatchData.Instance = new MissionPatchData
+        {
+            Units = [],
+            Ranks =
+            [
+                new DomainRank { Name = "Private" },
+                new DomainRank { Name = "Recruit" }
+            ]
+        };
+
+        // Create a ChainOfCommand where some positions are null (unassigned)
+        var chainOfCommand = new ChainOfCommand
+        {
+            First = null, // Unassigned position
+            Second = "real-member-id",
+            Third = null, // Unassigned position
+            Nco = null // Unassigned position
+        };
+
+        var sourceUnit = new DomainUnit { Id = "5bbbb9645eb3a4170c488b36", ChainOfCommand = chainOfCommand }; // Guardian 1-1
+
+        var unit = new MissionUnit
+        {
+            SourceUnit = sourceUnit,
+            Members =
+            [
+                // Real member with an account ID that matches a chain of command position
+                new MissionPlayer
+                {
+                    Name = "RealMember",
+                    Account = new DomainAccount { Id = "real-member-id" }, // Second in chain of command
+                    Rank = MissionPatchData.Instance.Ranks[0],
+                    Unit = null! // Will be set by ResolveUnitSlots
+                }
+            ]
+        };
+
+        // Set the Unit reference
+        foreach (var player in unit.Members)
+        {
+            player.Unit = unit;
+        }
+
+        // Act - This will add Reserve slots and sort them
+        var result = MissionDataResolver.ResolveUnitSlots(unit);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Count.Should().BeGreaterThan(1); // Should have the real member plus Reserve slots
+
+        // The real member should come first (higher priority role)
+        result[0].Name.Should().Be("RealMember");
+        result[0].Account.Should().NotBeNull();
+
+        // Reserve slots should come after real members (they should have role -1, not match null positions)
+        var reserveSlots = result.Where(p => p.Name == "Reserve").ToList();
+        reserveSlots.Should().NotBeEmpty();
+
+        // All Reserve slots should appear after the real member
+        var realMemberIndex = result.FindIndex(p => p.Name == "RealMember");
+        var firstReserveIndex = result.FindIndex(p => p.Name == "Reserve");
+
+        firstReserveIndex.Should()
+                         .BeGreaterThan(
+                             realMemberIndex,
+                             "Reserve slots should appear after real members, not before them due to null chain of command position matching"
+                         );
+
+        // Clean up
+        MissionPatchData.Instance = null;
     }
 
     private static MissionPlayer CreateTestPlayer(string unitId)
