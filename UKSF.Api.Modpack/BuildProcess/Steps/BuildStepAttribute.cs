@@ -1,11 +1,6 @@
 namespace UKSF.Api.Modpack.BuildProcess.Steps;
 
-public class BuildStepAttribute : Attribute
+public class BuildStepAttribute(string name) : Attribute
 {
-    public readonly string Name;
-
-    public BuildStepAttribute(string name)
-    {
-        Name = name;
-    }
+    public readonly string Name = name;
 }
