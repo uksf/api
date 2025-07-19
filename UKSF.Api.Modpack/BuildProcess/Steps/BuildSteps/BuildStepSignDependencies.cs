@@ -32,7 +32,7 @@ public class BuildStepSignDependencies : FileBuildStep
         StepLogger.LogSurround("Cleared keys directories");
 
         StepLogger.LogSurround("\nCreating key...");
-        await RunProcessModern(keygenPath, _dsCreateKey, _keyName, (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, true);
+        await RunProcess(keygenPath, _dsCreateKey, _keyName, (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, true);
         StepLogger.Log($"Created {_keyName}");
         await CopyFiles(keygen, keys, [new FileInfo(Path.Join(keygenPath, $"{_keyName}.bikey"))]);
         StepLogger.LogSurround("Created key");
@@ -83,7 +83,7 @@ public class BuildStepSignDependencies : FileBuildStep
             _batchSize,
             async file =>
             {
-                await RunProcessModern(
+                await RunProcess(
                     addonsPath,
                     _dsSignFile,
                     $"\"{privateKey}\" \"{file.FullName}\"",

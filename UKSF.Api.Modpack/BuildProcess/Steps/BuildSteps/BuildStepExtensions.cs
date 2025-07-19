@@ -31,7 +31,7 @@ public class BuildStepExtensions : FileBuildStep
             2,
             async file =>
             {
-                await RunProcessModern(
+                await RunProcess(
                     file.DirectoryName,
                     signTool,
                     $"sign /f \"{certPath}\" \"{file.FullName}\"",

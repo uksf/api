@@ -26,13 +26,13 @@ public class MissionPatchingResultTests
     {
         // Arrange
         var subject = new MissionPatchingResult();
-        const int expectedPlayerCount = 15;
+        const int ExpectedPlayerCount = 15;
 
         // Act
-        subject.PlayerCount = expectedPlayerCount;
+        subject.PlayerCount = ExpectedPlayerCount;
 
         // Assert
-        subject.PlayerCount.Should().Be(expectedPlayerCount);
+        subject.PlayerCount.Should().Be(ExpectedPlayerCount);
     }
 
     [Fact]

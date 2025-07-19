@@ -13,6 +13,7 @@ using UKSF.Api.Core.Queries;
 using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Core.Signalr.Hubs;
+using UKSF.Api.Core.Processes;
 
 namespace UKSF.Api.Core;
 
@@ -39,7 +40,8 @@ public static class ApiSharedExtensions
                 .AddSingleton<IEventBus, EventBus>()
                 .AddTransient<IMongoCollectionFactory, MongoCollectionFactory>()
                 .AddSingleton<IUksfLogger, UksfLogger>()
-                .AddSingleton<IClock, Clock>();
+                .AddSingleton<IClock, Clock>()
+                .AddSingleton<IProcessCommandFactory, ProcessCommandFactory>();
 
         services.AddSignalR()
                 .AddJsonProtocol(options =>
@@ -101,7 +103,8 @@ public static class ApiSharedExtensions
                        .AddSingleton<IObjectIdConversionService, ObjectIdConversionService>()
                        .AddSingleton<IAccountService, AccountService>()
                        .AddSingleton<IAssignmentService, AssignmentService>()
-                       .AddSingleton<IServiceRecordService, ServiceRecordService>();
+                       .AddSingleton<IServiceRecordService, ServiceRecordService>()
+                       .AddSingleton<IGitService, GitService>();
     }
 
     private static IServiceCollection AddCommands(this IServiceCollection services)

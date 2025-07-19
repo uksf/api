@@ -4,8 +4,8 @@ using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
-using UKSF.Api.Modpack.BuildProcess.Modern;
 using UKSF.Api.Modpack.Models;
+using UKSF.Api.Core.Processes;
 
 namespace UKSF.Api.Modpack.BuildProcess.Steps;
 
@@ -40,8 +40,6 @@ public class BuildStep : IBuildStep
     private ModpackBuildStep _buildStep;
     private Func<UpdateDefinition<DomainModpackBuild>, Task> _buildUpdatedCallback;
     private IUksfLogger _logger;
-    private BuilderProcessExecutor _processExecutor;
-    private IBuildProcessHelperFactory _processHelperFactory;
     private Func<Task> _stepUpdatedCallback;
     private TimeSpan _updateInterval;
     protected DomainModpackBuild Build;
@@ -49,6 +47,8 @@ public class BuildStep : IBuildStep
     protected IServiceProvider ServiceProvider;
     protected IStepLogger StepLogger;
     protected IVariablesService VariablesService;
+    private IProcessCommandFactory _processCommandFactory;
+    private IBuildProcessTracker _processTracker;
 
     public void Init(
         IServiceProvider newServiceProvider,
@@ -63,8 +63,8 @@ public class BuildStep : IBuildStep
         ServiceProvider = newServiceProvider;
         _logger = logger;
         VariablesService = ServiceProvider.GetService<IVariablesService>();
-        _processHelperFactory = ServiceProvider.GetService<IBuildProcessHelperFactory>();
-        _processExecutor = ServiceProvider.GetService<BuilderProcessExecutor>();
+        _processCommandFactory = ServiceProvider.GetService<IProcessCommandFactory>();
+        _processTracker = ServiceProvider.GetService<IBuildProcessTracker>();
         Build = modpackBuild;
         _buildStep = modpackBuildStep;
         _buildUpdatedCallback = buildUpdatedCallback;
@@ -206,7 +206,7 @@ public class BuildStep : IBuildStep
         return VariablesService.GetVariable("BUILD_PATH_SOURCES").AsString();
     }
 
-    protected List<string> RunProcess(
+    protected async Task<List<string>> RunProcess(
         string workingDirectory,
         string executable,
         string args,
@@ -220,36 +220,7 @@ public class BuildStep : IBuildStep
         string ignoreErrorGateOpen = ""
     )
     {
-        using var processHelper = _processHelperFactory.Create(
-            StepLogger,
-            _logger,
-            CancellationTokenSource,
-            suppressOutput,
-            raiseErrors,
-            errorSilently,
-            errorExclusions,
-            ignoreErrorGateClose,
-            ignoreErrorGateOpen,
-            Build?.Id
-        );
-        return processHelper.Run(workingDirectory, executable, args, timeout, log);
-    }
-
-    protected async Task<List<string>> RunProcessModern(
-        string workingDirectory,
-        string executable,
-        string args,
-        int timeout,
-        bool log = false,
-        bool suppressOutput = false,
-        bool raiseErrors = true,
-        bool errorSilently = false,
-        List<string> errorExclusions = null,
-        string ignoreErrorGateClose = "",
-        string ignoreErrorGateOpen = ""
-    )
-    {
-        var results = new List<string>();
+        List<string> results = [];
         var errorFilter = new ErrorFilter(
             new ProcessErrorHandlingConfig
             {
@@ -259,10 +230,11 @@ public class BuildStep : IBuildStep
             }
         );
 
-        var command = _processExecutor.CreateCommand(executable, workingDirectory, args)
-                                      .WithBuildId(Build?.Id)
-                                      .WithTimeout(TimeSpan.FromMilliseconds(timeout))
-                                      .WithLogging(log);
+        var command = _processCommandFactory.CreateCommand(executable, workingDirectory, args)
+                                            .WithProcessId(Build?.Id)
+                                            .WithTimeout(TimeSpan.FromMilliseconds(timeout))
+                                            .WithLogging(log)
+                                            .WithProcessTracker(_processTracker);
 
         Exception delayedException = null;
         var processExitCode = 0;

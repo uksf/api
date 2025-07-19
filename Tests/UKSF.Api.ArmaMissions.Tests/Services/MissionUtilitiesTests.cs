@@ -95,10 +95,10 @@ public class MissionUtilitiesTests
             "second line with KEY",
             "third line"
         };
-        const string key = "KEY";
+        const string Key = "KEY";
 
         // Act
-        var result = MissionUtilities.GetIndexByKey(source, key);
+        var result = MissionUtilities.GetIndexByKey(source, Key);
 
         // Assert
         result.Should().Be(1);
@@ -114,10 +114,10 @@ public class MissionUtilitiesTests
             "second line",
             "third line"
         };
-        const string key = "NOTFOUND";
+        const string Key = "NOTFOUND";
 
         // Act
-        var result = MissionUtilities.GetIndexByKey(source, key);
+        var result = MissionUtilities.GetIndexByKey(source, Key);
 
         // Assert
         result.Should().Be(-1);
@@ -133,10 +133,10 @@ public class MissionUtilitiesTests
             "second line with KEY",
             "third line with KEY too"
         };
-        const string key = "KEY";
+        const string Key = "KEY";
 
         // Act
-        var result = MissionUtilities.GetIndexByKey(source, key);
+        var result = MissionUtilities.GetIndexByKey(source, Key);
 
         // Assert
         result.Should().Be(1);
@@ -154,10 +154,10 @@ public class MissionUtilitiesTests
             "    property = value;",
             "};"
         };
-        const string key = "class Mission";
+        const string Key = "class Mission";
 
         // Act
-        var result = MissionUtilities.ReadDataByKey(source, key);
+        var result = MissionUtilities.ReadDataByKey(source, Key);
 
         // Assert
         result.Should().NotBeEmpty();
@@ -174,10 +174,10 @@ public class MissionUtilitiesTests
             "second line",
             "third line"
         };
-        const string key = "NOTFOUND";
+        const string Key = "NOTFOUND";
 
         // Act
-        var result = MissionUtilities.ReadDataByKey(source, key);
+        var result = MissionUtilities.ReadDataByKey(source, Key);
 
         // Assert
         result.Should().BeEmpty();
@@ -193,10 +193,10 @@ public class MissionUtilitiesTests
             "target = targetValue;",
             "third = value3;"
         };
-        const string key = "target";
+        const string Key = "target";
 
         // Act
-        var result = MissionUtilities.ReadSingleDataByKey(source, key);
+        var result = MissionUtilities.ReadSingleDataByKey(source, Key);
 
         // Assert
         result.Should().Be("targetValue");
@@ -212,10 +212,10 @@ public class MissionUtilitiesTests
             "target = \"targetValue\";",
             "third = value3;"
         };
-        const string key = "target";
+        const string Key = "target";
 
         // Act
-        var result = MissionUtilities.ReadSingleDataByKey(source, key);
+        var result = MissionUtilities.ReadSingleDataByKey(source, Key);
 
         // Assert
         result.Should().Be("targetValue");
@@ -231,10 +231,10 @@ public class MissionUtilitiesTests
             "second = value2;",
             "third = value3;"
         };
-        const string key = "NOTFOUND";
+        const string Key = "NOTFOUND";
 
         // Act
-        var result = MissionUtilities.ReadSingleDataByKey(source, key);
+        var result = MissionUtilities.ReadSingleDataByKey(source, Key);
 
         // Assert
         result.Should().Be("");
@@ -245,10 +245,10 @@ public class MissionUtilitiesTests
     {
         // Arrange
         Mission mission = null;
-        const string key = "testFlag";
+        const string Key = "testFlag";
 
         // Act & Assert
-        var act = () => MissionUtilities.CheckFlag(mission, key);
+        var act = () => MissionUtilities.CheckFlag(mission, Key);
         act.Should().Throw<NullReferenceException>();
     }
 
@@ -257,10 +257,10 @@ public class MissionUtilitiesTests
     {
         // Arrange
         var mission = new Mission("test/path") { DescriptionPath = "nonexistent/path/description.ext" };
-        const string key = "testFlag";
+        const string Key = "testFlag";
 
         // Act & Assert
-        var act = () => MissionUtilities.CheckFlag(mission, key);
+        var act = () => MissionUtilities.CheckFlag(mission, Key);
         act.Should().Throw<DirectoryNotFoundException>();
     }
 

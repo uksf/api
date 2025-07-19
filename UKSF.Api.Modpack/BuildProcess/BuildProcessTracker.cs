@@ -2,13 +2,12 @@ using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Processes;
 
 namespace UKSF.Api.Modpack.BuildProcess;
 
-public interface IBuildProcessTracker
+public interface IBuildProcessTracker : IProcessTracker
 {
-    void RegisterProcess(int processId, string buildId, string description);
-    void UnregisterProcess(int processId);
     IEnumerable<TrackedProcess> GetTrackedProcesses();
     IEnumerable<TrackedProcess> GetTrackedProcessesForBuild(string buildId);
     int KillTrackedProcesses(string buildId = null);
@@ -80,7 +79,7 @@ public class BuildProcessTracker(IUksfLogger logger) : IBuildProcessTracker
 
     private void CleanupDeadProcesses()
     {
-        var deadProcesses = new List<int>();
+        List<int> deadProcesses = [];
 
         foreach (var (processId, _) in _trackedProcesses)
         {

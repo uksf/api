@@ -1,6 +1,6 @@
 using UKSF.Api.Core.Extensions;
 
-namespace UKSF.Api.Modpack.BuildProcess.Modern;
+namespace UKSF.Api.Core.Processes;
 
 public record ProcessErrorHandlingConfig
 {
@@ -19,8 +19,6 @@ public class ErrorFilter(ProcessErrorHandlingConfig errorHandlingConfig)
     /// <summary>
     ///     Determines if an error should be ignored based on the configured rules
     /// </summary>
-    /// <param name="errorText">The error text to evaluate</param>
-    /// <returns>True if the error should be ignored</returns>
     public bool ShouldIgnoreError(string errorText)
     {
         if (string.IsNullOrEmpty(errorText))

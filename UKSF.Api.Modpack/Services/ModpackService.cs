@@ -44,6 +44,7 @@ public class ModpackService(
     IVariablesService variablesService,
     IHubContext<ModpackHub, IModpackClient> modpackHub,
     IHttpContextService httpContextService,
+    IGitService gitService,
     IUksfLogger logger
 ) : IModpackService
 {
@@ -183,16 +184,29 @@ public class ModpackService(
 
         var sourcesPath = variablesService.GetVariable("BUILD_PATH_SOURCES").AsString();
         var modpackSourcePath = Path.Join(sourcesPath, "modpack");
-        var gitCommand = new GitCommand(modpackSourcePath, logger);
+        var gitCommand = gitService.CreateGitCommand(modpackSourcePath);
 
-        gitCommand.ResetAndClean().Fetch();
-        gitCommand.Checkout("main").Pull();
-        gitCommand.Checkout("release").Pull();
+        // Reset and clean the repository
+        await gitCommand.Execute("reset --hard HEAD");
+        await gitCommand.Execute("clean -d -f");
+        await gitCommand.Execute("fetch");
+
+        // Checkout and pull main branch
+        await gitCommand.Execute("checkout -t origin/main", ignoreErrors: true);
+        await gitCommand.Execute("checkout main");
+        await gitCommand.Execute("pull");
+
+        // Checkout and pull release branch
+        await gitCommand.Execute("checkout -t origin/release", ignoreErrors: true);
+        await gitCommand.Execute("checkout release");
+        await gitCommand.Execute("pull");
 
         var versionFileContent = versionService.GetVersionFileContentFromVersion(version);
         await File.WriteAllTextAsync(Path.Join(modpackSourcePath, VersionFile), versionFileContent);
+        await gitCommand.Execute($"commit -am \"Version {version}\"");
 
-        await gitCommand.Commit($"Version {version}").Merge("main").Push("release");
+        await gitCommand.Execute("merge main");
+        await gitCommand.Execute("push -u origin release");
 
         logger.LogAudit($"New release version {version} created");
     }

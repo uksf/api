@@ -10,7 +10,7 @@ namespace UKSF.Api.Core.Processes;
 public static class ProcessUtilities
 {
     private const int ScClose = 0xF060;
-    private const int WmSyscommand = 0x0112;
+    private const int WmSysCommand = 0x0112;
 
     public static int LaunchManagedProcess(string executable, string arguments = null)
     {
@@ -19,7 +19,7 @@ public static class ProcessUtilities
             throw new InvalidOperationException("Not running on windows, stopping");
         }
 
-        int processId = default;
+        var processId = 0;
         using ManagementClass managementClass = new("Win32_Process");
         ManagementClass processInfo = new("Win32_ProcessStartup");
         processInfo.Properties["CreateFlags"].Value = 0x00000008;
@@ -50,6 +50,6 @@ public static class ProcessUtilities
     public static async Task CloseProcessGracefully(this Process process)
     {
         // UKSF.PostMessage exe location should be set as a PATH variable
-        await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WmSyscommand} {ScClose} 0");
+        await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WmSysCommand} {ScClose} 0");
     }
 }

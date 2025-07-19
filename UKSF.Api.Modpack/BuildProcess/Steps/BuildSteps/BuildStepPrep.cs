@@ -12,7 +12,7 @@ public class BuildStepPrep : BuildStep
         StepLogger.Log("Mounting build environment");
 
         var projectsPath = VariablesService.GetVariable("BUILD_PATH_PROJECTS").AsString();
-        await RunProcessModern("C:/", "cmd.exe", $"/c \"subst P: \"{projectsPath}\"\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, false, false);
-        await RunProcessModern("C:/", "cmd.exe", "/c \"subst\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, false, false);
+        await RunProcess("C:/", "cmd.exe", $"/c \"subst P: \"{projectsPath}\"\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, false, false);
+        await RunProcess("C:/", "cmd.exe", "/c \"subst\"", (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, false, false);
     }
 }

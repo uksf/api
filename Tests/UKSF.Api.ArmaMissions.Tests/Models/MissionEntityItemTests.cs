@@ -29,13 +29,13 @@ public class MissionEntityItemTests
     {
         // Arrange
         var subject = new MissionEntityItem();
-        const string expectedDataType = "TestDataType";
+        const string ExpectedDataType = "TestDataType";
 
         // Act
-        subject.DataType = expectedDataType;
+        subject.DataType = ExpectedDataType;
 
         // Assert
-        subject.DataType.Should().Be(expectedDataType);
+        subject.DataType.Should().Be(ExpectedDataType);
     }
 
     [Fact]
@@ -56,13 +56,13 @@ public class MissionEntityItemTests
     {
         // Arrange
         var subject = new MissionEntityItem();
-        const string expectedType = "TestType";
+        const string ExpectedType = "TestType";
 
         // Act
-        subject.Type = expectedType;
+        subject.Type = ExpectedType;
 
         // Assert
-        subject.Type.Should().Be(expectedType);
+        subject.Type.Should().Be(ExpectedType);
     }
 
     [Fact]
@@ -107,14 +107,14 @@ public class MissionEntityItemTests
     {
         // Arrange
         var subject = new MissionEntityItem();
-        const string testEntity = "TestEntity";
+        const string TestEntity = "TestEntity";
 
         // Act
-        subject.RawMissionEntities.Add(testEntity);
+        subject.RawMissionEntities.Add(TestEntity);
 
         // Assert
         subject.RawMissionEntities.Should().HaveCount(1);
-        subject.RawMissionEntities[0].Should().Be(testEntity);
+        subject.RawMissionEntities[0].Should().Be(TestEntity);
     }
 
     [Fact]
@@ -122,14 +122,14 @@ public class MissionEntityItemTests
     {
         // Arrange
         var subject = new MissionEntityItem();
-        const string testItem = "TestItem";
+        const string TestItem = "TestItem";
 
         // Act
-        subject.RawMissionEntityItem.Add(testItem);
+        subject.RawMissionEntityItem.Add(TestItem);
 
         // Assert
         subject.RawMissionEntityItem.Should().HaveCount(1);
-        subject.RawMissionEntityItem[0].Should().Be(testItem);
+        subject.RawMissionEntityItem[0].Should().Be(TestItem);
     }
 
     [Theory]

@@ -142,10 +142,10 @@ public class MissionDataResolverTests
     {
         // Arrange
         var unit = CreateTestUnit("5a435eea905d47336442c75a"); // Joint Special Forces Aviation Wing
-        const string defaultCallsign = "Default";
+        const string DefaultCallsign = "Default";
 
         // Act
-        var result = MissionDataResolver.ResolveCallsign(unit, defaultCallsign);
+        var result = MissionDataResolver.ResolveCallsign(unit, DefaultCallsign);
 
         // Assert
         result.Should().Be("JSFAW");
@@ -156,10 +156,10 @@ public class MissionDataResolverTests
     {
         // Arrange
         var unit = CreateTestUnit("5a42835b55d6109bf0b081bd"); // UKSF (not a pilot unit)
-        const string defaultCallsign = "Default";
+        const string DefaultCallsign = "Default";
 
         // Act
-        var result = MissionDataResolver.ResolveCallsign(unit, defaultCallsign);
+        var result = MissionDataResolver.ResolveCallsign(unit, DefaultCallsign);
 
         // Assert
         result.Should().Be("Default");
@@ -170,10 +170,10 @@ public class MissionDataResolverTests
     {
         // Arrange
         var unit = new MissionUnit { SourceUnit = null };
-        const string defaultCallsign = "Default";
+        const string DefaultCallsign = "Default";
 
         // Act & Assert
-        var act = () => MissionDataResolver.ResolveCallsign(unit, defaultCallsign);
+        var act = () => MissionDataResolver.ResolveCallsign(unit, DefaultCallsign);
         act.Should().Throw<NullReferenceException>();
     }
 

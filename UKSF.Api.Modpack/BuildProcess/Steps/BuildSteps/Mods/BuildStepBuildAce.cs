@@ -18,7 +18,7 @@ public class BuildStepBuildAce : ModBuildStep
         if (IsBuildNeeded(ModName))
         {
             StepLogger.LogSurround("\nRunning hemtt release...");
-            await RunProcessModern(rootPath, "cmd.exe", HemttCommand("release --no-archive"), (int)TimeSpan.FromMinutes(10).TotalMilliseconds, true);
+            await RunProcess(rootPath, "cmd.exe", HemttCommand("release --no-archive"), (int)TimeSpan.FromMinutes(10).TotalMilliseconds, true);
             StepLogger.LogSurround("Hemtt release complete");
         }
 

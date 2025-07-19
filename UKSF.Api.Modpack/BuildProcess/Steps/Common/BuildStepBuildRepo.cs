@@ -13,6 +13,6 @@ public class BuildStepBuildRepo : BuildStep
         StepLogger.Log($"Building {repoName} repo");
 
         var arma3SyncPath = VariablesService.GetVariable("BUILD_PATH_ARMA3SYNC").AsString();
-        await RunProcessModern(arma3SyncPath, "Java", $"-jar .\\ArmA3Sync.jar -BUILD {repoName}", (int)TimeSpan.FromMinutes(5).TotalMilliseconds);
+        await RunProcess(arma3SyncPath, "Java", $"-jar .\\ArmA3Sync.jar -BUILD {repoName}", (int)TimeSpan.FromMinutes(5).TotalMilliseconds);
     }
 }

@@ -28,13 +28,13 @@ public class MissionUnitTests
     {
         // Arrange
         var subject = new MissionUnit();
-        const string expectedCallsign = "Alpha-1";
+        const string ExpectedCallsign = "Alpha-1";
 
         // Act
-        subject.Callsign = expectedCallsign;
+        subject.Callsign = ExpectedCallsign;
 
         // Assert
-        subject.Callsign.Should().Be(expectedCallsign);
+        subject.Callsign.Should().Be(ExpectedCallsign);
     }
 
     [Fact]
@@ -97,16 +97,16 @@ public class MissionUnitTests
         // Arrange
         var subject = new MissionUnit();
         var player = new MissionPlayer { Name = "Leader" };
-        const string roleKey = "Squad Leader";
+        const string RoleKey = "Squad Leader";
 
         // Act
-        subject.Roles.Add(roleKey, player);
+        subject.Roles.Add(RoleKey, player);
 
         // Assert
         subject.Roles.Should().HaveCount(1);
-        subject.Roles.Should().ContainKey(roleKey);
-        subject.Roles[roleKey].Should().Be(player);
-        subject.Roles[roleKey].Name.Should().Be("Leader");
+        subject.Roles.Should().ContainKey(RoleKey);
+        subject.Roles[RoleKey].Should().Be(player);
+        subject.Roles[RoleKey].Name.Should().Be("Leader");
     }
 
     [Fact]

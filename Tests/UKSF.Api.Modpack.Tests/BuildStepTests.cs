@@ -9,25 +9,25 @@ using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
+using UKSF.Api.Core.Processes;
 using UKSF.Api.Modpack.BuildProcess;
-using UKSF.Api.Modpack.BuildProcess.Modern;
 using UKSF.Api.Modpack.BuildProcess.Steps;
 using UKSF.Api.Modpack.Models;
 using Xunit;
 
-namespace UKSF.Api.Modpack.Tests.Modern;
+namespace UKSF.Api.Modpack.Tests;
 
-public class BuildStepModernTests
+public class BuildStepTests
 {
     private readonly CancellationTokenSource _cancellationTokenSource = new();
-    private readonly Mock<IBuildProcessHelperFactory> _mockProcessHelperFactory = new();
     private readonly Mock<IBuildProcessTracker> _mockProcessTracker = new();
     private readonly Mock<IStepLogger> _mockStepLogger = new();
     private readonly Mock<IUksfLogger> _mockUksfLogger = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
     private ModpackBuildStep _modpackBuildStep;
+    private readonly Mock<IProcessCommandFactory> _mockProcessService = new();
 
-    public BuildStepModernTests()
+    public BuildStepTests()
     {
         // Setup default behavior for BUILD_FORCE_LOGS variable
         var buildForceLogsVariable = new DomainVariableItem { Key = "BUILD_FORCE_LOGS", Item = false };
@@ -36,10 +36,17 @@ public class BuildStepModernTests
         // Setup default behavior for BUILD_STATE_UPDATE_INTERVAL variable
         var buildStateUpdateIntervalVariable = new DomainVariableItem { Key = "BUILD_STATE_UPDATE_INTERVAL", Item = 1.0 };
         _mockVariablesService.Setup(x => x.GetVariable("BUILD_STATE_UPDATE_INTERVAL")).Returns(buildStateUpdateIntervalVariable);
+
+        // Set up process service to return a real ProcessCommand that can be controlled
+        _mockProcessService.Setup(x => x.CreateCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                   .Returns((string executable, string workingDir, string args) => 
+                   {
+                       return new ProcessCommand(_mockUksfLogger.Object, executable, workingDir, args);
+                   });
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_HandleCancellation_When_CancellationTokenIsTriggered()
+    public async Task RunProcess_Should_HandleCancellation_When_CancellationTokenIsTriggered()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -55,13 +62,13 @@ public class BuildStepModernTests
         // With a pre-cancelled token, we expect a TaskCanceledException
         await Assert.ThrowsAsync<TaskCanceledException>(async () =>
             {
-                await buildStep.RunProcessModern(".", executable, args, 5000, log: true, raiseErrors: false);
+                await buildStep.RunProcess(".", executable, args, 5000, log: true, raiseErrors: false);
             }
         );
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_HandleErrorSilently_When_ErrorSilentlyIsTrue()
+    public async Task RunProcess_Should_HandleErrorSilently_When_ErrorSilentlyIsTrue()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -71,7 +78,7 @@ public class BuildStepModernTests
         GetPlatformCommand(out executable, out args, "exit 1");
 
         // Act
-        var result = await buildStep.RunProcessModern(".", executable, args, 5000, raiseErrors: false, errorSilently: true);
+        var result = await buildStep.RunProcess(".", executable, args, 5000, raiseErrors: false, errorSilently: true);
 
         // Assert
         result.Should().NotBeNull();
@@ -80,7 +87,7 @@ public class BuildStepModernTests
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_HandleFailingCommandWithErrorOutput_WithoutHanging()
+    public async Task RunProcess_Should_HandleFailingCommandWithErrorOutput_WithoutHanging()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -92,7 +99,7 @@ public class BuildStepModernTests
         var startTime = DateTime.UtcNow;
 
         // Act
-        var result = await buildStep.RunProcessModern(
+        var result = await buildStep.RunProcess(
             ".",
             executable,
             args,
@@ -115,11 +122,11 @@ public class BuildStepModernTests
         _mockProcessTracker.Verify(x => x.UnregisterProcess(It.IsAny<int>()), Times.Once);
 
         // Verify that proper logging occurred for the lifecycle
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Starting process"))), Times.Once);
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_HandleIgnoreErrorGates()
+    public async Task RunProcess_Should_HandleIgnoreErrorGates()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -129,7 +136,7 @@ public class BuildStepModernTests
         GetPlatformCommand(out executable, out args, "echo test");
 
         // Act & Assert - Should not throw
-        var result = await buildStep.RunProcessModern(
+        var result = await buildStep.RunProcess(
             ".",
             executable,
             args,
@@ -144,7 +151,7 @@ public class BuildStepModernTests
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_HandleSuppressOutput()
+    public async Task RunProcess_Should_HandleSuppressOutput()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -154,7 +161,7 @@ public class BuildStepModernTests
         GetPlatformCommand(out executable, out args, "echo test output");
 
         // Act
-        var result = await buildStep.RunProcessModern(".", executable, args, 5000, suppressOutput: true);
+        var result = await buildStep.RunProcess(".", executable, args, 5000, suppressOutput: true);
 
         // Assert
         result.Should().NotBeNull();
@@ -164,7 +171,7 @@ public class BuildStepModernTests
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_HandleTimeout_Gracefully()
+    public async Task RunProcess_Should_HandleTimeout_Gracefully()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -185,7 +192,7 @@ public class BuildStepModernTests
         var startTime = DateTime.UtcNow;
 
         // Act
-        var result = await buildStep.RunProcessModern(
+        var result = await buildStep.RunProcess(
             ".",
             executable,
             args,
@@ -201,7 +208,7 @@ public class BuildStepModernTests
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_NotThrowException_When_RaiseErrorsIsFalse()
+    public async Task RunProcess_Should_NotThrowException_When_RaiseErrorsIsFalse()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -211,14 +218,14 @@ public class BuildStepModernTests
         GetPlatformCommand(out executable, out args, "exit 42");
 
         // Act & Assert - Should not throw
-        var result = await buildStep.RunProcessModern(".", executable, args, 5000, raiseErrors: false);
+        var result = await buildStep.RunProcess(".", executable, args, 5000, raiseErrors: false);
 
         result.Should().NotBeNull();
         result.Should().NotBeEmpty();
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_ThrowException_WithCorrectExitCode_When_ProcessExitsWithNonZeroCode()
+    public async Task RunProcess_Should_ThrowException_WithCorrectExitCode_When_ProcessExitsWithNonZeroCode()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -228,13 +235,13 @@ public class BuildStepModernTests
         GetPlatformCommand(out executable, out args, "exit 42");
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(async () => { await buildStep.RunProcessModern(".", executable, args, 5000, raiseErrors: true); });
+        var exception = await Assert.ThrowsAsync<Exception>(async () => { await buildStep.RunProcess(".", executable, args, 5000, raiseErrors: true); });
 
         exception.Message.Should().Contain("Process failed with exit code 42");
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_CaptureOutputCorrectly()
+    public async Task RunProcess_Should_CaptureOutputCorrectly()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -244,7 +251,7 @@ public class BuildStepModernTests
         GetPlatformCommand(out executable, out args, "echo Output Line");
 
         // Act
-        var result = await buildStep.RunProcessModern(".", executable, args, 5000, log: true, raiseErrors: false);
+        var result = await buildStep.RunProcess(".", executable, args, 5000, log: true, raiseErrors: false);
 
         // Assert
         result.Should().NotBeNull();
@@ -256,13 +263,13 @@ public class BuildStepModernTests
         _modpackBuildStep.Logs.Should().NotBeEmpty();
         _modpackBuildStep.Logs.Should().Contain(log => log.Text.Contains("Output"));
 
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Starting process"))), Times.Once);
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
     }
 
     [Theory]
     [InlineData("error1", "error2")]
     [InlineData("warning", "critical")]
-    public async Task RunProcessModern_Should_HandleErrorExclusions(string exclusion1, string exclusion2)
+    public async Task RunProcess_Should_HandleErrorExclusions(string exclusion1, string exclusion2)
     {
         // Arrange
         var errorExclusions = new List<string> { exclusion1, exclusion2 };
@@ -273,14 +280,14 @@ public class BuildStepModernTests
         GetPlatformCommand(out executable, out args, "echo test");
 
         // Act & Assert - Should not throw
-        var result = await buildStep.RunProcessModern(".", executable, args, 5000, raiseErrors: false, errorExclusions: errorExclusions);
+        var result = await buildStep.RunProcess(".", executable, args, 5000, raiseErrors: false, errorExclusions: errorExclusions);
 
         result.Should().NotBeNull();
         result.Should().NotBeEmpty();
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_HandleTimeout_AndThrowTimeoutException_When_RaiseErrorsIsTrue()
+    public async Task RunProcess_Should_HandleTimeout_AndThrowTimeoutException_When_RaiseErrorsIsTrue()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -301,7 +308,7 @@ public class BuildStepModernTests
         // Act & Assert
         var exception = await Assert.ThrowsAsync<TimeoutException>(async () =>
             {
-                await buildStep.RunProcessModern(
+                await buildStep.RunProcess(
                     ".",
                     executable,
                     args,
@@ -315,7 +322,7 @@ public class BuildStepModernTests
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_LogToStepLogger_WithCorrectColors()
+    public async Task RunProcess_Should_LogToStepLogger_WithCorrectColors()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -325,7 +332,7 @@ public class BuildStepModernTests
         GetPlatformCommand(out executable, out args, "echo Test Output");
 
         // Act
-        var result = await buildStep.RunProcessModern(".", executable, args, 5000, log: true);
+        var result = await buildStep.RunProcess(".", executable, args, 5000, log: true);
 
         // Assert
         result.Should().NotBeNull();
@@ -337,7 +344,7 @@ public class BuildStepModernTests
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_SupportExtendedTimeouts()
+    public async Task RunProcess_Should_SupportExtendedTimeouts()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -349,17 +356,17 @@ public class BuildStepModernTests
         var twoMinutesInMs = (int)TimeSpan.FromMinutes(2).TotalMilliseconds;
 
         // Act & Assert - Should handle large timeout values without issues
-        var result = await buildStep.RunProcessModern(".", executable, args, twoMinutesInMs, log: true, raiseErrors: false);
+        var result = await buildStep.RunProcess(".", executable, args, twoMinutesInMs, log: true, raiseErrors: false);
 
         result.Should().NotBeNull();
         result.Should().NotBeEmpty();
 
         // Verify logging occurred
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Starting process"))), Times.Once);
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_ReturnSameSignature_AsRunProcess()
+    public async Task RunProcess_Should_ReturnSameSignature_AsRunProcess()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -369,7 +376,7 @@ public class BuildStepModernTests
         GetPlatformCommand(out executable, out args, "echo signature test");
 
         // Act
-        var result = await buildStep.RunProcessModern(
+        var result = await buildStep.RunProcess(
             ".",
             executable,
             args,
@@ -390,7 +397,7 @@ public class BuildStepModernTests
     }
 
     [Fact]
-    public async Task RunProcessModern_Should_NotThrowException_When_RaiseErrorsIsFalse_AndExitCodeIsNonZero()
+    public async Task RunProcess_Should_NotThrowException_When_RaiseErrorsIsFalse_AndExitCodeIsNonZero()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -399,7 +406,7 @@ public class BuildStepModernTests
         GetPlatformCommand(out var executable, out var args, "exit 1");
 
         // Act & Assert - Should not throw when raiseErrors is false
-        var result = await buildStep.RunProcessModern(
+        var result = await buildStep.RunProcess(
             ".",
             executable,
             args,
@@ -451,8 +458,8 @@ public class BuildStepModernTests
         var services = new ServiceCollection();
 
         services.AddSingleton(_mockVariablesService.Object);
-        services.AddSingleton(_mockProcessHelperFactory.Object);
-        services.AddSingleton(new BuilderProcessExecutor(_mockUksfLogger.Object, _mockVariablesService.Object, _mockProcessTracker.Object));
+        services.AddSingleton(_mockProcessService.Object);
+        services.AddSingleton(_mockProcessTracker.Object);
 
         return services.BuildServiceProvider();
     }
@@ -471,10 +478,10 @@ public class BuildStepModernTests
         }
     }
 
-    // Test implementation of BuildStep that exposes RunProcessModern as public
+    // Test implementation of BuildStep that exposes RunProcess as public
     private class TestBuildStep : BuildStep
     {
-        public new async Task<List<string>> RunProcessModern(
+        public new async Task<List<string>> RunProcess(
             string workingDirectory,
             string executable,
             string args,
@@ -488,7 +495,7 @@ public class BuildStepModernTests
             string ignoreErrorGateOpen = ""
         )
         {
-            return await base.RunProcessModern(
+            return await base.RunProcess(
                 workingDirectory,
                 executable,
                 args,
@@ -503,4 +510,4 @@ public class BuildStepModernTests
             );
         }
     }
-}
+} 

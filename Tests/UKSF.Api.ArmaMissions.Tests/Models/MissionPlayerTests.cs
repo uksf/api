@@ -26,13 +26,13 @@ public class MissionPlayerTests
     {
         // Arrange
         var subject = new MissionPlayer();
-        const string expectedName = "John Doe";
+        const string ExpectedName = "John Doe";
 
         // Act
-        subject.Name = expectedName;
+        subject.Name = ExpectedName;
 
         // Assert
-        subject.Name.Should().Be(expectedName);
+        subject.Name.Should().Be(ExpectedName);
     }
 
     [Fact]
@@ -40,13 +40,13 @@ public class MissionPlayerTests
     {
         // Arrange
         var subject = new MissionPlayer();
-        const string expectedObjectClass = "UKSF_B_Rifleman";
+        const string ExpectedObjectClass = "UKSF_B_Rifleman";
 
         // Act
-        subject.ObjectClass = expectedObjectClass;
+        subject.ObjectClass = ExpectedObjectClass;
 
         // Assert
-        subject.ObjectClass.Should().Be(expectedObjectClass);
+        subject.ObjectClass.Should().Be(ExpectedObjectClass);
     }
 
     [Fact]

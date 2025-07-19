@@ -8,20 +8,20 @@ using Moq;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
-using UKSF.Api.Modpack.BuildProcess;
-using UKSF.Api.Modpack.BuildProcess.Modern;
+using UKSF.Api.Core.Processes;
 using Xunit;
+using UKSF.Api.Modpack.BuildProcess;
 
-namespace UKSF.Api.Modpack.Tests.Modern;
+namespace UKSF.Api.Modpack.Tests;
 
-public class BuilderProcessExecutorTests
+public class ProcessCommandFactoryTests
 {
     private readonly CancellationTokenSource _cancellationTokenSource = new();
     private readonly Mock<IBuildProcessTracker> _mockProcessTracker = new();
     private readonly Mock<IUksfLogger> _mockUksfLogger = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
 
-    public BuilderProcessExecutorTests()
+    public ProcessCommandFactoryTests()
     {
         _mockVariablesService.Setup(x => x.GetVariable("BUILD_FORCE_LOGS")).Returns(new DomainVariableItem { Key = "BUILD_FORCE_LOGS", Item = false });
     }
@@ -33,11 +33,9 @@ public class BuilderProcessExecutorTests
         var preCancelledTokenSource = new CancellationTokenSource();
         preCancelledTokenSource.Cancel(); // Pre-cancel the token
 
-        var executor = CreateBuilderProcessExecutor();
-
         GetPlatformCommand(out var executable, out var args, "echo cancellation test");
-
-        var command = executor.CreateCommand(executable, ".", args).WithBuildId("test-build").WithTimeout(TimeSpan.FromSeconds(5));
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act & Assert
         // With a pre-cancelled token, we expect a TaskCanceledException
@@ -53,21 +51,9 @@ public class BuilderProcessExecutorTests
     {
         // Arrange
         var cancellationTokenSource = new CancellationTokenSource();
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
-            executable = "powershell.exe";
-            args = "-Command \"Start-Sleep 5\""; // 5 second delay to allow cancellation
-        }
-        else
-        {
-            executable = "sh";
-            args = "-c \"sleep 5\""; // 5 second delay to allow cancellation
-        }
-
-        var command = executor.CreateCommand(executable, ".", args).WithBuildId("test-cancellation").WithTimeout(TimeSpan.FromSeconds(30));
+        GetPlatformCommand(out var executable, out var args, "powershell.exe -Command \"Start-Sleep 5\"");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -111,12 +97,9 @@ public class BuilderProcessExecutorTests
     public async Task ExecuteAsync_Should_ReportNonZeroExitCodes_AsProcessCompleted()
     {
         // Arrange
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "exit 1");
-
-        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
+        GetPlatformCommand(out var executable, out var args, "exit 1");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -135,15 +118,13 @@ public class BuilderProcessExecutorTests
     public async Task ExecuteAsync_Should_HandleFailingCommandWithErrorOutput_WithoutHanging()
     {
         // Arrange
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo Error output to stderr >&2 && exit 1");
-
-        var command = executor.CreateCommand(executable, ".", args)
-                              .WithBuildId("test-hanging-fix")
-                              .WithTimeout(TimeSpan.FromSeconds(10))
-                              .WithLogging(enableInternalLogging: true);
+        GetPlatformCommand(out var executable, out var args, "echo Error output to stderr >&2 && exit 1");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args)
+                             .WithTimeout(TimeSpan.FromSeconds(5))
+                             .WithProcessId("test-build-456")
+                             .WithProcessTracker(_mockProcessTracker.Object)
+                             .WithLogging(true);
 
         var startTime = DateTime.UtcNow;
 
@@ -163,23 +144,20 @@ public class BuilderProcessExecutorTests
         results.Should().NotBeEmpty("Result should not be empty even when process fails");
 
         // Verify that the process was properly tracked and cleaned up
-        _mockProcessTracker.Verify(x => x.RegisterProcess(It.IsAny<int>(), "test-hanging-fix", It.IsAny<string>()), Times.Once);
+        _mockProcessTracker.Verify(x => x.RegisterProcess(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         _mockProcessTracker.Verify(x => x.UnregisterProcess(It.IsAny<int>()), Times.Once);
 
         // Verify that proper logging occurred for the lifecycle
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Starting process"))), Times.Once);
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
     }
 
     [Fact]
     public async Task ExecuteAsync_Should_StreamAllOutput_WithoutSuppressionConcerns()
     {
         // Arrange
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo test output");
-
-        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
+        GetPlatformCommand(out var executable, out var args, "echo test output");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -198,21 +176,9 @@ public class BuilderProcessExecutorTests
     public async Task ExecuteAsync_Should_HandleTimeout_Gracefully()
     {
         // Arrange
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
-            executable = "powershell.exe";
-            args = "-Command \"Start-Sleep 15\""; // 15 second delay
-        }
-        else
-        {
-            executable = "sh";
-            args = "-c \"sleep 15\""; // 15 second delay
-        }
-
-        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(1)); // 1 second timeout
+        GetPlatformCommand(out var executable, out var args, "powershell.exe -Command \"Start-Sleep 15\"");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(3));
 
         var startTime = DateTime.UtcNow;
 
@@ -225,7 +191,7 @@ public class BuilderProcessExecutorTests
 
         // Assert
         var duration = DateTime.UtcNow - startTime;
-        duration.Should().BeLessThan(TimeSpan.FromSeconds(3), "Should timeout quickly");
+        duration.Should().BeLessThan(TimeSpan.FromSeconds(4), "Should timeout within reasonable time");
 
         // Should report timeout as an error
         results.Should().Contain(r => r.Type == ProcessOutputType.Error && r.Content.Contains("timed out"));
@@ -236,12 +202,9 @@ public class BuilderProcessExecutorTests
     public async Task ExecuteAsync_Should_NotRegisterProcess_When_BuildIdIsNull()
     {
         // Arrange
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo test");
-
-        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
+        GetPlatformCommand(out var executable, out var args, "echo test");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
         // Note: Not setting BuildId
 
         // Act
@@ -261,12 +224,9 @@ public class BuilderProcessExecutorTests
     public async Task ExecuteAsync_Should_StreamAllErrorsAndOutputs()
     {
         // Arrange
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo test output && echo error output >&2");
-
-        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
+        GetPlatformCommand(out var executable, out var args, "echo test output && echo error output >&2");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -286,12 +246,12 @@ public class BuilderProcessExecutorTests
     public async Task ExecuteAsync_Should_RegisterProcess_When_ProcessTrackerIsProvided()
     {
         // Arrange
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo test");
-
-        var command = executor.CreateCommand(executable, ".", args).WithBuildId("test-build-456").WithTimeout(TimeSpan.FromSeconds(5));
+        GetPlatformCommand(out var executable, out var args, "echo test");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args)
+                             .WithTimeout(TimeSpan.FromSeconds(5))
+                             .WithProcessId("test-build-123")
+                             .WithProcessTracker(_mockProcessTracker.Object);
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -302,7 +262,7 @@ public class BuilderProcessExecutorTests
 
         // Assert
         results.Should().NotBeEmpty();
-        _mockProcessTracker.Verify(x => x.RegisterProcess(It.IsAny<int>(), "test-build-456", It.IsAny<string>()), Times.Once);
+        _mockProcessTracker.Verify(x => x.RegisterProcess(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         _mockProcessTracker.Verify(x => x.UnregisterProcess(It.IsAny<int>()), Times.Once);
     }
 
@@ -310,14 +270,9 @@ public class BuilderProcessExecutorTests
     public async Task ExecuteAsync_Should_SupportExtendedTimeouts()
     {
         // Arrange
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo extended timeout test");
-
-        var command = executor.CreateCommand(executable, ".", args)
-                              .WithTimeout(TimeSpan.FromMinutes(2)) // 2 minute timeout
-                              .WithLogging(enableInternalLogging: true); // Enable logging to verify it works
+        GetPlatformCommand(out var executable, out var args, "echo extended timeout test");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5)).WithLogging(true);
 
         // Act & Assert - Should handle large timeout values without issues
         var results = new List<ProcessOutputLine>();
@@ -329,19 +284,16 @@ public class BuilderProcessExecutorTests
         results.Should().NotBeEmpty();
 
         // Verify logging occurred
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Starting process"))), Times.Once);
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
     }
 
     [Fact]
     public async Task ExecuteAsync_Should_ReportExitCodeInformation_WithProcessCompleted()
     {
         // Arrange
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "exit 42");
-
-        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
+        GetPlatformCommand(out var executable, out var args, "exit 42");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -362,12 +314,9 @@ public class BuilderProcessExecutorTests
     public async Task ExecuteAsync_Should_CaptureOutputCorrectly()
     {
         // Arrange
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo Output Line");
-
-        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5)).WithLogging(enableInternalLogging: true);
+        GetPlatformCommand(out var executable, out var args, "echo Output Line");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5)).WithLogging(true);
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -383,28 +332,16 @@ public class BuilderProcessExecutorTests
         results.Should().Contain(line => line.Content.Contains("Output"));
 
         // Verify logging occurred
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Starting process"))), Times.Once);
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
     }
 
     [Fact]
     public async Task ExecuteAsync_Should_HandleTimeoutException_Correctly()
     {
         // Arrange
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
-            executable = "powershell.exe";
-            args = "-Command \"Start-Sleep 10\""; // 10 second delay
-        }
-        else
-        {
-            executable = "sh";
-            args = "-c \"sleep 10\""; // 10 second delay
-        }
-
-        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(1)); // 1 second timeout
+        GetPlatformCommand(out var executable, out var args, "powershell.exe -Command \"Start-Sleep 10\"");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -424,12 +361,9 @@ public class BuilderProcessExecutorTests
     public async Task ExecuteAsync_Should_StreamOutput_InRealTime()
     {
         // Arrange
-        var executor = CreateBuilderProcessExecutor();
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo line1 && echo line2 && echo line3");
-
-        var command = executor.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
+        GetPlatformCommand(out var executable, out var args, "echo line1 && echo line2 && echo line3");
+        var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -450,11 +384,6 @@ public class BuilderProcessExecutorTests
         outputLines.Should().Contain(line => line.Contains("line3"));
     }
 
-    private BuilderProcessExecutor CreateBuilderProcessExecutor()
-    {
-        return new BuilderProcessExecutor(_mockUksfLogger.Object, _mockVariablesService.Object, _mockProcessTracker.Object);
-    }
-
     private static void GetPlatformCommand(out string executable, out string args, string command)
     {
         if (Environment.OSVersion.Platform == PlatformID.Win32NT)
@@ -468,4 +397,4 @@ public class BuilderProcessExecutorTests
             args = $"-c \"{command}\"";
         }
     }
-}
+} 

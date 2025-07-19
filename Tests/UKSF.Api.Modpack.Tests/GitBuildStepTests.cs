@@ -34,7 +34,6 @@ public class GitBuildStepTests
 
         _mockServiceProvider.Setup(x => x.GetService(typeof(IVariablesService))).Returns(mockVariablesService.Object);
         _mockServiceProvider.Setup(x => x.GetService(typeof(IBuildProcessTracker))).Returns(mockProcessTracker.Object);
-        _mockServiceProvider.Setup(x => x.GetService(typeof(IBuildProcessHelperFactory))).Returns(new Mock<IBuildProcessHelperFactory>().Object);
     }
 
     [Fact]
@@ -62,7 +61,6 @@ public class GitBuildStepTests
         // Assert
         // Verify that required services were retrieved during Init
         _mockServiceProvider.Verify(x => x.GetService(typeof(IVariablesService)), Times.Once);
-        _mockServiceProvider.Verify(x => x.GetService(typeof(IBuildProcessHelperFactory)), Times.Once);
     }
 
     [Fact]

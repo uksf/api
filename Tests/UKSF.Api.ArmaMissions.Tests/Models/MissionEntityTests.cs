@@ -24,13 +24,13 @@ public class MissionEntityTests
     {
         // Arrange
         var subject = new MissionEntity();
-        const int expectedCount = 5;
+        const int ExpectedCount = 5;
 
         // Act
-        subject.ItemsCount = expectedCount;
+        subject.ItemsCount = ExpectedCount;
 
         // Assert
-        subject.ItemsCount.Should().Be(expectedCount);
+        subject.ItemsCount.Should().Be(ExpectedCount);
     }
 
     [Fact]
