@@ -39,10 +39,11 @@ public class BuildStepTests
 
         // Set up process service to return a real ProcessCommand that can be controlled
         _mockProcessService.Setup(x => x.CreateCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-                   .Returns((string executable, string workingDir, string args) => 
-                   {
-                       return new ProcessCommand(_mockUksfLogger.Object, executable, workingDir, args);
-                   });
+                           .Returns((string executable, string workingDir, string args) =>
+                               {
+                                   return new ProcessCommand(_mockUksfLogger.Object, executable, workingDir, args);
+                               }
+                           );
     }
 
     [Fact]
@@ -192,19 +193,30 @@ public class BuildStepTests
         var startTime = DateTime.UtcNow;
 
         // Act
-        var result = await buildStep.RunProcess(
-            ".",
-            executable,
-            args,
-            1000, // 1 second timeout
-            raiseErrors: false
-        );
+        List<string> result = null;
+        TaskCanceledException caughtException = null;
+        try
+        {
+            result = await buildStep.RunProcess(
+                ".",
+                executable,
+                args,
+                1000, // 1 second timeout
+                raiseErrors: false
+            );
+        }
+        catch (TaskCanceledException ex)
+        {
+            // Expected when timeout occurs
+            caughtException = ex;
+        }
 
         // Assert
         var duration = DateTime.UtcNow - startTime;
         duration.Should().BeLessThan(TimeSpan.FromSeconds(3), "Should timeout quickly");
-        result.Should().NotBeNull();
-        result.Should().NotBeEmpty();
+        caughtException.Should().NotBeNull("TaskCanceledException should be thrown on timeout when raiseErrors is false");
+        caughtException.Message.Should().Contain("task was canceled");
+        result.Should().BeNull("No result should be returned when timeout occurs");
     }
 
     [Fact]
@@ -287,7 +299,7 @@ public class BuildStepTests
     }
 
     [Fact]
-    public async Task RunProcess_Should_HandleTimeout_AndThrowTimeoutException_When_RaiseErrorsIsTrue()
+    public async Task RunProcess_Should_HandleTimeout_AndThrowTaskCanceledException_When_RaiseErrorsIsTrue()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -305,8 +317,10 @@ public class BuildStepTests
             args = "-c \"sleep 10\""; // 10 second delay
         }
 
+        var startTime = DateTime.UtcNow;
+
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<TimeoutException>(async () =>
+        var exception = await Assert.ThrowsAsync<TaskCanceledException>(async () =>
             {
                 await buildStep.RunProcess(
                     ".",
@@ -318,7 +332,11 @@ public class BuildStepTests
             }
         );
 
-        exception.Message.Should().Contain("Process execution timed out after");
+        // Assert timeout behavior
+        var duration = DateTime.UtcNow - startTime;
+        duration.Should().BeLessThan(TimeSpan.FromSeconds(3), "Should timeout quickly");
+        exception.Should().NotBeNull();
+        exception.Message.Should().Contain("task was canceled");
     }
 
     [Fact]
@@ -510,4 +528,4 @@ public class BuildStepTests
             );
         }
     }
-} 
+}

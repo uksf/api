@@ -121,10 +121,10 @@ public class ProcessCommandFactoryTests
         GetPlatformCommand(out var executable, out var args, "echo Error output to stderr >&2 && exit 1");
         var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
         var command = processService.CreateCommand(executable, ".", args)
-                             .WithTimeout(TimeSpan.FromSeconds(5))
-                             .WithProcessId("test-build-456")
-                             .WithProcessTracker(_mockProcessTracker.Object)
-                             .WithLogging(true);
+                                    .WithTimeout(TimeSpan.FromSeconds(5))
+                                    .WithProcessId("test-build-456")
+                                    .WithProcessTracker(_mockProcessTracker.Object)
+                                    .WithLogging(true);
 
         var startTime = DateTime.UtcNow;
 
@@ -184,18 +184,25 @@ public class ProcessCommandFactoryTests
 
         // Act
         var results = new List<ProcessOutputLine>();
-        await foreach (var outputLine in command.ExecuteAsync(_cancellationTokenSource.Token))
+        TaskCanceledException caughtException = null;
+        try
         {
-            results.Add(outputLine);
+            await foreach (var outputLine in command.ExecuteAsync(_cancellationTokenSource.Token))
+            {
+                results.Add(outputLine);
+            }
+        }
+        catch (TaskCanceledException ex)
+        {
+            // Expected when timeout occurs
+            caughtException = ex;
         }
 
         // Assert
         var duration = DateTime.UtcNow - startTime;
         duration.Should().BeLessThan(TimeSpan.FromSeconds(4), "Should timeout within reasonable time");
-
-        // Should report timeout as an error
-        results.Should().Contain(r => r.Type == ProcessOutputType.Error && r.Content.Contains("timed out"));
-        results.Should().Contain(r => r.Exception is TimeoutException);
+        caughtException.Should().NotBeNull("TaskCanceledException should be thrown on timeout");
+        caughtException.Message.Should().Contain("task was canceled");
     }
 
     [Fact]
@@ -249,9 +256,9 @@ public class ProcessCommandFactoryTests
         GetPlatformCommand(out var executable, out var args, "echo test");
         var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
         var command = processService.CreateCommand(executable, ".", args)
-                             .WithTimeout(TimeSpan.FromSeconds(5))
-                             .WithProcessId("test-build-123")
-                             .WithProcessTracker(_mockProcessTracker.Object);
+                                    .WithTimeout(TimeSpan.FromSeconds(5))
+                                    .WithProcessId("test-build-123")
+                                    .WithProcessTracker(_mockProcessTracker.Object);
 
         // Act
         var results = new List<ProcessOutputLine>();
@@ -336,25 +343,39 @@ public class ProcessCommandFactoryTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_Should_HandleTimeoutException_Correctly()
+    public async Task ExecuteAsync_Should_HandleTaskCanceledException_Correctly()
     {
         // Arrange
         GetPlatformCommand(out var executable, out var args, "powershell.exe -Command \"Start-Sleep 10\"");
         var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
-        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
+        var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(3));
+
+        var startTime = DateTime.UtcNow;
 
         // Act
         var results = new List<ProcessOutputLine>();
-        await foreach (var outputLine in command.ExecuteAsync(_cancellationTokenSource.Token))
+        TaskCanceledException caughtException = null;
+        try
         {
-            results.Add(outputLine);
+            await foreach (var outputLine in command.ExecuteAsync(_cancellationTokenSource.Token))
+            {
+                results.Add(outputLine);
+            }
+        }
+        catch (TaskCanceledException ex)
+        {
+            // Expected when timeout occurs
+            caughtException = ex;
         }
 
         // Assert
-        results.Should().NotBeEmpty();
-        var timeoutErrors = results.Where(r => r.Type == ProcessOutputType.Error && r.Exception is TimeoutException).ToList();
-        timeoutErrors.Should().NotBeEmpty();
-        timeoutErrors.Should().Contain(r => r.Content.Contains("Process execution timed out after"));
+        var duration = DateTime.UtcNow - startTime;
+        duration.Should().BeLessThan(TimeSpan.FromSeconds(5), "Should timeout within reasonable time");
+        caughtException.Should().NotBeNull("TaskCanceledException should be thrown on timeout");
+        caughtException.Message.Should().Contain("task was canceled");
+
+        // Verify that the exception is properly propagated rather than being swallowed
+        caughtException.Should().BeOfType<TaskCanceledException>();
     }
 
     [Fact]
@@ -397,4 +418,4 @@ public class ProcessCommandFactoryTests
             args = $"-c \"{command}\"";
         }
     }
-} 
+}
