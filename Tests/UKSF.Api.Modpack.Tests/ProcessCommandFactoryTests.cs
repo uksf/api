@@ -335,7 +335,7 @@ public class ProcessCommandFactoryTests
         // Assert
         results.Should().NotBeNull();
         results.Should().NotBeEmpty();
-        results.Should().HaveCountGreaterOrEqualTo(1); // Should capture at least one output
+        results.Should().HaveCountGreaterThanOrEqualTo(1); // Should capture at least one output
         results.Should().Contain(line => line.Content.Contains("Output"));
 
         // Verify logging occurred
@@ -396,7 +396,7 @@ public class ProcessCommandFactoryTests
 
         // Assert
         results.Should().NotBeEmpty();
-        results.Where(r => r.Type == ProcessOutputType.Output).Should().HaveCountGreaterOrEqualTo(3);
+        results.Where(r => r.Type == ProcessOutputType.Output).Should().HaveCountGreaterThanOrEqualTo(3);
 
         // Verify we get multiple distinct output lines
         var outputLines = results.Where(r => r.Type == ProcessOutputType.Output).Select(r => r.Content).ToList();

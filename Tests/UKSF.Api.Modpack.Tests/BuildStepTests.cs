@@ -268,7 +268,7 @@ public class BuildStepTests
         // Assert
         result.Should().NotBeNull();
         result.Should().NotBeEmpty();
-        result.Should().HaveCountGreaterOrEqualTo(1); // Should capture at least one output
+        result.Should().HaveCountGreaterThanOrEqualTo(1); // Should capture at least one output
         result.Should().Contain(line => line.Contains("Output"));
 
         // Verify logging occurred - check the actual logs in the build step

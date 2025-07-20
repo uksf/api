@@ -14,7 +14,7 @@ public static class ChangeUtilities
 
     private static List<Change> GetChanges<T>(this T original, T updated)
     {
-        List<Change> changes = new();
+        List<Change> changes = [];
         var type = original.GetType();
         IEnumerable<PropertyInfo> properties = type.GetProperties();
 
@@ -26,6 +26,12 @@ public static class ChangeUtilities
 
         foreach (var propertyInfo in properties)
         {
+            // Skip properties that require parameters (like indexers)
+            if (propertyInfo.GetIndexParameters().Length > 0)
+            {
+                continue;
+            }
+
             var name = propertyInfo.Name;
             var originalValue = propertyInfo.GetValue(original);
             var updatedValue = propertyInfo.GetValue(updated);
@@ -39,7 +45,12 @@ public static class ChangeUtilities
                 continue;
             }
 
-            if (propertyInfo.PropertyType.IsClass && !propertyInfo.PropertyType.IsSerializable)
+            // Check if this property is a collection type (but not string)
+            if (IsCollectionType(propertyInfo.PropertyType))
+            {
+                changes.Add(GetChange(propertyInfo.PropertyType, name, originalValue, updatedValue));
+            }
+            else if (propertyInfo.PropertyType.IsClass && !IsSimpleType(propertyInfo.PropertyType))
             {
                 changes.Add(
                     new Change
@@ -61,7 +72,7 @@ public static class ChangeUtilities
 
     private static Change GetChange(Type type, string name, object original, object updated)
     {
-        if (type != typeof(string) && updated is IEnumerable originalListValue && original is IEnumerable updatedListValue)
+        if (type != typeof(string) && original is IEnumerable originalListValue && updated is IEnumerable updatedListValue)
         {
             return new Change
             {
@@ -102,14 +113,14 @@ public static class ChangeUtilities
 
     private static List<Change> GetListChanges(this IEnumerable original, IEnumerable updated)
     {
-        var originalObjects = original == null ? new List<object>() : original.Cast<object>().ToList();
-        var updatedObjects = updated == null ? new List<object>() : updated.Cast<object>().ToList();
-        var changes = originalObjects.Where(originalObject => !updatedObjects.Any(updatedObject => DeepEquals(originalObject, updatedObject)))
-                                     .Select(x => new Change { Type = ChangeType.Addition, Updated = x.ToString() })
-                                     .ToList();
+        var originalObjects = original == null ? [] : original.Cast<object>().ToList();
+        var updatedObjects = updated == null ? [] : updated.Cast<object>().ToList();
+        var changes = updatedObjects.Where(updatedObject => !originalObjects.Any(originalObject => DeepEquals(originalObject, updatedObject)))
+                                    .Select(x => new Change { Type = ChangeType.Addition, Updated = x.ToString() })
+                                    .ToList();
         changes.AddRange(
-            updatedObjects.Where(updatedObject => !originalObjects.Any(originalObject => DeepEquals(originalObject, updatedObject)))
-                          .Select(x => new Change { Type = ChangeType.Removal, Original = x.ToString() })
+            originalObjects.Where(originalObject => !updatedObjects.Any(updatedObject => DeepEquals(originalObject, updatedObject)))
+                           .Select(x => new Change { Type = ChangeType.Removal, Original = x.ToString() })
         );
         return changes;
     }
@@ -129,6 +140,26 @@ public static class ChangeUtilities
         var originalObject = JsonDocument.Parse(JsonSerializer.Serialize(original, DefaultJsonSerializerOptions.Options));
         var updatedObject = JsonDocument.Parse(JsonSerializer.Serialize(updated, DefaultJsonSerializerOptions.Options));
         return originalObject.DeepEquals(updatedObject);
+    }
+
+    private static bool IsCollectionType(Type type)
+    {
+        return type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type);
+    }
+
+    private static bool IsSimpleType(Type type)
+    {
+        return type.IsPrimitive ||
+               type.IsEnum ||
+               type == typeof(string) ||
+               type == typeof(decimal) ||
+               type == typeof(DateTime) ||
+               type == typeof(DateOnly) ||
+               type == typeof(TimeOnly) ||
+               type == typeof(DateTimeOffset) ||
+               type == typeof(TimeSpan) ||
+               type == typeof(Guid) ||
+               (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>) && IsSimpleType(Nullable.GetUnderlyingType(type)!));
     }
 
     private static string FormatChanges(IReadOnlyCollection<Change> changes, string indentation = "")
