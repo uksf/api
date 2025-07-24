@@ -170,6 +170,149 @@ public class DocumentServiceTests
         await act.Should().ThrowAsync<FolderException>().WithMessage("Cannot edit documents in this folder 'JSFAW'");
     }
 
+    [Fact]
+    public async Task UpdateDocumentContent_WhenUserHasDocumentCollaboratorPermissionsButNotFolderPermissions_ShouldAllowUpdate()
+    {
+        // Arrange - User has viewer permission on folder but collaborator permission on specific document
+        Given_folder_metadata();
+        _mockIFileContext.Setup(x => x.Exists("1.json")).Returns(true);
+
+        // Setup: User can view folder but not collaborate on folder
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentFolderMetadata>(f => f.Id == "2"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.Is<DomainDocumentFolderMetadata>(f => f.Id == "2"))).Returns(false);
+
+        // Setup: User can view and collaborate on specific document
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "1"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.Is<DomainDocumentMetadata>(d => d.Id == "1"))).Returns(true);
+
+        // Act
+        var result = await _subject.UpdateDocumentContent(
+            "2",
+            "1",
+            new UpdateDocumentContentRequest { NewText = "New text", LastKnownUpdated = _utcNow.AddDays(-1) }
+        );
+
+        // Assert - Should succeed because user has collaborator permissions on the document
+        result.Text.Should().Be("New text");
+        result.LastUpdated.Should().Be(_utcNow);
+        _mockIDocumentMetadataContext.Verify(
+            x => x.FindAndUpdate(It.IsAny<Expression<Func<DomainDocumentFolderMetadata, bool>>>(), It.IsAny<UpdateDefinition<DomainDocumentFolderMetadata>>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task UpdateDocument_WhenUserHasDocumentCollaboratorPermissionsButNotFolderPermissions_ShouldAllowUpdate()
+    {
+        // Arrange - User has viewer permission on folder but collaborator permission on specific document
+        Given_folder_metadata();
+
+        // Setup: User can view folder but not collaborate on folder
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentFolderMetadata>(f => f.Id == "2"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.Is<DomainDocumentFolderMetadata>(f => f.Id == "2"))).Returns(false);
+
+        // Setup: User can view and collaborate on specific document
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "1"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.Is<DomainDocumentMetadata>(d => d.Id == "1"))).Returns(true);
+
+        var updateRequest = new CreateDocumentRequest { Name = "UpdatedDocument.json" };
+
+        // Act
+        var result = await _subject.UpdateDocument("2", "1", updateRequest);
+
+        // Assert - Should succeed because user has collaborator permissions on the document
+        result.Should().NotBeNull();
+        _mockIDocumentMetadataContext.Verify(
+            x => x.FindAndUpdate(It.IsAny<Expression<Func<DomainDocumentFolderMetadata, bool>>>(), It.IsAny<UpdateDefinition<DomainDocumentFolderMetadata>>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task DeleteDocument_WhenUserHasDocumentCollaboratorPermissionsButNotFolderPermissions_ShouldAllowDelete()
+    {
+        // Arrange - User has viewer permission on folder but collaborator permission on specific document
+        Given_folder_metadata();
+        _mockIFileContext.Setup(x => x.Exists("1.json")).Returns(true);
+
+        // Setup: User can view folder but not collaborate on folder
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentFolderMetadata>(f => f.Id == "2"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.Is<DomainDocumentFolderMetadata>(f => f.Id == "2"))).Returns(false);
+
+        // Setup: User can view and collaborate on specific document
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "1"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.Is<DomainDocumentMetadata>(d => d.Id == "1"))).Returns(true);
+
+        // Act
+        await _subject.DeleteDocument("2", "1");
+
+        // Assert - Should succeed because user has collaborator permissions on the document
+        _mockIDocumentMetadataContext.Verify(x => x.Update("2", It.IsAny<UpdateDefinition<DomainDocumentFolderMetadata>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateDocument_WhenUserLacksPermissionsOnBothFolderAndDocument_ShouldThrowException()
+    {
+        // Arrange - User has no collaboration permissions on either folder or document
+        Given_folder_metadata();
+
+        // Setup: User can view folder but not collaborate on folder
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentFolderMetadata>(f => f.Id == "2"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.Is<DomainDocumentFolderMetadata>(f => f.Id == "2"))).Returns(false);
+
+        // Setup: User can view but cannot collaborate on specific document
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "1"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.Is<DomainDocumentMetadata>(d => d.Id == "1"))).Returns(false);
+
+        var updateRequest = new CreateDocumentRequest { Name = "UpdatedDocument.json" };
+
+        // Act & Assert
+        var act = async () => await _subject.UpdateDocument("2", "1", updateRequest);
+        await act.Should().ThrowAsync<FolderException>().WithMessage("Cannot edit documents in this folder 'JSFAW'");
+    }
+
+    [Fact]
+    public async Task DeleteDocument_WhenUserLacksPermissionsOnBothFolderAndDocument_ShouldThrowException()
+    {
+        // Arrange - User has no collaboration permissions on either folder or document
+        Given_folder_metadata();
+
+        // Setup: User can view folder but not collaborate on folder
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentFolderMetadata>(f => f.Id == "2"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.Is<DomainDocumentFolderMetadata>(f => f.Id == "2"))).Returns(false);
+
+        // Setup: User can view but cannot collaborate on specific document
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "1"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.Is<DomainDocumentMetadata>(d => d.Id == "1"))).Returns(false);
+
+        // Act & Assert
+        var act = async () => await _subject.DeleteDocument("2", "1");
+        await act.Should().ThrowAsync<FolderException>().WithMessage("Cannot delete documents from this folder 'JSFAW'");
+    }
+
+    [Fact]
+    public async Task UpdateDocumentContent_WhenUserLacksPermissionsOnBothFolderAndDocument_ShouldThrowException()
+    {
+        // Arrange - User has no collaboration permissions on either folder or document
+        Given_folder_metadata();
+
+        // Setup: User can view folder but not collaborate on folder
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentFolderMetadata>(f => f.Id == "2"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.Is<DomainDocumentFolderMetadata>(f => f.Id == "2"))).Returns(false);
+
+        // Setup: User can view but cannot collaborate on specific document
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextView(It.Is<DomainDocumentMetadata>(d => d.Id == "1"))).Returns(true);
+        _mockIDocumentPermissionsService.Setup(x => x.CanContextCollaborate(It.Is<DomainDocumentMetadata>(d => d.Id == "1"))).Returns(false);
+
+        // Act & Assert
+        var act = async () => await _subject.UpdateDocumentContent(
+            "2",
+            "1",
+            new UpdateDocumentContentRequest { NewText = "New text", LastKnownUpdated = _utcNow.AddDays(-1) }
+        );
+        await act.Should().ThrowAsync<FolderException>().WithMessage("Cannot edit documents in this folder 'JSFAW'");
+    }
+
     private void Given_folder_metadata()
     {
         _mockIDocumentMetadataContext.Setup(x => x.GetSingle("2"))

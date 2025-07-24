@@ -80,15 +80,12 @@ public class DocumentService(
     public async Task<DocumentMetadataResponse> UpdateDocument(string folderId, string documentId, CreateDocumentRequest newPermissions)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!documentPermissionsService.CanContextCollaborate(folderMetadata))
+        var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
+
+        // Allow editing if user has collaboration permissions on either the folder OR the specific document
+        if (!documentPermissionsService.CanContextCollaborate(folderMetadata) && !documentPermissionsService.CanContextCollaborate(documentMetadata))
         {
             throw new FolderException($"Cannot edit documents in this folder '{folderMetadata.Name}'");
-        }
-
-        var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
-        if (!documentPermissionsService.CanContextCollaborate(documentMetadata))
-        {
-            throw new DocumentException($"Cannot edit document '{folderMetadata.Name}/{documentMetadata.Name}'");
         }
 
         // Calculate new full path
@@ -123,15 +120,12 @@ public class DocumentService(
     public async Task DeleteDocument(string folderId, string documentId)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!documentPermissionsService.CanContextCollaborate(folderMetadata))
+        var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
+
+        // Allow deleting if user has collaboration permissions on either the folder OR the specific document
+        if (!documentPermissionsService.CanContextCollaborate(folderMetadata) && !documentPermissionsService.CanContextCollaborate(documentMetadata))
         {
             throw new FolderException($"Cannot delete documents from this folder '{folderMetadata.Name}'");
-        }
-
-        var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
-        if (!documentPermissionsService.CanContextCollaborate(documentMetadata))
-        {
-            throw new DocumentException($"Cannot delete document '{folderMetadata.Name}/{documentMetadata.Name}'");
         }
 
         ValidateAndGetDocumentPath(documentMetadata.Id);
@@ -157,15 +151,12 @@ public class DocumentService(
     public async Task<DocumentContentResponse> UpdateDocumentContent(string folderId, string documentId, UpdateDocumentContentRequest updateDocumentContent)
     {
         var folderMetadata = ValidateAndGetFolder(folderId);
-        if (!documentPermissionsService.CanContextCollaborate(folderMetadata))
+        var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
+
+        // Allow editing if user has collaboration permissions on either the folder OR the specific document
+        if (!documentPermissionsService.CanContextCollaborate(folderMetadata) && !documentPermissionsService.CanContextCollaborate(documentMetadata))
         {
             throw new FolderException($"Cannot edit documents in this folder '{folderMetadata.Name}'");
-        }
-
-        var documentMetadata = ValidateAndGetDocument(folderMetadata, documentId);
-        if (!documentPermissionsService.CanContextCollaborate(documentMetadata))
-        {
-            throw new DocumentException($"Cannot edit document '{folderMetadata.Name}/{documentMetadata.Name}'");
         }
 
         if (updateDocumentContent.LastKnownUpdated < documentMetadata.LastUpdated)
