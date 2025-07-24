@@ -5,11 +5,13 @@ public class GitCommand(IGitService gitService, string workingDirectory)
     private readonly IGitService _gitService = gitService;
     private readonly string _workingDirectory = workingDirectory;
 
-    public async Task Execute(string command, bool ignoreErrors = false, CancellationToken cancellationToken = default)
+    public async Task<string> Execute(string command, bool ignoreErrors = false, CancellationToken cancellationToken = default)
     {
         try
         {
-            await _gitService.ExecuteCommand(_workingDirectory, command, cancellationToken);
+            var result = await _gitService.ExecuteCommand(_workingDirectory, command, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            return result;
         }
         catch (OperationCanceledException)
         {
@@ -23,5 +25,7 @@ public class GitCommand(IGitService gitService, string workingDirectory)
                 throw;
             }
         }
+
+        return string.Empty;
     }
 }

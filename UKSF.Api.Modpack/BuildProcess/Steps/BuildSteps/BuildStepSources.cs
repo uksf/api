@@ -31,40 +31,17 @@ public class BuildStepSources : GitBuildStep
         DirectoryInfo release = new(releasePath);
         DirectoryInfo repo = new(repoPath);
 
-        // Break up the complex git command chain and add cancellation checks
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        await GitCommand(path, "reset --hard HEAD");
+        var gitCommand = GitService.CreateGitCommand(path);
+        await gitCommand.Execute("reset --hard HEAD", cancellationToken: CancellationTokenSource.Token);
+        await gitCommand.Execute("clean -d -f", cancellationToken: CancellationTokenSource.Token);
+        await gitCommand.Execute("fetch", cancellationToken: CancellationTokenSource.Token);
 
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        await GitCommand(path, "clean -d -f");
+        await gitCommand.Execute($"checkout -t origin/{branchName}", ignoreErrors: true, cancellationToken: CancellationTokenSource.Token);
+        await gitCommand.Execute($"checkout {branchName}", cancellationToken: CancellationTokenSource.Token);
 
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        await GitCommand(path, "fetch");
-
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-
-        // Handle potential branch creation errors gracefully
-        try
-        {
-            await GitCommand(path, $"checkout -t origin/{branchName}");
-        }
-        catch (Exception ex)
-        {
-            // Branch might already exist, try to checkout directly
-            StepLogger.Log($"Branch tracking creation failed, attempting direct checkout: {ex.Message}");
-        }
-
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        await GitCommand(path, $"checkout {branchName}");
-
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        var before = await GitCommand(path, "rev-parse HEAD");
-
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        await GitCommand(path, "pull");
-
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        var after = await GitCommand(path, "rev-parse HEAD");
+        var before = await gitCommand.Execute("rev-parse HEAD", cancellationToken: CancellationTokenSource.Token);
+        await gitCommand.Execute("pull", cancellationToken: CancellationTokenSource.Token);
+        var after = await gitCommand.Execute("rev-parse HEAD", cancellationToken: CancellationTokenSource.Token);
 
         var forceBuild = GetEnvironmentVariable<bool>($"{modName}_updated");
         bool updated;
@@ -102,34 +79,15 @@ public class BuildStepSources : GitBuildStep
 
         StepLogger.Log($"Checking out {referenceName}");
 
-        // Break up the complex git command chain and add cancellation checks
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        await GitCommand(modpackPath, "reset --hard HEAD");
+        var gitCommand = GitService.CreateGitCommand(modpackPath);
+        await gitCommand.Execute("reset --hard HEAD", cancellationToken: CancellationTokenSource.Token);
+        await gitCommand.Execute("clean -d -f", cancellationToken: CancellationTokenSource.Token);
+        await gitCommand.Execute("fetch", cancellationToken: CancellationTokenSource.Token);
 
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        await GitCommand(modpackPath, "clean -d -f");
+        await gitCommand.Execute($"checkout -t origin/{reference}", ignoreErrors: true, cancellationToken: CancellationTokenSource.Token);
+        await gitCommand.Execute($"checkout {reference}", cancellationToken: CancellationTokenSource.Token);
 
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        await GitCommand(modpackPath, "fetch");
-
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-
-        // Handle potential branch creation errors gracefully
-        try
-        {
-            await GitCommand(modpackPath, $"checkout -t origin/{reference}");
-        }
-        catch (Exception ex)
-        {
-            // Branch might already exist, try to checkout directly
-            StepLogger.Log($"Branch tracking creation failed, attempting direct checkout: {ex.Message}");
-        }
-
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        await GitCommand(modpackPath, $"checkout {reference}");
-
-        CancellationTokenSource.Token.ThrowIfCancellationRequested();
-        await GitCommand(modpackPath, "pull");
+        await gitCommand.Execute("pull", cancellationToken: CancellationTokenSource.Token);
 
         StepLogger.LogSurround("Checked out modpack");
     }
