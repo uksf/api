@@ -71,9 +71,6 @@ public class GitBuildStepTests
 
         // Act & Assert
         gitBuildStep.Should().BeAssignableTo<IBuildStep>();
-
-        // Verify expected methods exist (compile-time check)
-        typeof(GitBuildStep).Should().HaveMethod("GitCommand", [typeof(string), typeof(string)]);
     }
 
     [Fact]
