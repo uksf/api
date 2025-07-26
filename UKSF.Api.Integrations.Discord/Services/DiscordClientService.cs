@@ -103,6 +103,11 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
             if (tries >= 4)
             {
                 _logger.LogError($"Discord failed to reconnect itself after 60 seconds, trying to reconnect. Connection state: {_client.ConnectionState}");
+                if (_client.ConnectionState == ConnectionState.Connecting)
+                {
+                    await Disconnect();
+                }
+
                 await Connect();
             }
         }
