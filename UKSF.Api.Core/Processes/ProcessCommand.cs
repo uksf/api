@@ -155,15 +155,23 @@ public class ProcessCommand(IUksfLogger logger, string executable, string workin
                             var description = $"'{executable}' in '{workingDirectory}' with '{arguments}'";
                             _processTracker.RegisterProcess(processId, _processId, description);
                         }
+
                         break;
 
                     case StandardOutputCommandEvent stdOut when !string.IsNullOrEmpty(stdOut.Text):
-                        await ProcessStandardOutputAsync(stdOut.Text, jsonParser, writer, cancellationToken);
-                        break;
+                        await ProcessStandardOutputAsync(stdOut.Text, jsonParser, writer, cancellationToken); break;
 
                     case StandardErrorCommandEvent stdErr when !string.IsNullOrEmpty(stdErr.Text):
                         LogWarning($"Process error output: {stdErr.Text}");
-                        await writer.WriteAsync(new ProcessOutputLine { Content = stdErr.Text, Type = ProcessOutputType.Error }, cancellationToken);
+                        await writer.WriteAsync(
+                            new ProcessOutputLine
+                            {
+                                Content = stdErr.Text,
+                                Type = ProcessOutputType.Error,
+                                Exception = new Exception(stdErr.Text)
+                            },
+                            cancellationToken
+                        );
                         break;
 
                     case ExitedCommandEvent exited:

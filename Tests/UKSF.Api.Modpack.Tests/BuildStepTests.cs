@@ -8,8 +8,8 @@ using Moq;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Models.Domain;
-using UKSF.Api.Core.Services;
 using UKSF.Api.Core.Processes;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.BuildProcess;
 using UKSF.Api.Modpack.BuildProcess.Steps;
 using UKSF.Api.Modpack.Models;
@@ -20,12 +20,12 @@ namespace UKSF.Api.Modpack.Tests;
 public class BuildStepTests
 {
     private readonly CancellationTokenSource _cancellationTokenSource = new();
+    private readonly Mock<IProcessCommandFactory> _mockProcessService = new();
     private readonly Mock<IBuildProcessTracker> _mockProcessTracker = new();
     private readonly Mock<IStepLogger> _mockStepLogger = new();
     private readonly Mock<IUksfLogger> _mockUksfLogger = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
     private ModpackBuildStep _modpackBuildStep;
-    private readonly Mock<IProcessCommandFactory> _mockProcessService = new();
 
     public BuildStepTests()
     {
@@ -40,10 +40,33 @@ public class BuildStepTests
         // Set up process service to return a real ProcessCommand that can be controlled
         _mockProcessService.Setup(x => x.CreateCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                            .Returns((string executable, string workingDir, string args) =>
-                               {
-                                   return new ProcessCommand(_mockUksfLogger.Object, executable, workingDir, args);
-                               }
+                                        new ProcessCommand(_mockUksfLogger.Object, executable, workingDir, args)
                            );
+    }
+
+    [Fact]
+    public async Task RunProcess_Should_CaptureOutputCorrectly()
+    {
+        // Arrange
+        var buildStep = CreateTestBuildStep();
+        InitializeBuildStep(buildStep);
+
+        GetPlatformCommand(out var executable, out var args, "echo Output Line");
+
+        // Act
+        var result = await buildStep.RunProcess(".", executable, args, 5000, true, raiseErrors: false);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().NotBeEmpty();
+        result.Should().HaveCountGreaterThanOrEqualTo(1); // Should capture at least one output
+        result.Should().Contain(line => line.Contains("Output"));
+
+        // Verify logging occurred - check the actual logs in the build step
+        _modpackBuildStep.Logs.Should().NotBeEmpty();
+        _modpackBuildStep.Logs.Should().Contain(log => log.Text.Contains("Output"));
+
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
     }
 
     [Fact]
@@ -52,20 +75,15 @@ public class BuildStepTests
         // Arrange
         var buildStep = CreateTestBuildStep();
         var preCancelledTokenSource = new CancellationTokenSource();
-        preCancelledTokenSource.Cancel(); // Pre-cancel the token
+        await preCancelledTokenSource.CancelAsync(); // Pre-cancel the token
 
         InitializeBuildStep(buildStep, preCancelledTokenSource);
 
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo cancellation test");
+        GetPlatformCommand(out var executable, out var args, "echo cancellation test");
 
         // Act & Assert
         // With a pre-cancelled token, we expect a TaskCanceledException
-        await Assert.ThrowsAsync<TaskCanceledException>(async () =>
-            {
-                await buildStep.RunProcess(".", executable, args, 5000, log: true, raiseErrors: false);
-            }
-        );
+        await Assert.ThrowsAsync<TaskCanceledException>(async () => { await buildStep.RunProcess(".", executable, args, 5000, true, raiseErrors: false); });
     }
 
     [Fact]
@@ -75,8 +93,7 @@ public class BuildStepTests
         var buildStep = CreateTestBuildStep();
         InitializeBuildStep(buildStep);
 
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "exit 1");
+        GetPlatformCommand(out var executable, out var args, "exit 1");
 
         // Act
         var result = await buildStep.RunProcess(".", executable, args, 5000, raiseErrors: false, errorSilently: true);
@@ -94,8 +111,7 @@ public class BuildStepTests
         var buildStep = CreateTestBuildStep();
         InitializeBuildStep(buildStep);
 
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo Error output to stderr >&2 && exit 1");
+        GetPlatformCommand(out var executable, out var args, "echo Error output to stderr >&2 && exit 1");
 
         var startTime = DateTime.UtcNow;
 
@@ -105,7 +121,7 @@ public class BuildStepTests
             executable,
             args,
             10000, // 10 seconds
-            log: true,
+            true,
             raiseErrors: false
         );
 
@@ -133,8 +149,7 @@ public class BuildStepTests
         var buildStep = CreateTestBuildStep();
         InitializeBuildStep(buildStep);
 
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo test");
+        GetPlatformCommand(out var executable, out var args, "echo test");
 
         // Act & Assert - Should not throw
         var result = await buildStep.RunProcess(
@@ -158,8 +173,7 @@ public class BuildStepTests
         var buildStep = CreateTestBuildStep();
         InitializeBuildStep(buildStep);
 
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo test output");
+        GetPlatformCommand(out var executable, out var args, "echo test output");
 
         // Act
         var result = await buildStep.RunProcess(".", executable, args, 5000, suppressOutput: true);
@@ -169,6 +183,47 @@ public class BuildStepTests
         result.Should().NotBeEmpty();
         // With suppressOutput, StepLogger.Log should not be called for standard output
         _mockStepLogger.Verify(x => x.Log(It.Is<string>(s => s.Contains("test output")), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RunProcess_Should_HandleTimeout_AndThrowTaskCanceledException_When_RaiseErrorsIsTrue()
+    {
+        // Arrange
+        var buildStep = CreateTestBuildStep();
+        InitializeBuildStep(buildStep);
+
+        string executable, args;
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        {
+            executable = "powershell.exe";
+            args = "-Command \"Start-Sleep 10\""; // 10 second delay
+        }
+        else
+        {
+            executable = "sh";
+            args = "-c \"sleep 10\""; // 10 second delay
+        }
+
+        var startTime = DateTime.UtcNow;
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+            {
+                await buildStep.RunProcess(
+                    ".",
+                    executable,
+                    args,
+                    1000, // 1 second timeout
+                    raiseErrors: true
+                );
+            }
+        );
+
+        // Assert timeout behavior
+        var duration = DateTime.UtcNow - startTime;
+        duration.Should().BeLessThan(TimeSpan.FromSeconds(3), "Should timeout quickly");
+        exception.Should().NotBeNull();
+        exception.Message.Should().Contain("task was canceled");
     }
 
     [Fact]
@@ -220,137 +275,16 @@ public class BuildStepTests
     }
 
     [Fact]
-    public async Task RunProcess_Should_NotThrowException_When_RaiseErrorsIsFalse()
-    {
-        // Arrange
-        var buildStep = CreateTestBuildStep();
-        InitializeBuildStep(buildStep);
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "exit 42");
-
-        // Act & Assert - Should not throw
-        var result = await buildStep.RunProcess(".", executable, args, 5000, raiseErrors: false);
-
-        result.Should().NotBeNull();
-        result.Should().NotBeEmpty();
-    }
-
-    [Fact]
-    public async Task RunProcess_Should_ThrowException_WithCorrectExitCode_When_ProcessExitsWithNonZeroCode()
-    {
-        // Arrange
-        var buildStep = CreateTestBuildStep();
-        InitializeBuildStep(buildStep);
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "exit 42");
-
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(async () => { await buildStep.RunProcess(".", executable, args, 5000, raiseErrors: true); });
-
-        exception.Message.Should().Contain("Process failed with exit code 42");
-    }
-
-    [Fact]
-    public async Task RunProcess_Should_CaptureOutputCorrectly()
-    {
-        // Arrange
-        var buildStep = CreateTestBuildStep();
-        InitializeBuildStep(buildStep);
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo Output Line");
-
-        // Act
-        var result = await buildStep.RunProcess(".", executable, args, 5000, log: true, raiseErrors: false);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().NotBeEmpty();
-        result.Should().HaveCountGreaterThanOrEqualTo(1); // Should capture at least one output
-        result.Should().Contain(line => line.Contains("Output"));
-
-        // Verify logging occurred - check the actual logs in the build step
-        _modpackBuildStep.Logs.Should().NotBeEmpty();
-        _modpackBuildStep.Logs.Should().Contain(log => log.Text.Contains("Output"));
-
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
-    }
-
-    [Theory]
-    [InlineData("error1", "error2")]
-    [InlineData("warning", "critical")]
-    public async Task RunProcess_Should_HandleErrorExclusions(string exclusion1, string exclusion2)
-    {
-        // Arrange
-        var errorExclusions = new List<string> { exclusion1, exclusion2 };
-        var buildStep = CreateTestBuildStep();
-        InitializeBuildStep(buildStep);
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo test");
-
-        // Act & Assert - Should not throw
-        var result = await buildStep.RunProcess(".", executable, args, 5000, raiseErrors: false, errorExclusions: errorExclusions);
-
-        result.Should().NotBeNull();
-        result.Should().NotBeEmpty();
-    }
-
-    [Fact]
-    public async Task RunProcess_Should_HandleTimeout_AndThrowTaskCanceledException_When_RaiseErrorsIsTrue()
-    {
-        // Arrange
-        var buildStep = CreateTestBuildStep();
-        InitializeBuildStep(buildStep);
-
-        string executable, args;
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
-            executable = "powershell.exe";
-            args = "-Command \"Start-Sleep 10\""; // 10 second delay
-        }
-        else
-        {
-            executable = "sh";
-            args = "-c \"sleep 10\""; // 10 second delay
-        }
-
-        var startTime = DateTime.UtcNow;
-
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<TaskCanceledException>(async () =>
-            {
-                await buildStep.RunProcess(
-                    ".",
-                    executable,
-                    args,
-                    1000, // 1 second timeout
-                    raiseErrors: true
-                );
-            }
-        );
-
-        // Assert timeout behavior
-        var duration = DateTime.UtcNow - startTime;
-        duration.Should().BeLessThan(TimeSpan.FromSeconds(3), "Should timeout quickly");
-        exception.Should().NotBeNull();
-        exception.Message.Should().Contain("task was canceled");
-    }
-
-    [Fact]
     public async Task RunProcess_Should_LogToStepLogger_WithCorrectColors()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
         InitializeBuildStep(buildStep);
 
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo Test Output");
+        GetPlatformCommand(out var executable, out var args, "echo Test Output");
 
         // Act
-        var result = await buildStep.RunProcess(".", executable, args, 5000, log: true);
+        var result = await buildStep.RunProcess(".", executable, args, 5000, true);
 
         // Assert
         result.Should().NotBeNull();
@@ -362,55 +296,18 @@ public class BuildStepTests
     }
 
     [Fact]
-    public async Task RunProcess_Should_SupportExtendedTimeouts()
+    public async Task RunProcess_Should_NotThrowException_When_RaiseErrorsIsFalse()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
         InitializeBuildStep(buildStep);
 
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo extended timeout test");
+        GetPlatformCommand(out var executable, out var args, "exit 42");
 
-        var twoMinutesInMs = (int)TimeSpan.FromMinutes(2).TotalMilliseconds;
-
-        // Act & Assert - Should handle large timeout values without issues
-        var result = await buildStep.RunProcess(".", executable, args, twoMinutesInMs, log: true, raiseErrors: false);
+        // Act & Assert - Should not throw
+        var result = await buildStep.RunProcess(".", executable, args, 5000, raiseErrors: false);
 
         result.Should().NotBeNull();
-        result.Should().NotBeEmpty();
-
-        // Verify logging occurred
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
-    }
-
-    [Fact]
-    public async Task RunProcess_Should_ReturnSameSignature_AsRunProcess()
-    {
-        // Arrange
-        var buildStep = CreateTestBuildStep();
-        InitializeBuildStep(buildStep);
-
-        string executable, args;
-        GetPlatformCommand(out executable, out args, "echo signature test");
-
-        // Act
-        var result = await buildStep.RunProcess(
-            ".",
-            executable,
-            args,
-            5000,
-            log: false,
-            suppressOutput: false,
-            raiseErrors: true,
-            errorSilently: false,
-            errorExclusions: null,
-            ignoreErrorGateClose: "",
-            ignoreErrorGateOpen: ""
-        );
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().BeOfType<List<string>>();
         result.Should().NotBeEmpty();
     }
 
@@ -442,6 +339,94 @@ public class BuildStepTests
 
         // Verify no error was logged to the step logger when raiseErrors is false
         _mockStepLogger.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RunProcess_Should_ReturnSameSignature_AsRunProcess()
+    {
+        // Arrange
+        var buildStep = CreateTestBuildStep();
+        InitializeBuildStep(buildStep);
+
+        GetPlatformCommand(out var executable, out var args, "echo signature test");
+
+        // Act
+        var result = await buildStep.RunProcess(".", executable, args, 5000);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().BeOfType<List<string>>();
+        result.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task RunProcess_Should_SupportExtendedTimeouts()
+    {
+        // Arrange
+        var buildStep = CreateTestBuildStep();
+        InitializeBuildStep(buildStep);
+
+        GetPlatformCommand(out var executable, out var args, "echo extended timeout test");
+
+        var twoMinutesInMs = (int)TimeSpan.FromMinutes(2).TotalMilliseconds;
+
+        // Act & Assert - Should handle large timeout values without issues
+        var result = await buildStep.RunProcess(".", executable, args, twoMinutesInMs, true, raiseErrors: false);
+
+        result.Should().NotBeNull();
+        result.Should().NotBeEmpty();
+
+        // Verify logging occurred
+        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task RunProcess_Should_ThrowException_When_StderrOutputAndRaiseErrorsIsTrue()
+    {
+        // Arrange
+        var buildStep = CreateTestBuildStep();
+        InitializeBuildStep(buildStep);
+
+        GetPlatformCommand(out var executable, out var args, "echo Error message to stderr >&2");
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<Exception>(async () => { await buildStep.RunProcess(".", executable, args, 5000, raiseErrors: true); });
+
+        exception.Message.Should().Contain("Error message to stderr");
+    }
+
+    [Fact]
+    public async Task RunProcess_Should_ThrowException_WithCorrectExitCode_When_ProcessExitsWithNonZeroCode()
+    {
+        // Arrange
+        var buildStep = CreateTestBuildStep();
+        InitializeBuildStep(buildStep);
+
+        GetPlatformCommand(out var executable, out var args, "exit 42");
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<Exception>(async () => { await buildStep.RunProcess(".", executable, args, 5000, raiseErrors: true); });
+
+        exception.Message.Should().Contain("Process failed with exit code 42");
+    }
+
+    [Theory]
+    [InlineData("error1", "error2")]
+    [InlineData("warning", "critical")]
+    public async Task RunProcess_Should_HandleErrorExclusions(string exclusion1, string exclusion2)
+    {
+        // Arrange
+        var errorExclusions = new List<string> { exclusion1, exclusion2 };
+        var buildStep = CreateTestBuildStep();
+        InitializeBuildStep(buildStep);
+
+        GetPlatformCommand(out var executable, out var args, "echo test");
+
+        // Act & Assert - Should not throw
+        var result = await buildStep.RunProcess(".", executable, args, 5000, raiseErrors: false, errorExclusions: errorExclusions);
+
+        result.Should().NotBeNull();
+        result.Should().NotBeEmpty();
     }
 
     private TestBuildStep CreateTestBuildStep()
