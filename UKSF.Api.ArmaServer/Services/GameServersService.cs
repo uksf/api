@@ -31,48 +31,35 @@ public interface IGameServersService
     Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate);
 }
 
-public class GameServersService : IGameServersService
+public class GameServersService(
+    IGameServersContext gameServersContext,
+    IMissionPatchingService missionPatchingService,
+    IGameServerHelpers gameServerHelpers,
+    IVariablesService variablesService
+) : IGameServersService
 {
-    private readonly IGameServerHelpers _gameServerHelpers;
-    private readonly IVariablesService _variablesService;
-    private readonly IGameServersContext _gameServersContext;
-    private readonly IMissionPatchingService _missionPatchingService;
-
-    public GameServersService(
-        IGameServersContext gameServersContext,
-        IMissionPatchingService missionPatchingService,
-        IGameServerHelpers gameServerHelpers,
-        IVariablesService variablesService
-    )
-    {
-        _gameServersContext = gameServersContext;
-        _missionPatchingService = missionPatchingService;
-        _gameServerHelpers = gameServerHelpers;
-        _variablesService = variablesService;
-    }
-
     public int GetGameInstanceCount()
     {
-        return _gameServerHelpers.GetArmaProcesses().Count();
+        return gameServerHelpers.GetArmaProcesses().Count();
     }
 
     public async Task UploadMissionFile(IFormFile file)
     {
         var fileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
-        var filePath = Path.Combine(_gameServerHelpers.GetGameServerMissionsPath(), fileName);
+        var filePath = Path.Combine(gameServerHelpers.GetGameServerMissionsPath(), fileName);
         await using FileStream stream = new(filePath, FileMode.Create);
         await file.CopyToAsync(stream);
     }
 
     public List<MissionFile> GetMissionFiles()
     {
-        var files = new DirectoryInfo(_gameServerHelpers.GetGameServerMissionsPath()).EnumerateFiles("*.pbo", SearchOption.TopDirectoryOnly);
+        var files = new DirectoryInfo(gameServerHelpers.GetGameServerMissionsPath()).EnumerateFiles("*.pbo", SearchOption.TopDirectoryOnly);
         return files.Select(fileInfo => new MissionFile(fileInfo)).OrderBy(x => x.Map).ThenBy(x => x.Name).ToList();
     }
 
     public async Task GetGameServerStatus(DomainGameServer gameServer)
     {
-        if (_variablesService.GetFeatureState("SKIP_SERVER_STATUS"))
+        if (variablesService.GetFeatureState("SKIP_SERVER_STATUS"))
         {
             return;
         }
@@ -98,8 +85,8 @@ public class GameServersService : IGameServersService
 
             var content = await response.Content.ReadAsStringAsync();
             gameServer.Status = JsonSerializer.Deserialize<GameServerStatus>(content, DefaultJsonSerializerOptions.Options);
-            gameServer.Status.ParsedUptime = _gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(gameServer.Status.Uptime)).ToString();
-            gameServer.Status.MaxPlayers = _gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
+            gameServer.Status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(gameServer.Status.Uptime)).ToString();
+            gameServer.Status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
             gameServer.Status.Running = true;
             gameServer.Status.Started = false;
         }
@@ -111,7 +98,7 @@ public class GameServersService : IGameServersService
 
     public async Task<List<DomainGameServer>> GetAllGameServerStatuses()
     {
-        var gameServers = _gameServersContext.Get().ToList();
+        var gameServers = gameServersContext.Get().ToList();
         await Task.WhenAll(gameServers.Select(GetGameServerStatus));
         return gameServers;
     }
@@ -125,11 +112,11 @@ public class GameServersService : IGameServersService
         //     };
         // }
 
-        var missionPath = Path.Combine(_gameServerHelpers.GetGameServerMissionsPath(), missionName);
-        var result = await _missionPatchingService.PatchMission(
+        var missionPath = Path.Combine(gameServerHelpers.GetGameServerMissionsPath(), missionName);
+        var result = await missionPatchingService.PatchMission(
             missionPath,
-            _gameServerHelpers.GetGameServerModsPaths(GameEnvironment.Release),
-            _gameServerHelpers.GetMaxCuratorCountFromSettings()
+            gameServerHelpers.GetGameServerModsPaths(GameEnvironment.Release),
+            gameServerHelpers.GetMaxCuratorCountFromSettings()
         );
         return result;
     }
@@ -137,15 +124,15 @@ public class GameServersService : IGameServersService
     public void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection)
     {
         File.WriteAllText(
-            _gameServerHelpers.GetGameServerConfigPath(gameServer),
-            _gameServerHelpers.FormatGameServerConfig(gameServer, playerCount, missionSelection)
+            gameServerHelpers.GetGameServerConfigPath(gameServer),
+            gameServerHelpers.FormatGameServerConfig(gameServer, playerCount, missionSelection)
         );
     }
 
     public async Task LaunchGameServer(DomainGameServer gameServer)
     {
-        var launchArguments = _gameServerHelpers.FormatGameServerLaunchArguments(gameServer);
-        gameServer.ProcessId = ProcessUtilities.LaunchManagedProcess(_gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments);
+        var launchArguments = gameServerHelpers.FormatGameServerLaunchArguments(gameServer);
+        gameServer.ProcessId = ProcessUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments);
 
         await Task.Delay(TimeSpan.FromSeconds(1));
 
@@ -154,9 +141,9 @@ public class GameServersService : IGameServersService
         {
             for (var index = 0; index < gameServer.NumberHeadlessClients; index++)
             {
-                launchArguments = _gameServerHelpers.FormatHeadlessClientLaunchArguments(gameServer, index);
+                launchArguments = gameServerHelpers.FormatHeadlessClientLaunchArguments(gameServer, index);
                 gameServer.HeadlessClientProcessIds.Add(
-                    ProcessUtilities.LaunchManagedProcess(_gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments)
+                    ProcessUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments)
                 );
 
                 await Task.Delay(TimeSpan.FromSeconds(1));
@@ -224,13 +211,13 @@ public class GameServersService : IGameServersService
 
     public int KillAllArmaProcesses()
     {
-        var processes = _gameServerHelpers.GetArmaProcesses().ToList();
+        var processes = gameServerHelpers.GetArmaProcesses().ToList();
         foreach (var process in processes)
         {
             process.Kill(true);
         }
 
-        var gameServers = _gameServersContext.Get().ToList();
+        var gameServers = gameServersContext.Get().ToList();
         foreach (var gameServer in gameServers)
         {
             gameServer.ProcessId = null;
@@ -242,13 +229,13 @@ public class GameServersService : IGameServersService
 
     public List<GameServerMod> GetAvailableMods(string id)
     {
-        var gameServer = _gameServersContext.GetSingle(id);
-        Uri serverExecutable = new(_gameServerHelpers.GetGameServerExecutablePath(gameServer));
+        var gameServer = gameServersContext.GetSingle(id);
+        Uri serverExecutable = new(gameServerHelpers.GetGameServerExecutablePath(gameServer));
 
-        IEnumerable<string> availableModsFolders = [_gameServerHelpers.GetGameServerModsPaths(gameServer.Environment)];
-        availableModsFolders = availableModsFolders.Concat(_gameServerHelpers.GetGameServerExtraModsPaths());
+        IEnumerable<string> availableModsFolders = [gameServerHelpers.GetGameServerModsPaths(gameServer.Environment)];
+        availableModsFolders = availableModsFolders.Concat(gameServerHelpers.GetGameServerExtraModsPaths());
 
-        var dlcModFoldersRegexString = _gameServerHelpers.GetDlcModFoldersRegexString();
+        var dlcModFoldersRegexString = gameServerHelpers.GetDlcModFoldersRegexString();
         Regex allowedPaths = new($"@.*|{dlcModFoldersRegexString}", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         Regex allowedExtensions = new("[ep]bo", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -299,7 +286,7 @@ public class GameServersService : IGameServersService
 
     public List<GameServerMod> GetEnvironmentMods(GameEnvironment environment)
     {
-        var repoModsFolder = _gameServerHelpers.GetGameServerModsPaths(environment);
+        var repoModsFolder = gameServerHelpers.GetGameServerModsPaths(environment);
         var modFolders = new DirectoryInfo(repoModsFolder).EnumerateDirectories("@*", SearchOption.TopDirectoryOnly);
         return modFolders
                .Select(modFolder => new { modFolder, modFiles = new DirectoryInfo(modFolder.FullName).EnumerateFiles("*.pbo", SearchOption.AllDirectories) })
@@ -310,19 +297,19 @@ public class GameServersService : IGameServersService
 
     public async Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate)
     {
-        foreach (var server in _gameServersContext.Get())
+        foreach (var server in gameServersContext.Get())
         {
             if (server.Order == orderUpdate.PreviousIndex)
             {
-                await _gameServersContext.Update(server.Id, x => x.Order, orderUpdate.NewIndex);
+                await gameServersContext.Update(server.Id, x => x.Order, orderUpdate.NewIndex);
             }
             else if (server.Order > orderUpdate.PreviousIndex && server.Order <= orderUpdate.NewIndex)
             {
-                await _gameServersContext.Update(server.Id, x => x.Order, server.Order - 1);
+                await gameServersContext.Update(server.Id, x => x.Order, server.Order - 1);
             }
             else if (server.Order < orderUpdate.PreviousIndex && server.Order >= orderUpdate.NewIndex)
             {
-                await _gameServersContext.Update(server.Id, x => x.Order, server.Order + 1);
+                await gameServersContext.Update(server.Id, x => x.Order, server.Order + 1);
             }
         }
     }

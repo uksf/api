@@ -22,47 +22,26 @@ namespace UKSF.Api.ArmaServer.Controllers;
 
 [Route("[controller]")]
 [Permissions(Permissions.Nco, Permissions.Servers, Permissions.Command)]
-public class GameServersController : ControllerBase
+public class GameServersController(
+    IGameServersContext gameServersContext,
+    IVariablesContext variablesContext,
+    IGameServersService gameServersService,
+    IHubContext<ServersHub, IServersClient> serversHub,
+    IVariablesService variablesService,
+    IGameServerHelpers gameServerHelpers,
+    IUksfLogger logger,
+    IHttpContextService httpContextService
+) : ControllerBase
 {
-    private readonly IGameServerHelpers _gameServerHelpers;
-    private readonly IGameServersContext _gameServersContext;
-    private readonly IGameServersService _gameServersService;
-    private readonly IUksfLogger _logger;
-    private readonly IHubContext<ServersHub, IServersClient> _serversHub;
-    private readonly IVariablesContext _variablesContext;
-    private readonly IVariablesService _variablesService;
-    private readonly IHttpContextService _httpContextService;
-
-    public GameServersController(
-        IGameServersContext gameServersContext,
-        IVariablesContext variablesContext,
-        IGameServersService gameServersService,
-        IHubContext<ServersHub, IServersClient> serversHub,
-        IVariablesService variablesService,
-        IGameServerHelpers gameServerHelpers,
-        IUksfLogger logger,
-        IHttpContextService httpContextService
-    )
-    {
-        _gameServersContext = gameServersContext;
-        _variablesContext = variablesContext;
-        _gameServersService = gameServersService;
-        _serversHub = serversHub;
-        _variablesService = variablesService;
-        _gameServerHelpers = gameServerHelpers;
-        _logger = logger;
-        _httpContextService = httpContextService;
-    }
-
     [HttpGet]
     [Authorize]
     public GameServersDataset GetGameServers()
     {
         return new GameServersDataset
         {
-            Servers = _gameServersContext.Get(),
-            Missions = _gameServersService.GetMissionFiles(),
-            InstanceCount = _gameServersService.GetGameInstanceCount()
+            Servers = gameServersContext.Get(),
+            Missions = gameServersService.GetMissionFiles(),
+            InstanceCount = gameServersService.GetGameInstanceCount()
         };
     }
 
@@ -70,9 +49,9 @@ public class GameServersController : ControllerBase
     [Authorize]
     public async Task<GameServerDataset> GetGameServerStatus(string id)
     {
-        var gameServer = _gameServersContext.GetSingle(id);
-        await _gameServersService.GetGameServerStatus(gameServer);
-        return new GameServerDataset { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
+        var gameServer = gameServersContext.GetSingle(id);
+        await gameServersService.GetGameServerStatus(gameServer);
+        return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
     }
 
     [HttpPost("{check}")]
@@ -82,20 +61,20 @@ public class GameServersController : ControllerBase
         if (gameServer is not null)
         {
             var safeGameServer = gameServer;
-            return _gameServersContext.GetSingle(x => x.Id != safeGameServer.Id && (x.Name == check || x.ApiPort.ToString() == check));
+            return gameServersContext.GetSingle(x => x.Id != safeGameServer.Id && (x.Name == check || x.ApiPort.ToString() == check));
         }
 
-        return _gameServersContext.GetSingle(x => x.Name == check || x.ApiPort.ToString() == check);
+        return gameServersContext.GetSingle(x => x.Name == check || x.ApiPort.ToString() == check);
     }
 
     [HttpPut]
     [Authorize]
     public async Task AddServer([FromBody] DomainGameServer gameServer)
     {
-        gameServer.Order = _gameServersContext.Get().Count();
-        await _gameServersContext.Add(gameServer);
+        gameServer.Order = gameServersContext.Get().Count();
+        await gameServersContext.Add(gameServer);
 
-        _logger.LogAudit($"Server added '{gameServer}'");
+        logger.LogAudit($"Server added '{gameServer}'");
         SendAnyUpdateIfNotCaller(true);
     }
 
@@ -103,17 +82,17 @@ public class GameServersController : ControllerBase
     [Authorize]
     public async Task<bool> EditGameServer([FromBody] DomainGameServer gameServer)
     {
-        var oldGameServer = _gameServersContext.GetSingle(gameServer.Id);
-        _logger.LogAudit($"Game server '{gameServer.Name}' updated:{oldGameServer.Changes(gameServer)}");
+        var oldGameServer = gameServersContext.GetSingle(gameServer.Id);
+        logger.LogAudit($"Game server '{gameServer.Name}' updated:{oldGameServer.Changes(gameServer)}");
         var environmentChanged = false;
         if (oldGameServer.Environment != gameServer.Environment)
         {
             environmentChanged = true;
-            gameServer.Mods = _gameServersService.GetEnvironmentMods(gameServer.Environment);
+            gameServer.Mods = gameServersService.GetEnvironmentMods(gameServer.Environment);
             gameServer.ServerMods = new List<GameServerMod>();
         }
 
-        await _gameServersContext.Update(
+        await gameServersContext.Update(
             gameServer.Id,
             Builders<DomainGameServer>.Update.Set(x => x.Name, gameServer.Name)
                                       .Set(x => x.Port, gameServer.Port)
@@ -137,21 +116,21 @@ public class GameServersController : ControllerBase
     [Authorize]
     public async Task<IEnumerable<DomainGameServer>> DeleteGameServer(string id)
     {
-        var gameServer = _gameServersContext.GetSingle(id);
-        _logger.LogAudit($"Game server deleted '{gameServer.Name}'");
-        await _gameServersContext.Delete(id);
+        var gameServer = gameServersContext.GetSingle(id);
+        logger.LogAudit($"Game server deleted '{gameServer.Name}'");
+        await gameServersContext.Delete(id);
 
         SendAnyUpdateIfNotCaller(true);
-        return _gameServersContext.Get();
+        return gameServersContext.Get();
     }
 
     [HttpPatch("order")]
     [Authorize]
     public async Task<IEnumerable<DomainGameServer>> UpdateOrder([FromBody] OrderUpdateRequest orderUpdate)
     {
-        await _gameServersService.UpdateGameServerOrder(orderUpdate);
+        await gameServersService.UpdateGameServerOrder(orderUpdate);
         SendAnyUpdateIfNotCaller(true);
-        return _gameServersContext.Get();
+        return gameServersContext.Get();
     }
 
     [HttpPost("mission")]
@@ -165,20 +144,20 @@ public class GameServersController : ControllerBase
         {
             foreach (var file in Request.Form.Files.Where(x => x.Length > 0))
             {
-                await _gameServersService.UploadMissionFile(file);
-                var missionPatchingResult = await _gameServersService.PatchMissionFile(file.Name);
+                await gameServersService.UploadMissionFile(file);
+                var missionPatchingResult = await gameServersService.PatchMissionFile(file.Name);
                 missionPatchingResult.Reports = missionPatchingResult.Reports.OrderByDescending(x => x.Error).ToList();
                 missionReports.Add(new MissionReportDataset { Mission = file.Name, Reports = missionPatchingResult.Reports });
-                _logger.LogAudit($"Uploaded mission '{file.Name}'");
+                logger.LogAudit($"Uploaded mission '{file.Name}'");
             }
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception);
+            logger.LogError(exception);
             throw new BadRequestException(exception.Message); // TODO: Needs better error handling
         }
 
-        var missions = _gameServersService.GetMissionFiles();
+        var missions = gameServersService.GetMissionFiles();
         SendMissionsUpdateIfNotCaller(missions);
         return new MissionsDataset { Missions = missions, MissionReports = missionReports };
     }
@@ -187,35 +166,35 @@ public class GameServersController : ControllerBase
     [Authorize]
     public async Task<List<ValidationReport>> LaunchServer(string id, [FromBody] LaunchServerRequest launchServerRequest)
     {
-        Task.WaitAll(_gameServersContext.Get().Select(x => _gameServersService.GetGameServerStatus(x)).ToArray());
-        var gameServer = _gameServersContext.GetSingle(id);
+        Task.WaitAll(gameServersContext.Get().Select(x => gameServersService.GetGameServerStatus(x)).ToArray());
+        var gameServer = gameServersContext.GetSingle(id);
         if (gameServer.Status.Running)
         {
             throw new BadRequestException("Server is already running. This shouldn't happen so please contact an admin");
         }
 
-        if (_gameServerHelpers.IsMainOpTime())
+        if (gameServerHelpers.IsMainOpTime())
         {
             if (gameServer.ServerOption == GameServerOption.Singleton)
             {
-                if (_gameServersContext.Get(x => x.ServerOption != GameServerOption.Singleton).Any(x => x.Status.Started || x.Status.Running))
+                if (gameServersContext.Get(x => x.ServerOption != GameServerOption.Singleton).Any(x => x.Status.Started || x.Status.Running))
                 {
                     throw new BadRequestException("Server must be launched on its own. Stop the other running servers first");
                 }
             }
 
-            if (_gameServersContext.Get(x => x.ServerOption == GameServerOption.Singleton).Any(x => x.Status.Started || x.Status.Running))
+            if (gameServersContext.Get(x => x.ServerOption == GameServerOption.Singleton).Any(x => x.Status.Started || x.Status.Running))
             {
                 throw new BadRequestException("Server cannot be launched whilst main server is running at this time");
             }
         }
 
-        if (_gameServersContext.Get(x => x.Port == gameServer.Port).Any(x => x.Status.Started || x.Status.Running))
+        if (gameServersContext.Get(x => x.Port == gameServer.Port).Any(x => x.Status.Started || x.Status.Running))
         {
             throw new BadRequestException("Server cannot be launched while another server with the same port is running");
         }
 
-        var patchingResult = await _gameServersService.PatchMissionFile(launchServerRequest.MissionName);
+        var patchingResult = await gameServersService.PatchMissionFile(launchServerRequest.MissionName);
         if (!patchingResult.Success)
         {
             patchingResult.Reports = patchingResult.Reports.OrderByDescending(x => x.Error).ToList();
@@ -224,16 +203,16 @@ public class GameServersController : ControllerBase
             throw new MissionPatchingFailedException(error, new ValidationReportDataset { Reports = patchingResult.Reports });
         }
 
-        _gameServersService.WriteServerConfig(gameServer, patchingResult.PlayerCount, launchServerRequest.MissionName);
+        gameServersService.WriteServerConfig(gameServer, patchingResult.PlayerCount, launchServerRequest.MissionName);
         gameServer.Status.Mission = launchServerRequest.MissionName;
 
-        var currentUserId = _httpContextService.GetUserId();
+        var currentUserId = httpContextService.GetUserId();
         gameServer.LaunchedBy = currentUserId;
-        await _gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, currentUserId);
+        await gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, currentUserId);
 
-        await _gameServersService.LaunchGameServer(gameServer);
+        await gameServersService.LaunchGameServer(gameServer);
 
-        _logger.LogAudit($"Game server launched '{launchServerRequest.MissionName}' on '{gameServer.Name}'");
+        logger.LogAudit($"Game server launched '{launchServerRequest.MissionName}' on '{gameServer.Name}'");
         SendServerUpdateIfNotCaller(gameServer.Id);
         return patchingResult.Reports;
     }
@@ -242,30 +221,30 @@ public class GameServersController : ControllerBase
     [Authorize]
     public async Task<GameServerDataset> StopServer(string id)
     {
-        var gameServer = _gameServersContext.GetSingle(id);
-        _logger.LogAudit($"Game server stopped '{gameServer.Name}'");
-        await _gameServersService.GetGameServerStatus(gameServer);
+        var gameServer = gameServersContext.GetSingle(id);
+        logger.LogAudit($"Game server stopped '{gameServer.Name}'");
+        await gameServersService.GetGameServerStatus(gameServer);
         if (!gameServer.Status.Started && !gameServer.Status.Running)
         {
             throw new BadRequestException("Server is not running. This shouldn't happen so please contact an admin");
         }
 
         gameServer.LaunchedBy = null;
-        await _gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, null);
+        await gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, null);
 
         SendServerUpdateIfNotCaller(gameServer.Id);
-        await _gameServersService.StopGameServer(gameServer);
-        await _gameServersService.GetGameServerStatus(gameServer);
-        return new GameServerDataset { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
+        await gameServersService.StopGameServer(gameServer);
+        await gameServersService.GetGameServerStatus(gameServer);
+        return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
     }
 
     [HttpGet("kill/{id}")]
     [Authorize]
     public async Task<GameServerDataset> KillServer(string id)
     {
-        var gameServer = _gameServersContext.GetSingle(id);
-        _logger.LogAudit($"Game server killed '{gameServer.Name}'");
-        await _gameServersService.GetGameServerStatus(gameServer);
+        var gameServer = gameServersContext.GetSingle(id);
+        logger.LogAudit($"Game server killed '{gameServer.Name}'");
+        await gameServersService.GetGameServerStatus(gameServer);
         if (!gameServer.Status.Started && !gameServer.Status.Running)
         {
             throw new BadRequestException("Server is not running. This shouldn't happen so please contact an admin");
@@ -273,34 +252,35 @@ public class GameServersController : ControllerBase
 
         try
         {
-            _gameServersService.KillGameServer(gameServer);
+            gameServersService.KillGameServer(gameServer);
 
             gameServer.LaunchedBy = null;
-            await _gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, null);
+            await gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, null);
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            logger.LogError(exception);
             throw new BadRequestException("Failed to stop server. Contact an admin");
         }
 
-        await _gameServersService.GetGameServerStatus(gameServer);
+        await gameServersService.GetGameServerStatus(gameServer);
         SendServerUpdateIfNotCaller(gameServer.Id);
-        return new GameServerDataset { GameServer = gameServer, InstanceCount = _gameServersService.GetGameInstanceCount() };
+        return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
     }
 
     [HttpGet("killall")]
     [Authorize]
     public async Task KillAllArmaProcesses()
     {
-        var killed = _gameServersService.KillAllArmaProcesses();
+        var killed = gameServersService.KillAllArmaProcesses();
 
-        var gameServers = _gameServersContext.Get().ToList();
-        var updateTasks = gameServers.Select(x => _gameServersContext.Update(x.Id, y => y.LaunchedBy, null));
+        var gameServers = gameServersContext.Get().ToList();
+        var updateTasks = gameServers.Select(x => gameServersContext.Update(x.Id, y => y.LaunchedBy, null));
         await Task.WhenAll(updateTasks);
 
         gameServers.ForEach(x => x.LaunchedBy = null);
 
-        _logger.LogAudit($"Killed {killed} Arma instances");
+        logger.LogAudit($"Killed {killed} Arma instances");
         SendAnyUpdateIfNotCaller();
     }
 
@@ -308,29 +288,29 @@ public class GameServersController : ControllerBase
     [Authorize]
     public List<GameServerMod> GetAvailableMods(string id)
     {
-        return _gameServersService.GetAvailableMods(id);
+        return gameServersService.GetAvailableMods(id);
     }
 
     [HttpPost("{id}/mods")]
     [Authorize]
     public async Task<List<GameServerMod>> SetGameServerMods(string id, [FromBody] DomainGameServer gameServer)
     {
-        var oldGameServer = _gameServersContext.GetSingle(id);
-        await _gameServersContext.Update(id, Builders<DomainGameServer>.Update.Unset(x => x.Mods).Unset(x => x.ServerMods));
-        await _gameServersContext.Update(id, Builders<DomainGameServer>.Update.Set(x => x.Mods, gameServer.Mods).Set(x => x.ServerMods, gameServer.ServerMods));
-        _logger.LogAudit($"Game server '{gameServer.Name}' updated:{oldGameServer.Changes(gameServer)}");
-        return _gameServersService.GetAvailableMods(id);
+        var oldGameServer = gameServersContext.GetSingle(id);
+        await gameServersContext.Update(id, Builders<DomainGameServer>.Update.Unset(x => x.Mods).Unset(x => x.ServerMods));
+        await gameServersContext.Update(id, Builders<DomainGameServer>.Update.Set(x => x.Mods, gameServer.Mods).Set(x => x.ServerMods, gameServer.ServerMods));
+        logger.LogAudit($"Game server '{gameServer.Name}' updated:{oldGameServer.Changes(gameServer)}");
+        return gameServersService.GetAvailableMods(id);
     }
 
     [HttpGet("{id}/mods/reset")]
     [Authorize]
     public GameServerModsDataset ResetGameServerMods(string id)
     {
-        var gameServer = _gameServersContext.GetSingle(id);
+        var gameServer = gameServersContext.GetSingle(id);
         return new GameServerModsDataset
         {
-            AvailableMods = _gameServersService.GetAvailableMods(id),
-            Mods = _gameServersService.GetEnvironmentMods(gameServer.Environment),
+            AvailableMods = gameServersService.GetAvailableMods(id),
+            Mods = gameServersService.GetEnvironmentMods(gameServer.Environment),
             ServerMods = new List<GameServerMod>()
         };
     }
@@ -339,15 +319,15 @@ public class GameServersController : ControllerBase
     [Authorize]
     public bool GetDisabledState()
     {
-        return _variablesService.GetVariable("SERVER_CONTROL_DISABLED").AsBool();
+        return variablesService.GetVariable("SERVER_CONTROL_DISABLED").AsBool();
     }
 
     [HttpPost("disabled")]
     [Authorize]
     public async Task SetDisabledState([FromBody] SetDisabledStateRequest stateRequest)
     {
-        await _variablesContext.Update("SERVER_CONTROL_DISABLED", stateRequest.State);
-        await _serversHub.Clients.All.ReceiveDisabledState(stateRequest.State);
+        await variablesContext.Update("SERVER_CONTROL_DISABLED", stateRequest.State);
+        await serversHub.Clients.All.ReceiveDisabledState(stateRequest.State);
     }
 
     private void SendAnyUpdateIfNotCaller(bool skipRefresh = false)
@@ -357,7 +337,7 @@ public class GameServersController : ControllerBase
             return;
         }
 
-        _ = _serversHub.Clients.All.ReceiveAnyUpdateIfNotCaller(connectionId, skipRefresh);
+        _ = serversHub.Clients.All.ReceiveAnyUpdateIfNotCaller(connectionId, skipRefresh);
     }
 
     private void SendServerUpdateIfNotCaller(string serverId)
@@ -367,7 +347,7 @@ public class GameServersController : ControllerBase
             return;
         }
 
-        _ = _serversHub.Clients.All.ReceiveServerUpdateIfNotCaller(connectionId, serverId);
+        _ = serversHub.Clients.All.ReceiveServerUpdateIfNotCaller(connectionId, serverId);
     }
 
     private void SendMissionsUpdateIfNotCaller(List<MissionFile> missions)
@@ -377,7 +357,7 @@ public class GameServersController : ControllerBase
             return;
         }
 
-        _ = _serversHub.Clients.All.ReceiveMissionsUpdateIfNotCaller(connectionId, missions);
+        _ = serversHub.Clients.All.ReceiveMissionsUpdateIfNotCaller(connectionId, missions);
     }
 
     private bool GetHubConnectionId(out StringValues connecctionId)
