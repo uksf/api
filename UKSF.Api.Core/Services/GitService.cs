@@ -79,23 +79,15 @@ public class GitService(IProcessCommandFactory processCommandFactory, IUksfLogge
             }
         }
 
-        if (!gitCommandArgs.AllowedExitCodes.Contains(processExitCode))
+        if (!gitCommandArgs.AllowedExitCodes.Contains(processExitCode) && processExitCode != 0)
         {
-            if (processExitCode != 0)
-            {
-                var exitCodeException = new Exception($"Process failed with exit code {processExitCode}");
-                if (capturedException != null)
-                {
-                    throw new Exception($"Process failed with exit code {processExitCode}. {capturedException.Message}");
-                }
-
-                throw exitCodeException;
-            }
-
+            var exceptionMessage = $"Process failed with exit code {processExitCode}";
             if (capturedException != null)
             {
-                throw capturedException;
+                exceptionMessage = $"{exceptionMessage}. {capturedException.Message}";
             }
+
+            throw new Exception(exceptionMessage);
         }
 
         return results;
