@@ -296,6 +296,12 @@ public class BuildStep : IBuildStep
         if (processExitCode != 0 && raiseErrors)
         {
             var exitCodeException = new Exception($"Process failed with exit code {processExitCode}");
+
+            if (delayedException != null)
+            {
+                exitCodeException = new Exception($"Process failed with exit code {processExitCode}. {delayedException.Message}");
+            }
+
             if (!errorSilently)
             {
                 StepLogger.LogError(exitCodeException);

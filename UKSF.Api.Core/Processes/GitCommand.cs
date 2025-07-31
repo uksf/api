@@ -59,11 +59,6 @@ public class GitCommand(IGitService gitService)
             _cancellationToken.ThrowIfCancellationRequested();
             return result;
         }
-        catch (OperationCanceledException)
-        {
-            // Always re-throw cancellation exceptions
-            throw;
-        }
         catch (Exception)
         {
             throw;

@@ -49,9 +49,7 @@ public class GitService(IProcessCommandFactory processCommandFactory, IUksfLogge
     {
         List<string> results = [];
 
-        var command = processCommandFactory.CreateCommand(executable, gitCommandArgs.WorkingDirectory, args)
-                                           .WithTimeout(TimeSpan.FromMilliseconds(timeout))
-                                           .WithLogging(true);
+        var command = processCommandFactory.CreateCommand(executable, gitCommandArgs.WorkingDirectory, args).WithTimeout(TimeSpan.FromMilliseconds(timeout));
 
         Exception capturedException = null;
         var processExitCode = 0;
@@ -81,20 +79,23 @@ public class GitService(IProcessCommandFactory processCommandFactory, IUksfLogge
             }
         }
 
-        if (processExitCode != 0 && !gitCommandArgs.AllowedExitCodes.Contains(processExitCode))
+        if (!gitCommandArgs.AllowedExitCodes.Contains(processExitCode))
         {
-            var exitCodeException = new Exception($"Process failed with exit code {processExitCode}");
-            if (capturedException != null)
+            if (processExitCode != 0)
             {
-                exitCodeException.Data.Add("CapturedException", capturedException);
+                var exitCodeException = new Exception($"Process failed with exit code {processExitCode}");
+                if (capturedException != null)
+                {
+                    throw new Exception($"Process failed with exit code {processExitCode}. {capturedException.Message}");
+                }
+
+                throw exitCodeException;
             }
 
-            throw exitCodeException;
-        }
-
-        if (capturedException != null)
-        {
-            throw capturedException;
+            if (capturedException != null)
+            {
+                throw capturedException;
+            }
         }
 
         return results;
