@@ -1,3 +1,5 @@
+using UKSF.Api.Core.Processes;
+
 namespace UKSF.Api.Modpack.BuildProcess.Steps.BuildSteps;
 
 [BuildStep(Name)]
@@ -31,17 +33,22 @@ public class BuildStepSources : GitBuildStep
         DirectoryInfo release = new(releasePath);
         DirectoryInfo repo = new(repoPath);
 
-        var gitCommand = GitService.CreateGitCommand(path);
-        await gitCommand.Execute("reset --hard HEAD", cancellationToken: CancellationTokenSource.Token);
-        await gitCommand.Execute("clean -d -f", cancellationToken: CancellationTokenSource.Token);
-        await gitCommand.Execute("fetch", cancellationToken: CancellationTokenSource.Token);
+        var gitCommand = GitService.CreateGitCommand().WithWorkingDirectory(path).WithCancellationToken(CancellationTokenSource.Token);
+        await gitCommand.Execute("reset --hard HEAD");
+        await gitCommand.Execute("clean -d -f");
+        await gitCommand.Execute("fetch");
 
-        await gitCommand.Execute($"checkout -t origin/{branchName}", ignoreErrors: true, cancellationToken: CancellationTokenSource.Token);
-        await gitCommand.Execute($"checkout {branchName}", cancellationToken: CancellationTokenSource.Token);
+        var quietGitCommand = GitService.CreateGitCommand()
+                                        .WithWorkingDirectory(path)
+                                        .WithCancellationToken(CancellationTokenSource.Token)
+                                        .WithQuiet(true)
+                                        .WithAllowedExitCodes([GitExitCodes.AlreadyOnBranch]);
+        await quietGitCommand.Execute($"checkout -t origin/{branchName}");
+        await quietGitCommand.Execute($"checkout {branchName}");
 
-        var before = await gitCommand.Execute("rev-parse HEAD", cancellationToken: CancellationTokenSource.Token);
-        await gitCommand.Execute("pull", cancellationToken: CancellationTokenSource.Token);
-        var after = await gitCommand.Execute("rev-parse HEAD", cancellationToken: CancellationTokenSource.Token);
+        var before = await gitCommand.Execute("rev-parse HEAD");
+        await gitCommand.Execute("pull");
+        var after = await gitCommand.Execute("rev-parse HEAD");
 
         var forceBuild = GetEnvironmentVariable<bool>($"{modName}_updated");
         bool updated;
@@ -79,15 +86,20 @@ public class BuildStepSources : GitBuildStep
 
         StepLogger.Log($"Checking out {referenceName}");
 
-        var gitCommand = GitService.CreateGitCommand(modpackPath);
-        await gitCommand.Execute("reset --hard HEAD", cancellationToken: CancellationTokenSource.Token);
-        await gitCommand.Execute("clean -d -f", cancellationToken: CancellationTokenSource.Token);
-        await gitCommand.Execute("fetch", cancellationToken: CancellationTokenSource.Token);
+        var gitCommand = GitService.CreateGitCommand().WithWorkingDirectory(modpackPath).WithCancellationToken(CancellationTokenSource.Token);
+        await gitCommand.Execute("reset --hard HEAD");
+        await gitCommand.Execute("clean -d -f");
+        await gitCommand.Execute("fetch");
 
-        await gitCommand.Execute($"checkout -t origin/{reference}", ignoreErrors: true, cancellationToken: CancellationTokenSource.Token);
-        await gitCommand.Execute($"checkout {reference}", cancellationToken: CancellationTokenSource.Token);
+        var quietGitCommand = GitService.CreateGitCommand()
+                                        .WithWorkingDirectory(modpackPath)
+                                        .WithCancellationToken(CancellationTokenSource.Token)
+                                        .WithQuiet(true)
+                                        .WithAllowedExitCodes([GitExitCodes.AlreadyOnBranch]);
+        await quietGitCommand.Execute($"checkout -t origin/{reference}");
+        await quietGitCommand.Execute($"checkout {reference}");
 
-        await gitCommand.Execute("pull", cancellationToken: CancellationTokenSource.Token);
+        await gitCommand.Execute("pull");
 
         StepLogger.LogSurround("Checked out modpack");
     }

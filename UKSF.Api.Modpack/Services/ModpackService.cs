@@ -4,6 +4,7 @@ using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Processes;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Modpack.BuildProcess;
 using UKSF.Api.Modpack.Context;
@@ -184,7 +185,11 @@ public class ModpackService(
 
         var sourcesPath = variablesService.GetVariable("BUILD_PATH_SOURCES").AsString();
         var modpackSourcePath = Path.Join(sourcesPath, "modpack");
-        var gitCommand = gitService.CreateGitCommand(modpackSourcePath);
+        var gitCommand = gitService.CreateGitCommand().WithWorkingDirectory(modpackSourcePath);
+        var quietGitCommand = gitService.CreateGitCommand()
+                                        .WithWorkingDirectory(modpackSourcePath)
+                                        .WithQuiet(true)
+                                        .WithAllowedExitCodes([GitExitCodes.AlreadyOnBranch]);
 
         // Reset and clean the repository
         await gitCommand.Execute("reset --hard HEAD");
@@ -192,19 +197,21 @@ public class ModpackService(
         await gitCommand.Execute("fetch");
 
         // Checkout and pull main branch
-        await gitCommand.Execute("checkout -t origin/main", ignoreErrors: true);
-        await gitCommand.Execute("checkout main");
+        await quietGitCommand.Execute("checkout -t origin/main");
+        await quietGitCommand.Execute("checkout main");
         await gitCommand.Execute("pull");
 
         // Checkout and pull release branch
-        await gitCommand.Execute("checkout -t origin/release", ignoreErrors: true);
-        await gitCommand.Execute("checkout release");
+        await quietGitCommand.Execute("checkout -t origin/release");
+        await quietGitCommand.Execute("checkout release");
         await gitCommand.Execute("pull");
 
+        // Update version file
         var versionFileContent = versionService.GetVersionFileContentFromVersion(version);
         await File.WriteAllTextAsync(Path.Join(modpackSourcePath, VersionFile), versionFileContent);
         await gitCommand.Execute($"commit -am \"Version {version}\"");
 
+        // Merge main branch into release branch
         await gitCommand.Execute("merge main");
         await gitCommand.Execute("push -u origin release");
 

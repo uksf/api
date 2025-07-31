@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using UKSF.Api.Core.Processes;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -18,19 +21,22 @@ public class GitCommandTests
     {
         // Arrange
         const string Command = "status";
-        const bool IgnoreErrors = false;
         var cancellationToken = CancellationToken.None;
         const string ExpectedResult = "# On branch main";
 
-        _mockGitService.Setup(x => x.ExecuteCommand(WorkingDirectory, Command, cancellationToken)).ReturnsAsync(ExpectedResult);
+        _mockGitService.Setup(x => x.ExecuteCommand(It.IsAny<GitCommandArgs>(), Command, cancellationToken)).ReturnsAsync(ExpectedResult);
 
-        var gitCommand = new GitCommand(_mockGitService.Object, WorkingDirectory);
+        var gitCommand = new GitCommand(_mockGitService.Object).WithWorkingDirectory(WorkingDirectory).WithCancellationToken(cancellationToken);
 
         // Act
-        await gitCommand.Execute(Command, IgnoreErrors, cancellationToken);
+        var result = await gitCommand.Execute(Command);
 
         // Assert
-        _mockGitService.Verify(x => x.ExecuteCommand(WorkingDirectory, Command, cancellationToken), Times.Once);
+        result.Should().Be(ExpectedResult);
+        _mockGitService.Verify(
+            x => x.ExecuteCommand(It.Is<GitCommandArgs>(args => args.WorkingDirectory == WorkingDirectory), Command, cancellationToken),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -40,100 +46,163 @@ public class GitCommandTests
         const string Command = "status";
         const string ExpectedResult = "# On branch main\nnothing to commit";
 
-        _mockGitService.Setup(x => x.ExecuteCommand(WorkingDirectory, Command, It.IsAny<CancellationToken>())).ReturnsAsync(ExpectedResult);
+        _mockGitService.Setup(x => x.ExecuteCommand(It.IsAny<GitCommandArgs>(), Command, It.IsAny<CancellationToken>())).ReturnsAsync(ExpectedResult);
 
-        var gitCommand = new GitCommand(_mockGitService.Object, WorkingDirectory);
+        var gitCommand = new GitCommand(_mockGitService.Object).WithWorkingDirectory(WorkingDirectory);
 
         // Act
-        await gitCommand.Execute(Command);
+        var result = await gitCommand.Execute(Command);
 
         // Assert
-        _mockGitService.Verify(x => x.ExecuteCommand(WorkingDirectory, Command, It.IsAny<CancellationToken>()), Times.Once);
+        result.Should().Be(ExpectedResult);
+        _mockGitService.Verify(
+            x => x.ExecuteCommand(It.Is<GitCommandArgs>(args => args.WorkingDirectory == WorkingDirectory), Command, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
-    public async Task Execute_Should_RethrowOperationCanceledException_RegardlessOfIgnoreErrors()
+    public async Task Execute_Should_RethrowOperationCanceledException()
     {
         // Arrange
         const string Command = "status";
         var cancellationException = new OperationCanceledException("Operation was cancelled");
 
-        _mockGitService.Setup(x => x.ExecuteCommand(WorkingDirectory, Command, It.IsAny<CancellationToken>())).ThrowsAsync(cancellationException);
+        _mockGitService.Setup(x => x.ExecuteCommand(It.IsAny<GitCommandArgs>(), Command, It.IsAny<CancellationToken>())).ThrowsAsync(cancellationException);
 
-        var gitCommand = new GitCommand(_mockGitService.Object, WorkingDirectory);
+        var gitCommand = new GitCommand(_mockGitService.Object).WithWorkingDirectory(WorkingDirectory);
 
-        // Act & Assert - Should rethrow even with ignoreErrors = true
-        var exception = await Assert.ThrowsAsync<OperationCanceledException>(() => gitCommand.Execute(Command, ignoreErrors: true));
-
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<OperationCanceledException>(() => gitCommand.Execute(Command));
         exception.Should().Be(cancellationException);
     }
 
     [Fact]
-    public async Task Execute_Should_RethrowException_WhenIgnoreErrorsIsFalse()
+    public async Task Execute_Should_RethrowExceptions()
     {
         // Arrange
         const string Command = "invalid-command";
         var originalException = new InvalidOperationException("Git command failed");
 
-        _mockGitService.Setup(x => x.ExecuteCommand(WorkingDirectory, Command, It.IsAny<CancellationToken>())).ThrowsAsync(originalException);
+        _mockGitService.Setup(x => x.ExecuteCommand(It.IsAny<GitCommandArgs>(), Command, It.IsAny<CancellationToken>())).ThrowsAsync(originalException);
 
-        var gitCommand = new GitCommand(_mockGitService.Object, WorkingDirectory);
+        var gitCommand = new GitCommand(_mockGitService.Object).WithWorkingDirectory(WorkingDirectory);
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => gitCommand.Execute(Command, ignoreErrors: false));
-
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => gitCommand.Execute(Command));
         exception.Should().Be(originalException);
     }
 
     [Fact]
-    public async Task Execute_Should_SwallowException_WhenIgnoreErrorsIsTrue()
-    {
-        // Arrange
-        const string Command = "invalid-command";
-        var originalException = new InvalidOperationException("Git command failed");
-
-        _mockGitService.Setup(x => x.ExecuteCommand(WorkingDirectory, Command, It.IsAny<CancellationToken>())).ThrowsAsync(originalException);
-
-        var gitCommand = new GitCommand(_mockGitService.Object, WorkingDirectory);
-
-        // Act - Should not throw when ignoreErrors is true
-        await gitCommand.Execute(Command, ignoreErrors: true);
-
-        // Assert - Method completed without throwing
-        _mockGitService.Verify(x => x.ExecuteCommand(WorkingDirectory, Command, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task Execute_Should_UseDefaultIgnoreErrorsValue()
-    {
-        // Arrange
-        const string Command = "invalid-command";
-        var originalException = new InvalidOperationException("Git command failed");
-
-        _mockGitService.Setup(x => x.ExecuteCommand(WorkingDirectory, Command, It.IsAny<CancellationToken>())).ThrowsAsync(originalException);
-
-        var gitCommand = new GitCommand(_mockGitService.Object, WorkingDirectory);
-
-        // Act & Assert - Default ignoreErrors should be false
-        await Assert.ThrowsAsync<InvalidOperationException>(() => gitCommand.Execute(Command));
-    }
-
-    [Fact]
-    public async Task Execute_Should_UseDefaultCancellationToken()
+    public async Task WithWorkingDirectory_Should_SetWorkingDirectoryInArgs()
     {
         // Arrange
         const string Command = "status";
-        const string ExpectedResult = "# On branch main";
+        const string CustomWorkingDirectory = "/custom/path";
+        const string ExpectedResult = "success";
 
-        _mockGitService.Setup(x => x.ExecuteCommand(WorkingDirectory, Command, It.IsAny<CancellationToken>())).ReturnsAsync(ExpectedResult);
+        _mockGitService.Setup(x => x.ExecuteCommand(It.IsAny<GitCommandArgs>(), Command, It.IsAny<CancellationToken>())).ReturnsAsync(ExpectedResult);
 
-        var gitCommand = new GitCommand(_mockGitService.Object, WorkingDirectory);
+        var gitCommand = new GitCommand(_mockGitService.Object).WithWorkingDirectory(CustomWorkingDirectory);
 
         // Act
         await gitCommand.Execute(Command);
 
         // Assert
-        _mockGitService.Verify(x => x.ExecuteCommand(WorkingDirectory, Command, It.Is<CancellationToken>(ct => ct == CancellationToken.None)), Times.Once);
+        _mockGitService.Verify(
+            x => x.ExecuteCommand(It.Is<GitCommandArgs>(args => args.WorkingDirectory == CustomWorkingDirectory), Command, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task WithErrorExclusions_Should_SetErrorExclusionsInArgs()
+    {
+        // Arrange
+        const string Command = "status";
+        var errorExclusions = new List<string> { "warning", "info" };
+        const string ExpectedResult = "success";
+
+        _mockGitService.Setup(x => x.ExecuteCommand(It.IsAny<GitCommandArgs>(), Command, It.IsAny<CancellationToken>())).ReturnsAsync(ExpectedResult);
+
+        var gitCommand = new GitCommand(_mockGitService.Object).WithWorkingDirectory(WorkingDirectory).WithErrorExclusions(errorExclusions);
+
+        // Act
+        await gitCommand.Execute(Command);
+
+        // Assert
+        _mockGitService.Verify(
+            x => x.ExecuteCommand(
+                It.Is<GitCommandArgs>(args => args.ErrorFilter.ErrorExclusions.SequenceEqual(errorExclusions)),
+                Command,
+                It.IsAny<CancellationToken>()
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task WithAllowedExitCodes_Should_SetAllowedExitCodesInArgs()
+    {
+        // Arrange
+        const string Command = "status";
+        var allowedExitCodes = new List<int>
+        {
+            0,
+            1,
+            128
+        };
+        const string ExpectedResult = "success";
+
+        _mockGitService.Setup(x => x.ExecuteCommand(It.IsAny<GitCommandArgs>(), Command, It.IsAny<CancellationToken>())).ReturnsAsync(ExpectedResult);
+
+        var gitCommand = new GitCommand(_mockGitService.Object).WithWorkingDirectory(WorkingDirectory).WithAllowedExitCodes(allowedExitCodes);
+
+        // Act
+        await gitCommand.Execute(Command);
+
+        // Assert
+        _mockGitService.Verify(
+            x => x.ExecuteCommand(It.Is<GitCommandArgs>(args => args.AllowedExitCodes.SequenceEqual(allowedExitCodes)), Command, It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task WithQuiet_Should_SetQuietInArgs()
+    {
+        // Arrange
+        const string Command = "status";
+        const string ExpectedResult = "success";
+
+        _mockGitService.Setup(x => x.ExecuteCommand(It.IsAny<GitCommandArgs>(), Command, It.IsAny<CancellationToken>())).ReturnsAsync(ExpectedResult);
+
+        var gitCommand = new GitCommand(_mockGitService.Object).WithWorkingDirectory(WorkingDirectory).WithQuiet(true);
+
+        // Act
+        await gitCommand.Execute(Command);
+
+        // Assert
+        _mockGitService.Verify(x => x.ExecuteCommand(It.Is<GitCommandArgs>(args => args.Quiet == true), Command, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task WithCancellationToken_Should_PassCancellationTokenToGitService()
+    {
+        // Arrange
+        const string Command = "status";
+        var cancellationToken = new CancellationTokenSource().Token;
+        const string ExpectedResult = "success";
+
+        _mockGitService.Setup(x => x.ExecuteCommand(It.IsAny<GitCommandArgs>(), Command, cancellationToken)).ReturnsAsync(ExpectedResult);
+
+        var gitCommand = new GitCommand(_mockGitService.Object).WithWorkingDirectory(WorkingDirectory).WithCancellationToken(cancellationToken);
+
+        // Act
+        await gitCommand.Execute(Command);
+
+        // Assert
+        _mockGitService.Verify(x => x.ExecuteCommand(It.IsAny<GitCommandArgs>(), Command, cancellationToken), Times.Once);
     }
 
     [Theory]
@@ -146,14 +215,15 @@ public class GitCommandTests
         // Arrange
         var expectedResult = $"Result for: {command}";
 
-        _mockGitService.Setup(x => x.ExecuteCommand(WorkingDirectory, command, It.IsAny<CancellationToken>())).ReturnsAsync(expectedResult);
+        _mockGitService.Setup(x => x.ExecuteCommand(It.IsAny<GitCommandArgs>(), command, It.IsAny<CancellationToken>())).ReturnsAsync(expectedResult);
 
-        var gitCommand = new GitCommand(_mockGitService.Object, WorkingDirectory);
+        var gitCommand = new GitCommand(_mockGitService.Object).WithWorkingDirectory(WorkingDirectory);
 
         // Act
-        await gitCommand.Execute(command);
+        var result = await gitCommand.Execute(command);
 
         // Assert
-        _mockGitService.Verify(x => x.ExecuteCommand(WorkingDirectory, command, It.IsAny<CancellationToken>()), Times.Once);
+        result.Should().Be(expectedResult);
+        _mockGitService.Verify(x => x.ExecuteCommand(It.IsAny<GitCommandArgs>(), command, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

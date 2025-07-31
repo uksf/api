@@ -4,29 +4,32 @@ namespace UKSF.Api.Core.Services;
 
 public interface IGitService
 {
-    GitCommand CreateGitCommand(string workingDirectory);
-    Task<string> ExecuteCommand(string workingDirectory, string command, CancellationToken cancellationToken = default);
+    GitCommand CreateGitCommand();
+    Task<string> ExecuteCommand(GitCommandArgs gitCommandArgs, string command, CancellationToken cancellationToken = default);
 }
 
 public class GitService(IProcessCommandFactory processCommandFactory, IUksfLogger logger) : IGitService
 {
     private const string GitConfig = "-c core.askpass='' -c credential.helper='' -c core.longpaths=true";
 
-    public GitCommand CreateGitCommand(string workingDirectory)
+    public GitCommand CreateGitCommand()
     {
-        return new GitCommand(this, workingDirectory);
+        return new GitCommand(this);
     }
 
-    public async Task<string> ExecuteCommand(string workingDirectory, string command, CancellationToken cancellationToken = default)
+    public async Task<string> ExecuteCommand(GitCommandArgs gitCommandArgs, string command, CancellationToken cancellationToken = default)
     {
         try
         {
             var timeoutMs = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
 
-            // Add git configurations to prevent hangs and credential prompts and prepend to command
             var fullCommand = $"git {GitConfig} {command}";
+            if (gitCommandArgs.Quiet)
+            {
+                fullCommand += " --quiet";
+            }
 
-            var results = await RunProcess(workingDirectory, "cmd.exe", $"/c \"{fullCommand}\"", timeoutMs, cancellationToken);
+            var results = await RunProcess(gitCommandArgs, "cmd.exe", $"/c \"{fullCommand}\"", timeoutMs, cancellationToken);
             results = [.. results.Where(x => !x.Contains("Process exited"))];
             return results.Count > 0 ? results.Last() : string.Empty;
         }
@@ -42,21 +45,15 @@ public class GitService(IProcessCommandFactory processCommandFactory, IUksfLogge
         }
     }
 
-    private async Task<List<string>> RunProcess(string workingDirectory, string executable, string args, int timeout, CancellationToken cancellationToken)
+    private async Task<List<string>> RunProcess(GitCommandArgs gitCommandArgs, string executable, string args, int timeout, CancellationToken cancellationToken)
     {
         List<string> results = [];
-        var errorFilter = new ErrorFilter(
-            new ProcessErrorHandlingConfig
-            {
-                ErrorExclusions = [],
-                IgnoreErrorGateOpen = "",
-                IgnoreErrorGateClose = ""
-            }
-        );
 
-        var command = processCommandFactory.CreateCommand(executable, workingDirectory, args).WithTimeout(TimeSpan.FromMilliseconds(timeout)).WithLogging();
+        var command = processCommandFactory.CreateCommand(executable, gitCommandArgs.WorkingDirectory, args)
+                                           .WithTimeout(TimeSpan.FromMilliseconds(timeout))
+                                           .WithLogging(true);
 
-        Exception delayedException = null;
+        Exception capturedException = null;
         var processExitCode = 0;
 
         await foreach (var outputLine in command.ExecuteAsync(cancellationToken))
@@ -70,10 +67,10 @@ public class GitService(IProcessCommandFactory processCommandFactory, IUksfLogge
                     break;
 
                 case ProcessOutputType.Error:
-                    var shouldIgnoreError = errorFilter.ShouldIgnoreError(outputLine.Content);
+                    var shouldIgnoreError = gitCommandArgs.ErrorFilter.ShouldIgnoreError(outputLine.Content);
                     if (!shouldIgnoreError && outputLine.Exception != null)
                     {
-                        delayedException = outputLine.Exception;
+                        capturedException = outputLine.Exception;
                     }
 
                     break;
@@ -84,15 +81,20 @@ public class GitService(IProcessCommandFactory processCommandFactory, IUksfLogge
             }
         }
 
-        if (processExitCode != 0)
+        if (processExitCode != 0 && !gitCommandArgs.AllowedExitCodes.Contains(processExitCode))
         {
             var exitCodeException = new Exception($"Process failed with exit code {processExitCode}");
+            if (capturedException != null)
+            {
+                exitCodeException.Data.Add("CapturedException", capturedException);
+            }
+
             throw exitCodeException;
         }
 
-        if (delayedException != null)
+        if (capturedException != null)
         {
-            throw delayedException;
+            throw capturedException;
         }
 
         return results;

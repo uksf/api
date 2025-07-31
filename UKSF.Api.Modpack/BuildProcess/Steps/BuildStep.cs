@@ -221,14 +221,12 @@ public class BuildStep : IBuildStep
     )
     {
         List<string> results = [];
-        var errorFilter = new ErrorFilter(
-            new ProcessErrorHandlingConfig
-            {
-                ErrorExclusions = errorExclusions?.AsReadOnly() ?? (IReadOnlyList<string>) [],
-                IgnoreErrorGateOpen = ignoreErrorGateOpen,
-                IgnoreErrorGateClose = ignoreErrorGateClose
-            }
-        );
+        var errorFilter = new ErrorFilter
+        {
+            ErrorExclusions = errorExclusions ?? [],
+            IgnoreErrorGateOpen = ignoreErrorGateOpen,
+            IgnoreErrorGateClose = ignoreErrorGateClose
+        };
 
         var command = _processCommandFactory.CreateCommand(executable, workingDirectory, args)
                                             .WithProcessId(Build?.Id)

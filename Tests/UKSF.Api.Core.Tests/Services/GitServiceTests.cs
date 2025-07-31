@@ -21,11 +21,8 @@ public class GitServiceTests
     [Fact]
     public void CreateGitCommand_Should_ReturnGitCommandInstance()
     {
-        // Arrange
-        const string WorkingDirectory = "/test/directory";
-
         // Act
-        var result = _gitService.CreateGitCommand(WorkingDirectory);
+        var result = _gitService.CreateGitCommand();
 
         // Assert
         result.Should().NotBeNull();
