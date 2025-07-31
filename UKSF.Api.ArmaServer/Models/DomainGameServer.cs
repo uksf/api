@@ -1,3 +1,4 @@
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using UKSF.Api.Core.Models;
 
@@ -12,7 +13,7 @@ public enum GameServerOption
 
 public class DomainGameServer : MongoObject
 {
-    public List<GameServerMod> Mods { get; set; } = new();
+    public List<GameServerMod> Mods { get; set; } = [];
     public string AdminPassword { get; set; }
     public int ApiPort { get; set; }
 
@@ -35,8 +36,11 @@ public class DomainGameServer : MongoObject
     public int? ProcessId { get; set; }
 
     public string ProfileName { get; set; }
-    public List<GameServerMod> ServerMods { get; set; } = new();
+    public List<GameServerMod> ServerMods { get; set; } = [];
     public GameServerOption ServerOption { get; set; }
+
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string LaunchedBy { get; set; }
 
     [BsonIgnore]
     public GameServerStatus Status { get; set; } = new();

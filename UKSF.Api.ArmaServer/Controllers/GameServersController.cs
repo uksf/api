@@ -31,6 +31,7 @@ public class GameServersController : ControllerBase
     private readonly IHubContext<ServersHub, IServersClient> _serversHub;
     private readonly IVariablesContext _variablesContext;
     private readonly IVariablesService _variablesService;
+    private readonly IHttpContextService _httpContextService;
 
     public GameServersController(
         IGameServersContext gameServersContext,
@@ -39,7 +40,8 @@ public class GameServersController : ControllerBase
         IHubContext<ServersHub, IServersClient> serversHub,
         IVariablesService variablesService,
         IGameServerHelpers gameServerHelpers,
-        IUksfLogger logger
+        IUksfLogger logger,
+        IHttpContextService httpContextService
     )
     {
         _gameServersContext = gameServersContext;
@@ -49,6 +51,7 @@ public class GameServersController : ControllerBase
         _variablesService = variablesService;
         _gameServerHelpers = gameServerHelpers;
         _logger = logger;
+        _httpContextService = httpContextService;
     }
 
     [HttpGet]
@@ -224,6 +227,10 @@ public class GameServersController : ControllerBase
         _gameServersService.WriteServerConfig(gameServer, patchingResult.PlayerCount, launchServerRequest.MissionName);
         gameServer.Status.Mission = launchServerRequest.MissionName;
 
+        var currentUserId = _httpContextService.GetUserId();
+        gameServer.LaunchedBy = currentUserId;
+        await _gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, currentUserId);
+
         await _gameServersService.LaunchGameServer(gameServer);
 
         _logger.LogAudit($"Game server launched '{launchServerRequest.MissionName}' on '{gameServer.Name}'");
@@ -242,6 +249,9 @@ public class GameServersController : ControllerBase
         {
             throw new BadRequestException("Server is not running. This shouldn't happen so please contact an admin");
         }
+
+        gameServer.LaunchedBy = null;
+        await _gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, null);
 
         SendServerUpdateIfNotCaller(gameServer.Id);
         await _gameServersService.StopGameServer(gameServer);
@@ -264,6 +274,9 @@ public class GameServersController : ControllerBase
         try
         {
             _gameServersService.KillGameServer(gameServer);
+
+            gameServer.LaunchedBy = null;
+            await _gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, null);
         }
         catch (Exception)
         {
@@ -277,9 +290,16 @@ public class GameServersController : ControllerBase
 
     [HttpGet("killall")]
     [Authorize]
-    public void KillAllArmaProcesses()
+    public async Task KillAllArmaProcesses()
     {
         var killed = _gameServersService.KillAllArmaProcesses();
+
+        var gameServers = _gameServersContext.Get().ToList();
+        var updateTasks = gameServers.Select(x => _gameServersContext.Update(x.Id, y => y.LaunchedBy, null));
+        await Task.WhenAll(updateTasks);
+
+        gameServers.ForEach(x => x.LaunchedBy = null);
+
         _logger.LogAudit($"Killed {killed} Arma instances");
         SendAnyUpdateIfNotCaller();
     }

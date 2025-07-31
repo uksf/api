@@ -210,8 +210,7 @@ public class GameServersService : IGameServersService
 
         gameServer.ProcessId = null;
 
-        gameServer.HeadlessClientProcessIds.ForEach(
-            x =>
+        gameServer.HeadlessClientProcessIds.ForEach(x =>
             {
                 process = Process.GetProcesses().FirstOrDefault(y => y.Id == x);
                 if (process is { HasExited: false })
@@ -231,15 +230,13 @@ public class GameServersService : IGameServersService
             process.Kill(true);
         }
 
-        _gameServersContext.Get()
-                           .ToList()
-                           .ForEach(
-                               x =>
-                               {
-                                   x.ProcessId = null;
-                                   x.HeadlessClientProcessIds.Clear();
-                               }
-                           );
+        var gameServers = _gameServersContext.Get().ToList();
+        foreach (var gameServer in gameServers)
+        {
+            gameServer.ProcessId = null;
+            gameServer.HeadlessClientProcessIds.Clear();
+        }
+
         return processes.Count;
     }
 
