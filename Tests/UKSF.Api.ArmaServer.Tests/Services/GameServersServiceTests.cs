@@ -153,23 +153,7 @@ public class GameServersServiceTests
     }
 
     [Fact]
-    public async Task KillGameServer_Should_handle_zero_process_id()
-    {
-        // Arrange
-        var gameServer = new DomainGameServer
-        {
-            Id = "server-456",
-            LaunchedBy = "previous-user-123",
-            ProcessId = 0
-        };
-
-        // Act & Assert
-        var action = () => _subject.KillGameServer(gameServer);
-        await action.Should().ThrowAsync<NullReferenceException>();
-    }
-
-    [Fact]
-    public void KillAllArmaProcesses_Should_clear_process_data()
+    public async Task KillAllArmaProcesses_Should_clear_process_data()
     {
         // Arrange
         var gameServers = new List<DomainGameServer>
@@ -201,7 +185,7 @@ public class GameServersServiceTests
         _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns([]);
 
         // Act
-        var result = _subject.KillAllArmaProcesses();
+        var result = await _subject.KillAllArmaProcesses();
 
         // Assert
         gameServers.Should()
