@@ -80,7 +80,7 @@ public class GameServersService(
 
         using HttpClient client = new();
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        client.Timeout = TimeSpan.FromSeconds(2);
+        client.Timeout = TimeSpan.FromSeconds(5);
         try
         {
             var response = await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server");
