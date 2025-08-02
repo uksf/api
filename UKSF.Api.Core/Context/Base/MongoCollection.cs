@@ -82,7 +82,7 @@ public class MongoCollection<T>(IMongoDatabase database, string collectionName) 
 
     public T GetSingle(Func<T, bool> predicate)
     {
-        return GetCollection().AsQueryable().FirstOrDefault(predicate);
+        return GetCollection().AsQueryable().AsEnumerable().FirstOrDefault(predicate);
     }
 
     public async Task AddAsync(T data)

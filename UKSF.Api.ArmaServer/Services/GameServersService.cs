@@ -24,8 +24,8 @@ public interface IGameServersService
     void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection);
     Task LaunchGameServer(DomainGameServer gameServer);
     Task StopGameServer(DomainGameServer gameServer);
-    void KillGameServer(DomainGameServer gameServer);
-    int KillAllArmaProcesses();
+    Task KillGameServer(DomainGameServer gameServer);
+    Task<int> KillAllArmaProcesses();
     List<GameServerMod> GetAvailableMods(string id);
     List<GameServerMod> GetEnvironmentMods(GameEnvironment environment);
     Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate);
@@ -61,20 +61,26 @@ public class GameServersService(
     {
         if (variablesService.GetFeatureState("SKIP_SERVER_STATUS"))
         {
+            await gameServersContext.Replace(gameServer);
             return;
         }
 
-        if (gameServer.ProcessId != 0)
+        if (gameServer.ProcessId != null && gameServer.ProcessId != 0)
         {
             gameServer.Status.Started = Process.GetProcesses().Any(x => x.Id == gameServer.ProcessId);
             if (!gameServer.Status.Started)
             {
-                gameServer.ProcessId = 0;
+                gameServer.ProcessId = null;
             }
+        }
+        else
+        {
+            gameServer.Status.Started = false;
         }
 
         using HttpClient client = new();
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        client.Timeout = TimeSpan.FromSeconds(2);
         try
         {
             var response = await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server");
@@ -93,6 +99,10 @@ public class GameServersService(
         catch (Exception)
         {
             gameServer.Status.Running = false;
+        }
+        finally
+        {
+            await gameServersContext.Replace(gameServer);
         }
     }
 
@@ -149,6 +159,8 @@ public class GameServersService(
                 await Task.Delay(TimeSpan.FromSeconds(1));
             }
         }
+
+        await gameServersContext.Replace(gameServer);
     }
 
     public async Task StopGameServer(DomainGameServer gameServer)
@@ -182,11 +194,11 @@ public class GameServersService(
         }
     }
 
-    public void KillGameServer(DomainGameServer gameServer)
+    public async Task KillGameServer(DomainGameServer gameServer)
     {
-        if (gameServer.ProcessId is null or 0)
+        if (gameServer.ProcessId is null)
         {
-            throw new NullReferenceException();
+            throw new NullReferenceException("Process ID not found");
         }
 
         var process = Process.GetProcesses().FirstOrDefault(x => x.Id == gameServer.ProcessId.Value);
@@ -207,9 +219,11 @@ public class GameServersService(
             }
         );
         gameServer.HeadlessClientProcessIds.Clear();
+
+        await gameServersContext.Replace(gameServer);
     }
 
-    public int KillAllArmaProcesses()
+    public async Task<int> KillAllArmaProcesses()
     {
         var processes = gameServerHelpers.GetArmaProcesses().ToList();
         foreach (var process in processes)
@@ -222,6 +236,7 @@ public class GameServersService(
         {
             gameServer.ProcessId = null;
             gameServer.HeadlessClientProcessIds.Clear();
+            await gameServersContext.Replace(gameServer);
         }
 
         return processes.Count;

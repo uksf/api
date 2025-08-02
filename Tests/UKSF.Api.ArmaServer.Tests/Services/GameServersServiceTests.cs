@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -36,8 +35,8 @@ public class GameServersServiceTests
     public async Task LaunchGameServer_Should_launch_server_successfully()
     {
         // Arrange
-        const string testServerId = "server-456";
-        var gameServer = new DomainGameServer { Id = testServerId };
+        const string TestServerId = "server-456";
+        var gameServer = new DomainGameServer { Id = TestServerId };
 
         _mockGameServerHelpers.Setup(x => x.FormatGameServerLaunchArguments(gameServer)).Returns("test-args");
         _mockGameServerHelpers.Setup(x => x.GetGameServerExecutablePath(gameServer)).Returns("test-path");
@@ -54,10 +53,10 @@ public class GameServersServiceTests
     public async Task LaunchGameServer_Should_launch_headless_clients()
     {
         // Arrange
-        const string testServerId = "server-456";
+        const string TestServerId = "server-456";
         var gameServer = new DomainGameServer
         {
-            Id = testServerId,
+            Id = TestServerId,
             NumberHeadlessClients = 2,
             HeadlessClientProcessIds = []
         };
@@ -80,10 +79,10 @@ public class GameServersServiceTests
     public async Task StopGameServer_Should_stop_server_successfully()
     {
         // Arrange
-        const string testServerId = "server-456";
+        const string TestServerId = "server-456";
         var gameServer = new DomainGameServer
         {
-            Id = testServerId,
+            Id = TestServerId,
             LaunchedBy = "previous-user-123",
             ApiPort = 8080
         };
@@ -99,10 +98,10 @@ public class GameServersServiceTests
     public async Task StopGameServer_Should_stop_headless_clients()
     {
         // Arrange
-        const string testServerId = "server-456";
+        const string TestServerId = "server-456";
         var gameServer = new DomainGameServer
         {
-            Id = testServerId,
+            Id = TestServerId,
             LaunchedBy = "previous-user-123",
             ApiPort = 8080,
             NumberHeadlessClients = 2
@@ -117,20 +116,20 @@ public class GameServersServiceTests
     }
 
     [Fact]
-    public void KillGameServer_Should_kill_server_successfully()
+    public async Task KillGameServer_Should_kill_server_successfully()
     {
         // Arrange
-        const string testServerId = "server-456";
+        const string TestServerId = "server-456";
         var gameServer = new DomainGameServer
         {
-            Id = testServerId,
+            Id = TestServerId,
             LaunchedBy = "previous-user-123",
             ProcessId = 1234,
             HeadlessClientProcessIds = []
         };
 
         // Act
-        _subject.KillGameServer(gameServer);
+        await _subject.KillGameServer(gameServer);
 
         // Assert
         gameServer.ProcessId.Should().BeNull();
@@ -138,7 +137,7 @@ public class GameServersServiceTests
     }
 
     [Fact]
-    public void KillGameServer_Should_handle_null_process_id()
+    public async Task KillGameServer_Should_handle_null_process_id()
     {
         // Arrange
         var gameServer = new DomainGameServer
@@ -150,11 +149,11 @@ public class GameServersServiceTests
 
         // Act & Assert
         var action = () => _subject.KillGameServer(gameServer);
-        action.Should().Throw<NullReferenceException>();
+        await action.Should().ThrowAsync<NullReferenceException>();
     }
 
     [Fact]
-    public void KillGameServer_Should_handle_zero_process_id()
+    public async Task KillGameServer_Should_handle_zero_process_id()
     {
         // Arrange
         var gameServer = new DomainGameServer
@@ -166,7 +165,7 @@ public class GameServersServiceTests
 
         // Act & Assert
         var action = () => _subject.KillGameServer(gameServer);
-        action.Should().Throw<NullReferenceException>();
+        await action.Should().ThrowAsync<NullReferenceException>();
     }
 
     [Fact]

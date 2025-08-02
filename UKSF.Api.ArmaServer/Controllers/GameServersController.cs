@@ -166,7 +166,7 @@ public class GameServersController(
     [Authorize]
     public async Task<List<ValidationReport>> LaunchServer(string id, [FromBody] LaunchServerRequest launchServerRequest)
     {
-        Task.WaitAll(gameServersContext.Get().Select(x => gameServersService.GetGameServerStatus(x)).ToArray());
+        await Task.WhenAll(gameServersContext.Get().Select(gameServersService.GetGameServerStatus));
         var gameServer = gameServersContext.GetSingle(id);
         if (gameServer.Status.Running)
         {
@@ -208,7 +208,6 @@ public class GameServersController(
 
         var currentUserId = httpContextService.GetUserId();
         gameServer.LaunchedBy = currentUserId;
-        await gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, currentUserId);
 
         await gameServersService.LaunchGameServer(gameServer);
 
@@ -230,7 +229,6 @@ public class GameServersController(
         }
 
         gameServer.LaunchedBy = null;
-        await gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, null);
 
         SendServerUpdateIfNotCaller(gameServer.Id);
         await gameServersService.StopGameServer(gameServer);
@@ -252,10 +250,8 @@ public class GameServersController(
 
         try
         {
-            gameServersService.KillGameServer(gameServer);
-
             gameServer.LaunchedBy = null;
-            await gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, null);
+            await gameServersService.KillGameServer(gameServer);
         }
         catch (Exception exception)
         {
@@ -270,15 +266,12 @@ public class GameServersController(
 
     [HttpGet("killall")]
     [Authorize]
-    public async Task KillAllArmaProcesses()
+    public void KillAllArmaProcesses()
     {
-        var killed = gameServersService.KillAllArmaProcesses();
-
         var gameServers = gameServersContext.Get().ToList();
-        var updateTasks = gameServers.Select(x => gameServersContext.Update(x.Id, y => y.LaunchedBy, null));
-        await Task.WhenAll(updateTasks);
-
         gameServers.ForEach(x => x.LaunchedBy = null);
+
+        var killed = gameServersService.KillAllArmaProcesses();
 
         logger.LogAudit($"Killed {killed} Arma instances");
         SendAnyUpdateIfNotCaller();

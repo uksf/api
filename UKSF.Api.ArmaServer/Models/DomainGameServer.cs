@@ -17,24 +17,15 @@ public class DomainGameServer : MongoObject
     public string AdminPassword { get; set; }
     public int ApiPort { get; set; }
 
-    [BsonIgnore]
-    public bool CanLaunch { get; set; }
-
     public GameEnvironment Environment { get; set; }
-
-    [BsonIgnore]
     public List<int> HeadlessClientProcessIds { get; set; } = new();
-
     public string HostName { get; set; }
     public string Name { get; set; }
     public int NumberHeadlessClients { get; set; }
     public int Order { get; set; } = 0;
     public string Password { get; set; }
     public int Port { get; set; }
-
-    [BsonIgnore]
     public int? ProcessId { get; set; }
-
     public string ProfileName { get; set; }
     public List<GameServerMod> ServerMods { get; set; } = [];
     public GameServerOption ServerOption { get; set; }

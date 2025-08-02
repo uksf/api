@@ -56,7 +56,7 @@ public class ActionCleanupRunningServers : SelfCreatingScheduledAction, IActionC
         }
 
         KillOrphanedServers(runningServers);
-        KillRemainingProcesses();
+        await KillRemainingProcesses();
     }
 
     private void KillOrphanedServers(List<DomainGameServer> runningServers)
@@ -83,11 +83,11 @@ public class ActionCleanupRunningServers : SelfCreatingScheduledAction, IActionC
         }
     }
 
-    private void KillRemainingProcesses()
+    private async Task KillRemainingProcesses()
     {
         try
         {
-            var killedCount = _gameServersService.KillAllArmaProcesses();
+            var killedCount = await _gameServersService.KillAllArmaProcesses();
             if (killedCount > 0)
             {
                 _logger.LogInfo($"Killed {killedCount} orphaned arma processes");
