@@ -266,12 +266,12 @@ public class GameServersController(
 
     [HttpGet("killall")]
     [Authorize]
-    public void KillAllArmaProcesses()
+    public async Task KillAllArmaProcesses()
     {
         var gameServers = gameServersContext.Get().ToList();
         gameServers.ForEach(x => x.LaunchedBy = null);
 
-        var killed = gameServersService.KillAllArmaProcesses();
+        var killed = await gameServersService.KillAllArmaProcesses();
 
         logger.LogAudit($"Killed {killed} Arma instances");
         SendAnyUpdateIfNotCaller();
