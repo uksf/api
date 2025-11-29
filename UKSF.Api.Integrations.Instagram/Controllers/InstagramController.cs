@@ -1,40 +1,30 @@
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Integrations.Instagram.Models;
-using UKSF.Api.Integrations.Instagram.ScheduledActions;
 using UKSF.Api.Integrations.Instagram.Services;
 
 namespace UKSF.Api.Integrations.Instagram.Controllers;
 
 [Route("[controller]")]
-public class InstagramController : ControllerBase
+public class InstagramController(IInstagramService instagramService) : ControllerBase
 {
-    private readonly IActionInstagramToken _actionInstagramToken;
-    private readonly IInstagramService _instagramService;
-
-    public InstagramController(IInstagramService instagramService, IActionInstagramToken actionInstagramToken)
-    {
-        _instagramService = instagramService;
-        _actionInstagramToken = actionInstagramToken;
-    }
-
     [HttpGet]
-    public IEnumerable<InstagramImage> GetImages()
+    public Task<List<InstagramImage>> GetImages()
     {
-        return _instagramService.GetImages();
+        return instagramService.GetImagesFromLocalCache();
     }
 
     [HttpGet("refreshToken")]
     [Permissions(Permissions.Admin)]
     public async Task RefreshToken()
     {
-        await _actionInstagramToken.Reset();
+        // await actionInstagramToken.Reset();
     }
 
     [HttpGet("cache")]
     [Permissions(Permissions.Admin)]
     public async Task Cache()
     {
-        await _instagramService.CacheInstagramImages();
+        await instagramService.CacheInstagramImages();
     }
 }
