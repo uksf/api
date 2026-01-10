@@ -10,18 +10,11 @@ public interface IGetCurrentServerInfrastructureQuery
     Task<ServerInfrastructureCurrent> ExecuteAsync();
 }
 
-public class GetCurrentServerInfrastructureQuery : IGetCurrentServerInfrastructureQuery
+public class GetCurrentServerInfrastructureQuery(IVariablesService variablesService) : IGetCurrentServerInfrastructureQuery
 {
-    private readonly IVariablesService _variablesService;
-
-    public GetCurrentServerInfrastructureQuery(IVariablesService variablesService)
-    {
-        _variablesService = variablesService;
-    }
-
     public async Task<ServerInfrastructureCurrent> ExecuteAsync()
     {
-        var steamPath = _variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
+        var steamPath = variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
         var manifestPath = Path.Combine(steamPath, "steamapps", "appmanifest_233780.acf");
         var manifest = await File.ReadAllTextAsync(manifestPath);
         if (manifest.Length == 0)

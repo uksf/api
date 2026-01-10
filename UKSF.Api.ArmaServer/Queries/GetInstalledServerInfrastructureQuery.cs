@@ -10,18 +10,11 @@ public interface IGetInstalledServerInfrastructureQuery
     Task<ServerInfrastructureInstalled> ExecuteAsync();
 }
 
-public class GetInstalledServerInfrastructureQuery : IGetInstalledServerInfrastructureQuery
+public class GetInstalledServerInfrastructureQuery(IVariablesService variablesService) : IGetInstalledServerInfrastructureQuery
 {
-    private readonly IVariablesService _variablesService;
-
-    public GetInstalledServerInfrastructureQuery(IVariablesService variablesService)
-    {
-        _variablesService = variablesService;
-    }
-
     public Task<ServerInfrastructureInstalled> ExecuteAsync()
     {
-        var releasePath = _variablesService.GetVariable("SERVER_PATH_RELEASE").AsString();
+        var releasePath = variablesService.GetVariable("SERVER_PATH_RELEASE").AsString();
         var exePath = Path.Combine(releasePath, "arma3server_x64.exe");
 
         if (!File.Exists(exePath))

@@ -801,3 +801,9 @@ Authorization: Bearer {{token}}
 # @name Cleanup builds
 POST {{url}}/modpack/builds/emergency-cleanup
 Authorization: Bearer {{token}}
+
+###
+# group: Workshop
+# @name Get workshop mod updated date
+GET {{url}}/workshop/3575468172/updatedDate
+Authorization: Bearer {{token}}

@@ -4,9 +4,8 @@ using CliWrap.Buffered;
 using Microsoft.Extensions.Options;
 using UKSF.Api.Core.Configuration;
 using UKSF.Api.Core.Extensions;
-using UKSF.Api.Core.Services;
 
-namespace UKSF.Api.ArmaServer.Services;
+namespace UKSF.Api.Core.Services;
 
 public interface ISteamCmdService
 {
@@ -23,6 +22,7 @@ public class SteamCmdService : ISteamCmdService
     public SteamCmdService(IVariablesService variablesService, IOptions<AppSettings> options)
     {
         _variablesService = variablesService;
+
         var appSettings = options.Value;
         _username = appSettings.Secrets.SteamCmd.Username;
         _password = appSettings.Secrets.SteamCmd.Password;

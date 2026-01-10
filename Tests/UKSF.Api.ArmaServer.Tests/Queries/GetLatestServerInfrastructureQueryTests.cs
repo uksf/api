@@ -9,6 +9,7 @@ using UKSF.Api.ArmaServer.Queries;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Configuration;
+using UKSF.Api.Core.Services;
 using UKSF.Api.Tests.Common;
 using Xunit;
 

@@ -3,9 +3,9 @@ using Gameloop.Vdf.JsonConverter;
 using Microsoft.Extensions.Options;
 using UKSF.Api.ArmaServer.Exceptions;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Configuration;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.Queries;
 
@@ -14,18 +14,10 @@ public interface IGetLatestServerInfrastructureQuery
     Task<ServerInfrastructureLatest> ExecuteAsync(int retryDelay = 1);
 }
 
-public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructureQuery
+public class GetLatestServerInfrastructureQuery(ISteamCmdService steamCmdService, IOptions<AppSettings> options, IUksfLogger logger)
+    : IGetLatestServerInfrastructureQuery
 {
-    private readonly AppSettings _appSettings;
-    private readonly IUksfLogger _logger;
-    private readonly ISteamCmdService _steamCmdService;
-
-    public GetLatestServerInfrastructureQuery(ISteamCmdService steamCmdService, IOptions<AppSettings> options, IUksfLogger logger)
-    {
-        _appSettings = options.Value;
-        _steamCmdService = steamCmdService;
-        _logger = logger;
-    }
+    private readonly AppSettings _appSettings = options.Value;
 
     public async Task<ServerInfrastructureLatest> ExecuteAsync(int retryDelay = 1)
     {
@@ -34,7 +26,7 @@ public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructure
 
         do
         {
-            output = await _steamCmdService.GetServerInfo();
+            output = await steamCmdService.GetServerInfo();
             if (output.Contains("change number"))
             {
                 break;
@@ -53,7 +45,7 @@ public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructure
         var appInfoIndex = output.IndexOf(@"""233780""", StringComparison.Ordinal);
         if (appInfoIndex < 0)
         {
-            _logger.LogInfo(output);
+            logger.LogInfo(output);
             throw new ServerInfrastructureException("Unable to parse app info data from Steam", 404);
         }
 
@@ -93,7 +85,7 @@ public class GetLatestServerInfrastructureQuery : IGetLatestServerInfrastructure
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception);
+            logger.LogError(exception);
         }
     }
 }
