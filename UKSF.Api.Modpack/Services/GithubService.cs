@@ -245,7 +245,7 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
             changelog += issues.Select(x =>
                                    {
                                        var titleParts = x.Title.Split(" ");
-                                       return $"\n- {titleParts[0]} to [{titleParts[1]}]({x.HtmlUrl})";
+                                       return $"\n- {titleParts[0]} to [{titleParts[^1]}]({x.HtmlUrl})";
                                    }
                                )
                                .Aggregate((a, b) => a + b);
