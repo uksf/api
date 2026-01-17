@@ -11,6 +11,7 @@ public class BuildStepSignDependencies : FileBuildStep
     private string _dsCreateKey;
     private string _dsSignFile;
     private string _keyName;
+    private readonly int _signProcessTimeout = (int)TimeSpan.FromSeconds(20).TotalMilliseconds;
 
     protected override async Task SetupExecute()
     {
@@ -32,7 +33,7 @@ public class BuildStepSignDependencies : FileBuildStep
         StepLogger.LogSurround("Cleared keys directories");
 
         StepLogger.LogSurround("\nCreating key...");
-        await RunProcess(keygenPath, _dsCreateKey, _keyName, (int)TimeSpan.FromSeconds(10).TotalMilliseconds, false, true);
+        await RunProcess(keygenPath, _dsCreateKey, _keyName, _signProcessTimeout, false, true);
         StepLogger.Log($"Created {_keyName}");
         await CopyFiles(keygen, keys, [new FileInfo(Path.Join(keygenPath, $"{_keyName}.bikey"))]);
         StepLogger.LogSurround("Created key");
@@ -96,20 +97,5 @@ public class BuildStepSignDependencies : FileBuildStep
             () => $"Signed {signed} of {total} files",
             "Failed to sign file"
         );
-
-        // foreach (FileInfo file in files) {
-        //     try {
-        //         BuildProcessHelper processHelper = new BuildProcessHelper(Logger, CancellationTokenSource, true);
-        //         processHelper.Run(addonsPath, dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", (int) TimeSpan.FromSeconds(10).TotalMilliseconds);
-        //         signed++;
-        //         Logger.LogInline($"Signed {signed} of {total} files");
-        //     } catch (OperationCanceledException) {
-        //         throw;
-        //     } catch (Exception exception) {
-        //         throw new Exception($"Failed to sign file '{file}'\n{exception.GetCompleteMessage()}", exception);
-        //     }
-        // }
-        //
-        // return Task.CompletedTask;
     }
 }
