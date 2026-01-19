@@ -11,6 +11,7 @@ public interface ISteamCmdService
 {
     Task<string> GetServerInfo();
     Task<string> UpdateServer();
+    Task<string> DownloadWorkshopMod(string workshopModId);
 }
 
 public class SteamCmdService : ISteamCmdService
@@ -50,6 +51,19 @@ public class SteamCmdService : ISteamCmdService
                               .ExecuteBufferedAsync();
 
         return result.StandardOutput;
+    }
+
+    public async Task<string> DownloadWorkshopMod(string workshopModId)
+    {
+        var steamPath = _variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
+        var cmdPath = Path.Combine(steamPath, "steamcmd.exe");
+
+        var result = await Cli.Wrap(cmdPath)
+                              .WithWorkingDirectory(steamPath)
+                              .WithArguments($"+login {_username} {_password} +workshop_download_item 107410 {workshopModId} +quit")
+                              .ExecuteBufferedAsync();
+
+        return result.ExitCode != 0 ? throw new Exception($"Failed to download workshop mod {workshopModId}: {result.StandardError}") : result.StandardOutput;
     }
 
     private Process ExecuteSteamCmdCommand(string command)

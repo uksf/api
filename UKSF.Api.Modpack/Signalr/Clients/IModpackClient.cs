@@ -8,4 +8,5 @@ public interface IModpackClient
     Task ReceiveBuild(DomainModpackBuild build);
     Task ReceiveBuildStep(ModpackBuildStep step);
     Task ReceiveRelease(DomainModpackRelease release);
+    Task ReceiveWorkshopModUpdate(DomainWorkshopMod workshopMod);
 }

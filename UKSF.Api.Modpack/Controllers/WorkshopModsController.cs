@@ -1,16 +1,88 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Modpack.Context;
+using UKSF.Api.Modpack.Models;
+using UKSF.Api.Modpack.Models.Request;
+using UKSF.Api.Modpack.Models.Response;
 using UKSF.Api.Modpack.Services;
 
 namespace UKSF.Api.Modpack.Controllers;
 
 [Route("workshop")]
-public class WorkshopModsController(IWorkshopService workshopService) : ControllerBase
+public class WorkshopModsController(IWorkshopModsService workshopModsService, IWorkshopModsContext workshopModsContext) : ControllerBase
 {
-    [HttpGet("{workshopModId}/updatedDate")]
-    public async Task<string> GetWorkshopModUpdatedDate([FromRoute] string workshopModId)
+    [HttpGet]
+    public List<WorkshopModResponse> GetWorkshopMods()
     {
-        var updatedDate = await workshopService.GetWorkshopModUpdatedDate(workshopModId);
-        return updatedDate.ToString("o");
+        return workshopModsContext.Get().Select(MapToResponse).ToList();
+    }
+
+    [HttpGet("{workshopModId}")]
+    public WorkshopModResponse GetWorkshopMod([FromRoute] string workshopModId)
+    {
+        var workshopMod = workshopModsContext.GetSingle(workshopModId);
+        if (workshopMod == null)
+        {
+            throw new NotFoundException("Workshop mod with ID {workshopModId} not found");
+        }
+
+        return MapToResponse(workshopMod);
+    }
+
+    [HttpGet("{workshopModId}/updatedDate")]
+    public async Task<WorkshopModUpdatedDateResponse> GetWorkshopModUpdatedDate([FromRoute] string workshopModId)
+    {
+        var updatedDate = await workshopModsService.GetWorkshopModUpdatedDate(workshopModId);
+        return new WorkshopModUpdatedDateResponse { UpdatedDate = updatedDate.ToString("o") };
+    }
+
+    [HttpPost]
+    public Task InstallWorkshopMod([FromBody] InstallWorkshopModRequest request)
+    {
+        return workshopModsService.InstallWorkshopMod(request.SteamId, request.RootMod);
+    }
+
+    [HttpPost("{workshopModId}/update")]
+    public Task UpdateWorkshopMod([FromRoute] string workshopModId)
+    {
+        return workshopModsService.UpdateWorkshopMod(workshopModId);
+    }
+
+    [HttpPost("{workshopModId}/uninstall")]
+    public Task UninstallWorkshopMod([FromRoute] string workshopModId)
+    {
+        return workshopModsService.UninstallWorkshopMod(workshopModId);
+    }
+
+    [HttpPost("{workshopModId}/resolve")]
+    public Task ResolveWorkshopModManualIntervention([FromRoute] string workshopModId, [FromBody] WorkshopModResolveInterventionRequest request)
+    {
+        return workshopModsService.ResolveWorkshopModManualIntervention(workshopModId, request.SelectedPbos);
+    }
+
+    [HttpDelete("{workshopModId}")]
+    public Task DeleteWorkshopMod([FromRoute] string workshopModId)
+    {
+        return workshopModsService.DeleteWorkshopMod(workshopModId);
+    }
+
+    private static WorkshopModResponse MapToResponse(DomainWorkshopMod mod)
+    {
+        return new WorkshopModResponse
+        {
+            Id = mod.Id,
+            SteamId = mod.SteamId,
+            Name = mod.Name,
+            RootMod = mod.RootMod,
+            Status = mod.Status,
+            StatusMessage = mod.StatusMessage,
+            ErrorMessage = mod.ErrorMessage,
+            LastUpdatedLocally = mod.LastUpdatedLocally.ToString("o"),
+            ModpackVersionFirstAdded = mod.ModpackVersionFirstAdded,
+            ModpackVersionLastUpdated = mod.ModpackVersionLastUpdated,
+            Pbos = mod.Pbos,
+            CustomFilesList = mod.CustomFilesList
+        };
     }
 }
 

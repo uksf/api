@@ -113,6 +113,7 @@ public class BuildStepService : IBuildStepService
             new ModpackBuildStep(BuildStepReleaseKeys.Name),
             new ModpackBuildStep(BuildStepCbaSettings.Name),
             new ModpackBuildStep(BuildStepBuildRepo.Name),
+            new ModpackBuildStep(BuildStepProcessWorkshopMods.Name),
             new ModpackBuildStep(BuildStepPublish.Name),
             new ModpackBuildStep(BuildStepNotify.Name),
             new ModpackBuildStep(BuildStepMerge.Name),

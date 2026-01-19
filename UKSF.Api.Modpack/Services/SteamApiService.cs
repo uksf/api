@@ -1,16 +1,18 @@
 ﻿using System.Text.Json;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Modpack.Models;
 
 namespace UKSF.Api.Modpack.Services;
 
-public interface IWorkshopService
+public interface ISteamApiService
 {
-    Task<DateTime> GetWorkshopModUpdatedDate(string workshopModId);
+    Task<WorkshopModInfo> GetWorkshopModInfo(string workshopModId);
 }
 
-public class WorkshopService(IUksfLogger logger) : IWorkshopService
+public class SteamApiService(IUksfLogger logger) : ISteamApiService
 {
-    public async Task<DateTime> GetWorkshopModUpdatedDate(string workshopModId)
+    public async Task<WorkshopModInfo> GetWorkshopModInfo(string workshopModId)
     {
         using var client = new HttpClient();
         client.DefaultRequestHeaders.Add(
@@ -19,7 +21,6 @@ public class WorkshopService(IUksfLogger logger) : IWorkshopService
         );
 
         var formData = new Dictionary<string, string> { ["itemcount"] = "1", ["publishedfileids[0]"] = workshopModId };
-
         var content = new FormUrlEncodedContent(formData);
 
         try
@@ -37,18 +38,23 @@ public class WorkshopService(IUksfLogger logger) : IWorkshopService
             {
                 var item = detailsArray[0];
 
-                if (item.TryGetProperty("time_updated", out var tsElement) && tsElement.TryGetInt64(out var unixTimestamp))
+                if (item.TryGetProperty("result", out var resultElement) && resultElement.GetInt32() != 1)
                 {
-                    return DateTimeOffset.FromUnixTimeSeconds(unixTimestamp).UtcDateTime;
+                    throw new BadRequestException($"Workshop mod with id {workshopModId} not found");
                 }
 
-                if (item.TryGetProperty("result", out _))
+                if (item.TryGetProperty("title", out var titleElement) &&
+                    item.TryGetProperty("time_updated", out var tsElement) &&
+                    tsElement.TryGetInt64(out var unixTimestamp))
                 {
-                    throw new Exception($"Workshop mod with id {workshopModId} not found");
+                    return new WorkshopModInfo
+                    {
+                        Name = titleElement.GetString() ?? "NO NAME FOUND", UpdatedDate = DateTimeOffset.FromUnixTimeSeconds(unixTimestamp).UtcDateTime
+                    };
                 }
             }
 
-            throw new Exception($"Failed getting updated date for workshop mod id {workshopModId}");
+            throw new Exception($"Failed getting info for workshop mod id {workshopModId}");
         }
         catch (JsonException exception)
         {
