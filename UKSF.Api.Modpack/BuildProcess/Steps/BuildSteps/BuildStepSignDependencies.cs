@@ -73,7 +73,7 @@ public class BuildStepSignDependencies : FileBuildStep
         };
     }
 
-    private Task SignFiles(string keygenPath, string addonsPath, IReadOnlyCollection<FileInfo> files)
+    private Task SignFiles(string keygenPath, string addonsPath, List<FileInfo> files)
     {
         var privateKey = Path.Join(keygenPath, $"{_keyName}.biprivatekey");
         var signed = 0;
@@ -84,14 +84,7 @@ public class BuildStepSignDependencies : FileBuildStep
             _batchSize,
             async file =>
             {
-                await RunProcess(
-                    addonsPath,
-                    _dsSignFile,
-                    $"\"{privateKey}\" \"{file.FullName}\"",
-                    (int)TimeSpan.FromSeconds(10).TotalMilliseconds,
-                    false,
-                    true
-                );
+                await RunProcess(addonsPath, _dsSignFile, $"\"{privateKey}\" \"{file.FullName}\"", _signProcessTimeout, false, true);
                 Interlocked.Increment(ref signed);
             },
             () => $"Signed {signed} of {total} files",
