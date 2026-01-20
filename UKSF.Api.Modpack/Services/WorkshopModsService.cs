@@ -49,12 +49,12 @@ public class WorkshopModsService(
         await workshopModsContext.Add(workshopMod);
         logger.LogAudit($"Workshop mod installed: {workshopModId}, {workshopMod.Name}");
 
-        await publishEndpoint.Publish(new WorkshopModInstallCommand { WorkshopModId = workshopMod.Id });
+        await publishEndpoint.Publish(new WorkshopModInstallCommand { WorkshopModId = workshopModId });
     }
 
     public async Task UpdateWorkshopMod(string workshopModId)
     {
-        var workshopMod = workshopModsContext.GetSingle(workshopModId);
+        var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
         if (workshopMod == null)
         {
             throw new NotFoundException($"Cannot find workshop mod with ID {workshopModId}");
@@ -86,7 +86,7 @@ public class WorkshopModsService(
 
     public async Task UninstallWorkshopMod(string workshopModId)
     {
-        var workshopMod = workshopModsContext.GetSingle(workshopModId);
+        var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
         if (workshopMod == null)
         {
             throw new NotFoundException($"Cannot find workshop mod with ID {workshopModId}");
@@ -98,7 +98,7 @@ public class WorkshopModsService(
         }
 
         var otherModPbos = workshopModsContext.Get()
-                                              .Where(x => x.Id != workshopModId && x.Status != WorkshopModStatus.Uninstalled)
+                                              .Where(x => x.SteamId != workshopModId && x.Status != WorkshopModStatus.Uninstalled)
                                               .SelectMany(x => x.Pbos)
                                               .ToList();
         var conflicts = otherModPbos.Intersect(workshopMod.Pbos, StringComparer.OrdinalIgnoreCase).ToList();
@@ -117,7 +117,7 @@ public class WorkshopModsService(
 
     public async Task ResolveWorkshopModManualIntervention(string workshopModId, List<string> selectedPbos)
     {
-        var workshopMod = workshopModsContext.GetSingle(workshopModId);
+        var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
         if (workshopMod == null)
         {
             throw new NotFoundException($"Cannot find workshop mod with ID {workshopModId}");
@@ -133,7 +133,7 @@ public class WorkshopModsService(
 
     public async Task DeleteWorkshopMod(string workshopModId)
     {
-        var workshopMod = workshopModsContext.GetSingle(workshopModId);
+        var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
         if (workshopMod == null)
         {
             throw new NotFoundException($"Cannot find workshop mod with ID {workshopModId}");

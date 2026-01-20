@@ -807,3 +807,51 @@ Authorization: Bearer {{token}}
 # @name Get workshop mod updated date
 GET {{url}}/workshop/3575468172/updatedDate
 Authorization: Bearer {{token}}
+
+###
+# group: Workshop
+# @name Get workshop mod info
+GET {{url}}/workshop/3575468172
+Authorization: Bearer {{token}}
+
+###
+# group: Workshop
+# @name Install workshop mod
+POST {{url}}/workshop
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "steamId": "3575468172"
+}
+
+###
+# group: Workshop
+# @name Resolve workshop mod intervention
+POST {{url}}/workshop/3575468172/resolve
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "selectedPbos": [
+    "MCC_Core.pbo"
+  ]
+}
+
+###
+# group: Workshop
+# @name Update workshop mod
+POST {{url}}/workshop/3575468172/update
+Authorization: Bearer {{token}}
+
+###
+# group: Workshop
+# @name Uninstall workshop mod
+POST {{url}}/workshop/3575468172/uninstall
+Authorization: Bearer {{token}}
+
+###
+# group: Workshop
+# @name Delete workshop mod
+DELETE {{url}}/workshop/3575468172
+Authorization: Bearer {{token}}

@@ -6,7 +6,7 @@ public class WorkshopModResponse
     public string SteamId { get; set; }
     public string Name { get; set; }
     public bool RootMod { get; set; }
-    public WorkshopModStatus Status { get; set; }
+    public string Status { get; set; }
     public List<string> Pbos { get; set; } = [];
     public string LastUpdatedLocally { get; set; }
     public string ModpackVersionFirstAdded { get; set; }

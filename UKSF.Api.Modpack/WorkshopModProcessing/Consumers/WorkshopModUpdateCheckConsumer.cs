@@ -15,7 +15,7 @@ public class WorkshopModUpdateCheckConsumer(IUpdateOperation updateOperation, IW
             var result = await updateOperation.CheckAsync(context.Message.WorkshopModId, context.CancellationToken);
             if (result.Success)
             {
-                var workshopMod = workshopModsContext.GetSingle(context.Message.WorkshopModId);
+                var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == context.Message.WorkshopModId);
                 var currentPbos = workshopMod?.Pbos ?? [];
 
                 // Only require intervention if PBOs differ from currently installed

@@ -15,7 +15,7 @@ public class WorkshopModCleanupConsumer(
     {
         try
         {
-            var workshopMod = workshopModsContext.GetSingle(context.Message.WorkshopModId);
+            var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == context.Message.WorkshopModId);
             if (workshopMod == null)
             {
                 logger.LogWarning($"Workshop mod {context.Message.WorkshopModId} not found for cleanup");

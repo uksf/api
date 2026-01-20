@@ -17,7 +17,7 @@ public class UpdateOperation(IWorkshopModsContext workshopModsContext, IWorkshop
 {
     public async Task<DownloadResult> DownloadAsync(string workshopModId, CancellationToken cancellationToken = default)
     {
-        var workshopMod = workshopModsContext.GetSingle(workshopModId);
+        var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
 
         try
         {
@@ -43,7 +43,7 @@ public class UpdateOperation(IWorkshopModsContext workshopModsContext, IWorkshop
 
     public async Task<CheckResult> CheckAsync(string workshopModId, CancellationToken cancellationToken = default)
     {
-        var workshopMod = workshopModsContext.GetSingle(workshopModId);
+        var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
 
         try
         {
@@ -53,6 +53,7 @@ public class UpdateOperation(IWorkshopModsContext workshopModsContext, IWorkshop
             var pbos = workshopModsProcessingService.GetModFiles(workshopModPath);
 
             logger.LogInfo($"Found {pbos.Count} PBOs for workshop mod update {workshopModId}");
+            await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.InterventionRequired, "Select PBOs to install");
             return CheckResult.Successful(pbos);
         }
         catch (Exception exception)
@@ -66,7 +67,7 @@ public class UpdateOperation(IWorkshopModsContext workshopModsContext, IWorkshop
 
     public async Task<UpdateResult> UpdateAsync(string workshopModId, List<string> selectedPbos, CancellationToken cancellationToken = default)
     {
-        var workshopMod = workshopModsContext.GetSingle(workshopModId);
+        var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
 
         try
         {

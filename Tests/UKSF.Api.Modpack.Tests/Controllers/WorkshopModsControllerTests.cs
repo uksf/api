@@ -50,7 +50,7 @@ public class WorkshopModsControllerTests
         mapped.SteamId.Should().Be("123");
         mapped.Name.Should().Be("Test Mod");
         mapped.RootMod.Should().BeTrue();
-        mapped.Status.Should().Be(WorkshopModStatus.Installed);
+        mapped.Status.Should().Be(nameof(WorkshopModStatus.Installed));
         mapped.StatusMessage.Should().Be("Installed");
         mapped.ErrorMessage.Should().Be("None");
         mapped.LastUpdatedLocally.Should().Be(updatedDate.ToString("o"));

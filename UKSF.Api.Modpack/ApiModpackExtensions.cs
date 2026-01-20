@@ -76,7 +76,7 @@ public static class ApiModpackExtensions
                            .AddSingleton<IBuildQueueService, BuildQueueService>()
                            .AddSingleton<IVersionService, VersionService>()
                            .AddSingleton<IBuildProcessTracker, BuildProcessTracker>()
-                           .AddSingleton<IWorkshopModsService, WorkshopModsService>()
+                           .AddScoped<IWorkshopModsService, WorkshopModsService>()
                            .AddSingleton<ISteamApiService, SteamApiService>()
                            .AddSingleton<IWorkshopModsProcessingService, WorkshopModsProcessingService>()
                            .AddTransient<IInstallOperation, InstallOperation>()

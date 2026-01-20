@@ -20,10 +20,10 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
     [HttpGet("{workshopModId}")]
     public WorkshopModResponse GetWorkshopMod([FromRoute] string workshopModId)
     {
-        var workshopMod = workshopModsContext.GetSingle(workshopModId);
+        var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
         if (workshopMod == null)
         {
-            throw new NotFoundException("Workshop mod with ID {workshopModId} not found");
+            throw new NotFoundException($"Workshop mod with ID {workshopModId} not found");
         }
 
         return MapToResponse(workshopMod);
@@ -74,7 +74,7 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
             SteamId = mod.SteamId,
             Name = mod.Name,
             RootMod = mod.RootMod,
-            Status = mod.Status,
+            Status = mod.Status.ToString(),
             StatusMessage = mod.StatusMessage,
             ErrorMessage = mod.ErrorMessage,
             LastUpdatedLocally = mod.LastUpdatedLocally.ToString("o"),

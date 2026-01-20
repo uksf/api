@@ -15,7 +15,7 @@ public class UninstallOperation(IWorkshopModsContext workshopModsContext, IWorks
 {
     public async Task<UninstallResult> UninstallAsync(string workshopModId, CancellationToken cancellationToken = default)
     {
-        var workshopMod = workshopModsContext.GetSingle(workshopModId);
+        var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
 
         if (workshopMod.Status is WorkshopModStatus.Uninstalled or WorkshopModStatus.UninstalledPendingRelease)
         {
