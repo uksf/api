@@ -73,13 +73,13 @@ public class WorkshopModsServiceTests
         added.RootMod.Should().BeTrue();
         added.Status.Should().Be(WorkshopModStatus.Installing);
         published.Should().NotBeNull();
-        published!.WorkshopModId.Should().Be("new-id");
+        published!.WorkshopModId.Should().Be("123");
     }
 
     [Fact]
     public async Task UpdateWorkshopMod_WhenMissing_ShouldThrowNotFound()
     {
-        _context.Setup(x => x.GetSingle("missing")).Returns((DomainWorkshopMod)null);
+        _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainWorkshopMod, bool>>())).Returns((DomainWorkshopMod)null);
 
         await Assert.ThrowsAsync<NotFoundException>(() => _subject.UpdateWorkshopMod("missing"));
     }
@@ -87,17 +87,29 @@ public class WorkshopModsServiceTests
     [Fact]
     public async Task UpdateWorkshopMod_WhenAlreadyUpdating_ShouldThrowBadRequest()
     {
-        _context.Setup(x => x.GetSingle("mod-id")).Returns(new DomainWorkshopMod { Name = "Test", Status = WorkshopModStatus.Updating });
+        var workshopMod = new DomainWorkshopMod
+        {
+            Name = "Test",
+            Status = WorkshopModStatus.Updating,
+            SteamId = "steam-id"
+        };
+        _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
 
-        await Assert.ThrowsAsync<BadRequestException>(() => _subject.UpdateWorkshopMod("mod-id"));
+        await Assert.ThrowsAsync<BadRequestException>(() => _subject.UpdateWorkshopMod("steam-id"));
     }
 
     [Fact]
     public async Task UpdateWorkshopMod_WhenInterventionRequired_ShouldThrowBadRequest()
     {
-        _context.Setup(x => x.GetSingle("mod-id")).Returns(new DomainWorkshopMod { Name = "Test", Status = WorkshopModStatus.InterventionRequired });
+        var workshopMod = new DomainWorkshopMod
+        {
+            Name = "Test",
+            Status = WorkshopModStatus.InterventionRequired,
+            SteamId = "steam-id"
+        };
+        _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
 
-        await Assert.ThrowsAsync<BadRequestException>(() => _subject.UpdateWorkshopMod("mod-id"));
+        await Assert.ThrowsAsync<BadRequestException>(() => _subject.UpdateWorkshopMod("steam-id"));
     }
 
     [Fact]
@@ -107,15 +119,15 @@ public class WorkshopModsServiceTests
         {
             Id = "mod-id",
             Name = "Test",
-            SteamId = "123",
+            SteamId = "steam-id",
             Status = WorkshopModStatus.Installed,
             LastUpdatedLocally = DateTime.UtcNow
         };
-        _context.Setup(x => x.GetSingle("mod-id")).Returns(workshopMod);
-        _steamApiService.Setup(x => x.GetWorkshopModInfo("mod-id"))
+        _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        _steamApiService.Setup(x => x.GetWorkshopModInfo("steam-id"))
                         .ReturnsAsync(new WorkshopModInfo { Name = "Test", UpdatedDate = workshopMod.LastUpdatedLocally });
 
-        await Assert.ThrowsAsync<BadRequestException>(() => _subject.UpdateWorkshopMod("mod-id"));
+        await Assert.ThrowsAsync<BadRequestException>(() => _subject.UpdateWorkshopMod("steam-id"));
     }
 
     [Fact]
@@ -125,12 +137,12 @@ public class WorkshopModsServiceTests
         {
             Id = "mod-id",
             Name = "Test",
-            SteamId = "123",
+            SteamId = "steam-id",
             Status = WorkshopModStatus.Installed,
             LastUpdatedLocally = DateTime.UtcNow.AddDays(-1)
         };
-        _context.Setup(x => x.GetSingle("mod-id")).Returns(workshopMod);
-        _steamApiService.Setup(x => x.GetWorkshopModInfo("mod-id")).ReturnsAsync(new WorkshopModInfo { Name = "Test", UpdatedDate = DateTime.UtcNow });
+        _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        _steamApiService.Setup(x => x.GetWorkshopModInfo("steam-id")).ReturnsAsync(new WorkshopModInfo { Name = "Test", UpdatedDate = DateTime.UtcNow });
         _context.Setup(x => x.Replace(workshopMod)).Returns(Task.CompletedTask);
 
         WorkshopModUpdateCommand published = null;
@@ -138,18 +150,18 @@ public class WorkshopModsServiceTests
                         .Callback<WorkshopModUpdateCommand, CancellationToken>((msg, _) => published = msg)
                         .Returns(Task.CompletedTask);
 
-        await _subject.UpdateWorkshopMod("mod-id");
+        await _subject.UpdateWorkshopMod("steam-id");
 
         workshopMod.Status.Should().Be(WorkshopModStatus.Updating);
         workshopMod.StatusMessage.Should().Be("Preparing to update...");
         published.Should().NotBeNull();
-        published!.WorkshopModId.Should().Be("mod-id");
+        published!.WorkshopModId.Should().Be("steam-id");
     }
 
     [Fact]
     public async Task UninstallWorkshopMod_WhenMissing_ShouldThrowNotFound()
     {
-        _context.Setup(x => x.GetSingle("missing")).Returns((DomainWorkshopMod)null);
+        _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainWorkshopMod, bool>>())).Returns((DomainWorkshopMod)null);
 
         await Assert.ThrowsAsync<NotFoundException>(() => _subject.UninstallWorkshopMod("missing"));
     }
@@ -157,9 +169,15 @@ public class WorkshopModsServiceTests
     [Fact]
     public async Task UninstallWorkshopMod_WhenAlreadyUninstalled_ShouldThrowBadRequest()
     {
-        _context.Setup(x => x.GetSingle("mod-id")).Returns(new DomainWorkshopMod { Name = "Test", Status = WorkshopModStatus.Uninstalled });
+        var workshopMod = new DomainWorkshopMod
+        {
+            Name = "Test",
+            Status = WorkshopModStatus.Uninstalled,
+            SteamId = "steam-id"
+        };
+        _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
 
-        await Assert.ThrowsAsync<BadRequestException>(() => _subject.UninstallWorkshopMod("mod-id"));
+        await Assert.ThrowsAsync<BadRequestException>(() => _subject.UninstallWorkshopMod("steam-id"));
     }
 
     [Fact]
@@ -170,9 +188,10 @@ public class WorkshopModsServiceTests
             Id = "mod-id",
             Name = "Test",
             Status = WorkshopModStatus.Installed,
-            Pbos = ["Shared.PBO"]
+            Pbos = ["Shared.PBO"],
+            SteamId = "steam-id"
         };
-        _context.Setup(x => x.GetSingle("mod-id")).Returns(workshopMod);
+        _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _context.Setup(x => x.Get())
         .Returns(
             new List<DomainWorkshopMod>
@@ -182,12 +201,13 @@ public class WorkshopModsServiceTests
                 {
                     Id = "other-mod",
                     Status = WorkshopModStatus.Installed,
-                    Pbos = ["shared.pbo"]
+                    Pbos = ["shared.pbo"],
+                    SteamId = "other-steam-id"
                 }
             }
         );
 
-        await Assert.ThrowsAsync<BadRequestException>(() => _subject.UninstallWorkshopMod("mod-id"));
+        await Assert.ThrowsAsync<BadRequestException>(() => _subject.UninstallWorkshopMod("steam-id"));
     }
 
     [Fact]
@@ -198,9 +218,10 @@ public class WorkshopModsServiceTests
             Id = "mod-id",
             Name = "Test",
             Status = WorkshopModStatus.Installed,
-            Pbos = ["mod.pbo"]
+            Pbos = ["mod.pbo"],
+            SteamId = "steam-id"
         };
-        _context.Setup(x => x.GetSingle("mod-id")).Returns(workshopMod);
+        _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _context.Setup(x => x.Get()).Returns(new List<DomainWorkshopMod> { workshopMod });
         _context.Setup(x => x.Replace(workshopMod)).Returns(Task.CompletedTask);
 
@@ -209,18 +230,18 @@ public class WorkshopModsServiceTests
                         .Callback<WorkshopModUninstallCommand, CancellationToken>((msg, _) => published = msg)
                         .Returns(Task.CompletedTask);
 
-        await _subject.UninstallWorkshopMod("mod-id");
+        await _subject.UninstallWorkshopMod("steam-id");
 
         workshopMod.Status.Should().Be(WorkshopModStatus.Uninstalling);
         workshopMod.StatusMessage.Should().Be("Preparing to uninstall...");
         published.Should().NotBeNull();
-        published!.WorkshopModId.Should().Be("mod-id");
+        published!.WorkshopModId.Should().Be("steam-id");
     }
 
     [Fact]
     public async Task ResolveWorkshopModManualIntervention_WhenMissing_ShouldThrowNotFound()
     {
-        _context.Setup(x => x.GetSingle("missing")).Returns((DomainWorkshopMod)null);
+        _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainWorkshopMod, bool>>())).Returns((DomainWorkshopMod)null);
 
         await Assert.ThrowsAsync<NotFoundException>(() => _subject.ResolveWorkshopModManualIntervention("missing", ["a"]));
     }
@@ -228,22 +249,34 @@ public class WorkshopModsServiceTests
     [Fact]
     public async Task ResolveWorkshopModManualIntervention_WhenNotRequired_ShouldThrowBadRequest()
     {
-        _context.Setup(x => x.GetSingle("mod-id")).Returns(new DomainWorkshopMod { Name = "Test", Status = WorkshopModStatus.Installed });
+        var workshopMod = new DomainWorkshopMod
+        {
+            Name = "Test",
+            Status = WorkshopModStatus.Installed,
+            SteamId = "steam-id"
+        };
+        _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
 
-        await Assert.ThrowsAsync<BadRequestException>(() => _subject.ResolveWorkshopModManualIntervention("mod-id", ["a"]));
+        await Assert.ThrowsAsync<BadRequestException>(() => _subject.ResolveWorkshopModManualIntervention("steam-id", ["a"]));
     }
 
     [Fact]
     public async Task ResolveWorkshopModManualIntervention_WhenSelectedNull_ShouldPublishEmptyList()
     {
-        _context.Setup(x => x.GetSingle("mod-id")).Returns(new DomainWorkshopMod { Name = "Test", Status = WorkshopModStatus.InterventionRequired });
+        var workshopMod = new DomainWorkshopMod
+        {
+            Name = "Test",
+            Status = WorkshopModStatus.InterventionRequired,
+            SteamId = "steam-id"
+        };
+        _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
 
         WorkshopModInterventionResolved published = null;
         _publishEndpoint.Setup(x => x.Publish(It.IsAny<WorkshopModInterventionResolved>(), It.IsAny<CancellationToken>()))
                         .Callback<WorkshopModInterventionResolved, CancellationToken>((msg, _) => published = msg)
                         .Returns(Task.CompletedTask);
 
-        await _subject.ResolveWorkshopModManualIntervention("mod-id", null);
+        await _subject.ResolveWorkshopModManualIntervention("steam-id", null);
 
         published.Should().NotBeNull();
         published!.SelectedPbos.Should().BeEmpty();
@@ -252,7 +285,7 @@ public class WorkshopModsServiceTests
     [Fact]
     public async Task DeleteWorkshopMod_WhenMissing_ShouldThrowNotFound()
     {
-        _context.Setup(x => x.GetSingle("missing")).Returns((DomainWorkshopMod)null);
+        _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainWorkshopMod, bool>>())).Returns((DomainWorkshopMod)null);
 
         await Assert.ThrowsAsync<NotFoundException>(() => _subject.DeleteWorkshopMod("missing"));
     }
@@ -260,9 +293,15 @@ public class WorkshopModsServiceTests
     [Fact]
     public async Task DeleteWorkshopMod_WhenNotUninstalled_ShouldThrowBadRequest()
     {
-        _context.Setup(x => x.GetSingle("mod-id")).Returns(new DomainWorkshopMod { Name = "Test", Status = WorkshopModStatus.Installed });
+        var workshopMod = new DomainWorkshopMod
+        {
+            Name = "Test",
+            Status = WorkshopModStatus.Installed,
+            SteamId = "steam-id"
+        };
+        _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
 
-        await Assert.ThrowsAsync<BadRequestException>(() => _subject.DeleteWorkshopMod("mod-id"));
+        await Assert.ThrowsAsync<BadRequestException>(() => _subject.DeleteWorkshopMod("steam-id"));
     }
 
     [Fact]
@@ -272,12 +311,13 @@ public class WorkshopModsServiceTests
         {
             Id = "mod-id",
             Name = "Test",
-            Status = WorkshopModStatus.Uninstalled
+            Status = WorkshopModStatus.Uninstalled,
+            SteamId = "steam-id"
         };
-        _context.Setup(x => x.GetSingle("mod-id")).Returns(workshopMod);
+        _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _context.Setup(x => x.Delete(workshopMod)).Returns(Task.CompletedTask);
 
-        await _subject.DeleteWorkshopMod("mod-id");
+        await _subject.DeleteWorkshopMod("steam-id");
 
         _context.Verify(x => x.Delete(workshopMod), Times.Once);
     }

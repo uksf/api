@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
@@ -9,6 +10,7 @@ using UKSF.Api.Modpack.Services;
 namespace UKSF.Api.Modpack.Controllers;
 
 [Route("workshop")]
+[Permissions(Permissions.Admin)]
 public class WorkshopModsController(IWorkshopModsService workshopModsService, IWorkshopModsContext workshopModsContext) : ControllerBase
 {
     [HttpGet]

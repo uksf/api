@@ -378,7 +378,8 @@ public class WorkshopModUpdateCheckConsumerTests
         operation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(CheckResult.Successful(["b.pbo", "a.pbo"]));
 
         var contextMock = new Mock<IWorkshopModsContext>();
-        contextMock.Setup(x => x.GetSingle("mod1")).Returns(new DomainWorkshopMod { Pbos = ["a.pbo", "b.pbo"] });
+        var workshopMod = new DomainWorkshopMod { SteamId = "mod1", Pbos = ["a.pbo", "b.pbo"] };
+        contextMock.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         Mock<IUksfLogger> logger = new();
         var consumer = new WorkshopModUpdateCheckConsumer(operation.Object, contextMock.Object, logger.Object);
 
@@ -402,7 +403,8 @@ public class WorkshopModUpdateCheckConsumerTests
         operation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(CheckResult.Successful(["c.pbo"]));
 
         var contextMock = new Mock<IWorkshopModsContext>();
-        contextMock.Setup(x => x.GetSingle("mod1")).Returns(new DomainWorkshopMod { Pbos = ["a.pbo", "b.pbo"] });
+        var workshopMod = new DomainWorkshopMod { SteamId = "mod1", Pbos = ["a.pbo", "b.pbo"] };
+        contextMock.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         Mock<IUksfLogger> logger = new();
         var consumer = new WorkshopModUpdateCheckConsumer(operation.Object, contextMock.Object, logger.Object);
 
@@ -667,7 +669,7 @@ public class WorkshopModCleanupConsumerTests
     {
         var processingService = new Mock<IWorkshopModsProcessingService>();
         var context = new Mock<IWorkshopModsContext>();
-        context.Setup(x => x.GetSingle("mod1")).Returns((DomainWorkshopMod)null);
+        context.Setup(x => x.GetSingle(It.IsAny<Func<DomainWorkshopMod, bool>>())).Returns((DomainWorkshopMod)null);
         Mock<IUksfLogger> logger = new();
         var consumer = new WorkshopModCleanupConsumer(processingService.Object, context.Object, logger.Object);
 
@@ -687,10 +689,11 @@ public class WorkshopModCleanupConsumerTests
     public async Task Consume_WhenCleanupSucceeds_ShouldQueueBuildAndPublishComplete()
     {
         var processingService = new Mock<IWorkshopModsProcessingService>();
-        processingService.Setup(x => x.GetWorkshopModPath("steam-1")).Returns("path");
+        processingService.Setup(x => x.GetWorkshopModPath("mod1")).Returns("path");
         processingService.Setup(x => x.QueueDevBuild()).Returns(Task.CompletedTask);
         var context = new Mock<IWorkshopModsContext>();
-        context.Setup(x => x.GetSingle("mod1")).Returns(new DomainWorkshopMod { SteamId = "steam-1" });
+        var workshopMod = new DomainWorkshopMod { SteamId = "mod1" };
+        context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         Mock<IUksfLogger> logger = new();
         var consumer = new WorkshopModCleanupConsumer(processingService.Object, context.Object, logger.Object);
 
@@ -711,10 +714,11 @@ public class WorkshopModCleanupConsumerTests
     public async Task Consume_WhenCleanupThrows_ShouldStillPublishComplete()
     {
         var processingService = new Mock<IWorkshopModsProcessingService>();
-        processingService.Setup(x => x.GetWorkshopModPath("steam-1")).Returns("path");
+        processingService.Setup(x => x.GetWorkshopModPath("mod1")).Returns("path");
         processingService.Setup(x => x.CleanupWorkshopModFiles("path")).Throws(new IOException("fail"));
         var context = new Mock<IWorkshopModsContext>();
-        context.Setup(x => x.GetSingle("mod1")).Returns(new DomainWorkshopMod { SteamId = "steam-1" });
+        var workshopMod = new DomainWorkshopMod { SteamId = "mod1" };
+        context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         Mock<IUksfLogger> logger = new();
         var consumer = new WorkshopModCleanupConsumer(processingService.Object, context.Object, logger.Object);
 

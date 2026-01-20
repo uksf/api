@@ -31,10 +31,10 @@ public class UpdateOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Status = WorkshopModStatus.Installed
         };
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
 
         // Act
         var result = await _updateOperation.DownloadAsync(WorkshopModId);
@@ -53,10 +53,10 @@ public class UpdateOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Status = WorkshopModStatus.Installed
         };
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _mockProcessingService.Setup(x => x.DownloadWithRetries(WorkshopModId, It.IsAny<int>(), It.IsAny<CancellationToken>()))
                               .ThrowsAsync(new Exception("Download failed"));
 
@@ -77,10 +77,10 @@ public class UpdateOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Status = WorkshopModStatus.Installed
         };
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _mockProcessingService.Setup(x => x.DownloadWithRetries(WorkshopModId, It.IsAny<int>(), It.IsAny<CancellationToken>()))
                               .ThrowsAsync(new OperationCanceledException());
         var cancellationTokenSource = new CancellationTokenSource();
@@ -99,13 +99,13 @@ public class UpdateOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Pbos = ["old.pbo"]
         };
         var newPbos = new List<string> { "new1.pbo", "new2.pbo" };
 
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
-        _mockProcessingService.Setup(x => x.GetWorkshopModPath("123456")).Returns("/path/to/mod");
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        _mockProcessingService.Setup(x => x.GetWorkshopModPath(WorkshopModId)).Returns("/path/to/mod");
         _mockProcessingService.Setup(x => x.GetModFiles("/path/to/mod")).Returns(newPbos);
 
         // Act
@@ -124,11 +124,11 @@ public class UpdateOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Pbos = ["old.pbo"]
         };
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
-        _mockProcessingService.Setup(x => x.GetWorkshopModPath("123456")).Returns("/path/to/mod");
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        _mockProcessingService.Setup(x => x.GetWorkshopModPath(WorkshopModId)).Returns("/path/to/mod");
         _mockProcessingService.Setup(x => x.GetModFiles("/path/to/mod")).Throws(new InvalidOperationException("No PBO files"));
 
         // Act
@@ -150,12 +150,12 @@ public class UpdateOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Pbos = oldPbos,
             Status = WorkshopModStatus.Installed
         };
 
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
 
         // Act
@@ -177,11 +177,11 @@ public class UpdateOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Pbos = ["old.pbo"],
             Status = WorkshopModStatus.Installed
         };
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _mockProcessingService.Setup(x => x.CopyPbosToDependencies(workshopMod, It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                               .ThrowsAsync(new IOException("Copy failed"));
 
@@ -202,11 +202,11 @@ public class UpdateOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Pbos = ["old.pbo"],
             Status = WorkshopModStatus.Installed
         };
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _mockProcessingService.Setup(x => x.CopyPbosToDependencies(workshopMod, It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                               .ThrowsAsync(new OperationCanceledException());
         var cancellationTokenSource = new CancellationTokenSource();
@@ -226,12 +226,12 @@ public class UpdateOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Pbos = [],
             Status = WorkshopModStatus.Installing
         };
 
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
 
         // Act

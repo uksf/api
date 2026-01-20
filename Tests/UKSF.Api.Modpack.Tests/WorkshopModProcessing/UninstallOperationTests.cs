@@ -32,12 +32,12 @@ public class UninstallOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Pbos = pbos,
             Status = WorkshopModStatus.Installed
         };
 
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
 
         // Act
@@ -62,12 +62,12 @@ public class UninstallOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Status = WorkshopModStatus.Uninstalled,
             Pbos = []
         };
 
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
 
         // Act
         var result = await _uninstallOperation.UninstallAsync(WorkshopModId);
@@ -87,12 +87,12 @@ public class UninstallOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Pbos = [],
             Status = WorkshopModStatus.Installed // Changed from Installing to Installed
         };
 
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
 
         // Act
@@ -113,12 +113,12 @@ public class UninstallOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Pbos = pbos,
             Status = WorkshopModStatus.Installed
         };
 
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _mockProcessingService.Setup(x => x.DeletePbosFromDependencies(pbos)).Throws(new IOException("Delete failed"));
 
         // Act
@@ -138,14 +138,14 @@ public class UninstallOperationTests
         var workshopMod = new DomainWorkshopMod
         {
             Id = WorkshopModId,
-            SteamId = "123456",
+            SteamId = WorkshopModId,
             Pbos = ["mod1.pbo"],
             Status = WorkshopModStatus.Installed
         };
         var cancellationTokenSource = new CancellationTokenSource();
         cancellationTokenSource.Cancel();
 
-        _mockContext.Setup(x => x.GetSingle(WorkshopModId)).Returns(workshopMod);
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         _mockProcessingService.Setup(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>())).Throws(new OperationCanceledException());
 
         // Act & Assert

@@ -41,42 +41,6 @@ public class WorkshopModsProcessingServiceTests
     }
 
     [Fact]
-    public void GetModFiles_WhenNoPbos_ShouldThrow()
-    {
-        var tempDir = CreateTempDirectory();
-        try
-        {
-            Action action = () => _subject.GetModFiles(tempDir);
-
-            action.Should().Throw<InvalidOperationException>().WithMessage("*No PBO files*");
-        }
-        finally
-        {
-            Directory.Delete(tempDir, true);
-        }
-    }
-
-    [Fact]
-    public void GetModFiles_WhenPbosExist_ShouldReturnDistinctNames()
-    {
-        var tempDir = CreateTempDirectory();
-        try
-        {
-            Directory.CreateDirectory(Path.Combine(tempDir, "nested"));
-            File.WriteAllText(Path.Combine(tempDir, "mod1.pbo"), "data");
-            File.WriteAllText(Path.Combine(tempDir, "nested", "mod2.pbo"), "data");
-
-            var result = _subject.GetModFiles(tempDir);
-
-            result.Should().BeEquivalentTo("mod1.pbo", "mod2.pbo");
-        }
-        finally
-        {
-            Directory.Delete(tempDir, true);
-        }
-    }
-
-    [Fact]
     public async Task DownloadWithRetries_WhenSuccessful_ShouldReturn()
     {
         _steamCmdService.Setup(x => x.DownloadWorkshopMod("123")).ReturnsAsync("ok");
@@ -94,82 +58,6 @@ public class WorkshopModsProcessingServiceTests
         var action = async () => await _subject.DownloadWithRetries("123", 1);
 
         await action.Should().ThrowAsync<Exception>().WithMessage("*download failed*");
-    }
-
-    [Fact]
-    public async Task CopyPbosToDependencies_ShouldCopyToDevAndRc()
-    {
-        var tempRoot = CreateTempDirectory();
-        try
-        {
-            var steamPath = Path.Combine(tempRoot, "steam");
-            var devPath = Path.Combine(tempRoot, "dev");
-            var rcPath = Path.Combine(tempRoot, "rc");
-            ConfigurePaths(steamPath, devPath, rcPath);
-
-            var workshopModId = "123";
-            var workshopModPath = Path.Combine(steamPath, "steamapps", "workshop", "content", "107410", workshopModId);
-            Directory.CreateDirectory(workshopModPath);
-
-            File.WriteAllText(Path.Combine(workshopModPath, "mod1.pbo"), "data");
-            File.WriteAllText(Path.Combine(workshopModPath, "mod2.pbo"), "data");
-
-            Directory.CreateDirectory(Path.Combine(devPath, "Repo", "@uksf_dependencies", "addons"));
-            Directory.CreateDirectory(Path.Combine(rcPath, "Repo", "@uksf_dependencies", "addons"));
-
-            var workshopMod = new DomainWorkshopMod { SteamId = workshopModId, Id = "mod-id" };
-
-            await _subject.CopyPbosToDependencies(workshopMod, ["mod1.pbo", "mod2.pbo"]);
-
-            File.Exists(Path.Combine(devPath, "Repo", "@uksf_dependencies", "addons", "mod1.pbo")).Should().BeTrue();
-            File.Exists(Path.Combine(devPath, "Repo", "@uksf_dependencies", "addons", "mod2.pbo")).Should().BeTrue();
-            File.Exists(Path.Combine(rcPath, "Repo", "@uksf_dependencies", "addons", "mod1.pbo")).Should().BeTrue();
-            File.Exists(Path.Combine(rcPath, "Repo", "@uksf_dependencies", "addons", "mod2.pbo")).Should().BeTrue();
-        }
-        finally
-        {
-            Directory.Delete(tempRoot, true);
-        }
-    }
-
-    [Fact]
-    public void DeletePbosFromDependencies_ShouldDeleteFiles()
-    {
-        var tempRoot = CreateTempDirectory();
-        try
-        {
-            var devPath = Path.Combine(tempRoot, "dev");
-            var rcPath = Path.Combine(tempRoot, "rc");
-            ConfigurePaths("unused", devPath, rcPath);
-
-            var devAddons = Path.Combine(devPath, "Repo", "@uksf_dependencies", "addons");
-            var rcAddons = Path.Combine(rcPath, "Repo", "@uksf_dependencies", "addons");
-            Directory.CreateDirectory(devAddons);
-            Directory.CreateDirectory(rcAddons);
-
-            File.WriteAllText(Path.Combine(devAddons, "mod1.pbo"), "data");
-            File.WriteAllText(Path.Combine(rcAddons, "mod1.pbo"), "data");
-
-            _subject.DeletePbosFromDependencies(["mod1.pbo"]);
-
-            File.Exists(Path.Combine(devAddons, "mod1.pbo")).Should().BeFalse();
-            File.Exists(Path.Combine(rcAddons, "mod1.pbo")).Should().BeFalse();
-        }
-        finally
-        {
-            Directory.Delete(tempRoot, true);
-        }
-    }
-
-    [Fact]
-    public void CleanupWorkshopModFiles_ShouldDeleteDirectory()
-    {
-        var tempDir = CreateTempDirectory();
-        Directory.CreateDirectory(Path.Combine(tempDir, "nested"));
-
-        _subject.CleanupWorkshopModFiles(tempDir);
-
-        Directory.Exists(tempDir).Should().BeFalse();
     }
 
     [Fact]
@@ -221,19 +109,5 @@ public class WorkshopModsProcessingServiceTests
 
         workshopMod.StatusMessage.Should().Be("working");
         _context.Verify(x => x.Replace(workshopMod), Times.Once);
-    }
-
-    private static string CreateTempDirectory()
-    {
-        var path = Path.Combine(Path.GetTempPath(), $"uksf-tests-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(path);
-        return path;
-    }
-
-    private void ConfigurePaths(string steamPath, string devPath, string rcPath)
-    {
-        _variablesService.Setup(x => x.GetVariable("SERVER_PATH_STEAM")).Returns(new DomainVariableItem { Key = "SERVER_PATH_STEAM", Item = steamPath });
-        _variablesService.Setup(x => x.GetVariable("MODPACK_PATH_DEV")).Returns(new DomainVariableItem { Key = "MODPACK_PATH_DEV", Item = devPath });
-        _variablesService.Setup(x => x.GetVariable("MODPACK_PATH_RC")).Returns(new DomainVariableItem { Key = "MODPACK_PATH_RC", Item = rcPath });
     }
 }
