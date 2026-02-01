@@ -24,6 +24,7 @@ public class WorkshopModsProcessingService(
     IVariablesService variablesService,
     ISteamCmdService steamCmdService,
     IModpackService modpackService,
+    IFileSystemService fileSystemService,
     IUksfLogger logger
 ) : IWorkshopModsProcessingService
 {
@@ -31,22 +32,67 @@ public class WorkshopModsProcessingService(
     {
         var retryDelay = TimeSpan.FromSeconds(5);
 
+        var firstRoundError = await TryDownloadWithRetries(workshopModId, maxRetries, retryDelay, cancellationToken);
+        if (firstRoundError == null)
+        {
+            return;
+        }
+
+        logger.LogWarning($"All {maxRetries} download attempts failed for {workshopModId}. Clearing workshop cache and retrying");
+        ClearWorkshopCache();
+
+        var secondRoundError = await TryDownloadWithRetries(workshopModId, maxRetries, retryDelay, cancellationToken);
+        if (secondRoundError == null)
+        {
+            return;
+        }
+
+        throw new Exception($"Unable to download after clearing cache: {secondRoundError}");
+    }
+
+    private async Task<string> TryDownloadWithRetries(string workshopModId, int maxRetries, TimeSpan retryDelay, CancellationToken cancellationToken)
+    {
+        string lastError = null;
+
         for (var attempt = 1; attempt <= maxRetries; attempt++)
         {
             try
             {
                 await steamCmdService.DownloadWorkshopMod(workshopModId);
-                logger.LogInfo($"Downloaded workshop mod {workshopModId} on attempt {attempt}");
-                return;
+                return null;
             }
-            catch (Exception exception) when (attempt < maxRetries)
+            catch (Exception exception)
             {
-                logger.LogWarning($"Download attempt {attempt}/{maxRetries} failed for {workshopModId}: {exception.Message}. Retrying...");
-                await Task.Delay(retryDelay, cancellationToken);
+                lastError = exception.Message;
+                if (attempt < maxRetries)
+                {
+                    logger.LogWarning($"Download attempt {attempt}/{maxRetries} failed for {workshopModId}: {exception.Message}");
+                    await Task.Delay(retryDelay, cancellationToken);
+                }
             }
         }
 
-        throw new Exception($"Failed to download workshop mod {workshopModId} after {maxRetries} attempts");
+        return lastError;
+    }
+
+    private void ClearWorkshopCache()
+    {
+        var steamPath = variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
+        var workshopPath = Path.Combine(steamPath, "steamapps", "workshop");
+
+        var manifestFile = Path.Combine(workshopPath, "appworkshop_107410.acf");
+        if (fileSystemService.FileExists(manifestFile))
+        {
+            logger.LogWarning($"Deleting Steam workshop manifest: {manifestFile}");
+            fileSystemService.DeleteFile(manifestFile);
+        }
+
+        var downloadsPath = Path.Combine(workshopPath, "downloads");
+        if (fileSystemService.DirectoryExists(downloadsPath))
+        {
+            logger.LogWarning($"Clearing Steam workshop downloads: {downloadsPath}");
+            fileSystemService.DeleteDirectory(downloadsPath, true);
+        }
     }
 
     public string GetWorkshopModPath(string workshopModId)
@@ -106,8 +152,18 @@ public class WorkshopModsProcessingService(
 
         foreach (var pbo in pbos)
         {
-            File.Delete(Path.Combine(devPath, pbo));
-            File.Delete(Path.Combine(rcPath, pbo));
+            var devFile = Path.Combine(devPath, pbo);
+            var rcFile = Path.Combine(rcPath, pbo);
+
+            if (fileSystemService.FileExists(devFile))
+            {
+                fileSystemService.DeleteFile(devFile);
+            }
+
+            if (fileSystemService.FileExists(rcFile))
+            {
+                fileSystemService.DeleteFile(rcFile);
+            }
         }
 
         logger.LogInfo($"Deleted {pbos.Count} PBOs from dependencies");
@@ -115,9 +171,9 @@ public class WorkshopModsProcessingService(
 
     public void CleanupWorkshopModFiles(string workshopModPath)
     {
-        if (Directory.Exists(workshopModPath))
+        if (fileSystemService.DirectoryExists(workshopModPath))
         {
-            Directory.Delete(workshopModPath, true);
+            fileSystemService.DeleteDirectory(workshopModPath, true);
         }
     }
 

@@ -104,7 +104,8 @@ public static class ApiSharedExtensions
                        .AddSingleton<IAccountService, AccountService>()
                        .AddSingleton<IAssignmentService, AssignmentService>()
                        .AddSingleton<IServiceRecordService, ServiceRecordService>()
-                       .AddSingleton<IGitService, GitService>();
+                       .AddSingleton<IGitService, GitService>()
+                       .AddSingleton<IFileSystemService, FileSystemService>();
     }
 
     private static IServiceCollection AddCommands(this IServiceCollection services)

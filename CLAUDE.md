@@ -83,6 +83,7 @@ SignalR hubs for live updates:
 - xUnit with FluentAssertions and Moq
 - Mongo2Go for in-memory MongoDB during tests
 - `UKSF.Api.Tests.Common` provides shared test utilities
+- If builds or tests fail due to file locks from a running API process, stop the API process
 
 ## General Instructions
 
@@ -90,6 +91,7 @@ SignalR hubs for live updates:
 - Always use latest language and framework standards
 - Try to match implementations in the codebase where possible. If that implementation is inferior to another, use the better one. My code is not the best and has been a playground for experimentation. Refactors are welcome as long as they are validated with complete tests.
 - Aim to make code simple and clean
+- Avoid excessive comments. Code should be self-explanatory through clear naming and simple structure. Do not add comments that merely restate what can be inferred from the code itself.
 - Do not create summary documents unless explicitly asked to do so
 - When investigating bugs and issues, you should always write a failing test first to replicate the behaviour. The expectation is that these tests should then pass when the implementation is fixed. You must always triple check the test fails for the correct reason, to be highly certain it is not failing for an unrelated reason. When taking this approach, do not continue if the tests are unable to run or you cannot get test output to verify the test does fail in practice.
 - Always write tests for the whole code files that are being edited, but don't duplicate coverage. Do this before making implementation changes and verify the tests pass before editing implementation code files

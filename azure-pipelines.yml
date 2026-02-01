@@ -1,0 +1,262 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool: Avengers
+
+variables:
+  buildConfiguration: 'Release'
+  artifactName: 'UKSF.Api'
+
+stages:
+  - stage: Build
+    displayName: Build
+    jobs:
+      - job: Build
+        displayName: Build & Test
+        steps:
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore'
+            inputs:
+              command: 'restore'
+              projects: '**/*.sln'
+              feedsToUse: 'config'
+              nugetConfigPath: 'NuGet.config'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Build'
+            inputs:
+              command: 'build'
+              projects: '**/*.sln'
+              arguments: '-c $(buildConfiguration) --no-restore'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Test'
+            inputs:
+              command: 'test'
+              projects: '**/*.Tests*.csproj'
+              arguments: '-c $(buildConfiguration) --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish API'
+            inputs:
+              command: publish
+              publishWebProjects: false
+              projects: '**/UKSF.Api.csproj'
+              arguments: '-c $(buildConfiguration) --output "$(Build.BinariesDirectory)/UKSF.Api"'
+              zipAfterPublish: false
+              modifyOutputPath: false
+
+          - task: ArchiveFiles@2
+            displayName: 'Zip API Artifact'
+            inputs:
+              rootFolderOrFile: '$(Build.BinariesDirectory)/UKSF.Api'
+              includeRootFolder: false
+              archiveType: 'zip'
+              archiveFile: '$(Build.ArtifactStagingDirectory)/UKSF.Api.zip'
+              replaceExistingArchive: true
+
+          - publish: '$(Build.ArtifactStagingDirectory)/UKSF.Api.zip'
+            displayName: 'Publish Artifact'
+            artifact: $(artifactName)
+
+  - stage: DeployDev
+    displayName: Deploy to Dev
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    variables:
+      - group: 'UKSF API - Dev'
+      - name: serviceName
+        value: 'UKSF.Api.Dev'
+      - name: deployPath
+        value: 'C:\Server\UKSF.Api.Dev'
+    jobs:
+      - deployment: DeployDev
+        displayName: Deploy to Dev
+        environment: 'UKSF-Dev'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: $(artifactName)
+
+                - task: PowerShell@2
+                  displayName: 'Stop Service'
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      $serviceName = "$(serviceName)"
+                      $timeout = 60
+
+                      Write-Host "Stopping service: $serviceName"
+                      $stopResult = & nssm.exe stop $serviceName 2>&1
+                      Write-Host "Stop command result: $stopResult"
+
+                      # Wait for service to stop with timeout
+                      $elapsed = 0
+                      while ($elapsed -lt $timeout) {
+                          $status = & nssm.exe status $serviceName 2>&1
+                          Write-Host "Service status: $status"
+
+                          if ($status -match "SERVICE_STOPPED" -or $status -match "does not exist") {
+                              Write-Host "Service stopped successfully"
+                              break
+                          }
+
+                          Start-Sleep -Seconds 2
+                          $elapsed += 2
+                      }
+
+                      # Force kill if still running
+                      if ($elapsed -ge $timeout) {
+                          Write-Host "Service did not stop gracefully, forcing termination..."
+                          $processName = "UKSF.Api"
+                          $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
+                          if ($process) {
+                              Write-Host "Killing process: $processName (PID: $($process.Id))"
+                              Stop-Process -Id $process.Id -Force
+                              Start-Sleep -Seconds 5
+                          }
+                      }
+
+                      # Final verification
+                      Start-Sleep -Seconds 2
+                      Write-Host "Service stop complete"
+
+                - task: ExtractFiles@1
+                  displayName: 'Extract Files'
+                  inputs:
+                    archiveFilePatterns: '$(Pipeline.Workspace)/$(artifactName)/UKSF.Api.zip'
+                    destinationFolder: '$(deployPath)'
+                    cleanDestinationFolder: true
+                    overwriteExistingFiles: true
+
+                - task: FileTransform@1
+                  displayName: 'File Transform'
+                  inputs:
+                    folderPath: '$(deployPath)'
+                    fileType: 'json'
+                    targetFiles: 'appsettings.json'
+
+                - task: PowerShell@2
+                  displayName: 'Start Service'
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      $serviceName = "$(serviceName)"
+
+                      Write-Host "Starting service: $serviceName"
+                      & nssm.exe start $serviceName
+
+                      Start-Sleep -Seconds 5
+                      $status = & nssm.exe status $serviceName 2>&1
+                      Write-Host "Service status: $status"
+
+                      if ($status -notmatch "SERVICE_RUNNING") {
+                          Write-Error "Service failed to start"
+                          exit 1
+                      }
+
+                      Write-Host "Service started successfully"
+
+  - stage: DeployProd
+    displayName: Deploy to Production
+    dependsOn: DeployDev
+    condition: succeeded()
+    variables:
+      - group: 'UKSF API - Production'
+      - name: serviceName
+        value: 'UKSF.Api'
+      - name: deployPath
+        value: 'C:\Server\UKSF.Api'
+    jobs:
+      - deployment: DeployProd
+        displayName: Deploy to Production
+        environment: 'UKSF-Production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: $(artifactName)
+
+                - task: PowerShell@2
+                  displayName: 'Stop Service'
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      $serviceName = "$(serviceName)"
+                      $timeout = 60
+
+                      Write-Host "Stopping service: $serviceName"
+                      $stopResult = & nssm.exe stop $serviceName 2>&1
+                      Write-Host "Stop command result: $stopResult"
+
+                      # Wait for service to stop with timeout
+                      $elapsed = 0
+                      while ($elapsed -lt $timeout) {
+                          $status = & nssm.exe status $serviceName 2>&1
+                          Write-Host "Service status: $status"
+
+                          if ($status -match "SERVICE_STOPPED" -or $status -match "does not exist") {
+                              Write-Host "Service stopped successfully"
+                              break
+                          }
+
+                          Start-Sleep -Seconds 2
+                          $elapsed += 2
+                      }
+
+                      # Force kill if still running
+                      if ($elapsed -ge $timeout) {
+                          Write-Host "Service did not stop gracefully, forcing termination..."
+                          $processName = "UKSF.Api"
+                          $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
+                          if ($process) {
+                              Write-Host "Killing process: $processName (PID: $($process.Id))"
+                              Stop-Process -Id $process.Id -Force
+                              Start-Sleep -Seconds 5
+                          }
+                      }
+
+                      # Final verification
+                      Start-Sleep -Seconds 2
+                      Write-Host "Service stop complete"
+
+                - task: ExtractFiles@1
+                  displayName: 'Extract Files'
+                  inputs:
+                    archiveFilePatterns: '$(Pipeline.Workspace)/$(artifactName)/UKSF.Api.zip'
+                    destinationFolder: '$(deployPath)'
+                    cleanDestinationFolder: true
+                    overwriteExistingFiles: true
+
+                - task: FileTransform@1
+                  displayName: 'File Transform'
+                  inputs:
+                    folderPath: '$(deployPath)'
+                    fileType: 'json'
+                    targetFiles: 'appsettings.json'
+
+                - task: PowerShell@2
+                  displayName: 'Start Service'
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      $serviceName = "$(serviceName)"
+
+                      Write-Host "Starting service: $serviceName"
+                      & nssm.exe start $serviceName
+
+                      Start-Sleep -Seconds 5
+                      $status = & nssm.exe status $serviceName 2>&1
+                      Write-Host "Service status: $status"
+
+                      if ($status -notmatch "SERVICE_RUNNING") {
+                          Write-Error "Service failed to start"
+                          exit 1
+                      }
+
+                      Write-Host "Service started successfully"
