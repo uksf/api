@@ -1,4 +1,5 @@
 trigger:
+  batch: true
   branches:
     include:
       - main
@@ -7,294 +8,232 @@ pool: Avengers
 
 variables:
   buildConfiguration: 'Release'
-  artifactName: 'UKSF.Api'
 
-stages:
-  - stage: Build
-    displayName: Build
-    jobs:
-      - job: Build
-        displayName: Build & Test
-        steps:
-          - task: DotNetCoreCLI@2
-            displayName: 'Restore'
-            inputs:
-              command: 'restore'
-              projects: '**/*.sln'
-              feedsToUse: 'config'
-              nugetConfigPath: 'NuGet.config'
+jobs:
+  - job: BuildAndDeploy
+    displayName: Build and Deploy
+    steps:
+      - task: DotNetCoreCLI@2
+        displayName: 'Restore'
+        inputs:
+          command: 'restore'
+          projects: '**/*.sln'
+          feedsToUse: 'config'
+          nugetConfigPath: 'NuGet.config'
 
-          - task: DotNetCoreCLI@2
-            displayName: 'Build'
-            inputs:
-              command: 'build'
-              projects: '**/*.sln'
-              arguments: '-c $(buildConfiguration) --no-restore'
+      - task: DotNetCoreCLI@2
+        displayName: 'Build'
+        inputs:
+          command: 'build'
+          projects: '**/*.sln'
+          arguments: '-c $(buildConfiguration) --no-restore'
 
-          - task: DotNetCoreCLI@2
-            displayName: 'Test'
-            inputs:
-              command: 'test'
-              projects: '**/*.Tests*.csproj'
-              arguments: '-c $(buildConfiguration) --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
+      - task: DotNetCoreCLI@2
+        displayName: 'Test'
+        inputs:
+          command: 'test'
+          projects: '**/*.Tests*.csproj'
+          arguments: '-c $(buildConfiguration) --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
 
-          - task: DotNetCoreCLI@2
-            displayName: 'Publish API'
-            inputs:
-              command: publish
-              publishWebProjects: false
-              projects: '**/UKSF.Api.csproj'
-              arguments: '-c $(buildConfiguration) --output "$(Build.BinariesDirectory)/UKSF.Api"'
-              zipAfterPublish: false
-              modifyOutputPath: false
+      - task: DotNetCoreCLI@2
+        displayName: 'Publish API'
+        inputs:
+          command: publish
+          publishWebProjects: false
+          projects: '**/UKSF.Api.csproj'
+          arguments: '-c $(buildConfiguration) --output "$(Build.BinariesDirectory)/UKSF.Api"'
+          zipAfterPublish: false
+          modifyOutputPath: false
 
-          - task: ArchiveFiles@2
-            displayName: 'Zip API Artifact'
-            inputs:
-              rootFolderOrFile: '$(Build.BinariesDirectory)/UKSF.Api'
-              includeRootFolder: false
-              archiveType: 'zip'
-              archiveFile: '$(Build.ArtifactStagingDirectory)/UKSF.Api.zip'
-              replaceExistingArchive: true
+      # Deploy to Dev
+      - task: PowerShell@2
+        displayName: 'Dev - Stop Service'
+        inputs:
+          targetType: 'inline'
+          script: |
+            $serviceName = "UKSF.Api.Dev"
+            $timeout = 60
 
-          - publish: '$(Build.ArtifactStagingDirectory)/UKSF.Api.zip'
-            displayName: 'Publish Artifact'
-            artifact: $(artifactName)
+            Write-Host "Stopping service: $serviceName"
+            $stopResult = & nssm.exe stop $serviceName 2>&1
+            Write-Host "Stop command result: $stopResult"
 
-  - stage: DeployDev
-    displayName: Deploy to Dev
-    dependsOn: Build
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-    variables:
-      - group: 'UKSF API - Dev'
-      - name: serviceName
-        value: 'UKSF.Api.Dev'
-      - name: deployPath
-        value: 'C:\Server\UKSF.Api.Dev'
-    jobs:
-      - deployment: DeployDev
-        displayName: Deploy to Dev
-        environment: 'UKSF-Dev'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - download: current
-                  artifact: $(artifactName)
+            $elapsed = 0
+            while ($elapsed -lt $timeout) {
+                $status = & nssm.exe status $serviceName 2>&1
+                Write-Host "Service status: $status"
 
-                - task: PowerShell@2
-                  displayName: 'Stop Service'
-                  inputs:
-                    targetType: 'inline'
-                    script: |
-                      $serviceName = "$(serviceName)"
-                      $timeout = 60
+                if ($status -match "SERVICE_STOPPED" -or $status -match "does not exist") {
+                    Write-Host "Service stopped successfully"
+                    break
+                }
 
-                      Write-Host "Stopping service: $serviceName"
-                      $stopResult = & nssm.exe stop $serviceName 2>&1
-                      Write-Host "Stop command result: $stopResult"
+                Start-Sleep -Seconds 2
+                $elapsed += 2
+            }
 
-                      $elapsed = 0
-                      while ($elapsed -lt $timeout) {
-                          $status = & nssm.exe status $serviceName 2>&1
-                          Write-Host "Service status: $status"
+            if ($elapsed -ge $timeout) {
+                Write-Host "Service did not stop gracefully, forcing termination..."
+                $processName = "UKSF.Api"
+                $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
+                if ($process) {
+                    Write-Host "Killing process: $processName (PID: $($process.Id))"
+                    Stop-Process -Id $process.Id -Force
+                    Start-Sleep -Seconds 5
+                }
+            }
 
-                          if ($status -match "SERVICE_STOPPED" -or $status -match "does not exist") {
-                              Write-Host "Service stopped successfully"
-                              break
-                          }
+            Start-Sleep -Seconds 2
+            Write-Host "Service stop complete"
 
-                          Start-Sleep -Seconds 2
-                          $elapsed += 2
-                      }
+      - task: CopyFiles@2
+        displayName: 'Dev - Copy Files'
+        inputs:
+          SourceFolder: '$(Build.BinariesDirectory)/UKSF.Api'
+          Contents: '**'
+          TargetFolder: 'C:\Server\UKSF.Api.Dev'
+          CleanTargetFolder: true
+          OverWrite: true
 
-                      if ($elapsed -ge $timeout) {
-                          Write-Host "Service did not stop gracefully, forcing termination..."
-                          $processName = "UKSF.Api"
-                          $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
-                          if ($process) {
-                              Write-Host "Killing process: $processName (PID: $($process.Id))"
-                              Stop-Process -Id $process.Id -Force
-                              Start-Sleep -Seconds 5
-                          }
-                      }
+      - task: PowerShell@2
+        displayName: 'Dev - Transform appsettings'
+        inputs:
+          targetType: 'inline'
+          script: |
+            $settingsPath = "C:\Server\UKSF.Api.Dev\appsettings.json"
+            $settings = Get-Content $settingsPath | ConvertFrom-Json
 
-                      Start-Sleep -Seconds 2
-                      Write-Host "Service stop complete"
+            $settings.ConnectionStrings.Database = "$(Dev_ConnectionStrings_Database)"
+            $settings.Kestrel.Endpoints.Https.Url = "$(Dev_Kestrel_Https_Url)"
 
-                - task: ExtractFiles@1
-                  displayName: 'Extract Files'
-                  inputs:
-                    archiveFilePatterns: '$(Pipeline.Workspace)/$(artifactName)/UKSF.Api.zip'
-                    destinationFolder: '$(deployPath)'
-                    cleanDestinationFolder: true
-                    overwriteExistingFiles: true
+            $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath
+            Write-Host "Dev appsettings.json updated"
 
-                - task: FileTransform@1
-                  displayName: 'File Transform'
-                  inputs:
-                    folderPath: '$(deployPath)'
-                    fileType: 'json'
-                    targetFiles: 'appsettings.json'
+      - task: PowerShell@2
+        displayName: 'Dev - Start Service'
+        inputs:
+          targetType: 'inline'
+          script: |
+            $serviceName = "UKSF.Api.Dev"
 
-                - task: PowerShell@2
-                  displayName: 'Start Service'
-                  inputs:
-                    targetType: 'inline'
-                    script: |
-                      $serviceName = "$(serviceName)"
+            Write-Host "Starting service: $serviceName"
+            & nssm.exe start $serviceName
 
-                      Write-Host "Starting service: $serviceName"
-                      & nssm.exe start $serviceName
+            Start-Sleep -Seconds 5
+            $status = & nssm.exe status $serviceName 2>&1
+            Write-Host "Service status: $status"
 
-                      Start-Sleep -Seconds 5
-                      $status = & nssm.exe status $serviceName 2>&1
-                      Write-Host "Service status: $status"
+            if ($status -notmatch "SERVICE_RUNNING") {
+                Write-Error "Service failed to start"
+                exit 1
+            }
 
-                      if ($status -notmatch "SERVICE_RUNNING") {
-                          Write-Error "Service failed to start"
-                          exit 1
-                      }
+            Write-Host "Service started successfully"
 
-                      Write-Host "Service started successfully"
+      # Deploy to Production
+      - task: PowerShell@2
+        displayName: 'Prod - Stop Service'
+        inputs:
+          targetType: 'inline'
+          script: |
+            $serviceName = "UKSF.Api"
+            $timeout = 60
 
-                - task: PowerShell@2
-                  displayName: 'Migrate DB Data'
-                  inputs:
-                    targetType: 'inline'
-                    workingDirectory: 'C:\Program Files\MongoDB\Server\bin'
-                    script: |
-                      $password = "$(DbMigrationPassword)"
+            Write-Host "Stopping service: $serviceName"
+            $stopResult = & nssm.exe stop $serviceName 2>&1
+            Write-Host "Stop command result: $stopResult"
 
-                      Write-Host "Dumping prod database..."
-                      & .\mongodump --port=52005 --db prod --username admin --password $password --authenticationDatabase admin
+            $elapsed = 0
+            while ($elapsed -lt $timeout) {
+                $status = & nssm.exe status $serviceName 2>&1
+                Write-Host "Service status: $status"
 
-                      Write-Host "Restoring to dev database..."
-                      & .\mongorestore --port=52005 --db dev dump/prod --username admin --password $password --authenticationDatabase admin --drop --nsExclude dev.variables --nsExclude dev.gameServers --nsExclude dev.documentMetadata --nsExclude dev.scheduledJobs
+                if ($status -match "SERVICE_STOPPED" -or $status -match "does not exist") {
+                    Write-Host "Service stopped successfully"
+                    break
+                }
 
-                      Write-Host "Dumping dev database..."
-                      & .\mongodump --port=52005 --db dev --username admin --password $password --authenticationDatabase admin
+                Start-Sleep -Seconds 2
+                $elapsed += 2
+            }
 
-                      Write-Host "Restoring to devLocal database..."
-                      & .\mongorestore --port=52005 --db devLocal dump/dev --username admin --password $password --authenticationDatabase admin --drop --nsExclude devLocal.variables --nsExclude devLocal.gameServers --nsExclude devLocal.documentMetadata --nsExclude devLocal.scheduledJobs
+            if ($elapsed -ge $timeout) {
+                Write-Host "Service did not stop gracefully, forcing termination..."
+                $processName = "UKSF.Api"
+                $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
+                if ($process) {
+                    Write-Host "Killing process: $processName (PID: $($process.Id))"
+                    Stop-Process -Id $process.Id -Force
+                    Start-Sleep -Seconds 5
+                }
+            }
 
-                      Write-Host "DB migration complete"
+            Start-Sleep -Seconds 2
+            Write-Host "Service stop complete"
 
-  - stage: DeployProd
-    displayName: Deploy to Production
-    dependsOn: DeployDev
-    condition: succeeded()
-    variables:
-      - group: 'UKSF API - Production'
-      - name: serviceName
-        value: 'UKSF.Api'
-      - name: deployPath
-        value: 'C:\Server\UKSF.Api'
-    jobs:
-      - deployment: DeployProd
-        displayName: Deploy to Production
-        environment: 'UKSF-Production'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - download: current
-                  artifact: $(artifactName)
+      - task: CopyFiles@2
+        displayName: 'Prod - Copy Files'
+        inputs:
+          SourceFolder: '$(Build.BinariesDirectory)/UKSF.Api'
+          Contents: '**'
+          TargetFolder: 'C:\Server\UKSF.Api'
+          CleanTargetFolder: true
+          OverWrite: true
 
-                - task: PowerShell@2
-                  displayName: 'Stop Service'
-                  inputs:
-                    targetType: 'inline'
-                    script: |
-                      $serviceName = "$(serviceName)"
-                      $timeout = 60
+      - task: PowerShell@2
+        displayName: 'Prod - Transform appsettings'
+        inputs:
+          targetType: 'inline'
+          script: |
+            $settingsPath = "C:\Server\UKSF.Api\appsettings.json"
+            $settings = Get-Content $settingsPath | ConvertFrom-Json
 
-                      Write-Host "Stopping service: $serviceName"
-                      $stopResult = & nssm.exe stop $serviceName 2>&1
-                      Write-Host "Stop command result: $stopResult"
+            $settings.ConnectionStrings.Database = "$(Prod_ConnectionStrings_Database)"
+            $settings.Kestrel.Endpoints.Https.Url = "$(Prod_Kestrel_Https_Url)"
 
-                      $elapsed = 0
-                      while ($elapsed -lt $timeout) {
-                          $status = & nssm.exe status $serviceName 2>&1
-                          Write-Host "Service status: $status"
+            $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath
+            Write-Host "Prod appsettings.json updated"
 
-                          if ($status -match "SERVICE_STOPPED" -or $status -match "does not exist") {
-                              Write-Host "Service stopped successfully"
-                              break
-                          }
+      - task: PowerShell@2
+        displayName: 'Prod - Start Service'
+        inputs:
+          targetType: 'inline'
+          script: |
+            $serviceName = "UKSF.Api"
 
-                          Start-Sleep -Seconds 2
-                          $elapsed += 2
-                      }
+            Write-Host "Starting service: $serviceName"
+            & nssm.exe start $serviceName
 
-                      if ($elapsed -ge $timeout) {
-                          Write-Host "Service did not stop gracefully, forcing termination..."
-                          $processName = "UKSF.Api"
-                          $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
-                          if ($process) {
-                              Write-Host "Killing process: $processName (PID: $($process.Id))"
-                              Stop-Process -Id $process.Id -Force
-                              Start-Sleep -Seconds 5
-                          }
-                      }
+            Start-Sleep -Seconds 5
+            $status = & nssm.exe status $serviceName 2>&1
+            Write-Host "Service status: $status"
 
-                      Start-Sleep -Seconds 2
-                      Write-Host "Service stop complete"
+            if ($status -notmatch "SERVICE_RUNNING") {
+                Write-Error "Service failed to start"
+                exit 1
+            }
 
-                - task: ExtractFiles@1
-                  displayName: 'Extract Files'
-                  inputs:
-                    archiveFilePatterns: '$(Pipeline.Workspace)/$(artifactName)/UKSF.Api.zip'
-                    destinationFolder: '$(deployPath)'
-                    cleanDestinationFolder: true
-                    overwriteExistingFiles: true
+            Write-Host "Service started successfully"
 
-                - task: FileTransform@1
-                  displayName: 'File Transform'
-                  inputs:
-                    folderPath: '$(deployPath)'
-                    fileType: 'json'
-                    targetFiles: 'appsettings.json'
+      # DB Migration
+      - task: PowerShell@2
+        displayName: 'Migrate DB Data'
+        inputs:
+          targetType: 'inline'
+          workingDirectory: 'C:\Program Files\MongoDB\Server\bin'
+          script: |
+            $password = "$(DbMigrationPassword)"
 
-                - task: PowerShell@2
-                  displayName: 'Start Service'
-                  inputs:
-                    targetType: 'inline'
-                    script: |
-                      $serviceName = "$(serviceName)"
+            Write-Host "Dumping prod database..."
+            & .\mongodump --port=52005 --db prod --username admin --password $password --authenticationDatabase admin
 
-                      Write-Host "Starting service: $serviceName"
-                      & nssm.exe start $serviceName
+            Write-Host "Restoring to dev database..."
+            & .\mongorestore --port=52005 --db dev dump/prod --username admin --password $password --authenticationDatabase admin --drop --nsExclude dev.variables --nsExclude dev.gameServers --nsExclude dev.documentMetadata --nsExclude dev.scheduledJobs
 
-                      Start-Sleep -Seconds 5
-                      $status = & nssm.exe status $serviceName 2>&1
-                      Write-Host "Service status: $status"
+            Write-Host "Dumping dev database..."
+            & .\mongodump --port=52005 --db dev --username admin --password $password --authenticationDatabase admin
 
-                      if ($status -notmatch "SERVICE_RUNNING") {
-                          Write-Error "Service failed to start"
-                          exit 1
-                      }
+            Write-Host "Restoring to devLocal database..."
+            & .\mongorestore --port=52005 --db devLocal dump/dev --username admin --password $password --authenticationDatabase admin --drop --nsExclude devLocal.variables --nsExclude devLocal.gameServers --nsExclude devLocal.documentMetadata --nsExclude devLocal.scheduledJobs
 
-                      Write-Host "Service started successfully"
-
-                - task: PowerShell@2
-                  displayName: 'Migrate DB Data'
-                  inputs:
-                    targetType: 'inline'
-                    workingDirectory: 'C:\Program Files\MongoDB\Server\bin'
-                    script: |
-                      $password = "$(DbMigrationPassword)"
-
-                      Write-Host "Dumping prod database..."
-                      & .\mongodump --port=52005 --db prod --username admin --password $password --authenticationDatabase admin
-
-                      Write-Host "Restoring to dev database..."
-                      & .\mongorestore --port=52005 --db dev dump/prod --username admin --password $password --authenticationDatabase admin --drop --nsExclude dev.variables --nsExclude dev.gameServers --nsExclude dev.documentMetadata --nsExclude dev.scheduledJobs
-
-                      Write-Host "Dumping dev database..."
-                      & .\mongodump --port=52005 --db dev --username admin --password $password --authenticationDatabase admin
-
-                      Write-Host "Restoring to devLocal database..."
-                      & .\mongorestore --port=52005 --db devLocal dump/dev --username admin --password $password --authenticationDatabase admin --drop --nsExclude devLocal.variables --nsExclude devLocal.gameServers --nsExclude devLocal.documentMetadata --nsExclude devLocal.scheduledJobs
-
-                      Write-Host "DB migration complete"
+            Write-Host "DB migration complete"
