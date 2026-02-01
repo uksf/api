@@ -254,5 +254,8 @@ appsettings.*.json
 # Cursor IDE
 .cursor/**
 
+# Claude Code
+.claude/settings.local.json
+
 # Http
 *.private.env.json
