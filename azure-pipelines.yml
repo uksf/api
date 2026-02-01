@@ -94,7 +94,6 @@ stages:
                       $stopResult = & nssm.exe stop $serviceName 2>&1
                       Write-Host "Stop command result: $stopResult"
 
-                      # Wait for service to stop with timeout
                       $elapsed = 0
                       while ($elapsed -lt $timeout) {
                           $status = & nssm.exe status $serviceName 2>&1
@@ -109,7 +108,6 @@ stages:
                           $elapsed += 2
                       }
 
-                      # Force kill if still running
                       if ($elapsed -ge $timeout) {
                           Write-Host "Service did not stop gracefully, forcing termination..."
                           $processName = "UKSF.Api"
@@ -121,7 +119,6 @@ stages:
                           }
                       }
 
-                      # Final verification
                       Start-Sleep -Seconds 2
                       Write-Host "Service stop complete"
 
@@ -160,6 +157,28 @@ stages:
                       }
 
                       Write-Host "Service started successfully"
+
+                - task: PowerShell@2
+                  displayName: 'Migrate DB Data'
+                  inputs:
+                    targetType: 'inline'
+                    workingDirectory: 'C:\Program Files\MongoDB\Server\bin'
+                    script: |
+                      $password = "$(DbMigrationPassword)"
+
+                      Write-Host "Dumping prod database..."
+                      & .\mongodump --port=52005 --db prod --username admin --password $password --authenticationDatabase admin
+
+                      Write-Host "Restoring to dev database..."
+                      & .\mongorestore --port=52005 --db dev dump/prod --username admin --password $password --authenticationDatabase admin --drop --nsExclude dev.variables --nsExclude dev.gameServers --nsExclude dev.documentMetadata --nsExclude dev.scheduledJobs
+
+                      Write-Host "Dumping dev database..."
+                      & .\mongodump --port=52005 --db dev --username admin --password $password --authenticationDatabase admin
+
+                      Write-Host "Restoring to devLocal database..."
+                      & .\mongorestore --port=52005 --db devLocal dump/dev --username admin --password $password --authenticationDatabase admin --drop --nsExclude devLocal.variables --nsExclude devLocal.gameServers --nsExclude devLocal.documentMetadata --nsExclude devLocal.scheduledJobs
+
+                      Write-Host "DB migration complete"
 
   - stage: DeployProd
     displayName: Deploy to Production
@@ -194,7 +213,6 @@ stages:
                       $stopResult = & nssm.exe stop $serviceName 2>&1
                       Write-Host "Stop command result: $stopResult"
 
-                      # Wait for service to stop with timeout
                       $elapsed = 0
                       while ($elapsed -lt $timeout) {
                           $status = & nssm.exe status $serviceName 2>&1
@@ -209,7 +227,6 @@ stages:
                           $elapsed += 2
                       }
 
-                      # Force kill if still running
                       if ($elapsed -ge $timeout) {
                           Write-Host "Service did not stop gracefully, forcing termination..."
                           $processName = "UKSF.Api"
@@ -221,7 +238,6 @@ stages:
                           }
                       }
 
-                      # Final verification
                       Start-Sleep -Seconds 2
                       Write-Host "Service stop complete"
 
@@ -260,3 +276,25 @@ stages:
                       }
 
                       Write-Host "Service started successfully"
+
+                - task: PowerShell@2
+                  displayName: 'Migrate DB Data'
+                  inputs:
+                    targetType: 'inline'
+                    workingDirectory: 'C:\Program Files\MongoDB\Server\bin'
+                    script: |
+                      $password = "$(DbMigrationPassword)"
+
+                      Write-Host "Dumping prod database..."
+                      & .\mongodump --port=52005 --db prod --username admin --password $password --authenticationDatabase admin
+
+                      Write-Host "Restoring to dev database..."
+                      & .\mongorestore --port=52005 --db dev dump/prod --username admin --password $password --authenticationDatabase admin --drop --nsExclude dev.variables --nsExclude dev.gameServers --nsExclude dev.documentMetadata --nsExclude dev.scheduledJobs
+
+                      Write-Host "Dumping dev database..."
+                      & .\mongodump --port=52005 --db dev --username admin --password $password --authenticationDatabase admin
+
+                      Write-Host "Restoring to devLocal database..."
+                      & .\mongorestore --port=52005 --db devLocal dump/dev --username admin --password $password --authenticationDatabase admin --drop --nsExclude devLocal.variables --nsExclude devLocal.gameServers --nsExclude devLocal.documentMetadata --nsExclude devLocal.scheduledJobs
+
+                      Write-Host "DB migration complete"
