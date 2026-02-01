@@ -113,7 +113,8 @@ public class UpdateOperationTests
 
         // Assert
         result.Success.Should().BeTrue();
-        result.AvailablePbos.Should().BeEquivalentTo(newPbos);
+        result.InterventionRequired.Should().BeTrue();
+        _mockProcessingService.Verify(x => x.SetAvailablePbos(workshopMod, newPbos), Times.Once);
     }
 
     [Fact]

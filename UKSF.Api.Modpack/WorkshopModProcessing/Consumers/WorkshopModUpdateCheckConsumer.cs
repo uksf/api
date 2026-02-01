@@ -15,19 +15,8 @@ public class WorkshopModUpdateCheckConsumer(IUpdateOperation updateOperation, IW
             var result = await updateOperation.CheckAsync(context.Message.WorkshopModId, context.CancellationToken);
             if (result.Success)
             {
-                var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == context.Message.WorkshopModId);
-                var currentPbos = workshopMod?.Pbos ?? [];
-
-                // Only require intervention if PBOs differ from currently installed
-                var pbosChanged = !currentPbos.OrderBy(x => x).SequenceEqual(result.AvailablePbos.OrderBy(x => x));
-
                 await context.Publish(
-                    new WorkshopModUpdateCheckComplete
-                    {
-                        WorkshopModId = context.Message.WorkshopModId,
-                        InterventionRequired = pbosChanged,
-                        AvailablePbos = result.AvailablePbos
-                    }
+                    new WorkshopModUpdateCheckComplete { WorkshopModId = context.Message.WorkshopModId, InterventionRequired = result.InterventionRequired }
                 );
             }
             else

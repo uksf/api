@@ -40,7 +40,7 @@ public class SteamApiService(IUksfLogger logger) : ISteamApiService
 
                 if (item.TryGetProperty("result", out var resultElement) && resultElement.GetInt32() != 1)
                 {
-                    throw new BadRequestException($"Workshop mod with id {workshopModId} not found");
+                    throw new BadRequestException($"Workshop mod with Steam ID {workshopModId} not found");
                 }
 
                 if (item.TryGetProperty("title", out var titleElement) &&

@@ -60,10 +60,15 @@ public class SteamCmdService : ISteamCmdService
 
         var result = await Cli.Wrap(cmdPath)
                               .WithWorkingDirectory(steamPath)
-                              .WithArguments($"+login {_username} {_password} +workshop_download_item 107410 {workshopModId} +quit")
+                              .WithArguments($"+login anonymous +workshop_download_item 107410 {workshopModId} +quit")
                               .ExecuteBufferedAsync();
 
-        return result.ExitCode != 0 ? throw new Exception($"Failed to download workshop mod {workshopModId}: {result.StandardError}") : result.StandardOutput;
+        if (result.ExitCode != 0 || result.StandardOutput.Contains("failed"))
+        {
+            throw new Exception(result.StandardOutput);
+        }
+
+        return result.StandardOutput;
     }
 
     private Process ExecuteSteamCmdCommand(string command)

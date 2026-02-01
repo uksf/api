@@ -12,6 +12,6 @@ public class WorkshopModsContext(IMongoCollectionFactory mongoCollectionFactory,
 {
     protected override IEnumerable<DomainWorkshopMod> OrderCollection(IEnumerable<DomainWorkshopMod> collection)
     {
-        return collection.OrderByDescending(x => x.Name);
+        return collection.OrderBy(x => x.Name);
     }
 }

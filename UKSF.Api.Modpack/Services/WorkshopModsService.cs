@@ -35,7 +35,7 @@ public class WorkshopModsService(
         var existingMod = workshopModsContext.Get().FirstOrDefault(x => x.SteamId == workshopModId && x.Status != WorkshopModStatus.Uninstalled);
         if (existingMod != null)
         {
-            throw new BadRequestException($"Workshop mod with ID {workshopModId} already exists");
+            throw new BadRequestException($"Workshop mod with Steam ID {workshopModId} already exists");
         }
 
         var modInfo = await steamApiService.GetWorkshopModInfo(workshopModId);
@@ -57,7 +57,7 @@ public class WorkshopModsService(
         var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
         if (workshopMod == null)
         {
-            throw new NotFoundException($"Cannot find workshop mod with ID {workshopModId}");
+            throw new NotFoundException($"Cannot find workshop mod with Steam ID {workshopModId}");
         }
 
         if (workshopMod.Status == WorkshopModStatus.Updating)
@@ -89,7 +89,7 @@ public class WorkshopModsService(
         var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
         if (workshopMod == null)
         {
-            throw new NotFoundException($"Cannot find workshop mod with ID {workshopModId}");
+            throw new NotFoundException($"Cannot find workshop mod with Steam ID {workshopModId}");
         }
 
         if (workshopMod.Status == WorkshopModStatus.Uninstalled)
@@ -120,7 +120,7 @@ public class WorkshopModsService(
         var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
         if (workshopMod == null)
         {
-            throw new NotFoundException($"Cannot find workshop mod with ID {workshopModId}");
+            throw new NotFoundException($"Cannot find workshop mod with Steam ID {workshopModId}");
         }
 
         if (workshopMod.Status != WorkshopModStatus.InterventionRequired)
@@ -128,7 +128,12 @@ public class WorkshopModsService(
             throw new BadRequestException($"Workshop mod does not require manual intervention: {workshopMod.Name}");
         }
 
-        await publishEndpoint.Publish(new WorkshopModInterventionResolved { WorkshopModId = workshopModId, SelectedPbos = selectedPbos ?? [] });
+        if (selectedPbos == null || selectedPbos.Count == 0)
+        {
+            throw new BadRequestException($"No PBOs selected to install for workshop mod with Steam ID {workshopModId}");
+        }
+
+        await publishEndpoint.Publish(new WorkshopModInterventionResolved { WorkshopModId = workshopModId, SelectedPbos = selectedPbos });
     }
 
     public async Task DeleteWorkshopMod(string workshopModId)
@@ -136,7 +141,7 @@ public class WorkshopModsService(
         var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
         if (workshopMod == null)
         {
-            throw new NotFoundException($"Cannot find workshop mod with ID {workshopModId}");
+            throw new NotFoundException($"Cannot find workshop mod with Steam ID {workshopModId}");
         }
 
         if (workshopMod.Status != WorkshopModStatus.Uninstalled)

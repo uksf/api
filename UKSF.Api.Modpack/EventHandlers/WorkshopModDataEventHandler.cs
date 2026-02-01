@@ -24,14 +24,19 @@ public class WorkshopModDataEventHandler(IEventBus eventBus, IHubContext<Modpack
     {
         switch (eventModel.EventType)
         {
-            case EventType.Add:
-            case EventType.Update:
-            case EventType.Delete: await UpdatedEvent(eventData.Data); break;
+            case EventType.Add:    await AddedEvent(); break;
+            case EventType.Update: await UpdatedEvent(eventData.Id); break;
+            case EventType.Delete: await AddedEvent(); break;
         }
     }
 
-    private async Task UpdatedEvent(DomainWorkshopMod domainWorkshopMod)
+    private async Task AddedEvent()
     {
-        await hub.Clients.All.ReceiveWorkshopModUpdate(domainWorkshopMod);
+        await hub.Clients.All.ReceiveWorkshopModAdded();
+    }
+
+    private async Task UpdatedEvent(string id)
+    {
+        await hub.Clients.All.ReceiveWorkshopModUpdate(id);
     }
 }

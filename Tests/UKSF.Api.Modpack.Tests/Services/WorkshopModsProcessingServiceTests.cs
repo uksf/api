@@ -60,31 +60,15 @@ public class WorkshopModsProcessingServiceTests
         await action.Should().ThrowAsync<Exception>().WithMessage("*download failed*");
     }
 
+    // TODO: QueueDevBuild is temporarily disabled - re-enable these tests when the functionality is restored
     [Fact]
-    public async Task QueueDevBuild_ShouldCancelRunningBuildsAndCreateNew()
+    public async Task QueueDevBuild_WhenDisabled_ShouldReturnImmediately()
     {
-        var build1 = new DomainModpackBuild { Id = "build1", Running = true };
-        var build2 = new DomainModpackBuild { Id = "build2", Running = true };
-        _modpackService.Setup(x => x.GetDevBuilds()).Returns([build1, build2]);
-        _modpackService.Setup(x => x.CancelBuild(build1)).Returns(Task.CompletedTask);
-        _modpackService.Setup(x => x.CancelBuild(build2)).Returns(Task.CompletedTask);
-        _modpackService.Setup(x => x.NewBuild(It.IsAny<NewBuild>())).Returns(Task.CompletedTask);
-
         await _subject.QueueDevBuild();
 
-        _modpackService.Verify(x => x.CancelBuild(build1), Times.Once);
-        _modpackService.Verify(x => x.CancelBuild(build2), Times.Once);
-        _modpackService.Verify(x => x.NewBuild(It.Is<NewBuild>(b => b.Reference == "main")), Times.Once);
-    }
-
-    [Fact]
-    public async Task QueueDevBuild_WhenExceptionOccurs_ShouldLogError()
-    {
-        _modpackService.Setup(x => x.GetDevBuilds()).Throws(new InvalidOperationException("fail"));
-
-        await _subject.QueueDevBuild();
-
-        _logger.Verify(x => x.LogError(It.Is<string>(s => s.Contains("Failed to trigger dev build")), It.IsAny<Exception>()), Times.Once);
+        _modpackService.Verify(x => x.GetDevBuilds(), Times.Never);
+        _modpackService.Verify(x => x.CancelBuild(It.IsAny<DomainModpackBuild>()), Times.Never);
+        _modpackService.Verify(x => x.NewBuild(It.IsAny<NewBuild>()), Times.Never);
     }
 
     [Fact]

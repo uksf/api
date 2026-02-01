@@ -43,7 +43,19 @@ public static class ApiModpackExtensions
                          }
                      );
 
-                    x.UsingInMemory((context, cfg) => { cfg.ConfigureEndpoints(context); });
+                    x.UsingInMemory((context, cfg) =>
+                        {
+                            cfg.ConfigureEndpoints(context);
+                            cfg.UseInMemoryOutbox(context);
+                        }
+                    );
+
+                    x.Configure<MassTransitHostOptions>(options =>
+                        {
+                            options.StopTimeout = TimeSpan.FromSeconds(5);
+                            options.ConsumerStopTimeout = TimeSpan.FromSeconds(2);
+                        }
+                    );
                 }
             );
 

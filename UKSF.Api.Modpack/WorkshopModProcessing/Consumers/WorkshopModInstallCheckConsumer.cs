@@ -14,12 +14,7 @@ public class WorkshopModInstallCheckConsumer(IInstallOperation installOperation,
             if (result.Success)
             {
                 await context.Publish(
-                    new WorkshopModInstallCheckComplete
-                    {
-                        WorkshopModId = context.Message.WorkshopModId,
-                        InterventionRequired = true, // Always require intervention for install
-                        AvailablePbos = result.AvailablePbos
-                    }
+                    new WorkshopModInstallCheckComplete { WorkshopModId = context.Message.WorkshopModId, InterventionRequired = result.InterventionRequired }
                 );
             }
             else

@@ -61,11 +61,11 @@ public class WorkshopModsControllerTests
     }
 
     [Fact]
-    public void GetWorkshopMod_WhenMissing_ShouldThrowNotFound()
+    public void GetWorkshopModById_WhenMissing_ShouldThrowNotFound()
     {
-        _context.Setup(x => x.GetSingle("missing")).Returns((DomainWorkshopMod)null);
+        _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainWorkshopMod, bool>>())).Returns((DomainWorkshopMod)null);
 
-        Action action = () => _subject.GetWorkshopMod("missing");
+        Action action = () => _subject.GetWorkshopModById("missing");
 
         action.Should().Throw<NotFoundException>();
     }

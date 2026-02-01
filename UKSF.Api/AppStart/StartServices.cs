@@ -60,12 +60,15 @@ public static class StartServices
         {
             // Cancel any running builds in the queue
             serviceProvider.GetRequiredService<IBuildQueueService>().CancelAll().GetAwaiter().GetResult();
+            Console.Out.WriteLine("stopped builds");
 
             // Stop teamspeak
             serviceProvider.GetRequiredService<ITeamspeakManagerService>().Stop();
+            Console.Out.WriteLine("stopped ts");
 
             // Stop discord
             serviceProvider.GetRequiredService<IDiscordActivationService>().Deactivate().Wait(TimeSpan.FromSeconds(5));
+            Console.Out.WriteLine("stopped discord");
         }
     }
 }

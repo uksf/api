@@ -28,14 +28,12 @@ public class InstallOperation(IWorkshopModsContext workshopModsContext, IWorksho
         }
         catch (OperationCanceledException)
         {
-            logger.LogWarning($"Download cancelled for workshop mod {workshopModId}");
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, "Download cancelled");
             throw;
         }
         catch (Exception exception)
         {
             var errorMessage = $"Failed to download workshop mod {workshopModId}: {exception.Message}";
-            logger.LogError(errorMessage, exception);
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, errorMessage);
             return DownloadResult.Failure(errorMessage);
         }
@@ -50,16 +48,18 @@ public class InstallOperation(IWorkshopModsContext workshopModsContext, IWorksho
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Installing, "Checking...");
 
             var workshopModPath = workshopModsProcessingService.GetWorkshopModPath(workshopMod.SteamId);
+            var currentPbos = workshopMod.Pbos ?? [];
             var pbos = workshopModsProcessingService.GetModFiles(workshopModPath);
+            var pbosChanged = !currentPbos.OrderBy(x => x).SequenceEqual(pbos.OrderBy(x => x));
 
             logger.LogInfo($"Found {pbos.Count} PBOs for workshop mod {workshopModId}");
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.InterventionRequired, "Select PBOs to install");
-            return CheckResult.Successful(pbos);
+            await workshopModsProcessingService.SetAvailablePbos(workshopMod, pbos);
+            return CheckResult.Successful(pbosChanged);
         }
         catch (Exception exception)
         {
             var errorMessage = $"Failed to check workshop mod {workshopModId}: {exception.Message}";
-            logger.LogError(errorMessage, exception);
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, errorMessage);
             return CheckResult.Failure(errorMessage);
         }
@@ -86,14 +86,12 @@ public class InstallOperation(IWorkshopModsContext workshopModsContext, IWorksho
         }
         catch (OperationCanceledException)
         {
-            logger.LogWarning($"Installation cancelled for workshop mod {workshopModId}");
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, "Installation cancelled");
             throw;
         }
         catch (Exception exception)
         {
             var errorMessage = $"Failed to install workshop mod {workshopModId}: {exception.Message}";
-            logger.LogError(errorMessage, exception);
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, errorMessage);
             return InstallResult.Failure(errorMessage);
         }
@@ -113,11 +111,11 @@ public record DownloadResult(bool Success, string ErrorMessage = null)
     }
 }
 
-public record CheckResult(bool Success, List<string> AvailablePbos = null, string ErrorMessage = null)
+public record CheckResult(bool Success, bool InterventionRequired = false, string ErrorMessage = null)
 {
-    public static CheckResult Successful(List<string> availablePbos)
+    public static CheckResult Successful(bool interventionRequired)
     {
-        return new CheckResult(true, availablePbos);
+        return new CheckResult(true, interventionRequired);
     }
 
     public static CheckResult Failure(string errorMessage)

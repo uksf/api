@@ -69,7 +69,8 @@ public class InstallOperationTests
 
         // Assert
         result.Success.Should().BeTrue();
-        result.AvailablePbos.Should().BeEquivalentTo(pbos);
+        result.InterventionRequired.Should().BeTrue();
+        _mockProcessingService.Verify(x => x.SetAvailablePbos(workshopMod, pbos), Times.Once);
     }
 
     [Fact]

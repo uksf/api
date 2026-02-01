@@ -113,7 +113,7 @@ public class WorkshopModInstallCheckConsumerTests
     public async Task Consume_WhenCheckSucceeds_ShouldPublishCheckComplete()
     {
         var operation = new Mock<IInstallOperation>();
-        operation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(CheckResult.Successful(["a.pbo"]));
+        operation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(CheckResult.Successful(true));
         Mock<IUksfLogger> logger = new();
         var consumer = new WorkshopModInstallCheckConsumer(operation.Object, logger.Object);
 
@@ -127,7 +127,6 @@ public class WorkshopModInstallCheckConsumerTests
 
         published.Should().NotBeNull();
         published!.InterventionRequired.Should().BeTrue();
-        published.AvailablePbos.Should().BeEquivalentTo("a.pbo");
     }
 
     [Fact]
@@ -375,11 +374,9 @@ public class WorkshopModUpdateCheckConsumerTests
     public async Task Consume_WhenPbosUnchanged_ShouldNotRequireIntervention()
     {
         var operation = new Mock<IUpdateOperation>();
-        operation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(CheckResult.Successful(["b.pbo", "a.pbo"]));
+        operation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(CheckResult.Successful(false));
 
-        var contextMock = new Mock<IWorkshopModsContext>();
-        var workshopMod = new DomainWorkshopMod { SteamId = "mod1", Pbos = ["a.pbo", "b.pbo"] };
-        contextMock.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        Mock<IWorkshopModsContext> contextMock = new();
         Mock<IUksfLogger> logger = new();
         var consumer = new WorkshopModUpdateCheckConsumer(operation.Object, contextMock.Object, logger.Object);
 
@@ -393,18 +390,15 @@ public class WorkshopModUpdateCheckConsumerTests
 
         published.Should().NotBeNull();
         published!.InterventionRequired.Should().BeFalse();
-        published.AvailablePbos.Should().BeEquivalentTo("b.pbo", "a.pbo");
     }
 
     [Fact]
     public async Task Consume_WhenPbosChanged_ShouldRequireIntervention()
     {
         var operation = new Mock<IUpdateOperation>();
-        operation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(CheckResult.Successful(["c.pbo"]));
+        operation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(CheckResult.Successful(true));
 
-        var contextMock = new Mock<IWorkshopModsContext>();
-        var workshopMod = new DomainWorkshopMod { SteamId = "mod1", Pbos = ["a.pbo", "b.pbo"] };
-        contextMock.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        Mock<IWorkshopModsContext> contextMock = new();
         Mock<IUksfLogger> logger = new();
         var consumer = new WorkshopModUpdateCheckConsumer(operation.Object, contextMock.Object, logger.Object);
 
@@ -418,7 +412,6 @@ public class WorkshopModUpdateCheckConsumerTests
 
         published.Should().NotBeNull();
         published!.InterventionRequired.Should().BeTrue();
-        published.AvailablePbos.Should().BeEquivalentTo("c.pbo");
     }
 
     [Fact]

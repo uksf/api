@@ -261,7 +261,7 @@ public class WorkshopModsServiceTests
     }
 
     [Fact]
-    public async Task ResolveWorkshopModManualIntervention_WhenSelectedNull_ShouldPublishEmptyList()
+    public async Task ResolveWorkshopModManualIntervention_WhenSelectedNull_ShouldThrowBadRequest()
     {
         var workshopMod = new DomainWorkshopMod
         {
@@ -271,15 +271,7 @@ public class WorkshopModsServiceTests
         };
         _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
 
-        WorkshopModInterventionResolved published = null;
-        _publishEndpoint.Setup(x => x.Publish(It.IsAny<WorkshopModInterventionResolved>(), It.IsAny<CancellationToken>()))
-                        .Callback<WorkshopModInterventionResolved, CancellationToken>((msg, _) => published = msg)
-                        .Returns(Task.CompletedTask);
-
-        await _subject.ResolveWorkshopModManualIntervention("steam-id", null);
-
-        published.Should().NotBeNull();
-        published!.SelectedPbos.Should().BeEmpty();
+        await Assert.ThrowsAsync<BadRequestException>(() => _subject.ResolveWorkshopModManualIntervention("steam-id", null));
     }
 
     [Fact]

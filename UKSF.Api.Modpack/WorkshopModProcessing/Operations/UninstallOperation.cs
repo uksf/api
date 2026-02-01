@@ -34,9 +34,18 @@ public class UninstallOperation(IWorkshopModsContext workshopModsContext, IWorks
                 workshopModsProcessingService.DeletePbosFromDependencies(pbosToDelete);
             }
 
-            workshopMod.Status = WorkshopModStatus.UninstalledPendingRelease;
+            if (workshopMod.Status is WorkshopModStatus.Installed or WorkshopModStatus.InstalledPendingRelease or WorkshopModStatus.UpdatedPendingRelease)
+            {
+                workshopMod.Status = WorkshopModStatus.UninstalledPendingRelease;
+                workshopMod.StatusMessage = "Uninstalled pending next modpack release";
+            }
+            else
+            {
+                workshopMod.Status = WorkshopModStatus.Uninstalled;
+                workshopMod.StatusMessage = "Uninstalled";
+            }
+
             workshopMod.Pbos = [];
-            workshopMod.StatusMessage = "Uninstalled pending next modpack release";
             workshopMod.ErrorMessage = null;
             await workshopModsContext.Replace(workshopMod);
 

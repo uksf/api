@@ -10,28 +10,30 @@ using UKSF.Api.Modpack.Services;
 namespace UKSF.Api.Modpack.Controllers;
 
 [Route("workshop")]
-[Permissions(Permissions.Admin)]
 public class WorkshopModsController(IWorkshopModsService workshopModsService, IWorkshopModsContext workshopModsContext) : ControllerBase
 {
     [HttpGet]
+    [Permissions(Permissions.Member)]
     public List<WorkshopModResponse> GetWorkshopMods()
     {
         return workshopModsContext.Get().Select(MapToResponse).ToList();
     }
 
-    [HttpGet("{workshopModId}")]
-    public WorkshopModResponse GetWorkshopMod([FromRoute] string workshopModId)
+    [HttpGet("{id}")]
+    [Permissions(Permissions.Member)]
+    public WorkshopModResponse GetWorkshopModById([FromRoute] string id)
     {
-        var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
+        var workshopMod = workshopModsContext.GetSingle(x => x.Id == id);
         if (workshopMod == null)
         {
-            throw new NotFoundException($"Workshop mod with ID {workshopModId} not found");
+            throw new NotFoundException($"Workshop mod with ID {id} not found");
         }
 
         return MapToResponse(workshopMod);
     }
 
     [HttpGet("{workshopModId}/updatedDate")]
+    [Permissions(Permissions.Member)]
     public async Task<WorkshopModUpdatedDateResponse> GetWorkshopModUpdatedDate([FromRoute] string workshopModId)
     {
         var updatedDate = await workshopModsService.GetWorkshopModUpdatedDate(workshopModId);
@@ -39,30 +41,35 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
     }
 
     [HttpPost]
+    [Permissions(Permissions.Admin)]
     public Task InstallWorkshopMod([FromBody] InstallWorkshopModRequest request)
     {
         return workshopModsService.InstallWorkshopMod(request.SteamId, request.RootMod);
     }
 
     [HttpPost("{workshopModId}/update")]
+    [Permissions(Permissions.Admin)]
     public Task UpdateWorkshopMod([FromRoute] string workshopModId)
     {
         return workshopModsService.UpdateWorkshopMod(workshopModId);
     }
 
     [HttpPost("{workshopModId}/uninstall")]
+    [Permissions(Permissions.Admin)]
     public Task UninstallWorkshopMod([FromRoute] string workshopModId)
     {
         return workshopModsService.UninstallWorkshopMod(workshopModId);
     }
 
     [HttpPost("{workshopModId}/resolve")]
+    [Permissions(Permissions.Admin)]
     public Task ResolveWorkshopModManualIntervention([FromRoute] string workshopModId, [FromBody] WorkshopModResolveInterventionRequest request)
     {
         return workshopModsService.ResolveWorkshopModManualIntervention(workshopModId, request.SelectedPbos);
     }
 
     [HttpDelete("{workshopModId}")]
+    [Permissions(Permissions.Admin)]
     public Task DeleteWorkshopMod([FromRoute] string workshopModId)
     {
         return workshopModsService.DeleteWorkshopMod(workshopModId);

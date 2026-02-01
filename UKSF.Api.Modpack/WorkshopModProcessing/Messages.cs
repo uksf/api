@@ -85,14 +85,12 @@ public class WorkshopModInstallCheckComplete : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
     public bool InterventionRequired { get; init; }
-    public List<string> AvailablePbos { get; init; }
 }
 
 public class WorkshopModUpdateCheckComplete : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
     public bool InterventionRequired { get; init; }
-    public List<string> AvailablePbos { get; init; }
 }
 
 public class WorkshopModInstallComplete : IWorkshopModCommand

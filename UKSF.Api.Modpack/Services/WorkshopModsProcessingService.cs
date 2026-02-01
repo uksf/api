@@ -16,6 +16,7 @@ public interface IWorkshopModsProcessingService
     void CleanupWorkshopModFiles(string workshopModPath);
     Task QueueDevBuild();
     Task UpdateModStatus(DomainWorkshopMod workshopMod, WorkshopModStatus status, string message);
+    Task SetAvailablePbos(DomainWorkshopMod workshopMod, List<string> pbos);
 }
 
 public class WorkshopModsProcessingService(
@@ -122,6 +123,7 @@ public class WorkshopModsProcessingService(
 
     public async Task QueueDevBuild()
     {
+        return;
         try
         {
             var runningBuilds = modpackService.GetDevBuilds().Where(b => b.Running).ToList();
@@ -143,13 +145,21 @@ public class WorkshopModsProcessingService(
         workshopMod.Status = status;
         if (status == WorkshopModStatus.Error)
         {
+            workshopMod.StatusMessage = "An error occured";
             workshopMod.ErrorMessage = message;
         }
         else
         {
             workshopMod.StatusMessage = message;
+            workshopMod.ErrorMessage = null;
         }
 
+        await workshopModsContext.Replace(workshopMod);
+    }
+
+    public async Task SetAvailablePbos(DomainWorkshopMod workshopMod, List<string> pbos)
+    {
+        workshopMod.Pbos = pbos;
         await workshopModsContext.Replace(workshopMod);
     }
 

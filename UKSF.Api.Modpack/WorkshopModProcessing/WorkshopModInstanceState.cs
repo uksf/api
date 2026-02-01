@@ -13,7 +13,6 @@ public class WorkshopModInstanceState : SagaStateMachineInstance, ISagaVersion
     public string CurrentState { get; set; }
     public string WorkshopModId { get; set; }
     public string Operation { get; set; } // Install, Update, Uninstall
-    public List<string> AvailablePbos { get; set; }
     public List<string> SelectedPbos { get; set; }
 
     // Observability and fault tracking

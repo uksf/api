@@ -28,14 +28,12 @@ public class UpdateOperation(IWorkshopModsContext workshopModsContext, IWorkshop
         }
         catch (OperationCanceledException)
         {
-            logger.LogWarning($"Update download cancelled for workshop mod {workshopModId}");
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, "Download cancelled");
             throw;
         }
         catch (Exception exception)
         {
             var errorMessage = $"Failed to download workshop mod update {workshopModId}: {exception.Message}";
-            logger.LogError(errorMessage, exception);
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, errorMessage);
             return DownloadResult.Failure(errorMessage);
         }
@@ -50,16 +48,18 @@ public class UpdateOperation(IWorkshopModsContext workshopModsContext, IWorkshop
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Updating, "Checking...");
 
             var workshopModPath = workshopModsProcessingService.GetWorkshopModPath(workshopMod.SteamId);
+            var currentPbos = workshopMod.Pbos ?? [];
             var pbos = workshopModsProcessingService.GetModFiles(workshopModPath);
+            var pbosChanged = !currentPbos.OrderBy(x => x).SequenceEqual(pbos.OrderBy(x => x));
 
             logger.LogInfo($"Found {pbos.Count} PBOs for workshop mod update {workshopModId}");
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.InterventionRequired, "Select PBOs to install");
-            return CheckResult.Successful(pbos);
+            await workshopModsProcessingService.SetAvailablePbos(workshopMod, pbos);
+            return CheckResult.Successful(pbosChanged);
         }
         catch (Exception exception)
         {
             var errorMessage = $"Failed to check workshop mod update {workshopModId}: {exception.Message}";
-            logger.LogError(errorMessage, exception);
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, errorMessage);
             return CheckResult.Failure(errorMessage);
         }
@@ -94,14 +94,12 @@ public class UpdateOperation(IWorkshopModsContext workshopModsContext, IWorkshop
         }
         catch (OperationCanceledException)
         {
-            logger.LogWarning($"Update cancelled for workshop mod {workshopModId}");
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, "Update cancelled");
             throw;
         }
         catch (Exception exception)
         {
             var errorMessage = $"Failed to update workshop mod {workshopModId}: {exception.Message}";
-            logger.LogError(errorMessage, exception);
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, errorMessage);
             return UpdateResult.Failure(errorMessage);
         }
