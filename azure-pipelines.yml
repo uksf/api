@@ -10,8 +10,8 @@ variables:
   buildConfiguration: 'Release'
 
 jobs:
-  - job: BuildAndDeploy
-    displayName: Build and Deploy
+  - job: Build
+    displayName: Build and Test
     steps:
       - task: DotNetCoreCLI@2
         displayName: 'Restore'
@@ -41,13 +41,27 @@ jobs:
           command: publish
           publishWebProjects: false
           projects: '**/UKSF.Api.csproj'
-          arguments: '-c $(buildConfiguration) --output "$(Build.BinariesDirectory)/UKSF.Api"'
+          arguments: '-c $(buildConfiguration) --output "$(Build.ArtifactStagingDirectory)/UKSF.Api"'
           zipAfterPublish: false
           modifyOutputPath: false
 
-      # Deploy to Dev
+      - task: PublishPipelineArtifact@1
+        displayName: 'Publish Artifact'
+        inputs:
+          targetPath: '$(Build.ArtifactStagingDirectory)/UKSF.Api'
+          artifact: 'api'
+
+  - job: DeployDev
+    displayName: Deploy to Dev
+    dependsOn: Build
+    variables:
+      - group: UKSF API - Development
+    steps:
+      - download: current
+        artifact: api
+
       - task: PowerShell@2
-        displayName: 'Dev - Stop Service'
+        displayName: 'Stop Service'
         inputs:
           targetType: 'inline'
           script: |
@@ -59,12 +73,15 @@ jobs:
             Write-Host "Stop command result: $stopResult"
 
             $elapsed = 0
+            $stopped = $false
             while ($elapsed -lt $timeout) {
-                $status = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
-                Write-Host "Service status: $status"
+                $statusOutput = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
+                $statusText = ($statusOutput | Out-String).Trim()
+                Write-Host "Service status: [$statusText]"
 
-                if ($status -match "SERVICE_STOPPED" -or $status -match "does not exist") {
+                if ($statusText -like "*SERVICE_STOPPED*" -or $statusText -like "*does not exist*") {
                     Write-Host "Service stopped successfully"
+                    $stopped = $true
                     break
                 }
 
@@ -72,7 +89,7 @@ jobs:
                 $elapsed += 2
             }
 
-            if ($elapsed -ge $timeout) {
+            if (-not $stopped) {
                 Write-Host "Service did not stop gracefully, forcing termination..."
                 $processName = "UKSF.Api"
                 $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
@@ -87,30 +104,23 @@ jobs:
             Write-Host "Service stop complete"
 
       - task: CopyFiles@2
-        displayName: 'Dev - Copy Files'
+        displayName: 'Copy Files'
         inputs:
-          SourceFolder: '$(Build.BinariesDirectory)/UKSF.Api'
+          SourceFolder: '$(Pipeline.Workspace)/api'
           Contents: '**'
           TargetFolder: 'C:\Server\UKSF.Api.Dev'
           CleanTargetFolder: true
           OverWrite: true
 
-      - task: PowerShell@2
-        displayName: 'Dev - Transform appsettings'
+      - task: FileTransform@2
+        displayName: 'Transform appsettings'
         inputs:
-          targetType: 'inline'
-          script: |
-            $settingsPath = "C:\Server\UKSF.Api.Dev\appsettings.json"
-            $settings = Get-Content $settingsPath | ConvertFrom-Json
-
-            $settings.ConnectionStrings.Database = "$(Dev_ConnectionStrings_Database)"
-            $settings.Kestrel.Endpoints.Https.Url = "$(Dev_Kestrel_Https_Url)"
-
-            $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath
-            Write-Host "Dev appsettings.json updated"
+          folderPath: 'C:\Server\UKSF.Api.Dev'
+          xmlTransformationRules: ''
+          jsonTargetFiles: 'appsettings.json'
 
       - task: PowerShell@2
-        displayName: 'Dev - Start Service'
+        displayName: 'Start Service'
         inputs:
           targetType: 'inline'
           script: |
@@ -120,19 +130,28 @@ jobs:
             & "C:\Program Files\NSSM\win64\nssm.exe" start $serviceName
 
             Start-Sleep -Seconds 5
-            $status = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
-            Write-Host "Service status: $status"
+            $statusOutput = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
+            $statusText = ($statusOutput | Out-String).Trim()
+            Write-Host "Service status: [$statusText]"
 
-            if ($status -notmatch "SERVICE_RUNNING") {
+            if ($statusText -notlike "*SERVICE_RUNNING*") {
                 Write-Error "Service failed to start"
                 exit 1
             }
 
             Write-Host "Service started successfully"
 
-      # Deploy to Production
+  - job: DeployProd
+    displayName: Deploy to Production
+    dependsOn: DeployDev
+    variables:
+      - group: UKSF API - Production
+    steps:
+      - download: current
+        artifact: api
+
       - task: PowerShell@2
-        displayName: 'Prod - Stop Service'
+        displayName: 'Stop Service'
         inputs:
           targetType: 'inline'
           script: |
@@ -144,12 +163,15 @@ jobs:
             Write-Host "Stop command result: $stopResult"
 
             $elapsed = 0
+            $stopped = $false
             while ($elapsed -lt $timeout) {
-                $status = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
-                Write-Host "Service status: $status"
+                $statusOutput = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
+                $statusText = ($statusOutput | Out-String).Trim()
+                Write-Host "Service status: [$statusText]"
 
-                if ($status -match "SERVICE_STOPPED" -or $status -match "does not exist") {
+                if ($statusText -like "*SERVICE_STOPPED*" -or $statusText -like "*does not exist*") {
                     Write-Host "Service stopped successfully"
+                    $stopped = $true
                     break
                 }
 
@@ -157,7 +179,7 @@ jobs:
                 $elapsed += 2
             }
 
-            if ($elapsed -ge $timeout) {
+            if (-not $stopped) {
                 Write-Host "Service did not stop gracefully, forcing termination..."
                 $processName = "UKSF.Api"
                 $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
@@ -172,30 +194,23 @@ jobs:
             Write-Host "Service stop complete"
 
       - task: CopyFiles@2
-        displayName: 'Prod - Copy Files'
+        displayName: 'Copy Files'
         inputs:
-          SourceFolder: '$(Build.BinariesDirectory)/UKSF.Api'
+          SourceFolder: '$(Pipeline.Workspace)/api'
           Contents: '**'
           TargetFolder: 'C:\Server\UKSF.Api'
           CleanTargetFolder: true
           OverWrite: true
 
-      - task: PowerShell@2
-        displayName: 'Prod - Transform appsettings'
+      - task: FileTransform@2
+        displayName: 'Transform appsettings'
         inputs:
-          targetType: 'inline'
-          script: |
-            $settingsPath = "C:\Server\UKSF.Api\appsettings.json"
-            $settings = Get-Content $settingsPath | ConvertFrom-Json
-
-            $settings.ConnectionStrings.Database = "$(Prod_ConnectionStrings_Database)"
-            $settings.Kestrel.Endpoints.Https.Url = "$(Prod_Kestrel_Https_Url)"
-
-            $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath
-            Write-Host "Prod appsettings.json updated"
+          folderPath: 'C:\Server\UKSF.Api'
+          xmlTransformationRules: ''
+          jsonTargetFiles: 'appsettings.json'
 
       - task: PowerShell@2
-        displayName: 'Prod - Start Service'
+        displayName: 'Start Service'
         inputs:
           targetType: 'inline'
           script: |
@@ -205,17 +220,23 @@ jobs:
             & "C:\Program Files\NSSM\win64\nssm.exe" start $serviceName
 
             Start-Sleep -Seconds 5
-            $status = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
-            Write-Host "Service status: $status"
+            $statusOutput = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
+            $statusText = ($statusOutput | Out-String).Trim()
+            Write-Host "Service status: [$statusText]"
 
-            if ($status -notmatch "SERVICE_RUNNING") {
+            if ($statusText -notlike "*SERVICE_RUNNING*") {
                 Write-Error "Service failed to start"
                 exit 1
             }
 
             Write-Host "Service started successfully"
 
-      # DB Migration
+  - job: MigrateDB
+    displayName: Migrate DB Data
+    dependsOn: DeployProd
+    steps:
+      - checkout: none
+
       - task: PowerShell@2
         displayName: 'Migrate DB Data'
         inputs:
