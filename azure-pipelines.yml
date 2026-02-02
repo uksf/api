@@ -55,12 +55,12 @@ jobs:
             $timeout = 60
 
             Write-Host "Stopping service: $serviceName"
-            $stopResult = & nssm.exe stop $serviceName 2>&1
+            $stopResult = & "C:\Program Files\NSSM\win64\nssm.exe" stop $serviceName 2>&1
             Write-Host "Stop command result: $stopResult"
 
             $elapsed = 0
             while ($elapsed -lt $timeout) {
-                $status = & nssm.exe status $serviceName 2>&1
+                $status = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
                 Write-Host "Service status: $status"
 
                 if ($status -match "SERVICE_STOPPED" -or $status -match "does not exist") {
@@ -117,10 +117,10 @@ jobs:
             $serviceName = "UKSF.Api.Dev"
 
             Write-Host "Starting service: $serviceName"
-            & nssm.exe start $serviceName
+            & "C:\Program Files\NSSM\win64\nssm.exe" start $serviceName
 
             Start-Sleep -Seconds 5
-            $status = & nssm.exe status $serviceName 2>&1
+            $status = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
             Write-Host "Service status: $status"
 
             if ($status -notmatch "SERVICE_RUNNING") {
@@ -140,12 +140,12 @@ jobs:
             $timeout = 60
 
             Write-Host "Stopping service: $serviceName"
-            $stopResult = & nssm.exe stop $serviceName 2>&1
+            $stopResult = & "C:\Program Files\NSSM\win64\nssm.exe" stop $serviceName 2>&1
             Write-Host "Stop command result: $stopResult"
 
             $elapsed = 0
             while ($elapsed -lt $timeout) {
-                $status = & nssm.exe status $serviceName 2>&1
+                $status = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
                 Write-Host "Service status: $status"
 
                 if ($status -match "SERVICE_STOPPED" -or $status -match "does not exist") {
@@ -202,10 +202,10 @@ jobs:
             $serviceName = "UKSF.Api"
 
             Write-Host "Starting service: $serviceName"
-            & nssm.exe start $serviceName
+            & "C:\Program Files\NSSM\win64\nssm.exe" start $serviceName
 
             Start-Sleep -Seconds 5
-            $status = & nssm.exe status $serviceName 2>&1
+            $status = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
             Write-Host "Service status: $status"
 
             if ($status -notmatch "SERVICE_RUNNING") {
