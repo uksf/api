@@ -66,41 +66,54 @@ jobs:
           targetType: 'inline'
           script: |
             $serviceName = "UKSF.Api.Dev"
+            $nssm = "C:\Program Files\NSSM\win64\nssm.exe"
             $timeout = 60
 
+            $statusOutput = & $nssm status $serviceName 2>&1
+            $statusText = ($statusOutput | Out-String).Trim()
+            Write-Host "Current service status: [$statusText]"
+
+            if ($statusText -like "*SERVICE_STOPPED*") {
+                Write-Host "Service is already stopped"
+                exit 0
+            }
+
+            if ($statusText -like "*does not exist*") {
+                Write-Host "Service does not exist"
+                exit 0
+            }
+
             Write-Host "Stopping service: $serviceName"
-            $stopResult = & "C:\Program Files\NSSM\win64\nssm.exe" stop $serviceName 2>&1
+            $stopResult = & $nssm stop $serviceName 2>&1
             Write-Host "Stop command result: $stopResult"
 
             $elapsed = 0
             $stopped = $false
             while ($elapsed -lt $timeout) {
-                $statusOutput = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
+                Start-Sleep -Seconds 2
+                $elapsed += 2
+
+                $statusOutput = & $nssm status $serviceName 2>&1
                 $statusText = ($statusOutput | Out-String).Trim()
                 Write-Host "Service status: [$statusText]"
 
-                if ($statusText -like "*SERVICE_STOPPED*" -or $statusText -like "*does not exist*") {
+                if ($statusText -like "*SERVICE_STOPPED*") {
                     Write-Host "Service stopped successfully"
                     $stopped = $true
                     break
                 }
-
-                Start-Sleep -Seconds 2
-                $elapsed += 2
             }
 
             if (-not $stopped) {
                 Write-Host "Service did not stop gracefully, forcing termination..."
-                $processName = "UKSF.Api"
-                $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
+                $process = Get-Process -Name "UKSF.Api" -ErrorAction SilentlyContinue
                 if ($process) {
-                    Write-Host "Killing process: $processName (PID: $($process.Id))"
+                    Write-Host "Killing process (PID: $($process.Id))"
                     Stop-Process -Id $process.Id -Force
                     Start-Sleep -Seconds 5
                 }
             }
 
-            Start-Sleep -Seconds 2
             Write-Host "Service stop complete"
 
       - task: CopyFiles@2
@@ -125,21 +138,38 @@ jobs:
           targetType: 'inline'
           script: |
             $serviceName = "UKSF.Api.Dev"
+            $nssm = "C:\Program Files\NSSM\win64\nssm.exe"
+            $timeout = 30
 
-            Write-Host "Starting service: $serviceName"
-            & "C:\Program Files\NSSM\win64\nssm.exe" start $serviceName
-
-            Start-Sleep -Seconds 5
-            $statusOutput = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
+            $statusOutput = & $nssm status $serviceName 2>&1
             $statusText = ($statusOutput | Out-String).Trim()
-            Write-Host "Service status: [$statusText]"
+            Write-Host "Current service status: [$statusText]"
 
-            if ($statusText -notlike "*SERVICE_RUNNING*") {
-                Write-Error "Service failed to start"
-                exit 1
+            if ($statusText -like "*SERVICE_RUNNING*") {
+                Write-Host "Service is already running"
+                exit 0
             }
 
-            Write-Host "Service started successfully"
+            Write-Host "Starting service: $serviceName"
+            & $nssm start $serviceName
+
+            $elapsed = 0
+            while ($elapsed -lt $timeout) {
+                Start-Sleep -Seconds 2
+                $elapsed += 2
+
+                $statusOutput = & $nssm status $serviceName 2>&1
+                $statusText = ($statusOutput | Out-String).Trim()
+                Write-Host "Service status: [$statusText]"
+
+                if ($statusText -like "*SERVICE_RUNNING*") {
+                    Write-Host "Service started successfully"
+                    exit 0
+                }
+            }
+
+            Write-Error "Service failed to start within $timeout seconds"
+            exit 1
 
   - job: DeployProd
     displayName: Deploy to Production
@@ -156,41 +186,54 @@ jobs:
           targetType: 'inline'
           script: |
             $serviceName = "UKSF.Api"
+            $nssm = "C:\Program Files\NSSM\win64\nssm.exe"
             $timeout = 60
 
+            $statusOutput = & $nssm status $serviceName 2>&1
+            $statusText = ($statusOutput | Out-String).Trim()
+            Write-Host "Current service status: [$statusText]"
+
+            if ($statusText -like "*SERVICE_STOPPED*") {
+                Write-Host "Service is already stopped"
+                exit 0
+            }
+
+            if ($statusText -like "*does not exist*") {
+                Write-Host "Service does not exist"
+                exit 0
+            }
+
             Write-Host "Stopping service: $serviceName"
-            $stopResult = & "C:\Program Files\NSSM\win64\nssm.exe" stop $serviceName 2>&1
+            $stopResult = & $nssm stop $serviceName 2>&1
             Write-Host "Stop command result: $stopResult"
 
             $elapsed = 0
             $stopped = $false
             while ($elapsed -lt $timeout) {
-                $statusOutput = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
+                Start-Sleep -Seconds 2
+                $elapsed += 2
+
+                $statusOutput = & $nssm status $serviceName 2>&1
                 $statusText = ($statusOutput | Out-String).Trim()
                 Write-Host "Service status: [$statusText]"
 
-                if ($statusText -like "*SERVICE_STOPPED*" -or $statusText -like "*does not exist*") {
+                if ($statusText -like "*SERVICE_STOPPED*") {
                     Write-Host "Service stopped successfully"
                     $stopped = $true
                     break
                 }
-
-                Start-Sleep -Seconds 2
-                $elapsed += 2
             }
 
             if (-not $stopped) {
                 Write-Host "Service did not stop gracefully, forcing termination..."
-                $processName = "UKSF.Api"
-                $process = Get-Process -Name $processName -ErrorAction SilentlyContinue
+                $process = Get-Process -Name "UKSF.Api" -ErrorAction SilentlyContinue
                 if ($process) {
-                    Write-Host "Killing process: $processName (PID: $($process.Id))"
+                    Write-Host "Killing process (PID: $($process.Id))"
                     Stop-Process -Id $process.Id -Force
                     Start-Sleep -Seconds 5
                 }
             }
 
-            Start-Sleep -Seconds 2
             Write-Host "Service stop complete"
 
       - task: CopyFiles@2
@@ -215,21 +258,38 @@ jobs:
           targetType: 'inline'
           script: |
             $serviceName = "UKSF.Api"
+            $nssm = "C:\Program Files\NSSM\win64\nssm.exe"
+            $timeout = 30
 
-            Write-Host "Starting service: $serviceName"
-            & "C:\Program Files\NSSM\win64\nssm.exe" start $serviceName
-
-            Start-Sleep -Seconds 5
-            $statusOutput = & "C:\Program Files\NSSM\win64\nssm.exe" status $serviceName 2>&1
+            $statusOutput = & $nssm status $serviceName 2>&1
             $statusText = ($statusOutput | Out-String).Trim()
-            Write-Host "Service status: [$statusText]"
+            Write-Host "Current service status: [$statusText]"
 
-            if ($statusText -notlike "*SERVICE_RUNNING*") {
-                Write-Error "Service failed to start"
-                exit 1
+            if ($statusText -like "*SERVICE_RUNNING*") {
+                Write-Host "Service is already running"
+                exit 0
             }
 
-            Write-Host "Service started successfully"
+            Write-Host "Starting service: $serviceName"
+            & $nssm start $serviceName
+
+            $elapsed = 0
+            while ($elapsed -lt $timeout) {
+                Start-Sleep -Seconds 2
+                $elapsed += 2
+
+                $statusOutput = & $nssm status $serviceName 2>&1
+                $statusText = ($statusOutput | Out-String).Trim()
+                Write-Host "Service status: [$statusText]"
+
+                if ($statusText -like "*SERVICE_RUNNING*") {
+                    Write-Host "Service started successfully"
+                    exit 0
+                }
+            }
+
+            Write-Error "Service failed to start within $timeout seconds"
+            exit 1
 
   - job: MigrateDB
     displayName: Migrate DB Data
