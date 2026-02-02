@@ -31,18 +31,22 @@ jobs:
 
             function Get-ServiceStatus {
                 $output = & $nssm status $serviceName 2>&1 | Out-String
-                return ($output -replace '[\r\n\s]+', ' ').Trim().ToUpper()
+                if ($output -match "SERVICE_RUNNING") { return "RUNNING" }
+                if ($output -match "SERVICE_STOPPED") { return "STOPPED" }
+                if ($output -match "SERVICE_PAUSED") { return "PAUSED" }
+                if ($output -match "NOT EXIST") { return "NOT_EXIST" }
+                return "UNKNOWN"
             }
 
             $status = Get-ServiceStatus
-            Write-Host "Current service status: [$status]"
+            Write-Host "Current service status: $status"
 
-            if ($status -match "SERVICE_STOPPED") {
+            if ($status -eq "STOPPED") {
                 Write-Host "Service is already stopped"
                 exit 0
             }
 
-            if ($status -match "NOT EXIST") {
+            if ($status -eq "NOT_EXIST") {
                 Write-Host "Service does not exist"
                 exit 0
             }
@@ -57,9 +61,9 @@ jobs:
                 $elapsed += 2
 
                 $status = Get-ServiceStatus
-                Write-Host "Service status: [$status]"
+                Write-Host "Service status: $status"
 
-                if ($status -match "SERVICE_STOPPED") {
+                if ($status -eq "STOPPED") {
                     Write-Host "Service stopped successfully"
                     $stopped = $true
                     break
@@ -106,13 +110,17 @@ jobs:
 
             function Get-ServiceStatus {
                 $output = & $nssm status $serviceName 2>&1 | Out-String
-                return ($output -replace '[\r\n\s]+', ' ').Trim().ToUpper()
+                if ($output -match "SERVICE_RUNNING") { return "RUNNING" }
+                if ($output -match "SERVICE_STOPPED") { return "STOPPED" }
+                if ($output -match "SERVICE_PAUSED") { return "PAUSED" }
+                if ($output -match "NOT EXIST") { return "NOT_EXIST" }
+                return "UNKNOWN"
             }
 
             $status = Get-ServiceStatus
-            Write-Host "Current service status: [$status]"
+            Write-Host "Current service status: $status"
 
-            if ($status -match "SERVICE_RUNNING") {
+            if ($status -eq "RUNNING") {
                 Write-Host "Service is already running"
                 exit 0
             }
@@ -126,9 +134,9 @@ jobs:
                 $elapsed += 2
 
                 $status = Get-ServiceStatus
-                Write-Host "Service status: [$status]"
+                Write-Host "Service status: $status"
 
-                if ($status -match "SERVICE_RUNNING") {
+                if ($status -eq "RUNNING") {
                     Write-Host "Service started successfully"
                     exit 0
                 }
