@@ -55,7 +55,7 @@ jobs:
     displayName: Deploy to Dev
     dependsOn: Build
     variables:
-      - group: UKSF API - Development
+      - group: UKSF API - Dev
     steps:
       - download: current
         artifact: api
