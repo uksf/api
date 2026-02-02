@@ -179,7 +179,6 @@ public class WorkshopModsProcessingService(
 
     public async Task QueueDevBuild()
     {
-        return;
         try
         {
             var runningBuilds = modpackService.GetDevBuilds().Where(b => b.Running).ToList();

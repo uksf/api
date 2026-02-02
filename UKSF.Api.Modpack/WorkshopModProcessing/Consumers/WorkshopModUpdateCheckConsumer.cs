@@ -1,12 +1,10 @@
 using MassTransit;
 using UKSF.Api.Core;
-using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.WorkshopModProcessing.Operations;
 
 namespace UKSF.Api.Modpack.WorkshopModProcessing.Consumers;
 
-public class WorkshopModUpdateCheckConsumer(IUpdateOperation updateOperation, IWorkshopModsContext workshopModsContext, IUksfLogger logger)
-    : IConsumer<WorkshopModUpdateCheckCommand>
+public class WorkshopModUpdateCheckConsumer(IUpdateOperation updateOperation, IUksfLogger logger) : IConsumer<WorkshopModUpdateCheckCommand>
 {
     public async Task Consume(ConsumeContext<WorkshopModUpdateCheckCommand> context)
     {

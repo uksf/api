@@ -89,15 +89,42 @@ public class WorkshopModsProcessingServiceTests
         _steamCmdService.Verify(x => x.DownloadWorkshopMod("123"), Times.Exactly(2));
     }
 
-    // TODO: QueueDevBuild is temporarily disabled - re-enable these tests when the functionality is restored
     [Fact]
-    public async Task QueueDevBuild_WhenDisabled_ShouldReturnImmediately()
+    public async Task QueueDevBuild_ShouldCancelRunningBuildsAndStartNew()
     {
+        var runningBuild = new DomainModpackBuild { Running = true };
+        _modpackService.Setup(x => x.GetDevBuilds()).Returns([runningBuild]);
+        _modpackService.Setup(x => x.CancelBuild(runningBuild)).Returns(Task.CompletedTask);
+        _modpackService.Setup(x => x.NewBuild(It.IsAny<NewBuild>())).Returns(Task.CompletedTask);
+
         await _subject.QueueDevBuild();
 
-        _modpackService.Verify(x => x.GetDevBuilds(), Times.Never);
+        _modpackService.Verify(x => x.GetDevBuilds(), Times.Once);
+        _modpackService.Verify(x => x.CancelBuild(runningBuild), Times.Once);
+        _modpackService.Verify(x => x.NewBuild(It.Is<NewBuild>(b => b.Reference == "main")), Times.Once);
+    }
+
+    [Fact]
+    public async Task QueueDevBuild_WhenNoRunningBuilds_ShouldOnlyStartNew()
+    {
+        _modpackService.Setup(x => x.GetDevBuilds()).Returns([]);
+        _modpackService.Setup(x => x.NewBuild(It.IsAny<NewBuild>())).Returns(Task.CompletedTask);
+
+        await _subject.QueueDevBuild();
+
+        _modpackService.Verify(x => x.GetDevBuilds(), Times.Once);
         _modpackService.Verify(x => x.CancelBuild(It.IsAny<DomainModpackBuild>()), Times.Never);
-        _modpackService.Verify(x => x.NewBuild(It.IsAny<NewBuild>()), Times.Never);
+        _modpackService.Verify(x => x.NewBuild(It.Is<NewBuild>(b => b.Reference == "main")), Times.Once);
+    }
+
+    [Fact]
+    public async Task QueueDevBuild_WhenExceptionThrown_ShouldLogErrorAndNotRethrow()
+    {
+        _modpackService.Setup(x => x.GetDevBuilds()).Throws(new Exception("test error"));
+
+        await _subject.QueueDevBuild();
+
+        _logger.Verify(x => x.LogError(It.IsAny<string>(), It.IsAny<Exception>()), Times.Once);
     }
 
     [Fact]

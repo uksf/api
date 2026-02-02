@@ -2,31 +2,34 @@ parameters:
   - name: dependsOn
     type: string
 
-jobs:
-  - job: MigrateDB
+stages:
+  - stage: MigrateDB
     displayName: Migrate DB Data
     dependsOn: ${{ parameters.dependsOn }}
-    steps:
-      - checkout: none
+    jobs:
+      - job: Migrate
+        displayName: Migrate
+        steps:
+          - checkout: none
 
-      - task: PowerShell@2
-        displayName: 'Migrate DB Data'
-        inputs:
-          targetType: 'inline'
-          workingDirectory: 'C:\Program Files\MongoDB\Server\bin'
-          script: |
-            $password = "$(DbMigrationPassword)"
+          - task: PowerShell@2
+            displayName: 'Migrate DB Data'
+            inputs:
+              targetType: 'inline'
+              workingDirectory: 'C:\Program Files\MongoDB\Server\bin'
+              script: |
+                $password = "$(DbMigrationPassword)"
 
-            Write-Host "Dumping prod database..."
-            & .\mongodump --port=52005 --db prod --username admin --password $password --authenticationDatabase admin
+                Write-Host "Dumping prod database..."
+                & .\mongodump --port=52005 --db prod --username admin --password $password --authenticationDatabase admin
 
-            Write-Host "Restoring to dev database..."
-            & .\mongorestore --port=52005 --db dev dump/prod --username admin --password $password --authenticationDatabase admin --drop --nsExclude dev.variables --nsExclude dev.gameServers --nsExclude dev.documentMetadata --nsExclude dev.scheduledJobs
+                Write-Host "Restoring to dev database..."
+                & .\mongorestore --port=52005 --db dev dump/prod --username admin --password $password --authenticationDatabase admin --drop --nsExclude dev.variables --nsExclude dev.gameServers --nsExclude dev.documentMetadata --nsExclude dev.scheduledJobs
 
-            Write-Host "Dumping dev database..."
-            & .\mongodump --port=52005 --db dev --username admin --password $password --authenticationDatabase admin
+                Write-Host "Dumping dev database..."
+                & .\mongodump --port=52005 --db dev --username admin --password $password --authenticationDatabase admin
 
-            Write-Host "Restoring to devLocal database..."
-            & .\mongorestore --port=52005 --db devLocal dump/dev --username admin --password $password --authenticationDatabase admin --drop --nsExclude devLocal.variables --nsExclude devLocal.gameServers --nsExclude devLocal.documentMetadata --nsExclude devLocal.scheduledJobs
+                Write-Host "Restoring to devLocal database..."
+                & .\mongorestore --port=52005 --db devLocal dump/dev --username admin --password $password --authenticationDatabase admin --drop --nsExclude devLocal.variables --nsExclude devLocal.gameServers --nsExclude devLocal.documentMetadata --nsExclude devLocal.scheduledJobs
 
-            Write-Host "DB migration complete"
+                Write-Host "DB migration complete"

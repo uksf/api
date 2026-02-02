@@ -10,41 +10,44 @@ variables:
   buildConfiguration: 'Release'
   buildOutput: '$(Build.SourcesDirectory)\publish'
 
-jobs:
-  - job: Build
+stages:
+  - stage: Build
     displayName: Build and Test
-    steps:
-      - task: DotNetCoreCLI@2
-        displayName: 'Restore'
-        inputs:
-          command: 'restore'
-          projects: '**/*.sln'
-          feedsToUse: 'config'
-          nugetConfigPath: 'NuGet.config'
+    jobs:
+      - job: Build
+        displayName: Build
+        steps:
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore'
+            inputs:
+              command: 'restore'
+              projects: '**/*.sln'
+              feedsToUse: 'config'
+              nugetConfigPath: 'NuGet.config'
 
-      - task: DotNetCoreCLI@2
-        displayName: 'Build'
-        inputs:
-          command: 'build'
-          projects: '**/*.sln'
-          arguments: '-c $(buildConfiguration) --no-restore'
+          - task: DotNetCoreCLI@2
+            displayName: 'Build'
+            inputs:
+              command: 'build'
+              projects: '**/*.sln'
+              arguments: '-c $(buildConfiguration) --no-restore'
 
-      - task: DotNetCoreCLI@2
-        displayName: 'Test'
-        inputs:
-          command: 'test'
-          projects: '**/*.Tests*.csproj'
-          arguments: '-c $(buildConfiguration) --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
+          - task: DotNetCoreCLI@2
+            displayName: 'Test'
+            inputs:
+              command: 'test'
+              projects: '**/*.Tests*.csproj'
+              arguments: '-c $(buildConfiguration) --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=opencover'
 
-      - task: DotNetCoreCLI@2
-        displayName: 'Publish API'
-        inputs:
-          command: publish
-          publishWebProjects: false
-          projects: '**/UKSF.Api.csproj'
-          arguments: '-c $(buildConfiguration) --output "$(buildOutput)"'
-          zipAfterPublish: false
-          modifyOutputPath: false
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish API'
+            inputs:
+              command: publish
+              publishWebProjects: false
+              projects: '**/UKSF.Api.csproj'
+              arguments: '-c $(buildConfiguration) --output "$(buildOutput)"'
+              zipAfterPublish: false
+              modifyOutputPath: false
 
   - template: templates/deploy-api.yml
     parameters:

@@ -3,6 +3,8 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Modpack.WorkshopModProcessing;
 
+#nullable enable
+
 public class WorkshopModInstanceState : SagaStateMachineInstance, ISagaVersion
 {
     [BsonId]
@@ -10,10 +12,10 @@ public class WorkshopModInstanceState : SagaStateMachineInstance, ISagaVersion
 
     public int Version { get; set; }
 
-    public string CurrentState { get; set; }
-    public string WorkshopModId { get; set; }
-    public string Operation { get; set; } // Install, Update, Uninstall
-    public List<string> SelectedPbos { get; set; }
+    public string CurrentState { get; set; } = string.Empty;
+    public string WorkshopModId { get; set; } = string.Empty;
+    public string Operation { get; set; } = string.Empty; // Install, Update, Uninstall
+    public List<string> SelectedPbos { get; set; } = [];
 
     // Observability and fault tracking
     public DateTime StartedAt { get; set; }

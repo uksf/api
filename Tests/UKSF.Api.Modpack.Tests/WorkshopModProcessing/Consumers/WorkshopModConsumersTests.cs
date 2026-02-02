@@ -376,9 +376,8 @@ public class WorkshopModUpdateCheckConsumerTests
         var operation = new Mock<IUpdateOperation>();
         operation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(CheckResult.Successful(false));
 
-        Mock<IWorkshopModsContext> contextMock = new();
         Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModUpdateCheckConsumer(operation.Object, contextMock.Object, logger.Object);
+        var consumer = new WorkshopModUpdateCheckConsumer(operation.Object, logger.Object);
 
         var context = CreateContext(new WorkshopModUpdateCheckCommand { WorkshopModId = "mod1" });
         WorkshopModUpdateCheckComplete published = null;
@@ -398,9 +397,8 @@ public class WorkshopModUpdateCheckConsumerTests
         var operation = new Mock<IUpdateOperation>();
         operation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(CheckResult.Successful(true));
 
-        Mock<IWorkshopModsContext> contextMock = new();
         Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModUpdateCheckConsumer(operation.Object, contextMock.Object, logger.Object);
+        var consumer = new WorkshopModUpdateCheckConsumer(operation.Object, logger.Object);
 
         var context = CreateContext(new WorkshopModUpdateCheckCommand { WorkshopModId = "mod1" });
         WorkshopModUpdateCheckComplete published = null;
@@ -419,9 +417,8 @@ public class WorkshopModUpdateCheckConsumerTests
     {
         var operation = new Mock<IUpdateOperation>();
         operation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(CheckResult.Failure("bad"));
-        Mock<IWorkshopModsContext> contextMock = new();
         Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModUpdateCheckConsumer(operation.Object, contextMock.Object, logger.Object);
+        var consumer = new WorkshopModUpdateCheckConsumer(operation.Object, logger.Object);
 
         var context = CreateContext(new WorkshopModUpdateCheckCommand { WorkshopModId = "mod1" });
         WorkshopModOperationFaulted published = null;
@@ -441,9 +438,8 @@ public class WorkshopModUpdateCheckConsumerTests
     {
         var operation = new Mock<IUpdateOperation>();
         operation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException("boom"));
-        Mock<IWorkshopModsContext> contextMock = new();
         Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModUpdateCheckConsumer(operation.Object, contextMock.Object, logger.Object);
+        var consumer = new WorkshopModUpdateCheckConsumer(operation.Object, logger.Object);
 
         var context = CreateContext(new WorkshopModUpdateCheckCommand { WorkshopModId = "mod1" });
         WorkshopModOperationFaulted published = null;
