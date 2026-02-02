@@ -8,6 +8,7 @@ pool: Avengers
 
 variables:
   buildConfiguration: 'Release'
+  buildOutput: '$(Build.SourcesDirectory)\publish'
 
 jobs:
   - job: Build
@@ -41,280 +42,26 @@ jobs:
           command: publish
           publishWebProjects: false
           projects: '**/UKSF.Api.csproj'
-          arguments: '-c $(buildConfiguration) --output "$(Build.ArtifactStagingDirectory)/UKSF.Api"'
+          arguments: '-c $(buildConfiguration) --output "$(buildOutput)"'
           zipAfterPublish: false
           modifyOutputPath: false
 
-      - task: PublishPipelineArtifact@1
-        displayName: 'Publish Artifact'
-        inputs:
-          targetPath: '$(Build.ArtifactStagingDirectory)/UKSF.Api'
-          artifact: 'api'
+  - template: templates/deploy-api.yml
+    parameters:
+      environment: Dev
+      serviceName: UKSF.Api.Dev
+      deployPath: 'C:\Server\UKSF.Api.Dev'
+      variableGroup: UKSF API - Dev
+      dependsOn: Build
 
-  - job: DeployDev
-    displayName: Deploy to Dev
-    dependsOn: Build
-    variables:
-      - group: UKSF API - Dev
-    steps:
-      - download: current
-        artifact: api
+  - template: templates/deploy-api.yml
+    parameters:
+      environment: Prod
+      serviceName: UKSF.Api
+      deployPath: 'C:\Server\UKSF.Api'
+      variableGroup: UKSF API - Production
+      dependsOn: DeployDev
 
-      - task: PowerShell@2
-        displayName: 'Stop Service'
-        inputs:
-          targetType: 'inline'
-          script: |
-            $serviceName = "UKSF.Api.Dev"
-            $nssm = "C:\Program Files\NSSM\win64\nssm.exe"
-            $timeout = 60
-
-            $statusOutput = & $nssm status $serviceName 2>&1
-            $statusText = ($statusOutput | Out-String).Trim()
-            Write-Host "Current service status: [$statusText]"
-
-            if ($statusText -like "*SERVICE_STOPPED*") {
-                Write-Host "Service is already stopped"
-                exit 0
-            }
-
-            if ($statusText -like "*does not exist*") {
-                Write-Host "Service does not exist"
-                exit 0
-            }
-
-            Write-Host "Stopping service: $serviceName"
-            $stopResult = & $nssm stop $serviceName 2>&1
-            Write-Host "Stop command result: $stopResult"
-
-            $elapsed = 0
-            $stopped = $false
-            while ($elapsed -lt $timeout) {
-                Start-Sleep -Seconds 2
-                $elapsed += 2
-
-                $statusOutput = & $nssm status $serviceName 2>&1
-                $statusText = ($statusOutput | Out-String).Trim()
-                Write-Host "Service status: [$statusText]"
-
-                if ($statusText -like "*SERVICE_STOPPED*") {
-                    Write-Host "Service stopped successfully"
-                    $stopped = $true
-                    break
-                }
-            }
-
-            if (-not $stopped) {
-                Write-Host "Service did not stop gracefully, forcing termination..."
-                $process = Get-Process -Name "UKSF.Api" -ErrorAction SilentlyContinue
-                if ($process) {
-                    Write-Host "Killing process (PID: $($process.Id))"
-                    Stop-Process -Id $process.Id -Force
-                    Start-Sleep -Seconds 5
-                }
-            }
-
-            Write-Host "Service stop complete"
-
-      - task: CopyFiles@2
-        displayName: 'Copy Files'
-        inputs:
-          SourceFolder: '$(Pipeline.Workspace)/api'
-          Contents: '**'
-          TargetFolder: 'C:\Server\UKSF.Api.Dev'
-          CleanTargetFolder: true
-          OverWrite: true
-
-      - task: FileTransform@2
-        displayName: 'Transform appsettings'
-        inputs:
-          folderPath: 'C:\Server\UKSF.Api.Dev'
-          xmlTransformationRules: ''
-          jsonTargetFiles: 'appsettings.json'
-
-      - task: PowerShell@2
-        displayName: 'Start Service'
-        inputs:
-          targetType: 'inline'
-          script: |
-            $serviceName = "UKSF.Api.Dev"
-            $nssm = "C:\Program Files\NSSM\win64\nssm.exe"
-            $timeout = 30
-
-            $statusOutput = & $nssm status $serviceName 2>&1
-            $statusText = ($statusOutput | Out-String).Trim()
-            Write-Host "Current service status: [$statusText]"
-
-            if ($statusText -like "*SERVICE_RUNNING*") {
-                Write-Host "Service is already running"
-                exit 0
-            }
-
-            Write-Host "Starting service: $serviceName"
-            & $nssm start $serviceName
-
-            $elapsed = 0
-            while ($elapsed -lt $timeout) {
-                Start-Sleep -Seconds 2
-                $elapsed += 2
-
-                $statusOutput = & $nssm status $serviceName 2>&1
-                $statusText = ($statusOutput | Out-String).Trim()
-                Write-Host "Service status: [$statusText]"
-
-                if ($statusText -like "*SERVICE_RUNNING*") {
-                    Write-Host "Service started successfully"
-                    exit 0
-                }
-            }
-
-            Write-Error "Service failed to start within $timeout seconds"
-            exit 1
-
-  - job: DeployProd
-    displayName: Deploy to Production
-    dependsOn: DeployDev
-    variables:
-      - group: UKSF API - Production
-    steps:
-      - download: current
-        artifact: api
-
-      - task: PowerShell@2
-        displayName: 'Stop Service'
-        inputs:
-          targetType: 'inline'
-          script: |
-            $serviceName = "UKSF.Api"
-            $nssm = "C:\Program Files\NSSM\win64\nssm.exe"
-            $timeout = 60
-
-            $statusOutput = & $nssm status $serviceName 2>&1
-            $statusText = ($statusOutput | Out-String).Trim()
-            Write-Host "Current service status: [$statusText]"
-
-            if ($statusText -like "*SERVICE_STOPPED*") {
-                Write-Host "Service is already stopped"
-                exit 0
-            }
-
-            if ($statusText -like "*does not exist*") {
-                Write-Host "Service does not exist"
-                exit 0
-            }
-
-            Write-Host "Stopping service: $serviceName"
-            $stopResult = & $nssm stop $serviceName 2>&1
-            Write-Host "Stop command result: $stopResult"
-
-            $elapsed = 0
-            $stopped = $false
-            while ($elapsed -lt $timeout) {
-                Start-Sleep -Seconds 2
-                $elapsed += 2
-
-                $statusOutput = & $nssm status $serviceName 2>&1
-                $statusText = ($statusOutput | Out-String).Trim()
-                Write-Host "Service status: [$statusText]"
-
-                if ($statusText -like "*SERVICE_STOPPED*") {
-                    Write-Host "Service stopped successfully"
-                    $stopped = $true
-                    break
-                }
-            }
-
-            if (-not $stopped) {
-                Write-Host "Service did not stop gracefully, forcing termination..."
-                $process = Get-Process -Name "UKSF.Api" -ErrorAction SilentlyContinue
-                if ($process) {
-                    Write-Host "Killing process (PID: $($process.Id))"
-                    Stop-Process -Id $process.Id -Force
-                    Start-Sleep -Seconds 5
-                }
-            }
-
-            Write-Host "Service stop complete"
-
-      - task: CopyFiles@2
-        displayName: 'Copy Files'
-        inputs:
-          SourceFolder: '$(Pipeline.Workspace)/api'
-          Contents: '**'
-          TargetFolder: 'C:\Server\UKSF.Api'
-          CleanTargetFolder: true
-          OverWrite: true
-
-      - task: FileTransform@2
-        displayName: 'Transform appsettings'
-        inputs:
-          folderPath: 'C:\Server\UKSF.Api'
-          xmlTransformationRules: ''
-          jsonTargetFiles: 'appsettings.json'
-
-      - task: PowerShell@2
-        displayName: 'Start Service'
-        inputs:
-          targetType: 'inline'
-          script: |
-            $serviceName = "UKSF.Api"
-            $nssm = "C:\Program Files\NSSM\win64\nssm.exe"
-            $timeout = 30
-
-            $statusOutput = & $nssm status $serviceName 2>&1
-            $statusText = ($statusOutput | Out-String).Trim()
-            Write-Host "Current service status: [$statusText]"
-
-            if ($statusText -like "*SERVICE_RUNNING*") {
-                Write-Host "Service is already running"
-                exit 0
-            }
-
-            Write-Host "Starting service: $serviceName"
-            & $nssm start $serviceName
-
-            $elapsed = 0
-            while ($elapsed -lt $timeout) {
-                Start-Sleep -Seconds 2
-                $elapsed += 2
-
-                $statusOutput = & $nssm status $serviceName 2>&1
-                $statusText = ($statusOutput | Out-String).Trim()
-                Write-Host "Service status: [$statusText]"
-
-                if ($statusText -like "*SERVICE_RUNNING*") {
-                    Write-Host "Service started successfully"
-                    exit 0
-                }
-            }
-
-            Write-Error "Service failed to start within $timeout seconds"
-            exit 1
-
-  - job: MigrateDB
-    displayName: Migrate DB Data
-    dependsOn: DeployProd
-    steps:
-      - checkout: none
-
-      - task: PowerShell@2
-        displayName: 'Migrate DB Data'
-        inputs:
-          targetType: 'inline'
-          workingDirectory: 'C:\Program Files\MongoDB\Server\bin'
-          script: |
-            $password = "$(DbMigrationPassword)"
-
-            Write-Host "Dumping prod database..."
-            & .\mongodump --port=52005 --db prod --username admin --password $password --authenticationDatabase admin
-
-            Write-Host "Restoring to dev database..."
-            & .\mongorestore --port=52005 --db dev dump/prod --username admin --password $password --authenticationDatabase admin --drop --nsExclude dev.variables --nsExclude dev.gameServers --nsExclude dev.documentMetadata --nsExclude dev.scheduledJobs
-
-            Write-Host "Dumping dev database..."
-            & .\mongodump --port=52005 --db dev --username admin --password $password --authenticationDatabase admin
-
-            Write-Host "Restoring to devLocal database..."
-            & .\mongorestore --port=52005 --db devLocal dump/dev --username admin --password $password --authenticationDatabase admin --drop --nsExclude devLocal.variables --nsExclude devLocal.gameServers --nsExclude devLocal.documentMetadata --nsExclude devLocal.scheduledJobs
-
-            Write-Host "DB migration complete"
+  - template: templates/migrate-db.yml
+    parameters:
+      dependsOn: DeployProd
