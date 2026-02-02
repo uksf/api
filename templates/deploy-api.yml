@@ -26,58 +26,44 @@ jobs:
           script: |
             $ErrorActionPreference = "Continue"
             $serviceName = "${{ parameters.serviceName }}"
-            $nssm = "C:\Program Files\NSSM\win64\nssm.exe"
             $timeout = 60
 
-            function Get-ServiceStatus {
-                $output = & $nssm status $serviceName 2>&1 | Out-String
-                if ($output -match "SERVICE_RUNNING") { return "RUNNING" }
-                if ($output -match "SERVICE_STOPPED") { return "STOPPED" }
-                if ($output -match "SERVICE_PAUSED") { return "PAUSED" }
-                if ($output -match "NOT EXIST") { return "NOT_EXIST" }
-                return "UNKNOWN"
-            }
-
-            $status = Get-ServiceStatus
-            Write-Host "Current service status: $status"
-
-            if ($status -eq "STOPPED") {
-                Write-Host "Service is already stopped"
-                exit 0
-            }
-
-            if ($status -eq "NOT_EXIST") {
+            $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+            if (-not $service) {
                 Write-Host "Service does not exist"
                 exit 0
             }
 
+            Write-Host "Current service status: $($service.Status)"
+
+            if ($service.Status -eq "Stopped") {
+                Write-Host "Service is already stopped"
+                exit 0
+            }
+
             Write-Host "Stopping service: $serviceName"
-            & $nssm stop $serviceName 2>&1 | Out-String | Write-Host
+            Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
 
             $elapsed = 0
-            $stopped = $false
             while ($elapsed -lt $timeout) {
                 Start-Sleep -Seconds 2
                 $elapsed += 2
 
-                $status = Get-ServiceStatus
-                Write-Host "Service status: $status"
+                $service.Refresh()
+                Write-Host "Service status: $($service.Status)"
 
-                if ($status -eq "STOPPED") {
+                if ($service.Status -eq "Stopped") {
                     Write-Host "Service stopped successfully"
-                    $stopped = $true
-                    break
+                    exit 0
                 }
             }
 
-            if (-not $stopped) {
-                Write-Host "Service did not stop gracefully, forcing termination..."
-                $process = Get-Process -Name "UKSF.Api" -ErrorAction SilentlyContinue
-                if ($process) {
-                    Write-Host "Killing process (PID: $($process.Id))"
-                    Stop-Process -Id $process.Id -Force
-                    Start-Sleep -Seconds 5
-                }
+            Write-Host "Service did not stop gracefully, forcing termination..."
+            $process = Get-Process -Name "UKSF.Api" -ErrorAction SilentlyContinue
+            if ($process) {
+                Write-Host "Killing process (PID: $($process.Id))"
+                Stop-Process -Id $process.Id -Force
+                Start-Sleep -Seconds 5
             }
 
             Write-Host "Service stop complete"
@@ -105,38 +91,33 @@ jobs:
           script: |
             $ErrorActionPreference = "Continue"
             $serviceName = "${{ parameters.serviceName }}"
-            $nssm = "C:\Program Files\NSSM\win64\nssm.exe"
             $timeout = 30
 
-            function Get-ServiceStatus {
-                $output = & $nssm status $serviceName 2>&1 | Out-String
-                if ($output -match "SERVICE_RUNNING") { return "RUNNING" }
-                if ($output -match "SERVICE_STOPPED") { return "STOPPED" }
-                if ($output -match "SERVICE_PAUSED") { return "PAUSED" }
-                if ($output -match "NOT EXIST") { return "NOT_EXIST" }
-                return "UNKNOWN"
+            $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+            if (-not $service) {
+                Write-Error "Service does not exist"
+                exit 1
             }
 
-            $status = Get-ServiceStatus
-            Write-Host "Current service status: $status"
+            Write-Host "Current service status: $($service.Status)"
 
-            if ($status -eq "RUNNING") {
+            if ($service.Status -eq "Running") {
                 Write-Host "Service is already running"
                 exit 0
             }
 
             Write-Host "Starting service: $serviceName"
-            & $nssm start $serviceName
+            Start-Service -Name $serviceName
 
             $elapsed = 0
             while ($elapsed -lt $timeout) {
                 Start-Sleep -Seconds 2
                 $elapsed += 2
 
-                $status = Get-ServiceStatus
-                Write-Host "Service status: $status"
+                $service.Refresh()
+                Write-Host "Service status: $($service.Status)"
 
-                if ($status -eq "RUNNING") {
+                if ($service.Status -eq "Running") {
                     Write-Host "Service started successfully"
                     exit 0
                 }
