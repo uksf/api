@@ -31,18 +31,18 @@ jobs:
 
             function Get-ServiceStatus {
                 $output = & $nssm status $serviceName 2>&1 | Out-String
-                return $output.Trim().ToUpper()
+                return ($output -replace '[\r\n\s]+', ' ').Trim().ToUpper()
             }
 
             $status = Get-ServiceStatus
             Write-Host "Current service status: [$status]"
 
-            if ($status.Contains("SERVICE_STOPPED")) {
+            if ($status -match "SERVICE_STOPPED") {
                 Write-Host "Service is already stopped"
                 exit 0
             }
 
-            if ($status.Contains("NOT EXIST")) {
+            if ($status -match "NOT EXIST") {
                 Write-Host "Service does not exist"
                 exit 0
             }
@@ -59,7 +59,7 @@ jobs:
                 $status = Get-ServiceStatus
                 Write-Host "Service status: [$status]"
 
-                if ($status.Contains("SERVICE_STOPPED")) {
+                if ($status -match "SERVICE_STOPPED") {
                     Write-Host "Service stopped successfully"
                     $stopped = $true
                     break
@@ -106,13 +106,13 @@ jobs:
 
             function Get-ServiceStatus {
                 $output = & $nssm status $serviceName 2>&1 | Out-String
-                return $output.Trim().ToUpper()
+                return ($output -replace '[\r\n\s]+', ' ').Trim().ToUpper()
             }
 
             $status = Get-ServiceStatus
             Write-Host "Current service status: [$status]"
 
-            if ($status.Contains("SERVICE_RUNNING")) {
+            if ($status -match "SERVICE_RUNNING") {
                 Write-Host "Service is already running"
                 exit 0
             }
@@ -128,7 +128,7 @@ jobs:
                 $status = Get-ServiceStatus
                 Write-Host "Service status: [$status]"
 
-                if ($status.Contains("SERVICE_RUNNING")) {
+                if ($status -match "SERVICE_RUNNING") {
                     Write-Host "Service started successfully"
                     exit 0
                 }
