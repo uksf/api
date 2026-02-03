@@ -21,6 +21,7 @@ public class DomainWorkshopMod : MongoObject
     public string SteamId { get; set; }
     public string Name { get; set; }
     public bool RootMod { get; set; }
+    public string FolderName { get; set; }
     public List<string> Pbos { get; set; } = [];
     public DateTime LastUpdatedLocally { get; set; }
     public string ModpackVersionFirstAdded { get; set; }

@@ -25,7 +25,16 @@ public class WorkshopModCleanupConsumer(
 
             var workshopModPath = workshopModsProcessingService.GetWorkshopModPath(workshopMod.SteamId);
             workshopModsProcessingService.CleanupWorkshopModFiles(workshopModPath);
-            await workshopModsProcessingService.QueueDevBuild();
+
+            if (context.Message.FilesChanged)
+            {
+                await workshopModsProcessingService.QueueDevBuild();
+            }
+            else
+            {
+                logger.LogInfo($"Skipping dev build for {context.Message.WorkshopModId} - no file changes");
+            }
+
             await context.Publish(new WorkshopModCleanupComplete { WorkshopModId = context.Message.WorkshopModId });
         }
         catch (Exception exception)

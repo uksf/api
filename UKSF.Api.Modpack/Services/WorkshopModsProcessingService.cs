@@ -13,6 +13,9 @@ public interface IWorkshopModsProcessingService
     List<string> GetModFiles(string workshopModPath);
     Task CopyPbosToDependencies(DomainWorkshopMod domainWorkshopMod, List<string> pbos, CancellationToken cancellationToken = default);
     void DeletePbosFromDependencies(List<string> pbos);
+    Task CopyRootModToRepos(DomainWorkshopMod workshopMod, CancellationToken cancellationToken = default);
+    void DeleteRootModFromRepos(DomainWorkshopMod workshopMod);
+    string GetRootModFolderName(DomainWorkshopMod workshopMod);
     void CleanupWorkshopModFiles(string workshopModPath);
     Task QueueDevBuild();
     Task UpdateModStatus(DomainWorkshopMod workshopMod, WorkshopModStatus status, string message);
@@ -28,7 +31,7 @@ public class WorkshopModsProcessingService(
     IUksfLogger logger
 ) : IWorkshopModsProcessingService
 {
-    public async Task DownloadWithRetries(string workshopModId, int maxRetries = 3, CancellationToken cancellationToken = default)
+    public async Task DownloadWithRetries(string workshopModId, int maxRetries = 2, CancellationToken cancellationToken = default)
     {
         var retryDelay = TimeSpan.FromSeconds(5);
 
@@ -41,7 +44,7 @@ public class WorkshopModsProcessingService(
         logger.LogWarning($"All {maxRetries} download attempts failed for {workshopModId}. Clearing workshop cache and retrying");
         ClearWorkshopCache();
 
-        var secondRoundError = await TryDownloadWithRetries(workshopModId, maxRetries, retryDelay, cancellationToken);
+        var secondRoundError = await TryDownloadWithRetries(workshopModId, 1, retryDelay, cancellationToken);
         if (secondRoundError == null)
         {
             return;
@@ -169,6 +172,42 @@ public class WorkshopModsProcessingService(
         logger.LogInfo($"Deleted {pbos.Count} PBOs from dependencies");
     }
 
+    public async Task CopyRootModToRepos(DomainWorkshopMod workshopMod, CancellationToken cancellationToken = default)
+    {
+        var folderName = GetRootModFolderName(workshopMod);
+        var devPath = Path.Combine(variablesService.GetVariable("MODPACK_PATH_DEV").AsString(), "Repo", folderName);
+        var rcPath = Path.Combine(variablesService.GetVariable("MODPACK_PATH_RC").AsString(), "Repo", folderName);
+        var workshopModPath = GetWorkshopModPath(workshopMod.SteamId);
+
+        await Task.WhenAll(CopyDirectoryAsync(workshopModPath, devPath, cancellationToken), CopyDirectoryAsync(workshopModPath, rcPath, cancellationToken));
+
+        logger.LogInfo($"Copied root mod {workshopMod.Name} to {folderName} in both repos");
+    }
+
+    public void DeleteRootModFromRepos(DomainWorkshopMod workshopMod)
+    {
+        var folderName = GetRootModFolderName(workshopMod);
+        var devPath = Path.Combine(variablesService.GetVariable("MODPACK_PATH_DEV").AsString(), "Repo", folderName);
+        var rcPath = Path.Combine(variablesService.GetVariable("MODPACK_PATH_RC").AsString(), "Repo", folderName);
+
+        if (fileSystemService.DirectoryExists(devPath))
+        {
+            fileSystemService.DeleteDirectory(devPath, true);
+        }
+
+        if (fileSystemService.DirectoryExists(rcPath))
+        {
+            fileSystemService.DeleteDirectory(rcPath, true);
+        }
+
+        logger.LogInfo($"Deleted root mod {workshopMod.Name} from {folderName} in both repos");
+    }
+
+    public string GetRootModFolderName(DomainWorkshopMod workshopMod)
+    {
+        return string.IsNullOrEmpty(workshopMod.FolderName) ? $"@{workshopMod.Name}" : workshopMod.FolderName;
+    }
+
     public void CleanupWorkshopModFiles(string workshopModPath)
     {
         if (fileSystemService.DirectoryExists(workshopModPath))
@@ -179,6 +218,13 @@ public class WorkshopModsProcessingService(
 
     public async Task QueueDevBuild()
     {
+        var skipBuild = variablesService.GetVariable("WORKSHOP_SKIP_DEV_BUILD")?.AsBool() ?? false;
+        if (skipBuild)
+        {
+            logger.LogInfo("Skipping dev build queue (WORKSHOP_SKIP_DEV_BUILD is enabled)");
+            return;
+        }
+
         try
         {
             var runningBuilds = modpackService.GetDevBuilds().Where(b => b.Running).ToList();
@@ -223,5 +269,26 @@ public class WorkshopModsProcessingService(
         await using var sourceStream = File.OpenRead(source);
         await using var destinationStream = File.Create(destination);
         await sourceStream.CopyToAsync(destinationStream, cancellationToken);
+    }
+
+    private static async Task CopyDirectoryAsync(string sourceDir, string destDir, CancellationToken cancellationToken = default)
+    {
+        Directory.CreateDirectory(destDir);
+
+        var copyTasks = new List<Task>();
+
+        foreach (var file in Directory.GetFiles(sourceDir))
+        {
+            var destFile = Path.Combine(destDir, Path.GetFileName(file));
+            copyTasks.Add(CopyFileAsync(file, destFile, cancellationToken));
+        }
+
+        foreach (var subDir in Directory.GetDirectories(sourceDir))
+        {
+            var destSubDir = Path.Combine(destDir, Path.GetFileName(subDir));
+            copyTasks.Add(CopyDirectoryAsync(subDir, destSubDir, cancellationToken));
+        }
+
+        await Task.WhenAll(copyTasks);
     }
 }

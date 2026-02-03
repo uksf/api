@@ -32,6 +32,7 @@ public class WorkshopModInstallConsumerTests
 
         published.Should().NotBeNull();
         published!.WorkshopModId.Should().Be("mod1");
+        published.FilesChanged.Should().BeTrue();
     }
 
     [Fact]
@@ -294,6 +295,7 @@ public class WorkshopModUpdateConsumerTests
 
         published.Should().NotBeNull();
         published!.WorkshopModId.Should().Be("mod1");
+        published.FilesChanged.Should().BeTrue();
     }
 
     [Fact]
@@ -563,7 +565,7 @@ public class WorkshopModUninstallConsumerTests
     public async Task Consume_WhenUninstallSucceeds_ShouldPublishComplete()
     {
         var operation = new Mock<IUninstallOperation>();
-        operation.Setup(x => x.UninstallAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(UninstallResult.Successful());
+        operation.Setup(x => x.UninstallAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(UninstallResult.Successful(true));
         Mock<IUksfLogger> logger = new();
         var consumer = new WorkshopModUninstallConsumer(operation.Object, logger.Object);
 
@@ -577,6 +579,27 @@ public class WorkshopModUninstallConsumerTests
 
         published.Should().NotBeNull();
         published!.WorkshopModId.Should().Be("mod1");
+        published.FilesChanged.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Consume_WhenUninstallSucceeds_WithNoFilesChanged_ShouldPublishFilesChangedFalse()
+    {
+        var operation = new Mock<IUninstallOperation>();
+        operation.Setup(x => x.UninstallAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(UninstallResult.Successful(false));
+        Mock<IUksfLogger> logger = new();
+        var consumer = new WorkshopModUninstallConsumer(operation.Object, logger.Object);
+
+        var context = CreateContext(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });
+        WorkshopModUninstallComplete published = null;
+        context.Setup(x => x.Publish(It.IsAny<WorkshopModUninstallComplete>(), It.IsAny<CancellationToken>()))
+               .Callback<WorkshopModUninstallComplete, CancellationToken>((msg, _) => published = msg)
+               .Returns(Task.CompletedTask);
+
+        await consumer.Consume(context.Object);
+
+        published.Should().NotBeNull();
+        published!.FilesChanged.Should().BeFalse();
     }
 
     [Fact]
@@ -686,7 +709,7 @@ public class WorkshopModCleanupConsumerTests
         Mock<IUksfLogger> logger = new();
         var consumer = new WorkshopModCleanupConsumer(processingService.Object, context.Object, logger.Object);
 
-        var consumeContext = CreateContext(new WorkshopModCleanupCommand { WorkshopModId = "mod1" });
+        var consumeContext = CreateContext(new WorkshopModCleanupCommand { WorkshopModId = "mod1", FilesChanged = true });
         WorkshopModCleanupComplete published = null;
         consumeContext.Setup(x => x.Publish(It.IsAny<WorkshopModCleanupComplete>(), It.IsAny<CancellationToken>()))
                       .Callback<WorkshopModCleanupComplete, CancellationToken>((msg, _) => published = msg)
@@ -711,7 +734,7 @@ public class WorkshopModCleanupConsumerTests
         Mock<IUksfLogger> logger = new();
         var consumer = new WorkshopModCleanupConsumer(processingService.Object, context.Object, logger.Object);
 
-        var consumeContext = CreateContext(new WorkshopModCleanupCommand { WorkshopModId = "mod1" });
+        var consumeContext = CreateContext(new WorkshopModCleanupCommand { WorkshopModId = "mod1", FilesChanged = true });
         WorkshopModCleanupComplete published = null;
         consumeContext.Setup(x => x.Publish(It.IsAny<WorkshopModCleanupComplete>(), It.IsAny<CancellationToken>()))
                       .Callback<WorkshopModCleanupComplete, CancellationToken>((msg, _) => published = msg)
@@ -720,6 +743,45 @@ public class WorkshopModCleanupConsumerTests
         await consumer.Consume(consumeContext.Object);
 
         published.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Consume_WhenFilesChangedTrue_QueuesDevBuild()
+    {
+        var processingService = new Mock<IWorkshopModsProcessingService>();
+        processingService.Setup(x => x.GetWorkshopModPath("mod1")).Returns("path");
+        processingService.Setup(x => x.QueueDevBuild()).Returns(Task.CompletedTask);
+        var context = new Mock<IWorkshopModsContext>();
+        var workshopMod = new DomainWorkshopMod { SteamId = "mod1" };
+        context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        Mock<IUksfLogger> logger = new();
+        var consumer = new WorkshopModCleanupConsumer(processingService.Object, context.Object, logger.Object);
+
+        var consumeContext = CreateContext(new WorkshopModCleanupCommand { WorkshopModId = "mod1", FilesChanged = true });
+        consumeContext.Setup(x => x.Publish(It.IsAny<WorkshopModCleanupComplete>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
+        await consumer.Consume(consumeContext.Object);
+
+        processingService.Verify(x => x.QueueDevBuild(), Times.Once);
+    }
+
+    [Fact]
+    public async Task Consume_WhenFilesChangedFalse_DoesNotQueueDevBuild()
+    {
+        var processingService = new Mock<IWorkshopModsProcessingService>();
+        processingService.Setup(x => x.GetWorkshopModPath("mod1")).Returns("path");
+        var context = new Mock<IWorkshopModsContext>();
+        var workshopMod = new DomainWorkshopMod { SteamId = "mod1" };
+        context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        Mock<IUksfLogger> logger = new();
+        var consumer = new WorkshopModCleanupConsumer(processingService.Object, context.Object, logger.Object);
+
+        var consumeContext = CreateContext(new WorkshopModCleanupCommand { WorkshopModId = "mod1", FilesChanged = false });
+        consumeContext.Setup(x => x.Publish(It.IsAny<WorkshopModCleanupComplete>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
+        await consumer.Consume(consumeContext.Object);
+
+        processingService.Verify(x => x.QueueDevBuild(), Times.Never);
     }
 
     private static Mock<ConsumeContext<TMessage>> CreateContext<TMessage>(TMessage message) where TMessage : class

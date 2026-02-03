@@ -72,7 +72,10 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
 
         During(
             Installing,
-            When(InstallComplete).TransitionTo(Cleanup).Publish(context => new WorkshopModCleanupCommand { WorkshopModId = context.Saga.WorkshopModId })
+            When(InstallComplete)
+                .Then(context => context.Saga.FilesChanged = context.Message.FilesChanged)
+                .TransitionTo(Cleanup)
+                .Publish(context => new WorkshopModCleanupCommand { WorkshopModId = context.Saga.WorkshopModId, FilesChanged = context.Saga.FilesChanged })
         );
 
         Initially(
@@ -120,7 +123,10 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
 
         During(
             Updating,
-            When(UpdateComplete).TransitionTo(Cleanup).Publish(context => new WorkshopModCleanupCommand { WorkshopModId = context.Saga.WorkshopModId })
+            When(UpdateComplete)
+                .Then(context => context.Saga.FilesChanged = context.Message.FilesChanged)
+                .TransitionTo(Cleanup)
+                .Publish(context => new WorkshopModCleanupCommand { WorkshopModId = context.Saga.WorkshopModId, FilesChanged = context.Saga.FilesChanged })
         );
 
         Initially(
@@ -138,7 +144,10 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
 
         During(
             Uninstalling,
-            When(UninstallComplete).TransitionTo(Cleanup).Publish(context => new WorkshopModCleanupCommand { WorkshopModId = context.Saga.WorkshopModId })
+            When(UninstallComplete)
+                .Then(context => context.Saga.FilesChanged = context.Message.FilesChanged)
+                .TransitionTo(Cleanup)
+                .Publish(context => new WorkshopModCleanupCommand { WorkshopModId = context.Saga.WorkshopModId, FilesChanged = context.Saga.FilesChanged })
         );
 
         During(

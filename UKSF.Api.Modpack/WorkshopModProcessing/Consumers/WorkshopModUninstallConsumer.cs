@@ -13,7 +13,7 @@ public class WorkshopModUninstallConsumer(IUninstallOperation uninstallOperation
             var result = await uninstallOperation.UninstallAsync(context.Message.WorkshopModId, context.CancellationToken);
             if (result.Success)
             {
-                await context.Publish(new WorkshopModUninstallComplete { WorkshopModId = context.Message.WorkshopModId });
+                await context.Publish(new WorkshopModUninstallComplete { WorkshopModId = context.Message.WorkshopModId, FilesChanged = result.FilesChanged });
             }
             else
             {

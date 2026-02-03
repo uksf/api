@@ -68,6 +68,7 @@ public class WorkshopModUninstallInternalCommand : IWorkshopModCommand
 public class WorkshopModCleanupCommand : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
+    public bool FilesChanged { get; init; }
 }
 
 // Events (Completions)
@@ -96,16 +97,19 @@ public class WorkshopModUpdateCheckComplete : IWorkshopModCommand
 public class WorkshopModInstallComplete : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
+    public bool FilesChanged { get; init; }
 }
 
 public class WorkshopModUpdateComplete : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
+    public bool FilesChanged { get; init; }
 }
 
 public class WorkshopModUninstallComplete : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
+    public bool FilesChanged { get; init; }
 }
 
 public class WorkshopModCleanupComplete : IWorkshopModCommand

@@ -6,6 +6,7 @@ public class WorkshopModResponse
     public string SteamId { get; set; }
     public string Name { get; set; }
     public bool RootMod { get; set; }
+    public string FolderName { get; set; }
     public string Status { get; set; }
     public List<string> Pbos { get; set; } = [];
     public string LastUpdatedLocally { get; set; }

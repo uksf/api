@@ -43,6 +43,12 @@ public class UpdateOperation(IWorkshopModsContext workshopModsContext, IWorkshop
     {
         var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
 
+        if (workshopMod.RootMod)
+        {
+            logger.LogInfo($"Root mod {workshopModId} - skipping PBO selection for update");
+            return CheckResult.Successful(interventionRequired: false);
+        }
+
         try
         {
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Updating, "Checking...");
@@ -73,23 +79,45 @@ public class UpdateOperation(IWorkshopModsContext workshopModsContext, IWorkshop
         {
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Updating, "Updating...");
 
-            var oldPbos = workshopMod.Pbos ?? [];
-            if (oldPbos.Count > 0)
+            if (workshopMod.RootMod)
             {
-                logger.LogInfo($"Removing {oldPbos.Count} old PBOs from workshop mod {workshopModId}");
-                workshopModsProcessingService.DeletePbosFromDependencies(oldPbos);
+                // Delete then copy for root mods - we need a clean slate to avoid stale files
+                // This is safe because we only get here after successful download
+                workshopModsProcessingService.DeleteRootModFromRepos(workshopMod);
+                await workshopModsProcessingService.CopyRootModToRepos(workshopMod, cancellationToken);
+            }
+            else
+            {
+                // Copy new PBOs first
+                await workshopModsProcessingService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
+
+                // Then delete only the old PBOs that are no longer in the new set
+                var oldPbos = workshopMod.Pbos ?? [];
+                var pbosToDelete = oldPbos.Except(selectedPbos, StringComparer.OrdinalIgnoreCase).ToList();
+                if (pbosToDelete.Count > 0)
+                {
+                    logger.LogInfo($"Removing {pbosToDelete.Count} old PBOs no longer in workshop mod {workshopModId}");
+                    workshopModsProcessingService.DeletePbosFromDependencies(pbosToDelete);
+                }
+
+                workshopMod.Pbos = selectedPbos;
             }
 
-            await workshopModsProcessingService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
-
-            workshopMod.Pbos = selectedPbos;
             workshopMod.LastUpdatedLocally = DateTime.UtcNow;
             workshopMod.Status = WorkshopModStatus.UpdatedPendingRelease;
             workshopMod.StatusMessage = "Updated pending next modpack release";
             workshopMod.ErrorMessage = null;
             await workshopModsContext.Replace(workshopMod);
 
-            logger.LogInfo($"Successfully updated workshop mod {workshopModId} with {selectedPbos.Count} PBOs");
+            if (workshopMod.RootMod)
+            {
+                logger.LogInfo($"Successfully updated root mod {workshopModId}");
+            }
+            else
+            {
+                logger.LogInfo($"Successfully updated workshop mod {workshopModId} with {selectedPbos.Count} PBOs");
+            }
+
             return UpdateResult.Successful();
         }
         catch (OperationCanceledException)

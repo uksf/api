@@ -242,4 +242,89 @@ public class UpdateOperationTests
         result.Success.Should().BeTrue();
         _mockProcessingService.Verify(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>()), Times.Never);
     }
+
+    [Fact]
+    public async Task CheckAsync_ForRootMod_ReturnsNoInterventionRequired()
+    {
+        // Arrange
+        const string WorkshopModId = "test-mod-123";
+        var workshopMod = new DomainWorkshopMod
+        {
+            Id = WorkshopModId,
+            SteamId = WorkshopModId,
+            Name = "Test Mod",
+            RootMod = true,
+            Pbos = []
+        };
+
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+
+        // Act
+        var result = await _updateOperation.CheckAsync(WorkshopModId);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        result.InterventionRequired.Should().BeFalse();
+        _mockProcessingService.Verify(x => x.GetModFiles(It.IsAny<string>()), Times.Never);
+        _mockProcessingService.Verify(x => x.SetAvailablePbos(It.IsAny<DomainWorkshopMod>(), It.IsAny<List<string>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ForRootMod_DeletesAndRecopies()
+    {
+        // Arrange
+        const string WorkshopModId = "test-mod-123";
+        var workshopMod = new DomainWorkshopMod
+        {
+            Id = WorkshopModId,
+            SteamId = WorkshopModId,
+            Name = "Test Mod",
+            RootMod = true,
+            Status = WorkshopModStatus.Installed
+        };
+
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
+        _mockProcessingService.Setup(x => x.CopyRootModToRepos(workshopMod, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _updateOperation.UpdateAsync(WorkshopModId, []);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        _mockProcessingService.Verify(x => x.DeleteRootModFromRepos(workshopMod), Times.Once);
+        _mockProcessingService.Verify(x => x.CopyRootModToRepos(workshopMod, It.IsAny<CancellationToken>()), Times.Once);
+        _mockProcessingService.Verify(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>()), Times.Never);
+        _mockProcessingService.Verify(
+            x => x.CopyPbosToDependencies(It.IsAny<DomainWorkshopMod>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+        workshopMod.Status.Should().Be(WorkshopModStatus.UpdatedPendingRelease);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ForRootMod_WhenCopyFails_ShouldReturnFailure()
+    {
+        // Arrange
+        const string WorkshopModId = "test-mod-123";
+        var workshopMod = new DomainWorkshopMod
+        {
+            Id = WorkshopModId,
+            SteamId = WorkshopModId,
+            Name = "Test Mod",
+            RootMod = true,
+            Status = WorkshopModStatus.Installed
+        };
+
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        _mockProcessingService.Setup(x => x.CopyRootModToRepos(workshopMod, It.IsAny<CancellationToken>())).ThrowsAsync(new IOException("Copy failed"));
+
+        // Act
+        var result = await _updateOperation.UpdateAsync(WorkshopModId, []);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().Contain("Copy failed");
+        _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.Error, It.IsAny<string>()), Times.Once);
+    }
 }

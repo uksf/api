@@ -20,18 +20,28 @@ public class UninstallOperation(IWorkshopModsContext workshopModsContext, IWorks
         if (workshopMod.Status is WorkshopModStatus.Uninstalled or WorkshopModStatus.UninstalledPendingRelease)
         {
             logger.LogWarning($"Workshop mod {workshopModId} is already uninstalled");
-            return UninstallResult.Successful();
+            return UninstallResult.Successful(filesChanged: false);
         }
 
         try
         {
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Uninstalling, "Uninstalling...");
 
-            var pbosToDelete = workshopMod.Pbos ?? [];
-            if (pbosToDelete.Count > 0)
+            var filesChanged = false;
+            if (workshopMod.RootMod)
             {
-                logger.LogInfo($"Removing {pbosToDelete.Count} PBOs from workshop mod {workshopModId}");
-                workshopModsProcessingService.DeletePbosFromDependencies(pbosToDelete);
+                workshopModsProcessingService.DeleteRootModFromRepos(workshopMod);
+                filesChanged = true;
+            }
+            else
+            {
+                var pbosToDelete = workshopMod.Pbos ?? [];
+                if (pbosToDelete.Count > 0)
+                {
+                    logger.LogInfo($"Removing {pbosToDelete.Count} PBOs from workshop mod {workshopModId}");
+                    workshopModsProcessingService.DeletePbosFromDependencies(pbosToDelete);
+                    filesChanged = true;
+                }
             }
 
             if (workshopMod.Status is WorkshopModStatus.Installed or WorkshopModStatus.InstalledPendingRelease or WorkshopModStatus.UpdatedPendingRelease)
@@ -50,7 +60,7 @@ public class UninstallOperation(IWorkshopModsContext workshopModsContext, IWorks
             await workshopModsContext.Replace(workshopMod);
 
             logger.LogInfo($"Successfully uninstalled workshop mod {workshopModId}");
-            return UninstallResult.Successful();
+            return UninstallResult.Successful(filesChanged);
         }
         catch (OperationCanceledException)
         {
@@ -68,15 +78,15 @@ public class UninstallOperation(IWorkshopModsContext workshopModsContext, IWorks
     }
 }
 
-public record UninstallResult(bool Success, string ErrorMessage = null)
+public record UninstallResult(bool Success, bool FilesChanged = false, string ErrorMessage = null)
 {
-    public static UninstallResult Successful()
+    public static UninstallResult Successful(bool filesChanged = true)
     {
-        return new UninstallResult(true);
+        return new UninstallResult(true, filesChanged);
     }
 
     public static UninstallResult Failure(string errorMessage)
     {
-        return new UninstallResult(false, errorMessage);
+        return new UninstallResult(false, false, errorMessage);
     }
 }

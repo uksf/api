@@ -13,7 +13,7 @@ public class WorkshopModUpdateConsumer(IUpdateOperation updateOperation, IUksfLo
             var result = await updateOperation.UpdateAsync(context.Message.WorkshopModId, context.Message.SelectedPbos, context.CancellationToken);
             if (result.Success)
             {
-                await context.Publish(new WorkshopModUpdateComplete { WorkshopModId = context.Message.WorkshopModId });
+                await context.Publish(new WorkshopModUpdateComplete { WorkshopModId = context.Message.WorkshopModId, FilesChanged = true });
             }
             else
             {

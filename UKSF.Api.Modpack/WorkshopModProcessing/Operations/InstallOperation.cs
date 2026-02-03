@@ -43,6 +43,12 @@ public class InstallOperation(IWorkshopModsContext workshopModsContext, IWorksho
     {
         var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
 
+        if (workshopMod.RootMod)
+        {
+            logger.LogInfo($"Root mod {workshopModId} - skipping PBO selection");
+            return CheckResult.Successful(interventionRequired: false);
+        }
+
         try
         {
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Installing, "Checking...");
@@ -72,16 +78,32 @@ public class InstallOperation(IWorkshopModsContext workshopModsContext, IWorksho
         try
         {
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Installing, "Installing...");
-            await workshopModsProcessingService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
 
-            workshopMod.Pbos = selectedPbos;
+            if (workshopMod.RootMod)
+            {
+                await workshopModsProcessingService.CopyRootModToRepos(workshopMod, cancellationToken);
+            }
+            else
+            {
+                await workshopModsProcessingService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
+                workshopMod.Pbos = selectedPbos;
+            }
+
             workshopMod.LastUpdatedLocally = DateTime.UtcNow;
             workshopMod.Status = WorkshopModStatus.InstalledPendingRelease;
             workshopMod.StatusMessage = "Installed pending next modpack release";
             workshopMod.ErrorMessage = null;
             await workshopModsContext.Replace(workshopMod);
 
-            logger.LogInfo($"Successfully installed workshop mod {workshopModId} with {selectedPbos.Count} PBOs");
+            if (workshopMod.RootMod)
+            {
+                logger.LogInfo($"Successfully installed root mod {workshopModId}");
+            }
+            else
+            {
+                logger.LogInfo($"Successfully installed workshop mod {workshopModId} with {selectedPbos.Count} PBOs");
+            }
+
             return InstallResult.Successful();
         }
         catch (OperationCanceledException)

@@ -197,4 +197,79 @@ public class WorkshopModsProcessingServiceTests
 
         _fileSystemService.Verify(x => x.DeleteDirectory(It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
     }
+
+    [Fact]
+    public void GetRootModFolderName_WithFolderName_ReturnsFolderName()
+    {
+        var workshopMod = new DomainWorkshopMod { Name = "Test Mod", FolderName = "@CustomFolder" };
+
+        var result = _subject.GetRootModFolderName(workshopMod);
+
+        result.Should().Be("@CustomFolder");
+    }
+
+    [Fact]
+    public void GetRootModFolderName_WithoutFolderName_DerivesFromName()
+    {
+        var workshopMod = new DomainWorkshopMod { Name = "CBA A3", FolderName = null };
+
+        var result = _subject.GetRootModFolderName(workshopMod);
+
+        result.Should().Be("@CBA A3");
+    }
+
+    [Fact]
+    public void GetRootModFolderName_WithEmptyFolderName_DerivesFromName()
+    {
+        var workshopMod = new DomainWorkshopMod { Name = "CUP Terrains Core", FolderName = "" };
+
+        var result = _subject.GetRootModFolderName(workshopMod);
+
+        result.Should().Be("@CUP Terrains Core");
+    }
+
+    [Fact]
+    public void DeleteRootModFromRepos_DeletesFromBothRepos()
+    {
+        var workshopMod = new DomainWorkshopMod { Name = "Test Mod", FolderName = "@TestMod" };
+        _variablesService.Setup(x => x.GetVariable("MODPACK_PATH_DEV")).Returns(new DomainVariableItem { Key = "MODPACK_PATH_DEV", Item = "C:\\dev" });
+        _variablesService.Setup(x => x.GetVariable("MODPACK_PATH_RC")).Returns(new DomainVariableItem { Key = "MODPACK_PATH_RC", Item = "C:\\rc" });
+        _fileSystemService.Setup(x => x.DirectoryExists(It.IsAny<string>())).Returns(true);
+
+        _subject.DeleteRootModFromRepos(workshopMod);
+
+        var expectedDevPath = Path.Combine("C:\\dev", "Repo", "@TestMod");
+        var expectedRcPath = Path.Combine("C:\\rc", "Repo", "@TestMod");
+        _fileSystemService.Verify(x => x.DeleteDirectory(expectedDevPath, true), Times.Once);
+        _fileSystemService.Verify(x => x.DeleteDirectory(expectedRcPath, true), Times.Once);
+    }
+
+    [Fact]
+    public void DeleteRootModFromRepos_WhenDirectoriesDoNotExist_DoesNotDelete()
+    {
+        var workshopMod = new DomainWorkshopMod { Name = "Test Mod", FolderName = "@TestMod" };
+        _variablesService.Setup(x => x.GetVariable("MODPACK_PATH_DEV")).Returns(new DomainVariableItem { Key = "MODPACK_PATH_DEV", Item = "C:\\dev" });
+        _variablesService.Setup(x => x.GetVariable("MODPACK_PATH_RC")).Returns(new DomainVariableItem { Key = "MODPACK_PATH_RC", Item = "C:\\rc" });
+        _fileSystemService.Setup(x => x.DirectoryExists(It.IsAny<string>())).Returns(false);
+
+        _subject.DeleteRootModFromRepos(workshopMod);
+
+        _fileSystemService.Verify(x => x.DeleteDirectory(It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+    }
+
+    [Fact]
+    public void DeleteRootModFromRepos_WithoutFolderName_UsesDerivedName()
+    {
+        var workshopMod = new DomainWorkshopMod { Name = "CBA A3", FolderName = null };
+        _variablesService.Setup(x => x.GetVariable("MODPACK_PATH_DEV")).Returns(new DomainVariableItem { Key = "MODPACK_PATH_DEV", Item = "C:\\dev" });
+        _variablesService.Setup(x => x.GetVariable("MODPACK_PATH_RC")).Returns(new DomainVariableItem { Key = "MODPACK_PATH_RC", Item = "C:\\rc" });
+        _fileSystemService.Setup(x => x.DirectoryExists(It.IsAny<string>())).Returns(true);
+
+        _subject.DeleteRootModFromRepos(workshopMod);
+
+        var expectedDevPath = Path.Combine("C:\\dev", "Repo", "@CBA A3");
+        var expectedRcPath = Path.Combine("C:\\rc", "Repo", "@CBA A3");
+        _fileSystemService.Verify(x => x.DeleteDirectory(expectedDevPath, true), Times.Once);
+        _fileSystemService.Verify(x => x.DeleteDirectory(expectedRcPath, true), Times.Once);
+    }
 }

@@ -44,7 +44,7 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
     [Permissions(Permissions.Admin)]
     public Task InstallWorkshopMod([FromBody] InstallWorkshopModRequest request)
     {
-        return workshopModsService.InstallWorkshopMod(request.SteamId, request.RootMod);
+        return workshopModsService.InstallWorkshopMod(request.SteamId, request.RootMod, request.FolderName);
     }
 
     [HttpPost("{workshopModId}/update")]
@@ -83,6 +83,7 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
             SteamId = mod.SteamId,
             Name = mod.Name,
             RootMod = mod.RootMod,
+            FolderName = mod.FolderName,
             Status = mod.Status.ToString(),
             StatusMessage = mod.StatusMessage,
             ErrorMessage = mod.ErrorMessage,

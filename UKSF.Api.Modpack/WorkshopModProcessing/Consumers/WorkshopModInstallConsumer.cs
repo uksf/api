@@ -13,7 +13,7 @@ public class WorkshopModInstallConsumer(IInstallOperation installOperation, IUks
             var result = await installOperation.InstallAsync(context.Message.WorkshopModId, context.Message.SelectedPbos, context.CancellationToken);
             if (result.Success)
             {
-                await context.Publish(new WorkshopModInstallComplete { WorkshopModId = context.Message.WorkshopModId });
+                await context.Publish(new WorkshopModInstallComplete { WorkshopModId = context.Message.WorkshopModId, FilesChanged = true });
             }
             else
             {

@@ -10,7 +10,7 @@ namespace UKSF.Api.Modpack.Services;
 public interface IWorkshopModsService
 {
     Task<DateTime> GetWorkshopModUpdatedDate(string workshopModId);
-    Task InstallWorkshopMod(string workshopModId, bool rootMod);
+    Task InstallWorkshopMod(string workshopModId, bool rootMod, string folderName = null);
     Task UpdateWorkshopMod(string workshopModId);
     Task UninstallWorkshopMod(string workshopModId);
     Task DeleteWorkshopMod(string workshopModId);
@@ -30,7 +30,7 @@ public class WorkshopModsService(
         return info.UpdatedDate;
     }
 
-    public async Task InstallWorkshopMod(string workshopModId, bool rootMod)
+    public async Task InstallWorkshopMod(string workshopModId, bool rootMod, string folderName = null)
     {
         var existingMod = workshopModsContext.Get().FirstOrDefault(x => x.SteamId == workshopModId && x.Status != WorkshopModStatus.Uninstalled);
         if (existingMod != null)
@@ -44,7 +44,8 @@ public class WorkshopModsService(
             SteamId = workshopModId,
             Name = modInfo.Name,
             Status = WorkshopModStatus.Installing,
-            RootMod = rootMod
+            RootMod = rootMod,
+            FolderName = folderName
         };
         await workshopModsContext.Add(workshopMod);
         logger.LogAudit($"Workshop mod installed: {workshopModId}, {workshopMod.Name}");
