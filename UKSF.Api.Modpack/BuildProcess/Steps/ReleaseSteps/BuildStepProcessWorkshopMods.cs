@@ -7,7 +7,7 @@ namespace UKSF.Api.Modpack.BuildProcess.Steps.ReleaseSteps;
 public class BuildStepProcessWorkshopMods : BuildStep
 {
     private IWorkshopModsContext _workshopModsContext;
-    public const string Name = "Workshop Mods";
+    public const string Name = "Workshop";
 
     protected override Task SetupExecute()
     {
