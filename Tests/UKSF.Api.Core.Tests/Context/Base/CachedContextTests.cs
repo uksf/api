@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -33,7 +34,7 @@ public class CachedContextTests
     }
 
     [Fact]
-    public async Task Should_update_cache_for_add()
+    public async Task Add_ShouldFullRefresh()
     {
         _mockDataCollection.Setup(x => x.AddAsync(It.IsAny<DomainTestModel>())).Returns(Task.CompletedTask);
 
@@ -43,80 +44,150 @@ public class CachedContextTests
     }
 
     [Fact]
-    public async Task Should_update_cache_for_delete()
+    public async Task Delete_ByItem_ShouldNotFullRefresh()
     {
+        var item = new DomainTestModel { Name = "1" };
         _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
 
-        await _testCachedContext.Delete(new DomainTestModel { Name = "1" });
+        await _testCachedContext.Delete(item);
 
-        _mockDataCollection.Verify(x => x.Get(), Times.Once);
+        _mockDataCollection.Verify(x => x.Get(), Times.Never);
     }
 
     [Fact]
-    public async Task Should_update_cache_for_delete_by_id()
+    public async Task Delete_ById_ShouldNotFullRefresh()
     {
-        DomainTestModel item1 = new() { Name = "1" };
-
+        var item = new DomainTestModel { Name = "1" };
         _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
 
-        await _testCachedContext.Delete(item1.Id);
+        await _testCachedContext.Delete(item.Id);
 
-        _mockDataCollection.Verify(x => x.Get(), Times.Once);
+        _mockDataCollection.Verify(x => x.Get(), Times.Never);
     }
 
     [Fact]
-    public async Task Should_update_cache_for_delete_many()
+    public async Task Delete_ById_ShouldRemoveItemFromCache()
+    {
+        var item = new DomainTestModel { Name = "1" };
+        _mockDataCollection.Setup(x => x.Get()).Returns(() => new List<DomainTestModel> { item });
+        _mockDataCollection.Setup(x => x.DeleteAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+
+        // Initialize cache
+        _testCachedContext.Get().Should().HaveCount(1);
+
+        await _testCachedContext.Delete(item.Id);
+
+        _testCachedContext.Get().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteMany_ShouldFullRefresh()
     {
         _mockDataCollection.Setup(x => x.DeleteManyAsync(It.IsAny<Expression<Func<DomainTestModel, bool>>>())).Returns(Task.CompletedTask);
 
         await _testCachedContext.DeleteMany(x => x.Name == "1");
 
+        // Once for Get(predicate) to collect IDs, once for Refresh after delete
         _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
     }
 
     [Fact]
-    public async Task ShouldRefreshCollectionForReplace()
+    public async Task Replace_ShouldNotFullRefresh()
     {
+        var item = new DomainTestModel { Name = "1" };
         _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<DomainTestModel>())).Returns(Task.CompletedTask);
 
-        await _testCachedContext.Replace(new DomainTestModel { Name = "1" });
+        await _testCachedContext.Replace(item);
 
-        _mockDataCollection.Verify(x => x.Get(), Times.Once);
+        _mockDataCollection.Verify(x => x.Get(), Times.Never);
     }
 
     [Fact]
-    public async Task ShouldRefreshCollectionForUpdate()
+    public async Task Replace_ShouldUpdateItemInCache()
     {
-        DomainTestModel item1 = new() { Name = "1" };
+        var item = new DomainTestModel { Name = "1" };
+        _mockDataCollection.Setup(x => x.Get()).Returns(() => new List<DomainTestModel> { item });
+        _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<DomainTestModel>())).Returns(Task.CompletedTask);
+
+        // Initialize cache
+        _testCachedContext.Get().Should().HaveCount(1);
+
+        var updatedItem = new DomainTestModel { Id = item.Id, Name = "Updated" };
+        await _testCachedContext.Replace(updatedItem);
+
+        _testCachedContext.Get().Should().HaveCount(1);
+        _testCachedContext.Get().First().Name.Should().Be("Updated");
+    }
+
+    [Fact]
+    public async Task Update_ById_ShouldReFetchSingleItem()
+    {
+        var item = new DomainTestModel { Name = "1" };
+        var updatedItem = new DomainTestModel { Id = item.Id, Name = "2" };
 
         _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainTestModel>>())).Returns(Task.CompletedTask);
+        _mockDataCollection.Setup(x => x.GetSingle(item.Id)).Returns(updatedItem);
 
-        await _testCachedContext.Update(item1.Id, x => x.Name, "2");
+        await _testCachedContext.Update(item.Id, x => x.Name, "2");
 
-        _mockDataCollection.Verify(x => x.Get(), Times.Once);
+        _mockDataCollection.Verify(x => x.Get(), Times.Never);
+        _mockDataCollection.Verify(x => x.GetSingle(item.Id), Times.Once);
     }
 
     [Fact]
-    public async Task ShouldRefreshCollectionForUpdateByUpdateDefinition()
+    public async Task Update_ById_UpdateDefinition_ShouldReFetchSingleItem()
     {
-        DomainTestModel item1 = new() { Name = "1" };
+        var item = new DomainTestModel { Name = "1" };
+        var updatedItem = new DomainTestModel { Id = item.Id, Name = "2" };
 
         _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainTestModel>>())).Returns(Task.CompletedTask);
+        _mockDataCollection.Setup(x => x.GetSingle(item.Id)).Returns(updatedItem);
 
-        await _testCachedContext.Update(item1.Id, Builders<DomainTestModel>.Update.Set(x => x.Name, "2"));
+        await _testCachedContext.Update(item.Id, Builders<DomainTestModel>.Update.Set(x => x.Name, "2"));
 
-        _mockDataCollection.Verify(x => x.Get(), Times.Once);
+        _mockDataCollection.Verify(x => x.Get(), Times.Never);
+        _mockDataCollection.Verify(x => x.GetSingle(item.Id), Times.Once);
     }
 
     [Fact]
-    public async Task ShouldRefreshCollectionForUpdateMany()
+    public async Task Update_ById_ShouldUpdateItemInCache()
+    {
+        var item = new DomainTestModel { Name = "1" };
+        var updatedItem = new DomainTestModel { Id = item.Id, Name = "Updated" };
+
+        _mockDataCollection.Setup(x => x.Get()).Returns(() => new List<DomainTestModel> { item });
+        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainTestModel>>())).Returns(Task.CompletedTask);
+        _mockDataCollection.Setup(x => x.GetSingle(item.Id)).Returns(updatedItem);
+
+        // Initialize cache
+        _testCachedContext.Get().First().Name.Should().Be("1");
+
+        await _testCachedContext.Update(item.Id, x => x.Name, "Updated");
+
+        _testCachedContext.Get().First().Name.Should().Be("Updated");
+    }
+
+    [Fact]
+    public async Task UpdateMany_ShouldFullRefresh()
     {
         _mockDataCollection.Setup(x => x.UpdateManyAsync(It.IsAny<Expression<Func<DomainTestModel, bool>>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
                            .Returns(Task.CompletedTask);
 
         await _testCachedContext.UpdateMany(x => x.Name == "1", Builders<DomainTestModel>.Update.Set(x => x.Name, "3"));
 
+        // Once for Get(predicate) to collect IDs, once for Refresh after update
         _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task Update_ByFilterExpression_ShouldFullRefresh()
+    {
+        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
+                           .Returns(Task.CompletedTask);
+
+        await _testCachedContext.Update(x => x.Name == "1", Builders<DomainTestModel>.Update.Set(x => x.Name, "Updated"));
+
+        _mockDataCollection.Verify(x => x.Get(), Times.Once);
     }
 
     [Fact]
@@ -128,6 +199,17 @@ public class CachedContextTests
         var act = () => _testCachedContext.Update(x => x.Name == "NonExistent", Builders<DomainTestModel>.Update.Set(x => x.Name, "Updated"));
 
         await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task FindAndUpdate_ShouldFullRefresh()
+    {
+        _mockDataCollection.Setup(x => x.FindAndUpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
+                           .Returns(Task.CompletedTask);
+
+        await _testCachedContext.FindAndUpdate(x => x.Name == "1", Builders<DomainTestModel>.Update.Set(x => x.Name, "Updated"));
+
+        _mockDataCollection.Verify(x => x.Get(), Times.Once);
     }
 
     [Fact]

@@ -22,6 +22,29 @@ public class ContextCache<T> where T : MongoObject
             DataInitialized = true;
         }
     }
+
+    public void UpdateItem(T item)
+    {
+        var newList = new List<T>(_data);
+        var index = newList.FindIndex(x => x.Id == item.Id);
+        if (index >= 0)
+        {
+            newList[index] = item;
+        }
+        else
+        {
+            newList.Add(item);
+        }
+
+        Interlocked.Exchange(ref _data, newList);
+    }
+
+    public void RemoveItem(string id)
+    {
+        var newList = new List<T>(_data);
+        newList.RemoveAll(x => x.Id == id);
+        Interlocked.Exchange(ref _data, newList);
+    }
 }
 
 public interface ICachedMongoContext
@@ -87,14 +110,14 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     public override async Task Update<TField>(string id, Expression<Func<T, TField>> fieldSelector, TField value)
     {
         await base.Update(id, fieldSelector, value);
-        Refresh();
+        RefreshSingleItem(id);
         DataUpdateEvent(id);
     }
 
     public override async Task Update(string id, UpdateDefinition<T> update)
     {
         await base.Update(id, update);
-        Refresh();
+        RefreshSingleItem(id);
         DataUpdateEvent(id);
     }
 
@@ -131,21 +154,21 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     public override async Task Replace(T item)
     {
         await base.Replace(item);
-        Refresh();
+        _cache.UpdateItem(item);
         DataUpdateEvent(item.Id);
     }
 
     public override async Task Delete(string id)
     {
         await base.Delete(id);
-        Refresh();
+        _cache.RemoveItem(id);
         DataDeleteEvent(id);
     }
 
     public override async Task Delete(T item)
     {
         await base.Delete(item);
-        Refresh();
+        _cache.RemoveItem(item.Id);
         DataDeleteEvent(item.Id);
     }
 
@@ -160,6 +183,19 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     protected virtual IEnumerable<T> OrderCollection(IEnumerable<T> collection)
     {
         return collection;
+    }
+
+    private void RefreshSingleItem(string id)
+    {
+        var updated = base.GetSingle(id);
+        if (updated is not null)
+        {
+            _cache.UpdateItem(updated);
+        }
+        else
+        {
+            _cache.RemoveItem(id);
+        }
     }
 
     private bool UseCache()
