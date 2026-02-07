@@ -20,7 +20,7 @@ public interface IDiscordClientService
     Task AssertOnline();
 }
 
-public sealed class DiscordClientService : IDiscordClientService, IDisposable
+public sealed class DiscordClientService : IDiscordClientService, IAsyncDisposable, IDisposable
 {
     private readonly string _botToken;
     private readonly DiscordSocketClient _client;
@@ -113,9 +113,14 @@ public sealed class DiscordClientService : IDiscordClientService, IDisposable
         }
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        await Disconnect();
+    }
+
     public void Dispose()
     {
-        Disconnect().Wait();
+        Disconnect().Wait(TimeSpan.FromSeconds(5));
     }
 
     private event Action OnClientReadyEvent;

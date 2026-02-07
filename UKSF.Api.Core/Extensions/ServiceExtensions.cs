@@ -17,6 +17,8 @@ public static class ServiceExtensions
         return collection.AddContext<TService, TImplementation>().AddSingleton<ICachedMongoContext>(provider => provider.GetRequiredService<TService>());
     }
 
+    // Event handlers are Singletons. Their dependencies (contexts, services) must also be Singletons.
+    // If context lifetimes are ever changed to Scoped, event handler lifetimes must change too.
     public static IServiceCollection AddEventHandler<TService, TImplementation>(this IServiceCollection collection)
         where TService : IEventHandler where TImplementation : TService
     {

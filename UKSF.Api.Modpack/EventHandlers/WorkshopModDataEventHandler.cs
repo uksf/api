@@ -24,13 +24,15 @@ public class WorkshopModDataEventHandler(IEventBus eventBus, IHubContext<Modpack
     {
         switch (eventModel.EventType)
         {
-            case EventType.Add:    await AddedEvent(); break;
+            case EventType.Add:
+            case EventType.Delete:
+                // Both add and delete require a full mod list refresh on the frontend
+                await ModListChangedEvent(); break;
             case EventType.Update: await UpdatedEvent(eventData.Id); break;
-            case EventType.Delete: await AddedEvent(); break;
         }
     }
 
-    private async Task AddedEvent()
+    private async Task ModListChangedEvent()
     {
         await hub.Clients.All.ReceiveWorkshopModAdded();
     }

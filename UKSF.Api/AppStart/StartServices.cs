@@ -26,7 +26,7 @@ public static class StartServices
             serviceProvider.GetRequiredService<IEnumerable<IEventHandler>>().ForEach(x => x.EarlyInit());
 
             // Execute any DB migration
-            serviceProvider.GetRequiredService<MigrationUtility>().RunMigrations().GetAwaiter().GetResult();
+            serviceProvider.GetRequiredService<MigrationUtility>().RunMigrations().Wait(TimeSpan.FromMinutes(5));
 
             // Warm cached data services
             serviceProvider.GetRequiredService<IDataCacheService>().RefreshCachedData();
@@ -59,7 +59,7 @@ public static class StartServices
         public void StopUksfServices()
         {
             // Cancel any running builds in the queue
-            serviceProvider.GetRequiredService<IBuildQueueService>().CancelAll().GetAwaiter().GetResult();
+            serviceProvider.GetRequiredService<IBuildQueueService>().CancelAll().Wait(TimeSpan.FromSeconds(30));
             Console.Out.WriteLine("stopped builds");
 
             // Stop teamspeak
