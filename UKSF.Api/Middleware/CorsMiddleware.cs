@@ -20,6 +20,14 @@ public class CorsMiddleware(IOptions<AppSettings> appSettingsOptions) : IMiddlew
             {
                 context.Response.Headers["Access-Control-Allow-Origin"] = origin;
                 context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+
+                if (HttpMethods.IsOptions(context.Request.Method))
+                {
+                    context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
+                    context.Response.Headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, x-requested-with, x-signalr-user-agent";
+                    context.Response.StatusCode = StatusCodes.Status204NoContent;
+                    return;
+                }
             }
         }
 

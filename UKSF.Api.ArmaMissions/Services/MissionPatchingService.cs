@@ -195,9 +195,9 @@ public class MissionPatchingService(MissionService missionService, IVariablesSer
         {
             Directory.Delete(_folderPath, true);
         }
-        catch (Exception)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            // ignore
+            // Temp directory cleanup is best-effort
         }
     }
 }

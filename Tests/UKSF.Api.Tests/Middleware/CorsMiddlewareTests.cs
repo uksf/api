@@ -143,4 +143,71 @@ public class CorsMiddlewareTests
 
         context.Response.Headers["Access-Control-Allow-Origin"].ToString().Should().Be(origin);
     }
+
+    [Fact]
+    public async Task InvokeAsync_HubPath_OptionsPreflight_AllowedOrigin_ShouldReturn204()
+    {
+        var middleware = CreateMiddleware();
+        var context = CreateContext("/hub/account", "http://localhost:4200");
+        context.Request.Method = "OPTIONS";
+        var nextCalled = false;
+
+        await middleware.InvokeAsync(
+            context,
+            _ =>
+            {
+                nextCalled = true;
+                return Task.CompletedTask;
+            }
+        );
+
+        nextCalled.Should().BeFalse();
+        context.Response.StatusCode.Should().Be(204);
+        context.Response.Headers["Access-Control-Allow-Origin"].ToString().Should().Be("http://localhost:4200");
+        context.Response.Headers["Access-Control-Allow-Credentials"].ToString().Should().Be("true");
+        context.Response.Headers["Access-Control-Allow-Methods"].ToString().Should().Contain("POST");
+        context.Response.Headers["Access-Control-Allow-Headers"].ToString().Should().Contain("Authorization");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_HubPath_OptionsPreflight_DisallowedOrigin_ShouldCallNext()
+    {
+        var middleware = CreateMiddleware();
+        var context = CreateContext("/hub/account", "https://evil.example.com");
+        context.Request.Method = "OPTIONS";
+        var nextCalled = false;
+
+        await middleware.InvokeAsync(
+            context,
+            _ =>
+            {
+                nextCalled = true;
+                return Task.CompletedTask;
+            }
+        );
+
+        nextCalled.Should().BeTrue();
+        context.Response.Headers.ContainsKey("Access-Control-Allow-Origin").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task InvokeAsync_NonHubPath_OptionsPreflight_ShouldCallNext()
+    {
+        var middleware = CreateMiddleware();
+        var context = CreateContext("/api/accounts", "http://localhost:4200");
+        context.Request.Method = "OPTIONS";
+        var nextCalled = false;
+
+        await middleware.InvokeAsync(
+            context,
+            _ =>
+            {
+                nextCalled = true;
+                return Task.CompletedTask;
+            }
+        );
+
+        nextCalled.Should().BeTrue();
+        context.Response.Headers.ContainsKey("Access-Control-Allow-Methods").Should().BeFalse();
+    }
 }
