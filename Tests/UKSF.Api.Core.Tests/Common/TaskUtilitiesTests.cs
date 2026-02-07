@@ -10,49 +10,66 @@ namespace UKSF.Api.Core.Tests.Common;
 public class TaskUtilitiesTests
 {
     [Fact]
-    public async Task ShouldCallbackAfterDelay()
-    {
-        var subject = false;
-        var act = async () =>
-        {
-            CancellationTokenSource token = new();
-            await TaskUtilities.DelayWithCallback(
-                TimeSpan.FromMilliseconds(10),
-                token.Token,
-                () =>
-                {
-                    subject = true;
-                    return Task.CompletedTask;
-                }
-            );
-        };
-
-        await act.Should().NotThrowAsync();
-        act.ExecutionTime().Should().BeGreaterThan(TimeSpan.FromMilliseconds(10));
-        subject.Should().BeTrue();
-    }
-
-    [Fact]
-    public void ShouldNotCallbackForCancellation()
+    public async Task Delay_ShouldNotThrow_WhenCancelled()
     {
         CancellationTokenSource token = new();
-        var act = async () => { await TaskUtilities.DelayWithCallback(TimeSpan.FromMilliseconds(10), token.Token, null); };
-
-        act.Should().NotThrowAsync();
         token.Cancel();
-        act.ExecutionTime().Should().BeLessThan(TimeSpan.FromMilliseconds(10));
+
+        var act = () => TaskUtilities.Delay(TimeSpan.FromMilliseconds(50), token.Token);
+
+        await act.Should().NotThrowAsync();
     }
 
     [Fact]
-    public void ShouldNotThrowExceptionForDelay()
+    public async Task DelayWithCallback_ShouldInvokeCallback_AfterDelay()
     {
-        var act = () =>
-        {
-            CancellationTokenSource token = new();
-            var unused = TaskUtilities.Delay(TimeSpan.FromMilliseconds(50), token.Token);
-            token.Cancel();
-        };
+        var callbackInvoked = false;
+        CancellationTokenSource token = new();
 
-        act.Should().NotThrow();
+        await TaskUtilities.DelayWithCallback(
+            TimeSpan.FromMilliseconds(10),
+            token.Token,
+            () =>
+            {
+                callbackInvoked = true;
+                return Task.CompletedTask;
+            }
+        );
+
+        callbackInvoked.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DelayWithCallback_ShouldNotInvokeCallback_WhenCancelled()
+    {
+        var callbackInvoked = false;
+        CancellationTokenSource token = new();
+        token.Cancel();
+
+        await TaskUtilities.DelayWithCallback(
+            TimeSpan.FromMilliseconds(50),
+            token.Token,
+            () =>
+            {
+                callbackInvoked = true;
+                return Task.CompletedTask;
+            }
+        );
+
+        callbackInvoked.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DelayWithCallback_ShouldPropagateCallbackException()
+    {
+        CancellationTokenSource token = new();
+
+        var act = () => TaskUtilities.DelayWithCallback(
+            TimeSpan.FromMilliseconds(1),
+            token.Token,
+            () => throw new InvalidOperationException("callback failed")
+        );
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("callback failed");
     }
 }

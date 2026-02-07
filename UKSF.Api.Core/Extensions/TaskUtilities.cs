@@ -8,9 +8,9 @@ public static class TaskUtilities
         {
             await Task.Delay(timeSpan, token);
         }
-        catch (Exception)
+        catch (OperationCanceledException)
         {
-            // Ignored
+            // Expected when token is cancelled
         }
     }
 
@@ -19,11 +19,12 @@ public static class TaskUtilities
         try
         {
             await Task.Delay(timeSpan, token);
-            await callback();
         }
-        catch (Exception)
+        catch (OperationCanceledException)
         {
-            // Ignored
+            return;
         }
+
+        await callback();
     }
 }

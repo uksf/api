@@ -102,7 +102,11 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     {
         await base.Update(filterExpression, update);
         Refresh();
-        DataUpdateEvent(GetSingle(filterExpression.Compile()).Id);
+        var match = GetSingle(filterExpression.Compile());
+        if (match is not null)
+        {
+            DataUpdateEvent(match.Id);
+        }
     }
 
     public override async Task UpdateMany(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
@@ -117,7 +121,11 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     {
         await base.FindAndUpdate(filterExpression, update);
         Refresh();
-        DataUpdateEvent(GetSingle(filterExpression.Compile()).Id);
+        var match = GetSingle(filterExpression.Compile());
+        if (match is not null)
+        {
+            DataUpdateEvent(match.Id);
+        }
     }
 
     public override async Task Replace(T item)

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using FluentAssertions;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Core.Context.Base;
@@ -116,5 +117,27 @@ public class CachedContextTests
         await _testCachedContext.UpdateMany(x => x.Name == "1", Builders<DomainTestModel>.Update.Set(x => x.Name, "3"));
 
         _mockDataCollection.Verify(x => x.Get(), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task Update_ByFilterExpression_ShouldNotThrow_WhenFilterNoLongerMatchesAfterUpdate()
+    {
+        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
+                           .Returns(Task.CompletedTask);
+
+        var act = () => _testCachedContext.Update(x => x.Name == "NonExistent", Builders<DomainTestModel>.Update.Set(x => x.Name, "Updated"));
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task FindAndUpdate_ShouldNotThrow_WhenFilterNoLongerMatchesAfterUpdate()
+    {
+        _mockDataCollection.Setup(x => x.FindAndUpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
+                           .Returns(Task.CompletedTask);
+
+        var act = () => _testCachedContext.FindAndUpdate(x => x.Name == "NonExistent", Builders<DomainTestModel>.Update.Set(x => x.Name, "Updated"));
+
+        await act.Should().NotThrowAsync();
     }
 }

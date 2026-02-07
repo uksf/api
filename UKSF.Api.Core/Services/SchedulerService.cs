@@ -38,12 +38,7 @@ public class SchedulerService(ISchedulerContext context, IScheduledActionFactory
             return;
         }
 
-        if (ActiveTasks.TryGetValue(job.Id, out var token))
-        {
-            token.Cancel();
-            ActiveTasks.TryRemove(job.Id, out var _);
-        }
-
+        CancelAndDisposeToken(job.Id);
         await context.Delete(job);
     }
 
@@ -79,6 +74,9 @@ public class SchedulerService(ISchedulerContext context, IScheduledActionFactory
     private void Schedule(DomainScheduledJob job)
     {
         CancellationTokenSource token = new();
+        CancelAndDisposeToken(job.Id);
+        ActiveTasks[job.Id] = token;
+
         _ = Task.Run(
             async () =>
             {
@@ -122,12 +120,20 @@ public class SchedulerService(ISchedulerContext context, IScheduledActionFactory
                 else
                 {
                     await context.Delete(job);
-                    ActiveTasks.TryRemove(job.Id, out _);
+                    CancelAndDisposeToken(job.Id);
                 }
             },
             token.Token
         );
-        ActiveTasks[job.Id] = token;
+    }
+
+    private static void CancelAndDisposeToken(string jobId)
+    {
+        if (ActiveTasks.TryRemove(jobId, out var existingToken))
+        {
+            existingToken.Cancel();
+            existingToken.Dispose();
+        }
     }
 
     private async Task SetNext(DomainScheduledJob job)

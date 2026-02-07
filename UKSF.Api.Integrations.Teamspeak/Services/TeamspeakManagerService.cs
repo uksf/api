@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
@@ -7,6 +6,7 @@ using UKSF.Api.Core.Services;
 using UKSF.Api.Integrations.Teamspeak.Models;
 using UKSF.Api.Integrations.Teamspeak.Signalr.Clients;
 using UKSF.Api.Integrations.Teamspeak.Signalr.Hubs;
+using Process = System.Diagnostics.Process;
 
 namespace UKSF.Api.Integrations.Teamspeak.Services;
 
@@ -21,8 +21,9 @@ public interface ITeamspeakManagerService
 public class TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient> hub, IVariablesService variablesService, IUksfLogger logger)
     : ITeamspeakManagerService
 {
-    private bool _runTeamspeak;
+    private volatile bool _runTeamspeak;
     private CancellationTokenSource _token;
+    private Task _keepOnlineTask;
 
     public void Start()
     {
@@ -33,7 +34,7 @@ public class TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient>
 
         _runTeamspeak = true;
         _token = new CancellationTokenSource();
-        Task.Run(KeepOnline);
+        _keepOnlineTask = Task.Run(KeepOnline);
     }
 
     public void Stop()
@@ -44,9 +45,34 @@ public class TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient>
         }
 
         _runTeamspeak = false;
+
+        if (_token is null)
+        {
+            return;
+        }
+
         _token.Cancel();
-        Task.Delay(TimeSpan.FromSeconds(3)).GetAwaiter().GetResult();
-        ShutTeamspeak().GetAwaiter().GetResult();
+
+        try
+        {
+            _keepOnlineTask?.Wait(TimeSpan.FromSeconds(5));
+        }
+        catch (AggregateException)
+        {
+            // Expected if KeepOnline had issues during shutdown
+        }
+
+        try
+        {
+            ShutTeamspeak().Wait(TimeSpan.FromSeconds(5));
+        }
+        catch (AggregateException ex) when (ex.InnerException is OperationCanceledException)
+        {
+            // Expected during shutdown
+        }
+
+        _token.Dispose();
+        _token = null;
     }
 
     public async Task SendGroupProcedure(TeamspeakProcedureType procedure, TeamspeakGroupProcedure groupProcedure)
@@ -69,33 +95,40 @@ public class TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient>
         await hub.Clients.All.Receive(procedure, args);
     }
 
-    private async void KeepOnline()
+    private async Task KeepOnline()
     {
         await TaskUtilities.Delay(TimeSpan.FromSeconds(2), _token.Token);
         while (_runTeamspeak)
         {
-            if (variablesService.GetVariable("TEAMSPEAK_SERVER_RUN").AsBool())
+            try
             {
-                if (Process.GetProcessesByName("ts3server").Length == 0)
+                if (variablesService.GetVariable("TEAMSPEAK_SERVER_RUN").AsBool())
                 {
-                    await LaunchTeamspeakServer();
+                    if (Process.GetProcessesByName("ts3server").Length == 0)
+                    {
+                        await LaunchTeamspeakServer();
+                    }
+                }
+
+                if (variablesService.GetVariable("TEAMSPEAK_RUN").AsBool())
+                {
+                    if (!TeamspeakHubState.Connected)
+                    {
+                        if (Process.GetProcessesByName("ts3client_win64").Length == 0)
+                        {
+                            await LaunchTeamspeak();
+                        }
+                        else
+                        {
+                            await ShutTeamspeak();
+                            continue;
+                        }
+                    }
                 }
             }
-
-            if (variablesService.GetVariable("TEAMSPEAK_RUN").AsBool())
+            catch (Exception ex)
             {
-                if (!TeamspeakHubState.Connected)
-                {
-                    if (Process.GetProcessesByName("ts3client_win64").Length == 0)
-                    {
-                        await LaunchTeamspeak();
-                    }
-                    else
-                    {
-                        await ShutTeamspeak();
-                        continue;
-                    }
-                }
+                logger.LogError("Teamspeak KeepOnline iteration failed", ex);
             }
 
             await TaskUtilities.Delay(TimeSpan.FromSeconds(15), _token.Token);
@@ -116,11 +149,11 @@ public class TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient>
 
     private async Task ShutTeamspeak()
     {
-        logger.LogInfo("Teampseak shutdown via process");
+        logger.LogInfo("Teamspeak shutdown via process");
         var process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == "ts3client_win64");
         if (process == null)
         {
-            logger.LogInfo("Teampseak process not found");
+            logger.LogInfo("Teamspeak process not found");
             return;
         }
 
@@ -135,7 +168,7 @@ public class TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient>
             await TaskUtilities.Delay(TimeSpan.FromMilliseconds(100), _token.Token);
         }
 
-        logger.LogInfo("Teampseak process should be closed");
+        logger.LogInfo("Teamspeak process should be closed");
     }
 
     private bool IsTeamspeakDisabled()
