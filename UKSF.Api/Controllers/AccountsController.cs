@@ -214,13 +214,6 @@ public class AccountsController(
         return accountContext.GetSingle(account.Id).Settings;
     }
 
-    [HttpGet("test")]
-    public string Test()
-    {
-        logger.LogInfo("This is a test");
-        return DateTime.UtcNow.ToLongTimeString();
-    }
-
     private async Task SendConfirmationCode(DomainAccount account)
     {
         var code = await confirmationCodeService.CreateConfirmationCode(account.Email);

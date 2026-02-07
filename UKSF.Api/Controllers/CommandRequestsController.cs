@@ -29,8 +29,6 @@ public class CommandRequestsController(
     IUksfLogger logger
 ) : ControllerBase
 {
-    private const string SuperAdmin = "59e38f10594c603b78aa9dbd";
-
     [HttpGet]
     [Authorize]
     public CommandRequestsDataset Get()
@@ -41,7 +39,7 @@ public class CommandRequestsController(
         var contextId = httpContextService.GetUserId();
         var id = variablesContext.GetSingle("UNIT_ID_PERSONNEL").AsString();
         var canOverride = unitsContext.GetSingle(id).Members.Any(x => x == contextId);
-        var superAdmin = contextId == SuperAdmin;
+        var superAdmin = httpContextService.UserHasPermission(Permissions.Superadmin);
         var now = DateTime.UtcNow;
         foreach (var commandRequest in allRequests)
         {
