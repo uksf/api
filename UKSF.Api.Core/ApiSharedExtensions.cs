@@ -110,20 +110,20 @@ public static class ApiSharedExtensions
 
     private static IServiceCollection AddCommands(this IServiceCollection services)
     {
-        return services.AddSingleton<ISendTemplatedEmailCommand, SendTemplatedEmailCommand>()
-                       .AddSingleton<ISendBasicEmailCommand, SendBasicEmailCommand>()
-                       .AddSingleton<IUpdateApplicationCommand, UpdateApplicationCommand>()
-                       .AddSingleton<IUpdateAccountTrainingCommandHandler, UpdateAccountTrainingCommandHandler>();
+        return services.AddTransient<ISendTemplatedEmailCommand, SendTemplatedEmailCommand>()
+                       .AddTransient<ISendBasicEmailCommand, SendBasicEmailCommand>()
+                       .AddTransient<IUpdateApplicationCommand, UpdateApplicationCommand>()
+                       .AddTransient<IUpdateAccountTrainingCommandHandler, UpdateAccountTrainingCommandHandler>();
     }
 
     private static IServiceCollection AddQueries(this IServiceCollection services)
     {
-        return services.AddSingleton<IGetEmailTemplateQuery, GetEmailTemplateQuery>().AddSingleton<IBuildUrlQuery, BuildUrlQuery>();
+        return services.AddTransient<IGetEmailTemplateQuery, GetEmailTemplateQuery>().AddTransient<IBuildUrlQuery, BuildUrlQuery>();
     }
 
     private static IServiceCollection AddMappers(this IServiceCollection services)
     {
-        return services.AddSingleton<IAccountMapper, AccountMapper>().AddSingleton<IUnitMapper, UnitMapper>();
+        return services.AddTransient<IAccountMapper, AccountMapper>().AddTransient<IUnitMapper, UnitMapper>();
     }
 
     private static IServiceCollection AddActions(this IServiceCollection services)

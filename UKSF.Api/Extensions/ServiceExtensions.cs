@@ -66,9 +66,9 @@ public static class ServiceExtensions
                        .AddTransient<ILoaService, LoaService>()
                        .AddTransient<IOperationOrderService, OperationOrderService>()
                        .AddTransient<IOperationReportService, OperationReportService>()
-                       .AddSingleton<ILoginService, LoginService>()
-                       .AddSingleton<IPermissionsService, PermissionsService>()
-                       .AddSingleton<ICommentThreadService, CommentThreadService>()
+                       .AddTransient<ILoginService, LoginService>()
+                       .AddTransient<IPermissionsService, PermissionsService>()
+                       .AddTransient<ICommentThreadService, CommentThreadService>()
                        .AddScoped<IDocumentFolderService, DocumentFolderService>()
                        .AddScoped<IDocumentService, DocumentService>()
                        .AddScoped<IDocumentPermissionsService, DocumentPermissionsService>();
@@ -76,30 +76,30 @@ public static class ServiceExtensions
 
     private static IServiceCollection AddCommands(this IServiceCollection services)
     {
-        return services.AddSingleton<IRequestPasswordResetCommand, RequestPasswordResetCommand>()
-                       .AddSingleton<IResetPasswordCommand, ResetPasswordCommand>()
-                       .AddSingleton<IConnectTeamspeakIdToAccountCommand, ConnectTeamspeakIdToAccountCommand>()
-                       .AddSingleton<ICreateApplicationCommand, CreateApplicationCommand>()
-                       .AddSingleton<ICreateCommentThreadCommand, CreateCommentThreadCommand>()
-                       .AddSingleton<IQualificationsUpdateCommand, QualificationsUpdateCommand>()
-                       .AddSingleton<IUpdateUnitCommandHandler, UpdateUnitCommandHandler>();
+        return services.AddTransient<IRequestPasswordResetCommand, RequestPasswordResetCommand>()
+                       .AddTransient<IResetPasswordCommand, ResetPasswordCommand>()
+                       .AddTransient<IConnectTeamspeakIdToAccountCommand, ConnectTeamspeakIdToAccountCommand>()
+                       .AddTransient<ICreateApplicationCommand, CreateApplicationCommand>()
+                       .AddTransient<ICreateCommentThreadCommand, CreateCommentThreadCommand>()
+                       .AddTransient<IQualificationsUpdateCommand, QualificationsUpdateCommand>()
+                       .AddTransient<IUpdateUnitCommandHandler, UpdateUnitCommandHandler>();
     }
 
     private static IServiceCollection AddQueries(this IServiceCollection services)
     {
-        return services.AddSingleton<IGetCommandMembersPagedQuery, GetCommandMembersPagedQuery>()
-                       .AddSingleton<IGetPagedLoasQuery, GetPagedLoasQuery>()
-                       .AddSingleton<IAllNationsByAccountQuery, AllNationsByAccountQuery>()
-                       .AddSingleton<IGetUnitTreeQuery, GetUnitTreeQuery>()
-                       .AddSingleton<IGetCompletedApplicationsPagedQueryHandler, GetCompletedApplicationsPagedQueryHandler>();
+        return services.AddTransient<IGetCommandMembersPagedQuery, GetCommandMembersPagedQuery>()
+                       .AddTransient<IGetPagedLoasQuery, GetPagedLoasQuery>()
+                       .AddTransient<IAllNationsByAccountQuery, AllNationsByAccountQuery>()
+                       .AddTransient<IGetUnitTreeQuery, GetUnitTreeQuery>()
+                       .AddTransient<IGetCompletedApplicationsPagedQueryHandler, GetCompletedApplicationsPagedQueryHandler>();
     }
 
     private static IServiceCollection AddMappers(this IServiceCollection services)
     {
-        return services.AddSingleton<ICommandMemberMapper, CommandMemberMapper>()
-                       .AddSingleton<ILoaMapper, LoaMapper>()
-                       .AddSingleton<IUnitTreeMapper, UnitTreeMapper>()
-                       .AddSingleton<ICompletedApplicationMapper, CompletedApplicationMapper>();
+        return services.AddTransient<ICommandMemberMapper, CommandMemberMapper>()
+                       .AddTransient<ILoaMapper, LoaMapper>()
+                       .AddTransient<IUnitTreeMapper, UnitTreeMapper>()
+                       .AddTransient<ICompletedApplicationMapper, CompletedApplicationMapper>();
     }
 
     private static IServiceCollection AddMiddlewares(this IServiceCollection services)

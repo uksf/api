@@ -35,14 +35,14 @@ public static class ApiArmaServerExtensions
 
     private static IServiceCollection AddCommands(this IServiceCollection services)
     {
-        return services.AddSingleton<IUpdateServerInfrastructureCommand, UpdateServerInfrastructureCommand>();
+        return services.AddTransient<IUpdateServerInfrastructureCommand, UpdateServerInfrastructureCommand>();
     }
 
     private static IServiceCollection AddQueries(this IServiceCollection services)
     {
-        return services.AddSingleton<IGetLatestServerInfrastructureQuery, GetLatestServerInfrastructureQuery>()
-                       .AddSingleton<IGetCurrentServerInfrastructureQuery, GetCurrentServerInfrastructureQuery>()
-                       .AddSingleton<IGetInstalledServerInfrastructureQuery, GetInstalledServerInfrastructureQuery>();
+        return services.AddTransient<IGetLatestServerInfrastructureQuery, GetLatestServerInfrastructureQuery>()
+                       .AddTransient<IGetCurrentServerInfrastructureQuery, GetCurrentServerInfrastructureQuery>()
+                       .AddTransient<IGetInstalledServerInfrastructureQuery, GetInstalledServerInfrastructureQuery>();
     }
 
     private static IServiceCollection AddActions(this IServiceCollection services)
