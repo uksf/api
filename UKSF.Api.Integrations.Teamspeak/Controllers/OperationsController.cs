@@ -19,14 +19,14 @@ public class OperationsController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public TeampseakReportsDataset Get()
+    public TeamspeakReportsDataset Get()
     {
         var tsServerSnapshots = _database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots")
                                          .Find(x => x.Timestamp > DateTime.UtcNow.AddDays(-7))
                                          .ToList();
-        TeampseakReportDataset acreData = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, true) };
-        TeampseakReportDataset data = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, false) };
-        return new TeampseakReportsDataset { AcreData = acreData, Data = data };
+        TeamspeakReportDataset acreData = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, true) };
+        TeamspeakReportDataset data = new() { Labels = GetLabels(), Datasets = GetReports(tsServerSnapshots, false) };
+        return new TeamspeakReportsDataset { AcreData = acreData, Data = data };
     }
 
     private static int[] GetReportData(IReadOnlyCollection<TeamspeakServerSnapshot> serverSnapshots, DateTime day, bool acre)
@@ -51,7 +51,7 @@ public class OperationsController : ControllerBase
                     dataset.Add(0);
                 }
             }
-            catch (Exception)
+            catch (InvalidOperationException)
             {
                 dataset.Add(0);
             }
@@ -74,15 +74,15 @@ public class OperationsController : ControllerBase
         return labels;
     }
 
-    private static List<TeampseakReport> GetReports(IReadOnlyCollection<TeamspeakServerSnapshot> tsServerSnapshots, bool acre)
+    private static List<TeamspeakReport> GetReports(IReadOnlyCollection<TeamspeakServerSnapshot> tsServerSnapshots, bool acre)
     {
-        List<TeampseakReport> datasets = [];
+        List<TeamspeakReport> datasets = [];
         string[] colors = ["#4bc0c0", "#3992e6", "#a539e6", "#42e639", "#aae639", "#e6d239", "#e63939"];
 
         for (var i = 0; i < 7; i++)
         {
             datasets.Add(
-                new TeampseakReport
+                new TeamspeakReport
                 {
                     Label = $"{DateTime.UtcNow.AddDays(-i).DayOfWeek} - {DateTime.UtcNow.AddDays(-i).ToShortDateString()}",
                     Data = GetReportData(tsServerSnapshots, DateTime.UtcNow.AddDays(-i).Date, acre),

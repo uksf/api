@@ -53,15 +53,8 @@ public class GitCommand(IGitService gitService)
 
     public async Task<string> Execute(string command)
     {
-        try
-        {
-            var result = await gitService.ExecuteCommand(_gitCommandArgs, command, _cancellationToken);
-            _cancellationToken.ThrowIfCancellationRequested();
-            return result;
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        var result = await gitService.ExecuteCommand(_gitCommandArgs, command, _cancellationToken);
+        _cancellationToken.ThrowIfCancellationRequested();
+        return result;
     }
 }

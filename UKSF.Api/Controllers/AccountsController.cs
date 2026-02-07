@@ -86,8 +86,8 @@ public class AccountsController(
 
         try
         {
-            GuardUtilites.ValidateString(email, _ => throw new ArgumentException($"Email '{email}' is invalid. Please refresh the page."));
-            GuardUtilites.ValidateId(code, _ => throw new ArgumentException($"Code '{code}' is invalid. Please try again"));
+            GuardUtilities.ValidateString(email, _ => throw new ArgumentException($"Email '{email}' is invalid. Please refresh the page."));
+            GuardUtilities.ValidateId(code, _ => throw new ArgumentException($"Code '{code}' is invalid. Please try again"));
         }
         catch (ArgumentException exception)
         {

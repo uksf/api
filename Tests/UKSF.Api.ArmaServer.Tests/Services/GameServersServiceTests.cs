@@ -7,6 +7,7 @@ using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -18,6 +19,7 @@ public class GameServersServiceTests
     private readonly Mock<IGameServersContext> _mockGameServersContext = new();
     private readonly Mock<IMissionPatchingService> _mockMissionPatchingService = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
+    private readonly Mock<IUksfLogger> _mockLogger = new();
 
     private readonly GameServersService _subject;
 
@@ -27,7 +29,8 @@ public class GameServersServiceTests
             _mockGameServersContext.Object,
             _mockMissionPatchingService.Object,
             _mockGameServerHelpers.Object,
-            _mockVariablesService.Object
+            _mockVariablesService.Object,
+            _mockLogger.Object
         );
     }
 

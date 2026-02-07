@@ -16,9 +16,9 @@ public class InstagramController(IInstagramService instagramService) : Controlle
 
     [HttpGet("refreshToken")]
     [Permissions(Permissions.Admin)]
-    public async Task RefreshToken()
+    public Task RefreshToken()
     {
-        // await actionInstagramToken.Reset();
+        return Task.CompletedTask;
     }
 
     [HttpGet("cache")]

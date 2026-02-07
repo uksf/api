@@ -48,7 +48,7 @@ public class ModpackController(IModpackService modpackService, IGithubService gi
         throw new NotFoundException("Build step does not exist");
     }
 
-    [HttpGet("builds/{id}/rebuild")]
+    [HttpPost("builds/{id}/rebuild")]
     [Permissions(Permissions.Admin)]
     public async Task Rebuild([FromRoute] string id)
     {
@@ -61,7 +61,7 @@ public class ModpackController(IModpackService modpackService, IGithubService gi
         await modpackService.Rebuild(build);
     }
 
-    [HttpGet("builds/{id}/cancel")]
+    [HttpPost("builds/{id}/cancel")]
     [Permissions(Permissions.Admin)]
     public async Task CancelBuild([FromRoute] string id)
     {

@@ -4,7 +4,7 @@ using Xunit;
 
 namespace UKSF.Api.Core.Tests.Common;
 
-public class GuardUtilitesTests
+public class GuardUtilitiesTests
 {
     [Theory]
     [InlineData("", false)]
@@ -15,7 +15,7 @@ public class GuardUtilitesTests
     {
         var subject = true;
 
-        GuardUtilites.ValidateId(id, _ => subject = false);
+        GuardUtilities.ValidateId(id, _ => subject = false);
 
         subject.Should().Be(valid);
     }
@@ -28,7 +28,7 @@ public class GuardUtilitesTests
     {
         var subject = true;
 
-        GuardUtilites.ValidateArray(array, x => x.Length == 5, x => x % 2 == 0, () => subject = false);
+        GuardUtilities.ValidateArray(array, x => x.Length == 5, x => x % 2 == 0, () => subject = false);
 
         subject.Should().Be(valid);
     }
@@ -41,7 +41,7 @@ public class GuardUtilitesTests
     {
         var subject = true;
 
-        GuardUtilites.ValidateString(text, _ => subject = false);
+        GuardUtilities.ValidateString(text, _ => subject = false);
 
         subject.Should().Be(valid);
     }
@@ -56,7 +56,7 @@ public class GuardUtilitesTests
         var subject = true;
         var subjectId = true;
 
-        GuardUtilites.ValidateIdArray(array, x => x.Length == 2, () => subject = false, _ => subjectId = false);
+        GuardUtilities.ValidateIdArray(array, x => x.Length == 2, () => subject = false, _ => subjectId = false);
 
         subject.Should().Be(valid);
         subjectId.Should().Be(idValid);

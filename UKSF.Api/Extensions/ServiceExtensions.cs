@@ -54,7 +54,7 @@ public static class ServiceExtensions
                        .AddEventHandler<ICommandRequestEventHandler, CommandRequestEventHandler>()
                        .AddEventHandler<IAccountDataEventHandler, AccountDataEventHandler>()
                        .AddEventHandler<ICommentThreadEventHandler, CommentThreadEventHandler>()
-                       .AddEventHandler<IDiscordEventhandler, DiscordEventhandler>()
+                       .AddEventHandler<IDiscordEventHandler, DiscordEventHandler>()
                        .AddEventHandler<INotificationsEventHandler, NotificationsEventHandler>();
     }
 

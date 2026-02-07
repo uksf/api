@@ -9,6 +9,7 @@ using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Models.Request;
 using UKSF.Api.Core.Services;
 using Xunit;
@@ -21,6 +22,7 @@ public class GameServersServiceOrderTests
     private readonly Mock<IGameServersContext> _mockIGameServersContext = new();
     private readonly Mock<IMissionPatchingService> _mockIMissionPatchingService = new();
     private readonly Mock<IVariablesService> _mockIVariablesService = new();
+    private readonly Mock<IUksfLogger> _mockLogger = new();
 
     private readonly GameServersService _subject;
 
@@ -30,7 +32,8 @@ public class GameServersServiceOrderTests
             _mockIGameServersContext.Object,
             _mockIMissionPatchingService.Object,
             _mockIGameServerHelpers.Object,
-            _mockIVariablesService.Object
+            _mockIVariablesService.Object,
+            _mockLogger.Object
         );
     }
 
@@ -146,9 +149,9 @@ public class GameServersServiceOrderTests
     {
         _mockIGameServersContext.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<Expression<Func<DomainGameServer, int>>>(), It.IsAny<int>()))
                                 .Callback((string id, Expression<Func<DomainGameServer, int>> _, int index) =>
-                                          {
-                                              gameServers.First(x => x.Id == id).Order = index;
-                                          }
+                                    {
+                                        gameServers.First(x => x.Id == id).Order = index;
+                                    }
                                 );
     }
 }

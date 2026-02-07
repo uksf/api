@@ -35,7 +35,8 @@ public class GameServersService(
     IGameServersContext gameServersContext,
     IMissionPatchingService missionPatchingService,
     IGameServerHelpers gameServerHelpers,
-    IVariablesService variablesService
+    IVariablesService variablesService,
+    IUksfLogger logger
 ) : IGameServersService
 {
     public int GetGameInstanceCount()
@@ -96,8 +97,17 @@ public class GameServersService(
             gameServer.Status.Running = true;
             gameServer.Status.Started = false;
         }
-        catch (Exception)
+        catch (HttpRequestException)
         {
+            gameServer.Status.Running = false;
+        }
+        catch (TaskCanceledException)
+        {
+            gameServer.Status.Running = false;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError($"Unexpected error getting game server status for '{gameServer.Name}'", exception);
             gameServer.Status.Running = false;
         }
         finally
@@ -171,9 +181,11 @@ public class GameServersService(
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server/stop");
         }
-        catch (Exception)
+        catch (HttpRequestException) { }
+        catch (TaskCanceledException) { }
+        catch (Exception exception)
         {
-            // ignored
+            logger.LogError($"Unexpected error stopping game server '{gameServer.Name}'", exception);
         }
 
         if (gameServer.NumberHeadlessClients > 0)
@@ -186,9 +198,11 @@ public class GameServersService(
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                     await client.GetAsync($"http://localhost:{gameServer.ApiPort + index + 1}/server/stop");
                 }
-                catch (Exception)
+                catch (HttpRequestException) { }
+                catch (TaskCanceledException) { }
+                catch (Exception exception)
                 {
-                    // ignored
+                    logger.LogError($"Unexpected error stopping headless client {index} for '{gameServer.Name}'", exception);
                 }
             }
         }

@@ -8,10 +8,6 @@ using UKSF.Api.Launcher.Services;
 using UKSF.Api.Launcher.Signalr.Clients;
 using UKSF.Api.Launcher.Signalr.Hubs;
 
-// ReSharper disable UnusedVariable
-// ReSharper disable UnusedParameter.Global
-// ReSharper disable NotAccessedField.Local
-
 namespace UKSF.Api.Launcher.Controllers;
 
 [Route("[controller]")]
@@ -63,8 +59,6 @@ public class LauncherController(
     [HttpPost("error")]
     public void ReportError([FromBody] ReportErrorRequest reportErrorRequest)
     {
-        var version = reportErrorRequest.Version;
-        var message = reportErrorRequest.Message;
-        // logger.Log(new LauncherLog(version, message) { userId = httpContextService.GetUserId(), name = displayNameService.GetDisplayName(accountService.GetUserAccount()) });
+        // Stub - launcher sends error reports but processing is not yet implemented
     }
 }

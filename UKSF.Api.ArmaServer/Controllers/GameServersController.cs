@@ -216,7 +216,7 @@ public class GameServersController(
         return patchingResult.Reports;
     }
 
-    [HttpGet("stop/{id}")]
+    [HttpPost("stop/{id}")]
     [Authorize]
     public async Task<GameServerDataset> StopServer(string id)
     {
@@ -236,7 +236,7 @@ public class GameServersController(
         return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
     }
 
-    [HttpGet("kill/{id}")]
+    [HttpPost("kill/{id}")]
     [Authorize]
     public async Task<GameServerDataset> KillServer(string id)
     {
@@ -264,7 +264,7 @@ public class GameServersController(
         return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
     }
 
-    [HttpGet("killall")]
+    [HttpPost("killall")]
     [Authorize]
     public async Task KillAllArmaProcesses()
     {

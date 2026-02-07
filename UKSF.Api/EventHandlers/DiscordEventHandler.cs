@@ -10,9 +10,9 @@ using UKSF.Api.Services;
 
 namespace UKSF.Api.EventHandlers;
 
-public interface IDiscordEventhandler : IEventHandler;
+public interface IDiscordEventHandler : IEventHandler;
 
-public class DiscordEventhandler : IDiscordEventhandler
+public class DiscordEventHandler : IDiscordEventHandler
 {
     private readonly IAccountContext _accountContext;
     private readonly ICommentThreadService _commentThreadService;
@@ -20,7 +20,7 @@ public class DiscordEventhandler : IDiscordEventhandler
     private readonly IEventBus _eventBus;
     private readonly IUksfLogger _logger;
 
-    public DiscordEventhandler(
+    public DiscordEventHandler(
         IEventBus eventBus,
         ICommentThreadService commentThreadService,
         IAccountContext accountContext,
@@ -46,10 +46,8 @@ public class DiscordEventhandler : IDiscordEventhandler
     {
         switch (discordEventData.EventType)
         {
-            case DiscordUserEventType.Joined: break;
-            case DiscordUserEventType.Left:
-                await LeftEvent(discordEventData.EventData);
-                break;
+            case DiscordUserEventType.Joined:          break;
+            case DiscordUserEventType.Left:            await LeftEvent(discordEventData.EventData); break;
             case DiscordUserEventType.Banned:          break;
             case DiscordUserEventType.Unbanned:        break;
             case DiscordUserEventType.Message_Deleted: break;

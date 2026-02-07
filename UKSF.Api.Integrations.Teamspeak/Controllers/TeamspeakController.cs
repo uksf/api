@@ -73,7 +73,7 @@ public class TeamspeakController : ControllerBase
     [Permissions(Permissions.Admin)]
     public async Task Reload()
     {
-        _logger.LogInfo("Teampseak reload via API");
+        _logger.LogInfo("Teamspeak reload via API");
         await _teamspeakService.Reload();
     }
 
@@ -81,7 +81,7 @@ public class TeamspeakController : ControllerBase
     [Permissions(Permissions.Admin)]
     public async Task Shutdown()
     {
-        _logger.LogInfo("Teampseak shutdown via API");
+        _logger.LogInfo("Teamspeak shutdown via API");
         await _teamspeakService.Shutdown();
         await Task.Delay(TimeSpan.FromSeconds(3));
     }

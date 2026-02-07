@@ -2,7 +2,7 @@ using MongoDB.Bson;
 
 namespace UKSF.Api.Core.Extensions;
 
-public static class GuardUtilites
+public static class GuardUtilities
 {
     public static void ValidateString(string text, Action<string> onInvalid)
     {
