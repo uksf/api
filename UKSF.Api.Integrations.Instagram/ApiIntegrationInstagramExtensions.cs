@@ -4,29 +4,26 @@ namespace UKSF.Api.Integrations.Instagram;
 
 public static class ApiIntegrationInstagramExtensions
 {
-    public static IServiceCollection AddUksfIntegrationInstagram(this IServiceCollection services)
+    extension(IServiceCollection services)
     {
-        return services.AddContexts().AddEventHandlers().AddServices(); //.AddActions();
-    }
+        public IServiceCollection AddUksfIntegrationInstagram()
+        {
+            return services.AddContexts().AddEventHandlers().AddServices();
+        }
 
-    private static IServiceCollection AddContexts(this IServiceCollection services)
-    {
-        return services;
-    }
+        private IServiceCollection AddContexts()
+        {
+            return services;
+        }
 
-    private static IServiceCollection AddEventHandlers(this IServiceCollection services)
-    {
-        return services;
-    }
+        private IServiceCollection AddEventHandlers()
+        {
+            return services;
+        }
 
-    private static IServiceCollection AddServices(this IServiceCollection services)
-    {
-        return services.AddSingleton<IInstagramService, InstagramService>();
+        private IServiceCollection AddServices()
+        {
+            return services.AddSingleton<IInstagramService, InstagramService>();
+        }
     }
-
-    // private static IServiceCollection AddActions(this IServiceCollection services)
-    // {
-    //     return services.AddSelfCreatingScheduledAction<IActionInstagramImages, ActionInstagramImages>()
-    //                    .AddSelfCreatingScheduledAction<IActionInstagramToken, ActionInstagramToken>();
-    // }
 }

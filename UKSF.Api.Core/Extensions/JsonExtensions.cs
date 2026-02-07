@@ -5,18 +5,27 @@ namespace UKSF.Api.Core.Extensions;
 
 public static class JsonExtensions
 {
-    public static T Copy<T>(this object source)
+    extension(object source)
     {
-        return JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(source, DefaultJsonSerializerOptions.Options), DefaultJsonSerializerOptions.Options);
+        public T Copy<T>()
+        {
+            return JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(source, DefaultJsonSerializerOptions.Options), DefaultJsonSerializerOptions.Options);
+        }
     }
 
-    public static string Escape(this string jsonString)
+    extension(string jsonString)
     {
-        return jsonString.Replace("\\", "\\\\");
+        public string Escape()
+        {
+            return jsonString.Replace("\\", "\\\\");
+        }
     }
 
-    public static string GetValueFromObject(this JsonNode jsonNode, string key)
+    extension(JsonNode jsonNode)
     {
-        return jsonNode[key] is not null ? jsonNode[key].ToString() : string.Empty;
+        public string GetValueFromObject(string key)
+        {
+            return jsonNode[key] is not null ? jsonNode[key].ToString() : string.Empty;
+        }
     }
 }

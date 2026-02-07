@@ -2,23 +2,32 @@ namespace UKSF.Api.Core.Extensions;
 
 public static class CollectionExtensions
 {
-    public static void CleanHashset(this HashSet<string> collection)
+    extension(HashSet<string> collection)
     {
-        collection.RemoveWhere(string.IsNullOrEmpty);
+        public void CleanHashset()
+        {
+            collection.RemoveWhere(string.IsNullOrEmpty);
+        }
     }
 
-    public static bool IsNullOrEmpty<T>(this IEnumerable<T> collection)
+    extension<T>(IEnumerable<T> collection)
     {
-        return collection == null || collection.IsEmpty();
+        public bool IsNullOrEmpty()
+        {
+            return collection == null || collection.IsEmpty();
+        }
+
+        public bool IsEmpty()
+        {
+            return !collection.Any();
+        }
     }
 
-    public static bool IsEmpty<T>(this IEnumerable<T> collection)
+    extension<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
     {
-        return !collection.Any();
-    }
-
-    public static TKey GetKeyFromValue<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TValue value)
-    {
-        return dictionary.FirstOrDefault(x => x.Value.Equals(value)).Key;
+        public TKey GetKeyFromValue(TValue value)
+        {
+            return dictionary.FirstOrDefault(x => x.Value.Equals(value)).Key;
+        }
     }
 }

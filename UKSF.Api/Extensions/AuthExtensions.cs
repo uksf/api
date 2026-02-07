@@ -13,82 +13,85 @@ public static class AuthExtensions
     public static string TokenIssuer => "uksf-issuer";
     public static SymmetricSecurityKey SecurityKey { get; private set; }
 
-    public static IServiceCollection AddUksfAuthentication(this IServiceCollection services, IConfiguration configuration)
+    extension(IServiceCollection services)
     {
-        var appSettings = new AppSettings();
-        configuration.GetSection(nameof(AppSettings)).Bind(appSettings);
-        SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(appSettings.Secrets.TokenKey));
+        public IServiceCollection AddUksfAuthentication(IConfiguration configuration)
+        {
+            var appSettings = new AppSettings();
+            configuration.GetSection(nameof(AppSettings)).Bind(appSettings);
+            SecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(appSettings.Secrets.TokenKey));
 
-        services.AddAuthentication(options =>
-                    {
-                        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                    }
-                )
-                .AddJwtBearer(options =>
-                    {
-                        options.TokenValidationParameters = new TokenValidationParameters
+            services.AddAuthentication(options =>
                         {
-                            RequireExpirationTime = true,
-                            RequireSignedTokens = true,
-                            ValidateIssuerSigningKey = true,
-                            IssuerSigningKey = SecurityKey,
-                            ValidateIssuer = true,
-                            ValidIssuer = TokenIssuer,
-                            ValidateAudience = true,
-                            ValidAudience = TokenAudience,
-                            ValidateLifetime = true,
-                            ClockSkew = TimeSpan.Zero
-                        };
-                        options.Audience = TokenAudience;
-                        options.ClaimsIssuer = TokenIssuer;
-                        options.SaveToken = true;
-                        options.Events = new JwtBearerEvents
+                            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                            options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                        }
+                    )
+                    .AddJwtBearer(options =>
                         {
-                            OnAuthenticationFailed = context =>
+                            options.TokenValidationParameters = new TokenValidationParameters
                             {
-                                context.HttpContext.Items.Add("exception", context.Exception);
-
-                                return Task.CompletedTask;
-                            },
-                            OnMessageReceived = context =>
+                                RequireExpirationTime = true,
+                                RequireSignedTokens = true,
+                                ValidateIssuerSigningKey = true,
+                                IssuerSigningKey = SecurityKey,
+                                ValidateIssuer = true,
+                                ValidIssuer = TokenIssuer,
+                                ValidateAudience = true,
+                                ValidAudience = TokenAudience,
+                                ValidateLifetime = true,
+                                ClockSkew = TimeSpan.Zero
+                            };
+                            options.Audience = TokenAudience;
+                            options.ClaimsIssuer = TokenIssuer;
+                            options.SaveToken = true;
+                            options.Events = new JwtBearerEvents
                             {
-                                var accessToken = context.Request.Query["access_token"];
-                                if (!string.IsNullOrEmpty(accessToken) && context.Request.Path.StartsWithSegments("/hub"))
+                                OnAuthenticationFailed = context =>
                                 {
-                                    context.Token = accessToken;
+                                    context.HttpContext.Items.Add("exception", context.Exception);
+
+                                    return Task.CompletedTask;
+                                },
+                                OnMessageReceived = context =>
+                                {
+                                    var accessToken = context.Request.Query["access_token"];
+                                    if (!string.IsNullOrEmpty(accessToken) && context.Request.Path.StartsWithSegments("/hub"))
+                                    {
+                                        context.Token = accessToken;
+                                    }
+
+                                    return Task.CompletedTask;
                                 }
-
-                                return Task.CompletedTask;
-                            }
-                        };
-                    }
-                )
-                .AddCookie()
-                .AddSteam(options =>
-                    {
-                        options.ForwardAuthenticate = JwtBearerDefaults.AuthenticationScheme;
-                        options.Events = new OpenIdAuthenticationEvents
+                            };
+                        }
+                    )
+                    .AddCookie()
+                    .AddSteam(options =>
                         {
-                            OnAccessDenied = context =>
+                            options.ForwardAuthenticate = JwtBearerDefaults.AuthenticationScheme;
+                            options.Events = new OpenIdAuthenticationEvents
                             {
-                                context.Response.StatusCode = 401;
-                                return Task.CompletedTask;
-                            },
-                            OnTicketReceived = context =>
-                            {
-                                var idParts = context.Principal?.Claims
-                                                     .First(claim => claim.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
-                                                     .Value.Split('/');
-                                var id = idParts?[^1];
-                                context.ReturnUri = $"{context.ReturnUri}?id={id}";
-                                return Task.CompletedTask;
-                            }
-                        };
-                    }
-                );
+                                OnAccessDenied = context =>
+                                {
+                                    context.Response.StatusCode = 401;
+                                    return Task.CompletedTask;
+                                },
+                                OnTicketReceived = context =>
+                                {
+                                    var idParts = context.Principal?.Claims
+                                                         .First(claim => claim.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+                                                         .Value.Split('/');
+                                    var id = idParts?[^1];
+                                    context.ReturnUri = $"{context.ReturnUri}?id={id}";
+                                    return Task.CompletedTask;
+                                }
+                            };
+                        }
+                    );
 
-        return services;
+            return services;
+        }
     }
 }

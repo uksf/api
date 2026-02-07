@@ -47,9 +47,12 @@ public static class ProcessUtilities
         await Task.Delay(TimeSpan.FromSeconds(1));
     }
 
-    public static async Task CloseProcessGracefully(this Process process)
+    extension(Process process)
     {
-        // UKSF.PostMessage exe location should be set as a PATH variable
-        await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WmSysCommand} {ScClose} 0");
+        public async Task CloseProcessGracefully()
+        {
+            // UKSF.PostMessage exe location should be set as a PATH variable
+            await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WmSysCommand} {ScClose} 0");
+        }
     }
 }

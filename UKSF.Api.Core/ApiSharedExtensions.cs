@@ -19,124 +19,130 @@ namespace UKSF.Api.Core;
 
 public static class ApiSharedExtensions
 {
-    public static IServiceCollection AddUksfShared(this IServiceCollection services, IConfiguration configuration, IHostEnvironment currentEnvironment)
+    extension(IServiceCollection services)
     {
-        var appSettings = new AppSettings();
-        configuration.GetSection(nameof(AppSettings)).Bind(appSettings);
+        public IServiceCollection AddUksfShared(IConfiguration configuration, IHostEnvironment currentEnvironment)
+        {
+            var appSettings = new AppSettings();
+            configuration.GetSection(nameof(AppSettings)).Bind(appSettings);
 
-        services.AddConfiguration(configuration, appSettings)
-                .AddContexts()
-                .AddEventHandlers()
-                .AddServices()
-                .AddCommands()
-                .AddQueries()
-                .AddMappers()
-                .AddActions()
-                .AddSingleton(configuration)
-                .AddSingleton(currentEnvironment)
-                .AddTransient<IHttpContextService, HttpContextService>()
-                .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
-                .AddSingleton(GetDatabase(appSettings.ConnectionStrings.Database))
-                .AddSingleton<IEventBus, EventBus>()
-                .AddTransient<IMongoCollectionFactory, MongoCollectionFactory>()
-                .AddSingleton<IUksfLogger, UksfLogger>()
-                .AddSingleton<IClock, Clock>()
-                .AddSingleton<IProcessCommandFactory, ProcessCommandFactory>();
+            services.AddConfiguration(configuration, appSettings)
+                    .AddContexts()
+                    .AddEventHandlers()
+                    .AddServices()
+                    .AddCommands()
+                    .AddQueries()
+                    .AddMappers()
+                    .AddActions()
+                    .AddSingleton(configuration)
+                    .AddSingleton(currentEnvironment)
+                    .AddTransient<IHttpContextService, HttpContextService>()
+                    .AddSingleton<IHttpContextAccessor, HttpContextAccessor>()
+                    .AddSingleton(GetDatabase(appSettings.ConnectionStrings.Database))
+                    .AddSingleton<IEventBus, EventBus>()
+                    .AddTransient<IMongoCollectionFactory, MongoCollectionFactory>()
+                    .AddSingleton<IUksfLogger, UksfLogger>()
+                    .AddSingleton<IClock, Clock>()
+                    .AddSingleton<IProcessCommandFactory, ProcessCommandFactory>();
 
-        services.AddSignalR()
-                .AddJsonProtocol(options =>
-                    {
-                        options.PayloadSerializerOptions.PropertyNameCaseInsensitive = true;
-                        options.PayloadSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
-                        options.PayloadSerializerOptions.Converters.Add(new InferredTypeConverter());
-                    }
-                );
-        return services;
+            services.AddSignalR()
+                    .AddJsonProtocol(options =>
+                        {
+                            options.PayloadSerializerOptions.PropertyNameCaseInsensitive = true;
+                            options.PayloadSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+                            options.PayloadSerializerOptions.Converters.Add(new InferredTypeConverter());
+                        }
+                    );
+            return services;
+        }
+
+        private IServiceCollection AddConfiguration(IConfiguration configuration, AppSettings appSettings)
+        {
+            return services.Configure<AppSettings>(configuration.GetSection(nameof(AppSettings))).AddSingleton(appSettings);
+        }
+
+        private IServiceCollection AddContexts()
+        {
+            return services.AddSingleton<ISmtpClientContext, SmtpClientContext>()
+                           .AddSingleton<IFileContext, FileContext>()
+                           .AddContext<ILogContext, LogContext>()
+                           .AddContext<IAuditLogContext, AuditLogContext>()
+                           .AddContext<IConfirmationCodeContext, ConfirmationCodeContext>()
+                           .AddContext<IDiscordLogContext, DiscordLogContext>()
+                           .AddContext<IErrorLogContext, ErrorLogContext>()
+                           .AddContext<ILauncherLogContext, LauncherLogContext>()
+                           .AddContext<IMigrationContext, MigrationContext>()
+                           .AddContext<ISchedulerContext, SchedulerContext>()
+                           .AddCachedContext<IAccountContext, AccountContext>()
+                           .AddCachedContext<IArtilleryContext, ArtilleryContext>()
+                           .AddCachedContext<IDocumentFolderMetadataContext, DocumentFolderMetadataContext>()
+                           .AddCachedContext<INotificationsContext, NotificationsContext>()
+                           .AddCachedContext<IRanksContext, RanksContext>()
+                           .AddCachedContext<IRolesContext, RolesContext>()
+                           .AddCachedContext<ITrainingsContext, TrainingsContext>()
+                           .AddCachedContext<IUnitsContext, UnitsContext>()
+                           .AddCachedContext<IVariablesContext, VariablesContext>();
+        }
+
+        private IServiceCollection AddEventHandlers()
+        {
+            return services;
+        }
+
+        private IServiceCollection AddServices()
+        {
+            return services.AddSingleton<IScheduledActionFactory, ScheduledActionFactory>()
+                           .AddTransient<ISchedulerService, SchedulerService>()
+                           .AddSingleton<IVariablesService, VariablesService>()
+                           .AddSingleton<IStaticVariablesService, StaticVariablesService>()
+                           .AddSingleton<IDisplayNameService, DisplayNameService>()
+                           .AddSingleton<IRanksService, RanksService>()
+                           .AddSingleton<IChainOfCommandService, ChainOfCommandService>()
+                           .AddSingleton<IUnitsService, UnitsService>()
+                           .AddSingleton<IConfirmationCodeService, ConfirmationCodeService>()
+                           .AddSingleton<INotificationsService, NotificationsService>()
+                           .AddSingleton<IRecruitmentService, RecruitmentService>()
+                           .AddSingleton<IObjectIdConversionService, ObjectIdConversionService>()
+                           .AddSingleton<IAccountService, AccountService>()
+                           .AddSingleton<IAssignmentService, AssignmentService>()
+                           .AddSingleton<IServiceRecordService, ServiceRecordService>()
+                           .AddSingleton<IGitService, GitService>()
+                           .AddSingleton<IFileSystemService, FileSystemService>();
+        }
+
+        private IServiceCollection AddCommands()
+        {
+            return services.AddTransient<ISendTemplatedEmailCommand, SendTemplatedEmailCommand>()
+                           .AddTransient<ISendBasicEmailCommand, SendBasicEmailCommand>()
+                           .AddTransient<IUpdateApplicationCommand, UpdateApplicationCommand>()
+                           .AddTransient<IUpdateAccountTrainingCommandHandler, UpdateAccountTrainingCommandHandler>();
+        }
+
+        private IServiceCollection AddQueries()
+        {
+            return services.AddTransient<IGetEmailTemplateQuery, GetEmailTemplateQuery>().AddTransient<IBuildUrlQuery, BuildUrlQuery>();
+        }
+
+        private IServiceCollection AddMappers()
+        {
+            return services.AddTransient<IAccountMapper, AccountMapper>().AddTransient<IUnitMapper, UnitMapper>();
+        }
+
+        private IServiceCollection AddActions()
+        {
+            return services.AddScheduledAction<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>();
+        }
     }
 
-    private static IServiceCollection AddConfiguration(this IServiceCollection services, IConfiguration configuration, AppSettings appSettings)
+    extension(IEndpointRouteBuilder builder)
     {
-        return services.Configure<AppSettings>(configuration.GetSection(nameof(AppSettings))).AddSingleton(appSettings);
-    }
-
-    private static IServiceCollection AddContexts(this IServiceCollection services)
-    {
-        return services.AddSingleton<ISmtpClientContext, SmtpClientContext>()
-                       .AddSingleton<IFileContext, FileContext>()
-                       .AddContext<ILogContext, LogContext>()
-                       .AddContext<IAuditLogContext, AuditLogContext>()
-                       .AddContext<IConfirmationCodeContext, ConfirmationCodeContext>()
-                       .AddContext<IDiscordLogContext, DiscordLogContext>()
-                       .AddContext<IErrorLogContext, ErrorLogContext>()
-                       .AddContext<ILauncherLogContext, LauncherLogContext>()
-                       .AddContext<IMigrationContext, MigrationContext>()
-                       .AddContext<ISchedulerContext, SchedulerContext>()
-                       .AddCachedContext<IAccountContext, AccountContext>()
-                       .AddCachedContext<IArtilleryContext, ArtilleryContext>()
-                       .AddCachedContext<IDocumentFolderMetadataContext, DocumentFolderMetadataContext>()
-                       .AddCachedContext<INotificationsContext, NotificationsContext>()
-                       .AddCachedContext<IRanksContext, RanksContext>()
-                       .AddCachedContext<IRolesContext, RolesContext>()
-                       .AddCachedContext<ITrainingsContext, TrainingsContext>()
-                       .AddCachedContext<IUnitsContext, UnitsContext>()
-                       .AddCachedContext<IVariablesContext, VariablesContext>();
-    }
-
-    private static IServiceCollection AddEventHandlers(this IServiceCollection services)
-    {
-        return services;
-    }
-
-    private static IServiceCollection AddServices(this IServiceCollection services)
-    {
-        return services.AddSingleton<IScheduledActionFactory, ScheduledActionFactory>()
-                       .AddTransient<ISchedulerService, SchedulerService>()
-                       .AddSingleton<IVariablesService, VariablesService>()
-                       .AddSingleton<IStaticVariablesService, StaticVariablesService>()
-                       .AddSingleton<IDisplayNameService, DisplayNameService>()
-                       .AddSingleton<IRanksService, RanksService>()
-                       .AddSingleton<IChainOfCommandService, ChainOfCommandService>()
-                       .AddSingleton<IUnitsService, UnitsService>()
-                       .AddSingleton<IConfirmationCodeService, ConfirmationCodeService>()
-                       .AddSingleton<INotificationsService, NotificationsService>()
-                       .AddSingleton<IRecruitmentService, RecruitmentService>()
-                       .AddSingleton<IObjectIdConversionService, ObjectIdConversionService>()
-                       .AddSingleton<IAccountService, AccountService>()
-                       .AddSingleton<IAssignmentService, AssignmentService>()
-                       .AddSingleton<IServiceRecordService, ServiceRecordService>()
-                       .AddSingleton<IGitService, GitService>()
-                       .AddSingleton<IFileSystemService, FileSystemService>();
-    }
-
-    private static IServiceCollection AddCommands(this IServiceCollection services)
-    {
-        return services.AddTransient<ISendTemplatedEmailCommand, SendTemplatedEmailCommand>()
-                       .AddTransient<ISendBasicEmailCommand, SendBasicEmailCommand>()
-                       .AddTransient<IUpdateApplicationCommand, UpdateApplicationCommand>()
-                       .AddTransient<IUpdateAccountTrainingCommandHandler, UpdateAccountTrainingCommandHandler>();
-    }
-
-    private static IServiceCollection AddQueries(this IServiceCollection services)
-    {
-        return services.AddTransient<IGetEmailTemplateQuery, GetEmailTemplateQuery>().AddTransient<IBuildUrlQuery, BuildUrlQuery>();
-    }
-
-    private static IServiceCollection AddMappers(this IServiceCollection services)
-    {
-        return services.AddTransient<IAccountMapper, AccountMapper>().AddTransient<IUnitMapper, UnitMapper>();
-    }
-
-    private static IServiceCollection AddActions(this IServiceCollection services)
-    {
-        return services.AddScheduledAction<IActionDeleteExpiredConfirmationCode, ActionDeleteExpiredConfirmationCode>();
-    }
-
-    public static void AddUksfSharedSignalr(this IEndpointRouteBuilder builder)
-    {
-        builder.MapHub<AllHub>($"/hub/{AllHub.EndPoint}");
-        builder.MapHub<AccountGroupedHub>($"/hub/{AccountGroupedHub.EndPoint}");
-        builder.MapHub<NotificationHub>($"/hub/{NotificationHub.EndPoint}");
-        builder.MapHub<AccountHub>($"/hub/{AccountHub.EndPoint}");
+        public void AddUksfSharedSignalr()
+        {
+            builder.MapHub<AllHub>($"/hub/{AllHub.EndPoint}");
+            builder.MapHub<AccountGroupedHub>($"/hub/{AccountGroupedHub.EndPoint}");
+            builder.MapHub<NotificationHub>($"/hub/{NotificationHub.EndPoint}");
+            builder.MapHub<AccountHub>($"/hub/{AccountHub.EndPoint}");
+        }
     }
 
     private static IMongoDatabase GetDatabase(string connectionString)

@@ -5,9 +5,13 @@ namespace UKSF.Api.Core.Extensions;
 
 public static class ObservableExtensions
 {
-    public static void SubscribeWithAsyncNext<T>(this IObservable<EventModel> source, Func<EventModel, T, Task> onNext, Action<Exception> onError)
-        where T : EventData
+    extension(IObservable<EventModel> source)
     {
-        source.Select(x => Observable.FromAsync(() => x.Data is T data ? onNext(x, data) : Task.CompletedTask)).Concat().Subscribe(_ => { }, onError);
+        public IDisposable SubscribeWithAsyncNext<T>(Func<EventModel, T, Task> onNext, Action<Exception> onError) where T : EventData
+        {
+            return source.Select(x => Observable.FromAsync(() => x.Data is T data ? onNext(x, data) : Task.CompletedTask))
+                         .Concat()
+                         .Subscribe(_ => { }, onError);
+        }
     }
 }

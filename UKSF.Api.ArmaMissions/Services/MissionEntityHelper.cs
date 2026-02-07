@@ -28,41 +28,45 @@ public static class MissionEntityHelper
         return missionEntity;
     }
 
-    public static void Patch(this MissionEntity missionEntity, int maxCurators)
+    extension(MissionEntity missionEntity)
     {
-        MissionEntityItem.Position = 10;
-        missionEntity.MissionEntityItems.RemoveAll(
-            x => x.DataType.Equals("Group") && x.MissionEntity is not null && x.MissionEntity.MissionEntityItems.All(y => y.IsPlayable && !y.Ignored())
-        );
-        foreach (var unit in MissionPatchData.Instance.OrderedUnits)
+        public void Patch(int maxCurators)
         {
-            missionEntity.MissionEntityItems.Add(MissionEntityItemHelper.CreateFromMissionEntity(CreateFromUnit(unit), unit.Callsign));
+            MissionEntityItem.Position = 10;
+            missionEntity.MissionEntityItems.RemoveAll(x => x.DataType.Equals("Group") &&
+                                                            x.MissionEntity is not null &&
+                                                            x.MissionEntity.MissionEntityItems.All(y => y.IsPlayable && !y.Ignored())
+            );
+            foreach (var unit in MissionPatchData.Instance.OrderedUnits)
+            {
+                missionEntity.MissionEntityItems.Add(MissionEntityItemHelper.CreateFromMissionEntity(CreateFromUnit(unit), unit.Callsign));
+            }
+
+            MissionEntityItem.CuratorPosition = 0.5;
+            missionEntity.MissionEntityItems.RemoveAll(x => x.DataType == "Logic" && x.Type == "ModuleCurator_F");
+            for (var index = 0; index < maxCurators; index++)
+            {
+                missionEntity.MissionEntityItems.Add(MissionEntityItemHelper.CreateCuratorEntity());
+            }
+
+            missionEntity.ItemsCount = missionEntity.MissionEntityItems.Count;
+            for (var index = 0; index < missionEntity.MissionEntityItems.Count; index++)
+            {
+                missionEntity.MissionEntityItems[index].Patch(index);
+            }
         }
 
-        MissionEntityItem.CuratorPosition = 0.5;
-        missionEntity.MissionEntityItems.RemoveAll(x => x.DataType == "Logic" && x.Type == "ModuleCurator_F");
-        for (var index = 0; index < maxCurators; index++)
+        public IEnumerable<string> Serialize()
         {
-            missionEntity.MissionEntityItems.Add(MissionEntityItemHelper.CreateCuratorEntity());
-        }
+            missionEntity.ItemsCount = missionEntity.MissionEntityItems.Count;
+            List<string> serialized = ["class Entities", "{", $"items = {missionEntity.ItemsCount};"];
+            foreach (var item in missionEntity.MissionEntityItems)
+            {
+                serialized.AddRange(item.Serialize());
+            }
 
-        missionEntity.ItemsCount = missionEntity.MissionEntityItems.Count;
-        for (var index = 0; index < missionEntity.MissionEntityItems.Count; index++)
-        {
-            missionEntity.MissionEntityItems[index].Patch(index);
+            serialized.Add("};");
+            return serialized;
         }
-    }
-
-    public static IEnumerable<string> Serialize(this MissionEntity missionEntity)
-    {
-        missionEntity.ItemsCount = missionEntity.MissionEntityItems.Count;
-        List<string> serialized = ["class Entities", "{", $"items = {missionEntity.ItemsCount};"];
-        foreach (var item in missionEntity.MissionEntityItems)
-        {
-            serialized.AddRange(item.Serialize());
-        }
-
-        serialized.Add("};");
-        return serialized;
     }
 }

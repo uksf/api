@@ -11,48 +11,54 @@ namespace UKSF.Api.ArmaServer;
 
 public static class ApiArmaServerExtensions
 {
-    public static IServiceCollection AddUksfArmaServer(this IServiceCollection services)
+    extension(IServiceCollection services)
     {
-        return services.AddContexts().AddEventHandlers().AddServices().AddCommands().AddQueries().AddActions();
+        public IServiceCollection AddUksfArmaServer()
+        {
+            return services.AddContexts().AddEventHandlers().AddServices().AddCommands().AddQueries().AddActions();
+        }
+
+        private IServiceCollection AddContexts()
+        {
+            return services.AddCachedContext<IGameServersContext, GameServersContext>();
+        }
+
+        private IServiceCollection AddEventHandlers()
+        {
+            return services;
+        }
+
+        private IServiceCollection AddServices()
+        {
+            return services.AddSingleton<IGameServersService, GameServersService>()
+                           .AddSingleton<IGameServerHelpers, GameServerHelpers>()
+                           .AddSingleton<ISteamCmdService, SteamCmdService>();
+        }
+
+        private IServiceCollection AddCommands()
+        {
+            return services.AddTransient<IUpdateServerInfrastructureCommand, UpdateServerInfrastructureCommand>();
+        }
+
+        private IServiceCollection AddQueries()
+        {
+            return services.AddTransient<IGetLatestServerInfrastructureQuery, GetLatestServerInfrastructureQuery>()
+                           .AddTransient<IGetCurrentServerInfrastructureQuery, GetCurrentServerInfrastructureQuery>()
+                           .AddTransient<IGetInstalledServerInfrastructureQuery, GetInstalledServerInfrastructureQuery>();
+        }
+
+        private IServiceCollection AddActions()
+        {
+            return services.AddSelfCreatingScheduledAction<IActionCheckForServerUpdate, ActionCheckForServerUpdate>()
+                           .AddSelfCreatingScheduledAction<IActionCleanupRunningServers, ActionCleanupRunningServers>();
+        }
     }
 
-    private static IServiceCollection AddContexts(this IServiceCollection services)
+    extension(IEndpointRouteBuilder builder)
     {
-        return services.AddCachedContext<IGameServersContext, GameServersContext>();
-    }
-
-    private static IServiceCollection AddEventHandlers(this IServiceCollection services)
-    {
-        return services;
-    }
-
-    private static IServiceCollection AddServices(this IServiceCollection services)
-    {
-        return services.AddSingleton<IGameServersService, GameServersService>()
-                       .AddSingleton<IGameServerHelpers, GameServerHelpers>()
-                       .AddSingleton<ISteamCmdService, SteamCmdService>();
-    }
-
-    private static IServiceCollection AddCommands(this IServiceCollection services)
-    {
-        return services.AddTransient<IUpdateServerInfrastructureCommand, UpdateServerInfrastructureCommand>();
-    }
-
-    private static IServiceCollection AddQueries(this IServiceCollection services)
-    {
-        return services.AddTransient<IGetLatestServerInfrastructureQuery, GetLatestServerInfrastructureQuery>()
-                       .AddTransient<IGetCurrentServerInfrastructureQuery, GetCurrentServerInfrastructureQuery>()
-                       .AddTransient<IGetInstalledServerInfrastructureQuery, GetInstalledServerInfrastructureQuery>();
-    }
-
-    private static IServiceCollection AddActions(this IServiceCollection services)
-    {
-        return services.AddSelfCreatingScheduledAction<IActionCheckForServerUpdate, ActionCheckForServerUpdate>()
-                       .AddSelfCreatingScheduledAction<IActionCleanupRunningServers, ActionCleanupRunningServers>();
-    }
-
-    public static void AddUksfArmaServerSignalr(this IEndpointRouteBuilder builder)
-    {
-        builder.MapHub<ServersHub>($"/hub/{ServersHub.EndPoint}");
+        public void AddUksfArmaServerSignalr()
+        {
+            builder.MapHub<ServersHub>($"/hub/{ServersHub.EndPoint}");
+        }
     }
 }

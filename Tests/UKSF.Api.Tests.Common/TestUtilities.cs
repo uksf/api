@@ -6,13 +6,19 @@ namespace UKSF.Api.Tests.Common;
 
 public static class TestUtilities
 {
-    public static BsonValue RenderUpdate<T>(this UpdateDefinition<T> updateDefinition)
+    extension<T>(UpdateDefinition<T> updateDefinition)
     {
-        return updateDefinition.Render(new RenderArgs<T>(BsonSerializer.SerializerRegistry.GetSerializer<T>(), BsonSerializer.SerializerRegistry));
+        public BsonValue RenderUpdate()
+        {
+            return updateDefinition.Render(new RenderArgs<T>(BsonSerializer.SerializerRegistry.GetSerializer<T>(), BsonSerializer.SerializerRegistry));
+        }
     }
 
-    public static BsonValue RenderFilter<T>(this FilterDefinition<T> filterDefinition)
+    extension<T>(FilterDefinition<T> filterDefinition)
     {
-        return filterDefinition.Render(new RenderArgs<T>(BsonSerializer.SerializerRegistry.GetSerializer<T>(), BsonSerializer.SerializerRegistry));
+        public BsonValue RenderFilter()
+        {
+            return filterDefinition.Render(new RenderArgs<T>(BsonSerializer.SerializerRegistry.GetSerializer<T>(), BsonSerializer.SerializerRegistry));
+        }
     }
 }

@@ -102,8 +102,11 @@ public static class ApiModpackExtensions
         }
     }
 
-    public static void AddUksfModpackSignalr(this IEndpointRouteBuilder builder)
+    extension(IEndpointRouteBuilder builder)
     {
-        builder.MapHub<ModpackHub>($"/hub/{ModpackHub.EndPoint}");
+        public void AddUksfModpackSignalr()
+        {
+            builder.MapHub<ModpackHub>($"/hub/{ModpackHub.EndPoint}");
+        }
     }
 }

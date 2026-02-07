@@ -7,15 +7,19 @@ namespace UKSF.Api.Tests.Common;
 
 public static class AssertionExtensions
 {
-    public static async Task WithMessageAndStatusCode<T>(this Task<ExceptionAssertions<T>> task, string expectedWildcardPattern, int statusCode)
-        where T : UksfException
+    extension<T>(Task<ExceptionAssertions<T>> task) where T : UksfException
     {
-        (await task).WithMessage(expectedWildcardPattern).And.StatusCode.Should().Be(statusCode);
+        public async Task WithMessageAndStatusCode(string expectedWildcardPattern, int statusCode)
+        {
+            (await task).WithMessage(expectedWildcardPattern).And.StatusCode.Should().Be(statusCode);
+        }
     }
 
-    public static void WithMessageAndStatusCode<T>(this ExceptionAssertions<T> assertion, string expectedWildcardPattern, int statusCode)
-        where T : UksfException
+    extension<T>(ExceptionAssertions<T> assertion) where T : UksfException
     {
-        assertion.WithMessage(expectedWildcardPattern).And.StatusCode.Should().Be(statusCode);
+        public void WithMessageAndStatusCode(string expectedWildcardPattern, int statusCode)
+        {
+            assertion.WithMessage(expectedWildcardPattern).And.StatusCode.Should().Be(statusCode);
+        }
     }
 }

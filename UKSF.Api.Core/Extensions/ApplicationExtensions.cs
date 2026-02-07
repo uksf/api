@@ -4,28 +4,34 @@ namespace UKSF.Api.Core.Extensions;
 
 public static class ApplicationExtensions
 {
-    public static ApplicationAge ToAge(this DateTime dob, DateTime? date = null)
+    extension(DateTime dob)
     {
-        var today = date ?? DateTime.UtcNow.Date;
-        var months = today.Month - dob.Month;
-        var years = today.Year - dob.Year;
-
-        if (today.Day < dob.Day)
+        public ApplicationAge ToAge(DateTime? date = null)
         {
-            months--;
-        }
+            var today = date ?? DateTime.UtcNow.Date;
+            var months = today.Month - dob.Month;
+            var years = today.Year - dob.Year;
 
-        if (months < 0)
-        {
-            years--;
-            months += 12;
-        }
+            if (today.Day < dob.Day)
+            {
+                months--;
+            }
 
-        return new ApplicationAge { Years = years, Months = months };
+            if (months < 0)
+            {
+                years--;
+                months += 12;
+            }
+
+            return new ApplicationAge { Years = years, Months = months };
+        }
     }
 
-    public static bool IsAcceptableAge(this ApplicationAge age, int acceptableAge)
+    extension(ApplicationAge age)
     {
-        return age.Years >= acceptableAge || (age.Years == acceptableAge - 1 && age.Months == 1);
+        public bool IsAcceptableAge(int acceptableAge)
+        {
+            return age.Years >= acceptableAge || (age.Years == acceptableAge - 1 && age.Months == 1);
+        }
     }
 }

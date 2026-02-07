@@ -7,28 +7,34 @@ namespace UKSF.Api.Launcher;
 
 public static class ApiLauncherExtensions
 {
-    public static IServiceCollection AddUksfLauncher(this IServiceCollection services)
+    extension(IServiceCollection services)
     {
-        return services.AddContexts().AddEventHandlers().AddServices();
+        public IServiceCollection AddUksfLauncher()
+        {
+            return services.AddContexts().AddEventHandlers().AddServices();
+        }
+
+        private IServiceCollection AddContexts()
+        {
+            return services.AddCachedContext<ILauncherFileContext, LauncherFileContext>();
+        }
+
+        private IServiceCollection AddEventHandlers()
+        {
+            return services;
+        }
+
+        private IServiceCollection AddServices()
+        {
+            return services.AddSingleton<ILauncherFileService, LauncherFileService>().AddTransient<ILauncherService, LauncherService>();
+        }
     }
 
-    private static IServiceCollection AddContexts(this IServiceCollection services)
+    extension(IEndpointRouteBuilder builder)
     {
-        return services.AddCachedContext<ILauncherFileContext, LauncherFileContext>();
-    }
-
-    private static IServiceCollection AddEventHandlers(this IServiceCollection services)
-    {
-        return services;
-    }
-
-    private static IServiceCollection AddServices(this IServiceCollection services)
-    {
-        return services.AddSingleton<ILauncherFileService, LauncherFileService>().AddTransient<ILauncherService, LauncherService>();
-    }
-
-    public static void AddUksfLauncherSignalr(this IEndpointRouteBuilder builder)
-    {
-        builder.MapHub<LauncherHub>($"/hub/{LauncherHub.EndPoint}");
+        public void AddUksfLauncherSignalr()
+        {
+            builder.MapHub<LauncherHub>($"/hub/{LauncherHub.EndPoint}");
+        }
     }
 }

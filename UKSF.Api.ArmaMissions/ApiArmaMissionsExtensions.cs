@@ -4,23 +4,28 @@ namespace UKSF.Api.ArmaMissions;
 
 public static class ApiArmaMissionsExtensions
 {
-    public static IServiceCollection AddUksfArmaMissions(this IServiceCollection services)
+    extension(IServiceCollection services)
     {
-        return services.AddContexts().AddEventHandlers().AddServices();
-    }
+        public IServiceCollection AddUksfArmaMissions()
+        {
+            return services.AddContexts().AddEventHandlers().AddServices();
+        }
 
-    private static IServiceCollection AddContexts(this IServiceCollection services)
-    {
-        return services;
-    }
+        private IServiceCollection AddContexts()
+        {
+            return services;
+        }
 
-    private static IServiceCollection AddEventHandlers(this IServiceCollection services)
-    {
-        return services;
-    }
+        private IServiceCollection AddEventHandlers()
+        {
+            return services;
+        }
 
-    private static IServiceCollection AddServices(this IServiceCollection services)
-    {
-        return services.AddSingleton<MissionService>().AddSingleton<MissionPatchDataService>().AddSingleton<IMissionPatchingService, MissionPatchingService>();
+        private IServiceCollection AddServices()
+        {
+            return services.AddSingleton<MissionService>()
+                           .AddSingleton<MissionPatchDataService>()
+                           .AddSingleton<IMissionPatchingService, MissionPatchingService>();
+        }
     }
 }

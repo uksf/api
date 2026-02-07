@@ -64,7 +64,7 @@ public static class MissionEntityItemHelper
         missionEntityItem.RawMissionEntityItem.Add("};");
         if (MissionDataResolver.IsEngineer(missionPlayer))
         {
-            missionEntityItem.RawMissionEntityItem.AddEngineerTrait();
+            AddEngineerTrait(missionEntityItem.RawMissionEntityItem);
         }
 
         missionEntityItem.RawMissionEntityItem.Add("};");
@@ -129,30 +129,33 @@ public static class MissionEntityItemHelper
         return missionEntityItem;
     }
 
-    public static bool Ignored(this MissionEntityItem missionEntityItem)
+    extension(MissionEntityItem missionEntityItem)
     {
-        return missionEntityItem.RawMissionEntityItem.Any(x => x.ToLower().Contains("@ignore"));
-    }
-
-    public static void Patch(this MissionEntityItem missionEntityItem, int index)
-    {
-        missionEntityItem.RawMissionEntityItem[0] = $"class Item{index}";
-    }
-
-    public static IEnumerable<string> Serialize(this MissionEntityItem missionEntityItem)
-    {
-        if (missionEntityItem.RawMissionEntities.Count > 0)
+        public bool Ignored()
         {
-            var start = MissionUtilities.GetIndexByKey(missionEntityItem.RawMissionEntityItem, "Entities");
-            var count = missionEntityItem.RawMissionEntities.Count;
-            missionEntityItem.RawMissionEntityItem.RemoveRange(start, count);
-            missionEntityItem.RawMissionEntityItem.InsertRange(start, missionEntityItem.MissionEntity.Serialize());
+            return missionEntityItem.RawMissionEntityItem.Any(x => x.ToLower().Contains("@ignore"));
         }
 
-        return missionEntityItem.RawMissionEntityItem.ToList();
+        public void Patch(int index)
+        {
+            missionEntityItem.RawMissionEntityItem[0] = $"class Item{index}";
+        }
+
+        public IEnumerable<string> Serialize()
+        {
+            if (missionEntityItem.RawMissionEntities.Count > 0)
+            {
+                var start = MissionUtilities.GetIndexByKey(missionEntityItem.RawMissionEntityItem, "Entities");
+                var count = missionEntityItem.RawMissionEntities.Count;
+                missionEntityItem.RawMissionEntityItem.RemoveRange(start, count);
+                missionEntityItem.RawMissionEntityItem.InsertRange(start, missionEntityItem.MissionEntity.Serialize());
+            }
+
+            return missionEntityItem.RawMissionEntityItem.ToList();
+        }
     }
 
-    private static void AddEngineerTrait(this ICollection<string> entity)
+    private static void AddEngineerTrait(ICollection<string> entity)
     {
         entity.Add("class CustomAttributes");
         entity.Add("{");

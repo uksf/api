@@ -7,12 +7,15 @@ namespace UKSF.Api.Core.Extensions;
 
 public static class ChangeUtilities
 {
-    public static string Changes<T>(this T original, T updated)
+    extension<T>(T original)
     {
-        return DeepEquals(original, updated) ? "\tNo changes" : FormatChanges(GetChanges(original, updated));
+        public string Changes(T updated)
+        {
+            return DeepEquals(original, updated) ? "\tNo changes" : FormatChanges(GetChanges(original, updated));
+        }
     }
 
-    private static List<Change> GetChanges<T>(this T original, T updated)
+    private static List<Change> GetChanges<T>(T original, T updated)
     {
         List<Change> changes = [];
         var type = original.GetType();
@@ -111,7 +114,7 @@ public static class ChangeUtilities
         };
     }
 
-    private static List<Change> GetListChanges(this IEnumerable original, IEnumerable updated)
+    private static List<Change> GetListChanges(IEnumerable original, IEnumerable updated)
     {
         var originalObjects = original == null ? [] : original.Cast<object>().ToList();
         var updatedObjects = updated == null ? [] : updated.Cast<object>().ToList();
