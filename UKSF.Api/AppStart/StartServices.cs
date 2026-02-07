@@ -2,6 +2,7 @@ using MoreLinq;
 using UKSF.Api.Core.Events;
 using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;
+using UKSF.Api.EventHandlers;
 using UKSF.Api.Integrations.Discord.Services;
 using UKSF.Api.Integrations.Teamspeak.Services;
 using UKSF.Api.Modpack.BuildProcess;
@@ -69,6 +70,10 @@ public static class StartServices
             // Stop discord
             serviceProvider.GetRequiredService<IDiscordActivationService>().Deactivate().Wait(TimeSpan.FromSeconds(5));
             Console.Out.WriteLine("stopped discord");
+
+            // Flush pending logs before shutdown
+            serviceProvider.GetRequiredService<IUksfLoggerEventHandler>().FlushAsync().Wait(TimeSpan.FromSeconds(10));
+            Console.Out.WriteLine("flushed logs");
         }
     }
 }

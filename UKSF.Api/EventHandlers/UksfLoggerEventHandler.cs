@@ -9,7 +9,10 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.EventHandlers;
 
-public interface IUksfLoggerEventHandler : IEventHandler;
+public interface IUksfLoggerEventHandler : IEventHandler
+{
+    Task FlushAsync(CancellationToken cancellationToken = default);
+}
 
 public class UksfLoggerEventHandler(
     IEventBus eventBus,
@@ -23,6 +26,8 @@ public class UksfLoggerEventHandler(
 ) : IUksfLoggerEventHandler
 {
     private readonly ConcurrentQueue<DomainBasicLog> _logQueue = new();
+    private Task _processingTask = Task.CompletedTask;
+    private readonly object _processingLock = new();
 
     public void EarlyInit()
     {
@@ -31,15 +36,30 @@ public class UksfLoggerEventHandler(
 
     public void Init() { }
 
+    public async Task FlushAsync(CancellationToken cancellationToken = default)
+    {
+        while (!_logQueue.IsEmpty && !cancellationToken.IsCancellationRequested)
+        {
+            await ProcessNextLogAsync();
+        }
+    }
+
     private Task HandleLog(EventModel eventModel, LoggerEventData logData)
     {
         _logQueue.Enqueue(logData.Log);
 
-        _ = HandleLogAsync();
+        lock (_processingLock)
+        {
+            if (_processingTask.IsCompleted)
+            {
+                _processingTask = ProcessNextLogAsync();
+            }
+        }
+
         return Task.CompletedTask;
     }
 
-    private async Task HandleLogAsync()
+    private async Task ProcessNextLogAsync()
     {
         if (!_logQueue.TryDequeue(out var log))
         {

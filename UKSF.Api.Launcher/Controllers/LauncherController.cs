@@ -18,9 +18,6 @@ public class LauncherController(
     ILauncherFileService launcherFileService
 ) : ControllerBase
 {
-    [HttpGet("update/{platform}/{version}")]
-    public void GetUpdate(string platform, string version) { }
-
     [HttpGet("version")]
     public string GetVersion()
     {

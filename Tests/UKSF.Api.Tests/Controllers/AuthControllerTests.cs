@@ -92,13 +92,6 @@ public class AuthControllerTests
         result.Token.Should().Be("token");
     }
 
-    [Theory]
-    [InlineData(null, "password")]
-    [InlineData("email", null)]
-    public void When_logging_in_with_invalid_credentials(string email, string password)
-    {
-        Action act = () => _subject.Login(new LoginCredentials { Email = email, Password = password });
-
-        act.Should().Throw<BadRequestException>().WithMessageAndStatusCode("Bad request", 400);
-    }
+    // Null/empty credential validation is now handled by [Required] attributes on LoginCredentials,
+    // enforced by ASP.NET model validation before the action method is called.
 }

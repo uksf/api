@@ -41,11 +41,6 @@ public class AuthController(
     [HttpPost("login")]
     public TokenResponse Login([FromBody] LoginCredentials credentials)
     {
-        if (string.IsNullOrEmpty(credentials.Email) || string.IsNullOrEmpty(credentials.Password))
-        {
-            throw new BadRequestException();
-        }
-
         return loginService.Login(credentials.Email, credentials.Password);
     }
 

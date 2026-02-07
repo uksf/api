@@ -84,16 +84,6 @@ public class AccountsController(
         var email = applyConfirmationCodeRequest.Email;
         var code = applyConfirmationCodeRequest.Code;
 
-        try
-        {
-            GuardUtilities.ValidateString(email, _ => throw new ArgumentException($"Email '{email}' is invalid. Please refresh the page."));
-            GuardUtilities.ValidateId(code, _ => throw new ArgumentException($"Code '{code}' is invalid. Please try again"));
-        }
-        catch (ArgumentException exception)
-        {
-            throw new BadRequestException(exception.Message);
-        }
-
         var account = accountContext.GetSingle(x => x.Email == email);
         if (account == null)
         {

@@ -14,13 +14,6 @@ public class InstagramController(IInstagramService instagramService) : Controlle
         return instagramService.GetImagesFromLocalCache();
     }
 
-    [HttpGet("refreshToken")]
-    [Permissions(Permissions.Admin)]
-    public Task RefreshToken()
-    {
-        return Task.CompletedTask;
-    }
-
     [HttpGet("cache")]
     [Permissions(Permissions.Admin)]
     public async Task Cache()
