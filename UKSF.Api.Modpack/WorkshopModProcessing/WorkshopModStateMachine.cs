@@ -12,18 +12,11 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
         Event(() => UpdateRequested, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId).SelectId(_ => Guid.NewGuid()));
         Event(() => UninstallRequested, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId).SelectId(_ => Guid.NewGuid()));
 
-        Event(() => InstallDownloadComplete, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
-        Event(() => UpdateDownloadComplete, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
-
-        Event(() => InstallCheckComplete, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
-        Event(() => UpdateCheckComplete, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
-
+        Event(() => DownloadComplete, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
+        Event(() => CheckComplete, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
         Event(() => InterventionResolved, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
-
-        Event(() => InstallComplete, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
-        Event(() => UpdateComplete, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
+        Event(() => ExecuteComplete, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
         Event(() => UninstallComplete, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
-
         Event(() => CleanupComplete, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
         Event(() => OperationFaulted, x => x.CorrelateBy(s => s.WorkshopModId, context => context.Message.WorkshopModId));
 
@@ -33,49 +26,16 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
                     {
                         context.Saga.WorkshopModId = context.Message.WorkshopModId;
                         context.Saga.Operation = "Install";
+                        context.Saga.OperationType = WorkshopModOperationType.Install;
                         context.Saga.StartedAt = DateTime.UtcNow;
                     }
                 )
-                .TransitionTo(InstallingDownloading)
-                .Publish(context => new WorkshopModInstallDownloadCommand { WorkshopModId = context.Saga.WorkshopModId })
-        );
-
-        During(
-            InstallingDownloading,
-            When(InstallDownloadComplete)
-                .TransitionTo(InstallingChecking)
-                .Publish(context => new WorkshopModInstallCheckCommand { WorkshopModId = context.Saga.WorkshopModId })
-        );
-
-        During(
-            InstallingChecking,
-            When(InstallCheckComplete)
-                .IfElse(
-                    context => context.Message.InterventionRequired,
-                    binder => binder.TransitionTo(InstallingAwaitingIntervention),
-                    binder => binder.TransitionTo(Installing)
-                                    .Publish(context => new WorkshopModInstallInternalCommand { WorkshopModId = context.Saga.WorkshopModId })
+                .TransitionTo(Downloading)
+                .Publish(context => new WorkshopModDownloadCommand
+                             {
+                                 WorkshopModId = context.Saga.WorkshopModId, OperationType = WorkshopModOperationType.Install
+                             }
                 )
-        );
-
-        During(
-            InstallingAwaitingIntervention,
-            When(InterventionResolved)
-                .Then(context => { context.Saga.SelectedPbos = context.Message.SelectedPbos; })
-                .TransitionTo(Installing)
-                .Publish(context => new WorkshopModInstallInternalCommand
-                    {
-                        WorkshopModId = context.Saga.WorkshopModId, SelectedPbos = context.Saga.SelectedPbos
-                    }
-                )
-        );
-
-        During(
-            Installing,
-            When(InstallComplete)
-                .Then(context => context.Saga.FilesChanged = context.Message.FilesChanged)
-                .TransitionTo(Cleanup)
-                .Publish(context => new WorkshopModCleanupCommand { WorkshopModId = context.Saga.WorkshopModId, FilesChanged = context.Saga.FilesChanged })
         );
 
         Initially(
@@ -84,46 +44,78 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
                     {
                         context.Saga.WorkshopModId = context.Message.WorkshopModId;
                         context.Saga.Operation = "Update";
+                        context.Saga.OperationType = WorkshopModOperationType.Update;
                         context.Saga.StartedAt = DateTime.UtcNow;
                     }
                 )
-                .TransitionTo(UpdatingDownloading)
-                .Publish(context => new WorkshopModUpdateDownloadCommand { WorkshopModId = context.Saga.WorkshopModId })
-        );
-
-        During(
-            UpdatingDownloading,
-            When(UpdateDownloadComplete)
-                .TransitionTo(UpdatingChecking)
-                .Publish(context => new WorkshopModUpdateCheckCommand { WorkshopModId = context.Saga.WorkshopModId })
-        );
-
-        During(
-            UpdatingChecking,
-            When(UpdateCheckComplete)
-                .IfElse(
-                    context => context.Message.InterventionRequired,
-                    binder => binder.TransitionTo(UpdatingAwaitingIntervention),
-                    binder => binder.TransitionTo(Updating)
-                                    .Publish(context => new WorkshopModUpdateInternalCommand { WorkshopModId = context.Saga.WorkshopModId })
+                .TransitionTo(Downloading)
+                .Publish(context => new WorkshopModDownloadCommand
+                             {
+                                 WorkshopModId = context.Saga.WorkshopModId, OperationType = WorkshopModOperationType.Update
+                             }
                 )
         );
 
         During(
-            UpdatingAwaitingIntervention,
-            When(InterventionResolved)
-                .Then(context => { context.Saga.SelectedPbos = context.Message.SelectedPbos; })
-                .TransitionTo(Updating)
-                .Publish(context => new WorkshopModUpdateInternalCommand
+            Downloading,
+            When(DownloadComplete)
+                .TransitionTo(Checking)
+                .Publish(context => new WorkshopModCheckCommand
                     {
-                        WorkshopModId = context.Saga.WorkshopModId, SelectedPbos = context.Saga.SelectedPbos
+                        WorkshopModId = context.Saga.WorkshopModId, OperationType = context.Saga.OperationType!.Value
                     }
                 )
         );
 
         During(
-            Updating,
-            When(UpdateComplete)
+            Checking,
+            When(CheckComplete)
+                .IfElse(
+                    context => context.Message.InterventionRequired,
+                    binder => binder.TransitionTo(AwaitingIntervention),
+                    binder => binder.TransitionTo(Executing)
+                                    .Publish(context => new WorkshopModExecuteCommand
+                                        {
+                                            WorkshopModId = context.Saga.WorkshopModId,
+                                            OperationType = context.Saga.OperationType!.Value,
+                                            SelectedPbos = context.Saga.SelectedPbos
+                                        }
+                                    )
+                )
+        );
+
+        During(
+            AwaitingIntervention,
+            When(InterventionResolved)
+                .Then(context => { context.Saga.SelectedPbos = context.Message.SelectedPbos; })
+                .TransitionTo(Executing)
+                .Publish(context => new WorkshopModExecuteCommand
+                    {
+                        WorkshopModId = context.Saga.WorkshopModId,
+                        OperationType = context.Saga.OperationType!.Value,
+                        SelectedPbos = context.Saga.SelectedPbos
+                    }
+                )
+        );
+
+        During(
+            AwaitingIntervention,
+            When(UninstallRequested)
+                .Then(context =>
+                    {
+                        context.Saga.WorkshopModId = context.Message.WorkshopModId;
+                        context.Saga.Operation = "Uninstall";
+                        context.Saga.OperationType = null;
+                        context.Saga.StartedAt = DateTime.UtcNow;
+                    }
+                )
+                .TransitionTo(Uninstalling)
+                .Publish(context => new WorkshopModUninstallInternalCommand { WorkshopModId = context.Saga.WorkshopModId })
+        );
+
+        During(
+            Executing,
+            When(ExecuteComplete)
                 .Then(context => context.Saga.FilesChanged = context.Message.FilesChanged)
                 .TransitionTo(Cleanup)
                 .Publish(context => new WorkshopModCleanupCommand { WorkshopModId = context.Saga.WorkshopModId, FilesChanged = context.Saga.FilesChanged })
@@ -135,6 +127,7 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
                     {
                         context.Saga.WorkshopModId = context.Message.WorkshopModId;
                         context.Saga.Operation = "Uninstall";
+                        context.Saga.OperationType = null;
                         context.Saga.StartedAt = DateTime.UtcNow;
                     }
                 )
@@ -150,23 +143,8 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
                 .Publish(context => new WorkshopModCleanupCommand { WorkshopModId = context.Saga.WorkshopModId, FilesChanged = context.Saga.FilesChanged })
         );
 
-        During(
-            InstallingAwaitingIntervention,
-            When(UninstallRequested)
-                .Then(context =>
-                    {
-                        context.Saga.WorkshopModId = context.Message.WorkshopModId;
-                        context.Saga.Operation = "Uninstall";
-                        context.Saga.StartedAt = DateTime.UtcNow;
-                    }
-                )
-                .TransitionTo(Uninstalling)
-                .Publish(context => new WorkshopModUninstallInternalCommand { WorkshopModId = context.Saga.WorkshopModId })
-        );
-
         During(Cleanup, When(CleanupComplete).Then(context => context.Saga.CompletedAt = DateTime.UtcNow).Finalize());
 
-        // Handle faults in any state except final states
         DuringAny(
             When(OperationFaulted)
                 .Then(context =>
@@ -185,16 +163,10 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
 
     // ReSharper disable AutoPropertyCanBeMadeGetOnly.Local
     // ReSharper disable MemberCanBePrivate.Global
-    public State InstallingDownloading { get; private set; } = null!;
-    public State InstallingChecking { get; private set; } = null!;
-    public State InstallingAwaitingIntervention { get; private set; } = null!;
-    public State Installing { get; private set; } = null!;
-
-    public State UpdatingDownloading { get; private set; } = null!;
-    public State UpdatingChecking { get; private set; } = null!;
-    public State UpdatingAwaitingIntervention { get; private set; } = null!;
-    public State Updating { get; private set; } = null!;
-
+    public State Downloading { get; private set; } = null!;
+    public State Checking { get; private set; } = null!;
+    public State AwaitingIntervention { get; private set; } = null!;
+    public State Executing { get; private set; } = null!;
     public State Uninstalling { get; private set; } = null!;
     public State Cleanup { get; private set; } = null!;
 
@@ -202,18 +174,11 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
     public Event<WorkshopModUpdateCommand> UpdateRequested { get; private set; } = null!;
     public Event<WorkshopModUninstallCommand> UninstallRequested { get; private set; } = null!;
 
-    public Event<WorkshopModInstallDownloadComplete> InstallDownloadComplete { get; private set; } = null!;
-    public Event<WorkshopModUpdateDownloadComplete> UpdateDownloadComplete { get; private set; } = null!;
-
-    public Event<WorkshopModInstallCheckComplete> InstallCheckComplete { get; private set; } = null!;
-    public Event<WorkshopModUpdateCheckComplete> UpdateCheckComplete { get; private set; } = null!;
-
+    public Event<WorkshopModDownloadComplete> DownloadComplete { get; private set; } = null!;
+    public Event<WorkshopModCheckComplete> CheckComplete { get; private set; } = null!;
     public Event<WorkshopModInterventionResolved> InterventionResolved { get; private set; } = null!;
-
-    public Event<WorkshopModInstallComplete> InstallComplete { get; private set; } = null!;
-    public Event<WorkshopModUpdateComplete> UpdateComplete { get; private set; } = null!;
+    public Event<WorkshopModExecuteComplete> ExecuteComplete { get; private set; } = null!;
     public Event<WorkshopModUninstallComplete> UninstallComplete { get; private set; } = null!;
-
     public Event<WorkshopModCleanupComplete> CleanupComplete { get; private set; } = null!;
 
     public Event<WorkshopModOperationFaulted> OperationFaulted { get; private set; } = null!;

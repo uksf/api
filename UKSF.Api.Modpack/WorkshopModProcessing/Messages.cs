@@ -1,11 +1,17 @@
 ﻿namespace UKSF.Api.Modpack.WorkshopModProcessing;
 
+public enum WorkshopModOperationType
+{
+    Install,
+    Update
+}
+
 public interface IWorkshopModCommand
 {
     string WorkshopModId { get; }
 }
 
-// Initial Commands (Entry points)
+// Initial Commands (Entry points - kept separate for distinct API surface)
 public class WorkshopModInstallCommand : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
@@ -27,36 +33,23 @@ public class WorkshopModInterventionResolved : IWorkshopModCommand
     public List<string> SelectedPbos { get; init; }
 }
 
-// Internal Commands
-public class WorkshopModInstallDownloadCommand : IWorkshopModCommand
+// Unified Internal Commands
+public class WorkshopModDownloadCommand : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
+    public WorkshopModOperationType OperationType { get; init; }
 }
 
-public class WorkshopModUpdateDownloadCommand : IWorkshopModCommand
+public class WorkshopModCheckCommand : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
+    public WorkshopModOperationType OperationType { get; init; }
 }
 
-public class WorkshopModInstallCheckCommand : IWorkshopModCommand
+public class WorkshopModExecuteCommand : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
-}
-
-public class WorkshopModUpdateCheckCommand : IWorkshopModCommand
-{
-    public string WorkshopModId { get; init; }
-}
-
-public class WorkshopModInstallInternalCommand : IWorkshopModCommand
-{
-    public string WorkshopModId { get; init; }
-    public List<string> SelectedPbos { get; init; }
-}
-
-public class WorkshopModUpdateInternalCommand : IWorkshopModCommand
-{
-    public string WorkshopModId { get; init; }
+    public WorkshopModOperationType OperationType { get; init; }
     public List<string> SelectedPbos { get; init; }
 }
 
@@ -71,36 +64,19 @@ public class WorkshopModCleanupCommand : IWorkshopModCommand
     public bool FilesChanged { get; init; }
 }
 
-// Events (Completions)
-public class WorkshopModInstallDownloadComplete : IWorkshopModCommand
+// Unified Events (Completions)
+public class WorkshopModDownloadComplete : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
 }
 
-public class WorkshopModUpdateDownloadComplete : IWorkshopModCommand
-{
-    public string WorkshopModId { get; init; }
-}
-
-public class WorkshopModInstallCheckComplete : IWorkshopModCommand
+public class WorkshopModCheckComplete : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
     public bool InterventionRequired { get; init; }
 }
 
-public class WorkshopModUpdateCheckComplete : IWorkshopModCommand
-{
-    public string WorkshopModId { get; init; }
-    public bool InterventionRequired { get; init; }
-}
-
-public class WorkshopModInstallComplete : IWorkshopModCommand
-{
-    public string WorkshopModId { get; init; }
-    public bool FilesChanged { get; init; }
-}
-
-public class WorkshopModUpdateComplete : IWorkshopModCommand
+public class WorkshopModExecuteComplete : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
     public bool FilesChanged { get; init; }

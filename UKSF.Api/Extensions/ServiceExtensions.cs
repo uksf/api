@@ -119,7 +119,7 @@ public static class ServiceExtensions
         {
             return services.AddUksfShared(configuration, currentEnvironment)
                            .AddUksfAuthentication(configuration)
-                           .AddUksfModpack()
+                           .AddUksfModpack(configuration)
                            .AddUksfArmaMissions()
                            .AddUksfArmaServer()
                            .AddUksfLauncher()

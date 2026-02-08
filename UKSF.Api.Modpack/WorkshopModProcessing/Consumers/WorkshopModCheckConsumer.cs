@@ -4,51 +4,53 @@ using UKSF.Api.Modpack.WorkshopModProcessing.Operations;
 
 namespace UKSF.Api.Modpack.WorkshopModProcessing.Consumers;
 
-public class WorkshopModInstallDownloadConsumer(IInstallOperation installOperation, IUksfLogger logger) : IConsumer<WorkshopModInstallDownloadCommand>
+public class WorkshopModCheckConsumer(IWorkshopModOperation operation, IUksfLogger logger) : IConsumer<WorkshopModCheckCommand>
 {
-    public async Task Consume(ConsumeContext<WorkshopModInstallDownloadCommand> context)
+    public async Task Consume(ConsumeContext<WorkshopModCheckCommand> context)
     {
         try
         {
-            var result = await installOperation.DownloadAsync(context.Message.WorkshopModId, context.CancellationToken);
+            var result = await operation.CheckAsync(context.Message.WorkshopModId, context.Message.OperationType, context.CancellationToken);
             if (result.Success)
             {
-                await context.Publish(new WorkshopModInstallDownloadComplete { WorkshopModId = context.Message.WorkshopModId });
+                await context.Publish(
+                    new WorkshopModCheckComplete { WorkshopModId = context.Message.WorkshopModId, InterventionRequired = result.InterventionRequired }
+                );
             }
             else
             {
-                logger.LogError($"Install download failed for {context.Message.WorkshopModId}: {result.ErrorMessage}");
+                logger.LogError($"Check failed for {context.Message.WorkshopModId}: {result.ErrorMessage}");
                 await context.Publish(
                     new WorkshopModOperationFaulted
                     {
                         WorkshopModId = context.Message.WorkshopModId,
                         ErrorMessage = result.ErrorMessage,
-                        FaultedState = "InstallingDownloading"
+                        FaultedState = "Checking"
                     }
                 );
             }
         }
         catch (OperationCanceledException)
         {
-            logger.LogWarning($"Install download cancelled for {context.Message.WorkshopModId}");
+            logger.LogWarning($"Check cancelled for {context.Message.WorkshopModId}");
             await context.Publish(
                 new WorkshopModOperationFaulted
                 {
                     WorkshopModId = context.Message.WorkshopModId,
                     ErrorMessage = "Operation cancelled",
-                    FaultedState = "InstallingDownloading"
+                    FaultedState = "Checking"
                 }
             );
         }
         catch (Exception exception)
         {
-            logger.LogError($"Unexpected error in install download consumer for {context.Message.WorkshopModId}", exception);
+            logger.LogError($"Unexpected error in check consumer for {context.Message.WorkshopModId}", exception);
             await context.Publish(
                 new WorkshopModOperationFaulted
                 {
                     WorkshopModId = context.Message.WorkshopModId,
                     ErrorMessage = exception.Message,
-                    FaultedState = "InstallingDownloading"
+                    FaultedState = "Checking"
                 }
             );
         }

@@ -1,5 +1,4 @@
 using MassTransit;
-using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using UKSF.Api.Core.Configuration;
 using UKSF.Api.Core.Extensions;
@@ -20,23 +19,22 @@ public static class ApiModpackExtensions
 {
     extension(IServiceCollection services)
     {
-        public IServiceCollection AddUksfModpack()
+        public IServiceCollection AddUksfModpack(IConfiguration configuration)
         {
+            var appSettings = new AppSettings();
+            configuration.GetSection(nameof(AppSettings)).Bind(appSettings);
+
             services.AddMassTransit(x =>
                 {
-                    x.AddConsumer<WorkshopModInstallDownloadConsumer>();
-                    x.AddConsumer<WorkshopModUpdateDownloadConsumer>();
-                    x.AddConsumer<WorkshopModInstallCheckConsumer>();
-                    x.AddConsumer<WorkshopModUpdateCheckConsumer>();
-                    x.AddConsumer<WorkshopModInstallConsumer>();
-                    x.AddConsumer<WorkshopModUpdateConsumer>();
+                    x.AddConsumer<WorkshopModDownloadConsumer>();
+                    x.AddConsumer<WorkshopModCheckConsumer>();
+                    x.AddConsumer<WorkshopModExecuteConsumer>();
                     x.AddConsumer<WorkshopModUninstallConsumer>();
                     x.AddConsumer<WorkshopModCleanupConsumer>();
 
                     x.AddSagaStateMachine<WorkshopModStateMachine, WorkshopModInstanceState>()
                      .MongoDbRepository(r =>
                          {
-                             var appSettings = services.BuildServiceProvider().GetRequiredService<IOptions<AppSettings>>().Value;
                              r.Connection = appSettings.ConnectionStrings.Database;
                              r.DatabaseName = MongoUrl.Create(appSettings.ConnectionStrings.Database).DatabaseName;
                              r.CollectionName = "workshopModSagas";
@@ -102,8 +100,7 @@ public static class ApiModpackExtensions
                            .AddScoped<IWorkshopModsService, WorkshopModsService>()
                            .AddSingleton<ISteamApiService, SteamApiService>()
                            .AddSingleton<IWorkshopModsProcessingService, WorkshopModsProcessingService>()
-                           .AddTransient<IInstallOperation, InstallOperation>()
-                           .AddTransient<IUpdateOperation, UpdateOperation>()
+                           .AddTransient<IWorkshopModOperation, WorkshopModOperation>()
                            .AddTransient<IUninstallOperation, UninstallOperation>();
         }
 

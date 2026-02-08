@@ -8,7 +8,7 @@ namespace UKSF.Api.Modpack.Services;
 
 public interface IWorkshopModsProcessingService
 {
-    Task DownloadWithRetries(string workshopModId, int maxRetries = 3, CancellationToken cancellationToken = default);
+    Task DownloadWithRetries(string workshopModId, int maxRetries = 2, CancellationToken cancellationToken = default);
     string GetWorkshopModPath(string workshopModId);
     List<string> GetModFiles(string workshopModPath);
     Task CopyPbosToDependencies(DomainWorkshopMod domainWorkshopMod, List<string> pbos, CancellationToken cancellationToken = default);
@@ -106,10 +106,7 @@ public class WorkshopModsProcessingService(
 
     public List<string> GetModFiles(string workshopModPath)
     {
-        var pboFiles = Directory.EnumerateFiles(workshopModPath, "*.pbo", SearchOption.AllDirectories)
-                                .Select(Path.GetFileName)
-                                .Distinct(StringComparer.OrdinalIgnoreCase)
-                                .ToList();
+        var pboFiles = Directory.EnumerateFiles(workshopModPath, "*.pbo", SearchOption.AllDirectories).Select(Path.GetFileName).ToList();
 
         if (pboFiles.Count == 0)
         {
@@ -246,7 +243,7 @@ public class WorkshopModsProcessingService(
         workshopMod.Status = status;
         if (status == WorkshopModStatus.Error)
         {
-            workshopMod.StatusMessage = "An error occured";
+            workshopMod.StatusMessage = "An error occurred";
             workshopMod.ErrorMessage = message;
         }
         else

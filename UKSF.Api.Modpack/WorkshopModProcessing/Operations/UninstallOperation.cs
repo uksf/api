@@ -7,20 +7,24 @@ namespace UKSF.Api.Modpack.WorkshopModProcessing.Operations;
 
 public interface IUninstallOperation
 {
-    Task<UninstallResult> UninstallAsync(string workshopModId, CancellationToken cancellationToken = default);
+    Task<OperationResult> UninstallAsync(string workshopModId, CancellationToken cancellationToken = default);
 }
 
 public class UninstallOperation(IWorkshopModsContext workshopModsContext, IWorkshopModsProcessingService workshopModsProcessingService, IUksfLogger logger)
     : IUninstallOperation
 {
-    public async Task<UninstallResult> UninstallAsync(string workshopModId, CancellationToken cancellationToken = default)
+    public async Task<OperationResult> UninstallAsync(string workshopModId, CancellationToken cancellationToken = default)
     {
         var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
+        if (workshopMod == null)
+        {
+            return OperationResult.Failure($"Workshop mod {workshopModId} not found");
+        }
 
         if (workshopMod.Status is WorkshopModStatus.Uninstalled or WorkshopModStatus.UninstalledPendingRelease)
         {
             logger.LogWarning($"Workshop mod {workshopModId} is already uninstalled");
-            return UninstallResult.Successful(filesChanged: false);
+            return OperationResult.Successful(filesChanged: false);
         }
 
         try
@@ -60,7 +64,7 @@ public class UninstallOperation(IWorkshopModsContext workshopModsContext, IWorks
             await workshopModsContext.Replace(workshopMod);
 
             logger.LogInfo($"Successfully uninstalled workshop mod {workshopModId}");
-            return UninstallResult.Successful(filesChanged);
+            return OperationResult.Successful(filesChanged: filesChanged);
         }
         catch (OperationCanceledException)
         {
@@ -73,20 +77,7 @@ public class UninstallOperation(IWorkshopModsContext workshopModsContext, IWorks
             var errorMessage = $"Failed to uninstall workshop mod {workshopModId}: {exception.Message}";
             logger.LogError(errorMessage, exception);
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, errorMessage);
-            return UninstallResult.Failure(errorMessage);
+            return OperationResult.Failure(errorMessage);
         }
-    }
-}
-
-public record UninstallResult(bool Success, bool FilesChanged = false, string ErrorMessage = null)
-{
-    public static UninstallResult Successful(bool filesChanged = true)
-    {
-        return new UninstallResult(true, filesChanged);
-    }
-
-    public static UninstallResult Failure(string errorMessage)
-    {
-        return new UninstallResult(false, false, errorMessage);
     }
 }
