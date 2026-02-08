@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Models.Domain;
+using UKSF.Api.Core.Processes;
 using UKSF.Api.Core.Services;
 using UKSF.Api.Integrations.Teamspeak.Models;
 using UKSF.Api.Integrations.Teamspeak.Services;
@@ -18,6 +19,7 @@ public class TeamspeakManagerServiceTests
 {
     private readonly Mock<IHubContext<TeamspeakHub, ITeamspeakClient>> _mockHub;
     private readonly Mock<ITeamspeakClient> _mockClients;
+    private readonly Mock<IProcessUtilities> _mockProcessUtilities;
     private readonly Mock<IVariablesService> _mockVariablesService;
     private readonly Mock<IUksfLogger> _mockLogger;
     private readonly TeamspeakManagerService _subject;
@@ -27,10 +29,11 @@ public class TeamspeakManagerServiceTests
         _mockHub = new Mock<IHubContext<TeamspeakHub, ITeamspeakClient>>();
         _mockClients = new Mock<ITeamspeakClient>();
         _mockHub.Setup(x => x.Clients.All).Returns(_mockClients.Object);
+        _mockProcessUtilities = new Mock<IProcessUtilities>();
         _mockVariablesService = new Mock<IVariablesService>();
         _mockLogger = new Mock<IUksfLogger>();
 
-        _subject = new TeamspeakManagerService(_mockHub.Object, _mockVariablesService.Object, _mockLogger.Object);
+        _subject = new TeamspeakManagerService(_mockHub.Object, _mockProcessUtilities.Object, _mockVariablesService.Object, _mockLogger.Object);
     }
 
     [Fact]

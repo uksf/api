@@ -6,13 +6,23 @@ using Task = System.Threading.Tasks.Task;
 
 namespace UKSF.Api.Core.Processes;
 
+public interface IProcessUtilities
+{
+    int LaunchManagedProcess(string executable, string arguments = null);
+    Task LaunchExternalProcess(string name, string command, string workingDirectory = null);
+    Task CloseProcessGracefully(Process process);
+    Process FindProcessById(int id);
+    Process FindProcessByName(string name);
+    Process[] GetProcessesByName(string name);
+}
+
 [ExcludeFromCodeCoverage]
-public static class ProcessUtilities
+public class ProcessUtilities : IProcessUtilities
 {
     private const int ScClose = 0xF060;
     private const int WmSysCommand = 0x0112;
 
-    public static int LaunchManagedProcess(string executable, string arguments = null)
+    public int LaunchManagedProcess(string executable, string arguments = null)
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -37,7 +47,7 @@ public static class ProcessUtilities
         return processId;
     }
 
-    public static async Task LaunchExternalProcess(string name, string command, string workingDirectory = null)
+    public async Task LaunchExternalProcess(string name, string command, string workingDirectory = null)
     {
         TaskService.Instance.RootFolder.DeleteTask(name, false);
         using var taskDefinition = TaskService.Instance.NewTask();
@@ -47,12 +57,24 @@ public static class ProcessUtilities
         await Task.Delay(TimeSpan.FromSeconds(1));
     }
 
-    extension(Process process)
+    public async Task CloseProcessGracefully(Process process)
     {
-        public async Task CloseProcessGracefully()
-        {
-            // UKSF.PostMessage exe location should be set as a PATH variable
-            await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WmSysCommand} {ScClose} 0");
-        }
+        // UKSF.PostMessage exe location should be set as a PATH variable
+        await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WmSysCommand} {ScClose} 0");
+    }
+
+    public Process FindProcessById(int id)
+    {
+        return Process.GetProcesses().FirstOrDefault(x => x.Id == id);
+    }
+
+    public Process FindProcessByName(string name)
+    {
+        return Process.GetProcesses().FirstOrDefault(x => x.ProcessName == name);
+    }
+
+    public Process[] GetProcessesByName(string name)
+    {
+        return Process.GetProcessesByName(name);
     }
 }

@@ -6,7 +6,6 @@ using UKSF.Api.Core.Services;
 using UKSF.Api.Integrations.Teamspeak.Models;
 using UKSF.Api.Integrations.Teamspeak.Signalr.Clients;
 using UKSF.Api.Integrations.Teamspeak.Signalr.Hubs;
-using Process = System.Diagnostics.Process;
 
 namespace UKSF.Api.Integrations.Teamspeak.Services;
 
@@ -18,8 +17,12 @@ public interface ITeamspeakManagerService
     Task SendProcedure(TeamspeakProcedureType procedure, object args);
 }
 
-public class TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient> hub, IVariablesService variablesService, IUksfLogger logger)
-    : ITeamspeakManagerService
+public class TeamspeakManagerService(
+    IHubContext<TeamspeakHub, ITeamspeakClient> hub,
+    IProcessUtilities processUtilities,
+    IVariablesService variablesService,
+    IUksfLogger logger
+) : ITeamspeakManagerService
 {
     private volatile bool _runTeamspeak;
     private CancellationTokenSource _token;
@@ -104,7 +107,7 @@ public class TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient>
             {
                 if (variablesService.GetVariable("TEAMSPEAK_SERVER_RUN").AsBool())
                 {
-                    if (Process.GetProcessesByName("ts3server").Length == 0)
+                    if (processUtilities.GetProcessesByName("ts3server").Length == 0)
                     {
                         await LaunchTeamspeakServer();
                     }
@@ -114,7 +117,7 @@ public class TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient>
                 {
                     if (!TeamspeakHubState.Connected)
                     {
-                        if (Process.GetProcessesByName("ts3client_win64").Length == 0)
+                        if (processUtilities.GetProcessesByName("ts3client_win64").Length == 0)
                         {
                             await LaunchTeamspeak();
                         }
@@ -139,25 +142,25 @@ public class TeamspeakManagerService(IHubContext<TeamspeakHub, ITeamspeakClient>
     {
         var serverPath = variablesService.GetVariable("TEAMSPEAK_SERVER_PATH").AsString();
         var serverDirectory = Path.GetDirectoryName(serverPath);
-        await ProcessUtilities.LaunchExternalProcess("TeamspeakServer", $"start \"\" \"{serverPath}\"", serverDirectory);
+        await processUtilities.LaunchExternalProcess("TeamspeakServer", $"start \"\" \"{serverPath}\"", serverDirectory);
     }
 
     private async Task LaunchTeamspeak()
     {
-        await ProcessUtilities.LaunchExternalProcess("Teamspeak", $"start \"\" \"{variablesService.GetVariable("TEAMSPEAK_PATH").AsString()}\"");
+        await processUtilities.LaunchExternalProcess("Teamspeak", $"start \"\" \"{variablesService.GetVariable("TEAMSPEAK_PATH").AsString()}\"");
     }
 
     private async Task ShutTeamspeak()
     {
         logger.LogInfo("Teamspeak shutdown via process");
-        var process = Process.GetProcesses().FirstOrDefault(x => x.ProcessName == "ts3client_win64");
+        var process = processUtilities.FindProcessByName("ts3client_win64");
         if (process == null)
         {
             logger.LogInfo("Teamspeak process not found");
             return;
         }
 
-        await process.CloseProcessGracefully();
+        await processUtilities.CloseProcessGracefully(process);
         process.Refresh();
         process.WaitForExit(5000);
         process.Refresh();

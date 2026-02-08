@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -35,6 +34,8 @@ public class GameServersService(
     IGameServersContext gameServersContext,
     IMissionPatchingService missionPatchingService,
     IGameServerHelpers gameServerHelpers,
+    IProcessUtilities processUtilities,
+    IHttpClientFactory httpClientFactory,
     IVariablesService variablesService,
     IUksfLogger logger
 ) : IGameServersService
@@ -68,7 +69,8 @@ public class GameServersService(
 
         if (gameServer.ProcessId != null && gameServer.ProcessId != 0)
         {
-            gameServer.Status.Started = Process.GetProcesses().Any(x => x.Id == gameServer.ProcessId);
+            var process = processUtilities.FindProcessById(gameServer.ProcessId.Value);
+            gameServer.Status.Started = process is not null;
             if (!gameServer.Status.Started)
             {
                 gameServer.ProcessId = null;
@@ -79,7 +81,7 @@ public class GameServersService(
             gameServer.Status.Started = false;
         }
 
-        using HttpClient client = new();
+        using var client = httpClientFactory.CreateClient();
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         client.Timeout = TimeSpan.FromSeconds(5);
         try
@@ -152,7 +154,7 @@ public class GameServersService(
     public async Task LaunchGameServer(DomainGameServer gameServer)
     {
         var launchArguments = gameServerHelpers.FormatGameServerLaunchArguments(gameServer);
-        gameServer.ProcessId = ProcessUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments);
+        gameServer.ProcessId = processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments);
 
         await Task.Delay(TimeSpan.FromSeconds(1));
 
@@ -163,7 +165,7 @@ public class GameServersService(
             {
                 launchArguments = gameServerHelpers.FormatHeadlessClientLaunchArguments(gameServer, index);
                 gameServer.HeadlessClientProcessIds.Add(
-                    ProcessUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments)
+                    processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments)
                 );
 
                 await Task.Delay(TimeSpan.FromSeconds(1));
@@ -177,7 +179,7 @@ public class GameServersService(
     {
         try
         {
-            using HttpClient client = new();
+            using var client = httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server/stop");
         }
@@ -194,7 +196,7 @@ public class GameServersService(
             {
                 try
                 {
-                    using HttpClient client = new();
+                    using var client = httpClientFactory.CreateClient();
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                     await client.GetAsync($"http://localhost:{gameServer.ApiPort + index + 1}/server/stop");
                 }
@@ -215,7 +217,7 @@ public class GameServersService(
             throw new NullReferenceException("Process ID not found");
         }
 
-        var process = Process.GetProcesses().FirstOrDefault(x => x.Id == gameServer.ProcessId.Value);
+        var process = processUtilities.FindProcessById(gameServer.ProcessId.Value);
         if (process is { HasExited: false })
         {
             process.Kill(true);
@@ -225,7 +227,7 @@ public class GameServersService(
 
         gameServer.HeadlessClientProcessIds.ForEach(x =>
             {
-                process = Process.GetProcesses().FirstOrDefault(y => y.Id == x);
+                process = processUtilities.FindProcessById(x);
                 if (process is { HasExited: false })
                 {
                     process.Kill(true);

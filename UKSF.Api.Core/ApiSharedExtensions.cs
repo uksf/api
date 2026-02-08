@@ -43,7 +43,10 @@ public static class ApiSharedExtensions
                     .AddTransient<IMongoCollectionFactory, MongoCollectionFactory>()
                     .AddSingleton<IUksfLogger, UksfLogger>()
                     .AddSingleton<IClock, Clock>()
-                    .AddSingleton<IProcessCommandFactory, ProcessCommandFactory>();
+                    .AddSingleton<IProcessCommandFactory, ProcessCommandFactory>()
+                    .AddSingleton<IProcessUtilities, ProcessUtilities>();
+
+            services.AddHttpClient();
 
             services.AddSignalR()
                     .AddJsonProtocol(options =>

@@ -85,6 +85,76 @@ SignalR hubs for live updates:
 - `UKSF.Api.Tests.Common` provides shared test utilities
 - If builds or tests fail due to file locks from a running API process, stop the API process
 
+### Test Safety
+
+**CRITICAL: Tests run on a CI agent that shares the live production environment.** The test runner executes on the same box that runs live Teamspeak, Discord bots, game servers, and other services. A test that accidentally connects to a real service could disrupt production. All tests must be completely isolated.
+
+**All external dependencies MUST be mocked.** Never write tests that interact with real services.
+
+#### Teamspeak
+- Mock `ITeamspeakService`, `ITeamspeakManagerService`, `ITeamspeakGroupService`
+- Mock `IHubContext<TeamspeakHub, ITeamspeakClient>`
+- Never call real process launch/shutdown (ts3server.exe, ts3client_win64.exe)
+- Never send real Teamspeak procedures or messages
+
+#### Discord
+- Mock `IDiscordClientService`, `IDiscordMessageService`, `IDiscordMembersService`
+- Mock `DiscordSocketClient` (Discord.Net library)
+- Never call `Connect()`, `LoginAsync()`, or `StartAsync()` on real clients
+- Never send real messages to Discord channels
+
+#### HTTP Clients / External APIs
+- Mock `ISteamApiService` — never call real Steam Workshop API
+- Mock `IInstagramService` — never call real Instagram Graph API
+- Mock `IGithubService`, `IGithubClientService` — never call real GitHub API
+- Mock `IGameServersService` for server status HTTP checks
+- Never make real HTTP requests to external domains
+
+#### MongoDB
+- Use **Mongo2Go** for integration tests (in-memory MongoDB)
+- Mock `IMongoDatabase`, `IMongoCollection<T>` for unit tests
+- Mock specific context interfaces (e.g., `IAccountContext`, `IBuildsContext`)
+- **Never connect to the live MongoDB instance**
+
+#### File System
+- Mock `IFileSystemService` for file operations
+- If temp files are needed, use `Path.GetTempPath()` with cleanup in teardown
+- **Never read from or write to production paths** (modpack dirs, mission dirs, config files)
+- Mock `IMissionService`, `IModpackService`, `ILauncherFileService` for file-heavy services
+
+#### Process Execution (External Programs)
+- Mock `IProcessUtilities` — never launch real processes (game servers, Teamspeak, etc.)
+- Mock `IProcessCommandFactory` and `IProcessCommand`
+- Mock `ISteamCmdService` — never run real steamcmd.exe
+- Mock `IGitService` — never run real git commands that push or modify repos
+- Mock `IBuildsService` process launching
+- **Never call `Process.Start` against real executables** (SteamCMD, git, server binaries, Teamspeak)
+
+#### Email / SMTP
+- Mock `ISmtpClientContext`
+- Mock `ISendBasicEmailCommand`, `ISendTemplatedEmailCommand`
+- **Never send real emails** via SMTP
+
+#### SignalR Hubs
+- Mock `IHubContext<THub, TClient>` for all hubs
+- Mock specific hub client interfaces (`IModpackClient`, `IServersClient`, etc.)
+- Hub routing logic can be tested, but client-facing calls must be mocked
+
+#### MassTransit / Message Bus
+- Mock `IPublishEndpoint` and `IBus`
+- Saga state machine logic can be tested with the MassTransit test harness
+- Mock all side-effect consumers
+
+#### Scheduled Actions
+- Mock `IScheduledAction` implementations and `ISchedulerService`
+- **Never let scheduled actions execute** — they trigger external calls (Teamspeak snapshots, Instagram token refresh, log cleanup)
+
+#### Acceptable Real Interactions
+- Reading test fixture files from TestData directories
+- Executing safe, harmless process commands (echo, sleep) for testing process execution infrastructure only
+- In-memory event bus and mock contexts
+- Mongo2Go in-memory database
+
 ## General Instructions
 
 - Don't patronise or affirm me as part of your responses. No "You're absolutely right!" type responses.
