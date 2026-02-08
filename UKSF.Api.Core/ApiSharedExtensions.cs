@@ -95,7 +95,7 @@ public static class ApiSharedExtensions
         private IServiceCollection AddServices()
         {
             return services.AddSingleton<IScheduledActionFactory, ScheduledActionFactory>()
-                           .AddTransient<ISchedulerService, SchedulerService>()
+                           .AddSingleton<ISchedulerService, SchedulerService>()
                            .AddSingleton<IVariablesService, VariablesService>()
                            .AddSingleton<IStaticVariablesService, StaticVariablesService>()
                            .AddSingleton<IDisplayNameService, DisplayNameService>()

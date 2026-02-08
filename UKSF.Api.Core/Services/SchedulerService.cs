@@ -17,7 +17,7 @@ public interface ISchedulerService
 public class SchedulerService(ISchedulerContext context, IScheduledActionFactory scheduledActionFactory, IClock clock, IUksfLogger uksfLogger)
     : ISchedulerService
 {
-    private static readonly ConcurrentDictionary<string, CancellationTokenSource> ActiveTasks = new();
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> _activeTasks = new();
 
     public void Load()
     {
@@ -75,7 +75,7 @@ public class SchedulerService(ISchedulerContext context, IScheduledActionFactory
     {
         CancellationTokenSource token = new();
         CancelAndDisposeToken(job.Id);
-        ActiveTasks[job.Id] = token;
+        _activeTasks[job.Id] = token;
 
         _ = Task.Run(
             async () =>
@@ -127,9 +127,9 @@ public class SchedulerService(ISchedulerContext context, IScheduledActionFactory
         );
     }
 
-    private static void CancelAndDisposeToken(string jobId)
+    private void CancelAndDisposeToken(string jobId)
     {
-        if (ActiveTasks.TryRemove(jobId, out var existingToken))
+        if (_activeTasks.TryRemove(jobId, out var existingToken))
         {
             existingToken.Cancel();
             existingToken.Dispose();

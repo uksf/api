@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
@@ -118,8 +119,9 @@ public class SchedulerServiceTests
     [Fact]
     public async Task Schedule_ShouldExecuteAction_WhenJobTimeHasPassed()
     {
+        var executed = new TaskCompletionSource();
         var mockAction = new Mock<IScheduledAction>();
-        mockAction.Setup(x => x.Run(It.IsAny<object[]>())).Returns(Task.CompletedTask);
+        mockAction.Setup(x => x.Run(It.IsAny<object[]>())).Callback(() => executed.TrySetResult()).Returns(Task.CompletedTask);
         _mockFactory.Setup(x => x.GetScheduledAction("TestAction")).Returns(mockAction.Object);
         _mockClock.Setup(x => x.UtcNow()).Returns(DateTime.UtcNow);
 
@@ -134,7 +136,7 @@ public class SchedulerServiceTests
 
         _subject.Load();
 
-        await Task.Delay(TimeSpan.FromSeconds(1));
+        await executed.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         mockAction.Verify(x => x.Run(It.IsAny<object[]>()), Times.Once);
     }
@@ -142,10 +144,12 @@ public class SchedulerServiceTests
     [Fact]
     public async Task Schedule_ShouldLogError_WhenActionThrows()
     {
+        var errorLogged = new TaskCompletionSource();
         var mockAction = new Mock<IScheduledAction>();
         mockAction.Setup(x => x.Run(It.IsAny<object[]>())).ThrowsAsync(new InvalidOperationException("action failed"));
         _mockFactory.Setup(x => x.GetScheduledAction("FailAction")).Returns(mockAction.Object);
         _mockClock.Setup(x => x.UtcNow()).Returns(DateTime.UtcNow);
+        _mockLogger.Setup(x => x.LogError(It.IsAny<Exception>())).Callback(() => errorLogged.TrySetResult());
 
         var job = new DomainScheduledJob
         {
@@ -158,7 +162,7 @@ public class SchedulerServiceTests
 
         _subject.Load();
 
-        await Task.Delay(TimeSpan.FromSeconds(1));
+        await errorLogged.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         _mockLogger.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Once);
     }
@@ -166,10 +170,12 @@ public class SchedulerServiceTests
     [Fact]
     public async Task Schedule_ShouldDeleteNonRepeatingJob_AfterExecution()
     {
+        var deleted = new TaskCompletionSource();
         var mockAction = new Mock<IScheduledAction>();
         mockAction.Setup(x => x.Run(It.IsAny<object[]>())).Returns(Task.CompletedTask);
         _mockFactory.Setup(x => x.GetScheduledAction("OneTimeAction")).Returns(mockAction.Object);
         _mockClock.Setup(x => x.UtcNow()).Returns(DateTime.UtcNow);
+        _mockContext.Setup(x => x.Delete(It.IsAny<DomainScheduledJob>())).Callback(() => deleted.TrySetResult()).Returns(Task.CompletedTask);
 
         var job = new DomainScheduledJob
         {
@@ -182,7 +188,7 @@ public class SchedulerServiceTests
 
         _subject.Load();
 
-        await Task.Delay(TimeSpan.FromSeconds(1));
+        await deleted.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         _mockContext.Verify(x => x.Delete(job), Times.Once);
     }

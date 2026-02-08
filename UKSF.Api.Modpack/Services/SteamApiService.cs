@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Modpack.Models;
@@ -10,15 +10,11 @@ public interface ISteamApiService
     Task<WorkshopModInfo> GetWorkshopModInfo(string workshopModId);
 }
 
-public class SteamApiService(IUksfLogger logger) : ISteamApiService
+public class SteamApiService(IHttpClientFactory httpClientFactory, IUksfLogger logger) : ISteamApiService
 {
     public async Task<WorkshopModInfo> GetWorkshopModInfo(string workshopModId)
     {
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Add(
-            "User-Agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
-        );
+        using var client = httpClientFactory.CreateClient("Steam");
 
         var formData = new Dictionary<string, string> { ["itemcount"] = "1", ["publishedfileids[0]"] = workshopModId };
         var content = new FormUrlEncodedContent(formData);

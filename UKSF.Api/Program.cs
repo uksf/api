@@ -6,6 +6,7 @@ using UKSF.Api.Core;
 using UKSF.Api.Core.Configuration;
 using UKSF.Api.Core.Converters;
 using UKSF.Api.Extensions;
+using UKSF.Api.Filters;
 using UKSF.Api.Integrations.Teamspeak;
 using UKSF.Api.Middleware;
 using UKSF.Api.Modpack;
@@ -51,7 +52,7 @@ builder.Services.AddCors(options =>
        )
        .AddRouting()
        .AddLogging(options => { options.ClearProviders().AddConsole(); })
-       .AddControllers()
+       .AddControllers(options => options.Filters.Add<ValidateModelStateFilter>())
        .AddJsonOptions(options =>
            {
                options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;

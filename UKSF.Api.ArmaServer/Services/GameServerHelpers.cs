@@ -2,6 +2,7 @@ using System.Diagnostics;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
+using UKSF.Api.Core.Processes;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.Services;
@@ -25,7 +26,7 @@ public interface IGameServerHelpers
     string GetDlcModFoldersRegexString();
 }
 
-public class GameServerHelpers(IVariablesService variablesService, IUksfLogger logger) : IGameServerHelpers
+public class GameServerHelpers(IVariablesService variablesService, IProcessUtilities processUtilities, IUksfLogger logger) : IGameServerHelpers
 {
     private static readonly string[] BaseConfig =
     [
@@ -182,7 +183,7 @@ public class GameServerHelpers(IVariablesService variablesService, IUksfLogger l
 
     public IEnumerable<Process> GetArmaProcesses()
     {
-        return Process.GetProcesses().Where(x => x.ProcessName.StartsWith("arma3"));
+        return processUtilities.GetProcesses().Where(x => x.ProcessName.StartsWith("arma3"));
     }
 
     public bool IsMainOpTime()

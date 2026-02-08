@@ -14,6 +14,7 @@ public interface IProcessUtilities
     Process FindProcessById(int id);
     Process FindProcessByName(string name);
     Process[] GetProcessesByName(string name);
+    Process[] GetProcesses();
 }
 
 [ExcludeFromCodeCoverage]
@@ -76,5 +77,10 @@ public class ProcessUtilities : IProcessUtilities
     public Process[] GetProcessesByName(string name)
     {
         return Process.GetProcessesByName(name);
+    }
+
+    public Process[] GetProcesses()
+    {
+        return Process.GetProcesses();
     }
 }

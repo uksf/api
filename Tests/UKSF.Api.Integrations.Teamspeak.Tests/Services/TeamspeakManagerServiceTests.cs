@@ -125,17 +125,17 @@ public class TeamspeakManagerServiceTests
     [Fact]
     public async Task KeepOnline_ShouldLogErrorAndContinue_WhenIterationFails()
     {
+        var errorLogged = new TaskCompletionSource();
         _mockVariablesService.Setup(x => x.GetFeatureState("TEAMSPEAK")).Returns(true);
         _mockVariablesService.Setup(x => x.GetVariable("TEAMSPEAK_SERVER_RUN")).Throws(new InvalidOperationException("variable error"));
+        _mockLogger.Setup(x => x.LogError(It.Is<string>(s => s.Contains("KeepOnline")), It.IsAny<Exception>())).Callback(() => errorLogged.TrySetResult());
 
         _subject.Start();
 
-        // Wait for at least one iteration to fail and be caught
-        await Task.Delay(TimeSpan.FromSeconds(3));
+        await errorLogged.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         _subject.Stop();
 
-        // The key assertion: error was logged, not thrown (no process crash)
         _mockLogger.Verify(x => x.LogError(It.Is<string>(s => s.Contains("KeepOnline")), It.IsAny<Exception>()), Times.AtLeastOnce);
     }
 }
