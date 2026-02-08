@@ -87,7 +87,7 @@ public class WorkshopModOperation(IWorkshopModsContext workshopModsContext, IWor
             }
 
             await workshopModsProcessingService.SetAvailablePbos(workshopMod, pbos);
-            return OperationResult.Successful(interventionRequired: pbosChanged);
+            return OperationResult.Successful(interventionRequired: pbosChanged, availablePbos: pbos);
         }
         catch (Exception exception)
         {

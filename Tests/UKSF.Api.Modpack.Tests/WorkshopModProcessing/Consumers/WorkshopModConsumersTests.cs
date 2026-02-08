@@ -138,11 +138,12 @@ public class WorkshopModCheckConsumerTests
     }
 
     [Fact]
-    public async Task Consume_WhenCheckSucceeds_WithoutIntervention_ShouldPublishCheckComplete()
+    public async Task Consume_WhenCheckSucceeds_WithoutIntervention_ShouldPublishCheckCompleteWithAvailablePbos()
     {
+        var availablePbos = new List<string> { "a.pbo", "b.pbo" };
         var operation = new Mock<IWorkshopModOperation>();
         operation.Setup(x => x.CheckAsync("mod1", WorkshopModOperationType.Update, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(OperationResult.Successful(interventionRequired: false));
+                 .ReturnsAsync(OperationResult.Successful(interventionRequired: false, availablePbos: availablePbos));
         Mock<IUksfLogger> logger = new();
         var consumer = new WorkshopModCheckConsumer(operation.Object, logger.Object);
 
@@ -156,6 +157,7 @@ public class WorkshopModCheckConsumerTests
 
         published.Should().NotBeNull();
         published!.InterventionRequired.Should().BeFalse();
+        published.AvailablePbos.Should().BeEquivalentTo(availablePbos);
     }
 
     [Fact]

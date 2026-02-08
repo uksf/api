@@ -74,6 +74,7 @@ public class WorkshopModCheckComplete : IWorkshopModCommand
 {
     public string WorkshopModId { get; init; }
     public bool InterventionRequired { get; init; }
+    public List<string> AvailablePbos { get; init; }
 }
 
 public class WorkshopModExecuteComplete : IWorkshopModCommand

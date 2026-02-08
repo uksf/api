@@ -142,6 +142,42 @@ public class WorkshopModOperationTests
     }
 
     [Fact]
+    public async Task CheckAsync_ShouldReturnAvailablePbos()
+    {
+        var pbos = new List<string> { "mod1.pbo", "mod2.pbo" };
+        SetupWorkshopMod();
+        _mockProcessingService.Setup(x => x.GetWorkshopModPath("test-mod-123")).Returns("/path/to/mod");
+        _mockProcessingService.Setup(x => x.GetModFiles("/path/to/mod")).Returns(pbos);
+
+        var result = await _operation.CheckAsync("test-mod-123", WorkshopModOperationType.Install);
+
+        result.AvailablePbos.Should().BeEquivalentTo(pbos);
+    }
+
+    [Fact]
+    public async Task CheckAsync_WithPbosUnchanged_ShouldReturnAvailablePbos()
+    {
+        var pbos = new List<string> { "mod1.pbo", "mod2.pbo" };
+        SetupWorkshopMod(pbos: pbos);
+        _mockProcessingService.Setup(x => x.GetWorkshopModPath("test-mod-123")).Returns("/path/to/mod");
+        _mockProcessingService.Setup(x => x.GetModFiles("/path/to/mod")).Returns(pbos);
+
+        var result = await _operation.CheckAsync("test-mod-123", WorkshopModOperationType.Update);
+
+        result.AvailablePbos.Should().BeEquivalentTo(pbos);
+    }
+
+    [Fact]
+    public async Task CheckAsync_ForRootMod_ShouldReturnNullAvailablePbos()
+    {
+        SetupWorkshopMod(rootMod: true);
+
+        var result = await _operation.CheckAsync("test-mod-123", WorkshopModOperationType.Install);
+
+        result.AvailablePbos.Should().BeNull();
+    }
+
+    [Fact]
     public async Task CheckAsync_ForRootMod_ShouldReturnNoInterventionRequired()
     {
         SetupWorkshopMod(rootMod: true);

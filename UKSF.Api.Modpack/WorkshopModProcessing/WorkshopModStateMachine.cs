@@ -73,7 +73,8 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
                 .IfElse(
                     context => context.Message.InterventionRequired,
                     binder => binder.TransitionTo(AwaitingIntervention),
-                    binder => binder.TransitionTo(Executing)
+                    binder => binder.Then(context => { context.Saga.SelectedPbos = context.Message.AvailablePbos ?? context.Saga.SelectedPbos; })
+                                    .TransitionTo(Executing)
                                     .Publish(context => new WorkshopModExecuteCommand
                                         {
                                             WorkshopModId = context.Saga.WorkshopModId,

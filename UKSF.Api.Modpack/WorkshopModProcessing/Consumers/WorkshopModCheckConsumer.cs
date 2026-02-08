@@ -14,7 +14,12 @@ public class WorkshopModCheckConsumer(IWorkshopModOperation operation, IUksfLogg
             if (result.Success)
             {
                 await context.Publish(
-                    new WorkshopModCheckComplete { WorkshopModId = context.Message.WorkshopModId, InterventionRequired = result.InterventionRequired }
+                    new WorkshopModCheckComplete
+                    {
+                        WorkshopModId = context.Message.WorkshopModId,
+                        InterventionRequired = result.InterventionRequired,
+                        AvailablePbos = result.AvailablePbos
+                    }
                 );
             }
             else
