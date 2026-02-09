@@ -189,7 +189,7 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
     public bool IsMainOpTime()
     {
         var now = DateTime.UtcNow;
-        return now.DayOfWeek == DayOfWeek.Saturday && (now.Hour > 19 || (now.Hour == 19 && now.Minute >= 30));
+        return now.DayOfWeek == DayOfWeek.Saturday && now.Hour > 19;
     }
 
     public string GetDlcModFoldersRegexString()
