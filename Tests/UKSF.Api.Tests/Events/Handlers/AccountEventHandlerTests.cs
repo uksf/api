@@ -17,24 +17,27 @@ public class AccountEventHandlerTests
 {
     private readonly AccountDataEventHandler _accountDataEventHandler;
     private readonly IEventBus _eventBus;
-    private readonly Mock<IHubContext<AccountHub, IAccountClient>> _mockAccountHub;
-    private readonly Mock<IUksfLogger> _mockLoggingService;
+    private readonly Mock<IAccountClient> _mockAccountClient = new();
+    private readonly Mock<IUksfLogger> _mockLoggingService = new();
 
     public AccountEventHandlerTests()
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IHubContext<AccountGroupedHub, IAccountGroupedClient>> mockGroupedHub = new();
         Mock<IHubContext<AllHub, IAllClient>> mockAllHub = new();
-        _mockLoggingService = new Mock<IUksfLogger>();
-        _mockAccountHub = new Mock<IHubContext<AccountHub, IAccountClient>>();
+        Mock<IHubContext<AccountHub, IAccountClient>> mockAccountHub = new();
+        Mock<IHubClients<IAccountClient>> mockHubClients = new();
         _eventBus = new EventBus();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainAccount>(It.IsAny<string>()));
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainUnit>(It.IsAny<string>()));
 
+        mockAccountHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
+        mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(_mockAccountClient.Object);
+
         _accountDataEventHandler = new AccountDataEventHandler(
             _eventBus,
-            _mockAccountHub.Object,
+            mockAccountHub.Object,
             mockGroupedHub.Object,
             mockAllHub.Object,
             _mockLoggingService.Object
@@ -44,13 +47,7 @@ public class AccountEventHandlerTests
     [Fact]
     public void ShouldLogOnException()
     {
-        Mock<IHubClients<IAccountClient>> mockHubClients = new();
-        Mock<IAccountClient> mockAccountClient = new();
-
-        _mockAccountHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
-        mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockAccountClient.Object);
-        mockAccountClient.Setup(x => x.ReceiveAccountUpdate()).Throws(new Exception());
-        _mockLoggingService.Setup(x => x.LogError(It.IsAny<Exception>()));
+        _mockAccountClient.Setup(x => x.ReceiveAccountUpdate()).Throws(new Exception());
 
         _accountDataEventHandler.Init();
 
@@ -63,13 +60,6 @@ public class AccountEventHandlerTests
     [Fact]
     public void ShouldNotRunEvent()
     {
-        Mock<IHubClients<IAccountClient>> mockHubClients = new();
-        Mock<IAccountClient> mockAccountClient = new();
-
-        _mockAccountHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
-        mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockAccountClient.Object);
-        mockAccountClient.Setup(x => x.ReceiveAccountUpdate());
-
         _accountDataEventHandler.Init();
 
         _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<DomainAccount>(null, null), ""));
@@ -77,24 +67,17 @@ public class AccountEventHandlerTests
         _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<DomainUnit>(null, null), ""));
         _eventBus.Send(new EventModel(EventType.Delete, new ContextEventData<DomainUnit>(null, null), ""));
 
-        mockAccountClient.Verify(x => x.ReceiveAccountUpdate(), Times.Never);
+        _mockAccountClient.Verify(x => x.ReceiveAccountUpdate(), Times.Never);
     }
 
     [Fact]
     public void ShouldRunEventOnUpdate()
     {
-        Mock<IHubClients<IAccountClient>> mockHubClients = new();
-        Mock<IAccountClient> mockAccountClient = new();
-
-        _mockAccountHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
-        mockHubClients.Setup(x => x.Group(It.IsAny<string>())).Returns(mockAccountClient.Object);
-        mockAccountClient.Setup(x => x.ReceiveAccountUpdate());
-
         _accountDataEventHandler.Init();
 
         _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<DomainAccount>("1", null), ""));
         _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<DomainUnit>("2", null), ""));
 
-        mockAccountClient.Verify(x => x.ReceiveAccountUpdate(), Times.Exactly(2));
+        _mockAccountClient.Verify(x => x.ReceiveAccountUpdate(), Times.Exactly(2));
     }
 }

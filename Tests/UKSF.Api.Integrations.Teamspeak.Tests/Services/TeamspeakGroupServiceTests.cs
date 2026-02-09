@@ -78,12 +78,35 @@ public class TeamspeakGroupServiceTests
         );
     }
 
+    private void SetupUnitsContext(List<DomainUnit> units)
+    {
+        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
+        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
+                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
+    }
+
+    private void SetupRank(string rank, string teamspeakGroup)
+    {
+        _mockRanksContext.Setup(x => x.GetSingle(rank)).Returns(new DomainRank { Name = rank, TeamspeakGroup = teamspeakGroup });
+    }
+
+    private static DomainAccount CreateMember(string id, string rank = "Private", string unitAssignment = null)
+    {
+        return new DomainAccount
+        {
+            Id = id,
+            MembershipState = MembershipState.Member,
+            Rank = rank,
+            UnitAssignment = unitAssignment
+        };
+    }
+
     [Fact]
     public async Task Should_add_correct_groups_for_candidate()
     {
         var id = ObjectId.GenerateNewId().ToString();
-
-        _mockRanksContext.Setup(x => x.GetSingle("Candidate")).Returns(new DomainRank { Name = "Candidate", TeamspeakGroup = "5" });
+        SetupRank("Candidate", "5");
 
         await _teamspeakGroupService.UpdateAccountGroups(
             new DomainAccount
@@ -155,23 +178,10 @@ public class TeamspeakGroupServiceTests
         List<DomainUnit> units = [unit, unitParent, unitParentParent, _elcomUnit, auxiliaryUnit];
         _elcomUnit.Members.Add(id);
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "1 Section"
-            },
-            new List<int>(),
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "1 Section"), new List<int>(), 2);
 
         _addedGroups.Should()
         .BeEquivalentTo(
@@ -216,23 +226,10 @@ public class TeamspeakGroupServiceTests
         };
         List<DomainUnit> units = [rootUnit, unit, _elcomUnit, auxiliaryUnit];
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "JSFAW"
-            },
-            new List<int>(),
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "JSFAW"), new List<int>(), 2);
 
         _addedGroups.Should()
         .BeEquivalentTo(
@@ -277,23 +274,10 @@ public class TeamspeakGroupServiceTests
         List<DomainUnit> units = [rootUnit, unit, _elcomUnit, auxiliaryUnit];
         _elcomUnit.Members.Add(id);
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "JSFAW"
-            },
-            new List<int>(),
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "JSFAW"), new List<int>(), 2);
 
         _addedGroups.Should()
         .BeEquivalentTo(
@@ -345,23 +329,10 @@ public class TeamspeakGroupServiceTests
         };
         List<DomainUnit> units = [unit, unitParent, unitParentParent, _elcomUnit, auxiliaryUnit];
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "1 Section"
-            },
-            new List<int>(),
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "1 Section"), new List<int>(), 2);
 
         _addedGroups.Should()
         .BeEquivalentTo(
@@ -374,7 +345,6 @@ public class TeamspeakGroupServiceTests
                 9
             }
         );
-
         _removedGroups.Should().BeEmpty();
     }
 
@@ -412,23 +382,10 @@ public class TeamspeakGroupServiceTests
         };
         List<DomainUnit> units = [unit, unitParent, unitParentParent, unitParentParentParent, _elcomUnit];
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "1 Section"
-            },
-            new List<int>(),
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "1 Section"), new List<int>(), 2);
 
         _addedGroups.Should()
         .BeEquivalentTo(
@@ -440,7 +397,6 @@ public class TeamspeakGroupServiceTests
                 8
             }
         );
-
         _removedGroups.Should().BeEmpty();
     }
 
@@ -466,13 +422,12 @@ public class TeamspeakGroupServiceTests
     public async Task Should_add_correct_groups_for_secondary_units()
     {
         var id = ObjectId.GenerateNewId().ToString();
-        var parentId = ObjectId.GenerateNewId().ToString();
         DomainUnit unit = new()
         {
             Name = "Combat Unit",
             TeamspeakGroup = "6",
             Members = [id],
-            Parent = parentId,
+            Parent = ObjectId.GenerateNewId().ToString(),
             Branch = UnitBranch.Combat
         };
         DomainUnit auxiliaryUnit = new()
@@ -493,29 +448,16 @@ public class TeamspeakGroupServiceTests
         };
         List<DomainUnit> units = [unit, _elcomUnit, auxiliaryUnit, secondaryUnit];
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "Combat Unit"
-            },
-            new List<int>(),
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "Combat Unit"), new List<int>(), 2);
 
-        _addedGroups.Should().Contain(9); // Auxiliary unit group
-        _addedGroups.Should().NotContain(11); // Secondary unit group should NOT be included
-        _addedGroups.Should().Contain(3); // Root group
-        _addedGroups.Should().Contain(5); // Rank group
-        _addedGroups.Should().Contain(6); // Combat unit group
+        _addedGroups.Should().Contain(9);
+        _addedGroups.Should().NotContain(11);
+        _addedGroups.Should().Contain(3);
+        _addedGroups.Should().Contain(5);
+        _addedGroups.Should().Contain(6);
         _removedGroups.Should().BeEmpty();
     }
 
@@ -541,23 +483,10 @@ public class TeamspeakGroupServiceTests
         List<DomainUnit> units = [rootUnit, _elcomUnit, auxiliaryUnit];
         _elcomUnit.Members.Add(id);
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "UKSF"
-            },
-            new List<int>(),
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "UKSF"), new List<int>(), 2);
 
         _addedGroups.Should()
         .BeEquivalentTo(
@@ -577,47 +506,37 @@ public class TeamspeakGroupServiceTests
     public async Task Should_add_training_groups()
     {
         var id = ObjectId.GenerateNewId().ToString();
-        var parentId = ObjectId.GenerateNewId().ToString();
         var trainingId1 = ObjectId.GenerateNewId().ToString();
         var trainingId2 = ObjectId.GenerateNewId().ToString();
-
         DomainUnit unit = new()
         {
             Name = "Combat Unit",
             TeamspeakGroup = "6",
             Members = [id],
-            Parent = parentId,
+            Parent = ObjectId.GenerateNewId().ToString(),
             Branch = UnitBranch.Combat
         };
         List<DomainUnit> units = [unit, _elcomUnit];
 
-        var trainings = new List<DomainTraining> { new() { Id = trainingId1, TeamspeakGroup = "12" }, new() { Id = trainingId2, TeamspeakGroup = "13" } };
+        _mockTrainingsContext.Setup(x => x.Get())
+                             .Returns(
+                                 new List<DomainTraining>
+                                 {
+                                     new() { Id = trainingId1, TeamspeakGroup = "12" }, new() { Id = trainingId2, TeamspeakGroup = "13" }
+                                 }
+                             );
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        _mockTrainingsContext.Setup(x => x.Get()).Returns(trainings);
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        var account = CreateMember(id, unitAssignment: "Combat Unit");
+        account.Trainings = [trainingId1, trainingId2];
+        await _teamspeakGroupService.UpdateAccountGroups(account, new List<int>(), 2);
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "Combat Unit",
-                Trainings = [trainingId1, trainingId2]
-            },
-            new List<int>(),
-            2
-        );
-
-        _addedGroups.Should().Contain(12); // Training group 1
-        _addedGroups.Should().Contain(13); // Training group 2
-        _addedGroups.Should().Contain(3); // Root group
-        _addedGroups.Should().Contain(5); // Rank group
-        _addedGroups.Should().Contain(6); // Combat unit group
+        _addedGroups.Should().Contain(12);
+        _addedGroups.Should().Contain(13);
+        _addedGroups.Should().Contain(3);
+        _addedGroups.Should().Contain(5);
+        _addedGroups.Should().Contain(6);
         _removedGroups.Should().BeEmpty();
     }
 
@@ -629,7 +548,7 @@ public class TeamspeakGroupServiceTests
         DomainUnit unit = new()
         {
             Name = "1 Section",
-            TeamspeakGroup = "0", // Zero teamspeak group should trigger fallback
+            TeamspeakGroup = "0",
             Members = [id],
             Parent = parentId
         };
@@ -641,28 +560,14 @@ public class TeamspeakGroupServiceTests
         };
         List<DomainUnit> units = [unit, unitParent, _elcomUnit];
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "1 Section"
-            },
-            new List<int>(),
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "1 Section"), new List<int>(), 2);
 
-        _addedGroups.Should().Contain(3); // Root group
-        _addedGroups.Should().Contain(5); // Rank group
-        _addedGroups.Should().Contain(7); // Parent group (fallback from ResolveParentUnitGroup)
-        // The unit group (0) will still be added because ResolveUnitGroup adds it AND calls ResolveParentUnitGroup
-        // This is the actual behavior - both the unit group and parent group get added
+        _addedGroups.Should().Contain(3);
+        _addedGroups.Should().Contain(5);
+        _addedGroups.Should().Contain(7);
         _removedGroups.Should().BeEmpty();
     }
 
@@ -682,31 +587,19 @@ public class TeamspeakGroupServiceTests
         {
             Id = parentId,
             Name = "SFSG",
-            TeamspeakGroup = "", // No teamspeak group
+            TeamspeakGroup = "",
             Parent = ObjectId.Empty.ToString()
         };
         List<DomainUnit> units = [unit, unitParent, _elcomUnit];
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "1 Section"
-            },
-            new List<int>(),
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "1 Section"), new List<int>(), 2);
 
-        _addedGroups.Should().Contain(3); // Root group
-        _addedGroups.Should().Contain(5); // Rank group
-        _addedGroups.Should().Contain(6); // Unit group (fallback)
+        _addedGroups.Should().Contain(3);
+        _addedGroups.Should().Contain(5);
+        _addedGroups.Should().Contain(6);
         _removedGroups.Should().BeEmpty();
     }
 
@@ -714,115 +607,54 @@ public class TeamspeakGroupServiceTests
     public async Task Should_handle_account_with_no_trainings()
     {
         var id = ObjectId.GenerateNewId().ToString();
-        var parentId = ObjectId.GenerateNewId().ToString();
-
         DomainUnit unit = new()
         {
             Name = "Combat Unit",
             TeamspeakGroup = "6",
             Members = [id],
-            Parent = parentId,
+            Parent = ObjectId.GenerateNewId().ToString(),
             Branch = UnitBranch.Combat
         };
         List<DomainUnit> units = [unit, _elcomUnit];
 
         _mockTrainingsContext.Setup(x => x.Get()).Returns(new List<DomainTraining>());
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "Combat Unit",
-                Trainings = [] // Empty trainings list
-            },
-            new List<int>(),
-            2
-        );
+        var account = CreateMember(id, unitAssignment: "Combat Unit");
+        account.Trainings = [];
+        await _teamspeakGroupService.UpdateAccountGroups(account, new List<int>(), 2);
 
-        _addedGroups.Should().Contain(3); // Root group
-        _addedGroups.Should().Contain(5); // Rank group
-        _addedGroups.Should().Contain(6); // Combat unit group
-        _addedGroups.Should().NotContain(12); // No training groups
-        _addedGroups.Should().NotContain(13); // No training groups
+        _addedGroups.Should().Contain(3);
+        _addedGroups.Should().Contain(5);
+        _addedGroups.Should().Contain(6);
+        _addedGroups.Should().NotContain(12);
+        _addedGroups.Should().NotContain(13);
         _removedGroups.Should().BeEmpty();
     }
 
-    [Fact]
-    public async Task Should_not_add_rank_group_when_rank_is_empty()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task Should_not_add_rank_group_when_rank_is_null_or_empty(string rank)
     {
         var id = ObjectId.GenerateNewId().ToString();
-        var parentId = ObjectId.GenerateNewId().ToString();
         DomainUnit unit = new()
         {
             Name = "1 Section",
             TeamspeakGroup = "6",
             Members = [id],
-            Parent = parentId
+            Parent = ObjectId.GenerateNewId().ToString()
         };
         List<DomainUnit> units = [unit, _elcomUnit];
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
+        SetupUnitsContext(units);
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "", // Empty rank
-                UnitAssignment = "1 Section"
-            },
-            new List<int>(),
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, rank: rank, unitAssignment: "1 Section"), new List<int>(), 2);
 
-        _addedGroups.Should().Contain(3); // Root group
-        _addedGroups.Should().Contain(6); // Unit group
-        _addedGroups.Should().NotContain(5); // No rank group should be added
-        _removedGroups.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task Should_not_add_rank_group_when_rank_is_null()
-    {
-        var id = ObjectId.GenerateNewId().ToString();
-        var parentId = ObjectId.GenerateNewId().ToString();
-        DomainUnit unit = new()
-        {
-            Name = "1 Section",
-            TeamspeakGroup = "6",
-            Members = [id],
-            Parent = parentId
-        };
-        List<DomainUnit> units = [unit, _elcomUnit];
-
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = null, // Null rank
-                UnitAssignment = "1 Section"
-            },
-            new List<int>(),
-            2
-        );
-
-        _addedGroups.Should().Contain(3); // Root group
-        _addedGroups.Should().Contain(6); // Unit group
-        _addedGroups.Should().NotContain(5); // No rank group should be added
+        _addedGroups.Should().Contain(3);
+        _addedGroups.Should().Contain(6);
+        _addedGroups.Should().NotContain(5);
         _removedGroups.Should().BeEmpty();
     }
 
@@ -862,23 +694,10 @@ public class TeamspeakGroupServiceTests
         };
         List<DomainUnit> units = [unit, unitParent, unitParentParent, _elcomUnit, auxiliaryUnit];
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "1 Section"
-            },
-            new List<int> { 3, 5 },
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "1 Section"), new List<int> { 3, 5 }, 2);
 
         _addedGroups.Should()
         .BeEquivalentTo(
@@ -928,23 +747,10 @@ public class TeamspeakGroupServiceTests
         };
         List<DomainUnit> units = [unit, unitParent, unitParentParent, _elcomUnit, auxiliaryUnit];
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "1 Section"
-            },
-            new List<int> { 1, 10 },
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "1 Section"), new List<int> { 1, 10 }, 2);
 
         _addedGroups.Should()
         .BeEquivalentTo(
@@ -1002,13 +808,12 @@ public class TeamspeakGroupServiceTests
     public async Task Should_skip_auxiliary_units_without_teamspeak_groups()
     {
         var id = ObjectId.GenerateNewId().ToString();
-        var parentId = ObjectId.GenerateNewId().ToString();
         DomainUnit unit = new()
         {
             Name = "Combat Unit",
             TeamspeakGroup = "6",
             Members = [id],
-            Parent = parentId,
+            Parent = ObjectId.GenerateNewId().ToString(),
             Branch = UnitBranch.Combat
         };
         DomainUnit auxiliaryUnitWithGroup = new()
@@ -1023,35 +828,22 @@ public class TeamspeakGroupServiceTests
         {
             Branch = UnitBranch.Auxiliary,
             Name = "Auxiliary Unit Without Group",
-            TeamspeakGroup = "", // No teamspeak group - should be skipped
+            TeamspeakGroup = "",
             Parent = _elcomUnit.Id,
             Members = [id]
         };
         List<DomainUnit> units = [unit, _elcomUnit, auxiliaryUnitWithGroup, auxiliaryUnitWithoutGroup];
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "Combat Unit"
-            },
-            new List<int>(),
-            2
-        );
+        await _teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "Combat Unit"), new List<int>(), 2);
 
-        _addedGroups.Should().Contain(9); // Auxiliary unit with group
-        _addedGroups.Should().NotContain(0); // Should not contain empty/zero group
-        _addedGroups.Should().Contain(3); // Root group
-        _addedGroups.Should().Contain(5); // Rank group
-        _addedGroups.Should().Contain(6); // Combat unit group
+        _addedGroups.Should().Contain(9);
+        _addedGroups.Should().NotContain(0);
+        _addedGroups.Should().Contain(3);
+        _addedGroups.Should().Contain(5);
+        _addedGroups.Should().Contain(6);
         _removedGroups.Should().BeEmpty();
     }
 
@@ -1061,7 +853,6 @@ public class TeamspeakGroupServiceTests
         var id = ObjectId.GenerateNewId().ToString();
         var parentId = ObjectId.GenerateNewId().ToString();
         var parentParentId = ObjectId.GenerateNewId().ToString();
-
         DomainUnit unit = new()
         {
             Name = "1 Section",
@@ -1073,7 +864,7 @@ public class TeamspeakGroupServiceTests
         {
             Id = parentId,
             Name = "SFSG",
-            TeamspeakGroup = "6", // Same as unit group - will already be in groupIdsToAssign
+            TeamspeakGroup = "6",
             Parent = parentParentId
         };
         DomainUnit unitParentParent = new()
@@ -1084,7 +875,6 @@ public class TeamspeakGroupServiceTests
         };
         List<DomainUnit> units = [unit, unitParent, unitParentParent, _elcomUnit];
 
-        // Mock the UnitsService.GetParents method to return the parent chain
         var mockUnitsService = new Mock<IUnitsService>();
         mockUnitsService.Setup(x => x.GetParents(It.IsAny<DomainUnit>()))
         .Returns(
@@ -1106,28 +896,15 @@ public class TeamspeakGroupServiceTests
             _mockTrainingsContext.Object
         );
 
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        await teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "1 Section"
-            },
-            new List<int>(),
-            2
-        );
+        await teamspeakGroupService.UpdateAccountGroups(CreateMember(id, unitAssignment: "1 Section"), new List<int>(), 2);
 
-        _addedGroups.Should().Contain(3); // Root group
-        _addedGroups.Should().Contain(5); // Rank group
-        _addedGroups.Should().Contain(6); // Unit group (from ResolveUnitGroup)
-        _addedGroups.Should().Contain(8); // Parent parent group (parent group 6 is skipped because it's already in groupIdsToAssign from unit)
+        _addedGroups.Should().Contain(3);
+        _addedGroups.Should().Contain(5);
+        _addedGroups.Should().Contain(6);
+        _addedGroups.Should().Contain(8);
         _removedGroups.Should().BeEmpty();
     }
 
@@ -1135,51 +912,31 @@ public class TeamspeakGroupServiceTests
     public async Task Should_skip_training_groups_that_do_not_exist()
     {
         var id = ObjectId.GenerateNewId().ToString();
-        var parentId = ObjectId.GenerateNewId().ToString();
         var trainingId1 = ObjectId.GenerateNewId().ToString();
         var trainingId2 = ObjectId.GenerateNewId().ToString();
-
         DomainUnit unit = new()
         {
             Name = "Combat Unit",
             TeamspeakGroup = "6",
             Members = [id],
-            Parent = parentId,
+            Parent = ObjectId.GenerateNewId().ToString(),
             Branch = UnitBranch.Combat
         };
         List<DomainUnit> units = [unit, _elcomUnit];
 
-        var trainings = new List<DomainTraining>
-        {
-            new() { Id = trainingId1, TeamspeakGroup = "12" }
-            // trainingId2 doesn't exist in the training list
-        };
+        _mockTrainingsContext.Setup(x => x.Get()).Returns(new List<DomainTraining> { new() { Id = trainingId1, TeamspeakGroup = "12" } });
+        SetupUnitsContext(units);
+        SetupRank("Private", "5");
 
-        _mockTrainingsContext.Setup(x => x.Get()).Returns(trainings);
-        _mockUnitsContext.Setup(x => x.Get()).Returns(units);
-        _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => units.Where(predicate));
-        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>()))
-                         .Returns<Func<DomainUnit, bool>>(predicate => units.FirstOrDefault(predicate));
-        _mockRanksContext.Setup(x => x.GetSingle("Private")).Returns(new DomainRank { Name = "Private", TeamspeakGroup = "5" });
+        var account = CreateMember(id, unitAssignment: "Combat Unit");
+        account.Trainings = [trainingId1, trainingId2];
+        await _teamspeakGroupService.UpdateAccountGroups(account, new List<int>(), 2);
 
-        await _teamspeakGroupService.UpdateAccountGroups(
-            new DomainAccount
-            {
-                Id = id,
-                MembershipState = MembershipState.Member,
-                Rank = "Private",
-                UnitAssignment = "Combat Unit",
-                Trainings = [trainingId1, trainingId2] // trainingId2 doesn't exist
-            },
-            new List<int>(),
-            2
-        );
-
-        _addedGroups.Should().Contain(12); // Training group 1 (exists)
-        _addedGroups.Should().NotContain(0); // Should not contain zero/null training group
-        _addedGroups.Should().Contain(3); // Root group
-        _addedGroups.Should().Contain(5); // Rank group
-        _addedGroups.Should().Contain(6); // Combat unit group
+        _addedGroups.Should().Contain(12);
+        _addedGroups.Should().NotContain(0);
+        _addedGroups.Should().Contain(3);
+        _addedGroups.Should().Contain(5);
+        _addedGroups.Should().Contain(6);
         _removedGroups.Should().BeEmpty();
     }
 }

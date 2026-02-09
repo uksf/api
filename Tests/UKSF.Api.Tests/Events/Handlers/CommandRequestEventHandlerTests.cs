@@ -16,52 +16,42 @@ public class CommandRequestEventHandlerTests
 {
     private readonly CommandRequestEventHandler _commandRequestEventHandler;
     private readonly IEventBus _eventBus;
-    private readonly Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>> _mockHub;
+    private readonly Mock<ICommandRequestsClient> _mockClient = new();
 
     public CommandRequestEventHandlerTests()
     {
         Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
         Mock<IUksfLogger> mockLoggingService = new();
-        _mockHub = new Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>>();
+        Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>> mockHub = new();
+        Mock<IHubClients<ICommandRequestsClient>> mockHubClients = new();
         _eventBus = new EventBus();
 
         mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainCommandRequest>(It.IsAny<string>()));
 
-        _commandRequestEventHandler = new CommandRequestEventHandler(_eventBus, _mockHub.Object, mockLoggingService.Object);
+        mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
+        mockHubClients.Setup(x => x.All).Returns(_mockClient.Object);
+
+        _commandRequestEventHandler = new CommandRequestEventHandler(_eventBus, mockHub.Object, mockLoggingService.Object);
     }
 
     [Fact]
     public void ShouldNotRunEventOnDelete()
     {
-        Mock<IHubClients<ICommandRequestsClient>> mockHubClients = new();
-        Mock<ICommandRequestsClient> mockClient = new();
-
-        _mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
-        mockHubClients.Setup(x => x.All).Returns(mockClient.Object);
-        mockClient.Setup(x => x.ReceiveRequestUpdate());
-
         _commandRequestEventHandler.Init();
 
         _eventBus.Send(new EventModel(EventType.Delete, new ContextEventData<DomainCommandRequest>(null, null), ""));
 
-        mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Never);
+        _mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Never);
     }
 
     [Fact]
     public void ShouldRunEventOnUpdateAndAdd()
     {
-        Mock<IHubClients<ICommandRequestsClient>> mockHubClients = new();
-        Mock<ICommandRequestsClient> mockClient = new();
-
-        _mockHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
-        mockHubClients.Setup(x => x.All).Returns(mockClient.Object);
-        mockClient.Setup(x => x.ReceiveRequestUpdate());
-
         _commandRequestEventHandler.Init();
 
         _eventBus.Send(new EventModel(EventType.Add, new ContextEventData<DomainCommandRequest>(null, null), ""));
         _eventBus.Send(new EventModel(EventType.Update, new ContextEventData<DomainCommandRequest>(null, null), ""));
 
-        mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Exactly(2));
+        _mockClient.Verify(x => x.ReceiveRequestUpdate(), Times.Exactly(2));
     }
 }
