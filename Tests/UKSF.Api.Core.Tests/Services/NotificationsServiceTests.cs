@@ -156,7 +156,7 @@ public class NotificationsServiceTests
         _subject.SendTeamspeakNotification(new List<int> { 1 }, "<a href='http://example.com'>click</a>");
 
         _mockEventBus.Verify(
-            x => x.Send(It.Is<TeamspeakMessageEventData>(d => d.Message == "[url]http://example.com[/url]click</a>"), It.IsAny<string>()),
+            x => x.Send(It.Is<TeamspeakMessageEventData>(d => d.Message == "[url]http://example.com[/url]click"), It.IsAny<string>()),
             Times.Once
         );
     }

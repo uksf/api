@@ -39,7 +39,7 @@ public class NotificationsService(
             return;
         }
 
-        rawMessage = rawMessage.Replace("<a href='", "[url]").Replace("'>", "[/url]");
+        rawMessage = rawMessage.Replace("<a href='", "[url]").Replace("'>", "[/url]").Replace("</a>", "");
         eventBus.Send(new TeamspeakMessageEventData(clientDbIds, rawMessage), nameof(SendTeamspeakNotification));
     }
 

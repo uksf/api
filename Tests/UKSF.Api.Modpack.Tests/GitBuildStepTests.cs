@@ -64,42 +64,11 @@ public class GitBuildStepTests
     }
 
     [Fact]
-    public void GitBuildStep_Should_ImplementExpectedInterface()
+    public void GitBuildStep_Should_InheritFromBuildStepAndImplementInterface()
     {
-        // Arrange
         var gitBuildStep = new GitBuildStep();
 
-        // Act & Assert
-        gitBuildStep.Should().BeAssignableTo<IBuildStep>();
-    }
-
-    [Fact]
-    public void GitBuildStep_Should_InheritFromBuildStep()
-    {
-        // Arrange & Act
-        var gitBuildStep = new GitBuildStep();
-
-        // Assert
         gitBuildStep.Should().BeAssignableTo<BuildStep>();
         gitBuildStep.Should().BeAssignableTo<IBuildStep>();
-    }
-
-    [Fact]
-    public void GitBuildStep_Should_UseExtendedTimeoutConfiguration()
-    {
-        // This test verifies the configuration changes are in place
-        // by checking the GitBuildStep class has the expected timeout settings
-
-        // Arrange
-        var gitBuildStep = new GitBuildStep();
-
-        // Act & Assert
-        // The GitBuildStep class should be configured with:
-        // - 2 minute timeout instead of 10 seconds
-        // - Safety git configurations
-        // - Process tracking integration
-
-        gitBuildStep.Should().NotBeNull();
-        gitBuildStep.GetType().Should().Be<GitBuildStep>();
     }
 }

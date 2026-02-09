@@ -229,8 +229,8 @@ public class BuildsServiceTests
         result.BuildNumber.Should().Be(2);
         result.BuilderId.Should().Be("accountId");
         result.EnvironmentVariables.Should().Contain("ace_updated", true);
-        result.EnvironmentVariables.Should().Contain("ace_updated", true);
-        result.EnvironmentVariables.Should().Contain("ace_updated", true);
+        result.EnvironmentVariables.Should().Contain("acre_updated", true);
+        result.EnvironmentVariables.Should().Contain("uksf_air_updated", true);
     }
 
     [Fact]
