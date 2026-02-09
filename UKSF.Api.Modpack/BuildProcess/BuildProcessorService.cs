@@ -96,7 +96,7 @@ public class BuildProcessorService(IServiceProvider serviceProvider, IBuildStepS
 
         logger.LogInfo($"Attempting to restore repo prior to {build.Version}");
         var restoreSteps = buildStepService.GetStepsForReleaseRestore();
-        if (restoreSteps.Any())
+        if (!restoreSteps.Any())
         {
             logger.LogError("Restore steps expected but not found. Won't restore");
             return;

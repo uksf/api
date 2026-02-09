@@ -56,6 +56,7 @@ public class ReleaseService(IReleasesContext releasesContext, IAccountContext ac
         if (!release.IsDraft)
         {
             logger.LogWarning($"Attempted to release {version} again. Halting publish");
+            return;
         }
 
         release.Changelog += release.Changelog.EndsWith("\n\n") ? "<br>" : "\n\n<br>";

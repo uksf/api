@@ -24,7 +24,7 @@ public class LoaService(ILoaContext loaContext) : ILoaService
     public async Task<string> Add(CreateLoaRequest createLoaRequest, string recipient, string reason)
     {
         if (loaContext.Get(x => x.Recipient == recipient && x.State != LoaReviewState.Rejected)
-                      .Any(x => createLoaRequest.Start >= x.Start && createLoaRequest.End <= x.End))
+                      .Any(x => createLoaRequest.Start < x.End && createLoaRequest.End > x.Start))
         {
             throw new BadRequestException("An LOA covering the same date range already exists");
         }

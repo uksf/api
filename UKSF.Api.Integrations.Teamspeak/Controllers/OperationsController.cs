@@ -42,9 +42,9 @@ public class OperationsController : ControllerBase
                                                                          x.Timestamp.TimeOfDay < enddate.TimeOfDay &&
                                                                          x.Timestamp.Date == day
                 );
-                if (serverSnapshot is not null)
+                if (serverSnapshot?.Users is not null)
                 {
-                    dataset.Add(acre ? serverSnapshot.Users.Where(x => x.ChannelName == "ACRE").ToArray().Length : serverSnapshot.Users.Count);
+                    dataset.Add(acre ? serverSnapshot.Users.Count(x => x.ChannelName == "ACRE") : serverSnapshot.Users.Count);
                 }
                 else
                 {
