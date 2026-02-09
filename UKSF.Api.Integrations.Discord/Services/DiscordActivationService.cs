@@ -1,3 +1,4 @@
+using UKSF.Api.Core;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.Integrations.Discord.Services;
@@ -11,7 +12,8 @@ public interface IDiscordActivationService
 public class DiscordActivationService(
     IDiscordClientService discordClientService,
     IEnumerable<IDiscordService> discordServices,
-    IVariablesService variablesService
+    IVariablesService variablesService,
+    IUksfLogger logger
 ) : IDiscordActivationService
 {
     public async Task Activate()
@@ -38,9 +40,17 @@ public class DiscordActivationService(
             return;
         }
 
-        foreach (var discordService in discordServices)
-        {
-            discordService.CreateCommands();
-        }
+        Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.WhenAll(discordServices.Select(s => s.CreateCommands()));
+                }
+                catch (Exception exception)
+                {
+                    logger.LogError(exception);
+                }
+            }
+        );
     }
 }

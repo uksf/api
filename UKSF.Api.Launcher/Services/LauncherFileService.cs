@@ -80,9 +80,8 @@ public class LauncherFileService : ILauncherFileService
                 continue;
             }
 
-            if (storedFile.Version != launcherFile.Version || new Random().Next(0, 100) > 80)
+            if (storedFile.Version != launcherFile.Version)
             {
-                //TODO: remove before release
                 updatedFiles.Add(launcherFile.FileName);
             }
         }

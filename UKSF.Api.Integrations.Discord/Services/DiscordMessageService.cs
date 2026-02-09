@@ -180,7 +180,7 @@ public class DiscordMessageService(
         if (Triggers.Any(x => incomingMessage.Content.Contains(x, StringComparison.InvariantCultureIgnoreCase)))
         {
             var owner = incomingMessage.Author.Id == _variablesService.GetVariable("DID_U_OWNER").AsUlong();
-            var message = owner ? OwnerReplies[new Random().Next(0, OwnerReplies.Length)] : Replies[new Random().Next(0, Replies.Length)];
+            var message = owner ? OwnerReplies[Random.Shared.Next(0, OwnerReplies.Length)] : Replies[Random.Shared.Next(0, Replies.Length)];
             var parts = guild.GetUser(incomingMessage.Author.Id).Nickname.Split('.');
             var nickname = owner ? "Daddy" :
                 parts.Length > 1 ? parts[1] : parts[0];

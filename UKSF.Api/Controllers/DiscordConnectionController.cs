@@ -124,7 +124,7 @@ public class DiscordConnectionController : ControllerBase
         if (!addToServerResponse.IsSuccessStatusCode)
         {
             _logger.LogWarning(
-                $"Failed to add '{username}' to guild: {addToServerResponse.StatusCode}, {addToServerResponse.Content.ReadAsStringAsync().Result}"
+                $"Failed to add '{username}' to guild: {addToServerResponse.StatusCode}, {await addToServerResponse.Content.ReadAsStringAsync()}"
             );
             added = "false";
         }
