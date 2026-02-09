@@ -33,7 +33,7 @@ public class UpdateUnitCommandHandler(IUnitsContext unitsContext, IUksfLogger lo
                                 .Set(x => x.Icon, command.Unit.Icon)
                                 .Set(x => x.PreferShortname, command.Unit.PreferShortname)
         );
-        var updatedUnit = unitsContext.GetSingle(command.Unit.Id);
+        var updatedUnit = unitsContext.GetSingle(command.UnitId);
         logger.LogAudit($"Unit '{command.Unit.Shortname}' updated: {oldUnit.Changes(updatedUnit)}");
 
         await UpdateAccounts(updatedUnit, oldUnit);

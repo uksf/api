@@ -126,7 +126,7 @@ public class TeamspeakEventHandlerTests
         _eventBus.Send(new SignalrEventData { Procedure = TeamspeakEventType.Client_Server_Groups, Args = "{\"clientDbid\": 1, \"serverGroupId\": 5}" }, "");
         await Task.Delay(TimeSpan.FromMilliseconds(750));
 
-        _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(null, new List<int> { 5 }, 1), Times.Once);
+        _mockTeamspeakGroupService.Verify(x => x.UpdateAccountGroups(It.IsAny<DomainAccount>(), It.IsAny<ICollection<int>>(), It.IsAny<int>()), Times.Never);
     }
 
     [Fact]

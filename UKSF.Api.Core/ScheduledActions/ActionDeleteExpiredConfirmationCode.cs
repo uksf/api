@@ -17,7 +17,7 @@ public class ActionDeleteExpiredConfirmationCode : IActionDeleteExpiredConfirmat
 
     public string Name => ActionName;
 
-    public Task Run(params object[] parameters)
+    public async Task Run(params object[] parameters)
     {
         if (parameters.Length == 0)
         {
@@ -25,8 +25,6 @@ public class ActionDeleteExpiredConfirmationCode : IActionDeleteExpiredConfirmat
         }
 
         var id = parameters[0].ToString();
-        _confirmationCodeContext.Delete(id);
-
-        return Task.CompletedTask;
+        await _confirmationCodeContext.Delete(id);
     }
 }

@@ -160,7 +160,7 @@ public class UnitsController(
 
     [HttpPatch("{id}/order")]
     [Authorize]
-    public void UpdateSortOrder([FromRoute] string id, [FromBody] UnitUpdateOrderRequest unitUpdate)
+    public async Task UpdateSortOrder([FromRoute] string id, [FromBody] UnitUpdateOrderRequest unitUpdate)
     {
         var unit = unitsContext.GetSingle(id);
         var parentUnit = unitsContext.GetSingle(x => x.Id == unit.Parent);
@@ -169,7 +169,7 @@ public class UnitsController(
         parentChildren.Insert(unitUpdate.Index, unit);
         foreach (var child in parentChildren)
         {
-            unitsContext.Update(child.Id, x => x.Order, parentChildren.IndexOf(child));
+            await unitsContext.Update(child.Id, x => x.Order, parentChildren.IndexOf(child));
         }
     }
 

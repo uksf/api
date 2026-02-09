@@ -29,7 +29,13 @@ public class ActionPruneBuilds : SelfCreatingScheduledAction, IActionPruneBuilds
 
     public override async Task Run(params object[] parameters)
     {
-        var threshold = _buildsContext.Get(x => x.Environment == GameEnvironment.Development).Select(x => x.BuildNumber).MaxBy(x => x) - 100;
+        var devBuilds = _buildsContext.Get(x => x.Environment == GameEnvironment.Development).Select(x => x.BuildNumber).ToList();
+        if (devBuilds.Count == 0)
+        {
+            return;
+        }
+
+        var threshold = devBuilds.Max() - 100;
         await _buildsContext.DeleteMany(x => x.Environment == GameEnvironment.Development && x.BuildNumber < threshold);
     }
 }

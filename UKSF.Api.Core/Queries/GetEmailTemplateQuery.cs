@@ -39,9 +39,9 @@ public class GetEmailTemplateQuery : IGetEmailTemplateQuery
             _templateCache[args.TemplateName] = templateContent;
         }
 
-        args.Substitutions.Add("randomness", DateTime.UtcNow.ToString(CultureInfo.InvariantCulture));
+        var substitutions = new Dictionary<string, string>(args.Substitutions) { ["randomness"] = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) };
 
-        return args.Substitutions.Aggregate(templateContent, (current, substitution) => current.Replace($"${substitution.Key}$", substitution.Value));
+        return substitutions.Aggregate(templateContent, (current, substitution) => current.Replace($"${substitution.Key}$", substitution.Value));
     }
 
     private async Task<string> GetTemplateContent(string templateName)

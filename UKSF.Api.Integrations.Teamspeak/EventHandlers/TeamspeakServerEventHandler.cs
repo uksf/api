@@ -34,14 +34,10 @@ public class TeamspeakServerEventHandler(
     {
         switch (signalrEventData.Procedure)
         {
-            case TeamspeakEventType.Clients:
-                await UpdateClients(signalrEventData.Args.ToString());
-                break;
-            case TeamspeakEventType.Client_Server_Groups:
-                await UpdateClientServerGroups(signalrEventData.Args.ToString());
-                break;
-            case TeamspeakEventType.Empty: break;
-            default:                       throw new ArgumentException("Invalid teamspeak event type");
+            case TeamspeakEventType.Clients:              await UpdateClients(signalrEventData.Args.ToString()); break;
+            case TeamspeakEventType.Client_Server_Groups: await UpdateClientServerGroups(signalrEventData.Args.ToString()); break;
+            case TeamspeakEventType.Empty:                break;
+            default:                                      throw new ArgumentException("Invalid teamspeak event type");
         }
     }
 
@@ -98,6 +94,11 @@ public class TeamspeakServerEventHandler(
         await Console.Out.WriteLineAsync($"Processing server groups for {clientDbId}");
         var accounts = accountContext.Get(x => x.TeamspeakIdentities is not null && x.TeamspeakIdentities.Any(y => y.Equals(clientDbId)));
         var account = accounts.MaxBy(x => x.MembershipState);
+        if (account is null)
+        {
+            return;
+        }
+
         await teamspeakGroupService.UpdateAccountGroups(account, serverGroups, clientDbId);
     }
 }
