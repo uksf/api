@@ -31,7 +31,7 @@ public static class ApplicationExtensions
     {
         public bool IsAcceptableAge(int acceptableAge)
         {
-            return age.Years >= acceptableAge || (age.Years == acceptableAge - 1 && age.Months == 1);
+            return age.Years >= acceptableAge || (age.Years == acceptableAge - 1 && age.Months >= 11);
         }
     }
 }

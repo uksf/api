@@ -112,8 +112,9 @@ public class MongoContext<T> : MongoContextBase<T>, IMongoContext<T> where T : M
 
     public override async Task DeleteMany(Expression<Func<T, bool>> filterExpression)
     {
+        var ids = Get(filterExpression.Compile()).Select(x => x.Id).ToList();
         await base.DeleteMany(filterExpression);
-        Get(filterExpression.Compile()).ForEach(x => DataDeleteEvent(x.Id));
+        ids.ForEach(DataDeleteEvent);
     }
 
     private void DataAddEvent(T item)

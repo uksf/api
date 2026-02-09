@@ -191,10 +191,12 @@ public class RecruitmentService(
     {
         var now = DateTime.UtcNow;
         var nextDate = now;
-        while (nextDate.DayOfWeek != DayOfWeek.Tuesday &&
-               nextDate.DayOfWeek != DayOfWeek.Thursday &&
-               nextDate.DayOfWeek != DayOfWeek.Friday &&
-               nextDate.Hour > 18)
+        if (nextDate.Hour > 18)
+        {
+            nextDate = nextDate.Date.AddDays(1);
+        }
+
+        while (nextDate.DayOfWeek != DayOfWeek.Tuesday && nextDate.DayOfWeek != DayOfWeek.Thursday && nextDate.DayOfWeek != DayOfWeek.Friday)
         {
             nextDate = nextDate.AddDays(1);
         }
@@ -205,9 +207,13 @@ public class RecruitmentService(
 
     private double GetAverageProcessingTime()
     {
-        var waitingApplications = accountContext.Get(x => x.Application is not null && x.Application.State != ApplicationState.Waiting).ToList();
-        var days = waitingApplications.Sum(x => (x.Application.DateAccepted - x.Application.DateCreated).TotalDays);
-        var time = Math.Round(days / waitingApplications.Count, 1);
-        return time;
+        var processedApplications = accountContext.Get(x => x.Application is not null && x.Application.State != ApplicationState.Waiting).ToList();
+        if (processedApplications.Count == 0)
+        {
+            return 0;
+        }
+
+        var days = processedApplications.Sum(x => (x.Application.DateAccepted - x.Application.DateCreated).TotalDays);
+        return Math.Round(days / processedApplications.Count, 1);
     }
 }
