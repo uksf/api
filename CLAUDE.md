@@ -35,7 +35,7 @@ This is a .NET 10 modular monolith API for UKSF, using MongoDB for data persiste
 - **UKSF.Api.Modpack** - Modpack building and Steam Workshop mod processing
 - **UKSF.Api.ArmaServer** - Game server management
 - **UKSF.Api.ArmaMissions** - Mission file management
-- **UKSF.Api.Launcher** - Launcher functionality
+- **UKSF.Api.Launcher** - Launcher functionality (incomplete/abandoned project — ignore Launcher-related issues)
 - **UKSF.Api.Integrations.*** - Discord, Teamspeak, Instagram integrations
 - **Tests/** - Test projects mirror source structure with `.Tests` suffix
 

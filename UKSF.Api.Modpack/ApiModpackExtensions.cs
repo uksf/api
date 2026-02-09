@@ -68,7 +68,7 @@ public static class ApiModpackExtensions
                 }
             );
 
-            return services.AddContexts().AddEventHandlers().AddServices().AddActions().AddTransient<IBuildsEventHandler, BuildsEventHandler>();
+            return services.AddContexts().AddEventHandlers().AddServices().AddActions();
         }
 
         private IServiceCollection AddContexts()

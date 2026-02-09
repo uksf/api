@@ -77,7 +77,11 @@ public class MongoContext<T> : MongoContextBase<T>, IMongoContext<T> where T : M
     public override async Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
     {
         await base.Update(filterExpression, update);
-        DataUpdateEvent(GetSingle(filterExpression.Compile()).Id);
+        var item = GetSingle(filterExpression.Compile());
+        if (item is not null)
+        {
+            DataUpdateEvent(item.Id);
+        }
     }
 
     public override async Task UpdateMany(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
@@ -89,7 +93,11 @@ public class MongoContext<T> : MongoContextBase<T>, IMongoContext<T> where T : M
     public override async Task FindAndUpdate(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
     {
         await base.FindAndUpdate(filterExpression, update);
-        DataUpdateEvent(GetSingle(filterExpression.Compile()).Id);
+        var item = GetSingle(filterExpression.Compile());
+        if (item is not null)
+        {
+            DataUpdateEvent(item.Id);
+        }
     }
 
     public override async Task Replace(T item)

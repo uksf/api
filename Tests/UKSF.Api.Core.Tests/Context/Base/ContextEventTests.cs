@@ -171,4 +171,41 @@ public class ContextEventTests
                     }
                 );
     }
+
+    [Fact]
+    public async Task Should_not_fire_event_for_update_by_filter_when_no_item_matches()
+    {
+        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
+                           .Returns(Task.CompletedTask);
+
+        await _testContext.Update(x => x.Name == "nonexistent", Builders<DomainTestModel>.Update.Set(x => x.Name, "2"));
+
+        _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Should_not_fire_event_for_find_and_update_when_no_item_matches()
+    {
+        _mockDataCollection.Setup(x => x.FindAndUpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
+                           .Returns(Task.CompletedTask);
+
+        await _testContext.FindAndUpdate(x => x.Name == "nonexistent", Builders<DomainTestModel>.Update.Set(x => x.Name, "2"));
+
+        _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Should_create_correct_update_event_for_find_and_update()
+    {
+        EventModel subject = null;
+
+        _mockDataCollection.Setup(x => x.FindAndUpdateAsync(It.IsAny<FilterDefinition<DomainTestModel>>(), It.IsAny<UpdateDefinition<DomainTestModel>>()))
+                           .Returns(Task.CompletedTask);
+        _mockEventBus.Setup(x => x.Send(It.IsAny<EventModel>())).Callback<EventModel>(dataEventModel => subject = dataEventModel);
+
+        await _testContext.FindAndUpdate(x => x.Id == _id1, Builders<DomainTestModel>.Update.Set(x => x.Name, "2"));
+
+        _mockEventBus.Verify(x => x.Send(It.IsAny<EventModel>()), Times.Once);
+        subject.Should().BeEquivalentTo(new EventModel(EventType.Update, new ContextEventData<DomainTestModel>(_id1, null), "test.Update"));
+    }
 }
