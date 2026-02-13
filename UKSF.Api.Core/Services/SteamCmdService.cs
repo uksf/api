@@ -60,7 +60,7 @@ public class SteamCmdService : ISteamCmdService
 
         var result = await Cli.Wrap(cmdPath)
                               .WithWorkingDirectory(steamPath)
-                              .WithArguments($"+login anonymous +workshop_download_item 107410 {workshopModId} +quit")
+                              .WithArguments($"+login {_username} {_password} +workshop_download_item 107410 {workshopModId} +quit")
                               .ExecuteBufferedAsync();
 
         if (result.ExitCode != 0 || result.StandardOutput.Contains("failed"))
