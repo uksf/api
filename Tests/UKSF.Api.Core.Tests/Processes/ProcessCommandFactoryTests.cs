@@ -132,7 +132,7 @@ public class ProcessCommandFactoryTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_Should_HandleTaskCanceledException_Correctly()
+    public async Task ExecuteAsync_Should_DeliverTimeoutAsErrorOutput_NotThrowOperationCanceledException()
     {
         // Arrange
         GetPlatformCommand(out var executable, out var args, "powershell.exe -Command \"Start-Sleep 10\"");
@@ -141,30 +141,25 @@ public class ProcessCommandFactoryTests
 
         var startTime = DateTime.UtcNow;
 
-        // Act
-        TaskCanceledException caughtException = null;
-        try
+        // Act - timeout should deliver error output, not throw
+        var results = new List<ProcessOutputLine>();
+        await foreach (var outputLine in command.ExecuteAsync(_cancellationTokenSource.Token))
         {
-            await foreach (var _ in command.ExecuteAsync(_cancellationTokenSource.Token)) { }
-        }
-        catch (TaskCanceledException ex)
-        {
-            // Expected when timeout occurs
-            caughtException = ex;
+            results.Add(outputLine);
         }
 
         // Assert
         var duration = DateTime.UtcNow - startTime;
         duration.Should().BeLessThan(TimeSpan.FromSeconds(5), "Should timeout within reasonable time");
-        caughtException.Should().NotBeNull("TaskCanceledException should be thrown on timeout");
-        caughtException.Message.Should().Contain("task was canceled");
 
-        // Verify that the exception is properly propagated rather than being swallowed
-        caughtException.Should().BeOfType<TaskCanceledException>();
+        var errorLines = results.Where(r => r.Type == ProcessOutputType.Error).ToList();
+        errorLines.Should().NotBeEmpty("Timeout should produce an error output line");
+        errorLines.Should().Contain(r => r.Exception is TimeoutException, "Timeout should produce a TimeoutException");
+        errorLines.Should().Contain(r => r.Content.Contains("timed out"), "Timeout error should mention timing out");
     }
 
     [Fact]
-    public async Task ExecuteAsync_Should_HandleTimeout_Gracefully()
+    public async Task ExecuteAsync_Should_HandleTimeout_WithoutThrowingOperationCanceledException()
     {
         // Arrange
         GetPlatformCommand(out var executable, out var args, "powershell.exe -Command \"Start-Sleep 15\"");
@@ -173,23 +168,19 @@ public class ProcessCommandFactoryTests
 
         var startTime = DateTime.UtcNow;
 
-        // Act
-        TaskCanceledException caughtException = null;
-        try
+        // Act - should NOT throw OperationCanceledException/TaskCanceledException
+        var results = new List<ProcessOutputLine>();
+        await foreach (var outputLine in command.ExecuteAsync(_cancellationTokenSource.Token))
         {
-            await foreach (var _ in command.ExecuteAsync(_cancellationTokenSource.Token)) { }
-        }
-        catch (TaskCanceledException ex)
-        {
-            // Expected when timeout occurs
-            caughtException = ex;
+            results.Add(outputLine);
         }
 
         // Assert
         var duration = DateTime.UtcNow - startTime;
-        duration.Should().BeLessThan(TimeSpan.FromSeconds(4), "Should timeout within reasonable time");
-        caughtException.Should().NotBeNull("TaskCanceledException should be thrown on timeout");
-        caughtException.Message.Should().Contain("task was canceled");
+        duration.Should().BeLessThan(TimeSpan.FromSeconds(5), "Should timeout within reasonable time");
+
+        results.Should().NotBeEmpty("Should contain timeout error output");
+        results.Where(r => r.Type == ProcessOutputType.Error).Should().NotBeEmpty("Timeout should be reported as an error");
     }
 
     [Fact]

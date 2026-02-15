@@ -121,7 +121,10 @@ public class ProcessCommand(IUksfLogger logger, string executable, string workin
         );
 
         // Stream output as it becomes available
-        await foreach (var outputLine in reader.ReadAllAsync(combinedToken))
+        // Use only the caller's cancellation token (not the combined timeout token) so that
+        // process timeouts deliver error output lines instead of throwing OperationCanceledException.
+        // User cancellation still propagates correctly via the original cancellationToken.
+        await foreach (var outputLine in reader.ReadAllAsync(cancellationToken))
         {
             yield return outputLine;
         }

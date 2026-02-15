@@ -67,7 +67,7 @@ public class BuildProcessorService(IServiceProvider serviceProvider, IBuildStepS
                 await step.Process();
                 await step.Succeed();
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
             {
                 await step.Cancel();
                 await buildsService.UpdateBuildStep(build, buildStep);

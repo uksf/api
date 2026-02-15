@@ -186,7 +186,7 @@ public class BuildStepTests
     }
 
     [Fact]
-    public async Task RunProcess_Should_HandleTimeout_AndThrowTaskCanceledException_When_RaiseErrorsIsTrue()
+    public async Task RunProcess_Should_ThrowTimeoutException_WhenTimeoutOccurs_AndRaiseErrorsIsTrue()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -206,8 +206,9 @@ public class BuildStepTests
 
         var startTime = DateTime.UtcNow;
 
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+        // Act & Assert - timeout throws TimeoutException (not OperationCanceledException)
+        // so that BuildProcessorService correctly calls FailBuild instead of CancelBuild
+        var exception = await Assert.ThrowsAsync<TimeoutException>(async () =>
             {
                 await buildStep.RunProcess(
                     ".",
@@ -222,12 +223,11 @@ public class BuildStepTests
         // Assert timeout behavior
         var duration = DateTime.UtcNow - startTime;
         duration.Should().BeLessThan(TimeSpan.FromSeconds(3), "Should timeout quickly");
-        exception.Should().NotBeNull();
-        exception.Message.Should().Contain("task was canceled");
+        exception.Message.Should().Contain("timed out");
     }
 
     [Fact]
-    public async Task RunProcess_Should_HandleTimeout_Gracefully()
+    public async Task RunProcess_Should_NotThrow_WhenTimeoutOccurs_AndRaiseErrorsIsFalse()
     {
         // Arrange
         var buildStep = CreateTestBuildStep();
@@ -247,31 +247,20 @@ public class BuildStepTests
 
         var startTime = DateTime.UtcNow;
 
-        // Act
-        List<string> result = null;
-        TaskCanceledException caughtException = null;
-        try
-        {
-            result = await buildStep.RunProcess(
-                ".",
-                executable,
-                args,
-                1000, // 1 second timeout
-                raiseErrors: false
-            );
-        }
-        catch (TaskCanceledException ex)
-        {
-            // Expected when timeout occurs
-            caughtException = ex;
-        }
+        // Act - with raiseErrors=false, timeout error is logged but not thrown
+        var result = await buildStep.RunProcess(
+            ".",
+            executable,
+            args,
+            1000, // 1 second timeout
+            raiseErrors: false
+        );
 
         // Assert
         var duration = DateTime.UtcNow - startTime;
         duration.Should().BeLessThan(TimeSpan.FromSeconds(3), "Should timeout quickly");
-        caughtException.Should().NotBeNull("TaskCanceledException should be thrown on timeout when raiseErrors is false");
-        caughtException.Message.Should().Contain("task was canceled");
-        result.Should().BeNull("No result should be returned when timeout occurs");
+        result.Should().NotBeNull();
+        result.Should().Contain(line => line.Contains("timed out"), "Timeout error should be captured in output");
     }
 
     [Fact]
