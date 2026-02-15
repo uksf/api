@@ -12,6 +12,6 @@ public class DischargeContext(IMongoCollectionFactory mongoCollectionFactory, IE
 {
     protected override IEnumerable<DomainDischargeCollection> OrderCollection(IEnumerable<DomainDischargeCollection> collection)
     {
-        return collection.OrderByDescending(x => x.Discharges.Last().Timestamp);
+        return collection.OrderByDescending(x => x.Discharges.LastOrDefault()?.Timestamp ?? DateTime.MinValue);
     }
 }

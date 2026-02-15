@@ -146,31 +146,24 @@ public class CommandRequestsController(
         DateTime now
     )
     {
-        return myRequests.Select(x =>
+        return myRequests.Select(x => new CommandRequestDataset
             {
-                if (string.IsNullOrEmpty(x.Reason))
-                {
-                    x.Reason = "None given";
-                }
-
-                x.Type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.Type.ToLower());
-                return new CommandRequestDataset
-                {
-                    Data = x,
-                    CanOverride =
-                        superAdmin ||
-                        (canOverride &&
-                         x.Reviews.Count > 1 &&
-                         x.DateCreated.AddDays(1) < now &&
-                         x.Reviews.Any(y => y.Value == ReviewState.Pending && y.Key != contextId)),
-                    Reviews = x.Reviews.Select(y => new CommandRequestReviewDataset
-                        {
-                            Id = y.Key,
-                            Name = displayNameService.GetDisplayName(y.Key),
-                            State = y.Value
-                        }
-                    )
-                };
+                Data = x,
+                DisplayReason = string.IsNullOrEmpty(x.Reason) ? "None given" : x.Reason,
+                DisplayType = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.Type.ToLower()),
+                CanOverride =
+                    superAdmin ||
+                    (canOverride &&
+                     x.Reviews.Count > 1 &&
+                     x.DateCreated.AddDays(1) < now &&
+                     x.Reviews.Any(y => y.Value == ReviewState.Pending && y.Key != contextId)),
+                Reviews = x.Reviews.Select(y => new CommandRequestReviewDataset
+                    {
+                        Id = y.Key,
+                        Name = displayNameService.GetDisplayName(y.Key),
+                        State = y.Value
+                    }
+                )
             }
         );
     }
@@ -182,26 +175,19 @@ public class CommandRequestsController(
         DateTime now
     )
     {
-        return otherRequests.Select(x =>
+        return otherRequests.Select(x => new CommandRequestDataset
             {
-                if (string.IsNullOrEmpty(x.Reason))
-                {
-                    x.Reason = "None given";
-                }
-
-                x.Type = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.Type.ToLower());
-                return new CommandRequestDataset
-                {
-                    Data = x,
-                    CanOverride = superAdmin || (canOverride && x.DateCreated.AddDays(1) < now),
-                    Reviews = x.Reviews.Select(y => new CommandRequestReviewDataset
-                        {
-                            Id = y.Key,
-                            Name = displayNameService.GetDisplayName(y.Key),
-                            State = y.Value
-                        }
-                    )
-                };
+                Data = x,
+                DisplayReason = string.IsNullOrEmpty(x.Reason) ? "None given" : x.Reason,
+                DisplayType = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.Type.ToLower()),
+                CanOverride = superAdmin || (canOverride && x.DateCreated.AddDays(1) < now),
+                Reviews = x.Reviews.Select(y => new CommandRequestReviewDataset
+                    {
+                        Id = y.Key,
+                        Name = displayNameService.GetDisplayName(y.Key),
+                        State = y.Value
+                    }
+                )
             }
         );
     }

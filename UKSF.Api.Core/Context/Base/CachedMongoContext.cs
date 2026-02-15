@@ -154,7 +154,7 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
     public override async Task Replace(T item)
     {
         await base.Replace(item);
-        _cache.UpdateItem(item);
+        UpdateCacheItem(item);
         DataUpdateEvent(item.Id);
     }
 
@@ -190,12 +190,23 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         var updated = base.GetSingle(id);
         if (updated is not null)
         {
-            _cache.UpdateItem(updated);
+            UpdateCacheItem(updated);
         }
         else
         {
             _cache.RemoveItem(id);
         }
+    }
+
+    private void UpdateCacheItem(T item)
+    {
+        _cache.UpdateItem(item);
+        ReorderCache();
+    }
+
+    private void ReorderCache()
+    {
+        _cache.SetData(OrderCollection(_cache.Data));
     }
 
     private bool UseCache()

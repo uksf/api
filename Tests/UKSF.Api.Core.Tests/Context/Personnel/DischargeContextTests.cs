@@ -49,4 +49,26 @@ public class DischargeContextTests
 
         subject.Should().ContainInOrder(item2, item3, item1);
     }
+
+    [Fact]
+    public void Should_not_crash_when_discharges_list_is_empty()
+    {
+        Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
+        Mock<IEventBus> mockEventBus = new();
+        Mock<IMongoCollection<DomainDischargeCollection>> mockDataCollection = new();
+        Mock<IVariablesService> mockVariablesService = new();
+
+        DomainDischargeCollection itemWithDischarges = new() { Discharges = [new DomainDischarge { Timestamp = DateTime.UtcNow.AddDays(-1) }] };
+        DomainDischargeCollection itemWithEmptyDischarges = new() { Discharges = [] };
+
+        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainDischargeCollection>(It.IsAny<string>())).Returns(mockDataCollection.Object);
+        mockDataCollection.Setup(x => x.Get()).Returns(new List<DomainDischargeCollection> { itemWithDischarges, itemWithEmptyDischarges });
+        mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
+
+        DischargeContext dischargeContext = new(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object);
+
+        var act = () => dischargeContext.Get();
+
+        act.Should().NotThrow();
+    }
 }

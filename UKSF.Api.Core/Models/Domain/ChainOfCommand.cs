@@ -91,4 +91,15 @@ public class ChainOfCommand
 
         return positions.Select(position => (position, GetMemberAtPosition(position))).Where(x => !string.IsNullOrEmpty(x.Item2));
     }
+
+    public ChainOfCommand Clone()
+    {
+        return new ChainOfCommand
+        {
+            First = First,
+            Second = Second,
+            Third = Third,
+            Nco = Nco
+        };
+    }
 }

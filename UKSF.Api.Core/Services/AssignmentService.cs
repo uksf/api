@@ -85,7 +85,7 @@ public class AssignmentService(
             }
         }
 
-        serviceRecordService.AddServiceRecord(id, message, notes);
+        await serviceRecordService.AddServiceRecord(id, message, notes);
         UpdateGroupsAndRoles(id);
         return message != RemoveFlag
             ? new DomainNotification

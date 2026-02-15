@@ -29,7 +29,8 @@ public class NotificationsService(
     IHttpContextService httpContextService,
     IObjectIdConversionService objectIdConversionService,
     IEventBus eventBus,
-    IVariablesService variablesService
+    IVariablesService variablesService,
+    IUksfLogger logger
 ) : INotificationsService
 {
     public void SendTeamspeakNotification(IEnumerable<int> clientDbIds, string rawMessage)
@@ -76,23 +77,30 @@ public class NotificationsService(
 
     private async Task AddNotificationAsync(DomainNotification notification)
     {
-        notification.Message = objectIdConversionService.ConvertObjectIds(notification.Message);
-        var account = accountContext.GetSingle(notification.Owner);
-        if (account.MembershipState == MembershipState.Discharged)
+        try
         {
-            return;
+            notification.Message = objectIdConversionService.ConvertObjectIds(notification.Message);
+            var account = accountContext.GetSingle(notification.Owner);
+            if (account is null || account.MembershipState == MembershipState.Discharged)
+            {
+                return;
+            }
+
+            await notificationsContext.Add(notification);
+            await SendEmailNotification(
+                account,
+                $"{notification.Message}{(notification.Link is not null ? $"<br><a href='https://uk-sf.co.uk{notification.Link}'>https://uk-sf.co.uk{notification.Link}</a>" : "")}"
+            );
+
+            SendTeamspeakNotification(
+                account,
+                $"{notification.Message}{(notification.Link is not null ? $"\n[url]https://uk-sf.co.uk{notification.Link}[/url]" : "")}"
+            );
         }
-
-        await notificationsContext.Add(notification);
-        await SendEmailNotification(
-            account,
-            $"{notification.Message}{(notification.Link is not null ? $"<br><a href='https://uk-sf.co.uk{notification.Link}'>https://uk-sf.co.uk{notification.Link}</a>" : "")}"
-        );
-
-        SendTeamspeakNotification(
-            account,
-            $"{notification.Message}{(notification.Link is not null ? $"\n[url]https://uk-sf.co.uk{notification.Link}[/url]" : "")}"
-        );
+        catch (Exception exception)
+        {
+            logger.LogError(exception);
+        }
     }
 
     private async Task SendEmailNotification(DomainAccount account, string message)

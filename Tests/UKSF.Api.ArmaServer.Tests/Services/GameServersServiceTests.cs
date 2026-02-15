@@ -100,6 +100,24 @@ public class GameServersServiceTests
     }
 
     [Fact]
+    public async Task KillGameServer_ShouldClearLaunchedBy()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-456",
+            LaunchedBy = "user-123",
+            ProcessId = 1234,
+            HeadlessClientProcessIds = []
+        };
+
+        _mockProcessUtilities.Setup(x => x.FindProcessById(1234)).Returns((System.Diagnostics.Process)null);
+
+        await _subject.KillGameServer(gameServer);
+
+        gameServer.LaunchedBy.Should().BeNull();
+    }
+
+    [Fact]
     public async Task KillGameServer_Should_handle_null_process_id()
     {
         var gameServer = new DomainGameServer
@@ -154,5 +172,49 @@ public class GameServersServiceTests
                        }
                    );
         result.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task KillAllArmaProcesses_ShouldClearLaunchedBy()
+    {
+        var gameServers = new List<DomainGameServer>
+        {
+            new()
+            {
+                Id = "server1",
+                LaunchedBy = "user1",
+                ProcessId = 1001,
+                HeadlessClientProcessIds = []
+            },
+            new()
+            {
+                Id = "server2",
+                LaunchedBy = "user2",
+                ProcessId = 1002,
+                HeadlessClientProcessIds = []
+            }
+        };
+
+        _mockGameServersContext.Setup(x => x.Get()).Returns(gameServers);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns([]);
+
+        await _subject.KillAllArmaProcesses();
+
+        gameServers.Should().AllSatisfy(server => server.LaunchedBy.Should().BeNull());
+    }
+
+    [Fact]
+    public async Task LaunchGameServer_ShouldSetMissionAndLaunchedBy()
+    {
+        var gameServer = new DomainGameServer { Id = "server-1" };
+
+        _mockGameServerHelpers.Setup(x => x.FormatGameServerLaunchArguments(gameServer)).Returns("args");
+        _mockGameServerHelpers.Setup(x => x.GetGameServerExecutablePath(gameServer)).Returns("path");
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("path", "args")).Returns(1234);
+
+        await _subject.LaunchGameServer(gameServer, "mission.pbo", "user-123");
+
+        gameServer.Status.Mission.Should().Be("mission.pbo");
+        gameServer.LaunchedBy.Should().Be("user-123");
     }
 }

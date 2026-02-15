@@ -21,7 +21,7 @@ public interface IGameServersService
     Task<List<DomainGameServer>> GetAllGameServerStatuses();
     Task<MissionPatchingResult> PatchMissionFile(string missionName);
     void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection);
-    Task LaunchGameServer(DomainGameServer gameServer);
+    Task LaunchGameServer(DomainGameServer gameServer, string missionName = null, string launchedBy = null);
     Task StopGameServer(DomainGameServer gameServer);
     Task KillGameServer(DomainGameServer gameServer);
     Task<int> KillAllArmaProcesses();
@@ -151,7 +151,7 @@ public class GameServersService(
         );
     }
 
-    public async Task LaunchGameServer(DomainGameServer gameServer)
+    public async Task LaunchGameServer(DomainGameServer gameServer, string missionName = null, string launchedBy = null)
     {
         var launchArguments = gameServerHelpers.FormatGameServerLaunchArguments(gameServer);
         gameServer.ProcessId = processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments);
@@ -170,6 +170,16 @@ public class GameServersService(
 
                 await Task.Delay(TimeSpan.FromSeconds(1));
             }
+        }
+
+        if (missionName is not null)
+        {
+            gameServer.Status.Mission = missionName;
+        }
+
+        if (launchedBy is not null)
+        {
+            gameServer.LaunchedBy = launchedBy;
         }
 
         await gameServersContext.Replace(gameServer);
@@ -224,6 +234,7 @@ public class GameServersService(
         }
 
         gameServer.ProcessId = null;
+        gameServer.LaunchedBy = null;
 
         gameServer.HeadlessClientProcessIds.ForEach(x =>
             {
@@ -251,6 +262,7 @@ public class GameServersService(
         foreach (var gameServer in gameServers)
         {
             gameServer.ProcessId = null;
+            gameServer.LaunchedBy = null;
             gameServer.HeadlessClientProcessIds.Clear();
             await gameServersContext.Replace(gameServer);
         }

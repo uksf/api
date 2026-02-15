@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
 using Moq;
@@ -288,6 +289,34 @@ public class ChainOfCommandServiceTests
 
         // Assert
         result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SetMemberChainOfCommandPosition_Remove_ShouldNotMutateCachedUnit()
+    {
+        var memberId = ObjectId.GenerateNewId().ToString();
+        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true, commanderId: memberId);
+        unit.ChainOfCommand.Second = ObjectId.GenerateNewId().ToString();
+
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
+
+        await _chainOfCommandService.SetMemberChainOfCommandPosition(memberId, unit);
+
+        unit.ChainOfCommand.First.Should().Be(memberId, "the cached unit's ChainOfCommand should not be mutated");
+    }
+
+    [Fact]
+    public async Task SetMemberChainOfCommandPosition_SetNew_ShouldNotMutateCachedUnit()
+    {
+        var memberId = ObjectId.GenerateNewId().ToString();
+        var existingCommander = ObjectId.GenerateNewId().ToString();
+        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true, commanderId: existingCommander);
+
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
+
+        await _chainOfCommandService.SetMemberChainOfCommandPosition(memberId, unit, "2iC");
+
+        unit.ChainOfCommand.Second.Should().BeNull("the cached unit's ChainOfCommand should not be mutated");
     }
 
     private DomainUnit CreateUnit(string id, string name, bool hasCommander = false, string commanderId = null, string parent = "", string shortname = null)

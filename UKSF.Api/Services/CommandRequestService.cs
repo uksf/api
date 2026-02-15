@@ -99,13 +99,8 @@ public class CommandRequestService(
 
     public async Task SetRequestAllReviewStates(DomainCommandRequest request, ReviewState newState)
     {
-        List<string> keys = [..request.Reviews.Keys];
-        foreach (var key in keys)
-        {
-            request.Reviews[key] = newState;
-        }
-
-        await commandRequestContext.Update(request.Id, Builders<DomainCommandRequest>.Update.Set(x => x.Reviews, request.Reviews));
+        var updatedReviews = request.Reviews.ToDictionary(x => x.Key, _ => newState);
+        await commandRequestContext.Update(request.Id, Builders<DomainCommandRequest>.Update.Set(x => x.Reviews, updatedReviews));
     }
 
     public ReviewState GetReviewState(string id, string reviewer)

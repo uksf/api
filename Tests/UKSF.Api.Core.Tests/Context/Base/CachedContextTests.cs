@@ -223,3 +223,108 @@ public class CachedContextTests
         await act.Should().NotThrowAsync();
     }
 }
+
+public class CachedContextOrderingTests
+{
+    private readonly Mock<Core.Context.Base.IMongoCollection<DomainTestModel>> _mockDataCollection;
+    private readonly TestOrderedCachedContext _testOrderedContext;
+
+    public CachedContextOrderingTests()
+    {
+        Mock<IMongoCollectionFactory> mockDataCollectionFactory = new();
+        Mock<IEventBus> mockEventBus = new();
+        Mock<IVariablesService> mockVariablesService = new();
+        _mockDataCollection = new Mock<Core.Context.Base.IMongoCollection<DomainTestModel>>();
+
+        mockDataCollectionFactory.Setup(x => x.CreateMongoCollection<DomainTestModel>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
+        _mockDataCollection.Setup(x => x.Get()).Returns(() => new List<DomainTestModel>());
+        mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
+
+        _testOrderedContext = new TestOrderedCachedContext(mockDataCollectionFactory.Object, mockEventBus.Object, mockVariablesService.Object, "test");
+    }
+
+    [Fact]
+    public async Task Update_ById_ShouldReorderCache_WhenOrderingFieldChanges()
+    {
+        var itemA = new DomainTestModel { Name = "A" };
+        var itemB = new DomainTestModel { Name = "B" };
+        var itemC = new DomainTestModel { Name = "C" };
+
+        _mockDataCollection.Setup(x => x.Get())
+        .Returns(() => new List<DomainTestModel>
+            {
+                itemA,
+                itemB,
+                itemC
+            }
+        );
+        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainTestModel>>())).Returns(Task.CompletedTask);
+
+        // Initialize cache — should be ordered A, B, C
+        _testOrderedContext.Get().Select(x => x.Name).Should().ContainInOrder("A", "B", "C");
+
+        // Update A's name to Z — should reorder to B, C, Z
+        var updatedItem = new DomainTestModel { Id = itemA.Id, Name = "Z" };
+        _mockDataCollection.Setup(x => x.GetSingle(itemA.Id)).Returns(updatedItem);
+
+        await _testOrderedContext.Update(itemA.Id, x => x.Name, "Z");
+
+        _testOrderedContext.Get().Select(x => x.Name).Should().ContainInOrder("B", "C", "Z");
+    }
+
+    [Fact]
+    public async Task Update_ById_UpdateDefinition_ShouldReorderCache_WhenOrderingFieldChanges()
+    {
+        var itemA = new DomainTestModel { Name = "A" };
+        var itemB = new DomainTestModel { Name = "B" };
+        var itemC = new DomainTestModel { Name = "C" };
+
+        _mockDataCollection.Setup(x => x.Get())
+        .Returns(() => new List<DomainTestModel>
+            {
+                itemA,
+                itemB,
+                itemC
+            }
+        );
+        _mockDataCollection.Setup(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainTestModel>>())).Returns(Task.CompletedTask);
+
+        // Initialize cache
+        _testOrderedContext.Get().Select(x => x.Name).Should().ContainInOrder("A", "B", "C");
+
+        // Update A's name to Z — should reorder to B, C, Z
+        var updatedItem = new DomainTestModel { Id = itemA.Id, Name = "Z" };
+        _mockDataCollection.Setup(x => x.GetSingle(itemA.Id)).Returns(updatedItem);
+
+        await _testOrderedContext.Update(itemA.Id, Builders<DomainTestModel>.Update.Set(x => x.Name, "Z"));
+
+        _testOrderedContext.Get().Select(x => x.Name).Should().ContainInOrder("B", "C", "Z");
+    }
+
+    [Fact]
+    public async Task Replace_ShouldReorderCache_WhenOrderingFieldChanges()
+    {
+        var itemA = new DomainTestModel { Name = "A" };
+        var itemB = new DomainTestModel { Name = "B" };
+        var itemC = new DomainTestModel { Name = "C" };
+
+        _mockDataCollection.Setup(x => x.Get())
+        .Returns(() => new List<DomainTestModel>
+            {
+                itemA,
+                itemB,
+                itemC
+            }
+        );
+        _mockDataCollection.Setup(x => x.ReplaceAsync(It.IsAny<string>(), It.IsAny<DomainTestModel>())).Returns(Task.CompletedTask);
+
+        // Initialize cache
+        _testOrderedContext.Get().Select(x => x.Name).Should().ContainInOrder("A", "B", "C");
+
+        // Replace A with Z — should reorder to B, C, Z
+        var replacedItem = new DomainTestModel { Id = itemA.Id, Name = "Z" };
+        await _testOrderedContext.Replace(replacedItem);
+
+        _testOrderedContext.Get().Select(x => x.Name).Should().ContainInOrder("B", "C", "Z");
+    }
+}

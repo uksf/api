@@ -254,13 +254,19 @@ public class ChainOfCommandService(IUnitsContext unitsContext, IHttpContextServi
 
     public async Task SetMemberChainOfCommandPosition(string memberId, DomainUnit unit, string position = "")
     {
+        // Clone to avoid mutating the cached object
+        var updatedChainOfCommand = unit.ChainOfCommand?.Clone() ?? new ChainOfCommand();
+
         // Remove member from all current positions
-        await RemoveMemberFromChainOfCommand(memberId, unit);
+        if (updatedChainOfCommand.HasMember(memberId))
+        {
+            updatedChainOfCommand.RemoveMember(memberId);
+            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set(x => x.ChainOfCommand, updatedChainOfCommand));
+        }
 
         // Set new position if provided
         if (!string.IsNullOrEmpty(position))
         {
-            var updatedChainOfCommand = unit.ChainOfCommand ?? new ChainOfCommand();
             updatedChainOfCommand.SetMemberAtPosition(position, memberId);
             await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set(x => x.ChainOfCommand, updatedChainOfCommand));
         }
@@ -331,16 +337,6 @@ public class ChainOfCommandService(IUnitsContext unitsContext, IHttpContextServi
         var assignedPositions = unit.ChainOfCommand?.GetAssignedPositions();
         var memberPosition = assignedPositions?.FirstOrDefault(x => x.MemberId == accountId);
         return memberPosition?.Position ?? "";
-    }
-
-    private async Task RemoveMemberFromChainOfCommand(string memberId, DomainUnit unit)
-    {
-        if (unit.ChainOfCommand?.HasMember(memberId) == true)
-        {
-            var updatedChainOfCommand = unit.ChainOfCommand;
-            updatedChainOfCommand.RemoveMember(memberId);
-            await unitsContext.Update(unit.Id, Builders<DomainUnit>.Update.Set(x => x.ChainOfCommand, updatedChainOfCommand));
-        }
     }
 
     private DomainUnit GetCombatRoot()

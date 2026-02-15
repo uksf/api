@@ -29,6 +29,7 @@ public class NotificationsServiceTests
     private readonly Mock<IObjectIdConversionService> _mockObjectIdConversionService = new();
     private readonly Mock<IEventBus> _mockEventBus = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
+    private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<INotificationsClient> _mockClient = new();
     private readonly NotificationsService _subject;
 
@@ -49,7 +50,8 @@ public class NotificationsServiceTests
             _mockHttpContextService.Object,
             _mockObjectIdConversionService.Object,
             _mockEventBus.Object,
-            _mockVariablesService.Object
+            _mockVariablesService.Object,
+            _mockLogger.Object
         );
     }
 
@@ -77,6 +79,22 @@ public class NotificationsServiceTests
         var act = () => _subject.Add(notification);
 
         act.Should().NotThrow();
+    }
+
+    [Fact]
+    public async Task Add_ShouldNotThrow_WhenAccountNotFound()
+    {
+        _mockAccountContext.Setup(x => x.GetSingle("unknown")).Returns((DomainAccount)null);
+
+        var notification = new DomainNotification { Owner = "unknown", Message = "Test" };
+
+        _subject.Add(notification);
+
+        // Give the fire-and-forget task time to execute
+        await Task.Delay(100);
+
+        _mockNotificationsContext.Verify(x => x.Add(It.IsAny<DomainNotification>()), Times.Never);
+        _mockLogger.Verify(x => x.LogError(It.IsAny<Exception>()), Times.Never);
     }
 
     [Fact]
@@ -130,6 +148,21 @@ public class NotificationsServiceTests
 
         _mockNotificationsContext.Verify(x => x.DeleteMany(It.IsAny<Expression<Func<DomainNotification, bool>>>()), Times.Once);
         _mockClient.Verify(x => x.ReceiveClear(It.Is<List<string>>(l => l.Count == 2)), Times.Once);
+    }
+
+    [Fact]
+    public async Task Add_ShouldLogError_WhenExceptionOccurs()
+    {
+        _mockObjectIdConversionService.Setup(x => x.ConvertObjectIds(It.IsAny<string>())).Throws(new InvalidOperationException("test error"));
+
+        var notification = new DomainNotification { Owner = "user1", Message = "Test" };
+
+        _subject.Add(notification);
+
+        // Give the fire-and-forget task time to execute
+        await Task.Delay(100);
+
+        _mockLogger.Verify(x => x.LogError(It.IsAny<InvalidOperationException>()), Times.Once);
     }
 
     [Fact]

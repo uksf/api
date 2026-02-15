@@ -204,12 +204,9 @@ public class GameServersController(
         }
 
         gameServersService.WriteServerConfig(gameServer, patchingResult.PlayerCount, launchServerRequest.MissionName);
-        gameServer.Status.Mission = launchServerRequest.MissionName;
 
         var currentUserId = httpContextService.GetUserId();
-        gameServer.LaunchedBy = currentUserId;
-
-        await gameServersService.LaunchGameServer(gameServer);
+        await gameServersService.LaunchGameServer(gameServer, launchServerRequest.MissionName, currentUserId);
 
         logger.LogAudit($"Game server launched '{launchServerRequest.MissionName}' on '{gameServer.Name}'");
         SendServerUpdateIfNotCaller(gameServer.Id);
@@ -228,7 +225,7 @@ public class GameServersController(
             throw new BadRequestException("Server is not running. This shouldn't happen so please contact an admin");
         }
 
-        gameServer.LaunchedBy = null;
+        await gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, (string)null);
 
         SendServerUpdateIfNotCaller(gameServer.Id);
         await gameServersService.StopGameServer(gameServer);
@@ -250,7 +247,6 @@ public class GameServersController(
 
         try
         {
-            gameServer.LaunchedBy = null;
             await gameServersService.KillGameServer(gameServer);
         }
         catch (Exception exception)
@@ -268,9 +264,6 @@ public class GameServersController(
     [Authorize]
     public async Task KillAllArmaProcesses()
     {
-        var gameServers = gameServersContext.Get().ToList();
-        gameServers.ForEach(x => x.LaunchedBy = null);
-
         var killed = await gameServersService.KillAllArmaProcesses();
 
         logger.LogAudit($"Killed {killed} Arma instances");

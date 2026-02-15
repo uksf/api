@@ -190,9 +190,21 @@ public class CommandRequestServiceTests
 
         await _subject.SetRequestAllReviewStates(request, ReviewState.Approved);
 
-        request.Reviews["r1"].Should().Be(ReviewState.Approved);
-        request.Reviews["r2"].Should().Be(ReviewState.Approved);
         _mockCommandRequestContext.Verify(x => x.Update("req1", It.IsAny<UpdateDefinition<DomainCommandRequest>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SetRequestAllReviewStates_ShouldNotMutateCachedRequest()
+    {
+        var request = new DomainCommandRequest
+        {
+            Id = "req1", Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Pending }, { "r2", ReviewState.Pending } }
+        };
+
+        await _subject.SetRequestAllReviewStates(request, ReviewState.Approved);
+
+        request.Reviews["r1"].Should().Be(ReviewState.Pending);
+        request.Reviews["r2"].Should().Be(ReviewState.Pending);
     }
 
     [Fact]

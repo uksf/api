@@ -12,6 +12,8 @@ public class CommandRequestDataset
 {
     public bool CanOverride { get; set; }
     public DomainCommandRequest Data { get; set; }
+    public string DisplayReason { get; set; }
+    public string DisplayType { get; set; }
     public IEnumerable<CommandRequestReviewDataset> Reviews { get; set; }
 }
 

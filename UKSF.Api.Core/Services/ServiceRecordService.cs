@@ -7,7 +7,7 @@ namespace UKSF.Api.Core.Services;
 
 public interface IServiceRecordService
 {
-    void AddServiceRecord(string id, string occurence, string notes);
+    Task AddServiceRecord(string id, string occurence, string notes);
 }
 
 public class ServiceRecordService : IServiceRecordService
@@ -19,9 +19,9 @@ public class ServiceRecordService : IServiceRecordService
         _accountContext = accountContext;
     }
 
-    public void AddServiceRecord(string id, string occurence, string notes)
+    public async Task AddServiceRecord(string id, string occurence, string notes)
     {
-        _accountContext.Update(
+        await _accountContext.Update(
             id,
             Builders<DomainAccount>.Update.Push(
                 "serviceRecord",
