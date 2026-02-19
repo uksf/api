@@ -10,19 +10,19 @@ public class BuildStepBuildAir : ModBuildStep
     {
         StepLogger.Log("Running build for Air");
 
-        var toolsPath = Path.Join(GetBuildSourcesPath(), ModName, "tools");
-        var releasePath = Path.Join(GetBuildSourcesPath(), ModName, "release", "@uksf_air");
+        var rootPath = Path.Join(GetBuildSourcesPath(), ModName);
+        var hemttReleasePath = Path.Join(rootPath, ".hemttout", "release");
         var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf_air");
 
         if (IsBuildNeeded(ModName))
         {
-            StepLogger.LogSurround("\nRunning make.py...");
-            await RunProcess(toolsPath, PythonPath, MakeCommand("redirect"), (int)TimeSpan.FromMinutes(1).TotalMilliseconds, true);
-            StepLogger.LogSurround("Make.py complete");
+            StepLogger.LogSurround("\nRunning hemtt release...");
+            await RunProcess(rootPath, "cmd.exe", HemttCommand("release --no-archive"), (int)TimeSpan.FromMinutes(10).TotalMilliseconds, true);
+            StepLogger.LogSurround("Hemtt release complete");
         }
 
         StepLogger.LogSurround("\nMoving Air release to build...");
-        await CopyDirectory(releasePath, buildPath);
+        await CopyDirectory(hemttReleasePath, buildPath);
         StepLogger.LogSurround("Moved Air release to build");
     }
 }
