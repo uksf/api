@@ -47,6 +47,7 @@ public class WorkshopModOperation(IWorkshopModsContext workshopModsContext, IWor
         catch (Exception exception)
         {
             var errorMessage = $"Failed to {label} workshop mod {workshopModId}: {exception.Message}";
+            logger.LogError(errorMessage, exception);
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, errorMessage);
             return OperationResult.Failure(errorMessage);
         }
@@ -93,6 +94,7 @@ public class WorkshopModOperation(IWorkshopModsContext workshopModsContext, IWor
         {
             var typeLabel = type == WorkshopModOperationType.Install ? "" : " update";
             var errorMessage = $"Failed to check workshop mod{typeLabel} {workshopModId}: {exception.Message}";
+            logger.LogError(errorMessage, exception);
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, errorMessage);
             return OperationResult.Failure(errorMessage);
         }
@@ -187,6 +189,7 @@ public class WorkshopModOperation(IWorkshopModsContext workshopModsContext, IWor
         catch (Exception exception)
         {
             var errorMessage = $"Failed to {actionVerb} workshop mod {workshopModId}: {exception.Message}";
+            logger.LogError(errorMessage, exception);
             await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, errorMessage);
             return OperationResult.Failure(errorMessage);
         }

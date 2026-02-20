@@ -13,6 +13,7 @@ namespace UKSF.Api.Modpack.Tests.WorkshopModProcessing;
 public class WorkshopModOperationTests
 {
     private readonly Mock<IWorkshopModsContext> _mockContext;
+    private readonly Mock<IUksfLogger> _mockLogger;
     private readonly Mock<IWorkshopModsProcessingService> _mockProcessingService;
     private readonly WorkshopModOperation _operation;
 
@@ -20,8 +21,8 @@ public class WorkshopModOperationTests
     {
         _mockContext = new Mock<IWorkshopModsContext>();
         _mockProcessingService = new Mock<IWorkshopModsProcessingService>();
-        var mockLogger = new Mock<IUksfLogger>();
-        _operation = new WorkshopModOperation(_mockContext.Object, _mockProcessingService.Object, mockLogger.Object);
+        _mockLogger = new Mock<IUksfLogger>();
+        _operation = new WorkshopModOperation(_mockContext.Object, _mockProcessingService.Object, _mockLogger.Object);
     }
 
     private DomainWorkshopMod SetupWorkshopMod(
@@ -400,5 +401,51 @@ public class WorkshopModOperationTests
 
         result.Success.Should().BeFalse();
         result.ErrorMessage.Should().Contain("not found");
+    }
+
+    // Stack trace logging tests
+
+    [Theory]
+    [InlineData(WorkshopModOperationType.Install)]
+    [InlineData(WorkshopModOperationType.Update)]
+    public async Task DownloadAsync_WhenFails_ShouldLogExceptionWithStackTrace(WorkshopModOperationType type)
+    {
+        SetupWorkshopMod();
+        var exception = new InvalidOperationException("Download failed");
+        _mockProcessingService.Setup(x => x.DownloadWithRetries("test-mod-123", It.IsAny<int>(), It.IsAny<CancellationToken>())).ThrowsAsync(exception);
+
+        await _operation.DownloadAsync("test-mod-123", type);
+
+        _mockLogger.Verify(x => x.LogError(It.IsAny<string>(), exception), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(WorkshopModOperationType.Install)]
+    [InlineData(WorkshopModOperationType.Update)]
+    public async Task CheckAsync_WhenFails_ShouldLogExceptionWithStackTrace(WorkshopModOperationType type)
+    {
+        SetupWorkshopMod();
+        var exception = new InvalidOperationException("Check failed");
+        _mockProcessingService.Setup(x => x.GetWorkshopModPath("test-mod-123")).Returns("/path/to/mod");
+        _mockProcessingService.Setup(x => x.GetModFiles("/path/to/mod")).Throws(exception);
+
+        await _operation.CheckAsync("test-mod-123", type);
+
+        _mockLogger.Verify(x => x.LogError(It.IsAny<string>(), exception), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(WorkshopModOperationType.Install)]
+    [InlineData(WorkshopModOperationType.Update)]
+    public async Task ExecuteAsync_WhenFails_ShouldLogExceptionWithStackTrace(WorkshopModOperationType type)
+    {
+        var workshopMod = SetupWorkshopMod();
+        var exception = new IOException("Copy failed");
+        _mockProcessingService.Setup(x => x.CopyPbosToDependencies(workshopMod, It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+                              .ThrowsAsync(exception);
+
+        await _operation.ExecuteAsync("test-mod-123", type, ["mod1.pbo"]);
+
+        _mockLogger.Verify(x => x.LogError(It.IsAny<string>(), exception), Times.Once);
     }
 }

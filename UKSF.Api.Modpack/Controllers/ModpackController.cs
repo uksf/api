@@ -49,6 +49,7 @@ public class ModpackController(IModpackService modpackService, IGithubService gi
     }
 
     [HttpPost("builds/{id}/rebuild")]
+    [HttpGet("builds/{id}/rebuild")] // TODO: Remove once web is deployed with POST calls
     [Permissions(Permissions.Admin)]
     public async Task Rebuild([FromRoute] string id)
     {
@@ -62,6 +63,7 @@ public class ModpackController(IModpackService modpackService, IGithubService gi
     }
 
     [HttpPost("builds/{id}/cancel")]
+    [HttpGet("builds/{id}/cancel")] // TODO: Remove once web is deployed with POST calls
     [Permissions(Permissions.Admin)]
     public async Task CancelBuild([FromRoute] string id)
     {

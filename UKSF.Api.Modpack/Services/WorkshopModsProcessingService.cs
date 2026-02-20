@@ -35,8 +35,8 @@ public class WorkshopModsProcessingService(
     {
         var retryDelay = TimeSpan.FromSeconds(5);
 
-        var firstRoundError = await TryDownloadWithRetries(workshopModId, maxRetries, retryDelay, cancellationToken);
-        if (firstRoundError == null)
+        var firstRoundException = await TryDownloadWithRetries(workshopModId, maxRetries, retryDelay, cancellationToken);
+        if (firstRoundException == null)
         {
             return;
         }
@@ -44,18 +44,18 @@ public class WorkshopModsProcessingService(
         logger.LogWarning($"All {maxRetries} download attempts failed for {workshopModId}. Clearing workshop cache and retrying");
         ClearWorkshopCache();
 
-        var secondRoundError = await TryDownloadWithRetries(workshopModId, 1, retryDelay, cancellationToken);
-        if (secondRoundError == null)
+        var secondRoundException = await TryDownloadWithRetries(workshopModId, 1, retryDelay, cancellationToken);
+        if (secondRoundException == null)
         {
             return;
         }
 
-        throw new Exception($"Unable to download after clearing cache: {secondRoundError}");
+        throw new Exception($"Unable to download after clearing cache: {secondRoundException.Message}", secondRoundException);
     }
 
-    private async Task<string> TryDownloadWithRetries(string workshopModId, int maxRetries, TimeSpan retryDelay, CancellationToken cancellationToken)
+    private async Task<Exception> TryDownloadWithRetries(string workshopModId, int maxRetries, TimeSpan retryDelay, CancellationToken cancellationToken)
     {
-        string lastError = null;
+        Exception lastException = null;
 
         for (var attempt = 1; attempt <= maxRetries; attempt++)
         {
@@ -66,7 +66,7 @@ public class WorkshopModsProcessingService(
             }
             catch (Exception exception)
             {
-                lastError = exception.Message;
+                lastException = exception;
                 if (attempt < maxRetries)
                 {
                     logger.LogWarning($"Download attempt {attempt}/{maxRetries} failed for {workshopModId}: {exception.Message}");
@@ -75,7 +75,7 @@ public class WorkshopModsProcessingService(
             }
         }
 
-        return lastError;
+        return lastException;
     }
 
     private void ClearWorkshopCache()

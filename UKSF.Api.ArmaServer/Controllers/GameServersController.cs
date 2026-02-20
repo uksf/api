@@ -214,6 +214,7 @@ public class GameServersController(
     }
 
     [HttpPost("stop/{id}")]
+    [HttpGet("stop/{id}")] // TODO: Remove once web is deployed with POST calls
     [Authorize]
     public async Task<GameServerDataset> StopServer(string id)
     {
@@ -234,6 +235,7 @@ public class GameServersController(
     }
 
     [HttpPost("kill/{id}")]
+    [HttpGet("kill/{id}")] // TODO: Remove once web is deployed with POST calls
     [Authorize]
     public async Task<GameServerDataset> KillServer(string id)
     {
@@ -261,6 +263,7 @@ public class GameServersController(
     }
 
     [HttpPost("killall")]
+    [HttpGet("killall")] // TODO: Remove once web is deployed with POST calls
     [Authorize]
     public async Task KillAllArmaProcesses()
     {
