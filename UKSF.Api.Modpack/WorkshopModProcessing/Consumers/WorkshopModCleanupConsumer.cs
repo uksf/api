@@ -30,10 +30,6 @@ public class WorkshopModCleanupConsumer(
             {
                 await workshopModsProcessingService.QueueDevBuild();
             }
-            else
-            {
-                logger.LogInfo($"Skipping dev build for {context.Message.WorkshopModId} - no file changes");
-            }
 
             await context.Publish(new WorkshopModCleanupComplete { WorkshopModId = context.Message.WorkshopModId });
         }

@@ -1,4 +1,4 @@
-﻿namespace UKSF.Api.Modpack.WorkshopModProcessing;
+namespace UKSF.Api.Modpack.WorkshopModProcessing;
 
 public enum WorkshopModOperationType
 {

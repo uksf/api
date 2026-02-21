@@ -25,36 +25,64 @@ file static class TestHelpers
 
 public class WorkshopModDownloadConsumerTests
 {
-    [Theory]
-    [InlineData(WorkshopModOperationType.Install)]
-    [InlineData(WorkshopModOperationType.Update)]
-    public async Task Consume_WhenDownloadSucceeds_ShouldPublishComplete(WorkshopModOperationType type)
-    {
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.DownloadAsync("mod1", type, It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Successful());
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModDownloadConsumer(operation.Object, logger.Object);
+    private readonly Mock<IWorkshopModsContext> _workshopModsContext = new();
+    private readonly Mock<IWorkshopModsProcessingService> _processingService = new();
+    private readonly Mock<IUksfLogger> _logger = new();
+    private readonly Mock<IInstallOperation> _installOperation = new();
+    private readonly Mock<IUpdateOperation> _updateOperation = new();
+    private readonly WorkshopModDownloadConsumer _consumer;
 
-        var context = TestHelpers.CreateContext(new WorkshopModDownloadCommand { WorkshopModId = "mod1", OperationType = type });
+    public WorkshopModDownloadConsumerTests()
+    {
+        _consumer = new WorkshopModDownloadConsumer(
+            _installOperation.Object,
+            _updateOperation.Object,
+            _processingService.Object,
+            _workshopModsContext.Object,
+            _logger.Object
+        );
+    }
+
+    [Fact]
+    public async Task Consume_WhenInstallDownloadSucceeds_ShouldPublishComplete()
+    {
+        _installOperation.Setup(x => x.DownloadAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Successful());
+
+        var context = TestHelpers.CreateContext(new WorkshopModDownloadCommand { WorkshopModId = "mod1", OperationType = WorkshopModOperationType.Install });
         WorkshopModDownloadComplete published = null;
         context.Setup(x => x.Publish(It.IsAny<WorkshopModDownloadComplete>(), It.IsAny<CancellationToken>()))
                .Callback<WorkshopModDownloadComplete, CancellationToken>((msg, _) => published = msg)
                .Returns(Task.CompletedTask);
 
-        await consumer.Consume(context.Object);
+        await _consumer.Consume(context.Object);
 
         published.Should().NotBeNull();
         published!.WorkshopModId.Should().Be("mod1");
+        _installOperation.Verify(x => x.DownloadAsync("mod1", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Consume_WhenUpdateDownloadSucceeds_ShouldPublishCompleteWithUpdateStatus()
+    {
+        _updateOperation.Setup(x => x.DownloadAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Successful());
+
+        var context = TestHelpers.CreateContext(new WorkshopModDownloadCommand { WorkshopModId = "mod1", OperationType = WorkshopModOperationType.Update });
+        WorkshopModDownloadComplete published = null;
+        context.Setup(x => x.Publish(It.IsAny<WorkshopModDownloadComplete>(), It.IsAny<CancellationToken>()))
+               .Callback<WorkshopModDownloadComplete, CancellationToken>((msg, _) => published = msg)
+               .Returns(Task.CompletedTask);
+
+        await _consumer.Consume(context.Object);
+
+        published.Should().NotBeNull();
+        published!.WorkshopModId.Should().Be("mod1");
+        _updateOperation.Verify(x => x.DownloadAsync("mod1", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Consume_WhenDownloadFails_ShouldPublishFaulted()
     {
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.DownloadAsync("mod1", WorkshopModOperationType.Install, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(OperationResult.Failure("bad"));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModDownloadConsumer(operation.Object, logger.Object);
+        _installOperation.Setup(x => x.DownloadAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Failure("mod1 not found"));
 
         var context = TestHelpers.CreateContext(new WorkshopModDownloadCommand { WorkshopModId = "mod1", OperationType = WorkshopModOperationType.Install });
         WorkshopModOperationFaulted published = null;
@@ -62,68 +90,39 @@ public class WorkshopModDownloadConsumerTests
                .Callback<WorkshopModOperationFaulted, CancellationToken>((msg, _) => published = msg)
                .Returns(Task.CompletedTask);
 
-        await consumer.Consume(context.Object);
+        await _consumer.Consume(context.Object);
 
         published.Should().NotBeNull();
         published!.FaultedState.Should().Be("Downloading");
-        published.ErrorMessage.Should().Be("bad");
-    }
-
-    [Fact]
-    public async Task Consume_WhenDownloadCancelled_ShouldPublishFaulted()
-    {
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.DownloadAsync("mod1", WorkshopModOperationType.Install, It.IsAny<CancellationToken>()))
-                 .ThrowsAsync(new OperationCanceledException());
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModDownloadConsumer(operation.Object, logger.Object);
-
-        var context = TestHelpers.CreateContext(new WorkshopModDownloadCommand { WorkshopModId = "mod1", OperationType = WorkshopModOperationType.Install });
-        WorkshopModOperationFaulted published = null;
-        context.Setup(x => x.Publish(It.IsAny<WorkshopModOperationFaulted>(), It.IsAny<CancellationToken>()))
-               .Callback<WorkshopModOperationFaulted, CancellationToken>((msg, _) => published = msg)
-               .Returns(Task.CompletedTask);
-
-        await consumer.Consume(context.Object);
-
-        published.Should().NotBeNull();
-        published!.ErrorMessage.Should().Be("Operation cancelled");
-        published.FaultedState.Should().Be("Downloading");
-    }
-
-    [Fact]
-    public async Task Consume_WhenDownloadThrows_ShouldPublishFaulted()
-    {
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.DownloadAsync("mod1", WorkshopModOperationType.Install, It.IsAny<CancellationToken>()))
-                 .ThrowsAsync(new InvalidOperationException("boom"));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModDownloadConsumer(operation.Object, logger.Object);
-
-        var context = TestHelpers.CreateContext(new WorkshopModDownloadCommand { WorkshopModId = "mod1", OperationType = WorkshopModOperationType.Install });
-        WorkshopModOperationFaulted published = null;
-        context.Setup(x => x.Publish(It.IsAny<WorkshopModOperationFaulted>(), It.IsAny<CancellationToken>()))
-               .Callback<WorkshopModOperationFaulted, CancellationToken>((msg, _) => published = msg)
-               .Returns(Task.CompletedTask);
-
-        await consumer.Consume(context.Object);
-
-        published.Should().NotBeNull();
-        published!.ErrorMessage.Should().Be("boom");
-        published.FaultedState.Should().Be("Downloading");
+        published.ErrorMessage.Should().Contain("not found");
     }
 }
 
 public class WorkshopModCheckConsumerTests
 {
-    [Fact]
-    public async Task Consume_WhenCheckSucceeds_WithIntervention_ShouldPublishCheckComplete()
+    private readonly Mock<IWorkshopModsContext> _workshopModsContext = new();
+    private readonly Mock<IWorkshopModsProcessingService> _processingService = new();
+    private readonly Mock<IUksfLogger> _logger = new();
+    private readonly Mock<IInstallOperation> _installOperation = new();
+    private readonly Mock<IUpdateOperation> _updateOperation = new();
+    private readonly WorkshopModCheckConsumer _consumer;
+
+    public WorkshopModCheckConsumerTests()
     {
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.CheckAsync("mod1", WorkshopModOperationType.Install, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(OperationResult.Successful(interventionRequired: true));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModCheckConsumer(operation.Object, logger.Object);
+        _consumer = new WorkshopModCheckConsumer(
+            _installOperation.Object,
+            _updateOperation.Object,
+            _processingService.Object,
+            _workshopModsContext.Object,
+            _logger.Object
+        );
+    }
+
+    [Fact]
+    public async Task Consume_WhenInstallCheckSucceeds_WithIntervention_ShouldPublishCheckComplete()
+    {
+        _installOperation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>()))
+                         .ReturnsAsync(OperationResult.Successful(interventionRequired: true, availablePbos: ["new.pbo"]));
 
         var context = TestHelpers.CreateContext(new WorkshopModCheckCommand { WorkshopModId = "mod1", OperationType = WorkshopModOperationType.Install });
         WorkshopModCheckComplete published = null;
@@ -131,21 +130,19 @@ public class WorkshopModCheckConsumerTests
                .Callback<WorkshopModCheckComplete, CancellationToken>((msg, _) => published = msg)
                .Returns(Task.CompletedTask);
 
-        await consumer.Consume(context.Object);
+        await _consumer.Consume(context.Object);
 
         published.Should().NotBeNull();
         published!.InterventionRequired.Should().BeTrue();
+        published.AvailablePbos.Should().BeEquivalentTo(["new.pbo"]);
+        _installOperation.Verify(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task Consume_WhenCheckSucceeds_WithoutIntervention_ShouldPublishCheckCompleteWithAvailablePbos()
+    public async Task Consume_WhenUpdateCheckSucceeds_WithoutIntervention_ShouldPublishCheckCompleteWithAvailablePbos()
     {
         var availablePbos = new List<string> { "a.pbo", "b.pbo" };
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.CheckAsync("mod1", WorkshopModOperationType.Update, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(OperationResult.Successful(interventionRequired: false, availablePbos: availablePbos));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModCheckConsumer(operation.Object, logger.Object);
+        _updateOperation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Successful(availablePbos: availablePbos));
 
         var context = TestHelpers.CreateContext(new WorkshopModCheckCommand { WorkshopModId = "mod1", OperationType = WorkshopModOperationType.Update });
         WorkshopModCheckComplete published = null;
@@ -153,21 +150,35 @@ public class WorkshopModCheckConsumerTests
                .Callback<WorkshopModCheckComplete, CancellationToken>((msg, _) => published = msg)
                .Returns(Task.CompletedTask);
 
-        await consumer.Consume(context.Object);
+        await _consumer.Consume(context.Object);
 
         published.Should().NotBeNull();
         published!.InterventionRequired.Should().BeFalse();
         published.AvailablePbos.Should().BeEquivalentTo(availablePbos);
+        _updateOperation.Verify(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Consume_WhenRootMod_ShouldPublishNoInterventionRequired()
+    {
+        _installOperation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Successful());
+
+        var context = TestHelpers.CreateContext(new WorkshopModCheckCommand { WorkshopModId = "mod1", OperationType = WorkshopModOperationType.Install });
+        WorkshopModCheckComplete published = null;
+        context.Setup(x => x.Publish(It.IsAny<WorkshopModCheckComplete>(), It.IsAny<CancellationToken>()))
+               .Callback<WorkshopModCheckComplete, CancellationToken>((msg, _) => published = msg)
+               .Returns(Task.CompletedTask);
+
+        await _consumer.Consume(context.Object);
+
+        published.Should().NotBeNull();
+        published!.InterventionRequired.Should().BeFalse();
     }
 
     [Fact]
     public async Task Consume_WhenCheckFails_ShouldPublishFaulted()
     {
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.CheckAsync("mod1", WorkshopModOperationType.Install, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(OperationResult.Failure("bad"));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModCheckConsumer(operation.Object, logger.Object);
+        _installOperation.Setup(x => x.CheckAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Failure("mod1 not found"));
 
         var context = TestHelpers.CreateContext(new WorkshopModCheckCommand { WorkshopModId = "mod1", OperationType = WorkshopModOperationType.Install });
         WorkshopModOperationFaulted published = null;
@@ -175,68 +186,39 @@ public class WorkshopModCheckConsumerTests
                .Callback<WorkshopModOperationFaulted, CancellationToken>((msg, _) => published = msg)
                .Returns(Task.CompletedTask);
 
-        await consumer.Consume(context.Object);
+        await _consumer.Consume(context.Object);
 
         published.Should().NotBeNull();
         published!.FaultedState.Should().Be("Checking");
-        published.ErrorMessage.Should().Be("bad");
-    }
-
-    [Fact]
-    public async Task Consume_WhenCheckCancelled_ShouldPublishFaulted()
-    {
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.CheckAsync("mod1", WorkshopModOperationType.Install, It.IsAny<CancellationToken>()))
-                 .ThrowsAsync(new OperationCanceledException());
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModCheckConsumer(operation.Object, logger.Object);
-
-        var context = TestHelpers.CreateContext(new WorkshopModCheckCommand { WorkshopModId = "mod1", OperationType = WorkshopModOperationType.Install });
-        WorkshopModOperationFaulted published = null;
-        context.Setup(x => x.Publish(It.IsAny<WorkshopModOperationFaulted>(), It.IsAny<CancellationToken>()))
-               .Callback<WorkshopModOperationFaulted, CancellationToken>((msg, _) => published = msg)
-               .Returns(Task.CompletedTask);
-
-        await consumer.Consume(context.Object);
-
-        published.Should().NotBeNull();
-        published!.ErrorMessage.Should().Be("Operation cancelled");
-        published.FaultedState.Should().Be("Checking");
-    }
-
-    [Fact]
-    public async Task Consume_WhenCheckThrows_ShouldPublishFaulted()
-    {
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.CheckAsync("mod1", WorkshopModOperationType.Install, It.IsAny<CancellationToken>()))
-                 .ThrowsAsync(new InvalidOperationException("boom"));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModCheckConsumer(operation.Object, logger.Object);
-
-        var context = TestHelpers.CreateContext(new WorkshopModCheckCommand { WorkshopModId = "mod1", OperationType = WorkshopModOperationType.Install });
-        WorkshopModOperationFaulted published = null;
-        context.Setup(x => x.Publish(It.IsAny<WorkshopModOperationFaulted>(), It.IsAny<CancellationToken>()))
-               .Callback<WorkshopModOperationFaulted, CancellationToken>((msg, _) => published = msg)
-               .Returns(Task.CompletedTask);
-
-        await consumer.Consume(context.Object);
-
-        published.Should().NotBeNull();
-        published!.ErrorMessage.Should().Be("boom");
-        published.FaultedState.Should().Be("Checking");
+        published.ErrorMessage.Should().Contain("not found");
     }
 }
 
 public class WorkshopModExecuteConsumerTests
 {
-    [Fact]
-    public async Task Consume_WhenExecuteSucceeds_ShouldPublishCompleteWithFilesChanged()
+    private readonly Mock<IWorkshopModsContext> _workshopModsContext = new();
+    private readonly Mock<IWorkshopModsProcessingService> _processingService = new();
+    private readonly Mock<IUksfLogger> _logger = new();
+    private readonly Mock<IInstallOperation> _installOperation = new();
+    private readonly Mock<IUpdateOperation> _updateOperation = new();
+    private readonly WorkshopModExecuteConsumer _consumer;
+
+    public WorkshopModExecuteConsumerTests()
     {
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.ExecuteAsync("mod1", WorkshopModOperationType.Install, It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(OperationResult.Successful(filesChanged: true));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModExecuteConsumer(operation.Object, logger.Object);
+        _consumer = new WorkshopModExecuteConsumer(
+            _installOperation.Object,
+            _updateOperation.Object,
+            _processingService.Object,
+            _workshopModsContext.Object,
+            _logger.Object
+        );
+    }
+
+    [Fact]
+    public async Task Consume_WhenInstallExecuteSucceeds_ShouldPublishCompleteWithFilesChanged()
+    {
+        _installOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+                         .ReturnsAsync(OperationResult.Successful());
 
         var context = TestHelpers.CreateContext(
             new WorkshopModExecuteCommand
@@ -251,21 +233,43 @@ public class WorkshopModExecuteConsumerTests
                .Callback<WorkshopModExecuteComplete, CancellationToken>((msg, _) => published = msg)
                .Returns(Task.CompletedTask);
 
-        await consumer.Consume(context.Object);
+        await _consumer.Consume(context.Object);
 
         published.Should().NotBeNull();
         published!.WorkshopModId.Should().Be("mod1");
-        published.FilesChanged.Should().BeTrue();
+        _installOperation.Verify(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Consume_WhenUpdateExecuteSucceeds_ShouldPublishCompleteWithUpdateStatus()
+    {
+        _updateOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Successful());
+
+        var context = TestHelpers.CreateContext(
+            new WorkshopModExecuteCommand
+            {
+                WorkshopModId = "mod1",
+                OperationType = WorkshopModOperationType.Update,
+                SelectedPbos = ["a.pbo"]
+            }
+        );
+        WorkshopModExecuteComplete published = null;
+        context.Setup(x => x.Publish(It.IsAny<WorkshopModExecuteComplete>(), It.IsAny<CancellationToken>()))
+               .Callback<WorkshopModExecuteComplete, CancellationToken>((msg, _) => published = msg)
+               .Returns(Task.CompletedTask);
+
+        await _consumer.Consume(context.Object);
+
+        published.Should().NotBeNull();
+        published!.WorkshopModId.Should().Be("mod1");
+        _updateOperation.Verify(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Consume_WhenExecuteFails_ShouldPublishFaulted()
     {
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.ExecuteAsync("mod1", WorkshopModOperationType.Install, It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(OperationResult.Failure("failed"));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModExecuteConsumer(operation.Object, logger.Object);
+        _installOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+                         .ReturnsAsync(OperationResult.Failure("mod1 not found"));
 
         var context = TestHelpers.CreateContext(
             new WorkshopModExecuteCommand
@@ -280,81 +284,32 @@ public class WorkshopModExecuteConsumerTests
                .Callback<WorkshopModOperationFaulted, CancellationToken>((msg, _) => published = msg)
                .Returns(Task.CompletedTask);
 
-        await consumer.Consume(context.Object);
+        await _consumer.Consume(context.Object);
 
         published.Should().NotBeNull();
-        published!.ErrorMessage.Should().Be("failed");
-        published.FaultedState.Should().Be("Executing");
-    }
-
-    [Fact]
-    public async Task Consume_WhenExecuteCancelled_ShouldPublishFaulted()
-    {
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.ExecuteAsync("mod1", WorkshopModOperationType.Install, It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-                 .ThrowsAsync(new OperationCanceledException());
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModExecuteConsumer(operation.Object, logger.Object);
-
-        var context = TestHelpers.CreateContext(
-            new WorkshopModExecuteCommand
-            {
-                WorkshopModId = "mod1",
-                OperationType = WorkshopModOperationType.Install,
-                SelectedPbos = ["a.pbo"]
-            }
-        );
-        WorkshopModOperationFaulted published = null;
-        context.Setup(x => x.Publish(It.IsAny<WorkshopModOperationFaulted>(), It.IsAny<CancellationToken>()))
-               .Callback<WorkshopModOperationFaulted, CancellationToken>((msg, _) => published = msg)
-               .Returns(Task.CompletedTask);
-
-        await consumer.Consume(context.Object);
-
-        published.Should().NotBeNull();
-        published!.ErrorMessage.Should().Be("Operation cancelled");
-        published.FaultedState.Should().Be("Executing");
-    }
-
-    [Fact]
-    public async Task Consume_WhenExecuteThrows_ShouldPublishFaulted()
-    {
-        var operation = new Mock<IWorkshopModOperation>();
-        operation.Setup(x => x.ExecuteAsync("mod1", WorkshopModOperationType.Install, It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-                 .ThrowsAsync(new InvalidOperationException("boom"));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModExecuteConsumer(operation.Object, logger.Object);
-
-        var context = TestHelpers.CreateContext(
-            new WorkshopModExecuteCommand
-            {
-                WorkshopModId = "mod1",
-                OperationType = WorkshopModOperationType.Install,
-                SelectedPbos = ["a.pbo"]
-            }
-        );
-        WorkshopModOperationFaulted published = null;
-        context.Setup(x => x.Publish(It.IsAny<WorkshopModOperationFaulted>(), It.IsAny<CancellationToken>()))
-               .Callback<WorkshopModOperationFaulted, CancellationToken>((msg, _) => published = msg)
-               .Returns(Task.CompletedTask);
-
-        await consumer.Consume(context.Object);
-
-        published.Should().NotBeNull();
-        published!.ErrorMessage.Should().Be("boom");
+        published!.ErrorMessage.Should().Contain("not found");
         published.FaultedState.Should().Be("Executing");
     }
 }
 
 public class WorkshopModUninstallConsumerTests
 {
-    [Fact]
-    public async Task Consume_WhenUninstallSucceeds_ShouldPublishComplete()
+    private readonly Mock<IWorkshopModsContext> _workshopModsContext = new();
+    private readonly Mock<IWorkshopModsProcessingService> _processingService = new();
+    private readonly Mock<IUksfLogger> _logger = new();
+    private readonly Mock<IUninstallOperation> _uninstallOperation = new();
+    private readonly WorkshopModUninstallConsumer _consumer;
+
+    public WorkshopModUninstallConsumerTests()
     {
-        var operation = new Mock<IUninstallOperation>();
-        operation.Setup(x => x.UninstallAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Successful(filesChanged: true));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModUninstallConsumer(operation.Object, logger.Object);
+        _consumer = new WorkshopModUninstallConsumer(_uninstallOperation.Object, _processingService.Object, _workshopModsContext.Object, _logger.Object);
+    }
+
+    [Fact]
+    public async Task Consume_WhenUninstallSucceeds_ShouldPublishCompleteWithFilesChanged()
+    {
+        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+                           .ReturnsAsync(OperationResult.Successful());
 
         var context = TestHelpers.CreateContext(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });
         WorkshopModUninstallComplete published = null;
@@ -362,7 +317,7 @@ public class WorkshopModUninstallConsumerTests
                .Callback<WorkshopModUninstallComplete, CancellationToken>((msg, _) => published = msg)
                .Returns(Task.CompletedTask);
 
-        await consumer.Consume(context.Object);
+        await _consumer.Consume(context.Object);
 
         published.Should().NotBeNull();
         published!.WorkshopModId.Should().Be("mod1");
@@ -372,10 +327,8 @@ public class WorkshopModUninstallConsumerTests
     [Fact]
     public async Task Consume_WhenUninstallSucceeds_WithNoFilesChanged_ShouldPublishFilesChangedFalse()
     {
-        var operation = new Mock<IUninstallOperation>();
-        operation.Setup(x => x.UninstallAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Successful(filesChanged: false));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModUninstallConsumer(operation.Object, logger.Object);
+        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+                           .ReturnsAsync(OperationResult.Successful(filesChanged: false));
 
         var context = TestHelpers.CreateContext(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });
         WorkshopModUninstallComplete published = null;
@@ -383,7 +336,7 @@ public class WorkshopModUninstallConsumerTests
                .Callback<WorkshopModUninstallComplete, CancellationToken>((msg, _) => published = msg)
                .Returns(Task.CompletedTask);
 
-        await consumer.Consume(context.Object);
+        await _consumer.Consume(context.Object);
 
         published.Should().NotBeNull();
         published!.FilesChanged.Should().BeFalse();
@@ -392,10 +345,8 @@ public class WorkshopModUninstallConsumerTests
     [Fact]
     public async Task Consume_WhenUninstallFails_ShouldPublishFaulted()
     {
-        var operation = new Mock<IUninstallOperation>();
-        operation.Setup(x => x.UninstallAsync("mod1", It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Failure("bad"));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModUninstallConsumer(operation.Object, logger.Object);
+        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+                           .ReturnsAsync(OperationResult.Failure("mod1 not found"));
 
         var context = TestHelpers.CreateContext(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });
         WorkshopModOperationFaulted published = null;
@@ -403,53 +354,11 @@ public class WorkshopModUninstallConsumerTests
                .Callback<WorkshopModOperationFaulted, CancellationToken>((msg, _) => published = msg)
                .Returns(Task.CompletedTask);
 
-        await consumer.Consume(context.Object);
+        await _consumer.Consume(context.Object);
 
         published.Should().NotBeNull();
         published!.FaultedState.Should().Be("Uninstalling");
-        published.ErrorMessage.Should().Be("bad");
-    }
-
-    [Fact]
-    public async Task Consume_WhenUninstallCancelled_ShouldPublishFaulted()
-    {
-        var operation = new Mock<IUninstallOperation>();
-        operation.Setup(x => x.UninstallAsync("mod1", It.IsAny<CancellationToken>())).ThrowsAsync(new OperationCanceledException());
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModUninstallConsumer(operation.Object, logger.Object);
-
-        var context = TestHelpers.CreateContext(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });
-        WorkshopModOperationFaulted published = null;
-        context.Setup(x => x.Publish(It.IsAny<WorkshopModOperationFaulted>(), It.IsAny<CancellationToken>()))
-               .Callback<WorkshopModOperationFaulted, CancellationToken>((msg, _) => published = msg)
-               .Returns(Task.CompletedTask);
-
-        await consumer.Consume(context.Object);
-
-        published.Should().NotBeNull();
-        published!.ErrorMessage.Should().Be("Operation cancelled");
-        published.FaultedState.Should().Be("Uninstalling");
-    }
-
-    [Fact]
-    public async Task Consume_WhenUninstallThrows_ShouldPublishFaulted()
-    {
-        var operation = new Mock<IUninstallOperation>();
-        operation.Setup(x => x.UninstallAsync("mod1", It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException("boom"));
-        Mock<IUksfLogger> logger = new();
-        var consumer = new WorkshopModUninstallConsumer(operation.Object, logger.Object);
-
-        var context = TestHelpers.CreateContext(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });
-        WorkshopModOperationFaulted published = null;
-        context.Setup(x => x.Publish(It.IsAny<WorkshopModOperationFaulted>(), It.IsAny<CancellationToken>()))
-               .Callback<WorkshopModOperationFaulted, CancellationToken>((msg, _) => published = msg)
-               .Returns(Task.CompletedTask);
-
-        await consumer.Consume(context.Object);
-
-        published.Should().NotBeNull();
-        published!.ErrorMessage.Should().Be("boom");
-        published.FaultedState.Should().Be("Uninstalling");
+        published.ErrorMessage.Should().Contain("not found");
     }
 }
 

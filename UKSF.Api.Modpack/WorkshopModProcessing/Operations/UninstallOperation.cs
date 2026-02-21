@@ -1,83 +1,67 @@
-using UKSF.Api.Core;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services;
 
 namespace UKSF.Api.Modpack.WorkshopModProcessing.Operations;
 
-public interface IUninstallOperation
+public sealed class UninstallOperation(IWorkshopModsContext workshopModsContext, IWorkshopModsProcessingService workshopModsProcessingService)
+    : WorkshopModOperationBase(workshopModsContext, workshopModsProcessingService), IUninstallOperation
 {
-    Task<OperationResult> UninstallAsync(string workshopModId, CancellationToken cancellationToken = default);
-}
+    private WorkshopModStatus _previousStatus;
 
-public class UninstallOperation(IWorkshopModsContext workshopModsContext, IWorkshopModsProcessingService workshopModsProcessingService, IUksfLogger logger)
-    : IUninstallOperation
-{
-    public async Task<OperationResult> UninstallAsync(string workshopModId, CancellationToken cancellationToken = default)
+    protected override WorkshopModStatus ActiveStatus => WorkshopModStatus.Uninstalling;
+    protected override string CancelPrefix => "Uninstall";
+    protected override WorkshopModStatus CompletedStatus => WorkshopModStatus.Uninstalled;
+    protected override string CompletedMessage => "Uninstalled";
+    protected override string ActiveStatusMessage => "Uninstalling...";
+
+    protected override void OnBeforeExecute(DomainWorkshopMod workshopMod)
     {
-        var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
-        if (workshopMod == null)
-        {
-            return OperationResult.Failure($"Workshop mod {workshopModId} not found");
-        }
+        _previousStatus = workshopMod.Status;
+    }
 
+    protected override OperationResult ShouldSkipExecution(DomainWorkshopMod workshopMod)
+    {
         if (workshopMod.Status is WorkshopModStatus.Uninstalled or WorkshopModStatus.UninstalledPendingRelease)
         {
-            logger.LogWarning($"Workshop mod {workshopModId} is already uninstalled");
             return OperationResult.Successful(filesChanged: false);
         }
 
-        try
+        return null;
+    }
+
+    protected override Task ExecuteCoreAsync(DomainWorkshopMod workshopMod, List<string> selectedPbos, CancellationToken cancellationToken)
+    {
+        ExecutionFilesChanged = false;
+
+        if (workshopMod.RootMod)
         {
-            await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Uninstalling, "Uninstalling...");
-
-            var filesChanged = false;
-            if (workshopMod.RootMod)
-            {
-                workshopModsProcessingService.DeleteRootModFromRepos(workshopMod);
-                filesChanged = true;
-            }
-            else
-            {
-                var pbosToDelete = workshopMod.Pbos ?? [];
-                if (pbosToDelete.Count > 0)
-                {
-                    logger.LogInfo($"Removing {pbosToDelete.Count} PBOs from workshop mod {workshopModId}");
-                    workshopModsProcessingService.DeletePbosFromDependencies(pbosToDelete);
-                    filesChanged = true;
-                }
-            }
-
-            if (workshopMod.Status is WorkshopModStatus.Installed or WorkshopModStatus.InstalledPendingRelease or WorkshopModStatus.UpdatedPendingRelease)
-            {
-                workshopMod.Status = WorkshopModStatus.UninstalledPendingRelease;
-                workshopMod.StatusMessage = "Uninstalled pending next modpack release";
-            }
-            else
-            {
-                workshopMod.Status = WorkshopModStatus.Uninstalled;
-                workshopMod.StatusMessage = "Uninstalled";
-            }
-
-            workshopMod.Pbos = [];
-            workshopMod.ErrorMessage = null;
-            await workshopModsContext.Replace(workshopMod);
-
-            logger.LogInfo($"Successfully uninstalled workshop mod {workshopModId}");
-            return OperationResult.Successful(filesChanged: filesChanged);
+            WorkshopModsProcessingService.DeleteRootModFromRepos(workshopMod);
+            ExecutionFilesChanged = true;
         }
-        catch (OperationCanceledException)
+        else
         {
-            logger.LogWarning($"Uninstall cancelled for workshop mod {workshopModId}");
-            await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, "Uninstall cancelled");
-            throw;
+            var pbosToDelete = workshopMod.Pbos ?? [];
+            if (pbosToDelete.Count > 0)
+            {
+                WorkshopModsProcessingService.DeletePbosFromDependencies(pbosToDelete);
+                ExecutionFilesChanged = true;
+            }
         }
-        catch (Exception exception)
+
+        return Task.CompletedTask;
+    }
+
+    protected override void ApplyCompletedState(DomainWorkshopMod workshopMod)
+    {
+        base.ApplyCompletedState(workshopMod);
+
+        if (_previousStatus is WorkshopModStatus.Installed or WorkshopModStatus.InstalledPendingRelease or WorkshopModStatus.UpdatedPendingRelease)
         {
-            var errorMessage = $"Failed to uninstall workshop mod {workshopModId}: {exception.Message}";
-            logger.LogError(errorMessage, exception);
-            await workshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.Error, errorMessage);
-            return OperationResult.Failure(errorMessage);
+            workshopMod.Status = WorkshopModStatus.UninstalledPendingRelease;
+            workshopMod.StatusMessage = "Uninstalled pending next modpack release";
         }
+
+        workshopMod.Pbos = [];
     }
 }

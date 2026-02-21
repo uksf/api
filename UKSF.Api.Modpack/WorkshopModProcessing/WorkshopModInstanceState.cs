@@ -1,4 +1,4 @@
-﻿using MassTransit;
+using MassTransit;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace UKSF.Api.Modpack.WorkshopModProcessing;

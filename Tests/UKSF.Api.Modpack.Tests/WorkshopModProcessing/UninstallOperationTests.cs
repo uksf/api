@@ -1,9 +1,9 @@
 using FluentAssertions;
 using Moq;
-using UKSF.Api.Core;
 using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services;
+using UKSF.Api.Modpack.WorkshopModProcessing;
 using UKSF.Api.Modpack.WorkshopModProcessing.Operations;
 using Xunit;
 
@@ -13,298 +13,258 @@ public class UninstallOperationTests
 {
     private readonly Mock<IWorkshopModsContext> _mockContext;
     private readonly Mock<IWorkshopModsProcessingService> _mockProcessingService;
-    private readonly UninstallOperation _uninstallOperation;
+    private readonly UninstallOperation _operation;
 
     public UninstallOperationTests()
     {
         _mockContext = new Mock<IWorkshopModsContext>();
         _mockProcessingService = new Mock<IWorkshopModsProcessingService>();
-        var mockLogger = new Mock<IUksfLogger>();
-        _uninstallOperation = new UninstallOperation(_mockContext.Object, _mockProcessingService.Object, mockLogger.Object);
+        _operation = new UninstallOperation(_mockContext.Object, _mockProcessingService.Object);
+    }
+
+    private DomainWorkshopMod SetupWorkshopMod(
+        string workshopModId = "test-mod-123",
+        bool rootMod = false,
+        WorkshopModStatus status = WorkshopModStatus.Installed,
+        List<string> pbos = null
+    )
+    {
+        var workshopMod = new DomainWorkshopMod
+        {
+            Id = workshopModId,
+            SteamId = workshopModId,
+            Name = "Test Mod",
+            RootMod = rootMod,
+            Status = status,
+            Pbos = pbos ?? []
+        };
+        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        return workshopMod;
     }
 
     [Fact]
-    public async Task UninstallAsync_WithValidWorkshopMod_ShouldSucceed()
+    public async Task ExecuteAsync_WithValidWorkshopMod_ShouldSucceed()
     {
-        // Arrange
-        const string WorkshopModId = "test-mod-123";
         var pbos = new List<string> { "mod1.pbo", "mod2.pbo" };
-        var workshopMod = new DomainWorkshopMod
-        {
-            Id = WorkshopModId,
-            SteamId = WorkshopModId,
-            Pbos = pbos,
-            Status = WorkshopModStatus.Installed
-        };
-
-        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        var workshopMod = SetupWorkshopMod(pbos: pbos);
         _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
 
-        // Act
-        var result = await _uninstallOperation.UninstallAsync(WorkshopModId);
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
 
-        // Assert
         result.Success.Should().BeTrue();
         result.ErrorMessage.Should().BeNull();
         _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.Uninstalling, "Uninstalling..."), Times.Once);
         _mockProcessingService.Verify(x => x.DeletePbosFromDependencies(pbos), Times.Once);
         workshopMod.Pbos.Should().BeEmpty();
-        workshopMod.Status.Should().Be(WorkshopModStatus.UninstalledPendingRelease);
         workshopMod.ErrorMessage.Should().BeNull();
         _mockContext.Verify(x => x.Replace(workshopMod), Times.Once);
     }
 
     [Fact]
-    public async Task UninstallAsync_WithAlreadyUninstalledMod_ShouldReturnSuccessIdempotently()
+    public async Task ExecuteAsync_WithAlreadyUninstalledMod_ShouldReturnSuccessWithNoFilesChanged()
     {
-        // Arrange
-        const string WorkshopModId = "test-mod-123";
-        var workshopMod = new DomainWorkshopMod
-        {
-            Id = WorkshopModId,
-            SteamId = WorkshopModId,
-            Status = WorkshopModStatus.Uninstalled,
-            Pbos = []
-        };
+        SetupWorkshopMod(status: WorkshopModStatus.Uninstalled);
 
-        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
 
-        // Act
-        var result = await _uninstallOperation.UninstallAsync(WorkshopModId);
-
-        // Assert
         result.Success.Should().BeTrue();
-        result.ErrorMessage.Should().BeNull();
+        result.FilesChanged.Should().BeFalse();
         _mockProcessingService.Verify(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>()), Times.Never);
         _mockContext.Verify(x => x.Replace(It.IsAny<DomainWorkshopMod>()), Times.Never);
     }
 
     [Fact]
-    public async Task UninstallAsync_WithNoPbos_ShouldStillSucceed()
+    public async Task ExecuteAsync_WithUninstalledPendingReleaseMod_ShouldReturnSuccessWithNoFilesChanged()
     {
-        // Arrange
-        const string WorkshopModId = "test-mod-123";
-        var workshopMod = new DomainWorkshopMod
-        {
-            Id = WorkshopModId,
-            SteamId = WorkshopModId,
-            Pbos = [],
-            Status = WorkshopModStatus.Installed // Changed from Installing to Installed
-        };
+        SetupWorkshopMod(status: WorkshopModStatus.UninstalledPendingRelease);
 
-        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
-        _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
 
-        // Act
-        var result = await _uninstallOperation.UninstallAsync(WorkshopModId);
-
-        // Assert
-        result.Success.Should().BeTrue();
-        _mockProcessingService.Verify(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>()), Times.Never);
-        _mockContext.Verify(x => x.Replace(workshopMod), Times.Once);
-    }
-
-    [Fact]
-    public async Task UninstallAsync_WhenDeleteFails_ShouldReturnFailure()
-    {
-        // Arrange
-        const string WorkshopModId = "test-mod-123";
-        var pbos = new List<string> { "mod1.pbo" };
-        var workshopMod = new DomainWorkshopMod
-        {
-            Id = WorkshopModId,
-            SteamId = WorkshopModId,
-            Pbos = pbos,
-            Status = WorkshopModStatus.Installed
-        };
-
-        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
-        _mockProcessingService.Setup(x => x.DeletePbosFromDependencies(pbos)).Throws(new IOException("Delete failed"));
-
-        // Act
-        var result = await _uninstallOperation.UninstallAsync(WorkshopModId);
-
-        // Assert
-        result.Success.Should().BeFalse();
-        result.ErrorMessage.Should().Contain("Delete failed");
-        _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.Error, It.IsAny<string>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task UninstallAsync_WhenCancelled_ShouldThrowOperationCancelledException()
-    {
-        // Arrange
-        const string WorkshopModId = "test-mod-123";
-        var workshopMod = new DomainWorkshopMod
-        {
-            Id = WorkshopModId,
-            SteamId = WorkshopModId,
-            Pbos = ["mod1.pbo"],
-            Status = WorkshopModStatus.Installed
-        };
-        var cancellationTokenSource = new CancellationTokenSource();
-        cancellationTokenSource.Cancel();
-
-        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
-        _mockProcessingService.Setup(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>())).Throws(new OperationCanceledException());
-
-        // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(() => _uninstallOperation.UninstallAsync(WorkshopModId, cancellationTokenSource.Token));
-        _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.Error, "Uninstall cancelled"), Times.Once);
-    }
-
-    [Fact]
-    public async Task UninstallAsync_ForRootMod_CallsDeleteRootModFromRepos()
-    {
-        // Arrange
-        const string WorkshopModId = "test-mod-123";
-        var workshopMod = new DomainWorkshopMod
-        {
-            Id = WorkshopModId,
-            SteamId = WorkshopModId,
-            Name = "Test Mod",
-            RootMod = true,
-            Status = WorkshopModStatus.Installed
-        };
-
-        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
-        _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
-
-        // Act
-        var result = await _uninstallOperation.UninstallAsync(WorkshopModId);
-
-        // Assert
-        result.Success.Should().BeTrue();
-        _mockProcessingService.Verify(x => x.DeleteRootModFromRepos(workshopMod), Times.Once);
-        _mockProcessingService.Verify(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>()), Times.Never);
-        workshopMod.Status.Should().Be(WorkshopModStatus.UninstalledPendingRelease);
-    }
-
-    [Fact]
-    public async Task UninstallAsync_ForRootMod_WhenDeleteFails_ShouldReturnFailure()
-    {
-        // Arrange
-        const string WorkshopModId = "test-mod-123";
-        var workshopMod = new DomainWorkshopMod
-        {
-            Id = WorkshopModId,
-            SteamId = WorkshopModId,
-            Name = "Test Mod",
-            RootMod = true,
-            Status = WorkshopModStatus.Installed
-        };
-
-        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
-        _mockProcessingService.Setup(x => x.DeleteRootModFromRepos(workshopMod)).Throws(new IOException("Delete failed"));
-
-        // Act
-        var result = await _uninstallOperation.UninstallAsync(WorkshopModId);
-
-        // Assert
-        result.Success.Should().BeFalse();
-        result.ErrorMessage.Should().Contain("Delete failed");
-        _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.Error, It.IsAny<string>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task UninstallAsync_WhenAlreadyUninstalled_ReturnsSuccessWithNoFilesChanged()
-    {
-        // Arrange
-        const string WorkshopModId = "test-mod-123";
-        var workshopMod = new DomainWorkshopMod
-        {
-            Id = WorkshopModId,
-            SteamId = WorkshopModId,
-            Status = WorkshopModStatus.Uninstalled,
-            Pbos = []
-        };
-
-        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
-
-        // Act
-        var result = await _uninstallOperation.UninstallAsync(WorkshopModId);
-
-        // Assert
         result.Success.Should().BeTrue();
         result.FilesChanged.Should().BeFalse();
+        _mockProcessingService.Verify(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>()), Times.Never);
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainWorkshopMod>()), Times.Never);
     }
 
     [Fact]
-    public async Task UninstallAsync_WhenNoPbosAndNotRootMod_ReturnsSuccessWithNoFilesChanged()
+    public async Task ExecuteAsync_WithNoPbosAndNotRootMod_ShouldSucceedWithNoFilesChanged()
     {
-        // Arrange
-        const string WorkshopModId = "test-mod-123";
-        var workshopMod = new DomainWorkshopMod
-        {
-            Id = WorkshopModId,
-            SteamId = WorkshopModId,
-            Pbos = [],
-            RootMod = false,
-            Status = WorkshopModStatus.Installing
-        };
-
-        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        SetupWorkshopMod();
         _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
 
-        // Act
-        var result = await _uninstallOperation.UninstallAsync(WorkshopModId);
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
 
-        // Assert
         result.Success.Should().BeTrue();
         result.FilesChanged.Should().BeFalse();
         _mockProcessingService.Verify(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>()), Times.Never);
     }
 
     [Fact]
-    public async Task UninstallAsync_WhenHasPbos_ReturnsSuccessWithFilesChanged()
+    public async Task ExecuteAsync_WithPbos_ShouldReturnFilesChanged()
     {
-        // Arrange
-        const string WorkshopModId = "test-mod-123";
         var pbos = new List<string> { "mod1.pbo", "mod2.pbo" };
-        var workshopMod = new DomainWorkshopMod
-        {
-            Id = WorkshopModId,
-            SteamId = WorkshopModId,
-            Pbos = pbos,
-            RootMod = false,
-            Status = WorkshopModStatus.Installed
-        };
-
-        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        SetupWorkshopMod(pbos: pbos);
         _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
 
-        // Act
-        var result = await _uninstallOperation.UninstallAsync(WorkshopModId);
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
 
-        // Assert
         result.Success.Should().BeTrue();
         result.FilesChanged.Should().BeTrue();
         _mockProcessingService.Verify(x => x.DeletePbosFromDependencies(pbos), Times.Once);
     }
 
     [Fact]
-    public async Task UninstallAsync_WhenRootMod_ReturnsSuccessWithFilesChanged()
+    public async Task ExecuteAsync_ForRootMod_ShouldDeleteRootModAndReturnFilesChanged()
     {
-        // Arrange
-        const string WorkshopModId = "test-mod-123";
-        var workshopMod = new DomainWorkshopMod
-        {
-            Id = WorkshopModId,
-            SteamId = WorkshopModId,
-            Name = "Test Mod",
-            RootMod = true,
-            Status = WorkshopModStatus.Installed
-        };
-
-        _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
+        var workshopMod = SetupWorkshopMod(rootMod: true);
         _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
 
-        // Act
-        var result = await _uninstallOperation.UninstallAsync(WorkshopModId);
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
 
-        // Assert
         result.Success.Should().BeTrue();
         result.FilesChanged.Should().BeTrue();
         _mockProcessingService.Verify(x => x.DeleteRootModFromRepos(workshopMod), Times.Once);
+        _mockProcessingService.Verify(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithInstalledStatus_ShouldSetUninstalledPendingRelease()
+    {
+        var workshopMod = SetupWorkshopMod(status: WorkshopModStatus.Installed);
+        _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
+
+        await _operation.ExecuteAsync("test-mod-123", []);
+
+        workshopMod.Status.Should().Be(WorkshopModStatus.UninstalledPendingRelease);
+        workshopMod.StatusMessage.Should().Be("Uninstalled pending next modpack release");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithInstalledPendingReleaseStatus_ShouldSetUninstalledPendingRelease()
+    {
+        var workshopMod = SetupWorkshopMod(status: WorkshopModStatus.InstalledPendingRelease);
+        _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
+
+        await _operation.ExecuteAsync("test-mod-123", []);
+
+        workshopMod.Status.Should().Be(WorkshopModStatus.UninstalledPendingRelease);
+        workshopMod.StatusMessage.Should().Be("Uninstalled pending next modpack release");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithUpdatedPendingReleaseStatus_ShouldSetUninstalledPendingRelease()
+    {
+        var workshopMod = SetupWorkshopMod(status: WorkshopModStatus.UpdatedPendingRelease);
+        _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
+
+        await _operation.ExecuteAsync("test-mod-123", []);
+
+        workshopMod.Status.Should().Be(WorkshopModStatus.UninstalledPendingRelease);
+        workshopMod.StatusMessage.Should().Be("Uninstalled pending next modpack release");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithInstallingStatus_ShouldSetUninstalled()
+    {
+        var workshopMod = SetupWorkshopMod(status: WorkshopModStatus.Installing);
+        _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
+
+        await _operation.ExecuteAsync("test-mod-123", []);
+
+        workshopMod.Status.Should().Be(WorkshopModStatus.Uninstalled);
+        workshopMod.StatusMessage.Should().Be("Uninstalled");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenModNotFound_ShouldReturnFailure()
+    {
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainWorkshopMod, bool>>())).Returns((DomainWorkshopMod)null);
+
+        var result = await _operation.ExecuteAsync("missing-mod", []);
+
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().Contain("not found");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenDeleteFails_ShouldReturnFailureWithExceptionMessage()
+    {
+        var pbos = new List<string> { "mod1.pbo" };
+        SetupWorkshopMod(pbos: pbos);
+        _mockProcessingService.Setup(x => x.DeletePbosFromDependencies(pbos)).Throws(new IOException("Delete failed"));
+
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
+
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().Be("Delete failed");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenDeleteFails_ShouldNotUpdateStatusToError()
+    {
+        var pbos = new List<string> { "mod1.pbo" };
+        SetupWorkshopMod(pbos: pbos);
+        _mockProcessingService.Setup(x => x.DeletePbosFromDependencies(pbos)).Throws(new IOException("Delete failed"));
+
+        await _operation.ExecuteAsync("test-mod-123", []);
+
+        _mockProcessingService.Verify(x => x.UpdateModStatus(It.IsAny<DomainWorkshopMod>(), WorkshopModStatus.Error, It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ForRootMod_WhenDeleteFails_ShouldReturnFailure()
+    {
+        var workshopMod = SetupWorkshopMod(rootMod: true);
+        _mockProcessingService.Setup(x => x.DeleteRootModFromRepos(workshopMod)).Throws(new IOException("Delete failed"));
+
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
+
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().Be("Delete failed");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ForRootMod_WhenDeleteFails_ShouldNotUpdateStatusToError()
+    {
+        var workshopMod = SetupWorkshopMod(rootMod: true);
+        _mockProcessingService.Setup(x => x.DeleteRootModFromRepos(workshopMod)).Throws(new IOException("Delete failed"));
+
+        await _operation.ExecuteAsync("test-mod-123", []);
+
+        _mockProcessingService.Verify(x => x.UpdateModStatus(It.IsAny<DomainWorkshopMod>(), WorkshopModStatus.Error, It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenCancelled_ShouldThrowOperationCancelledException()
+    {
+        SetupWorkshopMod(pbos: ["mod1.pbo"]);
+        _mockProcessingService.Setup(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>())).Throws(new OperationCanceledException());
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => _operation.ExecuteAsync("test-mod-123", []));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenCancelled_ShouldUpdateStatusToError()
+    {
+        var workshopMod = SetupWorkshopMod(pbos: ["mod1.pbo"]);
+        _mockProcessingService.Setup(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>())).Throws(new OperationCanceledException());
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => _operation.ExecuteAsync("test-mod-123", []));
+
+        _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.Error, "Uninstall cancelled"), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldClearPbosAndSetLastUpdatedOnSuccess()
+    {
+        var pbos = new List<string> { "mod1.pbo", "mod2.pbo" };
+        var workshopMod = SetupWorkshopMod(pbos: pbos);
+        _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
+
+        await _operation.ExecuteAsync("test-mod-123", []);
+
+        workshopMod.Pbos.Should().BeEmpty();
+        workshopMod.ErrorMessage.Should().BeNull();
+        workshopMod.LastUpdatedLocally.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 }
