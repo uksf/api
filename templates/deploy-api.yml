@@ -36,10 +36,11 @@ stages:
                 function Get-TargetProcess {
                     $procs = Get-Process -Name "UKSF.Api" -ErrorAction SilentlyContinue
                     if (-not $procs) { return $null }
+                    $pathPrefix = $deployPath.TrimEnd('\') + '\'
                     foreach ($p in @($procs)) {
                         try {
                             $exePath = $p.Path
-                            if ($exePath -and $exePath.StartsWith($deployPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+                            if ($exePath -and $exePath.StartsWith($pathPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
                                 return $p
                             }
                         } catch {
