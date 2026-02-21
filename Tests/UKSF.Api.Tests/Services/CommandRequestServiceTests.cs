@@ -324,4 +324,45 @@ public class CommandRequestServiceTests
 
         _subject.DoesEquivalentRequestExist(request).Should().BeFalse();
     }
+
+    [Fact]
+    public void DoesEquivalentRequestExist_WithCustomFilter_ShouldUseFilter()
+    {
+        var existing = new DomainCommandRequest
+        {
+            Recipient = "user1",
+            Type = "Transfer",
+            DisplayValue = "2 Section",
+            DisplayFrom = "1 Section",
+            Reason = "Special"
+        };
+        _mockCommandRequestContext.Setup(x => x.Get()).Returns(new List<DomainCommandRequest> { existing });
+
+        var request = new DomainCommandRequest
+        {
+            Recipient = "user1",
+            Type = "Transfer",
+            DisplayValue = "Different",
+            DisplayFrom = "Different"
+        };
+
+        _subject.DoesEquivalentRequestExist(request, x => x.Reason == "Special").Should().BeTrue();
+        _subject.DoesEquivalentRequestExist(request, x => x.Reason == "Other").Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsRequestApproved_ShouldReturnFalse_WhenRequestNotFound()
+    {
+        _mockCommandRequestContext.Setup(x => x.GetSingle("missing")).Returns((DomainCommandRequest)null);
+
+        _subject.IsRequestApproved("missing").Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsRequestRejected_ShouldReturnFalse_WhenRequestNotFound()
+    {
+        _mockCommandRequestContext.Setup(x => x.GetSingle("missing")).Returns((DomainCommandRequest)null);
+
+        _subject.IsRequestRejected("missing").Should().BeFalse();
+    }
 }

@@ -446,4 +446,223 @@ public class UnitsServiceTests
         // Assert
         result.Should().Be("1 Section, SFSG, UKSF");
     }
+
+    [Fact]
+    public void GetUnitDepth_Should_Return_Zero_For_Root_Unit()
+    {
+        // Arrange
+        var rootUnit = new DomainUnit
+        {
+            Id = _combatRootId,
+            Name = "Root",
+            Parent = ObjectId.Empty.ToString()
+        };
+
+        // Act
+        var result = _unitsService.GetUnitDepth(rootUnit);
+
+        // Assert
+        result.Should().Be(0);
+    }
+
+    [Fact]
+    public void GetUnitDepth_Should_Return_One_For_Child_Of_Root()
+    {
+        // Arrange
+        var rootUnit = new DomainUnit
+        {
+            Id = _combatRootId,
+            Name = "Root",
+            Parent = ObjectId.Empty.ToString()
+        };
+        var childUnit = new DomainUnit
+        {
+            Id = _unitId,
+            Name = "Child",
+            Parent = _combatRootId
+        };
+
+        _mockUnitsContext.Setup(x => x.GetSingle(_combatRootId)).Returns(rootUnit);
+        _mockUnitsContext.Setup(x => x.GetSingle(ObjectId.Empty.ToString())).Returns((DomainUnit)null);
+
+        // Act
+        var result = _unitsService.GetUnitDepth(childUnit);
+
+        // Assert
+        result.Should().Be(1);
+    }
+
+    [Fact]
+    public void GetUnitDepth_Should_Return_Two_For_Grandchild()
+    {
+        // Arrange
+        var parentId = ObjectId.GenerateNewId().ToString();
+        var rootUnit = new DomainUnit
+        {
+            Id = _combatRootId,
+            Name = "Root",
+            Parent = ObjectId.Empty.ToString()
+        };
+        var parentUnit = new DomainUnit
+        {
+            Id = parentId,
+            Name = "Parent",
+            Parent = _combatRootId
+        };
+        var grandchild = new DomainUnit
+        {
+            Id = _unitId,
+            Name = "Grandchild",
+            Parent = parentId
+        };
+
+        _mockUnitsContext.Setup(x => x.GetSingle(parentId)).Returns(parentUnit);
+        _mockUnitsContext.Setup(x => x.GetSingle(_combatRootId)).Returns(rootUnit);
+        _mockUnitsContext.Setup(x => x.GetSingle(ObjectId.Empty.ToString())).Returns((DomainUnit)null);
+
+        // Act
+        var result = _unitsService.GetUnitDepth(grandchild);
+
+        // Assert
+        result.Should().Be(2);
+    }
+
+    [Fact]
+    public void AnyChildHasMember_Should_Return_True_When_Child_Has_Member()
+    {
+        // Arrange
+        var childId = ObjectId.GenerateNewId().ToString();
+        var parent = new DomainUnit
+        {
+            Id = _unitId,
+            Name = "Parent",
+            Members = new List<string>()
+        };
+        var child = new DomainUnit
+        {
+            Id = childId,
+            Name = "Child",
+            Parent = _unitId,
+            Members = new List<string> { _memberId }
+        };
+
+        _mockUnitsContext.Setup(x => x.GetSingle(_unitId)).Returns(parent);
+        _mockUnitsContext.SetupSequence(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns(new List<DomainUnit> { child }).Returns(new List<DomainUnit>());
+
+        // Act
+        var result = _unitsService.AnyChildHasMember(_unitId, _memberId);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void AnyChildHasMember_Should_Return_False_When_No_Child_Has_Member()
+    {
+        // Arrange
+        var childId = ObjectId.GenerateNewId().ToString();
+        var parent = new DomainUnit
+        {
+            Id = _unitId,
+            Name = "Parent",
+            Members = new List<string>()
+        };
+        var child = new DomainUnit
+        {
+            Id = childId,
+            Name = "Child",
+            Parent = _unitId,
+            Members = new List<string>()
+        };
+
+        _mockUnitsContext.Setup(x => x.GetSingle(_unitId)).Returns(parent);
+        _mockUnitsContext.SetupSequence(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns(new List<DomainUnit> { child }).Returns(new List<DomainUnit>());
+
+        // Act
+        var result = _unitsService.AnyChildHasMember(_unitId, _memberId);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void AnyParentHasMember_Should_Return_True_When_Parent_Has_Member()
+    {
+        // Arrange
+        var parentId = ObjectId.GenerateNewId().ToString();
+        var parent = new DomainUnit
+        {
+            Id = parentId,
+            Name = "Parent",
+            Parent = "",
+            Members = new List<string> { _memberId }
+        };
+        var unit = new DomainUnit
+        {
+            Id = _unitId,
+            Name = "Unit",
+            Parent = parentId,
+            Members = new List<string>()
+        };
+
+        _mockUnitsContext.Setup(x => x.GetSingle(_unitId)).Returns(unit);
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(parent);
+
+        // Act
+        var result = _unitsService.AnyParentHasMember(_unitId, _memberId);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void AnyParentHasMember_Should_Return_False_When_No_Parent_Has_Member()
+    {
+        // Arrange
+        var parentId = ObjectId.GenerateNewId().ToString();
+        var parent = new DomainUnit
+        {
+            Id = parentId,
+            Name = "Parent",
+            Parent = "",
+            Members = new List<string>()
+        };
+        var unit = new DomainUnit
+        {
+            Id = _unitId,
+            Name = "Unit",
+            Parent = parentId,
+            Members = new List<string>()
+        };
+
+        _mockUnitsContext.Setup(x => x.GetSingle(_unitId)).Returns(unit);
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(parent);
+
+        // Act
+        var result = _unitsService.AnyParentHasMember(_unitId, _memberId);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void GetSecondaryRoot_Should_Return_Secondary_Root_Unit()
+    {
+        // Arrange
+        var secondaryRootId = ObjectId.GenerateNewId().ToString();
+        var secondaryRoot = new DomainUnit
+        {
+            Id = secondaryRootId,
+            Branch = UnitBranch.Secondary,
+            Parent = ObjectId.Empty.ToString()
+        };
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(secondaryRoot);
+
+        // Act
+        var result = _unitsService.GetSecondaryRoot();
+
+        // Assert
+        result.Should().Be(secondaryRoot);
+        result.Branch.Should().Be(UnitBranch.Secondary);
+    }
 }

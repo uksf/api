@@ -259,3 +259,6 @@ appsettings.*.json
 
 # Http
 *.private.env.json
+
+# Plan documents
+docs/plans/

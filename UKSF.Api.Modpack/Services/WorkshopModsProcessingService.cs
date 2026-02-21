@@ -120,7 +120,6 @@ public class WorkshopModsProcessingService(
             throw new InvalidOperationException($"Duplicate PBO names found: {string.Join(", ", duplicates)}. Manual investigation required.");
         }
 
-        logger.LogInfo($"Found {pboFiles.Count} PBO files in {workshopModPath}");
         return pboFiles;
     }
 
@@ -142,7 +141,6 @@ public class WorkshopModsProcessingService(
         }
 
         await Task.WhenAll(copyTasks);
-        logger.LogInfo($"Copied {pbos.Count} PBOs for {domainWorkshopMod.Id}");
     }
 
     public void DeletePbosFromDependencies(List<string> pbos)
@@ -165,8 +163,6 @@ public class WorkshopModsProcessingService(
                 fileSystemService.DeleteFile(rcFile);
             }
         }
-
-        logger.LogInfo($"Deleted {pbos.Count} PBOs from dependencies");
     }
 
     public async Task CopyRootModToRepos(DomainWorkshopMod workshopMod, CancellationToken cancellationToken = default)
@@ -177,8 +173,6 @@ public class WorkshopModsProcessingService(
         var workshopModPath = GetWorkshopModPath(workshopMod.SteamId);
 
         await Task.WhenAll(CopyDirectoryAsync(workshopModPath, devPath, cancellationToken), CopyDirectoryAsync(workshopModPath, rcPath, cancellationToken));
-
-        logger.LogInfo($"Copied root mod {workshopMod.Name} to {folderName} in both repos");
     }
 
     public void DeleteRootModFromRepos(DomainWorkshopMod workshopMod)
@@ -196,8 +190,6 @@ public class WorkshopModsProcessingService(
         {
             fileSystemService.DeleteDirectory(rcPath, true);
         }
-
-        logger.LogInfo($"Deleted root mod {workshopMod.Name} from {folderName} in both repos");
     }
 
     public string GetRootModFolderName(DomainWorkshopMod workshopMod)

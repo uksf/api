@@ -319,6 +319,90 @@ public class ChainOfCommandServiceTests
         unit.ChainOfCommand.Second.Should().BeNull("the cached unit's ChainOfCommand should not be mutated");
     }
 
+    [Fact]
+    public void HasChainOfCommandPosition_By_UnitId_Should_Return_True_When_Position_Is_Filled()
+    {
+        // Arrange
+        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true);
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
+
+        // Act
+        var result = _chainOfCommandService.HasChainOfCommandPosition(_unitId, "1iC");
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void HasChainOfCommandPosition_By_UnitId_Should_Return_False_When_Position_Is_Empty()
+    {
+        // Arrange
+        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: false);
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(unit);
+
+        // Act
+        var result = _chainOfCommandService.HasChainOfCommandPosition(_unitId, "1iC");
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void GetMemberChainOfCommandOrder_Should_Return_Correct_Order_For_1iC()
+    {
+        // Arrange
+        var account = new DomainAccount { Id = _commanderId };
+        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true, commanderId: _commanderId);
+
+        // Act
+        var result = _chainOfCommandService.GetMemberChainOfCommandOrder(account, unit);
+
+        // Assert
+        result.Should().Be(int.MaxValue); // int.MaxValue - 0 (order of 1iC is 0)
+    }
+
+    [Fact]
+    public void GetMemberChainOfCommandOrder_Should_Return_Negative_One_When_Member_Has_No_Position()
+    {
+        // Arrange
+        var nonMemberId = ObjectId.GenerateNewId().ToString();
+        var account = new DomainAccount { Id = nonMemberId };
+        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true, commanderId: _commanderId);
+
+        // Act
+        var result = _chainOfCommandService.GetMemberChainOfCommandOrder(account, unit);
+
+        // Assert
+        result.Should().Be(-1);
+    }
+
+    [Fact]
+    public void GetChainOfCommandPosition_Should_Return_Correct_Position_Name()
+    {
+        // Arrange
+        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true, commanderId: _commanderId);
+
+        // Act
+        var result = _chainOfCommandService.GetChainOfCommandPosition(unit, _commanderId);
+
+        // Assert
+        result.Should().Be("1iC");
+    }
+
+    [Fact]
+    public void GetChainOfCommandPosition_Should_Return_Empty_When_Member_Has_No_Position()
+    {
+        // Arrange
+        var nonMemberId = ObjectId.GenerateNewId().ToString();
+        var unit = CreateUnit(_unitId, "Test Unit", hasCommander: true, commanderId: _commanderId);
+
+        // Act
+        var result = _chainOfCommandService.GetChainOfCommandPosition(unit, nonMemberId);
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
     private DomainUnit CreateUnit(string id, string name, bool hasCommander = false, string commanderId = null, string parent = "", string shortname = null)
     {
         var unit = new DomainUnit
