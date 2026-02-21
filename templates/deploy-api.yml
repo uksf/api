@@ -29,21 +29,37 @@ stages:
               script: |
                 $ErrorActionPreference = "Continue"
                 $serviceName = "${{ parameters.serviceName }}"
-                $processName = "UKSF.Api"
+                $deployPath = "${{ parameters.deployPath }}"
                 $serviceTimeout = 60
                 $processTimeout = 30
+
+                function Get-TargetProcess {
+                    $procs = Get-Process -Name "UKSF.Api" -ErrorAction SilentlyContinue
+                    if (-not $procs) { return $null }
+                    foreach ($p in @($procs)) {
+                        try {
+                            $exePath = $p.Path
+                            if ($exePath -and $exePath.StartsWith($deployPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+                                return $p
+                            }
+                        } catch {
+                            # Access denied - skip this process
+                        }
+                    }
+                    return $null
+                }
 
                 function Wait-ProcessExit {
                     param([int]$Timeout = 30)
 
                     $elapsed = 0
                     while ($elapsed -lt $Timeout) {
-                        $proc = Get-Process -Name $processName -ErrorAction SilentlyContinue
+                        $proc = Get-TargetProcess
                         if (-not $proc) {
                             Write-Host "Process is no longer running"
                             return $true
                         }
-                        Write-Host "Process still running (PID: $($proc.Id)), waiting..."
+                        Write-Host "Process still running (PID: $($proc.Id), Path: $($proc.Path)), waiting..."
                         Start-Sleep -Seconds 2
                         $elapsed += 2
                     }
@@ -53,7 +69,7 @@ stages:
                 function Wait-FileLockRelease {
                     param([string]$Path, [int]$Timeout = 15)
 
-                    $testFile = Join-Path $Path "$processName.dll"
+                    $testFile = Join-Path $Path "UKSF.Api.dll"
                     if (-not (Test-Path $testFile)) {
                         Write-Host "Deploy path does not exist yet, no locks to check"
                         return $true
@@ -116,9 +132,9 @@ stages:
                 # Verify process is gone regardless of how service stopped
                 if (-not (Wait-ProcessExit -Timeout $processTimeout)) {
                     Write-Host "Process did not exit, forcing termination..."
-                    $proc = Get-Process -Name $processName -ErrorAction SilentlyContinue
+                    $proc = Get-TargetProcess
                     if ($proc) {
-                        Write-Host "Killing process (PID: $($proc.Id))"
+                        Write-Host "Killing process (PID: $($proc.Id), Path: $($proc.Path))"
                         Stop-Process -Id $proc.Id -Force
                     }
 
