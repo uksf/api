@@ -33,7 +33,7 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
         "hostname = \"{0}\";",
         "password = \"{1}\";",
         "passwordAdmin = \"{2}\";",
-        "serverCommandPassword = \"brexit\";",
+        "serverCommandPassword = \"{5}\";",
         "logFile = \"\";",
         "motd[] = {{\"\"}};",
         "motdInterval = 999999;",
@@ -99,7 +99,8 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
 
     public string GetGameServerConfigPath(DomainGameServer gameServer)
     {
-        return Path.Combine(variablesService.GetVariable("SERVER_PATH_CONFIGS").AsString(), $"{gameServer.ProfileName}.cfg");
+        var sanitizedName = Path.GetFileName(gameServer.ProfileName);
+        return Path.Combine(variablesService.GetVariable("SERVER_PATH_CONFIGS").AsString(), $"{sanitizedName}.cfg");
     }
 
     public string GetGameServerModsPaths(GameEnvironment environment)
@@ -127,7 +128,8 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
             gameServer.Password,
             gameServer.AdminPassword,
             playerCount,
-            missionSelection.Replace(".pbo", "")
+            missionSelection.Replace(".pbo", ""),
+            variablesService.GetVariable("SERVER_COMMAND_PASSWORD").AsString()
         );
     }
 
@@ -157,8 +159,13 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
 
     public string GetMaxPlayerCountFromConfig(DomainGameServer gameServer)
     {
-        var maxPlayers = File.ReadAllLines(GetGameServerConfigPath(gameServer)).First(x => x.Contains("maxPlayers"));
-        maxPlayers = maxPlayers.RemoveSpaces().Replace(";", "");
+        var maxPlayersLine = File.ReadAllLines(GetGameServerConfigPath(gameServer)).FirstOrDefault(x => x.Contains("maxPlayers"));
+        if (maxPlayersLine == null)
+        {
+            return "0";
+        }
+
+        var maxPlayers = maxPlayersLine.RemoveSpaces().Replace(";", "");
         return maxPlayers.Split("=")[1];
     }
 

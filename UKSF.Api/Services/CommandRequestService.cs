@@ -111,12 +111,14 @@ public class CommandRequestService(
 
     public bool IsRequestApproved(string id)
     {
-        return commandRequestContext.GetSingle(id).Reviews.All(x => x.Value == ReviewState.Approved);
+        var request = commandRequestContext.GetSingle(id);
+        return request != null && request.Reviews.All(x => x.Value == ReviewState.Approved);
     }
 
     public bool IsRequestRejected(string id)
     {
-        return commandRequestContext.GetSingle(id).Reviews.Any(x => x.Value == ReviewState.Rejected);
+        var request = commandRequestContext.GetSingle(id);
+        return request != null && request.Reviews.Any(x => x.Value == ReviewState.Rejected);
     }
 
     public bool DoesEquivalentRequestExist(DomainCommandRequest request)

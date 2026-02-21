@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Queries;
 
 namespace UKSF.Api.Controllers;
 
 [Route("accounts/nations")]
+[Authorize]
 public class AccountNationsController(IAllNationsByAccountQuery allNationsByAccountQuery) : ControllerBase
 {
     [HttpGet]

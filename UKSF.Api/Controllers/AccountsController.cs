@@ -167,6 +167,7 @@ public class AccountsController(
     }
 
     [HttpGet("exists")]
+    [Authorize]
     public bool CheckUsernameOrEmailExists([FromQuery] string check)
     {
         return accountContext.Get().Any(x => string.Equals(x.Email, check, StringComparison.InvariantCultureIgnoreCase));
@@ -197,6 +198,12 @@ public class AccountsController(
     [Authorize]
     public async Task<AccountSettings> UpdateSetting([FromRoute] string id, [FromBody] AccountSettings settings)
     {
+        var contextId = httpContextService.GetUserId();
+        if (!string.IsNullOrEmpty(id) && id != contextId && !httpContextService.UserHasPermission(Permissions.Admin))
+        {
+            throw new AccessDeniedException();
+        }
+
         var account = string.IsNullOrEmpty(id) ? accountService.GetUserAccount() : accountContext.GetSingle(id);
         await accountContext.Update(account.Id, Builders<DomainAccount>.Update.Set(x => x.Settings, settings));
         logger.LogAudit($"Account settings updated: {account.Settings.Changes(settings)}");

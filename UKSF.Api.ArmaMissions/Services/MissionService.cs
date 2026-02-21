@@ -14,7 +14,7 @@ public class MissionService(MissionPatchDataService missionPatchDataService)
     private Mission _mission;
     private List<ValidationReport> _reports;
 
-    public List<ValidationReport> ProcessMission(Mission tempMission, string armaServerModsPath, int armaServerDefaultMaxCurators)
+    public async Task<List<ValidationReport>> ProcessMission(Mission tempMission, string armaServerModsPath, int armaServerDefaultMaxCurators)
     {
         _armaServerDefaultMaxCurators = armaServerDefaultMaxCurators;
         _armaServerModsPath = armaServerModsPath;
@@ -26,9 +26,9 @@ public class MissionService(MissionPatchDataService missionPatchDataService)
             return _reports;
         }
 
-        if (CheckBinned())
+        if (await CheckBinned())
         {
-            UnBin();
+            await UnBin();
         }
 
         Read();
@@ -95,7 +95,7 @@ public class MissionService(MissionPatchDataService missionPatchDataService)
         return true;
     }
 
-    private bool CheckBinned()
+    private async Task<bool> CheckBinned()
     {
         Process process = new()
         {
@@ -108,11 +108,11 @@ public class MissionService(MissionPatchDataService missionPatchDataService)
             }
         };
         process.Start();
-        process.WaitForExit();
+        await process.WaitForExitAsync();
         return process.ExitCode == 0;
     }
 
-    private void UnBin()
+    private async Task UnBin()
     {
         Process process = new()
         {
@@ -125,7 +125,7 @@ public class MissionService(MissionPatchDataService missionPatchDataService)
             }
         };
         process.Start();
-        process.WaitForExit();
+        await process.WaitForExitAsync();
 
         if (File.Exists($"{_mission.SqmPath}.txt"))
         {
@@ -149,7 +149,7 @@ public class MissionService(MissionPatchDataService missionPatchDataService)
 
     private void RemoveUnbinText()
     {
-        if (_mission.SqmLines.First() != "////////////////////////////////////////////////////////////////////")
+        if (_mission.SqmLines.FirstOrDefault() != "////////////////////////////////////////////////////////////////////")
         {
             return;
         }

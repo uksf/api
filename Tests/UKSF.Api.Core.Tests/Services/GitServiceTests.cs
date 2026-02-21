@@ -63,7 +63,7 @@ public class GitServiceTests
         _mockProcessCommandFactory.Setup(x => x.CreateCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Throws(originalException);
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<Exception>(() => _gitService.ExecuteCommand(gitCommandArgs, command));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => _gitService.ExecuteCommand(gitCommandArgs, command));
         exception.Message.Should().Be($"Git operation failed: {command}");
         exception.InnerException.Should().Be(originalException);
 

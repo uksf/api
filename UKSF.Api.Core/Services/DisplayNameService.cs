@@ -59,7 +59,13 @@ public class DisplayNameService(IAccountContext accountContext, IRanksContext ra
     {
         if (!string.IsNullOrEmpty(rank))
         {
-            var rankAbbreviation = ranksContext.GetSingle(rank).Abbreviation;
+            var rankObj = ranksContext.GetSingle(rank);
+            if (rankObj == null)
+            {
+                return $"{lastName}.{firstName[0]}";
+            }
+
+            var rankAbbreviation = rankObj.Abbreviation;
             return $"{rankAbbreviation}.{lastName}.{firstName[0]}";
         }
 

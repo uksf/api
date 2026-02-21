@@ -41,7 +41,7 @@ public class GitService(IProcessCommandFactory processCommandFactory, IUksfLogge
         catch (Exception ex)
         {
             logger?.LogWarning($"Git command failed: {command}. Error: {ex.Message}");
-            throw new Exception($"Git operation failed: {command}", ex);
+            throw new InvalidOperationException($"Git operation failed: {command}", ex);
         }
     }
 
@@ -87,7 +87,7 @@ public class GitService(IProcessCommandFactory processCommandFactory, IUksfLogge
                 exceptionMessage = $"{exceptionMessage}. {capturedException.Message}";
             }
 
-            throw new Exception(exceptionMessage);
+            throw new InvalidOperationException(exceptionMessage);
         }
 
         return results;

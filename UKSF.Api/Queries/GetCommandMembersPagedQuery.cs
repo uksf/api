@@ -108,7 +108,8 @@ public class GetCommandMembersPagedQuery(IAccountContext accountContext, IHttpCo
 
     private static FilterDefinition<CommandMemberAccount> BuildFiltersFromQueryPart(string queryPart)
     {
-        var regex = new BsonRegularExpression(new Regex(queryPart, RegexOptions.IgnoreCase));
+        var escapedQueryPart = Regex.Escape(queryPart);
+        var regex = new BsonRegularExpression(new Regex(escapedQueryPart, RegexOptions.IgnoreCase));
         var filters = new List<FilterDefinition<CommandMemberAccount>>
         {
             Builders<CommandMemberAccount>.Filter.Regex(x => x.Id, regex),
@@ -117,12 +118,12 @@ public class GetCommandMembersPagedQuery(IAccountContext accountContext, IHttpCo
             Builders<CommandMemberAccount>.Filter.Regex(x => x.Rank.Name, regex),
             Builders<CommandMemberAccount>.Filter.Regex(x => x.Rank.Abbreviation, regex),
             Builders<CommandMemberAccount>.Filter.Regex(x => x.Role.Name, regex),
-            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Units, x => Regex.IsMatch(x.Name, queryPart, RegexOptions.IgnoreCase)),
-            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Units, x => Regex.IsMatch(x.Shortname, queryPart, RegexOptions.IgnoreCase)),
-            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.ParentUnits, x => Regex.IsMatch(x.Name, queryPart, RegexOptions.IgnoreCase)),
-            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.ParentUnits, x => Regex.IsMatch(x.Shortname, queryPart, RegexOptions.IgnoreCase)),
-            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Trainings, x => Regex.IsMatch(x.Name, queryPart, RegexOptions.IgnoreCase)),
-            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Trainings, x => Regex.IsMatch(x.ShortName, queryPart, RegexOptions.IgnoreCase))
+            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Units, x => Regex.IsMatch(x.Name, escapedQueryPart, RegexOptions.IgnoreCase)),
+            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Units, x => Regex.IsMatch(x.Shortname, escapedQueryPart, RegexOptions.IgnoreCase)),
+            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.ParentUnits, x => Regex.IsMatch(x.Name, escapedQueryPart, RegexOptions.IgnoreCase)),
+            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.ParentUnits, x => Regex.IsMatch(x.Shortname, escapedQueryPart, RegexOptions.IgnoreCase)),
+            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Trainings, x => Regex.IsMatch(x.Name, escapedQueryPart, RegexOptions.IgnoreCase)),
+            Builders<CommandMemberAccount>.Filter.ElemMatch(x => x.Trainings, x => Regex.IsMatch(x.ShortName, escapedQueryPart, RegexOptions.IgnoreCase))
         };
         return Builders<CommandMemberAccount>.Filter.Or(filters);
     }

@@ -50,14 +50,14 @@ public class DiscordBaseService(
             return Task.CompletedTask;
         }
 
-        Task.Run(async () => { await RunEventTask(actionTask); });
+        _ = Task.Run(async () => { await RunEventTask(actionTask); });
 
         return Task.CompletedTask;
     }
 
     protected Task WrapAdminEventTask(Func<Task> actionTask)
     {
-        Task.Run(async () => { await RunEventTask(actionTask); });
+        _ = Task.Run(async () => { await RunEventTask(actionTask); });
 
         return Task.CompletedTask;
     }

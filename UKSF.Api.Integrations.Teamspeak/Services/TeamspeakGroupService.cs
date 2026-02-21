@@ -104,12 +104,23 @@ public class TeamspeakGroupService(
             return;
         }
 
-        groupIdsToAssign.Add(ranksContext.GetSingle(account.Rank).TeamspeakGroup.ToInt());
+        var rank = ranksContext.GetSingle(account.Rank);
+        if (rank == null)
+        {
+            return;
+        }
+
+        groupIdsToAssign.Add(rank.TeamspeakGroup.ToInt());
     }
 
     private void ResolveUnitGroup(DomainAccount account, HashSet<int> groupIdsToAssign)
     {
         var accountUnit = unitsContext.GetSingle(x => x.Name == account.UnitAssignment);
+        if (accountUnit == null)
+        {
+            return;
+        }
+
         var elcom = unitsService.GetAuxiliaryRoot();
 
         if (accountUnit.Parent == ObjectId.Empty.ToString())
@@ -138,6 +149,11 @@ public class TeamspeakGroupService(
     private void ResolveParentUnitGroup(DomainAccount account, HashSet<int> groupIdsToAssign)
     {
         var accountUnit = unitsContext.GetSingle(x => x.Name == account.UnitAssignment);
+        if (accountUnit == null)
+        {
+            return;
+        }
+
         var parentUnit = FindValidParentUnit(accountUnit, groupIdsToAssign);
 
         if (parentUnit is not null && parentUnit.Parent != ObjectId.Empty.ToString())

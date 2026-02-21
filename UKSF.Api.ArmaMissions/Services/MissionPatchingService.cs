@@ -23,52 +23,48 @@ public class MissionPatchingService(MissionService missionService, IVariablesSer
     private string _folderPath;
     private string _parentFolderPath;
 
-    public Task<MissionPatchingResult> PatchMission(string path, string armaServerModsPath, int armaServerDefaultMaxCurators)
+    public async Task<MissionPatchingResult> PatchMission(string path, string armaServerModsPath, int armaServerDefaultMaxCurators)
     {
-        return Task.Run(async () =>
+        _filePath = path.Replace("\"", "");
+        _parentFolderPath = Path.GetDirectoryName(_filePath);
+
+        MissionPatchingResult result = new();
+        try
+        {
+            CreateBackup();
+            await UnpackPbo();
+            Mission mission = new(_folderPath);
+            result.Reports = await missionService.ProcessMission(mission, armaServerModsPath, armaServerDefaultMaxCurators);
+            result.PlayerCount = mission.PlayerCount;
+            result.Success = result.Reports.All(x => !x.Error);
+
+            if (!result.Success)
             {
-                _filePath = path;
-                _parentFolderPath = Path.GetDirectoryName(_filePath);
-
-                MissionPatchingResult result = new();
-                try
-                {
-                    CreateBackup();
-                    UnpackPbo();
-                    Mission mission = new(_folderPath);
-                    result.Reports = missionService.ProcessMission(mission, armaServerModsPath, armaServerDefaultMaxCurators);
-                    result.PlayerCount = mission.PlayerCount;
-                    result.Success = result.Reports.All(x => !x.Error);
-
-                    if (!result.Success)
-                    {
-                        return result;
-                    }
-
-                    if (MissionUtilities.CheckFlag(mission, "missionUseSimplePack"))
-                    {
-                        logger.LogAudit($"Mission processed with simple packing enabled ({Path.GetFileName(path)})");
-                        await SimplePackPbo();
-                    }
-                    else
-                    {
-                        await MakePbo();
-                    }
-                }
-                catch (Exception exception)
-                {
-                    logger.LogError(exception);
-                    result.Reports = [new ValidationReport(exception)];
-                    result.Success = false;
-                }
-                finally
-                {
-                    Cleanup();
-                }
-
                 return result;
             }
-        );
+
+            if (MissionUtilities.CheckFlag(mission, "missionUseSimplePack"))
+            {
+                logger.LogAudit($"Mission processed with simple packing enabled ({Path.GetFileName(path)})");
+                await SimplePackPbo();
+            }
+            else
+            {
+                await MakePbo();
+            }
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception);
+            result.Reports = [new ValidationReport(exception)];
+            result.Success = false;
+        }
+        finally
+        {
+            Cleanup();
+        }
+
+        return result;
     }
 
     private void CreateBackup()
@@ -86,7 +82,7 @@ public class MissionPatchingService(MissionService missionService, IVariablesSer
         }
     }
 
-    private void UnpackPbo()
+    private async Task UnpackPbo()
     {
         if (Path.GetExtension(_filePath) != ".pbo")
         {
@@ -110,7 +106,7 @@ public class MissionPatchingService(MissionService missionService, IVariablesSer
             }
         };
         process.Start();
-        process.WaitForExit();
+        await process.WaitForExitAsync();
 
         if (!Directory.Exists(_folderPath))
         {
@@ -149,7 +145,7 @@ public class MissionPatchingService(MissionService missionService, IVariablesSer
         }
 
         var outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
-        output = outputLines.Where(x => !string.IsNullOrEmpty(x) && !x.ContainsIgnoreCase("compressing")).Aggregate((x, y) => $"{x}\n{y}");
+        output = string.Join("\n", outputLines.Where(x => !string.IsNullOrEmpty(x) && !x.ContainsIgnoreCase("compressing")));
         throw new Exception(output);
     }
 
@@ -185,7 +181,7 @@ public class MissionPatchingService(MissionService missionService, IVariablesSer
         }
 
         var outputLines = Regex.Split($"{output}\n{errorOutput}", "\r\n|\r|\n").ToList();
-        output = outputLines.Where(x => !string.IsNullOrEmpty(x)).Aggregate((x, y) => $"{x}\n{y}");
+        output = string.Join("\n", outputLines.Where(x => !string.IsNullOrEmpty(x)));
         throw new Exception(output);
     }
 

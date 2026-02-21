@@ -17,7 +17,8 @@ public class CommentThreadService(ICommentThreadContext commentThreadContext, ID
 {
     public IEnumerable<DomainComment> GetCommentThreadComments(string commentThreadId)
     {
-        return commentThreadContext.GetSingle(commentThreadId).Comments.Reverse();
+        var thread = commentThreadContext.GetSingle(commentThreadId);
+        return thread?.Comments.Reverse() ?? Enumerable.Empty<DomainComment>();
     }
 
     public async Task InsertComment(string commentThreadId, DomainComment comment)
@@ -33,7 +34,12 @@ public class CommentThreadService(ICommentThreadContext commentThreadContext, ID
     public IEnumerable<string> GetCommentThreadParticipants(string commentThreadId)
     {
         var participants = GetCommentThreadComments(commentThreadId).Select(x => x.Author).ToHashSet();
-        participants.UnionWith(commentThreadContext.GetSingle(commentThreadId).Authors);
+        var thread = commentThreadContext.GetSingle(commentThreadId);
+        if (thread != null)
+        {
+            participants.UnionWith(thread.Authors);
+        }
+
         return participants;
     }
 

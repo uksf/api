@@ -65,7 +65,7 @@ public class PermissionsService(
                 }
 
                 var personnelId = variablesService.GetVariable("UNIT_ID_PERSONNEL").AsString();
-                if (unitsContext.GetSingle(personnelId).Members.Contains(account.Id))
+                if (unitsContext.GetSingle(personnelId)?.Members.Contains(account.Id) == true)
                 {
                     permissions.Add(Permissions.Personnel);
                 }
@@ -77,7 +77,7 @@ public class PermissionsService(
                 }
 
                 var testersId = variablesService.GetVariable("UNIT_ID_TESTERS").AsString();
-                if (unitsContext.GetSingle(testersId).Members.Contains(account.Id))
+                if (unitsContext.GetSingle(testersId)?.Members.Contains(account.Id) == true)
                 {
                     permissions.Add(Permissions.Tester);
                 }

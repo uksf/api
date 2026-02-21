@@ -127,6 +127,7 @@ public class CommandRequestsController(
                 await commandRequestService.SetRequestReviewState(request, sessionDomainAccount.Id, ReviewState.Pending);
             }
 
+            logger.LogError("Command request resolution failed", exception);
             throw new BadRequestException(exception.Message);
         }
     }

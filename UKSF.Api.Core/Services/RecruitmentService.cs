@@ -56,8 +56,8 @@ public class RecruitmentService(
             NextCandidateOp = GetNextCandidateOp(),
             AverageProcessingTime = GetAverageProcessingTime(),
             SteamProfile = "https://steamcommunity.com/profiles/" + account.Steamname,
-            Recruiter = displayNameService.GetDisplayName(recruiterAccount),
-            RecruiterId = recruiterAccount.Id
+            Recruiter = recruiterAccount != null ? displayNameService.GetDisplayName(recruiterAccount) : string.Empty,
+            RecruiterId = recruiterAccount?.Id ?? string.Empty
         };
     }
 
@@ -126,7 +126,8 @@ public class RecruitmentService(
             }
         );
         var sorted = unsorted.OrderBy(x => x.waiting).ThenBy(x => x.complete);
-        return sorted.First().id;
+        var next = sorted.FirstOrDefault();
+        return next?.id ?? string.Empty;
     }
 
     public async Task SetApplicationRecruiter(string id, string newRecruiter)

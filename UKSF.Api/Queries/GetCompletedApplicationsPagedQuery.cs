@@ -79,7 +79,8 @@ public class GetCompletedApplicationsPagedQueryHandler(IAccountContext accountCo
 
     private static FilterDefinition<DomainAccount> BuildFiltersFromQueryPart(string queryPart)
     {
-        var regex = new BsonRegularExpression(new Regex(queryPart, RegexOptions.IgnoreCase));
+        var escapedQueryPart = Regex.Escape(queryPart);
+        var regex = new BsonRegularExpression(new Regex(escapedQueryPart, RegexOptions.IgnoreCase));
         var filters = new List<FilterDefinition<DomainAccount>>
         {
             Builders<DomainAccount>.Filter.Regex(x => x.Id, regex),

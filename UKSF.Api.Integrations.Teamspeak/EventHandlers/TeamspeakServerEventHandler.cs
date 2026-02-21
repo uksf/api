@@ -62,24 +62,27 @@ public class TeamspeakServerEventHandler(
         await Console.Out.WriteLineAsync($"Server group for {clientDbId}: {serverGroupId}");
 
         var update = _serverGroupUpdates.GetOrAdd(clientDbId, _ => new TeamspeakServerGroupUpdate());
-        update.ServerGroups.Add(serverGroupId);
-        if (update.CancellationTokenSource is not null)
+        CancellationToken token;
+        List<int> serverGroupsSnapshot;
+        lock (update.Lock)
         {
-            await update.CancellationTokenSource.CancelAsync();
+            update.ServerGroups.Add(serverGroupId);
+            update.CancellationTokenSource?.Cancel();
+            update.CancellationTokenSource = new CancellationTokenSource();
+            token = update.CancellationTokenSource.Token;
+            serverGroupsSnapshot = new List<int>(update.ServerGroups);
         }
 
-        update.CancellationTokenSource = new CancellationTokenSource();
         _ = TaskUtilities.DelayWithCallback(
             TimeSpan.FromMilliseconds(500),
-            update.CancellationTokenSource.Token,
+            token,
             async () =>
             {
-                await update.CancellationTokenSource.CancelAsync();
                 _serverGroupUpdates.TryRemove(clientDbId, out _);
 
                 try
                 {
-                    await ProcessAccountData(clientDbId, update.ServerGroups);
+                    await ProcessAccountData(clientDbId, serverGroupsSnapshot);
                 }
                 catch (Exception exception)
                 {

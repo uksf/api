@@ -128,7 +128,7 @@ public class GameServersServiceTests
         };
 
         var action = () => _subject.KillGameServer(gameServer);
-        await action.Should().ThrowAsync<NullReferenceException>();
+        await action.Should().ThrowAsync<InvalidOperationException>();
     }
 
     [Fact]

@@ -9,7 +9,8 @@ namespace UKSF.Api.Core.Context.Base;
 public class ContextCache<T> where T : MongoObject
 {
     private List<T> _data = [];
-    public bool DataInitialized { get; private set; }
+    private volatile bool _dataInitialized;
+    public bool DataInitialized => _dataInitialized;
     public List<T> Data => _data;
 
     public void SetData(IEnumerable<T> newCollection)
@@ -17,10 +18,7 @@ public class ContextCache<T> where T : MongoObject
         var newCache = newCollection.ToList();
         Interlocked.Exchange(ref _data, newCache);
 
-        if (!DataInitialized)
-        {
-            DataInitialized = true;
-        }
+        _dataInitialized = true;
     }
 
     public void UpdateItem(T item)

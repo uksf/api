@@ -81,6 +81,11 @@ public class CommentThreadController(
             accountContext.GetSingle(x => x.Application?.ApplicationCommentThread == commentThreadId || x.Application?.RecruiterCommentThread == commentThreadId
             );
 
+        if (applicationAccount == null)
+        {
+            return;
+        }
+
         foreach (var participant in participants.Where(x => x != comment.Author))
         {
             var link = applicationAccount.Id != participant ? $"/recruitment/{applicationAccount.Id}" : "/application";

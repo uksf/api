@@ -52,7 +52,7 @@ public class BuildStepService : IBuildStepService
     {
         if (!_buildStepDictionary.ContainsKey(buildStepName))
         {
-            throw new NullReferenceException($"Build step '{buildStepName}' does not exist in build step dictionary");
+            throw new InvalidOperationException($"Build step '{buildStepName}' does not exist in build step dictionary");
         }
 
         var type = _buildStepDictionary[buildStepName];

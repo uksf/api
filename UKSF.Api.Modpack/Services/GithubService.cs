@@ -163,6 +163,7 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
         catch (Exception exception)
         {
             logger.LogError(exception);
+            throw;
         }
     }
 
@@ -211,7 +212,9 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
                                             .Reverse()
                                             .Where(x => !x.Contains("Merge branch") && !Regex.IsMatch(x, @"Release \d*\.\d*\.\d*"))
                                             .ToList();
-        return filteredCommitMessages.Count == 0 ? commits.First().Commit.Message : filteredCommitMessages.Aggregate((a, b) => $"{a}\n\n{b}");
+        return filteredCommitMessages.Count == 0
+            ? (commits.Any() ? commits.First().Commit.Message : string.Empty)
+            : string.Join("\n\n", filteredCommitMessages);
     }
 
     private async Task<Milestone> GetOpenMilestone(string version)

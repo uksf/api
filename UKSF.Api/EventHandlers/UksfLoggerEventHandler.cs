@@ -61,19 +61,17 @@ public class UksfLoggerEventHandler(
 
     private async Task ProcessNextLogAsync()
     {
-        if (!_logQueue.TryDequeue(out var log))
+        while (_logQueue.TryDequeue(out var log))
         {
-            return;
-        }
+            if (log is AuditLog auditLog)
+            {
+                auditLog.Who = objectIdConversionService.ConvertObjectId(auditLog.Who);
+                log = auditLog;
+            }
 
-        if (log is AuditLog auditLog)
-        {
-            auditLog.Who = objectIdConversionService.ConvertObjectId(auditLog.Who);
-            log = auditLog;
+            log.Message = objectIdConversionService.ConvertObjectIds(log.Message).UnescapeForLogging();
+            await LogToStorageAsync(log);
         }
-
-        log.Message = objectIdConversionService.ConvertObjectIds(log.Message).UnescapeForLogging();
-        await LogToStorageAsync(log);
     }
 
     private Task LogToStorageAsync(DomainBasicLog log)

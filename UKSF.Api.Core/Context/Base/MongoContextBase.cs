@@ -35,7 +35,11 @@ public abstract class MongoContextBase<T>(IMongoCollectionFactory mongoCollectio
         var filterDefinition = string.IsNullOrEmpty(filter)
             ? Builders<T>.Filter.Empty
             : Builders<T>.Filter.Or(
-                filterPropertySelectors.Select(x => Builders<T>.Filter.Regex(x, new BsonRegularExpression(new Regex(filter, RegexOptions.IgnoreCase))))
+                filterPropertySelectors.Select(x => Builders<T>.Filter.Regex(
+                                                   x,
+                                                   new BsonRegularExpression(new Regex(Regex.Escape(filter), RegexOptions.IgnoreCase))
+                                               )
+                )
             );
         return GetPaged(page, pageSize, collection => collection.Aggregate(), sortDefinition, filterDefinition);
     }

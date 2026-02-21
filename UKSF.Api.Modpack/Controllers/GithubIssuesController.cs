@@ -10,8 +10,12 @@ namespace UKSF.Api.Modpack.Controllers;
 
 [Route("github/issues")]
 [Permissions(Permissions.Member)]
-public class GithubIssueController(IDisplayNameService displayNameService, IGithubIssuesService githubIssuesService, IHttpContextService httpContextService)
-    : ControllerBase
+public class GithubIssueController(
+    IDisplayNameService displayNameService,
+    IGithubIssuesService githubIssuesService,
+    IHttpContextService httpContextService,
+    IUksfLogger logger
+) : ControllerBase
 {
     [HttpGet("templates")]
     [Authorize]
@@ -35,6 +39,7 @@ public class GithubIssueController(IDisplayNameService displayNameService, IGith
         }
         catch (Exception exception)
         {
+            logger.LogError("GitHub issue creation failed", exception);
             throw new BadRequestException(exception.Message);
         }
     }

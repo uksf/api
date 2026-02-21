@@ -17,9 +17,10 @@ public interface IInstagramService
     Task<List<InstagramImage>> GetImagesFromLocalCache();
 }
 
-public class InstagramService(IVariablesContext variablesContext, IVariablesService variablesService, IUksfLogger logger) : IInstagramService
+public class InstagramService(IVariablesContext variablesContext, IVariablesService variablesService, IHttpClientFactory httpClientFactory, IUksfLogger logger)
+    : IInstagramService
 {
-    private List<InstagramImage> _images = new();
+    private volatile List<InstagramImage> _images = new();
 
     public async Task RefreshAccessToken()
     {
@@ -27,7 +28,7 @@ public class InstagramService(IVariablesContext variablesContext, IVariablesServ
         {
             var accessToken = variablesService.GetVariable("INSTAGRAM_ACCESS_TOKEN").AsString();
 
-            using HttpClient client = new();
+            var client = httpClientFactory.CreateClient();
             var response = await client.GetAsync($"https://graph.instagram.com/refresh_access_token?access_token={accessToken}&grant_type=ig_refresh_token");
             if (!response.IsSuccessStatusCode)
             {
@@ -62,7 +63,7 @@ public class InstagramService(IVariablesContext variablesContext, IVariablesServ
             var userId = variablesService.GetVariable("INSTAGRAM_USER_ID").AsString();
             var accessToken = variablesService.GetVariable("INSTAGRAM_ACCESS_TOKEN").AsString();
 
-            using HttpClient client = new();
+            var client = httpClientFactory.CreateClient();
             var response = await client.GetAsync(
                 $"https://graph.instagram.com/{userId}/media?access_token={accessToken}&fields=id,timestamp,media_type,media_url,permalink"
             );
@@ -83,24 +84,24 @@ public class InstagramService(IVariablesContext variablesContext, IVariablesServ
                 return;
             }
 
-            var newImages = allMedia.Where(x => x.MediaType == "IMAGE" && _images.All(y => x.Id != y.Id)).ToList();
+            var currentImages = _images;
+            var newImages = allMedia.Where(x => x.MediaType == "IMAGE" && currentImages.All(y => x.Id != y.Id)).ToList();
+            var updatedImages = new List<InstagramImage>(currentImages);
             foreach (var image in newImages)
             {
                 var imageData = await GetImageData(image);
                 if (!imageData.IsNullOrEmpty())
                 {
                     image.Base64 = imageData;
-                    _images.Add(image);
+                    updatedImages.Add(image);
                 }
             }
+
+            _images = updatedImages.Where(x => !x.Base64.IsNullOrEmpty()).ToList();
         }
         catch (Exception exception)
         {
             logger.LogError(exception);
-        }
-        finally
-        {
-            _images = _images.Where(x => !x.Base64.IsNullOrEmpty()).ToList();
         }
     }
 
@@ -134,7 +135,7 @@ public class InstagramService(IVariablesContext variablesContext, IVariablesServ
     {
         try
         {
-            using HttpClient client = new();
+            var client = httpClientFactory.CreateClient();
             var bytes = await client.GetByteArrayAsync(image.MediaUrl);
             return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
         }

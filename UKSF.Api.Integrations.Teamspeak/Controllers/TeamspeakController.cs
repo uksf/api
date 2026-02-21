@@ -87,6 +87,7 @@ public class TeamspeakController : ControllerBase
     }
 
     [HttpGet("onlineAccounts")]
+    [Authorize]
     public TeamspeakAccountsDataset GetOnlineAccounts()
     {
         var teamspeakClients = _teamspeakService.GetOnlineTeamspeakClients().ToList();

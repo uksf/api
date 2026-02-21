@@ -50,7 +50,7 @@ public class ReleaseService(IReleasesContext releasesContext, IAccountContext ac
         var release = GetRelease(version);
         if (release == null)
         {
-            throw new NullReferenceException($"Could not find release {version}");
+            throw new InvalidOperationException($"Could not find release {version}");
         }
 
         if (!release.IsDraft)

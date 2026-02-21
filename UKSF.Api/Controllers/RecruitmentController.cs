@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Commands;
 using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Domain;
@@ -57,6 +58,12 @@ public class RecruitmentController(
     [Authorize]
     public DetailedApplication GetSingle([FromRoute] string accountId)
     {
+        var contextId = httpContextService.GetUserId();
+        if (contextId != accountId && !httpContextService.UserHasPermission(Permissions.Recruiter) && !httpContextService.UserHasPermission(Permissions.Admin))
+        {
+            throw new AccessDeniedException();
+        }
+
         var account = accountContext.GetSingle(accountId);
         return recruitmentService.GetApplication(account);
     }
@@ -118,12 +125,12 @@ public class RecruitmentController(
     public IEnumerable<Recruiter> GetRecruiters()
     {
         return recruitmentService.GetRecruiterAccounts()
-                                 .Select(x => new Recruiter
-                                     {
-                                         Id = x.Id,
-                                         Name = displayNameService.GetDisplayName(x),
-                                         Active = x.Settings.Sr1Enabled
-                                     }
+        .Select(x => new Recruiter
+            {
+                Id = x.Id,
+                Name = displayNameService.GetDisplayName(x),
+                Active = x.Settings.Sr1Enabled
+            }
         );
     }
 
@@ -136,9 +143,10 @@ public class RecruitmentController(
                                          .Select(recruiterAccount => new
                                              {
                                                  recruiterAccount,
-                                                 recruiterApplications = accountContext
-                                                                         .Get(x => x.Application is not null && x.Application.Recruiter == recruiterAccount.Id)
-                                                                         .ToList()
+                                                 recruiterApplications =
+                                                     accountContext.Get(x => x.Application is not null && x.Application.Recruiter == recruiterAccount.Id
+                                                                   )
+                                                                   .ToList()
                                              }
                                          )
                                          .Select(x => new RecruitmentActivityDataset

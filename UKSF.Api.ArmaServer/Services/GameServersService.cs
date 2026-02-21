@@ -47,7 +47,7 @@ public class GameServersService(
 
     public async Task UploadMissionFile(IFormFile file)
     {
-        var fileName = ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"');
+        var fileName = Path.GetFileName(ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"'));
         var filePath = Path.Combine(gameServerHelpers.GetGameServerMissionsPath(), fileName);
         await using FileStream stream = new(filePath, FileMode.Create);
         await file.CopyToAsync(stream);
@@ -134,7 +134,7 @@ public class GameServersService(
         //     };
         // }
 
-        var missionPath = Path.Combine(gameServerHelpers.GetGameServerMissionsPath(), missionName);
+        var missionPath = Path.Combine(gameServerHelpers.GetGameServerMissionsPath(), Path.GetFileName(missionName));
         var result = await missionPatchingService.PatchMission(
             missionPath,
             gameServerHelpers.GetGameServerModsPaths(GameEnvironment.Release),
@@ -193,8 +193,14 @@ public class GameServersService(
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server/stop");
         }
-        catch (HttpRequestException) { }
-        catch (TaskCanceledException) { }
+        catch (HttpRequestException ex)
+        {
+            logger.LogWarning($"HTTP request failed while stopping game server '{gameServer.Name}': {ex.Message}");
+        }
+        catch (TaskCanceledException ex)
+        {
+            logger.LogWarning($"Request timed out while stopping game server '{gameServer.Name}': {ex.Message}");
+        }
         catch (Exception exception)
         {
             logger.LogError($"Unexpected error stopping game server '{gameServer.Name}'", exception);
@@ -210,8 +216,14 @@ public class GameServersService(
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                     await client.GetAsync($"http://localhost:{gameServer.ApiPort + index + 1}/server/stop");
                 }
-                catch (HttpRequestException) { }
-                catch (TaskCanceledException) { }
+                catch (HttpRequestException ex)
+                {
+                    logger.LogWarning($"HTTP request failed while stopping headless client {index} for '{gameServer.Name}': {ex.Message}");
+                }
+                catch (TaskCanceledException ex)
+                {
+                    logger.LogWarning($"Request timed out while stopping headless client {index} for '{gameServer.Name}': {ex.Message}");
+                }
                 catch (Exception exception)
                 {
                     logger.LogError($"Unexpected error stopping headless client {index} for '{gameServer.Name}'", exception);
@@ -224,7 +236,7 @@ public class GameServersService(
     {
         if (gameServer.ProcessId is null)
         {
-            throw new NullReferenceException("Process ID not found");
+            throw new InvalidOperationException("Process ID not found");
         }
 
         var process = processUtilities.FindProcessById(gameServer.ProcessId.Value);

@@ -77,14 +77,8 @@ public class DiscordMembersService(
 
         await AssertOnline();
         var guild = GetGuild();
-        await Task.Run(() =>
-            {
-                foreach (var user in guild.Users)
-                {
-                    _ = UpdateUserById(user.Id);
-                }
-            }
-        );
+        var tasks = guild.Users.Select(user => UpdateUserById(user.Id));
+        await Task.WhenAll(tasks);
     }
 
     public async Task UpdateUserByAccount(DomainAccount account)
@@ -203,7 +197,11 @@ public class DiscordMembersService(
         {
             if (ulong.TryParse(role, out var roleId))
             {
-                await user.AddRoleAsync(roles.First(x => x.Id == roleId));
+                var matchedRole = roles.FirstOrDefault(x => x.Id == roleId);
+                if (matchedRole != null)
+                {
+                    await user.AddRoleAsync(matchedRole);
+                }
             }
         }
     }
@@ -222,10 +220,11 @@ public class DiscordMembersService(
             {
                 await user.ModifyAsync(x => x.Nickname = name);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 _logger.LogError(
-                    $"Failed to update nickname for {(string.IsNullOrEmpty(user.Nickname) ? user.Username : user.Nickname)}. Must manually be changed to: {name}"
+                    $"Failed to update nickname for {(string.IsNullOrEmpty(user.Nickname) ? user.Username : user.Nickname)}. Must manually be changed to: {name}",
+                    ex
                 );
             }
         }
@@ -254,8 +253,8 @@ public class DiscordMembersService(
         return WrapEventTask(async () =>
             {
                 var oldUser = await cachedOldUser.GetOrDownloadAsync();
-                var oldRoles = oldUser.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}").Aggregate((x, y) => $"{x},{y}");
-                var newRoles = user.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}").Aggregate((x, y) => $"{x},{y}");
+                var oldRoles = string.Join(",", oldUser.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}"));
+                var newRoles = string.Join(",", user.Roles.OrderBy(x => x.Id).Select(x => $"{x.Id}"));
                 if (oldRoles != newRoles || oldUser.Nickname != user.Nickname)
                 {
                     await UpdateUserById(user.Id);

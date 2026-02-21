@@ -151,7 +151,8 @@ public class GetPagedLoasQuery(
 
     private static FilterDefinition<DomainLoaWithAccount> BuildFiltersFromQueryPart(string queryPart)
     {
-        var regex = new BsonRegularExpression(new Regex(queryPart, RegexOptions.IgnoreCase));
+        var escapedQueryPart = Regex.Escape(queryPart);
+        var regex = new BsonRegularExpression(new Regex(escapedQueryPart, RegexOptions.IgnoreCase));
         var filters = new List<FilterDefinition<DomainLoaWithAccount>>
         {
             Builders<DomainLoaWithAccount>.Filter.Regex(x => x.Id, regex),

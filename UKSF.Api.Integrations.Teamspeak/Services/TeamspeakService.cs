@@ -31,8 +31,7 @@ public class TeamspeakService(
     IHostEnvironment environment
 ) : ITeamspeakService
 {
-    private readonly SemaphoreSlim _clientsSemaphore = new(1);
-    private HashSet<TeamspeakClient> _clients = [];
+    private volatile HashSet<TeamspeakClient> _clients = [];
 
     public IEnumerable<TeamspeakClient> GetOnlineTeamspeakClients()
     {
@@ -41,9 +40,7 @@ public class TeamspeakService(
 
     public async Task UpdateClients(HashSet<TeamspeakClient> newClients)
     {
-        await _clientsSemaphore.WaitAsync();
         _clients = newClients;
-        _clientsSemaphore.Release();
         await teamspeakClientsHub.Clients.All.ReceiveClients(GetFormattedClients());
     }
 
@@ -76,14 +73,15 @@ public class TeamspeakService(
 
     public async Task StoreTeamspeakServerSnapshot()
     {
-        if (_clients.Count == 0)
+        var clients = _clients;
+        if (clients.Count == 0)
         {
             await Console.Out.WriteLineAsync("No client data for snapshot");
             return;
         }
 
         // TODO: Remove direct db call
-        TeamspeakServerSnapshot teamspeakServerSnapshot = new() { Timestamp = DateTime.UtcNow, Users = _clients };
+        TeamspeakServerSnapshot teamspeakServerSnapshot = new() { Timestamp = DateTime.UtcNow, Users = clients };
         await database.GetCollection<TeamspeakServerSnapshot>("teamspeakSnapshots").InsertOneAsync(teamspeakServerSnapshot);
     }
 
@@ -130,30 +128,27 @@ public class TeamspeakService(
     // TODO: Change to use signalr (or hook into existing _teamspeakClientsHub)
     public OnlineState GetOnlineUserDetails(string accountId)
     {
-        if (environment.IsDevelopment())
-        {
-            _clients = [new TeamspeakClient { ClientName = "SqnLdr.Beswick.T", ClientDbId = 2 }];
-        }
-
-        if (_clients.Count == 0)
-        {
-            return null;
-        }
-
         var account = accountContext.GetSingle(accountId);
         if (account?.TeamspeakIdentities == null)
         {
             return null;
         }
 
+        var clients = _clients;
         if (environment.IsDevelopment())
         {
-            _clients.First().ClientDbId = account.TeamspeakIdentities.First();
+            var devClient = new TeamspeakClient { ClientName = "SqnLdr.Beswick.T", ClientDbId = account.TeamspeakIdentities.FirstOrDefault() };
+            clients = [devClient];
         }
 
-        return _clients.Where(client => client is not null && account.TeamspeakIdentities.Any(clientDbId => clientDbId.Equals(client.ClientDbId)))
-                       .Select(client => new OnlineState { Online = true, Nickname = client.ClientName })
-                       .FirstOrDefault();
+        if (clients.Count == 0)
+        {
+            return null;
+        }
+
+        return clients.Where(client => client is not null && account.TeamspeakIdentities.Any(clientDbId => clientDbId.Equals(client.ClientDbId)))
+                      .Select(client => new OnlineState { Online = true, Nickname = client.ClientName })
+                      .FirstOrDefault();
     }
 
     private static string FormatTeamspeakMessage(string message)

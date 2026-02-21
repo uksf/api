@@ -37,7 +37,7 @@ public class TeamspeakManagerService(
 
         _runTeamspeak = true;
         _token = new CancellationTokenSource();
-        _keepOnlineTask = Task.Run(KeepOnline);
+        _keepOnlineTask = Task.Factory.StartNew(KeepOnline, TaskCreationOptions.LongRunning).Unwrap();
     }
 
     public void Stop()

@@ -75,7 +75,7 @@ public class GameServersController(
         await gameServersContext.Add(gameServer);
 
         logger.LogAudit($"Server added '{gameServer}'");
-        SendAnyUpdateIfNotCaller(true);
+        await SendAnyUpdateIfNotCaller(true);
     }
 
     [HttpPatch]
@@ -108,7 +108,7 @@ public class GameServersController(
                                       .Set(x => x.ServerMods, gameServer.ServerMods)
         );
 
-        SendServerUpdateIfNotCaller(gameServer.Id);
+        await SendServerUpdateIfNotCaller(gameServer.Id);
         return environmentChanged;
     }
 
@@ -120,7 +120,7 @@ public class GameServersController(
         logger.LogAudit($"Game server deleted '{gameServer.Name}'");
         await gameServersContext.Delete(id);
 
-        SendAnyUpdateIfNotCaller(true);
+        await SendAnyUpdateIfNotCaller(true);
         return gameServersContext.Get();
     }
 
@@ -129,7 +129,7 @@ public class GameServersController(
     public async Task<IEnumerable<DomainGameServer>> UpdateOrder([FromBody] OrderUpdateRequest orderUpdate)
     {
         await gameServersService.UpdateGameServerOrder(orderUpdate);
-        SendAnyUpdateIfNotCaller(true);
+        await SendAnyUpdateIfNotCaller(true);
         return gameServersContext.Get();
     }
 
@@ -158,7 +158,7 @@ public class GameServersController(
         }
 
         var missions = gameServersService.GetMissionFiles();
-        SendMissionsUpdateIfNotCaller(missions);
+        await SendMissionsUpdateIfNotCaller(missions);
         return new MissionsDataset { Missions = missions, MissionReports = missionReports };
     }
 
@@ -209,7 +209,7 @@ public class GameServersController(
         await gameServersService.LaunchGameServer(gameServer, launchServerRequest.MissionName, currentUserId);
 
         logger.LogAudit($"Game server launched '{launchServerRequest.MissionName}' on '{gameServer.Name}'");
-        SendServerUpdateIfNotCaller(gameServer.Id);
+        await SendServerUpdateIfNotCaller(gameServer.Id);
         return patchingResult.Reports;
     }
 
@@ -228,7 +228,7 @@ public class GameServersController(
 
         await gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, (string)null);
 
-        SendServerUpdateIfNotCaller(gameServer.Id);
+        await SendServerUpdateIfNotCaller(gameServer.Id);
         await gameServersService.StopGameServer(gameServer);
         await gameServersService.GetGameServerStatus(gameServer);
         return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
@@ -258,7 +258,7 @@ public class GameServersController(
         }
 
         await gameServersService.GetGameServerStatus(gameServer);
-        SendServerUpdateIfNotCaller(gameServer.Id);
+        await SendServerUpdateIfNotCaller(gameServer.Id);
         return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
     }
 
@@ -270,7 +270,7 @@ public class GameServersController(
         var killed = await gameServersService.KillAllArmaProcesses();
 
         logger.LogAudit($"Killed {killed} Arma instances");
-        SendAnyUpdateIfNotCaller();
+        await SendAnyUpdateIfNotCaller();
     }
 
     [HttpGet("{id}/mods")]
@@ -319,34 +319,34 @@ public class GameServersController(
         await serversHub.Clients.All.ReceiveDisabledState(stateRequest.State);
     }
 
-    private void SendAnyUpdateIfNotCaller(bool skipRefresh = false)
+    private async Task SendAnyUpdateIfNotCaller(bool skipRefresh = false)
     {
         if (!GetHubConnectionId(out var connectionId))
         {
             return;
         }
 
-        _ = serversHub.Clients.All.ReceiveAnyUpdateIfNotCaller(connectionId, skipRefresh);
+        await serversHub.Clients.All.ReceiveAnyUpdateIfNotCaller(connectionId, skipRefresh);
     }
 
-    private void SendServerUpdateIfNotCaller(string serverId)
+    private async Task SendServerUpdateIfNotCaller(string serverId)
     {
         if (!GetHubConnectionId(out var connectionId))
         {
             return;
         }
 
-        _ = serversHub.Clients.All.ReceiveServerUpdateIfNotCaller(connectionId, serverId);
+        await serversHub.Clients.All.ReceiveServerUpdateIfNotCaller(connectionId, serverId);
     }
 
-    private void SendMissionsUpdateIfNotCaller(List<MissionFile> missions)
+    private async Task SendMissionsUpdateIfNotCaller(List<MissionFile> missions)
     {
         if (!GetHubConnectionId(out var connectionId))
         {
             return;
         }
 
-        _ = serversHub.Clients.All.ReceiveMissionsUpdateIfNotCaller(connectionId, missions);
+        await serversHub.Clients.All.ReceiveMissionsUpdateIfNotCaller(connectionId, missions);
     }
 
     private bool GetHubConnectionId(out StringValues connecctionId)
