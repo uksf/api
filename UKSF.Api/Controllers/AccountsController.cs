@@ -167,7 +167,6 @@ public class AccountsController(
     }
 
     [HttpGet("exists")]
-    [Authorize]
     public bool CheckUsernameOrEmailExists([FromQuery] string check)
     {
         return accountContext.Get().Any(x => string.Equals(x.Email, check, StringComparison.InvariantCultureIgnoreCase));

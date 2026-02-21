@@ -5,7 +5,6 @@ using UKSF.Api.Core.Services;
 namespace UKSF.Api.Controllers;
 
 [Route("[controller]")]
-[Authorize]
 public class DisplayNameController(IDisplayNameService displayNameService) : ControllerBase
 {
     [HttpGet("{id}")]
