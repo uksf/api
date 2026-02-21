@@ -29,8 +29,53 @@ stages:
               script: |
                 $ErrorActionPreference = "Continue"
                 $serviceName = "${{ parameters.serviceName }}"
-                $timeout = 60
+                $processName = "UKSF.Api"
+                $serviceTimeout = 60
+                $processTimeout = 30
 
+                function Wait-ProcessExit {
+                    param([int]$Timeout = 30)
+
+                    $elapsed = 0
+                    while ($elapsed -lt $Timeout) {
+                        $proc = Get-Process -Name $processName -ErrorAction SilentlyContinue
+                        if (-not $proc) {
+                            Write-Host "Process is no longer running"
+                            return $true
+                        }
+                        Write-Host "Process still running (PID: $($proc.Id)), waiting..."
+                        Start-Sleep -Seconds 2
+                        $elapsed += 2
+                    }
+                    return $false
+                }
+
+                function Wait-FileLockRelease {
+                    param([string]$Path, [int]$Timeout = 15)
+
+                    $testFile = Join-Path $Path "$processName.dll"
+                    if (-not (Test-Path $testFile)) {
+                        Write-Host "Deploy path does not exist yet, no locks to check"
+                        return $true
+                    }
+
+                    $elapsed = 0
+                    while ($elapsed -lt $Timeout) {
+                        try {
+                            $stream = [System.IO.File]::Open($testFile, 'Open', 'ReadWrite', 'None')
+                            $stream.Close()
+                            Write-Host "File locks released"
+                            return $true
+                        } catch {
+                            Write-Host "Files still locked, waiting..."
+                            Start-Sleep -Seconds 2
+                            $elapsed += 2
+                        }
+                    }
+                    return $false
+                }
+
+                # Check if service exists
                 $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
                 if (-not $service) {
                     Write-Host "Service does not exist"
@@ -41,35 +86,55 @@ stages:
 
                 if ($service.Status -eq "Stopped") {
                     Write-Host "Service is already stopped"
-                    exit 0
+                    if (Wait-ProcessExit -Timeout $processTimeout) {
+                        Wait-FileLockRelease -Path "${{ parameters.deployPath }}" | Out-Null
+                        exit 0
+                    }
+                    Write-Host "Service stopped but process still running, forcing termination..."
                 }
 
-                Write-Host "Stopping service: $serviceName"
-                Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
+                # Graceful stop
+                if ($service.Status -ne "Stopped") {
+                    Write-Host "Stopping service: $serviceName"
+                    Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
 
-                $elapsed = 0
-                while ($elapsed -lt $timeout) {
-                    Start-Sleep -Seconds 2
-                    $elapsed += 2
+                    $elapsed = 0
+                    while ($elapsed -lt $serviceTimeout) {
+                        Start-Sleep -Seconds 2
+                        $elapsed += 2
 
-                    $service.Refresh()
-                    Write-Host "Service status: $($service.Status)"
+                        $service.Refresh()
+                        Write-Host "Service status: $($service.Status)"
 
-                    if ($service.Status -eq "Stopped") {
-                        Write-Host "Service stopped successfully"
-                        exit 0
+                        if ($service.Status -eq "Stopped") {
+                            Write-Host "Service stopped successfully"
+                            break
+                        }
                     }
                 }
 
-                Write-Host "Service did not stop gracefully, forcing termination..."
-                $process = Get-Process -Name "UKSF.Api" -ErrorAction SilentlyContinue
-                if ($process) {
-                    Write-Host "Killing process (PID: $($process.Id))"
-                    Stop-Process -Id $process.Id -Force
-                    Start-Sleep -Seconds 5
+                # Verify process is gone regardless of how service stopped
+                if (-not (Wait-ProcessExit -Timeout $processTimeout)) {
+                    Write-Host "Process did not exit, forcing termination..."
+                    $proc = Get-Process -Name $processName -ErrorAction SilentlyContinue
+                    if ($proc) {
+                        Write-Host "Killing process (PID: $($proc.Id))"
+                        Stop-Process -Id $proc.Id -Force
+                    }
+
+                    if (-not (Wait-ProcessExit -Timeout $processTimeout)) {
+                        Write-Error "Failed to stop process after force kill"
+                        exit 1
+                    }
                 }
 
-                Write-Host "Service stop complete"
+                # Verify file locks are released
+                if (-not (Wait-FileLockRelease -Path "${{ parameters.deployPath }}")) {
+                    Write-Error "Files still locked after process exit"
+                    exit 1
+                }
+
+                Write-Host "Service stop complete, files are unlocked"
 
           - task: CopyFiles@2
             displayName: 'Copy Files'
