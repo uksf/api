@@ -111,9 +111,9 @@ public static class MissionDataResolver
                 }
 
                 break;
-            case "5bbbb9645eb3a4170c488b36": // "Guardian 1-1"
-            case "5bbbbdab5eb3a4170c488f2e": // "Guardian 1-2"
-            case "5bbbbe365eb3a4170c488f30": // "Guardian 1-3"
+            case "5bbbb9645eb3a4170c488b36": // "Kestrel"
+            case "5bbbbdab5eb3a4170c488f2e": // "Raider"
+            case "5bbbbe365eb3a4170c488f30": // "Claymore"
                 slots.AddRange(unit.Members);
                 fillerCount = max - slots.Count;
                 for (var i = 0; i < fillerCount; i++)
@@ -129,8 +129,11 @@ public static class MissionDataResolver
                 }
 
                 break;
-            case "5ad748e0de5d414f4c4055e0": // "Guardian 1-R"
-                for (var i = 0; i < 10; i++)
+            case "5ad748e0de5d414f4c4055e0": // "Reserves"
+                max = 10;
+                slots.AddRange(unit.Members);
+                fillerCount = max - slots.Count;
+                for (var i = 0; i < fillerCount; i++)
                 {
                     MissionPlayer player = new()
                     {

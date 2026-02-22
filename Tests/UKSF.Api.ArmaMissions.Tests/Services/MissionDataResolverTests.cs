@@ -381,6 +381,70 @@ public class MissionDataResolverTests
         MissionPatchData.Instance = null;
     }
 
+    [Fact]
+    public void ResolveUnitSlots_ShouldIncludeMembersAndFillReserves_ForGuardian1R()
+    {
+        // Arrange
+        MissionPatchData.Instance = new MissionPatchData
+        {
+            Units = [],
+            Ranks =
+            [
+                new DomainRank { Name = "Private" },
+                new DomainRank { Name = "Recruit" }
+            ]
+        };
+
+        var chainOfCommand = new ChainOfCommand
+        {
+            First = "member-1",
+            Second = null,
+            Third = null,
+            Nco = null
+        };
+
+        var sourceUnit = new DomainUnit { Id = "5ad748e0de5d414f4c4055e0", ChainOfCommand = chainOfCommand }; // Guardian 1-R
+
+        var unit = new MissionUnit
+        {
+            SourceUnit = sourceUnit,
+            Members =
+            [
+                new MissionPlayer
+                {
+                    Name = "Member1",
+                    Account = new DomainAccount { Id = "member-1" },
+                    Rank = MissionPatchData.Instance.Ranks[0],
+                    Unit = null!
+                },
+                new MissionPlayer
+                {
+                    Name = "Member2",
+                    Account = new DomainAccount { Id = "member-2" },
+                    Rank = MissionPatchData.Instance.Ranks[0],
+                    Unit = null!
+                }
+            ]
+        };
+
+        foreach (var player in unit.Members)
+        {
+            player.Unit = unit;
+        }
+
+        // Act
+        var result = MissionDataResolver.ResolveUnitSlots(unit);
+
+        // Assert
+        result.Should().HaveCount(10); // max is 10 for Guardian 1-R
+        result.Where(p => p.Name == "Reserve").Should().HaveCount(8); // 10 - 2 members = 8 reserves
+        result[0].Name.Should().Be("Member1"); // Real members sorted first
+        result[1].Name.Should().Be("Member2");
+
+        // Clean up
+        MissionPatchData.Instance = null;
+    }
+
     private static MissionPlayer CreateTestPlayer(string unitId)
     {
         return new MissionPlayer
