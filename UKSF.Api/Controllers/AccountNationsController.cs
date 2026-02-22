@@ -8,6 +8,7 @@ namespace UKSF.Api.Controllers;
 public class AccountNationsController(IAllNationsByAccountQuery allNationsByAccountQuery) : ControllerBase
 {
     [HttpGet]
+    [AllowAnonymous]
     public async Task<List<string>> GetNations()
     {
         return await allNationsByAccountQuery.ExecuteAsync();
