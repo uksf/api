@@ -105,8 +105,12 @@ public class CommentThreadController(
     [Authorize]
     public async Task DeleteComment([FromRoute] string id, [FromRoute] string commentId)
     {
-        var comments = commentThreadService.GetCommentThreadComments(id).ToList();
-        var comment = comments.FirstOrDefault(x => x.Id == commentId);
+        var comment = commentThreadService.GetCommentThreadComments(id).FirstOrDefault(x => x.Id == commentId);
+        if (comment == null)
+        {
+            return;
+        }
+
         await commentThreadService.RemoveComment(id, comment);
     }
 }
