@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CliWrap;
 using CliWrap.Buffered;
 using Microsoft.Extensions.Options;
@@ -12,6 +11,7 @@ public interface ISteamCmdService
     Task<string> GetServerInfo();
     Task<string> UpdateServer();
     Task<string> DownloadWorkshopMod(string workshopModId);
+    Task<string> RefreshLogin();
 }
 
 public class SteamCmdService : ISteamCmdService
@@ -31,63 +31,42 @@ public class SteamCmdService : ISteamCmdService
 
     public async Task<string> GetServerInfo()
     {
-        var process = ExecuteSteamCmdCommand("+login anonymous +app_info_update 1 +app_info_print 233780 +logoff +quit");
-
-        process.Start();
-        var output = await process.StandardOutput.ReadToEndAsync();
-        await process.WaitForExitAsync();
-
-        return output;
+        return await ExecuteSteamCmd("+login anonymous +app_info_update 1 +app_info_print 233780 +logoff +quit");
     }
 
     public async Task<string> UpdateServer()
     {
-        var steamPath = _variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
-        var cmdPath = Path.Combine(steamPath, "steamcmd.exe");
-
-        var result = await Cli.Wrap(cmdPath)
-                              .WithWorkingDirectory(steamPath)
-                              .WithArguments($"+login {_username} {_password} +\"app_update 233780 -beta creatordlc\" validate +quit")
-                              .ExecuteBufferedAsync();
-
-        return result.StandardOutput;
+        return await ExecuteSteamCmd($"+login {_username} {_password} +\"app_update 233780 -beta creatordlc\" validate +quit");
     }
 
     public async Task<string> DownloadWorkshopMod(string workshopModId)
     {
+        var output = await ExecuteSteamCmd($"+login {_username} {_password} +workshop_download_item 107410 {workshopModId} +quit");
+
+        if (output.Contains("failed"))
+        {
+            throw new Exception(output);
+        }
+
+        return output;
+    }
+
+    public async Task<string> RefreshLogin()
+    {
+        return await ExecuteSteamCmd($"+login {_username} {_password} +quit");
+    }
+
+    private async Task<string> ExecuteSteamCmd(string arguments)
+    {
         var steamPath = _variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
         var cmdPath = Path.Combine(steamPath, "steamcmd.exe");
 
         var result = await Cli.Wrap(cmdPath)
                               .WithWorkingDirectory(steamPath)
-                              .WithArguments($"+login {_username} {_password} +workshop_download_item 107410 {workshopModId} +quit")
+                              .WithArguments(arguments)
+                              .WithValidation(CommandResultValidation.None)
                               .ExecuteBufferedAsync();
 
-        if (result.ExitCode != 0 || result.StandardOutput.Contains("failed"))
-        {
-            throw new Exception(result.StandardOutput);
-        }
-
         return result.StandardOutput;
-    }
-
-    private Process ExecuteSteamCmdCommand(string command)
-    {
-        var steamPath = _variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
-        var cmdPath = Path.Combine(steamPath, "steamcmd.exe");
-
-        return new Process
-        {
-            StartInfo =
-            {
-                FileName = cmdPath,
-                WorkingDirectory = steamPath,
-                Arguments = command,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            }
-        };
     }
 }

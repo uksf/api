@@ -107,7 +107,8 @@ public static class ApiModpackExtensions
 
         private IServiceCollection AddActions()
         {
-            return services.AddSelfCreatingScheduledAction<IActionPruneBuilds, ActionPruneBuilds>();
+            return services.AddSelfCreatingScheduledAction<IActionPruneBuilds, ActionPruneBuilds>()
+                           .AddSelfCreatingScheduledAction<IActionRefreshSteamToken, ActionRefreshSteamToken>();
         }
     }
 
