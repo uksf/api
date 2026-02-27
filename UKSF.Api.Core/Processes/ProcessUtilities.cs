@@ -6,6 +6,8 @@ using Task = System.Threading.Tasks.Task;
 
 namespace UKSF.Api.Core.Processes;
 
+public record ProcessCommandLineInfo(int ProcessId, string CommandLine);
+
 public interface IProcessUtilities
 {
     int LaunchManagedProcess(string executable, string arguments = null);
@@ -15,6 +17,7 @@ public interface IProcessUtilities
     Process FindProcessByName(string name);
     Process[] GetProcessesByName(string name);
     Process[] GetProcesses();
+    IReadOnlyList<ProcessCommandLineInfo> GetProcessesWithCommandLine(string processNamePrefix);
 }
 
 [ExcludeFromCodeCoverage]
@@ -82,5 +85,25 @@ public class ProcessUtilities : IProcessUtilities
     public Process[] GetProcesses()
     {
         return Process.GetProcesses();
+    }
+
+    public IReadOnlyList<ProcessCommandLineInfo> GetProcessesWithCommandLine(string processNamePrefix)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return [];
+        }
+
+        var query = $"SELECT ProcessId, CommandLine FROM Win32_Process WHERE Name LIKE '{processNamePrefix}%'";
+        using ManagementObjectSearcher searcher = new(query);
+        List<ProcessCommandLineInfo> results = [];
+        foreach (var obj in searcher.Get())
+        {
+            var pid = Convert.ToInt32(obj["ProcessId"]);
+            var cmdLine = obj["CommandLine"]?.ToString() ?? "";
+            results.Add(new ProcessCommandLineInfo(pid, cmdLine));
+        }
+
+        return results;
     }
 }

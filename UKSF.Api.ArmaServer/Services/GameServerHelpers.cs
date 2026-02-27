@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
@@ -22,6 +23,7 @@ public interface IGameServerHelpers
     int GetMaxCuratorCountFromSettings();
     TimeSpan StripMilliseconds(TimeSpan time);
     IEnumerable<Process> GetArmaProcesses();
+    IReadOnlyList<ProcessCommandLineInfo> GetArmaProcessesWithCommandLine();
     bool IsMainOpTime();
     string GetDlcModFoldersRegexString();
 }
@@ -191,6 +193,11 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
     public IEnumerable<Process> GetArmaProcesses()
     {
         return processUtilities.GetProcesses().Where(x => x.ProcessName.StartsWith("arma3"));
+    }
+
+    public IReadOnlyList<ProcessCommandLineInfo> GetArmaProcessesWithCommandLine()
+    {
+        return processUtilities.GetProcessesWithCommandLine("arma3");
     }
 
     public bool IsMainOpTime()

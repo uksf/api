@@ -217,4 +217,217 @@ public class GameServersServiceTests
         gameServer.Status.Mission.Should().Be("mission.pbo");
         gameServer.LaunchedBy.Should().Be("user-123");
     }
+
+    [Fact]
+    public async Task GetGameServerStatus_WhenSkipServerStatus_ShouldReplaceAndReturn()
+    {
+        var gameServer = new DomainGameServer { Id = "server-1", Port = 2302 };
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(true);
+
+        await _subject.GetGameServerStatus(gameServer);
+
+        _mockGameServersContext.Verify(x => x.Replace(gameServer), Times.Once);
+        _mockGameServerHelpers.Verify(x => x.GetArmaProcessesWithCommandLine(), Times.Never);
+        _mockHttpClientFactory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetGameServerStatus_WhenNoArmaProcesses_ShouldSetNotRunningWithoutHttpCall()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ProcessId = 1234
+        };
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([]);
+
+        await _subject.GetGameServerStatus(gameServer);
+
+        gameServer.Status.Running.Should().BeFalse();
+        gameServer.Status.Started.Should().BeFalse();
+        _mockHttpClientFactory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
+        _mockGameServersContext.Verify(x => x.Replace(gameServer), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetGameServerStatus_WhenNoArmaProcesses_ShouldClearStaleProcessId()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ProcessId = 1234
+        };
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([]);
+
+        await _subject.GetGameServerStatus(gameServer);
+
+        gameServer.ProcessId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetGameServerStatus_WhenArmaProcessesExistButNoPortMatch_ShouldSetNotRunning()
+    {
+        var gameServer = new DomainGameServer { Id = "server-1", Port = 2302 };
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([new ProcessCommandLineInfo(5678, "-port=2402 -apiport=\"2403\"")]);
+
+        await _subject.GetGameServerStatus(gameServer);
+
+        gameServer.Status.Running.Should().BeFalse();
+        gameServer.Status.Started.Should().BeFalse();
+        _mockHttpClientFactory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetGameServerStatus_WhenArmaProcessMatchesPort_ShouldSetStartedAndMakeHttpCall()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ApiPort = 2303
+        };
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([new ProcessCommandLineInfo(5678, "-port=2302 -apiport=\"2303\"")]);
+
+        var mockHandler = new MockHttpMessageHandler(System.Net.HttpStatusCode.RequestTimeout);
+        var httpClient = new HttpClient(mockHandler);
+        _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(httpClient);
+
+        await _subject.GetGameServerStatus(gameServer);
+
+        gameServer.Status.Started.Should().BeTrue();
+        _mockHttpClientFactory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetGameServerStatus_WhenArmaProcessMatchesPort_ShouldUpdateProcessId()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ApiPort = 2303,
+            ProcessId = null
+        };
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([new ProcessCommandLineInfo(5678, "-port=2302 -apiport=\"2303\"")]);
+
+        var mockHandler = new MockHttpMessageHandler(System.Net.HttpStatusCode.RequestTimeout);
+        var httpClient = new HttpClient(mockHandler);
+        _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(httpClient);
+
+        await _subject.GetGameServerStatus(gameServer);
+
+        gameServer.ProcessId.Should().Be(5678);
+    }
+
+    [Fact]
+    public async Task GetGameServerStatus_WhenMultipleProcessesMatchPort_ShouldUseFirstNonHeadlessProcess()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ApiPort = 2303,
+            ProcessId = null
+        };
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine())
+                              .Returns(
+                                  [
+                                      new ProcessCommandLineInfo(1111, "-port=2302 -apiport=\"2303\" -config="),
+                                      new ProcessCommandLineInfo(2222, "-port=2302 -apiport=\"2304\" -client")
+                                  ]
+                              );
+
+        var mockHandler = new MockHttpMessageHandler(System.Net.HttpStatusCode.RequestTimeout);
+        var httpClient = new HttpClient(mockHandler);
+        _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(httpClient);
+
+        await _subject.GetGameServerStatus(gameServer);
+
+        gameServer.ProcessId.Should().Be(1111);
+    }
+
+    [Fact]
+    public async Task GetAllGameServerStatuses_WhenNoArmaProcesses_ShouldSetAllNotRunningWithoutHttpCalls()
+    {
+        var gameServers = new List<DomainGameServer>
+        {
+            new()
+            {
+                Id = "server-1",
+                Port = 2302,
+                ProcessId = 1234
+            },
+            new()
+            {
+                Id = "server-2",
+                Port = 2402,
+                ProcessId = 5678
+            }
+        };
+        _mockGameServersContext.Setup(x => x.Get()).Returns(gameServers);
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([]);
+
+        var result = await _subject.GetAllGameServerStatuses();
+
+        result.Should()
+              .AllSatisfy(server =>
+                  {
+                      server.Status.Running.Should().BeFalse();
+                      server.Status.Started.Should().BeFalse();
+                      server.ProcessId.Should().BeNull();
+                  }
+              );
+        _mockHttpClientFactory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
+        _mockGameServerHelpers.Verify(x => x.GetArmaProcessesWithCommandLine(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllGameServerStatuses_WhenArmaProcesses_ShouldOnlyHttpCallMatchingServers()
+    {
+        var gameServers = new List<DomainGameServer>
+        {
+            new()
+            {
+                Id = "server-1",
+                Port = 2302,
+                ApiPort = 2303
+            },
+            new()
+            {
+                Id = "server-2",
+                Port = 2402,
+                ApiPort = 2403
+            }
+        };
+        _mockGameServersContext.Setup(x => x.Get()).Returns(gameServers);
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([new ProcessCommandLineInfo(5678, "-port=2302 -apiport=\"2303\"")]);
+
+        var mockHandler = new MockHttpMessageHandler(System.Net.HttpStatusCode.RequestTimeout);
+        var httpClient = new HttpClient(mockHandler);
+        _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(httpClient);
+
+        var result = await _subject.GetAllGameServerStatuses();
+
+        var server2 = result.Find(s => s.Id == "server-2");
+        server2!.Status.Running.Should().BeFalse();
+        server2.Status.Started.Should().BeFalse();
+    }
+}
+
+internal class MockHttpMessageHandler(System.Net.HttpStatusCode statusCode) : HttpMessageHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
+    {
+        return Task.FromResult(new HttpResponseMessage(statusCode));
+    }
 }

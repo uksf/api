@@ -67,19 +67,55 @@ public class GameServersService(
             return;
         }
 
-        if (gameServer.ProcessId != null && gameServer.ProcessId != 0)
+        var armaProcesses = gameServerHelpers.GetArmaProcessesWithCommandLine();
+        await UpdateServerStatus(gameServer, armaProcesses);
+    }
+
+    public async Task<List<DomainGameServer>> GetAllGameServerStatuses()
+    {
+        var gameServers = gameServersContext.Get().ToList();
+
+        if (variablesService.GetFeatureState("SKIP_SERVER_STATUS"))
         {
-            var process = processUtilities.FindProcessById(gameServer.ProcessId.Value);
-            gameServer.Status.Started = process is not null;
-            if (!gameServer.Status.Started)
+            foreach (var gameServer in gameServers)
             {
-                gameServer.ProcessId = null;
+                await gameServersContext.Replace(gameServer);
             }
+
+            return gameServers;
         }
-        else
+
+        var armaProcesses = gameServerHelpers.GetArmaProcessesWithCommandLine();
+        if (armaProcesses.Count == 0)
         {
-            gameServer.Status.Started = false;
+            foreach (var gameServer in gameServers)
+            {
+                gameServer.Status = new GameServerStatus();
+                gameServer.ProcessId = null;
+                await gameServersContext.Replace(gameServer);
+            }
+
+            return gameServers;
         }
+
+        await Task.WhenAll(gameServers.Select(server => UpdateServerStatus(server, armaProcesses)));
+        return gameServers;
+    }
+
+    private async Task UpdateServerStatus(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
+    {
+        var matchingProcess = FindMatchingProcess(gameServer, armaProcesses);
+        if (matchingProcess is null)
+        {
+            gameServer.Status.Running = false;
+            gameServer.Status.Started = false;
+            gameServer.ProcessId = null;
+            await gameServersContext.Replace(gameServer);
+            return;
+        }
+
+        gameServer.ProcessId = matchingProcess.ProcessId;
+        gameServer.Status.Started = true;
 
         using var client = httpClientFactory.CreateClient();
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -118,11 +154,19 @@ public class GameServersService(
         }
     }
 
-    public async Task<List<DomainGameServer>> GetAllGameServerStatuses()
+    private static ProcessCommandLineInfo FindMatchingProcess(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
     {
-        var gameServers = gameServersContext.Get().ToList();
-        await Task.WhenAll(gameServers.Select(GetGameServerStatus));
-        return gameServers;
+        var portArg = $"-port={gameServer.Port} ";
+
+        // Prefer the main server process (has -config=) over headless clients (have -client)
+        var mainProcess = armaProcesses.FirstOrDefault(p => p.CommandLine.Contains(portArg) && p.CommandLine.Contains("-config="));
+        if (mainProcess is not null)
+        {
+            return mainProcess;
+        }
+
+        // Fall back to any process matching the port (including headless clients)
+        return armaProcesses.FirstOrDefault(p => p.CommandLine.Contains(portArg) || p.CommandLine.EndsWith($"-port={gameServer.Port}"));
     }
 
     public async Task<MissionPatchingResult> PatchMissionFile(string missionName)
