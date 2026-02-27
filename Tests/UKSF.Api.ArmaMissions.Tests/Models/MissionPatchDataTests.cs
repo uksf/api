@@ -19,14 +19,12 @@ public class MissionPatchDataTests
     }
 
     [Fact]
-    public void Instance_ShouldAllowSettingStaticInstance()
+    public void Instance_ShouldAllowSettingAndGettingStaticInstance()
     {
-        var patchData = new MissionPatchData { Players = new List<MissionPlayer> { new() { Name = "TestPlayer" } } };
+        var patchData = new MissionPatchData { Players = [new() { Name = "TestPlayer" }] };
 
         MissionPatchData.Instance = patchData;
 
-        MissionPatchData.Instance.Should().Be(patchData);
-        MissionPatchData.Instance.Players.Should().HaveCount(1);
-        MissionPatchData.Instance.Players[0].Name.Should().Be("TestPlayer");
+        MissionPatchData.Instance.Should().BeSameAs(patchData);
     }
 }
