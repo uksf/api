@@ -21,7 +21,7 @@ public class TestPatchDataBuilder
     public DomainRank RankWo2 { get; }
     public DomainRank RankMajor { get; }
 
-    // Unit definitions (fixed IDs matching MissionDataResolver hardcoded IDs)
+    // Unit definitions
     public DomainUnit UnitUksf { get; }
     public DomainUnit UnitSfsg { get; }
     public DomainUnit UnitGuardian11 { get; } // Kestrel
@@ -111,7 +111,7 @@ public class TestPatchDataBuilder
         MedicHotel = CreateAccount("Hotel", "Ray", "Corporal", "3 Medical Regiment");
         _accounts = [MajSmith, Wo2Jones, SgtAlpha, CplBravo, PteCharlie, PilotDelta, PilotEcho, PilotFoxtrot, SniperGolf, MedicHotel];
 
-        // Units with hardcoded IDs matching MissionDataResolver
+        // Units with MissionPatchSettings for data-driven behaviour
         UnitUksf = CreateUnit("5a42835b55d6109bf0b081bd", "UKSF", ObjectId.Empty.ToString(), "UKSF", order: 0);
         UnitSfsg = CreateUnit(
             ObjectId.GenerateNewId().ToString(),
@@ -129,29 +129,111 @@ public class TestPatchDataBuilder
             "Kestrel",
             order: 0,
             members: [SgtAlpha.Id, CplBravo.Id, PteCharlie.Id],
-            chainOfCommand: new ChainOfCommand { First = SgtAlpha.Id }
+            chainOfCommand: new ChainOfCommand { First = SgtAlpha.Id },
+            missionPatchSettings: new MissionPatchSettings
+            {
+                MaxSlots = 12,
+                FillerName = "Reserve",
+                FillerRank = "Recruit",
+                IsPermanent = true
+            }
         );
-        UnitGuardian12 = CreateUnit("5bbbbdab5eb3a4170c488f2e", "Guardian 1-2", UnitSfsg.Id, "Raider", order: 1);
-        UnitGuardian13 = CreateUnit("5bbbbe365eb3a4170c488f30", "Guardian 1-3", UnitSfsg.Id, "Claymore", order: 2);
-        UnitGuardian1R = CreateUnit("5ad748e0de5d414f4c4055e0", "Guardian 1-R", UnitSfsg.Id, "Reserves", order: 3);
+        UnitGuardian12 = CreateUnit(
+            "5bbbbdab5eb3a4170c488f2e",
+            "Guardian 1-2",
+            UnitSfsg.Id,
+            "Raider",
+            order: 1,
+            missionPatchSettings: new MissionPatchSettings
+            {
+                MaxSlots = 12,
+                FillerName = "Reserve",
+                FillerRank = "Recruit",
+                IsPermanent = true
+            }
+        );
+        UnitGuardian13 = CreateUnit(
+            "5bbbbe365eb3a4170c488f30",
+            "Guardian 1-3",
+            UnitSfsg.Id,
+            "Claymore",
+            order: 2,
+            missionPatchSettings: new MissionPatchSettings
+            {
+                MaxSlots = 12,
+                FillerName = "Reserve",
+                FillerRank = "Recruit",
+                IsPermanent = true
+            }
+        );
+        UnitGuardian1R = CreateUnit(
+            "5ad748e0de5d414f4c4055e0",
+            "Guardian 1-R",
+            UnitSfsg.Id,
+            "Reserves",
+            order: 3,
+            missionPatchSettings: new MissionPatchSettings
+            {
+                MaxSlots = 10,
+                FillerName = "Reserve",
+                FillerRank = "Recruit",
+                IsPermanent = true
+            }
+        );
         UnitJsfaw = CreateUnit(
             "5a435eea905d47336442c75a",
             "Joint Special Forces Aviation Wing",
             UnitUksf.Id,
             "JSFAW",
             order: 1,
-            members: [PilotDelta.Id, PilotEcho.Id]
+            members: [PilotDelta.Id, PilotEcho.Id],
+            missionPatchSettings: new MissionPatchSettings { IsPilotUnit = true }
         );
-        UnitCombatReady = CreateUnit("5fe39de7815f5f03801134f7", "Combat Ready", UnitJsfaw.Id, "Combat Ready", order: 0, members: [PilotFoxtrot.Id]);
-        UnitRafCranwell = CreateUnit("5a848590eab14d12cc7fa618", "RAF Cranwell", UnitJsfaw.Id, "RAF Cranwell", order: 1);
-        UnitSniperPlatoon = CreateUnit("5a68b28e196530164c9b4fed", "Sniper Platoon", UnitUksf.Id, "Sniper Platoon", order: 2, members: [SniperGolf.Id]);
+        UnitCombatReady = CreateUnit(
+            "5fe39de7815f5f03801134f7",
+            "Combat Ready",
+            UnitJsfaw.Id,
+            "Combat Ready",
+            order: 0,
+            members: [PilotFoxtrot.Id],
+            missionPatchSettings: new MissionPatchSettings
+            {
+                AggregateIntoParent = true,
+                Pruned = true,
+                IsPilotUnit = true
+            }
+        );
+        UnitRafCranwell = CreateUnit(
+            "5a848590eab14d12cc7fa618",
+            "RAF Cranwell",
+            UnitJsfaw.Id,
+            "RAF Cranwell",
+            order: 1,
+            missionPatchSettings: new MissionPatchSettings { Pruned = true, IsPilotUnit = true }
+        );
+        UnitSniperPlatoon = CreateUnit(
+            "5a68b28e196530164c9b4fed",
+            "Sniper Platoon",
+            UnitUksf.Id,
+            "Sniper Platoon",
+            order: 2,
+            members: [SniperGolf.Id],
+            missionPatchSettings: new MissionPatchSettings
+            {
+                MaxSlots = 3,
+                FillerName = "Sniper",
+                FillerRank = "Private",
+                ForcedObjectClass = "UKSF_B_Sniper"
+            }
+        );
         UnitMedicalRegiment = CreateUnit(
             "5b9123ca7a6c1f0e9875601c",
             "3 Medical Regiment",
             UnitUksf.Id,
             "3 Medical Regiment",
             order: 3,
-            members: [MedicHotel.Id]
+            members: [MedicHotel.Id],
+            missionPatchSettings: new MissionPatchSettings { ForcedObjectClass = "UKSF_B_Medic" }
         );
         UnitEmpty = CreateUnit(ObjectId.GenerateNewId().ToString(), "Empty Unit", UnitUksf.Id, "", order: 4);
 
@@ -162,19 +244,53 @@ public class TestPatchDataBuilder
         ];
     }
 
+    public PatchDataBuilder BuildPatchDataBuilder()
+    {
+        return new PatchDataBuilder(
+            BuildRanksContext().Object,
+            BuildAccountContext().Object,
+            BuildUnitsContext().Object,
+            BuildRanksService().Object,
+            BuildDisplayNameService().Object
+        );
+    }
+
     public MissionPatchDataService BuildPatchDataService()
+    {
+        return new MissionPatchDataService(
+            BuildRanksContext().Object,
+            BuildAccountContext().Object,
+            BuildUnitsContext().Object,
+            BuildRanksService().Object,
+            BuildDisplayNameService().Object
+        );
+    }
+
+    private Mock<IRanksContext> BuildRanksContext()
     {
         var ranksContext = new Mock<IRanksContext>();
         ranksContext.Setup(x => x.Get()).Returns(_ranks);
         ranksContext.Setup(x => x.GetSingle(It.IsAny<string>()))
                     .Returns<string>(nameOrId => _ranks.FirstOrDefault(r => r.Id == nameOrId || r.Name == nameOrId));
+        return ranksContext;
+    }
 
+    private Mock<IAccountContext> BuildAccountContext()
+    {
         var accountContext = new Mock<IAccountContext>();
         accountContext.Setup(x => x.Get()).Returns(_accounts);
+        return accountContext;
+    }
 
+    private Mock<IUnitsContext> BuildUnitsContext()
+    {
         var unitsContext = new Mock<IUnitsContext>();
         unitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns<Func<DomainUnit, bool>>(predicate => _units.Where(predicate));
+        return unitsContext;
+    }
 
+    private Mock<IRanksService> BuildRanksService()
+    {
         var ranksService = new Mock<IRanksService>();
         ranksService.Setup(x => x.IsSuperiorOrEqual(It.IsAny<string>(), It.IsAny<string>()))
                     .Returns<string, string>((a, b) =>
@@ -185,7 +301,11 @@ public class TestPatchDataBuilder
                             return rankA.Order >= rankB.Order;
                         }
                     );
+        return ranksService;
+    }
 
+    private Mock<IDisplayNameService> BuildDisplayNameService()
+    {
         var displayNameService = new Mock<IDisplayNameService>();
         displayNameService.Setup(x => x.GetDisplayName(It.IsAny<DomainAccount>()))
                           .Returns<DomainAccount>(a =>
@@ -194,8 +314,7 @@ public class TestPatchDataBuilder
                                   return $"{rank?.Abbreviation ?? a.Rank}. {a.Lastname}.{a.Firstname[0]}";
                               }
                           );
-
-        return new MissionPatchDataService(ranksContext.Object, accountContext.Object, unitsContext.Object, ranksService.Object, displayNameService.Object);
+        return displayNameService;
     }
 
     private static DomainAccount CreateAccount(
@@ -227,7 +346,8 @@ public class TestPatchDataBuilder
         string callsign,
         int order = 0,
         List<string> members = null,
-        ChainOfCommand chainOfCommand = null
+        ChainOfCommand chainOfCommand = null,
+        MissionPatchSettings missionPatchSettings = null
     )
     {
         return new DomainUnit
@@ -239,7 +359,8 @@ public class TestPatchDataBuilder
             Branch = UnitBranch.Combat,
             Order = order,
             Members = members ?? [],
-            ChainOfCommand = chainOfCommand ?? new ChainOfCommand()
+            ChainOfCommand = chainOfCommand ?? new ChainOfCommand(),
+            MissionPatchSettings = missionPatchSettings
         };
     }
 }

@@ -1,8 +1,8 @@
 using UKSF.Api.ArmaMissions.Models;
+using UKSF.Api.ArmaMissions.Models.Sqm;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
-using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaMissions.Services;
 
@@ -11,115 +11,137 @@ public interface IMissionPatchingService
     Task<MissionPatchingResult> PatchMission(string path, string armaServerModsPath, int armaServerDefaultMaxCurators);
 }
 
-public class MissionPatchingService(MissionService missionService, IVariablesService variablesService, IPboTools pboTools, IUksfLogger logger)
-    : IMissionPatchingService
+public class MissionPatchingService(
+    IPboHandler pboHandler,
+    ISqmReader sqmReader,
+    ISqmWriter sqmWriter,
+    ISqmPatcher sqmPatcher,
+    IDescriptionReader descriptionReader,
+    IDescriptionWriter descriptionWriter,
+    IDescriptionPatcher descriptionPatcher,
+    ISettingsReader settingsReader,
+    IPatchDataBuilder patchDataBuilder,
+    ISqmDecompiler sqmDecompiler,
+    IUksfLogger logger
+) : IMissionPatchingService
 {
-    private string _filePath;
-    private string _folderPath;
-    private string _parentFolderPath;
-
     public async Task<MissionPatchingResult> PatchMission(string path, string armaServerModsPath, int armaServerDefaultMaxCurators)
     {
-        _filePath = path.Replace("\"", "");
-        _parentFolderPath = Path.GetDirectoryName(_filePath);
+        var context = new MissionPatchContext
+        {
+            PboPath = path.Replace("\"", ""),
+            ModsPath = armaServerModsPath,
+            DefaultMaxCurators = armaServerDefaultMaxCurators
+        };
 
-        MissionPatchingResult result = new();
         try
         {
-            CreateBackup();
-            await UnpackPbo();
-            Mission mission = new(_folderPath);
-            result.Reports = await missionService.ProcessMission(mission, armaServerModsPath, armaServerDefaultMaxCurators);
-            result.PlayerCount = mission.PlayerCount;
-            result.Success = result.Reports.All(x => !x.Error);
+            pboHandler.Backup(context);
+            await pboHandler.Extract(context);
 
-            if (!result.Success)
+            descriptionReader.Read(context);
+            if (context.Aborted)
             {
-                return result;
+                return BuildResult(context);
             }
 
-            if (MissionUtilities.CheckFlag(mission, "missionUseSimplePack"))
+            settingsReader.Read(context);
+            if (context.Aborted)
             {
-                logger.LogAudit($"Mission processed with simple packing enabled ({Path.GetFileName(path)})");
-                await SimplePackPbo();
+                return BuildResult(context);
+            }
+
+            pboHandler.DeleteReadme(context);
+
+            if (await sqmDecompiler.IsBinarized(context.SqmPath))
+            {
+                await sqmDecompiler.Decompile(context.SqmPath);
+            }
+
+            sqmReader.Read(context);
+
+            if (context.Description.MissionPatchingIgnore)
+            {
+                context.Reports.Add(
+                    new ValidationReport(
+                        "Mission Patching Ignored",
+                        "Mission patching for this mission was ignored.\nThis means no changes to the mission.sqm were made." +
+                        "This is not an error, however errors may occur in the mission as a result of this.\n" +
+                        "Ensure ALL the steps below have been done to the mission.sqm before reporting any errors:\n\n\n" +
+                        "1: Remove raw newline characters. Any newline characters (\\n) in code will result in compile errors and that code will NOT run.\n" +
+                        "For example, a line: init = \"myTestVariable = 10; \\n myOtherTestVariable = 20;\" should be replaced with: init = \"myTestVariable = 10; myOtherTestVariable = 20;\"\n\n" +
+                        "2: Replace embedded quotes. Any embedded (double) quotes (\"\"hello\"\") in code will result in compile errors and that code will NOT run. They should be replaced with a single quote character (').\n" +
+                        "For example, a line: init = \"myTestVariable = \"\"hello\"\";\" should be replaced with: init = \"myTestVariable = 'hello';\""
+                    )
+                );
+                CountPlayable(context);
+                descriptionPatcher.Patch(context);
+                descriptionWriter.Write(context);
             }
             else
             {
-                await MakePbo();
+                patchDataBuilder.Build(context);
+                sqmPatcher.Patch(context);
+                CountPlayable(context);
+                sqmWriter.Write(context);
+                pboHandler.CopyImage(context);
+                descriptionPatcher.Patch(context);
+                descriptionWriter.Write(context);
             }
+
+            if (context.Reports.Any(r => r.Error))
+            {
+                return BuildResult(context);
+            }
+
+            if (context.Description.UseSimplePack)
+            {
+                logger.LogAudit($"Mission processed with simple packing enabled ({Path.GetFileName(path)})");
+            }
+
+            await pboHandler.Pack(context);
         }
         catch (Exception exception)
         {
             logger.LogError(exception);
-            result.Reports = [new ValidationReport(exception)];
-            result.Success = false;
+            return new MissionPatchingResult { Reports = [new ValidationReport(exception)], Success = false };
         }
         finally
         {
-            Cleanup();
+            pboHandler.Cleanup(context);
         }
 
-        return result;
+        return BuildResult(context);
     }
 
-    private void CreateBackup()
+    private static MissionPatchingResult BuildResult(MissionPatchContext context)
     {
-        var backupPath = Path.Combine(
-            variablesService.GetVariable("MISSIONS_BACKUPS").AsString(),
-            Path.GetFileName(_filePath) ?? throw new FileNotFoundException()
-        );
-
-        Directory.CreateDirectory(Path.GetDirectoryName(backupPath) ?? throw new DirectoryNotFoundException());
-        File.Copy(_filePath, backupPath, true);
-        if (!File.Exists(backupPath))
+        return new MissionPatchingResult
         {
-            throw new FileNotFoundException("Could not create backup", backupPath);
-        }
+            Reports = context.Reports,
+            PlayerCount = context.PlayerCount,
+            Success = context.Reports.All(r => !r.Error)
+        };
     }
 
-    private async Task UnpackPbo()
+    private static void CountPlayable(MissionPatchContext context)
     {
-        if (Path.GetExtension(_filePath) != ".pbo")
+        var count = 0;
+        foreach (var entity in context.Sqm.Entities)
         {
-            throw new FileLoadException("File is not a pbo");
+            count += CountPlayableInEntity(entity);
         }
 
-        _folderPath = Path.Combine(_parentFolderPath, Path.GetFileNameWithoutExtension(_filePath));
-        await pboTools.ExtractPbo(_filePath, _parentFolderPath);
+        context.PlayerCount = count;
     }
 
-    private async Task MakePbo()
+    private static int CountPlayableInEntity(SqmEntity entity)
     {
-        if (Directory.Exists(_filePath))
+        switch (entity)
         {
-            _filePath += ".pbo";
-        }
-
-        await pboTools.MakePbo(_folderPath, _filePath, variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString());
-    }
-
-    private async Task SimplePackPbo()
-    {
-        if (Directory.Exists(_filePath))
-        {
-            _filePath += ".pbo";
-        }
-
-        await pboTools.SimplePackPbo(_folderPath, _filePath, variablesService.GetVariable("MISSIONS_WORKING_DIR").AsString());
-    }
-
-    private void Cleanup()
-    {
-        try
-        {
-            if (_folderPath is not null)
-            {
-                Directory.Delete(_folderPath, true);
-            }
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            // Temp directory cleanup is best-effort
+            case SqmObject obj:  return obj.IsPlayable ? 1 : 0;
+            case SqmGroup group: return group.Children.Sum(CountPlayableInEntity);
+            default:             return 0;
         }
     }
 }

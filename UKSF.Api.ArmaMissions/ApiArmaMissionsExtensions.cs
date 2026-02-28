@@ -25,9 +25,16 @@ public static class ApiArmaMissionsExtensions
         {
             return services.AddSingleton<ISqmDecompiler, SqmDecompiler>()
                            .AddSingleton<IPboTools, PboTools>()
-                           .AddSingleton<MissionService>()
-                           .AddSingleton<MissionPatchDataService>()
-                           .AddSingleton<IMissionPatchingService, MissionPatchingService>();
+                           .AddTransient<IPboHandler, PboHandler>()
+                           .AddTransient<ISqmReader, SqmReader>()
+                           .AddTransient<ISqmWriter, SqmWriter>()
+                           .AddTransient<ISqmPatcher, SqmPatcher>()
+                           .AddTransient<IDescriptionReader, DescriptionReader>()
+                           .AddTransient<IDescriptionWriter, DescriptionWriter>()
+                           .AddTransient<IDescriptionPatcher, DescriptionPatcher>()
+                           .AddTransient<ISettingsReader, SettingsReader>()
+                           .AddTransient<IPatchDataBuilder, PatchDataBuilder>()
+                           .AddTransient<IMissionPatchingService, MissionPatchingService>();
         }
     }
 }

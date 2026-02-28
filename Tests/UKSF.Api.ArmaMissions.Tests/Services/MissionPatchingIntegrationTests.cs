@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaMissions.Tests.Helpers;
 using UKSF.Api.Core;
@@ -15,7 +14,6 @@ using Xunit;
 
 namespace UKSF.Api.ArmaMissions.Tests.Services;
 
-[Collection("MissionPatchData")]
 public class MissionPatchingIntegrationTests : IDisposable
 {
     private readonly string _tempDir;
@@ -49,17 +47,33 @@ public class MissionPatchingIntegrationTests : IDisposable
         _mockDecompiler.Setup(x => x.IsBinarized(It.IsAny<string>())).ReturnsAsync(false);
 
         _testData = new TestPatchDataBuilder();
-        var patchDataService = _testData.BuildPatchDataService();
-        var missionService = new MissionService(patchDataService, _mockDecompiler.Object);
-        _service = new MissionPatchingService(missionService, _mockVariablesService.Object, _mockPboTools.Object, _mockLogger.Object);
+        var patchDataBuilder = _testData.BuildPatchDataBuilder();
+        var pboHandler = new PboHandler(_mockPboTools.Object, _mockVariablesService.Object);
+        var sqmReader = new SqmReader();
+        var sqmWriter = new SqmWriter();
+        var sqmPatcher = new SqmPatcher();
+        var descReader = new DescriptionReader();
+        var descWriter = new DescriptionWriter();
+        var descPatcher = new DescriptionPatcher();
+        var settingsReader = new SettingsReader();
+
+        _service = new MissionPatchingService(
+            pboHandler,
+            sqmReader,
+            sqmWriter,
+            sqmPatcher,
+            descReader,
+            descWriter,
+            descPatcher,
+            settingsReader,
+            patchDataBuilder,
+            _mockDecompiler.Object,
+            _mockLogger.Object
+        );
     }
 
     public void Dispose()
     {
-        MissionPatchData.Instance = null;
-        Mission.NextId = 0;
-        MissionEntityItem.Position = 10;
-        MissionEntityItem.CuratorPosition = 0.5;
         SafeDeleteDirectory(_tempDir);
         SafeDeleteDirectory(_backupDir);
         SafeDeleteDirectory(_modsDir);
