@@ -28,6 +28,7 @@ public interface IGameServersService
     List<GameServerMod> GetAvailableMods(string id);
     List<GameServerMod> GetEnvironmentMods(GameEnvironment environment);
     Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate);
+    Task HandleGameServerEvent(GameServerEvent gameServerEvent);
 }
 
 public class GameServersService(
@@ -393,6 +394,8 @@ public class GameServersService(
                .Select(x => new GameServerMod { Name = x.modFolder.Name, Path = x.modFolder.FullName })
                .ToList();
     }
+
+    public Task HandleGameServerEvent(GameServerEvent gameServerEvent) => throw new NotImplementedException();
 
     public async Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate)
     {
