@@ -255,17 +255,6 @@ public class TestPatchDataBuilder
         );
     }
 
-    public MissionPatchDataService BuildPatchDataService()
-    {
-        return new MissionPatchDataService(
-            BuildRanksContext().Object,
-            BuildAccountContext().Object,
-            BuildUnitsContext().Object,
-            BuildRanksService().Object,
-            BuildDisplayNameService().Object
-        );
-    }
-
     private Mock<IRanksContext> BuildRanksContext()
     {
         var ranksContext = new Mock<IRanksContext>();
