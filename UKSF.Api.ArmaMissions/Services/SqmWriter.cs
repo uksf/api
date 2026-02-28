@@ -39,7 +39,7 @@ public class SqmWriter : ISqmWriter
         return entity switch
         {
             SqmGroup group => SerializeGroup(group),
-            _              => GetRawLines(entity)
+            _              => entity.RawLines
         };
     }
 
@@ -51,74 +51,16 @@ public class SqmWriter : ISqmWriter
         }
 
         var lines = new List<string>(group.RawLines);
-        var entitiesIndex = GetIndexByKey(lines, "Entities");
+        var entitiesIndex = SqmParsingUtilities.GetIndexByKey(lines, "Entities");
         if (entitiesIndex == -1)
         {
             return lines;
         }
 
-        var entitiesBlock = ReadBlock(lines, entitiesIndex);
+        var entitiesBlock = SqmParsingUtilities.ReadBlock(lines, entitiesIndex);
         lines.RemoveRange(entitiesIndex, entitiesBlock.Count);
         lines.InsertRange(entitiesIndex, SerializeEntities(group.Children));
 
         return lines;
-    }
-
-    private static List<string> GetRawLines(SqmEntity entity)
-    {
-        return entity switch
-        {
-            SqmObject obj              => obj.RawLines,
-            SqmLogic logic             => logic.RawLines,
-            SqmPassthrough passthrough => passthrough.RawLines,
-            _                          => []
-        };
-    }
-
-    private static int GetIndexByKey(List<string> source, string key)
-    {
-        for (var i = 0; i < source.Count; i++)
-        {
-            if (source[i].ToLower().Contains(key.ToLower()))
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    private static List<string> ReadBlock(List<string> source, int startIndex)
-    {
-        var index = startIndex;
-        List<string> data = [source[index]];
-        index++;
-        if (index >= source.Count)
-        {
-            return data;
-        }
-
-        Stack<string> stack = new();
-        stack.Push(source[index]);
-        data.Add(source[index]);
-        index++;
-        while (stack.Count != 0 && index < source.Count)
-        {
-            var line = source[index];
-            if (line.Equals("{"))
-            {
-                stack.Push(line);
-            }
-
-            if (line.Equals("};"))
-            {
-                stack.Pop();
-            }
-
-            data.Add(line);
-            index++;
-        }
-
-        return data;
     }
 }

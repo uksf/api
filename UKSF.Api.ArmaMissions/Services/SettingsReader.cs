@@ -37,7 +37,7 @@ public class SettingsReader : ISettingsReader
                 new ValidationReport(
                     "Using server setting 'uksf_curator_curatorsMax'",
                     "Could not find setting 'uksf_curator_curatorsMax' in cba_settings.sqf" +
-                    "This is required to add the correct nubmer of pre-defined curator objects." +
+                    "This is required to add the correct number of pre-defined curator objects." +
                     $"The server setting value ({context.MaxCurators}) for this will be used instead."
                 )
             );
@@ -51,7 +51,7 @@ public class SettingsReader : ISettingsReader
                 new ValidationReport(
                     "Using hardcoded setting 'uksf_curator_curatorsMax'",
                     $"Could not read malformed setting: '{curatorsMaxLine}' in cba_settings.sqf" +
-                    "This is required to add the correct nubmer of pre-defined curator objects." +
+                    "This is required to add the correct number of pre-defined curator objects." +
                     "The hardcoded value (5) will be used instead."
                 )
             );

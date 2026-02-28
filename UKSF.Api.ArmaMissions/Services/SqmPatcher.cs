@@ -176,18 +176,9 @@ public class SqmPatcher : ISqmPatcher
 
     private static void ReindexEntity(SqmEntity entity, int index)
     {
-        var rawLines = entity switch
+        if (entity.RawLines is { Count: > 0 })
         {
-            SqmGroup g       => g.RawLines,
-            SqmObject o      => o.RawLines,
-            SqmLogic l       => l.RawLines,
-            SqmPassthrough p => p.RawLines,
-            _                => null
-        };
-
-        if (rawLines is { Count: > 0 })
-        {
-            rawLines[0] = $"class Item{index}";
+            entity.RawLines[0] = $"class Item{index}";
         }
     }
 }

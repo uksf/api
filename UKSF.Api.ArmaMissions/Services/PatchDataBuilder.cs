@@ -19,104 +19,71 @@ public class PatchDataBuilder(
     IDisplayNameService displayNameService
 ) : IPatchDataBuilder
 {
-    private List<DomainRank> _ranks;
-    private List<InternalPlayer> _players;
-    private List<InternalUnit> _units;
-
     public void Build(MissionPatchContext context)
     {
-        _ranks = ranksContext.Get().ToList();
+        var ranks = ranksContext.Get().ToList();
 
-        _units = unitContext.Get(x => x.Branch == UnitBranch.Combat).Select(u => new InternalUnit { Source = u }).ToList();
+        var units = unitContext.Get(x => x.Branch == UnitBranch.Combat).Select(u => new InternalUnit { Source = u }).ToList();
 
-        _players = accountContext.Get()
-                                 .Where(x => !string.IsNullOrEmpty(x.Rank) && ranksService.IsSuperiorOrEqual(x.Rank, "Recruit"))
-                                 .Select(a => new InternalPlayer
-                                     {
-                                         Account = a,
-                                         Rank = ranksContext.GetSingle(a.Rank),
-                                         DisplayName = displayNameService.GetDisplayName(a)
-                                     }
-                                 )
-                                 .ToList();
+        var players = accountContext.Get()
+                                    .Where(x => !string.IsNullOrEmpty(x.Rank) && ranksService.IsSuperiorOrEqual(x.Rank, "Recruit"))
+                                    .Select(a => new InternalPlayer
+                                        {
+                                            Account = a,
+                                            Rank = ranksContext.GetSingle(a.Rank),
+                                            DisplayName = displayNameService.GetDisplayName(a)
+                                        }
+                                    )
+                                    .ToList();
 
-        foreach (var unit in _units)
+        foreach (var unit in units)
         {
-            unit.Members = unit.Source.Members.Select(id => _players.FirstOrDefault(p => p.Account.Id == id)).ToList();
-
-            if (unit.Source.ChainOfCommand != null)
-            {
-                var coc = unit.Source.ChainOfCommand;
-                if (!string.IsNullOrEmpty(coc.First))
-                {
-                    unit.Roles["1iC"] = _players.FirstOrDefault(p => p.Account.Id == coc.First);
-                }
-
-                if (!string.IsNullOrEmpty(coc.Second))
-                {
-                    unit.Roles["2iC"] = _players.FirstOrDefault(p => p.Account.Id == coc.Second);
-                }
-
-                if (!string.IsNullOrEmpty(coc.Third))
-                {
-                    unit.Roles["3iC"] = _players.FirstOrDefault(p => p.Account.Id == coc.Third);
-                }
-
-                if (!string.IsNullOrEmpty(coc.Nco))
-                {
-                    unit.Roles["NCOiC"] = _players.FirstOrDefault(p => p.Account.Id == coc.Nco);
-                }
-            }
+            unit.Members = unit.Source.Members.Select(id => players.FirstOrDefault(p => p.Account.Id == id)).ToList();
         }
 
-        foreach (var player in _players)
-        {
-            player.Unit = _units.Find(u => u.Source.Name == player.Account.UnitAssignment);
-        }
-
-        var parent = _units.First(u => u.Source.Parent == ObjectId.Empty.ToString());
+        var parent = units.First(u => u.Source.Parent == ObjectId.Empty.ToString());
         List<InternalUnit> orderedUnits = [parent];
-        InsertUnitChildren(orderedUnits, parent);
+        InsertUnitChildren(orderedUnits, parent, units);
 
         orderedUnits.RemoveAll(u => (!IsUnitPermanent(u) && u.Members.Count == 0) || string.IsNullOrEmpty(ResolveCallsign(u)));
 
         AggregateSpecialUnits(orderedUnits);
 
-        var patchUnits = orderedUnits.Select(u => BuildPatchUnit(u)).ToList();
+        var patchUnits = orderedUnits.Select(u => BuildPatchUnit(u, ranks)).ToList();
 
-        context.PatchData = new PatchData { Ranks = _ranks, OrderedUnits = patchUnits };
+        context.PatchData = new PatchData { Ranks = ranks, OrderedUnits = patchUnits };
     }
 
-    private PatchUnit BuildPatchUnit(InternalUnit unit)
+    private static PatchUnit BuildPatchUnit(InternalUnit unit, List<DomainRank> ranks)
     {
         var callsign = ResolveCallsign(unit);
-        var slots = ResolveSlots(unit);
-        SortSlots(slots, unit);
+        var slots = ResolveSlots(unit, ranks);
+        SortSlots(slots, unit, ranks);
 
         return new PatchUnit
         {
             Source = unit.Source,
             Callsign = callsign,
-            Slots = slots.Select(p => ToPatchPlayer(p, unit, callsign)).ToList()
+            Slots = slots.Select(p => ToPatchPlayer(p, unit)).ToList()
         };
     }
 
-    private PatchPlayer ToPatchPlayer(InternalPlayer player, InternalUnit unit, string callsign)
+    private static PatchPlayer ToPatchPlayer(InternalPlayer player, InternalUnit unit)
     {
         var objectClass = ResolveObjectClass(player, unit);
-        var playerCallsign = ResolveCallsign(unit);
+        var callsign = ResolveCallsign(unit);
         return new PatchPlayer
         {
             DisplayName = player.DisplayName,
             ObjectClass = objectClass,
             RoleAssignment = player.Account?.RoleAssignment,
-            Callsign = playerCallsign,
+            Callsign = callsign,
             IsEngineer = player.Account?.Qualifications?.Engineer ?? false,
             Rank = player.Rank
         };
     }
 
-    private string ResolveObjectClass(InternalPlayer player, InternalUnit unit)
+    private static string ResolveObjectClass(InternalPlayer player, InternalUnit unit)
     {
         var settings = unit.Source.MissionPatchSettings;
 
@@ -143,7 +110,7 @@ public class PatchDataBuilder(
         return "UKSF_B_Rifleman";
     }
 
-    private List<InternalPlayer> ResolveSlots(InternalUnit unit)
+    private static List<InternalPlayer> ResolveSlots(InternalUnit unit, List<DomainRank> ranks)
     {
         var settings = unit.Source.MissionPatchSettings;
         List<InternalPlayer> slots = [];
@@ -161,12 +128,7 @@ public class PatchDataBuilder(
             for (var i = 0; i < fillerCount; i++)
             {
                 slots.Add(
-                    new InternalPlayer
-                    {
-                        DisplayName = settings.FillerName ?? "Reserve",
-                        Unit = unit,
-                        Rank = _ranks.Find(r => r.Name == (settings.FillerRank ?? "Recruit"))
-                    }
+                    new InternalPlayer { DisplayName = settings.FillerName ?? "Reserve", Rank = ranks.Find(r => r.Name == (settings.FillerRank ?? "Recruit")) }
                 );
             }
         }
@@ -174,7 +136,7 @@ public class PatchDataBuilder(
         return slots;
     }
 
-    private void AggregateSpecialUnits(List<InternalUnit> orderedUnits)
+    private static void AggregateSpecialUnits(List<InternalUnit> orderedUnits)
     {
         var toRemove = new List<InternalUnit>();
 
@@ -236,14 +198,14 @@ public class PatchDataBuilder(
         return positionPriorities.TryGetValue(playerId, out var priority) ? priority : -1;
     }
 
-    private void SortSlots(List<InternalPlayer> slots, InternalUnit unit)
+    private static void SortSlots(List<InternalPlayer> slots, InternalUnit unit, List<DomainRank> ranks)
     {
         slots.Sort((a, b) =>
             {
                 var priorityA = GetChainOfCommandSortPriority(a, unit);
                 var priorityB = GetChainOfCommandSortPriority(b, unit);
-                var rankA = _ranks.IndexOf(a.Rank);
-                var rankB = _ranks.IndexOf(b.Rank);
+                var rankA = ranks.IndexOf(a.Rank);
+                var rankB = ranks.IndexOf(b.Rank);
                 return priorityA < priorityB ? 1 :
                     priorityA > priorityB    ? -1 :
                     rankA < rankB            ? -1 :
@@ -252,9 +214,9 @@ public class PatchDataBuilder(
         );
     }
 
-    private void InsertUnitChildren(List<InternalUnit> newUnits, InternalUnit parent)
+    private static void InsertUnitChildren(List<InternalUnit> newUnits, InternalUnit parent, List<InternalUnit> allUnits)
     {
-        var children = _units.Where(u => u.Source.Parent == parent.Source.Id).OrderBy(u => u.Source.Order).ToList();
+        var children = allUnits.Where(u => u.Source.Parent == parent.Source.Id).OrderBy(u => u.Source.Order).ToList();
         if (children.Count == 0)
         {
             return;
@@ -264,7 +226,7 @@ public class PatchDataBuilder(
         newUnits.InsertRange(index + 1, children);
         foreach (var child in children)
         {
-            InsertUnitChildren(newUnits, child);
+            InsertUnitChildren(newUnits, child, allUnits);
         }
     }
 
@@ -272,7 +234,6 @@ public class PatchDataBuilder(
     {
         public DomainUnit Source { get; init; }
         public List<InternalPlayer> Members { get; set; } = [];
-        public Dictionary<string, InternalPlayer> Roles { get; } = new();
     }
 
     private class InternalPlayer
@@ -280,6 +241,5 @@ public class PatchDataBuilder(
         public DomainAccount Account { get; init; }
         public string DisplayName { get; init; }
         public DomainRank Rank { get; init; }
-        public InternalUnit Unit { get; set; }
     }
 }

@@ -22,7 +22,7 @@ public class MissionPatchContext
     public int PlayerCount { get; set; }
     public bool Aborted { get; set; }
 
-    public string SqmPath => Path.Combine(FolderPath, "mission.sqm");
-    public string DescriptionPath => Path.Combine(FolderPath, "description.ext");
-    public string CbaSettingsPath => Path.Combine(FolderPath, "cba_settings.sqf");
+    public string SqmPath => FolderPath is null ? null : Path.Combine(FolderPath, "mission.sqm");
+    public string DescriptionPath => FolderPath is null ? null : Path.Combine(FolderPath, "description.ext");
+    public string CbaSettingsPath => FolderPath is null ? null : Path.Combine(FolderPath, "cba_settings.sqf");
 }

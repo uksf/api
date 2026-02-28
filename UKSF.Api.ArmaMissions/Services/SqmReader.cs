@@ -19,7 +19,7 @@ public class SqmReader : ISqmReader
         var nextId = ReadNextId(allLines);
         context.NextEntityId = nextId;
 
-        var entitiesIndex = GetIndexByKey(allLines, "class Entities");
+        var entitiesIndex = SqmParsingUtilities.GetIndexByKey(allLines, "class Entities");
         if (entitiesIndex == -1)
         {
             context.Sqm = new SqmDocument { HeaderLines = allLines };
@@ -27,7 +27,7 @@ public class SqmReader : ISqmReader
         }
 
         var headerLines = allLines.Take(entitiesIndex).ToList();
-        var entitiesBlock = ReadBlock(allLines, ref entitiesIndex);
+        var entitiesBlock = SqmParsingUtilities.ReadBlock(allLines, ref entitiesIndex);
         var footerLines = allLines.Skip(entitiesIndex).ToList();
 
         var entities = ParseEntities(entitiesBlock);
@@ -50,7 +50,7 @@ public class SqmReader : ISqmReader
 
     private static int ReadNextId(List<string> lines)
     {
-        var providerBlock = ReadBlockByKey(lines, "ItemIDProvider");
+        var providerBlock = SqmParsingUtilities.ReadBlockByKey(lines, "ItemIDProvider");
         if (providerBlock.Count == 0)
         {
             return 0;
@@ -67,7 +67,7 @@ public class SqmReader : ISqmReader
         var index = entitiesBlock.FindIndex(x => x.StartsWith("class Item"));
         while (entities.Count < itemCount && index < entitiesBlock.Count)
         {
-            var itemBlock = ReadBlock(entitiesBlock, ref index);
+            var itemBlock = SqmParsingUtilities.ReadBlock(entitiesBlock, ref index);
             entities.Add(ParseEntity(itemBlock));
         }
 
@@ -82,7 +82,7 @@ public class SqmReader : ISqmReader
         {
             case "Group":
             {
-                var childEntitiesBlock = ReadBlockByKey(rawLines, "Entities");
+                var childEntitiesBlock = SqmParsingUtilities.ReadBlockByKey(rawLines, "Entities");
                 List<SqmEntity> children = [];
                 if (childEntitiesBlock.Count > 0)
                 {
@@ -133,7 +133,7 @@ public class SqmReader : ISqmReader
     {
         foreach (var line in lines)
         {
-            var parts = line.Split('=');
+            var parts = line.Split('=', 2);
             if (parts.Length == 2 && parts[0].Trim().Equals(key, StringComparison.OrdinalIgnoreCase))
             {
                 return parts[1].Replace(";", "").Replace("\"", "").Trim();
@@ -141,63 +141,5 @@ public class SqmReader : ISqmReader
         }
 
         return "";
-    }
-
-    private static int GetIndexByKey(List<string> source, string key)
-    {
-        for (var i = 0; i < source.Count; i++)
-        {
-            if (source[i].ToLower().Contains(key.ToLower()))
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    private static List<string> ReadBlock(List<string> source, ref int index)
-    {
-        List<string> data = [source[index]];
-        index++;
-        if (index >= source.Count)
-        {
-            return data;
-        }
-
-        var opening = source[index];
-        Stack<string> stack = new();
-        stack.Push(opening);
-        data.Add(opening);
-        index++;
-        while (stack.Count != 0)
-        {
-            if (index >= source.Count)
-            {
-                return [];
-            }
-
-            var line = source[index];
-            if (line.Equals("{"))
-            {
-                stack.Push(line);
-            }
-
-            if (line.Equals("};"))
-            {
-                stack.Pop();
-            }
-
-            data.Add(line);
-            index++;
-        }
-
-        return data;
-    }
-
-    private static List<string> ReadBlockByKey(List<string> source, string key)
-    {
-        var index = GetIndexByKey(source, key);
-        return index == -1 ? [] : ReadBlock(source, ref index);
     }
 }
