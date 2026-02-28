@@ -1,10 +1,13 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Signalr.Clients;
+using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Models.Request;
 using UKSF.Api.Core.Processes;
@@ -38,6 +41,7 @@ public class GameServersService(
     IProcessUtilities processUtilities,
     IHttpClientFactory httpClientFactory,
     IVariablesService variablesService,
+    IHubContext<ServersHub, IServersClient> serversHub,
     IUksfLogger logger
 ) : IGameServersService
 {
@@ -395,7 +399,91 @@ public class GameServersService(
                .ToList();
     }
 
-    public Task HandleGameServerEvent(GameServerEvent gameServerEvent) => throw new NotImplementedException();
+    public async Task HandleGameServerEvent(GameServerEvent gameServerEvent)
+    {
+        switch (gameServerEvent.Type)
+        {
+            case "server_status": await HandleServerStatusEvent(gameServerEvent.Data); break;
+            case "performance":   await HandlePerformanceEvent(gameServerEvent.Data); break;
+            case "player_connected":
+            case "player_disconnected":
+            case "mission_started":
+            case "mission_ended": logger.LogInfo($"Game server event: {gameServerEvent.Type}"); break;
+            default: logger.LogWarning($"Unknown game server event type: {gameServerEvent.Type}"); break;
+        }
+
+        await serversHub.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false);
+    }
+
+    private async Task HandleServerStatusEvent(Dictionary<string, object> data)
+    {
+        var gameServers = GetRunningGameServers();
+        foreach (var gameServer in gameServers)
+        {
+            if (data.TryGetValue("map", out var map))
+            {
+                gameServer.Status.Map = map.ToString();
+            }
+
+            if (data.TryGetValue("mission", out var mission))
+            {
+                gameServer.Status.Mission = mission.ToString();
+            }
+
+            if (data.TryGetValue("players", out var players) && int.TryParse(players.ToString(), out var playerCount))
+            {
+                gameServer.Status.Players = playerCount;
+            }
+
+            if (data.TryGetValue("uptime", out var uptime) && float.TryParse(uptime.ToString(), out var uptimeValue))
+            {
+                gameServer.Status.Uptime = uptimeValue;
+                gameServer.Status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(uptimeValue)).ToString();
+            }
+
+            gameServer.Status.Running = true;
+            gameServer.Status.Started = false;
+            gameServer.Status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
+            gameServer.Status.LastEventReceived = DateTime.UtcNow;
+            await gameServersContext.Replace(gameServer);
+        }
+    }
+
+    private async Task HandlePerformanceEvent(Dictionary<string, object> data)
+    {
+        var gameServers = GetRunningGameServers();
+        foreach (var gameServer in gameServers)
+        {
+            if (data.TryGetValue("fps", out var fps) && float.TryParse(fps.ToString(), out var fpsValue))
+            {
+                gameServer.Status.Fps = fpsValue;
+            }
+
+            if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount.ToString(), out var entityCountValue))
+            {
+                gameServer.Status.EntityCount = entityCountValue;
+            }
+
+            if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount.ToString(), out var aiCountValue))
+            {
+                gameServer.Status.AiCount = aiCountValue;
+            }
+
+            if (data.TryGetValue("headlessClientCount", out var headlessClientCount) &&
+                int.TryParse(headlessClientCount.ToString(), out var headlessClientCountValue))
+            {
+                gameServer.Status.HeadlessClientCount = headlessClientCountValue;
+            }
+
+            gameServer.Status.LastEventReceived = DateTime.UtcNow;
+            await gameServersContext.Replace(gameServer);
+        }
+    }
+
+    private List<DomainGameServer> GetRunningGameServers()
+    {
+        return gameServersContext.Get().Where(server => server.ProcessId is not null).ToList();
+    }
 
     public async Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate)
     {

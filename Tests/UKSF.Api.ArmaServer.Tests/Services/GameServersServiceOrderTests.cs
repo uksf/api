@@ -5,11 +5,14 @@ using System.Linq.Expressions;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.ArmaServer.Signalr.Clients;
+using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Models.Request;
 using UKSF.Api.Core.Processes;
@@ -26,6 +29,7 @@ public class GameServersServiceOrderTests
     private readonly Mock<IProcessUtilities> _mockProcessUtilities = new();
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory = new();
     private readonly Mock<IVariablesService> _mockIVariablesService = new();
+    private readonly Mock<IHubContext<ServersHub, IServersClient>> _mockServersHub = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
 
     private readonly GameServersService _subject;
@@ -39,6 +43,7 @@ public class GameServersServiceOrderTests
             _mockProcessUtilities.Object,
             _mockHttpClientFactory.Object,
             _mockIVariablesService.Object,
+            _mockServersHub.Object,
             _mockLogger.Object
         );
     }

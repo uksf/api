@@ -52,4 +52,9 @@ public class GameServerStatus
     public bool Running { get; set; }
     public bool Started { get; set; }
     public float Uptime { get; set; }
+    public float Fps { get; set; }
+    public int EntityCount { get; set; }
+    public int AiCount { get; set; }
+    public int HeadlessClientCount { get; set; }
+    public DateTime LastEventReceived { get; set; }
 }
