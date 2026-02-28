@@ -25,6 +25,7 @@ public class DomainUnit : MongoObject
     [BsonRepresentation(BsonType.ObjectId)]
     public List<string> Members { get; set; } = new();
 
+    public MissionPatchSettings MissionPatchSettings { get; set; }
     public string Name { get; set; }
     public int Order { get; set; }
 
