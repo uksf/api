@@ -209,17 +209,18 @@ public class UpdateOperationTests
     // Execute tests
 
     [Fact]
-    public async Task ExecuteAsync_WithRootMod_ShouldDeleteThenCopy()
+    public async Task ExecuteAsync_WithRootMod_ShouldSyncToRepos()
     {
         var workshopMod = SetupWorkshopMod(rootMod: true);
-        _mockProcessingService.Setup(x => x.CopyRootModToRepos(workshopMod, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        _mockProcessingService.Setup(x => x.SyncRootModToRepos(workshopMod)).Returns(true);
         _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
 
         var result = await _operation.ExecuteAsync("test-mod-123", []);
 
         result.Success.Should().BeTrue();
-        _mockProcessingService.Verify(x => x.DeleteRootModFromRepos(workshopMod), Times.Once);
-        _mockProcessingService.Verify(x => x.CopyRootModToRepos(workshopMod, It.IsAny<CancellationToken>()), Times.Once);
+        _mockProcessingService.Verify(x => x.SyncRootModToRepos(workshopMod), Times.Once);
+        _mockProcessingService.Verify(x => x.DeleteRootModFromRepos(workshopMod), Times.Never);
+        _mockProcessingService.Verify(x => x.CopyRootModToRepos(workshopMod, It.IsAny<CancellationToken>()), Times.Never);
         _mockProcessingService.Verify(
             x => x.CopyPbosToDependencies(It.IsAny<DomainWorkshopMod>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()),
             Times.Never
@@ -228,19 +229,29 @@ public class UpdateOperationTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithRootMod_ShouldDeleteBeforeCopy()
+    public async Task ExecuteAsync_WithRootMod_WhenNoFilesChanged_ShouldReportNoFilesChanged()
     {
         var workshopMod = SetupWorkshopMod(rootMod: true);
-        var callOrder = new List<string>();
-        _mockProcessingService.Setup(x => x.DeleteRootModFromRepos(workshopMod)).Callback(() => callOrder.Add("delete"));
-        _mockProcessingService.Setup(x => x.CopyRootModToRepos(workshopMod, It.IsAny<CancellationToken>()))
-                              .Callback(() => callOrder.Add("copy"))
-                              .Returns(Task.CompletedTask);
+        _mockProcessingService.Setup(x => x.SyncRootModToRepos(workshopMod)).Returns(false);
         _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
 
-        await _operation.ExecuteAsync("test-mod-123", []);
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
 
-        callOrder.Should().ContainInOrder("delete", "copy");
+        result.Success.Should().BeTrue();
+        result.FilesChanged.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithRootMod_WhenFilesChanged_ShouldReportFilesChanged()
+    {
+        var workshopMod = SetupWorkshopMod(rootMod: true);
+        _mockProcessingService.Setup(x => x.SyncRootModToRepos(workshopMod)).Returns(true);
+        _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
+
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
+
+        result.Success.Should().BeTrue();
+        result.FilesChanged.Should().BeTrue();
     }
 
     [Fact]
@@ -366,15 +377,15 @@ public class UpdateOperationTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_RootMod_WhenCopyFails_ShouldReturnFailure()
+    public async Task ExecuteAsync_RootMod_WhenSyncFails_ShouldReturnFailure()
     {
         var workshopMod = SetupWorkshopMod(rootMod: true);
-        _mockProcessingService.Setup(x => x.CopyRootModToRepos(workshopMod, It.IsAny<CancellationToken>())).ThrowsAsync(new IOException("Copy failed"));
+        _mockProcessingService.Setup(x => x.SyncRootModToRepos(workshopMod)).Throws(new IOException("Sync failed"));
 
         var result = await _operation.ExecuteAsync("test-mod-123", []);
 
         result.Success.Should().BeFalse();
-        result.ErrorMessage.Should().Contain("Copy failed");
+        result.ErrorMessage.Should().Contain("Sync failed");
     }
 
     [Fact]

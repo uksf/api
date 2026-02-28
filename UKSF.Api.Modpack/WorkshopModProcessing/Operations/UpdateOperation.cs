@@ -17,8 +17,7 @@ public sealed class UpdateOperation(IWorkshopModsContext workshopModsContext, IW
     {
         if (workshopMod.RootMod)
         {
-            WorkshopModsProcessingService.DeleteRootModFromRepos(workshopMod);
-            await WorkshopModsProcessingService.CopyRootModToRepos(workshopMod, cancellationToken);
+            ExecutionFilesChanged = WorkshopModsProcessingService.SyncRootModToRepos(workshopMod);
         }
         else
         {

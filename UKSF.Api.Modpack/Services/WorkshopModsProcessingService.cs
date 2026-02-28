@@ -14,6 +14,7 @@ public interface IWorkshopModsProcessingService
     Task CopyPbosToDependencies(DomainWorkshopMod domainWorkshopMod, List<string> pbos, CancellationToken cancellationToken = default);
     void DeletePbosFromDependencies(List<string> pbos);
     Task CopyRootModToRepos(DomainWorkshopMod workshopMod, CancellationToken cancellationToken = default);
+    bool SyncRootModToRepos(DomainWorkshopMod workshopMod);
     void DeleteRootModFromRepos(DomainWorkshopMod workshopMod);
     string GetRootModFolderName(DomainWorkshopMod workshopMod);
     void CleanupWorkshopModFiles(string workshopModPath);
@@ -132,15 +133,23 @@ public class WorkshopModsProcessingService(
         var allPboFiles = Directory.EnumerateFiles(workshopModPath, "*.pbo", SearchOption.AllDirectories)
                                    .ToDictionary(path => Path.GetFileName(path)!, path => path, StringComparer.OrdinalIgnoreCase);
 
-        var copyTasks = new List<Task>();
-        foreach (var pboName in pbos)
-        {
-            var sourcePath = allPboFiles[pboName];
-            copyTasks.Add(CopyFileAsync(sourcePath, Path.Combine(devPath, pboName), cancellationToken));
-            copyTasks.Add(CopyFileAsync(sourcePath, Path.Combine(rcPath, pboName), cancellationToken));
-        }
+        var copyOperations = pbos.SelectMany(pboName =>
+            {
+                var sourcePath = allPboFiles[pboName];
+                return new[] { (sourcePath, dest: Path.Combine(devPath, pboName)), (sourcePath, dest: Path.Combine(rcPath, pboName)) };
+            }
+        );
 
-        await Task.WhenAll(copyTasks);
+        await Parallel.ForEachAsync(
+            copyOperations,
+            new ParallelOptions { MaxDegreeOfParallelism = DefaultParallelOptions.MaxDegreeOfParallelism, CancellationToken = cancellationToken },
+            async (op, token) =>
+            {
+                await using var sourceStream = File.OpenRead(op.sourcePath);
+                await using var destinationStream = File.Create(op.dest);
+                await sourceStream.CopyToAsync(destinationStream, token);
+            }
+        );
     }
 
     public void DeletePbosFromDependencies(List<string> pbos)
@@ -173,6 +182,85 @@ public class WorkshopModsProcessingService(
         var workshopModPath = GetWorkshopModPath(workshopMod.SteamId);
 
         await Task.WhenAll(CopyDirectoryAsync(workshopModPath, devPath, cancellationToken), CopyDirectoryAsync(workshopModPath, rcPath, cancellationToken));
+    }
+
+    public bool SyncRootModToRepos(DomainWorkshopMod workshopMod)
+    {
+        var folderName = GetRootModFolderName(workshopMod);
+        var devPath = Path.Combine(variablesService.GetVariable("MODPACK_PATH_DEV").AsString(), "Repo", folderName);
+        var rcPath = Path.Combine(variablesService.GetVariable("MODPACK_PATH_RC").AsString(), "Repo", folderName);
+        var workshopModPath = GetWorkshopModPath(workshopMod.SteamId);
+
+        var devChanged = SyncDirectory(workshopModPath, devPath);
+        var rcChanged = SyncDirectory(workshopModPath, rcPath);
+
+        return devChanged || rcChanged;
+    }
+
+    private bool SyncDirectory(string sourceDir, string destDir)
+    {
+        var sourceFiles = fileSystemService.EnumerateFiles(sourceDir, "*", SearchOption.AllDirectories)
+                                           .Select(f => Path.GetRelativePath(sourceDir, f))
+                                           .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var destFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (fileSystemService.DirectoryExists(destDir))
+        {
+            destFiles = fileSystemService.EnumerateFiles(destDir, "*", SearchOption.AllDirectories)
+                                         .Select(f => Path.GetRelativePath(destDir, f))
+                                         .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var filesChanged = false;
+
+        foreach (var relativePath in sourceFiles)
+        {
+            var sourcePath = Path.Combine(sourceDir, relativePath);
+            var destPath = Path.Combine(destDir, relativePath);
+
+            var destFileExists = fileSystemService.FileExists(destPath);
+            if (destFileExists && fileSystemService.AreFilesEqual(sourcePath, destPath))
+            {
+                continue;
+            }
+
+            var destFileDir = Path.GetDirectoryName(destPath)!;
+            fileSystemService.CreateDirectory(destFileDir);
+            fileSystemService.CopyFile(sourcePath, destPath, true);
+            filesChanged = true;
+        }
+
+        var deletedRelativePaths = new List<string>();
+        var filesToDelete = destFiles.Except(sourceFiles, StringComparer.OrdinalIgnoreCase);
+        foreach (var relativePath in filesToDelete)
+        {
+            var destPath = Path.Combine(destDir, relativePath);
+            fileSystemService.DeleteFile(destPath);
+            deletedRelativePaths.Add(relativePath);
+            filesChanged = true;
+        }
+
+        CleanEmptyDirectoriesAfterDeletion(destDir, deletedRelativePaths);
+
+        return filesChanged;
+    }
+
+    private void CleanEmptyDirectoriesAfterDeletion(string destDir, List<string> deletedRelativePaths)
+    {
+        var parentDirs = deletedRelativePaths.Select(Path.GetDirectoryName)
+                                             .Where(d => !string.IsNullOrEmpty(d))
+                                             .Distinct(StringComparer.OrdinalIgnoreCase)
+                                             .OrderByDescending(d => d!.Length)
+                                             .ToList();
+
+        foreach (var relativeDir in parentDirs)
+        {
+            var fullDir = Path.Combine(destDir, relativeDir!);
+            if (fileSystemService.DirectoryExists(fullDir) && !fileSystemService.EnumerateFiles(fullDir, "*", SearchOption.AllDirectories).Any())
+            {
+                fileSystemService.DeleteDirectory(fullDir, true);
+            }
+        }
     }
 
     public void DeleteRootModFromRepos(DomainWorkshopMod workshopMod)
@@ -253,31 +341,25 @@ public class WorkshopModsProcessingService(
         await workshopModsContext.Replace(workshopMod);
     }
 
-    private static async Task CopyFileAsync(string source, string destination, CancellationToken cancellationToken = default)
-    {
-        await using var sourceStream = File.OpenRead(source);
-        await using var destinationStream = File.Create(destination);
-        await sourceStream.CopyToAsync(destinationStream, cancellationToken);
-    }
+    private static readonly ParallelOptions DefaultParallelOptions = new() { MaxDegreeOfParallelism = Environment.ProcessorCount };
 
     private static async Task CopyDirectoryAsync(string sourceDir, string destDir, CancellationToken cancellationToken = default)
     {
-        Directory.CreateDirectory(destDir);
+        var sourceFiles = Directory.EnumerateFiles(sourceDir, "*", SearchOption.AllDirectories);
 
-        var copyTasks = new List<Task>();
+        await Parallel.ForEachAsync(
+            sourceFiles,
+            new ParallelOptions { MaxDegreeOfParallelism = DefaultParallelOptions.MaxDegreeOfParallelism, CancellationToken = cancellationToken },
+            async (sourceFile, token) =>
+            {
+                var relativePath = Path.GetRelativePath(sourceDir, sourceFile);
+                var destFile = Path.Combine(destDir, relativePath);
+                Directory.CreateDirectory(Path.GetDirectoryName(destFile)!);
 
-        foreach (var file in Directory.GetFiles(sourceDir))
-        {
-            var destFile = Path.Combine(destDir, Path.GetFileName(file));
-            copyTasks.Add(CopyFileAsync(file, destFile, cancellationToken));
-        }
-
-        foreach (var subDir in Directory.GetDirectories(sourceDir))
-        {
-            var destSubDir = Path.Combine(destDir, Path.GetFileName(subDir));
-            copyTasks.Add(CopyDirectoryAsync(subDir, destSubDir, cancellationToken));
-        }
-
-        await Task.WhenAll(copyTasks);
+                await using var sourceStream = File.OpenRead(sourceFile);
+                await using var destinationStream = File.Create(destFile);
+                await sourceStream.CopyToAsync(destinationStream, token);
+            }
+        );
     }
 }
