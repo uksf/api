@@ -240,7 +240,8 @@ public class GameServersService(
         {
             using var client = httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server/stop");
+            var content = new StringContent("{\"type\":\"shutdown\"}", System.Text.Encoding.UTF8, "application/json");
+            await client.PostAsync($"http://localhost:{gameServer.ApiPort}/command", content);
         }
         catch (HttpRequestException ex)
         {
@@ -263,7 +264,8 @@ public class GameServersService(
                 {
                     using var client = httpClientFactory.CreateClient();
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    await client.GetAsync($"http://localhost:{gameServer.ApiPort + index + 1}/server/stop");
+                    var content = new StringContent("{\"type\":\"shutdown\"}", System.Text.Encoding.UTF8, "application/json");
+                    await client.PostAsync($"http://localhost:{gameServer.ApiPort + index + 1}/command", content);
                 }
                 catch (HttpRequestException ex)
                 {
