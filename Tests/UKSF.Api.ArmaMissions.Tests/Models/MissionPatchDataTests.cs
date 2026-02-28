@@ -5,6 +5,7 @@ using Xunit;
 
 namespace UKSF.Api.ArmaMissions.Tests.Models;
 
+[Collection("MissionPatchData")]
 public class MissionPatchDataTests
 {
     [Fact]

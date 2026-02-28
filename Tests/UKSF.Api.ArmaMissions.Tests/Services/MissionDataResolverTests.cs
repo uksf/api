@@ -9,6 +9,7 @@ using Xunit;
 
 namespace UKSF.Api.ArmaMissions.Tests.Services;
 
+[Collection("MissionPatchData")]
 public class MissionDataResolverTests
 {
     [Fact]
@@ -278,30 +279,22 @@ public class MissionDataResolverTests
         MissionPatchData.Instance = null;
     }
 
-    [Fact]
-    public void IsUnitPermanent_ShouldNotThrow_WhenUnitHasSourceUnit()
+    [Theory]
+    [InlineData("5bbbb9645eb3a4170c488b36")] // Kestrel
+    [InlineData("5bbbbdab5eb3a4170c488f2e")] // Raider
+    [InlineData("5bbbbe365eb3a4170c488f30")] // Claymore
+    [InlineData("5ad748e0de5d414f4c4055e0")] // Reserves
+    public void IsUnitPermanent_ShouldReturnTrue_ForPermanentUnitIds(string unitId)
     {
-        // Arrange
-        var unit = CreateTestUnit("5bbbb9645eb3a4170c488b36"); // Guardian 1-1
-
-        // Act
-        var result = MissionDataResolver.IsUnitPermanent(unit);
-
-        // Assert
-        result.Should().BeTrue();
+        var unit = CreateTestUnit(unitId);
+        MissionDataResolver.IsUnitPermanent(unit).Should().BeTrue();
     }
 
     [Fact]
-    public void IsUnitPermanent_ShouldNotThrow_WhenUnitHasDifferentBranch()
+    public void IsUnitPermanent_ShouldReturnFalse_ForNonPermanentUnit()
     {
-        // Arrange
         var unit = CreateTestUnit("5a42835b55d6109bf0b081bd"); // UKSF
-
-        // Act
-        var result = MissionDataResolver.IsUnitPermanent(unit);
-
-        // Assert
-        result.Should().BeFalse();
+        MissionDataResolver.IsUnitPermanent(unit).Should().BeFalse();
     }
 
     [Fact]
@@ -378,6 +371,262 @@ public class MissionDataResolverTests
                          );
 
         // Clean up
+        MissionPatchData.Instance = null;
+    }
+
+    [Theory]
+    [InlineData("5fe39de7815f5f03801134f7")] // Combat Ready
+    [InlineData("5a848590eab14d12cc7fa618")] // RAF Cranwell
+    public void ResolveObjectClass_ShouldReturnPilot_ForAllPilotUnitIds(string unitId)
+    {
+        var player = CreateTestPlayer(unitId);
+        MissionDataResolver.ResolveObjectClass(player).Should().Be("UKSF_B_Pilot");
+    }
+
+    [Theory]
+    [InlineData("5fe39de7815f5f03801134f7")] // Combat Ready
+    [InlineData("5a848590eab14d12cc7fa618")] // RAF Cranwell
+    public void ResolveCallsign_ShouldReturnJSFAW_ForAllPilotUnitIds(string unitId)
+    {
+        var unit = CreateTestUnit(unitId);
+        MissionDataResolver.ResolveCallsign(unit, "Default").Should().Be("JSFAW");
+    }
+
+    [Fact]
+    public void ResolveObjectClass_ShouldReturnSectionLeader_WhenPlayerIsSecondInCommand()
+    {
+        var player = CreateTestPlayer("5a42835b55d6109bf0b081bd");
+        player.Account = new DomainAccount { Id = "test-id" };
+        player.Unit.SourceUnit.ChainOfCommand = new ChainOfCommand { Second = "test-id" };
+
+        MissionDataResolver.ResolveObjectClass(player).Should().Be("UKSF_B_SectionLeader");
+    }
+
+    [Fact]
+    public void ResolveObjectClass_ShouldReturnSectionLeader_WhenPlayerIsThirdInCommand()
+    {
+        var player = CreateTestPlayer("5a42835b55d6109bf0b081bd");
+        player.Account = new DomainAccount { Id = "test-id" };
+        player.Unit.SourceUnit.ChainOfCommand = new ChainOfCommand { Third = "test-id" };
+
+        MissionDataResolver.ResolveObjectClass(player).Should().Be("UKSF_B_SectionLeader");
+    }
+
+    [Fact]
+    public void ResolveObjectClass_ShouldReturnSectionLeader_WhenPlayerIsNcoInCommand()
+    {
+        var player = CreateTestPlayer("5a42835b55d6109bf0b081bd");
+        player.Account = new DomainAccount { Id = "test-id" };
+        player.Unit.SourceUnit.ChainOfCommand = new ChainOfCommand { Nco = "test-id" };
+
+        MissionDataResolver.ResolveObjectClass(player).Should().Be("UKSF_B_SectionLeader");
+    }
+
+    [Fact]
+    public void ResolveObjectClass_ShouldReturnRifleman_WhenChainOfCommandIsNull()
+    {
+        var player = CreateTestPlayer("5a42835b55d6109bf0b081bd");
+        player.Account = new DomainAccount { Id = "test-id" };
+        player.Unit.SourceUnit.ChainOfCommand = null;
+
+        MissionDataResolver.ResolveObjectClass(player).Should().Be("UKSF_B_Rifleman");
+    }
+
+    [Fact]
+    public void ResolveObjectClass_ShouldReturnRifleman_WhenPlayerAccountIsNull()
+    {
+        var player = CreateTestPlayer("5a42835b55d6109bf0b081bd");
+        player.Account = null;
+        player.Unit.SourceUnit.ChainOfCommand = new ChainOfCommand { First = "someone-else" };
+
+        MissionDataResolver.ResolveObjectClass(player).Should().Be("UKSF_B_Rifleman");
+    }
+
+    [Fact]
+    public void ResolveObjectClass_ShouldReturnPilot_EvenWhenPlayerIsMedic_InPilotUnit()
+    {
+        var player = CreateTestPlayer("5a435eea905d47336442c75a");
+        player.Account = new DomainAccount { Id = "test-id", Qualifications = new Qualifications { Medic = true } };
+
+        // Pilot check comes before medic check
+        MissionDataResolver.ResolveObjectClass(player).Should().Be("UKSF_B_Pilot");
+    }
+
+    [Fact]
+    public void ResolveUnitSlots_ShouldAggregateMembers_ForJSFAW()
+    {
+        var ranks = new List<DomainRank> { new() { Name = "Private" } };
+        MissionPatchData.Instance = new MissionPatchData { Units = [], Ranks = ranks };
+
+        var jsfaw = CreateTestUnitWithMembers("5a435eea905d47336442c75a", ["PilotA"]);
+        var combatReady = CreateTestUnitWithMembers("5fe39de7815f5f03801134f7", ["PilotB", "PilotC"]);
+        var rafCranwell = CreateTestUnitWithMembers("5a848590eab14d12cc7fa618", ["PilotD"]);
+        MissionPatchData.Instance.Units = [jsfaw, combatReady, rafCranwell];
+
+        var result = MissionDataResolver.ResolveUnitSlots(jsfaw);
+
+        result.Should().HaveCount(4);
+        result.Select(p => p.Name).Should().BeEquivalentTo(["PilotA", "PilotB", "PilotC", "PilotD"]);
+
+        MissionPatchData.Instance = null;
+    }
+
+    [Fact]
+    public void ResolveUnitSlots_ShouldFillToMax3_ForSniperPlatoon()
+    {
+        MissionPatchData.Instance = new MissionPatchData { Units = [], Ranks = [new DomainRank { Name = "Private" }] };
+
+        var unit = CreateTestUnitWithMembers("5a68b28e196530164c9b4fed", ["RealSniper"]);
+        var result = MissionDataResolver.ResolveUnitSlots(unit);
+
+        result.Should().HaveCount(3);
+        result.Count(p => p.Name == "Sniper").Should().Be(2);
+        result.Where(p => p.Name == "Sniper").Should().OnlyContain(p => p.ObjectClass == "UKSF_B_Sniper");
+        result.Should().Contain(p => p.Name == "RealSniper");
+
+        MissionPatchData.Instance = null;
+    }
+
+    [Theory]
+    [InlineData("5bbbb9645eb3a4170c488b36")] // Kestrel
+    [InlineData("5bbbbdab5eb3a4170c488f2e")] // Raider
+    [InlineData("5bbbbe365eb3a4170c488f30")] // Claymore
+    public void ResolveUnitSlots_ShouldFillToMax12_ForGuardianSquads(string unitId)
+    {
+        MissionPatchData.Instance = new MissionPatchData
+        {
+            Units = [],
+            Ranks =
+            [
+                new DomainRank { Name = "Private" },
+                new DomainRank { Name = "Recruit" }
+            ]
+        };
+
+        var unit = CreateTestUnitWithMembers(unitId, ["Member1", "Member2"]);
+        var result = MissionDataResolver.ResolveUnitSlots(unit);
+
+        result.Should().HaveCount(12);
+        result.Where(p => p.Name == "Reserve").Should().HaveCount(10);
+
+        MissionPatchData.Instance = null;
+    }
+
+    [Fact]
+    public void ResolveUnitSlots_ShouldSortByRank_WhenCoCPrioritiesEqual()
+    {
+        MissionPatchData.Instance = new MissionPatchData
+        {
+            Units = [],
+            Ranks =
+            [
+                new DomainRank { Name = "Sergeant" },
+                new DomainRank { Name = "Corporal" },
+                new DomainRank { Name = "Private" }
+            ]
+        };
+
+        var unit = new MissionUnit
+        {
+            SourceUnit = new DomainUnit { Id = "some-default-unit", ChainOfCommand = new ChainOfCommand() },
+            Members =
+            [
+                new MissionPlayer
+                {
+                    Name = "PrivateJoe",
+                    Account = new DomainAccount { Id = "p1" },
+                    Rank = MissionPatchData.Instance.Ranks[2],
+                    Unit = null!
+                },
+                new MissionPlayer
+                {
+                    Name = "SergeantSmith",
+                    Account = new DomainAccount { Id = "p2" },
+                    Rank = MissionPatchData.Instance.Ranks[0],
+                    Unit = null!
+                },
+                new MissionPlayer
+                {
+                    Name = "CorporalDoe",
+                    Account = new DomainAccount { Id = "p3" },
+                    Rank = MissionPatchData.Instance.Ranks[1],
+                    Unit = null!
+                }
+            ]
+        };
+        foreach (var p in unit.Members) p.Unit = unit;
+
+        var result = MissionDataResolver.ResolveUnitSlots(unit);
+
+        result[0].Name.Should().Be("SergeantSmith");
+        result[1].Name.Should().Be("CorporalDoe");
+        result[2].Name.Should().Be("PrivateJoe");
+
+        MissionPatchData.Instance = null;
+    }
+
+    [Fact]
+    public void ResolveUnitSlots_ShouldSortByName_WhenRankAndPriorityEqual()
+    {
+        MissionPatchData.Instance = new MissionPatchData { Units = [], Ranks = [new DomainRank { Name = "Private" }] };
+
+        var unit = new MissionUnit
+        {
+            SourceUnit = new DomainUnit { Id = "some-default-unit", ChainOfCommand = new ChainOfCommand() },
+            Members =
+            [
+                new MissionPlayer
+                {
+                    Name = "Zulu",
+                    Account = new DomainAccount { Id = "z" },
+                    Rank = MissionPatchData.Instance.Ranks[0],
+                    Unit = null!
+                },
+                new MissionPlayer
+                {
+                    Name = "Alpha",
+                    Account = new DomainAccount { Id = "a" },
+                    Rank = MissionPatchData.Instance.Ranks[0],
+                    Unit = null!
+                }
+            ]
+        };
+        foreach (var p in unit.Members) p.Unit = unit;
+
+        var result = MissionDataResolver.ResolveUnitSlots(unit);
+
+        result[0].Name.Should().Be("Alpha");
+        result[1].Name.Should().Be("Zulu");
+
+        MissionPatchData.Instance = null;
+    }
+
+    [Fact]
+    public void ResolveUnitSlots_ShouldReturnMembersDirectly_ForDefaultUnit()
+    {
+        MissionPatchData.Instance = new MissionPatchData { Units = [], Ranks = [new DomainRank { Name = "Private" }] };
+
+        var unit = new MissionUnit
+        {
+            SourceUnit = new DomainUnit { Id = "some-random-unit", ChainOfCommand = new ChainOfCommand() },
+            Members =
+            [
+                new MissionPlayer
+                {
+                    Name = "Player1",
+                    Account = new DomainAccount { Id = "p1" },
+                    Rank = MissionPatchData.Instance.Ranks[0],
+                    Unit = null!
+                }
+            ]
+        };
+        foreach (var p in unit.Members) p.Unit = unit;
+
+        var result = MissionDataResolver.ResolveUnitSlots(unit);
+
+        result.Should().HaveCount(1);
+        result[0].Name.Should().Be("Player1");
+
         MissionPatchData.Instance = null;
     }
 
@@ -471,5 +720,20 @@ public class MissionDataResolverTests
             Members = [],
             Roles = []
         };
+    }
+
+    private static MissionUnit CreateTestUnitWithMembers(string unitId, string[] memberNames)
+    {
+        var unit = CreateTestUnit(unitId);
+        unit.Members = memberNames.Select(name => new MissionPlayer
+                                      {
+                                          Name = name,
+                                          Account = new DomainAccount { Id = $"id-{name}" },
+                                          Rank = MissionPatchData.Instance.Ranks[0],
+                                          Unit = unit
+                                      }
+                                  )
+                                  .ToList();
+        return unit;
     }
 }

@@ -23,7 +23,9 @@ public static class ApiArmaMissionsExtensions
 
         private IServiceCollection AddServices()
         {
-            return services.AddSingleton<MissionService>()
+            return services.AddSingleton<ISqmDecompiler, SqmDecompiler>()
+                           .AddSingleton<IPboTools, PboTools>()
+                           .AddSingleton<MissionService>()
                            .AddSingleton<MissionPatchDataService>()
                            .AddSingleton<IMissionPatchingService, MissionPatchingService>();
         }

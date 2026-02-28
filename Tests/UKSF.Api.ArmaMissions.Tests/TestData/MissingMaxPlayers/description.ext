@@ -1,0 +1,16 @@
+    author = "UKSF";
+    loadScreen = "uksf.paa";
+    onLoadName = "Custom Operation Name";
+    onLoadMission = "Custom Operation Briefing";
+    overviewText = "Custom Operation Overview";
+    respawn = "BASE";
+    respawnOnStart = 1;
+    respawnDelay = 1;
+    respawnDialog = 0;
+    respawnTemplates[] = { "MenuPosition" };
+    reviveMode = 0;
+    disabledAI = 1;
+    aiKills = 0;
+    disableChannels[] = { 0,2,6 };
+    cba_settings_hasSettingsFile = 1;
+    allowProfileGlasses = 0;

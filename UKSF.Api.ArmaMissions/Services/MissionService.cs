@@ -1,14 +1,11 @@
-using System.Diagnostics;
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.ArmaMissions.Services;
 
-public class MissionService(MissionPatchDataService missionPatchDataService)
+public class MissionService(MissionPatchDataService missionPatchDataService, ISqmDecompiler sqmDecompiler)
 {
-    private const string Unbin = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\DeRapDos.exe";
-
     private int _armaServerDefaultMaxCurators;
     private string _armaServerModsPath;
     private Mission _mission;
@@ -26,9 +23,9 @@ public class MissionService(MissionPatchDataService missionPatchDataService)
             return _reports;
         }
 
-        if (await CheckBinned())
+        if (await sqmDecompiler.IsBinarized(_mission.SqmPath))
         {
-            await UnBin();
+            await sqmDecompiler.Decompile(_mission.SqmPath);
         }
 
         Read();
@@ -93,49 +90,6 @@ public class MissionService(MissionPatchDataService missionPatchDataService)
         }
 
         return true;
-    }
-
-    private async Task<bool> CheckBinned()
-    {
-        Process process = new()
-        {
-            StartInfo =
-            {
-                FileName = Unbin,
-                Arguments = $"-p -q \"{_mission.SqmPath}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
-        };
-        process.Start();
-        await process.WaitForExitAsync();
-        return process.ExitCode == 0;
-    }
-
-    private async Task UnBin()
-    {
-        Process process = new()
-        {
-            StartInfo =
-            {
-                FileName = Unbin,
-                Arguments = $"-p \"{_mission.SqmPath}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
-        };
-        process.Start();
-        await process.WaitForExitAsync();
-
-        if (File.Exists($"{_mission.SqmPath}.txt"))
-        {
-            File.Delete(_mission.SqmPath);
-            File.Move($"{_mission.SqmPath}.txt", _mission.SqmPath);
-        }
-        else
-        {
-            throw new FileNotFoundException();
-        }
     }
 
     private void Read()

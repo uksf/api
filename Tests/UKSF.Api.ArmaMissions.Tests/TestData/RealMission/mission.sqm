@@ -1,0 +1,203 @@
+version=54;
+class EditorData
+{
+class ItemIDProvider
+{
+nextID=200;
+};
+class Camera
+{
+pos[]={5300,25,10250};
+dir[]={0,-0.5,1};
+up[]={0,0.85,0.5};
+aside[]={1,0,0};
+};
+};
+class ItemIDProvider
+{
+nextID=200;
+};
+class ScenarioData
+{
+author="MissionAuthor";
+};
+class Mission
+{
+class Intel
+{
+briefingName="TestLivonia";
+resistanceWest=0;
+startWeather=0.3;
+startWind=0.1;
+startWaves=0.1;
+forecastWeather=0.3;
+forecastWind=0.1;
+forecastWaves=0.1;
+forecastLightnings=0.1;
+year=2035;
+month=7;
+day=6;
+hour=6;
+minute=0;
+startFogDecay=0.013;
+forecastFogDecay=0.013;
+};
+class Entities
+{
+items = 7;
+class Item0
+{
+dataType="Group";
+side="West";
+id=100;
+class Entities
+{
+items = 3;
+class Item0
+{
+dataType="Object";
+flags=7;
+id=101;
+class PositionInfo
+{
+position[]={5316.5,0,10220};
+};
+side="West";
+type="UKSF_B_Rifleman";
+class Attributes
+{
+isPlayable=1;
+description="Squad Leader@Alpha";
+};
+};
+class Item1
+{
+dataType="Object";
+flags=5;
+id=102;
+class PositionInfo
+{
+position[]={5318.5,0,10220};
+};
+side="West";
+type="UKSF_B_Rifleman";
+class Attributes
+{
+isPlayable=1;
+description="Rifleman@Alpha";
+};
+};
+class Item2
+{
+dataType="Object";
+flags=5;
+id=103;
+class PositionInfo
+{
+position[]={5320.5,0,10220};
+};
+side="West";
+type="UKSF_B_Medic";
+class Attributes
+{
+isPlayable=1;
+description="Medic@Alpha";
+};
+};
+};
+class Attributes
+{
+};
+};
+class Item1
+{
+dataType="Object";
+id=110;
+class PositionInfo
+{
+position[]={5300,0,10240};
+};
+side="East";
+type="O_Soldier_F";
+class Attributes
+{
+};
+};
+class Item2
+{
+dataType="Object";
+id=111;
+class PositionInfo
+{
+position[]={5310,0,10240};
+};
+side="East";
+type="O_Soldier_F";
+class Attributes
+{
+};
+};
+class Item3
+{
+dataType="Logic";
+id=120;
+class PositionInfo
+{
+position[]={0.5,0,0.25};
+};
+type="ModuleCurator_F";
+class CustomAttributes
+{
+};
+};
+class Item4
+{
+dataType="Logic";
+id=121;
+class PositionInfo
+{
+position[]={1.5,0,0.25};
+};
+type="ModuleCurator_F";
+class CustomAttributes
+{
+};
+};
+class Item5
+{
+dataType="Logic";
+id=130;
+class PositionInfo
+{
+position[]={5290,0,10260};
+};
+type="ModuleEndMission_F";
+class CustomAttributes
+{
+};
+};
+class Item6
+{
+dataType="Layer";
+id=140;
+class Entities
+{
+items = 1;
+class Item0
+{
+dataType="Object";
+id=141;
+class PositionInfo
+{
+position[]={5295,0,10260};
+};
+side="Empty";
+type="Land_CampingTable_F";
+class Attributes
+{
+};
+};
+};
+};
+};
+};
