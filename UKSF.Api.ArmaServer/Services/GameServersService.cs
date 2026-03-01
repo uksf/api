@@ -2,9 +2,12 @@ using System.Collections.Concurrent;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using MassTransit;
 using Microsoft.AspNetCore.SignalR;
+using MongoDB.Bson;
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.ArmaMissions.Services;
+using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Signalr.Clients;
@@ -43,7 +46,8 @@ public class GameServersService(
     IHttpClientFactory httpClientFactory,
     IVariablesService variablesService,
     IHubContext<ServersHub, IServersClient> serversHub,
-    IUksfLogger logger
+    IUksfLogger logger,
+    IPublishEndpoint publishEndpoint
 ) : IGameServersService
 {
     private static readonly ConcurrentDictionary<string, GameServerStatus> StatusCache = new();
@@ -420,6 +424,7 @@ public class GameServersService(
             {
                 case "server_status": HandleServerStatusEvent(gameServerEvent.Data); break;
                 case "performance":   HandlePerformanceEvent(gameServerEvent.Data); break;
+                case "mission_stats": await HandleMissionStatsEvent(gameServerEvent.Data); break;
                 case "player_connected":
                 case "player_disconnected":
                 case "mission_started":
@@ -517,6 +522,39 @@ public class GameServersService(
                 logger.LogError($"Error updating performance cache for server '{gameServer.Name}'", ex);
             }
         }
+    }
+
+    private async Task HandleMissionStatsEvent(Dictionary<string, object> data)
+    {
+        var mission = data.TryGetValue("mission", out var m) ? m.ToString() : string.Empty;
+        var map = data.TryGetValue("map", out var mp) ? mp.ToString() : string.Empty;
+
+        if (string.IsNullOrEmpty(mission) || string.IsNullOrEmpty(map))
+        {
+            logger.LogWarning("mission_stats event missing mission or map");
+            return;
+        }
+
+        var events = new List<BsonDocument>();
+        if (data.TryGetValue("events", out var eventsObj) && eventsObj is JsonElement jsonElement)
+        {
+            foreach (var element in jsonElement.EnumerateArray())
+            {
+                events.Add(BsonDocument.Parse(element.GetRawText()));
+            }
+        }
+
+        await publishEndpoint.Publish(
+            new ProcessMissionStatsBatch
+            {
+                Mission = mission,
+                Map = map,
+                Events = events,
+                ReceivedAt = DateTime.UtcNow
+            }
+        );
+
+        logger.LogInfo($"Published mission_stats batch: {mission} on {map}, {events.Count} events");
     }
 
     private List<DomainGameServer> GetRunningGameServers()

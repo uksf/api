@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
+using MassTransit;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.ArmaMissions.Services;
@@ -31,6 +32,7 @@ public class GameServersServiceOrderTests
     private readonly Mock<IVariablesService> _mockIVariablesService = new();
     private readonly Mock<IHubContext<ServersHub, IServersClient>> _mockServersHub = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
+    private readonly Mock<IPublishEndpoint> _mockPublishEndpoint = new();
 
     private readonly GameServersService _subject;
 
@@ -44,7 +46,8 @@ public class GameServersServiceOrderTests
             _mockHttpClientFactory.Object,
             _mockIVariablesService.Object,
             _mockServersHub.Object,
-            _mockLogger.Object
+            _mockLogger.Object,
+            _mockPublishEndpoint.Object
         );
     }
 

@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
+using MassTransit;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.ArmaMissions.Services;
+using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
@@ -28,11 +32,17 @@ public class GameServersServiceTests
     private readonly Mock<IVariablesService> _mockVariablesService = new();
     private readonly Mock<IHubContext<ServersHub, IServersClient>> _mockServersHub = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
+    private readonly Mock<IPublishEndpoint> _mockPublishEndpoint = new();
 
     private readonly GameServersService _subject;
 
     public GameServersServiceTests()
     {
+        var mockClients = new Mock<IServersClient>();
+        var mockHubClients = new Mock<IHubCallerClients<IServersClient>>();
+        mockHubClients.Setup(x => x.All).Returns(mockClients.Object);
+        _mockServersHub.Setup(x => x.Clients).Returns(mockHubClients.Object);
+
         _subject = new GameServersService(
             _mockGameServersContext.Object,
             _mockMissionPatchingService.Object,
@@ -41,7 +51,8 @@ public class GameServersServiceTests
             _mockHttpClientFactory.Object,
             _mockVariablesService.Object,
             _mockServersHub.Object,
-            _mockLogger.Object
+            _mockLogger.Object,
+            _mockPublishEndpoint.Object
         );
     }
 
@@ -426,6 +437,45 @@ public class GameServersServiceTests
         var server2 = result.Find(s => s.Id == "server-2");
         server2!.Status.Running.Should().BeFalse();
         server2.Status.Started.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenMissionStats_ShouldPublishToMassTransit()
+    {
+        var eventsJson = JsonSerializer.Deserialize<JsonElement>(
+            """[{"type":"shot","uid":"123","weapon":"arifle_MX_F","magazine":"30Rnd","fireMode":"Single"}]"""
+        );
+
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "mission_stats",
+            Data = new Dictionary<string, object>
+            {
+                { "mission", "test.Altis" },
+                { "map", "Altis" },
+                { "events", eventsJson }
+            }
+        };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockPublishEndpoint.Verify(
+            x => x.Publish(
+                It.Is<ProcessMissionStatsBatch>(m => m.Mission == "test.Altis" && m.Map == "Altis" && m.Events.Count == 1),
+                It.IsAny<CancellationToken>()
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenMissionStatsMissingData_ShouldNotPublish()
+    {
+        var gameServerEvent = new GameServerEvent { Type = "mission_stats", Data = new Dictionary<string, object> { { "map", "Altis" } } };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockPublishEndpoint.Verify(x => x.Publish(It.IsAny<ProcessMissionStatsBatch>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
 
