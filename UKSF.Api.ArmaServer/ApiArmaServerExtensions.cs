@@ -26,7 +26,8 @@ public static class ApiArmaServerExtensions
                            .AddContext<IMissionSessionsContext, MissionSessionsContext>()
                            .AddContext<IMissionStatsBatchesContext, MissionStatsBatchesContext>()
                            .AddContext<IPlayerMissionStatsContext, PlayerMissionStatsContext>()
-                           .AddContext<IMissionStatsContext, MissionStatsContext>();
+                           .AddContext<IMissionStatsContext, MissionStatsContext>()
+                           .AddContext<IPersistenceSessionsContext, PersistenceSessionsContext>();
         }
 
         private IServiceCollection AddEventHandlers()
