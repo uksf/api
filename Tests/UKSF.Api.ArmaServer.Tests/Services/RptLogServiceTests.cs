@@ -175,4 +175,107 @@ public class RptLogServiceTests : IDisposable
     }
 
     #endregion
+
+    #region ReadFullFile
+
+    [Fact]
+    public void ReadFullFile_ReturnsAllLines()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "test.rpt");
+        var lines = Enumerable.Range(1, 10).Select(i => $"Line {i}").ToList();
+        File.WriteAllLines(filePath, lines);
+
+        var result = _sut.ReadFullFile(filePath);
+
+        result.Should().HaveCount(10);
+        result.Should().BeEquivalentTo(lines);
+    }
+
+    [Fact]
+    public void ReadFullFile_HandlesEmptyFile()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "empty.rpt");
+        File.WriteAllText(filePath, "");
+
+        var result = _sut.ReadFullFile(filePath);
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ReadFullFile_HandlesLargeFile()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "large.rpt");
+        var lines = Enumerable.Range(1, 50000).Select(i => $"Line {i}").ToList();
+        File.WriteAllLines(filePath, lines);
+
+        var result = _sut.ReadFullFile(filePath);
+
+        result.Should().HaveCount(50000);
+        result.First().Should().Be("Line 1");
+        result.Last().Should().Be("Line 50000");
+    }
+
+    #endregion
+
+    #region SearchFile
+
+    [Fact]
+    public void SearchFile_FindsMatchingLines()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "test.rpt");
+        File.WriteAllLines(filePath, ["First line", "Error: something failed", "Normal line", "Error: another failure"]);
+
+        var result = _sut.SearchFile(filePath, "Error:");
+
+        result.Should().HaveCount(2);
+        result[0].Should().Be(new RptLogSearchResult(1, "Error: something failed"));
+        result[1].Should().Be(new RptLogSearchResult(3, "Error: another failure"));
+    }
+
+    [Fact]
+    public void SearchFile_IsCaseInsensitive()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "test.rpt");
+        File.WriteAllLines(filePath, ["WARNING: loud message", "info: quiet message", "Warning: mixed case"]);
+
+        var result = _sut.SearchFile(filePath, "warning");
+
+        result.Should().HaveCount(2);
+        result[0].LineIndex.Should().Be(0);
+        result[1].LineIndex.Should().Be(2);
+    }
+
+    [Fact]
+    public void SearchFile_ReturnsEmpty_WhenNoMatches()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "test.rpt");
+        File.WriteAllLines(filePath, ["Line one", "Line two", "Line three"]);
+
+        var result = _sut.SearchFile(filePath, "nonexistent");
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void SearchFile_HandlesRegexSpecialCharacters()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "test.rpt");
+        File.WriteAllLines(filePath, ["[ACE] Medical initialized", "Normal line", "[ACE] Logistics loaded"]);
+
+        var result = _sut.SearchFile(filePath, "[ACE]");
+
+        result.Should().HaveCount(2);
+        result[0].Should().Be(new RptLogSearchResult(0, "[ACE] Medical initialized"));
+        result[1].Should().Be(new RptLogSearchResult(2, "[ACE] Logistics loaded"));
+    }
+
+    #endregion
 }

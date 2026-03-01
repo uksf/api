@@ -46,12 +46,23 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
 
     public List<string> ReadFullFile(string filePath)
     {
-        throw new NotImplementedException();
+        return File.ReadAllLines(filePath).ToList();
     }
 
     public List<RptLogSearchResult> SearchFile(string filePath, string query)
     {
-        throw new NotImplementedException();
+        var lines = File.ReadAllLines(filePath);
+        var results = new List<RptLogSearchResult>();
+
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].Contains(query, StringComparison.OrdinalIgnoreCase))
+            {
+                results.Add(new RptLogSearchResult(i, lines[i]));
+            }
+        }
+
+        return results;
     }
 
     public IDisposable WatchFile(string filePath, Action<List<string>> onNewContent)
