@@ -8,4 +8,6 @@ public interface IServersClient
     Task ReceiveAnyUpdateIfNotCaller(string connectionId, bool skipRefresh);
     Task ReceiveServerUpdateIfNotCaller(string connectionId, string serverId);
     Task ReceiveMissionsUpdateIfNotCaller(string connectionId, List<MissionFile> missions);
+    Task ReceiveLogContent(string serverId, string source, List<string> lines, int startLineIndex, bool isComplete);
+    Task ReceiveLogAppend(string serverId, string source, List<string> lines);
 }
