@@ -38,6 +38,7 @@ public static class ApiArmaServerExtensions
         {
             return services.AddSingleton<IGameServersService, GameServersService>()
                            .AddSingleton<IGameServerHelpers, GameServerHelpers>()
+                           .AddSingleton<IRptLogService, RptLogService>()
                            .AddSingleton<ISteamCmdService, SteamCmdService>()
                            .AddTransient<IMissionStatsService, MissionStatsService>()
                            .AddTransient<IStatsEventProcessor, ShotEventProcessor>()
