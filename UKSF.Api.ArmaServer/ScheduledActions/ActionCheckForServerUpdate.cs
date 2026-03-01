@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.ArmaServer.Commands;
 using UKSF.Api.ArmaServer.Queries;
 using UKSF.Api.Core;
@@ -13,7 +14,7 @@ public class ActionCheckForServerUpdate(
     IHostEnvironment currentEnvironment,
     IClock clock,
     IVariablesService variablesService,
-    IUpdateServerInfrastructureCommand updateServerInfrastructureCommand,
+    IServiceScopeFactory serviceScopeFactory,
     IGetLatestServerInfrastructureQuery getLatestServerInfrastructureQuery,
     IGetCurrentServerInfrastructureQuery getCurrentServerInfrastructureQuery,
     IGetInstalledServerInfrastructureQuery getInstalledServerInfrastructureQuery,
@@ -40,7 +41,10 @@ public class ActionCheckForServerUpdate(
         if (latestInfo.LatestBuild != currentInfo.CurrentBuild || latestInfo.LatestUpdate > currentInfo.CurrentUpdated || installedInfo.InstalledVersion == "0")
         {
             logger.LogInfo("Server infrastructure update required");
-            await updateServerInfrastructureCommand.ExecuteAsync();
+
+            using var scope = serviceScopeFactory.CreateScope();
+            var updateCommand = scope.ServiceProvider.GetRequiredService<IUpdateServerInfrastructureCommand>();
+            await updateCommand.ExecuteAsync();
 
             var afterVersion = await getInstalledServerInfrastructureQuery.ExecuteAsync();
             var afterBuild = await getCurrentServerInfrastructureQuery.ExecuteAsync();
