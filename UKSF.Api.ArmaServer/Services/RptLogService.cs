@@ -67,6 +67,98 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
 
     public IDisposable WatchFile(string filePath, Action<List<string>> onNewContent)
     {
-        throw new NotImplementedException();
+        return new FileLogWatcher(filePath, onNewContent);
+    }
+
+    private sealed class FileLogWatcher : IDisposable
+    {
+        private readonly Action<List<string>> _onNewContent;
+        private readonly FileSystemWatcher _fileSystemWatcher;
+        private readonly CancellationTokenSource _cts = new();
+        private readonly object _lock = new();
+        private long _offset;
+        private bool _disposed;
+
+        public FileLogWatcher(string filePath, Action<List<string>> onNewContent)
+        {
+            _onNewContent = onNewContent;
+            _offset = new FileInfo(filePath).Length;
+
+            var directory = Path.GetDirectoryName(filePath)!;
+            var fileName = Path.GetFileName(filePath);
+
+            _fileSystemWatcher = new FileSystemWatcher(directory, fileName)
+            {
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size, EnableRaisingEvents = true
+            };
+            _fileSystemWatcher.Changed += (_, _) => ReadNewContent(filePath);
+
+            _ = RunTimerFallbackAsync(filePath);
+        }
+
+        private async Task RunTimerFallbackAsync(string filePath)
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+            try
+            {
+                while (await timer.WaitForNextTickAsync(_cts.Token))
+                {
+                    ReadNewContent(filePath);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected on dispose
+            }
+        }
+
+        private void ReadNewContent(string filePath)
+        {
+            lock (_lock)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                var fileInfo = new FileInfo(filePath);
+                if (fileInfo.Length <= _offset)
+                {
+                    return;
+                }
+
+                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                stream.Seek(_offset, SeekOrigin.Begin);
+
+                using var reader = new StreamReader(stream);
+                var content = reader.ReadToEnd();
+                _offset = stream.Position;
+
+                var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => l.TrimEnd('\r')).Where(l => l.Length > 0).ToList();
+
+                if (lines.Count > 0)
+                {
+                    _onNewContent(lines);
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            lock (_lock)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+            }
+
+            _fileSystemWatcher.EnableRaisingEvents = false;
+            _fileSystemWatcher.Dispose();
+            _cts.Cancel();
+            _cts.Dispose();
+        }
     }
 }

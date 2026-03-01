@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.ArmaServer.Models;
@@ -275,6 +277,128 @@ public class RptLogServiceTests : IDisposable
         result.Should().HaveCount(2);
         result[0].Should().Be(new RptLogSearchResult(0, "[ACE] Medical initialized"));
         result[1].Should().Be(new RptLogSearchResult(2, "[ACE] Logistics loaded"));
+    }
+
+    #endregion
+
+    #region WatchFile
+
+    [Fact]
+    public async Task WatchFile_CallsBackWithNewContent_WhenFileAppended()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "test.rpt");
+        File.WriteAllText(filePath, "Initial line\n");
+
+        var receivedLines = new ConcurrentBag<List<string>>();
+        var tcs = new TaskCompletionSource<bool>();
+
+        using var watcher = _sut.WatchFile(
+            filePath,
+            lines =>
+            {
+                receivedLines.Add(lines);
+                tcs.TrySetResult(true);
+            }
+        );
+
+        await Task.Delay(500);
+        File.AppendAllText(filePath, "New line 1\nNew line 2\n");
+
+        var completed = await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        completed.Should().Be(tcs.Task, "callback should be invoked within 5 seconds");
+
+        var allLines = receivedLines.SelectMany(l => l).ToList();
+        allLines.Should().Contain("New line 1");
+        allLines.Should().Contain("New line 2");
+    }
+
+    [Fact]
+    public async Task WatchFile_DoesNotCallBack_WhenNoNewContent()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "test.rpt");
+        File.WriteAllText(filePath, "Initial line\n");
+
+        var callbackInvoked = false;
+
+        using var watcher = _sut.WatchFile(filePath, _ => { callbackInvoked = true; });
+
+        await Task.Delay(TimeSpan.FromSeconds(3));
+
+        callbackInvoked.Should().BeFalse("callback should not be invoked when file has no new content");
+    }
+
+    [Fact]
+    public async Task WatchFile_StopsWatching_WhenDisposed()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "test.rpt");
+        File.WriteAllText(filePath, "Initial line\n");
+
+        var callbackInvokedAfterDispose = false;
+
+        var watcher = _sut.WatchFile(filePath, _ => { callbackInvokedAfterDispose = true; });
+
+        await Task.Delay(500);
+        watcher.Dispose();
+        await Task.Delay(500);
+
+        File.AppendAllText(filePath, "New content after dispose\n");
+
+        await Task.Delay(TimeSpan.FromSeconds(3));
+
+        callbackInvokedAfterDispose.Should().BeFalse("callback should not be invoked after watcher is disposed");
+    }
+
+    [Fact]
+    public async Task WatchFile_TracksOffset_AcrossMultipleAppends()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "test.rpt");
+        File.WriteAllText(filePath, "Initial line\n");
+
+        var receivedBatches = new ConcurrentBag<List<string>>();
+        var firstBatchTcs = new TaskCompletionSource<bool>();
+        var secondBatchTcs = new TaskCompletionSource<bool>();
+        var batchCount = 0;
+
+        using var watcher = _sut.WatchFile(
+            filePath,
+            lines =>
+            {
+                receivedBatches.Add(lines);
+                var count = System.Threading.Interlocked.Increment(ref batchCount);
+                if (count == 1)
+                {
+                    firstBatchTcs.TrySetResult(true);
+                }
+                else if (count >= 2)
+                {
+                    secondBatchTcs.TrySetResult(true);
+                }
+            }
+        );
+
+        await Task.Delay(500);
+        File.AppendAllText(filePath, "First append\n");
+
+        var firstCompleted = await Task.WhenAny(firstBatchTcs.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        firstCompleted.Should().Be(firstBatchTcs.Task, "first callback should be invoked within 5 seconds");
+
+        await Task.Delay(500);
+        File.AppendAllText(filePath, "Second append\n");
+
+        var secondCompleted = await Task.WhenAny(secondBatchTcs.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        secondCompleted.Should().Be(secondBatchTcs.Task, "second callback should be invoked within 5 seconds");
+
+        var allLines = receivedBatches.SelectMany(l => l).ToList();
+        allLines.Should().Contain("First append");
+        allLines.Should().Contain("Second append");
+        allLines.Should().NotContain("Initial line");
+
+        var duplicates = allLines.GroupBy(l => l).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        duplicates.Should().BeEmpty("no lines should be received more than once");
     }
 
     #endregion
