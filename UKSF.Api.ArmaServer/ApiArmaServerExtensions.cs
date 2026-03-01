@@ -36,7 +36,8 @@ public static class ApiArmaServerExtensions
         {
             return services.AddSingleton<IGameServersService, GameServersService>()
                            .AddSingleton<IGameServerHelpers, GameServerHelpers>()
-                           .AddSingleton<ISteamCmdService, SteamCmdService>();
+                           .AddSingleton<ISteamCmdService, SteamCmdService>()
+                           .AddTransient<IMissionStatsService, MissionStatsService>();
         }
 
         private IServiceCollection AddCommands()
