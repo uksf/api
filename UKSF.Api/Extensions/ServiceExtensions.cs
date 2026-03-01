@@ -15,6 +15,7 @@ using UKSF.Api.Launcher;
 using UKSF.Api.Mappers;
 using UKSF.Api.Middleware;
 using UKSF.Api.Modpack;
+using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.Modpack.WorkshopModProcessing;
 using UKSF.Api.Modpack.WorkshopModProcessing.Consumers;
 using UKSF.Api.Queries;
@@ -141,6 +142,7 @@ public static class ServiceExtensions
 
             services.AddMassTransit(x =>
                 {
+                    x.AddConsumer<ProcessMissionStatsBatchConsumer>();
                     x.AddConsumer<WorkshopModDownloadConsumer>();
                     x.AddConsumer<WorkshopModCheckConsumer>();
                     x.AddConsumer<WorkshopModExecuteConsumer>();

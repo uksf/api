@@ -3,6 +3,7 @@ using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Queries;
 using UKSF.Api.ArmaServer.ScheduledActions;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.ArmaServer.Services.StatsEventProcessors;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
@@ -37,7 +38,9 @@ public static class ApiArmaServerExtensions
             return services.AddSingleton<IGameServersService, GameServersService>()
                            .AddSingleton<IGameServerHelpers, GameServerHelpers>()
                            .AddSingleton<ISteamCmdService, SteamCmdService>()
-                           .AddTransient<IMissionStatsService, MissionStatsService>();
+                           .AddTransient<IMissionStatsService, MissionStatsService>()
+                           .AddTransient<IStatsEventProcessor, ShotEventProcessor>()
+                           .AddTransient<IStatsEventProcessor, HitEventProcessor>();
         }
 
         private IServiceCollection AddCommands()
