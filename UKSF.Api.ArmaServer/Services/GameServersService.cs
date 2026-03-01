@@ -538,6 +538,7 @@ public class GameServersService(
         var events = new List<BsonDocument>();
         if (data.TryGetValue("events", out var eventsObj) && eventsObj is JsonElement jsonElement)
         {
+            events.EnsureCapacity(jsonElement.GetArrayLength());
             foreach (var element in jsonElement.EnumerateArray())
             {
                 events.Add(BsonDocument.Parse(element.GetRawText()));

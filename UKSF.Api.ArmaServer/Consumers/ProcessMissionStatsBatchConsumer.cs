@@ -49,10 +49,8 @@ public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsS
             processor.ProcessForPlayer(evt, stats);
         }
 
-        foreach (var (uid, stats) in playerStats)
-        {
-            await missionStatsService.UpdatePlayerStatsAsync(session.Id, uid, stats);
-        }
+        var playerUpdateTasks = playerStats.Select(kvp => missionStatsService.UpdatePlayerStatsAsync(session.Id, kvp.Key, kvp.Value));
+        await Task.WhenAll(playerUpdateTasks);
 
         if (missionStats.EventCounts.Count > 0)
         {

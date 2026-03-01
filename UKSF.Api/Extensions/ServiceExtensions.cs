@@ -142,7 +142,7 @@ public static class ServiceExtensions
 
             services.AddMassTransit(x =>
                 {
-                    x.AddConsumer<ProcessMissionStatsBatchConsumer>();
+                    x.AddConsumer<ProcessMissionStatsBatchConsumer>(cfg => cfg.ConcurrentMessageLimit = 1);
                     x.AddConsumer<WorkshopModDownloadConsumer>();
                     x.AddConsumer<WorkshopModCheckConsumer>();
                     x.AddConsumer<WorkshopModExecuteConsumer>();

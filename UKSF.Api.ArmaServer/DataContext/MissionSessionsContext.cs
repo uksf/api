@@ -1,11 +1,10 @@
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
-using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.DataContext;
 
-public interface IMissionSessionsContext : IMongoContext<MissionSession>, ICachedMongoContext;
+public interface IMissionSessionsContext : IMongoContext<MissionSession>;
 
-public class MissionSessionsContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService)
-    : CachedMongoContext<MissionSession>(mongoCollectionFactory, eventBus, variablesService, "missionSessions"), IMissionSessionsContext;
+public class MissionSessionsContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus)
+    : MongoContext<MissionSession>(mongoCollectionFactory, eventBus, "missionSessions"), IMissionSessionsContext;

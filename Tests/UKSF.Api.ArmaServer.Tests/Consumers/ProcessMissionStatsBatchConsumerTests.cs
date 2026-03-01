@@ -19,6 +19,8 @@ public class ProcessMissionStatsBatchConsumerTests
 {
     private readonly Mock<IMissionStatsService> _missionStatsService = new();
     private readonly Mock<IUksfLogger> _logger = new();
+    private readonly Mock<IStatsEventProcessor> _mockShotProcessor = new();
+    private readonly Mock<IStatsEventProcessor> _mockHitProcessor = new();
     private readonly ProcessMissionStatsBatchConsumer _consumer;
 
     private static readonly MissionSession TestSession = new()
@@ -30,7 +32,10 @@ public class ProcessMissionStatsBatchConsumerTests
 
     public ProcessMissionStatsBatchConsumerTests()
     {
-        var processors = new IStatsEventProcessor[] { new ShotEventProcessor(), new HitEventProcessor() };
+        _mockShotProcessor.Setup(x => x.EventType).Returns("shot");
+        _mockHitProcessor.Setup(x => x.EventType).Returns("hit");
+
+        var processors = new IStatsEventProcessor[] { _mockShotProcessor.Object, _mockHitProcessor.Object };
 
         _missionStatsService.Setup(x => x.FindOrCreateSessionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>())).ReturnsAsync(TestSession);
         _missionStatsService.Setup(x => x.StoreRawBatchAsync(
@@ -130,15 +135,11 @@ public class ProcessMissionStatsBatchConsumerTests
 
         await _consumer.Consume(context.Object);
 
-        _missionStatsService.Verify(
-            x => x.UpdatePlayerStatsAsync("session-1", "player1", It.Is<PlayerMissionStats>(s => s.TotalShots == 2 && s.WeaponBreakdown.ContainsKey("rifle"))),
-            Times.Once
-        );
+        _mockShotProcessor.Verify(x => x.ProcessForPlayer(It.IsAny<BsonDocument>(), It.IsAny<PlayerMissionStats>()), Times.Exactly(2));
+        _mockHitProcessor.Verify(x => x.ProcessForPlayer(It.IsAny<BsonDocument>(), It.IsAny<PlayerMissionStats>()), Times.Once);
 
-        _missionStatsService.Verify(
-            x => x.UpdatePlayerStatsAsync("session-1", "player2", It.Is<PlayerMissionStats>(s => s.TotalHits == 1 && s.BodyPartHits.ContainsKey("head"))),
-            Times.Once
-        );
+        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-1", "player1", It.IsAny<PlayerMissionStats>()), Times.Once);
+        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-1", "player2", It.IsAny<PlayerMissionStats>()), Times.Once);
     }
 
     [Fact]
@@ -210,6 +211,7 @@ public class ProcessMissionStatsBatchConsumerTests
         await _consumer.Consume(context.Object);
 
         _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<PlayerMissionStats>()), Times.Never);
+        _mockShotProcessor.Verify(x => x.ProcessForPlayer(It.IsAny<BsonDocument>(), It.IsAny<PlayerMissionStats>()), Times.Never);
 
         _missionStatsService.Verify(x => x.UpdateMissionStatsAsync("session-1", It.Is<MissionStats>(s => s.EventCounts["shot"] == 1)), Times.Once);
     }
@@ -234,5 +236,66 @@ public class ProcessMissionStatsBatchConsumerTests
         _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<PlayerMissionStats>()), Times.Never);
 
         _missionStatsService.Verify(x => x.UpdateMissionStatsAsync("session-1", It.Is<MissionStats>(s => s.EventCounts["explosion"] == 1)), Times.Once);
+    }
+
+    [Fact]
+    public async Task Consume_WhenEmptyEventsList_ShouldNotUpdateMissionStats()
+    {
+        var message = new ProcessMissionStatsBatch
+        {
+            Mission = "test_mission",
+            Map = "test_map",
+            Events = [],
+            ReceivedAt = DateTime.UtcNow
+        };
+        var context = CreateContext(message);
+
+        await _consumer.Consume(context.Object);
+
+        _missionStatsService.Verify(x => x.UpdateMissionStatsAsync(It.IsAny<string>(), It.IsAny<MissionStats>()), Times.Never);
+        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<PlayerMissionStats>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Consume_ShouldParallelizePlayerUpdates()
+    {
+        var events = new List<BsonDocument>
+        {
+            new()
+            {
+                { "type", "shot" },
+                { "uid", "player1" },
+                { "weapon", "rifle" },
+                { "fireMode", "single" }
+            },
+            new()
+            {
+                { "type", "shot" },
+                { "uid", "player2" },
+                { "weapon", "pistol" },
+                { "fireMode", "single" }
+            },
+            new()
+            {
+                { "type", "shot" },
+                { "uid", "player3" },
+                { "weapon", "rifle" },
+                { "fireMode", "single" }
+            }
+        };
+        var message = new ProcessMissionStatsBatch
+        {
+            Mission = "test_mission",
+            Map = "test_map",
+            Events = events,
+            ReceivedAt = DateTime.UtcNow
+        };
+        var context = CreateContext(message);
+
+        await _consumer.Consume(context.Object);
+
+        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-1", "player1", It.IsAny<PlayerMissionStats>()), Times.Once);
+        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-1", "player2", It.IsAny<PlayerMissionStats>()), Times.Once);
+        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-1", "player3", It.IsAny<PlayerMissionStats>()), Times.Once);
     }
 }

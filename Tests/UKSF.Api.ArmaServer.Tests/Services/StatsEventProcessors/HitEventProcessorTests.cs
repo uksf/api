@@ -82,20 +82,20 @@ public class HitEventProcessorTests
         {
             { "weapon", "rhs_weap_m4a1" },
             { "bodyPart", "head" },
-            { "distance", 150 }
+            { "distance", 150.7 }
         };
         var evt2 = new BsonDocument
         {
             { "weapon", "rhs_weap_m4a1" },
             { "bodyPart", "torso" },
-            { "distance", 300 }
+            { "distance", 300.3 }
         };
         var stats = new PlayerMissionStats();
 
         _subject.ProcessForPlayer(evt1, stats);
         _subject.ProcessForPlayer(evt2, stats);
 
-        stats.TotalDistance.Should().Be(450);
+        stats.TotalDistance.Should().Be(451.0);
         stats.TotalHits.Should().Be(2);
     }
 
@@ -110,6 +110,6 @@ public class HitEventProcessorTests
         stats.TotalHits.Should().Be(1);
         stats.WeaponBreakdown.Should().ContainKey("unknown");
         stats.BodyPartHits.Should().ContainKey("unknown");
-        stats.TotalDistance.Should().Be(0);
+        stats.TotalDistance.Should().Be(0.0);
     }
 }

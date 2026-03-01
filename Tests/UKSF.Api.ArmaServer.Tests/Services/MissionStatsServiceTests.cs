@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
+using MongoDB.Driver;
 using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using Xunit;
@@ -20,6 +23,7 @@ public class MissionStatsServiceTests
     private readonly Mock<IPlayerMissionStatsContext> _mockPlayerStatsContext = new();
     private readonly Mock<IMissionStatsContext> _mockMissionStatsContext = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
+    private readonly Mock<IUksfLogger> _mockLogger = new();
 
     private readonly MissionStatsService _subject;
 
@@ -30,7 +34,8 @@ public class MissionStatsServiceTests
             _mockBatchesContext.Object,
             _mockPlayerStatsContext.Object,
             _mockMissionStatsContext.Object,
-            _mockVariablesService.Object
+            _mockVariablesService.Object,
+            _mockLogger.Object
         );
     }
 
@@ -54,7 +59,7 @@ public class MissionStatsServiceTests
     }
 
     [Fact]
-    public async Task FindOrCreateSessionAsync_WhenMatchingSessionWithinGap_ShouldReturnExistingAndUpdateTimestamps()
+    public async Task FindOrCreateSessionAsync_WhenMatchingSessionWithinGap_ShouldReturnExistingAndUpdateAtomically()
     {
         var now = new DateTime(2025, 6, 14, 20, 0, 0);
         var existingSession = new MissionSession
@@ -71,15 +76,9 @@ public class MissionStatsServiceTests
 
         result.Id.Should().Be(existingSession.Id);
         result.TotalBatchesReceived.Should().Be(4);
+        result.LastBatchReceived.Should().Be(now);
         _mockSessionsContext.Verify(x => x.Add(It.IsAny<MissionSession>()), Times.Never);
-        _mockSessionsContext.Verify(
-            x => x.Update(existingSession.Id, It.IsAny<System.Linq.Expressions.Expression<Func<MissionSession, DateTime>>>(), now),
-            Times.Once
-        );
-        _mockSessionsContext.Verify(
-            x => x.Update(existingSession.Id, It.IsAny<System.Linq.Expressions.Expression<Func<MissionSession, int>>>(), 4),
-            Times.Once
-        );
+        _mockSessionsContext.Verify(x => x.Update(existingSession.Id, It.IsAny<UpdateDefinition<MissionSession>>()), Times.Once);
     }
 
     [Fact]
@@ -87,8 +86,6 @@ public class MissionStatsServiceTests
     {
         var now = new DateTime(2025, 6, 14, 20, 0, 0);
         _mockVariablesService.Setup(x => x.GetVariable("MISSION_STATS_SESSION_GAP_HOURS")).Returns(new DomainVariableItem { Item = "4" });
-        // The session's LastBatchReceived is 5 hours ago, which is beyond the 4-hour gap
-        // So Get() with the cutoff predicate will return empty (no match)
         _mockSessionsContext.Setup(x => x.Get(It.IsAny<Func<MissionSession, bool>>())).Returns([]);
 
         var result = await _subject.FindOrCreateSessionAsync("co40_op_eagle", "Altis", now);
@@ -107,7 +104,6 @@ public class MissionStatsServiceTests
     [InlineData(DayOfWeek.Friday, MissionType.SideOp)]
     public async Task FindOrCreateSessionAsync_ShouldSetCorrectMissionTypeFromDayOfWeek(DayOfWeek dayOfWeek, MissionType expectedType)
     {
-        // Find a date that falls on the given day of week
         var baseDate = new DateTime(2025, 6, 9); // Monday
         var daysToAdd = ((int)dayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
         var receivedAt = baseDate.AddDays(daysToAdd).AddHours(20);
@@ -131,6 +127,7 @@ public class MissionStatsServiceTests
 
         result.Should().NotBeNull();
         _mockSessionsContext.Verify(x => x.Add(It.IsAny<MissionSession>()), Times.Once);
+        _mockLogger.Verify(x => x.LogDebug(It.Is<string>(s => s.Contains("default session gap hours"))), Times.Once);
     }
 
     [Fact]
@@ -144,6 +141,32 @@ public class MissionStatsServiceTests
 
         result.Should().NotBeNull();
         _mockSessionsContext.Verify(x => x.Add(It.IsAny<MissionSession>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task FindOrCreateSessionAsync_WhenMultipleSessionsMatch_ShouldReturnMostRecent()
+    {
+        var now = new DateTime(2025, 6, 14, 20, 0, 0);
+        var olderSession = new MissionSession
+        {
+            Mission = "co40_op_eagle",
+            Map = "Altis",
+            LastBatchReceived = now.AddHours(-3),
+            TotalBatchesReceived = 2
+        };
+        var newerSession = new MissionSession
+        {
+            Mission = "co40_op_eagle",
+            Map = "Altis",
+            LastBatchReceived = now.AddHours(-1),
+            TotalBatchesReceived = 5
+        };
+        _mockVariablesService.Setup(x => x.GetVariable("MISSION_STATS_SESSION_GAP_HOURS")).Returns(new DomainVariableItem { Item = "4" });
+        _mockSessionsContext.Setup(x => x.Get(It.IsAny<Func<MissionSession, bool>>())).Returns([olderSession, newerSession]);
+
+        var result = await _subject.FindOrCreateSessionAsync("co40_op_eagle", "Altis", now);
+
+        result.Id.Should().Be(newerSession.Id);
     }
 
     #endregion
@@ -182,7 +205,7 @@ public class MissionStatsServiceTests
         {
             TotalShots = 10,
             TotalHits = 5,
-            TotalDistance = 1000
+            TotalDistance = 1000.5
         };
 
         await _subject.UpdatePlayerStatsAsync(sessionId, playerUid, updates);
@@ -193,7 +216,7 @@ public class MissionStatsServiceTests
                                                s.PlayerUid == playerUid &&
                                                s.TotalShots == 10 &&
                                                s.TotalHits == 5 &&
-                                               s.TotalDistance == 1000
+                                               Math.Abs(s.TotalDistance - 1000.5) < 0.01
                 )
             ),
             Times.Once
@@ -201,7 +224,7 @@ public class MissionStatsServiceTests
     }
 
     [Fact]
-    public async Task UpdatePlayerStatsAsync_WhenExistingStats_ShouldMergeScalarFields()
+    public async Task UpdatePlayerStatsAsync_WhenExistingStats_ShouldUseAtomicIncrement()
     {
         var sessionId = ObjectId.GenerateNewId().ToString();
         var playerUid = "76561198012345678";
@@ -219,19 +242,20 @@ public class MissionStatsServiceTests
         {
             TotalShots = 8,
             TotalHits = 3,
-            TotalDistance = 300
+            TotalDistance = 300.5
         };
 
         await _subject.UpdatePlayerStatsAsync(sessionId, playerUid, updates);
 
         _mockPlayerStatsContext.Verify(
-            x => x.Replace(It.Is<PlayerMissionStats>(s => s.TotalShots == 18 && s.TotalHits == 8 && s.TotalDistance == 800)),
+            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
             Times.Once
         );
+        _mockPlayerStatsContext.Verify(x => x.Replace(It.IsAny<PlayerMissionStats>()), Times.Never);
     }
 
     [Fact]
-    public async Task UpdatePlayerStatsAsync_WhenExistingStats_ShouldMergeWeaponBreakdown()
+    public async Task UpdatePlayerStatsAsync_WhenExistingStats_WithWeaponBreakdown_ShouldUseAtomicUpdate()
     {
         var sessionId = ObjectId.GenerateNewId().ToString();
         var playerUid = "76561198012345678";
@@ -273,23 +297,13 @@ public class MissionStatsServiceTests
         await _subject.UpdatePlayerStatsAsync(sessionId, playerUid, updates);
 
         _mockPlayerStatsContext.Verify(
-            x => x.Replace(
-                It.Is<PlayerMissionStats>(s => s.WeaponBreakdown["rhs_weap_m4a1"].Shots == 8 &&
-                                               s.WeaponBreakdown["rhs_weap_m4a1"].Hits == 3 &&
-                                               s.WeaponBreakdown["rhs_weap_m4a1"].FireModes["Single"] == 4 &&
-                                               s.WeaponBreakdown["rhs_weap_m4a1"].FireModes["FullAuto"] == 2 &&
-                                               s.WeaponBreakdown["rhs_weap_m4a1"].FireModes["Burst"] == 2 &&
-                                               s.WeaponBreakdown["rhs_weap_m249"].Shots == 10 &&
-                                               s.WeaponBreakdown["rhs_weap_m249"].Hits == 4 &&
-                                               s.WeaponBreakdown["rhs_weap_m249"].FireModes["FullAuto"] == 10
-                )
-            ),
+            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
             Times.Once
         );
     }
 
     [Fact]
-    public async Task UpdatePlayerStatsAsync_WhenExistingStats_ShouldMergeBodyPartHits()
+    public async Task UpdatePlayerStatsAsync_WhenExistingStats_WithBodyPartHits_ShouldUseAtomicUpdate()
     {
         var sessionId = ObjectId.GenerateNewId().ToString();
         var playerUid = "76561198012345678";
@@ -306,7 +320,7 @@ public class MissionStatsServiceTests
         await _subject.UpdatePlayerStatsAsync(sessionId, playerUid, updates);
 
         _mockPlayerStatsContext.Verify(
-            x => x.Replace(It.Is<PlayerMissionStats>(s => s.BodyPartHits["head"] == 2 && s.BodyPartHits["body"] == 8 && s.BodyPartHits["legs"] == 1)),
+            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
             Times.Once
         );
     }
@@ -332,7 +346,7 @@ public class MissionStatsServiceTests
     }
 
     [Fact]
-    public async Task UpdateMissionStatsAsync_WhenExisting_ShouldMergeEventCounts()
+    public async Task UpdateMissionStatsAsync_WhenExisting_ShouldUseAtomicIncrement()
     {
         var sessionId = ObjectId.GenerateNewId().ToString();
         var existing = new MissionStats { MissionSessionId = sessionId, EventCounts = new Dictionary<string, int> { ["shot"] = 30, ["hit"] = 10 } };
@@ -343,9 +357,10 @@ public class MissionStatsServiceTests
         await _subject.UpdateMissionStatsAsync(sessionId, updates);
 
         _mockMissionStatsContext.Verify(
-            x => x.Replace(It.Is<MissionStats>(s => s.EventCounts["shot"] == 50 && s.EventCounts["hit"] == 10 && s.EventCounts["kill"] == 5)),
+            x => x.Update(It.IsAny<Expression<Func<MissionStats, bool>>>(), It.IsAny<UpdateDefinition<MissionStats>>()),
             Times.Once
         );
+        _mockMissionStatsContext.Verify(x => x.Replace(It.IsAny<MissionStats>()), Times.Never);
     }
 
     #endregion

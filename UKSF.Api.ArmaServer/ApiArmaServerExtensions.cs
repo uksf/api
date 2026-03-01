@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.ArmaServer.Commands;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Queries;
@@ -16,13 +17,13 @@ public static class ApiArmaServerExtensions
     {
         public IServiceCollection AddUksfArmaServer()
         {
-            return services.AddContexts().AddEventHandlers().AddServices().AddCommands().AddQueries().AddActions();
+            return services.AddContexts().AddEventHandlers().AddServices().AddCommands().AddQueries().AddActions().AddHostedService<MissionStatsIndexes>();
         }
 
         private IServiceCollection AddContexts()
         {
             return services.AddCachedContext<IGameServersContext, GameServersContext>()
-                           .AddCachedContext<IMissionSessionsContext, MissionSessionsContext>()
+                           .AddContext<IMissionSessionsContext, MissionSessionsContext>()
                            .AddContext<IMissionStatsBatchesContext, MissionStatsBatchesContext>()
                            .AddContext<IPlayerMissionStatsContext, PlayerMissionStatsContext>()
                            .AddContext<IMissionStatsContext, MissionStatsContext>();

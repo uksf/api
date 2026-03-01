@@ -477,6 +477,146 @@ public class GameServersServiceTests
 
         _mockPublishEndpoint.Verify(x => x.Publish(It.IsAny<ProcessMissionStatsBatch>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenServerStatus_ShouldUpdateStatusCacheForRunningServers()
+    {
+        var runningServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ProcessId = 1234
+        };
+        _mockGameServersContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { runningServer });
+        _mockGameServerHelpers.Setup(x => x.GetMaxPlayerCountFromConfig(runningServer)).Returns("64");
+        _mockGameServerHelpers.Setup(x => x.StripMilliseconds(It.IsAny<TimeSpan>())).Returns(TimeSpan.FromSeconds(120));
+
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "server_status",
+            Data = new Dictionary<string, object>
+            {
+                { "map", "Altis" },
+                { "mission", "co40_op_eagle.Altis" },
+                { "players", "12" },
+                { "uptime", "120.5" }
+            }
+        };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockServersHub.Verify(x => x.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenServerStatus_ShouldNotCrashWithNoRunningServers()
+    {
+        _mockGameServersContext.Setup(x => x.Get()).Returns(new List<DomainGameServer>());
+
+        var gameServerEvent = new GameServerEvent { Type = "server_status", Data = new Dictionary<string, object> { { "map", "Altis" }, { "players", "5" } } };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockServersHub.Verify(x => x.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenPerformance_ShouldUpdatePerformanceCacheForRunningServers()
+    {
+        var runningServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ProcessId = 1234
+        };
+        _mockGameServersContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { runningServer });
+
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "performance",
+            Data = new Dictionary<string, object>
+            {
+                { "fps", "48.5" },
+                { "entityCount", "1500" },
+                { "aiCount", "200" },
+                { "headlessClientCount", "2" }
+            }
+        };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockServersHub.Verify(x => x.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenPerformance_ShouldNotCrashWithNoRunningServers()
+    {
+        _mockGameServersContext.Setup(x => x.Get()).Returns(new List<DomainGameServer>());
+
+        var gameServerEvent = new GameServerEvent { Type = "performance", Data = new Dictionary<string, object> { { "fps", "50.0" } } };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockServersHub.Verify(x => x.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenServerStatusWithBadData_ShouldNotThrow()
+    {
+        var runningServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ProcessId = 1234
+        };
+        _mockGameServersContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { runningServer });
+        _mockGameServerHelpers.Setup(x => x.GetMaxPlayerCountFromConfig(runningServer)).Throws(new Exception("Config error"));
+
+        var gameServerEvent = new GameServerEvent { Type = "server_status", Data = new Dictionary<string, object> { { "players", "5" } } };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockLogger.Verify(x => x.LogError(It.Is<string>(s => s.Contains("server_status")), It.IsAny<Exception>()), Times.Never);
+        _mockServersHub.Verify(x => x.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenUnknownType_ShouldLogWarning()
+    {
+        var gameServerEvent = new GameServerEvent { Type = "unknown_event", Data = new Dictionary<string, object>() };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("unknown_event"))), Times.Once);
+        _mockServersHub.Verify(x => x.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenEventHandlerThrows_ShouldLogErrorAndStillNotifyClients()
+    {
+        _mockGameServersContext.Setup(x => x.Get()).Throws(new Exception("DB error"));
+
+        var gameServerEvent = new GameServerEvent { Type = "server_status", Data = new Dictionary<string, object> { { "players", "5" } } };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockLogger.Verify(x => x.LogError(It.Is<string>(s => s.Contains("server_status")), It.IsAny<Exception>()), Times.Once);
+        _mockServersHub.Verify(x => x.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenMissionStatsMissingMission_ShouldNotPublish()
+    {
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "mission_stats", Data = new Dictionary<string, object> { { "map", "Altis" }, { "events", new List<object>() } }
+        };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockPublishEndpoint.Verify(x => x.Publish(It.IsAny<ProcessMissionStatsBatch>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("missing mission or map"))), Times.Once);
+    }
 }
 
 internal class MockHttpMessageHandler(System.Net.HttpStatusCode statusCode) : HttpMessageHandler

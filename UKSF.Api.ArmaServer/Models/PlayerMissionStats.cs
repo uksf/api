@@ -17,5 +17,5 @@ public class PlayerMissionStats : MongoObject
     public int TotalHits { get; set; }
     public Dictionary<string, WeaponStats> WeaponBreakdown { get; set; } = new();
     public Dictionary<string, int> BodyPartHits { get; set; } = new();
-    public int TotalDistance { get; set; }
+    public double TotalDistance { get; set; }
 }

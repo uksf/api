@@ -11,7 +11,7 @@ public class HitEventProcessor : IStatsEventProcessor
     {
         var weapon = evt.GetValue("weapon", "unknown").AsString;
         var bodyPart = evt.GetValue("bodyPart", "unknown").AsString;
-        var distance = evt.GetValue("distance", 0).ToInt32();
+        var distance = evt.GetValue("distance", 0).ToDouble();
 
         stats.TotalHits++;
         stats.TotalDistance += distance;
