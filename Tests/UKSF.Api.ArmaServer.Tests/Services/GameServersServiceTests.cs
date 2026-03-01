@@ -33,6 +33,7 @@ public class GameServersServiceTests
     private readonly Mock<IHubContext<ServersHub, IServersClient>> _mockServersHub = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<IPublishEndpoint> _mockPublishEndpoint = new();
+    private readonly Mock<IPersistenceSessionsService> _mockPersistenceSessionsService = new();
 
     private readonly GameServersService _subject;
 
@@ -52,7 +53,8 @@ public class GameServersServiceTests
             _mockVariablesService.Object,
             _mockServersHub.Object,
             _mockLogger.Object,
-            _mockPublishEndpoint.Object
+            _mockPublishEndpoint.Object,
+            _mockPersistenceSessionsService.Object
         );
     }
 
