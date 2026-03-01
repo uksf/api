@@ -1,0 +1,42 @@
+using MongoDB.Bson;
+using UKSF.Api.ArmaServer.Models;
+
+namespace UKSF.Api.ArmaServer.Services.StatsEventProcessors;
+
+public class ShotEventProcessor : IStatsEventProcessor
+{
+    public string EventType => "shot";
+
+    public void ProcessForPlayer(BsonDocument evt, PlayerMissionStats stats)
+    {
+        var weapon = evt.GetValue("weapon", "unknown").AsString;
+        var fireMode = evt.GetValue("fireMode", "unknown").AsString;
+
+        stats.TotalShots++;
+
+        if (!stats.WeaponBreakdown.TryGetValue(weapon, out var weaponStats))
+        {
+            weaponStats = new WeaponStats();
+            stats.WeaponBreakdown[weapon] = weaponStats;
+        }
+
+        weaponStats.Shots++;
+
+        if (!weaponStats.FireModes.ContainsKey(fireMode))
+        {
+            weaponStats.FireModes[fireMode] = 0;
+        }
+
+        weaponStats.FireModes[fireMode]++;
+    }
+
+    public void ProcessForMission(BsonDocument evt, MissionStats stats)
+    {
+        if (!stats.EventCounts.ContainsKey("shot"))
+        {
+            stats.EventCounts["shot"] = 0;
+        }
+
+        stats.EventCounts["shot"]++;
+    }
+}
