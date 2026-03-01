@@ -1,7 +1,10 @@
+using MassTransit;
+using MongoDB.Driver;
 using UKSF.Api.ArmaMissions;
 using UKSF.Api.ArmaServer;
 using UKSF.Api.Commands;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Configuration;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.EventHandlers;
@@ -12,6 +15,8 @@ using UKSF.Api.Launcher;
 using UKSF.Api.Mappers;
 using UKSF.Api.Middleware;
 using UKSF.Api.Modpack;
+using UKSF.Api.Modpack.WorkshopModProcessing;
+using UKSF.Api.Modpack.WorkshopModProcessing.Consumers;
 using UKSF.Api.Queries;
 using UKSF.Api.ScheduledActions;
 using UKSF.Api.Services;
@@ -119,13 +124,55 @@ public static class ServiceExtensions
         {
             return services.AddUksfShared(configuration, currentEnvironment)
                            .AddUksfAuthentication(configuration)
-                           .AddUksfModpack(configuration)
+                           .AddUksfMassTransit(configuration)
+                           .AddUksfModpack()
                            .AddUksfArmaMissions()
                            .AddUksfArmaServer()
                            .AddUksfLauncher()
                            .AddUksfIntegrationDiscord()
                            .AddUksfIntegrationInstagram()
                            .AddUksfIntegrationTeamspeak();
+        }
+
+        private IServiceCollection AddUksfMassTransit(IConfiguration configuration)
+        {
+            var appSettings = new AppSettings();
+            configuration.GetSection(nameof(AppSettings)).Bind(appSettings);
+
+            services.AddMassTransit(x =>
+                {
+                    x.AddConsumer<WorkshopModDownloadConsumer>();
+                    x.AddConsumer<WorkshopModCheckConsumer>();
+                    x.AddConsumer<WorkshopModExecuteConsumer>();
+                    x.AddConsumer<WorkshopModUninstallConsumer>();
+                    x.AddConsumer<WorkshopModCleanupConsumer>();
+
+                    x.AddSagaStateMachine<WorkshopModStateMachine, WorkshopModInstanceState>()
+                     .MongoDbRepository(r =>
+                         {
+                             r.Connection = appSettings.ConnectionStrings.Database;
+                             r.DatabaseName = MongoUrl.Create(appSettings.ConnectionStrings.Database).DatabaseName;
+                             r.CollectionName = "workshopModSagas";
+                         }
+                     );
+
+                    x.UsingInMemory((context, cfg) =>
+                        {
+                            cfg.ConfigureEndpoints(context);
+                            cfg.UseInMemoryOutbox(context);
+                        }
+                    );
+
+                    x.Configure<MassTransitHostOptions>(options =>
+                        {
+                            options.StopTimeout = TimeSpan.FromSeconds(5);
+                            options.ConsumerStopTimeout = TimeSpan.FromSeconds(2);
+                        }
+                    );
+                }
+            );
+
+            return services;
         }
     }
 
