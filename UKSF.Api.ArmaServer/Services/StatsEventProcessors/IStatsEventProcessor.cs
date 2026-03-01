@@ -7,5 +7,4 @@ public interface IStatsEventProcessor
 {
     string EventType { get; }
     void ProcessForPlayer(BsonDocument evt, PlayerMissionStats stats);
-    void ProcessForMission(BsonDocument evt, MissionStats stats);
 }

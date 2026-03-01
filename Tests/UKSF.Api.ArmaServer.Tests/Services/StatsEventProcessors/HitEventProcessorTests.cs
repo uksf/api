@@ -76,7 +76,7 @@ public class HitEventProcessorTests
     }
 
     [Fact]
-    public void ProcessForPlayer_ShouldAccumulateDistanceAndHitCount()
+    public void ProcessForPlayer_ShouldAccumulateDistance()
     {
         var evt1 = new BsonDocument
         {
@@ -96,7 +96,7 @@ public class HitEventProcessorTests
         _subject.ProcessForPlayer(evt2, stats);
 
         stats.TotalDistance.Should().Be(450);
-        stats.HitCount.Should().Be(2);
+        stats.TotalHits.Should().Be(2);
     }
 
     [Fact]
@@ -111,18 +111,5 @@ public class HitEventProcessorTests
         stats.WeaponBreakdown.Should().ContainKey("unknown");
         stats.BodyPartHits.Should().ContainKey("unknown");
         stats.TotalDistance.Should().Be(0);
-        stats.HitCount.Should().Be(1);
-    }
-
-    [Fact]
-    public void ProcessForMission_ShouldIncrementEventCount()
-    {
-        var evt = new BsonDocument();
-        var stats = new MissionStats();
-
-        _subject.ProcessForMission(evt, stats);
-        _subject.ProcessForMission(evt, stats);
-
-        stats.EventCounts.Should().ContainKey("hit").WhoseValue.Should().Be(2);
     }
 }

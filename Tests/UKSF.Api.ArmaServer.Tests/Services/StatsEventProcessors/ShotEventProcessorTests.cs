@@ -68,16 +68,4 @@ public class ShotEventProcessorTests
         stats.WeaponBreakdown.Should().ContainKey("unknown");
         stats.WeaponBreakdown["unknown"].FireModes.Should().ContainKey("unknown");
     }
-
-    [Fact]
-    public void ProcessForMission_ShouldIncrementEventCount()
-    {
-        var evt = new BsonDocument();
-        var stats = new MissionStats();
-
-        _subject.ProcessForMission(evt, stats);
-        _subject.ProcessForMission(evt, stats);
-
-        stats.EventCounts.Should().ContainKey("shot").WhoseValue.Should().Be(2);
-    }
 }

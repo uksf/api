@@ -29,14 +29,4 @@ public class ShotEventProcessor : IStatsEventProcessor
 
         weaponStats.FireModes[fireMode]++;
     }
-
-    public void ProcessForMission(BsonDocument evt, MissionStats stats)
-    {
-        if (!stats.EventCounts.ContainsKey("shot"))
-        {
-            stats.EventCounts["shot"] = 0;
-        }
-
-        stats.EventCounts["shot"]++;
-    }
 }

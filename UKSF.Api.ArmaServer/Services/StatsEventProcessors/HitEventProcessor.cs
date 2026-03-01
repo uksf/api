@@ -15,7 +15,6 @@ public class HitEventProcessor : IStatsEventProcessor
 
         stats.TotalHits++;
         stats.TotalDistance += distance;
-        stats.HitCount++;
 
         if (!stats.WeaponBreakdown.TryGetValue(weapon, out var weaponStats))
         {
@@ -31,15 +30,5 @@ public class HitEventProcessor : IStatsEventProcessor
         }
 
         stats.BodyPartHits[bodyPart]++;
-    }
-
-    public void ProcessForMission(BsonDocument evt, MissionStats stats)
-    {
-        if (!stats.EventCounts.ContainsKey("hit"))
-        {
-            stats.EventCounts["hit"] = 0;
-        }
-
-        stats.EventCounts["hit"]++;
     }
 }

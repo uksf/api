@@ -85,7 +85,6 @@ public class MissionStatsService(
         existing.TotalShots += updates.TotalShots;
         existing.TotalHits += updates.TotalHits;
         existing.TotalDistance += updates.TotalDistance;
-        existing.HitCount += updates.HitCount;
         MergeDictionary(existing.BodyPartHits, updates.BodyPartHits);
         MergeWeaponBreakdown(existing.WeaponBreakdown, updates.WeaponBreakdown);
 
