@@ -20,7 +20,11 @@ public static class ApiArmaServerExtensions
 
         private IServiceCollection AddContexts()
         {
-            return services.AddCachedContext<IGameServersContext, GameServersContext>();
+            return services.AddCachedContext<IGameServersContext, GameServersContext>()
+                           .AddCachedContext<IMissionSessionsContext, MissionSessionsContext>()
+                           .AddContext<IMissionStatsBatchesContext, MissionStatsBatchesContext>()
+                           .AddContext<IPlayerMissionStatsContext, PlayerMissionStatsContext>()
+                           .AddContext<IMissionStatsContext, MissionStatsContext>();
         }
 
         private IServiceCollection AddEventHandlers()
