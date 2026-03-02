@@ -39,6 +39,7 @@ public static class ApiArmaServerExtensions
         {
             return services.AddScoped<IGameServersService, GameServersService>()
                            .AddSingleton<IPersistenceSessionsService, PersistenceSessionsService>()
+                           .AddSingleton<ILogSubscriptionService, LogSubscriptionService>()
                            .AddSingleton<IGameServerHelpers, GameServerHelpers>()
                            .AddSingleton<IRptLogService, RptLogService>()
                            .AddSingleton<ISteamCmdService, SteamCmdService>()

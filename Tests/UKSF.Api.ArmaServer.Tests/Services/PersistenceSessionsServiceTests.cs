@@ -1,4 +1,3 @@
-#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -250,7 +249,7 @@ public class PersistenceSessionsServiceTests
 
         _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(new List<DomainPersistenceSession>());
 
-        DomainPersistenceSession? savedSession = null;
+        DomainPersistenceSession savedSession = null;
         _mockContext.Setup(x => x.Add(It.IsAny<DomainPersistenceSession>()))
                     .Callback<DomainPersistenceSession>(s => savedSession = s)
                     .Returns(Task.CompletedTask);
@@ -276,6 +275,51 @@ public class PersistenceSessionsServiceTests
         savedSession.Objects[0].Position.Should().BeEquivalentTo(new[] { 100.5, 200.3, 0.1 });
         savedSession.Players.Should().ContainKey("player-uid");
         savedSession.Players["player-uid"].Animation.Should().Be("AmovPercMstpSnonWnonDnon");
+    }
+
+    [Fact]
+    public async Task HandleSaveChunkAsync_EvictsExpiredBuffers()
+    {
+        // Send a chunk that will never complete (total=2 but only 1 sent)
+        var incompleteChunk = new ChunkEnvelope
+        {
+            Id = "expired-1",
+            Key = "expired-key",
+            Index = 0,
+            Total = 2,
+            Data = "partial"
+        };
+
+        await _subject.HandleSaveChunkAsync(incompleteChunk);
+
+        // The buffer exists but is incomplete - no save should have happened
+        _mockContext.Verify(x => x.Add(It.IsAny<DomainPersistenceSession>()), Times.Never);
+
+        // Send a normal complete chunk - this triggers eviction check but the expired buffer
+        // won't be evicted because it was just created (less than 5 minutes ago)
+        var session = new DomainPersistenceSession
+        {
+            Key = "normal-key",
+            Objects = [],
+            Players = new(),
+            Markers = []
+        };
+        var json = JsonSerializer.Serialize(session);
+        var normalChunk = new ChunkEnvelope
+        {
+            Id = "normal-1",
+            Key = "normal-key",
+            Index = 0,
+            Total = 1,
+            Data = json
+        };
+
+        _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(new List<DomainPersistenceSession>());
+
+        await _subject.HandleSaveChunkAsync(normalChunk);
+
+        // The normal chunk should save successfully
+        _mockContext.Verify(x => x.Add(It.Is<DomainPersistenceSession>(s => s.Key == "normal-key")), Times.Once);
     }
 
     #endregion

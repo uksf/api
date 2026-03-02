@@ -122,6 +122,11 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
                 }
 
                 var fileInfo = new FileInfo(filePath);
+                if (fileInfo.Length < _offset)
+                {
+                    _offset = 0;
+                }
+
                 if (fileInfo.Length <= _offset)
                 {
                     return;

@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.ArmaServer.DataContext;
@@ -13,14 +12,11 @@ public class ServersHub(
     IRptLogService rptLogService,
     IGameServersContext gameServersContext,
     IHubContext<ServersHub, IServersClient> hubContext,
+    ILogSubscriptionService logSubscriptionService,
     IUksfLogger logger
 ) : Hub<IServersClient>
 {
     public const string EndPoint = "servers";
-
-    private static readonly ConcurrentDictionary<string, HashSet<string>> ConnectionSubscriptions = new();
-    private static readonly ConcurrentDictionary<string, (IDisposable Watcher, int RefCount)> ActiveWatchers = new();
-    private static readonly object WatcherLock = new();
 
     public async Task SubscribeToLog(string serverId, string source)
     {
@@ -35,16 +31,7 @@ public class ServersHub(
 
         var groupName = $"log:{serverId}:{source}";
         await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-
-        ConnectionSubscriptions.AddOrUpdate(
-            Context.ConnectionId,
-            _ => [groupName],
-            (_, set) =>
-            {
-                set.Add(groupName);
-                return set;
-            }
-        );
+        logSubscriptionService.AddSubscription(Context.ConnectionId, groupName);
 
         var lines = rptLogService.ReadFullFile(filePath);
         const int chunkSize = 1000;
@@ -60,46 +47,9 @@ public class ServersHub(
             await Clients.Caller.ReceiveLogContent(serverId, source, [], 0, true);
         }
 
-        StartOrJoinWatcher(filePath, groupName, serverId, source);
-    }
-
-    public async Task UnsubscribeFromLog(string serverId, string source)
-    {
-        var groupName = $"log:{serverId}:{source}";
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-
-        if (ConnectionSubscriptions.TryGetValue(Context.ConnectionId, out var subs))
-        {
-            subs.Remove(groupName);
-        }
-
-        StopOrLeaveWatcher(groupName);
-    }
-
-    public override async Task OnDisconnectedAsync(Exception exception)
-    {
-        if (ConnectionSubscriptions.TryRemove(Context.ConnectionId, out var subs))
-        {
-            foreach (var groupName in subs)
-            {
-                StopOrLeaveWatcher(groupName);
-            }
-        }
-
-        await base.OnDisconnectedAsync(exception);
-    }
-
-    private void StartOrJoinWatcher(string filePath, string groupName, string serverId, string source)
-    {
-        lock (WatcherLock)
-        {
-            if (ActiveWatchers.TryGetValue(groupName, out var entry))
-            {
-                ActiveWatchers[groupName] = (entry.Watcher, entry.RefCount + 1);
-                return;
-            }
-
-            var watcher = rptLogService.WatchFile(
+        logSubscriptionService.StartOrJoinWatcher(
+            groupName,
+            () => rptLogService.WatchFile(
                 filePath,
                 newLines =>
                 {
@@ -112,30 +62,26 @@ public class ServersHub(
                         logger.LogError(ex);
                     }
                 }
-            );
-
-            ActiveWatchers[groupName] = (watcher, 1);
-        }
+            )
+        );
     }
 
-    private static void StopOrLeaveWatcher(string groupName)
+    public async Task UnsubscribeFromLog(string serverId, string source)
     {
-        lock (WatcherLock)
-        {
-            if (!ActiveWatchers.TryGetValue(groupName, out var entry))
-            {
-                return;
-            }
+        var groupName = $"log:{serverId}:{source}";
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
+        logSubscriptionService.RemoveSubscription(Context.ConnectionId, groupName);
+        logSubscriptionService.StopOrLeaveWatcher(groupName);
+    }
 
-            if (entry.RefCount <= 1)
-            {
-                entry.Watcher.Dispose();
-                ActiveWatchers.TryRemove(groupName, out _);
-            }
-            else
-            {
-                ActiveWatchers[groupName] = (entry.Watcher, entry.RefCount - 1);
-            }
+    public override async Task OnDisconnectedAsync(Exception exception)
+    {
+        var subs = logSubscriptionService.RemoveAllSubscriptions(Context.ConnectionId);
+        foreach (var groupName in subs)
+        {
+            logSubscriptionService.StopOrLeaveWatcher(groupName);
         }
+
+        await base.OnDisconnectedAsync(exception);
     }
 }

@@ -8,16 +8,22 @@ namespace UKSF.Api.ArmaServer.Services;
 
 public interface IPersistenceSessionsService
 {
-    DomainPersistenceSession? Load(string key);
+    DomainPersistenceSession Load(string key);
     Task SaveAsync(string key, DomainPersistenceSession session);
     Task HandleSaveChunkAsync(ChunkEnvelope chunk);
 }
 
 public class PersistenceSessionsService(IPersistenceSessionsContext context, IUksfLogger logger) : IPersistenceSessionsService
 {
-    private readonly ConcurrentDictionary<string, Dictionary<int, string>> _chunkBuffers = new();
+    // Dedicated options for persistence deserialization.
+    // Does NOT use InferredTypeConverter (would convert date-like strings to DateTime in object fields)
+    // Does NOT use DictionaryKeyPolicy (would mutate CustomData keys)
+    private static readonly JsonSerializerOptions DeserializerOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly TimeSpan ChunkBufferExpiry = TimeSpan.FromMinutes(5);
 
-    public DomainPersistenceSession? Load(string key)
+    private readonly ConcurrentDictionary<string, ChunkBuffer> _chunkBuffers = new();
+
+    public DomainPersistenceSession Load(string key)
     {
         return context.Get(x => x.Key == key).FirstOrDefault();
     }
@@ -41,19 +47,18 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
 
     public async Task HandleSaveChunkAsync(ChunkEnvelope chunk)
     {
-        var buffer = _chunkBuffers.GetOrAdd(chunk.Id, _ => new Dictionary<int, string>());
+        EvictExpiredBuffers();
 
-        buffer[chunk.Index] = chunk.Data;
+        var buffer = _chunkBuffers.GetOrAdd(chunk.Id, _ => new ChunkBuffer());
+        buffer.Chunks[chunk.Index] = chunk.Data;
 
-        if (buffer.Count == chunk.Total)
+        if (buffer.Chunks.Count == chunk.Total && _chunkBuffers.TryRemove(chunk.Id, out var completedBuffer))
         {
-            _chunkBuffers.TryRemove(chunk.Id, out _);
-
-            var fullJson = string.Concat(Enumerable.Range(0, chunk.Total).Select(i => buffer[i]));
+            var fullJson = string.Concat(Enumerable.Range(0, chunk.Total).Select(i => completedBuffer.Chunks[i]));
 
             try
             {
-                var session = JsonSerializer.Deserialize<DomainPersistenceSession>(fullJson);
+                var session = JsonSerializer.Deserialize<DomainPersistenceSession>(fullJson, DeserializerOptions);
                 if (session is not null)
                 {
                     await SaveAsync(chunk.Key, session);
@@ -68,5 +73,26 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
                 logger.LogError($"Failed to deserialize persistence session chunks for key '{chunk.Key}'", exception);
             }
         }
+    }
+
+    private void EvictExpiredBuffers()
+    {
+        var cutoff = DateTime.UtcNow - ChunkBufferExpiry;
+        foreach (var kvp in _chunkBuffers)
+        {
+            if (kvp.Value.CreatedAt < cutoff)
+            {
+                if (_chunkBuffers.TryRemove(kvp.Key, out _))
+                {
+                    logger.LogWarning($"Evicted incomplete chunk buffer '{kvp.Key}' (created {kvp.Value.CreatedAt:u})");
+                }
+            }
+        }
+    }
+
+    private sealed class ChunkBuffer
+    {
+        public ConcurrentDictionary<int, string> Chunks { get; } = new();
+        public DateTime CreatedAt { get; } = DateTime.UtcNow;
     }
 }

@@ -45,18 +45,18 @@ public class ActionCleanupRunningServers(
             return;
         }
 
-        KillOrphanedServers(gameServersService, runningServers);
+        await KillOrphanedServersAsync(gameServersService, runningServers);
         await KillRemainingProcesses(gameServersService);
     }
 
-    private void KillOrphanedServers(IGameServersService gameServersService, List<DomainGameServer> runningServers)
+    private async Task KillOrphanedServersAsync(IGameServersService gameServersService, List<DomainGameServer> runningServers)
     {
         var killedCount = 0;
         foreach (var runningServer in runningServers)
         {
             try
             {
-                gameServersService.KillGameServer(runningServer);
+                await gameServersService.KillGameServer(runningServer);
                 killedCount++;
             }
             catch (Exception exception)

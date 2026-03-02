@@ -388,8 +388,8 @@ public class GameServersController(
         await serversHub.Clients.All.ReceiveMissionsUpdateIfNotCaller(connectionId, missions);
     }
 
-    private bool GetHubConnectionId(out StringValues connecctionId)
+    private bool GetHubConnectionId(out StringValues connectionId)
     {
-        return HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out connecctionId);
+        return HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out connectionId);
     }
 }
