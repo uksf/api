@@ -24,11 +24,6 @@ public class HitEventProcessor : IStatsEventProcessor
 
         weaponStats.Hits++;
 
-        if (!stats.BodyPartHits.ContainsKey(bodyPart))
-        {
-            stats.BodyPartHits[bodyPart] = 0;
-        }
-
-        stats.BodyPartHits[bodyPart]++;
+        stats.BodyPartHits[bodyPart] = stats.BodyPartHits.GetValueOrDefault(bodyPart) + 1;
     }
 }

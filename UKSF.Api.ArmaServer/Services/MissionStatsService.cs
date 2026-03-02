@@ -2,7 +2,6 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
 
@@ -21,8 +20,7 @@ public class MissionStatsService(
     IMissionStatsBatchesContext batchesContext,
     IPlayerMissionStatsContext playerStatsContext,
     IMissionStatsContext missionStatsContext,
-    IVariablesService variablesService,
-    IUksfLogger logger
+    IVariablesService variablesService
 ) : IMissionStatsService
 {
     private const int DefaultSessionGapHours = 4;
@@ -121,26 +119,14 @@ public class MissionStatsService(
             return;
         }
 
-        var updateBuilder = Builders<MissionStats>.Update.Combine();
-        foreach (var (eventType, count) in updates.EventCounts)
-        {
-            updateBuilder = Builders<MissionStats>.Update.Combine(updateBuilder, Builders<MissionStats>.Update.Inc(x => x.EventCounts[eventType], count));
-        }
+        var updateDefinitions = updates.EventCounts.Select(kvp => Builders<MissionStats>.Update.Inc(x => x.EventCounts[kvp.Key], kvp.Value)).ToList();
 
-        await missionStatsContext.Update(x => x.MissionSessionId == sessionId, updateBuilder);
+        await missionStatsContext.Update(x => x.MissionSessionId == sessionId, Builders<MissionStats>.Update.Combine(updateDefinitions));
     }
 
     private int GetSessionGapHours()
     {
-        try
-        {
-            return variablesService.GetVariable("MISSION_STATS_SESSION_GAP_HOURS").AsInt();
-        }
-        catch (Exception ex)
-        {
-            logger.LogDebug($"Using default session gap hours ({DefaultSessionGapHours}): {ex.Message}");
-            return DefaultSessionGapHours;
-        }
+        return variablesService.GetVariable("MISSION_STATS_SESSION_GAP_HOURS").AsIntWithDefault(DefaultSessionGapHours);
     }
 
     private static MissionType GetMissionType(DayOfWeek dayOfWeek) =>

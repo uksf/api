@@ -22,11 +22,6 @@ public class ShotEventProcessor : IStatsEventProcessor
 
         weaponStats.Shots++;
 
-        if (!weaponStats.FireModes.ContainsKey(fireMode))
-        {
-            weaponStats.FireModes[fireMode] = 0;
-        }
-
-        weaponStats.FireModes[fireMode]++;
+        weaponStats.FireModes[fireMode] = weaponStats.FireModes.GetValueOrDefault(fireMode) + 1;
     }
 }

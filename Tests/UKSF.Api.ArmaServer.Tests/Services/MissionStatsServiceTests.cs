@@ -9,7 +9,6 @@ using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
-using UKSF.Api.Core;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
 using Xunit;
@@ -23,7 +22,6 @@ public class MissionStatsServiceTests
     private readonly Mock<IPlayerMissionStatsContext> _mockPlayerStatsContext = new();
     private readonly Mock<IMissionStatsContext> _mockMissionStatsContext = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
-    private readonly Mock<IUksfLogger> _mockLogger = new();
 
     private readonly MissionStatsService _subject;
 
@@ -34,8 +32,7 @@ public class MissionStatsServiceTests
             _mockBatchesContext.Object,
             _mockPlayerStatsContext.Object,
             _mockMissionStatsContext.Object,
-            _mockVariablesService.Object,
-            _mockLogger.Object
+            _mockVariablesService.Object
         );
     }
 
@@ -117,17 +114,16 @@ public class MissionStatsServiceTests
     }
 
     [Fact]
-    public async Task FindOrCreateSessionAsync_WhenVariableMissing_ShouldDefaultTo4Hours()
+    public async Task FindOrCreateSessionAsync_WhenVariableItemNotNumeric_ShouldDefaultTo4Hours()
     {
         var now = new DateTime(2025, 6, 14, 20, 0, 0);
-        _mockVariablesService.Setup(x => x.GetVariable("MISSION_STATS_SESSION_GAP_HOURS")).Throws(new Exception("Variable not found"));
+        _mockVariablesService.Setup(x => x.GetVariable("MISSION_STATS_SESSION_GAP_HOURS")).Returns(new DomainVariableItem { Item = "not_a_number" });
         _mockSessionsContext.Setup(x => x.Get(It.IsAny<Func<MissionSession, bool>>())).Returns([]);
 
         var result = await _subject.FindOrCreateSessionAsync("test_mission", "Altis", now);
 
         result.Should().NotBeNull();
         _mockSessionsContext.Verify(x => x.Add(It.IsAny<MissionSession>()), Times.Once);
-        _mockLogger.Verify(x => x.LogDebug(It.Is<string>(s => s.Contains("default session gap hours"))), Times.Once);
     }
 
     [Fact]

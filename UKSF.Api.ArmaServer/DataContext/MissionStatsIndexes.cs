@@ -43,15 +43,7 @@ public class MissionStatsIndexes(IMongoDatabase database, IUksfLogger logger) : 
     private async Task CreateIndex<T>(string collectionName, IndexKeysDefinition<T> keys, string indexName, bool unique = false)
     {
         var collection = database.GetCollection<T>(collectionName);
-        var model = new CreateIndexModel<T>(
-            keys,
-            new CreateIndexOptions
-            {
-                Name = indexName,
-                Unique = unique,
-                Background = true
-            }
-        );
+        var model = new CreateIndexModel<T>(keys, new CreateIndexOptions { Name = indexName, Unique = unique });
         await collection.Indexes.CreateOneAsync(model);
     }
 }
