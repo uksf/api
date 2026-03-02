@@ -18,14 +18,14 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
     // Dedicated options for persistence deserialization.
     // Does NOT use InferredTypeConverter (would convert date-like strings to DateTime in object fields)
     // Does NOT use DictionaryKeyPolicy (would mutate CustomData keys)
-    private static readonly JsonSerializerOptions DeserializerOptions = new() { PropertyNameCaseInsensitive = true };
+    internal static readonly JsonSerializerOptions SerializerOptions = new() { PropertyNameCaseInsensitive = true };
     private static readonly TimeSpan ChunkBufferExpiry = TimeSpan.FromMinutes(5);
 
     private readonly ConcurrentDictionary<string, ChunkBuffer> _chunkBuffers = new();
 
     public DomainPersistenceSession Load(string key)
     {
-        return context.Get(x => x.Key == key).FirstOrDefault();
+        return context.GetSingle(x => x.Key == key);
     }
 
     public async Task SaveAsync(string key, DomainPersistenceSession session)
@@ -33,7 +33,7 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
         session.Key = key;
         session.SavedAt = DateTime.UtcNow;
 
-        var existing = context.Get(x => x.Key == key).FirstOrDefault();
+        var existing = context.GetSingle(x => x.Key == key);
         if (existing is not null)
         {
             session.Id = existing.Id;
@@ -58,7 +58,7 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
 
             try
             {
-                var session = JsonSerializer.Deserialize<DomainPersistenceSession>(fullJson, DeserializerOptions);
+                var session = JsonSerializer.Deserialize<DomainPersistenceSession>(fullJson, SerializerOptions);
                 if (session is not null)
                 {
                     await SaveAsync(chunk.Key, session);

@@ -31,7 +31,7 @@ public class PersistenceSessionsServiceTests
     public void Load_WithExistingKey_ReturnsSession()
     {
         var session = new DomainPersistenceSession { Key = "test-key" };
-        _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(new List<DomainPersistenceSession> { session });
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(session);
 
         var result = _subject.Load("test-key");
 
@@ -42,7 +42,7 @@ public class PersistenceSessionsServiceTests
     [Fact]
     public void Load_WithMissingKey_ReturnsNull()
     {
-        _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(new List<DomainPersistenceSession>());
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
         var result = _subject.Load("nonexistent-key");
 
@@ -57,7 +57,7 @@ public class PersistenceSessionsServiceTests
     public async Task SaveAsync_WithNewKey_CreatesSession()
     {
         var session = new DomainPersistenceSession { Key = "new-key" };
-        _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(new List<DomainPersistenceSession>());
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
         await _subject.SaveAsync("new-key", session);
 
@@ -70,7 +70,7 @@ public class PersistenceSessionsServiceTests
     {
         var existingSession = new DomainPersistenceSession { Id = "existing-id", Key = "existing-key" };
         var newSession = new DomainPersistenceSession { Key = "existing-key" };
-        _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(new List<DomainPersistenceSession> { existingSession });
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(existingSession);
 
         await _subject.SaveAsync("existing-key", newSession);
 
@@ -82,7 +82,7 @@ public class PersistenceSessionsServiceTests
     public async Task SaveAsync_SetsSavedAtToUtcNow()
     {
         var session = new DomainPersistenceSession { Key = "key" };
-        _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(new List<DomainPersistenceSession>());
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
         var before = DateTime.UtcNow;
         await _subject.SaveAsync("key", session);
@@ -115,7 +115,7 @@ public class PersistenceSessionsServiceTests
             Data = json
         };
 
-        _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(new List<DomainPersistenceSession>());
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
         await _subject.HandleSaveChunkAsync(chunk);
 
@@ -154,7 +154,7 @@ public class PersistenceSessionsServiceTests
             Data = part2
         };
 
-        _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(new List<DomainPersistenceSession>());
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
         await _subject.HandleSaveChunkAsync(chunk1);
         _mockContext.Verify(x => x.Add(It.IsAny<DomainPersistenceSession>()), Times.Never);
@@ -203,7 +203,7 @@ public class PersistenceSessionsServiceTests
             Data = part2
         };
 
-        _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(new List<DomainPersistenceSession>());
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
         await _subject.HandleSaveChunkAsync(chunk1);
         await _subject.HandleSaveChunkAsync(chunk1Duplicate);
@@ -247,7 +247,7 @@ public class PersistenceSessionsServiceTests
         var chunkSize = json.Length / 3;
         var parts = new[] { json[..chunkSize], json[chunkSize..(chunkSize * 2)], json[(chunkSize * 2)..] };
 
-        _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(new List<DomainPersistenceSession>());
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
         DomainPersistenceSession savedSession = null;
         _mockContext.Setup(x => x.Add(It.IsAny<DomainPersistenceSession>()))
@@ -314,7 +314,7 @@ public class PersistenceSessionsServiceTests
             Data = json
         };
 
-        _mockContext.Setup(x => x.Get(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns(new List<DomainPersistenceSession>());
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
         await _subject.HandleSaveChunkAsync(normalChunk);
 

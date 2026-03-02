@@ -33,6 +33,17 @@ public static class VariablesExtensions
             return output;
         }
 
+        public int AsIntWithDefault(int defaultValue)
+        {
+            if (variable?.Item == null)
+            {
+                return defaultValue;
+            }
+
+            var item = variable.Item.ToString();
+            return !int.TryParse(item, out var output) ? defaultValue : output;
+        }
+
         public double AsDouble()
         {
             var item = variable.AsString();
