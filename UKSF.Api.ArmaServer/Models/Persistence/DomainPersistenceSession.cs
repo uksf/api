@@ -22,12 +22,12 @@ public class DomainPersistenceSession : MongoObject
     public List<object[]> Markers { get; set; } = [];
 
     [JsonPropertyName("dateTime")]
-    public int[] DateTime { get; set; } = [];
+    public int[] ArmaDateTime { get; set; } = [];
 
     [JsonPropertyName("customData")]
     public Dictionary<string, object> CustomData { get; set; } = new();
 
     [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
     [JsonPropertyName("savedAt")]
-    public System.DateTime SavedAt { get; set; }
+    public DateTime SavedAt { get; set; }
 }

@@ -761,7 +761,7 @@ public class PersistenceSessionsServiceTests
                     "marker_1", "hd_dot", new object[] { 1000.0, 2000.0, 0.0 }, "ICON", "ColorRed", 1.0, new object[] { 1.0, 1.0 }, 0.0, "Target", ""
                 }
             ],
-            DateTime = [2035, 6, 15, 14, 30],
+            ArmaDateTime = [2035, 6, 15, 14, 30],
             CustomData = new Dictionary<string, object> { ["weather"] = "clear", ["fogLevel"] = 0.1 },
             SavedAt = new DateTime(2026, 3, 1, 12, 0, 0, DateTimeKind.Utc)
         };
@@ -779,7 +779,7 @@ public class PersistenceSessionsServiceTests
         deserialized.Players.Should().ContainKey("uid-1");
         deserialized.Players.Should().ContainKey("uid-2");
         deserialized.Markers.Should().HaveCount(1);
-        deserialized.DateTime.Should().BeEquivalentTo(original.DateTime);
+        deserialized.ArmaDateTime.Should().BeEquivalentTo(original.ArmaDateTime);
         deserialized.SavedAt.Should().Be(original.SavedAt);
 
         JsonSerializer.Serialize(deserialized.CustomData).Should().Be(JsonSerializer.Serialize(original.CustomData));
@@ -800,7 +800,7 @@ public class PersistenceSessionsServiceTests
         deserialized.DeletedObjects.Should().BeEmpty();
         deserialized.Players.Should().BeEmpty();
         deserialized.Markers.Should().BeEmpty();
-        deserialized.DateTime.Should().BeEmpty();
+        deserialized.ArmaDateTime.Should().BeEmpty();
         deserialized.CustomData.Should().BeEmpty();
     }
 

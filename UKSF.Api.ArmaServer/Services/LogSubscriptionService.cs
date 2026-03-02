@@ -14,7 +14,7 @@ public interface ILogSubscriptionService : IDisposable
 public class LogSubscriptionService : ILogSubscriptionService
 {
     private readonly ConcurrentDictionary<string, ConcurrentHashSet> _connectionSubscriptions = new();
-    private readonly ConcurrentDictionary<string, WatcherEntry> _activeWatchers = new();
+    private readonly Dictionary<string, WatcherEntry> _activeWatchers = new();
     private readonly object _watcherLock = new();
     private bool _disposed;
 
@@ -70,22 +70,22 @@ public class LogSubscriptionService : ILogSubscriptionService
             if (entry.RefCount <= 0)
             {
                 entry.Dispose();
-                _activeWatchers.TryRemove(groupName, out _);
+                _activeWatchers.Remove(groupName);
             }
         }
     }
 
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
-
-        _disposed = true;
-
         lock (_watcherLock)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
             foreach (var entry in _activeWatchers.Values)
             {
                 entry.Dispose();
