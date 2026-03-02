@@ -191,20 +191,12 @@ public class GameServersService(
 
     public async Task<MissionPatchingResult> PatchMissionFile(string missionName)
     {
-        // if (Data.GetSingle(x => x.status.mission == missionName) != null) { // TODO: Needs better server <-> api interaction to properly get running missions
-        //     return new MissionPatchingResult {
-        //         success = true,
-        //         reports = new List<MissionPatchingReport> { new MissionPatchingReport("Mission in use", $"'{missionName}' is currently in use by another server.\nIt has not been patched.") }
-        //     };
-        // }
-
         var missionPath = Path.Combine(gameServerHelpers.GetGameServerMissionsPath(), Path.GetFileName(missionName));
-        var result = await missionPatchingService.PatchMission(
+        return await missionPatchingService.PatchMission(
             missionPath,
             gameServerHelpers.GetGameServerModsPaths(GameEnvironment.Release),
             gameServerHelpers.GetMaxCuratorCountFromSettings()
         );
-        return result;
     }
 
     public void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection)
@@ -251,50 +243,34 @@ public class GameServersService(
 
     public async Task StopGameServer(DomainGameServer gameServer)
     {
+        await SendShutdownAsync(gameServer.ApiPort, $"game server '{gameServer.Name}'");
+
+        for (var index = 0; index < gameServer.NumberHeadlessClients; index++)
+        {
+            await SendShutdownAsync(gameServer.ApiPort + index + 1, $"headless client {index} for '{gameServer.Name}'");
+        }
+    }
+
+    private async Task SendShutdownAsync(int port, string context)
+    {
         try
         {
             using var client = httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             var content = new StringContent("{\"type\":\"shutdown\"}", System.Text.Encoding.UTF8, "application/json");
-            await client.PostAsync($"http://localhost:{gameServer.ApiPort}/command", content);
+            await client.PostAsync($"http://localhost:{port}/command", content);
         }
         catch (HttpRequestException ex)
         {
-            logger.LogWarning($"HTTP request failed while stopping game server '{gameServer.Name}': {ex.Message}");
+            logger.LogWarning($"HTTP request failed while stopping {context}: {ex.Message}");
         }
         catch (TaskCanceledException ex)
         {
-            logger.LogWarning($"Request timed out while stopping game server '{gameServer.Name}': {ex.Message}");
+            logger.LogWarning($"Request timed out while stopping {context}: {ex.Message}");
         }
         catch (Exception exception)
         {
-            logger.LogError($"Unexpected error stopping game server '{gameServer.Name}'", exception);
-        }
-
-        if (gameServer.NumberHeadlessClients > 0)
-        {
-            for (var index = 0; index < gameServer.NumberHeadlessClients; index++)
-            {
-                try
-                {
-                    using var client = httpClientFactory.CreateClient();
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    var content = new StringContent("{\"type\":\"shutdown\"}", System.Text.Encoding.UTF8, "application/json");
-                    await client.PostAsync($"http://localhost:{gameServer.ApiPort + index + 1}/command", content);
-                }
-                catch (HttpRequestException ex)
-                {
-                    logger.LogWarning($"HTTP request failed while stopping headless client {index} for '{gameServer.Name}': {ex.Message}");
-                }
-                catch (TaskCanceledException ex)
-                {
-                    logger.LogWarning($"Request timed out while stopping headless client {index} for '{gameServer.Name}': {ex.Message}");
-                }
-                catch (Exception exception)
-                {
-                    logger.LogError($"Unexpected error stopping headless client {index} for '{gameServer.Name}'", exception);
-                }
-            }
+            logger.LogError($"Unexpected error stopping {context}", exception);
         }
     }
 
@@ -448,28 +424,11 @@ public class GameServersService(
     // exposes apiPort back to SQF, add an "apiPort" field to event data and match to a specific server.
     private void HandleServerStatusEvent(Dictionary<string, object> data)
     {
-        var gameServers = GetRunningGameServers();
-        foreach (var gameServer in gameServers)
-        {
-            try
+        ApplyToRunningServerCaches((gameServer, status) =>
             {
-                var status = StatusCache.GetOrAdd(gameServer.Id, _ => new GameServerStatus());
-
-                if (data.TryGetValue("map", out var map))
-                {
-                    status.Map = map.ToString();
-                }
-
-                if (data.TryGetValue("mission", out var mission))
-                {
-                    status.Mission = mission.ToString();
-                }
-
-                if (data.TryGetValue("players", out var players) && int.TryParse(players.ToString(), out var playerCount))
-                {
-                    status.Players = playerCount;
-                }
-
+                if (data.TryGetValue("map", out var map)) status.Map = map.ToString();
+                if (data.TryGetValue("mission", out var mission)) status.Mission = mission.ToString();
+                if (data.TryGetValue("players", out var players) && int.TryParse(players.ToString(), out var playerCount)) status.Players = playerCount;
                 if (data.TryGetValue("uptime", out var uptime) && float.TryParse(uptime.ToString(), out var uptimeValue))
                 {
                     status.Uptime = uptimeValue;
@@ -479,6 +438,32 @@ public class GameServersService(
                 status.Running = true;
                 status.Started = false;
                 status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
+            }
+        );
+    }
+
+    private void HandlePerformanceEvent(Dictionary<string, object> data)
+    {
+        ApplyToRunningServerCaches((_, status) =>
+            {
+                if (data.TryGetValue("fps", out var fps) && float.TryParse(fps.ToString(), out var fpsValue)) status.Fps = fpsValue;
+                if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount.ToString(), out var entityCountValue))
+                    status.EntityCount = entityCountValue;
+                if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount.ToString(), out var aiCountValue)) status.AiCount = aiCountValue;
+                if (data.TryGetValue("headlessClientCount", out var headlessClientCount) &&
+                    int.TryParse(headlessClientCount.ToString(), out var headlessClientCountValue)) status.HeadlessClientCount = headlessClientCountValue;
+            }
+        );
+    }
+
+    private void ApplyToRunningServerCaches(Action<DomainGameServer, GameServerStatus> applyUpdate)
+    {
+        foreach (var gameServer in GetRunningGameServers())
+        {
+            try
+            {
+                var status = StatusCache.GetOrAdd(gameServer.Id, _ => new GameServerStatus());
+                applyUpdate(gameServer, status);
                 status.LastEventReceived = DateTime.UtcNow;
             }
             catch (Exception ex)
@@ -488,49 +473,10 @@ public class GameServersService(
         }
     }
 
-    private void HandlePerformanceEvent(Dictionary<string, object> data)
-    {
-        var gameServers = GetRunningGameServers();
-        foreach (var gameServer in gameServers)
-        {
-            try
-            {
-                var status = StatusCache.GetOrAdd(gameServer.Id, _ => new GameServerStatus());
-
-                if (data.TryGetValue("fps", out var fps) && float.TryParse(fps.ToString(), out var fpsValue))
-                {
-                    status.Fps = fpsValue;
-                }
-
-                if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount.ToString(), out var entityCountValue))
-                {
-                    status.EntityCount = entityCountValue;
-                }
-
-                if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount.ToString(), out var aiCountValue))
-                {
-                    status.AiCount = aiCountValue;
-                }
-
-                if (data.TryGetValue("headlessClientCount", out var headlessClientCount) &&
-                    int.TryParse(headlessClientCount.ToString(), out var headlessClientCountValue))
-                {
-                    status.HeadlessClientCount = headlessClientCountValue;
-                }
-
-                status.LastEventReceived = DateTime.UtcNow;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"Error updating performance cache for server '{gameServer.Name}'", ex);
-            }
-        }
-    }
-
     private async Task HandleMissionStatsEvent(Dictionary<string, object> data)
     {
-        var mission = data.TryGetValue("mission", out var m) ? m.ToString() : string.Empty;
-        var map = data.TryGetValue("map", out var mp) ? mp.ToString() : string.Empty;
+        var mission = data.TryGetValue("mission", out var missionValue) ? missionValue.ToString() : string.Empty;
+        var map = data.TryGetValue("map", out var mapValue) ? mapValue.ToString() : string.Empty;
 
         if (string.IsNullOrEmpty(mission) || string.IsNullOrEmpty(map))
         {
