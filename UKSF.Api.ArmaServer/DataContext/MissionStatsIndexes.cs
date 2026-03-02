@@ -31,8 +31,6 @@ public class MissionStatsIndexes(IMongoDatabase database, IUksfLogger logger) : 
                 Builders<MissionStatsBatch>.IndexKeys.Ascending(x => x.MissionSessionId),
                 "ix_sessionId"
             );
-
-            logger.LogInfo("Mission stats indexes ensured");
         }
         catch (Exception ex)
         {

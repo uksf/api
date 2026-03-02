@@ -95,8 +95,6 @@ app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMo
    );
 
 app.Services.StartUksfServices();
-logger.LogInfo("Services started");
-
 app.Run();
 return;
 
