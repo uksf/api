@@ -186,16 +186,11 @@ public class PatchDataBuilder(
         }
 
         var playerId = player.Account.Id;
-        var positionPriorities = new[]
-            {
-                new { Key = chainOfCommand.First, Value = 3 },
-                new { Key = chainOfCommand.Second, Value = 2 },
-                new { Key = chainOfCommand.Third, Value = 1 },
-                new { Key = chainOfCommand.Nco, Value = 0 }
-            }.Where(x => x.Key != null)
-             .ToDictionary(x => x.Key, x => x.Value);
-
-        return positionPriorities.TryGetValue(playerId, out var priority) ? priority : -1;
+        if (chainOfCommand.First == playerId) return 3;
+        if (chainOfCommand.Second == playerId) return 2;
+        if (chainOfCommand.Third == playerId) return 1;
+        if (chainOfCommand.Nco == playerId) return 0;
+        return -1;
     }
 
     private static void SortSlots(List<InternalPlayer> slots, InternalUnit unit, List<DomainRank> ranks)

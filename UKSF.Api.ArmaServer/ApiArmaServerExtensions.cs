@@ -17,7 +17,7 @@ public static class ApiArmaServerExtensions
     {
         public IServiceCollection AddUksfArmaServer()
         {
-            return services.AddContexts().AddEventHandlers().AddServices().AddCommands().AddQueries().AddActions().AddHostedService<MissionStatsIndexes>();
+            return services.AddContexts().AddServices().AddCommands().AddQueries().AddActions().AddHostedService<MissionStatsIndexes>();
         }
 
         private IServiceCollection AddContexts()
@@ -28,11 +28,6 @@ public static class ApiArmaServerExtensions
                            .AddContext<IPlayerMissionStatsContext, PlayerMissionStatsContext>()
                            .AddContext<IMissionStatsContext, MissionStatsContext>()
                            .AddContext<IPersistenceSessionsContext, PersistenceSessionsContext>();
-        }
-
-        private IServiceCollection AddEventHandlers()
-        {
-            return services;
         }
 
         private IServiceCollection AddServices()
