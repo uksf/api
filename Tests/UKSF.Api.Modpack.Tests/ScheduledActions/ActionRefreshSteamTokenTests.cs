@@ -50,14 +50,15 @@ public class ActionRefreshSteamTokenTests
     }
 
     [Fact]
-    public async Task Run_WhenLoginSucceeds_ShouldLogSuccess()
+    public async Task Run_WhenLoginSucceeds_ShouldComplete()
     {
         _mockSteamCmdService.Setup(x => x.RefreshLogin()).ReturnsAsync("Logged in OK\nWaiting for user info...\nOK");
 
         await _action.Run();
 
         _mockSteamCmdService.Verify(x => x.RefreshLogin(), Times.Once);
-        _mockLogger.Verify(x => x.LogInfo("Steam token refreshed successfully"), Times.Once);
+        _mockLogger.Verify(x => x.LogError(It.IsAny<string>()), Times.Never);
+        _mockLogger.Verify(x => x.LogError(It.IsAny<string>(), It.IsAny<Exception>()), Times.Never);
     }
 
     [Fact]

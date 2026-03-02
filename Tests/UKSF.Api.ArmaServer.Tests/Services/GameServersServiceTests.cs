@@ -12,6 +12,7 @@ using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Models.Persistence;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.ArmaServer.Signalr.Clients;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
@@ -33,6 +34,7 @@ public class GameServersServiceTests
     private readonly Mock<IHubContext<ServersHub, IServersClient>> _mockServersHub = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<IPublishEndpoint> _mockPublishEndpoint = new();
+    private readonly Mock<IPersistenceSessionsService> _mockPersistenceSessionsService = new();
 
     private readonly GameServersService _subject;
 
@@ -52,7 +54,8 @@ public class GameServersServiceTests
             _mockVariablesService.Object,
             _mockServersHub.Object,
             _mockLogger.Object,
-            _mockPublishEndpoint.Object
+            _mockPublishEndpoint.Object,
+            _mockPersistenceSessionsService.Object
         );
     }
 
@@ -616,6 +619,46 @@ public class GameServersServiceTests
 
         _mockPublishEndpoint.Verify(x => x.Publish(It.IsAny<ProcessMissionStatsBatch>(), It.IsAny<CancellationToken>()), Times.Never);
         _mockLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("missing mission or map"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenPersistenceSave_ShouldDelegateToService()
+    {
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "persistence_save",
+            Data = new Dictionary<string, object>
+            {
+                { "id", "chunk-123" },
+                { "key", "session-key" },
+                { "index", 0 },
+                { "total", 1 },
+                { "data", "{\"key\":\"test\"}" }
+            }
+        };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockPersistenceSessionsService.Verify(
+            x => x.HandleSaveChunkAsync(
+                It.Is<ChunkEnvelope>(c => c.Id == "chunk-123" && c.Key == "session-key" && c.Index == 0 && c.Total == 1 && c.Data == "{\"key\":\"test\"}")
+            ),
+            Times.Once
+        );
+        _mockServersHub.Verify(x => x.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenPersistenceSave_WithMissingFields_ShouldUseDefaults()
+    {
+        var gameServerEvent = new GameServerEvent { Type = "persistence_save", Data = new Dictionary<string, object> { { "key", "session-key" } } };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockPersistenceSessionsService.Verify(
+            x => x.HandleSaveChunkAsync(It.Is<ChunkEnvelope>(c => c.Id == string.Empty && c.Index == 0 && c.Total == 1 && c.Data == string.Empty)),
+            Times.Once
+        );
     }
 }
 

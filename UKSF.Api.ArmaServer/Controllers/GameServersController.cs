@@ -29,6 +29,7 @@ public class GameServersController(
     IHubContext<ServersHub, IServersClient> serversHub,
     IVariablesService variablesService,
     IGameServerHelpers gameServerHelpers,
+    IRptLogService rptLogService,
     IUksfLogger logger,
     IHttpContextService httpContextService
 ) : ControllerBase
@@ -319,6 +320,44 @@ public class GameServersController(
         await serversHub.Clients.All.ReceiveDisabledState(stateRequest.State);
     }
 
+    [HttpGet("{id}/log/sources")]
+    [Authorize]
+    public List<RptLogSource> GetLogSources(string id)
+    {
+        var server = gameServersContext.GetSingle(id);
+        return rptLogService.GetLogSources(server);
+    }
+
+    [HttpPost("{id}/log/search")]
+    [Authorize]
+    public RptLogSearchResponse SearchLog(string id, [FromBody] LogSearchRequest request)
+    {
+        var server = gameServersContext.GetSingle(id);
+        var filePath = rptLogService.GetLatestRptFilePath(server, request.Source);
+        if (filePath == null)
+        {
+            return new RptLogSearchResponse([], 0);
+        }
+
+        var results = rptLogService.SearchFile(filePath, request.Query);
+        return new RptLogSearchResponse(results, results.Count);
+    }
+
+    [HttpGet("{id}/log/download")]
+    [Authorize]
+    public IActionResult DownloadLog(string id, [FromQuery] string source)
+    {
+        var server = gameServersContext.GetSingle(id);
+        var filePath = rptLogService.GetLatestRptFilePath(server, source);
+        if (filePath == null)
+        {
+            return NotFound("No log file found");
+        }
+
+        var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        return File(stream, "text/plain", Path.GetFileName(filePath));
+    }
+
     private async Task SendAnyUpdateIfNotCaller(bool skipRefresh = false)
     {
         if (!GetHubConnectionId(out var connectionId))
@@ -349,8 +388,8 @@ public class GameServersController(
         await serversHub.Clients.All.ReceiveMissionsUpdateIfNotCaller(connectionId, missions);
     }
 
-    private bool GetHubConnectionId(out StringValues connecctionId)
+    private bool GetHubConnectionId(out StringValues connectionId)
     {
-        return HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out connecctionId);
+        return HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out connectionId);
     }
 }

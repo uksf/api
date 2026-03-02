@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
@@ -9,69 +10,58 @@ namespace UKSF.Api.ArmaServer.ScheduledActions;
 
 public interface IActionCleanupRunningServers : ISelfCreatingScheduledAction;
 
-public class ActionCleanupRunningServers : SelfCreatingScheduledAction, IActionCleanupRunningServers
+public class ActionCleanupRunningServers(
+    ISchedulerService schedulerService,
+    IHostEnvironment currentEnvironment,
+    IClock clock,
+    IUksfLogger logger,
+    IServiceScopeFactory serviceScopeFactory,
+    IGameServerHelpers gameServerHelpers
+) : SelfCreatingScheduledAction(schedulerService, currentEnvironment), IActionCleanupRunningServers
 {
     private const string ActionName = nameof(ActionCleanupRunningServers);
-    private readonly IClock _clock;
-    private readonly IGameServerHelpers _gameServerHelpers;
-    private readonly IGameServersService _gameServersService;
-    private readonly IUksfLogger _logger;
 
-    public ActionCleanupRunningServers(
-        ISchedulerService schedulerService,
-        IHostEnvironment currentEnvironment,
-        IClock clock,
-        IUksfLogger logger,
-        IGameServersService gameServersService,
-        IGameServerHelpers gameServerHelpers
-    ) : base(schedulerService, currentEnvironment)
-    {
-        _clock = clock;
-        _logger = logger;
-        _gameServersService = gameServersService;
-        _gameServerHelpers = gameServerHelpers;
-    }
-
-    public override DateTime NextRun => _clock.UkToday().AddHours(02);
+    public override DateTime NextRun => clock.UkToday().AddHours(02);
     public override TimeSpan RunInterval => TimeSpan.FromDays(1);
     public override string Name => ActionName;
 
     public override async Task Run(params object[] parameters)
     {
-        var armaProcesses = _gameServerHelpers.GetArmaProcesses();
+        var armaProcesses = gameServerHelpers.GetArmaProcesses();
         if (!armaProcesses.Any())
         {
-            // No arma processes running, don't need to do anything
             return;
         }
 
-        var serverStatuses = await _gameServersService.GetAllGameServerStatuses();
+        using var scope = serviceScopeFactory.CreateScope();
+        var gameServersService = scope.ServiceProvider.GetRequiredService<IGameServersService>();
+
+        var serverStatuses = await gameServersService.GetAllGameServerStatuses();
         var runningServers = serverStatuses.Where(x => x.Status.Running).ToList();
         var populatedServers = runningServers.Where(x => x.Status.Players > 0);
 
         if (populatedServers.Any())
         {
-            // There are populated servers, don't kill anything
             return;
         }
 
-        KillOrphanedServers(runningServers);
-        await KillRemainingProcesses();
+        await KillOrphanedServersAsync(gameServersService, runningServers);
+        await KillRemainingProcesses(gameServersService);
     }
 
-    private void KillOrphanedServers(List<DomainGameServer> runningServers)
+    private async Task KillOrphanedServersAsync(IGameServersService gameServersService, List<DomainGameServer> runningServers)
     {
         var killedCount = 0;
         foreach (var runningServer in runningServers)
         {
             try
             {
-                _gameServersService.KillGameServer(runningServer);
+                await gameServersService.KillGameServer(runningServer);
                 killedCount++;
             }
             catch (Exception exception)
             {
-                _logger.LogError(
+                logger.LogError(
                     $"Failed to kill running game server - Name: {runningServer.Name} - ProcessId: {runningServer.ProcessId}\n{exception.GetCompleteString()}"
                 );
             }
@@ -79,23 +69,23 @@ public class ActionCleanupRunningServers : SelfCreatingScheduledAction, IActionC
 
         if (killedCount > 0)
         {
-            _logger.LogInfo($"Killed {killedCount} leftover servers");
+            logger.LogInfo($"Killed {killedCount} leftover servers");
         }
     }
 
-    private async Task KillRemainingProcesses()
+    private async Task KillRemainingProcesses(IGameServersService gameServersService)
     {
         try
         {
-            var killedCount = await _gameServersService.KillAllArmaProcesses();
+            var killedCount = await gameServersService.KillAllArmaProcesses();
             if (killedCount > 0)
             {
-                _logger.LogInfo($"Killed {killedCount} orphaned arma processes");
+                logger.LogInfo($"Killed {killedCount} orphaned arma processes");
             }
         }
         catch (Exception exception)
         {
-            _logger.LogError($"Failed to kill arma processes\n{exception.GetCompleteString()}");
+            logger.LogError($"Failed to kill arma processes\n{exception.GetCompleteString()}");
         }
     }
 }

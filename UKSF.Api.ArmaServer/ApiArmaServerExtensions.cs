@@ -26,7 +26,8 @@ public static class ApiArmaServerExtensions
                            .AddContext<IMissionSessionsContext, MissionSessionsContext>()
                            .AddContext<IMissionStatsBatchesContext, MissionStatsBatchesContext>()
                            .AddContext<IPlayerMissionStatsContext, PlayerMissionStatsContext>()
-                           .AddContext<IMissionStatsContext, MissionStatsContext>();
+                           .AddContext<IMissionStatsContext, MissionStatsContext>()
+                           .AddContext<IPersistenceSessionsContext, PersistenceSessionsContext>();
         }
 
         private IServiceCollection AddEventHandlers()
@@ -36,8 +37,11 @@ public static class ApiArmaServerExtensions
 
         private IServiceCollection AddServices()
         {
-            return services.AddSingleton<IGameServersService, GameServersService>()
+            return services.AddScoped<IGameServersService, GameServersService>()
+                           .AddSingleton<IPersistenceSessionsService, PersistenceSessionsService>()
+                           .AddSingleton<ILogSubscriptionService, LogSubscriptionService>()
                            .AddSingleton<IGameServerHelpers, GameServerHelpers>()
+                           .AddSingleton<IRptLogService, RptLogService>()
                            .AddSingleton<ISteamCmdService, SteamCmdService>()
                            .AddTransient<IMissionStatsService, MissionStatsService>()
                            .AddTransient<IStatsEventProcessor, ShotEventProcessor>()

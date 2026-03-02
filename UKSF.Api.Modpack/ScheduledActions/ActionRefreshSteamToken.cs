@@ -38,8 +38,6 @@ public class ActionRefreshSteamToken(
                 logger.LogError($"Steam login failed. SteamCMD output:\n{output}");
                 throw new InvalidOperationException($"Steam login failed: {output}");
             }
-
-            logger.LogInfo("Steam token refreshed successfully");
         }
         catch (InvalidOperationException)
         {

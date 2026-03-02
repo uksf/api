@@ -10,6 +10,7 @@ using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Models.Persistence;
 using UKSF.Api.ArmaServer.Signalr.Clients;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Core;
@@ -47,7 +48,8 @@ public class GameServersService(
     IVariablesService variablesService,
     IHubContext<ServersHub, IServersClient> serversHub,
     IUksfLogger logger,
-    IPublishEndpoint publishEndpoint
+    IPublishEndpoint publishEndpoint,
+    IPersistenceSessionsService persistenceSessionsService
 ) : IGameServersService
 {
     private static readonly ConcurrentDictionary<string, GameServerStatus> StatusCache = new();
@@ -422,9 +424,10 @@ public class GameServersService(
         {
             switch (gameServerEvent.Type)
             {
-                case "server_status": HandleServerStatusEvent(gameServerEvent.Data); break;
-                case "performance":   HandlePerformanceEvent(gameServerEvent.Data); break;
-                case "mission_stats": await HandleMissionStatsEvent(gameServerEvent.Data); break;
+                case "server_status":    HandleServerStatusEvent(gameServerEvent.Data); break;
+                case "performance":      HandlePerformanceEvent(gameServerEvent.Data); break;
+                case "mission_stats":    await HandleMissionStatsEvent(gameServerEvent.Data); break;
+                case "persistence_save": await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
                 case "player_connected":
                 case "player_disconnected":
                 case "mission_started":
@@ -556,6 +559,20 @@ public class GameServersService(
         );
 
         logger.LogInfo($"Published mission_stats batch: {mission} on {map}, {events.Count} events");
+    }
+
+    private async Task HandlePersistenceSaveEvent(Dictionary<string, object> data)
+    {
+        var chunk = new ChunkEnvelope
+        {
+            Id = data.GetValueOrDefault("id")?.ToString() ?? string.Empty,
+            Key = data.GetValueOrDefault("key")?.ToString() ?? string.Empty,
+            Index = Convert.ToInt32(data.GetValueOrDefault("index", 0)),
+            Total = Convert.ToInt32(data.GetValueOrDefault("total", 1)),
+            Data = data.GetValueOrDefault("data")?.ToString() ?? string.Empty
+        };
+
+        await persistenceSessionsService.HandleSaveChunkAsync(chunk);
     }
 
     private List<DomainGameServer> GetRunningGameServers()
