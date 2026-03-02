@@ -118,7 +118,7 @@ public class InstagramService(IVariablesContext variablesContext, IVariablesServ
         var tasks = imageFiles.Select(async x =>
             {
                 var imageData = await GetImageDataFromLocalCache(x);
-                images.Add(new InstagramImage { Base64 = imageData });
+                images.Add(new InstagramImage { Id = Path.GetFileNameWithoutExtension(x), Base64 = imageData });
             }
         );
         await Task.WhenAll(tasks);
