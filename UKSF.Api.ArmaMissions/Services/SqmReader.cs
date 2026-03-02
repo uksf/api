@@ -10,6 +10,8 @@ public interface ISqmReader
 
 public class SqmReader : ISqmReader
 {
+    private const int UnbinHeaderLineCount = 7;
+
     public void Read(MissionPatchContext context)
     {
         var allLines = File.ReadAllLines(context.SqmPath).Select(x => x.Trim()).ToList();
@@ -44,7 +46,7 @@ public class SqmReader : ISqmReader
     {
         if (lines.Count > 0 && lines[0] == "////////////////////////////////////////////////////////////////////")
         {
-            lines.RemoveRange(0, 7);
+            lines.RemoveRange(0, UnbinHeaderLineCount);
         }
     }
 
@@ -56,7 +58,7 @@ public class SqmReader : ISqmReader
             return 0;
         }
 
-        var nextIdValue = ReadSingleValue(providerBlock, "nextID");
+        var nextIdValue = SqmParsingUtilities.ReadSingleValue(providerBlock, "nextID");
         return int.TryParse(nextIdValue, out var id) ? id : 0;
     }
 
@@ -76,7 +78,7 @@ public class SqmReader : ISqmReader
 
     private static SqmEntity ParseEntity(List<string> rawLines)
     {
-        var dataType = ReadSingleValue(rawLines, "dataType");
+        var dataType = SqmParsingUtilities.ReadSingleValue(rawLines, "dataType");
 
         switch (dataType)
         {
@@ -90,7 +92,7 @@ public class SqmReader : ISqmReader
                 }
 
                 var allChildrenPlayable = children.Count > 0 && children.All(c => c is SqmObject { IsPlayable: true });
-                var isIgnored = children.Any(c => c is SqmObject obj && obj.RawLines.Any(l => l.ToLower().Contains("@ignore")));
+                var isIgnored = children.Any(c => c is SqmObject obj && obj.RawLines.Any(l => l.Contains("@ignore", StringComparison.OrdinalIgnoreCase)));
 
                 return new SqmGroup
                 {
@@ -102,10 +104,10 @@ public class SqmReader : ISqmReader
             }
             case "Object":
             {
-                var isPlayable = ReadSingleValue(rawLines, "isPlayable");
-                var isPlayer = ReadSingleValue(rawLines, "isPlayer");
+                var isPlayable = SqmParsingUtilities.ReadSingleValue(rawLines, "isPlayable");
+                var isPlayer = SqmParsingUtilities.ReadSingleValue(rawLines, "isPlayer");
                 var playable = isPlayable == "1" || isPlayer == "1";
-                var type = ReadSingleValue(rawLines, "type");
+                var type = SqmParsingUtilities.ReadSingleValue(rawLines, "type");
 
                 return new SqmObject
                 {
@@ -116,7 +118,7 @@ public class SqmReader : ISqmReader
             }
             case "Logic":
             {
-                var type = ReadSingleValue(rawLines, "type");
+                var type = SqmParsingUtilities.ReadSingleValue(rawLines, "type");
                 return new SqmLogic { Type = type, RawLines = rawLines };
             }
             default: return new SqmPassthrough { RawLines = rawLines };
@@ -125,21 +127,7 @@ public class SqmReader : ISqmReader
 
     private static int ReadItemCount(List<string> block)
     {
-        var value = ReadSingleValue(block, "items");
+        var value = SqmParsingUtilities.ReadSingleValue(block, "items");
         return int.TryParse(value, out var count) ? count : 0;
-    }
-
-    private static string ReadSingleValue(List<string> lines, string key)
-    {
-        foreach (var line in lines)
-        {
-            var parts = line.Split('=', 2);
-            if (parts.Length == 2 && parts[0].Trim().Equals(key, StringComparison.OrdinalIgnoreCase))
-            {
-                return parts[1].Replace(";", "").Replace("\"", "").Trim();
-            }
-        }
-
-        return "";
     }
 }

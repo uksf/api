@@ -6,7 +6,7 @@ public static class SqmParsingUtilities
     {
         for (var i = 0; i < source.Count; i++)
         {
-            if (source[i].ToLower().Contains(key.ToLower()))
+            if (source[i].Contains(key, StringComparison.OrdinalIgnoreCase))
             {
                 return i;
             }
@@ -64,5 +64,19 @@ public static class SqmParsingUtilities
     {
         var index = GetIndexByKey(source, key);
         return index == -1 ? [] : ReadBlock(source, ref index);
+    }
+
+    public static string ReadSingleValue(List<string> lines, string key)
+    {
+        foreach (var line in lines)
+        {
+            var parts = line.Split('=', 2);
+            if (parts.Length == 2 && parts[0].Trim().Equals(key, StringComparison.OrdinalIgnoreCase))
+            {
+                return parts[1].Replace(";", "").Replace("\"", "").Trim();
+            }
+        }
+
+        return "";
     }
 }
