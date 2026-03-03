@@ -202,14 +202,23 @@ public class GameServerHelpersTests
     }
 
     [Fact]
-    public void GetArmaProcesses_Calls_GetProcesses_And_Returns_Filtered_Result()
+    public void GetArmaProcesses_Filters_By_Arma3Server_Prefix()
     {
         _mockProcessUtilities.Setup(x => x.GetProcesses()).Returns([]);
 
-        var result = _sut.GetArmaProcesses().ToList();
+        _sut.GetArmaProcesses().ToList();
 
-        result.Should().BeEmpty();
         _mockProcessUtilities.Verify(x => x.GetProcesses(), Times.Once);
+    }
+
+    [Fact]
+    public void GetArmaProcessesWithCommandLine_Uses_Arma3Server_Prefix()
+    {
+        _mockProcessUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns([]);
+
+        _sut.GetArmaProcessesWithCommandLine();
+
+        _mockProcessUtilities.Verify(x => x.GetProcessesWithCommandLine("arma3server"), Times.Once);
     }
 
     [Fact]

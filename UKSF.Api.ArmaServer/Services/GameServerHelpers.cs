@@ -192,12 +192,12 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
 
     public IEnumerable<Process> GetArmaProcesses()
     {
-        return processUtilities.GetProcesses().Where(x => x.ProcessName.StartsWith("arma3"));
+        return processUtilities.GetProcesses().Where(x => x.ProcessName.StartsWith("arma3server"));
     }
 
     public IReadOnlyList<ProcessCommandLineInfo> GetArmaProcessesWithCommandLine()
     {
-        return processUtilities.GetProcessesWithCommandLine("arma3");
+        return processUtilities.GetProcessesWithCommandLine("arma3server");
     }
 
     public bool IsMainOpTime()
