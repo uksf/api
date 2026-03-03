@@ -26,7 +26,7 @@ public class BuildStepBuildModpack : ModBuildStep
         StepLogger.Log($"\nConfiguration set to '{configuration}'");
 
         StepLogger.LogSurround("\nBuilding Rust extension...");
-        await RunProcess(extensionPath, "cargo", "build --release", (int)TimeSpan.FromMinutes(5).TotalMilliseconds, true);
+        await RunProcess(extensionPath, "cmd.exe", "/c \"cargo build --release\"", (int)TimeSpan.FromMinutes(5).TotalMilliseconds, true);
         StepLogger.LogSurround("Rust extension built");
 
         StepLogger.LogSurround("\nCopying extension DLL...");
