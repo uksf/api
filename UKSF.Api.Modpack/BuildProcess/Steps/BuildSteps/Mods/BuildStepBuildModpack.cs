@@ -12,8 +12,9 @@ public class BuildStepBuildModpack : ModBuildStep
     {
         StepLogger.Log("Running build for UKSF");
 
-        var toolsPath = Path.Join(GetBuildSourcesPath(), ModName, "tools");
-        var releasePath = Path.Join(GetBuildSourcesPath(), ModName, "release", "@uksf");
+        var rootPath = Path.Join(GetBuildSourcesPath(), ModName);
+        var extensionPath = Path.Join(rootPath, "extension");
+        var hemttReleasePath = Path.Join(rootPath, ".hemttout", "release");
         var buildPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
 
         var configuration = GetEnvironmentVariable<string>("configuration");
@@ -24,12 +25,29 @@ public class BuildStepBuildModpack : ModBuildStep
 
         StepLogger.Log($"\nConfiguration set to '{configuration}'");
 
-        StepLogger.LogSurround("\nRunning make.py...");
-        await RunProcess(toolsPath, PythonPath, MakeCommand($"redirect configuration {configuration}"), (int)TimeSpan.FromMinutes(5).TotalMilliseconds, true);
-        StepLogger.LogSurround("Make.py complete");
+        StepLogger.LogSurround("\nBuilding Rust extension...");
+        await RunProcess(extensionPath, "cargo", "build --release", (int)TimeSpan.FromMinutes(5).TotalMilliseconds, true);
+        StepLogger.LogSurround("Rust extension built");
+
+        StepLogger.LogSurround("\nCopying extension DLL...");
+        var builtDll = Path.Join(extensionPath, "target", "release", "uksf_x64.dll");
+        var targetDll = Path.Join(rootPath, "uksf_x64.dll");
+        File.Copy(builtDll, targetDll, true);
+        StepLogger.Log($"Copied {builtDll} to {targetDll}");
+        StepLogger.LogSurround("Copied extension DLL");
+
+        StepLogger.LogSurround("\nSetting configuration...");
+        var configurationFile = Path.Join(rootPath, "addons", "main", "script_configuration.hpp");
+        await File.WriteAllTextAsync(configurationFile, $"#define CONFIGURATION '{configuration}'\n");
+        StepLogger.Log($"Set configuration to '{configuration}'");
+        StepLogger.LogSurround("Set configuration");
+
+        StepLogger.LogSurround("\nRunning hemtt release...");
+        await RunProcess(rootPath, "cmd.exe", HemttCommand("release --no-archive"), (int)TimeSpan.FromMinutes(5).TotalMilliseconds, true);
+        StepLogger.LogSurround("Hemtt release complete");
 
         StepLogger.LogSurround("\nMoving UKSF release to build...");
-        await CopyDirectory(releasePath, buildPath);
+        await CopyDirectory(hemttReleasePath, buildPath);
         StepLogger.LogSurround("Moved UKSF release to build");
 
         if (Build.Environment == GameEnvironment.Rc)

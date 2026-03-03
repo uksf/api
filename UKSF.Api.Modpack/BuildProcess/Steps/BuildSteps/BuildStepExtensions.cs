@@ -9,13 +9,11 @@ public class BuildStepExtensions : FileBuildStep
 
     protected override async Task ProcessExecute()
     {
-        var uksfPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf", "intercept");
-        var interceptPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@intercept");
+        var uksfPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@uksf");
         DirectoryInfo uksf = new(uksfPath);
-        DirectoryInfo intercept = new(interceptPath);
 
         StepLogger.LogSurround("\nSigning extensions...");
-        var files = GetDirectoryContents(uksf, "*.dll").Concat(GetDirectoryContents(intercept, "*.dll")).ToList();
+        var files = GetDirectoryContents(uksf, "*.dll");
         await SignExtensions(files);
         StepLogger.LogSurround("Signed extensions");
     }

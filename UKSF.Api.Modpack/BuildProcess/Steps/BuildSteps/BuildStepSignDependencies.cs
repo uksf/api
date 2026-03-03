@@ -42,10 +42,8 @@ public class BuildStepSignDependencies : FileBuildStep
     protected override async Task ProcessExecute()
     {
         var addonsPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "addons");
-        var interceptPath = Path.Join(GetBuildEnvironmentPath(), "Build", "@intercept", "addons");
         var keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
         DirectoryInfo addons = new(addonsPath);
-        DirectoryInfo intercept = new(interceptPath);
 
         StepLogger.LogSurround("\nDeleting dependencies signatures...");
         await DeleteFiles(GetDirectoryContents(addons, "*.bisign*"));
@@ -55,11 +53,6 @@ public class BuildStepSignDependencies : FileBuildStep
         StepLogger.LogSurround("\nSigning dependencies...");
         await SignFiles(keygenPath, addonsPath, repoFiles);
         StepLogger.LogSurround("Signed dependencies");
-
-        var interceptFiles = GetDirectoryContents(intercept, "*.pbo");
-        StepLogger.LogSurround("\nSigning intercept...");
-        await SignFiles(keygenPath, addonsPath, interceptFiles);
-        StepLogger.LogSurround("Signed intercept");
     }
 
     private string GetKeyname()
