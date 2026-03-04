@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.SignalR;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using UKSF.Api.Core.Commands;
@@ -12,6 +13,7 @@ using UKSF.Api.Core.Mappers;
 using UKSF.Api.Core.Queries;
 using UKSF.Api.Core.ScheduledActions;
 using UKSF.Api.Core.Services;
+using UKSF.Api.Core.Signalr;
 using UKSF.Api.Core.Signalr.Hubs;
 using UKSF.Api.Core.Processes;
 
@@ -48,7 +50,8 @@ public static class ApiSharedExtensions
 
             services.AddHttpClient();
 
-            services.AddSignalR()
+            services.AddSingleton<HubExceptionFilter>();
+            services.AddSignalR(options => { options.AddFilter<HubExceptionFilter>(); })
                     .AddJsonProtocol(options =>
                         {
                             options.PayloadSerializerOptions.PropertyNameCaseInsensitive = true;
