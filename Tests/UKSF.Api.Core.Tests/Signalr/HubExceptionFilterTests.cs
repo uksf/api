@@ -51,7 +51,7 @@ public class HubExceptionFilterTests
 
         var act = () => _filter.InvokeMethodAsync(context, _ => throw originalException).AsTask();
 
-        await act.Should().ThrowAsync<HubException>().WithMessage("TestServersHub.SubscribeToLog failed: Something broke");
+        await act.Should().ThrowAsync<HubException>().WithMessage("An error occurred in TestServersHub.SubscribeToLog");
         _mockLogger.Verify(x => x.LogError("Unhandled exception in TestServersHub.SubscribeToLog", originalException), Times.Once);
     }
 
@@ -63,7 +63,7 @@ public class HubExceptionFilterTests
 
         var act = () => _filter.InvokeMethodAsync(context, _ => throw nre).AsTask();
 
-        await act.Should().ThrowAsync<HubException>().WithMessage("TestServersHub.SubscribeToLog failed: Object reference not set");
+        await act.Should().ThrowAsync<HubException>().WithMessage("An error occurred in TestServersHub.SubscribeToLog");
         _mockLogger.Verify(x => x.LogError("Unhandled exception in TestServersHub.SubscribeToLog", nre), Times.Once);
     }
 

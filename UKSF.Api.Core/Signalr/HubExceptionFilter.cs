@@ -19,7 +19,7 @@ public class HubExceptionFilter(IUksfLogger logger) : IHubFilter
             var hubName = invocationContext.Hub.GetType().Name;
             var methodName = invocationContext.HubMethodName;
             logger.LogError($"Unhandled exception in {hubName}.{methodName}", ex);
-            throw new HubException($"{hubName}.{methodName} failed: {ex.Message}");
+            throw new HubException($"An error occurred in {hubName}.{methodName}");
         }
     }
 }

@@ -221,6 +221,21 @@ public class RptLogServiceTests : IDisposable
         result.Last().Should().Be("Line 50000");
     }
 
+    [Fact]
+    public void ReadFullFile_ReadsFile_WhenLockedByAnotherProcess()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "locked.rpt");
+        File.WriteAllLines(filePath, ["Line 1", "Line 2", "Line 3"]);
+
+        using var lockingStream = new FileStream(filePath, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+
+        var result = _sut.ReadFullFile(filePath);
+
+        result.Should().HaveCount(3);
+        result.Should().BeEquivalentTo(["Line 1", "Line 2", "Line 3"]);
+    }
+
     #endregion
 
     #region SearchFile
@@ -277,6 +292,21 @@ public class RptLogServiceTests : IDisposable
         result.Should().HaveCount(2);
         result[0].Should().Be(new RptLogSearchResult(0, "[ACE] Medical initialized"));
         result[1].Should().Be(new RptLogSearchResult(2, "[ACE] Logistics loaded"));
+    }
+
+    [Fact]
+    public void SearchFile_ReadsFile_WhenLockedByAnotherProcess()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "locked.rpt");
+        File.WriteAllLines(filePath, ["First line", "Error: something failed", "Normal line"]);
+
+        using var lockingStream = new FileStream(filePath, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+
+        var result = _sut.SearchFile(filePath, "Error:");
+
+        result.Should().HaveCount(1);
+        result[0].Should().Be(new RptLogSearchResult(1, "Error: something failed"));
     }
 
     #endregion

@@ -46,15 +46,15 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
 
     public List<string> ReadFullFile(string filePath)
     {
-        return File.ReadAllLines(filePath).ToList();
+        return ReadLinesShared(filePath);
     }
 
     public List<RptLogSearchResult> SearchFile(string filePath, string query)
     {
-        var lines = File.ReadAllLines(filePath);
+        var lines = ReadLinesShared(filePath);
         var results = new List<RptLogSearchResult>();
 
-        for (var i = 0; i < lines.Length; i++)
+        for (var i = 0; i < lines.Count; i++)
         {
             if (lines[i].Contains(query, StringComparison.OrdinalIgnoreCase))
             {
@@ -68,6 +68,19 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
     public IDisposable WatchFile(string filePath, Action<List<string>> onNewContent)
     {
         return new FileLogWatcher(filePath, onNewContent);
+    }
+
+    private static List<string> ReadLinesShared(string filePath)
+    {
+        using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new StreamReader(stream);
+        var lines = new List<string>();
+        while (reader.ReadLine() is { } line)
+        {
+            lines.Add(line);
+        }
+
+        return lines;
     }
 
     private sealed class FileLogWatcher : IDisposable
