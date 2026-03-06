@@ -8,11 +8,6 @@ public class BuildStepBuildModpack : ModBuildStep
     public const string Name = "Build UKSF";
     private const string ModName = "modpack";
 
-    private readonly List<string> _cargoErrorExclusions =
-    [
-        "Updating", "Downloading", "Downloaded", "Compiling", "Finished", "Locking", "Adding", "Blocking", "Fetching", "Unpacking", "Installed"
-    ];
-
     protected override async Task ProcessExecute()
     {
         StepLogger.Log("Running build for UKSF");
@@ -31,14 +26,7 @@ public class BuildStepBuildModpack : ModBuildStep
         StepLogger.Log($"\nConfiguration set to '{configuration}'");
 
         StepLogger.LogSurround("\nBuilding Rust extension...");
-        await RunProcess(
-            extensionPath,
-            "cmd.exe",
-            "/c \"cargo build --release\"",
-            (int)TimeSpan.FromMinutes(5).TotalMilliseconds,
-            true,
-            errorExclusions: _cargoErrorExclusions
-        );
+        await RunProcess(extensionPath, "cmd.exe", "/c \"cargo build --release 2>&1\"", (int)TimeSpan.FromMinutes(5).TotalMilliseconds, true);
         StepLogger.LogSurround("Rust extension built");
 
         StepLogger.LogSurround("\nCopying extension DLL...");
