@@ -269,10 +269,10 @@ public class BuildStep : IBuildStep
 
                     if (!shouldIgnoreError)
                     {
-                        // Log the error content if not silently handling errors
+                        // Log the error content as red text without Error/Failed wrapper
                         if (!errorSilently)
                         {
-                            StepLogger.LogError(outputLine.Exception ?? new Exception(outputLine.Content));
+                            StepLogger.LogErrorContent(outputLine.Content);
                         }
 
                         // Store exception for later throwing if raiseErrors is true
@@ -297,19 +297,7 @@ public class BuildStep : IBuildStep
 
         if (processExitCode != 0 && raiseErrors)
         {
-            var exitCodeException = new Exception($"Process failed with exit code {processExitCode}");
-
-            if (delayedException != null)
-            {
-                exitCodeException = new Exception($"Process failed with exit code {processExitCode}. {delayedException.Message}");
-            }
-
-            if (!errorSilently)
-            {
-                StepLogger.LogError(exitCodeException);
-            }
-
-            throw exitCodeException;
+            throw new Exception($"Process failed with exit code {processExitCode}");
         }
 
         // Throw delayed exception after all output has been collected and logged

@@ -10,6 +10,7 @@ public interface IStepLogger
     void LogSkipped();
     void LogWarning(string message);
     void LogError(Exception exception);
+    void LogErrorContent(string message);
     void LogSurround(string log);
     void Log(string log, string colour = "");
     void LogInline(string log);
@@ -50,6 +51,11 @@ public class StepLogger(ModpackBuildStep buildStep) : IStepLogger
     public void LogError(Exception exception)
     {
         LogLines($"Error\n{exception.Message}\n{exception.StackTrace}\n\nFailed: {buildStep.Name}", "red");
+    }
+
+    public void LogErrorContent(string message)
+    {
+        LogLines(message, "red");
     }
 
     public void LogSurround(string log)
