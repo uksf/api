@@ -217,7 +217,8 @@ public class BuildStep : IBuildStep
         bool errorSilently = false,
         List<string> errorExclusions = null,
         string ignoreErrorGateClose = "",
-        string ignoreErrorGateOpen = ""
+        string ignoreErrorGateOpen = "",
+        bool redirectStderrToOutput = false
     )
     {
         List<string> results = [];
@@ -232,7 +233,8 @@ public class BuildStep : IBuildStep
                                             .WithProcessId(Build?.Id)
                                             .WithTimeout(TimeSpan.FromMilliseconds(timeout))
                                             .WithLogging(log)
-                                            .WithProcessTracker(_processTracker);
+                                            .WithProcessTracker(_processTracker)
+                                            .WithRedirectStderrToOutput(redirectStderrToOutput);
 
         Exception delayedException = null;
         var processExitCode = 0;

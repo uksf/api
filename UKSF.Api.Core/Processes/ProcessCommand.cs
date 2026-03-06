@@ -16,6 +16,7 @@ public class ProcessCommand(IUksfLogger logger, string executable, string workin
     private bool _enableInternalLogging;
     private string _processId;
     private IProcessTracker _processTracker;
+    private bool _redirectStderrToOutput;
     private TimeSpan _timeout = TimeSpan.FromMinutes(10);
 
     public ProcessCommand WithProcessId(string processId)
@@ -39,6 +40,12 @@ public class ProcessCommand(IUksfLogger logger, string executable, string workin
     public ProcessCommand WithProcessTracker(IProcessTracker processTracker)
     {
         _processTracker = processTracker;
+        return this;
+    }
+
+    public ProcessCommand WithRedirectStderrToOutput(bool redirectStderrToOutput = true)
+    {
+        _redirectStderrToOutput = redirectStderrToOutput;
         return this;
     }
 
@@ -165,16 +172,24 @@ public class ProcessCommand(IUksfLogger logger, string executable, string workin
                         await ProcessStandardOutputAsync(stdOut.Text, jsonParser, writer, cancellationToken); break;
 
                     case StandardErrorCommandEvent stdErr when !string.IsNullOrEmpty(stdErr.Text):
-                        LogWarning($"Process error output: {stdErr.Text}");
-                        await writer.WriteAsync(
-                            new ProcessOutputLine
-                            {
-                                Content = stdErr.Text,
-                                Type = ProcessOutputType.Error,
-                                Exception = new Exception(stdErr.Text)
-                            },
-                            cancellationToken
-                        );
+                        if (_redirectStderrToOutput)
+                        {
+                            await writer.WriteAsync(new ProcessOutputLine { Content = stdErr.Text, Type = ProcessOutputType.Output }, cancellationToken);
+                        }
+                        else
+                        {
+                            LogWarning($"Process error output: {stdErr.Text}");
+                            await writer.WriteAsync(
+                                new ProcessOutputLine
+                                {
+                                    Content = stdErr.Text,
+                                    Type = ProcessOutputType.Error,
+                                    Exception = new Exception(stdErr.Text)
+                                },
+                                cancellationToken
+                            );
+                        }
+
                         break;
 
                     case ExitedCommandEvent exited:
