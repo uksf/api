@@ -4,7 +4,7 @@ namespace UKSF.Api.ArmaServer.Services;
 
 public interface ILogSubscriptionService : IDisposable
 {
-    void AddSubscription(string connectionId, string groupName);
+    bool AddSubscription(string connectionId, string groupName);
     void RemoveSubscription(string connectionId, string groupName);
     List<string> RemoveAllSubscriptions(string connectionId);
     void StartOrJoinWatcher(string groupName, Func<IDisposable> watcherFactory);
@@ -18,10 +18,10 @@ public class LogSubscriptionService : ILogSubscriptionService
     private readonly object _watcherLock = new();
     private bool _disposed;
 
-    public void AddSubscription(string connectionId, string groupName)
+    public bool AddSubscription(string connectionId, string groupName)
     {
         var subs = _connectionSubscriptions.GetOrAdd(connectionId, _ => new ConcurrentHashSet());
-        subs.Add(groupName);
+        return subs.Add(groupName);
     }
 
     public void RemoveSubscription(string connectionId, string groupName)
@@ -111,7 +111,7 @@ public class LogSubscriptionService : ILogSubscriptionService
     {
         private readonly ConcurrentDictionary<string, byte> _dictionary = new();
 
-        public void Add(string item) => _dictionary.TryAdd(item, 0);
+        public bool Add(string item) => _dictionary.TryAdd(item, 0);
         public void Remove(string item) => _dictionary.TryRemove(item, out _);
         public int Count => _dictionary.Count;
         public List<string> ToList() => _dictionary.Keys.ToList();

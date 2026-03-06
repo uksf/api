@@ -120,15 +120,19 @@ public class RptLogServiceTests : IDisposable
         var serverProfileDir = Path.Combine(tempDir, "Main");
         Directory.CreateDirectory(serverProfileDir);
 
-        File.WriteAllText(Path.Combine(serverProfileDir, "arma3server_x64_2024-01-15_18-00-00.rpt"), "old");
-        File.WriteAllText(Path.Combine(serverProfileDir, "arma3server_x64_2024-01-15_20-30-00.rpt"), "new");
+        var oldFile = Path.Combine(serverProfileDir, "arma3server_x64_2024-01-15_18-00-00.rpt");
+        var newFile = Path.Combine(serverProfileDir, "arma3server_x64_2024-01-15_20-30-00.rpt");
+        File.WriteAllText(oldFile, "old");
+        File.WriteAllText(newFile, "new");
+        File.SetLastWriteTime(oldFile, new DateTime(2024, 1, 15, 18, 0, 0));
+        File.SetLastWriteTime(newFile, new DateTime(2024, 1, 15, 20, 30, 0));
 
         SetupVariable("SERVER_PATH_PROFILES", tempDir);
         var server = CreateGameServer(name: "Main");
 
         var result = _sut.GetLatestRptFilePath(server, "Server");
 
-        result.Should().Be(Path.Combine(serverProfileDir, "arma3server_x64_2024-01-15_20-30-00.rpt"));
+        result.Should().Be(newFile);
     }
 
     [Fact]
@@ -138,15 +142,43 @@ public class RptLogServiceTests : IDisposable
         var hcProfileDir = Path.Combine(tempDir, "MainJarvis");
         Directory.CreateDirectory(hcProfileDir);
 
-        File.WriteAllText(Path.Combine(hcProfileDir, "arma3server_x64_2024-01-15_18-00-00.rpt"), "old");
-        File.WriteAllText(Path.Combine(hcProfileDir, "arma3server_x64_2024-01-15_20-30-00.rpt"), "new");
+        SetupVariable("SERVER_HEADLESS_NAMES", "Jarvis");
+
+        var oldFile = Path.Combine(hcProfileDir, "arma3server_x64_2024-01-15_18-00-00.rpt");
+        var newFile = Path.Combine(hcProfileDir, "arma3server_x64_2024-01-15_20-30-00.rpt");
+        File.WriteAllText(oldFile, "old");
+        File.WriteAllText(newFile, "new");
+        File.SetLastWriteTime(oldFile, new DateTime(2024, 1, 15, 18, 0, 0));
+        File.SetLastWriteTime(newFile, new DateTime(2024, 1, 15, 20, 30, 0));
+
+        SetupVariable("SERVER_PATH_PROFILES", tempDir);
+        var server = CreateGameServer(name: "Main", numberHeadlessClients: 1);
+
+        var result = _sut.GetLatestRptFilePath(server, "Jarvis");
+
+        result.Should().Be(newFile);
+    }
+
+    [Fact]
+    public void GetLatestRptFilePath_SortsByModificationTime_NotFilename()
+    {
+        var tempDir = CreateTempDirectory();
+        var serverProfileDir = Path.Combine(tempDir, "Main");
+        Directory.CreateDirectory(serverProfileDir);
+
+        var fileA = Path.Combine(serverProfileDir, "aaa.rpt");
+        var fileZ = Path.Combine(serverProfileDir, "zzz.rpt");
+        File.WriteAllText(fileA, "content");
+        File.WriteAllText(fileZ, "content");
+        File.SetLastWriteTime(fileA, new DateTime(2024, 6, 1));
+        File.SetLastWriteTime(fileZ, new DateTime(2024, 1, 1));
 
         SetupVariable("SERVER_PATH_PROFILES", tempDir);
         var server = CreateGameServer(name: "Main");
 
-        var result = _sut.GetLatestRptFilePath(server, "Jarvis");
+        var result = _sut.GetLatestRptFilePath(server, "Server");
 
-        result.Should().Be(Path.Combine(hcProfileDir, "arma3server_x64_2024-01-15_20-30-00.rpt"));
+        result.Should().Be(fileA, "should pick the file with the latest modification time, not the last alphabetically");
     }
 
     [Fact]
@@ -176,6 +208,31 @@ public class RptLogServiceTests : IDisposable
         result.Should().BeNull();
     }
 
+    [Fact]
+    public void GetLatestRptFilePath_ReturnsNull_WhenSourceIsInvalid()
+    {
+        var tempDir = CreateTempDirectory();
+        SetupVariable("SERVER_PATH_PROFILES", tempDir);
+        var server = CreateGameServer(name: "Main");
+
+        var result = _sut.GetLatestRptFilePath(server, "../../etc");
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetLatestRptFilePath_ReturnsNull_WhenSourceNotInConfiguredHcs()
+    {
+        SetupVariable("SERVER_HEADLESS_NAMES", "Jarvis");
+        var tempDir = CreateTempDirectory();
+        SetupVariable("SERVER_PATH_PROFILES", tempDir);
+        var server = CreateGameServer(name: "Main", numberHeadlessClients: 1);
+
+        var result = _sut.GetLatestRptFilePath(server, "Ultron");
+
+        result.Should().BeNull();
+    }
+
     #endregion
 
     #region ReadFullFile
@@ -188,10 +245,11 @@ public class RptLogServiceTests : IDisposable
         var lines = Enumerable.Range(1, 10).Select(i => $"Line {i}").ToList();
         File.WriteAllLines(filePath, lines);
 
-        var result = _sut.ReadFullFile(filePath);
+        var (result, bytesRead) = _sut.ReadFullFile(filePath);
 
         result.Should().HaveCount(10);
         result.Should().BeEquivalentTo(lines);
+        bytesRead.Should().BeGreaterThan(0);
     }
 
     [Fact]
@@ -201,9 +259,10 @@ public class RptLogServiceTests : IDisposable
         var filePath = Path.Combine(tempDir, "empty.rpt");
         File.WriteAllText(filePath, "");
 
-        var result = _sut.ReadFullFile(filePath);
+        var (result, bytesRead) = _sut.ReadFullFile(filePath);
 
         result.Should().BeEmpty();
+        bytesRead.Should().Be(0);
     }
 
     [Fact]
@@ -214,7 +273,7 @@ public class RptLogServiceTests : IDisposable
         var lines = Enumerable.Range(1, 50000).Select(i => $"Line {i}").ToList();
         File.WriteAllLines(filePath, lines);
 
-        var result = _sut.ReadFullFile(filePath);
+        var (result, _) = _sut.ReadFullFile(filePath);
 
         result.Should().HaveCount(50000);
         result.First().Should().Be("Line 1");
@@ -230,10 +289,23 @@ public class RptLogServiceTests : IDisposable
 
         using var lockingStream = new FileStream(filePath, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
 
-        var result = _sut.ReadFullFile(filePath);
+        var (result, _) = _sut.ReadFullFile(filePath);
 
         result.Should().HaveCount(3);
         result.Should().BeEquivalentTo(["Line 1", "Line 2", "Line 3"]);
+    }
+
+    [Fact]
+    public void ReadFullFile_BytesRead_MatchesFileLength()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "test.rpt");
+        File.WriteAllText(filePath, "Line 1\nLine 2\nLine 3\n");
+        var expectedLength = new FileInfo(filePath).Length;
+
+        var (_, bytesRead) = _sut.ReadFullFile(filePath);
+
+        bytesRead.Should().Be(expectedLength);
     }
 
     #endregion
@@ -249,9 +321,10 @@ public class RptLogServiceTests : IDisposable
 
         var result = _sut.SearchFile(filePath, "Error:");
 
-        result.Should().HaveCount(2);
-        result[0].Should().Be(new RptLogSearchResult(1, "Error: something failed"));
-        result[1].Should().Be(new RptLogSearchResult(3, "Error: another failure"));
+        result.Results.Should().HaveCount(2);
+        result.Results[0].Should().Be(new RptLogSearchResult(1, "Error: something failed"));
+        result.Results[1].Should().Be(new RptLogSearchResult(3, "Error: another failure"));
+        result.TotalMatches.Should().Be(2);
     }
 
     [Fact]
@@ -263,9 +336,10 @@ public class RptLogServiceTests : IDisposable
 
         var result = _sut.SearchFile(filePath, "warning");
 
-        result.Should().HaveCount(2);
-        result[0].LineIndex.Should().Be(0);
-        result[1].LineIndex.Should().Be(2);
+        result.Results.Should().HaveCount(2);
+        result.Results[0].LineIndex.Should().Be(0);
+        result.Results[1].LineIndex.Should().Be(2);
+        result.TotalMatches.Should().Be(2);
     }
 
     [Fact]
@@ -277,7 +351,8 @@ public class RptLogServiceTests : IDisposable
 
         var result = _sut.SearchFile(filePath, "nonexistent");
 
-        result.Should().BeEmpty();
+        result.Results.Should().BeEmpty();
+        result.TotalMatches.Should().Be(0);
     }
 
     [Fact]
@@ -289,9 +364,10 @@ public class RptLogServiceTests : IDisposable
 
         var result = _sut.SearchFile(filePath, "[ACE]");
 
-        result.Should().HaveCount(2);
-        result[0].Should().Be(new RptLogSearchResult(0, "[ACE] Medical initialized"));
-        result[1].Should().Be(new RptLogSearchResult(2, "[ACE] Logistics loaded"));
+        result.Results.Should().HaveCount(2);
+        result.Results[0].Should().Be(new RptLogSearchResult(0, "[ACE] Medical initialized"));
+        result.Results[1].Should().Be(new RptLogSearchResult(2, "[ACE] Logistics loaded"));
+        result.TotalMatches.Should().Be(2);
     }
 
     [Fact]
@@ -305,8 +381,22 @@ public class RptLogServiceTests : IDisposable
 
         var result = _sut.SearchFile(filePath, "Error:");
 
-        result.Should().HaveCount(1);
-        result[0].Should().Be(new RptLogSearchResult(1, "Error: something failed"));
+        result.Results.Should().HaveCount(1);
+        result.Results[0].Should().Be(new RptLogSearchResult(1, "Error: something failed"));
+        result.TotalMatches.Should().Be(1);
+    }
+
+    [Fact]
+    public void SearchFile_CountsMultipleMatchesPerLine()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "test.rpt");
+        File.WriteAllLines(filePath, ["error error error", "no match", "error here"]);
+
+        var result = _sut.SearchFile(filePath, "error");
+
+        result.Results.Should().HaveCount(2);
+        result.TotalMatches.Should().Be(4);
     }
 
     #endregion
@@ -322,9 +412,11 @@ public class RptLogServiceTests : IDisposable
 
         var receivedLines = new ConcurrentBag<List<string>>();
         var tcs = new TaskCompletionSource<bool>();
+        var startOffset = new FileInfo(filePath).Length;
 
         using var watcher = _sut.WatchFile(
             filePath,
+            startOffset,
             lines =>
             {
                 receivedLines.Add(lines);
@@ -351,8 +443,9 @@ public class RptLogServiceTests : IDisposable
         File.WriteAllText(filePath, "Initial line\n");
 
         var callbackInvoked = false;
+        var startOffset = new FileInfo(filePath).Length;
 
-        using var watcher = _sut.WatchFile(filePath, _ => { callbackInvoked = true; });
+        using var watcher = _sut.WatchFile(filePath, startOffset, _ => { callbackInvoked = true; });
 
         await Task.Delay(TimeSpan.FromSeconds(3));
 
@@ -367,8 +460,9 @@ public class RptLogServiceTests : IDisposable
         File.WriteAllText(filePath, "Initial line\n");
 
         var callbackInvokedAfterDispose = false;
+        var startOffset = new FileInfo(filePath).Length;
 
-        var watcher = _sut.WatchFile(filePath, _ => { callbackInvokedAfterDispose = true; });
+        var watcher = _sut.WatchFile(filePath, startOffset, _ => { callbackInvokedAfterDispose = true; });
 
         await Task.Delay(500);
         watcher.Dispose();
@@ -392,9 +486,11 @@ public class RptLogServiceTests : IDisposable
         var firstBatchTcs = new TaskCompletionSource<bool>();
         var secondBatchTcs = new TaskCompletionSource<bool>();
         var batchCount = 0;
+        var startOffset = new FileInfo(filePath).Length;
 
         using var watcher = _sut.WatchFile(
             filePath,
+            startOffset,
             lines =>
             {
                 receivedBatches.Add(lines);

@@ -31,9 +31,26 @@ public class ServersHub(
 
         var groupName = $"log:{serverId}:{source}";
         await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-        logSubscriptionService.AddSubscription(Context.ConnectionId, groupName);
 
-        var lines = rptLogService.ReadFullFile(filePath);
+        var isNew = logSubscriptionService.AddSubscription(Context.ConnectionId, groupName);
+        if (!isNew)
+        {
+            return;
+        }
+
+        List<string> lines;
+        long bytesRead;
+        try
+        {
+            (lines, bytesRead) = rptLogService.ReadFullFile(filePath);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex);
+            await Clients.Caller.ReceiveLogContent(serverId, source, [], 0, true);
+            return;
+        }
+
         const int chunkSize = 1000;
         for (var i = 0; i < lines.Count; i += chunkSize)
         {
@@ -51,6 +68,7 @@ public class ServersHub(
             groupName,
             () => rptLogService.WatchFile(
                 filePath,
+                bytesRead,
                 newLines =>
                 {
                     try

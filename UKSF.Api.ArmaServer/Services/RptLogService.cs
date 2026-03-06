@@ -8,9 +8,9 @@ public interface IRptLogService
 {
     List<RptLogSource> GetLogSources(DomainGameServer server);
     string GetLatestRptFilePath(DomainGameServer server, string source);
-    List<string> ReadFullFile(string filePath);
-    List<RptLogSearchResult> SearchFile(string filePath, string query);
-    IDisposable WatchFile(string filePath, Action<List<string>> onNewContent);
+    (List<string> Lines, long BytesRead) ReadFullFile(string filePath);
+    RptLogSearchResponse SearchFile(string filePath, string query);
+    IDisposable WatchFile(string filePath, long startOffset, Action<List<string>> onNewContent);
 }
 
 public class RptLogService(IVariablesService variablesService) : IRptLogService
@@ -33,6 +33,12 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
 
     public string GetLatestRptFilePath(DomainGameServer server, string source)
     {
+        var validSources = GetLogSources(server).Select(s => s.Name).ToHashSet();
+        if (!validSources.Contains(source))
+        {
+            return null;
+        }
+
         var profilesPath = variablesService.GetVariable("SERVER_PATH_PROFILES").AsString();
         var profileDir = source == "Server" ? Path.Combine(profilesPath, server.Name) : Path.Combine(profilesPath, $"{server.Name}{source}");
 
@@ -41,36 +47,10 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
             return null;
         }
 
-        return Directory.GetFiles(profileDir, "*.rpt").OrderByDescending(Path.GetFileName).FirstOrDefault();
+        return Directory.GetFiles(profileDir, "*.rpt").OrderByDescending(f => new FileInfo(f).LastWriteTime).FirstOrDefault();
     }
 
-    public List<string> ReadFullFile(string filePath)
-    {
-        return ReadLinesShared(filePath);
-    }
-
-    public List<RptLogSearchResult> SearchFile(string filePath, string query)
-    {
-        var lines = ReadLinesShared(filePath);
-        var results = new List<RptLogSearchResult>();
-
-        for (var i = 0; i < lines.Count; i++)
-        {
-            if (lines[i].Contains(query, StringComparison.OrdinalIgnoreCase))
-            {
-                results.Add(new RptLogSearchResult(i, lines[i]));
-            }
-        }
-
-        return results;
-    }
-
-    public IDisposable WatchFile(string filePath, Action<List<string>> onNewContent)
-    {
-        return new FileLogWatcher(filePath, onNewContent);
-    }
-
-    private static List<string> ReadLinesShared(string filePath)
+    public (List<string> Lines, long BytesRead) ReadFullFile(string filePath)
     {
         using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         using var reader = new StreamReader(stream);
@@ -80,7 +60,38 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
             lines.Add(line);
         }
 
-        return lines;
+        return (lines, stream.Position);
+    }
+
+    public RptLogSearchResponse SearchFile(string filePath, string query)
+    {
+        var (lines, _) = ReadFullFile(filePath);
+        var results = new List<RptLogSearchResult>();
+        var totalMatches = 0;
+
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var count = 0;
+            var index = 0;
+            while ((index = lines[i].IndexOf(query, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+            {
+                count++;
+                index += query.Length;
+            }
+
+            if (count > 0)
+            {
+                results.Add(new RptLogSearchResult(i, lines[i]));
+                totalMatches += count;
+            }
+        }
+
+        return new RptLogSearchResponse(results, totalMatches);
+    }
+
+    public IDisposable WatchFile(string filePath, long startOffset, Action<List<string>> onNewContent)
+    {
+        return new FileLogWatcher(filePath, startOffset, onNewContent);
     }
 
     private sealed class FileLogWatcher : IDisposable
@@ -92,10 +103,10 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
         private long _offset;
         private bool _disposed;
 
-        public FileLogWatcher(string filePath, Action<List<string>> onNewContent)
+        public FileLogWatcher(string filePath, long startOffset, Action<List<string>> onNewContent)
         {
             _onNewContent = onNewContent;
-            _offset = new FileInfo(filePath).Length;
+            _offset = startOffset;
 
             var directory = Path.GetDirectoryName(filePath)!;
             var fileName = Path.GetFileName(filePath);
