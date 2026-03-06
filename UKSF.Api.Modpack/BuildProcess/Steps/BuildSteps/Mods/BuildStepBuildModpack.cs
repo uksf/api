@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using UKSF.Api.ArmaServer.Models;
 
 namespace UKSF.Api.Modpack.BuildProcess.Steps.BuildSteps.Mods;
@@ -24,6 +25,24 @@ public class BuildStepBuildModpack : ModBuildStep
         }
 
         StepLogger.Log($"\nConfiguration set to '{configuration}'");
+
+        StepLogger.LogSurround("\nSetting extension version...");
+        var extensionVersion = Build.Version;
+        if (Build.Environment == GameEnvironment.Rc)
+        {
+            extensionVersion += $"-rc{Build.BuildNumber}";
+        }
+        else if (Build.Environment == GameEnvironment.Development)
+        {
+            extensionVersion += $"-dev{Build.BuildNumber}";
+        }
+
+        var cargoTomlPath = Path.Join(extensionPath, "Cargo.toml");
+        var cargoToml = await File.ReadAllTextAsync(cargoTomlPath);
+        cargoToml = Regex.Replace(cargoToml, @"^version\s*=\s*""[^""]*""", $"version = \"{extensionVersion}\"", RegexOptions.Multiline);
+        await File.WriteAllTextAsync(cargoTomlPath, cargoToml);
+        StepLogger.Log($"Set extension version to '{extensionVersion}'");
+        StepLogger.LogSurround("Set extension version");
 
         StepLogger.LogSurround("\nBuilding Rust extension...");
         await RunProcess(
