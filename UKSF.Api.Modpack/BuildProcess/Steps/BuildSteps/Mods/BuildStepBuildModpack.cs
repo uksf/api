@@ -63,6 +63,14 @@ public class BuildStepBuildModpack : ModBuildStep
             await MoveRcOptional(buildPath);
             StepLogger.LogSurround("Moved RC optionals");
         }
+
+        var optionalsPath = Path.Join(buildPath, "optionals");
+        if (Directory.Exists(optionalsPath))
+        {
+            StepLogger.LogSurround("\nRemoving optionals folder...");
+            Directory.Delete(optionalsPath, true);
+            StepLogger.LogSurround("Removed optionals folder");
+        }
     }
 
     private Task MoveRcOptional(string buildPath)
