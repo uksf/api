@@ -260,13 +260,14 @@ public class GameServersServiceTests
             ProcessId = 1234
         };
         _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
-        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([]);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns([]);
 
         await _subject.GetGameServerStatus(gameServer);
 
         gameServer.Status.Running.Should().BeFalse();
         gameServer.Status.Started.Should().BeFalse();
         _mockHttpClientFactory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
+        _mockGameServerHelpers.Verify(x => x.GetArmaProcessesWithCommandLine(), Times.Never);
         _mockGameServersContext.Verify(x => x.Replace(gameServer), Times.Once);
     }
 
@@ -280,7 +281,7 @@ public class GameServersServiceTests
             ProcessId = 1234
         };
         _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
-        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([]);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns([]);
 
         await _subject.GetGameServerStatus(gameServer);
 
@@ -288,10 +289,32 @@ public class GameServersServiceTests
     }
 
     [Fact]
+    public async Task GetGameServerStatus_WhenNoArmaProcesses_ShouldSkipWmiQuery()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ProcessId = 1234
+        };
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns([]);
+
+        await _subject.GetGameServerStatus(gameServer);
+
+        gameServer.Status.Running.Should().BeFalse();
+        gameServer.Status.Started.Should().BeFalse();
+        gameServer.ProcessId.Should().BeNull();
+        _mockGameServerHelpers.Verify(x => x.GetArmaProcessesWithCommandLine(), Times.Never);
+        _mockGameServersContext.Verify(x => x.Replace(gameServer), Times.Once);
+    }
+
+    [Fact]
     public async Task GetGameServerStatus_WhenArmaProcessesExistButNoPortMatch_ShouldSetNotRunning()
     {
         var gameServer = new DomainGameServer { Id = "server-1", Port = 2302 };
         _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(new System.Diagnostics.Process[] { null! });
         _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([new ProcessCommandLineInfo(5678, "-port=2402 -apiport=\"2403\"")]);
 
         await _subject.GetGameServerStatus(gameServer);
@@ -311,6 +334,7 @@ public class GameServersServiceTests
             ApiPort = 2303
         };
         _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(new System.Diagnostics.Process[] { null! });
         _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([new ProcessCommandLineInfo(5678, "-port=2302 -apiport=\"2303\"")]);
 
         var mockHandler = new MockHttpMessageHandler(System.Net.HttpStatusCode.RequestTimeout);
@@ -334,6 +358,7 @@ public class GameServersServiceTests
             ProcessId = null
         };
         _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(new System.Diagnostics.Process[] { null! });
         _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([new ProcessCommandLineInfo(5678, "-port=2302 -apiport=\"2303\"")]);
 
         var mockHandler = new MockHttpMessageHandler(System.Net.HttpStatusCode.RequestTimeout);
@@ -356,6 +381,7 @@ public class GameServersServiceTests
             ProcessId = null
         };
         _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(new System.Diagnostics.Process[] { null! });
         _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine())
                               .Returns(
                                   [

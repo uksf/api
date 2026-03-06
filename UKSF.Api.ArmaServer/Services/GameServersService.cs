@@ -81,6 +81,15 @@ public class GameServersService(
             return;
         }
 
+        if (!gameServerHelpers.GetArmaProcesses().Any())
+        {
+            gameServer.Status = new GameServerStatus();
+            gameServer.ProcessId = null;
+            StatusCache.TryRemove(gameServer.Id, out _);
+            await gameServersContext.Replace(gameServer);
+            return;
+        }
+
         var armaProcesses = gameServerHelpers.GetArmaProcessesWithCommandLine();
         await UpdateServerStatus(gameServer, armaProcesses);
     }
