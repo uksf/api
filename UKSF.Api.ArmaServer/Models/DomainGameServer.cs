@@ -36,6 +36,9 @@ public class DomainGameServer : MongoObject
     [BsonIgnore]
     public GameServerStatus Status { get; set; } = new();
 
+    [BsonIgnore]
+    public List<RptLogSource> LogSources { get; set; } = [];
+
     public override string ToString()
     {
         return $"{Name}, {Port}, {ApiPort}, {NumberHeadlessClients}, {ProfileName}, {HostName}, {Password}, {AdminPassword}, {Environment}, {ServerOption}";

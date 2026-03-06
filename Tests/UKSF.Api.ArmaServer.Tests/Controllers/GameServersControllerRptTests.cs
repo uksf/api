@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -73,20 +75,52 @@ public class GameServersControllerRptTests : IDisposable
         };
     }
 
-    #region GetLogSources
+    #region GetGameServers LogSources
 
     [Fact]
-    public void GetLogSources_ReturnsSourcesForServer()
+    public void GetGameServers_PopulatesLogSourcesOnEachServer()
     {
-        var server = CreateGameServer();
-        var expectedSources = new List<RptLogSource> { new("Server", true), new("Jarvis", false) };
+        var server1 = CreateGameServer("server1", "Main");
+        server1.NumberHeadlessClients = 1;
+        var server2 = CreateGameServer("server2", "Training");
+        server2.NumberHeadlessClients = 0;
 
+        _mockGameServersContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { server1, server2 });
+
+        var sources1 = new List<RptLogSource> { new("Server", true), new("HC0", false) };
+        var sources2 = new List<RptLogSource> { new("Server", true) };
+        _mockRptLogService.Setup(x => x.GetLogSources(server1)).Returns(sources1);
+        _mockRptLogService.Setup(x => x.GetLogSources(server2)).Returns(sources2);
+
+        var result = _sut.GetGameServers();
+
+        var servers = result.Servers.ToList();
+        servers[0].LogSources.Should().BeEquivalentTo(sources1);
+        servers[1].LogSources.Should().BeEquivalentTo(sources2);
+    }
+
+    #endregion
+
+    #region GetGameServerStatus LogSources
+
+    [Fact]
+    public async Task GetGameServerStatus_PopulatesLogSources()
+    {
+        var server = CreateGameServer("server1", "Main");
+        server.NumberHeadlessClients = 2;
+
+        var sources = new List<RptLogSource>
+        {
+            new("Server", true),
+            new("HC0", false),
+            new("HC1", false)
+        };
         _mockGameServersContext.Setup(x => x.GetSingle("server1")).Returns(server);
-        _mockRptLogService.Setup(x => x.GetLogSources(server)).Returns(expectedSources);
+        _mockRptLogService.Setup(x => x.GetLogSources(server)).Returns(sources);
 
-        var result = _sut.GetLogSources("server1");
+        var result = await _sut.GetGameServerStatus("server1");
 
-        result.Should().BeEquivalentTo(expectedSources);
+        result.GameServer.LogSources.Should().BeEquivalentTo(sources);
     }
 
     #endregion
@@ -101,12 +135,12 @@ public class GameServersControllerRptTests : IDisposable
 
         _mockGameServersContext.Setup(x => x.GetSingle("server1")).Returns(server);
         _mockRptLogService.Setup(x => x.GetLatestRptFilePath(server, "Server")).Returns("/path/to/file.rpt");
-        _mockRptLogService.Setup(x => x.SearchFile("/path/to/file.rpt", "Error")).Returns(searchResults);
+        _mockRptLogService.Setup(x => x.SearchFile("/path/to/file.rpt", "Error")).Returns(new RptLogSearchResponse(searchResults, 3));
 
         var result = _sut.SearchLog("server1", new LogSearchRequest("Server", "Error"));
 
         result.Results.Should().HaveCount(2);
-        result.TotalMatches.Should().Be(2);
+        result.TotalMatches.Should().Be(3);
         result.Results.Should().BeEquivalentTo(searchResults);
     }
 

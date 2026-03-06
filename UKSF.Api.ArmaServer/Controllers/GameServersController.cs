@@ -38,9 +38,15 @@ public class GameServersController(
     [Authorize]
     public GameServersDataset GetGameServers()
     {
+        var servers = gameServersContext.Get().ToList();
+        foreach (var server in servers)
+        {
+            server.LogSources = rptLogService.GetLogSources(server);
+        }
+
         return new GameServersDataset
         {
-            Servers = gameServersContext.Get(),
+            Servers = servers,
             Missions = gameServersService.GetMissionFiles(),
             InstanceCount = gameServersService.GetGameInstanceCount()
         };
@@ -52,6 +58,7 @@ public class GameServersController(
     {
         var gameServer = gameServersContext.GetSingle(id);
         await gameServersService.GetGameServerStatus(gameServer);
+        gameServer.LogSources = rptLogService.GetLogSources(gameServer);
         return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
     }
 
@@ -320,14 +327,6 @@ public class GameServersController(
         await serversHub.Clients.All.ReceiveDisabledState(stateRequest.State);
     }
 
-    [HttpGet("{id}/log/sources")]
-    [Authorize]
-    public List<RptLogSource> GetLogSources(string id)
-    {
-        var server = gameServersContext.GetSingle(id);
-        return rptLogService.GetLogSources(server);
-    }
-
     [HttpPost("{id}/log/search")]
     [Authorize]
     public RptLogSearchResponse SearchLog(string id, [FromBody] LogSearchRequest request)
@@ -339,8 +338,7 @@ public class GameServersController(
             return new RptLogSearchResponse([], 0);
         }
 
-        var results = rptLogService.SearchFile(filePath, request.Query);
-        return new RptLogSearchResponse(results, results.Count);
+        return rptLogService.SearchFile(filePath, request.Query);
     }
 
     [HttpGet("{id}/log/download")]
