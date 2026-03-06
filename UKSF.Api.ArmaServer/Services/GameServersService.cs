@@ -108,8 +108,7 @@ public class GameServersService(
             return gameServers;
         }
 
-        var armaProcesses = gameServerHelpers.GetArmaProcessesWithCommandLine();
-        if (armaProcesses.Count == 0)
+        if (!gameServerHelpers.GetArmaProcesses().Any())
         {
             StatusCache.Clear();
             foreach (var gameServer in gameServers)
@@ -122,6 +121,7 @@ public class GameServersService(
             return gameServers;
         }
 
+        var armaProcesses = gameServerHelpers.GetArmaProcessesWithCommandLine();
         await Task.WhenAll(gameServers.Select(server => UpdateServerStatus(server, armaProcesses)));
         return gameServers;
     }
