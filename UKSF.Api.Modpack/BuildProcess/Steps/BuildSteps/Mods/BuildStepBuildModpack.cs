@@ -26,13 +26,16 @@ public class BuildStepBuildModpack : ModBuildStep
 
         StepLogger.Log($"\nConfiguration set to '{configuration}'");
 
-        StepLogger.LogSurround("\nSetting extension version...");
-        var cargoTomlPath = Path.Join(extensionPath, "Cargo.toml");
-        var cargoToml = await File.ReadAllTextAsync(cargoTomlPath);
-        cargoToml = Regex.Replace(cargoToml, @"^version\s*=\s*""[^""]*""", $"version = \"{Build.Version}\"", RegexOptions.Multiline);
-        await File.WriteAllTextAsync(cargoTomlPath, cargoToml);
-        StepLogger.Log($"Set extension version to '{Build.Version}'");
-        StepLogger.LogSurround("Set extension version");
+        if (!string.IsNullOrEmpty(Build.Version))
+        {
+            StepLogger.LogSurround("\nSetting extension version...");
+            var cargoTomlPath = Path.Join(extensionPath, "Cargo.toml");
+            var cargoToml = await File.ReadAllTextAsync(cargoTomlPath);
+            cargoToml = Regex.Replace(cargoToml, @"^version\s*=\s*""[^""]*""", $"version = \"{Build.Version}\"", RegexOptions.Multiline);
+            await File.WriteAllTextAsync(cargoTomlPath, cargoToml);
+            StepLogger.Log($"Set extension version to '{Build.Version}'");
+            StepLogger.LogSurround("Set extension version");
+        }
 
         StepLogger.LogSurround("\nBuilding Rust extension...");
         await RunProcess(
