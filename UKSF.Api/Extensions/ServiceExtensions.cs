@@ -46,7 +46,8 @@ public static class ServiceExtensions
 
         private IServiceCollection AddContexts()
         {
-            return services.AddContext<ICommandRequestArchiveContext, CommandRequestArchiveContext>()
+            return services.AddContext<IApplicationFunnelEventContext, ApplicationFunnelEventContext>()
+                           .AddContext<ICommandRequestArchiveContext, CommandRequestArchiveContext>()
                            .AddCachedContext<ICommandRequestContext, CommandRequestContext>()
                            .AddCachedContext<IDischargeContext, DischargeContext>()
                            .AddCachedContext<ILoaContext, LoaContext>()
@@ -68,7 +69,9 @@ public static class ServiceExtensions
 
         private IServiceCollection AddServices()
         {
-            return services.AddSingleton<IDataCacheService, DataCacheService>()
+            return services.AddSingleton<IBotDetectionService, BotDetectionService>()
+                           .AddSingleton<IAnalyticsRateLimiter, AnalyticsRateLimiter>()
+                           .AddSingleton<IDataCacheService, DataCacheService>()
                            .AddTransient<ICommandRequestCompletionService, CommandRequestCompletionService>()
                            .AddTransient<ICommandRequestService, CommandRequestService>()
                            .AddTransient<ILoaService, LoaService>()
@@ -77,6 +80,7 @@ public static class ServiceExtensions
                            .AddTransient<ILoginService, LoginService>()
                            .AddTransient<IPermissionsService, PermissionsService>()
                            .AddTransient<ICommentThreadService, CommentThreadService>()
+                           .AddTransient<IApplicationFunnelService, ApplicationFunnelService>()
                            .AddScoped<IDocumentFolderService, DocumentFolderService>()
                            .AddScoped<IDocumentService, DocumentService>()
                            .AddScoped<IDocumentPermissionsService, DocumentPermissionsService>();
