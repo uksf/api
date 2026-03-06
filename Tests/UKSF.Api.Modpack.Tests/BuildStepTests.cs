@@ -484,7 +484,8 @@ public class BuildStepTests
             bool errorSilently = false,
             List<string> errorExclusions = null,
             string ignoreErrorGateClose = "",
-            string ignoreErrorGateOpen = ""
+            string ignoreErrorGateOpen = "",
+            bool redirectStderrToOutput = false
         )
         {
             return await base.RunProcess(
