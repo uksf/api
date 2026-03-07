@@ -13,6 +13,7 @@ public interface IGameServerHelpers
     string GetGameServerExecutablePath(DomainGameServer gameServer);
     string GetGameServerSettingsPath();
     string GetGameServerMissionsPath();
+    string GetGameServerMissionsArchivePath();
     string GetGameServerConfigPath(DomainGameServer gameServer);
     string GetGameServerModsPaths(GameEnvironment environment);
     IEnumerable<string> GetGameServerExtraModsPaths();
@@ -97,6 +98,11 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
     public string GetGameServerMissionsPath()
     {
         return variablesService.GetVariable("MISSIONS_PATH").AsString();
+    }
+
+    public string GetGameServerMissionsArchivePath()
+    {
+        return variablesService.GetVariable("MISSIONS_ARCHIVE_PATH").AsString();
     }
 
     public string GetGameServerConfigPath(DomainGameServer gameServer)

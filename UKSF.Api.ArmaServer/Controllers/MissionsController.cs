@@ -36,25 +36,26 @@ public class MissionsController(IMissionsService missionsService, IHubContext<Se
     public async Task<MissionsDataset> UploadMissionFile()
     {
         List<MissionReportDataset> missionReports = [];
-        try
+        foreach (var file in Request.Form.Files.Where(x => x.Length > 0))
         {
-            foreach (var file in Request.Form.Files.Where(x => x.Length > 0))
+            var fileName = await missionsService.UploadMissionFile(file);
+            try
             {
-                await missionsService.UploadMissionFile(file);
-                var missionPatchingResult = await missionsService.PatchMissionFile(file.Name);
+                var missionPatchingResult = await missionsService.PatchMissionFile(fileName);
                 missionPatchingResult.Reports = missionPatchingResult.Reports.OrderByDescending(x => x.Error).ToList();
-                missionReports.Add(new MissionReportDataset { Mission = file.Name, Reports = missionPatchingResult.Reports });
-                logger.LogAudit($"Uploaded mission '{file.Name}'");
+                missionReports.Add(new MissionReportDataset { Mission = fileName, Reports = missionPatchingResult.Reports });
+                logger.LogAudit($"Uploaded mission '{fileName}'");
             }
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(exception);
-            throw new BadRequestException(exception.Message);
+            catch (Exception exception)
+            {
+                missionsService.DeleteMissionFile(fileName);
+                logger.LogError(exception);
+                throw new BadRequestException(exception.Message);
+            }
         }
 
         var missions = missionsService.GetActiveMissions();
-        await SendMissionsUpdateIfNotCaller(missions);
+        await SendMissionsUpdate(missions);
         return new MissionsDataset { Missions = missions, MissionReports = missionReports };
     }
 
@@ -81,7 +82,7 @@ public class MissionsController(IMissionsService missionsService, IHubContext<Se
         {
             missionsService.DeleteMissionFile(fileName);
             var missions = missionsService.GetActiveMissions();
-            await SendMissionsUpdateIfNotCaller(missions);
+            await SendMissionsUpdate(missions);
             return Ok();
         }
         catch (FileNotFoundException)
@@ -98,7 +99,7 @@ public class MissionsController(IMissionsService missionsService, IHubContext<Se
         {
             missionsService.ArchiveMissionFile(fileName);
             var missions = missionsService.GetActiveMissions();
-            await SendMissionsUpdateIfNotCaller(missions);
+            await SendMissionsUpdate(missions);
             return Ok();
         }
         catch (FileNotFoundException)
@@ -115,7 +116,7 @@ public class MissionsController(IMissionsService missionsService, IHubContext<Se
         {
             missionsService.RestoreMissionFile(fileName);
             var missions = missionsService.GetActiveMissions();
-            await SendMissionsUpdateIfNotCaller(missions);
+            await SendMissionsUpdate(missions);
             return Ok();
         }
         catch (FileNotFoundException)
@@ -124,13 +125,9 @@ public class MissionsController(IMissionsService missionsService, IHubContext<Se
         }
     }
 
-    private async Task SendMissionsUpdateIfNotCaller(List<MissionFile> missions)
+    private async Task SendMissionsUpdate(List<MissionFile> missions)
     {
-        if (!HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out var connectionId))
-        {
-            return;
-        }
-
+        var connectionId = HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out var id) ? id.ToString() : string.Empty;
         await serversHub.Clients.All.ReceiveMissionsUpdateIfNotCaller(connectionId, missions);
     }
 }

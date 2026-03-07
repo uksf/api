@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.Models;
@@ -8,11 +7,9 @@ namespace UKSF.Api.ArmaServer.Services;
 
 public interface IMissionsService
 {
-    string GetActiveMissionsPath();
-    string GetArchivedMissionsPath();
     List<MissionFile> GetActiveMissions();
     List<MissionFile> GetArchivedMissions();
-    Task UploadMissionFile(IFormFile file);
+    Task<string> UploadMissionFile(IFormFile file);
     Task<MissionPatchingResult> PatchMissionFile(string missionName);
     string FindMissionFilePath(string fileName);
     void DeleteMissionFile(string fileName);
@@ -23,20 +20,21 @@ public interface IMissionsService
 
 public class MissionsService(IMissionPatchingService missionPatchingService, IGameServerHelpers gameServerHelpers, IUksfLogger logger) : IMissionsService
 {
-    public string GetActiveMissionsPath() => gameServerHelpers.GetGameServerMissionsPath();
+    private string GetActiveMissionsPath() => gameServerHelpers.GetGameServerMissionsPath();
 
-    public string GetArchivedMissionsPath() => gameServerHelpers.GetGameServerMissionsArchivePath();
+    private string GetArchivedMissionsPath() => gameServerHelpers.GetGameServerMissionsArchivePath();
 
     public List<MissionFile> GetActiveMissions() => GetMissionsFromPath(GetActiveMissionsPath());
 
     public List<MissionFile> GetArchivedMissions() => GetMissionsFromPath(GetArchivedMissionsPath());
 
-    public async Task UploadMissionFile(IFormFile file)
+    public async Task<string> UploadMissionFile(IFormFile file)
     {
-        var fileName = Path.GetFileName(ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"'));
+        var fileName = Path.GetFileName(file.FileName);
         var filePath = Path.Combine(GetActiveMissionsPath(), fileName);
         await using FileStream stream = new(filePath, FileMode.Create);
         await file.CopyToAsync(stream);
+        return fileName;
     }
 
     public async Task<MissionPatchingResult> PatchMissionFile(string missionName)
