@@ -392,9 +392,9 @@ public class BuildStep : IBuildStep
 
     private string CreateBuildStepSnapshot()
     {
+        var logs = _buildStep.Logs;
         try
         {
-            // Create a snapshot of the build step to avoid collection modification during serialization
             var snapshot = new
             {
                 _buildStep.BuildResult,
@@ -404,8 +404,8 @@ public class BuildStep : IBuildStep
                 _buildStep.Name,
                 _buildStep.Running,
                 _buildStep.StartTime,
-                LogsCount = _buildStep.Logs?.Count ?? 0,
-                LastLogText = _buildStep.Logs?.LastOrDefault()?.Text ?? ""
+                LogsCount = logs?.Count ?? 0,
+                LastLogText = logs?.LastOrDefault()?.Text ?? ""
             };
 
             return JsonSerializer.Serialize(snapshot, DefaultJsonSerializerOptions.Options);
@@ -413,8 +413,7 @@ public class BuildStep : IBuildStep
         catch (Exception ex)
         {
             _logger?.LogWarning($"Failed to create build step snapshot: {ex.Message}");
-            // Return a simple state representation as fallback
-            return $"{_buildStep.Running}_{_buildStep.Finished}_{_buildStep.BuildResult}_{_buildStep.Logs?.Count ?? 0}";
+            return $"{_buildStep.Running}_{_buildStep.Finished}_{_buildStep.BuildResult}_{logs?.Count ?? 0}";
         }
     }
 

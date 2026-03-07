@@ -1,4 +1,9 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using FluentAssertions;
 using UKSF.Api.Modpack.BuildProcess;
 using UKSF.Api.Modpack.Models;
@@ -187,5 +192,50 @@ public class StepLoggerTests
 
         _buildStep.Logs.Should().ContainSingle();
         _buildStep.Logs[0].Text.Should().Be("first inline");
+    }
+
+    [Fact]
+    public async Task ConcurrentLogAndEnumerate_Should_NotThrow()
+    {
+        // Reproduces the production bug: "Collection was modified; enumeration operation may not execute"
+        // when SignalR/MongoDB serializes the Logs list while StepLogger is writing to it.
+        //
+        // StepLogger's _logLock protects writers from each other, but readers (serializers)
+        // enumerate Logs without the lock, so AddRange during enumeration throws.
+        //
+        // To reliably reproduce: use a ManualResetEvent to guarantee that a write happens
+        // while an enumerator is held open — the exact condition that triggers the bug.
+        var enumeratorOpened = new ManualResetEventSlim(false);
+        var writeCompleted = new ManualResetEventSlim(false);
+
+        // Seed some logs so the enumerator has items to iterate
+        for (var i = 0; i < 100; i++)
+        {
+            _stepLogger.Log($"seed line {i}");
+        }
+
+        // Thread 1: open an enumerator (simulating what serializers do), then signal for write
+        var readerTask = Task.Run(() =>
+            {
+                using var enumerator = _buildStep.Logs.GetEnumerator();
+                enumerator.MoveNext(); // position on first element
+                enumeratorOpened.Set(); // signal that enumerator is open
+                writeCompleted.Wait(TimeSpan.FromSeconds(5)); // wait for write to happen
+                enumerator.MoveNext(); // this should throw if list was modified
+            }
+        );
+
+        // Thread 2: wait for enumerator to be open, then write a log
+        var writerTask = Task.Run(() =>
+            {
+                enumeratorOpened.Wait(TimeSpan.FromSeconds(5));
+                _stepLogger.Log("concurrent write while enumerator is open");
+                writeCompleted.Set();
+            }
+        );
+
+        var act = () => Task.WhenAll(readerTask, writerTask);
+
+        await act.Should().NotThrowAsync("concurrent enumeration of Logs during writes must not throw");
     }
 }

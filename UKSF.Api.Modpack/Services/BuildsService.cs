@@ -205,7 +205,7 @@ public class BuildsService(
                     runningStep.Finished = true;
                     runningStep.EndTime = DateTime.UtcNow;
                     runningStep.BuildResult = ModpackBuildResult.Cancelled;
-                    runningStep.Logs.Add(new ModpackBuildStepLogItem { Text = "Build was interrupted", Colour = "goldenrod" });
+                    runningStep.Logs = [..runningStep.Logs, new ModpackBuildStepLogItem { Text = "Build was interrupted", Colour = "goldenrod" }];
                     await buildsContext.Update(build, runningStep);
                 }
 

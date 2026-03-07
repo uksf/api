@@ -94,21 +94,24 @@ public class StepLogger(ModpackBuildStep buildStep) : IStepLogger
 
         lock (_logLock)
         {
+            var newLogs = new List<ModpackBuildStepLogItem>(buildStep.Logs);
             if (inline)
             {
-                if (buildStep.Logs.Count > 0)
+                if (newLogs.Count > 0)
                 {
-                    buildStep.Logs[^1] = logList.First();
+                    newLogs[^1] = logList.First();
                 }
                 else
                 {
-                    buildStep.Logs.AddRange(logList);
+                    newLogs.AddRange(logList);
                 }
             }
             else
             {
-                buildStep.Logs.AddRange(logList);
+                newLogs.AddRange(logList);
             }
+
+            buildStep.Logs = newLogs;
         }
     }
 }
