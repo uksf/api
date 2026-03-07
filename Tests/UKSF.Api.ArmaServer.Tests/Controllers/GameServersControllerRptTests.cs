@@ -41,6 +41,7 @@ public class GameServersControllerRptTests : IDisposable
             _mockGameServersContext.Object,
             Mock.Of<IVariablesContext>(),
             Mock.Of<IGameServersService>(),
+            Mock.Of<IMissionsService>(),
             mockServersHub.Object,
             Mock.Of<IVariablesService>(),
             Mock.Of<IGameServerHelpers>(),

@@ -26,6 +26,7 @@ public class GameServersController(
     IGameServersContext gameServersContext,
     IVariablesContext variablesContext,
     IGameServersService gameServersService,
+    IMissionsService missionsService,
     IHubContext<ServersHub, IServersClient> serversHub,
     IVariablesService variablesService,
     IGameServerHelpers gameServerHelpers,
@@ -47,7 +48,7 @@ public class GameServersController(
         return new GameServersDataset
         {
             Servers = servers,
-            Missions = gameServersService.GetMissionFiles(),
+            Missions = missionsService.GetActiveMissions(),
             InstanceCount = gameServersService.GetGameInstanceCount()
         };
     }
@@ -141,35 +142,6 @@ public class GameServersController(
         return gameServersContext.Get();
     }
 
-    [HttpPost("mission")]
-    [Authorize]
-    [RequestSizeLimit(52428800)]
-    [RequestFormLimits(MultipartBodyLengthLimit = 52428800)]
-    public async Task<MissionsDataset> UploadMissionFile()
-    {
-        List<MissionReportDataset> missionReports = new();
-        try
-        {
-            foreach (var file in Request.Form.Files.Where(x => x.Length > 0))
-            {
-                await gameServersService.UploadMissionFile(file);
-                var missionPatchingResult = await gameServersService.PatchMissionFile(file.Name);
-                missionPatchingResult.Reports = missionPatchingResult.Reports.OrderByDescending(x => x.Error).ToList();
-                missionReports.Add(new MissionReportDataset { Mission = file.Name, Reports = missionPatchingResult.Reports });
-                logger.LogAudit($"Uploaded mission '{file.Name}'");
-            }
-        }
-        catch (Exception exception)
-        {
-            logger.LogError(exception);
-            throw new BadRequestException(exception.Message); // TODO: Needs better error handling
-        }
-
-        var missions = gameServersService.GetMissionFiles();
-        await SendMissionsUpdateIfNotCaller(missions);
-        return new MissionsDataset { Missions = missions, MissionReports = missionReports };
-    }
-
     [HttpPost("launch/{id}")]
     [Authorize]
     public async Task<List<ValidationReport>> LaunchServer(string id, [FromBody] LaunchServerRequest launchServerRequest)
@@ -202,7 +174,7 @@ public class GameServersController(
             throw new BadRequestException("Server cannot be launched while another server with the same port is running");
         }
 
-        var patchingResult = await gameServersService.PatchMissionFile(launchServerRequest.MissionName);
+        var patchingResult = await missionsService.PatchMissionFile(launchServerRequest.MissionName);
         if (!patchingResult.Success)
         {
             patchingResult.Reports = patchingResult.Reports.OrderByDescending(x => x.Error).ToList();
@@ -374,16 +346,6 @@ public class GameServersController(
         }
 
         await serversHub.Clients.All.ReceiveServerUpdateIfNotCaller(connectionId, serverId);
-    }
-
-    private async Task SendMissionsUpdateIfNotCaller(List<MissionFile> missions)
-    {
-        if (!GetHubConnectionId(out var connectionId))
-        {
-            return;
-        }
-
-        await serversHub.Clients.All.ReceiveMissionsUpdateIfNotCaller(connectionId, missions);
     }
 
     private bool GetHubConnectionId(out StringValues connectionId)

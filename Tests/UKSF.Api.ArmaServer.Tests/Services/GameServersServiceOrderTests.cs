@@ -8,7 +8,6 @@ using FluentAssertions;
 using MassTransit;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
-using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
@@ -26,7 +25,6 @@ public class GameServersServiceOrderTests
 {
     private readonly Mock<IGameServerHelpers> _mockIGameServerHelpers = new();
     private readonly Mock<IGameServersContext> _mockIGameServersContext = new();
-    private readonly Mock<IMissionPatchingService> _mockIMissionPatchingService = new();
     private readonly Mock<IProcessUtilities> _mockProcessUtilities = new();
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory = new();
     private readonly Mock<IVariablesService> _mockIVariablesService = new();
@@ -41,7 +39,6 @@ public class GameServersServiceOrderTests
     {
         _subject = new GameServersService(
             _mockIGameServersContext.Object,
-            _mockIMissionPatchingService.Object,
             _mockIGameServerHelpers.Object,
             _mockProcessUtilities.Object,
             _mockHttpClientFactory.Object,

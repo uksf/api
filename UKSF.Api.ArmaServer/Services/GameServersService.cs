@@ -5,8 +5,6 @@ using System.Text.RegularExpressions;
 using MassTransit;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Bson;
-using UKSF.Api.ArmaMissions.Models;
-using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
@@ -23,11 +21,8 @@ namespace UKSF.Api.ArmaServer.Services;
 public interface IGameServersService
 {
     int GetGameInstanceCount();
-    Task UploadMissionFile(IFormFile file);
-    List<MissionFile> GetMissionFiles();
     Task GetGameServerStatus(DomainGameServer gameServer);
     Task<List<DomainGameServer>> GetAllGameServerStatuses();
-    Task<MissionPatchingResult> PatchMissionFile(string missionName);
     void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection);
     Task LaunchGameServer(DomainGameServer gameServer, string missionName = null, string launchedBy = null);
     Task StopGameServer(DomainGameServer gameServer);
@@ -41,7 +36,6 @@ public interface IGameServersService
 
 public class GameServersService(
     IGameServersContext gameServersContext,
-    IMissionPatchingService missionPatchingService,
     IGameServerHelpers gameServerHelpers,
     IProcessUtilities processUtilities,
     IHttpClientFactory httpClientFactory,
@@ -57,20 +51,6 @@ public class GameServersService(
     public int GetGameInstanceCount()
     {
         return gameServerHelpers.GetArmaProcesses().Count();
-    }
-
-    public async Task UploadMissionFile(IFormFile file)
-    {
-        var fileName = Path.GetFileName(ContentDispositionHeaderValue.Parse(file.ContentDisposition).FileName.Trim('"'));
-        var filePath = Path.Combine(gameServerHelpers.GetGameServerMissionsPath(), fileName);
-        await using FileStream stream = new(filePath, FileMode.Create);
-        await file.CopyToAsync(stream);
-    }
-
-    public List<MissionFile> GetMissionFiles()
-    {
-        var files = new DirectoryInfo(gameServerHelpers.GetGameServerMissionsPath()).EnumerateFiles("*.pbo", SearchOption.TopDirectoryOnly);
-        return files.Select(fileInfo => new MissionFile(fileInfo)).OrderBy(x => x.Map).ThenBy(x => x.Name).ToList();
     }
 
     public async Task GetGameServerStatus(DomainGameServer gameServer)
@@ -196,16 +176,6 @@ public class GameServersService(
 
         // Fall back to any process matching the port (including headless clients)
         return armaProcesses.FirstOrDefault(p => p.CommandLine.Contains(portArg) || p.CommandLine.EndsWith($"-port={gameServer.Port}"));
-    }
-
-    public async Task<MissionPatchingResult> PatchMissionFile(string missionName)
-    {
-        var missionPath = Path.Combine(gameServerHelpers.GetGameServerMissionsPath(), Path.GetFileName(missionName));
-        return await missionPatchingService.PatchMission(
-            missionPath,
-            gameServerHelpers.GetGameServerModsPaths(GameEnvironment.Release),
-            gameServerHelpers.GetMaxCuratorCountFromSettings()
-        );
     }
 
     public void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection)
