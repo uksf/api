@@ -126,41 +126,6 @@ public class GameServersControllerRptTests : IDisposable
 
     #endregion
 
-    #region SearchLog
-
-    [Fact]
-    public void SearchLog_ReturnsMatchingResults()
-    {
-        var server = CreateGameServer();
-        var searchResults = new List<RptLogSearchResult> { new(5, "Error: something"), new(10, "Error: another") };
-
-        _mockGameServersContext.Setup(x => x.GetSingle("server1")).Returns(server);
-        _mockRptLogService.Setup(x => x.GetLatestRptFilePath(server, "Server")).Returns("/path/to/file.rpt");
-        _mockRptLogService.Setup(x => x.SearchFile("/path/to/file.rpt", "Error")).Returns(new RptLogSearchResponse(searchResults, 3));
-
-        var result = _sut.SearchLog("server1", new LogSearchRequest("Server", "Error"));
-
-        result.Results.Should().HaveCount(2);
-        result.TotalMatches.Should().Be(3);
-        result.Results.Should().BeEquivalentTo(searchResults);
-    }
-
-    [Fact]
-    public void SearchLog_ReturnsEmpty_WhenNoLogFile()
-    {
-        var server = CreateGameServer();
-
-        _mockGameServersContext.Setup(x => x.GetSingle("server1")).Returns(server);
-        _mockRptLogService.Setup(x => x.GetLatestRptFilePath(server, "Server")).Returns((string)null);
-
-        var result = _sut.SearchLog("server1", new LogSearchRequest("Server", "Error"));
-
-        result.Results.Should().BeEmpty();
-        result.TotalMatches.Should().Be(0);
-    }
-
-    #endregion
-
     #region DownloadLog
 
     [Fact]

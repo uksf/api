@@ -9,7 +9,6 @@ public interface IRptLogService
     List<RptLogSource> GetLogSources(DomainGameServer server);
     string GetLatestRptFilePath(DomainGameServer server, string source);
     (List<string> Lines, long BytesRead) ReadFullFile(string filePath);
-    RptLogSearchResponse SearchFile(string filePath, string query);
     IDisposable WatchFile(string filePath, long startOffset, Func<List<string>, Task> onNewContent);
 }
 
@@ -63,32 +62,6 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
         return (lines, stream.Position);
     }
 
-    public RptLogSearchResponse SearchFile(string filePath, string query)
-    {
-        var (lines, _) = ReadFullFile(filePath);
-        var results = new List<RptLogSearchResult>();
-        var totalMatches = 0;
-
-        for (var i = 0; i < lines.Count; i++)
-        {
-            var count = 0;
-            var index = 0;
-            while ((index = lines[i].IndexOf(query, index, StringComparison.OrdinalIgnoreCase)) >= 0)
-            {
-                count++;
-                index += query.Length;
-            }
-
-            if (count > 0)
-            {
-                results.Add(new RptLogSearchResult(i, lines[i]));
-                totalMatches += count;
-            }
-        }
-
-        return new RptLogSearchResponse(results, totalMatches);
-    }
-
     public IDisposable WatchFile(string filePath, long startOffset, Func<List<string>, Task> onNewContent)
     {
         return new FileLogWatcher(filePath, startOffset, onNewContent);
@@ -96,120 +69,90 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
 
     private sealed class FileLogWatcher : IDisposable
     {
-        private readonly Func<List<string>, Task> _onNewContent;
         private readonly FileSystemWatcher _fileSystemWatcher;
-        private readonly CancellationTokenSource _cts = new();
-        private readonly SemaphoreSlim _semaphore = new(1, 1);
+        private readonly string _filePath;
+        private readonly Func<List<string>, Task> _onNewContent;
         private long _offset;
+        private int _reading;
+        private bool _pendingRead;
         private bool _disposed;
 
         public FileLogWatcher(string filePath, long startOffset, Func<List<string>, Task> onNewContent)
         {
+            _filePath = filePath;
             _onNewContent = onNewContent;
             _offset = startOffset;
 
-            var directory = Path.GetDirectoryName(filePath)!;
-            var fileName = Path.GetFileName(filePath);
-
-            _fileSystemWatcher = new FileSystemWatcher(directory, fileName)
+            _fileSystemWatcher = new FileSystemWatcher(Path.GetDirectoryName(filePath)!, Path.GetFileName(filePath))
             {
                 NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size, EnableRaisingEvents = true
             };
-            _fileSystemWatcher.Changed += async (_, _) =>
-            {
-                try
-                {
-                    await ReadNewContentAsync(filePath);
-                }
-                catch
-                {
-                    // File watcher errors are transient (locked file, deleted file, etc.)
-                    // The timer fallback will retry in 2 seconds
-                }
-            };
-
-            _ = RunTimerFallbackAsync(filePath);
+            _fileSystemWatcher.Changed += OnFileChanged;
         }
 
-        private async Task RunTimerFallbackAsync(string filePath)
+        private async void OnFileChanged(object sender, FileSystemEventArgs e)
         {
-            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref _reading, 1, 0) != 0)
+            {
+                _pendingRead = true;
+                return;
+            }
+
             try
             {
-                while (await timer.WaitForNextTickAsync(_cts.Token))
+                do
                 {
-                    await ReadNewContentAsync(filePath);
+                    _pendingRead = false;
+                    await ReadNewContentAsync();
                 }
+                while (_pendingRead && !_disposed);
             }
-            catch (OperationCanceledException)
+            catch
             {
-                // Expected on dispose
-            }
-        }
-
-        private async Task ReadNewContentAsync(string filePath)
-        {
-            await _semaphore.WaitAsync();
-            try
-            {
-                if (_disposed)
-                {
-                    return;
-                }
-
-                var fileInfo = new FileInfo(filePath);
-                if (fileInfo.Length < _offset)
-                {
-                    _offset = 0;
-                }
-
-                if (fileInfo.Length <= _offset)
-                {
-                    return;
-                }
-
-                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                stream.Seek(_offset, SeekOrigin.Begin);
-
-                using var reader = new StreamReader(stream);
-                var content = await reader.ReadToEndAsync();
-                _offset = stream.Position;
-
-                var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => l.TrimEnd('\r')).Where(l => l.Length > 0).ToList();
-
-                if (lines.Count > 0)
-                {
-                    await _onNewContent(lines);
-                }
+                // File access errors are transient — next Changed event will retry
             }
             finally
             {
-                _semaphore.Release();
+                Interlocked.Exchange(ref _reading, 0);
+            }
+        }
+
+        private async Task ReadNewContentAsync()
+        {
+            var fileLength = new FileInfo(_filePath).Length;
+            if (fileLength < _offset)
+            {
+                _offset = 0;
+            }
+
+            if (fileLength <= _offset)
+            {
+                return;
+            }
+
+            using var stream = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            stream.Seek(_offset, SeekOrigin.Begin);
+            using var reader = new StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+            _offset = stream.Position;
+
+            var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => l.TrimEnd('\r')).Where(l => l.Length > 0).ToList();
+            if (lines.Count > 0)
+            {
+                await _onNewContent(lines);
             }
         }
 
         public void Dispose()
         {
-            _semaphore.Wait();
-            try
-            {
-                if (_disposed)
-                {
-                    return;
-                }
-
-                _disposed = true;
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
-
+            _disposed = true;
             _fileSystemWatcher.EnableRaisingEvents = false;
             _fileSystemWatcher.Dispose();
-            _cts.Cancel();
-            _cts.Dispose();
-            _semaphore.Dispose();
         }
     }
 }

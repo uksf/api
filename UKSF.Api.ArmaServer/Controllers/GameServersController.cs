@@ -299,20 +299,6 @@ public class GameServersController(
         await serversHub.Clients.All.ReceiveDisabledState(stateRequest.State);
     }
 
-    [HttpPost("{id}/log/search")]
-    [Authorize]
-    public RptLogSearchResponse SearchLog(string id, [FromBody] LogSearchRequest request)
-    {
-        var server = gameServersContext.GetSingle(id);
-        var filePath = rptLogService.GetLatestRptFilePath(server, request.Source);
-        if (filePath == null)
-        {
-            return new RptLogSearchResponse([], 0);
-        }
-
-        return rptLogService.SearchFile(filePath, request.Query);
-    }
-
     [HttpGet("{id}/log/download")]
     [Authorize]
     public IActionResult DownloadLog(string id, [FromQuery] string source)
