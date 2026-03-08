@@ -421,6 +421,7 @@ public class RptLogServiceTests : IDisposable
             {
                 receivedLines.Add(lines);
                 tcs.TrySetResult(true);
+                return Task.CompletedTask;
             }
         );
 
@@ -445,7 +446,15 @@ public class RptLogServiceTests : IDisposable
         var callbackInvoked = false;
         var startOffset = new FileInfo(filePath).Length;
 
-        using var watcher = _sut.WatchFile(filePath, startOffset, _ => { callbackInvoked = true; });
+        using var watcher = _sut.WatchFile(
+            filePath,
+            startOffset,
+            _ =>
+            {
+                callbackInvoked = true;
+                return Task.CompletedTask;
+            }
+        );
 
         await Task.Delay(TimeSpan.FromSeconds(3));
 
@@ -462,7 +471,15 @@ public class RptLogServiceTests : IDisposable
         var callbackInvokedAfterDispose = false;
         var startOffset = new FileInfo(filePath).Length;
 
-        var watcher = _sut.WatchFile(filePath, startOffset, _ => { callbackInvokedAfterDispose = true; });
+        var watcher = _sut.WatchFile(
+            filePath,
+            startOffset,
+            _ =>
+            {
+                callbackInvokedAfterDispose = true;
+                return Task.CompletedTask;
+            }
+        );
 
         await Task.Delay(500);
         watcher.Dispose();
@@ -503,6 +520,8 @@ public class RptLogServiceTests : IDisposable
                 {
                     secondBatchTcs.TrySetResult(true);
                 }
+
+                return Task.CompletedTask;
             }
         );
 

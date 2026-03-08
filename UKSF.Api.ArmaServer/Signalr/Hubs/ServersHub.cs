@@ -69,11 +69,11 @@ public class ServersHub(
             () => rptLogService.WatchFile(
                 filePath,
                 bytesRead,
-                newLines =>
+                async newLines =>
                 {
                     try
                     {
-                        hubContext.Clients.Group(groupName).ReceiveLogAppend(serverId, source, newLines);
+                        await hubContext.Clients.Group(groupName).ReceiveLogAppend(serverId, source, newLines);
                     }
                     catch (Exception ex)
                     {

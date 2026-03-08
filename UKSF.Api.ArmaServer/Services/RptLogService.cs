@@ -10,7 +10,7 @@ public interface IRptLogService
     string GetLatestRptFilePath(DomainGameServer server, string source);
     (List<string> Lines, long BytesRead) ReadFullFile(string filePath);
     RptLogSearchResponse SearchFile(string filePath, string query);
-    IDisposable WatchFile(string filePath, long startOffset, Action<List<string>> onNewContent);
+    IDisposable WatchFile(string filePath, long startOffset, Func<List<string>, Task> onNewContent);
 }
 
 public class RptLogService(IVariablesService variablesService) : IRptLogService
@@ -89,21 +89,21 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
         return new RptLogSearchResponse(results, totalMatches);
     }
 
-    public IDisposable WatchFile(string filePath, long startOffset, Action<List<string>> onNewContent)
+    public IDisposable WatchFile(string filePath, long startOffset, Func<List<string>, Task> onNewContent)
     {
         return new FileLogWatcher(filePath, startOffset, onNewContent);
     }
 
     private sealed class FileLogWatcher : IDisposable
     {
-        private readonly Action<List<string>> _onNewContent;
+        private readonly Func<List<string>, Task> _onNewContent;
         private readonly FileSystemWatcher _fileSystemWatcher;
         private readonly CancellationTokenSource _cts = new();
-        private readonly object _lock = new();
+        private readonly SemaphoreSlim _semaphore = new(1, 1);
         private long _offset;
         private bool _disposed;
 
-        public FileLogWatcher(string filePath, long startOffset, Action<List<string>> onNewContent)
+        public FileLogWatcher(string filePath, long startOffset, Func<List<string>, Task> onNewContent)
         {
             _onNewContent = onNewContent;
             _offset = startOffset;
@@ -115,7 +115,18 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
             {
                 NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size, EnableRaisingEvents = true
             };
-            _fileSystemWatcher.Changed += (_, _) => ReadNewContent(filePath);
+            _fileSystemWatcher.Changed += async (_, _) =>
+            {
+                try
+                {
+                    await ReadNewContentAsync(filePath);
+                }
+                catch
+                {
+                    // File watcher errors are transient (locked file, deleted file, etc.)
+                    // The timer fallback will retry in 2 seconds
+                }
+            };
 
             _ = RunTimerFallbackAsync(filePath);
         }
@@ -127,7 +138,7 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
             {
                 while (await timer.WaitForNextTickAsync(_cts.Token))
                 {
-                    ReadNewContent(filePath);
+                    await ReadNewContentAsync(filePath);
                 }
             }
             catch (OperationCanceledException)
@@ -136,9 +147,10 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
             }
         }
 
-        private void ReadNewContent(string filePath)
+        private async Task ReadNewContentAsync(string filePath)
         {
-            lock (_lock)
+            await _semaphore.WaitAsync();
+            try
             {
                 if (_disposed)
                 {
@@ -160,21 +172,26 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
                 stream.Seek(_offset, SeekOrigin.Begin);
 
                 using var reader = new StreamReader(stream);
-                var content = reader.ReadToEnd();
+                var content = await reader.ReadToEndAsync();
                 _offset = stream.Position;
 
                 var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => l.TrimEnd('\r')).Where(l => l.Length > 0).ToList();
 
                 if (lines.Count > 0)
                 {
-                    _onNewContent(lines);
+                    await _onNewContent(lines);
                 }
+            }
+            finally
+            {
+                _semaphore.Release();
             }
         }
 
         public void Dispose()
         {
-            lock (_lock)
+            _semaphore.Wait();
+            try
             {
                 if (_disposed)
                 {
@@ -183,11 +200,16 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
 
                 _disposed = true;
             }
+            finally
+            {
+                _semaphore.Release();
+            }
 
             _fileSystemWatcher.EnableRaisingEvents = false;
             _fileSystemWatcher.Dispose();
             _cts.Cancel();
             _cts.Dispose();
+            _semaphore.Dispose();
         }
     }
 }
