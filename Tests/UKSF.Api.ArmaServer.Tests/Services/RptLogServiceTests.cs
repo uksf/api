@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.Core;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
@@ -16,13 +17,14 @@ namespace UKSF.Api.ArmaServer.Tests.Services;
 
 public class RptLogServiceTests : IDisposable
 {
+    private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
     private readonly RptLogService _sut;
     private readonly List<string> _tempDirectories = [];
 
     public RptLogServiceTests()
     {
-        _sut = new RptLogService(_mockVariablesService.Object);
+        _sut = new RptLogService(_mockVariablesService.Object, _mockLogger.Object);
     }
 
     public void Dispose()

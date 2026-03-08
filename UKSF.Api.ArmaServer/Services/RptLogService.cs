@@ -1,4 +1,5 @@
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
 
@@ -8,11 +9,11 @@ public interface IRptLogService
 {
     List<RptLogSource> GetLogSources(DomainGameServer server);
     string GetLatestRptFilePath(DomainGameServer server, string source);
-    Task<long> ReadChunksAsync(string filePath, int chunkSize, Func<List<string>, bool, Task> onChunk);
+    Task<long> ReadChunksAsync(string filePath, int chunkSize, Func<List<string>, bool, Task> onChunk, CancellationToken cancellationToken = default);
     IDisposable WatchFile(string filePath, long startOffset, Func<List<string>, Task> onNewContent);
 }
 
-public class RptLogService(IVariablesService variablesService) : IRptLogService
+public class RptLogService(IVariablesService variablesService, IUksfLogger logger) : IRptLogService
 {
     public List<RptLogSource> GetLogSources(DomainGameServer server)
     {
@@ -49,13 +50,18 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
         return Directory.GetFiles(profileDir, "*.rpt").OrderByDescending(f => new FileInfo(f).LastWriteTime).FirstOrDefault();
     }
 
-    public async Task<long> ReadChunksAsync(string filePath, int chunkSize, Func<List<string>, bool, Task> onChunk)
+    public async Task<long> ReadChunksAsync(
+        string filePath,
+        int chunkSize,
+        Func<List<string>, bool, Task> onChunk,
+        CancellationToken cancellationToken = default
+    )
     {
         using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         using var reader = new StreamReader(stream);
         var chunk = new List<string>(chunkSize);
 
-        while (reader.ReadLine() is { } line)
+        while (await reader.ReadLineAsync(cancellationToken) is { } line)
         {
             chunk.Add(line);
             if (chunk.Count >= chunkSize)
@@ -71,40 +77,51 @@ public class RptLogService(IVariablesService variablesService) : IRptLogService
 
     public IDisposable WatchFile(string filePath, long startOffset, Func<List<string>, Task> onNewContent)
     {
-        return new FilePollingWatcher(filePath, startOffset, onNewContent);
+        return new FilePollingWatcher(filePath, startOffset, onNewContent, logger);
     }
 
     private sealed class FilePollingWatcher : IDisposable
     {
         private readonly CancellationTokenSource _cts = new();
 
-        public FilePollingWatcher(string filePath, long startOffset, Func<List<string>, Task> onNewContent)
+        public FilePollingWatcher(string filePath, long startOffset, Func<List<string>, Task> onNewContent, IUksfLogger logger)
         {
-            _ = PollAsync(filePath, startOffset, onNewContent, _cts.Token);
+            _ = PollAsync(filePath, startOffset, onNewContent, logger, _cts.Token);
         }
 
-        private static async Task PollAsync(string filePath, long offset, Func<List<string>, Task> onNewContent, CancellationToken ct)
+        private static async Task PollAsync(string filePath, long offset, Func<List<string>, Task> onNewContent, IUksfLogger logger, CancellationToken ct)
         {
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
             try
             {
                 while (await timer.WaitForNextTickAsync(ct))
                 {
-                    var length = new FileInfo(filePath).Length;
-                    if (length < offset) offset = 0;
-                    if (length <= offset) continue;
-
-                    using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    stream.Seek(offset, SeekOrigin.Begin);
-                    using var reader = new StreamReader(stream);
-                    var lines = new List<string>();
-                    while (await reader.ReadLineAsync(ct) is { } line)
+                    try
                     {
-                        if (line.Length > 0) lines.Add(line);
-                    }
+                        var length = new FileInfo(filePath).Length;
+                        if (length < offset) offset = 0;
+                        if (length <= offset) continue;
 
-                    offset = stream.Position;
-                    if (lines.Count > 0) await onNewContent(lines);
+                        using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        stream.Seek(offset, SeekOrigin.Begin);
+                        using var reader = new StreamReader(stream);
+                        var lines = new List<string>();
+                        while (await reader.ReadLineAsync(ct) is { } line)
+                        {
+                            lines.Add(line);
+                        }
+
+                        offset = stream.Position;
+                        if (lines.Count > 0) await onNewContent(lines);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning($"Error polling RPT file '{filePath}': {ex.Message}");
+                    }
                 }
             }
             catch (OperationCanceledException) { }

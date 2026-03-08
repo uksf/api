@@ -49,7 +49,8 @@ public class ServersHub(
                 {
                     await Clients.Caller.ReceiveLogContent(serverId, source, chunk, linesSent, isComplete);
                     linesSent += chunk.Count;
-                }
+                },
+                Context.ConnectionAborted
             );
         }
         catch (Exception ex)
