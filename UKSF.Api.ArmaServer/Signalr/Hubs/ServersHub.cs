@@ -38,30 +38,25 @@ public class ServersHub(
             return;
         }
 
-        List<string> lines;
         long bytesRead;
         try
         {
-            (lines, bytesRead) = rptLogService.ReadFullFile(filePath);
+            var linesSent = 0;
+            bytesRead = await rptLogService.ReadChunksAsync(
+                filePath,
+                1000,
+                async (chunk, isComplete) =>
+                {
+                    await Clients.Caller.ReceiveLogContent(serverId, source, chunk, linesSent, isComplete);
+                    linesSent += chunk.Count;
+                }
+            );
         }
         catch (Exception ex)
         {
             logger.LogError(ex);
             await Clients.Caller.ReceiveLogContent(serverId, source, [], 0, true);
             return;
-        }
-
-        const int chunkSize = 1000;
-        for (var i = 0; i < lines.Count; i += chunkSize)
-        {
-            var chunk = lines.GetRange(i, Math.Min(chunkSize, lines.Count - i));
-            var isComplete = i + chunkSize >= lines.Count;
-            await Clients.Caller.ReceiveLogContent(serverId, source, chunk, i, isComplete);
-        }
-
-        if (lines.Count == 0)
-        {
-            await Clients.Caller.ReceiveLogContent(serverId, source, [], 0, true);
         }
 
         logSubscriptionService.StartOrJoinWatcher(

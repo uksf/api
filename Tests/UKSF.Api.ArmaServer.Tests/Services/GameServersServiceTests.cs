@@ -332,7 +332,8 @@ public class GameServersServiceTests
         };
         _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
         _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(new System.Diagnostics.Process[] { null! });
-        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([new ProcessCommandLineInfo(5678, "-port=2302 -apiport=\"2303\"")]);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine())
+                              .Returns([new ProcessCommandLineInfo(5678, "-config=ServerConfigs/Main.cfg -port=2302 -apiport=\"2303\"")]);
 
         var mockHandler = new MockHttpMessageHandler(System.Net.HttpStatusCode.RequestTimeout);
         var httpClient = new HttpClient(mockHandler);
@@ -356,7 +357,8 @@ public class GameServersServiceTests
         };
         _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
         _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(new System.Diagnostics.Process[] { null! });
-        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([new ProcessCommandLineInfo(5678, "-port=2302 -apiport=\"2303\"")]);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine())
+                              .Returns([new ProcessCommandLineInfo(5678, "-config=ServerConfigs/Main.cfg -port=2302 -apiport=\"2303\"")]);
 
         var mockHandler = new MockHttpMessageHandler(System.Net.HttpStatusCode.RequestTimeout);
         var httpClient = new HttpClient(mockHandler);
@@ -394,6 +396,120 @@ public class GameServersServiceTests
         await _subject.GetGameServerStatus(gameServer);
 
         gameServer.ProcessId.Should().Be(1111);
+    }
+
+    [Fact]
+    public async Task GetGameServerStatus_WhenOnlyHeadlessClientRunning_ShouldNotDetectServerAsRunning()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ApiPort = 2303,
+            ProcessId = null
+        };
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(new System.Diagnostics.Process[] { null! });
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine())
+                              .Returns(
+                                  [
+                                      new ProcessCommandLineInfo(
+                                          3333,
+                                          "-profiles=ServerProfiles/MainHC0 -name=HC0 -port=2302 -apiport=\"2304\" -password=pass -localhost=127.0.0.1 -connect=localhost -client -hugepages -filePatching -limitFPS=200"
+                                      )
+                                  ]
+                              );
+
+        await _subject.GetGameServerStatus(gameServer);
+
+        gameServer.Status.Running.Should().BeFalse();
+        gameServer.Status.Started.Should().BeFalse();
+        gameServer.ProcessId.Should().BeNull();
+        _mockHttpClientFactory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetGameServerStatus_WhenOnlyHeadlessClientRunning_ShouldStillTrackHeadlessClientProcessIds()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ApiPort = 2303,
+            ProcessId = null,
+            HeadlessClientProcessIds = []
+        };
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(new System.Diagnostics.Process[] { null! });
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine())
+                              .Returns(
+                                  [
+                                      new ProcessCommandLineInfo(
+                                          3333,
+                                          "-profiles=ServerProfiles/MainHC0 -name=HC0 -port=2302 -apiport=\"2304\" -password=pass -localhost=127.0.0.1 -connect=localhost -client -hugepages -filePatching -limitFPS=200"
+                                      ),
+                                      new ProcessCommandLineInfo(
+                                          4444,
+                                          "-profiles=ServerProfiles/MainHC1 -name=HC1 -port=2302 -apiport=\"2305\" -password=pass -localhost=127.0.0.1 -connect=localhost -client -hugepages -filePatching -limitFPS=200"
+                                      )
+                                  ]
+                              );
+
+        await _subject.GetGameServerStatus(gameServer);
+
+        gameServer.HeadlessClientProcessIds.Should().BeEquivalentTo([3333, 4444]);
+    }
+
+    [Fact]
+    public async Task GetGameServerStatus_WhenServerAndHeadlessClientsRunning_ShouldTrackBoth()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ApiPort = 2303,
+            ProcessId = null,
+            HeadlessClientProcessIds = []
+        };
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(new System.Diagnostics.Process[] { null! });
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine())
+                              .Returns(
+                                  [
+                                      new ProcessCommandLineInfo(1111, "-config=ServerConfigs/Main.cfg -port=2302 -apiport=\"2303\""),
+                                      new ProcessCommandLineInfo(
+                                          3333,
+                                          "-profiles=ServerProfiles/MainHC0 -name=HC0 -port=2302 -apiport=\"2304\" -password=pass -localhost=127.0.0.1 -connect=localhost -client -hugepages -filePatching -limitFPS=200"
+                                      )
+                                  ]
+                              );
+
+        var mockHandler = new MockHttpMessageHandler(System.Net.HttpStatusCode.RequestTimeout);
+        var httpClient = new HttpClient(mockHandler);
+        _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(httpClient);
+
+        await _subject.GetGameServerStatus(gameServer);
+
+        gameServer.ProcessId.Should().Be(1111);
+        gameServer.HeadlessClientProcessIds.Should().BeEquivalentTo([3333]);
+    }
+
+    [Fact]
+    public async Task GetGameServerStatus_WhenNoArmaProcesses_ShouldClearHeadlessClientProcessIds()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ProcessId = 1234,
+            HeadlessClientProcessIds = [5555, 6666]
+        };
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns([]);
+
+        await _subject.GetGameServerStatus(gameServer);
+
+        gameServer.HeadlessClientProcessIds.Should().BeEmpty();
     }
 
     [Fact]
@@ -487,7 +603,8 @@ public class GameServersServiceTests
         _mockGameServersContext.Setup(x => x.Get()).Returns(gameServers);
         _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
         _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(new System.Diagnostics.Process[] { null! });
-        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([new ProcessCommandLineInfo(5678, "-port=2302 -apiport=\"2303\"")]);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine())
+                              .Returns([new ProcessCommandLineInfo(5678, "-config=ServerConfigs/Main.cfg -port=2302 -apiport=\"2303\"")]);
 
         var mockHandler = new MockHttpMessageHandler(System.Net.HttpStatusCode.RequestTimeout);
         var httpClient = new HttpClient(mockHandler);

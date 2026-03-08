@@ -65,6 +65,7 @@ public class GameServersService(
         {
             gameServer.Status = new GameServerStatus();
             gameServer.ProcessId = null;
+            gameServer.HeadlessClientProcessIds.Clear();
             StatusCache.TryRemove(gameServer.Id, out _);
             await gameServersContext.Replace(gameServer);
             return;
@@ -95,6 +96,7 @@ public class GameServersService(
             {
                 gameServer.Status = new GameServerStatus();
                 gameServer.ProcessId = null;
+                gameServer.HeadlessClientProcessIds.Clear();
                 await gameServersContext.Replace(gameServer);
             }
 
@@ -108,7 +110,9 @@ public class GameServersService(
 
     private async Task UpdateServerStatus(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
     {
-        var matchingProcess = FindMatchingProcess(gameServer, armaProcesses);
+        var matchingProcess = FindMatchingServerProcess(gameServer, armaProcesses);
+        UpdateHeadlessClientProcessIds(gameServer, armaProcesses);
+
         if (matchingProcess is null)
         {
             gameServer.Status.Running = false;
@@ -163,19 +167,23 @@ public class GameServersService(
         await gameServersContext.Replace(gameServer);
     }
 
-    private static ProcessCommandLineInfo FindMatchingProcess(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
+    private static ProcessCommandLineInfo FindMatchingServerProcess(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
     {
-        var portArg = $"-port={gameServer.Port} ";
+        return armaProcesses.FirstOrDefault(p => MatchesPort(p, gameServer.Port) && p.CommandLine.Contains("-config=") && !p.CommandLine.Contains("-client"));
+    }
 
-        // Prefer the main server process (has -config=) over headless clients (have -client)
-        var mainProcess = armaProcesses.FirstOrDefault(p => p.CommandLine.Contains(portArg) && p.CommandLine.Contains("-config="));
-        if (mainProcess is not null)
-        {
-            return mainProcess;
-        }
+    private static void UpdateHeadlessClientProcessIds(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
+    {
+        gameServer.HeadlessClientProcessIds = armaProcesses.Where(p => MatchesPort(p, gameServer.Port) && p.CommandLine.Contains("-client"))
+                                                           .Select(p => p.ProcessId)
+                                                           .ToList();
+    }
 
-        // Fall back to any process matching the port (including headless clients)
-        return armaProcesses.FirstOrDefault(p => p.CommandLine.Contains(portArg) || p.CommandLine.EndsWith($"-port={gameServer.Port}"));
+    private static bool MatchesPort(ProcessCommandLineInfo process, int port)
+    {
+        var portArg = $"-port={port} ";
+        var portArgEnd = $"-port={port}";
+        return process.CommandLine.Contains(portArg) || process.CommandLine.EndsWith(portArgEnd);
     }
 
     public void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection)

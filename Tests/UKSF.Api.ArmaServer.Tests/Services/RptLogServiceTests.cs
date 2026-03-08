@@ -235,53 +235,82 @@ public class RptLogServiceTests : IDisposable
 
     #endregion
 
-    #region ReadFullFile
+    #region ReadChunksAsync
 
     [Fact]
-    public void ReadFullFile_ReturnsAllLines()
+    public async Task ReadChunksAsync_SendsAllLinesInChunks()
     {
         var tempDir = CreateTempDirectory();
         var filePath = Path.Combine(tempDir, "test.rpt");
         var lines = Enumerable.Range(1, 10).Select(i => $"Line {i}").ToList();
         File.WriteAllLines(filePath, lines);
 
-        var (result, bytesRead) = _sut.ReadFullFile(filePath);
+        var receivedChunks = new List<(List<string> Lines, bool IsComplete)>();
+        var bytesRead = await _sut.ReadChunksAsync(
+            filePath,
+            5,
+            (chunk, isComplete) =>
+            {
+                receivedChunks.Add((chunk.ToList(), isComplete));
+                return Task.CompletedTask;
+            }
+        );
 
-        result.Should().HaveCount(10);
-        result.Should().BeEquivalentTo(lines);
+        var allLines = receivedChunks.SelectMany(c => c.Lines).ToList();
+        allLines.Should().BeEquivalentTo(lines);
         bytesRead.Should().BeGreaterThan(0);
     }
 
     [Fact]
-    public void ReadFullFile_HandlesEmptyFile()
+    public async Task ReadChunksAsync_SetsIsCompleteOnlyOnLastChunk()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "test.rpt");
+        var lines = Enumerable.Range(1, 10).Select(i => $"Line {i}").ToList();
+        File.WriteAllLines(filePath, lines);
+
+        var receivedChunks = new List<(List<string> Lines, bool IsComplete)>();
+        await _sut.ReadChunksAsync(
+            filePath,
+            5,
+            (chunk, isComplete) =>
+            {
+                receivedChunks.Add((chunk.ToList(), isComplete));
+                return Task.CompletedTask;
+            }
+        );
+
+        receivedChunks.Should().HaveCountGreaterThanOrEqualTo(2);
+        receivedChunks.SkipLast(1).Should().AllSatisfy(c => c.IsComplete.Should().BeFalse());
+        receivedChunks.Last().IsComplete.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ReadChunksAsync_HandlesEmptyFile()
     {
         var tempDir = CreateTempDirectory();
         var filePath = Path.Combine(tempDir, "empty.rpt");
         File.WriteAllText(filePath, "");
 
-        var (result, bytesRead) = _sut.ReadFullFile(filePath);
+        var receivedChunks = new List<(List<string> Lines, bool IsComplete)>();
+        var bytesRead = await _sut.ReadChunksAsync(
+            filePath,
+            1000,
+            (chunk, isComplete) =>
+            {
+                receivedChunks.Add((chunk.ToList(), isComplete));
+                return Task.CompletedTask;
+            }
+        );
 
-        result.Should().BeEmpty();
+        receivedChunks.Should().ContainSingle();
+        receivedChunks[0].Lines.Should().BeEmpty();
+        receivedChunks[0].IsComplete.Should().BeTrue();
         bytesRead.Should().Be(0);
     }
 
     [Fact]
-    public void ReadFullFile_HandlesLargeFile()
-    {
-        var tempDir = CreateTempDirectory();
-        var filePath = Path.Combine(tempDir, "large.rpt");
-        var lines = Enumerable.Range(1, 50000).Select(i => $"Line {i}").ToList();
-        File.WriteAllLines(filePath, lines);
-
-        var (result, _) = _sut.ReadFullFile(filePath);
-
-        result.Should().HaveCount(50000);
-        result.First().Should().Be("Line 1");
-        result.Last().Should().Be("Line 50000");
-    }
-
-    [Fact]
-    public void ReadFullFile_ReadsFile_WhenLockedByAnotherProcess()
+    public async Task ReadChunksAsync_ReadsFile_WhenLockedByAnotherProcess()
     {
         var tempDir = CreateTempDirectory();
         var filePath = Path.Combine(tempDir, "locked.rpt");
@@ -289,23 +318,54 @@ public class RptLogServiceTests : IDisposable
 
         using var lockingStream = new FileStream(filePath, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
 
-        var (result, _) = _sut.ReadFullFile(filePath);
+        var receivedChunks = new List<(List<string> Lines, bool IsComplete)>();
+        await _sut.ReadChunksAsync(
+            filePath,
+            1000,
+            (chunk, isComplete) =>
+            {
+                receivedChunks.Add((chunk.ToList(), isComplete));
+                return Task.CompletedTask;
+            }
+        );
 
-        result.Should().HaveCount(3);
-        result.Should().BeEquivalentTo(["Line 1", "Line 2", "Line 3"]);
+        var allLines = receivedChunks.SelectMany(c => c.Lines).ToList();
+        allLines.Should().BeEquivalentTo(["Line 1", "Line 2", "Line 3"]);
     }
 
     [Fact]
-    public void ReadFullFile_BytesRead_MatchesFileLength()
+    public async Task ReadChunksAsync_BytesRead_MatchesFileLength()
     {
         var tempDir = CreateTempDirectory();
         var filePath = Path.Combine(tempDir, "test.rpt");
         File.WriteAllText(filePath, "Line 1\nLine 2\nLine 3\n");
         var expectedLength = new FileInfo(filePath).Length;
 
-        var (_, bytesRead) = _sut.ReadFullFile(filePath);
+        var bytesRead = await _sut.ReadChunksAsync(filePath, 1000, (_, _) => Task.CompletedTask);
 
         bytesRead.Should().Be(expectedLength);
+    }
+
+    [Fact]
+    public async Task ReadChunksAsync_HandlesLargeFile()
+    {
+        var tempDir = CreateTempDirectory();
+        var filePath = Path.Combine(tempDir, "large.rpt");
+        var lines = Enumerable.Range(1, 50000).Select(i => $"Line {i}").ToList();
+        File.WriteAllLines(filePath, lines);
+
+        var totalLines = 0;
+        await _sut.ReadChunksAsync(
+            filePath,
+            1000,
+            (chunk, _) =>
+            {
+                totalLines += chunk.Count;
+                return Task.CompletedTask;
+            }
+        );
+
+        totalLines.Should().Be(50000);
     }
 
     #endregion
@@ -334,7 +394,7 @@ public class RptLogServiceTests : IDisposable
             }
         );
 
-        await Task.Delay(500);
+        await Task.Delay(100);
         File.AppendAllText(filePath, "New line 1\nNew line 2\n");
 
         var completed = await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(5)));
@@ -365,7 +425,7 @@ public class RptLogServiceTests : IDisposable
             }
         );
 
-        await Task.Delay(TimeSpan.FromSeconds(3));
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
         callbackInvoked.Should().BeFalse("callback should not be invoked when file has no new content");
     }
@@ -396,7 +456,7 @@ public class RptLogServiceTests : IDisposable
 
         File.AppendAllText(filePath, "New content after dispose\n");
 
-        await Task.Delay(TimeSpan.FromSeconds(3));
+        await Task.Delay(TimeSpan.FromSeconds(2));
 
         callbackInvokedAfterDispose.Should().BeFalse("callback should not be invoked after watcher is disposed");
     }
@@ -434,13 +494,13 @@ public class RptLogServiceTests : IDisposable
             }
         );
 
-        await Task.Delay(500);
+        await Task.Delay(100);
         File.AppendAllText(filePath, "First append\n");
 
         var firstCompleted = await Task.WhenAny(firstBatchTcs.Task, Task.Delay(TimeSpan.FromSeconds(5)));
         firstCompleted.Should().Be(firstBatchTcs.Task, "first callback should be invoked within 5 seconds");
 
-        await Task.Delay(500);
+        await Task.Delay(600);
         File.AppendAllText(filePath, "Second append\n");
 
         var secondCompleted = await Task.WhenAny(secondBatchTcs.Task, Task.Delay(TimeSpan.FromSeconds(5)));

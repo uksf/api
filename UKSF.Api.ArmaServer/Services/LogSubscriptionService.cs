@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-
 namespace UKSF.Api.ArmaServer.Services;
 
 public interface ILogSubscriptionService : IDisposable
@@ -13,71 +11,92 @@ public interface ILogSubscriptionService : IDisposable
 
 public class LogSubscriptionService : ILogSubscriptionService
 {
-    private readonly ConcurrentDictionary<string, ConcurrentHashSet> _connectionSubscriptions = new();
-    private readonly Dictionary<string, WatcherEntry> _activeWatchers = new();
-    private readonly object _watcherLock = new();
+    private readonly Lock _lock = new();
+    private readonly Dictionary<string, HashSet<string>> _connectionSubscriptions = new();
+    private readonly Dictionary<string, IDisposable> _watchers = new();
+    private readonly Dictionary<string, int> _watcherRefCounts = new();
     private bool _disposed;
 
     public bool AddSubscription(string connectionId, string groupName)
     {
-        var subs = _connectionSubscriptions.GetOrAdd(connectionId, _ => new ConcurrentHashSet());
-        return subs.Add(groupName);
+        lock (_lock)
+        {
+            if (!_connectionSubscriptions.TryGetValue(connectionId, out var subs))
+            {
+                subs = [];
+                _connectionSubscriptions[connectionId] = subs;
+            }
+
+            return subs.Add(groupName);
+        }
     }
 
     public void RemoveSubscription(string connectionId, string groupName)
     {
-        if (_connectionSubscriptions.TryGetValue(connectionId, out var subs))
+        lock (_lock)
         {
-            subs.Remove(groupName);
+            if (_connectionSubscriptions.TryGetValue(connectionId, out var subs))
+            {
+                subs.Remove(groupName);
+            }
         }
     }
 
     public List<string> RemoveAllSubscriptions(string connectionId)
     {
-        if (_connectionSubscriptions.TryRemove(connectionId, out var subs))
+        lock (_lock)
         {
-            return subs.ToList();
-        }
+            if (_connectionSubscriptions.Remove(connectionId, out var subs))
+            {
+                return subs.ToList();
+            }
 
-        return [];
+            return [];
+        }
     }
 
     public void StartOrJoinWatcher(string groupName, Func<IDisposable> watcherFactory)
     {
-        lock (_watcherLock)
+        lock (_lock)
         {
-            if (_activeWatchers.TryGetValue(groupName, out var entry))
+            if (_watcherRefCounts.TryGetValue(groupName, out var refCount))
             {
-                entry.RefCount++;
+                _watcherRefCounts[groupName] = refCount + 1;
                 return;
             }
 
             var watcher = watcherFactory();
-            _activeWatchers[groupName] = new WatcherEntry(watcher);
+            _watchers[groupName] = watcher;
+            _watcherRefCounts[groupName] = 1;
         }
     }
 
     public void StopOrLeaveWatcher(string groupName)
     {
-        lock (_watcherLock)
+        lock (_lock)
         {
-            if (!_activeWatchers.TryGetValue(groupName, out var entry))
+            if (!_watcherRefCounts.TryGetValue(groupName, out var refCount))
             {
                 return;
             }
 
-            entry.RefCount--;
-            if (entry.RefCount <= 0)
+            refCount--;
+            if (refCount <= 0)
             {
-                entry.Dispose();
-                _activeWatchers.Remove(groupName);
+                _watchers[groupName].Dispose();
+                _watchers.Remove(groupName);
+                _watcherRefCounts.Remove(groupName);
+            }
+            else
+            {
+                _watcherRefCounts[groupName] = refCount;
             }
         }
     }
 
     public void Dispose()
     {
-        lock (_watcherLock)
+        lock (_lock)
         {
             if (_disposed)
             {
@@ -86,34 +105,14 @@ public class LogSubscriptionService : ILogSubscriptionService
 
             _disposed = true;
 
-            foreach (var entry in _activeWatchers.Values)
+            foreach (var watcher in _watchers.Values)
             {
-                entry.Dispose();
+                watcher.Dispose();
             }
 
-            _activeWatchers.Clear();
+            _watchers.Clear();
+            _watcherRefCounts.Clear();
+            _connectionSubscriptions.Clear();
         }
-
-        _connectionSubscriptions.Clear();
-    }
-
-    private sealed class WatcherEntry(IDisposable watcher) : IDisposable
-    {
-        public int RefCount { get; set; } = 1;
-
-        public void Dispose()
-        {
-            watcher.Dispose();
-        }
-    }
-
-    private sealed class ConcurrentHashSet
-    {
-        private readonly ConcurrentDictionary<string, byte> _dictionary = new();
-
-        public bool Add(string item) => _dictionary.TryAdd(item, 0);
-        public void Remove(string item) => _dictionary.TryRemove(item, out _);
-        public int Count => _dictionary.Count;
-        public List<string> ToList() => _dictionary.Keys.ToList();
     }
 }
