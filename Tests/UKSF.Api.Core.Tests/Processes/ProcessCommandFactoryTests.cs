@@ -70,8 +70,7 @@ public class ProcessCommandFactoryTests
         errorLines.Should().NotBeEmpty("Should capture stderr output as error");
 
         var stderrLine = errorLines.First(line => line.Content.Contains("Error message to stderr"));
-        stderrLine.Exception.Should().NotBeNull("Stderr output should have Exception property set");
-        stderrLine.Exception.Message.Should().Contain("Error message to stderr");
+        stderrLine.Exception.Should().BeNull("Stderr lines should not allocate an Exception; the content is in the Content property");
     }
 
     [Fact]

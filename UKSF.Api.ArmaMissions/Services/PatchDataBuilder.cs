@@ -30,7 +30,7 @@ public class PatchDataBuilder(
                                     .Select(a => new InternalPlayer
                                         {
                                             Account = a,
-                                            Rank = ranksContext.GetSingle(a.Rank),
+                                            Rank = ranks.Find(r => r.Name == a.Rank),
                                             DisplayName = displayNameService.GetDisplayName(a)
                                         }
                                     )
@@ -41,7 +41,8 @@ public class PatchDataBuilder(
             unit.Members = unit.Source.Members.Select(id => players.FirstOrDefault(p => p.Account.Id == id)).ToList();
         }
 
-        var parent = units.First(u => u.Source.Parent == ObjectId.Empty.ToString());
+        var parent = units.FirstOrDefault(u => u.Source.Parent == ObjectId.Empty.ToString()) ??
+                     throw new InvalidOperationException("No root unit found with empty parent ID");
         List<InternalUnit> orderedUnits = [parent];
         InsertUnitChildren(orderedUnits, parent, units);
 

@@ -276,9 +276,9 @@ public class BuildStep : IBuildStep
                         }
 
                         // Store exception for later throwing if raiseErrors is true
-                        if (raiseErrors && outputLine.Exception != null)
+                        if (raiseErrors)
                         {
-                            delayedException = outputLine.Exception;
+                            delayedException = outputLine.Exception ?? new Exception(outputLine.Content);
                         }
                     }
 

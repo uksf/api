@@ -10,10 +10,14 @@ public interface ISqmPatcher
 
 public class SqmPatcher : ISqmPatcher
 {
+    // Position offsets to space entities apart in the world so they don't stack on each other
+    private const int PlayerStartPosition = 10;
+    private const double CuratorStartPosition = 0.5;
+
     public void Patch(MissionPatchContext context)
     {
         var entities = context.Sqm.Entities;
-        var position = 10;
+        var position = PlayerStartPosition;
 
         entities.RemoveAll(e => e is SqmGroup { AllChildrenPlayable: true, IsIgnored: false });
         entities.RemoveAll(e => e is SqmLogic { Type: "ModuleCurator_F" });
@@ -24,7 +28,7 @@ public class SqmPatcher : ISqmPatcher
             entities.Add(group);
         }
 
-        var curatorPosition = 0.5;
+        var curatorPosition = CuratorStartPosition;
         for (var i = 0; i < context.MaxCurators; i++)
         {
             var curator = CreateCuratorEntity(context, ref curatorPosition);

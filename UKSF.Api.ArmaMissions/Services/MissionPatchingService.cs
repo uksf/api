@@ -103,7 +103,7 @@ public class MissionPatchingService(
         }
         catch (Exception exception)
         {
-            logger.LogError(exception);
+            logger.LogError($"Mission patching failed ({exception.GetType().Name})", exception);
             return new MissionPatchingResult { Reports = [new ValidationReport(exception)], Success = false };
         }
         finally

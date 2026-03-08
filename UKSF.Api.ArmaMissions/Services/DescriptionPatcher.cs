@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models;
@@ -65,11 +66,8 @@ public class DescriptionPatcher : IDescriptionPatcher
 
     private static void CheckDescriptionItem(MissionPatchContext context, string key, string defaultValue, bool required = true)
     {
-        var index = context.Description.Lines.FindIndex(x => x.Contains($"{key} = ") ||
-                                                             x.Contains($"{key}=") ||
-                                                             x.Contains($"{key}= ") ||
-                                                             x.Contains($"{key} =")
-        );
+        var pattern = $@"^\s*{Regex.Escape(key)}\s*=";
+        var index = context.Description.Lines.FindIndex(x => Regex.IsMatch(x, pattern));
         if (index != -1)
         {
             var itemValue = context.Description.Lines[index].Split("=")[1].Trim();

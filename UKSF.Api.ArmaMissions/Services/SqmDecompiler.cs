@@ -1,42 +1,43 @@
-using System.Diagnostics;
+using Microsoft.Extensions.Configuration;
+using UKSF.Api.Core.Processes;
 
 namespace UKSF.Api.ArmaMissions.Services;
 
-public class SqmDecompiler : ISqmDecompiler
+public class SqmDecompiler(IProcessCommandFactory processCommandFactory, IConfiguration configuration) : ISqmDecompiler
 {
-    private const string Unbin = "C:\\Program Files (x86)\\Mikero\\DePboTools\\bin\\DeRapDos.exe";
+    private const string DefaultDeRapDosPath = @"C:\Program Files (x86)\Mikero\DePboTools\bin\DeRapDos.exe";
+
+    private string DeRapDosPath => configuration.GetValue("MissionPatching:DeRapDosPath", DefaultDeRapDosPath);
 
     public async Task<bool> IsBinarized(string sqmPath)
     {
-        Process process = new()
+        var command = processCommandFactory.CreateCommand(DeRapDosPath, Path.GetDirectoryName(sqmPath) ?? ".", $"-p -q \"{sqmPath}\"")
+                                           .WithTimeout(TimeSpan.FromMinutes(2));
+
+        var exitCode = 0;
+        await foreach (var line in command.ExecuteAsync())
         {
-            StartInfo =
+            if (line.Type == ProcessOutputType.ProcessCompleted)
             {
-                FileName = Unbin,
-                Arguments = $"-p -q \"{sqmPath}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true
+                exitCode = line.ExitCode;
             }
-        };
-        process.Start();
-        await process.WaitForExitAsync();
-        return process.ExitCode == 0;
+        }
+
+        return exitCode == 0;
     }
 
     public async Task Decompile(string sqmPath)
     {
-        Process process = new()
+        var command = processCommandFactory.CreateCommand(DeRapDosPath, Path.GetDirectoryName(sqmPath) ?? ".", $"-p \"{sqmPath}\"")
+                                           .WithTimeout(TimeSpan.FromMinutes(2));
+
+        await foreach (var line in command.ExecuteAsync())
         {
-            StartInfo =
+            if (line.Type == ProcessOutputType.Error)
             {
-                FileName = Unbin,
-                Arguments = $"-p \"{sqmPath}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true
+                throw new InvalidOperationException($"DeRapDos failed: {line.Content}");
             }
-        };
-        process.Start();
-        await process.WaitForExitAsync();
+        }
 
         if (File.Exists($"{sqmPath}.txt"))
         {
