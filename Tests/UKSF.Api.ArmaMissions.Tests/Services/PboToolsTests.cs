@@ -59,7 +59,7 @@ public class PboToolsTests : IDisposable
     }
 
     [Fact]
-    public async Task ExtractPbo_WhenFolderNotCreated_ThrowsDirectoryNotFoundException()
+    public async Task ExtractPbo_WhenFolderNotCreated_ThrowsPboOperationExceptionWithOutput()
     {
         var pboPath = Path.Combine(_tempDir, "testmission.pbo");
         File.WriteAllText(pboPath, "fake pbo");
@@ -68,7 +68,20 @@ public class PboToolsTests : IDisposable
 
         var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
 
-        await act.Should().ThrowAsync<DirectoryNotFoundException>().WithMessage("Could not find unpacked pbo");
+        await act.Should().ThrowAsync<PboOperationException>().WithMessage("ExtractPboDos failed:*");
+    }
+
+    [Fact]
+    public async Task ExtractPbo_WhenFolderNotCreatedAndNoOutput_ThrowsPboOperationExceptionWithFallback()
+    {
+        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
+        File.WriteAllText(pboPath, "fake pbo");
+
+        SetupProcessCommand("echo.");
+
+        var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
+
+        await act.Should().ThrowAsync<PboOperationException>();
     }
 
     [Fact]
@@ -97,16 +110,29 @@ public class PboToolsTests : IDisposable
     }
 
     [Fact]
-    public async Task ExtractPbo_WhenProcessReportsError_ThrowsPboOperationException()
+    public async Task ExtractPbo_WhenStderrOutputButFolderCreated_Succeeds()
     {
         var pboPath = Path.Combine(_tempDir, "testmission.pbo");
         File.WriteAllText(pboPath, "fake pbo");
 
-        SetupProcessCommandWithStderr("echo error message >&2");
+        SetupProcessCommandWithStderr("echo version banner info >&2", onExecute: () => { Directory.CreateDirectory(Path.Combine(_tempDir, "testmission")); });
+
+        await _pboTools.ExtractPbo(pboPath, _tempDir);
+
+        Directory.Exists(Path.Combine(_tempDir, "testmission")).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ExtractPbo_WhenStderrOutputAndFolderNotCreated_ThrowsWithOutput()
+    {
+        var pboPath = Path.Combine(_tempDir, "testmission.pbo");
+        File.WriteAllText(pboPath, "fake pbo");
+
+        SetupProcessCommandWithStderr("echo some error >&2");
 
         var act = () => _pboTools.ExtractPbo(pboPath, _tempDir);
 
-        await act.Should().ThrowAsync<PboOperationException>();
+        await act.Should().ThrowAsync<PboOperationException>().WithMessage("ExtractPboDos failed:*");
     }
 
     [Fact]
@@ -241,13 +267,16 @@ public class PboToolsTests : IDisposable
                                   );
     }
 
-    private void SetupProcessCommandWithStderr(string shellCommand)
+    private void SetupProcessCommandWithStderr(string shellCommand, Action onExecute = null)
     {
         GetPlatformCommand(out var executable, out var args, shellCommand);
 
         _mockProcessCommandFactory.Setup(x => x.CreateCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                                   .Returns((string _, string workingDir, string _) =>
-                                               new ProcessCommand(_mockLogger.Object, executable, workingDir, args).WithTimeout(TimeSpan.FromSeconds(5))
+                                      {
+                                          onExecute?.Invoke();
+                                          return new ProcessCommand(_mockLogger.Object, executable, workingDir, args).WithTimeout(TimeSpan.FromSeconds(5));
+                                      }
                                   );
     }
 

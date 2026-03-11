@@ -23,19 +23,23 @@ public class PboTools(IProcessCommandFactory processCommandFactory, IConfigurati
             Directory.Delete(folderPath, true);
         }
 
-        var command = processCommandFactory.CreateCommand(ExtractPboDosPath, parentFolder, $"-D -P \"{pboPath}\"").WithTimeout(TimeSpan.FromMinutes(2));
+        var command = processCommandFactory.CreateCommand(ExtractPboDosPath, parentFolder, $"-D -P \"{pboPath}\"")
+                                           .WithTimeout(TimeSpan.FromMinutes(2))
+                                           .WithRedirectStderrToOutput();
 
+        var outputLines = new List<string>();
         await foreach (var line in command.ExecuteAsync())
         {
-            if (line.Type == ProcessOutputType.Error)
+            if (line.Type == ProcessOutputType.Output && !string.IsNullOrEmpty(line.Content))
             {
-                throw new PboOperationException($"ExtractPboDos failed: {line.Content}");
+                outputLines.Add(line.Content);
             }
         }
 
         if (!Directory.Exists(folderPath))
         {
-            throw new DirectoryNotFoundException("Could not find unpacked pbo");
+            var output = string.Join("\n", outputLines);
+            throw new PboOperationException(string.IsNullOrEmpty(output) ? "Could not find unpacked pbo" : $"ExtractPboDos failed: {output}");
         }
     }
 

@@ -29,13 +29,15 @@ public class SqmDecompiler(IProcessCommandFactory processCommandFactory, IConfig
     public async Task Decompile(string sqmPath)
     {
         var command = processCommandFactory.CreateCommand(DeRapDosPath, Path.GetDirectoryName(sqmPath) ?? ".", $"-p \"{sqmPath}\"")
-                                           .WithTimeout(TimeSpan.FromMinutes(2));
+                                           .WithTimeout(TimeSpan.FromMinutes(2))
+                                           .WithRedirectStderrToOutput();
 
+        var outputLines = new List<string>();
         await foreach (var line in command.ExecuteAsync())
         {
-            if (line.Type == ProcessOutputType.Error)
+            if (line.Type == ProcessOutputType.Output && !string.IsNullOrEmpty(line.Content))
             {
-                throw new InvalidOperationException($"DeRapDos failed: {line.Content}");
+                outputLines.Add(line.Content);
             }
         }
 
@@ -46,7 +48,8 @@ public class SqmDecompiler(IProcessCommandFactory processCommandFactory, IConfig
         }
         else
         {
-            throw new FileNotFoundException();
+            var output = string.Join("\n", outputLines);
+            throw new InvalidOperationException(string.IsNullOrEmpty(output) ? "DeRapDos failed: output file not found" : $"DeRapDos failed: {output}");
         }
     }
 }

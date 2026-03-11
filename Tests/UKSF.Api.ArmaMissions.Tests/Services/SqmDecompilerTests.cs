@@ -86,7 +86,7 @@ public class SqmDecompilerTests : IDisposable
     }
 
     [Fact]
-    public async Task Decompile_WhenOutputFileDoesNotExist_ThrowsFileNotFoundException()
+    public async Task Decompile_WhenOutputFileDoesNotExist_ThrowsInvalidOperationException()
     {
         var sqmPath = Path.Combine(_tempDir, "mission.sqm");
         File.WriteAllText(sqmPath, "binary content");
@@ -95,7 +95,20 @@ public class SqmDecompilerTests : IDisposable
 
         var act = () => _sqmDecompiler.Decompile(sqmPath);
 
-        await act.Should().ThrowAsync<FileNotFoundException>();
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("DeRapDos failed:*");
+    }
+
+    [Fact]
+    public async Task Decompile_WhenStderrOutputButFileExists_Succeeds()
+    {
+        var sqmPath = Path.Combine(_tempDir, "mission.sqm");
+        File.WriteAllText(sqmPath, "binary content");
+
+        SetupProcessCommandWithStderr("echo version banner >&2", onExecute: () => { File.WriteAllText($"{sqmPath}.txt", "decompiled content"); });
+
+        await _sqmDecompiler.Decompile(sqmPath);
+
+        File.ReadAllText(sqmPath).Should().Be("decompiled content");
     }
 
     [Fact]
@@ -135,6 +148,19 @@ public class SqmDecompilerTests : IDisposable
     }
 
     private void SetupProcessCommand(string shellCommand, Action onExecute = null)
+    {
+        GetPlatformCommand(out var executable, out var args, shellCommand);
+
+        _mockProcessCommandFactory.Setup(x => x.CreateCommand(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                                  .Returns((string _, string workingDir, string _) =>
+                                      {
+                                          onExecute?.Invoke();
+                                          return new ProcessCommand(_mockLogger.Object, executable, workingDir, args).WithTimeout(TimeSpan.FromSeconds(5));
+                                      }
+                                  );
+    }
+
+    private void SetupProcessCommandWithStderr(string shellCommand, Action onExecute = null)
     {
         GetPlatformCommand(out var executable, out var args, shellCommand);
 
