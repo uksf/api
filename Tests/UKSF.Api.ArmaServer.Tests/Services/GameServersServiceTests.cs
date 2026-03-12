@@ -835,12 +835,36 @@ public class GameServersServiceTests
             Times.Once
         );
     }
+
+    [Fact]
+    public async Task StopGameServer_ShouldOnlySendShutdownToServerPort()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            ApiPort = 2303,
+            NumberHeadlessClients = 2
+        };
+
+        var mockHandler = new MockHttpMessageHandler(System.Net.HttpStatusCode.OK);
+        _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(() => new HttpClient(mockHandler, disposeHandler: false));
+
+        await _subject.StopGameServer(gameServer);
+
+        mockHandler.RequestCount.Should().Be(1);
+        mockHandler.LastRequestUri.Should().Contain("2303");
+    }
 }
 
 internal class MockHttpMessageHandler(System.Net.HttpStatusCode statusCode) : HttpMessageHandler
 {
+    public int RequestCount { get; private set; }
+    public string LastRequestUri { get; private set; }
+
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
     {
+        RequestCount++;
+        LastRequestUri = request.RequestUri?.ToString();
         return Task.FromResult(new HttpResponseMessage(statusCode));
     }
 }

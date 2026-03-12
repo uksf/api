@@ -231,11 +231,6 @@ public class GameServersService(
     public async Task StopGameServer(DomainGameServer gameServer)
     {
         await SendShutdownAsync(gameServer.ApiPort, $"game server '{gameServer.Name}'");
-
-        for (var index = 0; index < gameServer.NumberHeadlessClients; index++)
-        {
-            await SendShutdownAsync(gameServer.ApiPort + index + 1, $"headless client {index} for '{gameServer.Name}'");
-        }
     }
 
     private async Task SendShutdownAsync(int port, string context)
