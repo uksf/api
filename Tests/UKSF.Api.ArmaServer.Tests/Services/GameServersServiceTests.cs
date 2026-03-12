@@ -57,45 +57,6 @@ public class GameServersServiceTests
     }
 
     [Fact]
-    public async Task LaunchGameServer_Should_launch_server_successfully()
-    {
-        const string TestServerId = "server-456";
-        var gameServer = new DomainGameServer { Id = TestServerId };
-
-        _mockGameServerHelpers.Setup(x => x.FormatGameServerLaunchArguments(gameServer)).Returns("test-args");
-        _mockGameServerHelpers.Setup(x => x.GetGameServerExecutablePath(gameServer)).Returns("test-path");
-        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("test-path", "test-args")).Returns(1234);
-
-        await _subject.LaunchGameServer(gameServer);
-
-        gameServer.ProcessId.Should().Be(1234);
-        _mockProcessUtilities.Verify(x => x.LaunchManagedProcess("test-path", "test-args"), Times.Once);
-    }
-
-    [Fact]
-    public async Task LaunchGameServer_Should_launch_headless_clients()
-    {
-        const string TestServerId = "server-456";
-        var gameServer = new DomainGameServer
-        {
-            Id = TestServerId,
-            NumberHeadlessClients = 2,
-            HeadlessClientProcessIds = []
-        };
-
-        _mockGameServerHelpers.Setup(x => x.FormatGameServerLaunchArguments(gameServer)).Returns("test-args");
-        _mockGameServerHelpers.Setup(x => x.FormatHeadlessClientLaunchArguments(gameServer, It.IsAny<int>())).Returns("headless-args");
-        _mockGameServerHelpers.Setup(x => x.GetGameServerExecutablePath(gameServer)).Returns("test-path");
-        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("test-path", It.IsAny<string>())).Returns(5678);
-
-        await _subject.LaunchGameServer(gameServer);
-
-        gameServer.HeadlessClientProcessIds.Count.Should().Be(2);
-        _mockProcessUtilities.Verify(x => x.LaunchManagedProcess("test-path", "test-args"), Times.Once);
-        _mockProcessUtilities.Verify(x => x.LaunchManagedProcess("test-path", "headless-args"), Times.Exactly(2));
-    }
-
-    [Fact]
     public async Task KillGameServer_Should_kill_server_successfully()
     {
         var gameServer = new DomainGameServer
@@ -217,21 +178,6 @@ public class GameServersServiceTests
         await _subject.KillAllArmaProcesses();
 
         gameServers.Should().AllSatisfy(server => server.LaunchedBy.Should().BeNull());
-    }
-
-    [Fact]
-    public async Task LaunchGameServer_ShouldSetMissionAndLaunchedBy()
-    {
-        var gameServer = new DomainGameServer { Id = "server-1" };
-
-        _mockGameServerHelpers.Setup(x => x.FormatGameServerLaunchArguments(gameServer)).Returns("args");
-        _mockGameServerHelpers.Setup(x => x.GetGameServerExecutablePath(gameServer)).Returns("path");
-        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("path", "args")).Returns(1234);
-
-        await _subject.LaunchGameServer(gameServer, "mission.pbo", "user-123");
-
-        gameServer.Status.Mission.Should().Be("mission.pbo");
-        gameServer.LaunchedBy.Should().Be("user-123");
     }
 
     [Fact]
@@ -902,6 +848,81 @@ public class GameServersServiceTests
         await _subject.HandleGameServerEvent(gameServerEvent, 2303);
 
         _mockProcessUtilities.Verify(x => x.FindProcessById(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task PrepareLaunch_ShouldSetStartedAndSave()
+    {
+        var gameServer = new DomainGameServer { Id = "server-1" };
+
+        await _subject.PrepareLaunch(gameServer, "mission.pbo", "user-123");
+
+        gameServer.Status.Started.Should().BeTrue();
+        gameServer.Status.Mission.Should().Be("mission.pbo");
+        gameServer.LaunchedBy.Should().Be("user-123");
+        _mockGameServersContext.Verify(x => x.Replace(gameServer), Times.Once);
+    }
+
+    [Fact]
+    public async Task PrepareLaunch_WithNullOptionalParams_ShouldNotSetThem()
+    {
+        var gameServer = new DomainGameServer { Id = "server-1" };
+
+        await _subject.PrepareLaunch(gameServer);
+
+        gameServer.Status.Started.Should().BeTrue();
+        gameServer.Status.Mission.Should().BeNull();
+        gameServer.LaunchedBy.Should().BeNull();
+        _mockGameServersContext.Verify(x => x.Replace(gameServer), Times.Once);
+    }
+
+    [Fact]
+    public async Task LaunchProcessesAsync_ShouldLaunchServerAndHCs()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            NumberHeadlessClients = 1,
+            HeadlessClientProcessIds = []
+        };
+
+        _mockGameServerHelpers.Setup(x => x.FormatGameServerLaunchArguments(gameServer)).Returns("server-args");
+        _mockGameServerHelpers.Setup(x => x.FormatHeadlessClientLaunchArguments(gameServer, 0)).Returns("hc-args");
+        _mockGameServerHelpers.Setup(x => x.GetGameServerExecutablePath(gameServer)).Returns("test-path");
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("test-path", "server-args")).Returns(1001);
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("test-path", "hc-args")).Returns(2001);
+
+        await _subject.LaunchProcessesAsync(gameServer);
+
+        gameServer.ProcessId.Should().Be(1001);
+        gameServer.HeadlessClientProcessIds.Should().BeEquivalentTo([2001]);
+        _mockGameServersContext.Verify(x => x.Replace(gameServer), Times.Once);
+    }
+
+    [Fact]
+    public async Task LaunchProcessesAsync_WhenServerLaunchFails_ShouldRollbackAndNotify()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Status = new GameServerStatus { Started = true, Mission = "mission.pbo" },
+            LaunchedBy = "user-123",
+            HeadlessClientProcessIds = []
+        };
+
+        _mockGameServerHelpers.Setup(x => x.FormatGameServerLaunchArguments(gameServer)).Returns("args");
+        _mockGameServerHelpers.Setup(x => x.GetGameServerExecutablePath(gameServer)).Returns("path");
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("path", "args")).Throws(new Exception("Launch failed"));
+
+        await _subject.LaunchProcessesAsync(gameServer);
+
+        gameServer.Status.Started.Should().BeFalse();
+        gameServer.Status.Mission.Should().BeNull();
+        gameServer.LaunchedBy.Should().BeNull();
+        gameServer.ProcessId.Should().BeNull();
+        gameServer.HeadlessClientProcessIds.Should().BeEmpty();
+        _mockGameServersContext.Verify(x => x.Replace(gameServer), Times.Once);
+        _mockLogger.Verify(x => x.LogError(It.Is<string>(s => s.Contains("server-1")), It.IsAny<Exception>()), Times.Once);
     }
 
     [Fact]
