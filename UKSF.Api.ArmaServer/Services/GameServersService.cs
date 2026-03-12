@@ -31,7 +31,7 @@ public interface IGameServersService
     List<GameServerMod> GetAvailableMods(string id);
     List<GameServerMod> GetEnvironmentMods(GameEnvironment environment);
     Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate);
-    Task HandleGameServerEvent(GameServerEvent gameServerEvent);
+    Task HandleGameServerEvent(GameServerEvent gameServerEvent, int? apiPort = null);
 }
 
 public class GameServersService(
@@ -376,16 +376,17 @@ public class GameServersService(
                .ToList();
     }
 
-    public async Task HandleGameServerEvent(GameServerEvent gameServerEvent)
+    public async Task HandleGameServerEvent(GameServerEvent gameServerEvent, int? apiPort = null)
     {
         try
         {
             switch (gameServerEvent.Type)
             {
-                case "server_status":    HandleServerStatusEvent(gameServerEvent.Data); break;
-                case "performance":      HandlePerformanceEvent(gameServerEvent.Data); break;
-                case "mission_stats":    await HandleMissionStatsEvent(gameServerEvent.Data); break;
-                case "persistence_save": await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
+                case "server_status":     HandleServerStatusEvent(gameServerEvent.Data); break;
+                case "performance":       HandlePerformanceEvent(gameServerEvent.Data); break;
+                case "mission_stats":     await HandleMissionStatsEvent(gameServerEvent.Data); break;
+                case "persistence_save":  await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
+                case "shutdown_complete": await HandleShutdownCompleteEvent(apiPort); break;
                 case "player_connected":
                 case "player_disconnected":
                 case "mission_started":
@@ -402,8 +403,36 @@ public class GameServersService(
         await serversHub.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false);
     }
 
-    // TODO: Events don't currently identify which server sent them. When the Rust extension
-    // exposes apiPort back to SQF, add an "apiPort" field to event data and match to a specific server.
+    private async Task HandleShutdownCompleteEvent(int? apiPort)
+    {
+        if (apiPort is null)
+        {
+            logger.LogWarning("Received shutdown_complete event without apiPort header");
+            return;
+        }
+
+        var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort.Value);
+        if (gameServer is null)
+        {
+            logger.LogWarning($"Received shutdown_complete but no server matches apiPort {apiPort}");
+            return;
+        }
+
+        foreach (var processId in gameServer.HeadlessClientProcessIds)
+        {
+            var process = processUtilities.FindProcessById(processId);
+            if (process is { HasExited: false })
+            {
+                process.Kill(true);
+            }
+        }
+
+        gameServer.HeadlessClientProcessIds.Clear();
+        await gameServersContext.Replace(gameServer);
+
+        logger.LogInfo($"Killed headless clients for '{gameServer.Name}' after shutdown_complete");
+    }
+
     private void HandleServerStatusEvent(Dictionary<string, object> data)
     {
         ApplyToRunningServerCaches((gameServer, status) =>

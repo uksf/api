@@ -15,7 +15,14 @@ public class GameServerEventsController(IGameServersService gameServersService, 
     public async Task<IActionResult> ReceiveEvent([FromBody] GameServerEvent gameServerEvent)
     {
         logger.LogDebug($"Received game server event: {gameServerEvent.Type}");
-        await gameServersService.HandleGameServerEvent(gameServerEvent);
+
+        int? apiPort = null;
+        if (HttpContext.Request.Headers.TryGetValue("X-Api-Port", out var apiPortHeader) && int.TryParse(apiPortHeader, out var parsedPort))
+        {
+            apiPort = parsedPort;
+        }
+
+        await gameServersService.HandleGameServerEvent(gameServerEvent, apiPort);
 
         return Ok();
     }
