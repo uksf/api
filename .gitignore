@@ -262,3 +262,6 @@ appsettings.*.json
 
 # Local documents
 docs/
+
+# Worktrees
+.worktrees/
