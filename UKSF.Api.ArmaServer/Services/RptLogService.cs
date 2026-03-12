@@ -91,7 +91,7 @@ public class RptLogService(IVariablesService variablesService, IUksfLogger logge
 
         private static async Task PollAsync(string filePath, long offset, Func<List<string>, Task> onNewContent, IUksfLogger logger, CancellationToken ct)
         {
-            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
+            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
             try
             {
                 while (await timer.WaitForNextTickAsync(ct))
