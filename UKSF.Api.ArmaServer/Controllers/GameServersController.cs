@@ -210,7 +210,6 @@ public class GameServersController(
 
         await SendServerUpdateIfNotCaller(gameServer.Id);
         await gameServersService.StopGameServer(gameServer);
-        await gameServersService.GetGameServerStatus(gameServer);
         return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
     }
 
@@ -237,7 +236,6 @@ public class GameServersController(
             throw new BadRequestException("Failed to stop server. Contact an admin");
         }
 
-        await gameServersService.GetGameServerStatus(gameServer);
         await SendServerUpdateIfNotCaller(gameServer.Id);
         return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
     }
