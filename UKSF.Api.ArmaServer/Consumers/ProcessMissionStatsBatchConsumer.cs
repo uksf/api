@@ -16,13 +16,15 @@ public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsS
     {
         var message = context.Message;
 
+        var events = message.Events.Select(BsonDocument.Parse).ToList();
+
         var session = await missionStatsService.FindOrCreateSessionAsync(message.Mission, message.Map, message.ReceivedAt);
-        await missionStatsService.StoreRawBatchAsync(session.Id, message.Mission, message.Map, message.Events, message.ReceivedAt);
+        await missionStatsService.StoreRawBatchAsync(session.Id, message.Mission, message.Map, events, message.ReceivedAt);
 
         var playerStats = new Dictionary<string, PlayerMissionStats>();
         var missionStats = new MissionStats();
 
-        foreach (var evt in message.Events)
+        foreach (var evt in events)
         {
             var eventType = evt.GetValue("type", "unknown").AsString;
 

@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using MassTransit;
 using Microsoft.AspNetCore.SignalR;
-using MongoDB.Bson;
 using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
@@ -511,13 +510,13 @@ public class GameServersService(
             return;
         }
 
-        var events = new List<BsonDocument>();
+        var events = new List<string>();
         if (data.TryGetValue("events", out var eventsObj) && eventsObj is JsonElement jsonElement)
         {
             events.EnsureCapacity(jsonElement.GetArrayLength());
             foreach (var element in jsonElement.EnumerateArray())
             {
-                events.Add(BsonDocument.Parse(element.GetRawText()));
+                events.Add(element.GetRawText());
             }
         }
 

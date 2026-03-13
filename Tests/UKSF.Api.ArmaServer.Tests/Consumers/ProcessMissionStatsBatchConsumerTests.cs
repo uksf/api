@@ -81,7 +81,7 @@ public class ProcessMissionStatsBatchConsumerTests
     public async Task Consume_ShouldStoreRawBatch()
     {
         var receivedAt = new DateTime(2025, 6, 14, 20, 0, 0, DateTimeKind.Utc);
-        var events = new List<BsonDocument> { new() { { "type", "shot" }, { "uid", "player1" } } };
+        var events = new List<string> { """{"type":"shot","uid":"player1"}""" };
         var message = new ProcessMissionStatsBatch
         {
             Mission = "test_mission",
@@ -93,36 +93,17 @@ public class ProcessMissionStatsBatchConsumerTests
 
         await _consumer.Consume(context.Object);
 
-        _missionStatsService.Verify(x => x.StoreRawBatchAsync("session-1", "test_mission", "test_map", events, receivedAt), Times.Once);
+        _missionStatsService.Verify(x => x.StoreRawBatchAsync("session-1", "test_mission", "test_map", It.IsAny<List<BsonDocument>>(), receivedAt), Times.Once);
     }
 
     [Fact]
     public async Task Consume_ShouldProcessPlayerEvents_GroupedByUid()
     {
-        var events = new List<BsonDocument>
+        var events = new List<string>
         {
-            new()
-            {
-                { "type", "shot" },
-                { "uid", "player1" },
-                { "weapon", "rifle" },
-                { "fireMode", "single" }
-            },
-            new()
-            {
-                { "type", "shot" },
-                { "uid", "player1" },
-                { "weapon", "rifle" },
-                { "fireMode", "single" }
-            },
-            new()
-            {
-                { "type", "hit" },
-                { "uid", "player2" },
-                { "weapon", "pistol" },
-                { "bodyPart", "head" },
-                { "distance", 50 }
-            }
+            """{"type":"shot","uid":"player1","weapon":"rifle","fireMode":"single"}""",
+            """{"type":"shot","uid":"player1","weapon":"rifle","fireMode":"single"}""",
+            """{"type":"hit","uid":"player2","weapon":"pistol","bodyPart":"head","distance":50}"""
         };
         var message = new ProcessMissionStatsBatch
         {
@@ -145,30 +126,11 @@ public class ProcessMissionStatsBatchConsumerTests
     [Fact]
     public async Task Consume_ShouldProcessMissionStats_WithEventCounts()
     {
-        var events = new List<BsonDocument>
+        var events = new List<string>
         {
-            new()
-            {
-                { "type", "shot" },
-                { "uid", "player1" },
-                { "weapon", "rifle" },
-                { "fireMode", "single" }
-            },
-            new()
-            {
-                { "type", "hit" },
-                { "uid", "player1" },
-                { "weapon", "rifle" },
-                { "bodyPart", "torso" },
-                { "distance", 100 }
-            },
-            new()
-            {
-                { "type", "shot" },
-                { "uid", "player2" },
-                { "weapon", "pistol" },
-                { "fireMode", "single" }
-            }
+            """{"type":"shot","uid":"player1","weapon":"rifle","fireMode":"single"}""",
+            """{"type":"hit","uid":"player1","weapon":"rifle","bodyPart":"torso","distance":100}""",
+            """{"type":"shot","uid":"player2","weapon":"pistol","fireMode":"single"}"""
         };
         var message = new ProcessMissionStatsBatch
         {
@@ -190,15 +152,7 @@ public class ProcessMissionStatsBatchConsumerTests
     [Fact]
     public async Task Consume_ShouldHandleEventsWithoutUid_CountedInMissionStatsButNoPlayerUpdate()
     {
-        var events = new List<BsonDocument>
-        {
-            new()
-            {
-                { "type", "shot" },
-                { "weapon", "rifle" },
-                { "fireMode", "single" }
-            }
-        };
+        var events = new List<string> { """{"type":"shot","weapon":"rifle","fireMode":"single"}""" };
         var message = new ProcessMissionStatsBatch
         {
             Mission = "test_mission",
@@ -219,7 +173,7 @@ public class ProcessMissionStatsBatchConsumerTests
     [Fact]
     public async Task Consume_ShouldHandleUnknownEventTypes_LoggedAndCountedInMissionStats()
     {
-        var events = new List<BsonDocument> { new() { { "type", "explosion" }, { "uid", "player1" } } };
+        var events = new List<string> { """{"type":"explosion","uid":"player1"}""" };
         var message = new ProcessMissionStatsBatch
         {
             Mission = "test_mission",
@@ -259,29 +213,11 @@ public class ProcessMissionStatsBatchConsumerTests
     [Fact]
     public async Task Consume_ShouldParallelizePlayerUpdates()
     {
-        var events = new List<BsonDocument>
+        var events = new List<string>
         {
-            new()
-            {
-                { "type", "shot" },
-                { "uid", "player1" },
-                { "weapon", "rifle" },
-                { "fireMode", "single" }
-            },
-            new()
-            {
-                { "type", "shot" },
-                { "uid", "player2" },
-                { "weapon", "pistol" },
-                { "fireMode", "single" }
-            },
-            new()
-            {
-                { "type", "shot" },
-                { "uid", "player3" },
-                { "weapon", "rifle" },
-                { "fireMode", "single" }
-            }
+            """{"type":"shot","uid":"player1","weapon":"rifle","fireMode":"single"}""",
+            """{"type":"shot","uid":"player2","weapon":"pistol","fireMode":"single"}""",
+            """{"type":"shot","uid":"player3","weapon":"rifle","fireMode":"single"}"""
         };
         var message = new ProcessMissionStatsBatch
         {
