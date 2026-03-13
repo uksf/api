@@ -186,12 +186,9 @@ public class GameServersController(
         gameServersService.WriteServerConfig(gameServer, patchingResult.PlayerCount, launchServerRequest.MissionName);
 
         var currentUserId = httpContextService.GetUserId();
-        await gameServersService.PrepareLaunch(gameServer, launchServerRequest.MissionName, currentUserId);
+        await gameServersService.LaunchGameServer(gameServer, launchServerRequest.MissionName, currentUserId);
 
         logger.LogAudit($"Game server launched '{launchServerRequest.MissionName}' on '{gameServer.Name}'");
-        await SendServerUpdateIfNotCaller(gameServer.Id);
-
-        _ = Task.Run(() => gameServersService.LaunchProcessesAsync(gameServer));
 
         return patchingResult.Reports;
     }

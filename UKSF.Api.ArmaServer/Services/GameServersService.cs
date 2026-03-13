@@ -24,8 +24,7 @@ public interface IGameServersService
     Task GetGameServerStatus(DomainGameServer gameServer);
     Task<List<DomainGameServer>> GetAllGameServerStatuses();
     void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection);
-    Task PrepareLaunch(DomainGameServer gameServer, string missionName = null, string launchedBy = null);
-    Task LaunchProcessesAsync(DomainGameServer gameServer);
+    Task LaunchGameServer(DomainGameServer gameServer, string missionName = null, string launchedBy = null);
     Task StopGameServer(DomainGameServer gameServer);
     Task KillGameServer(DomainGameServer gameServer);
     Task<int> KillAllArmaProcesses();
@@ -195,7 +194,7 @@ public class GameServersService(
         );
     }
 
-    public async Task PrepareLaunch(DomainGameServer gameServer, string missionName = null, string launchedBy = null)
+    public async Task LaunchGameServer(DomainGameServer gameServer, string missionName = null, string launchedBy = null)
     {
         gameServer.Status.Started = true;
 
@@ -209,47 +208,22 @@ public class GameServersService(
             gameServer.LaunchedBy = launchedBy;
         }
 
+        var launchArguments = gameServerHelpers.FormatGameServerLaunchArguments(gameServer);
+        gameServer.ProcessId = processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments);
+
+        await Task.Delay(TimeSpan.FromMilliseconds(50));
+
+        for (var index = 0; index < gameServer.NumberHeadlessClients; index++)
+        {
+            launchArguments = gameServerHelpers.FormatHeadlessClientLaunchArguments(gameServer, index);
+            gameServer.HeadlessClientProcessIds.Add(
+                processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments)
+            );
+
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+        }
+
         await gameServersContext.Replace(gameServer);
-    }
-
-    public async Task LaunchProcessesAsync(DomainGameServer gameServer)
-    {
-        try
-        {
-            var launchArguments = gameServerHelpers.FormatGameServerLaunchArguments(gameServer);
-            gameServer.ProcessId = processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments);
-
-            await Task.Delay(TimeSpan.FromSeconds(1));
-
-            if (gameServer.NumberHeadlessClients > 0)
-            {
-                for (var index = 0; index < gameServer.NumberHeadlessClients; index++)
-                {
-                    launchArguments = gameServerHelpers.FormatHeadlessClientLaunchArguments(gameServer, index);
-                    gameServer.HeadlessClientProcessIds.Add(
-                        processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments)
-                    );
-
-                    await Task.Delay(TimeSpan.FromSeconds(1));
-                }
-            }
-
-            await gameServersContext.Replace(gameServer);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError($"Failed to launch processes for server '{gameServer.Id}'", ex);
-
-            gameServer.Status.Started = false;
-            gameServer.Status.Mission = null;
-            gameServer.LaunchedBy = null;
-            gameServer.ProcessId = null;
-            gameServer.HeadlessClientProcessIds.Clear();
-            StatusCache.TryRemove(gameServer.Id, out _);
-
-            await gameServersContext.Replace(gameServer);
-        }
-
         await serversHub.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false);
     }
 
