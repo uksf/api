@@ -31,7 +31,7 @@ public interface IGameServersService
     List<GameServerMod> GetAvailableMods(string id);
     List<GameServerMod> GetEnvironmentMods(GameEnvironment environment);
     Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate);
-    Task HandleGameServerEvent(GameServerEvent gameServerEvent, int? apiPort = null);
+    Task HandleGameServerEvent(GameServerEvent gameServerEvent);
 }
 
 public class GameServersService(
@@ -375,7 +375,7 @@ public class GameServersService(
                .ToList();
     }
 
-    public async Task HandleGameServerEvent(GameServerEvent gameServerEvent, int? apiPort = null)
+    public async Task HandleGameServerEvent(GameServerEvent gameServerEvent)
     {
         try
         {
@@ -385,7 +385,7 @@ public class GameServersService(
                 case "performance":       HandlePerformanceEvent(gameServerEvent.Data); break;
                 case "mission_stats":     await HandleMissionStatsEvent(gameServerEvent.Data); break;
                 case "persistence_save":  await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
-                case "shutdown_complete": await HandleShutdownCompleteEvent(apiPort); break;
+                case "shutdown_complete": await HandleShutdownCompleteEvent(gameServerEvent.ApiPort); break;
                 case "player_connected":
                 case "player_disconnected":
                 case "mission_started":

@@ -796,9 +796,14 @@ public class GameServersServiceTests
         _mockGameServersContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(gameServer);
         _mockProcessUtilities.Setup(x => x.FindProcessById(It.IsAny<int>())).Returns((System.Diagnostics.Process)null);
 
-        var gameServerEvent = new GameServerEvent { Type = "shutdown_complete", Data = new Dictionary<string, object>() };
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "shutdown_complete",
+            ApiPort = 2303,
+            Data = new Dictionary<string, object>()
+        };
 
-        await _subject.HandleGameServerEvent(gameServerEvent, 2303);
+        await _subject.HandleGameServerEvent(gameServerEvent);
 
         _mockProcessUtilities.Verify(x => x.FindProcessById(5001), Times.Once);
         _mockProcessUtilities.Verify(x => x.FindProcessById(5002), Times.Once);
@@ -811,9 +816,14 @@ public class GameServersServiceTests
     {
         _mockGameServersContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns((DomainGameServer)null);
 
-        var gameServerEvent = new GameServerEvent { Type = "shutdown_complete", Data = new Dictionary<string, object>() };
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "shutdown_complete",
+            ApiPort = 2303,
+            Data = new Dictionary<string, object>()
+        };
 
-        await _subject.HandleGameServerEvent(gameServerEvent, 2303);
+        await _subject.HandleGameServerEvent(gameServerEvent);
 
         _mockLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("2303"))), Times.Once);
         _mockProcessUtilities.Verify(x => x.FindProcessById(It.IsAny<int>()), Times.Never);
@@ -843,9 +853,14 @@ public class GameServersServiceTests
 
         _mockGameServersContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(gameServer);
 
-        var gameServerEvent = new GameServerEvent { Type = "shutdown_complete", Data = new Dictionary<string, object>() };
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "shutdown_complete",
+            ApiPort = 2303,
+            Data = new Dictionary<string, object>()
+        };
 
-        await _subject.HandleGameServerEvent(gameServerEvent, 2303);
+        await _subject.HandleGameServerEvent(gameServerEvent);
 
         _mockProcessUtilities.Verify(x => x.FindProcessById(It.IsAny<int>()), Times.Never);
     }

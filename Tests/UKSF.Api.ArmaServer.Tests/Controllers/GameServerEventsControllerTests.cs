@@ -32,7 +32,7 @@ public class GameServerEventsControllerTests
         var result = await _sut.ReceiveEvent(gameServerEvent);
 
         result.Should().BeOfType<OkResult>();
-        _mockService.Verify(x => x.HandleGameServerEvent(gameServerEvent, null), Times.Once);
+        _mockService.Verify(x => x.HandleGameServerEvent(gameServerEvent), Times.Once);
     }
 
     [Fact]
@@ -46,24 +46,17 @@ public class GameServerEventsControllerTests
     }
 
     [Fact]
-    public async Task ReceiveEvent_ExtractsApiPortFromHeader()
+    public async Task ReceiveEvent_PassesApiPortFromBody()
     {
-        _sut.ControllerContext.HttpContext.Request.Headers["X-Api-Port"] = "2303";
-        var gameServerEvent = new GameServerEvent { Type = "shutdown_complete", Data = new Dictionary<string, object>() };
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "shutdown_complete",
+            ApiPort = 2303,
+            Data = new Dictionary<string, object>()
+        };
 
         await _sut.ReceiveEvent(gameServerEvent);
 
-        _mockService.Verify(x => x.HandleGameServerEvent(gameServerEvent, 2303), Times.Once);
-    }
-
-    [Fact]
-    public async Task ReceiveEvent_WithInvalidApiPortHeader_PassesNull()
-    {
-        _sut.ControllerContext.HttpContext.Request.Headers["X-Api-Port"] = "not-a-number";
-        var gameServerEvent = new GameServerEvent { Type = "server_status", Data = new Dictionary<string, object>() };
-
-        await _sut.ReceiveEvent(gameServerEvent);
-
-        _mockService.Verify(x => x.HandleGameServerEvent(gameServerEvent, null), Times.Once);
+        _mockService.Verify(x => x.HandleGameServerEvent(It.Is<GameServerEvent>(e => e.ApiPort == 2303)), Times.Once);
     }
 }
