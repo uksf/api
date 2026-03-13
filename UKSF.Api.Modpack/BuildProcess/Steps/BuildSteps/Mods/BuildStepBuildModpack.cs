@@ -83,12 +83,20 @@ public class BuildStepBuildModpack : ModBuildStep
         }
     }
 
-    private Task MoveRcOptional(string buildPath)
+    private async Task MoveRcOptional(string buildPath)
     {
         DirectoryInfo addons = new(Path.Join(buildPath, "addons"));
-        DirectoryInfo optional = new(Path.Join(buildPath, "optionals", "@uksf_rc", "addons"));
+        DirectoryInfo optionalAddons = new(Path.Join(buildPath, "optionals", "@uksf_rc", "addons"));
 
-        var files = GetDirectoryContents(optional);
-        return CopyFiles(optional, addons, files);
+        var pboFiles = GetDirectoryContents(optionalAddons);
+        await CopyFiles(optionalAddons, addons, pboFiles);
+
+        DirectoryInfo keys = new(Path.Join(buildPath, "keys"));
+        DirectoryInfo optionalKeys = new(Path.Join(buildPath, "optionals", "@uksf_rc", "keys"));
+        if (optionalKeys.Exists)
+        {
+            var keyFiles = GetDirectoryContents(optionalKeys, "*.bikey");
+            await CopyFiles(optionalKeys, keys, keyFiles);
+        }
     }
 }
