@@ -294,6 +294,19 @@ public class GameServersService(
             process.Kill(true);
         }
 
+        await Task.WhenAll(
+            processes.Select(async process =>
+                {
+                    try
+                    {
+                        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                    }
+                    catch (TimeoutException) { }
+                    catch (InvalidOperationException) { }
+                }
+            )
+        );
+
         var gameServers = gameServersContext.Get().ToList();
         foreach (var gameServer in gameServers)
         {
