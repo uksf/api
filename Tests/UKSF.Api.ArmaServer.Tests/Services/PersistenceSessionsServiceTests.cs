@@ -346,7 +346,7 @@ public class PersistenceSessionsServiceTests
             AceCargo = [new object[] { "Box_IND_Ammo_F", new object[] { }, new object[] { }, "Ammo Box" }],
             Inventory = [new object[] { "item1", "item2" }, new object[] { "mag1", "mag2" }],
             AceFortify = [new object[] { "fort1", 5 }],
-            AceMedical = [new object[] { "medical1", 10 }],
+            AceMedical = [0, false, false],
             AceRepair = [new object[] { "repair1", 3 }],
             CustomName = "Custom Helicopter"
         };
@@ -544,7 +544,12 @@ public class PersistenceSessionsServiceTests
             Animation = "AmovPercMstpSlowWrflDnon",
             Loadout = [new object[] { "uniform_class" }, new object[] { "vest_class" }],
             Damage = 0.15,
-            AceMedical = [new object[] { "bandage", 3 }],
+            AceMedical = new AceMedicalState
+            {
+                BloodVolume = 5.5,
+                HeartRate = 90.0,
+                InPain = true
+            },
             Earplugs = true,
             AttachedItems = ["NVGoggles", "ItemMap", "ItemCompass"],
             Radios = [new object[] { "ACRE_PRC152", "channel1" }],
@@ -564,7 +569,9 @@ public class PersistenceSessionsServiceTests
 
         JsonSerializer.Serialize(deserialized.VehicleState).Should().Be(JsonSerializer.Serialize(original.VehicleState));
         JsonSerializer.Serialize(deserialized.Loadout).Should().Be(JsonSerializer.Serialize(original.Loadout));
-        JsonSerializer.Serialize(deserialized.AceMedical).Should().Be(JsonSerializer.Serialize(original.AceMedical));
+        deserialized.AceMedical.BloodVolume.Should().Be(original.AceMedical.BloodVolume);
+        deserialized.AceMedical.HeartRate.Should().Be(original.AceMedical.HeartRate);
+        deserialized.AceMedical.InPain.Should().Be(original.AceMedical.InPain);
         JsonSerializer.Serialize(deserialized.Radios).Should().Be(JsonSerializer.Serialize(original.Radios));
         JsonSerializer.Serialize(deserialized.DiveState).Should().Be(JsonSerializer.Serialize(original.DiveState));
     }
@@ -636,7 +643,8 @@ public class PersistenceSessionsServiceTests
         deserialized.Animation.Should().Be(string.Empty);
         deserialized.Loadout.Should().BeEmpty();
         deserialized.Damage.Should().Be(0);
-        deserialized.AceMedical.Should().BeEmpty();
+        deserialized.AceMedical.Should().NotBeNull();
+        deserialized.AceMedical.BloodVolume.Should().Be(0);
         deserialized.Earplugs.Should().BeFalse();
         deserialized.AttachedItems.Should().BeEmpty();
         deserialized.Radios.Should().BeEmpty();
@@ -826,6 +834,34 @@ public class PersistenceSessionsServiceTests
         deserialized.Should().NotBeNull();
         deserialized!.CustomData.Should().HaveCount(5);
         JsonSerializer.Serialize(deserialized.CustomData).Should().Be(JsonSerializer.Serialize(original.CustomData));
+    }
+
+    [Fact]
+    public void RoundTrip_AceMedical_WithUnknownFields_PreservesAdditionalData()
+    {
+        var json = """
+                   {
+                       "ace_medical_bloodVolume": 5.5,
+                       "ace_medical_heartRate": 90,
+                       "ace_medical_bloodPressure": [70, 110],
+                       "ace_medical_future_field": [1, 2, 3],
+                       "ace_medical_another_new_thing": "test"
+                   }
+                   """;
+
+        var state = JsonSerializer.Deserialize<AceMedicalState>(json);
+
+        state.Should().NotBeNull();
+        state!.BloodVolume.Should().Be(5.5);
+        state.HeartRate.Should().Be(90);
+        state.BloodPressure.Should().BeEquivalentTo(new[] { 70.0, 110.0 });
+        state.AdditionalData.Should().ContainKey("ace_medical_future_field");
+        state.AdditionalData.Should().ContainKey("ace_medical_another_new_thing");
+
+        // Verify round-trip preserves additional data
+        var reserialized = JsonSerializer.Serialize(state);
+        reserialized.Should().Contain("ace_medical_future_field");
+        reserialized.Should().Contain("ace_medical_another_new_thing");
     }
 
     #endregion

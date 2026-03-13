@@ -33,7 +33,6 @@ public class DomainGameServer : MongoObject
     [BsonRepresentation(BsonType.ObjectId)]
     public string LaunchedBy { get; set; }
 
-    [BsonIgnore]
     public GameServerStatus Status { get; set; } = new();
 
     [BsonIgnore]

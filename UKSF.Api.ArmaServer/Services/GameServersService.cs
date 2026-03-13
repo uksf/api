@@ -134,15 +134,33 @@ public class GameServersService(
             var response = await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server");
             if (!response.IsSuccessStatusCode)
             {
-                gameServer.Status.Running = false;
+                var statusCode = (int)response.StatusCode;
+                if (statusCode is 502 or 504)
+                {
+                    // Gateway error — server process exists but extension not reachable
+                    gameServer.Status.Running = false;
+                }
+                else if (statusCode == 503)
+                {
+                    // Extension is up but has no status yet (startup)
+                    // Leave current status unchanged, don't log
+                }
+                else
+                {
+                    // Unexpected error (e.g. 500) — log for visibility
+                    var body = await response.Content.ReadAsStringAsync();
+                    logger.LogWarning($"Status endpoint returned {statusCode} for '{gameServer.Name}': {body}");
+                }
             }
-
-            var content = await response.Content.ReadAsStringAsync();
-            gameServer.Status = JsonSerializer.Deserialize<GameServerStatus>(content, DefaultJsonSerializerOptions.Options);
-            gameServer.Status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(gameServer.Status.Uptime)).ToString();
-            gameServer.Status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
-            gameServer.Status.Running = true;
-            gameServer.Status.Started = false;
+            else
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                gameServer.Status = JsonSerializer.Deserialize<GameServerStatus>(content, DefaultJsonSerializerOptions.Options);
+                gameServer.Status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(gameServer.Status.Uptime)).ToString();
+                gameServer.Status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
+                gameServer.Status.Running = true;
+                gameServer.Status.Started = false;
+            }
         }
         catch (HttpRequestException)
         {
@@ -394,8 +412,8 @@ public class GameServersService(
         {
             switch (gameServerEvent.Type)
             {
-                case "server_status":     HandleServerStatusEvent(gameServerEvent.Data); break;
-                case "performance":       HandlePerformanceEvent(gameServerEvent.Data); break;
+                case "server_status":     await HandleServerStatusEvent(gameServerEvent.Data); break;
+                case "performance":       await HandlePerformanceEvent(gameServerEvent.Data); break;
                 case "mission_stats":     await HandleMissionStatsEvent(gameServerEvent.Data); break;
                 case "persistence_save":  await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
                 case "shutdown_complete": await HandleShutdownCompleteEvent(gameServerEvent.ApiPort); break;
@@ -439,9 +457,9 @@ public class GameServersService(
         logger.LogInfo($"Killed headless clients for '{gameServer.Name}' after shutdown_complete");
     }
 
-    private void HandleServerStatusEvent(Dictionary<string, object> data)
+    private async Task HandleServerStatusEvent(Dictionary<string, object> data)
     {
-        ApplyToRunningServerCaches((gameServer, status) =>
+        await ApplyToRunningServerCaches((gameServer, status) =>
             {
                 if (data.TryGetValue("map", out var map)) status.Map = map.ToString();
                 if (data.TryGetValue("mission", out var mission)) status.Mission = mission.ToString();
@@ -459,9 +477,9 @@ public class GameServersService(
         );
     }
 
-    private void HandlePerformanceEvent(Dictionary<string, object> data)
+    private async Task HandlePerformanceEvent(Dictionary<string, object> data)
     {
-        ApplyToRunningServerCaches((_, status) =>
+        await ApplyToRunningServerCaches((_, status) =>
             {
                 if (data.TryGetValue("fps", out var fps) && float.TryParse(fps.ToString(), out var fpsValue)) status.Fps = fpsValue;
                 if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount.ToString(), out var entityCountValue))
@@ -473,15 +491,18 @@ public class GameServersService(
         );
     }
 
-    private void ApplyToRunningServerCaches(Action<DomainGameServer, GameServerStatus> applyUpdate)
+    private async Task ApplyToRunningServerCaches(Action<DomainGameServer, GameServerStatus> applyUpdate)
     {
         foreach (var gameServer in GetRunningGameServers())
         {
             try
             {
-                var status = StatusCache.GetOrAdd(gameServer.Id, _ => new GameServerStatus());
+                var status = StatusCache.GetOrAdd(gameServer.Id, _ => gameServer.Status ?? new GameServerStatus());
                 applyUpdate(gameServer, status);
                 status.LastEventReceived = DateTime.UtcNow;
+
+                gameServer.Status = status;
+                await gameServersContext.Replace(gameServer);
             }
             catch (Exception ex)
             {

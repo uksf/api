@@ -23,7 +23,7 @@ public class PlayerRedeployData
     public double Damage { get; set; }
 
     [JsonPropertyName("aceMedical")]
-    public object[] AceMedical { get; set; } = [];
+    public AceMedicalState AceMedical { get; set; } = new();
 
     [JsonPropertyName("earplugs")]
     public bool Earplugs { get; set; }
