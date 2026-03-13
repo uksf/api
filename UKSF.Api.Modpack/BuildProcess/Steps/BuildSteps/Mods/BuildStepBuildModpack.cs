@@ -24,8 +24,6 @@ public class BuildStepBuildModpack : ModBuildStep
             throw new Exception("Configuration not set for build");
         }
 
-        StepLogger.Log($"\nConfiguration set to '{configuration}'");
-
         if (!string.IsNullOrEmpty(Build.Version))
         {
             StepLogger.LogSurround("\nSetting extension version...");
