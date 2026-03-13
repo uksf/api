@@ -645,19 +645,20 @@ public class GameServersServiceTests
     }
 
     [Fact]
-    public async Task HandleGameServerEvent_WhenPerformance_ShouldUpdatePerformanceCacheForRunningServers()
+    public async Task HandleGameServerEvent_WhenServerStatusWithPerformanceData_ShouldUpdateCacheForRunningServers()
     {
         var runningServer = new DomainGameServer
         {
-            Id = "server-1",
+            Id = "server-perf-1",
             Port = 2302,
             ProcessId = 1234
         };
         _mockGameServersContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { runningServer });
+        _mockGameServerHelpers.Setup(x => x.GetMaxPlayerCountFromConfig(runningServer)).Returns("64");
 
         var gameServerEvent = new GameServerEvent
         {
-            Type = "performance",
+            Type = "server_status",
             Data = new Dictionary<string, object>
             {
                 { "fps", "48.5" },
@@ -666,18 +667,6 @@ public class GameServersServiceTests
                 { "headlessClientCount", "2" }
             }
         };
-
-        await _subject.HandleGameServerEvent(gameServerEvent);
-
-        _mockServersHub.Verify(x => x.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false), Times.Once);
-    }
-
-    [Fact]
-    public async Task HandleGameServerEvent_WhenPerformance_ShouldNotCrashWithNoRunningServers()
-    {
-        _mockGameServersContext.Setup(x => x.Get()).Returns(new List<DomainGameServer>());
-
-        var gameServerEvent = new GameServerEvent { Type = "performance", Data = new Dictionary<string, object> { { "fps", "50.0" } } };
 
         await _subject.HandleGameServerEvent(gameServerEvent);
 

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace UKSF.Api.ArmaServer.Models.Persistence;
@@ -35,13 +34,13 @@ public class AceMedicalState
     public double PainSuppress { get; set; }
 
     [JsonPropertyName("ace_medical_openWounds")]
-    public Dictionary<string, JsonElement> OpenWounds { get; set; } = new();
+    public Dictionary<string, object> OpenWounds { get; set; } = new();
 
     [JsonPropertyName("ace_medical_bandagedWounds")]
-    public Dictionary<string, JsonElement> BandagedWounds { get; set; } = new();
+    public Dictionary<string, object> BandagedWounds { get; set; } = new();
 
     [JsonPropertyName("ace_medical_stitchedWounds")]
-    public Dictionary<string, JsonElement> StitchedWounds { get; set; } = new();
+    public Dictionary<string, object> StitchedWounds { get; set; } = new();
 
     [JsonPropertyName("ace_medical_fractures")]
     public double[] Fractures { get; set; } = [];
@@ -53,25 +52,25 @@ public class AceMedicalState
     public double[] BodyPartDamage { get; set; } = [];
 
     [JsonPropertyName("ace_medical_medications")]
-    public JsonElement[] Medications { get; set; } = [];
+    public object[] Medications { get; set; } = [];
 
     [JsonPropertyName("ace_medical_occludedMedications")]
-    public JsonElement[] OccludedMedications { get; set; } = [];
+    public object[] OccludedMedications { get; set; } = [];
 
     [JsonPropertyName("ace_medical_ivBags")]
-    public JsonElement[] IvBags { get; set; } = [];
+    public object[] IvBags { get; set; } = [];
 
     [JsonPropertyName("ace_medical_triageLevel")]
     public double TriageLevel { get; set; }
 
     [JsonPropertyName("ace_medical_triageCard")]
-    public JsonElement[] TriageCard { get; set; } = [];
+    public object[] TriageCard { get; set; } = [];
 
     [JsonPropertyName("ace_medical_statemachineState")]
     public string StateMachineState { get; set; } = string.Empty;
 
     [JsonPropertyName("ace_medical_logs")]
-    public JsonElement[] Logs { get; set; } = [];
+    public object[] Logs { get; set; } = [];
 
     /// <summary>
     /// Captures any ACE medical fields not explicitly modelled above.
@@ -79,5 +78,5 @@ public class AceMedicalState
     /// rather than causing deserialization failures.
     /// </summary>
     [JsonExtensionData]
-    public Dictionary<string, JsonElement> AdditionalData { get; set; } = new();
+    public Dictionary<string, object> AdditionalData { get; set; } = new();
 }

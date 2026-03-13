@@ -1,6 +1,9 @@
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson.Serialization;
 using UKSF.Api.ArmaServer.Commands;
 using UKSF.Api.ArmaServer.DataContext;
+using UKSF.Api.ArmaServer.Models.Persistence;
 using UKSF.Api.ArmaServer.Queries;
 using UKSF.Api.ArmaServer.ScheduledActions;
 using UKSF.Api.ArmaServer.Services;
@@ -17,6 +20,8 @@ public static class ApiArmaServerExtensions
     {
         public IServiceCollection AddUksfArmaServer()
         {
+            BsonSerializer.RegisterSerializer(new JsonElementBsonSerializer());
+
             return services.AddContexts().AddServices().AddCommands().AddQueries().AddActions().AddHostedService<MissionStatsIndexes>();
         }
 

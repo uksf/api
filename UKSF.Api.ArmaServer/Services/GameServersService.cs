@@ -413,15 +413,10 @@ public class GameServersService(
             switch (gameServerEvent.Type)
             {
                 case "server_status":     await HandleServerStatusEvent(gameServerEvent.Data); break;
-                case "performance":       await HandlePerformanceEvent(gameServerEvent.Data); break;
                 case "mission_stats":     await HandleMissionStatsEvent(gameServerEvent.Data); break;
                 case "persistence_save":  await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
                 case "shutdown_complete": await HandleShutdownCompleteEvent(gameServerEvent.ApiPort); break;
-                case "player_connected":
-                case "player_disconnected":
-                case "mission_started":
-                case "mission_ended": logger.LogInfo($"Game server event: {gameServerEvent.Type}"); break;
-                default: logger.LogWarning($"Unknown game server event type: {gameServerEvent.Type}"); break;
+                default:                  logger.LogWarning($"Unknown game server event type: {gameServerEvent.Type}"); break;
             }
         }
         catch (Exception ex)
@@ -463,30 +458,24 @@ public class GameServersService(
             {
                 if (data.TryGetValue("map", out var map)) status.Map = map.ToString();
                 if (data.TryGetValue("mission", out var mission)) status.Mission = mission.ToString();
-                if (data.TryGetValue("players", out var players) && int.TryParse(players.ToString(), out var playerCount)) status.Players = playerCount;
+                if (data.TryGetValue("players", out var players) && players is JsonElement playersElement && playersElement.ValueKind == JsonValueKind.Array)
+                    status.Players = playersElement.EnumerateArray().Select(e => e.GetString()).Where(s => s is not null).ToList();
                 if (data.TryGetValue("uptime", out var uptime) && float.TryParse(uptime.ToString(), out var uptimeValue))
                 {
                     status.Uptime = uptimeValue;
                     status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(uptimeValue)).ToString();
                 }
 
-                status.Running = true;
-                status.Started = false;
-                status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
-            }
-        );
-    }
-
-    private async Task HandlePerformanceEvent(Dictionary<string, object> data)
-    {
-        await ApplyToRunningServerCaches((_, status) =>
-            {
                 if (data.TryGetValue("fps", out var fps) && float.TryParse(fps.ToString(), out var fpsValue)) status.Fps = fpsValue;
                 if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount.ToString(), out var entityCountValue))
                     status.EntityCount = entityCountValue;
                 if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount.ToString(), out var aiCountValue)) status.AiCount = aiCountValue;
                 if (data.TryGetValue("headlessClientCount", out var headlessClientCount) &&
                     int.TryParse(headlessClientCount.ToString(), out var headlessClientCountValue)) status.HeadlessClientCount = headlessClientCountValue;
+
+                status.Running = true;
+                status.Started = false;
+                status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
             }
         );
     }

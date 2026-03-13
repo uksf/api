@@ -50,7 +50,7 @@ public class GameServerStatus
     public string MaxPlayers { get; set; }
     public string Mission { get; set; }
     public string ParsedUptime { get; set; }
-    public int Players { get; set; }
+    public List<string> Players { get; set; } = [];
     public bool Running { get; set; }
     public bool Started { get; set; }
     public float Uptime { get; set; }

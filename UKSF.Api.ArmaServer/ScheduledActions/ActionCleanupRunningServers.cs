@@ -38,7 +38,7 @@ public class ActionCleanupRunningServers(
 
         var serverStatuses = await gameServersService.GetAllGameServerStatuses();
         var runningServers = serverStatuses.Where(x => x.Status.Running).ToList();
-        var populatedServers = runningServers.Where(x => x.Status.Players > 0);
+        var populatedServers = runningServers.Where(x => x.Status.Players.Count > 0);
 
         if (populatedServers.Any())
         {
