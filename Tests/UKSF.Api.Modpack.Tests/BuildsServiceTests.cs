@@ -171,6 +171,89 @@ public class BuildsServiceTests
     }
 
     [Fact]
+    public async Task CreateRebuild_Should_carry_version_forward_for_dev_rebuild()
+    {
+        const string Version = "1.2.0";
+        var latestDevBuild = new DomainModpackBuild
+        {
+            BuildNumber = 5,
+            Version = Version,
+            Environment = GameEnvironment.Development,
+            Commit = new GithubCommit
+            {
+                Branch = "main",
+                After = "abc123",
+                Message = "test commit"
+            },
+            EnvironmentVariables = new Dictionary<string, object> { { "configuration", "development" } }
+        };
+
+        _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>())).Returns(new List<DomainModpackBuild> { latestDevBuild });
+        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.Development)).Returns([]);
+
+        var result = await _subject.CreateRebuild(latestDevBuild);
+
+        result.Version.Should().Be(Version);
+        result.IsRebuild.Should().BeTrue();
+        result.Environment.Should().Be(GameEnvironment.Development);
+        result.BuildNumber.Should().Be(6);
+    }
+
+    [Fact]
+    public async Task CreateRebuild_Should_carry_version_forward_for_rc_rebuild()
+    {
+        const string Version = "1.2.0";
+        var latestRcBuild = new DomainModpackBuild
+        {
+            BuildNumber = 2,
+            Version = Version,
+            Environment = GameEnvironment.Rc,
+            Commit = new GithubCommit
+            {
+                Branch = "release",
+                After = "def456",
+                Message = "rc commit"
+            },
+            EnvironmentVariables = new Dictionary<string, object> { { "configuration", "release" } }
+        };
+
+        _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>())).Returns(new List<DomainModpackBuild> { latestRcBuild });
+        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.Rc)).Returns([]);
+
+        var result = await _subject.CreateRebuild(latestRcBuild);
+
+        result.Version.Should().Be(Version);
+        result.IsRebuild.Should().BeTrue();
+        result.Environment.Should().Be(GameEnvironment.Rc);
+        result.BuildNumber.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task CreateRebuild_Should_update_sha_when_provided()
+    {
+        var latestBuild = new DomainModpackBuild
+        {
+            BuildNumber = 3,
+            Version = "1.0.0",
+            Environment = GameEnvironment.Development,
+            Commit = new GithubCommit
+            {
+                Branch = "main",
+                After = "old-sha",
+                Message = "original"
+            },
+            EnvironmentVariables = new Dictionary<string, object> { { "configuration", "development" } }
+        };
+
+        _mockBuildsContext.Setup(x => x.Get(It.IsAny<Func<DomainModpackBuild, bool>>())).Returns(new List<DomainModpackBuild> { latestBuild });
+        _mockBuildStepService.Setup(x => x.GetSteps(GameEnvironment.Development)).Returns([]);
+
+        var result = await _subject.CreateRebuild(latestBuild, "new-sha");
+
+        result.Commit.After.Should().Be("new-sha");
+    }
+
+    [Fact]
     public async Task When_creating_first_rc_build()
     {
         const string Version = "1.1.0";

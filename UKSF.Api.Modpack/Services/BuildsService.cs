@@ -145,7 +145,7 @@ public class BuildsService(
         var latestBuild = build.Environment == GameEnvironment.Development ? GetLatestDevBuild() : GetLatestRcBuild(build.Version);
         DomainModpackBuild rebuild = new()
         {
-            Version = latestBuild.Environment == GameEnvironment.Development ? null : latestBuild.Version,
+            Version = latestBuild.Version,
             BuildNumber = latestBuild.BuildNumber + 1,
             IsRebuild = true,
             Environment = latestBuild.Environment,
