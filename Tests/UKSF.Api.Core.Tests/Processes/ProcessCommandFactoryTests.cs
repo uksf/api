@@ -44,9 +44,6 @@ public class ProcessCommandFactoryTests
         results.Should().NotBeEmpty();
         results.Should().HaveCountGreaterThanOrEqualTo(1); // Should capture at least one output
         results.Should().Contain(line => line.Content.Contains("Output"));
-
-        // Verify logging occurred
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
     }
 
     [Fact]
@@ -126,8 +123,8 @@ public class ProcessCommandFactoryTests
         _mockProcessTracker.Verify(x => x.RegisterProcess(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         _mockProcessTracker.Verify(x => x.UnregisterProcess(It.IsAny<int>()), Times.Once);
 
-        // Verify that proper logging occurred for the lifecycle
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
+        // Verify that failure logging occurred for non-zero exit code
+        _mockUksfLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("non-zero code"))), Times.Once);
     }
 
     [Fact]
@@ -405,9 +402,6 @@ public class ProcessCommandFactoryTests
         }
 
         results.Should().NotBeEmpty();
-
-        // Verify logging occurred
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
     }
 
     private static void GetPlatformCommand(out string executable, out string args, string command)

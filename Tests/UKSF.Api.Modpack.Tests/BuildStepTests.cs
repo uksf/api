@@ -62,11 +62,11 @@ public class BuildStepTests
         result.Should().HaveCountGreaterThanOrEqualTo(1); // Should capture at least one output
         result.Should().Contain(line => line.Contains("Output"));
 
-        // Verify logging occurred - check the actual logs in the build step
+        // Verify build step captured process output
         _modpackBuildStep.Logs.Should().NotBeEmpty();
         _modpackBuildStep.Logs.Should().Contain(log => log.Text.Contains("Output"));
 
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
+        _mockUksfLogger.Verify(x => x.LogWarning(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -138,8 +138,8 @@ public class BuildStepTests
         _mockProcessTracker.Verify(x => x.RegisterProcess(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         _mockProcessTracker.Verify(x => x.UnregisterProcess(It.IsAny<int>()), Times.Once);
 
-        // Verify that proper logging occurred for the lifecycle
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
+        // Verify that failure logging occurred for non-zero exit code
+        _mockUksfLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("non-zero code"))), Times.Once);
     }
 
     [Fact]
@@ -279,7 +279,7 @@ public class BuildStepTests
         result.Should().NotBeNull();
         result.Should().NotBeEmpty();
 
-        // Verify that StepLogger.Log was called for standard output - check the actual logs
+        // Verify build step captured process output
         _modpackBuildStep.Logs.Should().NotBeEmpty();
         _modpackBuildStep.Logs.Should().Contain(log => log.Text.Contains("Test Output"));
     }
@@ -365,8 +365,8 @@ public class BuildStepTests
         result.Should().NotBeNull();
         result.Should().NotBeEmpty();
 
-        // Verify logging occurred
-        _mockUksfLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Process started with ID"))), Times.Once);
+        // Verify no warnings logged for successful process
+        _mockUksfLogger.Verify(x => x.LogWarning(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]

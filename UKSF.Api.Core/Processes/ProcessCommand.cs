@@ -13,6 +13,7 @@ namespace UKSF.Api.Core.Processes;
 /// </summary>
 public class ProcessCommand(IUksfLogger logger, string executable, string workingDirectory, string arguments)
 {
+    private readonly string _logContext = $"'{executable}' in '{workingDirectory}' with '{arguments}'";
     private bool _enableInternalLogging;
     private string _processId;
     private IProcessTracker _processTracker;
@@ -63,9 +64,6 @@ public class ProcessCommand(IUksfLogger logger, string executable, string workin
         using var timeoutCts = new CancellationTokenSource(_timeout);
         using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
         var combinedToken = combinedCts.Token;
-
-        var logContext = $"'{executable}' in '{workingDirectory}' with '{arguments}'";
-        LogInformation($"Starting process: {logContext} (timeout: {_timeout})");
 
         // Capture the timeout token to avoid disposal issues
         var timeoutToken = timeoutCts.Token;
@@ -157,7 +155,6 @@ public class ProcessCommand(IUksfLogger logger, string executable, string workin
                 {
                     case StartedCommandEvent started:
                         processId = started.ProcessId;
-                        LogInformation($"Process started with ID {processId}");
 
                         // Register process with tracker if available
                         if (_processTracker != null && !string.IsNullOrEmpty(_processId))
@@ -186,7 +183,10 @@ public class ProcessCommand(IUksfLogger logger, string executable, string workin
 
                     case ExitedCommandEvent exited:
                         exitCode = exited.ExitCode;
-                        LogInformation($"Process exited with code {exited.ExitCode}");
+                        if (exited.ExitCode != 0)
+                        {
+                            LogWarning($"Process exited with non-zero code {exited.ExitCode}: {_logContext}");
+                        }
 
                         // Unregister process from tracker if available
                         if (_processTracker != null && processId > 0)
@@ -210,7 +210,10 @@ public class ProcessCommand(IUksfLogger logger, string executable, string workin
         finally
         {
             stopwatch.Stop();
-            LogInformation($"Process completed in {stopwatch.Elapsed:mm\\:ss\\.fff} with exit code {exitCode}");
+            if (exitCode != 0)
+            {
+                LogWarning($"Process failed in {stopwatch.Elapsed:mm\\:ss\\.fff} with exit code {exitCode}: {_logContext}");
+            }
         }
     }
 
@@ -257,14 +260,6 @@ public class ProcessCommand(IUksfLogger logger, string executable, string workin
             {
                 await writer.WriteAsync(new ProcessOutputLine { Content = trimmedLine, Type = ProcessOutputType.Output }, cancellationToken);
             }
-        }
-    }
-
-    private void LogInformation(string message)
-    {
-        if (ShouldLog())
-        {
-            logger.LogInfo(message);
         }
     }
 
