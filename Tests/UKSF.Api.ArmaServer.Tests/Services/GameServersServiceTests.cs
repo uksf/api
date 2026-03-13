@@ -830,17 +830,6 @@ public class GameServersServiceTests
     }
 
     [Fact]
-    public async Task HandleGameServerEvent_WhenShutdownComplete_WithNoApiPort_ShouldLogWarning()
-    {
-        var gameServerEvent = new GameServerEvent { Type = "shutdown_complete", Data = new Dictionary<string, object>() };
-
-        await _subject.HandleGameServerEvent(gameServerEvent);
-
-        _mockLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("apiPort"))), Times.Once);
-        _mockProcessUtilities.Verify(x => x.FindProcessById(It.IsAny<int>()), Times.Never);
-    }
-
-    [Fact]
     public async Task HandleGameServerEvent_WhenShutdownComplete_WithNoHeadlessClients_ShouldDoNothing()
     {
         var gameServer = new DomainGameServer

@@ -402,15 +402,9 @@ public class GameServersService(
         await serversHub.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false);
     }
 
-    private async Task HandleShutdownCompleteEvent(int? apiPort)
+    private async Task HandleShutdownCompleteEvent(int apiPort)
     {
-        if (apiPort is null)
-        {
-            logger.LogWarning("Received shutdown_complete event without apiPort header");
-            return;
-        }
-
-        var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort.Value);
+        var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort);
         if (gameServer is null)
         {
             logger.LogWarning($"Received shutdown_complete but no server matches apiPort {apiPort}");
