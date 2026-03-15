@@ -21,6 +21,7 @@ public class PatchPlayer
     public string ObjectClass { get; init; }
     public string RoleAssignment { get; init; }
     public string Callsign { get; init; }
+    public bool IsMedic { get; init; }
     public bool IsEngineer { get; init; }
     public DomainRank Rank { get; init; }
 }

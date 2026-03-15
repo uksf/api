@@ -262,6 +262,24 @@ public class PatchDataBuilderTests
         g11.Slots.Single(p => p.DisplayName == "Pte. Charlie.B").IsEngineer.Should().BeFalse();
     }
 
+    // ─── Medic Flag ────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Build_MedicQualifiedMembersHaveIsMedicTrue()
+    {
+        // CplBravo has Medic qualification in Guardian 1-1
+        var g11 = GetUnit("Guardian 1-1");
+        g11.Slots.Single(p => p.DisplayName == "Cpl. Bravo.J").IsMedic.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Build_NonMedicMembersHaveIsMedicFalse()
+    {
+        var g11 = GetUnit("Guardian 1-1");
+        g11.Slots.Single(p => p.DisplayName == "Sgt. Alpha.T").IsMedic.Should().BeFalse();
+        g11.Slots.Single(p => p.DisplayName == "Pte. Charlie.B").IsMedic.Should().BeFalse();
+    }
+
     // ─── Slot Sort Order ──────────────────────────────────────────────────
 
     [Fact]

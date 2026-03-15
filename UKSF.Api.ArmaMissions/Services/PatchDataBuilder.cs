@@ -79,6 +79,7 @@ public class PatchDataBuilder(
             ObjectClass = objectClass,
             RoleAssignment = player.Account?.RoleAssignment,
             Callsign = callsign,
+            IsMedic = player.Account?.Qualifications?.Medic ?? false,
             IsEngineer = player.Account?.Qualifications?.Engineer ?? false,
             Rank = player.Rank
         };

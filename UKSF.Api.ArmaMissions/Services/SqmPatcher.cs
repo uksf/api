@@ -119,36 +119,7 @@ public class SqmPatcher : ISqmPatcher
             "};"
         ];
 
-        if (player.IsEngineer)
-        {
-            rawLines.AddRange(
-                [
-                    "class CustomAttributes",
-                    "{",
-                    "class Attribute0",
-                    "{",
-                    "property=\"Enh_unitTraits_engineer\";",
-                    "expression=\"_this setUnitTrait ['Engineer',_value]\";",
-                    "class Value",
-                    "{",
-                    "class data",
-                    "{",
-                    "class type",
-                    "{",
-                    "type[]=",
-                    "{",
-                    "\"BOOL\"",
-                    "};",
-                    "};",
-                    "value=1;",
-                    "};",
-                    "};",
-                    "};",
-                    "nAttributes=1;",
-                    "};"
-                ]
-            );
-        }
+        AddTraitAttributes(rawLines, player);
 
         rawLines.Add("};");
 
@@ -180,6 +151,56 @@ public class SqmPatcher : ISqmPatcher
         ];
 
         return new SqmLogic { Type = "ModuleCurator_F", RawLines = rawLines };
+    }
+
+    private static void AddTraitAttributes(List<string> rawLines, PatchPlayer player)
+    {
+        List<(string property, string expression)> traits = [];
+
+        if (player.IsMedic)
+        {
+            traits.Add(("Enh_unitTraits_medic", "_this setUnitTrait ['Medic',_value]"));
+        }
+
+        if (player.IsEngineer)
+        {
+            traits.Add(("Enh_unitTraits_engineer", "_this setUnitTrait ['Engineer',_value]"));
+        }
+
+        if (traits.Count == 0)
+        {
+            return;
+        }
+
+        rawLines.Add("class CustomAttributes");
+        rawLines.Add("{");
+
+        for (var i = 0; i < traits.Count; i++)
+        {
+            var (property, expression) = traits[i];
+            rawLines.Add($"class Attribute{i}");
+            rawLines.Add("{");
+            rawLines.Add($"property=\"{property}\";");
+            rawLines.Add($"expression=\"{expression}\";");
+            rawLines.Add("class Value");
+            rawLines.Add("{");
+            rawLines.Add("class data");
+            rawLines.Add("{");
+            rawLines.Add("class type");
+            rawLines.Add("{");
+            rawLines.Add("type[]=");
+            rawLines.Add("{");
+            rawLines.Add("\"BOOL\"");
+            rawLines.Add("};");
+            rawLines.Add("};");
+            rawLines.Add("value=1;");
+            rawLines.Add("};");
+            rawLines.Add("};");
+            rawLines.Add("};");
+        }
+
+        rawLines.Add($"nAttributes={traits.Count};");
+        rawLines.Add("};");
     }
 
     private static void ReindexEntity(SqmEntity entity, int index)

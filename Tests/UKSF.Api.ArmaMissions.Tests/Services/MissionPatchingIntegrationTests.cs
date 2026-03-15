@@ -117,7 +117,8 @@ public class MissionPatchingIntegrationTests : IDisposable
         sqmLines.Should().Contain(l => l.Contains("UKSF_B_SectionLeader"));
         sqmLines.Should().Contain(l => l.Contains("UKSF_B_Rifleman"));
 
-        // Engineer trait present
+        // Medic and Engineer traits present
+        sqmLines.Should().Contain(l => l.Contains("Enh_unitTraits_medic"));
         sqmLines.Should().Contain(l => l.Contains("Enh_unitTraits_engineer"));
 
         // isPlayable count matches PlayerCount
