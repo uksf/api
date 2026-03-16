@@ -48,7 +48,7 @@ public class PatchDataBuilder(
 
         orderedUnits.RemoveAll(u => (!IsUnitPermanent(u) && u.Members.Count == 0) || string.IsNullOrEmpty(ResolveCallsign(u)));
 
-        AggregateSpecialUnits(orderedUnits);
+        MergeSpecialUnits(orderedUnits);
 
         var patchUnits = orderedUnits.Select(u => BuildPatchUnit(u, ranks)).ToList();
 
@@ -89,14 +89,9 @@ public class PatchDataBuilder(
     {
         var settings = unit.Source.MissionPatchSettings;
 
-        if (settings?.IsPilotUnit == true)
+        if (!string.IsNullOrEmpty(settings?.ObjectClassOverride))
         {
-            return "UKSF_B_Pilot";
-        }
-
-        if (!string.IsNullOrEmpty(settings?.ForcedObjectClass))
-        {
-            return settings.ForcedObjectClass;
+            return settings.ObjectClassOverride;
         }
 
         if (player.Account?.Qualifications?.Medic == true)
@@ -117,16 +112,16 @@ public class PatchDataBuilder(
         var settings = unit.Source.MissionPatchSettings;
         List<InternalPlayer> slots = [];
 
-        if (settings?.AggregateIntoParent == true)
+        if (settings?.MergeIntoParent == true)
         {
             return slots;
         }
 
         slots.AddRange(unit.Members);
 
-        if (settings is { MaxSlots: > 0 })
+        if (settings is { MinSlots: > 0 })
         {
-            var fillerCount = settings.MaxSlots - slots.Count;
+            var fillerCount = settings.MinSlots - slots.Count;
             for (var i = 0; i < fillerCount; i++)
             {
                 slots.Add(
@@ -138,14 +133,14 @@ public class PatchDataBuilder(
         return slots;
     }
 
-    private static void AggregateSpecialUnits(List<InternalUnit> orderedUnits)
+    private static void MergeSpecialUnits(List<InternalUnit> orderedUnits)
     {
         var toRemove = new List<InternalUnit>();
 
         foreach (var unit in orderedUnits.ToList())
         {
             var settings = unit.Source.MissionPatchSettings;
-            if (settings is { AggregateIntoParent: true })
+            if (settings is { MergeIntoParent: true })
             {
                 var parent = orderedUnits.FirstOrDefault(u => u.Source.Id == unit.Source.Parent);
                 if (parent != null)
@@ -155,10 +150,6 @@ public class PatchDataBuilder(
 
                 toRemove.Add(unit);
             }
-            else if (settings is { Pruned: true })
-            {
-                toRemove.Add(unit);
-            }
         }
 
         orderedUnits.RemoveAll(toRemove.Contains);
@@ -166,9 +157,9 @@ public class PatchDataBuilder(
 
     private static string ResolveCallsign(InternalUnit unit)
     {
-        if (unit.Source.MissionPatchSettings?.IsPilotUnit == true)
+        if (!string.IsNullOrEmpty(unit.Source.MissionPatchSettings?.CallsignOverride))
         {
-            return "JSFAW";
+            return unit.Source.MissionPatchSettings.CallsignOverride;
         }
 
         return unit.Source.Callsign;
@@ -176,7 +167,7 @@ public class PatchDataBuilder(
 
     private static bool IsUnitPermanent(InternalUnit unit)
     {
-        return unit.Source.MissionPatchSettings?.IsPermanent == true;
+        return unit.Source.MissionPatchSettings?.KeepWhenEmpty == true;
     }
 
     private static int GetChainOfCommandSortPriority(InternalPlayer player, InternalUnit unit)

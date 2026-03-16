@@ -132,10 +132,10 @@ public class TestPatchDataBuilder
             chainOfCommand: new ChainOfCommand { First = SgtAlpha.Id },
             missionPatchSettings: new MissionPatchSettings
             {
-                MaxSlots = 12,
+                MinSlots = 12,
                 FillerName = "Reserve",
                 FillerRank = "Recruit",
-                IsPermanent = true
+                KeepWhenEmpty = true
             }
         );
         UnitGuardian12 = CreateUnit(
@@ -146,10 +146,10 @@ public class TestPatchDataBuilder
             order: 1,
             missionPatchSettings: new MissionPatchSettings
             {
-                MaxSlots = 12,
+                MinSlots = 12,
                 FillerName = "Reserve",
                 FillerRank = "Recruit",
-                IsPermanent = true
+                KeepWhenEmpty = true
             }
         );
         UnitGuardian13 = CreateUnit(
@@ -160,10 +160,10 @@ public class TestPatchDataBuilder
             order: 2,
             missionPatchSettings: new MissionPatchSettings
             {
-                MaxSlots = 12,
+                MinSlots = 12,
                 FillerName = "Reserve",
                 FillerRank = "Recruit",
-                IsPermanent = true
+                KeepWhenEmpty = true
             }
         );
         UnitGuardian1R = CreateUnit(
@@ -174,20 +174,20 @@ public class TestPatchDataBuilder
             order: 3,
             missionPatchSettings: new MissionPatchSettings
             {
-                MaxSlots = 10,
+                MinSlots = 10,
                 FillerName = "Reserve",
                 FillerRank = "Recruit",
-                IsPermanent = true
+                KeepWhenEmpty = true
             }
         );
         UnitJsfaw = CreateUnit(
             "5a435eea905d47336442c75a",
             "Joint Special Forces Aviation Wing",
             UnitUksf.Id,
-            "JSFAW",
+            "Hawk",
             order: 1,
             members: [PilotDelta.Id, PilotEcho.Id],
-            missionPatchSettings: new MissionPatchSettings { IsPilotUnit = true }
+            missionPatchSettings: new MissionPatchSettings { ObjectClassOverride = "UKSF_B_Pilot", CallsignOverride = "JSFAW" }
         );
         UnitCombatReady = CreateUnit(
             "5fe39de7815f5f03801134f7",
@@ -196,12 +196,7 @@ public class TestPatchDataBuilder
             "Combat Ready",
             order: 0,
             members: [PilotFoxtrot.Id],
-            missionPatchSettings: new MissionPatchSettings
-            {
-                AggregateIntoParent = true,
-                Pruned = true,
-                IsPilotUnit = true
-            }
+            missionPatchSettings: new MissionPatchSettings { MergeIntoParent = true, ObjectClassOverride = "UKSF_B_Pilot" }
         );
         UnitRafCranwell = CreateUnit(
             "5a848590eab14d12cc7fa618",
@@ -209,7 +204,7 @@ public class TestPatchDataBuilder
             UnitJsfaw.Id,
             "RAF Cranwell",
             order: 1,
-            missionPatchSettings: new MissionPatchSettings { Pruned = true, IsPilotUnit = true }
+            missionPatchSettings: new MissionPatchSettings { ObjectClassOverride = "UKSF_B_Pilot" }
         );
         UnitSniperPlatoon = CreateUnit(
             "5a68b28e196530164c9b4fed",
@@ -220,10 +215,10 @@ public class TestPatchDataBuilder
             members: [SniperGolf.Id],
             missionPatchSettings: new MissionPatchSettings
             {
-                MaxSlots = 3,
+                MinSlots = 3,
                 FillerName = "Sniper",
                 FillerRank = "Private",
-                ForcedObjectClass = "UKSF_B_Sniper"
+                ObjectClassOverride = "UKSF_B_Sniper"
             }
         );
         UnitMedicalRegiment = CreateUnit(
@@ -233,7 +228,7 @@ public class TestPatchDataBuilder
             "3 Medical Regiment",
             order: 3,
             members: [MedicHotel.Id],
-            missionPatchSettings: new MissionPatchSettings { ForcedObjectClass = "UKSF_B_Medic" }
+            missionPatchSettings: new MissionPatchSettings { ObjectClassOverride = "UKSF_B_Medic" }
         );
         UnitEmpty = CreateUnit(ObjectId.GenerateNewId().ToString(), "Empty Unit", UnitUksf.Id, "", order: 4);
 

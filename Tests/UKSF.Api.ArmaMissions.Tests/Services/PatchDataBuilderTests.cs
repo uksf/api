@@ -41,10 +41,10 @@ public class PatchDataBuilderTests
     [Fact]
     public void Build_ProducesCorrectNumberOfOrderedUnits()
     {
-        // UKSF root: no members, not permanent → pruned
-        // CombatReady: aggregated into JSFAW → removed
-        // RAF Cranwell: no members, not permanent → pruned
-        // Empty Unit: no members, not permanent, no callsign → pruned
+        // UKSF root: no members, not KeepWhenEmpty → removed
+        // CombatReady: merged into JSFAW → removed
+        // RAF Cranwell: no members, not KeepWhenEmpty → removed
+        // Empty Unit: no members, not KeepWhenEmpty, no callsign → removed
         // Remaining: SFSG, Guardian 1-1, 1-2, 1-3, 1-R, JSFAW, Sniper Platoon, 3 Medical Regiment
         _context.PatchData.OrderedUnits.Should().HaveCount(8);
     }
@@ -100,7 +100,7 @@ public class PatchDataBuilderTests
     }
 
     [Fact]
-    public void Build_PilotUnitsGetJsfawCallsign()
+    public void Build_CallsignOverrideApplied()
     {
         var jsfaw = GetUnit("Joint Special Forces Aviation Wing");
         jsfaw.Callsign.Should().Be("JSFAW");
@@ -115,26 +115,26 @@ public class PatchDataBuilderTests
         GetUnit("Guardian 1-R").Callsign.Should().Be("Reserves");
     }
 
-    // ─── Permanent Units and Fillers ──────────────────────────────────────
+    // ─── KeepWhenEmpty Units and Fillers ───────────────────────────────────
 
     [Fact]
-    public void Build_PermanentUnitWithMembersFilledToMaxSlots()
+    public void Build_KeepWhenEmptyUnitWithMembersFilledToMinSlots()
     {
-        // Guardian 1-1: MaxSlots=12, has SgtAlpha, CplBravo, PteCharlie (3 real members)
+        // Guardian 1-1: MinSlots=12, has SgtAlpha, CplBravo, PteCharlie (3 real members)
         var g11 = GetUnit("Guardian 1-1");
         g11.Slots.Should().HaveCount(12);
     }
 
     [Fact]
-    public void Build_PermanentUnitWithNoMembersFilledToMaxSlots()
+    public void Build_KeepWhenEmptyUnitWithNoMembersFilledToMinSlots()
     {
-        // Guardian 1-2: MaxSlots=12, no members
+        // Guardian 1-2: MinSlots=12, no members
         var g12 = GetUnit("Guardian 1-2");
         g12.Slots.Should().HaveCount(12);
     }
 
     [Fact]
-    public void Build_PermanentUnitFillersHaveCorrectDisplayName()
+    public void Build_KeepWhenEmptyUnitFillersHaveCorrectDisplayName()
     {
         var g11 = GetUnit("Guardian 1-1");
         var fillers = g11.Slots.Where(p => p.DisplayName == "Reserve").ToList();
@@ -142,16 +142,16 @@ public class PatchDataBuilderTests
     }
 
     [Fact]
-    public void Build_PermanentUnitFillersHaveRecruitRank()
+    public void Build_KeepWhenEmptyUnitFillersHaveRecruitRank()
     {
         var g12 = GetUnit("Guardian 1-2");
         g12.Slots.Should().OnlyContain(p => p.Rank == _testData.RankRecruit);
     }
 
     [Fact]
-    public void Build_SniperPlatoonFilledToMaxSlots()
+    public void Build_SniperPlatoonFilledToMinSlots()
     {
-        // SniperPlatoon: MaxSlots=3, has SniperGolf (1 real member)
+        // SniperPlatoon: MinSlots=3, has SniperGolf (1 real member)
         var snipers = GetUnit("Sniper Platoon");
         snipers.Slots.Should().HaveCount(3);
     }
@@ -165,10 +165,10 @@ public class PatchDataBuilderTests
         fillers.Should().OnlyContain(p => p.Rank == _testData.RankPrivate);
     }
 
-    // ─── Aggregation ──────────────────────────────────────────────────────
+    // ─── Merge Into Parent ─────────────────────────────────────────────────
 
     [Fact]
-    public void Build_CombatReadyMembersAggregatedIntoJsfaw()
+    public void Build_CombatReadyMembersMergedIntoJsfaw()
     {
         // PilotFoxtrot is in CombatReady which aggregates into JSFAW
         var jsfaw = GetUnit("Joint Special Forces Aviation Wing");
@@ -187,21 +187,21 @@ public class PatchDataBuilderTests
     // ─── Object Classes ───────────────────────────────────────────────────
 
     [Fact]
-    public void Build_PilotUnitMembersGetPilotObjectClass()
+    public void Build_ObjectClassOverrideMembersGetOverriddenClass()
     {
         var jsfaw = GetUnit("Joint Special Forces Aviation Wing");
         jsfaw.Slots.Should().OnlyContain(p => p.ObjectClass == "UKSF_B_Pilot");
     }
 
     [Fact]
-    public void Build_SniperPlatoonMembersGetForcedSniperObjectClass()
+    public void Build_SniperPlatoonMembersGetOverriddenSniperObjectClass()
     {
         var snipers = GetUnit("Sniper Platoon");
         snipers.Slots.Should().OnlyContain(p => p.ObjectClass == "UKSF_B_Sniper");
     }
 
     [Fact]
-    public void Build_MedicalRegimentMembersGetForcedMedicObjectClass()
+    public void Build_MedicalRegimentMembersGetOverriddenMedicObjectClass()
     {
         var medics = GetUnit("3 Medical Regiment");
         medics.Slots.Should().OnlyContain(p => p.ObjectClass == "UKSF_B_Medic");
