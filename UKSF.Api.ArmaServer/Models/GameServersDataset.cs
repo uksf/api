@@ -1,14 +1,14 @@
 namespace UKSF.Api.ArmaServer.Models;
 
-public class GameServersDataset
+public class GameServersUpdate
 {
+    public List<DomainGameServer> Servers { get; set; }
     public int InstanceCount { get; set; }
     public List<MissionFile> Missions { get; set; }
-    public IEnumerable<DomainGameServer> Servers { get; set; }
 }
 
-public class GameServerDataset
+public class GameServerUpdate
 {
-    public DomainGameServer GameServer { get; set; }
+    public DomainGameServer Server { get; set; }
     public int InstanceCount { get; set; }
 }

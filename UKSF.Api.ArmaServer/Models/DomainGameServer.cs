@@ -52,7 +52,9 @@ public class GameServerStatus
     public string ParsedUptime { get; set; }
     public List<string> Players { get; set; } = [];
     public bool Running { get; set; }
-    public bool Started { get; set; }
+    public bool Launching { get; set; }
+    public bool Stopping { get; set; }
+    public DateTime? StoppingInitiatedAt { get; set; }
     public float Uptime { get; set; }
     public float Fps { get; set; }
     public int EntityCount { get; set; }

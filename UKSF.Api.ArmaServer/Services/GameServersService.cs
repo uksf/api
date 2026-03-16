@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -20,7 +21,6 @@ namespace UKSF.Api.ArmaServer.Services;
 public interface IGameServersService
 {
     int GetGameInstanceCount();
-    Task GetGameServerStatus(DomainGameServer gameServer);
     Task<List<DomainGameServer>> GetAllGameServerStatuses();
     void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection);
     Task LaunchGameServer(DomainGameServer gameServer, string missionName = null, string launchedBy = null);
@@ -31,6 +31,7 @@ public interface IGameServersService
     List<GameServerMod> GetEnvironmentMods(GameEnvironment environment);
     Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate);
     Task HandleGameServerEvent(GameServerEvent gameServerEvent);
+    void ClearStatusCache(string serverId);
 }
 
 public class GameServersService(
@@ -50,28 +51,6 @@ public class GameServersService(
     public int GetGameInstanceCount()
     {
         return gameServerHelpers.GetArmaProcesses().Count();
-    }
-
-    public async Task GetGameServerStatus(DomainGameServer gameServer)
-    {
-        if (variablesService.GetFeatureState("SKIP_SERVER_STATUS"))
-        {
-            await gameServersContext.Replace(gameServer);
-            return;
-        }
-
-        if (!gameServerHelpers.GetArmaProcesses().Any())
-        {
-            gameServer.Status = new GameServerStatus();
-            gameServer.ProcessId = null;
-            gameServer.HeadlessClientProcessIds.Clear();
-            StatusCache.TryRemove(gameServer.Id, out _);
-            await gameServersContext.Replace(gameServer);
-            return;
-        }
-
-        var armaProcesses = gameServerHelpers.GetArmaProcessesWithCommandLine();
-        await UpdateServerStatus(gameServer, armaProcesses);
     }
 
     public async Task<List<DomainGameServer>> GetAllGameServerStatuses()
@@ -115,7 +94,7 @@ public class GameServersService(
         if (matchingProcess is null)
         {
             gameServer.Status.Running = false;
-            gameServer.Status.Started = false;
+            gameServer.Status.Launching = false;
             gameServer.ProcessId = null;
             StatusCache.TryRemove(gameServer.Id, out _);
             await gameServersContext.Replace(gameServer);
@@ -123,7 +102,7 @@ public class GameServersService(
         }
 
         gameServer.ProcessId = matchingProcess.ProcessId;
-        gameServer.Status.Started = true;
+        gameServer.Status.Launching = true;
 
         using var client = httpClientFactory.CreateClient();
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -158,7 +137,7 @@ public class GameServersService(
                 gameServer.Status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(gameServer.Status.Uptime)).ToString();
                 gameServer.Status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
                 gameServer.Status.Running = true;
-                gameServer.Status.Started = false;
+                gameServer.Status.Launching = false;
             }
         }
         catch (HttpRequestException)
@@ -213,7 +192,7 @@ public class GameServersService(
 
     public async Task LaunchGameServer(DomainGameServer gameServer, string missionName = null, string launchedBy = null)
     {
-        gameServer.Status.Started = true;
+        gameServer.Status.Launching = true;
 
         if (missionName is not null)
         {
@@ -241,7 +220,6 @@ public class GameServersService(
         }
 
         await gameServersContext.Replace(gameServer);
-        await serversHub.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false);
     }
 
     public async Task StopGameServer(DomainGameServer gameServer)
@@ -287,6 +265,7 @@ public class GameServersService(
 
         gameServer.ProcessId = null;
         gameServer.LaunchedBy = null;
+        gameServer.Status = new GameServerStatus();
         StatusCache.TryRemove(gameServer.Id, out _);
 
         gameServer.HeadlessClientProcessIds.ForEach(x =>
@@ -411,7 +390,7 @@ public class GameServersService(
         {
             switch (gameServerEvent.Type)
             {
-                case "server_status":     await HandleServerStatusEvent(gameServerEvent.Data); break;
+                case "server_status":     await HandleServerStatusEvent(gameServerEvent.ApiPort, gameServerEvent.Data); break;
                 case "mission_stats":     await HandleMissionStatsEvent(gameServerEvent.Data); break;
                 case "persistence_save":  await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
                 case "shutdown_complete": await HandleShutdownCompleteEvent(gameServerEvent.ApiPort); break;
@@ -422,9 +401,6 @@ public class GameServersService(
         {
             logger.LogError($"Error handling game server event: {gameServerEvent.Type}", ex);
         }
-
-        // Always notify web clients, even if event handling failed
-        await serversHub.Clients.All.ReceiveAnyUpdateIfNotCaller(string.Empty, false);
     }
 
     private async Task HandleShutdownCompleteEvent(int apiPort)
@@ -451,52 +427,45 @@ public class GameServersService(
         logger.LogInfo($"Killed headless clients for '{gameServer.Name}' after shutdown_complete");
     }
 
-    private async Task HandleServerStatusEvent(Dictionary<string, object> data)
+    private async Task HandleServerStatusEvent(int apiPort, Dictionary<string, object> data)
     {
-        await ApplyToRunningServerCaches((gameServer, status) =>
-            {
-                if (data.TryGetValue("map", out var map)) status.Map = map.ToString();
-                if (data.TryGetValue("mission", out var mission)) status.Mission = mission.ToString();
-                if (data.TryGetValue("players", out var players) && players is JsonElement playersElement && playersElement.ValueKind == JsonValueKind.Array)
-                    status.Players = playersElement.EnumerateArray().Select(e => e.GetString()).Where(s => s is not null).ToList();
-                if (data.TryGetValue("uptime", out var uptime) && float.TryParse(uptime.ToString(), out var uptimeValue))
-                {
-                    status.Uptime = uptimeValue;
-                    status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(uptimeValue)).ToString();
-                }
-
-                if (data.TryGetValue("fps", out var fps) && float.TryParse(fps.ToString(), out var fpsValue)) status.Fps = fpsValue;
-                if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount.ToString(), out var entityCountValue))
-                    status.EntityCount = entityCountValue;
-                if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount.ToString(), out var aiCountValue)) status.AiCount = aiCountValue;
-                if (data.TryGetValue("headlessClientCount", out var headlessClientCount) &&
-                    int.TryParse(headlessClientCount.ToString(), out var headlessClientCountValue)) status.HeadlessClientCount = headlessClientCountValue;
-
-                status.Running = true;
-                status.Started = false;
-                status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
-            }
-        );
-    }
-
-    private async Task ApplyToRunningServerCaches(Action<DomainGameServer, GameServerStatus> applyUpdate)
-    {
-        foreach (var gameServer in GetRunningGameServers())
+        var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort);
+        if (gameServer is null)
         {
-            try
-            {
-                var status = StatusCache.GetOrAdd(gameServer.Id, _ => gameServer.Status ?? new GameServerStatus());
-                applyUpdate(gameServer, status);
-                status.LastEventReceived = DateTime.UtcNow;
-
-                gameServer.Status = status;
-                await gameServersContext.Replace(gameServer);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"Error updating status cache for server '{gameServer.Name}'", ex);
-            }
+            logger.LogWarning($"Received server_status but no server matches apiPort {apiPort}");
+            return;
         }
+
+        var status = StatusCache.GetOrAdd(gameServer.Id, _ => gameServer.Status ?? new GameServerStatus());
+
+        if (data.TryGetValue("map", out var map)) status.Map = map.ToString();
+        if (data.TryGetValue("mission", out var mission)) status.Mission = mission.ToString();
+        if (data.TryGetValue("players", out var players) && players is JsonElement playersElement && playersElement.ValueKind == JsonValueKind.Array)
+            status.Players = playersElement.EnumerateArray().Select(e => e.GetString()).Where(s => s is not null).ToList();
+        if (data.TryGetValue("uptime", out var uptime) &&
+            float.TryParse(uptime.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var uptimeValue))
+        {
+            status.Uptime = uptimeValue;
+            status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(uptimeValue)).ToString();
+        }
+
+        if (data.TryGetValue("fps", out var fps) && float.TryParse(fps.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var fpsValue))
+            status.Fps = fpsValue;
+        if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount.ToString(), out var entityCountValue))
+            status.EntityCount = entityCountValue;
+        if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount.ToString(), out var aiCountValue)) status.AiCount = aiCountValue;
+        if (data.TryGetValue("headlessClientCount", out var headlessClientCount) &&
+            int.TryParse(headlessClientCount.ToString(), out var headlessClientCountValue)) status.HeadlessClientCount = headlessClientCountValue;
+
+        status.Running = true;
+        status.Launching = false;
+        status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
+        status.LastEventReceived = DateTime.UtcNow;
+
+        gameServer.Status = status;
+        await gameServersContext.Replace(gameServer);
+
+        await serversHub.Clients.All.ReceiveServerUpdate(new GameServerUpdate { Server = gameServer, InstanceCount = GetGameInstanceCount() });
     }
 
     private async Task HandleMissionStatsEvent(Dictionary<string, object> data)
@@ -547,9 +516,9 @@ public class GameServersService(
         await persistenceSessionsService.HandleSaveChunkAsync(chunk);
     }
 
-    private List<DomainGameServer> GetRunningGameServers()
+    public void ClearStatusCache(string serverId)
     {
-        return gameServersContext.Get().Where(server => server.ProcessId is not null).ToList();
+        StatusCache.TryRemove(serverId, out _);
     }
 
     public async Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate)

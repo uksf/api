@@ -46,7 +46,9 @@ public static class ApiArmaServerExtensions
                            .AddSingleton<ISteamCmdService, SteamCmdService>()
                            .AddTransient<IMissionStatsService, MissionStatsService>()
                            .AddTransient<IStatsEventProcessor, ShotEventProcessor>()
-                           .AddTransient<IStatsEventProcessor, HitEventProcessor>();
+                           .AddTransient<IStatsEventProcessor, HitEventProcessor>()
+                           .AddSingleton<IGameServerProcessMonitor, GameServerProcessMonitor>()
+                           .AddHostedService<GameServerProcessMonitorStartup>();
         }
 
         private IServiceCollection AddCommands()

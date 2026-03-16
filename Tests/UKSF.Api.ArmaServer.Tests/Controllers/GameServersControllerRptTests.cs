@@ -47,7 +47,8 @@ public class GameServersControllerRptTests : IDisposable
             Mock.Of<IGameServerHelpers>(),
             _mockRptLogService.Object,
             _mockLogger.Object,
-            Mock.Of<IHttpContextService>()
+            Mock.Of<IHttpContextService>(),
+            Mock.Of<IGameServerProcessMonitor>()
         );
 
         _sut.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
@@ -98,30 +99,6 @@ public class GameServersControllerRptTests : IDisposable
         var servers = result.Servers.ToList();
         servers[0].LogSources.Should().BeEquivalentTo(sources1);
         servers[1].LogSources.Should().BeEquivalentTo(sources2);
-    }
-
-    #endregion
-
-    #region GetGameServerStatus LogSources
-
-    [Fact]
-    public async Task GetGameServerStatus_PopulatesLogSources()
-    {
-        var server = CreateGameServer("server1", "Main");
-        server.NumberHeadlessClients = 2;
-
-        var sources = new List<RptLogSource>
-        {
-            new("Server", true),
-            new("HC0", false),
-            new("HC1", false)
-        };
-        _mockGameServersContext.Setup(x => x.GetSingle("server1")).Returns(server);
-        _mockRptLogService.Setup(x => x.GetLogSources(server)).Returns(sources);
-
-        var result = await _sut.GetGameServerStatus("server1");
-
-        result.GameServer.LogSources.Should().BeEquivalentTo(sources);
     }
 
     #endregion

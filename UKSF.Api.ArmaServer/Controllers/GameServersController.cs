@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Primitives;
 using MongoDB.Driver;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Exceptions;
@@ -32,12 +31,13 @@ public class GameServersController(
     IGameServerHelpers gameServerHelpers,
     IRptLogService rptLogService,
     IUksfLogger logger,
-    IHttpContextService httpContextService
+    IHttpContextService httpContextService,
+    IGameServerProcessMonitor processMonitor
 ) : ControllerBase
 {
     [HttpGet]
     [Authorize]
-    public GameServersDataset GetGameServers()
+    public GameServersUpdate GetGameServers()
     {
         var servers = gameServersContext.Get().ToList();
         foreach (var server in servers)
@@ -45,22 +45,12 @@ public class GameServersController(
             server.LogSources = rptLogService.GetLogSources(server);
         }
 
-        return new GameServersDataset
+        return new GameServersUpdate
         {
             Servers = servers,
             Missions = missionsService.GetActiveMissions(),
             InstanceCount = gameServersService.GetGameInstanceCount()
         };
-    }
-
-    [HttpGet("status/{id}")]
-    [Authorize]
-    public async Task<GameServerDataset> GetGameServerStatus(string id)
-    {
-        var gameServer = gameServersContext.GetSingle(id);
-        await gameServersService.GetGameServerStatus(gameServer);
-        gameServer.LogSources = rptLogService.GetLogSources(gameServer);
-        return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
     }
 
     [HttpPost("{check}")]
@@ -84,7 +74,7 @@ public class GameServersController(
         await gameServersContext.Add(gameServer);
 
         logger.LogAudit($"Server added '{gameServer}'");
-        await SendAnyUpdateIfNotCaller(true);
+        await PushServersUpdate();
     }
 
     [HttpPatch]
@@ -117,38 +107,36 @@ public class GameServersController(
                                       .Set(x => x.ServerMods, gameServer.ServerMods)
         );
 
-        await SendServerUpdateIfNotCaller(gameServer.Id);
+        gameServer = gameServersContext.GetSingle(gameServer.Id);
+        await PushServerUpdate(gameServer);
         return environmentChanged;
     }
 
     [HttpDelete("{id}")]
     [Authorize]
-    public async Task<IEnumerable<DomainGameServer>> DeleteGameServer(string id)
+    public async Task DeleteGameServer(string id)
     {
         var gameServer = gameServersContext.GetSingle(id);
         logger.LogAudit($"Game server deleted '{gameServer.Name}'");
         await gameServersContext.Delete(id);
 
-        await SendAnyUpdateIfNotCaller(true);
-        return gameServersContext.Get();
+        await PushServersUpdate();
     }
 
     [HttpPatch("order")]
     [Authorize]
-    public async Task<IEnumerable<DomainGameServer>> UpdateOrder([FromBody] OrderUpdateRequest orderUpdate)
+    public async Task UpdateOrder([FromBody] OrderUpdateRequest orderUpdate)
     {
         await gameServersService.UpdateGameServerOrder(orderUpdate);
-        await SendAnyUpdateIfNotCaller(true);
-        return gameServersContext.Get();
+        await PushServersUpdate();
     }
 
     [HttpPost("launch/{id}")]
     [Authorize]
     public async Task<List<ValidationReport>> LaunchServer(string id, [FromBody] LaunchServerRequest launchServerRequest)
     {
-        await Task.WhenAll(gameServersContext.Get().Select(gameServersService.GetGameServerStatus));
         var gameServer = gameServersContext.GetSingle(id);
-        if (gameServer.Status.Running)
+        if (gameServer.Status.Running || gameServer.Status.Launching)
         {
             throw new BadRequestException("Server is already running. This shouldn't happen so please contact an admin");
         }
@@ -157,19 +145,19 @@ public class GameServersController(
         {
             if (gameServer.ServerOption == GameServerOption.Singleton)
             {
-                if (gameServersContext.Get(x => x.ServerOption != GameServerOption.Singleton).Any(x => x.Status.Started || x.Status.Running))
+                if (gameServersContext.Get(x => x.ServerOption != GameServerOption.Singleton).Any(x => x.Status.Launching || x.Status.Running))
                 {
                     throw new BadRequestException("Server must be launched on its own. Stop the other running servers first");
                 }
             }
 
-            if (gameServersContext.Get(x => x.ServerOption == GameServerOption.Singleton).Any(x => x.Status.Started || x.Status.Running))
+            if (gameServersContext.Get(x => x.ServerOption == GameServerOption.Singleton).Any(x => x.Status.Launching || x.Status.Running))
             {
                 throw new BadRequestException("Server cannot be launched whilst main server is running at this time");
             }
         }
 
-        if (gameServersContext.Get(x => x.Port == gameServer.Port).Any(x => x.Status.Started || x.Status.Running))
+        if (gameServersContext.Get(x => x.Port == gameServer.Port).Any(x => x.Status.Launching || x.Status.Running))
         {
             throw new BadRequestException("Server cannot be launched while another server with the same port is running");
         }
@@ -190,42 +178,49 @@ public class GameServersController(
 
         logger.LogAudit($"Game server launched '{launchServerRequest.MissionName}' on '{gameServer.Name}'");
 
+        await PushServerUpdate(gameServer);
+        processMonitor.EnsureRunning();
+
         return patchingResult.Reports;
     }
 
     [HttpPost("stop/{id}")]
-    [HttpGet("stop/{id}")] // TODO: Remove once web is deployed with POST calls
     [Authorize]
-    public async Task<GameServerDataset> StopServer(string id)
+    public async Task StopServer(string id)
     {
         var gameServer = gameServersContext.GetSingle(id);
-        logger.LogAudit($"Game server stopped '{gameServer.Name}'");
-        await gameServersService.GetGameServerStatus(gameServer);
-        if (!gameServer.Status.Started && !gameServer.Status.Running)
+        if (!gameServer.Status.Launching && !gameServer.Status.Running)
         {
             throw new BadRequestException("Server is not running. This shouldn't happen so please contact an admin");
         }
 
-        await gameServersContext.Update(gameServer.Id, x => x.LaunchedBy, (string)null);
+        gameServer.Status.Stopping = true;
+        gameServer.Status.StoppingInitiatedAt = DateTime.UtcNow;
+        await gameServersContext.Replace(gameServer);
 
-        await SendServerUpdateIfNotCaller(gameServer.Id);
-        await gameServersService.StopGameServer(gameServer);
-        return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
+        logger.LogAudit($"Game server stopped '{gameServer.Name}'");
+        try
+        {
+            await gameServersService.StopGameServer(gameServer);
+        }
+        finally
+        {
+            await PushServerUpdate(gameServer);
+            processMonitor.EnsureRunning();
+        }
     }
 
     [HttpPost("kill/{id}")]
-    [HttpGet("kill/{id}")] // TODO: Remove once web is deployed with POST calls
     [Authorize]
-    public async Task<GameServerDataset> KillServer(string id)
+    public async Task KillServer(string id)
     {
         var gameServer = gameServersContext.GetSingle(id);
-        logger.LogAudit($"Game server killed '{gameServer.Name}'");
-        await gameServersService.GetGameServerStatus(gameServer);
-        if (!gameServer.Status.Started && !gameServer.Status.Running)
+        if (!gameServer.Status.Launching && !gameServer.Status.Running && !gameServer.Status.Stopping)
         {
             throw new BadRequestException("Server is not running. This shouldn't happen so please contact an admin");
         }
 
+        logger.LogAudit($"Game server killed '{gameServer.Name}'");
         try
         {
             await gameServersService.KillGameServer(gameServer);
@@ -236,19 +231,19 @@ public class GameServersController(
             throw new BadRequestException("Failed to stop server. Contact an admin");
         }
 
-        await SendServerUpdateIfNotCaller(gameServer.Id);
-        return new GameServerDataset { GameServer = gameServer, InstanceCount = gameServersService.GetGameInstanceCount() };
+        await PushServerUpdate(gameServer);
+        processMonitor.EnsureRunning();
     }
 
     [HttpPost("killall")]
-    [HttpGet("killall")] // TODO: Remove once web is deployed with POST calls
     [Authorize]
     public async Task KillAllArmaProcesses()
     {
         var killed = await gameServersService.KillAllArmaProcesses();
 
         logger.LogAudit($"Killed {killed} Arma instances");
-        await SendAnyUpdateIfNotCaller();
+        await PushServersUpdate();
+        processMonitor.EnsureRunning();
     }
 
     [HttpGet("{id}/mods")]
@@ -312,28 +307,27 @@ public class GameServersController(
         return File(stream, "text/plain", Path.GetFileName(filePath));
     }
 
-    private async Task SendAnyUpdateIfNotCaller(bool skipRefresh = false)
+    private async Task PushServersUpdate()
     {
-        if (!GetHubConnectionId(out var connectionId))
+        var servers = gameServersContext.Get().ToList();
+        foreach (var server in servers)
         {
-            return;
+            server.LogSources = rptLogService.GetLogSources(server);
         }
 
-        await serversHub.Clients.All.ReceiveAnyUpdateIfNotCaller(connectionId, skipRefresh);
-    }
-
-    private async Task SendServerUpdateIfNotCaller(string serverId)
-    {
-        if (!GetHubConnectionId(out var connectionId))
+        var update = new GameServersUpdate
         {
-            return;
-        }
-
-        await serversHub.Clients.All.ReceiveServerUpdateIfNotCaller(connectionId, serverId);
+            Servers = servers,
+            Missions = missionsService.GetActiveMissions(),
+            InstanceCount = gameServersService.GetGameInstanceCount()
+        };
+        await serversHub.Clients.All.ReceiveServersUpdate(update);
     }
 
-    private bool GetHubConnectionId(out StringValues connectionId)
+    private async Task PushServerUpdate(DomainGameServer server)
     {
-        return HttpContext.Request.Headers.TryGetValue("Hub-Connection-Id", out connectionId);
+        server.LogSources = rptLogService.GetLogSources(server);
+        var update = new GameServerUpdate { Server = server, InstanceCount = gameServersService.GetGameInstanceCount() };
+        await serversHub.Clients.All.ReceiveServerUpdate(update);
     }
 }
