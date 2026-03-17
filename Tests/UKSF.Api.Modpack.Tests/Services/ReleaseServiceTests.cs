@@ -16,12 +16,20 @@ public class ReleaseServiceTests
     private readonly Mock<IReleasesContext> _mockReleasesContext = new();
     private readonly Mock<IAccountContext> _mockAccountContext = new();
     private readonly Mock<IGithubService> _mockGithubService = new();
+    private readonly Mock<IWorkshopModsContext> _mockWorkshopModsContext = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly ReleaseService _subject;
 
     public ReleaseServiceTests()
     {
-        _subject = new ReleaseService(_mockReleasesContext.Object, _mockAccountContext.Object, _mockGithubService.Object, _mockLogger.Object);
+        _mockWorkshopModsContext.Setup(x => x.Get()).Returns(new List<DomainWorkshopMod>());
+        _subject = new ReleaseService(
+            _mockReleasesContext.Object,
+            _mockAccountContext.Object,
+            _mockGithubService.Object,
+            _mockWorkshopModsContext.Object,
+            _mockLogger.Object
+        );
     }
 
     [Fact]
@@ -55,7 +63,7 @@ public class ReleaseServiceTests
     {
         var commit = new GithubCommit { Author = "test@example.com" };
         var account = new DomainAccount { Email = "test@example.com" };
-        _mockGithubService.Setup(x => x.GenerateChangelog("3.0.0")).ReturnsAsync("changelog content");
+        _mockGithubService.Setup(x => x.GenerateChangelog("3.0.0", It.IsAny<IReadOnlyList<DomainWorkshopMod>>())).ReturnsAsync("changelog content");
         _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>()))
                            .Returns<Func<DomainAccount, bool>>(pred => new List<DomainAccount> { account }.SingleOrDefault(pred));
         _mockReleasesContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainModpackRelease, bool>>()))
@@ -75,7 +83,7 @@ public class ReleaseServiceTests
     public async Task MakeDraftRelease_sets_null_creator_when_author_not_found()
     {
         var commit = new GithubCommit { Author = "unknown@example.com" };
-        _mockGithubService.Setup(x => x.GenerateChangelog("3.0.0")).ReturnsAsync("changelog");
+        _mockGithubService.Setup(x => x.GenerateChangelog("3.0.0", It.IsAny<IReadOnlyList<DomainWorkshopMod>>())).ReturnsAsync("changelog");
         _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>()))
                            .Returns<Func<DomainAccount, bool>>(pred => new List<DomainAccount>().SingleOrDefault(pred));
         _mockReleasesContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainModpackRelease, bool>>()))
@@ -91,7 +99,7 @@ public class ReleaseServiceTests
     {
         var commit = new GithubCommit { Author = "test@example.com" };
         var expectedRelease = new DomainModpackRelease { Version = "3.0.0", Changelog = "log" };
-        _mockGithubService.Setup(x => x.GenerateChangelog("3.0.0")).ReturnsAsync("log");
+        _mockGithubService.Setup(x => x.GenerateChangelog("3.0.0", It.IsAny<IReadOnlyList<DomainWorkshopMod>>())).ReturnsAsync("log");
         _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns((DomainAccount)null);
         _mockReleasesContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainModpackRelease, bool>>()))
                             .Returns<Func<DomainModpackRelease, bool>>(_ => expectedRelease);
@@ -199,5 +207,37 @@ public class ReleaseServiceTests
         await _subject.AddHistoricReleases(input);
 
         _mockReleasesContext.Verify(x => x.Add(It.IsAny<DomainModpackRelease>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task MakeDraftRelease_passes_pending_workshop_mods_to_changelog_generation()
+    {
+        var commit = new GithubCommit { Author = "test@example.com" };
+        var pendingMod = new DomainWorkshopMod
+        {
+            Name = "Test Mod",
+            SteamId = "12345",
+            Status = WorkshopModStatus.InstalledPendingRelease
+        };
+        var installedMod = new DomainWorkshopMod
+        {
+            Name = "Already Installed",
+            SteamId = "99999",
+            Status = WorkshopModStatus.Installed
+        };
+        _mockWorkshopModsContext.Setup(x => x.Get()).Returns(new List<DomainWorkshopMod> { pendingMod, installedMod });
+        _mockGithubService.Setup(x => x.GenerateChangelog(
+                                     "3.0.0",
+                                     It.Is<IReadOnlyList<DomainWorkshopMod>>(mods => mods.Count == 1 && mods[0].SteamId == "12345")
+                                 )
+                          )
+                          .ReturnsAsync("changelog");
+        _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns((DomainAccount)null);
+        _mockReleasesContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainModpackRelease, bool>>()))
+                            .Returns<Func<DomainModpackRelease, bool>>(_ => new DomainModpackRelease { Version = "3.0.0" });
+
+        await _subject.MakeDraftRelease("3.0.0", commit);
+
+        _mockGithubService.Verify(x => x.GenerateChangelog("3.0.0", It.Is<IReadOnlyList<DomainWorkshopMod>>(mods => mods.Count == 1)), Times.Once);
     }
 }

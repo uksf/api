@@ -15,8 +15,13 @@ public interface IReleaseService
     Task AddHistoricReleases(IEnumerable<DomainModpackRelease> releases);
 }
 
-public class ReleaseService(IReleasesContext releasesContext, IAccountContext accountContext, IGithubService githubService, IUksfLogger logger)
-    : IReleaseService
+public class ReleaseService(
+    IReleasesContext releasesContext,
+    IAccountContext accountContext,
+    IGithubService githubService,
+    IWorkshopModsContext workshopModsContext,
+    IUksfLogger logger
+) : IReleaseService
 {
     public DomainModpackRelease GetRelease(string version)
     {
@@ -25,7 +30,12 @@ public class ReleaseService(IReleasesContext releasesContext, IAccountContext ac
 
     public async Task<DomainModpackRelease> MakeDraftRelease(string version, GithubCommit commit)
     {
-        var changelog = await githubService.GenerateChangelog(version);
+        var pendingMods = workshopModsContext.Get()
+                                             .Where(m => m.Status is WorkshopModStatus.InstalledPendingRelease or WorkshopModStatus.UpdatedPendingRelease
+                                                        or WorkshopModStatus.UninstalledPendingRelease
+                                             )
+                                             .ToList();
+        var changelog = await githubService.GenerateChangelog(version, pendingMods);
         var creatorId = accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
         await releasesContext.Add(
             new DomainModpackRelease

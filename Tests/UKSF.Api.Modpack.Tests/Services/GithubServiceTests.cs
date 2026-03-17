@@ -7,6 +7,7 @@ using Octokit;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Configuration;
 using UKSF.Api.Core.Services;
+using UKSF.Api.Modpack.Models;
 using UKSF.Api.Modpack.Services;
 using Xunit;
 
@@ -225,5 +226,221 @@ public class GithubServiceTests
         var result = _subject.VerifySignature(null!, body);
 
         result.Should().BeFalse();
+    }
+
+    private static Issue CreateIssue(string title, string body, int number, params string[] labelNames)
+    {
+        var labels = labelNames.Select((name, i) => new Label(i, "", name, "", "", "", false)).ToList();
+        return new Issue(
+            "",
+            $"https://github.com/uksf/modpack/issues/{number}",
+            "",
+            "",
+            number,
+            ItemState.Open,
+            title,
+            body,
+            null,
+            null,
+            labels,
+            null,
+            null,
+            null,
+            0,
+            null,
+            null,
+            DateTimeOffset.UtcNow,
+            null,
+            number,
+            "",
+            false,
+            null,
+            null,
+            null,
+            null
+        );
+    }
+
+    [Fact]
+    public void BuildChangelog_WithNoIssuesOrMods_ReturnsEmptyString()
+    {
+        var result = GithubService.BuildChangelog([], []);
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void BuildChangelog_WithOnlyIssues_ReturnsStandardChangelog()
+    {
+        var issues = new List<Issue> { CreateIssue("New feature", null, 1, "type/feature"), CreateIssue("Bug fix", null, 2, "type/bug fix") };
+
+        var result = GithubService.BuildChangelog(issues, []);
+
+        result.Should().Contain("#### Added");
+        result.Should().Contain("- New feature [(#1)](https://github.com/uksf/modpack/issues/1)");
+        result.Should().Contain("#### Fixed");
+        result.Should().Contain("- Bug fix [(#2)](https://github.com/uksf/modpack/issues/2)");
+    }
+
+    [Fact]
+    public void BuildChangelog_WithOnlyWorkshopMods_ReturnsModEntries()
+    {
+        var mods = new List<DomainWorkshopMod>
+        {
+            new()
+            {
+                Name = "CBA_A3",
+                SteamId = "450814997",
+                Status = WorkshopModStatus.InstalledPendingRelease
+            },
+            new()
+            {
+                Name = "ACE3",
+                SteamId = "463939057",
+                Status = WorkshopModStatus.UpdatedPendingRelease
+            },
+            new()
+            {
+                Name = "Old Mod",
+                SteamId = "111111111",
+                Status = WorkshopModStatus.UninstalledPendingRelease,
+                ModpackVersionFirstAdded = "1.0.0"
+            }
+        };
+
+        var result = GithubService.BuildChangelog([], mods);
+
+        result.Should().Contain("#### Added\n- CBA_A3\n\n");
+        result.Should().Contain("#### Updated\n- ACE3\n\n");
+        result.Should().Contain("#### Removed\n- Old Mod\n\n");
+    }
+
+    [Fact]
+    public void BuildChangelog_MergesModsIntoExistingSections()
+    {
+        var issues = new List<Issue> { CreateIssue("Zulu feature", null, 1, "type/feature") };
+        var mods = new List<DomainWorkshopMod>
+        {
+            new()
+            {
+                Name = "Alpha Mod",
+                SteamId = "12345",
+                Status = WorkshopModStatus.InstalledPendingRelease
+            }
+        };
+
+        var result = GithubService.BuildChangelog(issues, mods);
+
+        result.Should().Contain("#### Added");
+        var addedSection = result.Split("#### Added")[1].Split("\n\n")[0];
+        addedSection.Should().Contain("- Alpha Mod");
+        addedSection.Should().Contain("- Zulu feature");
+        addedSection.IndexOf("Alpha Mod", StringComparison.Ordinal).Should().BeLessThan(addedSection.IndexOf("Zulu feature", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void BuildChangelog_DeduplicatesModWhenIssueBodyContainsSteamId()
+    {
+        var issues = new List<Issue> { CreateIssue("Add CBA_A3", "https://steamcommunity.com/sharedfiles/filedetails/?id=463939057", 1, "type/mod addition") };
+        var mods = new List<DomainWorkshopMod>
+        {
+            new()
+            {
+                Name = "CBA_A3",
+                SteamId = "463939057",
+                Status = WorkshopModStatus.InstalledPendingRelease
+            }
+        };
+
+        var result = GithubService.BuildChangelog(issues, mods);
+
+        result.Should().Contain("#### Added");
+        var addedSection = result.Split("#### Added")[1].Split("\n\n")[0];
+        addedSection.Split("CBA_A3").Should().HaveCount(2); // appears once (split gives 2 parts)
+        addedSection.Should().Contain("[(#1)]"); // the issue entry, not the mod entry
+    }
+
+    [Fact]
+    public void BuildChangelog_DoesNotDeduplicateWhenIssueBodyIsNull()
+    {
+        var issues = new List<Issue> { CreateIssue("Add some mod", null, 1, "type/mod addition") };
+        var mods = new List<DomainWorkshopMod>
+        {
+            new()
+            {
+                Name = "Some Mod",
+                SteamId = "463939057",
+                Status = WorkshopModStatus.InstalledPendingRelease
+            }
+        };
+
+        var result = GithubService.BuildChangelog(issues, mods);
+
+        var addedSection = result.Split("#### Added")[1].Split("\n\n")[0];
+        addedSection.Should().Contain("- Add some mod");
+        addedSection.Should().Contain("- Some Mod");
+    }
+
+    [Fact]
+    public void BuildChangelog_ExcludesUnreleasedModsFromRemoved()
+    {
+        var mods = new List<DomainWorkshopMod>
+        {
+            new()
+            {
+                Name = "Never Released Mod",
+                SteamId = "12345",
+                Status = WorkshopModStatus.UninstalledPendingRelease,
+                ModpackVersionFirstAdded = null
+            }
+        };
+
+        var result = GithubService.BuildChangelog([], mods);
+
+        result.Should().NotContain("#### Removed");
+        result.Should().NotContain("Never Released Mod");
+    }
+
+    [Fact]
+    public void BuildChangelog_IncludesPreviouslyReleasedModInRemoved()
+    {
+        var mods = new List<DomainWorkshopMod>
+        {
+            new()
+            {
+                Name = "Old Mod",
+                SteamId = "12345",
+                Status = WorkshopModStatus.UninstalledPendingRelease,
+                ModpackVersionFirstAdded = "1.0.0"
+            }
+        };
+
+        var result = GithubService.BuildChangelog([], mods);
+
+        result.Should().Contain("#### Removed");
+        result.Should().Contain("- Old Mod");
+    }
+
+    [Fact]
+    public void BuildChangelog_MergesUpdatedModsWithSpecialIssueFormat()
+    {
+        var issues = new List<Issue> { CreateIssue("CBA_A3 1.2.3", null, 1, "type/mod update") };
+        var mods = new List<DomainWorkshopMod>
+        {
+            new()
+            {
+                Name = "ACE3",
+                SteamId = "463939057",
+                Status = WorkshopModStatus.UpdatedPendingRelease
+            }
+        };
+
+        var result = GithubService.BuildChangelog(issues, mods);
+
+        result.Should().Contain("#### Updated");
+        var updatedSection = result.Split("#### Updated")[1].Split("\n\n")[0];
+        updatedSection.Should().Contain("- ACE3");
+        updatedSection.Should().Contain("- CBA_A3 to [1.2.3]");
+        updatedSection.IndexOf("ACE3", StringComparison.Ordinal).Should().BeLessThan(updatedSection.IndexOf("CBA_A3", StringComparison.Ordinal));
     }
 }

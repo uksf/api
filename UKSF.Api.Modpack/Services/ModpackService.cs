@@ -46,6 +46,7 @@ public class ModpackService(
     IHubContext<ModpackHub, IModpackClient> modpackHub,
     IHttpContextService httpContextService,
     IGitService gitService,
+    IWorkshopModsContext workshopModsContext,
     IUksfLogger logger
 ) : IModpackService
 {
@@ -132,7 +133,12 @@ public class ModpackService(
     public async Task RegenerateReleaseDraftChangelog(string version)
     {
         var release = releaseService.GetRelease(version);
-        var newChangelog = await githubService.GenerateChangelog(version);
+        var pendingMods = workshopModsContext.Get()
+                                             .Where(m => m.Status is WorkshopModStatus.InstalledPendingRelease or WorkshopModStatus.UpdatedPendingRelease
+                                                        or WorkshopModStatus.UninstalledPendingRelease
+                                             )
+                                             .ToList();
+        var newChangelog = await githubService.GenerateChangelog(version, pendingMods);
         release.Changelog = newChangelog;
 
         logger.LogAudit($"Release {version} draft changelog regenerated from github");

@@ -20,7 +20,7 @@ public interface IGithubService
     Task<GithubCommit> GetPushEvent(PushWebhookPayload payload, string latestCommit = "");
     bool VerifySignature(string signature, string body);
     Task<bool> IsReferenceValid(string reference);
-    Task<string> GenerateChangelog(string version);
+    Task<string> GenerateChangelog(string version, IReadOnlyList<DomainWorkshopMod> pendingWorkshopMods);
     Task PublishRelease(DomainModpackRelease release);
 }
 
@@ -107,13 +107,13 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
         };
     }
 
-    public async Task<string> GenerateChangelog(string version)
+    public async Task<string> GenerateChangelog(string version, IReadOnlyList<DomainWorkshopMod> pendingWorkshopMods)
     {
         var client = await githubClientService.GetAuthenticatedClient();
         var milestone = await GetOpenMilestone(version);
         if (milestone == null)
         {
-            return "No milestone found";
+            return pendingWorkshopMods.Count > 0 ? BuildChangelog([], pendingWorkshopMods) : "No milestone found";
         }
 
         var issues = await client.Issue.GetAllForRepository(
@@ -122,21 +122,7 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
             new RepositoryIssueRequest { Milestone = milestone.Number.ToString(), State = ItemStateFilter.All }
         );
 
-        var changelog = "";
-
-        var added = issues.Where(x => x.Labels.Any(y => LabelsAdded.Contains(y.Name) && !LabelsExclude.Contains(y.Name))).OrderBy(x => x.Title).ToList();
-        var changed = issues.Where(x => x.Labels.Any(y => LabelsChanged.Contains(y.Name) && !LabelsExclude.Contains(y.Name))).OrderBy(x => x.Title).ToList();
-        var fixes = issues.Where(x => x.Labels.Any(y => LabelsFixed.Contains(y.Name) && !LabelsExclude.Contains(y.Name))).OrderBy(x => x.Title).ToList();
-        var updated = issues.Where(x => x.Labels.Any(y => LabelsUpdated.Contains(y.Name) && !LabelsExclude.Contains(y.Name))).OrderBy(x => x.Title).ToList();
-        var removed = issues.Where(x => x.Labels.Any(y => LabelsRemoved.Contains(y.Name) && !LabelsExclude.Contains(y.Name))).OrderBy(x => x.Title).ToList();
-
-        AddChangelogSection(ref changelog, added, "Added");
-        AddChangelogSection(ref changelog, changed, "Changed");
-        AddChangelogSection(ref changelog, fixes, "Fixed");
-        AddChangelogUpdated(ref changelog, updated, "Updated");
-        AddChangelogSection(ref changelog, removed, "Removed");
-
-        return changelog;
+        return BuildChangelog(issues.ToList(), pendingWorkshopMods);
     }
 
     public async Task PublishRelease(DomainModpackRelease release)
@@ -240,18 +226,70 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
         }
     }
 
-    private static void AddChangelogUpdated(ref string changelog, IReadOnlyCollection<Issue> issues, string header)
+    internal static string BuildChangelog(IReadOnlyList<Issue> issues, IReadOnlyList<DomainWorkshopMod> pendingWorkshopMods)
     {
-        if (issues.Count != 0)
+        var added = issues.Where(x => x.Labels.Any(y => LabelsAdded.Contains(y.Name) && !LabelsExclude.Contains(y.Name))).ToList();
+        var changed = issues.Where(x => x.Labels.Any(y => LabelsChanged.Contains(y.Name) && !LabelsExclude.Contains(y.Name))).ToList();
+        var fixes = issues.Where(x => x.Labels.Any(y => LabelsFixed.Contains(y.Name) && !LabelsExclude.Contains(y.Name))).ToList();
+        var updated = issues.Where(x => x.Labels.Any(y => LabelsUpdated.Contains(y.Name) && !LabelsExclude.Contains(y.Name))).ToList();
+        var removed = issues.Where(x => x.Labels.Any(y => LabelsRemoved.Contains(y.Name) && !LabelsExclude.Contains(y.Name))).ToList();
+
+        var addedMods = pendingWorkshopMods.Where(m => m.Status == WorkshopModStatus.InstalledPendingRelease).ToList();
+        var updatedMods = pendingWorkshopMods.Where(m => m.Status == WorkshopModStatus.UpdatedPendingRelease).ToList();
+        var removedMods = pendingWorkshopMods.Where(m => m.Status == WorkshopModStatus.UninstalledPendingRelease && m.ModpackVersionFirstAdded is not null)
+                                             .ToList();
+
+        var changelog = "";
+        AddMergedSection(ref changelog, added, addedMods, "Added");
+        AddChangelogSection(ref changelog, changed, "Changed");
+        AddChangelogSection(ref changelog, fixes, "Fixed");
+        AddMergedUpdatedSection(ref changelog, updated, updatedMods, "Updated");
+        AddMergedSection(ref changelog, removed, removedMods, "Removed");
+
+        return changelog;
+    }
+
+    private static bool IsModCoveredByIssue(DomainWorkshopMod mod, IReadOnlyCollection<Issue> issues)
+    {
+        return issues.Any(issue => issue.Body is not null && issue.Body.Contains(mod.SteamId));
+    }
+
+    private static void AddMergedSection(ref string changelog, IReadOnlyCollection<Issue> issues, IReadOnlyCollection<DomainWorkshopMod> mods, string header)
+    {
+        var issueEntries = issues.Select(x => (SortKey: x.Title, Entry: $"\n- {x.Title} [(#{x.Number})]({x.HtmlUrl})")).ToList();
+        var modEntries = mods.Where(m => !IsModCoveredByIssue(m, issues)).Select(m => (SortKey: m.Name, Entry: $"\n- {m.Name}")).ToList();
+
+        var allEntries = issueEntries.Concat(modEntries).OrderBy(x => x.SortKey).ToList();
+        if (allEntries.Count != 0)
         {
             changelog += $"#### {header}";
-            changelog += issues.Select(x =>
-                                   {
-                                       var titleParts = x.Title.Split(" ");
-                                       return $"\n- {titleParts[0]} to [{titleParts[^1]}]({x.HtmlUrl})";
-                                   }
-                               )
-                               .Aggregate((a, b) => a + b);
+            changelog += allEntries.Select(x => x.Entry).Aggregate((a, b) => a + b);
+            changelog += "\n\n";
+        }
+    }
+
+    private static void AddMergedUpdatedSection(
+        ref string changelog,
+        IReadOnlyCollection<Issue> issues,
+        IReadOnlyCollection<DomainWorkshopMod> mods,
+        string header
+    )
+    {
+        var issueEntries = issues.Select(x =>
+                                     {
+                                         var titleParts = x.Title.Split(" ");
+                                         return (SortKey: titleParts[0], Entry: $"\n- {titleParts[0]} to [{titleParts[^1]}]({x.HtmlUrl})");
+                                     }
+                                 )
+                                 .ToList();
+
+        var modEntries = mods.Where(m => !IsModCoveredByIssue(m, issues)).Select(m => (SortKey: m.Name, Entry: $"\n- {m.Name}")).ToList();
+
+        var allEntries = issueEntries.Concat(modEntries).OrderBy(x => x.SortKey).ToList();
+        if (allEntries.Count != 0)
+        {
+            changelog += $"#### {header}";
+            changelog += allEntries.Select(x => x.Entry).Aggregate((a, b) => a + b);
             changelog += "\n\n";
         }
     }
