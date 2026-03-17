@@ -313,4 +313,54 @@ public class WorkshopModsServiceTests
 
         _context.Verify(x => x.Delete(workshopMod), Times.Once);
     }
+
+    [Fact]
+    public void GetPendingReleaseMods_ShouldReturnOnlyPendingStatuses()
+    {
+        var mods = new List<DomainWorkshopMod>
+        {
+            new()
+            {
+                Name = "Added Mod",
+                SteamId = "1",
+                Status = WorkshopModStatus.InstalledPendingRelease
+            },
+            new()
+            {
+                Name = "Updated Mod",
+                SteamId = "2",
+                Status = WorkshopModStatus.UpdatedPendingRelease
+            },
+            new()
+            {
+                Name = "Removed Mod",
+                SteamId = "3",
+                Status = WorkshopModStatus.UninstalledPendingRelease
+            },
+            new()
+            {
+                Name = "Installed Mod",
+                SteamId = "4",
+                Status = WorkshopModStatus.Installed
+            },
+            new()
+            {
+                Name = "Installing Mod",
+                SteamId = "5",
+                Status = WorkshopModStatus.Installing
+            },
+            new()
+            {
+                Name = "Error Mod",
+                SteamId = "6",
+                Status = WorkshopModStatus.Error
+            }
+        };
+        _context.Setup(x => x.Get()).Returns(mods);
+
+        var result = _subject.GetPendingReleaseMods();
+
+        result.Should().HaveCount(3);
+        result.Select(m => m.Name).Should().BeEquivalentTo(["Added Mod", "Updated Mod", "Removed Mod"]);
+    }
 }

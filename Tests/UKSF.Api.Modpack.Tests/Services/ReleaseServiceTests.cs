@@ -16,18 +16,18 @@ public class ReleaseServiceTests
     private readonly Mock<IReleasesContext> _mockReleasesContext = new();
     private readonly Mock<IAccountContext> _mockAccountContext = new();
     private readonly Mock<IGithubService> _mockGithubService = new();
-    private readonly Mock<IWorkshopModsContext> _mockWorkshopModsContext = new();
+    private readonly Mock<IWorkshopModsService> _mockWorkshopModsService = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly ReleaseService _subject;
 
     public ReleaseServiceTests()
     {
-        _mockWorkshopModsContext.Setup(x => x.Get()).Returns(new List<DomainWorkshopMod>());
+        _mockWorkshopModsService.Setup(x => x.GetPendingReleaseMods()).Returns(new List<DomainWorkshopMod>());
         _subject = new ReleaseService(
             _mockReleasesContext.Object,
             _mockAccountContext.Object,
             _mockGithubService.Object,
-            _mockWorkshopModsContext.Object,
+            _mockWorkshopModsService.Object,
             _mockLogger.Object
         );
     }
@@ -213,31 +213,23 @@ public class ReleaseServiceTests
     public async Task MakeDraftRelease_passes_pending_workshop_mods_to_changelog_generation()
     {
         var commit = new GithubCommit { Author = "test@example.com" };
-        var pendingMod = new DomainWorkshopMod
+        var pendingMods = new List<DomainWorkshopMod>
         {
-            Name = "Test Mod",
-            SteamId = "12345",
-            Status = WorkshopModStatus.InstalledPendingRelease
+            new()
+            {
+                Name = "Test Mod",
+                SteamId = "12345",
+                Status = WorkshopModStatus.InstalledPendingRelease
+            }
         };
-        var installedMod = new DomainWorkshopMod
-        {
-            Name = "Already Installed",
-            SteamId = "99999",
-            Status = WorkshopModStatus.Installed
-        };
-        _mockWorkshopModsContext.Setup(x => x.Get()).Returns(new List<DomainWorkshopMod> { pendingMod, installedMod });
-        _mockGithubService.Setup(x => x.GenerateChangelog(
-                                     "3.0.0",
-                                     It.Is<IReadOnlyList<DomainWorkshopMod>>(mods => mods.Count == 1 && mods[0].SteamId == "12345")
-                                 )
-                          )
-                          .ReturnsAsync("changelog");
+        _mockWorkshopModsService.Setup(x => x.GetPendingReleaseMods()).Returns(pendingMods);
+        _mockGithubService.Setup(x => x.GenerateChangelog("3.0.0", pendingMods)).ReturnsAsync("changelog");
         _mockAccountContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainAccount, bool>>())).Returns((DomainAccount)null);
         _mockReleasesContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainModpackRelease, bool>>()))
                             .Returns<Func<DomainModpackRelease, bool>>(_ => new DomainModpackRelease { Version = "3.0.0" });
 
         await _subject.MakeDraftRelease("3.0.0", commit);
 
-        _mockGithubService.Verify(x => x.GenerateChangelog("3.0.0", It.Is<IReadOnlyList<DomainWorkshopMod>>(mods => mods.Count == 1)), Times.Once);
+        _mockGithubService.Verify(x => x.GenerateChangelog("3.0.0", pendingMods), Times.Once);
     }
 }

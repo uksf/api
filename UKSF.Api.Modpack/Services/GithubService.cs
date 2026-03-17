@@ -278,7 +278,10 @@ public class GithubService(IUksfLogger logger, IOptions<AppSettings> appSettings
         var issueEntries = issues.Select(x =>
                                      {
                                          var titleParts = x.Title.Split(" ");
-                                         return (SortKey: titleParts[0], Entry: $"\n- {titleParts[0]} to [{titleParts[^1]}]({x.HtmlUrl})");
+                                         var entry = titleParts.Length > 1
+                                             ? $"\n- {titleParts[0]} to [{titleParts[^1]}]({x.HtmlUrl})"
+                                             : $"\n- {x.Title} [(#{x.Number})]({x.HtmlUrl})";
+                                         return (SortKey: titleParts[0], Entry: entry);
                                      }
                                  )
                                  .ToList();

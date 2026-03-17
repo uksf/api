@@ -434,8 +434,6 @@ public class GameServersService(
         gameServer.Status = new GameServerStatus();
         StatusCache.TryRemove(gameServer.Id, out _);
         await gameServersContext.Replace(gameServer);
-
-        logger.LogInfo($"Killed headless clients for '{gameServer.Name}' after shutdown_complete");
     }
 
     private async Task HandleServerStatusEvent(int apiPort, Dictionary<string, object> data)

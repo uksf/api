@@ -15,6 +15,7 @@ public interface IWorkshopModsService
     Task UninstallWorkshopMod(string workshopModId);
     Task DeleteWorkshopMod(string workshopModId);
     Task ResolveWorkshopModManualIntervention(string workshopModId, List<string> selectedPbos);
+    List<DomainWorkshopMod> GetPendingReleaseMods();
 }
 
 public class WorkshopModsService(
@@ -24,6 +25,15 @@ public class WorkshopModsService(
     IUksfLogger logger
 ) : IWorkshopModsService
 {
+    public List<DomainWorkshopMod> GetPendingReleaseMods()
+    {
+        return workshopModsContext.Get()
+                                  .Where(m => m.Status is WorkshopModStatus.InstalledPendingRelease or WorkshopModStatus.UpdatedPendingRelease
+                                             or WorkshopModStatus.UninstalledPendingRelease
+                                  )
+                                  .ToList();
+    }
+
     public async Task<DateTime> GetWorkshopModUpdatedDate(string workshopModId)
     {
         var info = await steamApiService.GetWorkshopModInfo(workshopModId);

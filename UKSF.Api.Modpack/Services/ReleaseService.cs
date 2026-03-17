@@ -19,7 +19,7 @@ public class ReleaseService(
     IReleasesContext releasesContext,
     IAccountContext accountContext,
     IGithubService githubService,
-    IWorkshopModsContext workshopModsContext,
+    IWorkshopModsService workshopModsService,
     IUksfLogger logger
 ) : IReleaseService
 {
@@ -30,11 +30,7 @@ public class ReleaseService(
 
     public async Task<DomainModpackRelease> MakeDraftRelease(string version, GithubCommit commit)
     {
-        var pendingMods = workshopModsContext.Get()
-                                             .Where(m => m.Status is WorkshopModStatus.InstalledPendingRelease or WorkshopModStatus.UpdatedPendingRelease
-                                                        or WorkshopModStatus.UninstalledPendingRelease
-                                             )
-                                             .ToList();
+        var pendingMods = workshopModsService.GetPendingReleaseMods();
         var changelog = await githubService.GenerateChangelog(version, pendingMods);
         var creatorId = accountContext.GetSingle(x => x.Email == commit.Author)?.Id;
         await releasesContext.Add(
