@@ -809,13 +809,14 @@ public class GameServersServiceTests
     }
 
     [Fact]
-    public async Task StopGameServer_ShouldOnlySendShutdownToServerPort()
+    public async Task StopGameServer_WhenRunning_ShouldSendShutdownCommand()
     {
         var gameServer = new DomainGameServer
         {
             Id = "server-1",
             ApiPort = 2303,
-            NumberHeadlessClients = 2
+            NumberHeadlessClients = 2,
+            Status = new GameServerStatus { Running = true }
         };
 
         var mockHandler = new MockHttpMessageHandler(System.Net.HttpStatusCode.OK);
@@ -825,6 +826,30 @@ public class GameServersServiceTests
 
         mockHandler.RequestCount.Should().Be(1);
         mockHandler.LastRequestUri.Should().Contain("2303");
+    }
+
+    [Fact]
+    public async Task StopGameServer_WhenNotRunning_ShouldKillInsteadOfShutdown()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            ApiPort = 2303,
+            ProcessId = 1001,
+            Status = new GameServerStatus { Launching = true, Running = false },
+            HeadlessClientProcessIds = [2001]
+        };
+
+        _mockProcessUtilities.Setup(x => x.FindProcessById(It.IsAny<int>())).Returns((System.Diagnostics.Process)null);
+
+        await _subject.StopGameServer(gameServer);
+
+        _mockProcessUtilities.Verify(x => x.FindProcessById(1001), Times.Once);
+        gameServer.Status.Running.Should().BeFalse();
+        gameServer.ProcessId.Should().BeNull();
+        gameServer.HeadlessClientProcessIds.Should().BeEmpty();
+        _mockGameServersContext.Verify(x => x.Replace(gameServer), Times.Once);
+        _mockHttpClientFactory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
     }
 }
 

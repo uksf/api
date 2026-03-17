@@ -233,6 +233,12 @@ public class GameServersService(
 
     public async Task StopGameServer(DomainGameServer gameServer)
     {
+        if (!gameServer.Status.Running)
+        {
+            await KillGameServer(gameServer);
+            return;
+        }
+
         await SendShutdownAsync(gameServer.ApiPort, $"game server '{gameServer.Name}'");
     }
 
