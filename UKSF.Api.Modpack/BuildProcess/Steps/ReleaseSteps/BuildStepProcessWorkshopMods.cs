@@ -57,7 +57,5 @@ public class BuildStepProcessWorkshopMods : BuildStep
         }
 
         StepLogger.LogSurround("Processed workshop mods pending uninstallation");
-
-        StepLogger.Log("Workshop mods processing completed");
     }
 }
