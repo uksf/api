@@ -25,8 +25,6 @@ public class PersistenceSessionsServiceTests
         _subject = new PersistenceSessionsService(_mockContext.Object, _mockLogger.Object);
     }
 
-    #region Load tests
-
     [Fact]
     public void Load_WithExistingKey_ReturnsSession()
     {
@@ -48,10 +46,6 @@ public class PersistenceSessionsServiceTests
 
         result.Should().BeNull();
     }
-
-    #endregion
-
-    #region Save tests
 
     [Fact]
     public async Task SaveAsync_WithNewKey_CreatesSession()
@@ -90,10 +84,6 @@ public class PersistenceSessionsServiceTests
 
         _mockContext.Verify(x => x.Add(It.Is<DomainPersistenceSession>(s => s.SavedAt >= before && s.SavedAt <= after)), Times.Once);
     }
-
-    #endregion
-
-    #region Chunk reassembly tests
 
     [Fact]
     public async Task HandleSaveChunkAsync_SingleChunk_SavesImmediately()
@@ -322,10 +312,6 @@ public class PersistenceSessionsServiceTests
         _mockContext.Verify(x => x.Add(It.Is<DomainPersistenceSession>(s => s.Key == "normal-key")), Times.Once);
     }
 
-    #endregion
-
-    #region Round-trip tests
-
     [Fact]
     public void RoundTrip_ObjectWithAllFields_PreservesData()
     {
@@ -337,17 +323,47 @@ public class PersistenceSessionsServiceTests
             VectorDirUp = [new double[] { 0.0, 0.8, 0.0 }, new double[] { 0.0, 0.0, 1.0 }],
             Damage = 0.35,
             Fuel = 0.72,
-            TurretWeapons = [new object[] { new object[] { new object[] { 0, 1 }, new object[] { "LMG_Minigun", "missiles_DAR" } } }],
-            TurretMagazines = [new object[] { new object[] { new object[] { 0 }, new object[] { "200Rnd_65x39_cased_Box" } } }],
-            PylonLoadout = [new object[] { "PylonMissile_1Rnd_Missile_AA_04_F", 1 }, new object[] { "PylonRack_12Rnd_missiles", 12 }],
+            TurretWeapons =
+            [
+                new TurretWeaponsEntry { TurretPath = [0, 1], Weapons = ["LMG_Minigun", "missiles_DAR"] }
+            ],
+            TurretMagazines =
+            [
+                new TurretMagazineEntry
+                {
+                    ClassName = "200Rnd_65x39_cased_Box",
+                    TurretPath = [0],
+                    AmmoCount = 200
+                }
+            ],
+            PylonLoadout =
+            [
+                new PylonEntry { Magazine = "PylonMissile_1Rnd_Missile_AA_04_F", Ammo = 1 },
+                new PylonEntry { Magazine = "PylonRack_12Rnd_missiles", Ammo = 12 }
+            ],
             Logistics = [100.0, 50.0, 75.0, 200.0],
-            Attached = [new object[] { "ACE_IR_Strobe_Effect", new object[] { 0.0, 0.0, 1.5 } }],
-            RackChannels = [new object[] { 0, 1, 2 }],
-            AceCargo = [new object[] { "Box_IND_Ammo_F", new object[] { }, new object[] { }, "Ammo Box" }],
-            Inventory = [new object[] { "item1", "item2" }, new object[] { "mag1", "mag2" }],
-            AceFortify = [new object[] { "fort1", 5 }],
-            AceMedical = [0, false, false],
-            AceRepair = [new object[] { "repair1", 3 }],
+            Attached =
+            [
+                new AttachedObject { ClassName = "ACE_IR_Strobe_Effect", Offset = [0.0, 0.0, 1.5] }
+            ],
+            RackChannels = [0, 1, 2],
+            AceCargo =
+            [
+                new AceCargoEntry { ClassName = "Box_IND_Ammo_F", CustomName = "Ammo Box" }
+            ],
+            Inventory =
+                new InventoryContainer
+                {
+                    Weapons = new CargoSlot { ClassNames = ["item1"], Counts = [1] }, Magazines = new CargoSlot { ClassNames = ["mag1"], Counts = [10] }
+                },
+            AceFortify = new AceFortifyState { IsAceFortification = false, Side = "WEST" },
+            AceMedical = new ObjectMedicalState
+            {
+                MedicClass = 0,
+                MedicalVehicle = false,
+                MedicalFacility = false
+            },
+            AceRepair = new ObjectRepairState { RepairVehicle = 0, RepairFacility = 0 },
             CustomName = "Custom Helicopter"
         };
 
@@ -364,17 +380,39 @@ public class PersistenceSessionsServiceTests
         deserialized.CustomName.Should().Be(original.CustomName);
         deserialized.Logistics.Should().BeEquivalentTo(original.Logistics);
 
-        // Verify complex arrays survived round-trip by re-serializing
-        JsonSerializer.Serialize(deserialized.TurretWeapons).Should().Be(JsonSerializer.Serialize(original.TurretWeapons));
-        JsonSerializer.Serialize(deserialized.TurretMagazines).Should().Be(JsonSerializer.Serialize(original.TurretMagazines));
-        JsonSerializer.Serialize(deserialized.PylonLoadout).Should().Be(JsonSerializer.Serialize(original.PylonLoadout));
-        JsonSerializer.Serialize(deserialized.Attached).Should().Be(JsonSerializer.Serialize(original.Attached));
-        JsonSerializer.Serialize(deserialized.RackChannels).Should().Be(JsonSerializer.Serialize(original.RackChannels));
-        JsonSerializer.Serialize(deserialized.AceCargo).Should().Be(JsonSerializer.Serialize(original.AceCargo));
-        JsonSerializer.Serialize(deserialized.Inventory).Should().Be(JsonSerializer.Serialize(original.Inventory));
-        JsonSerializer.Serialize(deserialized.AceFortify).Should().Be(JsonSerializer.Serialize(original.AceFortify));
-        JsonSerializer.Serialize(deserialized.AceMedical).Should().Be(JsonSerializer.Serialize(original.AceMedical));
-        JsonSerializer.Serialize(deserialized.AceRepair).Should().Be(JsonSerializer.Serialize(original.AceRepair));
+        deserialized.TurretWeapons.Should().HaveCount(1);
+        deserialized.TurretWeapons[0].TurretPath.Should().BeEquivalentTo(new[] { 0, 1 });
+        deserialized.TurretWeapons[0].Weapons.Should().BeEquivalentTo(new[] { "LMG_Minigun", "missiles_DAR" });
+
+        deserialized.TurretMagazines.Should().HaveCount(1);
+        deserialized.TurretMagazines[0].ClassName.Should().Be("200Rnd_65x39_cased_Box");
+        deserialized.TurretMagazines[0].TurretPath.Should().BeEquivalentTo(new[] { 0 });
+
+        deserialized.PylonLoadout.Should().HaveCount(2);
+        deserialized.PylonLoadout[0].Magazine.Should().Be("PylonMissile_1Rnd_Missile_AA_04_F");
+        deserialized.PylonLoadout[0].Ammo.Should().Be(1);
+
+        deserialized.Attached.Should().HaveCount(1);
+        deserialized.Attached[0].ClassName.Should().Be("ACE_IR_Strobe_Effect");
+        deserialized.Attached[0].Offset.Should().BeEquivalentTo(new[] { 0.0, 0.0, 1.5 });
+
+        deserialized.RackChannels.Should().BeEquivalentTo(new[] { 0, 1, 2 });
+
+        deserialized.AceCargo.Should().HaveCount(1);
+        deserialized.AceCargo[0].ClassName.Should().Be("Box_IND_Ammo_F");
+        deserialized.AceCargo[0].CustomName.Should().Be("Ammo Box");
+
+        deserialized.Inventory.Weapons.ClassNames.Should().BeEquivalentTo(new[] { "item1" });
+        deserialized.Inventory.Magazines.ClassNames.Should().BeEquivalentTo(new[] { "mag1" });
+
+        deserialized.AceFortify.IsAceFortification.Should().BeFalse();
+        deserialized.AceFortify.Side.Should().Be("WEST");
+
+        deserialized.AceMedical.MedicClass.Should().Be(0);
+        deserialized.AceMedical.MedicalVehicle.Should().BeFalse();
+
+        deserialized.AceRepair.RepairVehicle.Should().Be(0);
+        deserialized.AceRepair.RepairFacility.Should().Be(0);
     }
 
     [Fact]
@@ -399,19 +437,19 @@ public class PersistenceSessionsServiceTests
         deserialized.Attached.Should().BeEmpty();
         deserialized.RackChannels.Should().BeEmpty();
         deserialized.AceCargo.Should().BeEmpty();
-        deserialized.Inventory.Should().BeEmpty();
-        deserialized.AceFortify.Should().BeEmpty();
-        deserialized.AceMedical.Should().BeEmpty();
-        deserialized.AceRepair.Should().BeEmpty();
+        deserialized.Inventory.Should().NotBeNull();
+        deserialized.AceFortify.Should().NotBeNull();
+        deserialized.AceMedical.Should().NotBeNull();
+        deserialized.AceRepair.Should().NotBeNull();
         deserialized.CustomName.Should().Be(string.Empty);
     }
 
     [Fact]
-    public void RoundTrip_ObjectWithEmptyArrays_PreservesData()
+    public void RoundTrip_ObjectWithEmptyCollections_PreservesData()
     {
         var original = new PersistenceObject
         {
-            Id = "empty-arrays",
+            Id = "empty-collections",
             Type = "B_Truck_01_transport_F",
             Position = [],
             VectorDirUp = [],
@@ -422,17 +460,17 @@ public class PersistenceSessionsServiceTests
             Attached = [],
             RackChannels = [],
             AceCargo = [],
-            Inventory = [],
-            AceFortify = [],
-            AceMedical = [],
-            AceRepair = []
+            Inventory = new InventoryContainer(),
+            AceFortify = new AceFortifyState(),
+            AceMedical = new ObjectMedicalState(),
+            AceRepair = new ObjectRepairState()
         };
 
         var json = JsonSerializer.Serialize(original);
         var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json);
 
         deserialized.Should().NotBeNull();
-        deserialized!.Id.Should().Be("empty-arrays");
+        deserialized!.Id.Should().Be("empty-collections");
         deserialized.Position.Should().BeEmpty();
         deserialized.VectorDirUp.Should().BeEmpty();
         deserialized.TurretWeapons.Should().BeEmpty();
@@ -442,10 +480,6 @@ public class PersistenceSessionsServiceTests
         deserialized.Attached.Should().BeEmpty();
         deserialized.RackChannels.Should().BeEmpty();
         deserialized.AceCargo.Should().BeEmpty();
-        deserialized.Inventory.Should().BeEmpty();
-        deserialized.AceFortify.Should().BeEmpty();
-        deserialized.AceMedical.Should().BeEmpty();
-        deserialized.AceRepair.Should().BeEmpty();
     }
 
     [Fact]
@@ -455,14 +489,26 @@ public class PersistenceSessionsServiceTests
         {
             Id = "nested-cargo",
             Type = "B_CargoNet_01_ammo_F",
-            AceCargo = [new object[] { "Box_IND_Ammo_F", new object[] { "nested_item_1" }, new object[] { "inv1", "inv2" }, "Ammo Box" }]
+            AceCargo =
+            [
+                new AceCargoEntry
+                {
+                    ClassName = "Box_IND_Ammo_F",
+                    Cargo = [new AceCargoEntry { ClassName = "nested_item_1" }],
+                    CustomName = "Ammo Box"
+                }
+            ]
         };
 
         var json = JsonSerializer.Serialize(original);
         var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json);
 
         deserialized.Should().NotBeNull();
-        JsonSerializer.Serialize(deserialized!.AceCargo).Should().Be(JsonSerializer.Serialize(original.AceCargo));
+        deserialized!.AceCargo.Should().HaveCount(1);
+        deserialized.AceCargo[0].ClassName.Should().Be("Box_IND_Ammo_F");
+        deserialized.AceCargo[0].Cargo.Should().HaveCount(1);
+        deserialized.AceCargo[0].Cargo[0].ClassName.Should().Be("nested_item_1");
+        deserialized.AceCargo[0].CustomName.Should().Be("Ammo Box");
     }
 
     [Fact]
@@ -472,14 +518,19 @@ public class PersistenceSessionsServiceTests
         {
             Id = "turret-weapons",
             Type = "B_APC_Tracked_01_AA_F",
-            TurretWeapons = [new object[] { new object[] { new object[] { 0, 1 }, new object[] { "weapon1", "weapon2" } } }]
+            TurretWeapons =
+            [
+                new TurretWeaponsEntry { TurretPath = [0, 1], Weapons = ["weapon1", "weapon2"] }
+            ]
         };
 
         var json = JsonSerializer.Serialize(original);
         var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json);
 
         deserialized.Should().NotBeNull();
-        JsonSerializer.Serialize(deserialized!.TurretWeapons).Should().Be(JsonSerializer.Serialize(original.TurretWeapons));
+        deserialized!.TurretWeapons.Should().HaveCount(1);
+        deserialized.TurretWeapons[0].TurretPath.Should().BeEquivalentTo(new[] { 0, 1 });
+        deserialized.TurretWeapons[0].Weapons.Should().BeEquivalentTo(new[] { "weapon1", "weapon2" });
     }
 
     [Fact]
@@ -489,14 +540,22 @@ public class PersistenceSessionsServiceTests
         {
             Id = "pylon-loadout",
             Type = "B_Plane_CAS_01_dynamicLoadout_F",
-            PylonLoadout = [new object[] { "mag1", 20 }, new object[] { "mag2", 0 }]
+            PylonLoadout =
+            [
+                new PylonEntry { Magazine = "mag1", Ammo = 20 },
+                new PylonEntry { Magazine = "mag2", Ammo = 0 }
+            ]
         };
 
         var json = JsonSerializer.Serialize(original);
         var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json);
 
         deserialized.Should().NotBeNull();
-        JsonSerializer.Serialize(deserialized!.PylonLoadout).Should().Be(JsonSerializer.Serialize(original.PylonLoadout));
+        deserialized!.PylonLoadout.Should().HaveCount(2);
+        deserialized.PylonLoadout[0].Magazine.Should().Be("mag1");
+        deserialized.PylonLoadout[0].Ammo.Should().Be(20);
+        deserialized.PylonLoadout[1].Magazine.Should().Be("mag2");
+        deserialized.PylonLoadout[1].Ammo.Should().Be(0);
     }
 
     [Fact]
@@ -506,14 +565,19 @@ public class PersistenceSessionsServiceTests
         {
             Id = "attached-objects",
             Type = "B_MRAP_01_F",
-            Attached = [new object[] { "classname", new object[] { 0.1, 0.2, 0.3 } }]
+            Attached =
+            [
+                new AttachedObject { ClassName = "classname", Offset = [0.1, 0.2, 0.3] }
+            ]
         };
 
         var json = JsonSerializer.Serialize(original);
         var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json);
 
         deserialized.Should().NotBeNull();
-        JsonSerializer.Serialize(deserialized!.Attached).Should().Be(JsonSerializer.Serialize(original.Attached));
+        deserialized!.Attached.Should().HaveCount(1);
+        deserialized.Attached[0].ClassName.Should().Be("classname");
+        deserialized.Attached[0].Offset.Should().BeEquivalentTo(new[] { 0.1, 0.2, 0.3 });
     }
 
     [Fact]
@@ -539,10 +603,19 @@ public class PersistenceSessionsServiceTests
         var original = new PlayerRedeployData
         {
             Position = [1000.0, 2000.0, 5.5],
-            VehicleState = ["persistence_id_123", "driver", -1],
+            VehicleState = new PlayerVehicleState
+            {
+                VehicleId = "persistence_id_123",
+                Role = "driver",
+                Index = -1
+            },
             Direction = 270.0,
             Animation = "AmovPercMstpSlowWrflDnon",
-            Loadout = [new object[] { "uniform_class" }, new object[] { "vest_class" }],
+            Loadout =
+                new ArmaLoadout
+                {
+                    PrimaryWeapon = new WeaponSlot { Weapon = "arifle_MX_F" }, Uniform = new ContainerSlot { ClassName = "U_B_CombatUniform_mcam" }
+                },
             Damage = 0.15,
             AceMedical = new AceMedicalState
             {
@@ -552,8 +625,17 @@ public class PersistenceSessionsServiceTests
             },
             Earplugs = true,
             AttachedItems = ["NVGoggles", "ItemMap", "ItemCompass"],
-            Radios = [new object[] { "ACRE_PRC152", "channel1" }],
-            DiveState = [new object[] { 0.8, 100.0 }]
+            Radios =
+            [
+                new RadioState
+                {
+                    Type = "ACRE_PRC152",
+                    Channel = 1,
+                    Volume = 1.0,
+                    Spatial = "CENTER"
+                }
+            ],
+            DiveState = new PlayerDiveState { IsDiving = false }
         };
 
         var json = JsonSerializer.Serialize(original);
@@ -567,13 +649,22 @@ public class PersistenceSessionsServiceTests
         deserialized.Earplugs.Should().Be(original.Earplugs);
         deserialized.AttachedItems.Should().BeEquivalentTo(original.AttachedItems);
 
-        JsonSerializer.Serialize(deserialized.VehicleState).Should().Be(JsonSerializer.Serialize(original.VehicleState));
-        JsonSerializer.Serialize(deserialized.Loadout).Should().Be(JsonSerializer.Serialize(original.Loadout));
+        deserialized.VehicleState.VehicleId.Should().Be("persistence_id_123");
+        deserialized.VehicleState.Role.Should().Be("driver");
+        deserialized.VehicleState.Index.Should().Be(-1);
+
+        deserialized.Loadout.PrimaryWeapon.Weapon.Should().Be("arifle_MX_F");
+        deserialized.Loadout.Uniform.ClassName.Should().Be("U_B_CombatUniform_mcam");
+
         deserialized.AceMedical.BloodVolume.Should().Be(original.AceMedical.BloodVolume);
         deserialized.AceMedical.HeartRate.Should().Be(original.AceMedical.HeartRate);
         deserialized.AceMedical.InPain.Should().Be(original.AceMedical.InPain);
-        JsonSerializer.Serialize(deserialized.Radios).Should().Be(JsonSerializer.Serialize(original.Radios));
-        JsonSerializer.Serialize(deserialized.DiveState).Should().Be(JsonSerializer.Serialize(original.DiveState));
+
+        deserialized.Radios.Should().HaveCount(1);
+        deserialized.Radios[0].Type.Should().Be("ACRE_PRC152");
+        deserialized.Radios[0].Channel.Should().Be(1);
+
+        deserialized.DiveState.IsDiving.Should().BeFalse();
     }
 
     [Fact]
@@ -582,7 +673,12 @@ public class PersistenceSessionsServiceTests
         var original = new PlayerRedeployData
         {
             Position = [500.0, 600.0, 0.0],
-            VehicleState = ["", "", -1],
+            VehicleState = new PlayerVehicleState
+            {
+                VehicleId = string.Empty,
+                Role = string.Empty,
+                Index = -1
+            },
             Direction = 90.0,
             Animation = "AmovPercMstpSnonWnonDnon"
         };
@@ -591,7 +687,9 @@ public class PersistenceSessionsServiceTests
         var deserialized = JsonSerializer.Deserialize<PlayerRedeployData>(json);
 
         deserialized.Should().NotBeNull();
-        JsonSerializer.Serialize(deserialized!.VehicleState).Should().Be(JsonSerializer.Serialize(original.VehicleState));
+        deserialized!.VehicleState.VehicleId.Should().Be(string.Empty);
+        deserialized.VehicleState.Role.Should().Be(string.Empty);
+        deserialized.VehicleState.Index.Should().Be(-1);
     }
 
     [Fact]
@@ -600,7 +698,12 @@ public class PersistenceSessionsServiceTests
         var original = new PlayerRedeployData
         {
             Position = [800.0, 900.0, 2.0],
-            VehicleState = ["persistence_id", "driver", -1],
+            VehicleState = new PlayerVehicleState
+            {
+                VehicleId = "persistence_id",
+                Role = "driver",
+                Index = -1
+            },
             Direction = 45.0
         };
 
@@ -608,7 +711,9 @@ public class PersistenceSessionsServiceTests
         var deserialized = JsonSerializer.Deserialize<PlayerRedeployData>(json);
 
         deserialized.Should().NotBeNull();
-        JsonSerializer.Serialize(deserialized!.VehicleState).Should().Be(JsonSerializer.Serialize(original.VehicleState));
+        deserialized!.VehicleState.VehicleId.Should().Be("persistence_id");
+        deserialized.VehicleState.Role.Should().Be("driver");
+        deserialized.VehicleState.Index.Should().Be(-1);
     }
 
     [Fact]
@@ -617,7 +722,12 @@ public class PersistenceSessionsServiceTests
         var original = new PlayerRedeployData
         {
             Position = [800.0, 900.0, 2.0],
-            VehicleState = ["persistence_id", "turret", new object[] { 0, 1 }],
+            VehicleState = new PlayerVehicleState
+            {
+                VehicleId = "persistence_id",
+                Role = "turret",
+                Index = 0
+            },
             Direction = 180.0
         };
 
@@ -625,7 +735,9 @@ public class PersistenceSessionsServiceTests
         var deserialized = JsonSerializer.Deserialize<PlayerRedeployData>(json);
 
         deserialized.Should().NotBeNull();
-        JsonSerializer.Serialize(deserialized!.VehicleState).Should().Be(JsonSerializer.Serialize(original.VehicleState));
+        deserialized!.VehicleState.VehicleId.Should().Be("persistence_id");
+        deserialized.VehicleState.Role.Should().Be("turret");
+        deserialized.VehicleState.Index.Should().Be(0);
     }
 
     [Fact]
@@ -638,26 +750,72 @@ public class PersistenceSessionsServiceTests
 
         deserialized.Should().NotBeNull();
         deserialized!.Position.Should().BeEmpty();
-        deserialized.VehicleState.Should().BeEmpty();
+        deserialized.VehicleState.Should().NotBeNull();
+        deserialized.VehicleState.VehicleId.Should().Be(string.Empty);
         deserialized.Direction.Should().Be(0);
         deserialized.Animation.Should().Be(string.Empty);
-        deserialized.Loadout.Should().BeEmpty();
+        deserialized.Loadout.Should().NotBeNull();
         deserialized.Damage.Should().Be(0);
         deserialized.AceMedical.Should().NotBeNull();
         deserialized.AceMedical.BloodVolume.Should().Be(0);
         deserialized.Earplugs.Should().BeFalse();
         deserialized.AttachedItems.Should().BeEmpty();
         deserialized.Radios.Should().BeEmpty();
-        deserialized.DiveState.Should().BeEmpty();
+        deserialized.DiveState.Should().NotBeNull();
+        deserialized.DiveState.IsDiving.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RoundTrip_PlayerWithRadios_PreservesData()
+    {
+        var original = new PlayerRedeployData
+        {
+            Radios =
+            [
+                new RadioState
+                {
+                    Type = "ACRE_PRC343",
+                    Channel = 8,
+                    Volume = 0.8,
+                    Spatial = "CENTER",
+                    PttIndex = 0
+                }
+            ]
+        };
+
+        var json = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<PlayerRedeployData>(json);
+
+        deserialized.Should().NotBeNull();
+        deserialized!.Radios.Should().HaveCount(1);
+        deserialized.Radios[0].Type.Should().Be("ACRE_PRC343");
+        deserialized.Radios[0].Channel.Should().Be(8);
+        deserialized.Radios[0].Volume.Should().Be(0.8);
+        deserialized.Radios[0].Spatial.Should().Be("CENTER");
+        deserialized.Radios[0].PttIndex.Should().Be(0);
     }
 
     [Fact]
     public void RoundTrip_StandardMarker_PreservesData()
     {
         // Standard marker: [name, type, pos, shape, color, alpha, size, dir, text, brush]
-        var marker = new object[]
+        var marker = new List<object>
         {
-            "marker_1", "hd_dot", new object[] { 1000.0, 2000.0, 0.0 }, "ICON", "ColorRed", 1.0, new object[] { 1.0, 1.0 }, 0.0, "Target Alpha", ""
+            "marker_1",
+            "hd_dot",
+            new List<object>
+            {
+                1000.0,
+                2000.0,
+                0.0
+            },
+            "ICON",
+            "ColorRed",
+            1.0,
+            new List<object> { 1.0, 1.0 },
+            0.0,
+            "Target Alpha",
+            ""
         };
 
         var session = new DomainPersistenceSession { Key = "marker-test", Markers = [marker] };
@@ -667,6 +825,7 @@ public class PersistenceSessionsServiceTests
 
         deserialized.Should().NotBeNull();
         deserialized!.Markers.Should().HaveCount(1);
+        deserialized.Markers[0].Should().HaveCount(marker.Count);
         JsonSerializer.Serialize(deserialized.Markers[0]).Should().Be(JsonSerializer.Serialize(marker));
     }
 
@@ -674,11 +833,16 @@ public class PersistenceSessionsServiceTests
     public void RoundTrip_PolylineMarker_PreservesData()
     {
         // Polyline marker: [name, type, polyline, color, alpha, text]
-        var marker = new object[]
+        var marker = new List<object>
         {
             "polyline_1",
             "hd_polyline",
-            new object[] { new object[] { 100.0, 200.0 }, new object[] { 300.0, 400.0 }, new object[] { 500.0, 600.0 } },
+            new List<object>
+            {
+                new List<object> { 100.0, 200.0 },
+                new List<object> { 300.0, 400.0 },
+                new List<object> { 500.0, 600.0 }
+            },
             "ColorBlue",
             0.8,
             "Route Alpha"
@@ -697,13 +861,32 @@ public class PersistenceSessionsServiceTests
     [Fact]
     public void RoundTrip_MixedMarkers_PreservesData()
     {
-        var standardMarker = new object[]
+        var standardMarker = new List<object>
         {
-            "marker_1", "hd_dot", new object[] { 1000.0, 2000.0, 0.0 }, "ICON", "ColorRed", 1.0, new object[] { 1.0, 1.0 }, 0.0, "Target", ""
+            "marker_1",
+            "hd_dot",
+            new List<object>
+            {
+                1000.0,
+                2000.0,
+                0.0
+            },
+            "ICON",
+            "ColorRed",
+            1.0,
+            new List<object> { 1.0, 1.0 },
+            0.0,
+            "Target",
+            ""
         };
-        var polylineMarker = new object[]
+        var polylineMarker = new List<object>
         {
-            "polyline_1", "hd_polyline", new object[] { new object[] { 100.0, 200.0 }, new object[] { 300.0, 400.0 } }, "ColorBlue", 0.8, "Route"
+            "polyline_1",
+            "hd_polyline",
+            new List<object> { new List<object> { 100.0, 200.0 }, new List<object> { 300.0, 400.0 } },
+            "ColorBlue",
+            0.8,
+            "Route"
         };
 
         var session = new DomainPersistenceSession { Key = "mixed-markers", Markers = [standardMarker, polylineMarker] };
@@ -748,7 +931,12 @@ public class PersistenceSessionsServiceTests
                 ["uid-1"] = new()
                 {
                     Position = [500.0, 600.0, 0.0],
-                    VehicleState = ["obj-1", "driver", -1],
+                    VehicleState = new PlayerVehicleState
+                    {
+                        VehicleId = "obj-1",
+                        Role = "driver",
+                        Index = -1
+                    },
                     Direction = 90.0,
                     Animation = "AmovPercMstpSnonWnonDnon",
                     Earplugs = true,
@@ -757,16 +945,35 @@ public class PersistenceSessionsServiceTests
                 ["uid-2"] = new()
                 {
                     Position = [700.0, 800.0, 0.0],
-                    VehicleState = ["", "", -1],
+                    VehicleState = new PlayerVehicleState
+                    {
+                        VehicleId = string.Empty,
+                        Role = string.Empty,
+                        Index = -1
+                    },
                     Direction = 180.0,
                     Animation = "AmovPercMstpSlowWrflDnon"
                 }
             },
             Markers =
             [
-                new object[]
+                new List<object>
                 {
-                    "marker_1", "hd_dot", new object[] { 1000.0, 2000.0, 0.0 }, "ICON", "ColorRed", 1.0, new object[] { 1.0, 1.0 }, 0.0, "Target", ""
+                    "marker_1",
+                    "hd_dot",
+                    new List<object>
+                    {
+                        1000.0,
+                        2000.0,
+                        0.0
+                    },
+                    "ICON",
+                    "ColorRed",
+                    1.0,
+                    new List<object> { 1.0, 1.0 },
+                    0.0,
+                    "Target",
+                    ""
                 }
             ],
             ArmaDateTime = [2035, 6, 15, 14, 30],
@@ -785,13 +992,14 @@ public class PersistenceSessionsServiceTests
         deserialized.DeletedObjects.Should().BeEquivalentTo(original.DeletedObjects);
         deserialized.Players.Should().HaveCount(2);
         deserialized.Players.Should().ContainKey("uid-1");
+        deserialized.Players["uid-1"].VehicleState.VehicleId.Should().Be("obj-1");
         deserialized.Players.Should().ContainKey("uid-2");
         deserialized.Markers.Should().HaveCount(1);
+        JsonSerializer.Serialize(deserialized.Markers).Should().Be(JsonSerializer.Serialize(original.Markers));
         deserialized.ArmaDateTime.Should().BeEquivalentTo(original.ArmaDateTime);
         deserialized.SavedAt.Should().Be(original.SavedAt);
 
         JsonSerializer.Serialize(deserialized.CustomData).Should().Be(JsonSerializer.Serialize(original.CustomData));
-        JsonSerializer.Serialize(deserialized.Markers).Should().Be(JsonSerializer.Serialize(original.Markers));
     }
 
     [Fact]
@@ -864,5 +1072,104 @@ public class PersistenceSessionsServiceTests
         reserialized.Should().Contain("ace_medical_another_new_thing");
     }
 
-    #endregion
+    [Fact]
+    public void RoundTrip_AceMedicalState_WithWounds_PreservesData()
+    {
+        var original = new AceMedicalState
+        {
+            BloodVolume = 5.5,
+            OpenWounds = new Dictionary<string, List<WoundEntry>>
+            {
+                ["0"] =
+                [
+                    new WoundEntry
+                    {
+                        ClassComplex = 1,
+                        AmountOf = 2,
+                        BleedingRate = 0.1,
+                        WoundDamage = 0.5
+                    }
+                ]
+            },
+            Medications =
+            [
+                new MedicationEntry
+                {
+                    Medication = "Morphine",
+                    TimeOffset = 0.0,
+                    HrAdjust = -20.0
+                }
+            ],
+            IvBags =
+            [
+                new IvBagEntry
+                {
+                    Volume = 500.0,
+                    Type = "Saline",
+                    PartIndex = 0
+                }
+            ],
+            TriageCard =
+            [
+                new TriageCardEntry
+                {
+                    Item = "ace_triage_green",
+                    Count = 1,
+                    Timestamp = 100.0
+                }
+            ],
+            Logs = [new MedicalLogCategory { LogType = "treatment", Entries = [new MedicalLogEntry { Message = "Applied bandage" }] }]
+        };
+
+        var json = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<AceMedicalState>(json);
+
+        deserialized.Should().NotBeNull();
+        deserialized!.BloodVolume.Should().Be(5.5);
+        deserialized.OpenWounds.Should().ContainKey("0");
+        deserialized.OpenWounds["0"].Should().HaveCount(1);
+        deserialized.OpenWounds["0"][0].ClassComplex.Should().Be(1);
+        deserialized.OpenWounds["0"][0].AmountOf.Should().Be(2);
+        deserialized.Medications.Should().HaveCount(1);
+        deserialized.Medications[0].Medication.Should().Be("Morphine");
+        deserialized.IvBags.Should().HaveCount(1);
+        deserialized.IvBags[0].Volume.Should().Be(500.0);
+        deserialized.TriageCard.Should().HaveCount(1);
+        deserialized.TriageCard[0].Item.Should().Be("ace_triage_green");
+        deserialized.Logs.Should().HaveCount(1);
+        deserialized.Logs[0].LogType.Should().Be("treatment");
+    }
+
+    [Fact]
+    public void RoundTrip_ArmaLoadout_WithAllSlots_PreservesData()
+    {
+        var original = new ArmaLoadout
+        {
+            PrimaryWeapon = new WeaponSlot
+            {
+                Weapon = "arifle_MX_F",
+                Optic = "optic_MRCO",
+                PrimaryMagazine = new MagazineState { ClassName = "30Rnd_65x39_caseless_mag", Ammo = 25 }
+            },
+            Uniform = new ContainerSlot { ClassName = "U_B_CombatUniform_mcam", Items = [new ContainerItem { ClassName = "FirstAidKit", Count = 3 }] },
+            Headgear = "H_HelmetB",
+            LinkedItems = new LinkedItems { Map = "ItemMap", Compass = "ItemCompass" }
+        };
+
+        var json = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<ArmaLoadout>(json);
+
+        deserialized.Should().NotBeNull();
+        deserialized!.PrimaryWeapon.Weapon.Should().Be("arifle_MX_F");
+        deserialized.PrimaryWeapon.Optic.Should().Be("optic_MRCO");
+        deserialized.PrimaryWeapon.PrimaryMagazine.ClassName.Should().Be("30Rnd_65x39_caseless_mag");
+        deserialized.PrimaryWeapon.PrimaryMagazine.Ammo.Should().Be(25);
+        deserialized.Uniform.ClassName.Should().Be("U_B_CombatUniform_mcam");
+        deserialized.Uniform.Items.Should().HaveCount(1);
+        deserialized.Uniform.Items[0].ClassName.Should().Be("FirstAidKit");
+        deserialized.Uniform.Items[0].Count.Should().Be(3);
+        deserialized.Headgear.Should().Be("H_HelmetB");
+        deserialized.LinkedItems.Map.Should().Be("ItemMap");
+        deserialized.LinkedItems.Compass.Should().Be("ItemCompass");
+    }
 }

@@ -8,7 +8,7 @@ public class PlayerRedeployData
     public double[] Position { get; set; } = [];
 
     [JsonPropertyName("vehicleState")]
-    public object[] VehicleState { get; set; } = [];
+    public PlayerVehicleState VehicleState { get; set; } = new();
 
     [JsonPropertyName("direction")]
     public double Direction { get; set; }
@@ -17,7 +17,7 @@ public class PlayerRedeployData
     public string Animation { get; set; } = string.Empty;
 
     [JsonPropertyName("loadout")]
-    public object[] Loadout { get; set; } = [];
+    public ArmaLoadout Loadout { get; set; } = new();
 
     [JsonPropertyName("damage")]
     public double Damage { get; set; }
@@ -32,8 +32,8 @@ public class PlayerRedeployData
     public string[] AttachedItems { get; set; } = [];
 
     [JsonPropertyName("radios")]
-    public object[] Radios { get; set; } = [];
+    public List<RadioState> Radios { get; set; } = [];
 
     [JsonPropertyName("diveState")]
-    public object[] DiveState { get; set; } = [];
+    public PlayerDiveState DiveState { get; set; } = new();
 }

@@ -117,43 +117,16 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
     /// </summary>
     private static void SanitizeSession(DomainPersistenceSession session)
     {
-        foreach (var persistenceObject in session.Objects)
-        {
-            persistenceObject.TurretWeapons = SanitizeArray(persistenceObject.TurretWeapons);
-            persistenceObject.TurretMagazines = SanitizeArray(persistenceObject.TurretMagazines);
-            persistenceObject.PylonLoadout = SanitizeArray(persistenceObject.PylonLoadout);
-            persistenceObject.Attached = SanitizeArray(persistenceObject.Attached);
-            persistenceObject.RackChannels = SanitizeArray(persistenceObject.RackChannels);
-            persistenceObject.AceCargo = SanitizeArray(persistenceObject.AceCargo);
-            persistenceObject.AceFortify = SanitizeArray(persistenceObject.AceFortify);
-            persistenceObject.AceMedical = SanitizeArray(persistenceObject.AceMedical);
-            persistenceObject.AceRepair = SanitizeArray(persistenceObject.AceRepair);
-            persistenceObject.Inventory = persistenceObject.Inventory.Select(SanitizeArray).ToArray();
-        }
-
         foreach (var player in session.Players.Values)
         {
-            player.VehicleState = SanitizeArray(player.VehicleState);
-            player.Loadout = SanitizeArray(player.Loadout);
-            player.Radios = SanitizeArray(player.Radios);
-            player.DiveState = SanitizeArray(player.DiveState);
-
-            player.AceMedical.OpenWounds = SanitizeDictionary(player.AceMedical.OpenWounds);
-            player.AceMedical.BandagedWounds = SanitizeDictionary(player.AceMedical.BandagedWounds);
-            player.AceMedical.StitchedWounds = SanitizeDictionary(player.AceMedical.StitchedWounds);
-            player.AceMedical.Medications = SanitizeArray(player.AceMedical.Medications);
-            player.AceMedical.OccludedMedications = SanitizeArray(player.AceMedical.OccludedMedications);
-            player.AceMedical.IvBags = SanitizeArray(player.AceMedical.IvBags);
-            player.AceMedical.TriageCard = SanitizeArray(player.AceMedical.TriageCard);
-            player.AceMedical.Logs = SanitizeArray(player.AceMedical.Logs);
             player.AceMedical.AdditionalData = SanitizeDictionary(player.AceMedical.AdditionalData);
         }
 
-        session.Markers = session.Markers.Select(SanitizeArray).ToList();
+        session.Markers = session.Markers.Select(SanitizeList).ToList();
         session.CustomData = SanitizeDictionary(session.CustomData);
     }
 
-    private static object[] SanitizeArray(object[] array) => array.Select(SanitizeValue).ToArray();
+    private static List<object> SanitizeList(List<object> list) => list.Select(SanitizeValue).ToList();
 
     private static Dictionary<string, object> SanitizeDictionary(Dictionary<string, object> dictionary)
     {
@@ -164,9 +137,11 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
     {
         return value switch
         {
-            JsonElement element => ConvertJsonElement(element),
-            object[] array      => array.Select(SanitizeValue).ToArray(),
-            _                   => value
+            JsonElement element             => ConvertJsonElement(element),
+            object[] array                  => array.Select(SanitizeValue).ToArray(),
+            List<object> list               => list.Select(SanitizeValue).ToList(),
+            Dictionary<string, object> dict => dict.ToDictionary(kvp => kvp.Key, kvp => SanitizeValue(kvp.Value)),
+            _                               => value
         };
     }
 

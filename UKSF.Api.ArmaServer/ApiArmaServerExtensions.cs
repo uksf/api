@@ -22,6 +22,21 @@ public static class ApiArmaServerExtensions
         {
             BsonSerializer.RegisterSerializer(new JsonElementBsonSerializer());
 
+            BsonClassMap.RegisterClassMap<AceMedicalState>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.GetMemberMap(x => x.AdditionalData).SetSerializer(PlainObjectDictionaryBsonSerializer.Instance);
+                }
+            );
+
+            BsonClassMap.RegisterClassMap<DomainPersistenceSession>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.GetMemberMap(x => x.Markers).SetSerializer(PlainObjectNestedListBsonSerializer.Instance);
+                    cm.GetMemberMap(x => x.CustomData).SetSerializer(PlainObjectDictionaryBsonSerializer.Instance);
+                }
+            );
+
             return services.AddContexts().AddServices().AddCommands().AddQueries().AddActions().AddHostedService<MissionStatsIndexes>();
         }
 

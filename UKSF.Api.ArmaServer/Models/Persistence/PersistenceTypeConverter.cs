@@ -16,18 +16,7 @@ public sealed class PersistenceTypeConverter : JsonConverter<object>
 {
     public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return reader.TokenType switch
-        {
-            JsonTokenType.Null                                          => null,
-            JsonTokenType.True                                          => true,
-            JsonTokenType.False                                         => false,
-            JsonTokenType.Number when reader.TryGetInt64(out var value) => value,
-            JsonTokenType.Number                                        => reader.GetDouble(),
-            JsonTokenType.String                                        => reader.GetString(),
-            JsonTokenType.StartArray                                    => ReadArray(ref reader, options),
-            JsonTokenType.StartObject                                   => ReadObject(ref reader, options),
-            _                                                           => JsonDocument.ParseValue(ref reader).RootElement.Clone()
-        };
+        return ReadValue(ref reader, options);
     }
 
     public override void Write(Utf8JsonWriter writer, object objectToWrite, JsonSerializerOptions options)

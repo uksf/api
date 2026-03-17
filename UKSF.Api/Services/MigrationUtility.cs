@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
+using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
@@ -8,7 +9,7 @@ namespace UKSF.Api.Services;
 
 public class MigrationUtility(IMigrationContext migrationContext, IMongoDatabase database, IUksfLogger logger)
 {
-    private const int Version = 8;
+    private const int Version = 9;
 
     public async Task RunMigrations()
     {
@@ -33,6 +34,7 @@ public class MigrationUtility(IMigrationContext migrationContext, IMongoDatabase
     private async Task ExecuteMigrations()
     {
         await MigrateGameServerPlayersToArray();
+        await MigratePersistenceSessionDiscriminators();
         logger.LogInfo("All migrations completed successfully");
     }
 
@@ -46,5 +48,11 @@ public class MigrationUtility(IMigrationContext migrationContext, IMongoDatabase
         var result = await collection.UpdateManyAsync(new BsonDocument("status.players", new BsonDocument("$not", new BsonDocument("$type", "array"))), update);
 
         logger.LogInfo($"Migrated {result.ModifiedCount} game server documents: status.players converted to empty array");
+    }
+
+    private async Task MigratePersistenceSessionDiscriminators()
+    {
+        logger.LogInfo("Starting migration to unwrap BSON discriminators from persistence sessions");
+        await PersistenceDataMigration.MigrateAsync(database, msg => logger.LogInfo(msg));
     }
 }

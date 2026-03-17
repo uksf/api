@@ -34,13 +34,13 @@ public class AceMedicalState
     public double PainSuppress { get; set; }
 
     [JsonPropertyName("ace_medical_openWounds")]
-    public Dictionary<string, object> OpenWounds { get; set; } = new();
+    public Dictionary<string, List<WoundEntry>> OpenWounds { get; set; } = new();
 
     [JsonPropertyName("ace_medical_bandagedWounds")]
-    public Dictionary<string, object> BandagedWounds { get; set; } = new();
+    public Dictionary<string, List<WoundEntry>> BandagedWounds { get; set; } = new();
 
     [JsonPropertyName("ace_medical_stitchedWounds")]
-    public Dictionary<string, object> StitchedWounds { get; set; } = new();
+    public Dictionary<string, List<WoundEntry>> StitchedWounds { get; set; } = new();
 
     [JsonPropertyName("ace_medical_fractures")]
     public double[] Fractures { get; set; } = [];
@@ -52,25 +52,25 @@ public class AceMedicalState
     public double[] BodyPartDamage { get; set; } = [];
 
     [JsonPropertyName("ace_medical_medications")]
-    public object[] Medications { get; set; } = [];
+    public List<MedicationEntry> Medications { get; set; } = [];
 
     [JsonPropertyName("ace_medical_occludedMedications")]
-    public object[] OccludedMedications { get; set; } = [];
+    public List<OccludedMedicationEntry> OccludedMedications { get; set; } = [];
 
     [JsonPropertyName("ace_medical_ivBags")]
-    public object[] IvBags { get; set; } = [];
+    public List<IvBagEntry> IvBags { get; set; } = [];
 
     [JsonPropertyName("ace_medical_triageLevel")]
     public double TriageLevel { get; set; }
 
     [JsonPropertyName("ace_medical_triageCard")]
-    public object[] TriageCard { get; set; } = [];
+    public List<TriageCardEntry> TriageCard { get; set; } = [];
 
     [JsonPropertyName("ace_medical_statemachineState")]
     public string StateMachineState { get; set; } = string.Empty;
 
     [JsonPropertyName("ace_medical_logs")]
-    public object[] Logs { get; set; } = [];
+    public List<MedicalLogCategory> Logs { get; set; } = [];
 
     /// <summary>
     /// Captures any ACE medical fields not explicitly modelled above.
