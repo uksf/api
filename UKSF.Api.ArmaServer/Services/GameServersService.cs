@@ -93,8 +93,7 @@ public class GameServersService(
 
         if (matchingProcess is null)
         {
-            gameServer.Status.Running = false;
-            gameServer.Status.Launching = false;
+            gameServer.Status = new GameServerStatus();
             gameServer.ProcessId = null;
             StatusCache.TryRemove(gameServer.Id, out _);
             await gameServersContext.Replace(gameServer);
@@ -196,7 +195,17 @@ public class GameServersService(
 
         if (missionName is not null)
         {
-            gameServer.Status.Mission = missionName;
+            var nameWithoutExtension = Path.GetFileNameWithoutExtension(missionName);
+            var lastDot = nameWithoutExtension.LastIndexOf('.');
+            if (lastDot > 0)
+            {
+                gameServer.Status.Mission = nameWithoutExtension[..lastDot];
+                gameServer.Status.Map = nameWithoutExtension[(lastDot + 1)..];
+            }
+            else
+            {
+                gameServer.Status.Mission = nameWithoutExtension;
+            }
         }
 
         if (launchedBy is not null)
@@ -422,6 +431,8 @@ public class GameServersService(
         }
 
         gameServer.HeadlessClientProcessIds.Clear();
+        gameServer.Status = new GameServerStatus();
+        StatusCache.TryRemove(gameServer.Id, out _);
         await gameServersContext.Replace(gameServer);
 
         logger.LogInfo($"Killed headless clients for '{gameServer.Name}' after shutdown_complete");

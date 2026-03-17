@@ -290,6 +290,84 @@ public class GameServersServiceTests
     }
 
     [Fact]
+    public async Task GetAllGameServerStatuses_WhenNoMatchingProcess_ShouldResetStaleStatusFields()
+    {
+        var gameServers = new List<DomainGameServer>
+        {
+            new()
+            {
+                Id = "server-1",
+                Port = 2302,
+                ApiPort = 2303,
+                Status = new GameServerStatus
+                {
+                    Running = true,
+                    Mission = "mission.Altis.pbo",
+                    Map = "Altis",
+                    MaxPlayers = "32",
+                    Fps = 48.5f,
+                    LastEventReceived = DateTime.UtcNow
+                }
+            }
+        };
+        _mockGameServersContext.Setup(x => x.Get()).Returns(gameServers);
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(new System.Diagnostics.Process[] { null! });
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([]);
+
+        var result = await _subject.GetAllGameServerStatuses();
+
+        var server = result.Find(s => s.Id == "server-1");
+        server!.Status.Running.Should().BeFalse();
+        server.Status.Mission.Should().BeNull();
+        server.Status.Map.Should().BeNull();
+        server.Status.MaxPlayers.Should().BeNull();
+        server.Status.Fps.Should().Be(0);
+        server.Status.LastEventReceived.Should().Be(default);
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenShutdownComplete_ShouldResetStatus()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Name = "Main",
+            ApiPort = 2303,
+            HeadlessClientProcessIds = [5001],
+            Status = new GameServerStatus
+            {
+                Running = true,
+                Mission = "mission.Altis.pbo",
+                Map = "Altis",
+                MaxPlayers = "32",
+                Fps = 48.5f,
+                LastEventReceived = DateTime.UtcNow
+            }
+        };
+
+        _mockGameServersContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(gameServer);
+        _mockProcessUtilities.Setup(x => x.FindProcessById(It.IsAny<int>())).Returns((System.Diagnostics.Process)null);
+
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "shutdown_complete",
+            ApiPort = 2303,
+            Data = new Dictionary<string, object>()
+        };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        gameServer.Status.Running.Should().BeFalse();
+        gameServer.Status.Mission.Should().BeNull();
+        gameServer.Status.Map.Should().BeNull();
+        gameServer.Status.MaxPlayers.Should().BeNull();
+        gameServer.Status.Fps.Should().Be(0);
+        gameServer.Status.LastEventReceived.Should().Be(default);
+        gameServer.HeadlessClientProcessIds.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task HandleGameServerEvent_WhenMissionStats_ShouldPublishToMassTransit()
     {
         var eventsJson = JsonSerializer.Deserialize<JsonElement>(
@@ -643,14 +721,35 @@ public class GameServersServiceTests
         _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("test-path", "server-args")).Returns(1001);
         _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("test-path", "hc-args")).Returns(2001);
 
-        await _subject.LaunchGameServer(gameServer, "mission.pbo", "user-123");
+        await _subject.LaunchGameServer(gameServer, "mission.Altis.pbo", "user-123");
 
         gameServer.Status.Launching.Should().BeTrue();
-        gameServer.Status.Mission.Should().Be("mission.pbo");
+        gameServer.Status.Mission.Should().Be("mission");
+        gameServer.Status.Map.Should().Be("Altis");
         gameServer.LaunchedBy.Should().Be("user-123");
         gameServer.ProcessId.Should().Be(1001);
         gameServer.HeadlessClientProcessIds.Should().BeEquivalentTo([2001]);
         _mockGameServersContext.Verify(x => x.Replace(gameServer), Times.Once);
+    }
+
+    [Fact]
+    public async Task LaunchGameServer_WithMissionWithoutMap_ShouldNotSetMap()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "server-1",
+            NumberHeadlessClients = 0,
+            HeadlessClientProcessIds = []
+        };
+
+        _mockGameServerHelpers.Setup(x => x.FormatGameServerLaunchArguments(gameServer)).Returns("args");
+        _mockGameServerHelpers.Setup(x => x.GetGameServerExecutablePath(gameServer)).Returns("path");
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("path", "args")).Returns(1001);
+
+        await _subject.LaunchGameServer(gameServer, "mission.pbo", "user-123");
+
+        gameServer.Status.Mission.Should().Be("mission");
+        gameServer.Status.Map.Should().BeNull();
     }
 
     [Fact]
