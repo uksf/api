@@ -9,6 +9,14 @@ public enum MissionType
     SideOp
 }
 
+public class PlayerPresence
+{
+    public string Uid { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public DateTime Connected { get; set; }
+    public DateTime? Disconnected { get; set; }
+}
+
 public class MissionSession : MongoObject
 {
     public string Mission { get; set; } = string.Empty;
@@ -18,4 +26,12 @@ public class MissionSession : MongoObject
     public DateTime FirstBatchReceived { get; set; }
     public DateTime LastBatchReceived { get; set; }
     public int TotalBatchesReceived { get; set; }
+
+    // Lifecycle — set from mission_started/mission_ended events
+    public DateTime? MissionStarted { get; set; }
+    public DateTime? MissionEnded { get; set; }
+    public double? DurationSeconds { get; set; }
+
+    // Player presence — connect/disconnect events
+    public List<PlayerPresence> PlayerPresence { get; set; } = [];
 }

@@ -46,7 +46,8 @@ public class GameServersServiceOrderTests
             _mockServersHub.Object,
             _mockLogger.Object,
             _mockPublishEndpoint.Object,
-            _mockPersistenceSessionsService.Object
+            _mockPersistenceSessionsService.Object,
+            new Mock<IMissionStatsService>().Object
         );
     }
 

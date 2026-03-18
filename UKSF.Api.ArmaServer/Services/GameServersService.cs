@@ -43,7 +43,8 @@ public class GameServersService(
     IHubContext<ServersHub, IServersClient> serversHub,
     IUksfLogger logger,
     IPublishEndpoint publishEndpoint,
-    IPersistenceSessionsService persistenceSessionsService
+    IPersistenceSessionsService persistenceSessionsService,
+    IMissionStatsService missionStatsService
 ) : IGameServersService
 {
     private static readonly ConcurrentDictionary<string, GameServerStatus> StatusCache = new();
@@ -405,11 +406,15 @@ public class GameServersService(
         {
             switch (gameServerEvent.Type)
             {
-                case "server_status":     await HandleServerStatusEvent(gameServerEvent.ApiPort, gameServerEvent.Data); break;
-                case "mission_stats":     await HandleMissionStatsEvent(gameServerEvent.Data); break;
-                case "persistence_save":  await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
-                case "shutdown_complete": await HandleShutdownCompleteEvent(gameServerEvent.ApiPort); break;
-                default:                  logger.LogWarning($"Unknown game server event type: {gameServerEvent.Type}"); break;
+                case "server_status":       await HandleServerStatusEvent(gameServerEvent.ApiPort, gameServerEvent.Data); break;
+                case "mission_stats":       await HandleMissionStatsEvent(gameServerEvent.Data); break;
+                case "mission_started":     await HandleMissionLifecycleEvent(gameServerEvent.Data, isStart: true); break;
+                case "mission_ended":       await HandleMissionLifecycleEvent(gameServerEvent.Data, isStart: false); break;
+                case "player_connected":    await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: true); break;
+                case "player_disconnected": await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: false); break;
+                case "persistence_save":    await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
+                case "shutdown_complete":   await HandleShutdownCompleteEvent(gameServerEvent.ApiPort); break;
+                default:                    logger.LogWarning($"Unknown game server event type: {gameServerEvent.Type}"); break;
             }
         }
         catch (Exception ex)
@@ -515,6 +520,55 @@ public class GameServersService(
         );
 
         logger.LogInfo($"Published mission_stats batch: {mission} on {map}, {events.Count} events");
+    }
+
+    private async Task HandleMissionLifecycleEvent(Dictionary<string, object> data, bool isStart)
+    {
+        var mission = data.TryGetValue("mission", out var missionValue) ? missionValue.ToString() : string.Empty;
+        var map = data.TryGetValue("map", out var mapValue) ? mapValue.ToString() : string.Empty;
+
+        if (string.IsNullOrEmpty(mission) || string.IsNullOrEmpty(map))
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+
+        if (isStart)
+        {
+            await missionStatsService.HandleMissionStartedAsync(mission, map, now);
+        }
+        else
+        {
+            var duration = data.TryGetValue("duration", out var durationValue) && double.TryParse(durationValue.ToString(), out var durationSeconds)
+                ? durationSeconds
+                : 0;
+            await missionStatsService.HandleMissionEndedAsync(mission, map, duration, now);
+        }
+    }
+
+    private async Task HandlePlayerPresenceEvent(Dictionary<string, object> data, bool isConnected)
+    {
+        var mission = data.TryGetValue("mission", out var missionValue) ? missionValue.ToString() : string.Empty;
+        var map = data.TryGetValue("map", out var mapValue) ? mapValue.ToString() : string.Empty;
+        var uid = data.TryGetValue("uid", out var uidValue) ? uidValue.ToString() : string.Empty;
+        var name = data.TryGetValue("name", out var nameValue) ? nameValue.ToString() : string.Empty;
+
+        if (string.IsNullOrEmpty(mission) || string.IsNullOrEmpty(map) || string.IsNullOrEmpty(uid))
+        {
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+
+        if (isConnected)
+        {
+            await missionStatsService.HandlePlayerConnectedAsync(mission, map, uid, name, now);
+        }
+        else
+        {
+            await missionStatsService.HandlePlayerDisconnectedAsync(mission, map, uid, name, now);
+        }
     }
 
     private async Task HandlePersistenceSaveEvent(Dictionary<string, object> data)

@@ -13,6 +13,10 @@ public interface IMissionStatsService
     Task<MissionStatsBatch> StoreRawBatchAsync(string sessionId, string mission, string map, List<BsonDocument> events, DateTime receivedAt);
     Task UpdatePlayerStatsAsync(string sessionId, string playerUid, PlayerMissionStats updates);
     Task UpdateMissionStatsAsync(string sessionId, MissionStats updates);
+    Task HandleMissionStartedAsync(string mission, string map, DateTime timestamp);
+    Task HandleMissionEndedAsync(string mission, string map, double durationSeconds, DateTime timestamp);
+    Task HandlePlayerConnectedAsync(string mission, string map, string uid, string name, DateTime timestamp);
+    Task HandlePlayerDisconnectedAsync(string mission, string map, string uid, string name, DateTime timestamp);
 }
 
 public class MissionStatsService(
@@ -162,6 +166,54 @@ public class MissionStatsService(
         var updateDefinitions = updates.EventCounts.Select(kvp => Builders<MissionStats>.Update.Inc(x => x.EventCounts[kvp.Key], kvp.Value)).ToList();
 
         await missionStatsContext.Update(x => x.MissionSessionId == sessionId, Builders<MissionStats>.Update.Combine(updateDefinitions));
+    }
+
+    public async Task HandleMissionStartedAsync(string mission, string map, DateTime timestamp)
+    {
+        var session = await FindOrCreateSessionAsync(mission, map, timestamp);
+        var update = Builders<MissionSession>.Update.Set(x => x.MissionStarted, timestamp);
+        await sessionsContext.Update(session.Id, update);
+    }
+
+    public async Task HandleMissionEndedAsync(string mission, string map, double durationSeconds, DateTime timestamp)
+    {
+        var session = await FindOrCreateSessionAsync(mission, map, timestamp);
+        var update = Builders<MissionSession>.Update.Set(x => x.MissionEnded, timestamp).Set(x => x.DurationSeconds, durationSeconds);
+        await sessionsContext.Update(session.Id, update);
+    }
+
+    public async Task HandlePlayerConnectedAsync(string mission, string map, string uid, string name, DateTime timestamp)
+    {
+        var session = await FindOrCreateSessionAsync(mission, map, timestamp);
+        var presence = new PlayerPresence
+        {
+            Uid = uid,
+            Name = name,
+            Connected = timestamp
+        };
+        var update = Builders<MissionSession>.Update.Push(x => x.PlayerPresence, presence);
+        await sessionsContext.Update(session.Id, update);
+    }
+
+    public async Task HandlePlayerDisconnectedAsync(string mission, string map, string uid, string name, DateTime timestamp)
+    {
+        var session = await FindOrCreateSessionAsync(mission, map, timestamp);
+
+        // Find the most recent connected entry for this player that hasn't been disconnected
+        var sessionDoc = sessionsContext.GetSingle(x => x.Id == session.Id);
+        if (sessionDoc is null)
+        {
+            return;
+        }
+
+        var openPresence = sessionDoc.PlayerPresence.FindLastIndex(p => p.Uid == uid && p.Disconnected is null);
+        if (openPresence < 0)
+        {
+            return;
+        }
+
+        var update = Builders<MissionSession>.Update.Set(x => x.PlayerPresence[openPresence].Disconnected, timestamp);
+        await sessionsContext.Update(session.Id, update);
     }
 
     private int GetSessionGapHours()
