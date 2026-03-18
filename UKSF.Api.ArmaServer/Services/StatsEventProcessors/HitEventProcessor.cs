@@ -25,7 +25,6 @@ public class HitEventProcessor : IStatsEventProcessor
         }
 
         weaponStats.Hits++;
-        weaponStats.HitCount++;
         weaponStats.TotalEngagementDistance2D += distance2D;
         weaponStats.TotalEngagementDistance3D += distance3D;
 

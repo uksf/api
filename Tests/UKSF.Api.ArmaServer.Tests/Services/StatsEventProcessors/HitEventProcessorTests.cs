@@ -89,7 +89,6 @@ public class HitEventProcessorTests
 
         var weaponStats = stats.WeaponBreakdown["rhs_weap_m4a1"];
         weaponStats.Hits.Should().Be(2);
-        weaponStats.HitCount.Should().Be(2);
         weaponStats.TotalEngagementDistance2D.Should().Be(450);
         weaponStats.TotalEngagementDistance3D.Should().Be(465);
         weaponStats.MaxEngagementDistance2D.Should().Be(300);

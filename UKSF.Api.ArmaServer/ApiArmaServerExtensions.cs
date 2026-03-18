@@ -70,6 +70,7 @@ public static class ApiArmaServerExtensions
                            .AddTransient<IStatsEventProcessor, FuelConsumedEventProcessor>()
                            .AddTransient<IStatsEventProcessor, ExplosivePlacedEventProcessor>()
                            .AddTransient<IStatsEventProcessor, UnconsciousEventProcessor>()
+                           .AddTransient<IStatsEventProcessor, FpsEventProcessor>()
                            .AddSingleton<IGameServerProcessMonitor, GameServerProcessMonitor>()
                            .AddHostedService<GameServerProcessMonitorStartup>();
         }

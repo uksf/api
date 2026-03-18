@@ -10,7 +10,6 @@ public class WeaponStats
     public double TotalEngagementDistance2D { get; set; }
     public double TotalEngagementDistance3D { get; set; }
     public double MaxEngagementDistance2D { get; set; }
-    public int HitCount { get; set; } // For computing average engagement distance
 }
 
 public class KillStats
@@ -54,6 +53,11 @@ public class PlayerMissionStats : MongoObject
 
     // Explosives
     public int ExplosivesPlaced { get; set; }
+
+    // Performance
+    public int FpsSampleCount { get; set; }
+    public int FpsTotalSum { get; set; } // Divide by FpsSampleCount for average
+    public int FpsMin { get; set; } = int.MaxValue;
 
     // Health
     public int TimesUnconscious { get; set; }

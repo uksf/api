@@ -97,7 +97,10 @@ public class MissionStatsService(
                                                         .Inc(x => x.DistanceInVehicle, updates.DistanceInVehicle)
                                                         .Inc(x => x.TotalFuelConsumed, updates.TotalFuelConsumed)
                                                         .Inc(x => x.ExplosivesPlaced, updates.ExplosivesPlaced)
-                                                        .Inc(x => x.TimesUnconscious, updates.TimesUnconscious);
+                                                        .Inc(x => x.TimesUnconscious, updates.TimesUnconscious)
+                                                        .Inc(x => x.FpsSampleCount, updates.FpsSampleCount)
+                                                        .Inc(x => x.FpsTotalSum, updates.FpsTotalSum)
+                                                        .Min(x => x.FpsMin, updates.FpsMin);
 
         foreach (var (bodyPart, count) in updates.BodyPartHits)
         {
@@ -128,7 +131,6 @@ public class MissionStatsService(
         {
             updateBuilder = updateBuilder.Inc(x => x.WeaponBreakdown[weapon].Shots, sourceStats.Shots)
                                          .Inc(x => x.WeaponBreakdown[weapon].Hits, sourceStats.Hits)
-                                         .Inc(x => x.WeaponBreakdown[weapon].HitCount, sourceStats.HitCount)
                                          .Inc(x => x.WeaponBreakdown[weapon].TotalEngagementDistance2D, sourceStats.TotalEngagementDistance2D)
                                          .Inc(x => x.WeaponBreakdown[weapon].TotalEngagementDistance3D, sourceStats.TotalEngagementDistance3D);
 
