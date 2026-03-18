@@ -201,7 +201,7 @@ public class MissionStatsServiceTests
         {
             TotalShots = 10,
             TotalHits = 5,
-            TotalDistance = 1000.5
+            DistanceOnFoot = 1000.5
         };
 
         await _subject.UpdatePlayerStatsAsync(sessionId, playerUid, updates);
@@ -212,7 +212,7 @@ public class MissionStatsServiceTests
                                                s.PlayerUid == playerUid &&
                                                s.TotalShots == 10 &&
                                                s.TotalHits == 5 &&
-                                               Math.Abs(s.TotalDistance - 1000.5) < 0.01
+                                               Math.Abs(s.DistanceOnFoot - 1000.5) < 0.01
                 )
             ),
             Times.Once
@@ -230,7 +230,7 @@ public class MissionStatsServiceTests
             PlayerUid = playerUid,
             TotalShots = 10,
             TotalHits = 5,
-            TotalDistance = 500
+            DistanceOnFoot = 500
         };
         _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns(existing);
 
@@ -238,7 +238,7 @@ public class MissionStatsServiceTests
         {
             TotalShots = 8,
             TotalHits = 3,
-            TotalDistance = 300.5
+            DistanceOnFoot = 300.5
         };
 
         await _subject.UpdatePlayerStatsAsync(sessionId, playerUid, updates);

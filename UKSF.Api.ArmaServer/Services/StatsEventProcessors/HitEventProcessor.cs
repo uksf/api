@@ -10,11 +10,13 @@ public class HitEventProcessor : IStatsEventProcessor
     public void ProcessForPlayer(BsonDocument evt, PlayerMissionStats stats)
     {
         var weapon = evt.GetValue("weapon", "unknown").AsString;
-        var bodyPart = evt.GetValue("bodyPart", "unknown").AsString;
-        var distance = evt.GetValue("distance", 0).ToDouble();
+        var bodyPart = evt.GetValue("bodyPart", "").AsString;
+        var targetType = evt.GetValue("targetType", "unknown").AsString;
+        var distance2D = evt.GetValue("distance2D", 0).ToDouble();
+        var distance3D = evt.GetValue("distance3D", 0).ToDouble();
 
         stats.TotalHits++;
-        stats.TotalDistance += distance;
+        stats.HitsByTargetType[targetType] = stats.HitsByTargetType.GetValueOrDefault(targetType) + 1;
 
         if (!stats.WeaponBreakdown.TryGetValue(weapon, out var weaponStats))
         {
@@ -23,7 +25,18 @@ public class HitEventProcessor : IStatsEventProcessor
         }
 
         weaponStats.Hits++;
+        weaponStats.HitCount++;
+        weaponStats.TotalEngagementDistance2D += distance2D;
+        weaponStats.TotalEngagementDistance3D += distance3D;
 
-        stats.BodyPartHits[bodyPart] = stats.BodyPartHits.GetValueOrDefault(bodyPart) + 1;
+        if (distance2D > weaponStats.MaxEngagementDistance2D)
+        {
+            weaponStats.MaxEngagementDistance2D = distance2D;
+        }
+
+        if (!string.IsNullOrEmpty(bodyPart))
+        {
+            stats.BodyPartHits[bodyPart] = stats.BodyPartHits.GetValueOrDefault(bodyPart) + 1;
+        }
     }
 }

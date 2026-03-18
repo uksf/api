@@ -87,17 +87,55 @@ public class MissionStatsService(
 
         var updateBuilder = Builders<PlayerMissionStats>.Update.Inc(x => x.TotalShots, updates.TotalShots)
                                                         .Inc(x => x.TotalHits, updates.TotalHits)
-                                                        .Inc(x => x.TotalDistance, updates.TotalDistance);
+                                                        .Inc(x => x.Kills.Direct, updates.Kills.Direct)
+                                                        .Inc(x => x.Kills.Indirect, updates.Kills.Indirect)
+                                                        .Inc(x => x.Kills.Assists, updates.Kills.Assists)
+                                                        .Inc(x => x.Kills.TotalAssistDamage, updates.Kills.TotalAssistDamage)
+                                                        .Inc(x => x.TotalDamageDealt, updates.TotalDamageDealt)
+                                                        .Inc(x => x.TimesWounded, updates.TimesWounded)
+                                                        .Inc(x => x.DistanceOnFoot, updates.DistanceOnFoot)
+                                                        .Inc(x => x.DistanceInVehicle, updates.DistanceInVehicle)
+                                                        .Inc(x => x.TotalFuelConsumed, updates.TotalFuelConsumed)
+                                                        .Inc(x => x.ExplosivesPlaced, updates.ExplosivesPlaced)
+                                                        .Inc(x => x.TimesUnconscious, updates.TimesUnconscious);
 
         foreach (var (bodyPart, count) in updates.BodyPartHits)
         {
             updateBuilder = updateBuilder.Inc(x => x.BodyPartHits[bodyPart], count);
         }
 
+        foreach (var (targetType, count) in updates.HitsByTargetType)
+        {
+            updateBuilder = updateBuilder.Inc(x => x.HitsByTargetType[targetType], count);
+        }
+
+        foreach (var (targetType, count) in updates.KillsByTargetType)
+        {
+            updateBuilder = updateBuilder.Inc(x => x.KillsByTargetType[targetType], count);
+        }
+
+        foreach (var (part, count) in updates.WoundsByBodyPart)
+        {
+            updateBuilder = updateBuilder.Inc(x => x.WoundsByBodyPart[part], count);
+        }
+
+        foreach (var (damageType, count) in updates.WoundsByDamageType)
+        {
+            updateBuilder = updateBuilder.Inc(x => x.WoundsByDamageType[damageType], count);
+        }
+
         foreach (var (weapon, sourceStats) in updates.WeaponBreakdown)
         {
             updateBuilder = updateBuilder.Inc(x => x.WeaponBreakdown[weapon].Shots, sourceStats.Shots)
-                                         .Inc(x => x.WeaponBreakdown[weapon].Hits, sourceStats.Hits);
+                                         .Inc(x => x.WeaponBreakdown[weapon].Hits, sourceStats.Hits)
+                                         .Inc(x => x.WeaponBreakdown[weapon].HitCount, sourceStats.HitCount)
+                                         .Inc(x => x.WeaponBreakdown[weapon].TotalEngagementDistance2D, sourceStats.TotalEngagementDistance2D)
+                                         .Inc(x => x.WeaponBreakdown[weapon].TotalEngagementDistance3D, sourceStats.TotalEngagementDistance3D);
+
+            if (sourceStats.MaxEngagementDistance2D > 0)
+            {
+                updateBuilder = updateBuilder.Max(x => x.WeaponBreakdown[weapon].MaxEngagementDistance2D, sourceStats.MaxEngagementDistance2D);
+            }
 
             foreach (var (fireMode, count) in sourceStats.FireModes)
             {

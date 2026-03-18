@@ -3,11 +3,10 @@ using MongoDB.Bson;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.ArmaServer.Services.StatsEventProcessors;
-using UKSF.Api.Core;
 
 namespace UKSF.Api.ArmaServer.Consumers;
 
-public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsService, IEnumerable<IStatsEventProcessor> processors, IUksfLogger logger)
+public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsService, IEnumerable<IStatsEventProcessor> processors)
     : IConsumer<ProcessMissionStatsBatch>
 {
     private readonly Dictionary<string, IStatsEventProcessor> _processorsByType = processors.ToDictionary(p => p.EventType);
@@ -30,9 +29,15 @@ public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsS
 
             missionStats.EventCounts[eventType] = missionStats.EventCounts.GetValueOrDefault(eventType) + 1;
 
+            // Kill events use "killerUid" instead of "uid" and have assists that affect other players
+            if (eventType is "kill")
+            {
+                ProcessKillEvent(evt, playerStats);
+                continue;
+            }
+
             if (!_processorsByType.TryGetValue(eventType, out var processor))
             {
-                logger.LogDebug($"No processor registered for event type '{eventType}'");
                 continue;
             }
 
@@ -42,12 +47,7 @@ public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsS
                 continue;
             }
 
-            if (!playerStats.TryGetValue(uid, out var stats))
-            {
-                stats = new PlayerMissionStats();
-                playerStats[uid] = stats;
-            }
-
+            var stats = GetOrCreatePlayerStats(playerStats, uid);
             processor.ProcessForPlayer(evt, stats);
         }
 
@@ -58,5 +58,54 @@ public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsS
         {
             await missionStatsService.UpdateMissionStatsAsync(session.Id, missionStats);
         }
+    }
+
+    private void ProcessKillEvent(BsonDocument evt, Dictionary<string, PlayerMissionStats> playerStats)
+    {
+        // Process the kill for the killer
+        var killerUid = evt.GetValue("killerUid", "").AsString;
+        if (!string.IsNullOrEmpty(killerUid) && _processorsByType.TryGetValue("kill", out var killProcessor))
+        {
+            var killerStats = GetOrCreatePlayerStats(playerStats, killerUid);
+            killProcessor.ProcessForPlayer(evt, killerStats);
+        }
+
+        // Process assists — each assist entry affects a different player
+        if (!evt.Contains("assists") || !evt["assists"].IsBsonArray)
+        {
+            return;
+        }
+
+        foreach (var assistEntry in evt["assists"].AsBsonArray)
+        {
+            if (!assistEntry.IsBsonDocument)
+            {
+                continue;
+            }
+
+            var assistDoc = assistEntry.AsBsonDocument;
+            var assistUid = assistDoc.GetValue("uid", "").AsString;
+            var assistDamage = assistDoc.GetValue("totalDamage", 0).ToDouble();
+
+            if (string.IsNullOrEmpty(assistUid))
+            {
+                continue;
+            }
+
+            var assistStats = GetOrCreatePlayerStats(playerStats, assistUid);
+            assistStats.Kills.Assists++;
+            assistStats.Kills.TotalAssistDamage += assistDamage;
+        }
+    }
+
+    private static PlayerMissionStats GetOrCreatePlayerStats(Dictionary<string, PlayerMissionStats> playerStats, string uid)
+    {
+        if (!playerStats.TryGetValue(uid, out var stats))
+        {
+            stats = new PlayerMissionStats();
+            playerStats[uid] = stats;
+        }
+
+        return stats;
     }
 }

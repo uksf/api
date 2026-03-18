@@ -62,6 +62,14 @@ public static class ApiArmaServerExtensions
                            .AddTransient<IMissionStatsService, MissionStatsService>()
                            .AddTransient<IStatsEventProcessor, ShotEventProcessor>()
                            .AddTransient<IStatsEventProcessor, HitEventProcessor>()
+                           .AddTransient<IStatsEventProcessor, KillEventProcessor>()
+                           .AddTransient<IStatsEventProcessor, DamageEventProcessor>()
+                           .AddTransient<IStatsEventProcessor, DamageReceivedEventProcessor>()
+                           .AddTransient<IStatsEventProcessor, DistanceOnFootEventProcessor>()
+                           .AddTransient<IStatsEventProcessor, DistanceInVehicleEventProcessor>()
+                           .AddTransient<IStatsEventProcessor, FuelConsumedEventProcessor>()
+                           .AddTransient<IStatsEventProcessor, ExplosivePlacedEventProcessor>()
+                           .AddTransient<IStatsEventProcessor, UnconsciousEventProcessor>()
                            .AddSingleton<IGameServerProcessMonitor, GameServerProcessMonitor>()
                            .AddHostedService<GameServerProcessMonitorStartup>();
         }

@@ -10,7 +10,6 @@ using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.ArmaServer.Services.StatsEventProcessors;
-using UKSF.Api.Core;
 using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Consumers;
@@ -18,7 +17,6 @@ namespace UKSF.Api.ArmaServer.Tests.Consumers;
 public class ProcessMissionStatsBatchConsumerTests
 {
     private readonly Mock<IMissionStatsService> _missionStatsService = new();
-    private readonly Mock<IUksfLogger> _logger = new();
     private readonly Mock<IStatsEventProcessor> _mockShotProcessor = new();
     private readonly Mock<IStatsEventProcessor> _mockHitProcessor = new();
     private readonly ProcessMissionStatsBatchConsumer _consumer;
@@ -48,7 +46,7 @@ public class ProcessMissionStatsBatchConsumerTests
                             )
                             .ReturnsAsync(new MissionStatsBatch());
 
-        _consumer = new ProcessMissionStatsBatchConsumer(_missionStatsService.Object, processors, _logger.Object);
+        _consumer = new ProcessMissionStatsBatchConsumer(_missionStatsService.Object, processors);
     }
 
     private static Mock<ConsumeContext<ProcessMissionStatsBatch>> CreateContext(ProcessMissionStatsBatch message)
@@ -171,7 +169,7 @@ public class ProcessMissionStatsBatchConsumerTests
     }
 
     [Fact]
-    public async Task Consume_ShouldHandleUnknownEventTypes_LoggedAndCountedInMissionStats()
+    public async Task Consume_ShouldHandleUnknownEventTypes_CountedInMissionStats()
     {
         var events = new List<string> { """{"type":"explosion","uid":"player1"}""" };
         var message = new ProcessMissionStatsBatch
@@ -184,8 +182,6 @@ public class ProcessMissionStatsBatchConsumerTests
         var context = CreateContext(message);
 
         await _consumer.Consume(context.Object);
-
-        _logger.Verify(x => x.LogDebug(It.Is<string>(s => s.Contains("explosion"))), Times.Once);
 
         _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<PlayerMissionStats>()), Times.Never);
 

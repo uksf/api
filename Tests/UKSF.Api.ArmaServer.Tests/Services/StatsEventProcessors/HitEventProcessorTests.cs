@@ -23,7 +23,9 @@ public class HitEventProcessorTests
         {
             { "weapon", "rhs_weap_m4a1" },
             { "bodyPart", "head" },
-            { "distance", 150 }
+            { "targetType", "infantry" },
+            { "distance2D", 150 },
+            { "distance3D", 155 }
         };
         var stats = new PlayerMissionStats();
 
@@ -39,13 +41,17 @@ public class HitEventProcessorTests
         {
             { "weapon", "rhs_weap_m4a1" },
             { "bodyPart", "head" },
-            { "distance", 100 }
+            { "targetType", "infantry" },
+            { "distance2D", 100 },
+            { "distance3D", 100 }
         };
         var evtTorso = new BsonDocument
         {
             { "weapon", "rhs_weap_m4a1" },
             { "bodyPart", "torso" },
-            { "distance", 200 }
+            { "targetType", "infantry" },
+            { "distance2D", 200 },
+            { "distance3D", 200 }
         };
         var stats = new PlayerMissionStats();
 
@@ -58,45 +64,64 @@ public class HitEventProcessorTests
     }
 
     [Fact]
-    public void ProcessForPlayer_ShouldTrackWeaponHits()
-    {
-        var evt = new BsonDocument
-        {
-            { "weapon", "rhs_weap_m4a1" },
-            { "bodyPart", "head" },
-            { "distance", 100 }
-        };
-        var stats = new PlayerMissionStats();
-
-        _subject.ProcessForPlayer(evt, stats);
-        _subject.ProcessForPlayer(evt, stats);
-
-        stats.WeaponBreakdown.Should().ContainKey("rhs_weap_m4a1");
-        stats.WeaponBreakdown["rhs_weap_m4a1"].Hits.Should().Be(2);
-    }
-
-    [Fact]
-    public void ProcessForPlayer_ShouldAccumulateDistance()
+    public void ProcessForPlayer_ShouldTrackWeaponHitsAndEngagementDistance()
     {
         var evt1 = new BsonDocument
         {
             { "weapon", "rhs_weap_m4a1" },
             { "bodyPart", "head" },
-            { "distance", 150.7 }
+            { "targetType", "infantry" },
+            { "distance2D", 150 },
+            { "distance3D", 155 }
         };
         var evt2 = new BsonDocument
         {
             { "weapon", "rhs_weap_m4a1" },
             { "bodyPart", "torso" },
-            { "distance", 300.3 }
+            { "targetType", "infantry" },
+            { "distance2D", 300 },
+            { "distance3D", 310 }
         };
         var stats = new PlayerMissionStats();
 
         _subject.ProcessForPlayer(evt1, stats);
         _subject.ProcessForPlayer(evt2, stats);
 
-        stats.TotalDistance.Should().Be(451.0);
-        stats.TotalHits.Should().Be(2);
+        var weaponStats = stats.WeaponBreakdown["rhs_weap_m4a1"];
+        weaponStats.Hits.Should().Be(2);
+        weaponStats.HitCount.Should().Be(2);
+        weaponStats.TotalEngagementDistance2D.Should().Be(450);
+        weaponStats.TotalEngagementDistance3D.Should().Be(465);
+        weaponStats.MaxEngagementDistance2D.Should().Be(300);
+    }
+
+    [Fact]
+    public void ProcessForPlayer_ShouldTrackHitsByTargetType()
+    {
+        var evtInfantry = new BsonDocument
+        {
+            { "weapon", "rhs_weap_m4a1" },
+            { "bodyPart", "torso" },
+            { "targetType", "infantry" },
+            { "distance2D", 100 },
+            { "distance3D", 100 }
+        };
+        var evtVehicle = new BsonDocument
+        {
+            { "weapon", "launch_RPG32_F" },
+            { "bodyPart", "" },
+            { "targetType", "vehicle" },
+            { "distance2D", 500 },
+            { "distance3D", 500 }
+        };
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(evtInfantry, stats);
+        _subject.ProcessForPlayer(evtInfantry, stats);
+        _subject.ProcessForPlayer(evtVehicle, stats);
+
+        stats.HitsByTargetType.Should().ContainKey("infantry").WhoseValue.Should().Be(2);
+        stats.HitsByTargetType.Should().ContainKey("vehicle").WhoseValue.Should().Be(1);
     }
 
     [Fact]
@@ -109,7 +134,24 @@ public class HitEventProcessorTests
 
         stats.TotalHits.Should().Be(1);
         stats.WeaponBreakdown.Should().ContainKey("unknown");
-        stats.BodyPartHits.Should().ContainKey("unknown");
-        stats.TotalDistance.Should().Be(0.0);
+        stats.HitsByTargetType.Should().ContainKey("unknown");
+    }
+
+    [Fact]
+    public void ProcessForPlayer_WhenEmptyBodyPart_ShouldNotTrackBodyPart()
+    {
+        var evt = new BsonDocument
+        {
+            { "weapon", "launch_RPG32_F" },
+            { "bodyPart", "" },
+            { "targetType", "vehicle" },
+            { "distance2D", 500 },
+            { "distance3D", 500 }
+        };
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(evt, stats);
+
+        stats.BodyPartHits.Should().BeEmpty();
     }
 }
