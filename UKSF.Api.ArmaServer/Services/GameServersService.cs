@@ -520,8 +520,6 @@ public class GameServersService(
                 ReceivedAt = DateTime.UtcNow
             }
         );
-
-        logger.LogInfo($"Published mission_stats batch: {mission} on {map}, {events.Count} events");
     }
 
     private async Task HandleMissionLifecycleEvent(Dictionary<string, object> data, bool isStart)
