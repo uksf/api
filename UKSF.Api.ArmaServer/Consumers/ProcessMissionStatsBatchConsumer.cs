@@ -17,8 +17,8 @@ public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsS
 
         var events = message.Events.Select(BsonDocument.Parse).ToList();
 
-        var session = await missionStatsService.FindOrCreateSessionAsync(message.Mission, message.Map, message.ReceivedAt);
-        await missionStatsService.StoreRawBatchAsync(session.Id, message.Mission, message.Map, events, message.ReceivedAt);
+        var session = await missionStatsService.GetOrCreateSessionAsync(message.SessionId, message.Mission, message.Map, message.ReceivedAt);
+        await missionStatsService.StoreRawBatchAsync(message.SessionId, message.Mission, message.Map, events, message.ReceivedAt);
 
         var playerStats = new Dictionary<string, PlayerMissionStats>();
         var missionStats = new MissionStats();

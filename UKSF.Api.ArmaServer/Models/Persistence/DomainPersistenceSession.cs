@@ -30,4 +30,7 @@ public class DomainPersistenceSession : MongoObject
     [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
     [JsonPropertyName("savedAt")]
     public DateTime SavedAt { get; set; }
+
+    [JsonPropertyName("missionSessionIds")]
+    public List<string> MissionSessionIds { get; set; } = [];
 }

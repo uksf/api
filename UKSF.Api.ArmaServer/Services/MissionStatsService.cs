@@ -2,41 +2,31 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.Core.Extensions;
-using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.Services;
 
 public interface IMissionStatsService
 {
-    Task<MissionSession> FindOrCreateSessionAsync(string mission, string map, DateTime receivedAt);
+    Task<MissionSession> GetOrCreateSessionAsync(string sessionId, string mission, string map, DateTime receivedAt);
     Task<MissionStatsBatch> StoreRawBatchAsync(string sessionId, string mission, string map, List<BsonDocument> events, DateTime receivedAt);
     Task UpdatePlayerStatsAsync(string sessionId, string playerUid, PlayerMissionStats updates);
     Task UpdateMissionStatsAsync(string sessionId, MissionStats updates);
-    Task HandleMissionStartedAsync(string mission, string map, DateTime timestamp);
-    Task HandleMissionEndedAsync(string mission, string map, double durationSeconds, DateTime timestamp);
-    Task HandlePlayerConnectedAsync(string mission, string map, string uid, string name, DateTime timestamp);
-    Task HandlePlayerDisconnectedAsync(string mission, string map, string uid, string name, DateTime timestamp);
+    Task HandleMissionStartedAsync(string sessionId, string mission, string map, DateTime timestamp);
+    Task HandleMissionEndedAsync(string sessionId, double durationSeconds, DateTime timestamp);
+    Task HandlePlayerConnectedAsync(string sessionId, string uid, string name, DateTime timestamp);
+    Task HandlePlayerDisconnectedAsync(string sessionId, string uid, DateTime timestamp);
 }
 
 public class MissionStatsService(
     IMissionSessionsContext sessionsContext,
     IMissionStatsBatchesContext batchesContext,
     IPlayerMissionStatsContext playerStatsContext,
-    IMissionStatsContext missionStatsContext,
-    IVariablesService variablesService
+    IMissionStatsContext missionStatsContext
 ) : IMissionStatsService
 {
-    private const int DefaultSessionGapHours = 4;
-
-    public async Task<MissionSession> FindOrCreateSessionAsync(string mission, string map, DateTime receivedAt)
+    public async Task<MissionSession> GetOrCreateSessionAsync(string sessionId, string mission, string map, DateTime receivedAt)
     {
-        var gapHours = GetSessionGapHours();
-        var cutoff = receivedAt.AddHours(-gapHours);
-
-        var existing = sessionsContext.Get(s => s.Mission == mission && s.Map == map && s.LastBatchReceived >= cutoff)
-                                      .OrderByDescending(s => s.LastBatchReceived)
-                                      .FirstOrDefault();
+        var existing = sessionsContext.GetSingle(s => s.SessionId == sessionId);
 
         if (existing is not null)
         {
@@ -49,6 +39,7 @@ public class MissionStatsService(
 
         var session = new MissionSession
         {
+            SessionId = sessionId,
             Mission = mission,
             Map = map,
             Type = GetMissionType(receivedAt.DayOfWeek),
@@ -168,57 +159,67 @@ public class MissionStatsService(
         await missionStatsContext.Update(x => x.MissionSessionId == sessionId, Builders<MissionStats>.Update.Combine(updateDefinitions));
     }
 
-    public async Task HandleMissionStartedAsync(string mission, string map, DateTime timestamp)
+    public async Task HandleMissionStartedAsync(string sessionId, string mission, string map, DateTime timestamp)
     {
-        var session = await FindOrCreateSessionAsync(mission, map, timestamp);
+        var session = await GetOrCreateSessionAsync(sessionId, mission, map, timestamp);
         var update = Builders<MissionSession>.Update.Set(x => x.MissionStarted, timestamp);
         await sessionsContext.Update(session.Id, update);
     }
 
-    public async Task HandleMissionEndedAsync(string mission, string map, double durationSeconds, DateTime timestamp)
+    public async Task HandleMissionEndedAsync(string sessionId, double durationSeconds, DateTime timestamp)
     {
-        var session = await FindOrCreateSessionAsync(mission, map, timestamp);
+        var existing = sessionsContext.GetSingle(s => s.SessionId == sessionId);
+        if (existing is null)
+        {
+            return;
+        }
+
         var update = Builders<MissionSession>.Update.Set(x => x.MissionEnded, timestamp).Set(x => x.DurationSeconds, durationSeconds);
-        await sessionsContext.Update(session.Id, update);
+        await sessionsContext.Update(existing.Id, update);
     }
 
-    public async Task HandlePlayerConnectedAsync(string mission, string map, string uid, string name, DateTime timestamp)
+    public async Task HandlePlayerConnectedAsync(string sessionId, string uid, string name, DateTime timestamp)
     {
-        var session = await FindOrCreateSessionAsync(mission, map, timestamp);
+        var existing = sessionsContext.GetSingle(s => s.SessionId == sessionId);
+        if (existing is null)
+        {
+            return;
+        }
+
+        // Close any open presence entries for this player (crash recovery)
+        var openIndex = existing.PlayerPresence.FindLastIndex(p => p.Uid == uid && p.Disconnected is null);
+        if (openIndex >= 0)
+        {
+            var closeUpdate = Builders<MissionSession>.Update.Set(x => x.PlayerPresence[openIndex].Disconnected, timestamp);
+            await sessionsContext.Update(existing.Id, closeUpdate);
+        }
+
         var presence = new PlayerPresence
         {
             Uid = uid,
             Name = name,
             Connected = timestamp
         };
-        var update = Builders<MissionSession>.Update.Push(x => x.PlayerPresence, presence);
-        await sessionsContext.Update(session.Id, update);
+        var pushUpdate = Builders<MissionSession>.Update.Push(x => x.PlayerPresence, presence);
+        await sessionsContext.Update(existing.Id, pushUpdate);
     }
 
-    public async Task HandlePlayerDisconnectedAsync(string mission, string map, string uid, string name, DateTime timestamp)
+    public async Task HandlePlayerDisconnectedAsync(string sessionId, string uid, DateTime timestamp)
     {
-        var session = await FindOrCreateSessionAsync(mission, map, timestamp);
-
-        // Find the most recent connected entry for this player that hasn't been disconnected
-        var sessionDoc = sessionsContext.GetSingle(x => x.Id == session.Id);
-        if (sessionDoc is null)
+        var existing = sessionsContext.GetSingle(s => s.SessionId == sessionId);
+        if (existing is null)
         {
             return;
         }
 
-        var openPresence = sessionDoc.PlayerPresence.FindLastIndex(p => p.Uid == uid && p.Disconnected is null);
-        if (openPresence < 0)
+        var openIndex = existing.PlayerPresence.FindLastIndex(p => p.Uid == uid && p.Disconnected is null);
+        if (openIndex < 0)
         {
             return;
         }
 
-        var update = Builders<MissionSession>.Update.Set(x => x.PlayerPresence[openPresence].Disconnected, timestamp);
-        await sessionsContext.Update(session.Id, update);
-    }
-
-    private int GetSessionGapHours()
-    {
-        return variablesService.GetVariable("MISSION_STATS_SESSION_GAP_HOURS").AsIntWithDefault(DefaultSessionGapHours);
+        var update = Builders<MissionSession>.Update.Set(x => x.PlayerPresence[openIndex].Disconnected, timestamp);
+        await sessionsContext.Update(existing.Id, update);
     }
 
     private static MissionType GetMissionType(DayOfWeek dayOfWeek) =>

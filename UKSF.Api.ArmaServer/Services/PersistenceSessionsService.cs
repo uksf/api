@@ -10,7 +10,7 @@ namespace UKSF.Api.ArmaServer.Services;
 public interface IPersistenceSessionsService
 {
     DomainPersistenceSession Load(string key);
-    Task SaveAsync(string key, DomainPersistenceSession session);
+    Task SaveAsync(string key, DomainPersistenceSession session, string sessionId = "");
     Task HandleSaveChunkAsync(ChunkEnvelope chunk);
 }
 
@@ -34,12 +34,29 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
         return context.GetSingle(x => x.Key == key);
     }
 
-    public async Task SaveAsync(string key, DomainPersistenceSession session)
+    public async Task SaveAsync(string key, DomainPersistenceSession session, string sessionId = "")
     {
         session.Key = key;
         session.SavedAt = DateTime.UtcNow;
 
         var existing = context.GetSingle(x => x.Key == key);
+
+        // Track which mission sessions have saved to this persistence key
+        if (!string.IsNullOrEmpty(sessionId))
+        {
+            var sessionIds = existing?.MissionSessionIds ?? [];
+            if (!sessionIds.Contains(sessionId))
+            {
+                sessionIds.Add(sessionId);
+            }
+
+            session.MissionSessionIds = sessionIds;
+        }
+        else if (existing is not null)
+        {
+            session.MissionSessionIds = existing.MissionSessionIds;
+        }
+
         try
         {
             if (existing is not null)
@@ -94,7 +111,7 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
                 var session = JsonSerializer.Deserialize<DomainPersistenceSession>(fullJson, SerializerOptions);
                 if (session is not null)
                 {
-                    await SaveAsync(chunk.Key, session);
+                    await SaveAsync(chunk.Key, session, chunk.SessionId);
                 }
                 else
                 {

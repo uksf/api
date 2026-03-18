@@ -24,6 +24,7 @@ public class ProcessMissionStatsBatchConsumerTests
     private static readonly MissionSession TestSession = new()
     {
         Id = "session-1",
+        SessionId = "session-123",
         Mission = "test_mission",
         Map = "test_map"
     };
@@ -35,7 +36,8 @@ public class ProcessMissionStatsBatchConsumerTests
 
         var processors = new IStatsEventProcessor[] { _mockShotProcessor.Object, _mockHitProcessor.Object };
 
-        _missionStatsService.Setup(x => x.FindOrCreateSessionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>())).ReturnsAsync(TestSession);
+        _missionStatsService.Setup(x => x.GetOrCreateSessionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()))
+                            .ReturnsAsync(TestSession);
         _missionStatsService.Setup(x => x.StoreRawBatchAsync(
                                        It.IsAny<string>(),
                                        It.IsAny<string>(),
@@ -63,6 +65,7 @@ public class ProcessMissionStatsBatchConsumerTests
         var receivedAt = new DateTime(2025, 6, 14, 20, 0, 0, DateTimeKind.Utc);
         var message = new ProcessMissionStatsBatch
         {
+            SessionId = "session-123",
             Mission = "test_mission",
             Map = "test_map",
             Events = [],
@@ -72,7 +75,7 @@ public class ProcessMissionStatsBatchConsumerTests
 
         await _consumer.Consume(context.Object);
 
-        _missionStatsService.Verify(x => x.FindOrCreateSessionAsync("test_mission", "test_map", receivedAt), Times.Once);
+        _missionStatsService.Verify(x => x.GetOrCreateSessionAsync(It.IsAny<string>(), "test_mission", "test_map", receivedAt), Times.Once);
     }
 
     [Fact]
@@ -82,6 +85,7 @@ public class ProcessMissionStatsBatchConsumerTests
         var events = new List<string> { """{"type":"shot","uid":"player1"}""" };
         var message = new ProcessMissionStatsBatch
         {
+            SessionId = "session-123",
             Mission = "test_mission",
             Map = "test_map",
             Events = events,
@@ -91,7 +95,10 @@ public class ProcessMissionStatsBatchConsumerTests
 
         await _consumer.Consume(context.Object);
 
-        _missionStatsService.Verify(x => x.StoreRawBatchAsync("session-1", "test_mission", "test_map", It.IsAny<List<BsonDocument>>(), receivedAt), Times.Once);
+        _missionStatsService.Verify(
+            x => x.StoreRawBatchAsync("session-123", "test_mission", "test_map", It.IsAny<List<BsonDocument>>(), receivedAt),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -105,6 +112,7 @@ public class ProcessMissionStatsBatchConsumerTests
         };
         var message = new ProcessMissionStatsBatch
         {
+            SessionId = "session-123",
             Mission = "test_mission",
             Map = "test_map",
             Events = events,
@@ -132,6 +140,7 @@ public class ProcessMissionStatsBatchConsumerTests
         };
         var message = new ProcessMissionStatsBatch
         {
+            SessionId = "session-123",
             Mission = "test_mission",
             Map = "test_map",
             Events = events,
@@ -153,6 +162,7 @@ public class ProcessMissionStatsBatchConsumerTests
         var events = new List<string> { """{"type":"shot","weapon":"rifle","fireMode":"single"}""" };
         var message = new ProcessMissionStatsBatch
         {
+            SessionId = "session-123",
             Mission = "test_mission",
             Map = "test_map",
             Events = events,
@@ -174,6 +184,7 @@ public class ProcessMissionStatsBatchConsumerTests
         var events = new List<string> { """{"type":"explosion","uid":"player1"}""" };
         var message = new ProcessMissionStatsBatch
         {
+            SessionId = "session-123",
             Mission = "test_mission",
             Map = "test_map",
             Events = events,
@@ -193,6 +204,7 @@ public class ProcessMissionStatsBatchConsumerTests
     {
         var message = new ProcessMissionStatsBatch
         {
+            SessionId = "session-123",
             Mission = "test_mission",
             Map = "test_map",
             Events = [],
@@ -217,6 +229,7 @@ public class ProcessMissionStatsBatchConsumerTests
         };
         var message = new ProcessMissionStatsBatch
         {
+            SessionId = "session-123",
             Mission = "test_mission",
             Map = "test_map",
             Events = events,

@@ -19,6 +19,7 @@ public class PlayerPresence
 
 public class MissionSession : MongoObject
 {
+    public string SessionId { get; set; } = string.Empty;
     public string Mission { get; set; } = string.Empty;
     public string Map { get; set; } = string.Empty;
     public MissionType Type { get; set; }

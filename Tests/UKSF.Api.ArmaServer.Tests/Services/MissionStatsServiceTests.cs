@@ -9,8 +9,6 @@ using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
-using UKSF.Api.Core.Models.Domain;
-using UKSF.Api.Core.Services;
 using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Services;
@@ -21,7 +19,6 @@ public class MissionStatsServiceTests
     private readonly Mock<IMissionStatsBatchesContext> _mockBatchesContext = new();
     private readonly Mock<IPlayerMissionStatsContext> _mockPlayerStatsContext = new();
     private readonly Mock<IMissionStatsContext> _mockMissionStatsContext = new();
-    private readonly Mock<IVariablesService> _mockVariablesService = new();
 
     private readonly MissionStatsService _subject;
 
@@ -31,22 +28,21 @@ public class MissionStatsServiceTests
             _mockSessionsContext.Object,
             _mockBatchesContext.Object,
             _mockPlayerStatsContext.Object,
-            _mockMissionStatsContext.Object,
-            _mockVariablesService.Object
+            _mockMissionStatsContext.Object
         );
     }
 
-    #region FindOrCreateSessionAsync
+    #region GetOrCreateSessionAsync
 
     [Fact]
-    public async Task FindOrCreateSessionAsync_WhenNoMatchingSession_ShouldCreateNewSession()
+    public async Task GetOrCreateSessionAsync_WhenNoMatchingSession_ShouldCreateNewSession()
     {
         var receivedAt = new DateTime(2025, 6, 14, 20, 0, 0); // Saturday
-        _mockVariablesService.Setup(x => x.GetVariable("MISSION_STATS_SESSION_GAP_HOURS")).Returns(new DomainVariableItem { Item = "4" });
-        _mockSessionsContext.Setup(x => x.Get(It.IsAny<Func<MissionSession, bool>>())).Returns([]);
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns((MissionSession)null);
 
-        var result = await _subject.FindOrCreateSessionAsync("co40_op_eagle", "Altis", receivedAt);
+        var result = await _subject.GetOrCreateSessionAsync("session-123", "co40_op_eagle", "Altis", receivedAt);
 
+        result.SessionId.Should().Be("session-123");
         result.Mission.Should().Be("co40_op_eagle");
         result.Map.Should().Be("Altis");
         result.FirstBatchReceived.Should().Be(receivedAt);
@@ -56,39 +52,26 @@ public class MissionStatsServiceTests
     }
 
     [Fact]
-    public async Task FindOrCreateSessionAsync_WhenMatchingSessionWithinGap_ShouldReturnExistingAndUpdateAtomically()
+    public async Task GetOrCreateSessionAsync_WhenSessionExists_ShouldReturnExistingAndUpdate()
     {
         var now = new DateTime(2025, 6, 14, 20, 0, 0);
         var existingSession = new MissionSession
         {
+            SessionId = "session-123",
             Mission = "co40_op_eagle",
             Map = "Altis",
             LastBatchReceived = now.AddHours(-1),
             TotalBatchesReceived = 3
         };
-        _mockVariablesService.Setup(x => x.GetVariable("MISSION_STATS_SESSION_GAP_HOURS")).Returns(new DomainVariableItem { Item = "4" });
-        _mockSessionsContext.Setup(x => x.Get(It.IsAny<Func<MissionSession, bool>>())).Returns([existingSession]);
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(existingSession);
 
-        var result = await _subject.FindOrCreateSessionAsync("co40_op_eagle", "Altis", now);
+        var result = await _subject.GetOrCreateSessionAsync("session-123", "co40_op_eagle", "Altis", now);
 
         result.Id.Should().Be(existingSession.Id);
         result.TotalBatchesReceived.Should().Be(4);
         result.LastBatchReceived.Should().Be(now);
         _mockSessionsContext.Verify(x => x.Add(It.IsAny<MissionSession>()), Times.Never);
         _mockSessionsContext.Verify(x => x.Update(existingSession.Id, It.IsAny<UpdateDefinition<MissionSession>>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task FindOrCreateSessionAsync_WhenMatchingSessionBeyondGap_ShouldCreateNewSession()
-    {
-        var now = new DateTime(2025, 6, 14, 20, 0, 0);
-        _mockVariablesService.Setup(x => x.GetVariable("MISSION_STATS_SESSION_GAP_HOURS")).Returns(new DomainVariableItem { Item = "4" });
-        _mockSessionsContext.Setup(x => x.Get(It.IsAny<Func<MissionSession, bool>>())).Returns([]);
-
-        var result = await _subject.FindOrCreateSessionAsync("co40_op_eagle", "Altis", now);
-
-        _mockSessionsContext.Verify(x => x.Add(It.IsAny<MissionSession>()), Times.Once);
-        result.TotalBatchesReceived.Should().Be(1);
     }
 
     [Theory]
@@ -99,70 +82,17 @@ public class MissionStatsServiceTests
     [InlineData(DayOfWeek.Sunday, MissionType.SideOp)]
     [InlineData(DayOfWeek.Tuesday, MissionType.SideOp)]
     [InlineData(DayOfWeek.Friday, MissionType.SideOp)]
-    public async Task FindOrCreateSessionAsync_ShouldSetCorrectMissionTypeFromDayOfWeek(DayOfWeek dayOfWeek, MissionType expectedType)
+    public async Task GetOrCreateSessionAsync_ShouldSetCorrectMissionTypeFromDayOfWeek(DayOfWeek dayOfWeek, MissionType expectedType)
     {
         var baseDate = new DateTime(2025, 6, 9); // Monday
         var daysToAdd = ((int)dayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
         var receivedAt = baseDate.AddDays(daysToAdd).AddHours(20);
 
-        _mockVariablesService.Setup(x => x.GetVariable("MISSION_STATS_SESSION_GAP_HOURS")).Returns(new DomainVariableItem { Item = "4" });
-        _mockSessionsContext.Setup(x => x.Get(It.IsAny<Func<MissionSession, bool>>())).Returns([]);
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns((MissionSession)null);
 
-        var result = await _subject.FindOrCreateSessionAsync("test_mission", "Altis", receivedAt);
+        var result = await _subject.GetOrCreateSessionAsync("session-123", "test_mission", "Altis", receivedAt);
 
         result.Type.Should().Be(expectedType);
-    }
-
-    [Fact]
-    public async Task FindOrCreateSessionAsync_WhenVariableItemNotNumeric_ShouldDefaultTo4Hours()
-    {
-        var now = new DateTime(2025, 6, 14, 20, 0, 0);
-        _mockVariablesService.Setup(x => x.GetVariable("MISSION_STATS_SESSION_GAP_HOURS")).Returns(new DomainVariableItem { Item = "not_a_number" });
-        _mockSessionsContext.Setup(x => x.Get(It.IsAny<Func<MissionSession, bool>>())).Returns([]);
-
-        var result = await _subject.FindOrCreateSessionAsync("test_mission", "Altis", now);
-
-        result.Should().NotBeNull();
-        _mockSessionsContext.Verify(x => x.Add(It.IsAny<MissionSession>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task FindOrCreateSessionAsync_WhenVariableItemIsNull_ShouldDefaultTo4Hours()
-    {
-        var now = new DateTime(2025, 6, 14, 20, 0, 0);
-        _mockVariablesService.Setup(x => x.GetVariable("MISSION_STATS_SESSION_GAP_HOURS")).Returns(new DomainVariableItem { Item = null });
-        _mockSessionsContext.Setup(x => x.Get(It.IsAny<Func<MissionSession, bool>>())).Returns([]);
-
-        var result = await _subject.FindOrCreateSessionAsync("test_mission", "Altis", now);
-
-        result.Should().NotBeNull();
-        _mockSessionsContext.Verify(x => x.Add(It.IsAny<MissionSession>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task FindOrCreateSessionAsync_WhenMultipleSessionsMatch_ShouldReturnMostRecent()
-    {
-        var now = new DateTime(2025, 6, 14, 20, 0, 0);
-        var olderSession = new MissionSession
-        {
-            Mission = "co40_op_eagle",
-            Map = "Altis",
-            LastBatchReceived = now.AddHours(-3),
-            TotalBatchesReceived = 2
-        };
-        var newerSession = new MissionSession
-        {
-            Mission = "co40_op_eagle",
-            Map = "Altis",
-            LastBatchReceived = now.AddHours(-1),
-            TotalBatchesReceived = 5
-        };
-        _mockVariablesService.Setup(x => x.GetVariable("MISSION_STATS_SESSION_GAP_HOURS")).Returns(new DomainVariableItem { Item = "4" });
-        _mockSessionsContext.Setup(x => x.Get(It.IsAny<Func<MissionSession, bool>>())).Returns([olderSession, newerSession]);
-
-        var result = await _subject.FindOrCreateSessionAsync("co40_op_eagle", "Altis", now);
-
-        result.Id.Should().Be(newerSession.Id);
     }
 
     #endregion
@@ -172,7 +102,7 @@ public class MissionStatsServiceTests
     [Fact]
     public async Task StoreRawBatchAsync_ShouldStoreBatchWithSessionReference()
     {
-        var sessionId = ObjectId.GenerateNewId().ToString();
+        var sessionId = "session-123";
         var events = new List<BsonDocument> { new() { { "type", "shot" } }, new() { { "type", "hit" } } };
         var receivedAt = new DateTime(2025, 6, 14, 20, 0, 0);
 
@@ -193,7 +123,7 @@ public class MissionStatsServiceTests
     [Fact]
     public async Task UpdatePlayerStatsAsync_WhenNoExistingStats_ShouldCreateNew()
     {
-        var sessionId = ObjectId.GenerateNewId().ToString();
+        var sessionId = "session-123";
         var playerUid = "76561198012345678";
         _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns((PlayerMissionStats)null);
 
@@ -222,7 +152,7 @@ public class MissionStatsServiceTests
     [Fact]
     public async Task UpdatePlayerStatsAsync_WhenExistingStats_ShouldUseAtomicIncrement()
     {
-        var sessionId = ObjectId.GenerateNewId().ToString();
+        var sessionId = "session-123";
         var playerUid = "76561198012345678";
         var existing = new PlayerMissionStats
         {
@@ -253,7 +183,7 @@ public class MissionStatsServiceTests
     [Fact]
     public async Task UpdatePlayerStatsAsync_WhenExistingStats_WithWeaponBreakdown_ShouldUseAtomicUpdate()
     {
-        var sessionId = ObjectId.GenerateNewId().ToString();
+        var sessionId = "session-123";
         var playerUid = "76561198012345678";
         var existing = new PlayerMissionStats
         {
@@ -298,29 +228,6 @@ public class MissionStatsServiceTests
         );
     }
 
-    [Fact]
-    public async Task UpdatePlayerStatsAsync_WhenExistingStats_WithBodyPartHits_ShouldUseAtomicUpdate()
-    {
-        var sessionId = ObjectId.GenerateNewId().ToString();
-        var playerUid = "76561198012345678";
-        var existing = new PlayerMissionStats
-        {
-            MissionSessionId = sessionId,
-            PlayerUid = playerUid,
-            BodyPartHits = new Dictionary<string, int> { ["head"] = 2, ["body"] = 5 }
-        };
-        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns(existing);
-
-        var updates = new PlayerMissionStats { BodyPartHits = new Dictionary<string, int> { ["body"] = 3, ["legs"] = 1 } };
-
-        await _subject.UpdatePlayerStatsAsync(sessionId, playerUid, updates);
-
-        _mockPlayerStatsContext.Verify(
-            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
-            Times.Once
-        );
-    }
-
     #endregion
 
     #region UpdateMissionStatsAsync
@@ -328,7 +235,7 @@ public class MissionStatsServiceTests
     [Fact]
     public async Task UpdateMissionStatsAsync_WhenNoExisting_ShouldCreateNew()
     {
-        var sessionId = ObjectId.GenerateNewId().ToString();
+        var sessionId = "session-123";
         _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
 
         var updates = new MissionStats { EventCounts = new Dictionary<string, int> { ["shot"] = 50, ["hit"] = 20 } };
@@ -344,7 +251,7 @@ public class MissionStatsServiceTests
     [Fact]
     public async Task UpdateMissionStatsAsync_WhenExisting_ShouldUseAtomicIncrement()
     {
-        var sessionId = ObjectId.GenerateNewId().ToString();
+        var sessionId = "session-123";
         var existing = new MissionStats { MissionSessionId = sessionId, EventCounts = new Dictionary<string, int> { ["shot"] = 30, ["hit"] = 10 } };
         _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns(existing);
 

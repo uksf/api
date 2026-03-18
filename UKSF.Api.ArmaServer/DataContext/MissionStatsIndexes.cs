@@ -11,11 +11,7 @@ public class MissionStatsIndexes(IMongoDatabase database, IUksfLogger logger) : 
     {
         try
         {
-            await CreateIndex<MissionSession>(
-                "missionSessions",
-                Builders<MissionSession>.IndexKeys.Ascending(x => x.Mission).Ascending(x => x.Map).Descending(x => x.LastBatchReceived),
-                "ix_mission_map_lastBatch"
-            );
+            await CreateIndex<MissionSession>("missionSessions", Builders<MissionSession>.IndexKeys.Ascending(x => x.SessionId), "ix_sessionId", unique: true);
 
             await CreateIndex<PlayerMissionStats>(
                 "playerMissionStats",

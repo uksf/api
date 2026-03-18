@@ -380,6 +380,7 @@ public class GameServersServiceTests
             Type = "mission_stats",
             Data = new Dictionary<string, object>
             {
+                { "sessionId", "session-123" },
                 { "mission", "test.Altis" },
                 { "map", "Altis" },
                 { "events", eventsJson }
@@ -592,7 +593,7 @@ public class GameServersServiceTests
         await _subject.HandleGameServerEvent(gameServerEvent);
 
         _mockPublishEndpoint.Verify(x => x.Publish(It.IsAny<ProcessMissionStatsBatch>(), It.IsAny<CancellationToken>()), Times.Never);
-        _mockLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("missing mission or map"))), Times.Once);
+        _mockLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("missing sessionId"))), Times.Once);
     }
 
     [Fact]

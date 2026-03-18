@@ -490,12 +490,13 @@ public class GameServersService(
 
     private async Task HandleMissionStatsEvent(Dictionary<string, object> data)
     {
+        var sessionId = data.TryGetValue("sessionId", out var sessionIdValue) ? sessionIdValue.ToString() : string.Empty;
         var mission = data.TryGetValue("mission", out var missionValue) ? missionValue.ToString() : string.Empty;
         var map = data.TryGetValue("map", out var mapValue) ? mapValue.ToString() : string.Empty;
 
-        if (string.IsNullOrEmpty(mission) || string.IsNullOrEmpty(map))
+        if (string.IsNullOrEmpty(sessionId) || string.IsNullOrEmpty(mission) || string.IsNullOrEmpty(map))
         {
-            logger.LogWarning("mission_stats event missing mission or map");
+            logger.LogWarning("mission_stats event missing sessionId, mission, or map");
             return;
         }
 
@@ -512,6 +513,7 @@ public class GameServersService(
         await publishEndpoint.Publish(
             new ProcessMissionStatsBatch
             {
+                SessionId = sessionId,
                 Mission = mission,
                 Map = map,
                 Events = events,
@@ -524,10 +526,8 @@ public class GameServersService(
 
     private async Task HandleMissionLifecycleEvent(Dictionary<string, object> data, bool isStart)
     {
-        var mission = data.TryGetValue("mission", out var missionValue) ? missionValue.ToString() : string.Empty;
-        var map = data.TryGetValue("map", out var mapValue) ? mapValue.ToString() : string.Empty;
-
-        if (string.IsNullOrEmpty(mission) || string.IsNullOrEmpty(map))
+        var sessionId = data.TryGetValue("sessionId", out var sessionIdValue) ? sessionIdValue.ToString() : string.Empty;
+        if (string.IsNullOrEmpty(sessionId))
         {
             return;
         }
@@ -536,25 +536,30 @@ public class GameServersService(
 
         if (isStart)
         {
-            await missionStatsService.HandleMissionStartedAsync(mission, map, now);
+            var mission = data.TryGetValue("mission", out var missionValue) ? missionValue.ToString() : string.Empty;
+            var map = data.TryGetValue("map", out var mapValue) ? mapValue.ToString() : string.Empty;
+            if (string.IsNullOrEmpty(mission) || string.IsNullOrEmpty(map))
+            {
+                return;
+            }
+
+            await missionStatsService.HandleMissionStartedAsync(sessionId, mission, map, now);
         }
         else
         {
             var duration = data.TryGetValue("duration", out var durationValue) && double.TryParse(durationValue.ToString(), out var durationSeconds)
                 ? durationSeconds
                 : 0;
-            await missionStatsService.HandleMissionEndedAsync(mission, map, duration, now);
+            await missionStatsService.HandleMissionEndedAsync(sessionId, duration, now);
         }
     }
 
     private async Task HandlePlayerPresenceEvent(Dictionary<string, object> data, bool isConnected)
     {
-        var mission = data.TryGetValue("mission", out var missionValue) ? missionValue.ToString() : string.Empty;
-        var map = data.TryGetValue("map", out var mapValue) ? mapValue.ToString() : string.Empty;
+        var sessionId = data.TryGetValue("sessionId", out var sessionIdValue) ? sessionIdValue.ToString() : string.Empty;
         var uid = data.TryGetValue("uid", out var uidValue) ? uidValue.ToString() : string.Empty;
-        var name = data.TryGetValue("name", out var nameValue) ? nameValue.ToString() : string.Empty;
 
-        if (string.IsNullOrEmpty(mission) || string.IsNullOrEmpty(map) || string.IsNullOrEmpty(uid))
+        if (string.IsNullOrEmpty(sessionId) || string.IsNullOrEmpty(uid))
         {
             return;
         }
@@ -563,11 +568,12 @@ public class GameServersService(
 
         if (isConnected)
         {
-            await missionStatsService.HandlePlayerConnectedAsync(mission, map, uid, name, now);
+            var name = data.TryGetValue("name", out var nameValue) ? nameValue.ToString() : string.Empty;
+            await missionStatsService.HandlePlayerConnectedAsync(sessionId, uid, name, now);
         }
         else
         {
-            await missionStatsService.HandlePlayerDisconnectedAsync(mission, map, uid, name, now);
+            await missionStatsService.HandlePlayerDisconnectedAsync(sessionId, uid, now);
         }
     }
 
