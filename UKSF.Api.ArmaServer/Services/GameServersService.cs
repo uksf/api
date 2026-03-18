@@ -322,6 +322,7 @@ public class GameServersService(
         {
             gameServer.ProcessId = null;
             gameServer.LaunchedBy = null;
+            gameServer.Status = new GameServerStatus();
             gameServer.HeadlessClientProcessIds.Clear();
             StatusCache.TryRemove(gameServer.Id, out _);
             await gameServersContext.Replace(gameServer);

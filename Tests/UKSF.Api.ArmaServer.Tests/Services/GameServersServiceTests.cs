@@ -121,7 +121,7 @@ public class GameServersServiceTests
     }
 
     [Fact]
-    public async Task KillAllArmaProcesses_Should_clear_process_data()
+    public async Task KillAllArmaProcesses_Should_clear_process_data_and_reset_status()
     {
         var gameServers = new List<DomainGameServer>
         {
@@ -130,14 +130,16 @@ public class GameServersServiceTests
                 Id = "server1",
                 LaunchedBy = "user1",
                 ProcessId = 1001,
-                HeadlessClientProcessIds = []
+                HeadlessClientProcessIds = [],
+                Status = new GameServerStatus { Running = true, Mission = "test.Altis" }
             },
             new()
             {
                 Id = "server2",
                 LaunchedBy = "user2",
                 ProcessId = 1002,
-                HeadlessClientProcessIds = []
+                HeadlessClientProcessIds = [],
+                Status = new GameServerStatus { Running = true, Stopping = true }
             },
             new()
             {
@@ -158,6 +160,10 @@ public class GameServersServiceTests
                        {
                            server.ProcessId.Should().BeNull();
                            server.HeadlessClientProcessIds.Count.Should().Be(0);
+                           server.Status.Running.Should().BeFalse();
+                           server.Status.Stopping.Should().BeFalse();
+                           server.Status.Launching.Should().BeFalse();
+                           server.Status.Mission.Should().BeNull();
                        }
                    );
         result.Should().Be(0);
