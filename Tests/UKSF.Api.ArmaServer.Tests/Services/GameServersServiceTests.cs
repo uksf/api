@@ -443,6 +443,66 @@ public class GameServersServiceTests
     }
 
     [Fact]
+    public async Task HandleGameServerEvent_WhenServerStatusWithUptime_ShouldSetStartedAt()
+    {
+        var runningServer = new DomainGameServer
+        {
+            Id = "server-1",
+            Port = 2302,
+            ApiPort = 2303,
+            ProcessId = 1234
+        };
+        _mockGameServersContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>()))
+                               .Returns((Func<DomainGameServer, bool> predicate) => new List<DomainGameServer> { runningServer }.FirstOrDefault(predicate));
+        _mockGameServerHelpers.Setup(x => x.GetMaxPlayerCountFromConfig(runningServer)).Returns("64");
+        _mockGameServerHelpers.Setup(x => x.StripMilliseconds(It.IsAny<TimeSpan>())).Returns(TimeSpan.FromSeconds(120));
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<System.Diagnostics.Process>());
+
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "server_status",
+            ApiPort = 2303,
+            Data = new Dictionary<string, object> { { "uptime", "120.5" } }
+        };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        runningServer.Status.StartedAt.Should().NotBeNull();
+        runningServer.Status.StartedAt.Should().BeCloseTo(DateTime.UtcNow.AddSeconds(-120.5), TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_WhenServerStatusWithUptime_ShouldNotOverwriteExistingStartedAt()
+    {
+        _subject.ClearStatusCache("server-started-at");
+        var existingStartedAt = DateTime.UtcNow.AddHours(-1);
+        var runningServer = new DomainGameServer
+        {
+            Id = "server-started-at",
+            Port = 2302,
+            ApiPort = 2303,
+            ProcessId = 1234,
+            Status = new GameServerStatus { StartedAt = existingStartedAt }
+        };
+        _mockGameServersContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>()))
+                               .Returns((Func<DomainGameServer, bool> predicate) => new List<DomainGameServer> { runningServer }.FirstOrDefault(predicate));
+        _mockGameServerHelpers.Setup(x => x.GetMaxPlayerCountFromConfig(runningServer)).Returns("64");
+        _mockGameServerHelpers.Setup(x => x.StripMilliseconds(It.IsAny<TimeSpan>())).Returns(TimeSpan.FromSeconds(3600));
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<System.Diagnostics.Process>());
+
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "server_status",
+            ApiPort = 2303,
+            Data = new Dictionary<string, object> { { "uptime", "3600" } }
+        };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        runningServer.Status.StartedAt.Should().Be(existingStartedAt);
+    }
+
+    [Fact]
     public async Task HandleGameServerEvent_WhenServerStatus_ShouldNotCrashWithNoRunningServers()
     {
         _mockGameServersContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns((DomainGameServer)null);

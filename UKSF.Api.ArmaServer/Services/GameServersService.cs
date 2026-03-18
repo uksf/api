@@ -467,6 +467,7 @@ public class GameServersService(
         {
             status.Uptime = uptimeValue;
             status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(uptimeValue)).ToString();
+            status.StartedAt ??= DateTime.UtcNow.AddSeconds(-uptimeValue);
         }
 
         if (data.TryGetValue("fps", out var fps) && float.TryParse(fps.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var fpsValue))
