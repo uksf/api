@@ -46,9 +46,9 @@ public class PatchDataBuilder(
         List<InternalUnit> orderedUnits = [parent];
         InsertUnitChildren(orderedUnits, parent, units);
 
-        orderedUnits.RemoveAll(u => (!IsUnitPermanent(u) && u.Members.Count == 0) || string.IsNullOrEmpty(ResolveCallsign(u)));
-
         MergeSpecialUnits(orderedUnits);
+
+        orderedUnits.RemoveAll(u => (!IsUnitPermanent(u) && u.Members.Count == 0) || string.IsNullOrEmpty(ResolveCallsign(u)));
 
         var patchUnits = orderedUnits.Select(u => BuildPatchUnit(u, ranks)).ToList();
 

@@ -193,7 +193,7 @@ public class TestPatchDataBuilder
             "5fe39de7815f5f03801134f7",
             "Combat Ready",
             UnitJsfaw.Id,
-            "Combat Ready",
+            "",
             order: 0,
             members: [PilotFoxtrot.Id],
             missionPatchSettings: new MissionPatchSettings { MergeIntoParent = true, ObjectClassOverride = "UKSF_B_Pilot" }
