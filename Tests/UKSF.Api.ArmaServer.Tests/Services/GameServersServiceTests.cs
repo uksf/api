@@ -100,17 +100,24 @@ public class GameServersServiceTests
     }
 
     [Fact]
-    public async Task KillGameServer_Should_handle_null_process_id()
+    public async Task KillGameServer_Should_handle_null_process_id_gracefully()
     {
         var gameServer = new DomainGameServer
         {
             Id = "server-456",
             LaunchedBy = "previous-user-123",
-            ProcessId = null
+            ProcessId = null,
+            HeadlessClientProcessIds = [],
+            Status = new GameServerStatus { Running = true, Stopping = true }
         };
 
-        var action = () => _subject.KillGameServer(gameServer);
-        await action.Should().ThrowAsync<InvalidOperationException>();
+        await _subject.KillGameServer(gameServer);
+
+        gameServer.ProcessId.Should().BeNull();
+        gameServer.LaunchedBy.Should().BeNull();
+        gameServer.Status.Running.Should().BeFalse();
+        gameServer.Status.Stopping.Should().BeFalse();
+        _mockProcessUtilities.Verify(x => x.FindProcessById(It.IsAny<int>()), Times.Never);
     }
 
     [Fact]

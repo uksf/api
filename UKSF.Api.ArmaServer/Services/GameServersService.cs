@@ -268,15 +268,13 @@ public class GameServersService(
 
     public async Task KillGameServer(DomainGameServer gameServer)
     {
-        if (gameServer.ProcessId is null)
+        if (gameServer.ProcessId is not null)
         {
-            throw new InvalidOperationException("Process ID not found");
-        }
-
-        var process = processUtilities.FindProcessById(gameServer.ProcessId.Value);
-        if (process is { HasExited: false })
-        {
-            process.Kill(true);
+            var process = processUtilities.FindProcessById(gameServer.ProcessId.Value);
+            if (process is { HasExited: false })
+            {
+                process.Kill(true);
+            }
         }
 
         gameServer.ProcessId = null;
@@ -286,10 +284,10 @@ public class GameServersService(
 
         gameServer.HeadlessClientProcessIds.ForEach(x =>
             {
-                process = processUtilities.FindProcessById(x);
-                if (process is { HasExited: false })
+                var hcProcess = processUtilities.FindProcessById(x);
+                if (hcProcess is { HasExited: false })
                 {
-                    process.Kill(true);
+                    hcProcess.Kill(true);
                 }
             }
         );
