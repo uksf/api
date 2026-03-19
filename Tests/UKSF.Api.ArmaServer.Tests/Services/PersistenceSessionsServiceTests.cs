@@ -313,106 +313,50 @@ public class PersistenceSessionsServiceTests
     }
 
     [Fact]
-    public void RoundTrip_ObjectWithAllFields_PreservesData()
+    public void RoundTrip_SqfPositionalArrayFormat_PreservesData()
     {
-        var original = new PersistenceObject
-        {
-            Id = "obj-all-fields",
-            Type = "B_Heli_Transport_01_F",
-            Position = [1234.56, 5678.90, 15.3],
-            VectorDirUp = [new double[] { 0.0, 0.8, 0.0 }, new double[] { 0.0, 0.0, 1.0 }],
-            Damage = 0.35,
-            Fuel = 0.72,
-            TurretWeapons =
-            [
-                new TurretWeaponsEntry { TurretPath = [0, 1], Weapons = ["LMG_Minigun", "missiles_DAR"] }
-            ],
-            TurretMagazines =
-            [
-                new TurretMagazineEntry
-                {
-                    ClassName = "200Rnd_65x39_cased_Box",
-                    TurretPath = [0],
-                    AmmoCount = 200
-                }
-            ],
-            PylonLoadout =
-            [
-                new PylonEntry { Magazine = "PylonMissile_1Rnd_Missile_AA_04_F", Ammo = 1 },
-                new PylonEntry { Magazine = "PylonRack_12Rnd_missiles", Ammo = 12 }
-            ],
-            Logistics = [100.0, 50.0, 75.0, 200.0],
-            Attached =
-            [
-                new AttachedObject { ClassName = "ACE_IR_Strobe_Effect", Offset = [0.0, 0.0, 1.5] }
-            ],
-            RackChannels = [0, 1, 2],
-            AceCargo =
-            [
-                new AceCargoEntry { ClassName = "Box_IND_Ammo_F", CustomName = "Ammo Box" }
-            ],
-            Inventory =
-                new InventoryContainer
-                {
-                    Weapons = new CargoSlot { ClassNames = ["item1"], Counts = [1] }, Magazines = new CargoSlot { ClassNames = ["mag1"], Counts = [10] }
-                },
-            AceFortify = new AceFortifyState { IsAceFortification = false, Side = "WEST" },
-            AceMedical = new ObjectMedicalState
-            {
-                MedicClass = 0,
-                MedicalVehicle = false,
-                MedicalFacility = false
-            },
-            AceRepair = new ObjectRepairState { RepairVehicle = 0, RepairFacility = 0 },
-            CustomName = "Custom Helicopter"
-        };
+        // SQF sends all sub-structures as positional arrays, not named objects.
+        // This test uses the actual format from the game mod.
+        var json = """
+                   {
+                       "id": "obj-all-fields",
+                       "type": "B_Heli_Transport_01_F",
+                       "position": [1234.56, 5678.90, 15.3],
+                       "vectorDirUp": [[0.0, 0.8, 0.0], [0.0, 0.0, 1.0]],
+                       "damage": 0.35,
+                       "fuel": 0.72,
+                       "turretWeapons": [[[0, 1], ["LMG_Minigun", "missiles_DAR"]]],
+                       "turretMagazines": [["200Rnd_65x39_cased_Box", [0], 200, 10000200, 2]],
+                       "pylonLoadout": [["PylonMissile_1Rnd_Missile_AA_04_F", 1], ["PylonRack_12Rnd_missiles", 12]],
+                       "logistics": [100.0, 50.0, 75.0, 200.0],
+                       "attached": [["ACE_IR_Strobe_Effect", [0.0, 0.0, 1.5]]],
+                       "rackChannels": [0, 1, 2],
+                       "aceCargo": [["Box_IND_Ammo_F", [], [], "Ammo Box"]],
+                       "inventory": [[["item1"], [1]], [["mag1"], [10]], [[], []], [[], []]],
+                       "aceFortify": [false, "WEST"],
+                       "aceMedical": [0, false, false],
+                       "aceRepair": [0, 0],
+                       "customName": "Custom Helicopter"
+                   }
+                   """;
 
-        var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json);
+        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json, PersistenceSessionsService.SerializerOptions);
 
         deserialized.Should().NotBeNull();
-        deserialized!.Id.Should().Be(original.Id);
-        deserialized.Type.Should().Be(original.Type);
-        deserialized.Position.Should().BeEquivalentTo(original.Position);
-        deserialized.VectorDirUp.Should().BeEquivalentTo(original.VectorDirUp);
-        deserialized.Damage.Should().Be(original.Damage);
-        deserialized.Fuel.Should().Be(original.Fuel);
-        deserialized.CustomName.Should().Be(original.CustomName);
-        deserialized.Logistics.Should().BeEquivalentTo(original.Logistics);
-
-        deserialized.TurretWeapons.Should().HaveCount(1);
-        deserialized.TurretWeapons[0].TurretPath.Should().BeEquivalentTo(new[] { 0, 1 });
-        deserialized.TurretWeapons[0].Weapons.Should().BeEquivalentTo(new[] { "LMG_Minigun", "missiles_DAR" });
-
-        deserialized.TurretMagazines.Should().HaveCount(1);
-        deserialized.TurretMagazines[0].ClassName.Should().Be("200Rnd_65x39_cased_Box");
-        deserialized.TurretMagazines[0].TurretPath.Should().BeEquivalentTo(new[] { 0 });
-
-        deserialized.PylonLoadout.Should().HaveCount(2);
-        deserialized.PylonLoadout[0].Magazine.Should().Be("PylonMissile_1Rnd_Missile_AA_04_F");
-        deserialized.PylonLoadout[0].Ammo.Should().Be(1);
-
-        deserialized.Attached.Should().HaveCount(1);
-        deserialized.Attached[0].ClassName.Should().Be("ACE_IR_Strobe_Effect");
-        deserialized.Attached[0].Offset.Should().BeEquivalentTo(new[] { 0.0, 0.0, 1.5 });
-
+        deserialized!.Id.Should().Be("obj-all-fields");
+        deserialized.Type.Should().Be("B_Heli_Transport_01_F");
+        deserialized.Position.Should().BeEquivalentTo(new[] { 1234.56, 5678.90, 15.3 });
+        deserialized.Damage.Should().Be(0.35);
+        deserialized.Fuel.Should().Be(0.72);
+        deserialized.CustomName.Should().Be("Custom Helicopter");
+        deserialized.Logistics.Should().BeEquivalentTo(new[] { 100.0, 50.0, 75.0, 200.0 });
         deserialized.RackChannels.Should().BeEquivalentTo(new[] { 0, 1, 2 });
 
+        deserialized.TurretWeapons.Should().HaveCount(1);
+        deserialized.TurretMagazines.Should().HaveCount(1);
+        deserialized.PylonLoadout.Should().HaveCount(2);
+        deserialized.Attached.Should().HaveCount(1);
         deserialized.AceCargo.Should().HaveCount(1);
-        deserialized.AceCargo[0].ClassName.Should().Be("Box_IND_Ammo_F");
-        deserialized.AceCargo[0].CustomName.Should().Be("Ammo Box");
-
-        deserialized.Inventory.Weapons.ClassNames.Should().BeEquivalentTo(new[] { "item1" });
-        deserialized.Inventory.Magazines.ClassNames.Should().BeEquivalentTo(new[] { "mag1" });
-
-        deserialized.AceFortify.IsAceFortification.Should().BeFalse();
-        deserialized.AceFortify.Side.Should().Be("WEST");
-
-        deserialized.AceMedical.MedicClass.Should().Be(0);
-        deserialized.AceMedical.MedicalVehicle.Should().BeFalse();
-
-        deserialized.AceRepair.RepairVehicle.Should().Be(0);
-        deserialized.AceRepair.RepairFacility.Should().Be(0);
     }
 
     [Fact]
@@ -421,7 +365,7 @@ public class PersistenceSessionsServiceTests
         var original = new PersistenceObject();
 
         var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json);
+        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json, PersistenceSessionsService.SerializerOptions);
 
         deserialized.Should().NotBeNull();
         deserialized!.Id.Should().Be(string.Empty);
@@ -447,27 +391,27 @@ public class PersistenceSessionsServiceTests
     [Fact]
     public void RoundTrip_ObjectWithEmptyCollections_PreservesData()
     {
-        var original = new PersistenceObject
-        {
-            Id = "empty-collections",
-            Type = "B_Truck_01_transport_F",
-            Position = [],
-            VectorDirUp = [],
-            TurretWeapons = [],
-            TurretMagazines = [],
-            PylonLoadout = [],
-            Logistics = [],
-            Attached = [],
-            RackChannels = [],
-            AceCargo = [],
-            Inventory = new InventoryContainer(),
-            AceFortify = new AceFortifyState(),
-            AceMedical = new ObjectMedicalState(),
-            AceRepair = new ObjectRepairState()
-        };
+        var json = """
+                   {
+                       "id": "empty-collections",
+                       "type": "B_Truck_01_transport_F",
+                       "position": [],
+                       "vectorDirUp": [],
+                       "turretWeapons": [],
+                       "turretMagazines": [],
+                       "pylonLoadout": [],
+                       "logistics": [],
+                       "attached": [],
+                       "rackChannels": [],
+                       "aceCargo": [],
+                       "inventory": [[[],[]],[[],[]],[[],[]],[[],[]]],
+                       "aceFortify": [false, "WEST"],
+                       "aceMedical": [0, false, false],
+                       "aceRepair": [0, 0]
+                   }
+                   """;
 
-        var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json);
+        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json, PersistenceSessionsService.SerializerOptions);
 
         deserialized.Should().NotBeNull();
         deserialized!.Id.Should().Be("empty-collections");
@@ -483,101 +427,75 @@ public class PersistenceSessionsServiceTests
     }
 
     [Fact]
-    public void RoundTrip_ObjectWithNestedAceCargo_PreservesData()
+    public void RoundTrip_SqfNestedAceCargo_PreservesData()
     {
-        var original = new PersistenceObject
-        {
-            Id = "nested-cargo",
-            Type = "B_CargoNet_01_ammo_F",
-            AceCargo =
-            [
-                new AceCargoEntry
-                {
-                    ClassName = "Box_IND_Ammo_F",
-                    Cargo = [new AceCargoEntry { ClassName = "nested_item_1" }],
-                    CustomName = "Ammo Box"
-                }
-            ]
-        };
+        // SQF ace cargo format: [className, nestedCargo[], inventory[], customName]
+        var json = """
+                   {
+                       "id": "nested-cargo",
+                       "type": "B_CargoNet_01_ammo_F",
+                       "aceCargo": [["Box_IND_Ammo_F", [["nested_item_1", [], [], ""]], [], "Ammo Box"]]
+                   }
+                   """;
 
-        var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json);
+        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json, PersistenceSessionsService.SerializerOptions);
 
         deserialized.Should().NotBeNull();
         deserialized!.AceCargo.Should().HaveCount(1);
-        deserialized.AceCargo[0].ClassName.Should().Be("Box_IND_Ammo_F");
-        deserialized.AceCargo[0].Cargo.Should().HaveCount(1);
-        deserialized.AceCargo[0].Cargo[0].ClassName.Should().Be("nested_item_1");
-        deserialized.AceCargo[0].CustomName.Should().Be("Ammo Box");
     }
 
     [Fact]
-    public void RoundTrip_ObjectWithTurretWeapons_PreservesData()
+    public void RoundTrip_SqfTurretWeapons_PreservesData()
     {
-        var original = new PersistenceObject
-        {
-            Id = "turret-weapons",
-            Type = "B_APC_Tracked_01_AA_F",
-            TurretWeapons =
-            [
-                new TurretWeaponsEntry { TurretPath = [0, 1], Weapons = ["weapon1", "weapon2"] }
-            ]
-        };
+        // SQF turret weapons format: [[turretPath, weapons[]]]
+        var json = """
+                   {
+                       "id": "turret-weapons",
+                       "type": "B_APC_Tracked_01_AA_F",
+                       "turretWeapons": [[[0, 1], ["weapon1", "weapon2"]]]
+                   }
+                   """;
 
-        var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json);
+        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json, PersistenceSessionsService.SerializerOptions);
 
         deserialized.Should().NotBeNull();
         deserialized!.TurretWeapons.Should().HaveCount(1);
-        deserialized.TurretWeapons[0].TurretPath.Should().BeEquivalentTo(new[] { 0, 1 });
-        deserialized.TurretWeapons[0].Weapons.Should().BeEquivalentTo(new[] { "weapon1", "weapon2" });
     }
 
     [Fact]
-    public void RoundTrip_ObjectWithPylonLoadout_PreservesData()
+    public void RoundTrip_SqfPylonLoadout_PreservesData()
     {
-        var original = new PersistenceObject
-        {
-            Id = "pylon-loadout",
-            Type = "B_Plane_CAS_01_dynamicLoadout_F",
-            PylonLoadout =
-            [
-                new PylonEntry { Magazine = "mag1", Ammo = 20 },
-                new PylonEntry { Magazine = "mag2", Ammo = 0 }
-            ]
-        };
+        // SQF pylon format: [magazine, ammo]
+        var json = """
+                   {
+                       "id": "pylon-loadout",
+                       "type": "B_Plane_CAS_01_dynamicLoadout_F",
+                       "pylonLoadout": [["mag1", 20], ["mag2", 0]]
+                   }
+                   """;
 
-        var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json);
+        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json, PersistenceSessionsService.SerializerOptions);
 
         deserialized.Should().NotBeNull();
         deserialized!.PylonLoadout.Should().HaveCount(2);
-        deserialized.PylonLoadout[0].Magazine.Should().Be("mag1");
-        deserialized.PylonLoadout[0].Ammo.Should().Be(20);
-        deserialized.PylonLoadout[1].Magazine.Should().Be("mag2");
-        deserialized.PylonLoadout[1].Ammo.Should().Be(0);
     }
 
     [Fact]
-    public void RoundTrip_ObjectWithAttachedObjects_PreservesData()
+    public void RoundTrip_SqfAttachedObjects_PreservesData()
     {
-        var original = new PersistenceObject
-        {
-            Id = "attached-objects",
-            Type = "B_MRAP_01_F",
-            Attached =
-            [
-                new AttachedObject { ClassName = "classname", Offset = [0.1, 0.2, 0.3] }
-            ]
-        };
+        // SQF attached format: [className, offset[]]
+        var json = """
+                   {
+                       "id": "attached-objects",
+                       "type": "B_MRAP_01_F",
+                       "attached": [["classname", [0.1, 0.2, 0.3]]]
+                   }
+                   """;
 
-        var json = JsonSerializer.Serialize(original);
-        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json);
+        var deserialized = JsonSerializer.Deserialize<PersistenceObject>(json, PersistenceSessionsService.SerializerOptions);
 
         deserialized.Should().NotBeNull();
         deserialized!.Attached.Should().HaveCount(1);
-        deserialized.Attached[0].ClassName.Should().Be("classname");
-        deserialized.Attached[0].Offset.Should().BeEquivalentTo(new[] { 0.1, 0.2, 0.3 });
     }
 
     [Fact]

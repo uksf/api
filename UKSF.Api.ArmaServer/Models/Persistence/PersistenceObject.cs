@@ -23,37 +23,37 @@ public class PersistenceObject
     public double Fuel { get; set; }
 
     [JsonPropertyName("turretWeapons")]
-    public List<TurretWeaponsEntry> TurretWeapons { get; set; } = [];
+    public List<object> TurretWeapons { get; set; } = [];
 
     [JsonPropertyName("turretMagazines")]
-    public List<TurretMagazineEntry> TurretMagazines { get; set; } = [];
+    public List<object> TurretMagazines { get; set; } = [];
 
     [JsonPropertyName("pylonLoadout")]
-    public List<PylonEntry> PylonLoadout { get; set; } = [];
+    public List<object> PylonLoadout { get; set; } = [];
 
     [JsonPropertyName("logistics")]
     public double[] Logistics { get; set; } = [];
 
     [JsonPropertyName("attached")]
-    public List<AttachedObject> Attached { get; set; } = [];
+    public List<object> Attached { get; set; } = [];
 
     [JsonPropertyName("rackChannels")]
     public int[] RackChannels { get; set; } = [];
 
     [JsonPropertyName("aceCargo")]
-    public List<AceCargoEntry> AceCargo { get; set; } = [];
+    public List<object> AceCargo { get; set; } = [];
 
     [JsonPropertyName("inventory")]
-    public InventoryContainer Inventory { get; set; } = new();
+    public object Inventory { get; set; } = new object[] { };
 
     [JsonPropertyName("aceFortify")]
-    public AceFortifyState AceFortify { get; set; } = new();
+    public object AceFortify { get; set; } = new object[] { };
 
     [JsonPropertyName("aceMedical")]
-    public ObjectMedicalState AceMedical { get; set; } = new();
+    public object AceMedical { get; set; } = new object[] { };
 
     [JsonPropertyName("aceRepair")]
-    public ObjectRepairState AceRepair { get; set; } = new();
+    public object AceRepair { get; set; } = new object[] { };
 
     [JsonPropertyName("customName")]
     public string CustomName { get; set; } = string.Empty;
