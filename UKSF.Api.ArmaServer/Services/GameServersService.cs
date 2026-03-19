@@ -445,6 +445,8 @@ public class GameServersService(
             }
         }
 
+        gameServer.ProcessId = null;
+        gameServer.LaunchedBy = null;
         gameServer.HeadlessClientProcessIds.Clear();
         gameServer.Status = new GameServerStatus();
         StatusCache.TryRemove(gameServer.Id, out _);
