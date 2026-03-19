@@ -403,6 +403,11 @@ public class GameServersService(
     {
         try
         {
+            if (gameServerEvent.Type is not "server_status")
+            {
+                logger.LogInfo($"Game server event received: {gameServerEvent.Type} (apiPort {gameServerEvent.ApiPort})");
+            }
+
             switch (gameServerEvent.Type)
             {
                 case "server_status":       await HandleServerStatusEvent(gameServerEvent.ApiPort, gameServerEvent.Data); break;
@@ -444,6 +449,8 @@ public class GameServersService(
         gameServer.Status = new GameServerStatus();
         StatusCache.TryRemove(gameServer.Id, out _);
         await gameServersContext.Replace(gameServer);
+
+        logger.LogInfo($"Server shutdown complete: {gameServer.Name} (apiPort {gameServer.ApiPort})");
     }
 
     private async Task HandleServerStatusEvent(int apiPort, Dictionary<string, object> data)
