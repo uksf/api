@@ -403,11 +403,6 @@ public class GameServersService(
     {
         try
         {
-            if (gameServerEvent.Type is not "server_status")
-            {
-                logger.LogInfo($"Game server event received: {gameServerEvent.Type} (apiPort {gameServerEvent.ApiPort})");
-            }
-
             switch (gameServerEvent.Type)
             {
                 case "server_status":       await HandleServerStatusEvent(gameServerEvent.ApiPort, gameServerEvent.Data); break;
