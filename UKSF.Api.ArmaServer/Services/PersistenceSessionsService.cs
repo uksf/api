@@ -20,7 +20,7 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
     // Uses PersistenceTypeConverter to unwrap JsonElement → native .NET types in object fields.
     // Does NOT use InferredTypeConverter (would convert date-like strings to DateTime)
     // Does NOT use DictionaryKeyPolicy (would mutate CustomData keys)
-    public static readonly JsonSerializerOptions SerializerOptions = new()
+    internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNameCaseInsensitive = true, Converters = { new PersistenceTypeConverter() }
     };
