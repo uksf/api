@@ -21,12 +21,6 @@ public class TurretMagazineEntry
 
     [JsonPropertyName("ammoCount")]
     public int AmmoCount { get; set; }
-
-    [JsonPropertyName("id")]
-    public long Id { get; set; }
-
-    [JsonPropertyName("ammo")]
-    public int Ammo { get; set; }
 }
 
 public class PylonEntry
