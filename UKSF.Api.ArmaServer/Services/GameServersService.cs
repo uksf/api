@@ -450,6 +450,8 @@ public class GameServersService(
         StatusCache.TryRemove(gameServer.Id, out _);
         await gameServersContext.Replace(gameServer);
 
+        await serversHub.Clients.All.ReceiveServerUpdate(new GameServerUpdate { Server = gameServer, InstanceCount = GetGameInstanceCount() });
+
         logger.LogInfo($"Server shutdown complete: {gameServer.Name} (apiPort {gameServer.ApiPort})");
     }
 
