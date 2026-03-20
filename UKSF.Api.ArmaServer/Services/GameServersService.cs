@@ -192,7 +192,8 @@ public class GameServersService(
 
     public async Task LaunchGameServer(DomainGameServer gameServer, string missionName = null, string launchedBy = null)
     {
-        gameServer.Status.Launching = true;
+        gameServer.Status = new GameServerStatus { Launching = true };
+        StatusCache.TryRemove(gameServer.Id, out _);
 
         if (missionName is not null)
         {
