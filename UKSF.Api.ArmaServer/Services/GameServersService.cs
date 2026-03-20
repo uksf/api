@@ -594,6 +594,7 @@ public class GameServersService(
         {
             Id = data.GetValueOrDefault("id")?.ToString() ?? string.Empty,
             Key = data.GetValueOrDefault("key")?.ToString() ?? string.Empty,
+            SessionId = data.GetValueOrDefault("sessionId")?.ToString() ?? string.Empty,
             Index = Convert.ToInt32(data.GetValueOrDefault("index", 0)),
             Total = Convert.ToInt32(data.GetValueOrDefault("total", 1)),
             Data = data.GetValueOrDefault("data")?.ToString() ?? string.Empty

@@ -679,6 +679,7 @@ public class GameServersServiceTests
             {
                 { "id", "chunk-123" },
                 { "key", "session-key" },
+                { "sessionId", "session-456" },
                 { "index", 0 },
                 { "total", 1 },
                 { "data", "{\"key\":\"test\"}" }
@@ -689,7 +690,13 @@ public class GameServersServiceTests
 
         _mockPersistenceSessionsService.Verify(
             x => x.HandleSaveChunkAsync(
-                It.Is<ChunkEnvelope>(c => c.Id == "chunk-123" && c.Key == "session-key" && c.Index == 0 && c.Total == 1 && c.Data == "{\"key\":\"test\"}")
+                It.Is<ChunkEnvelope>(c => c.Id == "chunk-123" &&
+                                          c.Key == "session-key" &&
+                                          c.SessionId == "session-456" &&
+                                          c.Index == 0 &&
+                                          c.Total == 1 &&
+                                          c.Data == "{\"key\":\"test\"}"
+                )
             ),
             Times.Once
         );
