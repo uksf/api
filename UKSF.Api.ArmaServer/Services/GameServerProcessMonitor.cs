@@ -131,16 +131,19 @@ public class GameServerProcessMonitor(
             if (hcProcess is { HasExited: false })
             {
                 hcProcess.Kill(true);
+                try
+                {
+                    await hcProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                }
+                catch (TimeoutException) { }
+                catch (InvalidOperationException) { }
             }
         }
 
         server.ProcessId = null;
         server.HeadlessClientProcessIds.Clear();
         server.LaunchedBy = null;
-        server.Status.Running = false;
-        server.Status.Launching = false;
-        server.Status.Stopping = false;
-        server.Status.StoppingInitiatedAt = null;
+        server.Status = new GameServerStatus();
 
         using var scope = serviceScopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<IGameServersContext>();

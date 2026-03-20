@@ -437,6 +437,12 @@ public class GameServersService(
             if (process is { HasExited: false })
             {
                 process.Kill(true);
+                try
+                {
+                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                }
+                catch (TimeoutException) { }
+                catch (InvalidOperationException) { }
             }
         }
 
