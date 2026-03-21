@@ -275,6 +275,12 @@ public class GameServersService(
             if (process is { HasExited: false })
             {
                 process.Kill(true);
+                try
+                {
+                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                }
+                catch (TimeoutException) { }
+                catch (InvalidOperationException) { }
             }
         }
 
@@ -283,14 +289,22 @@ public class GameServersService(
         gameServer.Status = new GameServerStatus();
         StatusCache.TryRemove(gameServer.Id, out _);
 
-        gameServer.HeadlessClientProcessIds.ForEach(x =>
-            {
-                var hcProcess = processUtilities.FindProcessById(x);
-                if (hcProcess is { HasExited: false })
+        await Task.WhenAll(
+            gameServer.HeadlessClientProcessIds.Select(async hcProcessId =>
                 {
-                    hcProcess.Kill(true);
+                    var hcProcess = processUtilities.FindProcessById(hcProcessId);
+                    if (hcProcess is { HasExited: false })
+                    {
+                        hcProcess.Kill(true);
+                        try
+                        {
+                            await hcProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                        }
+                        catch (TimeoutException) { }
+                        catch (InvalidOperationException) { }
+                    }
                 }
-            }
+            )
         );
         gameServer.HeadlessClientProcessIds.Clear();
 
@@ -430,6 +444,20 @@ public class GameServersService(
         {
             logger.LogWarning($"Received shutdown_complete but no server matches apiPort {apiPort}");
             return;
+        }
+
+        if (gameServer.ProcessId is not null)
+        {
+            var mainProcess = processUtilities.FindProcessById(gameServer.ProcessId.Value);
+            if (mainProcess is { HasExited: false })
+            {
+                try
+                {
+                    await mainProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                }
+                catch (TimeoutException) { }
+                catch (InvalidOperationException) { }
+            }
         }
 
         foreach (var processId in gameServer.HeadlessClientProcessIds)
