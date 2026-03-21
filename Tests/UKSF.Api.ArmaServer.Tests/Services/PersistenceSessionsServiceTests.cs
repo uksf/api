@@ -1172,4 +1172,84 @@ public class PersistenceSessionsServiceTests
         deserialized.LinkedItems.Map.Should().Be("ItemMap");
         deserialized.LinkedItems.Compass.Should().Be("ItemCompass");
     }
+
+    [Fact]
+    public void RoundTrip_ContainerItem_AllTypes_PreservesData()
+    {
+        var original = new ContainerSlot
+        {
+            ClassName = "B_Carryall_ocamo",
+            Items =
+            [
+                new ContainerItem
+                {
+                    Type = "item",
+                    ClassName = "FirstAidKit",
+                    Count = 1
+                },
+                new ContainerItem
+                {
+                    Type = "magazine",
+                    ClassName = "30Rnd_65x39_caseless_mag",
+                    Count = 2,
+                    Ammo = 30
+                },
+                new ContainerItem
+                {
+                    Type = "weapon",
+                    Weapon = new WeaponSlot
+                    {
+                        Weapon = "arifle_MX_ACO_pointer_F",
+                        Pointer = "acc_pointer_IR",
+                        Optic = "optic_Aco"
+                    },
+                    Count = 1
+                },
+                new ContainerItem
+                {
+                    Type = "container",
+                    ClassName = "B_Carryall_khk",
+                    IsBackpack = true
+                }
+            ]
+        };
+
+        var json = JsonSerializer.Serialize(original);
+        var deserialized = JsonSerializer.Deserialize<ContainerSlot>(json);
+
+        deserialized.Should().NotBeNull();
+        deserialized!.Items.Should().HaveCount(4);
+
+        deserialized.Items[0].Type.Should().Be("item");
+        deserialized.Items[0].ClassName.Should().Be("FirstAidKit");
+        deserialized.Items[0].Count.Should().Be(1);
+
+        deserialized.Items[1].Type.Should().Be("magazine");
+        deserialized.Items[1].ClassName.Should().Be("30Rnd_65x39_caseless_mag");
+        deserialized.Items[1].Count.Should().Be(2);
+        deserialized.Items[1].Ammo.Should().Be(30);
+
+        deserialized.Items[2].Type.Should().Be("weapon");
+        deserialized.Items[2].Weapon.Should().NotBeNull();
+        deserialized.Items[2].Weapon!.Weapon.Should().Be("arifle_MX_ACO_pointer_F");
+        deserialized.Items[2].Weapon.Pointer.Should().Be("acc_pointer_IR");
+        deserialized.Items[2].Weapon.Optic.Should().Be("optic_Aco");
+        deserialized.Items[2].Count.Should().Be(1);
+
+        deserialized.Items[3].Type.Should().Be("container");
+        deserialized.Items[3].ClassName.Should().Be("B_Carryall_khk");
+        deserialized.Items[3].IsBackpack.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Deserialize_ContainerItem_WithoutTypeField_DefaultsToItem()
+    {
+        const string json = """{"className":"FirstAidKit","count":3}""";
+        var deserialized = JsonSerializer.Deserialize<ContainerItem>(json);
+
+        deserialized.Should().NotBeNull();
+        deserialized!.Type.Should().Be("item");
+        deserialized.ClassName.Should().Be("FirstAidKit");
+        deserialized.Count.Should().Be(3);
+    }
 }

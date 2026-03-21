@@ -79,6 +79,9 @@ public class ContainerSlot
 
 public class ContainerItem
 {
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "item";
+
     [JsonPropertyName("className")]
     public string ClassName { get; set; } = string.Empty;
 
@@ -87,6 +90,12 @@ public class ContainerItem
 
     [JsonPropertyName("ammo")]
     public int? Ammo { get; set; }
+
+    [JsonPropertyName("weapon")]
+    public WeaponSlot? Weapon { get; set; }
+
+    [JsonPropertyName("isBackpack")]
+    public bool? IsBackpack { get; set; }
 }
 
 public class LinkedItems
