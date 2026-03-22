@@ -42,8 +42,6 @@ public class MissionStatsService(
             SessionId = sessionId,
             Mission = mission,
             Map = map,
-            Type = GetMissionType(receivedAt.DayOfWeek),
-            Date = receivedAt.Date,
             FirstBatchReceived = receivedAt,
             LastBatchReceived = receivedAt,
             TotalBatchesReceived = 1
@@ -221,12 +219,4 @@ public class MissionStatsService(
         var update = Builders<MissionSession>.Update.Set(x => x.PlayerPresence[openIndex].Disconnected, timestamp);
         await sessionsContext.Update(existing.Id, update);
     }
-
-    private static MissionType GetMissionType(DayOfWeek dayOfWeek) =>
-        dayOfWeek switch
-        {
-            DayOfWeek.Saturday  => MissionType.MainOp,
-            DayOfWeek.Wednesday => MissionType.Training,
-            _                   => MissionType.SideOp
-        };
 }

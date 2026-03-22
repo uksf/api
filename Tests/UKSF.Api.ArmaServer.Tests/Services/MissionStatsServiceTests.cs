@@ -74,27 +74,6 @@ public class MissionStatsServiceTests
         _mockSessionsContext.Verify(x => x.Update(existingSession.Id, It.IsAny<UpdateDefinition<MissionSession>>()), Times.Once);
     }
 
-    [Theory]
-    [InlineData(DayOfWeek.Saturday, MissionType.MainOp)]
-    [InlineData(DayOfWeek.Wednesday, MissionType.Training)]
-    [InlineData(DayOfWeek.Monday, MissionType.SideOp)]
-    [InlineData(DayOfWeek.Thursday, MissionType.SideOp)]
-    [InlineData(DayOfWeek.Sunday, MissionType.SideOp)]
-    [InlineData(DayOfWeek.Tuesday, MissionType.SideOp)]
-    [InlineData(DayOfWeek.Friday, MissionType.SideOp)]
-    public async Task GetOrCreateSessionAsync_ShouldSetCorrectMissionTypeFromDayOfWeek(DayOfWeek dayOfWeek, MissionType expectedType)
-    {
-        var baseDate = new DateTime(2025, 6, 9); // Monday
-        var daysToAdd = ((int)dayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
-        var receivedAt = baseDate.AddDays(daysToAdd).AddHours(20);
-
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns((MissionSession)null);
-
-        var result = await _subject.GetOrCreateSessionAsync("session-123", "test_mission", "Altis", receivedAt);
-
-        result.Type.Should().Be(expectedType);
-    }
-
     #endregion
 
     #region StoreRawBatchAsync
