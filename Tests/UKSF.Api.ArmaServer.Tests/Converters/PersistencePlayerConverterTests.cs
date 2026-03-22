@@ -263,7 +263,6 @@ public class PersistencePlayerConverterTests
         var items = result.Loadout.Uniform.Items;
         items.Should().HaveCount(4);
 
-        // Item: 2 elements
         items[0].Type.Should().Be("item");
         items[0].ClassName.Should().Be("FirstAidKit");
         items[0].Count.Should().Be(1);
@@ -271,19 +270,16 @@ public class PersistencePlayerConverterTests
         items[0].Weapon.Should().BeNull();
         items[0].IsBackpack.Should().BeNull();
 
-        // Magazine: 3 elements
         items[1].Type.Should().Be("magazine");
         items[1].ClassName.Should().Be("30Rnd_65x39_caseless_mag");
         items[1].Count.Should().Be(2);
         items[1].Ammo.Should().Be(30);
 
-        // Weapon: first element is array
         items[2].Type.Should().Be("weapon");
         items[2].Weapon.Should().NotBeNull();
         items[2].Weapon!.Weapon.Should().Be("arifle_MX_F");
         items[2].Count.Should().Be(1);
 
-        // Container/backpack: second element is bool
         items[3].Type.Should().Be("container");
         items[3].ClassName.Should().Be("B_Carryall_khk");
         items[3].IsBackpack.Should().BeTrue();

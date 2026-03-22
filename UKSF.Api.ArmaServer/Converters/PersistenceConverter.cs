@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using UKSF.Api.ArmaServer.Models.Persistence;
+using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
 namespace UKSF.Api.ArmaServer.Converters;
 
@@ -73,21 +74,4 @@ public static partial class PersistenceConverter
 
         return raw;
     }
-
-    private static int ToInt(object v) =>
-        v switch
-        {
-            int i    => i,
-            long l   => (int)l,
-            double d => (int)d,
-            _        => Convert.ToInt32(v)
-        };
-
-    private static List<object> ToList(object v) =>
-        v switch
-        {
-            List<object> list => list,
-            object[] array    => [..array],
-            _                 => []
-        };
 }

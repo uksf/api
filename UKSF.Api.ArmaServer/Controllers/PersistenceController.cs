@@ -12,7 +12,7 @@ namespace UKSF.Api.ArmaServer.Controllers;
 public class PersistenceController(IPersistenceSessionsService persistenceSessionsService, IUksfLogger logger) : ControllerBase
 {
     [HttpGet("{key}")]
-    public IActionResult Get([FromRoute] string key, [FromQuery] string format = null)
+    public IActionResult Get([FromRoute] string key, [FromQuery] string? format = null)
     {
         logger.LogDebug($"Persistence load requested for key: {key}");
 

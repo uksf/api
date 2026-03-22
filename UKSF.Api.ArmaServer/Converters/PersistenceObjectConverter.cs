@@ -1,4 +1,5 @@
 using UKSF.Api.ArmaServer.Models.Persistence;
+using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
 namespace UKSF.Api.ArmaServer.Converters;
 
@@ -8,8 +9,8 @@ public static class PersistenceObjectConverter
     {
         var obj = new PersistenceObject
         {
-            Id = ToString(raw[0]),
-            Type = ToString(raw[1]),
+            Id = ToSafeString(raw[0]),
+            Type = ToSafeString(raw[1]),
             Position = ToList(raw[2]).Select(ToDouble).ToArray(),
             VectorDirUp = ToList(raw[3]).Select(v => ToList(v).Select(ToDouble).ToArray()).ToArray(),
             Damage = ToDouble(raw[4]),
@@ -25,7 +26,7 @@ public static class PersistenceObjectConverter
             AceFortify = ParseAceFortify(ToList(raw[14])),
             AceMedical = ParseAceMedical(ToList(raw[15])),
             AceRepair = ParseAceRepair(ToList(raw[16])),
-            CustomName = ToString(raw[17])
+            CustomName = ToSafeString(raw[17])
         };
 
         return obj;
@@ -61,47 +62,14 @@ public static class PersistenceObjectConverter
         ];
     }
 
-    private static double ToDouble(object v) =>
-        v switch
-        {
-            double d => d,
-            long l   => l,
-            int i    => i,
-            float f  => f,
-            _        => Convert.ToDouble(v)
-        };
-
-    private static int ToInt(object v) =>
-        v switch
-        {
-            int i    => i,
-            long l   => (int)l,
-            double d => (int)d,
-            _        => Convert.ToInt32(v)
-        };
-
-    private static string ToString(object v) => v?.ToString() ?? string.Empty;
-
-    private static bool ToBool(object v) =>
-        v switch
-        {
-            bool b => b,
-            _      => Convert.ToBoolean(v)
-        };
-
-    private static List<object> ToList(object v) =>
-        v switch
-        {
-            List<object> list => list,
-            object[] array    => [..array],
-            _                 => []
-        };
-
     private static List<TurretWeaponsEntry> ParseTurretWeapons(List<object> raw) =>
         raw.Select(entry =>
                {
                    var list = ToList(entry);
-                   return new TurretWeaponsEntry { TurretPath = ToList(list[0]).Select(ToInt).ToArray(), Weapons = ToList(list[1]).Select(ToString).ToArray() };
+                   return new TurretWeaponsEntry
+                       {
+                           TurretPath = ToList(list[0]).Select(ToInt).ToArray(), Weapons = ToList(list[1]).Select(ToSafeString).ToArray()
+                       };
                }
            )
            .ToList();
@@ -110,9 +78,14 @@ public static class PersistenceObjectConverter
         raw.Select(entry =>
                {
                    var list = ToList(entry);
+                   if (list.Count < 3)
+                   {
+                       return new TurretMagazineEntry();
+                   }
+
                    return new TurretMagazineEntry
                    {
-                       ClassName = ToString(list[0]),
+                       ClassName = ToSafeString(list[0]),
                        TurretPath = ToList(list[1]).Select(ToInt).ToArray(),
                        AmmoCount = ToInt(list[2])
                    };
@@ -124,7 +97,7 @@ public static class PersistenceObjectConverter
         raw.Select(entry =>
                {
                    var list = ToList(entry);
-                   return new PylonEntry { Magazine = ToString(list[0]), Ammo = ToInt(list[1]) };
+                   return new PylonEntry { Magazine = ToSafeString(list[0]), Ammo = ToInt(list[1]) };
                }
            )
            .ToList();
@@ -133,7 +106,7 @@ public static class PersistenceObjectConverter
         raw.Select(entry =>
                {
                    var list = ToList(entry);
-                   return new AttachedObject { ClassName = ToString(list[0]), Offset = ToList(list[1]).Select(ToDouble).ToArray() };
+                   return new AttachedObject { ClassName = ToSafeString(list[0]), Offset = ToList(list[1]).Select(ToDouble).ToArray() };
                }
            )
            .ToList();
@@ -144,10 +117,10 @@ public static class PersistenceObjectConverter
                    var list = ToList(entry);
                    return new AceCargoEntry
                    {
-                       ClassName = ToString(list[0]),
+                       ClassName = ToSafeString(list[0]),
                        Cargo = ParseAceCargo(ToList(list[1])),
                        Inventory = ParseInventory(ToList(list[2])),
-                       CustomName = ToString(list[3])
+                       CustomName = ToSafeString(list[3])
                    };
                }
            )
@@ -176,20 +149,43 @@ public static class PersistenceObjectConverter
             return new CargoSlot();
         }
 
-        return new CargoSlot { ClassNames = ToList(raw[0]).Select(ToString).ToArray(), Counts = ToList(raw[1]).Select(ToInt).ToArray() };
+        return new CargoSlot { ClassNames = ToList(raw[0]).Select(ToSafeString).ToArray(), Counts = ToList(raw[1]).Select(ToInt).ToArray() };
     }
 
-    private static AceFortifyState ParseAceFortify(List<object> raw) => new() { IsAceFortification = ToBool(raw[0]), Side = ToString(raw[1]) };
+    private static AceFortifyState ParseAceFortify(List<object> raw)
+    {
+        if (raw.Count < 2)
+        {
+            return new AceFortifyState();
+        }
 
-    private static ObjectMedicalState ParseAceMedical(List<object> raw) =>
-        new()
+        return new AceFortifyState { IsAceFortification = ToBool(raw[0]), Side = ToSafeString(raw[1]) };
+    }
+
+    private static ObjectMedicalState ParseAceMedical(List<object> raw)
+    {
+        if (raw.Count < 3)
+        {
+            return new ObjectMedicalState();
+        }
+
+        return new ObjectMedicalState
         {
             MedicClass = ToInt(raw[0]),
             MedicalVehicle = ToBool(raw[1]),
             MedicalFacility = ToBool(raw[2])
         };
+    }
 
-    private static ObjectRepairState ParseAceRepair(List<object> raw) => new() { RepairVehicle = ToInt(raw[0]), RepairFacility = ToInt(raw[1]) };
+    private static ObjectRepairState ParseAceRepair(List<object> raw)
+    {
+        if (raw.Count < 2)
+        {
+            return new ObjectRepairState();
+        }
+
+        return new ObjectRepairState { RepairVehicle = ToInt(raw[0]), RepairFacility = ToInt(raw[1]) };
+    }
 
     private static List<object> SerializeTurretWeapons(List<TurretWeaponsEntry> entries) =>
         entries.Select(e => (object)new List<object> { e.TurretPath.Cast<object>().ToList(), e.Weapons.Cast<object>().ToList() }).ToList();

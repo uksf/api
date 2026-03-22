@@ -72,11 +72,8 @@ public class PersistenceObjectConverterTests
         array[0] = "vehicle_001";
         array[1] = "B_MRAP_01_hmg_F";
 
-        // Turret weapons: [[turretPath, [weapons...]], ...]
         array[6] = new List<object> { new List<object> { new List<object> { 0L }, new List<object> { "HMG_127", "SmokeLauncher" } } };
 
-        // Turret magazines from magazinesAllTurrets: 5-element arrays, only first 3 consumed
-        // Format: [className, turretPath, ammoCount, ?, ?]
         array[7] = new List<object>
         {
             new List<object>
@@ -97,8 +94,6 @@ public class PersistenceObjectConverterTests
             }
         };
 
-        // Inventory: [[classNames[], counts[]], [classNames[], counts[]], [classNames[], counts[]], [classNames[], counts[]]]
-        // Order: weapons, magazines, items, backpacks
         array[13] = new List<object>
         {
             new List<object> { new List<object>(), new List<object>() },
@@ -191,8 +186,6 @@ public class PersistenceObjectConverterTests
         array[0] = "crate_002";
         array[1] = "B_CargoNet_01_ammo_F";
 
-        // ACE cargo format: [className, nestedCargo[], inventory, customName]
-        // Entry 1: Simple — ACE_Wheel with no nested cargo or inventory
         var simpleCargoEntry = new List<object>
         {
             "ACE_Wheel",
@@ -207,7 +200,6 @@ public class PersistenceObjectConverterTests
             ""
         };
 
-        // Entry 2: With inventory containing magazines
         var cargoWithInventory = new List<object>
         {
             "B_supplyCrate_F",
@@ -247,7 +239,6 @@ public class PersistenceObjectConverterTests
         array[0] = "obj_003";
         array[1] = "B_Heli_Light_01_F";
 
-        // Add the 19th element (index 18 = FailedLastLoad, runtime-only flag)
         array.Add(true);
 
         array.Should().HaveCount(19);

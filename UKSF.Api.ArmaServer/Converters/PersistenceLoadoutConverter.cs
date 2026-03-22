@@ -1,4 +1,5 @@
 using UKSF.Api.ArmaServer.Models.Persistence;
+using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
 namespace UKSF.Api.ArmaServer.Converters;
 
@@ -19,8 +20,8 @@ public static class PersistenceLoadoutConverter
             Uniform = ParseContainerSlot(ToList(raw[3])),
             Vest = ParseContainerSlot(ToList(raw[4])),
             Backpack = ParseContainerSlot(ToList(raw[5])),
-            Headgear = ToString(raw[6]),
-            Facewear = ToString(raw[7]),
+            Headgear = ToSafeString(raw[6]),
+            Facewear = ToSafeString(raw[7]),
             Binoculars = ParseWeaponSlot(ToList(raw[8])),
             LinkedItems = ParseLinkedItems(ToList(raw[9]))
         };
@@ -60,13 +61,13 @@ public static class PersistenceLoadoutConverter
 
         return new WeaponSlot
         {
-            Weapon = ToString(raw[0]),
-            Muzzle = ToString(raw[1]),
-            Pointer = ToString(raw[2]),
-            Optic = ToString(raw[3]),
+            Weapon = ToSafeString(raw[0]),
+            Muzzle = ToSafeString(raw[1]),
+            Pointer = ToSafeString(raw[2]),
+            Optic = ToSafeString(raw[3]),
             PrimaryMagazine = ParseMagazineState(ToList(raw[4])),
             SecondaryMagazine = ParseMagazineState(ToList(raw[5])),
-            Bipod = ToString(raw[6])
+            Bipod = ToSafeString(raw[6])
         };
     }
 
@@ -77,7 +78,7 @@ public static class PersistenceLoadoutConverter
             return new MagazineState();
         }
 
-        return new MagazineState { ClassName = ToString(raw[0]), Ammo = ToInt(raw[1]) };
+        return new MagazineState { ClassName = ToSafeString(raw[0]), Ammo = ToInt(raw[1]) };
     }
 
     private static ContainerSlot ParseContainerSlot(List<object> raw)
@@ -87,7 +88,7 @@ public static class PersistenceLoadoutConverter
             return new ContainerSlot();
         }
 
-        return new ContainerSlot { ClassName = ToString(raw[0]), Items = ToList(raw[1]).Select(ParseContainerItem).ToList() };
+        return new ContainerSlot { ClassName = ToSafeString(raw[0]), Items = ToList(raw[1]).Select(ParseContainerItem).ToList() };
     }
 
     private static ContainerItem ParseContainerItem(object raw)
@@ -109,7 +110,7 @@ public static class PersistenceLoadoutConverter
             return new ContainerItem
             {
                 Type = "container",
-                ClassName = ToString(list[0]),
+                ClassName = ToSafeString(list[0]),
                 IsBackpack = ToBool(list[1])
             };
         }
@@ -119,7 +120,7 @@ public static class PersistenceLoadoutConverter
             return new ContainerItem
             {
                 Type = "magazine",
-                ClassName = ToString(list[0]),
+                ClassName = ToSafeString(list[0]),
                 Count = ToInt(list[1]),
                 Ammo = ToInt(list[2])
             };
@@ -128,7 +129,7 @@ public static class PersistenceLoadoutConverter
         return new ContainerItem
         {
             Type = "item",
-            ClassName = ToString(list[0]),
+            ClassName = ToSafeString(list[0]),
             Count = list.Count >= 2 ? ToInt(list[1]) : 0
         };
     }
@@ -142,12 +143,12 @@ public static class PersistenceLoadoutConverter
 
         return new LinkedItems
         {
-            Map = ToString(raw[0]),
-            Gps = ToString(raw[1]),
-            Radio = ToString(raw[2]),
-            Compass = ToString(raw[3]),
-            Watch = ToString(raw[4]),
-            Nvg = ToString(raw[5])
+            Map = ToSafeString(raw[0]),
+            Gps = ToSafeString(raw[1]),
+            Radio = ToSafeString(raw[2]),
+            Compass = ToSafeString(raw[3]),
+            Watch = ToSafeString(raw[4]),
+            Nvg = ToSafeString(raw[5])
         };
     }
 
@@ -194,46 +195,10 @@ public static class PersistenceLoadoutConverter
     {
         return item.Type switch
         {
-            "weapon"    => [SerializeWeaponSlot(item.Weapon!), (long)item.Count],
-            "container" => [item.ClassName, item.IsBackpack!.Value],
-            "magazine"  => [item.ClassName, (long)item.Count, (long)item.Ammo!.Value],
+            "weapon"    => [SerializeWeaponSlot(item.Weapon ?? new WeaponSlot()), (long)item.Count],
+            "container" => [item.ClassName, item.IsBackpack ?? false],
+            "magazine"  => [item.ClassName, (long)item.Count, (long)(item.Ammo ?? 0)],
             _           => [item.ClassName, (long)item.Count]
         };
     }
-
-    private static double ToDouble(object v) =>
-        v switch
-        {
-            double d => d,
-            long l   => l,
-            int i    => i,
-            float f  => f,
-            _        => Convert.ToDouble(v)
-        };
-
-    private static int ToInt(object v) =>
-        v switch
-        {
-            int i    => i,
-            long l   => (int)l,
-            double d => (int)d,
-            _        => Convert.ToInt32(v)
-        };
-
-    private static string ToString(object v) => v?.ToString() ?? string.Empty;
-
-    private static bool ToBool(object v) =>
-        v switch
-        {
-            bool b => b,
-            _      => Convert.ToBoolean(v)
-        };
-
-    private static List<object> ToList(object v) =>
-        v switch
-        {
-            List<object> list => list,
-            object[] array    => [..array],
-            _                 => []
-        };
 }
