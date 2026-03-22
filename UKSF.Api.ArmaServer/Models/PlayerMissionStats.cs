@@ -54,10 +54,11 @@ public class PlayerMissionStats : MongoObject
     // Explosives
     public int ExplosivesPlaced { get; set; }
 
-    // Performance
-    public int FpsSampleCount { get; set; }
-    public int FpsTotalSum { get; set; } // Divide by FpsSampleCount for average
-    public int FpsMin { get; set; } = int.MaxValue;
+    // Performance — computed on mission end from raw FPS events in batch data
+    public int? FpsMin { get; set; }
+    public int? FpsMax { get; set; }
+    public double? FpsAverage { get; set; }
+    public int? FpsP1 { get; set; } // 1st percentile (1% low)
 
     // Health
     public int TimesUnconscious { get; set; }

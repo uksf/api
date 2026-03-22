@@ -9,14 +9,9 @@ public class FpsEventProcessor : IStatsEventProcessor
 
     public void ProcessForPlayer(BsonDocument evt, PlayerMissionStats stats)
     {
-        var value = evt.GetValue("value", 0).ToInt32();
-
-        stats.FpsSampleCount++;
-        stats.FpsTotalSum += value;
-
-        if (value < stats.FpsMin)
-        {
-            stats.FpsMin = value;
-        }
+        // FPS stats (min, max, average, P1) are computed on mission end
+        // from raw FPS events in the merged batch data.
+        // Per-batch processing only counts FPS events in missionStats.eventCounts
+        // (handled by the consumer before this method is called).
     }
 }

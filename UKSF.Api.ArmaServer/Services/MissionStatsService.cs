@@ -90,10 +90,7 @@ public class MissionStatsService(
                                                         .Inc(x => x.DistanceInVehicle, updates.DistanceInVehicle)
                                                         .Inc(x => x.TotalFuelConsumed, updates.TotalFuelConsumed)
                                                         .Inc(x => x.ExplosivesPlaced, updates.ExplosivesPlaced)
-                                                        .Inc(x => x.TimesUnconscious, updates.TimesUnconscious)
-                                                        .Inc(x => x.FpsSampleCount, updates.FpsSampleCount)
-                                                        .Inc(x => x.FpsTotalSum, updates.FpsTotalSum)
-                                                        .Min(x => x.FpsMin, updates.FpsMin);
+                                                        .Inc(x => x.TimesUnconscious, updates.TimesUnconscious);
 
         foreach (var (bodyPart, count) in updates.BodyPartHits)
         {

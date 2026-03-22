@@ -17,31 +17,17 @@ public class FpsEventProcessorTests
     }
 
     [Fact]
-    public void ProcessForPlayer_ShouldTrackSampleCountAndSum()
+    public void ProcessForPlayer_ShouldBeNoOp()
     {
-        var evt1 = new BsonDocument { { "value", 60 } };
-        var evt2 = new BsonDocument { { "value", 45 } };
+        var evt = new BsonDocument { { "value", 60 } };
         var stats = new PlayerMissionStats();
 
-        _subject.ProcessForPlayer(evt1, stats);
-        _subject.ProcessForPlayer(evt2, stats);
+        _subject.ProcessForPlayer(evt, stats);
 
-        stats.FpsSampleCount.Should().Be(2);
-        stats.FpsTotalSum.Should().Be(105);
-    }
-
-    [Fact]
-    public void ProcessForPlayer_ShouldTrackMinFps()
-    {
-        var evt1 = new BsonDocument { { "value", 60 } };
-        var evt2 = new BsonDocument { { "value", 25 } };
-        var evt3 = new BsonDocument { { "value", 45 } };
-        var stats = new PlayerMissionStats();
-
-        _subject.ProcessForPlayer(evt1, stats);
-        _subject.ProcessForPlayer(evt2, stats);
-        _subject.ProcessForPlayer(evt3, stats);
-
-        stats.FpsMin.Should().Be(25);
+        // FPS stats are computed on mission end, not per-event
+        stats.FpsMin.Should().BeNull();
+        stats.FpsMax.Should().BeNull();
+        stats.FpsAverage.Should().BeNull();
+        stats.FpsP1.Should().BeNull();
     }
 }
