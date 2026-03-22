@@ -2,11 +2,21 @@ using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.ArmaServer.Models;
 
+public class AmmoStats
+{
+    public int Shots { get; set; }
+    public int Hits { get; set; }
+    public Dictionary<string, int> BodyPartHits { get; set; } = new();
+    public double TotalEngagementDistance2D { get; set; }
+    public double TotalEngagementDistance3D { get; set; }
+    public double MaxEngagementDistance2D { get; set; }
+}
+
 public class WeaponStats
 {
     public int Shots { get; set; }
     public int Hits { get; set; }
-    public Dictionary<string, int> FireModes { get; set; } = new();
+    public Dictionary<string, AmmoStats> AmmoBreakdown { get; set; } = new();
     public double TotalEngagementDistance2D { get; set; }
     public double TotalEngagementDistance3D { get; set; }
     public double MaxEngagementDistance2D { get; set; }
