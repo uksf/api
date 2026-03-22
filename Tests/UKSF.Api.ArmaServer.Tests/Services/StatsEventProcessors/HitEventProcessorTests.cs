@@ -22,6 +22,7 @@ public class HitEventProcessorTests
         var evt = new BsonDocument
         {
             { "weapon", "rhs_weap_m4a1" },
+            { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "head" },
             { "targetType", "infantry" },
             { "distance2D", 150 },
@@ -35,11 +36,12 @@ public class HitEventProcessorTests
     }
 
     [Fact]
-    public void ProcessForPlayer_ShouldTrackBodyPartHits()
+    public void ProcessForPlayer_ShouldTrackBodyPartHitsInAmmoBreakdown()
     {
         var evtHead = new BsonDocument
         {
             { "weapon", "rhs_weap_m4a1" },
+            { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "head" },
             { "targetType", "infantry" },
             { "distance2D", 100 },
@@ -48,6 +50,7 @@ public class HitEventProcessorTests
         var evtTorso = new BsonDocument
         {
             { "weapon", "rhs_weap_m4a1" },
+            { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "torso" },
             { "targetType", "infantry" },
             { "distance2D", 200 },
@@ -59,16 +62,37 @@ public class HitEventProcessorTests
         _subject.ProcessForPlayer(evtHead, stats);
         _subject.ProcessForPlayer(evtTorso, stats);
 
-        stats.BodyPartHits.Should().ContainKey("head").WhoseValue.Should().Be(2);
-        stats.BodyPartHits.Should().ContainKey("torso").WhoseValue.Should().Be(1);
+        var ammoStats = stats.WeaponBreakdown["rhs_weap_m4a1"].AmmoBreakdown["rhs_ammo_556x45_M855A1"];
+        ammoStats.BodyPartHits.Should().ContainKey("head").WhoseValue.Should().Be(2);
+        ammoStats.BodyPartHits.Should().ContainKey("torso").WhoseValue.Should().Be(1);
     }
 
     [Fact]
-    public void ProcessForPlayer_ShouldTrackWeaponHitsAndEngagementDistance()
+    public void ProcessForPlayer_ShouldAlsoTrackTopLevelBodyPartHits()
+    {
+        var evt = new BsonDocument
+        {
+            { "weapon", "rhs_weap_m4a1" },
+            { "ammo", "rhs_ammo_556x45_M855A1" },
+            { "bodyPart", "head" },
+            { "targetType", "infantry" },
+            { "distance2D", 100 },
+            { "distance3D", 100 }
+        };
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(evt, stats);
+
+        stats.BodyPartHits.Should().ContainKey("head").WhoseValue.Should().Be(1);
+    }
+
+    [Fact]
+    public void ProcessForPlayer_ShouldTrackEngagementDistancePerAmmo()
     {
         var evt1 = new BsonDocument
         {
             { "weapon", "rhs_weap_m4a1" },
+            { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "head" },
             { "targetType", "infantry" },
             { "distance2D", 150 },
@@ -77,6 +101,7 @@ public class HitEventProcessorTests
         var evt2 = new BsonDocument
         {
             { "weapon", "rhs_weap_m4a1" },
+            { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "torso" },
             { "targetType", "infantry" },
             { "distance2D", 300 },
@@ -87,10 +112,16 @@ public class HitEventProcessorTests
         _subject.ProcessForPlayer(evt1, stats);
         _subject.ProcessForPlayer(evt2, stats);
 
+        var ammoStats = stats.WeaponBreakdown["rhs_weap_m4a1"].AmmoBreakdown["rhs_ammo_556x45_M855A1"];
+        ammoStats.Hits.Should().Be(2);
+        ammoStats.TotalEngagementDistance2D.Should().Be(450);
+        ammoStats.TotalEngagementDistance3D.Should().Be(465);
+        ammoStats.MaxEngagementDistance2D.Should().Be(300);
+
+        // Weapon-level totals should also be maintained
         var weaponStats = stats.WeaponBreakdown["rhs_weap_m4a1"];
         weaponStats.Hits.Should().Be(2);
         weaponStats.TotalEngagementDistance2D.Should().Be(450);
-        weaponStats.TotalEngagementDistance3D.Should().Be(465);
         weaponStats.MaxEngagementDistance2D.Should().Be(300);
     }
 
@@ -100,6 +131,7 @@ public class HitEventProcessorTests
         var evtInfantry = new BsonDocument
         {
             { "weapon", "rhs_weap_m4a1" },
+            { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "torso" },
             { "targetType", "infantry" },
             { "distance2D", 100 },
@@ -108,6 +140,7 @@ public class HitEventProcessorTests
         var evtVehicle = new BsonDocument
         {
             { "weapon", "launch_RPG32_F" },
+            { "ammo", "rhs_ammo_pg32v" },
             { "bodyPart", "" },
             { "targetType", "vehicle" },
             { "distance2D", 500 },
@@ -133,6 +166,7 @@ public class HitEventProcessorTests
 
         stats.TotalHits.Should().Be(1);
         stats.WeaponBreakdown.Should().ContainKey("unknown");
+        stats.WeaponBreakdown["unknown"].AmmoBreakdown.Should().ContainKey("unknown");
         stats.HitsByTargetType.Should().ContainKey("unknown");
     }
 
@@ -142,6 +176,7 @@ public class HitEventProcessorTests
         var evt = new BsonDocument
         {
             { "weapon", "launch_RPG32_F" },
+            { "ammo", "rhs_ammo_pg32v" },
             { "bodyPart", "" },
             { "targetType", "vehicle" },
             { "distance2D", 500 },
@@ -152,5 +187,6 @@ public class HitEventProcessorTests
         _subject.ProcessForPlayer(evt, stats);
 
         stats.BodyPartHits.Should().BeEmpty();
+        stats.WeaponBreakdown["launch_RPG32_F"].AmmoBreakdown["rhs_ammo_pg32v"].BodyPartHits.Should().BeEmpty();
     }
 }
