@@ -551,7 +551,6 @@ public class GameServersServiceTests
             ApiPort = 2303,
             Data = new Dictionary<string, object>
             {
-                { "fps", "48.5" },
                 { "entityCount", "1500" },
                 { "aiCount", "200" },
                 { "headlessClientCount", "2" }
