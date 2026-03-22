@@ -56,7 +56,6 @@ public class GameServerStatus
     public bool Stopping { get; set; }
     public DateTime? StoppingInitiatedAt { get; set; }
     public float Uptime { get; set; }
-    public float Fps { get; set; }
     public int EntityCount { get; set; }
     public int AiCount { get; set; }
     public int HeadlessClientCount { get; set; }

@@ -54,11 +54,13 @@ public class PlayerMissionStats : MongoObject
     // Explosives
     public int ExplosivesPlaced { get; set; }
 
-    // Performance — computed on mission end from raw FPS events in batch data
+    // Performance — rolling stats updated from performance events, P1 computed at mission end
     public int? FpsMin { get; set; }
     public int? FpsMax { get; set; }
     public double? FpsAverage { get; set; }
     public int? FpsP1 { get; set; } // 1st percentile (1% low)
+    public int FpsSampleCount { get; set; } // For rolling average computation
+    public double FpsSampleSum { get; set; } // For rolling average computation
 
     // Health
     public int TimesUnconscious { get; set; }

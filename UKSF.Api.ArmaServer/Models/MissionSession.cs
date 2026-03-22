@@ -10,6 +10,18 @@ public class PlayerPresence
     public DateTime? Disconnected { get; set; }
 }
 
+public class HeadlessClientPerformance
+{
+    public string Name { get; set; } = string.Empty;
+    public List<int> Fps { get; set; } = [];
+}
+
+public class PlayerPerformance
+{
+    public string Uid { get; set; } = string.Empty;
+    public List<int> Fps { get; set; } = [];
+}
+
 public class MissionSession : MongoObject
 {
     public string SessionId { get; set; } = string.Empty;
@@ -26,4 +38,9 @@ public class MissionSession : MongoObject
 
     // Player presence — connect/disconnect events
     public List<PlayerPresence> PlayerPresence { get; set; } = [];
+
+    // Performance — FPS data from performance events, RLE-encoded (positive = sample, negative = gap in seconds)
+    public List<int> ServerFps { get; set; } = [];
+    public List<HeadlessClientPerformance> HeadlessClientPerformance { get; set; } = [];
+    public List<PlayerPerformance> PlayerPerformance { get; set; } = [];
 }
