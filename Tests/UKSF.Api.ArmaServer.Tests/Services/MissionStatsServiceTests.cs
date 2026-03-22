@@ -247,8 +247,7 @@ public class MissionStatsServiceTests
             x => x.Add(It.Is<MissionStatsBatch>(b => b.MissionSessionId == sessionId && b.Events.Count == 3 && b.ReceivedAt == batch1.ReceivedAt)),
             Times.Once
         );
-        _mockBatchesContext.Verify(x => x.Delete("batch-1"), Times.Once);
-        _mockBatchesContext.Verify(x => x.Delete("batch-2"), Times.Once);
+        _mockBatchesContext.Verify(x => x.DeleteMany(It.IsAny<Expression<Func<MissionStatsBatch, bool>>>()), Times.Once);
     }
 
     [Fact]
@@ -269,7 +268,7 @@ public class MissionStatsServiceTests
         await _subject.HandleMissionEndedAsync(sessionId, 300, DateTime.UtcNow);
 
         _mockBatchesContext.Verify(x => x.Add(It.IsAny<MissionStatsBatch>()), Times.Never);
-        _mockBatchesContext.Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+        _mockBatchesContext.Verify(x => x.DeleteMany(It.IsAny<Expression<Func<MissionStatsBatch, bool>>>()), Times.Never);
     }
 
     [Fact]
@@ -282,7 +281,7 @@ public class MissionStatsServiceTests
         await _subject.HandleMissionEndedAsync("session-123", 300, DateTime.UtcNow);
 
         _mockBatchesContext.Verify(x => x.Add(It.IsAny<MissionStatsBatch>()), Times.Never);
-        _mockBatchesContext.Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+        _mockBatchesContext.Verify(x => x.DeleteMany(It.IsAny<Expression<Func<MissionStatsBatch, bool>>>()), Times.Never);
     }
 
     #endregion

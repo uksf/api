@@ -193,12 +193,9 @@ public class MissionStatsService(
             Events = batches.SelectMany(b => b.Events).ToList()
         };
 
+        var originalIds = batches.Select(b => b.Id).ToHashSet();
         await batchesContext.Add(mergedBatch);
-
-        foreach (var batch in batches)
-        {
-            await batchesContext.Delete(batch.Id);
-        }
+        await batchesContext.DeleteMany(b => originalIds.Contains(b.Id));
     }
 
     private async Task ComputeFpsStatsAsync(string sessionId)
