@@ -651,7 +651,7 @@ public class PersistenceSessionsServiceTests
 
         deserialized.VehicleState.VehicleId.Should().Be("persistence_id_123");
         deserialized.VehicleState.Role.Should().Be("driver");
-        deserialized.VehicleState.Index.Should().Be(-1);
+        ((JsonElement)deserialized.VehicleState.Index).GetInt32().Should().Be(-1);
 
         deserialized.Loadout.PrimaryWeapon.Weapon.Should().Be("arifle_MX_F");
         deserialized.Loadout.Uniform.ClassName.Should().Be("U_B_CombatUniform_mcam");
@@ -689,7 +689,7 @@ public class PersistenceSessionsServiceTests
         deserialized.Should().NotBeNull();
         deserialized!.VehicleState.VehicleId.Should().Be(string.Empty);
         deserialized.VehicleState.Role.Should().Be(string.Empty);
-        deserialized.VehicleState.Index.Should().Be(-1);
+        ((JsonElement)deserialized.VehicleState.Index).GetInt32().Should().Be(-1);
     }
 
     [Fact]
@@ -713,7 +713,7 @@ public class PersistenceSessionsServiceTests
         deserialized.Should().NotBeNull();
         deserialized!.VehicleState.VehicleId.Should().Be("persistence_id");
         deserialized.VehicleState.Role.Should().Be("driver");
-        deserialized.VehicleState.Index.Should().Be(-1);
+        ((JsonElement)deserialized.VehicleState.Index).GetInt32().Should().Be(-1);
     }
 
     [Fact]
@@ -737,7 +737,7 @@ public class PersistenceSessionsServiceTests
         deserialized.Should().NotBeNull();
         deserialized!.VehicleState.VehicleId.Should().Be("persistence_id");
         deserialized.VehicleState.Role.Should().Be("turret");
-        deserialized.VehicleState.Index.Should().Be(0);
+        ((JsonElement)deserialized.VehicleState.Index).GetInt32().Should().Be(0);
     }
 
     [Fact]
