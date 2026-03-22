@@ -10,7 +10,7 @@ public class ShotEventProcessor : IStatsEventProcessor
     public void ProcessForPlayer(BsonDocument evt, PlayerMissionStats stats)
     {
         var weapon = evt.GetValue("weapon", "unknown").AsString;
-        var fireMode = evt.GetValue("fireMode", "unknown").AsString;
+        var ammo = evt.GetValue("ammo", "unknown").AsString;
 
         stats.TotalShots++;
 
@@ -22,6 +22,12 @@ public class ShotEventProcessor : IStatsEventProcessor
 
         weaponStats.Shots++;
 
-        weaponStats.FireModes[fireMode] = weaponStats.FireModes.GetValueOrDefault(fireMode) + 1;
+        if (!weaponStats.AmmoBreakdown.TryGetValue(ammo, out var ammoStats))
+        {
+            ammoStats = new AmmoStats();
+            weaponStats.AmmoBreakdown[ammo] = ammoStats;
+        }
+
+        ammoStats.Shots++;
     }
 }

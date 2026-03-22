@@ -177,7 +177,10 @@ public class MissionStatsServiceTests
                 {
                     Shots = 5,
                     Hits = 2,
-                    FireModes = new Dictionary<string, int> { ["Single"] = 3, ["FullAuto"] = 2 }
+                    AmmoBreakdown = new Dictionary<string, AmmoStats>
+                        {
+                            ["rhs_ammo_556x45_M855A1"] = new() { Shots = 3 }, ["rhs_ammo_556x45_M856"] = new() { Shots = 2 }
+                        }
                 }
             }
         };
@@ -191,13 +194,16 @@ public class MissionStatsServiceTests
                 {
                     Shots = 3,
                     Hits = 1,
-                    FireModes = new Dictionary<string, int> { ["Single"] = 1, ["Burst"] = 2 }
+                    AmmoBreakdown = new Dictionary<string, AmmoStats>
+                        {
+                            ["rhs_ammo_556x45_M855A1"] = new() { Shots = 1 }, ["rhs_ammo_556x45_M862"] = new() { Shots = 2 }
+                        }
                 },
                 ["rhs_weap_m249"] = new()
                 {
                     Shots = 10,
                     Hits = 4,
-                    FireModes = new Dictionary<string, int> { ["FullAuto"] = 10 }
+                    AmmoBreakdown = new Dictionary<string, AmmoStats> { ["rhs_ammo_762x51_M80"] = new() { Shots = 10 } }
                 }
             }
         };

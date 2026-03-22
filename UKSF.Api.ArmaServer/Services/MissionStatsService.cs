@@ -130,9 +130,10 @@ public class MissionStatsService(
                 updateBuilder = updateBuilder.Max(x => x.WeaponBreakdown[weapon].MaxEngagementDistance2D, sourceStats.MaxEngagementDistance2D);
             }
 
-            foreach (var (fireMode, count) in sourceStats.FireModes)
+            foreach (var (ammoType, ammoStats) in sourceStats.AmmoBreakdown)
             {
-                updateBuilder = updateBuilder.Inc(x => x.WeaponBreakdown[weapon].FireModes[fireMode], count);
+                updateBuilder = updateBuilder.Inc(x => x.WeaponBreakdown[weapon].AmmoBreakdown[ammoType].Shots, ammoStats.Shots);
+                updateBuilder = updateBuilder.Inc(x => x.WeaponBreakdown[weapon].AmmoBreakdown[ammoType].Hits, ammoStats.Hits);
             }
         }
 

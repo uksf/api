@@ -19,7 +19,7 @@ public class ShotEventProcessorTests
     [Fact]
     public void ProcessForPlayer_ShouldIncrementTotalShots()
     {
-        var evt = new BsonDocument { { "weapon", "rhs_weap_m4a1" }, { "fireMode", "Single" } };
+        var evt = new BsonDocument { { "weapon", "rhs_weap_m4a1" }, { "ammo", "rhs_ammo_556x45_M855A1" } };
         var stats = new PlayerMissionStats();
 
         _subject.ProcessForPlayer(evt, stats);
@@ -30,7 +30,7 @@ public class ShotEventProcessorTests
     [Fact]
     public void ProcessForPlayer_ShouldTrackWeaponShots()
     {
-        var evt = new BsonDocument { { "weapon", "rhs_weap_m4a1" }, { "fireMode", "Single" } };
+        var evt = new BsonDocument { { "weapon", "rhs_weap_m4a1" }, { "ammo", "rhs_ammo_556x45_M855A1" } };
         var stats = new PlayerMissionStats();
 
         _subject.ProcessForPlayer(evt, stats);
@@ -41,19 +41,21 @@ public class ShotEventProcessorTests
     }
 
     [Fact]
-    public void ProcessForPlayer_ShouldTrackFireModesPerWeapon()
+    public void ProcessForPlayer_ShouldTrackAmmoBreakdownPerWeapon()
     {
-        var evtSingle = new BsonDocument { { "weapon", "rhs_weap_m4a1" }, { "fireMode", "Single" } };
-        var evtAuto = new BsonDocument { { "weapon", "rhs_weap_m4a1" }, { "fireMode", "FullAuto" } };
+        var evtM855 = new BsonDocument { { "weapon", "rhs_weap_m4a1" }, { "ammo", "rhs_ammo_556x45_M855A1" } };
+        var evtTracer = new BsonDocument { { "weapon", "rhs_weap_m4a1" }, { "ammo", "rhs_ammo_556x45_M856" } };
         var stats = new PlayerMissionStats();
 
-        _subject.ProcessForPlayer(evtSingle, stats);
-        _subject.ProcessForPlayer(evtAuto, stats);
-        _subject.ProcessForPlayer(evtAuto, stats);
+        _subject.ProcessForPlayer(evtM855, stats);
+        _subject.ProcessForPlayer(evtTracer, stats);
+        _subject.ProcessForPlayer(evtTracer, stats);
 
-        var fireModes = stats.WeaponBreakdown["rhs_weap_m4a1"].FireModes;
-        fireModes.Should().ContainKey("Single").WhoseValue.Should().Be(1);
-        fireModes.Should().ContainKey("FullAuto").WhoseValue.Should().Be(2);
+        var ammoBreakdown = stats.WeaponBreakdown["rhs_weap_m4a1"].AmmoBreakdown;
+        ammoBreakdown.Should().ContainKey("rhs_ammo_556x45_M855A1");
+        ammoBreakdown["rhs_ammo_556x45_M855A1"].Shots.Should().Be(1);
+        ammoBreakdown.Should().ContainKey("rhs_ammo_556x45_M856");
+        ammoBreakdown["rhs_ammo_556x45_M856"].Shots.Should().Be(2);
     }
 
     [Fact]
@@ -66,6 +68,6 @@ public class ShotEventProcessorTests
 
         stats.TotalShots.Should().Be(1);
         stats.WeaponBreakdown.Should().ContainKey("unknown");
-        stats.WeaponBreakdown["unknown"].FireModes.Should().ContainKey("unknown");
+        stats.WeaponBreakdown["unknown"].AmmoBreakdown.Should().ContainKey("unknown");
     }
 }
