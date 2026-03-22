@@ -9,6 +9,7 @@ using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Tests.Common;
 using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Services;
@@ -82,7 +83,7 @@ public class PerformanceServiceTests
     }
 
     [Fact]
-    public async Task HandlePerformanceEvent_ShouldUpdateRollingPlayerStats()
+    public async Task HandlePerformanceEvent_WhenNewPlayer_ShouldCreateStatsDocument()
     {
         var session = new MissionSession
         {
@@ -97,6 +98,48 @@ public class PerformanceServiceTests
 
         await _subject.HandlePerformanceEventAsync("session-1", [50], [], players);
 
+        _mockPlayerStatsContext.Verify(
+            x => x.Add(
+                It.Is<PlayerMissionStats>(s => s.MissionSessionId == "session-1" &&
+                                               s.PlayerUid == "player1" &&
+                                               s.FpsMin == 40 &&
+                                               s.FpsMax == 50 &&
+                                               s.FpsSampleCount == 3 &&
+                                               Math.Abs(s.FpsSampleSum - 135) < 0.01
+                )
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task HandlePerformanceEvent_WhenExistingPlayer_ShouldUpdateRollingStats()
+    {
+        var session = new MissionSession
+        {
+            SessionId = "session-1",
+            MissionStarted = DateTime.UtcNow.AddMinutes(-5),
+            PlayerPerformance = [new PlayerPerformance { Uid = "player1", Fps = [40, 45] }]
+        };
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+
+        var existingStats = new PlayerMissionStats
+        {
+            MissionSessionId = "session-1",
+            PlayerUid = "player1",
+            FpsMin = 38,
+            FpsMax = 45,
+            FpsSampleCount = 2,
+            FpsSampleSum = 83
+        };
+        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns(existingStats);
+
+        var players = new List<PlayerPerformance> { new() { Uid = "player1", Fps = [50, 55] } };
+
+        await _subject.HandlePerformanceEventAsync("session-1", [50], [], players);
+
+        // Should use atomic Min/Max/Inc update, not Add
+        _mockPlayerStatsContext.Verify(x => x.Add(It.IsAny<PlayerMissionStats>()), Times.Never);
         _mockPlayerStatsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
             Times.Once
@@ -120,18 +163,32 @@ public class PerformanceServiceTests
     }
 
     [Fact]
-    public async Task ComputeFinalFpsStats_ShouldComputeP1FromRleData()
+    public async Task ComputeFinalFpsStats_ShouldComputeP1AndAverageFromData()
     {
         var fpsSamples = Enumerable.Range(1, 100).Select(i => i).ToList();
         var session = new MissionSession { SessionId = "session-1", PlayerPerformance = [new PlayerPerformance { Uid = "player1", Fps = fpsSamples }] };
         _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
 
+        var existingStats = new PlayerMissionStats
+        {
+            MissionSessionId = "session-1",
+            PlayerUid = "player1",
+            FpsSampleCount = 100,
+            FpsSampleSum = 5050
+        };
+        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns(existingStats);
+
+        var expectedUpdate = Builders<PlayerMissionStats>.Update.Set(x => x.FpsP1, 1).Set(x => x.FpsAverage, 50.5).RenderUpdate();
+
+        UpdateDefinition<PlayerMissionStats> capturedUpdate = null;
+        _mockPlayerStatsContext.Setup(x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
+                               .Callback((Expression<Func<PlayerMissionStats, bool>> _, UpdateDefinition<PlayerMissionStats> update) => capturedUpdate = update)
+                               .Returns(Task.CompletedTask);
+
         await _subject.ComputeFinalFpsStatsAsync("session-1");
 
-        _mockPlayerStatsContext.Verify(
-            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
-            Times.Once
-        );
+        capturedUpdate.Should().NotBeNull();
+        capturedUpdate.RenderUpdate().Should().BeEquivalentTo(expectedUpdate);
     }
 
     [Fact]
@@ -148,11 +205,25 @@ public class PerformanceServiceTests
         var session = new MissionSession { SessionId = "session-1", PlayerPerformance = [new PlayerPerformance { Uid = "player1", Fps = fps }] };
         _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
 
+        var existingStats = new PlayerMissionStats
+        {
+            MissionSessionId = "session-1",
+            PlayerUid = "player1",
+            FpsSampleCount = 4,
+            FpsSampleSum = 190
+        };
+        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns(existingStats);
+
+        var expectedUpdate = Builders<PlayerMissionStats>.Update.Set(x => x.FpsP1, 40).Set(x => x.FpsAverage, 47.5).RenderUpdate();
+
+        UpdateDefinition<PlayerMissionStats> capturedUpdate = null;
+        _mockPlayerStatsContext.Setup(x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
+                               .Callback((Expression<Func<PlayerMissionStats, bool>> _, UpdateDefinition<PlayerMissionStats> update) => capturedUpdate = update)
+                               .Returns(Task.CompletedTask);
+
         await _subject.ComputeFinalFpsStatsAsync("session-1");
 
-        _mockPlayerStatsContext.Verify(
-            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
-            Times.Once
-        );
+        capturedUpdate.Should().NotBeNull();
+        capturedUpdate.RenderUpdate().Should().BeEquivalentTo(expectedUpdate);
     }
 }
