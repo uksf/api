@@ -125,8 +125,8 @@ public class ProcessMissionStatsBatchConsumerTests
         _mockShotProcessor.Verify(x => x.ProcessForPlayer(It.IsAny<BsonDocument>(), It.IsAny<PlayerMissionStats>()), Times.Exactly(2));
         _mockHitProcessor.Verify(x => x.ProcessForPlayer(It.IsAny<BsonDocument>(), It.IsAny<PlayerMissionStats>()), Times.Once);
 
-        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-1", "player1", It.IsAny<PlayerMissionStats>()), Times.Once);
-        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-1", "player2", It.IsAny<PlayerMissionStats>()), Times.Once);
+        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-123", "player1", It.IsAny<PlayerMissionStats>()), Times.Once);
+        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-123", "player2", It.IsAny<PlayerMissionStats>()), Times.Once);
     }
 
     [Fact]
@@ -151,7 +151,7 @@ public class ProcessMissionStatsBatchConsumerTests
         await _consumer.Consume(context.Object);
 
         _missionStatsService.Verify(
-            x => x.UpdateMissionStatsAsync("session-1", It.Is<MissionStats>(s => s.EventCounts["shot"] == 2 && s.EventCounts["hit"] == 1)),
+            x => x.UpdateMissionStatsAsync("session-123", It.Is<MissionStats>(s => s.EventCounts["shot"] == 2 && s.EventCounts["hit"] == 1)),
             Times.Once
         );
     }
@@ -175,7 +175,7 @@ public class ProcessMissionStatsBatchConsumerTests
         _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<PlayerMissionStats>()), Times.Never);
         _mockShotProcessor.Verify(x => x.ProcessForPlayer(It.IsAny<BsonDocument>(), It.IsAny<PlayerMissionStats>()), Times.Never);
 
-        _missionStatsService.Verify(x => x.UpdateMissionStatsAsync("session-1", It.Is<MissionStats>(s => s.EventCounts["shot"] == 1)), Times.Once);
+        _missionStatsService.Verify(x => x.UpdateMissionStatsAsync("session-123", It.Is<MissionStats>(s => s.EventCounts["shot"] == 1)), Times.Once);
     }
 
     [Fact]
@@ -196,7 +196,7 @@ public class ProcessMissionStatsBatchConsumerTests
 
         _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<PlayerMissionStats>()), Times.Never);
 
-        _missionStatsService.Verify(x => x.UpdateMissionStatsAsync("session-1", It.Is<MissionStats>(s => s.EventCounts["explosion"] == 1)), Times.Once);
+        _missionStatsService.Verify(x => x.UpdateMissionStatsAsync("session-123", It.Is<MissionStats>(s => s.EventCounts["explosion"] == 1)), Times.Once);
     }
 
     [Fact]
@@ -239,8 +239,8 @@ public class ProcessMissionStatsBatchConsumerTests
 
         await _consumer.Consume(context.Object);
 
-        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-1", "player1", It.IsAny<PlayerMissionStats>()), Times.Once);
-        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-1", "player2", It.IsAny<PlayerMissionStats>()), Times.Once);
-        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-1", "player3", It.IsAny<PlayerMissionStats>()), Times.Once);
+        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-123", "player1", It.IsAny<PlayerMissionStats>()), Times.Once);
+        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-123", "player2", It.IsAny<PlayerMissionStats>()), Times.Once);
+        _missionStatsService.Verify(x => x.UpdatePlayerStatsAsync("session-123", "player3", It.IsAny<PlayerMissionStats>()), Times.Once);
     }
 }

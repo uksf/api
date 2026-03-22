@@ -51,12 +51,12 @@ public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsS
             processor.ProcessForPlayer(evt, stats);
         }
 
-        var playerUpdateTasks = playerStats.Select(kvp => missionStatsService.UpdatePlayerStatsAsync(session.Id, kvp.Key, kvp.Value));
+        var playerUpdateTasks = playerStats.Select(kvp => missionStatsService.UpdatePlayerStatsAsync(session.SessionId, kvp.Key, kvp.Value));
         await Task.WhenAll(playerUpdateTasks);
 
         if (missionStats.EventCounts.Count > 0)
         {
-            await missionStatsService.UpdateMissionStatsAsync(session.Id, missionStats);
+            await missionStatsService.UpdateMissionStatsAsync(session.SessionId, missionStats);
         }
     }
 
