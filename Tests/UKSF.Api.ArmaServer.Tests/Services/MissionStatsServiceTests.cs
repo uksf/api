@@ -9,6 +9,7 @@ using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Tests.Common;
 using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Services;
@@ -325,12 +326,39 @@ public class MissionStatsServiceTests
         _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
         _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([batch]);
 
+        // Capture the update to verify computed values
+        UpdateDefinition<PlayerMissionStats> capturedUpdate = null;
+        _mockPlayerStatsContext.Setup(x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
+                               .Callback<Expression<Func<PlayerMissionStats, bool>>,
+                                   UpdateDefinition<PlayerMissionStats>>((_, update) => capturedUpdate = update)
+                               .Returns(Task.CompletedTask);
+
         await _subject.HandleMissionEndedAsync(sessionId, 300, DateTime.UtcNow);
 
         _mockPlayerStatsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
             Times.Once
         );
+        capturedUpdate.Should().NotBeNull();
+
+        // Render the update to verify values: min=30, max=60, avg=45, P1=30
+        var rendered = capturedUpdate.RenderUpdate();
+        var setDoc = rendered["$set"].AsBsonDocument;
+        setDoc.GetValue("FpsMin", setDoc.GetValue("fpsMin", BsonNull.Value)).ToInt32().Should().Be(30);
+        setDoc.GetValue("FpsMax", setDoc.GetValue("fpsMax", BsonNull.Value)).ToInt32().Should().Be(60);
+        setDoc.GetValue("FpsAverage", setDoc.GetValue("fpsAverage", BsonNull.Value)).ToDouble().Should().Be(45.0);
+        setDoc.GetValue("FpsP1", setDoc.GetValue("fpsP1", BsonNull.Value)).ToInt32().Should().Be(30);
+    }
+
+    [Fact]
+    public async Task HandleMissionEndedAsync_WhenSessionNotFound_ShouldDoNothing()
+    {
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns((MissionSession)null);
+
+        await _subject.HandleMissionEndedAsync("nonexistent", 300, DateTime.UtcNow);
+
+        _mockSessionsContext.Verify(x => x.Update(It.IsAny<string>(), It.IsAny<UpdateDefinition<MissionSession>>()), Times.Never);
+        _mockBatchesContext.Verify(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>()), Times.Never);
     }
 
     #endregion

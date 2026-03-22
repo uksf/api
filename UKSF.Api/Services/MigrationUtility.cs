@@ -33,10 +33,13 @@ public class MigrationUtility(IMigrationContext migrationContext, IMongoDatabase
 
     private async Task ExecuteMigrations()
     {
+        // Old migrations should be deleted once they have run on all environments.
+        // They are idempotent but wasteful to re-run on every version bump.
         await MigrateGameServerPlayersToArray();
         await MigratePersistenceSessionDiscriminators();
         await MigrateStatisticsSessionIds();
         await MigrateStatisticsCleanup();
+        await MigrateStatisticsComputeFps();
         logger.LogInfo("All migrations completed successfully");
     }
 
@@ -169,5 +172,81 @@ public class MigrationUtility(IMigrationContext migrationContext, IMongoDatabase
         }
 
         logger.LogInfo($"Merged batches for {mergedCount} sessions");
+    }
+
+    private async Task MigrateStatisticsComputeFps()
+    {
+        logger.LogInfo("Starting migration to compute FPS stats from historical batch data");
+
+        var batchesCollection = database.GetCollection<BsonDocument>("missionStatsBatches");
+        var playerStatsCollection = database.GetCollection<BsonDocument>("playerMissionStats");
+
+        var distinctSessionIds = await batchesCollection.DistinctAsync<string>("missionSessionId", new BsonDocument());
+        var sessionIds = await distinctSessionIds.ToListAsync();
+        var playersUpdated = 0;
+
+        foreach (var sessionId in sessionIds)
+        {
+            var batches = await batchesCollection.Find(Builders<BsonDocument>.Filter.Eq("missionSessionId", sessionId)).ToListAsync();
+
+            var fpsByPlayer = new Dictionary<string, List<int>>();
+            foreach (var batch in batches)
+            {
+                if (!batch.Contains("events") || !batch["events"].IsBsonArray)
+                {
+                    continue;
+                }
+
+                foreach (var evt in batch["events"].AsBsonArray)
+                {
+                    if (!evt.IsBsonDocument)
+                    {
+                        continue;
+                    }
+
+                    var doc = evt.AsBsonDocument;
+                    if (!doc.Contains("type") || doc["type"].AsString != "fps" || !doc.Contains("uid") || !doc.Contains("value"))
+                    {
+                        continue;
+                    }
+
+                    var uid = doc["uid"].AsString;
+                    var value = doc["value"].ToInt32();
+
+                    if (!fpsByPlayer.TryGetValue(uid, out var samples))
+                    {
+                        samples = [];
+                        fpsByPlayer[uid] = samples;
+                    }
+
+                    samples.Add(value);
+                }
+            }
+
+            foreach (var (uid, samples) in fpsByPlayer)
+            {
+                if (samples.Count == 0)
+                {
+                    continue;
+                }
+
+                samples.Sort();
+                var min = samples[0];
+                var max = samples[^1];
+                var average = samples.Average();
+                var p1Index = Math.Max(0, (int)Math.Ceiling(samples.Count * 0.01) - 1);
+                var p1 = samples[p1Index];
+
+                var filter = Builders<BsonDocument>.Filter.Eq("missionSessionId", sessionId) & Builders<BsonDocument>.Filter.Eq("playerUid", uid);
+                var update = Builders<BsonDocument>.Update.Set("fpsMin", min).Set("fpsMax", max).Set("fpsAverage", average).Set("fpsP1", p1);
+                var result = await playerStatsCollection.UpdateOneAsync(filter, update);
+                if (result.ModifiedCount > 0)
+                {
+                    playersUpdated++;
+                }
+            }
+        }
+
+        logger.LogInfo($"Computed FPS stats for {playersUpdated} player-session records");
     }
 }
