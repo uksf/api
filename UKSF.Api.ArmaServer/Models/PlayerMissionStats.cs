@@ -25,7 +25,7 @@ public class WeaponStats
 public class KillStats
 {
     public int Direct { get; set; }
-    public int Indirect { get; set; } // Chain reaction / cookoff kills
+    public int Indirect { get; set; }
     public int Assists { get; set; }
     public double TotalAssistDamage { get; set; }
 }
@@ -42,11 +42,11 @@ public class PlayerMissionStats : MongoObject
 
     // Hit details
     public Dictionary<string, int> BodyPartHits { get; set; } = new();
-    public Dictionary<string, int> HitsByTargetType { get; set; } = new(); // infantry, vehicle, static
+    public Dictionary<string, int> HitsByTargetType { get; set; } = new();
 
     // Kills and assists
     public KillStats Kills { get; set; } = new();
-    public Dictionary<string, int> KillsByTargetType { get; set; } = new(); // infantry, vehicle, static
+    public Dictionary<string, int> KillsByTargetType { get; set; } = new();
 
     // Damage
     public double TotalDamageDealt { get; set; } // From standalone damage events
