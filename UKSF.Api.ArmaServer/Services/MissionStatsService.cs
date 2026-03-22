@@ -171,6 +171,88 @@ public class MissionStatsService(
 
         var update = Builders<MissionSession>.Update.Set(x => x.MissionEnded, timestamp).Set(x => x.DurationSeconds, durationSeconds);
         await sessionsContext.Update(existing.Id, update);
+
+        await MergeBatchesAsync(sessionId);
+        await ComputeFpsStatsAsync(sessionId);
+    }
+
+    private async Task MergeBatchesAsync(string sessionId)
+    {
+        var batches = batchesContext.Get(b => b.MissionSessionId == sessionId).OrderBy(b => b.ReceivedAt).ToList();
+        if (batches.Count <= 1)
+        {
+            return;
+        }
+
+        var mergedBatch = new MissionStatsBatch
+        {
+            MissionSessionId = sessionId,
+            Mission = batches[0].Mission,
+            Map = batches[0].Map,
+            ReceivedAt = batches[0].ReceivedAt,
+            Events = batches.SelectMany(b => b.Events).ToList()
+        };
+
+        await batchesContext.Add(mergedBatch);
+
+        foreach (var batch in batches)
+        {
+            await batchesContext.Delete(batch.Id);
+        }
+    }
+
+    private async Task ComputeFpsStatsAsync(string sessionId)
+    {
+        var batches = batchesContext.Get(b => b.MissionSessionId == sessionId).ToList();
+        var fpsSamplesByPlayer = new Dictionary<string, List<int>>();
+
+        foreach (var batch in batches)
+        {
+            foreach (var eventDocument in batch.Events)
+            {
+                if (!eventDocument.Contains("type") ||
+                    eventDocument["type"].AsString != "fps" ||
+                    !eventDocument.Contains("uid") ||
+                    !eventDocument.Contains("value"))
+                {
+                    continue;
+                }
+
+                var uid = eventDocument["uid"].AsString;
+                var value = eventDocument["value"].ToInt32();
+
+                if (!fpsSamplesByPlayer.TryGetValue(uid, out var samples))
+                {
+                    samples = [];
+                    fpsSamplesByPlayer[uid] = samples;
+                }
+
+                samples.Add(value);
+            }
+        }
+
+        foreach (var (uid, samples) in fpsSamplesByPlayer)
+        {
+            if (samples.Count == 0)
+            {
+                continue;
+            }
+
+            samples.Sort();
+
+            var min = samples[0];
+            var max = samples[^1];
+            var average = samples.Average();
+            var p1Index = Math.Max(0, (int)Math.Ceiling(samples.Count * 0.01) - 1);
+            var p1 = samples[p1Index];
+
+            var update = Builders<PlayerMissionStats>.Update.Set(x => x.FpsMin, min)
+                                                     .Set(x => x.FpsMax, max)
+                                                     .Set(x => x.FpsAverage, average)
+                                                     .Set(x => x.FpsP1, p1);
+
+            await playerStatsContext.Update(x => x.MissionSessionId == sessionId && x.PlayerUid == uid, update);
+        }
     }
 
     public async Task HandlePlayerConnectedAsync(string sessionId, string uid, string name, DateTime timestamp)

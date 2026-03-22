@@ -209,6 +209,133 @@ public class MissionStatsServiceTests
 
     #endregion
 
+    #region HandleMissionEndedAsync — Batch Merging
+
+    [Fact]
+    public async Task HandleMissionEndedAsync_ShouldMergeAllBatchesIntoOne()
+    {
+        var sessionId = "session-123";
+        var batch1Events = new List<BsonDocument> { new() { { "type", "shot" }, { "uid", "p1" } } };
+        var batch2Events = new List<BsonDocument> { new() { { "type", "hit" }, { "uid", "p1" } }, new() { { "type", "kill" }, { "killerUid", "p1" } } };
+
+        var batch1 = new MissionStatsBatch
+        {
+            Id = "batch-1",
+            MissionSessionId = sessionId,
+            Mission = "test_mission",
+            Map = "Altis",
+            ReceivedAt = new DateTime(2025, 6, 14, 20, 0, 0),
+            Events = batch1Events
+        };
+        var batch2 = new MissionStatsBatch
+        {
+            Id = "batch-2",
+            MissionSessionId = sessionId,
+            Mission = "test_mission",
+            Map = "Altis",
+            ReceivedAt = new DateTime(2025, 6, 14, 20, 1, 0),
+            Events = batch2Events
+        };
+
+        var session = new MissionSession { SessionId = sessionId };
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([batch1, batch2]);
+
+        await _subject.HandleMissionEndedAsync(sessionId, 300, DateTime.UtcNow);
+
+        _mockBatchesContext.Verify(
+            x => x.Add(It.Is<MissionStatsBatch>(b => b.MissionSessionId == sessionId && b.Events.Count == 3 && b.ReceivedAt == batch1.ReceivedAt)),
+            Times.Once
+        );
+        _mockBatchesContext.Verify(x => x.Delete("batch-1"), Times.Once);
+        _mockBatchesContext.Verify(x => x.Delete("batch-2"), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleMissionEndedAsync_WhenSingleBatch_ShouldNotMerge()
+    {
+        var sessionId = "session-123";
+        var batch = new MissionStatsBatch
+        {
+            Id = "batch-1",
+            MissionSessionId = sessionId,
+            Events = [new BsonDocument { { "type", "shot" } }]
+        };
+
+        var session = new MissionSession { SessionId = sessionId };
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([batch]);
+
+        await _subject.HandleMissionEndedAsync(sessionId, 300, DateTime.UtcNow);
+
+        _mockBatchesContext.Verify(x => x.Add(It.IsAny<MissionStatsBatch>()), Times.Never);
+        _mockBatchesContext.Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleMissionEndedAsync_WhenNoBatches_ShouldNotMerge()
+    {
+        var session = new MissionSession { SessionId = "session-123" };
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([]);
+
+        await _subject.HandleMissionEndedAsync("session-123", 300, DateTime.UtcNow);
+
+        _mockBatchesContext.Verify(x => x.Add(It.IsAny<MissionStatsBatch>()), Times.Never);
+        _mockBatchesContext.Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+    }
+
+    #endregion
+
+    #region HandleMissionEndedAsync — FPS Computation
+
+    [Fact]
+    public async Task HandleMissionEndedAsync_ShouldComputeFpsStats()
+    {
+        var sessionId = "session-123";
+        var events = new List<BsonDocument>
+        {
+            new()
+            {
+                { "type", "fps" },
+                { "uid", "player1" },
+                { "value", 60 }
+            },
+            new()
+            {
+                { "type", "fps" },
+                { "uid", "player1" },
+                { "value", 30 }
+            },
+            new()
+            {
+                { "type", "fps" },
+                { "uid", "player1" },
+                { "value", 45 }
+            },
+            new() { { "type", "shot" }, { "uid", "player1" } }
+        };
+        var batch = new MissionStatsBatch
+        {
+            Id = "batch-1",
+            MissionSessionId = sessionId,
+            Events = events
+        };
+
+        var session = new MissionSession { SessionId = sessionId };
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([batch]);
+
+        await _subject.HandleMissionEndedAsync(sessionId, 300, DateTime.UtcNow);
+
+        _mockPlayerStatsContext.Verify(
+            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
+            Times.Once
+        );
+    }
+
+    #endregion
+
     #region UpdateMissionStatsAsync
 
     [Fact]
