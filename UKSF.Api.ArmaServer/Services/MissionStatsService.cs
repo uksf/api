@@ -122,18 +122,47 @@ public class MissionStatsService(
         {
             updateBuilder = updateBuilder.Inc(x => x.WeaponBreakdown[weapon].Shots, sourceStats.Shots)
                                          .Inc(x => x.WeaponBreakdown[weapon].Hits, sourceStats.Hits)
-                                         .Inc(x => x.WeaponBreakdown[weapon].TotalEngagementDistance2D, sourceStats.TotalEngagementDistance2D)
-                                         .Inc(x => x.WeaponBreakdown[weapon].TotalEngagementDistance3D, sourceStats.TotalEngagementDistance3D);
+                                         .Inc(x => x.WeaponBreakdown[weapon].EngagementDistanceSum, sourceStats.EngagementDistanceSum);
 
-            if (sourceStats.MaxEngagementDistance2D > 0)
+            if (sourceStats.MinEngagementDistance < double.MaxValue)
             {
-                updateBuilder = updateBuilder.Max(x => x.WeaponBreakdown[weapon].MaxEngagementDistance2D, sourceStats.MaxEngagementDistance2D);
+                updateBuilder = updateBuilder.Min(x => x.WeaponBreakdown[weapon].MinEngagementDistance, sourceStats.MinEngagementDistance);
+            }
+
+            if (sourceStats.MaxEngagementDistance > 0)
+            {
+                updateBuilder = updateBuilder.Max(x => x.WeaponBreakdown[weapon].MaxEngagementDistance, sourceStats.MaxEngagementDistance);
             }
 
             foreach (var (ammoType, ammoStats) in sourceStats.AmmoBreakdown)
             {
-                updateBuilder = updateBuilder.Inc(x => x.WeaponBreakdown[weapon].AmmoBreakdown[ammoType].Shots, ammoStats.Shots);
-                updateBuilder = updateBuilder.Inc(x => x.WeaponBreakdown[weapon].AmmoBreakdown[ammoType].Hits, ammoStats.Hits);
+                updateBuilder = updateBuilder.Inc(x => x.WeaponBreakdown[weapon].AmmoBreakdown[ammoType].Shots, ammoStats.Shots)
+                                             .Inc(x => x.WeaponBreakdown[weapon].AmmoBreakdown[ammoType].Hits, ammoStats.Hits)
+                                             .Inc(
+                                                 x => x.WeaponBreakdown[weapon].AmmoBreakdown[ammoType].EngagementDistanceSum,
+                                                 ammoStats.EngagementDistanceSum
+                                             );
+
+                if (ammoStats.MinEngagementDistance < double.MaxValue)
+                {
+                    updateBuilder = updateBuilder.Min(
+                        x => x.WeaponBreakdown[weapon].AmmoBreakdown[ammoType].MinEngagementDistance,
+                        ammoStats.MinEngagementDistance
+                    );
+                }
+
+                if (ammoStats.MaxEngagementDistance > 0)
+                {
+                    updateBuilder = updateBuilder.Max(
+                        x => x.WeaponBreakdown[weapon].AmmoBreakdown[ammoType].MaxEngagementDistance,
+                        ammoStats.MaxEngagementDistance
+                    );
+                }
+
+                foreach (var (bodyPart, count) in ammoStats.BodyPartHits)
+                {
+                    updateBuilder = updateBuilder.Inc(x => x.WeaponBreakdown[weapon].AmmoBreakdown[ammoType].BodyPartHits[bodyPart], count);
+                }
             }
         }
 

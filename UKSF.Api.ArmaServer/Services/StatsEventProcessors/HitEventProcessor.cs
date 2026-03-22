@@ -14,7 +14,6 @@ public class HitEventProcessor : IStatsEventProcessor
         var bodyPart = evt.GetValue("bodyPart", "").AsString;
         var targetType = evt.GetValue("targetType", "unknown").AsString;
         var distance2D = evt.GetValue("distance2D", 0).ToDouble();
-        var distance3D = evt.GetValue("distance3D", 0).ToDouble();
 
         stats.TotalHits++;
         stats.HitsByTargetType[targetType] = stats.HitsByTargetType.GetValueOrDefault(targetType) + 1;
@@ -26,13 +25,9 @@ public class HitEventProcessor : IStatsEventProcessor
         }
 
         weaponStats.Hits++;
-        weaponStats.TotalEngagementDistance2D += distance2D;
-        weaponStats.TotalEngagementDistance3D += distance3D;
-
-        if (distance2D > weaponStats.MaxEngagementDistance2D)
-        {
-            weaponStats.MaxEngagementDistance2D = distance2D;
-        }
+        weaponStats.EngagementDistanceSum += distance2D;
+        weaponStats.MinEngagementDistance = Math.Min(weaponStats.MinEngagementDistance, distance2D);
+        weaponStats.MaxEngagementDistance = Math.Max(weaponStats.MaxEngagementDistance, distance2D);
 
         if (!weaponStats.AmmoBreakdown.TryGetValue(ammo, out var ammoStats))
         {
@@ -41,13 +36,9 @@ public class HitEventProcessor : IStatsEventProcessor
         }
 
         ammoStats.Hits++;
-        ammoStats.TotalEngagementDistance2D += distance2D;
-        ammoStats.TotalEngagementDistance3D += distance3D;
-
-        if (distance2D > ammoStats.MaxEngagementDistance2D)
-        {
-            ammoStats.MaxEngagementDistance2D = distance2D;
-        }
+        ammoStats.EngagementDistanceSum += distance2D;
+        ammoStats.MinEngagementDistance = Math.Min(ammoStats.MinEngagementDistance, distance2D);
+        ammoStats.MaxEngagementDistance = Math.Max(ammoStats.MaxEngagementDistance, distance2D);
 
         if (!string.IsNullOrEmpty(bodyPart))
         {

@@ -25,8 +25,7 @@ public class HitEventProcessorTests
             { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "head" },
             { "targetType", "infantry" },
-            { "distance2D", 150 },
-            { "distance3D", 155 }
+            { "distance2D", 150 }
         };
         var stats = new PlayerMissionStats();
 
@@ -44,8 +43,7 @@ public class HitEventProcessorTests
             { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "head" },
             { "targetType", "infantry" },
-            { "distance2D", 100 },
-            { "distance3D", 100 }
+            { "distance2D", 100 }
         };
         var evtTorso = new BsonDocument
         {
@@ -53,8 +51,7 @@ public class HitEventProcessorTests
             { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "torso" },
             { "targetType", "infantry" },
-            { "distance2D", 200 },
-            { "distance3D", 200 }
+            { "distance2D", 200 }
         };
         var stats = new PlayerMissionStats();
 
@@ -76,8 +73,7 @@ public class HitEventProcessorTests
             { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "head" },
             { "targetType", "infantry" },
-            { "distance2D", 100 },
-            { "distance3D", 100 }
+            { "distance2D", 100 }
         };
         var stats = new PlayerMissionStats();
 
@@ -95,8 +91,7 @@ public class HitEventProcessorTests
             { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "head" },
             { "targetType", "infantry" },
-            { "distance2D", 150 },
-            { "distance3D", 155 }
+            { "distance2D", 150 }
         };
         var evt2 = new BsonDocument
         {
@@ -104,8 +99,7 @@ public class HitEventProcessorTests
             { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "torso" },
             { "targetType", "infantry" },
-            { "distance2D", 300 },
-            { "distance3D", 310 }
+            { "distance2D", 300 }
         };
         var stats = new PlayerMissionStats();
 
@@ -114,15 +108,16 @@ public class HitEventProcessorTests
 
         var ammoStats = stats.WeaponBreakdown["rhs_weap_m4a1"].AmmoBreakdown["rhs_ammo_556x45_M855A1"];
         ammoStats.Hits.Should().Be(2);
-        ammoStats.TotalEngagementDistance2D.Should().Be(450);
-        ammoStats.TotalEngagementDistance3D.Should().Be(465);
-        ammoStats.MaxEngagementDistance2D.Should().Be(300);
+        ammoStats.EngagementDistanceSum.Should().Be(450);
+        ammoStats.MinEngagementDistance.Should().Be(150);
+        ammoStats.MaxEngagementDistance.Should().Be(300);
 
         // Weapon-level totals should also be maintained
         var weaponStats = stats.WeaponBreakdown["rhs_weap_m4a1"];
         weaponStats.Hits.Should().Be(2);
-        weaponStats.TotalEngagementDistance2D.Should().Be(450);
-        weaponStats.MaxEngagementDistance2D.Should().Be(300);
+        weaponStats.EngagementDistanceSum.Should().Be(450);
+        weaponStats.MinEngagementDistance.Should().Be(150);
+        weaponStats.MaxEngagementDistance.Should().Be(300);
     }
 
     [Fact]
@@ -134,8 +129,7 @@ public class HitEventProcessorTests
             { "ammo", "rhs_ammo_556x45_M855A1" },
             { "bodyPart", "torso" },
             { "targetType", "infantry" },
-            { "distance2D", 100 },
-            { "distance3D", 100 }
+            { "distance2D", 100 }
         };
         var evtVehicle = new BsonDocument
         {
@@ -143,8 +137,7 @@ public class HitEventProcessorTests
             { "ammo", "rhs_ammo_pg32v" },
             { "bodyPart", "" },
             { "targetType", "vehicle" },
-            { "distance2D", 500 },
-            { "distance3D", 500 }
+            { "distance2D", 500 }
         };
         var stats = new PlayerMissionStats();
 
@@ -179,8 +172,7 @@ public class HitEventProcessorTests
             { "ammo", "rhs_ammo_pg32v" },
             { "bodyPart", "" },
             { "targetType", "vehicle" },
-            { "distance2D", 500 },
-            { "distance3D", 500 }
+            { "distance2D", 500 }
         };
         var stats = new PlayerMissionStats();
 
@@ -188,5 +180,48 @@ public class HitEventProcessorTests
 
         stats.BodyPartHits.Should().BeEmpty();
         stats.WeaponBreakdown["launch_RPG32_F"].AmmoBreakdown["rhs_ammo_pg32v"].BodyPartHits.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ProcessForPlayer_ShouldIsolateStatsPerAmmoType()
+    {
+        var evtAmmo1 = new BsonDocument
+        {
+            { "weapon", "rhs_weap_m4a1" },
+            { "ammo", "rhs_ammo_556x45_M855A1" },
+            { "bodyPart", "head" },
+            { "targetType", "infantry" },
+            { "distance2D", 200 }
+        };
+        var evtAmmo2 = new BsonDocument
+        {
+            { "weapon", "rhs_weap_m4a1" },
+            { "ammo", "rhs_ammo_556x45_M856" },
+            { "bodyPart", "torso" },
+            { "targetType", "infantry" },
+            { "distance2D", 400 }
+        };
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(evtAmmo1, stats);
+        _subject.ProcessForPlayer(evtAmmo2, stats);
+
+        var ammo1 = stats.WeaponBreakdown["rhs_weap_m4a1"].AmmoBreakdown["rhs_ammo_556x45_M855A1"];
+        ammo1.Hits.Should().Be(1);
+        ammo1.BodyPartHits.Should().ContainKey("head").WhoseValue.Should().Be(1);
+        ammo1.BodyPartHits.Should().NotContainKey("torso");
+        ammo1.MaxEngagementDistance.Should().Be(200);
+
+        var ammo2 = stats.WeaponBreakdown["rhs_weap_m4a1"].AmmoBreakdown["rhs_ammo_556x45_M856"];
+        ammo2.Hits.Should().Be(1);
+        ammo2.BodyPartHits.Should().ContainKey("torso").WhoseValue.Should().Be(1);
+        ammo2.BodyPartHits.Should().NotContainKey("head");
+        ammo2.MaxEngagementDistance.Should().Be(400);
+
+        // Weapon-level should have both
+        var weapon = stats.WeaponBreakdown["rhs_weap_m4a1"];
+        weapon.Hits.Should().Be(2);
+        weapon.MinEngagementDistance.Should().Be(200);
+        weapon.MaxEngagementDistance.Should().Be(400);
     }
 }
