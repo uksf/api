@@ -66,4 +66,16 @@ public class KillEventProcessorTests
         stats.Kills.Direct.Should().Be(1);
         stats.KillsByTargetType.Should().ContainKey("unknown");
     }
+
+    [Fact]
+    public void ProcessForPlayer_StructureKill_ShouldTrackAsStructure()
+    {
+        var evt = new BsonDocument { { "indirect", false }, { "targetType", "structure" } };
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(evt, stats);
+
+        stats.Kills.Direct.Should().Be(1);
+        stats.KillsByTargetType.Should().ContainKey("structure").WhoseValue.Should().Be(1);
+    }
 }
