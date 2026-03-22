@@ -1,6 +1,5 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
-using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
@@ -33,32 +32,10 @@ public class MigrationUtility(IMigrationContext migrationContext, IMongoDatabase
 
     private async Task ExecuteMigrations()
     {
-        // Old migrations should be deleted once they have run on all environments.
-        // They are idempotent but wasteful to re-run on every version bump.
-        await MigrateGameServerPlayersToArray();
-        await MigratePersistenceSessionDiscriminators();
         await MigrateStatisticsSessionIds();
         await MigrateStatisticsCleanup();
         await MigrateStatisticsComputeFps();
         logger.LogInfo("All migrations completed successfully");
-    }
-
-    private async Task MigrateGameServerPlayersToArray()
-    {
-        logger.LogInfo("Starting migration to convert gameServers status.players from int to array");
-
-        var collection = database.GetCollection<BsonDocument>("gameServers");
-        var update = Builders<BsonDocument>.Update.Set("status.players", new BsonArray());
-
-        var result = await collection.UpdateManyAsync(new BsonDocument("status.players", new BsonDocument("$not", new BsonDocument("$type", "array"))), update);
-
-        logger.LogInfo($"Migrated {result.ModifiedCount} game server documents: status.players converted to empty array");
-    }
-
-    private async Task MigratePersistenceSessionDiscriminators()
-    {
-        logger.LogInfo("Starting migration to unwrap BSON discriminators from persistence sessions");
-        await PersistenceDataMigration.MigrateAsync(database, msg => logger.LogInfo(msg));
     }
 
     private async Task MigrateStatisticsSessionIds()
