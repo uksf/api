@@ -20,6 +20,7 @@ public class MissionStatsServiceTests
     private readonly Mock<IMissionStatsBatchesContext> _mockBatchesContext = new();
     private readonly Mock<IPlayerMissionStatsContext> _mockPlayerStatsContext = new();
     private readonly Mock<IMissionStatsContext> _mockMissionStatsContext = new();
+    private readonly Mock<IPerformanceService> _mockPerformanceService = new();
 
     private readonly MissionStatsService _subject;
 
@@ -29,7 +30,8 @@ public class MissionStatsServiceTests
             _mockSessionsContext.Object,
             _mockBatchesContext.Object,
             _mockPlayerStatsContext.Object,
-            _mockMissionStatsContext.Object
+            _mockMissionStatsContext.Object,
+            _mockPerformanceService.Object
         );
     }
 
@@ -290,64 +292,16 @@ public class MissionStatsServiceTests
     #region HandleMissionEndedAsync — FPS Computation
 
     [Fact]
-    public async Task HandleMissionEndedAsync_ShouldComputeFpsStats()
+    public async Task HandleMissionEndedAsync_ShouldCallComputeFinalFpsStats()
     {
         var sessionId = "session-123";
-        var events = new List<BsonDocument>
-        {
-            new()
-            {
-                { "type", "fps" },
-                { "uid", "player1" },
-                { "value", 60 }
-            },
-            new()
-            {
-                { "type", "fps" },
-                { "uid", "player1" },
-                { "value", 30 }
-            },
-            new()
-            {
-                { "type", "fps" },
-                { "uid", "player1" },
-                { "value", 45 }
-            },
-            new() { { "type", "shot" }, { "uid", "player1" } }
-        };
-        var batch = new MissionStatsBatch
-        {
-            Id = "batch-1",
-            MissionSessionId = sessionId,
-            Events = events
-        };
-
         var session = new MissionSession { SessionId = sessionId };
         _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
-        _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([batch]);
-
-        // Capture the update to verify computed values
-        UpdateDefinition<PlayerMissionStats> capturedUpdate = null;
-        _mockPlayerStatsContext.Setup(x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
-                               .Callback<Expression<Func<PlayerMissionStats, bool>>,
-                                   UpdateDefinition<PlayerMissionStats>>((_, update) => capturedUpdate = update)
-                               .Returns(Task.CompletedTask);
+        _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([]);
 
         await _subject.HandleMissionEndedAsync(sessionId, 300, DateTime.UtcNow);
 
-        _mockPlayerStatsContext.Verify(
-            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
-            Times.Once
-        );
-        capturedUpdate.Should().NotBeNull();
-
-        // Render the update to verify values: min=30, max=60, avg=45, P1=30
-        var rendered = capturedUpdate.RenderUpdate();
-        var setDoc = rendered["$set"].AsBsonDocument;
-        setDoc.GetValue("FpsMin", setDoc.GetValue("fpsMin", BsonNull.Value)).ToInt32().Should().Be(30);
-        setDoc.GetValue("FpsMax", setDoc.GetValue("fpsMax", BsonNull.Value)).ToInt32().Should().Be(60);
-        setDoc.GetValue("FpsAverage", setDoc.GetValue("fpsAverage", BsonNull.Value)).ToDouble().Should().Be(45.0);
-        setDoc.GetValue("FpsP1", setDoc.GetValue("fpsP1", BsonNull.Value)).ToInt32().Should().Be(30);
+        _mockPerformanceService.Verify(x => x.ComputeFinalFpsStatsAsync(sessionId), Times.Once);
     }
 
     [Fact]

@@ -44,7 +44,8 @@ public class GameServersService(
     IUksfLogger logger,
     IPublishEndpoint publishEndpoint,
     IPersistenceSessionsService persistenceSessionsService,
-    IMissionStatsService missionStatsService
+    IMissionStatsService missionStatsService,
+    IPerformanceService performanceService
 ) : IGameServersService
 {
     private static readonly ConcurrentDictionary<string, GameServerStatus> StatusCache = new();
@@ -426,6 +427,7 @@ public class GameServersService(
                 case "mission_ended":       await HandleMissionLifecycleEvent(gameServerEvent.Data, isStart: false); break;
                 case "player_connected":    await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: true); break;
                 case "player_disconnected": await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: false); break;
+                case "performance":         await HandlePerformanceEvent(gameServerEvent.Data); break;
                 case "persistence_save":    await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
                 case "shutdown_complete":   await HandleShutdownCompleteEvent(gameServerEvent.ApiPort); break;
                 default:                    logger.LogWarning($"Unknown game server event type: {gameServerEvent.Type}"); break;
@@ -510,8 +512,6 @@ public class GameServersService(
             status.StartedAt ??= DateTime.UtcNow.AddSeconds(-uptimeValue);
         }
 
-        if (data.TryGetValue("fps", out var fps) && float.TryParse(fps.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var fpsValue))
-            status.Fps = fpsValue;
         if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount.ToString(), out var entityCountValue))
             status.EntityCount = entityCountValue;
         if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount.ToString(), out var aiCountValue)) status.AiCount = aiCountValue;
@@ -614,6 +614,55 @@ public class GameServersService(
         {
             await missionStatsService.HandlePlayerDisconnectedAsync(sessionId, uid, now);
         }
+    }
+
+    private async Task HandlePerformanceEvent(Dictionary<string, object> data)
+    {
+        var sessionId = data.TryGetValue("sessionId", out var sessionIdValue) ? sessionIdValue.ToString() : string.Empty;
+        if (string.IsNullOrEmpty(sessionId))
+        {
+            return;
+        }
+
+        var serverFps = new List<int>();
+        if (data.TryGetValue("server", out var serverValue) && serverValue is JsonElement serverElement && serverElement.ValueKind == JsonValueKind.Array)
+        {
+            serverFps = serverElement.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Number).Select(e => e.GetInt32()).ToList();
+        }
+
+        var headlessClients = new List<HeadlessClientPerformance>();
+        if (data.TryGetValue("headlessClients", out var hcValue) && hcValue is JsonElement hcElement && hcElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var hc in hcElement.EnumerateArray())
+            {
+                var name = hc.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : string.Empty;
+                var fps = hc.TryGetProperty("fps", out var fpsProp) && fpsProp.ValueKind == JsonValueKind.Array
+                    ? fpsProp.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Number).Select(e => e.GetInt32()).ToList()
+                    : [];
+                if (!string.IsNullOrEmpty(name) && fps.Count > 0)
+                {
+                    headlessClients.Add(new HeadlessClientPerformance { Name = name, Fps = fps });
+                }
+            }
+        }
+
+        var players = new List<PlayerPerformance>();
+        if (data.TryGetValue("players", out var playersValue) && playersValue is JsonElement playersElement && playersElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var player in playersElement.EnumerateArray())
+            {
+                var uid = player.TryGetProperty("uid", out var uidProp) ? uidProp.GetString() : string.Empty;
+                var fps = player.TryGetProperty("fps", out var fpsProp) && fpsProp.ValueKind == JsonValueKind.Array
+                    ? fpsProp.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Number).Select(e => e.GetInt32()).ToList()
+                    : [];
+                if (!string.IsNullOrEmpty(uid) && fps.Count > 0)
+                {
+                    players.Add(new PlayerPerformance { Uid = uid, Fps = fps });
+                }
+            }
+        }
+
+        await performanceService.HandlePerformanceEventAsync(sessionId, serverFps, headlessClients, players);
     }
 
     private async Task HandlePersistenceSaveEvent(Dictionary<string, object> data)

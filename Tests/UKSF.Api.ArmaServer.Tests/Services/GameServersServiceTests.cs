@@ -54,7 +54,8 @@ public class GameServersServiceTests
             _mockLogger.Object,
             _mockPublishEndpoint.Object,
             _mockPersistenceSessionsService.Object,
-            new Mock<IMissionStatsService>().Object
+            new Mock<IMissionStatsService>().Object,
+            new Mock<IPerformanceService>().Object
         );
     }
 
@@ -319,7 +320,6 @@ public class GameServersServiceTests
                     Mission = "mission.Altis.pbo",
                     Map = "Altis",
                     MaxPlayers = "32",
-                    Fps = 48.5f,
                     LastEventReceived = DateTime.UtcNow
                 }
             }
@@ -336,7 +336,6 @@ public class GameServersServiceTests
         server.Status.Mission.Should().BeNull();
         server.Status.Map.Should().BeNull();
         server.Status.MaxPlayers.Should().BeNull();
-        server.Status.Fps.Should().Be(0);
         server.Status.LastEventReceived.Should().Be(default);
     }
 
@@ -355,7 +354,6 @@ public class GameServersServiceTests
                 Mission = "mission.Altis.pbo",
                 Map = "Altis",
                 MaxPlayers = "32",
-                Fps = 48.5f,
                 LastEventReceived = DateTime.UtcNow
             }
         };
@@ -376,7 +374,6 @@ public class GameServersServiceTests
         gameServer.Status.Mission.Should().BeNull();
         gameServer.Status.Map.Should().BeNull();
         gameServer.Status.MaxPlayers.Should().BeNull();
-        gameServer.Status.Fps.Should().Be(0);
         gameServer.Status.LastEventReceived.Should().Be(default);
         gameServer.HeadlessClientProcessIds.Should().BeEmpty();
     }
