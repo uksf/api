@@ -1252,4 +1252,51 @@ public class PersistenceSessionsServiceTests
         deserialized.ClassName.Should().Be("FirstAidKit");
         deserialized.Count.Should().Be(3);
     }
+
+    [Fact]
+    public async Task HandleSaveChunkAsync_WithRawNamespaceFormat_ShouldSaveViaConverter()
+    {
+        // Build a raw namespace JSON: uksf_persistence_objects contains array-of-arrays,
+        // not the structured { id, type, ... } format
+        const string rawJson = """
+                               {
+                                   "uksf_persistence_objects": [
+                                       ["obj-1","B_MRAP_01_F",[100.5,200.3,0.1],[[0,1,0],[0,0,1]],0.25,0.8,[],[],[],[],[],[],[],[[],[],[],[],[]],[false,""],[0,false,false],[0,0],""]
+                                   ],
+                                   "uksf_persistence_dateTime": [2035,6,15,12,30],
+                                   "uksf_persistence_deletedObjects": ["del-1"],
+                                   "uksf_persistence_mapMarkers": []
+                               }
+                               """;
+
+        var chunk = new ChunkEnvelope
+        {
+            Id = "raw-1",
+            Key = "raw-key",
+            Index = 0,
+            Total = 1,
+            Data = rawJson,
+            SessionId = "session-1"
+        };
+
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
+
+        DomainPersistenceSession savedSession = null;
+        _mockContext.Setup(x => x.Add(It.IsAny<DomainPersistenceSession>()))
+                    .Callback<DomainPersistenceSession>(s => savedSession = s)
+                    .Returns(Task.CompletedTask);
+
+        await _subject.HandleSaveChunkAsync(chunk);
+
+        savedSession.Should().NotBeNull();
+        savedSession!.Key.Should().Be("raw-key");
+        savedSession.Objects.Should().HaveCount(1);
+        savedSession.Objects[0].Id.Should().Be("obj-1");
+        savedSession.Objects[0].Type.Should().Be("B_MRAP_01_F");
+        savedSession.Objects[0].Position.Should().BeEquivalentTo(new[] { 100.5, 200.3, 0.1 });
+        savedSession.Objects[0].Damage.Should().Be(0.25);
+        savedSession.Objects[0].Fuel.Should().Be(0.8);
+        savedSession.DeletedObjects.Should().ContainSingle().Which.Should().Be("del-1");
+        savedSession.ArmaDateTime.Should().BeEquivalentTo(new[] { 2035, 6, 15, 12, 30 });
+    }
 }

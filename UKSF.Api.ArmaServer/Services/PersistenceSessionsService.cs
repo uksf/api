@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using MongoDB.Bson;
+using UKSF.Api.ArmaServer.Converters;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models.Persistence;
 using UKSF.Api.Core;
@@ -108,7 +109,17 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
 
             try
             {
-                var session = JsonSerializer.Deserialize<DomainPersistenceSession>(fullJson, SerializerOptions);
+                var rawDict = JsonSerializer.Deserialize<Dictionary<string, object>>(fullJson, SerializerOptions);
+                DomainPersistenceSession session;
+                if (rawDict is not null && PersistenceConverter.IsRawNamespaceFormat(rawDict))
+                {
+                    session = PersistenceConverter.FromRawNamespace(rawDict);
+                }
+                else
+                {
+                    session = JsonSerializer.Deserialize<DomainPersistenceSession>(fullJson, SerializerOptions);
+                }
+
                 if (session is not null)
                 {
                     await SaveAsync(chunk.Key, session, chunk.SessionId);

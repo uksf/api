@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UKSF.Api.ArmaServer.Converters;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 
@@ -11,7 +12,7 @@ namespace UKSF.Api.ArmaServer.Controllers;
 public class PersistenceController(IPersistenceSessionsService persistenceSessionsService, IUksfLogger logger) : ControllerBase
 {
     [HttpGet("{key}")]
-    public IActionResult Get([FromRoute] string key)
+    public IActionResult Get([FromRoute] string key, [FromQuery] string format = null)
     {
         logger.LogDebug($"Persistence load requested for key: {key}");
 
@@ -19,6 +20,12 @@ public class PersistenceController(IPersistenceSessionsService persistenceSessio
         if (session is null)
         {
             return NotFound();
+        }
+
+        if (format == "raw")
+        {
+            var raw = PersistenceConverter.ToRawNamespace(session);
+            return new JsonResult(raw);
         }
 
         return new JsonResult(session, PersistenceSessionsService.SerializerOptions);

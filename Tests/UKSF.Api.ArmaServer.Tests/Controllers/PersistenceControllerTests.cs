@@ -55,4 +55,50 @@ public class PersistenceControllerTests
 
         _mockLogger.Verify(x => x.LogDebug(It.Is<string>(s => s.Contains("test-key"))), Times.Once);
     }
+
+    [Fact]
+    public void Get_WithFormatRaw_ShouldReturnRawNamespaceFormat()
+    {
+        var session = new DomainPersistenceSession
+        {
+            Key = "test-key",
+            Objects =
+            [
+                new PersistenceObject
+                {
+                    Id = "obj-1",
+                    Type = "B_MRAP_01_F",
+                    Position = [100.5, 200.3, 0.1],
+                    VectorDirUp = [[0, 1, 0], [0, 0, 1]],
+                    Damage = 0.25,
+                    Fuel = 0.8
+                }
+            ],
+            Players = new Dictionary<string, PlayerRedeployData>
+            {
+                ["76561198012345678"] = new()
+                {
+                    Position = [50.0, 60.0, 0.0],
+                    Direction = 180.0,
+                    Animation = "AmovPercMstpSnonWnonDnon"
+                }
+            },
+            ArmaDateTime = [2035, 6, 15, 12, 30],
+            DeletedObjects = ["del-1"],
+            Markers = []
+        };
+        _mockService.Setup(x => x.Load("test-key")).Returns(session);
+
+        var result = _sut.Get("test-key", "raw");
+
+        var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
+        var raw = jsonResult.Value.Should().BeOfType<Dictionary<string, object>>().Subject;
+        raw.Should().ContainKey("uksf_persistence_objects");
+        raw.Should().ContainKey("uksf_persistence_dateTime");
+        raw.Should().ContainKey("uksf_persistence_deletedObjects");
+        raw.Should().ContainKey("uksf_persistence_mapMarkers");
+        raw.Should().ContainKey("76561198012345678");
+        raw.Should().NotContainKey("objects");
+        raw.Should().NotContainKey("players");
+    }
 }

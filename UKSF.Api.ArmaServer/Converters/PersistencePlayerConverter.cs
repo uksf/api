@@ -150,5 +150,11 @@ public static class PersistencePlayerConverter
             _      => Convert.ToBoolean(v)
         };
 
-    private static List<object> ToList(object v) => v as List<object> ?? [];
+    private static List<object> ToList(object v) =>
+        v switch
+        {
+            List<object> list => list,
+            object[] array    => [..array],
+            _                 => []
+        };
 }

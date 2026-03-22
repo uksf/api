@@ -83,5 +83,11 @@ public static partial class PersistenceConverter
             _        => Convert.ToInt32(v)
         };
 
-    private static List<object> ToList(object v) => v as List<object> ?? [];
+    private static List<object> ToList(object v) =>
+        v switch
+        {
+            List<object> list => list,
+            object[] array    => [..array],
+            _                 => []
+        };
 }
