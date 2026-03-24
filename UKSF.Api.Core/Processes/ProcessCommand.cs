@@ -169,16 +169,8 @@ public class ProcessCommand(IUksfLogger logger, string executable, string workin
                         await ProcessStandardOutputAsync(stdOut.Text, jsonParser, writer, cancellationToken); break;
 
                     case StandardErrorCommandEvent stdErr when !string.IsNullOrEmpty(stdErr.Text):
-                        if (_redirectStderrToOutput)
-                        {
-                            await writer.WriteAsync(new ProcessOutputLine { Content = stdErr.Text, Type = ProcessOutputType.Output }, cancellationToken);
-                        }
-                        else
-                        {
-                            LogWarning($"Process error output: {stdErr.Text}");
-                            await writer.WriteAsync(new ProcessOutputLine { Content = stdErr.Text, Type = ProcessOutputType.Error }, cancellationToken);
-                        }
-
+                        var stderrType = _redirectStderrToOutput ? ProcessOutputType.Output : ProcessOutputType.Error;
+                        await writer.WriteAsync(new ProcessOutputLine { Content = stdErr.Text, Type = stderrType }, cancellationToken);
                         break;
 
                     case ExitedCommandEvent exited:
