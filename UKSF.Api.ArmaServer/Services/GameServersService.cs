@@ -771,7 +771,7 @@ public class GameServersService(
     {
         try
         {
-            await TryFinaliseKilledSessionAsync(sessionId);
+            await missionStatsService.FinaliseKilledSessionAsync(sessionId);
         }
         catch (Exception ex)
         {
