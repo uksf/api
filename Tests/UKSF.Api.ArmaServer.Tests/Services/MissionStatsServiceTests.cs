@@ -9,6 +9,7 @@ using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Core;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
@@ -21,6 +22,7 @@ public class MissionStatsServiceTests
     private readonly Mock<IPlayerMissionStatsContext> _mockPlayerStatsContext = new();
     private readonly Mock<IMissionStatsContext> _mockMissionStatsContext = new();
     private readonly Mock<IPerformanceService> _mockPerformanceService = new();
+    private readonly Mock<IUksfLogger> _mockLogger = new();
 
     private readonly MissionStatsService _subject;
 
@@ -31,7 +33,8 @@ public class MissionStatsServiceTests
             _mockBatchesContext.Object,
             _mockPlayerStatsContext.Object,
             _mockMissionStatsContext.Object,
-            _mockPerformanceService.Object
+            _mockPerformanceService.Object,
+            _mockLogger.Object
         );
     }
 
@@ -360,4 +363,276 @@ public class MissionStatsServiceTests
     }
 
     #endregion
+
+    [Fact]
+    public async Task FinaliseKilledSessionAsync_WhenSessionNotFound_ShouldDoNothing()
+    {
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns((MissionSession)null);
+
+        await _subject.FinaliseKilledSessionAsync("nonexistent");
+
+        _mockSessionsContext.Verify(x => x.Update(It.IsAny<string>(), It.IsAny<UpdateDefinition<MissionSession>>()), Times.Never);
+        _mockBatchesContext.Verify(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task FinaliseKilledSessionAsync_WhenAlreadyEnded_ShouldDoNothing()
+    {
+        var session = new MissionSession { SessionId = "session-123", MissionEnded = new DateTime(2025, 6, 14, 21, 0, 0) };
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+
+        await _subject.FinaliseKilledSessionAsync("session-123");
+
+        _mockSessionsContext.Verify(x => x.Update(It.IsAny<string>(), It.IsAny<UpdateDefinition<MissionSession>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task FinaliseKilledSessionAsync_ShouldSetMissionEndedFromLastBatchReceived()
+    {
+        var lastBatch = new DateTime(2025, 6, 14, 20, 30, 0);
+        var missionStarted = new DateTime(2025, 6, 14, 20, 0, 0);
+        var session = new MissionSession
+        {
+            Id = "id-1",
+            SessionId = "session-123",
+            Mission = "co40_op_eagle",
+            Map = "Altis",
+            MissionStarted = missionStarted,
+            LastBatchReceived = lastBatch,
+            PlayerPresence = []
+        };
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
+                            .Callback(() => session.MissionEnded = lastBatch);
+        _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([]);
+        _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
+
+        await _subject.FinaliseKilledSessionAsync("session-123");
+
+        _mockSessionsContext.Verify(
+            x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()),
+            Times.Once
+        );
+        _mockPerformanceService.Verify(x => x.ComputeFinalFpsStatsAsync("session-123"), Times.Once);
+    }
+
+    [Fact]
+    public async Task FinaliseKilledSessionAsync_ShouldCloseOpenPlayerPresenceEntries()
+    {
+        var lastBatch = new DateTime(2025, 6, 14, 20, 30, 0);
+        var session = new MissionSession
+        {
+            Id = "id-1",
+            SessionId = "session-123",
+            Mission = "co40_op_eagle",
+            Map = "Altis",
+            MissionStarted = new DateTime(2025, 6, 14, 20, 0, 0),
+            LastBatchReceived = lastBatch,
+            PlayerPresence =
+            [
+                new PlayerPresence
+                {
+                    Uid = "uid-1",
+                    Name = "Player1",
+                    Connected = new DateTime(2025, 6, 14, 20, 0, 0),
+                    Disconnected = new DateTime(2025, 6, 14, 20, 10, 0)
+                },
+                new PlayerPresence
+                {
+                    Uid = "uid-2",
+                    Name = "Player2",
+                    Connected = new DateTime(2025, 6, 14, 20, 5, 0),
+                    Disconnected = null
+                },
+                new PlayerPresence
+                {
+                    Uid = "uid-3",
+                    Name = "Player3",
+                    Connected = new DateTime(2025, 6, 14, 20, 8, 0),
+                    Disconnected = null
+                }
+            ]
+        };
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
+                            .Callback(() => session.MissionEnded = lastBatch);
+        _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([]);
+        _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
+
+        await _subject.FinaliseKilledSessionAsync("session-123");
+
+        _mockSessionsContext.Verify(
+            x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task FinaliseKilledSessionAsync_ShouldBackfillSyntheticEvents()
+    {
+        var lastBatch = new DateTime(2025, 6, 14, 20, 30, 0);
+        var session = new MissionSession
+        {
+            Id = "id-1",
+            SessionId = "session-123",
+            Mission = "co40_op_eagle",
+            Map = "Altis",
+            MissionStarted = new DateTime(2025, 6, 14, 20, 0, 0),
+            LastBatchReceived = lastBatch,
+            PlayerPresence =
+            [
+                new PlayerPresence
+                {
+                    Uid = "uid-1",
+                    Name = "Player1",
+                    Connected = new DateTime(2025, 6, 14, 20, 0, 0),
+                    Disconnected = null
+                },
+                new PlayerPresence
+                {
+                    Uid = "uid-2",
+                    Name = "Player2",
+                    Connected = new DateTime(2025, 6, 14, 20, 5, 0),
+                    Disconnected = null
+                }
+            ]
+        };
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
+                            .Callback(() => session.MissionEnded = lastBatch);
+        _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([]);
+        _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
+
+        await _subject.FinaliseKilledSessionAsync("session-123");
+
+        _mockBatchesContext.Verify(
+            x => x.Add(
+                It.Is<MissionStatsBatch>(b => b.MissionSessionId == "session-123" && b.Events.Count == 3 && b.Mission == "co40_op_eagle" && b.Map == "Altis")
+            ),
+            Times.Once
+        );
+
+        _mockMissionStatsContext.Verify(
+            x => x.Add(
+                It.Is<MissionStats>(s => s.MissionSessionId == "session-123" && s.EventCounts["mission_ended"] == 1 && s.EventCounts["player_disconnected"] == 2
+                )
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task FinaliseKilledSessionAsync_WhenNoOpenPresence_ShouldStillBackfillMissionEndedEvent()
+    {
+        var lastBatch = new DateTime(2025, 6, 14, 20, 30, 0);
+        var session = new MissionSession
+        {
+            Id = "id-1",
+            SessionId = "session-123",
+            Mission = "co40_op_eagle",
+            Map = "Altis",
+            MissionStarted = new DateTime(2025, 6, 14, 20, 0, 0),
+            LastBatchReceived = lastBatch,
+            PlayerPresence = []
+        };
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
+                            .Callback(() => session.MissionEnded = lastBatch);
+        _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([]);
+        _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
+
+        await _subject.FinaliseKilledSessionAsync("session-123");
+
+        _mockBatchesContext.Verify(x => x.Add(It.Is<MissionStatsBatch>(b => b.Events.Count == 1)), Times.Once);
+
+        _mockMissionStatsContext.Verify(
+            x => x.Add(It.Is<MissionStats>(s => s.EventCounts["mission_ended"] == 1 && !s.EventCounts.ContainsKey("player_disconnected"))),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task FinaliseKilledSessionAsync_ShouldCallMergeAndComputeFps()
+    {
+        var lastBatch = new DateTime(2025, 6, 14, 20, 30, 0);
+        var session = new MissionSession
+        {
+            Id = "id-1",
+            SessionId = "session-123",
+            Mission = "co40_op_eagle",
+            Map = "Altis",
+            MissionStarted = new DateTime(2025, 6, 14, 20, 0, 0),
+            LastBatchReceived = lastBatch,
+            PlayerPresence = []
+        };
+        var batch1 = new MissionStatsBatch
+        {
+            Id = "b1",
+            MissionSessionId = "session-123",
+            Mission = "co40_op_eagle",
+            Map = "Altis",
+            ReceivedAt = new DateTime(2025, 6, 14, 20, 0, 0),
+            Events = [new BsonDocument { { "type", "shot" } }]
+        };
+        var batch2 = new MissionStatsBatch
+        {
+            Id = "b2",
+            MissionSessionId = "session-123",
+            Mission = "co40_op_eagle",
+            Map = "Altis",
+            ReceivedAt = new DateTime(2025, 6, 14, 20, 1, 0),
+            Events = [new BsonDocument { { "type", "hit" } }]
+        };
+
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
+                            .Callback(() => session.MissionEnded = lastBatch);
+        _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([batch1, batch2]);
+        _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
+
+        await _subject.FinaliseKilledSessionAsync("session-123");
+
+        _mockBatchesContext.Verify(x => x.Add(It.IsAny<MissionStatsBatch>()), Times.Exactly(2));
+        _mockBatchesContext.Verify(x => x.DeleteMany(It.IsAny<Expression<Func<MissionStatsBatch, bool>>>()), Times.Once);
+        _mockPerformanceService.Verify(x => x.ComputeFinalFpsStatsAsync("session-123"), Times.Once);
+    }
+
+    [Fact]
+    public async Task FinaliseKilledSessionAsync_WhenMissionStatsAlreadyExist_ShouldIncrementEventCounts()
+    {
+        var lastBatch = new DateTime(2025, 6, 14, 20, 30, 0);
+        var session = new MissionSession
+        {
+            Id = "id-1",
+            SessionId = "session-123",
+            Mission = "co40_op_eagle",
+            Map = "Altis",
+            MissionStarted = new DateTime(2025, 6, 14, 20, 0, 0),
+            LastBatchReceived = lastBatch,
+            PlayerPresence =
+            [
+                new PlayerPresence
+                {
+                    Uid = "uid-1",
+                    Name = "Player1",
+                    Connected = new DateTime(2025, 6, 14, 20, 0, 0),
+                    Disconnected = null
+                }
+            ]
+        };
+        var existingStats = new MissionStats { MissionSessionId = "session-123", EventCounts = new Dictionary<string, int> { ["shot"] = 50, ["hit"] = 20 } };
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+        _mockSessionsContext.Setup(x => x.FindAndUpdate(It.IsAny<Expression<Func<MissionSession, bool>>>(), It.IsAny<UpdateDefinition<MissionSession>>()))
+                            .Callback(() => session.MissionEnded = lastBatch);
+        _mockBatchesContext.Setup(x => x.Get(It.IsAny<Func<MissionStatsBatch, bool>>())).Returns([]);
+        _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns(existingStats);
+
+        await _subject.FinaliseKilledSessionAsync("session-123");
+
+        _mockMissionStatsContext.Verify(x => x.Add(It.IsAny<MissionStats>()), Times.Never);
+        _mockMissionStatsContext.Verify(
+            x => x.Update(It.IsAny<Expression<Func<MissionStats, bool>>>(), It.IsAny<UpdateDefinition<MissionStats>>()),
+            Times.Once
+        );
+    }
 }

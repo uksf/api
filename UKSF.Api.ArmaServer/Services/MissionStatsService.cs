@@ -2,6 +2,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.Core;
 
 namespace UKSF.Api.ArmaServer.Services;
 
@@ -15,6 +16,7 @@ public interface IMissionStatsService
     Task HandleMissionEndedAsync(string sessionId, double durationSeconds, DateTime timestamp);
     Task HandlePlayerConnectedAsync(string sessionId, string uid, string name, DateTime timestamp);
     Task HandlePlayerDisconnectedAsync(string sessionId, string uid, DateTime timestamp);
+    Task FinaliseKilledSessionAsync(string sessionId);
 }
 
 public class MissionStatsService(
@@ -22,7 +24,8 @@ public class MissionStatsService(
     IMissionStatsBatchesContext batchesContext,
     IPlayerMissionStatsContext playerStatsContext,
     IMissionStatsContext missionStatsContext,
-    IPerformanceService performanceService
+    IPerformanceService performanceService,
+    IUksfLogger logger
 ) : IMissionStatsService
 {
     public async Task<MissionSession> GetOrCreateSessionAsync(string sessionId, string mission, string map, DateTime receivedAt)
@@ -205,6 +208,97 @@ public class MissionStatsService(
 
         await MergeBatchesAsync(sessionId);
         await performanceService.ComputeFinalFpsStatsAsync(sessionId);
+    }
+
+    public async Task FinaliseKilledSessionAsync(string sessionId)
+    {
+        var session = sessionsContext.GetSingle(s => s.SessionId == sessionId);
+        if (session is null)
+        {
+            logger.LogInfo($"FinaliseKilledSession: session '{sessionId}' not found, skipping");
+            return;
+        }
+
+        if (session.MissionEnded.HasValue)
+        {
+            logger.LogInfo($"FinaliseKilledSession: session '{sessionId}' already ended, skipping");
+            return;
+        }
+
+        var endTimestamp = session.LastBatchReceived != default ? session.LastBatchReceived : session.MissionStarted ?? DateTime.UtcNow;
+
+        double? durationSeconds = session.MissionStarted.HasValue ? (endTimestamp - session.MissionStarted.Value).TotalSeconds : null;
+
+        var openPresenceEntries = session.PlayerPresence.Select((p, i) => (Entry: p, Index: i)).Where(x => x.Entry.Disconnected is null).ToList();
+
+        var updates = new List<UpdateDefinition<MissionSession>> { Builders<MissionSession>.Update.Set(x => x.MissionEnded, endTimestamp) };
+
+        if (durationSeconds.HasValue)
+        {
+            updates.Add(Builders<MissionSession>.Update.Set(x => x.DurationSeconds, durationSeconds));
+        }
+
+        foreach (var (_, index) in openPresenceEntries)
+        {
+            updates.Add(Builders<MissionSession>.Update.Set(x => x.PlayerPresence[index].Disconnected, endTimestamp));
+        }
+
+        // Atomic claim: only update if MissionEnded is still null (prevents duplicate finalisation from concurrent paths)
+        await sessionsContext.FindAndUpdate(s => s.SessionId == sessionId && s.MissionEnded == null, Builders<MissionSession>.Update.Combine(updates));
+
+        // Re-read to verify we won the claim — if another caller set MissionEnded first, our FindAndUpdate was a no-op
+        var updated = sessionsContext.GetSingle(s => s.SessionId == sessionId);
+        if (updated?.MissionEnded != endTimestamp)
+        {
+            logger.LogInfo($"FinaliseKilledSession: session '{sessionId}' was claimed by another path, skipping");
+            return;
+        }
+
+        await BackfillSyntheticEventsAsync(session, openPresenceEntries.Select(x => x.Entry).ToList(), endTimestamp);
+
+        await MergeBatchesAsync(sessionId);
+        await performanceService.ComputeFinalFpsStatsAsync(sessionId);
+
+        logger.LogInfo($"FinaliseKilledSession: finalised session '{sessionId}' — closed {openPresenceEntries.Count} open player entries");
+    }
+
+    private async Task BackfillSyntheticEventsAsync(MissionSession session, List<PlayerPresence> closedEntries, DateTime endTimestamp)
+    {
+        var syntheticEvents = new List<BsonDocument>
+        {
+            new()
+            {
+                { "type", "mission_ended" },
+                { "sessionId", session.SessionId },
+                { "timestamp", endTimestamp.ToString("O") },
+                { "synthetic", true }
+            }
+        };
+
+        foreach (var entry in closedEntries)
+        {
+            syntheticEvents.Add(
+                new BsonDocument
+                {
+                    { "type", "player_disconnected" },
+                    { "sessionId", session.SessionId },
+                    { "uid", entry.Uid },
+                    { "name", entry.Name },
+                    { "timestamp", endTimestamp.ToString("O") },
+                    { "synthetic", true }
+                }
+            );
+        }
+
+        await StoreRawBatchAsync(session.SessionId, session.Mission, session.Map, syntheticEvents, endTimestamp);
+
+        var eventCounts = new Dictionary<string, int> { ["mission_ended"] = 1 };
+        if (closedEntries.Count > 0)
+        {
+            eventCounts["player_disconnected"] = closedEntries.Count;
+        }
+
+        await UpdateMissionStatsAsync(session.SessionId, new MissionStats { EventCounts = eventCounts });
     }
 
     private async Task MergeBatchesAsync(string sessionId)

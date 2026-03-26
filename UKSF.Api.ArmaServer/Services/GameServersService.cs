@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using MassTransit;
+using MongoDB.Driver;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
@@ -72,6 +73,15 @@ public class GameServersService(
         if (!gameServerHelpers.GetArmaProcesses().Any())
         {
             StatusCache.Clear();
+
+            foreach (var gameServer in gameServers)
+            {
+                if (!string.IsNullOrEmpty(gameServer.Status.CurrentMissionSessionId))
+                {
+                    await TryFinaliseKilledSessionAsync(gameServer.Status.CurrentMissionSessionId);
+                }
+            }
+
             foreach (var gameServer in gameServers)
             {
                 gameServer.Status = new GameServerStatus();
@@ -95,6 +105,12 @@ public class GameServersService(
 
         if (matchingProcess is null)
         {
+            var sessionId = gameServer.Status.CurrentMissionSessionId;
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                await TryFinaliseKilledSessionAsync(sessionId);
+            }
+
             gameServer.Status = new GameServerStatus();
             gameServer.ProcessId = null;
             StatusCache.TryRemove(gameServer.Id, out _);
@@ -134,8 +150,15 @@ public class GameServersService(
             else
             {
                 var content = await response.Content.ReadAsStringAsync();
-                gameServer.Status = JsonSerializer.Deserialize<GameServerStatus>(content, DefaultJsonSerializerOptions.Options);
-                gameServer.Status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(gameServer.Status.Uptime)).ToString();
+                var polled = JsonSerializer.Deserialize<GameServerStatus>(content, DefaultJsonSerializerOptions.Options);
+                gameServer.Status.Map = polled.Map;
+                gameServer.Status.Mission = polled.Mission;
+                gameServer.Status.Players = polled.Players;
+                gameServer.Status.Uptime = polled.Uptime;
+                gameServer.Status.EntityCount = polled.EntityCount;
+                gameServer.Status.AiCount = polled.AiCount;
+                gameServer.Status.HeadlessClientCount = polled.HeadlessClientCount;
+                gameServer.Status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(polled.Uptime)).ToString();
                 gameServer.Status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
                 gameServer.Status.Running = true;
                 gameServer.Status.Launching = false;
@@ -158,7 +181,19 @@ public class GameServersService(
         // If we have recent event-based status cached, use it as it's more up-to-date than HTTP polling
         if (StatusCache.TryGetValue(gameServer.Id, out var cachedStatus) && cachedStatus.LastEventReceived > DateTime.UtcNow.AddSeconds(-30))
         {
-            gameServer.Status = cachedStatus;
+            gameServer.Status.Map = cachedStatus.Map;
+            gameServer.Status.Mission = cachedStatus.Mission;
+            gameServer.Status.Players = cachedStatus.Players;
+            gameServer.Status.Uptime = cachedStatus.Uptime;
+            gameServer.Status.ParsedUptime = cachedStatus.ParsedUptime;
+            gameServer.Status.StartedAt = cachedStatus.StartedAt;
+            gameServer.Status.EntityCount = cachedStatus.EntityCount;
+            gameServer.Status.AiCount = cachedStatus.AiCount;
+            gameServer.Status.HeadlessClientCount = cachedStatus.HeadlessClientCount;
+            gameServer.Status.MaxPlayers = cachedStatus.MaxPlayers;
+            gameServer.Status.Running = cachedStatus.Running;
+            gameServer.Status.Launching = cachedStatus.Launching;
+            gameServer.Status.LastEventReceived = cachedStatus.LastEventReceived;
         }
 
         await gameServersContext.Replace(gameServer);
@@ -270,6 +305,8 @@ public class GameServersService(
 
     public async Task KillGameServer(DomainGameServer gameServer)
     {
+        var activeSessionId = gameServer.Status.CurrentMissionSessionId;
+
         if (gameServer.ProcessId is not null)
         {
             var process = processUtilities.FindProcessById(gameServer.ProcessId.Value);
@@ -283,6 +320,11 @@ public class GameServersService(
                 catch (TimeoutException) { }
                 catch (InvalidOperationException) { }
             }
+        }
+
+        if (!string.IsNullOrEmpty(activeSessionId))
+        {
+            await TryFinaliseKilledSessionAsync(activeSessionId);
         }
 
         gameServer.ProcessId = null;
@@ -334,6 +376,15 @@ public class GameServersService(
         );
 
         var gameServers = gameServersContext.Get().ToList();
+
+        foreach (var gameServer in gameServers)
+        {
+            if (!string.IsNullOrEmpty(gameServer.Status.CurrentMissionSessionId))
+            {
+                await TryFinaliseKilledSessionAsync(gameServer.Status.CurrentMissionSessionId);
+            }
+        }
+
         foreach (var gameServer in gameServers)
         {
             gameServer.ProcessId = null;
@@ -423,8 +474,8 @@ public class GameServersService(
             {
                 case "server_status":       await HandleServerStatusEvent(gameServerEvent.ApiPort, gameServerEvent.Data); break;
                 case "mission_stats":       await HandleMissionStatsEvent(gameServerEvent.Data); break;
-                case "mission_started":     await HandleMissionLifecycleEvent(gameServerEvent.Data, isStart: true); break;
-                case "mission_ended":       await HandleMissionLifecycleEvent(gameServerEvent.Data, isStart: false); break;
+                case "mission_started":     await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, true); break;
+                case "mission_ended":       await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, false); break;
                 case "player_connected":    await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: true); break;
                 case "player_disconnected": await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: false); break;
                 case "performance":         await HandlePerformanceEvent(gameServerEvent.Data); break;
@@ -475,6 +526,12 @@ public class GameServersService(
                 catch (TimeoutException) { }
                 catch (InvalidOperationException) { }
             }
+        }
+
+        var activeSessionId = gameServer.Status.CurrentMissionSessionId;
+        if (!string.IsNullOrEmpty(activeSessionId))
+        {
+            await TryFinaliseKilledSessionAsync(activeSessionId);
         }
 
         gameServer.ProcessId = null;
@@ -563,12 +620,20 @@ public class GameServersService(
         );
     }
 
-    private async Task HandleMissionLifecycleEvent(Dictionary<string, object> data, bool isStart)
+    private async Task HandleMissionLifecycleEvent(int apiPort, Dictionary<string, object> data, bool isStart)
     {
         var sessionId = data.TryGetValue("sessionId", out var sessionIdValue) ? sessionIdValue.ToString() : string.Empty;
         if (string.IsNullOrEmpty(sessionId))
         {
             return;
+        }
+
+        // Update server session tracking first — this must succeed regardless of stats processing
+        var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort);
+        if (gameServer is not null)
+        {
+            var newSessionId = isStart ? sessionId : null;
+            await gameServersContext.Update(gameServer.Id, Builders<DomainGameServer>.Update.Set(x => x.Status.CurrentMissionSessionId, newSessionId));
         }
 
         var now = DateTime.UtcNow;
@@ -586,9 +651,7 @@ public class GameServersService(
         }
         else
         {
-            var duration = data.TryGetValue("duration", out var durationValue) && double.TryParse(durationValue.ToString(), out var durationSeconds)
-                ? durationSeconds
-                : 0;
+            var duration = data.TryGetValue("duration", out var durationValue) && double.TryParse(durationValue?.ToString(), out var parsed) ? parsed : 0;
             await missionStatsService.HandleMissionEndedAsync(sessionId, duration, now);
         }
     }
@@ -701,6 +764,18 @@ public class GameServersService(
             {
                 await gameServersContext.Update(server.Id, x => x.Order, server.Order + 1);
             }
+        }
+    }
+
+    private async Task TryFinaliseKilledSessionAsync(string sessionId)
+    {
+        try
+        {
+            await TryFinaliseKilledSessionAsync(sessionId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"Failed to finalise killed session '{sessionId}', proceeding with server cleanup", ex);
         }
     }
 }

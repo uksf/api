@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MassTransit;
+using MongoDB.Driver;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.ArmaServer.Consumers;
@@ -34,6 +35,7 @@ public class GameServersServiceTests
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<IPublishEndpoint> _mockPublishEndpoint = new();
     private readonly Mock<IPersistenceSessionsService> _mockPersistenceSessionsService = new();
+    private readonly Mock<IMissionStatsService> _mockMissionStatsService = new();
 
     private readonly GameServersService _subject;
 
@@ -54,7 +56,7 @@ public class GameServersServiceTests
             _mockLogger.Object,
             _mockPublishEndpoint.Object,
             _mockPersistenceSessionsService.Object,
-            new Mock<IMissionStatsService>().Object,
+            _mockMissionStatsService.Object,
             new Mock<IPerformanceService>().Object
         );
     }
@@ -928,6 +930,158 @@ public class GameServersServiceTests
         gameServer.HeadlessClientProcessIds.Should().BeEmpty();
         _mockGameServersContext.Verify(x => x.Replace(gameServer), Times.Once);
         _mockHttpClientFactory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_MissionStarted_ShouldSetCurrentMissionSessionId()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1",
+            ApiPort = 2400,
+            Status = new GameServerStatus { Running = true }
+        };
+        _mockGameServersContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
+
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "mission_started",
+            ApiPort = 2400,
+            Data = new Dictionary<string, object>
+            {
+                ["sessionId"] = "session-abc",
+                ["mission"] = "co40_op_eagle",
+                ["map"] = "Altis"
+            }
+        };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockGameServersContext.Verify(x => x.Update("s1", It.IsAny<UpdateDefinition<DomainGameServer>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleGameServerEvent_MissionEnded_ShouldClearCurrentMissionSessionId()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1",
+            ApiPort = 2400,
+            Status = new GameServerStatus { Running = true, CurrentMissionSessionId = "session-abc" }
+        };
+        _mockGameServersContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
+
+        var gameServerEvent = new GameServerEvent
+        {
+            Type = "mission_ended",
+            ApiPort = 2400,
+            Data = new Dictionary<string, object> { ["sessionId"] = "session-abc", ["duration"] = 1800.0 }
+        };
+
+        await _subject.HandleGameServerEvent(gameServerEvent);
+
+        _mockGameServersContext.Verify(x => x.Update("s1", It.IsAny<UpdateDefinition<DomainGameServer>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task KillGameServer_WhenActiveSession_ShouldFinaliseBeforeReset()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "s1",
+            ProcessId = 1234,
+            HeadlessClientProcessIds = [],
+            Status = new GameServerStatus { Running = true, CurrentMissionSessionId = "session-abc" }
+        };
+
+        _mockProcessUtilities.Setup(x => x.FindProcessById(1234)).Returns((System.Diagnostics.Process)null);
+
+        await _subject.KillGameServer(gameServer);
+
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("session-abc"), Times.Once);
+        gameServer.Status.CurrentMissionSessionId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task KillGameServer_WhenNoActiveSession_ShouldNotCallFinalise()
+    {
+        var gameServer = new DomainGameServer
+        {
+            Id = "s1",
+            ProcessId = 1234,
+            HeadlessClientProcessIds = [],
+            Status = new GameServerStatus { Running = true }
+        };
+
+        _mockProcessUtilities.Setup(x => x.FindProcessById(1234)).Returns((System.Diagnostics.Process)null);
+
+        await _subject.KillGameServer(gameServer);
+
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task KillAllArmaProcesses_ShouldFinaliseAllActiveSessions()
+    {
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns([]);
+
+        var server1 = new DomainGameServer { Id = "s1", Status = new GameServerStatus { CurrentMissionSessionId = "session-1" } };
+        var server2 = new DomainGameServer { Id = "s2" };
+        var server3 = new DomainGameServer { Id = "s3", Status = new GameServerStatus { CurrentMissionSessionId = "session-3" } };
+        _mockGameServersContext.Setup(x => x.Get())
+        .Returns(
+            new List<DomainGameServer>
+            {
+                server1,
+                server2,
+                server3
+            }
+        );
+
+        await _subject.KillAllArmaProcesses();
+
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("session-1"), Times.Once);
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("session-3"), Times.Once);
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync(It.IsAny<string>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task GetAllGameServerStatuses_WhenNoProcesses_ShouldFinaliseActiveSessions()
+    {
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns([]);
+
+        var server1 = new DomainGameServer { Id = "s1", Status = new GameServerStatus { CurrentMissionSessionId = "session-1" } };
+        var server2 = new DomainGameServer { Id = "s2", Status = new GameServerStatus() };
+        _mockGameServersContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { server1, server2 });
+
+        await _subject.GetAllGameServerStatuses();
+
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("session-1"), Times.Once);
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync(It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllGameServerStatuses_WhenNoMatchingProcess_WithActiveSession_ShouldFinalise()
+    {
+        var gameServers = new List<DomainGameServer>
+        {
+            new()
+            {
+                Id = "server-1",
+                Port = 2302,
+                ApiPort = 2303,
+                Status = new GameServerStatus { Running = true, CurrentMissionSessionId = "session-xyz" }
+            }
+        };
+        _mockGameServersContext.Setup(x => x.Get()).Returns(gameServers);
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcesses()).Returns(new System.Diagnostics.Process[] { null! });
+        _mockGameServerHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([]);
+
+        await _subject.GetAllGameServerStatuses();
+
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("session-xyz"), Times.Once);
     }
 }
 

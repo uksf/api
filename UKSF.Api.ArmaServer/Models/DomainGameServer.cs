@@ -61,4 +61,5 @@ public class GameServerStatus
     public int HeadlessClientCount { get; set; }
     public DateTime LastEventReceived { get; set; }
     public DateTime? StartedAt { get; set; }
+    public string CurrentMissionSessionId { get; set; }
 }

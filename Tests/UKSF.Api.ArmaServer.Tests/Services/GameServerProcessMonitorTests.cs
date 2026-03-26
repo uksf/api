@@ -25,6 +25,7 @@ public class GameServerProcessMonitorTests
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<IGameServersContext> _mockContext = new();
     private readonly Mock<IGameServersService> _mockService = new();
+    private readonly Mock<IMissionStatsService> _mockMissionStatsService = new();
     private readonly Mock<IServersClient> _mockServersClient;
 
     public GameServerProcessMonitorTests()
@@ -38,6 +39,7 @@ public class GameServerProcessMonitorTests
         var mockProvider = new Mock<IServiceProvider>();
         mockProvider.Setup(x => x.GetService(typeof(IGameServersContext))).Returns(_mockContext.Object);
         mockProvider.Setup(x => x.GetService(typeof(IGameServersService))).Returns(_mockService.Object);
+        mockProvider.Setup(x => x.GetService(typeof(IMissionStatsService))).Returns(_mockMissionStatsService.Object);
         mockScope.Setup(x => x.ServiceProvider).Returns(mockProvider.Object);
         _mockScopeFactory.Setup(x => x.CreateScope()).Returns(mockScope.Object);
     }
@@ -153,6 +155,66 @@ public class GameServerProcessMonitorTests
         // Loop should have stopped — calling EnsureRunning again should not throw
         _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer>());
         monitor.EnsureRunning();
+    }
+
+    [Fact]
+    public async Task Tick_WhenProcessGone_WithActiveSession_ShouldFinaliseSession()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1",
+            Name = "Test",
+            ProcessId = 1234,
+            HeadlessClientProcessIds = [],
+            Status = new GameServerStatus { Running = true, CurrentMissionSessionId = "session-abc" }
+        };
+
+        _mockProcessUtilities.Setup(x => x.FindProcessById(1234)).Returns((Process)null);
+        var callCount = 0;
+        _mockContext.Setup(x => x.Get())
+                    .Returns(() =>
+                        {
+                            callCount++;
+                            return callCount == 1 ? new List<DomainGameServer> { server } : new List<DomainGameServer>();
+                        }
+                    );
+        _mockService.Setup(x => x.GetGameInstanceCount()).Returns(0);
+
+        var monitor = CreateMonitor();
+        monitor.EnsureRunning();
+        await Task.Delay(1000);
+
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("session-abc"), Times.Once);
+    }
+
+    [Fact]
+    public async Task Tick_WhenProcessGone_WithNoActiveSession_ShouldNotCallFinalise()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1",
+            Name = "Test",
+            ProcessId = 1234,
+            HeadlessClientProcessIds = [],
+            Status = new GameServerStatus { Running = true }
+        };
+
+        _mockProcessUtilities.Setup(x => x.FindProcessById(1234)).Returns((Process)null);
+        var callCount = 0;
+        _mockContext.Setup(x => x.Get())
+                    .Returns(() =>
+                        {
+                            callCount++;
+                            return callCount == 1 ? new List<DomainGameServer> { server } : new List<DomainGameServer>();
+                        }
+                    );
+        _mockService.Setup(x => x.GetGameInstanceCount()).Returns(0);
+
+        var monitor = CreateMonitor();
+        monitor.EnsureRunning();
+        await Task.Delay(1000);
+
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync(It.IsAny<string>()), Times.Never);
     }
 
     private GameServerProcessMonitor CreateMonitor()

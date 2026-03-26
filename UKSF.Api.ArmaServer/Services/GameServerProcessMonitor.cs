@@ -1,7 +1,4 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Signalr.Clients;
@@ -125,6 +122,8 @@ public class GameServerProcessMonitor(
 
     private async Task HandleProcessGone(DomainGameServer server)
     {
+        var activeSessionId = server.Status.CurrentMissionSessionId;
+
         foreach (var hcProcessId in server.HeadlessClientProcessIds)
         {
             var hcProcess = processUtilities.FindProcessById(hcProcessId);
@@ -140,12 +139,19 @@ public class GameServerProcessMonitor(
             }
         }
 
+        using var scope = serviceScopeFactory.CreateScope();
+
+        if (!string.IsNullOrEmpty(activeSessionId))
+        {
+            var missionStatsService = scope.ServiceProvider.GetRequiredService<IMissionStatsService>();
+            await missionStatsService.FinaliseKilledSessionAsync(activeSessionId);
+        }
+
         server.ProcessId = null;
         server.HeadlessClientProcessIds.Clear();
         server.LaunchedBy = null;
         server.Status = new GameServerStatus();
 
-        using var scope = serviceScopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<IGameServersContext>();
         await context.Replace(server);
 
