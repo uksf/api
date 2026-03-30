@@ -58,7 +58,7 @@ public static class ApiModpackExtensions
                            .AddSingleton<IBuildProcessTracker, BuildProcessTracker>()
                            .AddTransient<IWorkshopModsService, WorkshopModsService>()
                            .AddSingleton<ISteamApiService, SteamApiService>()
-                           .AddSingleton<IWorkshopModsProcessingService, WorkshopModsProcessingService>()
+                           .AddTransient<IWorkshopModsProcessingService, WorkshopModsProcessingService>()
                            .AddTransient<IInstallOperation, InstallOperation>()
                            .AddTransient<IUpdateOperation, UpdateOperation>()
                            .AddTransient<IUninstallOperation, UninstallOperation>();

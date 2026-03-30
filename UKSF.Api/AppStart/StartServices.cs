@@ -54,7 +54,10 @@ public static class StartServices
 
             // Mark running builds as cancelled & run queued builds
             serviceProvider.GetRequiredService<IBuildsService>().CancelInterruptedBuilds().Wait(TimeSpan.FromSeconds(30));
-            serviceProvider.GetRequiredService<IModpackService>().RunQueuedBuilds();
+            using (var scope = serviceProvider.CreateScope())
+            {
+                scope.ServiceProvider.GetRequiredService<IModpackService>().RunQueuedBuilds();
+            }
         }
 
         public void StopUksfServices()
