@@ -1,10 +1,12 @@
 using System.Linq.Expressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Domain;
+using SortDirection = UKSF.Api.Core.Models.SortDirection;
 
 namespace UKSF.Api.Controllers;
 
@@ -24,11 +26,13 @@ public class LoggingController(
         [FromQuery] int pageSize,
         [FromQuery] SortDirection sortDirection,
         [FromQuery] string sortField,
-        [FromQuery] string filter
+        [FromQuery] string filter,
+        [FromQuery] string levels
     )
     {
         var filterProperties = GetBasicLogFilterProperties();
-        return logContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
+        var additionalFilter = ParseEnumFilter<DomainBasicLog, UksfLogLevel>(levels, x => x.Level);
+        return logContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter, additionalFilter);
     }
 
     [HttpGet("error")]
@@ -77,11 +81,13 @@ public class LoggingController(
         [FromQuery] int pageSize,
         [FromQuery] SortDirection sortDirection,
         [FromQuery] string sortField,
-        [FromQuery] string filter
+        [FromQuery] string filter,
+        [FromQuery] string eventTypes
     )
     {
         var filterProperties = GetDiscordLogFilterProperties();
-        return discordLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter);
+        var additionalFilter = ParseEnumFilter<DiscordLog, DiscordUserEventType>(eventTypes, x => x.DiscordUserEventType);
+        return discordLogContext.GetPaged(page, pageSize, sortDirection, sortField, filterProperties, filter, additionalFilter);
     }
 
     private static IEnumerable<Expression<Func<DomainBasicLog, object>>> GetBasicLogFilterProperties()
@@ -125,5 +131,22 @@ public class LoggingController(
             x => x.ChannelName,
             x => x.Name
         };
+    }
+
+    private static FilterDefinition<TLog> ParseEnumFilter<TLog, TEnum>(string commaSeparatedValues, Expression<Func<TLog, TEnum>> fieldSelector)
+        where TEnum : struct, Enum
+    {
+        if (string.IsNullOrWhiteSpace(commaSeparatedValues))
+        {
+            return null;
+        }
+
+        var values = commaSeparatedValues.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                                         .Select(v => Enum.TryParse<TEnum>(v, ignoreCase: true, out var parsed) ? parsed : (TEnum?)null)
+                                         .Where(v => v.HasValue)
+                                         .Select(v => v.Value)
+                                         .ToList();
+
+        return values.Count == 0 ? null : Builders<TLog>.Filter.In(fieldSelector, values);
     }
 }

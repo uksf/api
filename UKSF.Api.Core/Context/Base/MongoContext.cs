@@ -21,6 +21,16 @@ public interface IMongoContext<T> where T : MongoObject
         string filter
     );
 
+    PagedResult<T> GetPaged(
+        int page,
+        int pageSize,
+        SortDirection sortDirection,
+        string sortField,
+        IEnumerable<Expression<Func<T, object>>> filterPropertySelectors,
+        string filter,
+        FilterDefinition<T> additionalFilter
+    );
+
     PagedResult<TOut> GetPaged<TOut>(
         int page,
         int pageSize,

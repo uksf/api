@@ -44,6 +44,32 @@ public abstract class MongoContextBase<T>(IMongoCollectionFactory mongoCollectio
         return GetPaged(page, pageSize, collection => collection.Aggregate(), sortDefinition, filterDefinition);
     }
 
+    public virtual PagedResult<T> GetPaged(
+        int page,
+        int pageSize,
+        SortDirection sortDirection,
+        string sortField,
+        IEnumerable<Expression<Func<T, object>>> filterPropertySelectors,
+        string filter,
+        FilterDefinition<T> additionalFilter
+    )
+    {
+        var sortDefinition = sortDirection == SortDirection.Ascending ? Builders<T>.Sort.Ascending(sortField) : Builders<T>.Sort.Descending(sortField);
+        var textFilter = string.IsNullOrEmpty(filter)
+            ? Builders<T>.Filter.Empty
+            : Builders<T>.Filter.Or(
+                filterPropertySelectors.Select(x => Builders<T>.Filter.Regex(
+                                                   x,
+                                                   new BsonRegularExpression(new Regex(Regex.Escape(filter), RegexOptions.IgnoreCase))
+                                               )
+                )
+            );
+
+        var combinedFilter = additionalFilter != null ? Builders<T>.Filter.And(textFilter, additionalFilter) : textFilter;
+
+        return GetPaged(page, pageSize, collection => collection.Aggregate(), sortDefinition, combinedFilter);
+    }
+
     public virtual PagedResult<TOut> GetPaged<TOut>(
         int page,
         int pageSize,
