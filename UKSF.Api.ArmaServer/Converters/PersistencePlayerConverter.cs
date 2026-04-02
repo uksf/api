@@ -8,40 +8,40 @@ public static class PersistencePlayerConverter
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    public static PlayerRedeployData FromArray(List<object> raw)
+    public static PlayerRedeployData FromHashmap(Dictionary<string, object> raw)
     {
         return new PlayerRedeployData
         {
-            Position = ToList(raw[0]).Select(ToDouble).ToArray(),
-            VehicleState = ParseVehicleState(ToList(raw[1])),
-            Direction = ToDouble(raw[2]),
-            Animation = ToSafeString(raw[3]),
-            Loadout = PersistenceLoadoutConverter.FromArray(ToList(raw[4])),
-            Damage = ToDouble(raw[5]),
-            AceMedical = ParseAceMedical(raw[6]),
-            Earplugs = ToBool(raw[7]),
-            AttachedItems = ToList(raw[8]).Select(ToSafeString).ToArray(),
-            Radios = ToList(raw[9]).Select(ParseRadioState).ToList(),
-            DiveState = ParseDiveState(ToList(raw[10]))
+            Position = ToList(raw.GetValueOrDefault("position")).Select(ToDouble).ToArray(),
+            VehicleState = ParseVehicleState(ToList(raw.GetValueOrDefault("vehicleState"))),
+            Direction = ToDouble(raw.GetValueOrDefault("direction") ?? 0.0),
+            Animation = ToSafeString(raw.GetValueOrDefault("animation")),
+            Loadout = PersistenceLoadoutConverter.FromArray(ToList(raw.GetValueOrDefault("loadout"))),
+            Damage = ToDouble(raw.GetValueOrDefault("damage") ?? 0.0),
+            AceMedical = ParseAceMedical(raw.GetValueOrDefault("aceMedical")),
+            Earplugs = ToBool(raw.GetValueOrDefault("earplugs")),
+            AttachedItems = ToList(raw.GetValueOrDefault("attachedItems")).Select(ToSafeString).ToArray(),
+            Radios = ToList(raw.GetValueOrDefault("radios")).Select(ParseRadioState).ToList(),
+            DiveState = ParseDiveState(ToList(raw.GetValueOrDefault("diveState")))
         };
     }
 
-    public static List<object> ToArray(PlayerRedeployData player)
+    public static Dictionary<string, object> ToHashmap(PlayerRedeployData player)
     {
-        return
-        [
-            player.Position.Cast<object>().ToList(),
-            SerializeVehicleState(player.VehicleState),
-            player.Direction,
-            player.Animation,
-            PersistenceLoadoutConverter.ToArray(player.Loadout),
-            player.Damage,
-            JsonSerializer.Serialize(player.AceMedical, JsonOptions),
-            player.Earplugs,
-            player.AttachedItems.Cast<object>().ToList(),
-            player.Radios.Select(SerializeRadioState).Cast<object>().ToList(),
-            SerializeDiveState(player.DiveState)
-        ];
+        return new Dictionary<string, object>
+        {
+            ["position"] = player.Position.Cast<object>().ToList(),
+            ["vehicleState"] = SerializeVehicleState(player.VehicleState),
+            ["direction"] = player.Direction,
+            ["animation"] = player.Animation,
+            ["loadout"] = PersistenceLoadoutConverter.ToArray(player.Loadout),
+            ["damage"] = player.Damage,
+            ["aceMedical"] = JsonSerializer.Serialize(player.AceMedical, JsonOptions),
+            ["earplugs"] = player.Earplugs,
+            ["attachedItems"] = player.AttachedItems.Cast<object>().ToList(),
+            ["radios"] = player.Radios.Select(SerializeRadioState).Cast<object>().ToList(),
+            ["diveState"] = SerializeDiveState(player.DiveState)
+        };
     }
 
     private static PlayerVehicleState ParseVehicleState(List<object> raw)

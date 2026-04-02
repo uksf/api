@@ -63,7 +63,7 @@ public class PersistenceConverterTests
                 "FOB Alpha"
             }
         };
-        raw["76561198068932442"] = BuildMinimalPlayerArray();
+        raw["76561198068932442"] = BuildMinimalPlayerHashmap();
         raw["uksf_safehouses_state"] = new List<object>
         {
             new List<object>(),
@@ -87,7 +87,7 @@ public class PersistenceConverterTests
     public void FromRawNamespace_ShouldDetectPlayerUids()
     {
         var raw = BuildMinimalNamespace();
-        raw["76561198068932442"] = BuildMinimalPlayerArray();
+        raw["76561198068932442"] = BuildMinimalPlayerHashmap();
         raw["uksf_arearating_ratingAreas"] = new List<object>();
 
         var result = PersistenceConverter.FromRawNamespace(raw);
@@ -278,25 +278,24 @@ public class PersistenceConverterTests
             ["customName"] = ""
         };
 
-    private static List<object> BuildMinimalPlayerArray()
-    {
-        return
-        [
-            new List<object>
+    private static Dictionary<string, object> BuildMinimalPlayerHashmap() =>
+        new()
+        {
+            ["position"] = new List<object>
             {
                 0.0,
                 0.0,
                 0.0
-            }, // 0: position
-            new List<object>
+            },
+            ["vehicleState"] = new List<object>
             {
                 "",
                 "",
                 -1L
-            }, // 1: vehicleState
-            0.0, // 2: direction
-            "", // 3: animation
-            new List<object> // 4: loadout
+            },
+            ["direction"] = 0.0,
+            ["animation"] = "",
+            ["loadout"] = new List<object>
             {
                 new List<object>(),
                 new List<object>(),
@@ -317,14 +316,13 @@ public class PersistenceConverterTests
                     ""
                 }
             },
-            0.0, // 5: damage
-            "{}", // 6: aceMedical
-            false, // 7: earplugs
-            new List<object>(), // 8: attachedItems
-            new List<object>(), // 9: radios
-            new List<object> { false } // 10: diveState
-        ];
-    }
+            ["damage"] = 0.0,
+            ["aceMedical"] = "{}",
+            ["earplugs"] = false,
+            ["attachedItems"] = new List<object>(),
+            ["radios"] = new List<object>(),
+            ["diveState"] = new List<object> { false }
+        };
 
     [Fact]
     public void FromRawNamespace_WithRealObjectData_ShouldRoundTrip()
@@ -732,23 +730,23 @@ public class PersistenceConverterTests
             ["customName"] = ""
         };
 
-        var playerArray = new List<object>
+        var playerHashmap = new Dictionary<string, object>
         {
-            new List<object>
+            ["position"] = new List<object>
             {
                 11500.0,
                 2400.0,
                 25.0
             },
-            new List<object>
+            ["vehicleState"] = new List<object>
             {
                 "",
                 "",
                 -1L
             },
-            135.5,
-            "amovpercmstpsnonwnondnon",
-            new List<object>
+            ["direction"] = 135.5,
+            ["animation"] = "amovpercmstpsnonwnondnon",
+            ["loadout"] = new List<object>
             {
                 new List<object>
                 {
@@ -778,12 +776,12 @@ public class PersistenceConverterTests
                     ""
                 }
             },
-            0.15,
-            "{}",
-            false,
-            new List<object>(),
-            new List<object>(),
-            new List<object> { false }
+            ["damage"] = 0.15,
+            ["aceMedical"] = "{}",
+            ["earplugs"] = false,
+            ["attachedItems"] = new List<object>(),
+            ["radios"] = new List<object>(),
+            ["diveState"] = new List<object> { false }
         };
 
         var marker = new List<object>
@@ -815,7 +813,7 @@ public class PersistenceConverterTests
                 }
             },
             { "uksf_persistence_mapMarkers", new List<object> { marker } },
-            { "76561198068932442", playerArray },
+            { "76561198068932442", playerHashmap },
             {
                 "uksf_safehouses_state", new List<object>
                 {

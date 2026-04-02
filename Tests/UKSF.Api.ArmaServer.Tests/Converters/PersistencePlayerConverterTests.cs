@@ -9,24 +9,24 @@ namespace UKSF.Api.ArmaServer.Tests.Converters;
 public class PersistencePlayerConverterTests
 {
     [Fact]
-    public void FromArray_WithBasicPlayer_ShouldConvertAllFields()
+    public void FromHashmap_WithBasicPlayer_ShouldConvertAllFields()
     {
-        var array = BuildMinimalPlayerArray();
-        array[0] = new List<object>
+        var hashmap = BuildMinimalPlayerHashmap();
+        hashmap["position"] = new List<object>
         {
             100.0,
             200.0,
             30.0
         };
-        array[1] = new List<object>
+        hashmap["vehicleState"] = new List<object>
         {
             "",
             "",
             -1L
         };
-        array[2] = 45.0;
-        array[3] = "amovpercmstpsnonwnondnon";
-        array[4] = new List<object>
+        hashmap["direction"] = 45.0;
+        hashmap["animation"] = "amovpercmstpsnonwnondnon";
+        hashmap["loadout"] = new List<object>
         {
             new List<object>
             {
@@ -56,11 +56,11 @@ public class PersistencePlayerConverterTests
                 "NVGoggles"
             }
         };
-        array[5] = 0.25;
-        array[6] = "{\"ace_medical_bloodVolume\": 6.0, \"ace_medical_heartRate\": 80}";
-        array[7] = true;
-        array[8] = new List<object> { "ACE_IR_Strobe_Item" };
-        array[9] = new List<object>
+        hashmap["damage"] = 0.25;
+        hashmap["aceMedical"] = "{\"ace_medical_bloodVolume\": 6.0, \"ace_medical_heartRate\": 80}";
+        hashmap["earplugs"] = true;
+        hashmap["attachedItems"] = new List<object> { "ACE_IR_Strobe_Item" };
+        hashmap["radios"] = new List<object>
         {
             new List<object>
             {
@@ -71,9 +71,9 @@ public class PersistencePlayerConverterTests
                 0L
             }
         };
-        array[10] = new List<object> { false };
+        hashmap["diveState"] = new List<object> { false };
 
-        var result = PersistencePlayerConverter.FromArray(array);
+        var result = PersistencePlayerConverter.FromHashmap(hashmap);
 
         result.Position.Should().BeEquivalentTo(new[] { 100.0, 200.0, 30.0 });
         result.VehicleState.VehicleId.Should().BeEmpty();
@@ -111,17 +111,17 @@ public class PersistencePlayerConverterTests
     }
 
     [Fact]
-    public void FromArray_WithTurretVehicleState_ShouldHandleIntArrayIndex()
+    public void FromHashmap_WithTurretVehicleState_ShouldHandleIntArrayIndex()
     {
-        var array = BuildMinimalPlayerArray();
-        array[1] = new List<object>
+        var hashmap = BuildMinimalPlayerHashmap();
+        hashmap["vehicleState"] = new List<object>
         {
             "veh_123",
             "turret",
             new List<object> { 0L, 1L }
         };
 
-        var result = PersistencePlayerConverter.FromArray(array);
+        var result = PersistencePlayerConverter.FromHashmap(hashmap);
 
         result.VehicleState.VehicleId.Should().Be("veh_123");
         result.VehicleState.Role.Should().Be("turret");
@@ -129,17 +129,17 @@ public class PersistencePlayerConverterTests
     }
 
     [Fact]
-    public void FromArray_WithCargoVehicleState_ShouldHandleIntIndex()
+    public void FromHashmap_WithCargoVehicleState_ShouldHandleIntIndex()
     {
-        var array = BuildMinimalPlayerArray();
-        array[1] = new List<object>
+        var hashmap = BuildMinimalPlayerHashmap();
+        hashmap["vehicleState"] = new List<object>
         {
             "veh_456",
             "cargo",
             3L
         };
 
-        var result = PersistencePlayerConverter.FromArray(array);
+        var result = PersistencePlayerConverter.FromHashmap(hashmap);
 
         result.VehicleState.VehicleId.Should().Be("veh_456");
         result.VehicleState.Role.Should().Be("cargo");
@@ -147,18 +147,18 @@ public class PersistencePlayerConverterTests
     }
 
     [Fact]
-    public void FromArray_WithDiveState33Elements_ShouldCaptureFullState()
+    public void FromHashmap_WithDiveState33Elements_ShouldCaptureFullState()
     {
-        var array = BuildMinimalPlayerArray();
+        var hashmap = BuildMinimalPlayerHashmap();
         var diveState = new List<object> { true };
         for (var i = 1; i <= 32; i++)
         {
             diveState.Add((double)i * 0.5);
         }
 
-        array[10] = diveState;
+        hashmap["diveState"] = diveState;
 
-        var result = PersistencePlayerConverter.FromArray(array);
+        var result = PersistencePlayerConverter.FromHashmap(hashmap);
 
         result.DiveState.IsDiving.Should().BeTrue();
         result.DiveState.RawData.Should().HaveCount(32);
@@ -167,10 +167,10 @@ public class PersistencePlayerConverterTests
     }
 
     [Fact]
-    public void FromArray_WithEmptyWeaponSlots_ShouldNotError()
+    public void FromHashmap_WithEmptyWeaponSlots_ShouldNotError()
     {
-        var array = BuildMinimalPlayerArray();
-        array[4] = new List<object>
+        var hashmap = BuildMinimalPlayerHashmap();
+        hashmap["loadout"] = new List<object>
         {
             new List<object>(),
             new List<object>(),
@@ -192,19 +192,19 @@ public class PersistencePlayerConverterTests
             }
         };
 
-        var act = () => PersistencePlayerConverter.FromArray(array);
+        var act = () => PersistencePlayerConverter.FromHashmap(hashmap);
 
         act.Should().NotThrow();
-        var result = PersistencePlayerConverter.FromArray(array);
+        var result = PersistencePlayerConverter.FromHashmap(hashmap);
         result.Loadout.PrimaryWeapon.Weapon.Should().BeEmpty();
         result.Loadout.SecondaryWeapon.Weapon.Should().BeEmpty();
         result.Loadout.Handgun.Weapon.Should().BeEmpty();
     }
 
     [Fact]
-    public void FromArray_WithContainerItemTypes_ShouldConvertAllFourTypes()
+    public void FromHashmap_WithContainerItemTypes_ShouldConvertAllFourTypes()
     {
-        var array = BuildMinimalPlayerArray();
+        var hashmap = BuildMinimalPlayerHashmap();
 
         var weaponInContainer = new List<object>
         {
@@ -221,7 +221,7 @@ public class PersistencePlayerConverterTests
             1L
         };
 
-        array[4] = new List<object>
+        hashmap["loadout"] = new List<object>
         {
             new List<object>(),
             new List<object>(),
@@ -258,7 +258,7 @@ public class PersistencePlayerConverterTests
             }
         };
 
-        var result = PersistencePlayerConverter.FromArray(array);
+        var result = PersistencePlayerConverter.FromHashmap(hashmap);
 
         var items = result.Loadout.Uniform.Items;
         items.Should().HaveCount(4);
@@ -286,12 +286,12 @@ public class PersistencePlayerConverterTests
     }
 
     [Fact]
-    public void FromArray_WithAceMedicalJsonString_ShouldPreserveForModel()
+    public void FromHashmap_WithAceMedicalJsonString_ShouldPreserveForModel()
     {
-        var array = BuildMinimalPlayerArray();
-        array[6] = "{\"ace_medical_bloodVolume\": 5.2, \"ace_medical_heartRate\": 90, \"ace_medical_openWounds\": {}, \"ace_medical_pain\": 0.3}";
+        var hashmap = BuildMinimalPlayerHashmap();
+        hashmap["aceMedical"] = "{\"ace_medical_bloodVolume\": 5.2, \"ace_medical_heartRate\": 90, \"ace_medical_openWounds\": {}, \"ace_medical_pain\": 0.3}";
 
-        var result = PersistencePlayerConverter.FromArray(array);
+        var result = PersistencePlayerConverter.FromHashmap(hashmap);
 
         result.AceMedical.Should().NotBeNull();
         result.AceMedical.BloodVolume.Should().Be(5.2);
@@ -300,7 +300,7 @@ public class PersistencePlayerConverterTests
     }
 
     [Fact]
-    public void ToArray_RoundTrip_ShouldPreserveAllFields()
+    public void ToHashmap_RoundTrip_ShouldPreserveAllFields()
     {
         var original = new PlayerRedeployData
         {
@@ -363,8 +363,8 @@ public class PersistencePlayerConverterTests
             DiveState = new PlayerDiveState { IsDiving = false, RawData = [] }
         };
 
-        var array = PersistencePlayerConverter.ToArray(original);
-        var roundTripped = PersistencePlayerConverter.FromArray(array);
+        var hashmap = PersistencePlayerConverter.ToHashmap(original);
+        var roundTripped = PersistencePlayerConverter.FromHashmap(hashmap);
 
         roundTripped.Position.Should().BeEquivalentTo(original.Position);
         roundTripped.VehicleState.VehicleId.Should().Be(original.VehicleState.VehicleId);
@@ -395,25 +395,69 @@ public class PersistencePlayerConverterTests
         roundTripped.DiveState.IsDiving.Should().Be(original.DiveState.IsDiving);
     }
 
-    private static List<object> BuildMinimalPlayerArray()
+    [Fact]
+    public void ToHashmap_ShouldProduceCorrectKeys()
     {
-        return
-        [
-            new List<object>
+        var player = new PlayerRedeployData
+        {
+            Position = [0.0, 0.0, 0.0],
+            VehicleState = new PlayerVehicleState
+            {
+                VehicleId = "",
+                Role = "",
+                Index = -1
+            },
+            Direction = 0.0,
+            Animation = "",
+            Loadout = new ArmaLoadout(),
+            Damage = 0.0,
+            AceMedical = new AceMedicalState(),
+            Earplugs = false,
+            AttachedItems = [],
+            Radios = [],
+            DiveState = new PlayerDiveState { IsDiving = false, RawData = [] }
+        };
+
+        var result = PersistencePlayerConverter.ToHashmap(player);
+
+        result.Should().HaveCount(11);
+        result.Keys.Should()
+              .BeEquivalentTo(
+                  new[]
+                  {
+                      "position",
+                      "vehicleState",
+                      "direction",
+                      "animation",
+                      "loadout",
+                      "damage",
+                      "aceMedical",
+                      "earplugs",
+                      "attachedItems",
+                      "radios",
+                      "diveState"
+                  }
+              );
+    }
+
+    private static Dictionary<string, object> BuildMinimalPlayerHashmap() =>
+        new()
+        {
+            ["position"] = new List<object>
             {
                 0.0,
                 0.0,
                 0.0
-            }, // 0: position
-            new List<object>
+            },
+            ["vehicleState"] = new List<object>
             {
                 "",
                 "",
                 -1L
-            }, // 1: vehicleState
-            0.0, // 2: direction
-            "", // 3: animation
-            new List<object> // 4: loadout (10 elements, all empty/default)
+            },
+            ["direction"] = 0.0,
+            ["animation"] = "",
+            ["loadout"] = new List<object>
             {
                 new List<object>(), // primary weapon
                 new List<object>(), // secondary weapon
@@ -434,12 +478,11 @@ public class PersistencePlayerConverterTests
                     ""
                 } // linked items
             },
-            0.0, // 5: damage
-            "{}", // 6: aceMedical (empty JSON)
-            false, // 7: earplugs
-            new List<object>(), // 8: attachedItems
-            new List<object>(), // 9: radios
-            new List<object> { false } // 10: diveState
-        ];
-    }
+            ["damage"] = 0.0,
+            ["aceMedical"] = "{}",
+            ["earplugs"] = false,
+            ["attachedItems"] = new List<object>(),
+            ["radios"] = new List<object>(),
+            ["diveState"] = new List<object> { false }
+        };
 }

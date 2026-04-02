@@ -41,7 +41,7 @@ public static partial class PersistenceConverter
 
             if (uidRegex.IsMatch(kvp.Key))
             {
-                session.Players[kvp.Key] = PersistencePlayerConverter.FromArray(ToList(kvp.Value));
+                session.Players[kvp.Key] = PersistencePlayerConverter.FromHashmap(ToDict(kvp.Value));
             }
             else
             {
@@ -64,7 +64,7 @@ public static partial class PersistenceConverter
 
         foreach (var kvp in session.Players)
         {
-            raw[kvp.Key] = PersistencePlayerConverter.ToArray(kvp.Value);
+            raw[kvp.Key] = PersistencePlayerConverter.ToHashmap(kvp.Value);
         }
 
         foreach (var kvp in session.CustomData)
