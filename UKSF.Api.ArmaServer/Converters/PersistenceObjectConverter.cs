@@ -5,62 +5,58 @@ namespace UKSF.Api.ArmaServer.Converters;
 
 public static class PersistenceObjectConverter
 {
-    public static PersistenceObject FromArray(List<object> raw)
+    public static PersistenceObject FromHashmap(Dictionary<string, object> raw)
     {
-        var obj = new PersistenceObject
+        return new PersistenceObject
         {
-            Id = ToSafeString(raw[0]),
-            Type = ToSafeString(raw[1]),
-            Position = ToList(raw[2]).Select(ToDouble).ToArray(),
-            VectorDirUp = ToList(raw[3]).Select(v => ToList(v).Select(ToDouble).ToArray()).ToArray(),
-            Damage = ToDouble(raw[4]),
-            Fuel = ToDouble(raw[5]),
-            TurretWeapons = ParseTurretWeapons(ToList(raw[6])),
-            TurretMagazines = ParseTurretMagazines(ToList(raw[7])),
-            PylonLoadout = ParsePylonLoadout(ToList(raw[8])),
-            Logistics = ToList(raw[9]).Select(ToDouble).ToArray(),
-            Attached = ParseAttached(ToList(raw[10])),
-            RackChannels = ToList(raw[11]).Select(ToInt).ToArray(),
-            AceCargo = ParseAceCargo(ToList(raw[12])),
-            Inventory = ParseInventory(ToList(raw[13])),
-            AceFortify = ParseAceFortify(ToList(raw[14])),
-            AceMedical = ParseAceMedical(ToList(raw[15])),
-            AceRepair = ParseAceRepair(ToList(raw[16])),
-            CustomName = ToSafeString(raw[17])
+            Id = ToSafeString(raw.GetValueOrDefault("id")),
+            Type = ToSafeString(raw.GetValueOrDefault("type")),
+            Position = ToList(raw.GetValueOrDefault("position")).Select(ToDouble).ToArray(),
+            VectorDirUp = ToList(raw.GetValueOrDefault("vectorDirUp")).Select(v => ToList(v).Select(ToDouble).ToArray()).ToArray(),
+            Damage = ToDouble(raw.GetValueOrDefault("damage") ?? 0.0),
+            Fuel = ToDouble(raw.GetValueOrDefault("fuel") ?? 0.0),
+            TurretWeapons = ParseTurretWeapons(ToList(raw.GetValueOrDefault("turretWeapons"))),
+            TurretMagazines = ParseTurretMagazines(ToList(raw.GetValueOrDefault("turretMagazines"))),
+            PylonLoadout = ParsePylonLoadout(ToList(raw.GetValueOrDefault("pylonLoadout"))),
+            Logistics = ToList(raw.GetValueOrDefault("logistics")).Select(ToDouble).ToArray(),
+            Attached = ParseAttached(ToList(raw.GetValueOrDefault("attached"))),
+            RackChannels = ToList(raw.GetValueOrDefault("rackChannels")).Select(ToInt).ToArray(),
+            AceCargo = ParseAceCargo(ToList(raw.GetValueOrDefault("aceCargo"))),
+            Inventory = ParseInventory(ToList(raw.GetValueOrDefault("inventory"))),
+            AceFortify = ParseAceFortify(ToList(raw.GetValueOrDefault("aceFortify"))),
+            AceMedical = ParseAceMedical(ToList(raw.GetValueOrDefault("aceMedical"))),
+            AceRepair = ParseAceRepair(ToList(raw.GetValueOrDefault("aceRepair"))),
+            CustomName = ToSafeString(raw.GetValueOrDefault("customName"))
         };
-
-        return obj;
     }
 
-    public static List<object> ToArray(PersistenceObject obj)
-    {
-        return
-        [
-            obj.Id,
-            obj.Type,
-            obj.Position.Cast<object>().ToList(),
-            obj.VectorDirUp.Select(v => (object)v.Cast<object>().ToList()).ToList(),
-            obj.Damage,
-            obj.Fuel,
-            SerializeTurretWeapons(obj.TurretWeapons),
-            SerializeTurretMagazines(obj.TurretMagazines),
-            SerializePylonLoadout(obj.PylonLoadout),
-            obj.Logistics.Cast<object>().ToList(),
-            SerializeAttached(obj.Attached),
-            obj.RackChannels.Cast<object>().ToList(),
-            SerializeAceCargo(obj.AceCargo),
-            SerializeInventory(obj.Inventory),
-            new List<object> { obj.AceFortify.IsAceFortification, obj.AceFortify.Side },
-            new List<object>
+    public static Dictionary<string, object> ToHashmap(PersistenceObject obj) =>
+        new()
+        {
+            ["id"] = obj.Id,
+            ["type"] = obj.Type,
+            ["position"] = obj.Position.Cast<object>().ToList(),
+            ["vectorDirUp"] = obj.VectorDirUp.Select(v => (object)v.Cast<object>().ToList()).ToList(),
+            ["damage"] = obj.Damage,
+            ["fuel"] = obj.Fuel,
+            ["turretWeapons"] = SerializeTurretWeapons(obj.TurretWeapons),
+            ["turretMagazines"] = SerializeTurretMagazines(obj.TurretMagazines),
+            ["pylonLoadout"] = SerializePylonLoadout(obj.PylonLoadout),
+            ["logistics"] = obj.Logistics.Cast<object>().ToList(),
+            ["attached"] = SerializeAttached(obj.Attached),
+            ["rackChannels"] = obj.RackChannels.Cast<object>().ToList(),
+            ["aceCargo"] = SerializeAceCargo(obj.AceCargo),
+            ["inventory"] = SerializeInventory(obj.Inventory),
+            ["aceFortify"] = new List<object> { obj.AceFortify.IsAceFortification, obj.AceFortify.Side },
+            ["aceMedical"] = new List<object>
             {
                 obj.AceMedical.MedicClass,
                 obj.AceMedical.MedicalVehicle,
                 obj.AceMedical.MedicalFacility
             },
-            new List<object> { (object)obj.AceRepair.RepairVehicle, (object)obj.AceRepair.RepairFacility },
-            obj.CustomName
-        ];
-    }
+            ["aceRepair"] = new List<object> { (object)obj.AceRepair.RepairVehicle, (object)obj.AceRepair.RepairFacility },
+            ["customName"] = obj.CustomName
+        };
 
     private static List<TurretWeaponsEntry> ParseTurretWeapons(List<object> raw) =>
         raw.Select(entry =>

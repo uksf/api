@@ -37,4 +37,11 @@ internal static class PersistenceConversionHelpers
             object[] array    => [..array],
             _                 => []
         };
+
+    internal static Dictionary<string, object> ToDict(object v) =>
+        v switch
+        {
+            Dictionary<string, object> dict => dict,
+            _                               => new Dictionary<string, object>()
+        };
 }

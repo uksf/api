@@ -9,18 +9,18 @@ namespace UKSF.Api.ArmaServer.Tests.Converters;
 public class PersistenceObjectConverterTests
 {
     [Fact]
-    public void FromArray_WithMinimalObject_ShouldConvertAllFields()
+    public void FromHashmap_WithMinimalObject_ShouldParseAllFields()
     {
-        var array = BuildMinimalObjectArray();
-        array[0] = "crate_001";
-        array[1] = "B_supplyCrate_F";
-        array[2] = new List<object>
+        var hashmap = BuildMinimalHashmap();
+        hashmap["id"] = "crate_001";
+        hashmap["type"] = "B_supplyCrate_F";
+        hashmap["position"] = new List<object>
         {
             1234.56,
             5678.90,
             0.05
         };
-        array[3] = new List<object>
+        hashmap["vectorDirUp"] = new List<object>
         {
             new List<object>
             {
@@ -35,17 +35,18 @@ public class PersistenceObjectConverterTests
                 1.0
             }
         };
-        array[4] = 0.25;
-        array[5] = 0.0;
-        array[14] = new List<object> { true, "WEST" };
-        array[15] = new List<object>
+        hashmap["damage"] = 0.25;
+        hashmap["fuel"] = 0.0;
+        hashmap["aceFortify"] = new List<object> { true, "WEST" };
+        hashmap["aceMedical"] = new List<object>
         {
             1L,
             true,
             false
         };
+        hashmap["customName"] = "Test Crate";
 
-        var result = PersistenceObjectConverter.FromArray(array);
+        var result = PersistenceObjectConverter.FromHashmap(hashmap);
 
         result.Id.Should().Be("crate_001");
         result.Type.Should().Be("B_supplyCrate_F");
@@ -63,66 +64,65 @@ public class PersistenceObjectConverterTests
         result.AceMedical.MedicClass.Should().Be(1);
         result.AceMedical.MedicalVehicle.Should().BeTrue();
         result.AceMedical.MedicalFacility.Should().BeFalse();
+        result.CustomName.Should().Be("Test Crate");
     }
 
     [Fact]
-    public void FromArray_WithTurretsAndInventory_ShouldConvertNestedStructures()
+    public void ToHashmap_ShouldProduceCorrectKeys()
     {
-        var array = BuildMinimalObjectArray();
-        array[0] = "vehicle_001";
-        array[1] = "B_MRAP_01_hmg_F";
-
-        array[6] = new List<object> { new List<object> { new List<object> { 0L }, new List<object> { "HMG_127", "SmokeLauncher" } } };
-
-        array[7] = new List<object>
+        var obj = new PersistenceObject
         {
-            new List<object>
-            {
-                "100Rnd_127x99_mag",
-                new List<object> { 0L },
-                100L,
-                0L,
-                0L
-            },
-            new List<object>
-            {
-                "SmokeLauncherMag",
-                new List<object> { 0L },
-                2L,
-                0L,
-                0L
-            }
+            Id = "obj_001",
+            Type = "B_Truck_01_transport_F",
+            Position = [100.0, 200.0, 0.0],
+            VectorDirUp = [new[] { 0.0, 1.0, 0.0 }, new[] { 0.0, 0.0, 1.0 }],
+            Damage = 0.0,
+            Fuel = 1.0,
+            TurretWeapons = [],
+            TurretMagazines = [],
+            PylonLoadout = [],
+            Logistics = [0.0, 0.0, 0.0],
+            Attached = [],
+            RackChannels = [],
+            AceCargo = [],
+            Inventory = new InventoryContainer(),
+            AceFortify = new AceFortifyState(),
+            AceMedical = new ObjectMedicalState(),
+            AceRepair = new ObjectRepairState(),
+            CustomName = string.Empty
         };
 
-        array[13] = new List<object>
-        {
-            new List<object> { new List<object>(), new List<object>() },
-            new List<object> { new List<object>(), new List<object>() },
-            new List<object> { new List<object> { "FirstAidKit", "Medikit" }, new List<object> { 10L, 2L } },
-            new List<object> { new List<object>(), new List<object>() }
-        };
+        var result = PersistenceObjectConverter.ToHashmap(obj);
 
-        var result = PersistenceObjectConverter.FromArray(array);
-
-        result.TurretWeapons.Should().HaveCount(1);
-        result.TurretWeapons[0].TurretPath.Should().BeEquivalentTo(new[] { 0 });
-        result.TurretWeapons[0].Weapons.Should().BeEquivalentTo(new[] { "HMG_127", "SmokeLauncher" });
-
-        result.TurretMagazines.Should().HaveCount(2);
-        result.TurretMagazines[0].ClassName.Should().Be("100Rnd_127x99_mag");
-        result.TurretMagazines[0].TurretPath.Should().BeEquivalentTo(new[] { 0 });
-        result.TurretMagazines[0].AmmoCount.Should().Be(100);
-        result.TurretMagazines[1].ClassName.Should().Be("SmokeLauncherMag");
-        result.TurretMagazines[1].AmmoCount.Should().Be(2);
-
-        result.Inventory.Items.ClassNames.Should().BeEquivalentTo(new[] { "FirstAidKit", "Medikit" });
-        result.Inventory.Items.Counts.Should().BeEquivalentTo(new[] { 10, 2 });
-        result.Inventory.Weapons.ClassNames.Should().BeEmpty();
-        result.Inventory.Backpacks.ClassNames.Should().BeEmpty();
+        result.Should().HaveCount(18);
+        result.Keys.Should()
+              .BeEquivalentTo(
+                  new[]
+                  {
+                      "id",
+                      "type",
+                      "position",
+                      "vectorDirUp",
+                      "damage",
+                      "fuel",
+                      "turretWeapons",
+                      "turretMagazines",
+                      "pylonLoadout",
+                      "logistics",
+                      "attached",
+                      "rackChannels",
+                      "aceCargo",
+                      "inventory",
+                      "aceFortify",
+                      "aceMedical",
+                      "aceRepair",
+                      "customName"
+                  }
+              );
     }
 
     [Fact]
-    public void ToArray_ShouldProduceArrayThatRoundTripsBackToSameObject()
+    public void RoundTrip_ShouldPreserveData()
     {
         var original = new PersistenceObject
         {
@@ -145,7 +145,12 @@ public class PersistenceObjectConverterTests
                     AmmoCount = 150
                 }
             ],
+            PylonLoadout = [],
             Logistics = [200.0, 50.0, 100.0],
+            Attached = [],
+            RackChannels = [],
+            AceCargo = [],
+            Inventory = new InventoryContainer(),
             AceFortify = new AceFortifyState { IsAceFortification = false, Side = "EAST" },
             AceMedical = new ObjectMedicalState
             {
@@ -157,12 +162,15 @@ public class PersistenceObjectConverterTests
             CustomName = "Supply Truck Alpha"
         };
 
-        var array = PersistenceObjectConverter.ToArray(original);
-        var roundTripped = PersistenceObjectConverter.FromArray(array);
+        var hashmap = PersistenceObjectConverter.ToHashmap(original);
+        var roundTripped = PersistenceObjectConverter.FromHashmap(hashmap);
 
         roundTripped.Id.Should().Be(original.Id);
         roundTripped.Type.Should().Be(original.Type);
         roundTripped.Position.Should().BeEquivalentTo(original.Position);
+        roundTripped.VectorDirUp.Should().HaveCount(2);
+        roundTripped.VectorDirUp[0].Should().BeEquivalentTo(original.VectorDirUp[0]);
+        roundTripped.VectorDirUp[1].Should().BeEquivalentTo(original.VectorDirUp[1]);
         roundTripped.Damage.Should().Be(original.Damage);
         roundTripped.Fuel.Should().Be(original.Fuel);
         roundTripped.TurretWeapons.Should().HaveCount(1);
@@ -175,93 +183,62 @@ public class PersistenceObjectConverterTests
         roundTripped.AceFortify.IsAceFortification.Should().Be(original.AceFortify.IsAceFortification);
         roundTripped.AceFortify.Side.Should().Be(original.AceFortify.Side);
         roundTripped.AceMedical.MedicClass.Should().Be(original.AceMedical.MedicClass);
+        roundTripped.AceMedical.MedicalVehicle.Should().Be(original.AceMedical.MedicalVehicle);
+        roundTripped.AceMedical.MedicalFacility.Should().Be(original.AceMedical.MedicalFacility);
         roundTripped.AceRepair.RepairVehicle.Should().Be(original.AceRepair.RepairVehicle);
+        roundTripped.AceRepair.RepairFacility.Should().Be(original.AceRepair.RepairFacility);
         roundTripped.CustomName.Should().Be(original.CustomName);
     }
 
     [Fact]
-    public void FromArray_WithAceCargo_ShouldConvertRecursiveStructure()
+    public void FromHashmap_WithTurretData_ShouldParseSubArrays()
     {
-        var array = BuildMinimalObjectArray();
-        array[0] = "crate_002";
-        array[1] = "B_CargoNet_01_ammo_F";
-
-        var simpleCargoEntry = new List<object>
+        var hashmap = BuildMinimalHashmap();
+        hashmap["id"] = "vehicle_001";
+        hashmap["type"] = "B_MRAP_01_hmg_F";
+        hashmap["turretWeapons"] = new List<object> { new List<object> { new List<object> { 0L }, new List<object> { "HMG_127", "SmokeLauncher" } } };
+        hashmap["turretMagazines"] = new List<object>
         {
-            "ACE_Wheel",
-            new List<object>(),
             new List<object>
             {
-                new List<object> { new List<object>(), new List<object>() },
-                new List<object> { new List<object>(), new List<object>() },
-                new List<object> { new List<object>(), new List<object>() },
-                new List<object> { new List<object>(), new List<object>() }
+                "100Rnd_127x99_mag",
+                new List<object> { 0L },
+                100L
             },
-            ""
-        };
-
-        var cargoWithInventory = new List<object>
-        {
-            "B_supplyCrate_F",
-            new List<object>(),
             new List<object>
             {
-                new List<object> { new List<object>(), new List<object>() },
-                new List<object> { new List<object> { "30Rnd_65x39_caseless_mag", "16Rnd_9x21_Mag" }, new List<object> { 5L, 3L } },
-                new List<object> { new List<object>(), new List<object>() },
-                new List<object> { new List<object>(), new List<object>() }
-            },
-            "Ammo Crate"
+                "SmokeLauncherMag",
+                new List<object> { 0L },
+                2L
+            }
         };
 
-        array[12] = new List<object> { simpleCargoEntry, cargoWithInventory };
+        var result = PersistenceObjectConverter.FromHashmap(hashmap);
 
-        var result = PersistenceObjectConverter.FromArray(array);
+        result.TurretWeapons.Should().HaveCount(1);
+        result.TurretWeapons[0].TurretPath.Should().BeEquivalentTo(new[] { 0 });
+        result.TurretWeapons[0].Weapons.Should().BeEquivalentTo(new[] { "HMG_127", "SmokeLauncher" });
 
-        result.AceCargo.Should().HaveCount(2);
-
-        result.AceCargo[0].ClassName.Should().Be("ACE_Wheel");
-        result.AceCargo[0].Cargo.Should().BeEmpty();
-        result.AceCargo[0].Inventory.Magazines.ClassNames.Should().BeEmpty();
-        result.AceCargo[0].CustomName.Should().BeEmpty();
-
-        result.AceCargo[1].ClassName.Should().Be("B_supplyCrate_F");
-        result.AceCargo[1].Cargo.Should().BeEmpty();
-        result.AceCargo[1].Inventory.Magazines.ClassNames.Should().BeEquivalentTo(new[] { "30Rnd_65x39_caseless_mag", "16Rnd_9x21_Mag" });
-        result.AceCargo[1].Inventory.Magazines.Counts.Should().BeEquivalentTo(new[] { 5, 3 });
-        result.AceCargo[1].CustomName.Should().Be("Ammo Crate");
+        result.TurretMagazines.Should().HaveCount(2);
+        result.TurretMagazines[0].ClassName.Should().Be("100Rnd_127x99_mag");
+        result.TurretMagazines[0].TurretPath.Should().BeEquivalentTo(new[] { 0 });
+        result.TurretMagazines[0].AmmoCount.Should().Be(100);
+        result.TurretMagazines[1].ClassName.Should().Be("SmokeLauncherMag");
+        result.TurretMagazines[1].AmmoCount.Should().Be(2);
     }
 
-    [Fact]
-    public void FromArray_With19Elements_ShouldIgnoreIndex18()
-    {
-        var array = BuildMinimalObjectArray();
-        array[0] = "obj_003";
-        array[1] = "B_Heli_Light_01_F";
-
-        array.Add(true);
-
-        array.Should().HaveCount(19);
-
-        var result = PersistenceObjectConverter.FromArray(array);
-
-        result.Id.Should().Be("obj_003");
-        result.Type.Should().Be("B_Heli_Light_01_F");
-    }
-
-    private static List<object> BuildMinimalObjectArray()
-    {
-        return
-        [
-            "", // 0: id
-            "", // 1: type
-            new List<object>
+    private static Dictionary<string, object> BuildMinimalHashmap() =>
+        new()
+        {
+            ["id"] = "",
+            ["type"] = "",
+            ["position"] = new List<object>
             {
                 0.0,
                 0.0,
                 0.0
-            }, // 2: position
-            new List<object>
+            },
+            ["vectorDirUp"] = new List<object>
             {
                 new List<object>
                 {
@@ -275,37 +252,36 @@ public class PersistenceObjectConverterTests
                     0.0,
                     1.0
                 }
-            }, // 3: vectorDirUp
-            0.0, // 4: damage
-            1.0, // 5: fuel
-            new List<object>(), // 6: turretWeapons
-            new List<object>(), // 7: turretMagazines
-            new List<object>(), // 8: pylonLoadout
-            new List<object>
+            },
+            ["damage"] = 0.0,
+            ["fuel"] = 1.0,
+            ["turretWeapons"] = new List<object>(),
+            ["turretMagazines"] = new List<object>(),
+            ["pylonLoadout"] = new List<object>(),
+            ["logistics"] = new List<object>
             {
                 0.0,
                 0.0,
                 0.0
-            }, // 9: logistics
-            new List<object>(), // 10: attached
-            new List<object>(), // 11: rackChannels
-            new List<object>(), // 12: aceCargo
-            new List<object> // 13: inventory (4 cargo slots, all empty)
+            },
+            ["attached"] = new List<object>(),
+            ["rackChannels"] = new List<object>(),
+            ["aceCargo"] = new List<object>(),
+            ["inventory"] = new List<object>
             {
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() }
             },
-            new List<object> { false, "WEST" }, // 14: aceFortify
-            new List<object>
+            ["aceFortify"] = new List<object> { false, "WEST" },
+            ["aceMedical"] = new List<object>
             {
                 0L,
                 false,
                 false
-            }, // 15: aceMedical
-            new List<object> { 0L, 0L }, // 16: aceRepair
-            "" // 17: customName
-        ];
-    }
+            },
+            ["aceRepair"] = new List<object> { 0L, 0L },
+            ["customName"] = ""
+        };
 }

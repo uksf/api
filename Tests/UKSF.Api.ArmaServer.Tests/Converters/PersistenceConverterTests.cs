@@ -37,7 +37,7 @@ public class PersistenceConverterTests
     public void FromRawNamespace_WithFullSession_ShouldConvertAllCategories()
     {
         var raw = BuildMinimalNamespace();
-        raw["uksf_persistence_objects"] = new List<object> { BuildMinimalObjectArray() };
+        raw["uksf_persistence_objects"] = new List<object> { BuildMinimalObjectHashmap() };
         raw["uksf_persistence_deletedObjects"] = new List<object> { "deleted_1", "deleted_2" };
         raw["uksf_persistence_dateTime"] = new List<object>
         {
@@ -220,19 +220,18 @@ public class PersistenceConverterTests
         finalSession.Markers[1][2].Should().Be("POLYLINE");
     }
 
-    private static List<object> BuildMinimalObjectArray()
-    {
-        return
-        [
-            "", // 0: id
-            "", // 1: type
-            new List<object>
+    private static Dictionary<string, object> BuildMinimalObjectHashmap() =>
+        new()
+        {
+            ["id"] = "",
+            ["type"] = "",
+            ["position"] = new List<object>
             {
                 0.0,
                 0.0,
                 0.0
-            }, // 2: position
-            new List<object>
+            },
+            ["vectorDirUp"] = new List<object>
             {
                 new List<object>
                 {
@@ -246,39 +245,38 @@ public class PersistenceConverterTests
                     0.0,
                     1.0
                 }
-            }, // 3: vectorDirUp
-            0.0, // 4: damage
-            1.0, // 5: fuel
-            new List<object>(), // 6: turretWeapons
-            new List<object>(), // 7: turretMagazines
-            new List<object>(), // 8: pylonLoadout
-            new List<object>
+            },
+            ["damage"] = 0.0,
+            ["fuel"] = 1.0,
+            ["turretWeapons"] = new List<object>(),
+            ["turretMagazines"] = new List<object>(),
+            ["pylonLoadout"] = new List<object>(),
+            ["logistics"] = new List<object>
             {
                 0.0,
                 0.0,
                 0.0
-            }, // 9: logistics
-            new List<object>(), // 10: attached
-            new List<object>(), // 11: rackChannels
-            new List<object>(), // 12: aceCargo
-            new List<object> // 13: inventory
+            },
+            ["attached"] = new List<object>(),
+            ["rackChannels"] = new List<object>(),
+            ["aceCargo"] = new List<object>(),
+            ["inventory"] = new List<object>
             {
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() }
             },
-            new List<object> { false, "WEST" }, // 14: aceFortify
-            new List<object>
+            ["aceFortify"] = new List<object> { false, "WEST" },
+            ["aceMedical"] = new List<object>
             {
                 0L,
                 false,
                 false
-            }, // 15: aceMedical
-            new List<object> { 0L, 0L }, // 16: aceRepair
-            "" // 17: customName
-        ];
-    }
+            },
+            ["aceRepair"] = new List<object> { 0L, 0L },
+            ["customName"] = ""
+        };
 
     private static List<object> BuildMinimalPlayerArray()
     {
@@ -331,17 +329,17 @@ public class PersistenceConverterTests
     [Fact]
     public void FromRawNamespace_WithRealObjectData_ShouldRoundTrip()
     {
-        var realObject = new List<object>
+        var realObject = new Dictionary<string, object>
         {
-            "uksf_resupply_r4_728144_65204",
-            "uksf_resupply_r4",
-            new List<object>
+            ["id"] = "uksf_resupply_r4_728144_65204",
+            ["type"] = "uksf_resupply_r4",
+            ["position"] = new List<object>
             {
                 11614.5,
                 3722.82,
                 20.8851
             },
-            new List<object>
+            ["vectorDirUp"] = new List<object>
             {
                 new List<object>
                 {
@@ -356,20 +354,20 @@ public class PersistenceConverterTests
                     0.999972
                 }
             },
-            0.0158537,
-            1.0,
-            new List<object>(),
-            new List<object>(),
-            new List<object>(),
-            new List<object>
+            ["damage"] = 0.0158537,
+            ["fuel"] = 1.0,
+            ["turretWeapons"] = new List<object>(),
+            ["turretMagazines"] = new List<object>(),
+            ["pylonLoadout"] = new List<object>(),
+            ["logistics"] = new List<object>
             {
                 -1.0,
                 -1.0,
                 -1.0
             },
-            new List<object>(),
-            new List<object>(),
-            new List<object>
+            ["attached"] = new List<object>(),
+            ["rackChannels"] = new List<object>(),
+            ["aceCargo"] = new List<object>
             {
                 new List<object>
                 {
@@ -393,22 +391,22 @@ public class PersistenceConverterTests
                     ""
                 }
             },
-            new List<object>
+            ["inventory"] = new List<object>
             {
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() }
             },
-            new List<object> { false, "WEST" },
-            new List<object>
+            ["aceFortify"] = new List<object> { false, "WEST" },
+            ["aceMedical"] = new List<object>
             {
                 0L,
                 false,
                 false
             },
-            new List<object> { 0L, 0L },
-            ""
+            ["aceRepair"] = new List<object> { 0L, 0L },
+            ["customName"] = ""
         };
 
         var raw = BuildMinimalNamespace();
@@ -456,17 +454,17 @@ public class PersistenceConverterTests
     [Fact]
     public void FromRawNamespace_WithRealVehicleData_ShouldHandleTurrets()
     {
-        var vehicle = new List<object>
+        var vehicle = new Dictionary<string, object>
         {
-            "UK3CB_BAF_LandRover_Hard_FFR_Sand_A_662960_75545",
-            "UK3CB_BAF_LandRover_Hard_FFR_Sand_A",
-            new List<object>
+            ["id"] = "UK3CB_BAF_LandRover_Hard_FFR_Sand_A_662960_75545",
+            ["type"] = "UK3CB_BAF_LandRover_Hard_FFR_Sand_A",
+            ["position"] = new List<object>
             {
                 11486.1,
                 2392.07,
                 23.017
             },
-            new List<object>
+            ["vectorDirUp"] = new List<object>
             {
                 new List<object>
                 {
@@ -481,10 +479,10 @@ public class PersistenceConverterTests
                     0.999978
                 }
             },
-            0.0,
-            0.998611,
-            new List<object> { new List<object> { new List<object> { 0L }, new List<object> { "UK3CB_BAF_L7A2" } } },
-            new List<object>
+            ["damage"] = 0.0,
+            ["fuel"] = 0.998611,
+            ["turretWeapons"] = new List<object> { new List<object> { new List<object> { 0L }, new List<object> { "UK3CB_BAF_L7A2" } } },
+            ["turretMagazines"] = new List<object>
             {
                 new List<object>
                 {
@@ -495,16 +493,16 @@ public class PersistenceConverterTests
                     5678L
                 }
             },
-            new List<object>(),
-            new List<object>
+            ["pylonLoadout"] = new List<object>(),
+            ["logistics"] = new List<object>
             {
                 -1.0,
                 -1.0,
                 -1.0
             },
-            new List<object>(),
-            new List<object>(),
-            new List<object>
+            ["attached"] = new List<object>(),
+            ["rackChannels"] = new List<object>(),
+            ["aceCargo"] = new List<object>
             {
                 new List<object>
                 {
@@ -521,22 +519,22 @@ public class PersistenceConverterTests
                     ""
                 }
             },
-            new List<object>
+            ["inventory"] = new List<object>
             {
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object> { "FirstAidKit" }, new List<object> { 4L } },
                 new List<object> { new List<object>(), new List<object>() }
             },
-            new List<object> { false, "WEST" },
-            new List<object>
+            ["aceFortify"] = new List<object> { false, "WEST" },
+            ["aceMedical"] = new List<object>
             {
                 0L,
                 false,
                 false
             },
-            new List<object> { 0L, 0L },
-            ""
+            ["aceRepair"] = new List<object> { 0L, 0L },
+            ["customName"] = ""
         };
 
         var raw = BuildMinimalNamespace();
@@ -571,17 +569,17 @@ public class PersistenceConverterTests
     [Fact]
     public void FullRoundTrip_RawNamespaceToSessionAndBack_ShouldBeConsistent()
     {
-        var supplyCrate = new List<object>
+        var supplyCrate = new Dictionary<string, object>
         {
-            "uksf_resupply_r4_728144_65204",
-            "uksf_resupply_r4",
-            new List<object>
+            ["id"] = "uksf_resupply_r4_728144_65204",
+            ["type"] = "uksf_resupply_r4",
+            ["position"] = new List<object>
             {
                 11614.5,
                 3722.82,
                 20.8851
             },
-            new List<object>
+            ["vectorDirUp"] = new List<object>
             {
                 new List<object>
                 {
@@ -596,20 +594,20 @@ public class PersistenceConverterTests
                     0.999972
                 }
             },
-            0.0158537,
-            1.0,
-            new List<object>(),
-            new List<object>(),
-            new List<object>(),
-            new List<object>
+            ["damage"] = 0.0158537,
+            ["fuel"] = 1.0,
+            ["turretWeapons"] = new List<object>(),
+            ["turretMagazines"] = new List<object>(),
+            ["pylonLoadout"] = new List<object>(),
+            ["logistics"] = new List<object>
             {
                 -1.0,
                 -1.0,
                 -1.0
             },
-            new List<object>(),
-            new List<object>(),
-            new List<object>
+            ["attached"] = new List<object>(),
+            ["rackChannels"] = new List<object>(),
+            ["aceCargo"] = new List<object>
             {
                 new List<object>
                 {
@@ -633,35 +631,35 @@ public class PersistenceConverterTests
                     ""
                 }
             },
-            new List<object>
+            ["inventory"] = new List<object>
             {
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() }
             },
-            new List<object> { false, "WEST" },
-            new List<object>
+            ["aceFortify"] = new List<object> { false, "WEST" },
+            ["aceMedical"] = new List<object>
             {
                 0L,
                 false,
                 false
             },
-            new List<object> { 0L, 0L },
-            ""
+            ["aceRepair"] = new List<object> { 0L, 0L },
+            ["customName"] = ""
         };
 
-        var vehicle = new List<object>
+        var vehicle = new Dictionary<string, object>
         {
-            "UK3CB_BAF_LandRover_Hard_FFR_Sand_A_662960_75545",
-            "UK3CB_BAF_LandRover_Hard_FFR_Sand_A",
-            new List<object>
+            ["id"] = "UK3CB_BAF_LandRover_Hard_FFR_Sand_A_662960_75545",
+            ["type"] = "UK3CB_BAF_LandRover_Hard_FFR_Sand_A",
+            ["position"] = new List<object>
             {
                 11486.1,
                 2392.07,
                 23.017
             },
-            new List<object>
+            ["vectorDirUp"] = new List<object>
             {
                 new List<object>
                 {
@@ -676,10 +674,10 @@ public class PersistenceConverterTests
                     0.999978
                 }
             },
-            0.0,
-            0.998611,
-            new List<object> { new List<object> { new List<object> { 0L }, new List<object> { "UK3CB_BAF_L7A2" } } },
-            new List<object>
+            ["damage"] = 0.0,
+            ["fuel"] = 0.998611,
+            ["turretWeapons"] = new List<object> { new List<object> { new List<object> { 0L }, new List<object> { "UK3CB_BAF_L7A2" } } },
+            ["turretMagazines"] = new List<object>
             {
                 new List<object>
                 {
@@ -690,16 +688,16 @@ public class PersistenceConverterTests
                     5678L
                 }
             },
-            new List<object>(),
-            new List<object>
+            ["pylonLoadout"] = new List<object>(),
+            ["logistics"] = new List<object>
             {
                 -1.0,
                 -1.0,
                 -1.0
             },
-            new List<object>(),
-            new List<object>(),
-            new List<object>
+            ["attached"] = new List<object>(),
+            ["rackChannels"] = new List<object>(),
+            ["aceCargo"] = new List<object>
             {
                 new List<object>
                 {
@@ -716,22 +714,22 @@ public class PersistenceConverterTests
                     ""
                 }
             },
-            new List<object>
+            ["inventory"] = new List<object>
             {
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object>(), new List<object>() },
                 new List<object> { new List<object> { "FirstAidKit" }, new List<object> { 4L } },
                 new List<object> { new List<object>(), new List<object>() }
             },
-            new List<object> { false, "WEST" },
-            new List<object>
+            ["aceFortify"] = new List<object> { false, "WEST" },
+            ["aceMedical"] = new List<object>
             {
                 0L,
                 false,
                 false
             },
-            new List<object> { 0L, 0L },
-            ""
+            ["aceRepair"] = new List<object> { 0L, 0L },
+            ["customName"] = ""
         };
 
         var playerArray = new List<object>

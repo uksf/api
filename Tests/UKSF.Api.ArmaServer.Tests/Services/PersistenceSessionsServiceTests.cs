@@ -1256,12 +1256,11 @@ public class PersistenceSessionsServiceTests
     [Fact]
     public async Task HandleSaveChunkAsync_WithRawNamespaceFormat_ShouldSaveViaConverter()
     {
-        // Build a raw namespace JSON: uksf_persistence_objects contains array-of-arrays,
-        // not the structured { id, type, ... } format
+        // Build a raw namespace JSON: uksf_persistence_objects contains hashmap objects
         const string rawJson = """
                                {
                                    "uksf_persistence_objects": [
-                                       ["obj-1","B_MRAP_01_F",[100.5,200.3,0.1],[[0,1,0],[0,0,1]],0.25,0.8,[],[],[],[],[],[],[],[[],[],[],[],[]],[false,""],[0,false,false],[0,0],""]
+                                       {"id":"obj-1","type":"B_MRAP_01_F","position":[100.5,200.3,0.1],"vectorDirUp":[[0,1,0],[0,0,1]],"damage":0.25,"fuel":0.8,"turretWeapons":[],"turretMagazines":[],"pylonLoadout":[],"logistics":[],"attached":[],"rackChannels":[],"aceCargo":[],"inventory":[[[],[]],[[],[]],[[],[]],[[],[]]],"aceFortify":[false,""],"aceMedical":[0,false,false],"aceRepair":[0,0],"customName":""}
                                    ],
                                    "uksf_persistence_dateTime": [2035,6,15,12,30],
                                    "uksf_persistence_deletedObjects": ["del-1"],

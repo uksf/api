@@ -25,7 +25,7 @@ public static partial class PersistenceConverter
     {
         var session = new DomainPersistenceSession
         {
-            Objects = ToList(raw.GetValueOrDefault(KeyObjects)).Select(o => PersistenceObjectConverter.FromArray(ToList(o))).ToList(),
+            Objects = ToList(raw.GetValueOrDefault(KeyObjects)).Select(o => PersistenceObjectConverter.FromHashmap(ToDict(o))).ToList(),
             DeletedObjects = ToList(raw.GetValueOrDefault(KeyDeletedObjects)).Select(o => o.ToString()!).ToList(),
             ArmaDateTime = ToList(raw.GetValueOrDefault(KeyDateTime)).Select(ToInt).ToArray(),
             Markers = ToList(raw.GetValueOrDefault(KeyMapMarkers)).Select(o => ToList(o)).ToList()
@@ -56,7 +56,7 @@ public static partial class PersistenceConverter
     {
         var raw = new Dictionary<string, object>
         {
-            { KeyObjects, session.Objects.Select(o => (object)PersistenceObjectConverter.ToArray(o)).ToList() },
+            { KeyObjects, session.Objects.Select(o => (object)PersistenceObjectConverter.ToHashmap(o)).ToList() },
             { KeyDeletedObjects, session.DeletedObjects.Cast<object>().ToList() },
             { KeyDateTime, session.ArmaDateTime.Select(i => (object)(long)i).ToList() },
             { KeyMapMarkers, session.Markers.Select(m => (object)m).ToList() }
