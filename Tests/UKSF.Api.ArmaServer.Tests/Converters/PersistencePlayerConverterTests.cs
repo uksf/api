@@ -396,6 +396,57 @@ public class PersistencePlayerConverterTests
     }
 
     [Fact]
+    public void FromHashmap_WithAceMedicalDictionary_ShouldParseCorrectly()
+    {
+        var hashmap = BuildMinimalPlayerHashmap();
+        hashmap["aceMedical"] = new Dictionary<string, object>
+        {
+            ["ace_medical_bloodVolume"] = 5.2,
+            ["ace_medical_heartRate"] = 90L,
+            ["ace_medical_openWounds"] = new Dictionary<string, object>(),
+            ["ace_medical_pain"] = 0.3
+        };
+
+        var result = PersistencePlayerConverter.FromHashmap(hashmap);
+
+        result.AceMedical.Should().NotBeNull();
+        result.AceMedical.BloodVolume.Should().Be(5.2);
+        result.AceMedical.HeartRate.Should().Be(90);
+        result.AceMedical.Pain.Should().Be(0.3);
+    }
+
+    [Fact]
+    public void ToHashmap_AceMedical_ShouldReturnDictionaryNotString()
+    {
+        var player = new PlayerRedeployData
+        {
+            Position = [0.0, 0.0, 0.0],
+            VehicleState = new PlayerVehicleState
+            {
+                VehicleId = "",
+                Role = "",
+                Index = -1
+            },
+            Direction = 0.0,
+            Animation = "",
+            Loadout = new ArmaLoadout(),
+            Damage = 0.0,
+            AceMedical = new AceMedicalState { BloodVolume = 6.0, HeartRate = 80 },
+            Earplugs = false,
+            AttachedItems = [],
+            Radios = [],
+            DiveState = new PlayerDiveState { IsDiving = false, RawData = [] }
+        };
+
+        var result = PersistencePlayerConverter.ToHashmap(player);
+
+        result["aceMedical"].Should().BeOfType<Dictionary<string, object>>();
+        var medical = (Dictionary<string, object>)result["aceMedical"];
+        medical["ace_medical_bloodVolume"].Should().Be(6.0);
+        medical["ace_medical_heartRate"].Should().Be(80.0);
+    }
+
+    [Fact]
     public void ToHashmap_ShouldProduceCorrectKeys()
     {
         var player = new PlayerRedeployData

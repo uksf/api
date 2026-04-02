@@ -1,5 +1,6 @@
 using System.Text.Json;
 using UKSF.Api.ArmaServer.Models.Persistence;
+using UKSF.Api.ArmaServer.Services;
 using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
 namespace UKSF.Api.ArmaServer.Converters;
@@ -36,7 +37,7 @@ public static class PersistencePlayerConverter
             ["animation"] = player.Animation,
             ["loadout"] = PersistenceLoadoutConverter.ToArray(player.Loadout),
             ["damage"] = player.Damage,
-            ["aceMedical"] = JsonSerializer.Serialize(player.AceMedical, JsonOptions),
+            ["aceMedical"] = SerializeAceMedical(player.AceMedical),
             ["earplugs"] = player.Earplugs,
             ["attachedItems"] = player.AttachedItems.Cast<object>().ToList(),
             ["radios"] = player.Radios.Select(SerializeRadioState).Cast<object>().ToList(),
@@ -66,7 +67,24 @@ public static class PersistencePlayerConverter
 
     private static AceMedicalState ParseAceMedical(object raw)
     {
-        var json = ToSafeString(raw);
+        // The incoming data can be either a Dictionary<string, object> (from PersistenceTypeConverter
+        // parsing a JSON object) or a string (legacy format). Re-serialize to JSON string first,
+        // then deserialize into the typed model.
+        string json;
+        if (raw is Dictionary<string, object> dict)
+        {
+            if (dict.Count == 0)
+            {
+                return new AceMedicalState();
+            }
+
+            json = JsonSerializer.Serialize(dict);
+        }
+        else
+        {
+            json = ToSafeString(raw);
+        }
+
         if (string.IsNullOrEmpty(json) || json == "{}")
         {
             return new AceMedicalState();
@@ -120,6 +138,14 @@ public static class PersistencePlayerConverter
     private static List<object> SerializeRadioState(RadioState radio)
     {
         return [(object)radio.Type, (long)radio.Channel, radio.Volume, radio.Spatial, (long)radio.PttIndex];
+    }
+
+    private static Dictionary<string, object> SerializeAceMedical(AceMedicalState state)
+    {
+        // Re-serialize through JSON round-trip to get a flat dictionary with JsonPropertyName keys,
+        // matching the original SQF hashmap structure from ace_medical_fnc_serializeState
+        var json = JsonSerializer.Serialize(state, JsonOptions);
+        return JsonSerializer.Deserialize<Dictionary<string, object>>(json, PersistenceSessionsService.SerializerOptions) ?? new Dictionary<string, object>();
     }
 
     private static List<object> SerializeDiveState(PlayerDiveState state)
