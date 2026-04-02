@@ -559,8 +559,22 @@ public class GameServersService(
 
         if (data.TryGetValue("map", out var map)) status.Map = map.ToString();
         if (data.TryGetValue("mission", out var mission)) status.Mission = mission.ToString();
-        if (data.TryGetValue("players", out var players) && players is JsonElement playersElement && playersElement.ValueKind == JsonValueKind.Array)
-            status.Players = playersElement.EnumerateArray().Select(e => e.GetString()).Where(s => s is not null).ToList();
+        if (data.TryGetValue("players", out var players))
+        {
+            if (players is JsonElement playersElement && playersElement.ValueKind == JsonValueKind.Array)
+            {
+                status.Players = playersElement.EnumerateArray().Select(e => e.GetString()).Where(s => s is not null).ToList();
+            }
+            else
+            {
+                logger.LogWarning($"server_status players field is {players?.GetType().Name ?? "null"}, not JsonElement array. Value: {players}");
+            }
+        }
+        else
+        {
+            logger.LogWarning($"server_status event missing 'players' key. Keys: {string.Join(", ", data.Keys)}");
+        }
+
         if (data.TryGetValue("uptime", out var uptime) &&
             float.TryParse(uptime.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var uptimeValue))
         {
