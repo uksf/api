@@ -12,7 +12,7 @@ namespace UKSF.Api.ArmaServer.Controllers;
 public class PersistenceController(IPersistenceSessionsService persistenceSessionsService, IUksfLogger logger) : ControllerBase
 {
     [HttpGet("{key}")]
-    public IActionResult Get([FromRoute] string key, [FromQuery] string? format = null)
+    public IActionResult Get([FromRoute] string key)
     {
         logger.LogDebug($"Persistence load requested for key: {key}");
 
@@ -22,12 +22,7 @@ public class PersistenceController(IPersistenceSessionsService persistenceSessio
             return NotFound();
         }
 
-        if (format == "raw")
-        {
-            var raw = PersistenceConverter.ToHashmap(session);
-            return new JsonResult(raw);
-        }
-
-        return new JsonResult(session, PersistenceSessionsService.SerializerOptions);
+        var hashmap = PersistenceConverter.ToHashmap(session);
+        return new JsonResult(hashmap);
     }
 }
