@@ -1,49 +1,35 @@
-using System.Text.RegularExpressions;
 using UKSF.Api.ArmaServer.Models.Persistence;
 using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
 namespace UKSF.Api.ArmaServer.Converters;
 
-public static partial class PersistenceConverter
+public static class PersistenceConverter
 {
-    private const string KeyObjects = "uksf_persistence_objects";
-    private const string KeyDeletedObjects = "uksf_persistence_deletedObjects";
-    private const string KeyDateTime = "uksf_persistence_dateTime";
-    private const string KeyMapMarkers = "uksf_persistence_mapMarkers";
+    private static readonly HashSet<string> KnownKeys = ["objects", "deletedObjects", "dateTime", "mapMarkers", "players"];
 
-    [GeneratedRegex(@"^\d{17}$")]
-    private static partial Regex PlayerUidRegex();
-
-    private static readonly HashSet<string> KnownKeys = [KeyObjects, KeyDeletedObjects, KeyDateTime, KeyMapMarkers];
-
-    public static bool IsRawNamespaceFormat(Dictionary<string, object> raw)
-    {
-        return raw.ContainsKey(KeyObjects);
-    }
-
-    public static DomainPersistenceSession FromRawNamespace(Dictionary<string, object> raw)
+    public static DomainPersistenceSession FromHashmap(Dictionary<string, object> raw)
     {
         var session = new DomainPersistenceSession
         {
-            Objects = ToList(raw.GetValueOrDefault(KeyObjects)).Select(o => PersistenceObjectConverter.FromHashmap(ToDict(o))).ToList(),
-            DeletedObjects = ToList(raw.GetValueOrDefault(KeyDeletedObjects)).Select(o => o.ToString()!).ToList(),
-            ArmaDateTime = ToList(raw.GetValueOrDefault(KeyDateTime)).Select(ToInt).ToArray(),
-            Markers = ToList(raw.GetValueOrDefault(KeyMapMarkers)).Select(o => ToList(o)).ToList()
+            Objects = ToList(raw.GetValueOrDefault("objects")).Select(o => PersistenceObjectConverter.FromHashmap(ToDict(o))).ToList(),
+            DeletedObjects = ToList(raw.GetValueOrDefault("deletedObjects")).Select(o => o.ToString()!).ToList(),
+            ArmaDateTime = ToList(raw.GetValueOrDefault("dateTime")).Select(ToInt).ToArray(),
+            Markers = ToList(raw.GetValueOrDefault("mapMarkers")).Select(o => ToList(o)).ToList()
         };
 
-        var uidRegex = PlayerUidRegex();
-        foreach (var kvp in raw)
+        // Players are nested under a "players" key as a dictionary of UID → data
+        if (raw.TryGetValue("players", out var playersObj) && playersObj is Dictionary<string, object> playersDict)
         {
-            if (KnownKeys.Contains(kvp.Key))
-            {
-                continue;
-            }
-
-            if (uidRegex.IsMatch(kvp.Key))
+            foreach (var kvp in playersDict)
             {
                 session.Players[kvp.Key] = PersistencePlayerConverter.FromHashmap(ToDict(kvp.Value));
             }
-            else
+        }
+
+        // Everything else is custom serialiser data
+        foreach (var kvp in raw)
+        {
+            if (!KnownKeys.Contains(kvp.Key))
             {
                 session.CustomData[kvp.Key] = kvp.Value;
             }
@@ -52,20 +38,16 @@ public static partial class PersistenceConverter
         return session;
     }
 
-    public static Dictionary<string, object> ToRawNamespace(DomainPersistenceSession session)
+    public static Dictionary<string, object> ToHashmap(DomainPersistenceSession session)
     {
         var raw = new Dictionary<string, object>
         {
-            { KeyObjects, session.Objects.Select(o => (object)PersistenceObjectConverter.ToHashmap(o)).ToList() },
-            { KeyDeletedObjects, session.DeletedObjects.Cast<object>().ToList() },
-            { KeyDateTime, session.ArmaDateTime.Select(i => (object)(long)i).ToList() },
-            { KeyMapMarkers, session.Markers.Select(m => (object)m).ToList() }
+            { "objects", session.Objects.Select(o => (object)PersistenceObjectConverter.ToHashmap(o)).ToList() },
+            { "deletedObjects", session.DeletedObjects.Cast<object>().ToList() },
+            { "dateTime", session.ArmaDateTime.Select(i => (object)(long)i).ToList() },
+            { "mapMarkers", session.Markers.Select(m => (object)m).ToList() },
+            { "players", session.Players.ToDictionary(kvp => kvp.Key, kvp => (object)PersistencePlayerConverter.ToHashmap(kvp.Value)) }
         };
-
-        foreach (var kvp in session.Players)
-        {
-            raw[kvp.Key] = PersistencePlayerConverter.ToHashmap(kvp.Value);
-        }
 
         foreach (var kvp in session.CustomData)
         {

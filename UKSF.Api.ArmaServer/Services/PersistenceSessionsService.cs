@@ -111,9 +111,9 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
             {
                 var rawDict = JsonSerializer.Deserialize<Dictionary<string, object>>(fullJson, SerializerOptions);
                 DomainPersistenceSession session;
-                if (rawDict is not null && PersistenceConverter.IsRawNamespaceFormat(rawDict))
+                if (rawDict is not null && rawDict.ContainsKey("mapMarkers"))
                 {
-                    session = PersistenceConverter.FromRawNamespace(rawDict);
+                    session = PersistenceConverter.FromHashmap(rawDict);
                 }
                 else
                 {

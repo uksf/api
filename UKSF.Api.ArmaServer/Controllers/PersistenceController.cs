@@ -24,7 +24,7 @@ public class PersistenceController(IPersistenceSessionsService persistenceSessio
 
         if (format == "raw")
         {
-            var raw = PersistenceConverter.ToRawNamespace(session);
+            var raw = PersistenceConverter.ToHashmap(session);
             return new JsonResult(raw);
         }
 

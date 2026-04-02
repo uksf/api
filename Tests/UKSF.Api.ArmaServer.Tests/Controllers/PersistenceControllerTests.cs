@@ -93,12 +93,15 @@ public class PersistenceControllerTests
 
         var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
         var raw = jsonResult.Value.Should().BeOfType<Dictionary<string, object>>().Subject;
-        raw.Should().ContainKey("uksf_persistence_objects");
-        raw.Should().ContainKey("uksf_persistence_dateTime");
-        raw.Should().ContainKey("uksf_persistence_deletedObjects");
-        raw.Should().ContainKey("uksf_persistence_mapMarkers");
-        raw.Should().ContainKey("76561198012345678");
-        raw.Should().NotContainKey("objects");
-        raw.Should().NotContainKey("players");
+        raw.Should().ContainKey("objects");
+        raw.Should().ContainKey("dateTime");
+        raw.Should().ContainKey("deletedObjects");
+        raw.Should().ContainKey("mapMarkers");
+        raw.Should().ContainKey("players");
+        raw.Should().NotContainKey("uksf_persistence_objects");
+        raw.Should().NotContainKey("uksf_persistence_dateTime");
+        var playersDict = raw["players"].Should().BeOfType<Dictionary<string, object>>().Subject;
+        playersDict.Should().ContainKey("76561198012345678");
+        raw.Should().NotContainKey("76561198012345678");
     }
 }

@@ -9,37 +9,12 @@ namespace UKSF.Api.ArmaServer.Tests.Converters;
 public class PersistenceConverterTests
 {
     [Fact]
-    public void IsRawNamespaceFormat_WithRawKeys_ShouldReturnTrue()
+    public void FromHashmap_WithFullSession_ShouldConvertAllCategories()
     {
-        var raw = new Dictionary<string, object> { { "uksf_persistence_objects", new List<object>() } };
-
-        var result = PersistenceConverter.IsRawNamespaceFormat(raw);
-
-        result.Should().BeTrue();
-    }
-
-    [Fact]
-    public void IsRawNamespaceFormat_WithStructuredKeys_ShouldReturnFalse()
-    {
-        var raw = new Dictionary<string, object>
-        {
-            { "objects", new List<object>() },
-            { "players", new Dictionary<string, object>() },
-            { "markers", new List<object>() }
-        };
-
-        var result = PersistenceConverter.IsRawNamespaceFormat(raw);
-
-        result.Should().BeFalse();
-    }
-
-    [Fact]
-    public void FromRawNamespace_WithFullSession_ShouldConvertAllCategories()
-    {
-        var raw = BuildMinimalNamespace();
-        raw["uksf_persistence_objects"] = new List<object> { BuildMinimalObjectHashmap() };
-        raw["uksf_persistence_deletedObjects"] = new List<object> { "deleted_1", "deleted_2" };
-        raw["uksf_persistence_dateTime"] = new List<object>
+        var raw = BuildMinimalSessionHashmap();
+        raw["objects"] = new List<object> { BuildMinimalObjectHashmap() };
+        raw["deletedObjects"] = new List<object> { "deleted_1", "deleted_2" };
+        raw["dateTime"] = new List<object>
         {
             2038L,
             6L,
@@ -47,7 +22,7 @@ public class PersistenceConverterTests
             2L,
             44L
         };
-        raw["uksf_persistence_mapMarkers"] = new List<object>
+        raw["mapMarkers"] = new List<object>
         {
             new List<object>
             {
@@ -63,7 +38,7 @@ public class PersistenceConverterTests
                 "FOB Alpha"
             }
         };
-        raw["76561198068932442"] = BuildMinimalPlayerHashmap();
+        raw["players"] = new Dictionary<string, object> { { "76561198068932442", BuildMinimalPlayerHashmap() } };
         raw["uksf_safehouses_state"] = new List<object>
         {
             new List<object>(),
@@ -71,7 +46,7 @@ public class PersistenceConverterTests
             new List<object>()
         };
 
-        var result = PersistenceConverter.FromRawNamespace(raw);
+        var result = PersistenceConverter.FromHashmap(raw);
 
         result.Objects.Should().HaveCount(1);
         result.DeletedObjects.Should().HaveCount(2);
@@ -84,21 +59,32 @@ public class PersistenceConverterTests
     }
 
     [Fact]
-    public void FromRawNamespace_ShouldDetectPlayerUids()
+    public void FromHashmap_WithPlayersNestedUnderPlayersKey_ShouldDetectPlayers()
     {
-        var raw = BuildMinimalNamespace();
-        raw["76561198068932442"] = BuildMinimalPlayerHashmap();
+        var raw = BuildMinimalSessionHashmap();
+        raw["players"] = new Dictionary<string, object> { { "76561198068932442", BuildMinimalPlayerHashmap() } };
         raw["uksf_arearating_ratingAreas"] = new List<object>();
 
-        var result = PersistenceConverter.FromRawNamespace(raw);
+        var result = PersistenceConverter.FromHashmap(raw);
 
         result.Players.Should().HaveCount(1);
         result.Players.Should().ContainKey("76561198068932442");
-        result.Players.Should().NotContainKey("uksf_arearating_ratingAreas");
+        result.CustomData.Should().ContainKey("uksf_arearating_ratingAreas");
+        result.CustomData.Should().NotContainKey("players");
     }
 
     [Fact]
-    public void ToRawNamespace_RoundTrip_ShouldPreserveData()
+    public void FromHashmap_WithEmptyPlayers_ShouldReturnEmptyPlayersDictionary()
+    {
+        var raw = BuildMinimalSessionHashmap();
+
+        var result = PersistenceConverter.FromHashmap(raw);
+
+        result.Players.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ToHashmap_RoundTrip_ShouldPreserveData()
     {
         var session = new DomainPersistenceSession
         {
@@ -144,8 +130,8 @@ public class PersistenceConverterTests
             CustomData = new Dictionary<string, object> { { "uksf_safehouses_state", new List<object> { new List<object>() } } }
         };
 
-        var raw = PersistenceConverter.ToRawNamespace(session);
-        var roundTripped = PersistenceConverter.FromRawNamespace(raw);
+        var raw = PersistenceConverter.ToHashmap(session);
+        var roundTripped = PersistenceConverter.FromHashmap(raw);
 
         roundTripped.Objects.Should().HaveCount(1);
         roundTripped.Objects[0].Id.Should().Be("obj_1");
@@ -157,6 +143,51 @@ public class PersistenceConverterTests
         roundTripped.Players["76561198068932442"].Position.Should().BeEquivalentTo(new[] { 150.0, 250.0, 5.0 });
         roundTripped.Players["76561198068932442"].Direction.Should().Be(45.0);
         roundTripped.CustomData.Should().ContainKey("uksf_safehouses_state");
+    }
+
+    [Fact]
+    public void ToHashmap_ShouldUseNestedPlayersKey()
+    {
+        var session = new DomainPersistenceSession
+        {
+            Players = new Dictionary<string, PlayerRedeployData>
+            {
+                {
+                    "76561198068932442", new PlayerRedeployData
+                    {
+                        Position = [0.0, 0.0, 0.0],
+                        Direction = 0.0,
+                        Animation = ""
+                    }
+                }
+            }
+        };
+
+        var raw = PersistenceConverter.ToHashmap(session);
+
+        raw.Should().ContainKey("players");
+        raw.Should().NotContainKey("76561198068932442");
+        var playersDict = raw["players"] as Dictionary<string, object>;
+        playersDict.Should().NotBeNull();
+        playersDict!.Should().ContainKey("76561198068932442");
+    }
+
+    [Fact]
+    public void ToHashmap_ShouldUsePlainKeys()
+    {
+        var session = new DomainPersistenceSession();
+
+        var raw = PersistenceConverter.ToHashmap(session);
+
+        raw.Should().ContainKey("objects");
+        raw.Should().ContainKey("deletedObjects");
+        raw.Should().ContainKey("dateTime");
+        raw.Should().ContainKey("mapMarkers");
+        raw.Should().ContainKey("players");
+        raw.Should().NotContainKey("uksf_persistence_objects");
+        raw.Should().NotContainKey("uksf_persistence_deletedObjects");
+        raw.Should().NotContainKey("uksf_persistence_dateTime");
+        raw.Should().NotContainKey("uksf_persistence_mapMarkers");
     }
 
     [Fact]
@@ -205,12 +236,12 @@ public class PersistenceConverterTests
             }
         };
 
-        var raw = BuildMinimalNamespace();
-        raw["uksf_persistence_mapMarkers"] = new List<object> { standardMarker, polylineMarker };
+        var raw = BuildMinimalSessionHashmap();
+        raw["mapMarkers"] = new List<object> { standardMarker, polylineMarker };
 
-        var session = PersistenceConverter.FromRawNamespace(raw);
-        var rawRoundTripped = PersistenceConverter.ToRawNamespace(session);
-        var finalSession = PersistenceConverter.FromRawNamespace(rawRoundTripped);
+        var session = PersistenceConverter.FromHashmap(raw);
+        var rawRoundTripped = PersistenceConverter.ToHashmap(session);
+        var finalSession = PersistenceConverter.FromHashmap(rawRoundTripped);
 
         finalSession.Markers.Should().HaveCount(2);
         finalSession.Markers[0].Should().HaveCount(10);
@@ -220,112 +251,8 @@ public class PersistenceConverterTests
         finalSession.Markers[1][2].Should().Be("POLYLINE");
     }
 
-    private static Dictionary<string, object> BuildMinimalObjectHashmap() =>
-        new()
-        {
-            ["id"] = "",
-            ["type"] = "",
-            ["position"] = new List<object>
-            {
-                0.0,
-                0.0,
-                0.0
-            },
-            ["vectorDirUp"] = new List<object>
-            {
-                new List<object>
-                {
-                    0.0,
-                    1.0,
-                    0.0
-                },
-                new List<object>
-                {
-                    0.0,
-                    0.0,
-                    1.0
-                }
-            },
-            ["damage"] = 0.0,
-            ["fuel"] = 1.0,
-            ["turretWeapons"] = new List<object>(),
-            ["turretMagazines"] = new List<object>(),
-            ["pylonLoadout"] = new List<object>(),
-            ["logistics"] = new List<object>
-            {
-                0.0,
-                0.0,
-                0.0
-            },
-            ["attached"] = new List<object>(),
-            ["rackChannels"] = new List<object>(),
-            ["aceCargo"] = new List<object>(),
-            ["inventory"] = new List<object>
-            {
-                new List<object> { new List<object>(), new List<object>() },
-                new List<object> { new List<object>(), new List<object>() },
-                new List<object> { new List<object>(), new List<object>() },
-                new List<object> { new List<object>(), new List<object>() }
-            },
-            ["aceFortify"] = new List<object> { false, "WEST" },
-            ["aceMedical"] = new List<object>
-            {
-                0L,
-                false,
-                false
-            },
-            ["aceRepair"] = new List<object> { 0L, 0L },
-            ["customName"] = ""
-        };
-
-    private static Dictionary<string, object> BuildMinimalPlayerHashmap() =>
-        new()
-        {
-            ["position"] = new List<object>
-            {
-                0.0,
-                0.0,
-                0.0
-            },
-            ["vehicleState"] = new List<object>
-            {
-                "",
-                "",
-                -1L
-            },
-            ["direction"] = 0.0,
-            ["animation"] = "",
-            ["loadout"] = new List<object>
-            {
-                new List<object>(),
-                new List<object>(),
-                new List<object>(),
-                new List<object>(),
-                new List<object>(),
-                new List<object>(),
-                "",
-                "",
-                new List<object>(),
-                new List<object>
-                {
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    ""
-                }
-            },
-            ["damage"] = 0.0,
-            ["aceMedical"] = "{}",
-            ["earplugs"] = false,
-            ["attachedItems"] = new List<object>(),
-            ["radios"] = new List<object>(),
-            ["diveState"] = new List<object> { false }
-        };
-
     [Fact]
-    public void FromRawNamespace_WithRealObjectData_ShouldRoundTrip()
+    public void FromHashmap_WithRealObjectData_ShouldRoundTrip()
     {
         var realObject = new Dictionary<string, object>
         {
@@ -407,9 +334,9 @@ public class PersistenceConverterTests
             ["customName"] = ""
         };
 
-        var raw = BuildMinimalNamespace();
-        raw["uksf_persistence_objects"] = new List<object> { realObject };
-        raw["uksf_persistence_dateTime"] = new List<object>
+        var raw = BuildMinimalSessionHashmap();
+        raw["objects"] = new List<object> { realObject };
+        raw["dateTime"] = new List<object>
         {
             2038L,
             6L,
@@ -418,7 +345,7 @@ public class PersistenceConverterTests
             44L
         };
 
-        var session = PersistenceConverter.FromRawNamespace(raw);
+        var session = PersistenceConverter.FromHashmap(raw);
 
         session.Objects.Should().HaveCount(1);
         var obj = session.Objects[0];
@@ -435,8 +362,8 @@ public class PersistenceConverterTests
         obj.AceFortify.IsAceFortification.Should().BeFalse();
         obj.AceFortify.Side.Should().Be("WEST");
 
-        var rawRoundTripped = PersistenceConverter.ToRawNamespace(session);
-        var sessionRoundTripped = PersistenceConverter.FromRawNamespace(rawRoundTripped);
+        var rawRoundTripped = PersistenceConverter.ToHashmap(session);
+        var sessionRoundTripped = PersistenceConverter.FromHashmap(rawRoundTripped);
 
         var objRt = sessionRoundTripped.Objects[0];
         objRt.Id.Should().Be(obj.Id);
@@ -450,7 +377,7 @@ public class PersistenceConverterTests
     }
 
     [Fact]
-    public void FromRawNamespace_WithRealVehicleData_ShouldHandleTurrets()
+    public void FromHashmap_WithRealVehicleData_ShouldHandleTurrets()
     {
         var vehicle = new Dictionary<string, object>
         {
@@ -535,10 +462,10 @@ public class PersistenceConverterTests
             ["customName"] = ""
         };
 
-        var raw = BuildMinimalNamespace();
-        raw["uksf_persistence_objects"] = new List<object> { vehicle };
+        var raw = BuildMinimalSessionHashmap();
+        raw["objects"] = new List<object> { vehicle };
 
-        var session = PersistenceConverter.FromRawNamespace(raw);
+        var session = PersistenceConverter.FromHashmap(raw);
 
         session.Objects.Should().HaveCount(1);
         var obj = session.Objects[0];
@@ -565,7 +492,7 @@ public class PersistenceConverterTests
     }
 
     [Fact]
-    public void FullRoundTrip_RawNamespaceToSessionAndBack_ShouldBeConsistent()
+    public void FullRoundTrip_HashmapToSessionAndBack_ShouldBeConsistent()
     {
         var supplyCrate = new Dictionary<string, object>
         {
@@ -800,10 +727,10 @@ public class PersistenceConverterTests
 
         var raw = new Dictionary<string, object>
         {
-            { "uksf_persistence_objects", new List<object> { supplyCrate, vehicle } },
-            { "uksf_persistence_deletedObjects", new List<object> { "deleted_obj_1" } },
+            { "objects", new List<object> { supplyCrate, vehicle } },
+            { "deletedObjects", new List<object> { "deleted_obj_1" } },
             {
-                "uksf_persistence_dateTime", new List<object>
+                "dateTime", new List<object>
                 {
                     2038L,
                     6L,
@@ -812,8 +739,8 @@ public class PersistenceConverterTests
                     44L
                 }
             },
-            { "uksf_persistence_mapMarkers", new List<object> { marker } },
-            { "76561198068932442", playerHashmap },
+            { "mapMarkers", new List<object> { marker } },
+            { "players", new Dictionary<string, object> { { "76561198068932442", playerHashmap } } },
             {
                 "uksf_safehouses_state", new List<object>
                 {
@@ -824,9 +751,9 @@ public class PersistenceConverterTests
             }
         };
 
-        var session1 = PersistenceConverter.FromRawNamespace(raw);
-        var rawRoundTripped = PersistenceConverter.ToRawNamespace(session1);
-        var session2 = PersistenceConverter.FromRawNamespace(rawRoundTripped);
+        var session1 = PersistenceConverter.FromHashmap(raw);
+        var rawRoundTripped = PersistenceConverter.ToHashmap(session1);
+        var session2 = PersistenceConverter.FromHashmap(rawRoundTripped);
 
         session2.Objects.Should().HaveCount(session1.Objects.Count);
         session2.Players.Should().HaveCount(session1.Players.Count);
@@ -850,14 +777,118 @@ public class PersistenceConverterTests
         player.Damage.Should().BeApproximately(0.15, 0.001);
     }
 
-    private static Dictionary<string, object> BuildMinimalNamespace()
+    private static Dictionary<string, object> BuildMinimalObjectHashmap() =>
+        new()
+        {
+            ["id"] = "",
+            ["type"] = "",
+            ["position"] = new List<object>
+            {
+                0.0,
+                0.0,
+                0.0
+            },
+            ["vectorDirUp"] = new List<object>
+            {
+                new List<object>
+                {
+                    0.0,
+                    1.0,
+                    0.0
+                },
+                new List<object>
+                {
+                    0.0,
+                    0.0,
+                    1.0
+                }
+            },
+            ["damage"] = 0.0,
+            ["fuel"] = 1.0,
+            ["turretWeapons"] = new List<object>(),
+            ["turretMagazines"] = new List<object>(),
+            ["pylonLoadout"] = new List<object>(),
+            ["logistics"] = new List<object>
+            {
+                0.0,
+                0.0,
+                0.0
+            },
+            ["attached"] = new List<object>(),
+            ["rackChannels"] = new List<object>(),
+            ["aceCargo"] = new List<object>(),
+            ["inventory"] = new List<object>
+            {
+                new List<object> { new List<object>(), new List<object>() },
+                new List<object> { new List<object>(), new List<object>() },
+                new List<object> { new List<object>(), new List<object>() },
+                new List<object> { new List<object>(), new List<object>() }
+            },
+            ["aceFortify"] = new List<object> { false, "WEST" },
+            ["aceMedical"] = new List<object>
+            {
+                0L,
+                false,
+                false
+            },
+            ["aceRepair"] = new List<object> { 0L, 0L },
+            ["customName"] = ""
+        };
+
+    private static Dictionary<string, object> BuildMinimalPlayerHashmap() =>
+        new()
+        {
+            ["position"] = new List<object>
+            {
+                0.0,
+                0.0,
+                0.0
+            },
+            ["vehicleState"] = new List<object>
+            {
+                "",
+                "",
+                -1L
+            },
+            ["direction"] = 0.0,
+            ["animation"] = "",
+            ["loadout"] = new List<object>
+            {
+                new List<object>(),
+                new List<object>(),
+                new List<object>(),
+                new List<object>(),
+                new List<object>(),
+                new List<object>(),
+                "",
+                "",
+                new List<object>(),
+                new List<object>
+                {
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                }
+            },
+            ["damage"] = 0.0,
+            ["aceMedical"] = "{}",
+            ["earplugs"] = false,
+            ["attachedItems"] = new List<object>(),
+            ["radios"] = new List<object>(),
+            ["diveState"] = new List<object> { false }
+        };
+
+    private static Dictionary<string, object> BuildMinimalSessionHashmap()
     {
         return new Dictionary<string, object>
         {
-            { "uksf_persistence_objects", new List<object>() },
-            { "uksf_persistence_deletedObjects", new List<object>() },
+            { "objects", new List<object>() },
+            { "deletedObjects", new List<object>() },
             {
-                "uksf_persistence_dateTime", new List<object>
+                "dateTime", new List<object>
                 {
                     2038L,
                     6L,
@@ -866,7 +897,8 @@ public class PersistenceConverterTests
                     44L
                 }
             },
-            { "uksf_persistence_mapMarkers", new List<object>() }
+            { "mapMarkers", new List<object>() },
+            { "players", new Dictionary<string, object>() }
         };
     }
 }
