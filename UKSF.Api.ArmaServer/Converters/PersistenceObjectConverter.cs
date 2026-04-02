@@ -213,13 +213,26 @@ public static class PersistenceObjectConverter
                )
                .ToList();
 
-    private static List<object> SerializeInventory(InventoryContainer inv) =>
-    [
-        SerializeCargoSlot(inv.Weapons),
-        SerializeCargoSlot(inv.Magazines),
-        SerializeCargoSlot(inv.Items),
-        SerializeCargoSlot(inv.Backpacks)
-    ];
+    private static object SerializeInventory(InventoryContainer inv)
+    {
+        // If all cargo slots are empty, return an empty list to match the SQF representation.
+        // SQF sends [] for empty inventories; inflating to [[[],[]],[[],[]],[[],[]],[[],[]]] would mismatch.
+        if (inv.Weapons.ClassNames.Length == 0 &&
+            inv.Magazines.ClassNames.Length == 0 &&
+            inv.Items.ClassNames.Length == 0 &&
+            inv.Backpacks.ClassNames.Length == 0)
+        {
+            return new List<object>();
+        }
+
+        return new List<object>
+        {
+            SerializeCargoSlot(inv.Weapons),
+            SerializeCargoSlot(inv.Magazines),
+            SerializeCargoSlot(inv.Items),
+            SerializeCargoSlot(inv.Backpacks)
+        };
+    }
 
     private static List<object> SerializeCargoSlot(CargoSlot slot) => new() { slot.ClassNames.Cast<object>().ToList(), slot.Counts.Cast<object>().ToList() };
 }
