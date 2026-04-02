@@ -23,6 +23,6 @@ public class PersistenceController(IPersistenceSessionsService persistenceSessio
         }
 
         var hashmap = PersistenceConverter.ToHashmap(session);
-        return new JsonResult(hashmap);
+        return new JsonResult(hashmap, PersistenceSessionsService.SerializerOptions);
     }
 }
