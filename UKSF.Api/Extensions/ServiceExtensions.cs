@@ -53,7 +53,8 @@ public static class ServiceExtensions
                            .AddCachedContext<ILoaContext, LoaContext>()
                            .AddCachedContext<IOperationOrderContext, OperationOrderContext>()
                            .AddCachedContext<IOperationReportContext, OperationReportContext>()
-                           .AddCachedContext<ICommentThreadContext, CommentThreadContext>();
+                           .AddCachedContext<ICommentThreadContext, CommentThreadContext>()
+                           .AddContext<IBoardContext, BoardContext>();
         }
 
         private IServiceCollection AddEventHandlers()
@@ -80,6 +81,7 @@ public static class ServiceExtensions
                            .AddTransient<ILoginService, LoginService>()
                            .AddTransient<IPermissionsService, PermissionsService>()
                            .AddTransient<ICommentThreadService, CommentThreadService>()
+                           .AddTransient<IBoardService, BoardService>()
                            .AddTransient<IApplicationFunnelService, ApplicationFunnelService>()
                            .AddScoped<IDocumentFolderService, DocumentFolderService>()
                            .AddScoped<IDocumentService, DocumentService>()
@@ -190,6 +192,7 @@ public static class ServiceExtensions
             builder.MapHub<UtilityHub>($"/hub/{UtilityHub.EndPoint}");
             builder.MapHub<CommandRequestsHub>($"/hub/{CommandRequestsHub.EndPoint}");
             builder.MapHub<CommentThreadHub>($"/hub/{CommentThreadHub.EndPoint}");
+            builder.MapHub<BoardHub>($"/hub/{BoardHub.EndPoint}");
         }
     }
 }
