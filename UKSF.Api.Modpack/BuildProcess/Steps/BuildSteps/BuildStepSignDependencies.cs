@@ -59,14 +59,14 @@ public class BuildStepSignDependencies : FileBuildStep
         DirectoryInfo addons = new(addonsPath);
         if (!addons.Exists)
         {
-            StepLogger.Log("Dependencies addons directory not found, full sign required");
+            StepLogger.Log("Dependencies addons directory not found");
             FullSign = true;
             return true;
         }
 
         if (Build.Environment == GameEnvironment.Rc && Build.BuildNumber == 1)
         {
-            StepLogger.Log($"First RC build for {Build.Version}, full sign required");
+            StepLogger.Log($"First RC build for {Build.Version}");
             FullSign = true;
             return true;
         }
@@ -74,7 +74,7 @@ public class BuildStepSignDependencies : FileBuildStep
         var pboFiles = addons.GetFiles("*.pbo", SearchOption.AllDirectories);
         if (pboFiles.Length == 0)
         {
-            StepLogger.Log("No PBO files found in dependencies, skipping");
+            StepLogger.Log("No PBO files found");
             return false;
         }
 
@@ -99,7 +99,7 @@ public class BuildStepSignDependencies : FileBuildStep
 
         if (changedPbos.Count == 0 && missingSignaturePbos.Count == 0)
         {
-            StepLogger.Log($"All {pboFiles.Length} dependencies PBOs have valid signatures, skipping");
+            StepLogger.Log($"All {pboFiles.Length} PBOs have valid signatures");
             return false;
         }
 
@@ -110,12 +110,11 @@ public class BuildStepSignDependencies : FileBuildStep
 
         foreach (var pbo in missingSignaturePbos)
         {
-            StepLogger.Log($"{pbo.Name} has invalid signatures");
+            StepLogger.Log($"{pbo.Name} is missing a valid signature");
         }
 
         if (changedPbos.Count > 0)
         {
-            StepLogger.Log("PBO content changed, full sign required");
             FullSign = true;
             return true;
         }
@@ -125,12 +124,10 @@ public class BuildStepSignDependencies : FileBuildStep
 
         if (existingKey is null)
         {
-            StepLogger.Log("No existing private key found, full sign required");
             FullSign = true;
             return true;
         }
 
-        StepLogger.Log($"Reusing existing key, partial sign for {missingSignaturePbos.Count} PBOs");
         _affectedPbos = missingSignaturePbos;
         return true;
     }
@@ -161,7 +158,9 @@ public class BuildStepSignDependencies : FileBuildStep
         var keygenPath = Path.Join(GetBuildEnvironmentPath(), "PrivateKeys");
         var privateKeyPath = Directory.GetFiles(keygenPath, "*.biprivatekey").First();
 
-        StepLogger.Log($"\nUsing existing key: {Path.GetFileNameWithoutExtension(privateKeyPath)}");
+        StepLogger.LogSurround("\nLoading key...");
+        StepLogger.Log($"Loaded {Path.GetFileNameWithoutExtension(privateKeyPath)}");
+        StepLogger.LogSurround("Loaded key");
     }
 
     private async Task ProcessFullSign()
