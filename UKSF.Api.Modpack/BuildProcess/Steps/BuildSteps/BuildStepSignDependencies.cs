@@ -15,6 +15,14 @@ public class BuildStepSignDependencies : FileBuildStep
 
     public override bool CheckGuards()
     {
+        StepLogger.LogSurround("\nChecking dependencies signatures...");
+        var shouldSign = ShouldSignDependencies();
+        StepLogger.LogSurround("Checked dependencies signatures");
+        return shouldSign;
+    }
+
+    private bool ShouldSignDependencies()
+    {
         var addonsPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "addons");
         DirectoryInfo addons = new(addonsPath);
         if (!addons.Exists)
