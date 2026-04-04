@@ -13,6 +13,24 @@ public class BuildStepSignDependencies : FileBuildStep
     private string _keyName;
     private readonly int _signProcessTimeout = (int)TimeSpan.FromSeconds(20).TotalMilliseconds;
 
+    public override bool CheckGuards()
+    {
+        var addonsPath = Path.Join(GetBuildEnvironmentPath(), "Repo", "@uksf_dependencies", "addons");
+        DirectoryInfo addons = new(addonsPath);
+        if (!addons.Exists)
+        {
+            return true;
+        }
+
+        // First RC build for a version always signs
+        if (Build.Environment == GameEnvironment.Rc && Build.BuildNumber == 1)
+        {
+            return true;
+        }
+
+        return DependenciesNeedSigning(addons);
+    }
+
     protected override async Task SetupExecute()
     {
         _dsSignFile = Path.Join(VariablesService.GetVariable("BUILD_PATH_DSSIGN").AsString(), "DSSignFile.exe");
@@ -55,15 +73,39 @@ public class BuildStepSignDependencies : FileBuildStep
         StepLogger.LogSurround("Signed dependencies");
     }
 
-    private string GetKeyname()
+    internal string GetKeyname()
     {
         return Build.Environment switch
         {
-            GameEnvironment.Release     => $"uksf_dependencies_{Build.Version}",
-            GameEnvironment.Rc          => $"uksf_dependencies_{Build.Version}_rc{Build.BuildNumber}",
-            GameEnvironment.Development => $"uksf_dependencies_dev_{Build.BuildNumber}",
-            _                           => throw new ArgumentException("Invalid build environment")
+            GameEnvironment.Rc          => $"uksf_dependencies_{Build.Version}",
+            GameEnvironment.Development => "uksf_dependencies_dev",
+            _                           => throw new ArgumentException("Invalid build environment for dependency signing")
         };
+    }
+
+    private static bool DependenciesNeedSigning(DirectoryInfo addons)
+    {
+        var pboFiles = addons.GetFiles("*.pbo", SearchOption.AllDirectories);
+        if (pboFiles.Length == 0)
+        {
+            return false;
+        }
+
+        foreach (var pbo in pboFiles)
+        {
+            var bisigns = addons.GetFiles($"{pbo.Name}.*.bisign", SearchOption.AllDirectories);
+            if (bisigns.Length != 1)
+            {
+                return true;
+            }
+
+            if (bisigns[0].LastWriteTimeUtc < pbo.LastWriteTimeUtc)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private Task SignFiles(string keygenPath, string addonsPath, List<FileInfo> files)
