@@ -72,33 +72,75 @@ public class BuildStepSignDependenciesTests : IDisposable
     }
 
     [Fact]
-    public void CheckGuards_Should_ReturnTrue_When_NoBisignsExist()
+    public void CheckGuards_Should_ReturnTrue_FullMode_When_NoBisignsExist()
     {
         SetupAddonsDirectory("mod_a.pbo", "mod_b.pbo");
         var step = CreateStep(GameEnvironment.Development, 1, "1.0.0");
 
         step.CheckGuards().Should().BeTrue();
+        step.TestFullSign.Should().BeTrue();
     }
 
     [Fact]
-    public void CheckGuards_Should_ReturnTrue_When_PboHasNoBisign()
+    public void CheckGuards_Should_ReturnTrue_PartialMode_When_PboMissingBisign_AndKeyExists()
     {
         var addonsPath = SetupAddonsDirectory("mod_a.pbo", "mod_b.pbo");
-        CreateBisign(addonsPath, "mod_a.pbo", DateTime.UtcNow);
+        var now = DateTime.UtcNow;
+        File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_a.pbo"), now.AddMinutes(-5));
+        File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_b.pbo"), now.AddMinutes(-5));
+        CreateBisign(addonsPath, "mod_a.pbo", now);
+        // mod_b.pbo has no bisign
+        CreatePrivateKey();
 
         var step = CreateStep(GameEnvironment.Development, 1, "1.0.0");
         step.CheckGuards().Should().BeTrue();
+        step.TestFullSign.Should().BeFalse();
     }
 
     [Fact]
-    public void CheckGuards_Should_ReturnTrue_When_PboIsNewerThanBisign()
+    public void CheckGuards_Should_ReturnTrue_FullMode_When_PboMissingBisign_AndNoKeyExists()
+    {
+        var addonsPath = SetupAddonsDirectory("mod_a.pbo", "mod_b.pbo");
+        var now = DateTime.UtcNow;
+        File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_a.pbo"), now.AddMinutes(-5));
+        File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_b.pbo"), now.AddMinutes(-5));
+        CreateBisign(addonsPath, "mod_a.pbo", now);
+        // mod_b.pbo has no bisign, no private key exists
+
+        var step = CreateStep(GameEnvironment.Development, 1, "1.0.0");
+        step.CheckGuards().Should().BeTrue();
+        step.TestFullSign.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CheckGuards_Should_ReturnTrue_FullMode_When_PboIsNewerThanBisign()
     {
         var addonsPath = SetupAddonsDirectory("mod_a.pbo");
         CreateBisign(addonsPath, "mod_a.pbo", DateTime.UtcNow.AddHours(-1));
         File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_a.pbo"), DateTime.UtcNow);
+        CreatePrivateKey();
 
         var step = CreateStep(GameEnvironment.Development, 1, "1.0.0");
         step.CheckGuards().Should().BeTrue();
+        step.TestFullSign.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CheckGuards_Should_ReturnTrue_FullMode_When_ChangedAndMissingBisigns()
+    {
+        var addonsPath = SetupAddonsDirectory("mod_a.pbo", "mod_b.pbo");
+        var now = DateTime.UtcNow;
+
+        // mod_a is newer than its bisign (changed)
+        CreateBisign(addonsPath, "mod_a.pbo", now.AddHours(-1));
+        File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_a.pbo"), now);
+        // mod_b has no bisign (missing)
+        File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_b.pbo"), now.AddMinutes(-5));
+        CreatePrivateKey();
+
+        var step = CreateStep(GameEnvironment.Development, 1, "1.0.0");
+        step.CheckGuards().Should().BeTrue();
+        step.TestFullSign.Should().BeTrue();
     }
 
     [Fact]
@@ -132,8 +174,6 @@ public class BuildStepSignDependenciesTests : IDisposable
 
         File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_a.pbo"), now.AddMinutes(-5));
         CreateBisign(addonsPath, "mod_a.pbo", now);
-
-        // Stale bisign for a PBO that no longer exists - should be irrelevant
         File.WriteAllBytes(Path.Combine(addonsPath, "mod_deleted.pbo.uksf_dependencies_dev.bisign"), [0]);
 
         var step = CreateStep(GameEnvironment.Development, 1, "1.0.0");
@@ -141,7 +181,7 @@ public class BuildStepSignDependenciesTests : IDisposable
     }
 
     [Fact]
-    public void CheckGuards_Should_ReturnTrue_When_RcBuildNumber1_EvenIfAllSigned()
+    public void CheckGuards_Should_ReturnTrue_FullMode_When_RcBuildNumber1_EvenIfAllSigned()
     {
         var addonsPath = SetupAddonsDirectory("mod_a.pbo");
         var now = DateTime.UtcNow;
@@ -151,6 +191,7 @@ public class BuildStepSignDependenciesTests : IDisposable
 
         var step = CreateStep(GameEnvironment.Rc, 1, "5.23.7");
         step.CheckGuards().Should().BeTrue();
+        step.TestFullSign.Should().BeTrue();
     }
 
     [Fact]
@@ -167,27 +208,28 @@ public class BuildStepSignDependenciesTests : IDisposable
     }
 
     [Fact]
-    public void CheckGuards_Should_ReturnTrue_When_PboHasMultipleBisigns()
+    public void CheckGuards_Should_ReturnTrue_PartialMode_When_PboHasMultipleBisigns_AndKeyExists()
     {
         var addonsPath = SetupAddonsDirectory("mod_a.pbo");
         var now = DateTime.UtcNow;
 
         File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_a.pbo"), now.AddMinutes(-5));
         CreateBisign(addonsPath, "mod_a.pbo", now);
-        // Second bisign from a different key
         File.WriteAllBytes(Path.Combine(addonsPath, "mod_a.pbo.uksf_dependencies_old.bisign"), [0]);
         File.SetLastWriteTimeUtc(Path.Combine(addonsPath, "mod_a.pbo.uksf_dependencies_old.bisign"), now);
+        CreatePrivateKey();
 
         var step = CreateStep(GameEnvironment.Development, 1, "1.0.0");
         step.CheckGuards().Should().BeTrue();
+        step.TestFullSign.Should().BeFalse();
     }
 
     [Fact]
-    public void CheckGuards_Should_ReturnTrue_When_AddonsDirectoryDoesNotExist()
+    public void CheckGuards_Should_ReturnTrue_FullMode_When_AddonsDirectoryDoesNotExist()
     {
-        // Don't create addons directory at all
         var step = CreateStep(GameEnvironment.Development, 1, "1.0.0");
         step.CheckGuards().Should().BeTrue();
+        step.TestFullSign.Should().BeTrue();
     }
 
     private string SetupAddonsDirectory(params string[] pboNames)
@@ -200,6 +242,13 @@ public class BuildStepSignDependenciesTests : IDisposable
         }
 
         return addonsPath;
+    }
+
+    private void CreatePrivateKey()
+    {
+        var keygenPath = Path.Combine(_tempDir, "PrivateKeys");
+        Directory.CreateDirectory(keygenPath);
+        File.WriteAllBytes(Path.Combine(keygenPath, "uksf_dependencies_dev.biprivatekey"), [0]);
     }
 
     private static void CreateBisign(string addonsPath, string pboName, DateTime writeTime)
@@ -234,7 +283,8 @@ public class BuildStepSignDependenciesTests : IDisposable
     }
 }
 
-public class TestBuildStepSignDependencies : BuildStepSignDependencies
+internal class TestBuildStepSignDependencies : BuildStepSignDependencies
 {
     public string TestGetKeyname() => GetKeyname();
+    public bool TestFullSign => FullSign;
 }
