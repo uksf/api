@@ -37,21 +37,26 @@ public class BuildStepSignDependencies : FileBuildStep
             return true;
         }
 
-        var result = CheckDependenciesNeedSigning(addons);
-        if (result is null)
+        var pboFiles = addons.GetFiles("*.pbo", SearchOption.AllDirectories);
+        if (pboFiles.Length == 0)
         {
             StepLogger.Log("No PBO files found in dependencies, skipping");
             return false;
         }
 
-        if (result != "")
+        var issues = FindSigningIssues(addons, pboFiles);
+        if (issues.Count > 0)
         {
-            StepLogger.Log(result);
+            foreach (var issue in issues)
+            {
+                StepLogger.Log(issue);
+            }
+
+            StepLogger.Log("Signing required");
             return true;
         }
 
-        var pboCount = addons.GetFiles("*.pbo", SearchOption.AllDirectories).Length;
-        StepLogger.Log($"All {pboCount} dependencies PBOs have valid signatures, skipping");
+        StepLogger.Log($"All {pboFiles.Length} dependencies PBOs have valid signatures, skipping");
         return false;
     }
 
@@ -107,34 +112,27 @@ public class BuildStepSignDependencies : FileBuildStep
         };
     }
 
-    private static string CheckDependenciesNeedSigning(DirectoryInfo addons)
+    private static List<string> FindSigningIssues(DirectoryInfo addons, FileInfo[] pboFiles)
     {
-        var pboFiles = addons.GetFiles("*.pbo", SearchOption.AllDirectories);
-        if (pboFiles.Length == 0)
-        {
-            return null;
-        }
-
+        List<string> issues = [];
         foreach (var pbo in pboFiles)
         {
             var bisigns = addons.GetFiles($"{pbo.Name}.*.bisign", SearchOption.AllDirectories);
             if (bisigns.Length == 0)
             {
-                return $"Found PBOs without signatures ({pbo.Name}), signing required";
+                issues.Add($"{pbo.Name} has no signature");
             }
-
-            if (bisigns.Length > 1)
+            else if (bisigns.Length > 1)
             {
-                return $"Found PBOs with multiple signatures ({pbo.Name}), signing required";
+                issues.Add($"{pbo.Name} has {bisigns.Length} signatures");
             }
-
-            if (bisigns[0].LastWriteTimeUtc < pbo.LastWriteTimeUtc)
+            else if (bisigns[0].LastWriteTimeUtc < pbo.LastWriteTimeUtc)
             {
-                return $"Found PBOs newer than their signatures ({pbo.Name}), signing required";
+                issues.Add($"{pbo.Name} is newer than its signature");
             }
         }
 
-        return "";
+        return issues;
     }
 
     private Task SignFiles(string keygenPath, string addonsPath, List<FileInfo> files)
