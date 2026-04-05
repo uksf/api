@@ -54,6 +54,7 @@ public static class ApiSharedExtensions
             services.AddSignalR(options => { options.AddFilter<HubExceptionFilter>(); })
                     .AddJsonProtocol(options =>
                         {
+                            options.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                             options.PayloadSerializerOptions.PropertyNameCaseInsensitive = true;
                             options.PayloadSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
                             options.PayloadSerializerOptions.Converters.Add(new InferredTypeConverter());
