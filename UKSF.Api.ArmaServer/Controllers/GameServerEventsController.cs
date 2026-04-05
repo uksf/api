@@ -8,13 +8,12 @@ namespace UKSF.Api.ArmaServer.Controllers;
 [Route("gameservers/events")]
 [AllowAnonymous]
 [LocalhostOnly]
-public class GameServerEventsController(IGameServersService gameServersService) : ControllerBase
+public class GameServerEventsController(IGameServerEventHandler eventHandler) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> ReceiveEvent([FromBody] GameServerEvent gameServerEvent)
     {
-        await gameServersService.HandleGameServerEvent(gameServerEvent);
-
+        await eventHandler.HandleEventAsync(gameServerEvent);
         return Ok();
     }
 }

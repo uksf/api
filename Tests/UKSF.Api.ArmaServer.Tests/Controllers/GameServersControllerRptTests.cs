@@ -6,16 +6,11 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.ArmaServer.Controllers;
-using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
-using UKSF.Api.ArmaServer.Signalr.Clients;
-using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Core;
-using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -23,7 +18,7 @@ namespace UKSF.Api.ArmaServer.Tests.Controllers;
 
 public class GameServersControllerRptTests : IDisposable
 {
-    private readonly Mock<IGameServersContext> _mockGameServersContext = new();
+    private readonly Mock<IGameServersService> _mockGameServersService = new();
     private readonly Mock<IRptLogService> _mockRptLogService = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly GameServersController _sut;
@@ -31,24 +26,14 @@ public class GameServersControllerRptTests : IDisposable
 
     public GameServersControllerRptTests()
     {
-        var mockServersHub = new Mock<IHubContext<ServersHub, IServersClient>>();
-        var mockClients = new Mock<IHubClients<IServersClient>>();
-        var mockServersClient = new Mock<IServersClient>();
-        mockClients.Setup(x => x.All).Returns(mockServersClient.Object);
-        mockServersHub.Setup(x => x.Clients).Returns(mockClients.Object);
-
         _sut = new GameServersController(
-            _mockGameServersContext.Object,
-            Mock.Of<IVariablesContext>(),
-            Mock.Of<IGameServersService>(),
+            _mockGameServersService.Object,
+            Mock.Of<IGameServerProcessManager>(),
             Mock.Of<IMissionsService>(),
-            mockServersHub.Object,
-            Mock.Of<IVariablesService>(),
-            Mock.Of<IGameServerHelpers>(),
             _mockRptLogService.Object,
+            Mock.Of<IGameServerHelpers>(),
             _mockLogger.Object,
-            Mock.Of<IHttpContextService>(),
-            Mock.Of<IGameServerProcessMonitor>()
+            Mock.Of<IHttpContextService>()
         );
 
         _sut.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
@@ -77,8 +62,6 @@ public class GameServersControllerRptTests : IDisposable
         };
     }
 
-    #region GetGameServers LogSources
-
     [Fact]
     public void GetGameServers_PopulatesLogSourcesOnEachServer()
     {
@@ -87,7 +70,7 @@ public class GameServersControllerRptTests : IDisposable
         var server2 = CreateGameServer("server2", "Training");
         server2.NumberHeadlessClients = 0;
 
-        _mockGameServersContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { server1, server2 });
+        _mockGameServersService.Setup(x => x.GetServers()).Returns(new List<DomainGameServer> { server1, server2 });
 
         var sources1 = new List<RptLogSource> { new("Server", true), new("HC0", false) };
         var sources2 = new List<RptLogSource> { new("Server", true) };
@@ -101,10 +84,6 @@ public class GameServersControllerRptTests : IDisposable
         servers[1].LogSources.Should().BeEquivalentTo(sources2);
     }
 
-    #endregion
-
-    #region DownloadLog
-
     [Fact]
     public void DownloadLog_ReturnsFileStream()
     {
@@ -113,7 +92,7 @@ public class GameServersControllerRptTests : IDisposable
         File.WriteAllText(tempFile, "log content here");
         _tempFiles.Add(tempFile);
 
-        _mockGameServersContext.Setup(x => x.GetSingle("server1")).Returns(server);
+        _mockGameServersService.Setup(x => x.GetServer("server1")).Returns(server);
         _mockRptLogService.Setup(x => x.GetLatestRptFilePath(server, "Server")).Returns(tempFile);
 
         var result = _sut.DownloadLog("server1", "Server");
@@ -130,7 +109,7 @@ public class GameServersControllerRptTests : IDisposable
     {
         var server = CreateGameServer();
 
-        _mockGameServersContext.Setup(x => x.GetSingle("server1")).Returns(server);
+        _mockGameServersService.Setup(x => x.GetServer("server1")).Returns(server);
         _mockRptLogService.Setup(x => x.GetLatestRptFilePath(server, "Server")).Returns((string)null);
 
         var result = _sut.DownloadLog("server1", "Server");
@@ -138,6 +117,4 @@ public class GameServersControllerRptTests : IDisposable
         var notFoundResult = result.Should().BeOfType<NotFoundObjectResult>().Subject;
         notFoundResult.Value.Should().Be("No log file found");
     }
-
-    #endregion
 }

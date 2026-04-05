@@ -1,4 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
@@ -15,8 +14,8 @@ public class ActionCleanupRunningServers(
     IHostEnvironment currentEnvironment,
     IClock clock,
     IUksfLogger logger,
-    IServiceScopeFactory serviceScopeFactory,
-    IGameServerHelpers gameServerHelpers
+    IGameServerHelpers gameServerHelpers,
+    IGameServerProcessManager processManager
 ) : SelfCreatingScheduledAction(schedulerService, currentEnvironment), IActionCleanupRunningServers
 {
     private const string ActionName = nameof(ActionCleanupRunningServers);
@@ -33,10 +32,7 @@ public class ActionCleanupRunningServers(
             return;
         }
 
-        using var scope = serviceScopeFactory.CreateScope();
-        var gameServersService = scope.ServiceProvider.GetRequiredService<IGameServersService>();
-
-        var serverStatuses = await gameServersService.GetAllGameServerStatuses();
+        var serverStatuses = await processManager.GetAllServerStatusesAsync();
         var runningServers = serverStatuses.Where(x => x.Status.Running).ToList();
         var populatedServers = runningServers.Where(x => x.Status.Players.Count > 0);
 
@@ -45,18 +41,18 @@ public class ActionCleanupRunningServers(
             return;
         }
 
-        await KillOrphanedServersAsync(gameServersService, runningServers);
-        await KillRemainingProcesses(gameServersService);
+        await KillOrphanedServersAsync(runningServers);
+        await KillRemainingProcesses();
     }
 
-    private async Task KillOrphanedServersAsync(IGameServersService gameServersService, List<DomainGameServer> runningServers)
+    private async Task KillOrphanedServersAsync(List<DomainGameServer> runningServers)
     {
         var killedCount = 0;
         foreach (var runningServer in runningServers)
         {
             try
             {
-                await gameServersService.KillGameServer(runningServer);
+                await processManager.KillServerAsync(runningServer);
                 killedCount++;
             }
             catch (Exception exception)
@@ -73,11 +69,11 @@ public class ActionCleanupRunningServers(
         }
     }
 
-    private async Task KillRemainingProcesses(IGameServersService gameServersService)
+    private async Task KillRemainingProcesses()
     {
         try
         {
-            var killedCount = await gameServersService.KillAllArmaProcesses();
+            var killedCount = await processManager.KillAllAsync();
             if (killedCount > 0)
             {
                 logger.LogInfo($"Killed {killedCount} orphaned arma processes");

@@ -7,6 +7,7 @@ public interface IServersClient
     Task ReceiveDisabledState(bool state);
     Task ReceiveServersUpdate(GameServersUpdate update);
     Task ReceiveServerUpdate(GameServerUpdate update);
+    Task ReceiveInstanceCount(int instanceCount);
     Task ReceiveMissionsUpdate(List<MissionFile> missions);
     Task ReceiveLogContent(string serverId, string source, List<string> lines, int startLineIndex, bool isComplete);
     Task ReceiveLogAppend(string serverId, string source, List<string> lines);

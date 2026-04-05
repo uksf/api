@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
-using MassTransit;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using UKSF.Api.ArmaServer.DataContext;
@@ -14,8 +12,8 @@ using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.ArmaServer.Signalr.Clients;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models.Request;
-using UKSF.Api.Core.Processes;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -25,13 +23,8 @@ public class GameServersServiceOrderTests
 {
     private readonly Mock<IGameServerHelpers> _mockIGameServerHelpers = new();
     private readonly Mock<IGameServersContext> _mockIGameServersContext = new();
-    private readonly Mock<IProcessUtilities> _mockProcessUtilities = new();
-    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory = new();
     private readonly Mock<IVariablesService> _mockIVariablesService = new();
-    private readonly Mock<IHubContext<ServersHub, IServersClient>> _mockServersHub = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
-    private readonly Mock<IPublishEndpoint> _mockPublishEndpoint = new();
-    private readonly Mock<IPersistenceSessionsService> _mockPersistenceSessionsService = new();
 
     private readonly GameServersService _subject;
 
@@ -40,15 +33,10 @@ public class GameServersServiceOrderTests
         _subject = new GameServersService(
             _mockIGameServersContext.Object,
             _mockIGameServerHelpers.Object,
-            _mockProcessUtilities.Object,
-            _mockHttpClientFactory.Object,
             _mockIVariablesService.Object,
-            _mockServersHub.Object,
-            _mockLogger.Object,
-            _mockPublishEndpoint.Object,
-            _mockPersistenceSessionsService.Object,
-            new Mock<IMissionStatsService>().Object,
-            new Mock<IPerformanceService>().Object
+            new Mock<IVariablesContext>().Object,
+            new Mock<IHubContext<ServersHub, IServersClient>>().Object,
+            _mockLogger.Object
         );
     }
 

@@ -1,401 +1,107 @@
-using System.Collections.Concurrent;
-using System.Globalization;
-using System.Net.Http.Headers;
-using System.Text.Json;
 using System.Text.RegularExpressions;
-using MassTransit;
 using MongoDB.Driver;
 using Microsoft.AspNetCore.SignalR;
-using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.ArmaServer.Models.Persistence;
 using UKSF.Api.ArmaServer.Signalr.Clients;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Context;
+using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Models.Request;
-using UKSF.Api.Core.Processes;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.Services;
 
 public interface IGameServersService
 {
-    int GetGameInstanceCount();
-    Task<List<DomainGameServer>> GetAllGameServerStatuses();
-    void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection);
-    Task LaunchGameServer(DomainGameServer gameServer, string missionName = null, string launchedBy = null);
-    Task StopGameServer(DomainGameServer gameServer);
-    Task KillGameServer(DomainGameServer gameServer);
-    Task<int> KillAllArmaProcesses();
+    List<DomainGameServer> GetServers();
+    DomainGameServer GetServer(string id);
+    DomainGameServer CheckServer(string check, string excludeId = null);
+    Task AddServerAsync(DomainGameServer server);
+    Task<bool> EditServerAsync(DomainGameServer server);
+    Task DeleteServerAsync(string id);
     List<GameServerMod> GetAvailableMods(string id);
     List<GameServerMod> GetEnvironmentMods(GameEnvironment environment);
+    Task SetServerModsAsync(string id, DomainGameServer server);
+    GameServerModsDataset ResetServerMods(string id);
     Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate);
-    Task HandleGameServerEvent(GameServerEvent gameServerEvent);
-    void ClearStatusCache(string serverId);
+    bool GetDisabledState();
+    Task SetDisabledStateAsync(bool state);
 }
 
 public class GameServersService(
     IGameServersContext gameServersContext,
     IGameServerHelpers gameServerHelpers,
-    IProcessUtilities processUtilities,
-    IHttpClientFactory httpClientFactory,
     IVariablesService variablesService,
+    IVariablesContext variablesContext,
     IHubContext<ServersHub, IServersClient> serversHub,
-    IUksfLogger logger,
-    IPublishEndpoint publishEndpoint,
-    IPersistenceSessionsService persistenceSessionsService,
-    IMissionStatsService missionStatsService,
-    IPerformanceService performanceService
+    IUksfLogger logger
 ) : IGameServersService
 {
-    private static readonly ConcurrentDictionary<string, GameServerStatus> StatusCache = new();
-
-    public int GetGameInstanceCount()
+    public List<DomainGameServer> GetServers()
     {
-        return gameServerHelpers.GetArmaProcesses().Count();
+        return gameServersContext.Get().ToList();
     }
 
-    public async Task<List<DomainGameServer>> GetAllGameServerStatuses()
+    public DomainGameServer GetServer(string id)
     {
-        var gameServers = gameServersContext.Get().ToList();
-
-        if (variablesService.GetFeatureState("SKIP_SERVER_STATUS"))
-        {
-            foreach (var gameServer in gameServers)
-            {
-                await gameServersContext.Replace(gameServer);
-            }
-
-            return gameServers;
-        }
-
-        if (!gameServerHelpers.GetArmaProcesses().Any())
-        {
-            StatusCache.Clear();
-
-            foreach (var gameServer in gameServers)
-            {
-                if (!string.IsNullOrEmpty(gameServer.Status.CurrentMissionSessionId))
-                {
-                    await TryFinaliseKilledSessionAsync(gameServer.Status.CurrentMissionSessionId);
-                }
-            }
-
-            foreach (var gameServer in gameServers)
-            {
-                gameServer.Status = new GameServerStatus();
-                gameServer.ProcessId = null;
-                gameServer.HeadlessClientProcessIds.Clear();
-                await gameServersContext.Replace(gameServer);
-            }
-
-            return gameServers;
-        }
-
-        var armaProcesses = gameServerHelpers.GetArmaProcessesWithCommandLine();
-        await Task.WhenAll(gameServers.Select(server => UpdateServerStatus(server, armaProcesses)));
-        return gameServers;
+        return gameServersContext.GetSingle(id);
     }
 
-    private async Task UpdateServerStatus(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
+    public DomainGameServer CheckServer(string check, string excludeId = null)
     {
-        var matchingProcess = FindMatchingServerProcess(gameServer, armaProcesses);
-        UpdateHeadlessClientProcessIds(gameServer, armaProcesses);
-
-        if (matchingProcess is null)
+        if (excludeId is not null)
         {
-            var sessionId = gameServer.Status.CurrentMissionSessionId;
-            if (!string.IsNullOrEmpty(sessionId))
-            {
-                await TryFinaliseKilledSessionAsync(sessionId);
-            }
-
-            gameServer.Status = new GameServerStatus();
-            gameServer.ProcessId = null;
-            StatusCache.TryRemove(gameServer.Id, out _);
-            await gameServersContext.Replace(gameServer);
-            return;
+            return gameServersContext.GetSingle(x => x.Id != excludeId && (x.Name == check || x.ApiPort.ToString() == check));
         }
 
-        gameServer.ProcessId = matchingProcess.ProcessId;
-        gameServer.Status.Launching = true;
-
-        using var client = httpClientFactory.CreateClient();
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        client.Timeout = TimeSpan.FromSeconds(5);
-        try
-        {
-            var response = await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server");
-            if (!response.IsSuccessStatusCode)
-            {
-                var statusCode = (int)response.StatusCode;
-                if (statusCode is 502 or 504)
-                {
-                    // Gateway error — server process exists but extension not reachable
-                    gameServer.Status.Running = false;
-                }
-                else if (statusCode == 503)
-                {
-                    // Extension is up but has no status yet (startup)
-                    // Leave current status unchanged, don't log
-                }
-                else
-                {
-                    // Unexpected error (e.g. 500) — log for visibility
-                    var body = await response.Content.ReadAsStringAsync();
-                    logger.LogWarning($"Status endpoint returned {statusCode} for '{gameServer.Name}': {body}");
-                }
-            }
-            else
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                var polled = JsonSerializer.Deserialize<GameServerStatus>(content, DefaultJsonSerializerOptions.Options);
-                gameServer.Status.Map = polled.Map;
-                gameServer.Status.Mission = polled.Mission;
-                gameServer.Status.Players = polled.Players;
-                gameServer.Status.Uptime = polled.Uptime;
-                gameServer.Status.EntityCount = polled.EntityCount;
-                gameServer.Status.AiCount = polled.AiCount;
-                gameServer.Status.HeadlessClientCount = polled.HeadlessClientCount;
-                gameServer.Status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(polled.Uptime)).ToString();
-                gameServer.Status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
-                gameServer.Status.Running = true;
-                gameServer.Status.Launching = false;
-            }
-        }
-        catch (HttpRequestException)
-        {
-            gameServer.Status.Running = false;
-        }
-        catch (TaskCanceledException)
-        {
-            gameServer.Status.Running = false;
-        }
-        catch (Exception exception)
-        {
-            logger.LogError($"Unexpected error getting game server status for '{gameServer.Name}'", exception);
-            gameServer.Status.Running = false;
-        }
-
-        // If we have recent event-based status cached, use it as it's more up-to-date than HTTP polling
-        if (StatusCache.TryGetValue(gameServer.Id, out var cachedStatus) && cachedStatus.LastEventReceived > DateTime.UtcNow.AddSeconds(-30))
-        {
-            gameServer.Status.Map = cachedStatus.Map;
-            gameServer.Status.Mission = cachedStatus.Mission;
-            gameServer.Status.Players = cachedStatus.Players;
-            gameServer.Status.Uptime = cachedStatus.Uptime;
-            gameServer.Status.ParsedUptime = cachedStatus.ParsedUptime;
-            gameServer.Status.StartedAt = cachedStatus.StartedAt;
-            gameServer.Status.EntityCount = cachedStatus.EntityCount;
-            gameServer.Status.AiCount = cachedStatus.AiCount;
-            gameServer.Status.HeadlessClientCount = cachedStatus.HeadlessClientCount;
-            gameServer.Status.MaxPlayers = cachedStatus.MaxPlayers;
-            gameServer.Status.Running = cachedStatus.Running;
-            gameServer.Status.Launching = cachedStatus.Launching;
-            gameServer.Status.LastEventReceived = cachedStatus.LastEventReceived;
-        }
-
-        await gameServersContext.Replace(gameServer);
+        return gameServersContext.GetSingle(x => x.Name == check || x.ApiPort.ToString() == check);
     }
 
-    private static ProcessCommandLineInfo FindMatchingServerProcess(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
+    public async Task AddServerAsync(DomainGameServer server)
     {
-        return armaProcesses.FirstOrDefault(p => MatchesPort(p, gameServer.Port) && p.CommandLine.Contains("-config=") && !p.CommandLine.Contains("-client"));
+        server.Order = gameServersContext.Get().Count();
+        await gameServersContext.Add(server);
+        logger.LogAudit($"Server added '{server}'");
     }
 
-    private static void UpdateHeadlessClientProcessIds(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
+    public async Task<bool> EditServerAsync(DomainGameServer server)
     {
-        gameServer.HeadlessClientProcessIds = armaProcesses.Where(p => MatchesPort(p, gameServer.Port) && p.CommandLine.Contains("-client"))
-                                                           .Select(p => p.ProcessId)
-                                                           .ToList();
-    }
-
-    private static bool MatchesPort(ProcessCommandLineInfo process, int port)
-    {
-        var portArg = $"-port={port} ";
-        var portArgEnd = $"-port={port}";
-        return process.CommandLine.Contains(portArg) || process.CommandLine.EndsWith(portArgEnd);
-    }
-
-    public void WriteServerConfig(DomainGameServer gameServer, int playerCount, string missionSelection)
-    {
-        File.WriteAllText(
-            gameServerHelpers.GetGameServerConfigPath(gameServer),
-            gameServerHelpers.FormatGameServerConfig(gameServer, playerCount, missionSelection)
-        );
-    }
-
-    public async Task LaunchGameServer(DomainGameServer gameServer, string missionName = null, string launchedBy = null)
-    {
-        gameServer.Status = new GameServerStatus { Launching = true };
-        StatusCache.TryRemove(gameServer.Id, out _);
-
-        if (missionName is not null)
+        var oldGameServer = gameServersContext.GetSingle(server.Id);
+        logger.LogAudit($"Game server '{server.Name}' updated:{oldGameServer.Changes(server)}");
+        var environmentChanged = false;
+        if (oldGameServer.Environment != server.Environment)
         {
-            var nameWithoutExtension = Path.GetFileNameWithoutExtension(missionName);
-            var lastDot = nameWithoutExtension.LastIndexOf('.');
-            if (lastDot > 0)
-            {
-                gameServer.Status.Mission = nameWithoutExtension[..lastDot];
-                gameServer.Status.Map = nameWithoutExtension[(lastDot + 1)..];
-            }
-            else
-            {
-                gameServer.Status.Mission = nameWithoutExtension;
-            }
+            environmentChanged = true;
+            server.Mods = GetEnvironmentMods(server.Environment);
+            server.ServerMods = new List<GameServerMod>();
         }
 
-        if (launchedBy is not null)
-        {
-            gameServer.LaunchedBy = launchedBy;
-        }
-
-        var launchArguments = gameServerHelpers.FormatGameServerLaunchArguments(gameServer);
-        gameServer.ProcessId = processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments);
-
-        await Task.Delay(TimeSpan.FromMilliseconds(50));
-
-        for (var index = 0; index < gameServer.NumberHeadlessClients; index++)
-        {
-            launchArguments = gameServerHelpers.FormatHeadlessClientLaunchArguments(gameServer, index);
-            gameServer.HeadlessClientProcessIds.Add(
-                processUtilities.LaunchManagedProcess(gameServerHelpers.GetGameServerExecutablePath(gameServer), launchArguments)
-            );
-
-            await Task.Delay(TimeSpan.FromMilliseconds(50));
-        }
-
-        await gameServersContext.Replace(gameServer);
-    }
-
-    public async Task StopGameServer(DomainGameServer gameServer)
-    {
-        if (!gameServer.Status.Running)
-        {
-            await KillGameServer(gameServer);
-            return;
-        }
-
-        await SendShutdownAsync(gameServer.ApiPort, $"game server '{gameServer.Name}'");
-    }
-
-    private async Task SendShutdownAsync(int port, string context)
-    {
-        try
-        {
-            using var client = httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            var content = new StringContent("{\"type\":\"shutdown\"}", System.Text.Encoding.UTF8, "application/json");
-            await client.PostAsync($"http://localhost:{port}/command", content);
-        }
-        catch (HttpRequestException ex)
-        {
-            logger.LogWarning($"HTTP request failed while stopping {context}: {ex.Message}");
-        }
-        catch (TaskCanceledException ex)
-        {
-            logger.LogWarning($"Request timed out while stopping {context}: {ex.Message}");
-        }
-        catch (Exception exception)
-        {
-            logger.LogError($"Unexpected error stopping {context}", exception);
-        }
-    }
-
-    public async Task KillGameServer(DomainGameServer gameServer)
-    {
-        var activeSessionId = gameServer.Status.CurrentMissionSessionId;
-
-        if (gameServer.ProcessId is not null)
-        {
-            var process = processUtilities.FindProcessById(gameServer.ProcessId.Value);
-            if (process is { HasExited: false })
-            {
-                process.Kill(true);
-                try
-                {
-                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                }
-                catch (TimeoutException) { }
-                catch (InvalidOperationException) { }
-            }
-        }
-
-        if (!string.IsNullOrEmpty(activeSessionId))
-        {
-            await TryFinaliseKilledSessionAsync(activeSessionId);
-        }
-
-        gameServer.ProcessId = null;
-        gameServer.LaunchedBy = null;
-        gameServer.Status = new GameServerStatus();
-        StatusCache.TryRemove(gameServer.Id, out _);
-
-        await Task.WhenAll(
-            gameServer.HeadlessClientProcessIds.Select(async hcProcessId =>
-                {
-                    var hcProcess = processUtilities.FindProcessById(hcProcessId);
-                    if (hcProcess is { HasExited: false })
-                    {
-                        hcProcess.Kill(true);
-                        try
-                        {
-                            await hcProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                        }
-                        catch (TimeoutException) { }
-                        catch (InvalidOperationException) { }
-                    }
-                }
-            )
-        );
-        gameServer.HeadlessClientProcessIds.Clear();
-
-        await gameServersContext.Replace(gameServer);
-    }
-
-    public async Task<int> KillAllArmaProcesses()
-    {
-        var processes = gameServerHelpers.GetArmaProcesses().ToList();
-        foreach (var process in processes)
-        {
-            process.Kill(true);
-        }
-
-        await Task.WhenAll(
-            processes.Select(async process =>
-                {
-                    try
-                    {
-                        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                    }
-                    catch (TimeoutException) { }
-                    catch (InvalidOperationException) { }
-                }
-            )
+        await gameServersContext.Update(
+            server.Id,
+            Builders<DomainGameServer>.Update.Set(x => x.Name, server.Name)
+                                      .Set(x => x.Port, server.Port)
+                                      .Set(x => x.ApiPort, server.ApiPort)
+                                      .Set(x => x.NumberHeadlessClients, server.NumberHeadlessClients)
+                                      .Set(x => x.ProfileName, server.ProfileName)
+                                      .Set(x => x.HostName, server.HostName)
+                                      .Set(x => x.Password, server.Password)
+                                      .Set(x => x.AdminPassword, server.AdminPassword)
+                                      .Set(x => x.Environment, server.Environment)
+                                      .Set(x => x.ServerOption, server.ServerOption)
+                                      .Set(x => x.Mods, server.Mods)
+                                      .Set(x => x.ServerMods, server.ServerMods)
         );
 
-        var gameServers = gameServersContext.Get().ToList();
+        return environmentChanged;
+    }
 
-        foreach (var gameServer in gameServers)
-        {
-            if (!string.IsNullOrEmpty(gameServer.Status.CurrentMissionSessionId))
-            {
-                await TryFinaliseKilledSessionAsync(gameServer.Status.CurrentMissionSessionId);
-            }
-        }
-
-        foreach (var gameServer in gameServers)
-        {
-            gameServer.ProcessId = null;
-            gameServer.LaunchedBy = null;
-            gameServer.Status = new GameServerStatus();
-            gameServer.HeadlessClientProcessIds.Clear();
-            StatusCache.TryRemove(gameServer.Id, out _);
-            await gameServersContext.Replace(gameServer);
-        }
-
-        return processes.Count;
+    public async Task DeleteServerAsync(string id)
+    {
+        var gameServer = gameServersContext.GetSingle(id);
+        logger.LogAudit($"Game server deleted '{gameServer.Name}'");
+        await gameServersContext.Delete(id);
     }
 
     public List<GameServerMod> GetAvailableMods(string id)
@@ -466,300 +172,23 @@ public class GameServersService(
                .ToList();
     }
 
-    public async Task HandleGameServerEvent(GameServerEvent gameServerEvent)
+    public async Task SetServerModsAsync(string id, DomainGameServer server)
     {
-        try
-        {
-            switch (gameServerEvent.Type)
-            {
-                case "server_status":       await HandleServerStatusEvent(gameServerEvent.ApiPort, gameServerEvent.Data); break;
-                case "mission_stats":       await HandleMissionStatsEvent(gameServerEvent.Data); break;
-                case "mission_started":     await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, true); break;
-                case "mission_ended":       await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, false); break;
-                case "player_connected":    await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: true); break;
-                case "player_disconnected": await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: false); break;
-                case "performance":         await HandlePerformanceEvent(gameServerEvent.Data); break;
-                case "persistence_save":    await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
-                case "shutdown_complete":   await HandleShutdownCompleteEvent(gameServerEvent.ApiPort); break;
-                default:                    logger.LogWarning($"Unknown game server event type: {gameServerEvent.Type}"); break;
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError($"Error handling game server event: {gameServerEvent.Type}", ex);
-        }
+        var oldGameServer = gameServersContext.GetSingle(id);
+        await gameServersContext.Update(id, Builders<DomainGameServer>.Update.Unset(x => x.Mods).Unset(x => x.ServerMods));
+        await gameServersContext.Update(id, Builders<DomainGameServer>.Update.Set(x => x.Mods, server.Mods).Set(x => x.ServerMods, server.ServerMods));
+        logger.LogAudit($"Game server '{server.Name}' updated:{oldGameServer.Changes(server)}");
     }
 
-    private async Task HandleShutdownCompleteEvent(int apiPort)
+    public GameServerModsDataset ResetServerMods(string id)
     {
-        var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort);
-        if (gameServer is null)
+        var gameServer = gameServersContext.GetSingle(id);
+        return new GameServerModsDataset
         {
-            logger.LogWarning($"Received shutdown_complete but no server matches apiPort {apiPort}");
-            return;
-        }
-
-        if (gameServer.ProcessId is not null)
-        {
-            var mainProcess = processUtilities.FindProcessById(gameServer.ProcessId.Value);
-            if (mainProcess is { HasExited: false })
-            {
-                try
-                {
-                    await mainProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                }
-                catch (TimeoutException) { }
-                catch (InvalidOperationException) { }
-            }
-        }
-
-        foreach (var processId in gameServer.HeadlessClientProcessIds)
-        {
-            var process = processUtilities.FindProcessById(processId);
-            if (process is { HasExited: false })
-            {
-                process.Kill(true);
-                try
-                {
-                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                }
-                catch (TimeoutException) { }
-                catch (InvalidOperationException) { }
-            }
-        }
-
-        var activeSessionId = gameServer.Status.CurrentMissionSessionId;
-        if (!string.IsNullOrEmpty(activeSessionId))
-        {
-            await TryFinaliseKilledSessionAsync(activeSessionId);
-        }
-
-        gameServer.ProcessId = null;
-        gameServer.LaunchedBy = null;
-        gameServer.HeadlessClientProcessIds.Clear();
-        gameServer.Status = new GameServerStatus();
-        StatusCache.TryRemove(gameServer.Id, out _);
-        await gameServersContext.Replace(gameServer);
-
-        await serversHub.Clients.All.ReceiveServerUpdate(new GameServerUpdate { Server = gameServer, InstanceCount = GetGameInstanceCount() });
-
-        logger.LogInfo($"Server shutdown complete: {gameServer.Name} (apiPort {gameServer.ApiPort})");
-    }
-
-    private async Task HandleServerStatusEvent(int apiPort, Dictionary<string, object> data)
-    {
-        var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort);
-        if (gameServer is null)
-        {
-            logger.LogWarning($"Received server_status but no server matches apiPort {apiPort}");
-            return;
-        }
-
-        var status = StatusCache.GetOrAdd(gameServer.Id, _ => gameServer.Status ?? new GameServerStatus());
-
-        if (data.TryGetValue("map", out var map)) status.Map = map.ToString();
-        if (data.TryGetValue("mission", out var mission)) status.Mission = mission.ToString();
-        if (data.TryGetValue("players", out var players))
-        {
-            if (players is JsonElement playersElement && playersElement.ValueKind == JsonValueKind.Array)
-            {
-                status.Players = playersElement.EnumerateArray().Select(e => e.GetString()).Where(s => s is not null).ToList();
-            }
-            else
-            {
-                logger.LogWarning($"server_status players field is {players?.GetType().Name ?? "null"}, not JsonElement array. Value: {players}");
-            }
-        }
-        else
-        {
-            logger.LogWarning($"server_status event missing 'players' key. Keys: {string.Join(", ", data.Keys)}");
-        }
-
-        if (data.TryGetValue("uptime", out var uptime) &&
-            float.TryParse(uptime.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var uptimeValue))
-        {
-            status.Uptime = uptimeValue;
-            status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(uptimeValue)).ToString();
-            status.StartedAt ??= DateTime.UtcNow.AddSeconds(-uptimeValue);
-        }
-
-        if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount.ToString(), out var entityCountValue))
-            status.EntityCount = entityCountValue;
-        if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount.ToString(), out var aiCountValue)) status.AiCount = aiCountValue;
-        if (data.TryGetValue("headlessClientCount", out var headlessClientCount) &&
-            int.TryParse(headlessClientCount.ToString(), out var headlessClientCountValue)) status.HeadlessClientCount = headlessClientCountValue;
-
-        status.Running = true;
-        status.Launching = false;
-        status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
-        status.LastEventReceived = DateTime.UtcNow;
-
-        gameServer.Status = status;
-        await gameServersContext.Replace(gameServer);
-
-        await serversHub.Clients.All.ReceiveServerUpdate(new GameServerUpdate { Server = gameServer, InstanceCount = GetGameInstanceCount() });
-    }
-
-    private async Task HandleMissionStatsEvent(Dictionary<string, object> data)
-    {
-        var sessionId = data.TryGetValue("sessionId", out var sessionIdValue) ? sessionIdValue.ToString() : string.Empty;
-        var mission = data.TryGetValue("mission", out var missionValue) ? missionValue.ToString() : string.Empty;
-        var map = data.TryGetValue("map", out var mapValue) ? mapValue.ToString() : string.Empty;
-
-        if (string.IsNullOrEmpty(sessionId) || string.IsNullOrEmpty(mission) || string.IsNullOrEmpty(map))
-        {
-            logger.LogWarning("mission_stats event missing sessionId, mission, or map");
-            return;
-        }
-
-        var events = new List<string>();
-        if (data.TryGetValue("events", out var eventsObj) && eventsObj is JsonElement jsonElement)
-        {
-            events.EnsureCapacity(jsonElement.GetArrayLength());
-            foreach (var element in jsonElement.EnumerateArray())
-            {
-                events.Add(element.GetRawText());
-            }
-        }
-
-        await publishEndpoint.Publish(
-            new ProcessMissionStatsBatch
-            {
-                SessionId = sessionId,
-                Mission = mission,
-                Map = map,
-                Events = events,
-                ReceivedAt = DateTime.UtcNow
-            }
-        );
-    }
-
-    private async Task HandleMissionLifecycleEvent(int apiPort, Dictionary<string, object> data, bool isStart)
-    {
-        var sessionId = data.TryGetValue("sessionId", out var sessionIdValue) ? sessionIdValue.ToString() : string.Empty;
-        if (string.IsNullOrEmpty(sessionId))
-        {
-            return;
-        }
-
-        // Update server session tracking first — this must succeed regardless of stats processing
-        var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort);
-        if (gameServer is not null)
-        {
-            var newSessionId = isStart ? sessionId : null;
-            await gameServersContext.Update(gameServer.Id, Builders<DomainGameServer>.Update.Set(x => x.Status.CurrentMissionSessionId, newSessionId));
-        }
-
-        var now = DateTime.UtcNow;
-
-        if (isStart)
-        {
-            var mission = data.TryGetValue("mission", out var missionValue) ? missionValue.ToString() : string.Empty;
-            var map = data.TryGetValue("map", out var mapValue) ? mapValue.ToString() : string.Empty;
-            if (string.IsNullOrEmpty(mission) || string.IsNullOrEmpty(map))
-            {
-                return;
-            }
-
-            await missionStatsService.HandleMissionStartedAsync(sessionId, mission, map, now);
-        }
-        else
-        {
-            var duration = data.TryGetValue("duration", out var durationValue) && double.TryParse(durationValue?.ToString(), out var parsed) ? parsed : 0;
-            await missionStatsService.HandleMissionEndedAsync(sessionId, duration, now);
-        }
-    }
-
-    private async Task HandlePlayerPresenceEvent(Dictionary<string, object> data, bool isConnected)
-    {
-        var sessionId = data.TryGetValue("sessionId", out var sessionIdValue) ? sessionIdValue.ToString() : string.Empty;
-        var uid = data.TryGetValue("uid", out var uidValue) ? uidValue.ToString() : string.Empty;
-
-        if (string.IsNullOrEmpty(sessionId) || string.IsNullOrEmpty(uid))
-        {
-            return;
-        }
-
-        var now = DateTime.UtcNow;
-
-        if (isConnected)
-        {
-            var name = data.TryGetValue("name", out var nameValue) ? nameValue.ToString() : string.Empty;
-            await missionStatsService.HandlePlayerConnectedAsync(sessionId, uid, name, now);
-        }
-        else
-        {
-            await missionStatsService.HandlePlayerDisconnectedAsync(sessionId, uid, now);
-        }
-    }
-
-    private async Task HandlePerformanceEvent(Dictionary<string, object> data)
-    {
-        var sessionId = data.TryGetValue("sessionId", out var sessionIdValue) ? sessionIdValue.ToString() : string.Empty;
-        if (string.IsNullOrEmpty(sessionId))
-        {
-            return;
-        }
-
-        var serverFps = new List<int>();
-        if (data.TryGetValue("server", out var serverValue) && serverValue is JsonElement serverElement && serverElement.ValueKind == JsonValueKind.Array)
-        {
-            serverFps = serverElement.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Number).Select(e => e.GetInt32()).ToList();
-        }
-
-        var headlessClients = new List<HeadlessClientPerformance>();
-        if (data.TryGetValue("headlessClients", out var hcValue) && hcValue is JsonElement hcElement && hcElement.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var hc in hcElement.EnumerateArray())
-            {
-                var name = hc.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : string.Empty;
-                var fps = hc.TryGetProperty("fps", out var fpsProp) && fpsProp.ValueKind == JsonValueKind.Array
-                    ? fpsProp.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Number).Select(e => e.GetInt32()).ToList()
-                    : [];
-                if (!string.IsNullOrEmpty(name) && fps.Count > 0)
-                {
-                    headlessClients.Add(new HeadlessClientPerformance { Name = name, Fps = fps });
-                }
-            }
-        }
-
-        var players = new List<PlayerPerformance>();
-        if (data.TryGetValue("players", out var playersValue) && playersValue is JsonElement playersElement && playersElement.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var player in playersElement.EnumerateArray())
-            {
-                var uid = player.TryGetProperty("uid", out var uidProp) ? uidProp.GetString() : string.Empty;
-                var fps = player.TryGetProperty("fps", out var fpsProp) && fpsProp.ValueKind == JsonValueKind.Array
-                    ? fpsProp.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Number).Select(e => e.GetInt32()).ToList()
-                    : [];
-                if (!string.IsNullOrEmpty(uid) && fps.Count > 0)
-                {
-                    players.Add(new PlayerPerformance { Uid = uid, Fps = fps });
-                }
-            }
-        }
-
-        await performanceService.HandlePerformanceEventAsync(sessionId, serverFps, headlessClients, players);
-    }
-
-    private async Task HandlePersistenceSaveEvent(Dictionary<string, object> data)
-    {
-        var chunk = new ChunkEnvelope
-        {
-            Id = data.GetValueOrDefault("id")?.ToString() ?? string.Empty,
-            Key = data.GetValueOrDefault("key")?.ToString() ?? string.Empty,
-            SessionId = data.GetValueOrDefault("sessionId")?.ToString() ?? string.Empty,
-            Index = Convert.ToInt32(data.GetValueOrDefault("index", 0)),
-            Total = Convert.ToInt32(data.GetValueOrDefault("total", 1)),
-            Data = data.GetValueOrDefault("data")?.ToString() ?? string.Empty
+            AvailableMods = GetAvailableMods(id),
+            Mods = GetEnvironmentMods(gameServer.Environment),
+            ServerMods = new List<GameServerMod>()
         };
-
-        await persistenceSessionsService.HandleSaveChunkAsync(chunk);
-    }
-
-    public void ClearStatusCache(string serverId)
-    {
-        StatusCache.TryRemove(serverId, out _);
     }
 
     public async Task UpdateGameServerOrder(OrderUpdateRequest orderUpdate)
@@ -781,15 +210,14 @@ public class GameServersService(
         }
     }
 
-    private async Task TryFinaliseKilledSessionAsync(string sessionId)
+    public bool GetDisabledState()
     {
-        try
-        {
-            await missionStatsService.FinaliseKilledSessionAsync(sessionId);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError($"Failed to finalise killed session '{sessionId}', proceeding with server cleanup", ex);
-        }
+        return variablesService.GetVariable("SERVER_CONTROL_DISABLED").AsBool();
+    }
+
+    public async Task SetDisabledStateAsync(bool state)
+    {
+        await variablesContext.Update("SERVER_CONTROL_DISABLED", state);
+        await serversHub.Clients.All.ReceiveDisabledState(state);
     }
 }

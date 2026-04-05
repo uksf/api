@@ -71,8 +71,9 @@ public static class ApiArmaServerExtensions
                            .AddTransient<IStatsEventProcessor, ExplosivePlacedEventProcessor>()
                            .AddTransient<IStatsEventProcessor, UnconsciousEventProcessor>()
                            .AddTransient<IPerformanceService, PerformanceService>()
-                           .AddSingleton<IGameServerProcessMonitor, GameServerProcessMonitor>()
-                           .AddHostedService<GameServerProcessMonitorStartup>();
+                           .AddScoped<IGameServerEventHandler, GameServerEventHandler>()
+                           .AddSingleton<IGameServerProcessManager, GameServerProcessManager>()
+                           .AddHostedService<GameServerProcessManagerStartup>();
         }
 
         private IServiceCollection AddCommands()
