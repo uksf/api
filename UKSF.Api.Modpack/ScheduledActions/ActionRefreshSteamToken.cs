@@ -16,9 +16,11 @@ public class ActionRefreshSteamToken(
 {
     private const string ActionName = nameof(ActionRefreshSteamToken);
 
-    public override DateTime NextRun => clock.UkToday().AddHours(6);
+    public override DateTime NextRun => NextRunAfter(clock.UtcNow());
     public override TimeSpan RunInterval => TimeSpan.FromHours(12);
     public override string Name => ActionName;
+
+    public override DateTime NextRunAfter(DateTime previous) => clock.NextUkHourUtc(previous, 6, 18);
 
     public override async Task Run(params object[] parameters)
     {

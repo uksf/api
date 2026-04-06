@@ -24,10 +24,12 @@ public class ActionInstagramImages : SelfCreatingScheduledAction, IActionInstagr
         _clock = clock;
     }
 
-    public override DateTime NextRun => _clock.UkToday();
+    public override DateTime NextRun => NextRunAfter(_clock.UtcNow());
     public override TimeSpan RunInterval => TimeSpan.FromHours(12);
     public override bool RunOnCreate => true;
     public override string Name => ActionName;
+
+    public override DateTime NextRunAfter(DateTime previous) => _clock.NextUkHourUtc(previous, 0, 12);
 
     public override Task Run(params object[] parameters)
     {

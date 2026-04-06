@@ -23,9 +23,11 @@ public class ActionCheckForServerUpdate(
 {
     private const string ActionName = nameof(ActionCheckForServerUpdate);
 
-    public override DateTime NextRun => clock.UkToday().AddHours(04).AddDays(1);
+    public override DateTime NextRun => NextRunAfter(clock.UtcNow());
     public override TimeSpan RunInterval => TimeSpan.FromHours(12);
     public override string Name => ActionName;
+
+    public override DateTime NextRunAfter(DateTime previous) => clock.NextUkHourUtc(previous, 4, 16);
 
     public override async Task Run(params object[] parameters)
     {

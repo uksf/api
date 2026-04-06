@@ -20,9 +20,11 @@ public class ActionCleanupRunningServers(
 {
     private const string ActionName = nameof(ActionCleanupRunningServers);
 
-    public override DateTime NextRun => clock.UkToday().AddHours(02);
+    public override DateTime NextRun => NextRunAfter(clock.UtcNow());
     public override TimeSpan RunInterval => TimeSpan.FromDays(1);
     public override string Name => ActionName;
+
+    public override DateTime NextRunAfter(DateTime previous) => clock.NextUkHourUtc(previous, 2);
 
     public override async Task Run(params object[] parameters)
     {

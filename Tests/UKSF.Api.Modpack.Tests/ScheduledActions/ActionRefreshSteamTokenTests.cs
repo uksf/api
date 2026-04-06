@@ -41,12 +41,13 @@ public class ActionRefreshSteamTokenTests
     }
 
     [Fact]
-    public void NextRun_ShouldBeToday6Am()
+    public void NextRunAfter_ShouldDelegateToClockHelperWith6And18()
     {
-        var today = new DateTime(2026, 2, 27);
-        _mockClock.Setup(x => x.UkToday()).Returns(today);
+        var previous = new DateTime(2026, 4, 6, 10, 0, 0, DateTimeKind.Utc);
+        var expected = new DateTime(2026, 4, 6, 17, 0, 0, DateTimeKind.Utc);
+        _mockClock.Setup(x => x.NextUkHourUtc(previous, new[] { 6, 18 })).Returns(expected);
 
-        _action.NextRun.Should().Be(today.AddHours(6));
+        _action.NextRunAfter(previous).Should().Be(expected);
     }
 
     [Fact]

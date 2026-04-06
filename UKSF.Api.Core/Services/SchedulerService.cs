@@ -3,6 +3,7 @@ using System.Text.Json;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Models;
 using UKSF.Api.Core.Models.Domain;
+using UKSF.Api.Core.ScheduledActions;
 
 namespace UKSF.Api.Core.Services;
 
@@ -97,7 +98,7 @@ public class SchedulerService(ISchedulerContext context, IScheduledActionFactory
                         var nowLessInterval = now - job.Interval;
                         while (job.Next < nowLessInterval)
                         {
-                            job.Next += job.Interval;
+                            job.Next = AdvanceNext(job);
                         }
                     }
                 }
@@ -113,7 +114,7 @@ public class SchedulerService(ISchedulerContext context, IScheduledActionFactory
 
                 if (job.Repeat)
                 {
-                    job.Next += job.Interval;
+                    job.Next = AdvanceNext(job);
                     await SetNext(job);
                     Schedule(job);
                 }
@@ -134,6 +135,12 @@ public class SchedulerService(ISchedulerContext context, IScheduledActionFactory
             existingToken.Cancel();
             existingToken.Dispose();
         }
+    }
+
+    private DateTime AdvanceNext(DomainScheduledJob job)
+    {
+        var action = scheduledActionFactory.GetScheduledAction(job.Action);
+        return action is SelfCreatingScheduledAction selfCreating ? selfCreating.NextRunAfter(job.Next) : job.Next + job.Interval;
     }
 
     private async Task SetNext(DomainScheduledJob job)

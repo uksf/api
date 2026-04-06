@@ -19,6 +19,11 @@ public class SelfCreatingScheduledAction : ISelfCreatingScheduledAction
     public virtual bool RunOnCreate => false;
     public virtual string Name => "UNNAMED ACTION";
 
+    public virtual DateTime NextRunAfter(DateTime previous)
+    {
+        return previous + RunInterval;
+    }
+
     public async Task CreateSelf()
     {
         if (_currentEnvironment.IsDevelopment())
