@@ -59,7 +59,7 @@ public class PlayerMissionStats : MongoObject
     public double DistanceInVehicle { get; set; }
 
     // Vehicle
-    public double TotalFuelConsumed { get; set; }
+    public double TotalFuelLitres { get; set; }
 
     // Explosives
     public int ExplosivesPlaced { get; set; }

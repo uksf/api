@@ -92,7 +92,7 @@ public class MissionStatsService(
                                                         .Inc(x => x.TimesWounded, updates.TimesWounded)
                                                         .Inc(x => x.DistanceOnFoot, updates.DistanceOnFoot)
                                                         .Inc(x => x.DistanceInVehicle, updates.DistanceInVehicle)
-                                                        .Inc(x => x.TotalFuelConsumed, updates.TotalFuelConsumed)
+                                                        .Inc(x => x.TotalFuelLitres, updates.TotalFuelLitres)
                                                         .Inc(x => x.ExplosivesPlaced, updates.ExplosivesPlaced)
                                                         .Inc(x => x.TimesUnconscious, updates.TimesUnconscious);
 

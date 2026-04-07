@@ -6,75 +6,83 @@ using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Services.StatsEventProcessors;
 
-public class DistanceOnFootEventProcessorTests
+public class SamplerBatchEventProcessorTests
 {
-    private readonly DistanceOnFootEventProcessor _subject = new();
+    private readonly SamplerBatchEventProcessor _subject = new();
 
     [Fact]
-    public void EventType_ShouldBeDistanceOnFoot()
+    public void EventType_ShouldBeSamplerBatch()
     {
-        _subject.EventType.Should().Be("distanceOnFoot");
+        _subject.EventType.Should().Be("samplerBatch");
     }
 
     [Fact]
-    public void ProcessForPlayer_ShouldAccumulateDistance()
+    public void ProcessForPlayer_ShouldSumPositiveEntriesAndIgnoreGaps()
     {
-        var evt1 = new BsonDocument { { "metres", 500 } };
-        var evt2 = new BsonDocument { { "metres", 300 } };
+        var evt = new BsonDocument
+        {
+            {
+                "distanceOnFoot", new BsonArray
+                {
+                    12,
+                    8,
+                    -3,
+                    5,
+                    -2,
+                    7,
+                    -1
+                }
+            },
+            {
+                "distanceInVehicle", new BsonArray
+                {
+                    1500,
+                    -2,
+                    2000
+                }
+            },
+            {
+                "fuelLitres", new BsonArray
+                {
+                    4,
+                    -1,
+                    6
+                }
+            }
+        };
         var stats = new PlayerMissionStats();
 
-        _subject.ProcessForPlayer(evt1, stats);
-        _subject.ProcessForPlayer(evt2, stats);
+        _subject.ProcessForPlayer(evt, stats);
 
-        stats.DistanceOnFoot.Should().Be(800);
-    }
-}
-
-public class DistanceInVehicleEventProcessorTests
-{
-    private readonly DistanceInVehicleEventProcessor _subject = new();
-
-    [Fact]
-    public void EventType_ShouldBeDistanceInVehicle()
-    {
-        _subject.EventType.Should().Be("distanceInVehicle");
-    }
-
-    [Fact]
-    public void ProcessForPlayer_ShouldAccumulateDistance()
-    {
-        var evt1 = new BsonDocument { { "metres", 2000 } };
-        var evt2 = new BsonDocument { { "metres", 1500 } };
-        var stats = new PlayerMissionStats();
-
-        _subject.ProcessForPlayer(evt1, stats);
-        _subject.ProcessForPlayer(evt2, stats);
-
+        stats.DistanceOnFoot.Should().Be(32);
         stats.DistanceInVehicle.Should().Be(3500);
-    }
-}
-
-public class FuelConsumedEventProcessorTests
-{
-    private readonly FuelConsumedEventProcessor _subject = new();
-
-    [Fact]
-    public void EventType_ShouldBeFuelConsumed()
-    {
-        _subject.EventType.Should().Be("fuelConsumed");
+        stats.TotalFuelLitres.Should().Be(10);
     }
 
     [Fact]
-    public void ProcessForPlayer_ShouldAccumulateFuel()
+    public void ProcessForPlayer_ShouldAccumulateAcrossEvents()
     {
-        var evt1 = new BsonDocument { { "amount", 0.15 } };
-        var evt2 = new BsonDocument { { "amount", 0.08 } };
         var stats = new PlayerMissionStats();
+        var evt1 = new BsonDocument { { "distanceOnFoot", new BsonArray { 100, 50 } } };
+        var evt2 = new BsonDocument { { "distanceOnFoot", new BsonArray { 25 } } };
 
         _subject.ProcessForPlayer(evt1, stats);
         _subject.ProcessForPlayer(evt2, stats);
 
-        stats.TotalFuelConsumed.Should().BeApproximately(0.23, 0.001);
+        stats.DistanceOnFoot.Should().Be(175);
+    }
+
+    [Fact]
+    public void ProcessForPlayer_ShouldHandleMissingFields()
+    {
+        var evt = new BsonDocument();
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(evt, stats);
+
+        stats.DistanceOnFoot.Should().Be(0);
+        stats.DistanceInVehicle.Should().Be(0);
+        stats.TotalFuelLitres.Should().Be(0);
     }
 }
 
