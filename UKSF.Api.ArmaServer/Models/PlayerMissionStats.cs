@@ -30,6 +30,18 @@ public class KillStats
     public double TotalAssistDamage { get; set; }
 }
 
+public class KillTargetTypeStats
+{
+    public int Count { get; set; }
+    public Dictionary<string, int> Types { get; set; } = new();
+}
+
+public class KillWeaponStats
+{
+    public int Count { get; set; }
+    public Dictionary<string, int> Ammo { get; set; } = new();
+}
+
 public class PlayerMissionStats : MongoObject
 {
     public string MissionSessionId { get; set; } = string.Empty;
@@ -40,16 +52,26 @@ public class PlayerMissionStats : MongoObject
     public int TotalHits { get; set; }
     public Dictionary<string, WeaponStats> WeaponBreakdown { get; set; } = new();
 
+    // Shots and hits by ammo category (ballistic / explosive / other)
+    public int BallisticShots { get; set; }
+    public int BallisticHits { get; set; }
+    public int ExplosiveShots { get; set; }
+    public int ExplosiveHits { get; set; }
+    public int OtherShots { get; set; }
+    public int OtherHits { get; set; }
+
     // Hit details
     public Dictionary<string, int> BodyPartHits { get; set; } = new();
     public Dictionary<string, int> HitsByTargetType { get; set; } = new();
 
     // Kills and assists
     public KillStats Kills { get; set; } = new();
-    public Dictionary<string, int> KillsByTargetType { get; set; } = new();
+    public Dictionary<string, KillTargetTypeStats> KillsByTargetType { get; set; } = new();
+    public Dictionary<string, KillWeaponStats> KillsByWeapon { get; set; } = new();
 
     // Damage
     public double TotalDamageDealt { get; set; } // From standalone damage events
+    public Dictionary<string, double> DamageDealtByAmmo { get; set; } = new();
     public int TimesWounded { get; set; }
     public Dictionary<string, int> WoundsByBodyPart { get; set; } = new();
     public Dictionary<string, int> WoundsByDamageType { get; set; } = new();

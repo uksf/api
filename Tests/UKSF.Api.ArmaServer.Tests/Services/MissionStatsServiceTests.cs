@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.ArmaServer.DataContext;
@@ -17,6 +18,13 @@ namespace UKSF.Api.ArmaServer.Tests.Services;
 
 public class MissionStatsServiceTests
 {
+    static MissionStatsServiceTests()
+    {
+        // Register the camelCase convention used by the API at startup so rendered
+        // update paths match production shape (e.g. killsByTargetType.infantry.count).
+        ConventionRegistry.Register("TestCamelCase", new ConventionPack { new CamelCaseElementNameConvention() }, _ => true);
+    }
+
     private readonly Mock<IMissionSessionsContext> _mockSessionsContext = new();
     private readonly Mock<IMissionStatsBatchesContext> _mockBatchesContext = new();
     private readonly Mock<IPlayerMissionStatsContext> _mockPlayerStatsContext = new();
@@ -217,6 +225,91 @@ public class MissionStatsServiceTests
             x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
             Times.Once
         );
+    }
+
+    [Fact]
+    public async Task UpdatePlayerStatsAsync_WithKillsByTargetType_ShouldRenderNestedIncrementPaths()
+    {
+        var sessionId = "session-123";
+        var playerUid = "76561198012345678";
+        var existing = new PlayerMissionStats { MissionSessionId = sessionId, PlayerUid = playerUid };
+        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns(existing);
+
+        var updates = new PlayerMissionStats
+        {
+            KillsByTargetType = new Dictionary<string, KillTargetTypeStats>
+            {
+                ["infantry"] = new() { Count = 3, Types = new Dictionary<string, int> { ["O_Soldier_F"] = 2, ["O_Officer_F"] = 1 } },
+                ["vehicle"] = new() { Count = 1, Types = new Dictionary<string, int> { ["O_MRAP_02_F"] = 1 } }
+            }
+        };
+
+        UpdateDefinition<PlayerMissionStats> capturedUpdate = null;
+        _mockPlayerStatsContext.Setup(x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
+                               .Callback<Expression<Func<PlayerMissionStats, bool>>, UpdateDefinition<PlayerMissionStats>>((_, u) => capturedUpdate = u)
+                               .Returns(Task.CompletedTask);
+
+        await _subject.UpdatePlayerStatsAsync(sessionId, playerUid, updates);
+
+        capturedUpdate.Should().NotBeNull();
+
+        var serializer = MongoDB.Bson.Serialization.BsonSerializer.SerializerRegistry.GetSerializer<PlayerMissionStats>();
+        var rendered = capturedUpdate.Render(
+            new MongoDB.Driver.RenderArgs<PlayerMissionStats>(serializer, MongoDB.Bson.Serialization.BsonSerializer.SerializerRegistry)
+        );
+        var incDoc = rendered["$inc"].AsBsonDocument;
+
+        incDoc.Contains("killsByTargetType.infantry.count").Should().BeTrue();
+        incDoc["killsByTargetType.infantry.count"].AsInt32.Should().Be(3);
+
+        incDoc.Contains("killsByTargetType.infantry.types.O_Soldier_F").Should().BeTrue();
+        incDoc["killsByTargetType.infantry.types.O_Soldier_F"].AsInt32.Should().Be(2);
+
+        incDoc.Contains("killsByTargetType.infantry.types.O_Officer_F").Should().BeTrue();
+        incDoc["killsByTargetType.infantry.types.O_Officer_F"].AsInt32.Should().Be(1);
+
+        incDoc.Contains("killsByTargetType.vehicle.count").Should().BeTrue();
+        incDoc["killsByTargetType.vehicle.count"].AsInt32.Should().Be(1);
+
+        incDoc.Contains("killsByTargetType.vehicle.types.O_MRAP_02_F").Should().BeTrue();
+        incDoc["killsByTargetType.vehicle.types.O_MRAP_02_F"].AsInt32.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task UpdatePlayerStatsAsync_WithKillsByWeapon_ShouldRenderNestedIncrementPaths()
+    {
+        var sessionId = "session-123";
+        var playerUid = "76561198012345678";
+        var existing = new PlayerMissionStats { MissionSessionId = sessionId, PlayerUid = playerUid };
+        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns(existing);
+
+        var updates = new PlayerMissionStats
+        {
+            KillsByWeapon = new Dictionary<string, KillWeaponStats>
+            {
+                ["rhs_weap_m4a1"] = new()
+                {
+                    Count = 3, Ammo = new Dictionary<string, int> { ["rhs_ammo_556x45_M855A1"] = 2, ["rhs_ammo_556x45_M856"] = 1 }
+                }
+            }
+        };
+
+        UpdateDefinition<PlayerMissionStats> capturedUpdate = null;
+        _mockPlayerStatsContext.Setup(x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
+                               .Callback<Expression<Func<PlayerMissionStats, bool>>, UpdateDefinition<PlayerMissionStats>>((_, u) => capturedUpdate = u)
+                               .Returns(Task.CompletedTask);
+
+        await _subject.UpdatePlayerStatsAsync(sessionId, playerUid, updates);
+
+        var serializer = MongoDB.Bson.Serialization.BsonSerializer.SerializerRegistry.GetSerializer<PlayerMissionStats>();
+        var rendered = capturedUpdate.Render(
+            new MongoDB.Driver.RenderArgs<PlayerMissionStats>(serializer, MongoDB.Bson.Serialization.BsonSerializer.SerializerRegistry)
+        );
+        var incDoc = rendered["$inc"].AsBsonDocument;
+
+        incDoc["killsByWeapon.rhs_weap_m4a1.count"].AsInt32.Should().Be(3);
+        incDoc["killsByWeapon.rhs_weap_m4a1.ammo.rhs_ammo_556x45_M855A1"].AsInt32.Should().Be(2);
+        incDoc["killsByWeapon.rhs_weap_m4a1.ammo.rhs_ammo_556x45_M856"].AsInt32.Should().Be(1);
     }
 
     #endregion

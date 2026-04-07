@@ -11,8 +11,16 @@ public class ShotEventProcessor : IStatsEventProcessor
     {
         var weapon = evt.GetValue("weapon", "unknown").AsString;
         var ammo = evt.GetValue("ammo", "unknown").AsString;
+        var category = evt.GetValue("category", "other").AsString;
 
         stats.TotalShots++;
+
+        switch (category)
+        {
+            case "ballistic": stats.BallisticShots++; break;
+            case "explosive": stats.ExplosiveShots++; break;
+            default:          stats.OtherShots++; break;
+        }
 
         if (!stats.WeaponBreakdown.TryGetValue(weapon, out var weaponStats))
         {

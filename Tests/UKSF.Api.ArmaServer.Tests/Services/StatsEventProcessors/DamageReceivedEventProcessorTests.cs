@@ -56,6 +56,18 @@ public class DamageReceivedEventProcessorTests
     }
 
     [Fact]
+    public void ProcessForPlayer_ShouldStripLeadingHashFromBodyPart()
+    {
+        var evt = new BsonDocument { { "bodyParts", new BsonArray { "#structural" } }, { "damageType", "Hit_AP" } };
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(evt, stats);
+
+        stats.WoundsByBodyPart.Should().ContainKey("structural").WhoseValue.Should().Be(1);
+        stats.WoundsByBodyPart.Should().NotContainKey("#structural");
+    }
+
+    [Fact]
     public void ProcessForPlayer_WhenMissingBodyParts_ShouldStillCountWound()
     {
         var evt = new BsonDocument { { "damageType", "collision" } };

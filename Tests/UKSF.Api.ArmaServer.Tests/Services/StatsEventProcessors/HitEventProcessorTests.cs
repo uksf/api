@@ -149,6 +149,34 @@ public class HitEventProcessorTests
         stats.HitsByTargetType.Should().ContainKey("vehicle").WhoseValue.Should().Be(1);
     }
 
+    [Theory]
+    [InlineData("ballistic")]
+    [InlineData("explosive")]
+    [InlineData("other")]
+    public void ProcessForPlayer_ShouldBucketHitsByCategory(string category)
+    {
+        var evt = new BsonDocument
+        {
+            { "weapon", "rhs_weap_m4a1" },
+            { "ammo", "any" },
+            { "category", category },
+            { "targetType", "infantry" },
+            { "distance2D", 100 }
+        };
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(evt, stats);
+
+        var (ballistic, explosive, other) = (stats.BallisticHits, stats.ExplosiveHits, stats.OtherHits);
+        (ballistic + explosive + other).Should().Be(1);
+        switch (category)
+        {
+            case "ballistic": ballistic.Should().Be(1); break;
+            case "explosive": explosive.Should().Be(1); break;
+            default:          other.Should().Be(1); break;
+        }
+    }
+
     [Fact]
     public void ProcessForPlayer_WhenMissingFields_ShouldUseDefaults()
     {

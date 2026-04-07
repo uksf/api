@@ -33,6 +33,12 @@ public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsS
             if (eventType is "kill")
             {
                 ProcessKillEvent(evt, playerStats);
+
+                if (evt.GetValue("targetType", "unknown").AsString == "vehicle")
+                {
+                    missionStats.VehiclesDestroyed++;
+                }
+
                 continue;
             }
 

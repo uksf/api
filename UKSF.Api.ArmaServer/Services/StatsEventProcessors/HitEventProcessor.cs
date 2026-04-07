@@ -11,12 +11,20 @@ public class HitEventProcessor : IStatsEventProcessor
     {
         var weapon = evt.GetValue("weapon", "unknown").AsString;
         var ammo = evt.GetValue("ammo", "unknown").AsString;
+        var category = evt.GetValue("category", "other").AsString;
         var bodyPart = evt.GetValue("bodyPart", "").AsString;
         var targetType = evt.GetValue("targetType", "unknown").AsString;
         var distance2D = evt.GetValue("distance2D", 0).ToDouble();
 
         stats.TotalHits++;
         stats.HitsByTargetType[targetType] = stats.HitsByTargetType.GetValueOrDefault(targetType) + 1;
+
+        switch (category)
+        {
+            case "ballistic": stats.BallisticHits++; break;
+            case "explosive": stats.ExplosiveHits++; break;
+            default:          stats.OtherHits++; break;
+        }
 
         if (!stats.WeaponBreakdown.TryGetValue(weapon, out var weaponStats))
         {

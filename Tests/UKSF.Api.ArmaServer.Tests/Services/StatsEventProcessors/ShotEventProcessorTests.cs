@@ -58,6 +58,46 @@ public class ShotEventProcessorTests
         ammoBreakdown["rhs_ammo_556x45_M856"].Shots.Should().Be(2);
     }
 
+    [Theory]
+    [InlineData("ballistic")]
+    [InlineData("explosive")]
+    [InlineData("other")]
+    public void ProcessForPlayer_ShouldBucketShotsByCategory(string category)
+    {
+        var evt = new BsonDocument
+        {
+            { "weapon", "rhs_weap_m4a1" },
+            { "ammo", "any" },
+            { "category", category }
+        };
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(evt, stats);
+        _subject.ProcessForPlayer(evt, stats);
+
+        var (ballistic, explosive, other) = (stats.BallisticShots, stats.ExplosiveShots, stats.OtherShots);
+        (ballistic + explosive + other).Should().Be(2);
+        switch (category)
+        {
+            case "ballistic": ballistic.Should().Be(2); break;
+            case "explosive": explosive.Should().Be(2); break;
+            default:          other.Should().Be(2); break;
+        }
+    }
+
+    [Fact]
+    public void ProcessForPlayer_WhenCategoryMissing_ShouldBucketAsOther()
+    {
+        var evt = new BsonDocument { { "weapon", "rhs_weap_m4a1" }, { "ammo", "any" } };
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(evt, stats);
+
+        stats.OtherShots.Should().Be(1);
+        stats.BallisticShots.Should().Be(0);
+        stats.ExplosiveShots.Should().Be(0);
+    }
+
     [Fact]
     public void ProcessForPlayer_WhenMissingFields_ShouldUseDefaults()
     {
