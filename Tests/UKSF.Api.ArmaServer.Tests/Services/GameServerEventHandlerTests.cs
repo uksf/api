@@ -141,7 +141,7 @@ public class GameServerEventHandlerTests
         mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
         mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns((PlayerMissionStats)null);
 
-        var realPerformanceService = new PerformanceService(mockSessionsContext.Object, mockPlayerStatsContext.Object, _mockLogger.Object);
+        var realPerformanceService = new PerformanceService(mockSessionsContext.Object, mockPlayerStatsContext.Object);
 
         var sut = new GameServerEventHandler(
             _mockProcessManager.Object,
