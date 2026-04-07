@@ -92,7 +92,7 @@ public class ContainerItem
     public int? Ammo { get; set; }
 
     [JsonPropertyName("weapon")]
-    public WeaponSlot? Weapon { get; set; }
+    public WeaponSlot Weapon { get; set; }
 
     [JsonPropertyName("isBackpack")]
     public bool? IsBackpack { get; set; }
