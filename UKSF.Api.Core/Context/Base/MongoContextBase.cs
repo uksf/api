@@ -130,6 +130,11 @@ public abstract class MongoContextBase<T>(IMongoCollectionFactory mongoCollectio
         await _mongoCollection.UpdateManyAsync(filterExpression, update);
     }
 
+    public virtual async Task Upsert(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
+    {
+        await _mongoCollection.UpsertAsync(Builders<T>.Filter.Where(filterExpression), update);
+    }
+
     public virtual async Task FindAndUpdate(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
     {
         await _mongoCollection.FindAndUpdateAsync(Builders<T>.Filter.Where(filterExpression), update);

@@ -138,6 +138,17 @@ public class CachedMongoContext<T> : MongoContextBase<T>, IMongoContext<T>, ICac
         ids.ForEach(x => DataUpdateEvent(x.Id));
     }
 
+    public override async Task Upsert(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
+    {
+        await base.Upsert(filterExpression, update);
+        Refresh();
+        var match = GetSingle(filterExpression.Compile());
+        if (match is not null)
+        {
+            DataUpdateEvent(match.Id);
+        }
+    }
+
     public override async Task FindAndUpdate(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
     {
         await base.FindAndUpdate(filterExpression, update);

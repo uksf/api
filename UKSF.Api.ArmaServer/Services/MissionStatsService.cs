@@ -72,17 +72,11 @@ public class MissionStatsService(
 
     public async Task UpdatePlayerStatsAsync(string sessionId, string playerUid, PlayerMissionStats updates)
     {
-        var existing = playerStatsContext.GetSingle(s => s.MissionSessionId == sessionId && s.PlayerUid == playerUid);
-
-        if (existing is null)
-        {
-            updates.MissionSessionId = sessionId;
-            updates.PlayerUid = playerUid;
-            await playerStatsContext.Add(updates);
-            return;
-        }
-
-        var updateBuilder = Builders<PlayerMissionStats>.Update.Inc(x => x.TotalShots, updates.TotalShots)
+        // Upsert is atomic — avoids the check-then-insert race where two concurrent batches
+        // both observe no existing document and both insert, producing duplicates.
+        var updateBuilder = Builders<PlayerMissionStats>.Update.SetOnInsert(x => x.MissionSessionId, sessionId)
+                                                        .SetOnInsert(x => x.PlayerUid, playerUid)
+                                                        .Inc(x => x.TotalShots, updates.TotalShots)
                                                         .Inc(x => x.TotalHits, updates.TotalHits)
                                                         .Inc(x => x.BallisticShots, updates.BallisticShots)
                                                         .Inc(x => x.BallisticHits, updates.BallisticHits)
@@ -195,20 +189,13 @@ public class MissionStatsService(
             }
         }
 
-        await playerStatsContext.Update(x => x.MissionSessionId == sessionId && x.PlayerUid == playerUid, updateBuilder);
+        await playerStatsContext.Upsert(x => x.MissionSessionId == sessionId && x.PlayerUid == playerUid, updateBuilder);
     }
 
     public async Task UpdateMissionStatsAsync(string sessionId, MissionStats updates)
     {
-        var existing = missionStatsContext.GetSingle(s => s.MissionSessionId == sessionId);
-
-        if (existing is null)
-        {
-            updates.MissionSessionId = sessionId;
-            await missionStatsContext.Add(updates);
-            return;
-        }
-
+        // Upsert is atomic — avoids the check-then-insert race where two concurrent batches
+        // for the same session both observe no existing document and both insert, producing duplicates.
         var updateDefinitions = updates.EventCounts.Select(kvp => Builders<MissionStats>.Update.Inc(x => x.EventCounts[kvp.Key], kvp.Value)).ToList();
 
         if (updates.VehiclesDestroyed > 0)
@@ -221,7 +208,9 @@ public class MissionStatsService(
             return;
         }
 
-        await missionStatsContext.Update(x => x.MissionSessionId == sessionId, Builders<MissionStats>.Update.Combine(updateDefinitions));
+        updateDefinitions.Add(Builders<MissionStats>.Update.SetOnInsert(x => x.MissionSessionId, sessionId));
+
+        await missionStatsContext.Upsert(x => x.MissionSessionId == sessionId, Builders<MissionStats>.Update.Combine(updateDefinitions));
     }
 
     public async Task HandleMissionStartedAsync(string sessionId, string mission, string map, DateTime timestamp)
@@ -261,7 +250,11 @@ public class MissionStatsService(
             return;
         }
 
-        var endTimestamp = session.LastBatchReceived != default ? session.LastBatchReceived : session.MissionStarted ?? DateTime.UtcNow;
+        // Truncate to millisecond precision to match MongoDB's BSON DateTime resolution.
+        // Without this, the `DateTime.UtcNow` fallback has sub-ms ticks that are lost on write,
+        // causing the re-read equality check below to incorrectly bail out.
+        var rawEndTimestamp = session.LastBatchReceived != default ? session.LastBatchReceived : session.MissionStarted ?? DateTime.UtcNow;
+        var endTimestamp = new DateTime(rawEndTimestamp.Ticks - rawEndTimestamp.Ticks % TimeSpan.TicksPerMillisecond, rawEndTimestamp.Kind);
 
         double? durationSeconds = session.MissionStarted.HasValue ? (endTimestamp - session.MissionStarted.Value).TotalSeconds : null;
 

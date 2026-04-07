@@ -46,6 +46,7 @@ public interface IMongoContext<T> where T : MongoObject
     Task Update(string id, UpdateDefinition<T> update);
     Task Update(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update);
     Task UpdateMany(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update);
+    Task Upsert(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update);
     Task FindAndUpdate(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update);
     Task Replace(T item);
     Task Delete(string id);
@@ -98,6 +99,16 @@ public class MongoContext<T> : MongoContextBase<T>, IMongoContext<T> where T : M
     {
         await base.UpdateMany(filterExpression, update);
         Get(filterExpression.Compile()).ForEach(x => DataUpdateEvent(x.Id));
+    }
+
+    public override async Task Upsert(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)
+    {
+        await base.Upsert(filterExpression, update);
+        var item = GetSingle(filterExpression.Compile());
+        if (item is not null)
+        {
+            DataUpdateEvent(item.Id);
+        }
     }
 
     public override async Task FindAndUpdate(Expression<Func<T, bool>> filterExpression, UpdateDefinition<T> update)

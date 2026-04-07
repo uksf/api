@@ -114,11 +114,10 @@ public class MissionStatsServiceTests
     #region UpdatePlayerStatsAsync
 
     [Fact]
-    public async Task UpdatePlayerStatsAsync_WhenNoExistingStats_ShouldCreateNew()
+    public async Task UpdatePlayerStatsAsync_ShouldUseAtomicUpsertWithSetOnInsertIdentifiers()
     {
         var sessionId = "session-123";
         var playerUid = "76561198012345678";
-        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns((PlayerMissionStats)null);
 
         var updates = new PlayerMissionStats
         {
@@ -127,54 +126,41 @@ public class MissionStatsServiceTests
             DistanceOnFoot = 1000.5
         };
 
+        UpdateDefinition<PlayerMissionStats> capturedUpdate = null;
+        _mockPlayerStatsContext.Setup(x => x.Upsert(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
+                               .Callback<Expression<Func<PlayerMissionStats, bool>>, UpdateDefinition<PlayerMissionStats>>((_, u) => capturedUpdate = u)
+                               .Returns(Task.CompletedTask);
+
         await _subject.UpdatePlayerStatsAsync(sessionId, playerUid, updates);
 
         _mockPlayerStatsContext.Verify(
-            x => x.Add(
-                It.Is<PlayerMissionStats>(s => s.MissionSessionId == sessionId &&
-                                               s.PlayerUid == playerUid &&
-                                               s.TotalShots == 10 &&
-                                               s.TotalHits == 5 &&
-                                               Math.Abs(s.DistanceOnFoot - 1000.5) < 0.01
-                )
-            ),
+            x => x.Upsert(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
             Times.Once
         );
-    }
-
-    [Fact]
-    public async Task UpdatePlayerStatsAsync_WhenExistingStats_ShouldUseAtomicIncrement()
-    {
-        var sessionId = "session-123";
-        var playerUid = "76561198012345678";
-        var existing = new PlayerMissionStats
-        {
-            MissionSessionId = sessionId,
-            PlayerUid = playerUid,
-            TotalShots = 10,
-            TotalHits = 5,
-            DistanceOnFoot = 500
-        };
-        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns(existing);
-
-        var updates = new PlayerMissionStats
-        {
-            TotalShots = 8,
-            TotalHits = 3,
-            DistanceOnFoot = 300.5
-        };
-
-        await _subject.UpdatePlayerStatsAsync(sessionId, playerUid, updates);
-
+        _mockPlayerStatsContext.Verify(x => x.Add(It.IsAny<PlayerMissionStats>()), Times.Never);
         _mockPlayerStatsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
-            Times.Once
+            Times.Never
         );
-        _mockPlayerStatsContext.Verify(x => x.Replace(It.IsAny<PlayerMissionStats>()), Times.Never);
+
+        capturedUpdate.Should().NotBeNull();
+        var serializer = MongoDB.Bson.Serialization.BsonSerializer.SerializerRegistry.GetSerializer<PlayerMissionStats>();
+        var rendered = capturedUpdate.Render(
+            new MongoDB.Driver.RenderArgs<PlayerMissionStats>(serializer, MongoDB.Bson.Serialization.BsonSerializer.SerializerRegistry)
+        );
+
+        var setOnInsert = rendered["$setOnInsert"].AsBsonDocument;
+        setOnInsert["missionSessionId"].AsString.Should().Be(sessionId);
+        setOnInsert["playerUid"].AsString.Should().Be(playerUid);
+
+        var incDoc = rendered["$inc"].AsBsonDocument;
+        incDoc["totalShots"].AsInt32.Should().Be(10);
+        incDoc["totalHits"].AsInt32.Should().Be(5);
+        incDoc["distanceOnFoot"].AsDouble.Should().BeApproximately(1000.5, 0.01);
     }
 
     [Fact]
-    public async Task UpdatePlayerStatsAsync_WhenExistingStats_WithWeaponBreakdown_ShouldUseAtomicUpdate()
+    public async Task UpdatePlayerStatsAsync_WithWeaponBreakdown_ShouldUseAtomicUpsert()
     {
         var sessionId = "session-123";
         var playerUid = "76561198012345678";
@@ -222,7 +208,7 @@ public class MissionStatsServiceTests
         await _subject.UpdatePlayerStatsAsync(sessionId, playerUid, updates);
 
         _mockPlayerStatsContext.Verify(
-            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
+            x => x.Upsert(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
             Times.Once
         );
     }
@@ -245,7 +231,7 @@ public class MissionStatsServiceTests
         };
 
         UpdateDefinition<PlayerMissionStats> capturedUpdate = null;
-        _mockPlayerStatsContext.Setup(x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
+        _mockPlayerStatsContext.Setup(x => x.Upsert(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
                                .Callback<Expression<Func<PlayerMissionStats, bool>>, UpdateDefinition<PlayerMissionStats>>((_, u) => capturedUpdate = u)
                                .Returns(Task.CompletedTask);
 
@@ -295,7 +281,7 @@ public class MissionStatsServiceTests
         };
 
         UpdateDefinition<PlayerMissionStats> capturedUpdate = null;
-        _mockPlayerStatsContext.Setup(x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
+        _mockPlayerStatsContext.Setup(x => x.Upsert(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
                                .Callback<Expression<Func<PlayerMissionStats, bool>>, UpdateDefinition<PlayerMissionStats>>((_, u) => capturedUpdate = u)
                                .Returns(Task.CompletedTask);
 
@@ -422,37 +408,49 @@ public class MissionStatsServiceTests
     #region UpdateMissionStatsAsync
 
     [Fact]
-    public async Task UpdateMissionStatsAsync_WhenNoExisting_ShouldCreateNew()
+    public async Task UpdateMissionStatsAsync_ShouldUseAtomicUpsertWithSetOnInsertSessionId()
     {
         var sessionId = "session-123";
-        _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns((MissionStats)null);
-
         var updates = new MissionStats { EventCounts = new Dictionary<string, int> { ["shot"] = 50, ["hit"] = 20 } };
+
+        UpdateDefinition<MissionStats> capturedUpdate = null;
+        _mockMissionStatsContext.Setup(x => x.Upsert(It.IsAny<Expression<Func<MissionStats, bool>>>(), It.IsAny<UpdateDefinition<MissionStats>>()))
+                                .Callback<Expression<Func<MissionStats, bool>>, UpdateDefinition<MissionStats>>((_, u) => capturedUpdate = u)
+                                .Returns(Task.CompletedTask);
 
         await _subject.UpdateMissionStatsAsync(sessionId, updates);
 
         _mockMissionStatsContext.Verify(
-            x => x.Add(It.Is<MissionStats>(s => s.MissionSessionId == sessionId && s.EventCounts["shot"] == 50 && s.EventCounts["hit"] == 20)),
+            x => x.Upsert(It.IsAny<Expression<Func<MissionStats, bool>>>(), It.IsAny<UpdateDefinition<MissionStats>>()),
             Times.Once
         );
+        _mockMissionStatsContext.Verify(x => x.Add(It.IsAny<MissionStats>()), Times.Never);
+        _mockMissionStatsContext.Verify(
+            x => x.Update(It.IsAny<Expression<Func<MissionStats, bool>>>(), It.IsAny<UpdateDefinition<MissionStats>>()),
+            Times.Never
+        );
+
+        capturedUpdate.Should().NotBeNull();
+        var serializer = MongoDB.Bson.Serialization.BsonSerializer.SerializerRegistry.GetSerializer<MissionStats>();
+        var rendered = capturedUpdate.Render(
+            new MongoDB.Driver.RenderArgs<MissionStats>(serializer, MongoDB.Bson.Serialization.BsonSerializer.SerializerRegistry)
+        );
+
+        rendered["$setOnInsert"].AsBsonDocument["missionSessionId"].AsString.Should().Be(sessionId);
+        var incDoc = rendered["$inc"].AsBsonDocument;
+        incDoc["eventCounts.shot"].AsInt32.Should().Be(50);
+        incDoc["eventCounts.hit"].AsInt32.Should().Be(20);
     }
 
     [Fact]
-    public async Task UpdateMissionStatsAsync_WhenExisting_ShouldUseAtomicIncrement()
+    public async Task UpdateMissionStatsAsync_WhenNoIncrements_ShouldBeNoOp()
     {
-        var sessionId = "session-123";
-        var existing = new MissionStats { MissionSessionId = sessionId, EventCounts = new Dictionary<string, int> { ["shot"] = 30, ["hit"] = 10 } };
-        _mockMissionStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionStats, bool>>())).Returns(existing);
-
-        var updates = new MissionStats { EventCounts = new Dictionary<string, int> { ["shot"] = 20, ["kill"] = 5 } };
-
-        await _subject.UpdateMissionStatsAsync(sessionId, updates);
+        await _subject.UpdateMissionStatsAsync("session-123", new MissionStats { EventCounts = new Dictionary<string, int>() });
 
         _mockMissionStatsContext.Verify(
-            x => x.Update(It.IsAny<Expression<Func<MissionStats, bool>>>(), It.IsAny<UpdateDefinition<MissionStats>>()),
-            Times.Once
+            x => x.Upsert(It.IsAny<Expression<Func<MissionStats, bool>>>(), It.IsAny<UpdateDefinition<MissionStats>>()),
+            Times.Never
         );
-        _mockMissionStatsContext.Verify(x => x.Replace(It.IsAny<MissionStats>()), Times.Never);
     }
 
     #endregion
@@ -606,10 +604,7 @@ public class MissionStatsServiceTests
         );
 
         _mockMissionStatsContext.Verify(
-            x => x.Add(
-                It.Is<MissionStats>(s => s.MissionSessionId == "session-123" && s.EventCounts["mission_ended"] == 1 && s.EventCounts["player_disconnected"] == 2
-                )
-            ),
+            x => x.Upsert(It.IsAny<Expression<Func<MissionStats, bool>>>(), It.IsAny<UpdateDefinition<MissionStats>>()),
             Times.Once
         );
     }
@@ -639,7 +634,7 @@ public class MissionStatsServiceTests
         _mockBatchesContext.Verify(x => x.Add(It.Is<MissionStatsBatch>(b => b.Events.Count == 1)), Times.Once);
 
         _mockMissionStatsContext.Verify(
-            x => x.Add(It.Is<MissionStats>(s => s.EventCounts["mission_ended"] == 1 && !s.EventCounts.ContainsKey("player_disconnected"))),
+            x => x.Upsert(It.IsAny<Expression<Func<MissionStats, bool>>>(), It.IsAny<UpdateDefinition<MissionStats>>()),
             Times.Once
         );
     }
@@ -724,7 +719,7 @@ public class MissionStatsServiceTests
 
         _mockMissionStatsContext.Verify(x => x.Add(It.IsAny<MissionStats>()), Times.Never);
         _mockMissionStatsContext.Verify(
-            x => x.Update(It.IsAny<Expression<Func<MissionStats, bool>>>(), It.IsAny<UpdateDefinition<MissionStats>>()),
+            x => x.Upsert(It.IsAny<Expression<Func<MissionStats, bool>>>(), It.IsAny<UpdateDefinition<MissionStats>>()),
             Times.Once
         );
     }

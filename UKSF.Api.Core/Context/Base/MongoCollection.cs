@@ -24,6 +24,7 @@ public interface IMongoCollection<T> where T : MongoObject
     Task UpdateAsync(string id, UpdateDefinition<T> update);
     Task UpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
     Task UpdateManyAsync(Expression<Func<T, bool>> predicate, UpdateDefinition<T> update);
+    Task UpsertAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
     Task FindAndUpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update);
     Task ReplaceAsync(string id, T value);
     Task DeleteAsync(string id);
@@ -106,6 +107,11 @@ public class MongoCollection<T>(IMongoDatabase database, string collectionName) 
         // (e.g. Role order default 0, may not be stored in document, and is thus not filterable)
         var ids = Get(predicate.Compile()).Select(x => x.Id);
         await GetCollection().UpdateManyAsync(Builders<T>.Filter.In(x => x.Id, ids), update);
+    }
+
+    public async Task UpsertAsync(FilterDefinition<T> filter, UpdateDefinition<T> update)
+    {
+        await GetCollection().UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true });
     }
 
     public async Task FindAndUpdateAsync(FilterDefinition<T> filter, UpdateDefinition<T> update)
