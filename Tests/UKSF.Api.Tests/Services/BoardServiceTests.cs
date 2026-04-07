@@ -159,10 +159,11 @@ public class BoardServiceTests
         _mockBoardContext.Setup(x => x.Add(It.IsAny<DomainBoard>())).Callback<DomainBoard>(b => capturedBoard = b).Returns(Task.CompletedTask);
 
         var permissions = new BoardPermissions { Members = [_userId] };
-        var result = await _subject.CreateBoard("Test Board", permissions);
+        var result = await _subject.CreateBoard("Test Board", "#2196f3", permissions);
 
         capturedBoard.Should().NotBeNull();
         capturedBoard.Name.Should().Be("Test Board");
+        capturedBoard.Color.Should().Be("#2196f3");
         capturedBoard.CreatedBy.Should().Be(_userId);
         capturedBoard.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         capturedBoard.Permissions.Should().Be(permissions);

@@ -12,8 +12,8 @@ public interface IBoardService
     DomainBoard GetBoard(string boardId);
     bool HasAccess(DomainBoard board);
     List<BasicAccount> ResolveAccessMembers(BoardPermissions permissions);
-    Task<DomainBoard> CreateBoard(string name, BoardPermissions permissions);
-    Task UpdateBoard(string boardId, string name, BoardPermissions permissions, List<string> labels);
+    Task<DomainBoard> CreateBoard(string name, string color, BoardPermissions permissions);
+    Task UpdateBoard(string boardId, string name, string color, BoardPermissions permissions, List<string> labels);
     Task SoftDeleteBoard(string boardId);
     Task<BoardCard> CreateCard(string boardId, string title);
     Task UpdateCard(string boardId, string cardId, string title, string detail, List<string> labels, string assigneeId);
@@ -98,11 +98,12 @@ public class BoardService(
         return memberIds.Select(id => new BasicAccount { Id = id, DisplayName = displayNameService.GetDisplayName(id) }).ToList();
     }
 
-    public async Task<DomainBoard> CreateBoard(string name, BoardPermissions permissions)
+    public async Task<DomainBoard> CreateBoard(string name, string color, BoardPermissions permissions)
     {
         var board = new DomainBoard
         {
             Name = name,
+            Color = color,
             CreatedBy = httpContextService.GetUserId(),
             CreatedAt = DateTime.UtcNow,
             Permissions = permissions,
@@ -120,10 +121,11 @@ public class BoardService(
         return board;
     }
 
-    public async Task UpdateBoard(string boardId, string name, BoardPermissions permissions, List<string> labels)
+    public async Task UpdateBoard(string boardId, string name, string color, BoardPermissions permissions, List<string> labels)
     {
         var board = boardContext.GetSingle(boardId);
         board.Name = name;
+        board.Color = color;
         board.Permissions = permissions;
         board.Labels = labels;
         await boardContext.Replace(board);

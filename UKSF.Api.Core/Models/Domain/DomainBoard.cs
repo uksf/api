@@ -6,6 +6,7 @@ namespace UKSF.Api.Core.Models.Domain;
 public class DomainBoard : MongoObject
 {
     public string Name { get; set; }
+    public string Color { get; set; }
 
     [BsonRepresentation(BsonType.ObjectId)]
     public string CreatedBy { get; set; }

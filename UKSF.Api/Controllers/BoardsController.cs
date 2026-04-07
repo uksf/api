@@ -23,6 +23,7 @@ public class BoardsController(IBoardService boardService, IHubContext<BoardHub, 
             {
                 Id = b.Id,
                 Name = b.Name,
+                Color = b.Color,
                 MemberCount = boardService.ResolveAccessMembers(b.Permissions).Count
             }
         );
@@ -41,6 +42,7 @@ public class BoardsController(IBoardService boardService, IHubContext<BoardHub, 
         {
             Id = board.Id,
             Name = board.Name,
+            Color = board.Color,
             Labels = board.Labels,
             Permissions = board.Permissions,
             Members = members,
@@ -62,11 +64,12 @@ public class BoardsController(IBoardService boardService, IHubContext<BoardHub, 
     [Permissions(Permissions.Admin)]
     public async Task<BoardListItem> CreateBoard([FromBody] CreateBoardRequest request)
     {
-        var board = await boardService.CreateBoard(request.Name, request.Permissions);
+        var board = await boardService.CreateBoard(request.Name, request.Color, request.Permissions);
         return new BoardListItem
         {
             Id = board.Id,
             Name = board.Name,
+            Color = board.Color,
             MemberCount = boardService.ResolveAccessMembers(board.Permissions).Count
         };
     }
@@ -75,7 +78,7 @@ public class BoardsController(IBoardService boardService, IHubContext<BoardHub, 
     [Permissions(Permissions.Admin)]
     public async Task UpdateBoard([FromRoute] string boardId, [FromBody] UpdateBoardRequest request)
     {
-        await boardService.UpdateBoard(boardId, request.Name, request.Permissions, request.Labels);
+        await boardService.UpdateBoard(boardId, request.Name, request.Color, request.Permissions, request.Labels);
         await boardHub.Clients.Group(boardId).ReceiveBoardUpdated(new { boardId });
     }
 
@@ -211,6 +214,7 @@ public class BoardListItem
 {
     public string Id { get; set; }
     public string Name { get; set; }
+    public string Color { get; set; }
     public int MemberCount { get; set; }
 }
 
@@ -218,6 +222,7 @@ public class BoardResponse
 {
     public string Id { get; set; }
     public string Name { get; set; }
+    public string Color { get; set; }
     public List<string> Labels { get; set; }
     public BoardPermissions Permissions { get; set; }
     public List<BasicAccount> Members { get; set; }
@@ -259,12 +264,14 @@ public class BoardCardActivityResponse
 public class CreateBoardRequest
 {
     public string Name { get; set; }
+    public string Color { get; set; }
     public BoardPermissions Permissions { get; set; }
 }
 
 public class UpdateBoardRequest
 {
     public string Name { get; set; }
+    public string Color { get; set; }
     public BoardPermissions Permissions { get; set; }
     public List<string> Labels { get; set; }
 }

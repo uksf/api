@@ -223,13 +223,14 @@ public class BoardsControllerTests
         var request = new UpdateBoardRequest
         {
             Name = "Updated",
+            Color = "#2196f3",
             Permissions = new BoardPermissions(),
             Labels = ["label1"]
         };
 
         await _controller.UpdateBoard("board1", request);
 
-        _mockBoardService.Verify(x => x.UpdateBoard("board1", "Updated", request.Permissions, request.Labels), Times.Once);
+        _mockBoardService.Verify(x => x.UpdateBoard("board1", "Updated", "#2196f3", request.Permissions, request.Labels), Times.Once);
         _mockBoardClient.Verify(x => x.ReceiveBoardUpdated(It.IsAny<object>()), Times.Once);
     }
 }
