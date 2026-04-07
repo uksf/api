@@ -109,6 +109,8 @@ public class GameServerEventHandler(
             }
 
             await missionStatsService.HandleMissionStartedAsync(sessionId, mission, map, now);
+
+            logger.LogInfo($"HandleMissionLifecycleEvent: started sessionId={sessionId} mission={mission} map={map}");
         }
         else
         {
@@ -142,9 +144,12 @@ public class GameServerEventHandler(
 
     private async Task HandlePerformanceEvent(Dictionary<string, object> data)
     {
+        logger.LogInfo($"HandlePerformanceEvent: entry, dataKeys=[{string.Join(",", data.Keys)}]");
+
         var sessionId = data.TryGetValue("sessionId", out var sessionIdValue) ? sessionIdValue.ToString() : string.Empty;
         if (string.IsNullOrEmpty(sessionId))
         {
+            logger.LogWarning("HandlePerformanceEvent: missing or empty sessionId, returning");
             return;
         }
 
@@ -185,6 +190,8 @@ public class GameServerEventHandler(
                 }
             }
         }
+
+        logger.LogInfo($"HandlePerformanceEvent: parsed sessionId={sessionId} server={serverFps.Count} hcs={headlessClients.Count} players={players.Count}");
 
         await performanceService.HandlePerformanceEventAsync(sessionId, serverFps, headlessClients, players);
     }

@@ -9,6 +9,7 @@ using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Core;
 using UKSF.Api.Tests.Common;
 using Xunit;
 
@@ -18,11 +19,12 @@ public class PerformanceServiceTests
 {
     private readonly Mock<IMissionSessionsContext> _mockSessionsContext = new();
     private readonly Mock<IPlayerMissionStatsContext> _mockPlayerStatsContext = new();
+    private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly PerformanceService _subject;
 
     public PerformanceServiceTests()
     {
-        _subject = new PerformanceService(_mockSessionsContext.Object, _mockPlayerStatsContext.Object);
+        _subject = new PerformanceService(_mockSessionsContext.Object, _mockPlayerStatsContext.Object, _mockLogger.Object);
     }
 
     [Fact]

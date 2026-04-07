@@ -1,6 +1,7 @@
 using MongoDB.Driver;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.Core;
 
 namespace UKSF.Api.ArmaServer.Services;
 
@@ -11,7 +12,8 @@ public interface IPerformanceService
     Task ComputeFinalFpsStatsAsync(string sessionId);
 }
 
-public class PerformanceService(IMissionSessionsContext sessionsContext, IPlayerMissionStatsContext playerStatsContext) : IPerformanceService
+public class PerformanceService(IMissionSessionsContext sessionsContext, IPlayerMissionStatsContext playerStatsContext, IUksfLogger logger)
+    : IPerformanceService
 {
     public async Task HandlePerformanceEventAsync(
         string sessionId,
@@ -20,9 +22,12 @@ public class PerformanceService(IMissionSessionsContext sessionsContext, IPlayer
         List<PlayerPerformance> players
     )
     {
+        logger.LogInfo($"PerformanceService: entry sessionId={sessionId} server={serverFps.Count} hcs={headlessClients.Count} players={players.Count}");
+
         var session = sessionsContext.GetSingle(s => s.SessionId == sessionId);
         if (session is null)
         {
+            logger.LogWarning($"PerformanceService: session not found for sessionId={sessionId}");
             return;
         }
 
@@ -106,6 +111,13 @@ public class PerformanceService(IMissionSessionsContext sessionsContext, IPlayer
         if (updates.Count > 0)
         {
             await sessionsContext.Update(session.Id, Builders<MissionSession>.Update.Combine(updates));
+            logger.LogInfo($"PerformanceService: applied {updates.Count} updates to session {session.Id}");
+        }
+        else
+        {
+            logger.LogWarning(
+                $"PerformanceService: no updates produced for sessionId={sessionId} (server={serverFps.Count} hcs={headlessClients.Count} players={players.Count})"
+            );
         }
     }
 
