@@ -381,7 +381,17 @@ public class GameServerProcessManager(
                     {
                         await mainProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(15));
                     }
-                    catch (TimeoutException) { }
+                    catch (TimeoutException)
+                    {
+                        logger.LogWarning($"Server process {gameServer.ProcessId} did not exit within 15s after shutdown_complete, force-killing");
+                        mainProcess.Kill(true);
+                        try
+                        {
+                            await mainProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                        }
+                        catch (TimeoutException) { }
+                        catch (InvalidOperationException) { }
+                    }
                     catch (InvalidOperationException) { }
                 }
             }
@@ -655,6 +665,7 @@ public class GameServerProcessManager(
                 var remainingProcesses = GetInstanceCount();
                 if (remainingProcesses == 0)
                 {
+                    await serversHub.Clients.All.ReceiveInstanceCount(0);
                     break;
                 }
 

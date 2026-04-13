@@ -604,13 +604,15 @@ public class GameServerProcessManagerTests
     }
 
     [Fact]
-    public async Task Monitor_WhenNoServersAndNoOrphanedProcesses_Exits()
+    public async Task Monitor_WhenNoServersAndNoOrphanedProcesses_ExitsAndPushesZeroCount()
     {
         _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer>());
         _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
 
         _sut.EnsureMonitorRunning();
         await Task.Delay(500);
+
+        _mockServersClient.Verify(x => x.ReceiveInstanceCount(0), Times.Once);
 
         // Should exit cleanly and allow restart
         _sut.EnsureMonitorRunning();
