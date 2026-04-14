@@ -372,30 +372,6 @@ public class GameServerProcessManager(
         await serverLock.WaitAsync();
         try
         {
-            if (gameServer.ProcessId is not null)
-            {
-                var mainProcess = processUtilities.FindProcessById(gameServer.ProcessId.Value);
-                if (mainProcess is { HasExited: false })
-                {
-                    try
-                    {
-                        await mainProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(15));
-                    }
-                    catch (TimeoutException)
-                    {
-                        logger.LogWarning($"Server process {gameServer.ProcessId} did not exit within 15s after shutdown_complete, force-killing");
-                        mainProcess.Kill(true);
-                        try
-                        {
-                            await mainProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                        }
-                        catch (TimeoutException) { }
-                        catch (InvalidOperationException) { }
-                    }
-                    catch (InvalidOperationException) { }
-                }
-            }
-
             foreach (var processId in gameServer.HeadlessClientProcessIds)
             {
                 var process = processUtilities.FindProcessById(processId);
@@ -669,19 +645,38 @@ public class GameServerProcessManager(
                     break;
                 }
 
-                logger.LogInfo($"Process monitor: {remainingProcesses} orphaned arma process(es) still running, waiting for exit");
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                var orphanStart = DateTime.UtcNow;
+                var lastReportedCount = remainingProcesses;
+                var lastLogAt = orphanStart;
+                logger.LogInfo($"Process monitor: {remainingProcesses} orphaned arma process(es) still running after server state cleared, waiting for exit");
 
-                var updatedCount = GetInstanceCount();
-                if (updatedCount != remainingProcesses)
+                while (true)
                 {
-                    await serversHub.Clients.All.ReceiveInstanceCount(updatedCount);
+                    await Task.Delay(TimeSpan.FromSeconds(2));
+
+                    var currentCount = GetInstanceCount();
+                    if (currentCount != lastReportedCount)
+                    {
+                        await serversHub.Clients.All.ReceiveInstanceCount(currentCount);
+                        lastReportedCount = currentCount;
+                    }
+
+                    if (currentCount == 0)
+                    {
+                        logger.LogInfo($"Process monitor: orphaned arma process(es) exited after {(DateTime.UtcNow - orphanStart).TotalSeconds:F0}s");
+                        break;
+                    }
+
+                    if (DateTime.UtcNow - lastLogAt >= TimeSpan.FromSeconds(30))
+                    {
+                        logger.LogWarning(
+                            $"Process monitor: {currentCount} orphaned arma process(es) still running after {(DateTime.UtcNow - orphanStart).TotalSeconds:F0}s"
+                        );
+                        lastLogAt = DateTime.UtcNow;
+                    }
                 }
 
-                if (updatedCount == 0)
-                {
-                    break;
-                }
+                break;
             }
         }
         catch (Exception ex)
@@ -714,7 +709,7 @@ public class GameServerProcessManager(
 
             if (server.Status.Stopping &&
                 server.Status.StoppingInitiatedAt.HasValue &&
-                DateTime.UtcNow - server.Status.StoppingInitiatedAt.Value > TimeSpan.FromSeconds(30))
+                DateTime.UtcNow - server.Status.StoppingInitiatedAt.Value > TimeSpan.FromSeconds(60))
             {
                 await ForceKillServer(server);
                 return;
@@ -740,7 +735,7 @@ public class GameServerProcessManager(
 
     private async Task ForceKillServer(DomainGameServer server)
     {
-        logger.LogInfo($"Force-killing server '{server.Name}' after 30s stopping timeout");
+        logger.LogInfo($"Force-killing server '{server.Name}' after 60s stopping timeout");
 
         var process = processUtilities.FindProcessById(server.ProcessId!.Value);
         if (process is { HasExited: false })
