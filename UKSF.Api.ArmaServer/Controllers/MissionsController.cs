@@ -127,6 +127,14 @@ public class MissionsController(IMissionsService missionsService, IHubContext<Se
 
     private async Task SendMissionsUpdate(List<MissionFile> missions)
     {
-        await serversHub.Clients.All.ReceiveMissionsUpdate(missions);
+        var callerConnectionId = Request.Headers["Hub-Connection-Id"].ToString();
+        if (!string.IsNullOrEmpty(callerConnectionId))
+        {
+            await serversHub.Clients.AllExcept(callerConnectionId).ReceiveMissionsUpdate(missions);
+        }
+        else
+        {
+            await serversHub.Clients.All.ReceiveMissionsUpdate(missions);
+        }
     }
 }

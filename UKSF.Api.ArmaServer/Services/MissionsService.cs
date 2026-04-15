@@ -83,7 +83,9 @@ public class MissionsService(IMissionPatchingService missionPatchingService, IGa
             throw new FileNotFoundException($"Active mission file '{fileName}' not found");
         }
 
-        var destPath = Path.Combine(GetArchivedMissionsPath(), sanitizedName);
+        var archiveDir = GetArchivedMissionsPath();
+        Directory.CreateDirectory(archiveDir);
+        var destPath = Path.Combine(archiveDir, sanitizedName);
         File.Move(sourcePath, destPath, overwrite: true);
         logger.LogAudit($"Mission file archived: {sanitizedName}");
     }
@@ -97,7 +99,9 @@ public class MissionsService(IMissionPatchingService missionPatchingService, IGa
             throw new FileNotFoundException($"Archived mission file '{fileName}' not found");
         }
 
-        var destPath = Path.Combine(GetActiveMissionsPath(), sanitizedName);
+        var activeDir = GetActiveMissionsPath();
+        Directory.CreateDirectory(activeDir);
+        var destPath = Path.Combine(activeDir, sanitizedName);
         File.Move(sourcePath, destPath, overwrite: true);
         logger.LogAudit($"Mission file restored: {sanitizedName}");
     }

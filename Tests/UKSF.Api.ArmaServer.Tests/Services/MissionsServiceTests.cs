@@ -190,6 +190,20 @@ public class MissionsServiceTests : IDisposable
     }
 
     [Fact]
+    public void ArchiveMissionFile_ShouldCreateArchiveDirectoryWhenMissing()
+    {
+        var archiveDir = Path.Combine(_tempDir, "archive-missing");
+        _mockGameServerHelpers.Setup(x => x.GetGameServerMissionsPath()).Returns(_tempDir);
+        _mockGameServerHelpers.Setup(x => x.GetGameServerMissionsArchivePath()).Returns(archiveDir);
+        File.WriteAllText(Path.Combine(_tempDir, "test.Altis.pbo"), "content");
+
+        _subject.ArchiveMissionFile("test.Altis.pbo");
+
+        Directory.Exists(archiveDir).Should().BeTrue();
+        File.Exists(Path.Combine(archiveDir, "test.Altis.pbo")).Should().BeTrue();
+    }
+
+    [Fact]
     public void ArchiveMissionFile_ShouldThrowWhenFileNotInActivePath()
     {
         _mockGameServerHelpers.Setup(x => x.GetGameServerMissionsPath()).Returns(_tempDir);
