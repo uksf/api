@@ -12,7 +12,7 @@ using UKSF.Api.Core.Extensions;
 namespace UKSF.Api.ArmaServer.Controllers;
 
 [Route("[controller]")]
-[Permissions(Permissions.Servers)]
+[Permissions(Permissions.Nco, Permissions.Servers, Permissions.Command)]
 public class MissionsController(IMissionsService missionsService, IHubContext<ServersHub, IServersClient> serversHub, IUksfLogger logger) : ControllerBase
 {
     [HttpGet]
@@ -81,6 +81,7 @@ public class MissionsController(IMissionsService missionsService, IHubContext<Se
         try
         {
             missionsService.DeleteMissionFile(fileName);
+            logger.LogAudit($"Deleted mission '{fileName}'");
             var missions = missionsService.GetActiveMissions();
             await SendMissionsUpdate(missions);
             return Ok();
@@ -98,6 +99,7 @@ public class MissionsController(IMissionsService missionsService, IHubContext<Se
         try
         {
             missionsService.ArchiveMissionFile(fileName);
+            logger.LogAudit($"Archived mission '{fileName}'");
             var missions = missionsService.GetActiveMissions();
             await SendMissionsUpdate(missions);
             return Ok();
@@ -115,6 +117,7 @@ public class MissionsController(IMissionsService missionsService, IHubContext<Se
         try
         {
             missionsService.RestoreMissionFile(fileName);
+            logger.LogAudit($"Restored mission '{fileName}'");
             var missions = missionsService.GetActiveMissions();
             await SendMissionsUpdate(missions);
             return Ok();
