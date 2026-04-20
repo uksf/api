@@ -10,7 +10,6 @@ using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
-using UKSF.Api.Core;
 using UKSF.Api.Core.Models;
 using Xunit;
 
@@ -20,7 +19,6 @@ public class MissionsServiceTests : IDisposable
 {
     private readonly Mock<IMissionPatchingService> _mockMissionPatchingService = new();
     private readonly Mock<IGameServerHelpers> _mockGameServerHelpers = new();
-    private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly string _tempDir;
 
     private readonly MissionsService _subject;
@@ -29,7 +27,7 @@ public class MissionsServiceTests : IDisposable
     {
         _tempDir = Path.Combine(Path.GetTempPath(), $"MissionsServiceTests_{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempDir);
-        _subject = new MissionsService(_mockMissionPatchingService.Object, _mockGameServerHelpers.Object, _mockLogger.Object);
+        _subject = new MissionsService(_mockMissionPatchingService.Object, _mockGameServerHelpers.Object);
     }
 
     public void Dispose()
@@ -160,7 +158,6 @@ public class MissionsServiceTests : IDisposable
         _subject.DeleteMissionFile("test.Altis.pbo");
 
         File.Exists(filePath).Should().BeFalse();
-        _mockLogger.Verify(x => x.LogAudit(It.Is<string>(s => s.Contains("test.Altis.pbo"))));
     }
 
     [Fact]

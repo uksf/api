@@ -1,7 +1,6 @@
 using UKSF.Api.ArmaMissions.Models;
 using UKSF.Api.ArmaMissions.Services;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.Core;
 
 namespace UKSF.Api.ArmaServer.Services;
 
@@ -18,7 +17,7 @@ public interface IMissionsService
     FileStream GetMissionFileStream(string fileName);
 }
 
-public class MissionsService(IMissionPatchingService missionPatchingService, IGameServerHelpers gameServerHelpers, IUksfLogger logger) : IMissionsService
+public class MissionsService(IMissionPatchingService missionPatchingService, IGameServerHelpers gameServerHelpers) : IMissionsService
 {
     private string GetActiveMissionsPath() => gameServerHelpers.GetGameServerMissionsPath();
 
@@ -71,7 +70,6 @@ public class MissionsService(IMissionPatchingService missionPatchingService, IGa
     {
         var path = FindMissionFilePath(fileName) ?? throw new FileNotFoundException($"Mission file '{fileName}' not found");
         File.Delete(path);
-        logger.LogAudit($"Mission file deleted: {Path.GetFileName(path)}");
     }
 
     public void ArchiveMissionFile(string fileName)
@@ -87,7 +85,6 @@ public class MissionsService(IMissionPatchingService missionPatchingService, IGa
         Directory.CreateDirectory(archiveDir);
         var destPath = Path.Combine(archiveDir, sanitizedName);
         File.Move(sourcePath, destPath, overwrite: true);
-        logger.LogAudit($"Mission file archived: {sanitizedName}");
     }
 
     public void RestoreMissionFile(string fileName)
@@ -103,7 +100,6 @@ public class MissionsService(IMissionPatchingService missionPatchingService, IGa
         Directory.CreateDirectory(activeDir);
         var destPath = Path.Combine(activeDir, sanitizedName);
         File.Move(sourcePath, destPath, overwrite: true);
-        logger.LogAudit($"Mission file restored: {sanitizedName}");
     }
 
     public FileStream GetMissionFileStream(string fileName)
