@@ -7,7 +7,20 @@ namespace UKSF.Api.ArmaServer.Converters;
 
 public static class PersistencePlayerConverter
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters =
+        {
+            new WoundEntryConverter(),
+            new MedicationEntryConverter(),
+            new OccludedMedicationEntryConverter(),
+            new IvBagEntryConverter(),
+            new TriageCardEntryConverter(),
+            new MedicalLogCategoryConverter(),
+            new MedicalLogEntryConverter()
+        }
+    };
 
     public static PlayerRedeployData FromHashmap(Dictionary<string, object> raw)
     {
@@ -142,8 +155,8 @@ public static class PersistencePlayerConverter
 
     private static Dictionary<string, object> SerializeAceMedical(AceMedicalState state)
     {
-        // Re-serialize through JSON round-trip to get a flat dictionary with JsonPropertyName keys,
-        // matching the original SQF hashmap structure from ace_medical_fnc_serializeState
+        // Round-trip through JSON so nested ACE entries emit as positional arrays (via the
+        // registered converters), matching the wire format from ace_medical_fnc_serializeState.
         var json = JsonSerializer.Serialize(state, JsonOptions);
         return JsonSerializer.Deserialize<Dictionary<string, object>>(json, PersistenceSessionsService.SerializerOptions) ?? new Dictionary<string, object>();
     }

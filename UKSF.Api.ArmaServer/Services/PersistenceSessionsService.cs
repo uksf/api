@@ -23,7 +23,18 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
     // Does NOT use DictionaryKeyPolicy (would mutate CustomData keys)
     internal static readonly JsonSerializerOptions SerializerOptions = new()
     {
-        PropertyNameCaseInsensitive = true, Converters = { new PersistenceTypeConverter() }
+        PropertyNameCaseInsensitive = true,
+        Converters =
+        {
+            new PersistenceTypeConverter(),
+            new WoundEntryConverter(),
+            new MedicationEntryConverter(),
+            new OccludedMedicationEntryConverter(),
+            new IvBagEntryConverter(),
+            new TriageCardEntryConverter(),
+            new MedicalLogCategoryConverter(),
+            new MedicalLogEntryConverter()
+        }
     };
 
     private static readonly TimeSpan ChunkBufferExpiry = TimeSpan.FromMinutes(5);
