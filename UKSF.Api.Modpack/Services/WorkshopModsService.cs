@@ -42,22 +42,39 @@ public class WorkshopModsService(
 
     public async Task InstallWorkshopMod(string workshopModId, bool rootMod, string folderName = null)
     {
-        var existingMod = workshopModsContext.Get().FirstOrDefault(x => x.SteamId == workshopModId && x.Status != WorkshopModStatus.Uninstalled);
-        if (existingMod != null)
+        var existingMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
+        if (existingMod is not null && existingMod.Status != WorkshopModStatus.Uninstalled)
         {
             throw new BadRequestException($"Workshop mod with Steam ID {workshopModId} already exists");
         }
 
         var modInfo = await steamApiService.GetWorkshopModInfo(workshopModId);
-        var workshopMod = new DomainWorkshopMod
+        DomainWorkshopMod workshopMod;
+        if (existingMod is null)
         {
-            SteamId = workshopModId,
-            Name = modInfo.Name,
-            Status = WorkshopModStatus.Installing,
-            RootMod = rootMod,
-            FolderName = folderName
-        };
-        await workshopModsContext.Add(workshopMod);
+            workshopMod = new DomainWorkshopMod
+            {
+                SteamId = workshopModId,
+                Name = modInfo.Name,
+                Status = WorkshopModStatus.Installing,
+                RootMod = rootMod,
+                FolderName = folderName
+            };
+            await workshopModsContext.Add(workshopMod);
+        }
+        else
+        {
+            existingMod.Name = modInfo.Name;
+            existingMod.Status = WorkshopModStatus.Installing;
+            existingMod.RootMod = rootMod;
+            existingMod.FolderName = folderName;
+            existingMod.Pbos = [];
+            existingMod.StatusMessage = null;
+            existingMod.ErrorMessage = null;
+            await workshopModsContext.Replace(existingMod);
+            workshopMod = existingMod;
+        }
+
         logger.LogAudit($"Workshop mod installed: {workshopModId}, {workshopMod.Name}");
 
         await publishEndpoint.Publish(new WorkshopModInstallCommand { WorkshopModId = workshopModId });
