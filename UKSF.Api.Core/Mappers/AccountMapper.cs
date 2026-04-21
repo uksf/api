@@ -19,7 +19,7 @@ public class AccountMapper(IDisplayNameService displayNameService) : IAccountMap
             Settings = account.Settings,
             MembershipState = account.MembershipState,
             RolePreferences = account.RolePreferences,
-            ServiceRecord = account.ServiceRecord,
+            ServiceRecord = account.ServiceRecord?.OrderByDescending(x => x.Timestamp).ToList(),
             Admin = account.Admin,
             Application = account.Application,
             ArmaExperience = account.ArmaExperience,

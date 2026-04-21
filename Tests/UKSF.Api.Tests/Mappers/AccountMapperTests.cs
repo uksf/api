@@ -53,4 +53,17 @@ public class AccountMapperTests
         subject.RolePreferences.Should().Contain("Aviation");
         subject.MilitaryExperience.Should().BeFalse();
     }
+
+    [Fact]
+    public void ShouldSortServiceRecordNewestFirst()
+    {
+        var oldest = new ServiceRecordEntry { Occurence = "Joined", Timestamp = DateTime.UtcNow.AddDays(-10) };
+        var middle = new ServiceRecordEntry { Occurence = "Promoted", Timestamp = DateTime.UtcNow.AddDays(-5) };
+        var newest = new ServiceRecordEntry { Occurence = "Transferred", Timestamp = DateTime.UtcNow.AddDays(-1) };
+        DomainAccount account = new() { Id = ObjectId.GenerateNewId().ToString(), ServiceRecord = [oldest, newest, middle] };
+
+        var subject = _subject.MapToAccount(account);
+
+        subject.ServiceRecord.Should().ContainInOrder(newest, middle, oldest);
+    }
 }
