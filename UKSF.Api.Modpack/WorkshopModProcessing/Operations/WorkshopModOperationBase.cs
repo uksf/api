@@ -103,7 +103,7 @@ public abstract class WorkshopModOperationBase(IWorkshopModsContext workshopMods
             await WorkshopModsProcessingService.UpdateModStatus(workshopMod, ActiveStatus, ActiveStatusMessage);
             await ExecuteCoreAsync(workshopMod, selectedPbos, cancellationToken);
             ApplyCompletedState(workshopMod);
-            await WorkshopModsContext.Replace(workshopMod);
+            await PersistCompletedAsync(workshopMod);
 
             return OperationResult.Successful(filesChanged: ExecutionFilesChanged);
         }
@@ -129,6 +129,8 @@ public abstract class WorkshopModOperationBase(IWorkshopModsContext workshopMods
         workshopMod.LastUpdatedLocally = DateTime.UtcNow;
         workshopMod.ErrorMessage = null;
     }
+
+    protected virtual Task PersistCompletedAsync(DomainWorkshopMod workshopMod) => WorkshopModsContext.Replace(workshopMod);
 
     protected abstract Task ExecuteCoreAsync(DomainWorkshopMod workshopMod, List<string> selectedPbos, CancellationToken cancellationToken);
 }

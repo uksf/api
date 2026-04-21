@@ -26,7 +26,8 @@ public class UninstallOperationTests
         string workshopModId = "test-mod-123",
         bool rootMod = false,
         WorkshopModStatus status = WorkshopModStatus.Installed,
-        List<string> pbos = null
+        List<string> pbos = null,
+        string modpackVersionFirstAdded = "1.0.0"
     )
     {
         var workshopMod = new DomainWorkshopMod
@@ -36,7 +37,8 @@ public class UninstallOperationTests
             Name = "Test Mod",
             RootMod = rootMod,
             Status = status,
-            Pbos = pbos ?? []
+            Pbos = pbos ?? [],
+            ModpackVersionFirstAdded = modpackVersionFirstAdded
         };
         _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         return workshopMod;
@@ -140,15 +142,16 @@ public class UninstallOperationTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithInstalledPendingReleaseStatus_ShouldSetUninstalledPendingRelease()
+    public async Task ExecuteAsync_WithInstalledPendingReleaseStatus_NeverReleased_ShouldDelete()
     {
-        var workshopMod = SetupWorkshopMod(status: WorkshopModStatus.InstalledPendingRelease);
-        _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
+        var workshopMod = SetupWorkshopMod(status: WorkshopModStatus.InstalledPendingRelease, modpackVersionFirstAdded: null);
+        _mockContext.Setup(x => x.Delete(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
 
-        await _operation.ExecuteAsync("test-mod-123", []);
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
 
-        workshopMod.Status.Should().Be(WorkshopModStatus.UninstalledPendingRelease);
-        workshopMod.StatusMessage.Should().Be("Uninstalled pending next modpack release");
+        result.Success.Should().BeTrue();
+        _mockContext.Verify(x => x.Delete(workshopMod), Times.Once);
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainWorkshopMod>()), Times.Never);
     }
 
     [Fact]
@@ -164,15 +167,43 @@ public class UninstallOperationTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithInstallingStatus_ShouldSetUninstalled()
+    public async Task ExecuteAsync_WithInstallingStatus_NeverReleased_ShouldDelete()
     {
-        var workshopMod = SetupWorkshopMod(status: WorkshopModStatus.Installing);
+        var workshopMod = SetupWorkshopMod(status: WorkshopModStatus.Installing, modpackVersionFirstAdded: null);
+        _mockContext.Setup(x => x.Delete(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
+
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
+
+        result.Success.Should().BeTrue();
+        _mockContext.Verify(x => x.Delete(workshopMod), Times.Once);
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainWorkshopMod>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithErrorStatus_NeverReleased_ShouldDelete()
+    {
+        var workshopMod = SetupWorkshopMod(status: WorkshopModStatus.Error, modpackVersionFirstAdded: null);
+        _mockContext.Setup(x => x.Delete(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
+
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
+
+        result.Success.Should().BeTrue();
+        _mockContext.Verify(x => x.Delete(workshopMod), Times.Once);
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainWorkshopMod>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithErrorStatus_PreviouslyReleased_ShouldReplace()
+    {
+        var workshopMod = SetupWorkshopMod(status: WorkshopModStatus.Error, modpackVersionFirstAdded: "1.2.3");
         _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
 
-        await _operation.ExecuteAsync("test-mod-123", []);
+        var result = await _operation.ExecuteAsync("test-mod-123", []);
 
+        result.Success.Should().BeTrue();
         workshopMod.Status.Should().Be(WorkshopModStatus.Uninstalled);
-        workshopMod.StatusMessage.Should().Be("Uninstalled");
+        _mockContext.Verify(x => x.Replace(workshopMod), Times.Once);
+        _mockContext.Verify(x => x.Delete(It.IsAny<DomainWorkshopMod>()), Times.Never);
     }
 
     [Fact]

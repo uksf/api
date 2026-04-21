@@ -8,6 +8,7 @@ public sealed class UninstallOperation(IWorkshopModsContext workshopModsContext,
     : WorkshopModOperationBase(workshopModsContext, workshopModsProcessingService), IUninstallOperation
 {
     private WorkshopModStatus _previousStatus;
+    private bool _wasEverReleased;
 
     protected override WorkshopModStatus ActiveStatus => WorkshopModStatus.Uninstalling;
     protected override string CancelPrefix => "Uninstall";
@@ -18,6 +19,12 @@ public sealed class UninstallOperation(IWorkshopModsContext workshopModsContext,
     protected override void OnBeforeExecute(DomainWorkshopMod workshopMod)
     {
         _previousStatus = workshopMod.Status;
+        _wasEverReleased = workshopMod.ModpackVersionFirstAdded is not null;
+    }
+
+    protected override Task PersistCompletedAsync(DomainWorkshopMod workshopMod)
+    {
+        return _wasEverReleased ? WorkshopModsContext.Replace(workshopMod) : WorkshopModsContext.Delete(workshopMod);
     }
 
     protected override OperationResult ShouldSkipExecution(DomainWorkshopMod workshopMod)
