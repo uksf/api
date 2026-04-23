@@ -337,7 +337,7 @@ public class WorkshopModsProcessingService(
 
     public async Task SetAvailablePbos(DomainWorkshopMod workshopMod, List<string> pbos)
     {
-        workshopMod.Pbos = pbos;
+        workshopMod.AvailablePbos = pbos;
         await workshopModsContext.Replace(workshopMod);
     }
 

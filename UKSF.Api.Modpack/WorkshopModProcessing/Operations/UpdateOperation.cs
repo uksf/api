@@ -31,6 +31,7 @@ public sealed class UpdateOperation(IWorkshopModsContext workshopModsContext, IW
             }
 
             workshopMod.Pbos = selectedPbos;
+            workshopMod.AvailablePbos = [];
         }
     }
 }

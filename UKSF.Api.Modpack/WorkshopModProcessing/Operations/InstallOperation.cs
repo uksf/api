@@ -23,6 +23,7 @@ public sealed class InstallOperation(IWorkshopModsContext workshopModsContext, I
         {
             await WorkshopModsProcessingService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
             workshopMod.Pbos = selectedPbos;
+            workshopMod.AvailablePbos = [];
         }
     }
 }

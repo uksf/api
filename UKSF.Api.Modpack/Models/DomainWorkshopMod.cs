@@ -23,6 +23,7 @@ public class DomainWorkshopMod : MongoObject
     public bool RootMod { get; set; }
     public string FolderName { get; set; }
     public List<string> Pbos { get; set; } = [];
+    public List<string> AvailablePbos { get; set; } = [];
     public DateTime LastUpdatedLocally { get; set; }
     public string ModpackVersionFirstAdded { get; set; }
     public string ModpackVersionLastUpdated { get; set; }

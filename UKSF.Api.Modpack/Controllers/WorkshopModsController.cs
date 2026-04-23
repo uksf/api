@@ -91,6 +91,7 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
             ModpackVersionFirstAdded = mod.ModpackVersionFirstAdded,
             ModpackVersionLastUpdated = mod.ModpackVersionLastUpdated,
             Pbos = mod.Pbos,
+            AvailablePbos = mod.AvailablePbos,
             CustomFilesList = mod.CustomFilesList
         };
     }

@@ -70,5 +70,6 @@ public sealed class UninstallOperation(IWorkshopModsContext workshopModsContext,
         }
 
         workshopMod.Pbos = [];
+        workshopMod.AvailablePbos = [];
     }
 }

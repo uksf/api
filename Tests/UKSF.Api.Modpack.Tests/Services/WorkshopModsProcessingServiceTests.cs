@@ -510,4 +510,19 @@ public class WorkshopModsProcessingServiceTests
         _fileSystemService.Verify(x => x.DeleteFile(removedDev), Times.Once);
         _fileSystemService.Verify(x => x.DeleteFile(removedRc), Times.Once);
     }
+
+    [Fact]
+    public async Task SetAvailablePbos_ShouldWriteAvailablePbos_AndLeaveInstalledPbosUntouched()
+    {
+        var existingInstalled = new List<string> { "a.pbo", "b.pbo" };
+        var candidate = new List<string> { "b.pbo", "c.pbo" };
+        var workshopMod = new DomainWorkshopMod { SteamId = "123", Pbos = [..existingInstalled] };
+        _context.Setup(x => x.Replace(workshopMod)).Returns(Task.CompletedTask);
+
+        await _subject.SetAvailablePbos(workshopMod, candidate);
+
+        workshopMod.AvailablePbos.Should().BeEquivalentTo(candidate);
+        workshopMod.Pbos.Should().BeEquivalentTo(existingInstalled);
+        _context.Verify(x => x.Replace(workshopMod), Times.Once);
+    }
 }

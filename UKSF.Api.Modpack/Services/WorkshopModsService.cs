@@ -69,6 +69,7 @@ public class WorkshopModsService(
             existingMod.RootMod = rootMod;
             existingMod.FolderName = folderName;
             existingMod.Pbos = [];
+            existingMod.AvailablePbos = [];
             existingMod.StatusMessage = null;
             existingMod.ErrorMessage = null;
             await workshopModsContext.Replace(existingMod);

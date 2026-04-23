@@ -144,6 +144,20 @@ public class UpdateOperationTests
     }
 
     [Fact]
+    public async Task CheckAsync_WithPbosChanged_ShouldPreserveInstalledPbos()
+    {
+        var installed = new List<string> { "old1.pbo", "old2.pbo" };
+        var workshopMod = SetupWorkshopMod(pbos: installed);
+        var candidate = new List<string> { "old1.pbo", "new1.pbo" };
+        _mockProcessingService.Setup(x => x.GetWorkshopModPath("test-mod-123")).Returns("/path/to/mod");
+        _mockProcessingService.Setup(x => x.GetModFiles("/path/to/mod")).Returns(candidate);
+
+        await _operation.CheckAsync("test-mod-123");
+
+        workshopMod.Pbos.Should().BeEquivalentTo(installed);
+    }
+
+    [Fact]
     public async Task CheckAsync_ShouldReturnAvailablePbos()
     {
         var pbos = new List<string> { "mod1.pbo", "mod2.pbo" };
@@ -319,6 +333,20 @@ public class UpdateOperationTests
         workshopMod.Status.Should().Be(WorkshopModStatus.UpdatedPendingRelease);
         workshopMod.StatusMessage.Should().Be("Updated pending next modpack release");
         _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.Updating, "Updating..."), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OnSuccess_ShouldClearAvailablePbos()
+    {
+        var workshopMod = SetupWorkshopMod(pbos: ["old.pbo"]);
+        workshopMod.AvailablePbos = ["old.pbo", "new.pbo"];
+        var selectedPbos = new List<string> { "new.pbo" };
+        _mockProcessingService.Setup(x => x.CopyPbosToDependencies(workshopMod, selectedPbos, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
+
+        await _operation.ExecuteAsync("test-mod-123", selectedPbos);
+
+        workshopMod.AvailablePbos.Should().BeEmpty();
     }
 
     [Fact]
