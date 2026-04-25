@@ -4,7 +4,6 @@ using MongoDB.Driver;
 using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
-using UKSF.Api.ArmaServer.Models.Persistence;
 using UKSF.Api.Core;
 
 namespace UKSF.Api.ArmaServer.Services;
@@ -191,16 +190,10 @@ public class GameServerEventHandler(
 
     private async Task HandlePersistenceSaveEvent(Dictionary<string, object> data)
     {
-        var chunk = new ChunkEnvelope
-        {
-            Id = data.GetValueOrDefault("id")?.ToString() ?? string.Empty,
-            Key = data.GetValueOrDefault("key")?.ToString() ?? string.Empty,
-            SessionId = data.GetValueOrDefault("sessionId")?.ToString() ?? string.Empty,
-            Index = Convert.ToInt32(data.GetValueOrDefault("index", 0)),
-            Total = Convert.ToInt32(data.GetValueOrDefault("total", 1)),
-            Data = data.GetValueOrDefault("data")?.ToString() ?? string.Empty
-        };
+        var key = data.GetValueOrDefault("key")?.ToString() ?? string.Empty;
+        var sessionId = data.GetValueOrDefault("sessionId")?.ToString() ?? string.Empty;
+        var json = data.GetValueOrDefault("data")?.ToString() ?? string.Empty;
 
-        await persistenceSessionsService.HandleSaveChunkAsync(chunk);
+        await persistenceSessionsService.HandleSaveAsync(key, sessionId, json);
     }
 }

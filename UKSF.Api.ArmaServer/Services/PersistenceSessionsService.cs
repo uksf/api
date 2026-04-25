@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Text.Json;
 using MongoDB.Bson;
 using UKSF.Api.ArmaServer.Converters;
@@ -12,7 +11,7 @@ public interface IPersistenceSessionsService
 {
     DomainPersistenceSession Load(string key);
     Task SaveAsync(string key, DomainPersistenceSession session, string sessionId = "");
-    Task HandleSaveChunkAsync(ChunkEnvelope chunk);
+    Task HandleSaveAsync(string key, string sessionId, string json);
 }
 
 public class PersistenceSessionsService(IPersistenceSessionsContext context, IUksfLogger logger) : IPersistenceSessionsService
@@ -36,10 +35,6 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
             new MedicalLogEntryConverter()
         }
     };
-
-    private static readonly TimeSpan ChunkBufferExpiry = TimeSpan.FromMinutes(5);
-
-    private readonly ConcurrentDictionary<string, ChunkBuffer> _chunkBuffers = new();
 
     public DomainPersistenceSession Load(string key)
     {
@@ -107,43 +102,33 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
         }
     }
 
-    public async Task HandleSaveChunkAsync(ChunkEnvelope chunk)
+    public async Task HandleSaveAsync(string key, string sessionId, string json)
     {
-        EvictExpiredBuffers();
-
-        var buffer = _chunkBuffers.GetOrAdd(chunk.Id, _ => new ChunkBuffer());
-        buffer.Chunks[chunk.Index] = chunk.Data;
-
-        if (buffer.Chunks.Count == chunk.Total && _chunkBuffers.TryRemove(chunk.Id, out var completedBuffer))
+        try
         {
-            var fullJson = string.Concat(Enumerable.Range(0, chunk.Total).Select(i => completedBuffer.Chunks[i]));
-
-            try
+            var rawDict = JsonSerializer.Deserialize<Dictionary<string, object>>(json, SerializerOptions);
+            DomainPersistenceSession session;
+            if (rawDict is not null && rawDict.ContainsKey("mapMarkers"))
             {
-                var rawDict = JsonSerializer.Deserialize<Dictionary<string, object>>(fullJson, SerializerOptions);
-                DomainPersistenceSession session;
-                if (rawDict is not null && rawDict.ContainsKey("mapMarkers"))
-                {
-                    session = PersistenceConverter.FromHashmap(rawDict);
-                }
-                else
-                {
-                    session = JsonSerializer.Deserialize<DomainPersistenceSession>(fullJson, SerializerOptions);
-                }
-
-                if (session is not null)
-                {
-                    await SaveAsync(chunk.Key, session, chunk.SessionId);
-                }
-                else
-                {
-                    logger.LogWarning($"Failed to deserialize persistence session from chunks for key '{chunk.Key}'");
-                }
+                session = PersistenceConverter.FromHashmap(rawDict);
             }
-            catch (JsonException exception)
+            else
             {
-                logger.LogError($"Failed to deserialize persistence session chunks for key '{chunk.Key}'", exception);
+                session = JsonSerializer.Deserialize<DomainPersistenceSession>(json, SerializerOptions);
             }
+
+            if (session is not null)
+            {
+                await SaveAsync(key, session, sessionId);
+            }
+            else
+            {
+                logger.LogWarning($"Failed to deserialize persistence session for key '{key}'");
+            }
+        }
+        catch (JsonException exception)
+        {
+            logger.LogError($"Failed to deserialize persistence session for key '{key}'", exception);
         }
     }
 
@@ -198,26 +183,5 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
             JsonValueKind.Object                                     => element.EnumerateObject().ToDictionary(p => p.Name, p => ConvertJsonElement(p.Value)),
             _                                                        => element.ToString()
         };
-    }
-
-    private void EvictExpiredBuffers()
-    {
-        var cutoff = DateTime.UtcNow - ChunkBufferExpiry;
-        foreach (var kvp in _chunkBuffers)
-        {
-            if (kvp.Value.CreatedAt < cutoff)
-            {
-                if (_chunkBuffers.TryRemove(kvp.Key, out _))
-                {
-                    logger.LogWarning($"Evicted incomplete chunk buffer '{kvp.Key}' (created {kvp.Value.CreatedAt:u})");
-                }
-            }
-        }
-    }
-
-    private sealed class ChunkBuffer
-    {
-        public ConcurrentDictionary<int, string> Chunks { get; } = new();
-        public DateTime CreatedAt { get; } = DateTime.UtcNow;
     }
 }
