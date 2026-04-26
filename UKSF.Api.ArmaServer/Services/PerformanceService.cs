@@ -26,86 +26,61 @@ public class PerformanceService(IMissionSessionsContext sessionsContext, IPlayer
             return;
         }
 
-        var updates = new List<UpdateDefinition<MissionSession>>();
+        var update = Builders<MissionSession>.Update;
 
-        // Append server FPS samples
+        // Mongo forbids combining a $push to an array with a positional modification of
+        // the same array in one update. Add new HC/player rows in their own write first;
+        // the second write does serverFps, per-element FPS appends, and gap extensions
+        // against the pre-event session state. New rows aren't in `session` here, so
+        // FindIndex returns -1 for them and the per-element loop skips them naturally
+        // (their Fps was already attached to the row pushed in the first write).
+        var newHeadlessClients = headlessClients.Where(hc => session.HeadlessClientPerformance.All(h => h.Name != hc.Name)).ToList();
+        var newPlayers = players.Where(p => session.PlayerPerformance.All(existing => existing.Uid != p.Uid)).ToList();
+
+        var additions = new List<UpdateDefinition<MissionSession>>();
+        if (newHeadlessClients.Count > 0) additions.Add(update.PushEach(x => x.HeadlessClientPerformance, newHeadlessClients));
+        if (newPlayers.Count > 0) additions.Add(update.PushEach(x => x.PlayerPerformance, newPlayers));
+        if (additions.Count > 0)
+        {
+            await sessionsContext.Update(session.Id, update.Combine(additions));
+        }
+
+        var updates = new List<UpdateDefinition<MissionSession>>();
         if (serverFps.Count > 0)
         {
-            updates.Add(Builders<MissionSession>.Update.PushEach(x => x.ServerFps, serverFps));
+            updates.Add(update.PushEach(x => x.ServerFps, serverFps));
         }
 
-        // Handle HC FPS — separate new entries from existing to avoid multiple Push to the same array field
-        var newHeadlessClients = new List<HeadlessClientPerformance>();
         foreach (var hc in headlessClients)
         {
-            var existingIndex = session.HeadlessClientPerformance.FindIndex(h => h.Name == hc.Name);
-            if (existingIndex >= 0)
-            {
-                updates.Add(Builders<MissionSession>.Update.PushEach(x => x.HeadlessClientPerformance[existingIndex].Fps, hc.Fps));
-            }
-            else
-            {
-                newHeadlessClients.Add(hc);
-            }
+            var i = session.HeadlessClientPerformance.FindIndex(h => h.Name == hc.Name);
+            if (i >= 0) updates.Add(update.PushEach(x => x.HeadlessClientPerformance[i].Fps, hc.Fps));
         }
 
-        if (newHeadlessClients.Count > 0)
-        {
-            updates.Add(Builders<MissionSession>.Update.PushEach(x => x.HeadlessClientPerformance, newHeadlessClients));
-        }
-
-        // Handle player FPS — append samples and extend gaps for absent players
-        var reportedPlayerUids = players.Select(p => p.Uid).ToHashSet();
-
-        var newPlayers = new List<PlayerPerformance>();
         foreach (var player in players)
         {
-            var existingIndex = session.PlayerPerformance.FindIndex(p => p.Uid == player.Uid);
-            if (existingIndex >= 0)
-            {
-                updates.Add(Builders<MissionSession>.Update.PushEach(x => x.PlayerPerformance[existingIndex].Fps, player.Fps));
-            }
-            else
-            {
-                newPlayers.Add(player);
-            }
-
-            // Update rolling stats
+            var i = session.PlayerPerformance.FindIndex(p => p.Uid == player.Uid);
+            if (i >= 0) updates.Add(update.PushEach(x => x.PlayerPerformance[i].Fps, player.Fps));
             await UpdateRollingFpsStatsAsync(sessionId, player.Uid, player.Fps);
         }
 
-        if (newPlayers.Count > 0)
+        var reported = players.Select(p => p.Uid).ToHashSet();
+        for (var i = 0; i < session.PlayerPerformance.Count; i++)
         {
-            updates.Add(Builders<MissionSession>.Update.PushEach(x => x.PlayerPerformance, newPlayers));
-        }
+            var existing = session.PlayerPerformance[i];
+            if (reported.Contains(existing.Uid)) continue;
 
-        // Extend gaps for previously seen players absent from this event
-        foreach (var existingPlayer in session.PlayerPerformance)
-        {
-            if (reportedPlayerUids.Contains(existingPlayer.Uid))
-            {
-                continue;
-            }
-
-            // Extend or create gap
-            var playerIndex = session.PlayerPerformance.FindIndex(p => p.Uid == existingPlayer.Uid);
-            var lastValue = existingPlayer.Fps.Count > 0 ? existingPlayer.Fps[^1] : 0;
-            if (lastValue < 0)
-            {
-                // Extend existing gap by 5 seconds — use concrete last index
-                var lastFpsIndex = existingPlayer.Fps.Count - 1;
-                updates.Add(Builders<MissionSession>.Update.Set(x => x.PlayerPerformance[playerIndex].Fps[lastFpsIndex], lastValue - 5));
-            }
-            else
-            {
-                // Start new gap
-                updates.Add(Builders<MissionSession>.Update.Push(x => x.PlayerPerformance[playerIndex].Fps, -5));
-            }
+            var lastFps = existing.Fps.Count > 0 ? existing.Fps[^1] : 0;
+            updates.Add(
+                lastFps < 0
+                    ? update.Set(x => x.PlayerPerformance[i].Fps[existing.Fps.Count - 1], lastFps - 5)
+                    : update.Push(x => x.PlayerPerformance[i].Fps, -5)
+            );
         }
 
         if (updates.Count > 0)
         {
-            await sessionsContext.Update(session.Id, Builders<MissionSession>.Update.Combine(updates));
+            await sessionsContext.Update(session.Id, update.Combine(updates));
         }
     }
 

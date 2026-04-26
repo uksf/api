@@ -4,6 +4,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FluentAssertions;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.ArmaServer.DataContext;
@@ -79,7 +81,43 @@ public class PerformanceServiceTests
 
         await _subject.HandlePerformanceEventAsync("session-1", [50], headlessClients, []);
 
-        _mockSessionsContext.Verify(x => x.Update(session.Id, It.IsAny<UpdateDefinition<MissionSession>>()), Times.Once);
+        // Two writes: phase 1 pushes the new HC, phase 2 appends serverFps (no per-element appends, since the HC was just added).
+        _mockSessionsContext.Verify(x => x.Update(session.Id, It.IsAny<UpdateDefinition<MissionSession>>()), Times.Exactly(2));
+    }
+
+    // Regression: when an event contains a NEW player and an EXISTING player together,
+    // the new player's Fps must arrive only via the row pushed in phase 1, not also via
+    // a phase-2 positional append (which would double the values). Renders both update
+    // documents to BSON and asserts phase 2 only touches the existing player's index.
+    [Fact]
+    public async Task HandlePerformanceEvent_NewAndExistingPlayer_ShouldNotDoubleAppendNew()
+    {
+        var session = new MissionSession
+        {
+            SessionId = "session-1",
+            MissionStarted = DateTime.UtcNow.AddMinutes(-5),
+            PlayerPerformance = [new PlayerPerformance { Uid = "EXISTING", Fps = [60, 61] }]
+        };
+        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
+
+        var capturedUpdates = new List<BsonValue>();
+        var renderArgs = new RenderArgs<MissionSession>(BsonSerializer.SerializerRegistry.GetSerializer<MissionSession>(), BsonSerializer.SerializerRegistry);
+        _mockSessionsContext.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<UpdateDefinition<MissionSession>>()))
+                            .Callback<string, UpdateDefinition<MissionSession>>((_, def) => capturedUpdates.Add(def.Render(renderArgs)))
+                            .Returns(Task.CompletedTask);
+
+        var players = new List<PlayerPerformance> { new() { Uid = "NEW", Fps = [70, 71] }, new() { Uid = "EXISTING", Fps = [62, 63] } };
+
+        await _subject.HandlePerformanceEventAsync("session-1", [], [], players);
+
+        capturedUpdates.Should().HaveCount(2);
+
+        // Phase 2 must reference index 0 (the EXISTING player), not index 1 (where NEW
+        // would land after phase 1). If FindIndex picked up the just-pushed NEW row, this
+        // would assert against playerPerformance.1.fps too — that's the double-append bug.
+        var phaseTwoJson = capturedUpdates[1].ToJson();
+        phaseTwoJson.Should().Contain("playerPerformance.0.fps");
+        phaseTwoJson.Should().NotContain("playerPerformance.1.fps");
     }
 
     [Fact]

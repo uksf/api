@@ -57,7 +57,7 @@ public class PersistencePlayerConverterTests
             }
         };
         hashmap["damage"] = 0.25;
-        hashmap["aceMedical"] = "{\"ace_medical_bloodVolume\": 6.0, \"ace_medical_heartRate\": 80}";
+        hashmap["aceMedical"] = new Dictionary<string, object> { ["ace_medical_bloodVolume"] = 6.0, ["ace_medical_heartRate"] = 80L };
         hashmap["earplugs"] = true;
         hashmap["attachedItems"] = new List<object> { "ACE_IR_Strobe_Item" };
         hashmap["radios"] = new List<object>
@@ -286,17 +286,23 @@ public class PersistencePlayerConverterTests
     }
 
     [Fact]
-    public void FromHashmap_WithAceMedicalJsonString_ShouldPreserveForModel()
+    public void FromHashmap_WithAceMedicalDictionary_PopulatedWounds_ArrayInner()
     {
         var hashmap = BuildMinimalPlayerHashmap();
-        hashmap["aceMedical"] = "{\"ace_medical_bloodVolume\": 5.2, \"ace_medical_heartRate\": 90, \"ace_medical_openWounds\": {}, \"ace_medical_pain\": 0.3}";
+        hashmap["aceMedical"] = new Dictionary<string, object>
+        {
+            ["ace_medical_bloodVolume"] = 5.5,
+            ["ace_medical_openWounds"] = new Dictionary<string, object> { ["Head"] = new object[] { new object[] { 15L, 1L, 0.1, 0.5 } } }
+        };
 
         var result = PersistencePlayerConverter.FromHashmap(hashmap);
 
-        result.AceMedical.Should().NotBeNull();
-        result.AceMedical.BloodVolume.Should().Be(5.2);
-        result.AceMedical.HeartRate.Should().Be(90);
-        result.AceMedical.Pain.Should().Be(0.3);
+        result.AceMedical.OpenWounds.Should().ContainKey("Head");
+        result.AceMedical.OpenWounds["Head"].Should().HaveCount(1);
+        result.AceMedical.OpenWounds["Head"][0].ClassComplex.Should().Be(15);
+        result.AceMedical.OpenWounds["Head"][0].AmountOf.Should().Be(1);
+        result.AceMedical.OpenWounds["Head"][0].BleedingRate.Should().BeApproximately(0.1, 0.0001);
+        result.AceMedical.OpenWounds["Head"][0].WoundDamage.Should().BeApproximately(0.5, 0.0001);
     }
 
     [Fact]
@@ -530,7 +536,7 @@ public class PersistencePlayerConverterTests
                 } // linked items
             },
             ["damage"] = 0.0,
-            ["aceMedical"] = "{}",
+            ["aceMedical"] = new Dictionary<string, object>(),
             ["earplugs"] = false,
             ["attachedItems"] = new List<object>(),
             ["radios"] = new List<object>(),

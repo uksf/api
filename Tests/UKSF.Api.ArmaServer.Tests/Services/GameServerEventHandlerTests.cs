@@ -178,8 +178,11 @@ public class GameServerEventHandlerTests
 
         await sut.HandleEventAsync(evt);
 
-        // Verify the real PerformanceService produced an Update call against mongo
-        mockSessionsContext.Verify(x => x.Update(session.Id, It.IsAny<UpdateDefinition<MissionSession>>()), Times.Once);
+        // Verify the real PerformanceService produced both phase-one (array additions) and
+        // phase-two (per-element appends + serverFps) Update calls against mongo. Two writes
+        // is required because Mongo rejects combining a $push to an array with a positional
+        // modification of the same array in one update.
+        mockSessionsContext.Verify(x => x.Update(session.Id, It.IsAny<UpdateDefinition<MissionSession>>()), Times.Exactly(2));
 
         // Verify rolling player stats was added (new player path)
         mockPlayerStatsContext.Verify(

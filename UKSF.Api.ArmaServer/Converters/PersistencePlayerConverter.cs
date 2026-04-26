@@ -80,29 +80,12 @@ public static class PersistencePlayerConverter
 
     private static AceMedicalState ParseAceMedical(object raw)
     {
-        // The incoming data can be either a Dictionary<string, object> (from PersistenceTypeConverter
-        // parsing a JSON object) or a string (legacy format). Re-serialize to JSON string first,
-        // then deserialize into the typed model.
-        string json;
-        if (raw is Dictionary<string, object> dict)
-        {
-            if (dict.Count == 0)
-            {
-                return new AceMedicalState();
-            }
-
-            json = JsonSerializer.Serialize(dict);
-        }
-        else
-        {
-            json = ToSafeString(raw);
-        }
-
-        if (string.IsNullOrEmpty(json) || json == "{}")
+        if (raw is not Dictionary<string, object> dict || dict.Count == 0)
         {
             return new AceMedicalState();
         }
 
+        var json = JsonSerializer.Serialize(dict);
         return JsonSerializer.Deserialize<AceMedicalState>(json, JsonOptions) ?? new AceMedicalState();
     }
 
