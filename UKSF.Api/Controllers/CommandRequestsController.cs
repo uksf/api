@@ -78,6 +78,8 @@ public class CommandRequestsController(
         if (updateCommandReviewRequest.Overriden)
         {
             await commandRequestService.SetRequestOverride(request, state, sessionDomainAccount.Id);
+            request.OverriddenState = state;
+            request.OverriddenBy = sessionDomainAccount.Id;
 
             foreach (var reviewerId in request.Reviews.Select(x => x.Key).Where(x => x != sessionDomainAccount.Id))
             {
@@ -85,7 +87,7 @@ public class CommandRequestsController(
                     new DomainNotification
                     {
                         Owner = reviewerId,
-                        Icon = Icons.Request,
+                        Icon = ResolveIcon(request.Type),
                         Message =
                             $"Your review on {AvsAn.Query(request.Type).Article} {request.Type.ToLower()} request for {request.DisplayRecipient} was overriden by {displayNameService.GetDisplayName(sessionDomainAccount)}"
                     }
@@ -108,9 +110,10 @@ public class CommandRequestsController(
             }
 
             await commandRequestService.SetRequestReviewState(request, sessionDomainAccount.Id, state);
+            request.Reviews[sessionDomainAccount.Id] = state;
         }
 
-        var willResolve = commandRequestService.IsRequestApproved(request.Id) || commandRequestService.IsRequestRejected(request.Id);
+        var willResolve = commandRequestService.IsRequestApproved(request) || commandRequestService.IsRequestRejected(request);
 
         if (!willResolve && !updateCommandReviewRequest.Overriden)
         {
@@ -127,7 +130,7 @@ public class CommandRequestsController(
         {
             if (updateCommandReviewRequest.Overriden)
             {
-                await commandRequestService.SetRequestOverride(request, ReviewState.Pending, null);
+                await commandRequestService.ClearRequestOverride(request);
             }
             else
             {

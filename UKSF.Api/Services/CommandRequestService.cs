@@ -14,9 +14,12 @@ public interface ICommandRequestService
     Task ArchiveRequest(string id);
     Task SetRequestReviewState(DomainCommandRequest request, string reviewerId, ReviewState newState);
     Task SetRequestOverride(DomainCommandRequest request, ReviewState newState, string actorId);
+    Task ClearRequestOverride(DomainCommandRequest request);
     ReviewState GetReviewState(string id, string reviewer);
     bool IsRequestApproved(string id);
+    bool IsRequestApproved(DomainCommandRequest request);
     bool IsRequestRejected(string id);
+    bool IsRequestRejected(DomainCommandRequest request);
     bool DoesEquivalentRequestExist(DomainCommandRequest request);
     bool DoesEquivalentRequestExist(DomainCommandRequest request, Func<DomainCommandRequest, bool> filter);
 }
@@ -105,29 +108,36 @@ public class CommandRequestService(
         );
     }
 
+    public async Task ClearRequestOverride(DomainCommandRequest request)
+    {
+        await commandRequestContext.Update(request.Id, Builders<DomainCommandRequest>.Update.Unset(x => x.OverriddenState).Unset(x => x.OverriddenBy));
+    }
+
     public ReviewState GetReviewState(string id, string reviewer)
     {
         var request = commandRequestContext.GetSingle(id);
         return request == null ? ReviewState.Error : request.Reviews.GetValueOrDefault(reviewer, ReviewState.Error);
     }
 
-    public bool IsRequestApproved(string id)
-    {
-        var request = commandRequestContext.GetSingle(id);
-        if (request == null) return false;
-        if (request.OverriddenState is ReviewState.Approved) return true;
-        if (request.OverriddenState is ReviewState.Rejected) return false;
-        return request.Reviews.All(x => x.Value == ReviewState.Approved);
-    }
+    public bool IsRequestApproved(string id) => IsRequestApproved(commandRequestContext.GetSingle(id));
 
-    public bool IsRequestRejected(string id)
-    {
-        var request = commandRequestContext.GetSingle(id);
-        if (request == null) return false;
-        if (request.OverriddenState is ReviewState.Approved) return false;
-        if (request.OverriddenState is ReviewState.Rejected) return true;
-        return request.Reviews.Any(x => x.Value == ReviewState.Rejected);
-    }
+    public bool IsRequestApproved(DomainCommandRequest request) =>
+        request?.OverriddenState switch
+        {
+            ReviewState.Approved => true,
+            ReviewState.Rejected => false,
+            _                    => request != null && request.Reviews.All(x => x.Value == ReviewState.Approved)
+        };
+
+    public bool IsRequestRejected(string id) => IsRequestRejected(commandRequestContext.GetSingle(id));
+
+    public bool IsRequestRejected(DomainCommandRequest request) =>
+        request?.OverriddenState switch
+        {
+            ReviewState.Approved => false,
+            ReviewState.Rejected => true,
+            _                    => request != null && request.Reviews.Any(x => x.Value == ReviewState.Rejected)
+        };
 
     public bool DoesEquivalentRequestExist(DomainCommandRequest request)
     {

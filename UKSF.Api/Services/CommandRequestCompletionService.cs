@@ -259,8 +259,9 @@ public class CommandRequestCompletionService(
         var actorId = isOverridden ? request.OverriddenBy : httpContextService.GetUserId();
         var actorDisplayName = displayNameService.GetDisplayName(actorId);
         var verbClause = isOverridden ? $"overridden to {outcome} by {actorDisplayName}" : $"{outcome} by {actorDisplayName}";
-        var displayFrom = FormatDate(request.DisplayFrom);
-        var displayValue = FormatDate(request.DisplayValue);
+        var isLoa = request.Type == CommandRequestType.Loa;
+        var displayFrom = isLoa ? FormatDate(request.DisplayFrom) : request.DisplayFrom;
+        var displayValue = isLoa ? FormatDate(request.DisplayValue) : request.DisplayValue;
         var reasonClause = approved && !string.IsNullOrEmpty(request.Reason) ? $" because '{request.Reason}'" : string.Empty;
         await commandRequestService.ArchiveRequest(request.Id);
         logger.LogAudit($"{request.Type} request {verbClause} for {request.DisplayRecipient} from {displayFrom} to {displayValue}{reasonClause}");

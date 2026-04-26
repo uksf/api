@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FluentAssertions;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.Core;
@@ -421,5 +422,39 @@ public class CommandRequestServiceTests
 
         _mockCommandRequestContext.Verify(x => x.Update("req1", It.IsAny<UpdateDefinition<DomainCommandRequest>>()), Times.Once);
         request.Reviews.Should().BeEquivalentTo(existingReviews);
+    }
+
+    [Fact]
+    public async Task ClearRequestOverride_UnsetsBothFields_WithoutTouchingReviews()
+    {
+        var existingReviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Approved }, { "r2", ReviewState.Pending } };
+        var request = new DomainCommandRequest
+        {
+            Id = "req1",
+            Reviews = existingReviews,
+            OverriddenState = ReviewState.Approved,
+            OverriddenBy = "actor1"
+        };
+        UpdateDefinition<DomainCommandRequest> capturedUpdate = null;
+        _mockCommandRequestContext.Setup(x => x.Update("req1", It.IsAny<UpdateDefinition<DomainCommandRequest>>()))
+                                  .Callback<string, UpdateDefinition<DomainCommandRequest>>((_, u) => capturedUpdate = u)
+                                  .Returns(Task.CompletedTask);
+
+        await _subject.ClearRequestOverride(request);
+
+        _mockCommandRequestContext.Verify(x => x.Update("req1", It.IsAny<UpdateDefinition<DomainCommandRequest>>()), Times.Once);
+        request.Reviews.Should().BeEquivalentTo(existingReviews);
+
+        var rendered = capturedUpdate.Render(
+                                         new RenderArgs<DomainCommandRequest>(
+                                             BsonSerializer.SerializerRegistry.GetSerializer<DomainCommandRequest>(),
+                                             BsonSerializer.SerializerRegistry
+                                         )
+                                     )
+                                     .AsBsonDocument;
+        rendered.Names.Should().Contain("$unset");
+        var unsetKeys = rendered["$unset"].AsBsonDocument.Names.Select(x => x.ToLowerInvariant()).ToList();
+        unsetKeys.Should().Contain("overriddenstate");
+        unsetKeys.Should().Contain("overriddenby");
     }
 }

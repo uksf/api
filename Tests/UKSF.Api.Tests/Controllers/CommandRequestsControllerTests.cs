@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -64,11 +65,7 @@ public class CommandRequestsControllerTests
     [Fact]
     public async Task UpdateRequestReview_WhenOverridden_CallsSetRequestOverride_NotAllReviewStates()
     {
-        var existingReviews = new Dictionary<string, ReviewState>
-        {
-            { "r1", ReviewState.Approved },
-            { "r2", ReviewState.Pending }
-        };
+        var existingReviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Approved }, { "r2", ReviewState.Pending } };
         var request = new DomainCommandRequest
         {
             Id = "req1",
@@ -87,6 +84,30 @@ public class CommandRequestsControllerTests
     }
 
     [Fact]
+    public async Task UpdateRequestReview_WhenOverrideResolveFails_RollsBackViaClearRequestOverride()
+    {
+        var request = new DomainCommandRequest
+        {
+            Id = "req1",
+            Type = CommandRequestType.Loa,
+            DisplayRecipient = "Cpl Bridg",
+            Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Pending } }
+        };
+        _mockCommandRequestContext.Setup(x => x.GetSingle("req1")).Returns(request);
+        _mockAccountService.Setup(x => x.GetUserAccount()).Returns(new DomainAccount { Id = "actor1" });
+        _mockCommandRequestCompletionService.Setup(x => x.Resolve("req1")).ThrowsAsync(new Exception("boom"));
+
+        var act = async () => await _subject.UpdateRequestReview(
+            "req1",
+            new UpdateCommandReviewRequest { ReviewState = ReviewState.Approved, Overriden = true }
+        );
+        await Assert.ThrowsAsync<BadRequestException>(act);
+
+        _mockCommandRequestService.Verify(x => x.ClearRequestOverride(request), Times.Once);
+        _mockCommandRequestService.Verify(x => x.SetRequestOverride(It.IsAny<DomainCommandRequest>(), ReviewState.Pending, It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
     public async Task UpdateRequestReview_WhenVoteResolves_DoesNotEmitIntermediateReviewStateAudit()
     {
         var request = new DomainCommandRequest
@@ -98,15 +119,12 @@ public class CommandRequestsControllerTests
         };
         _mockCommandRequestContext.Setup(x => x.GetSingle("req1")).Returns(request);
         _mockCommandRequestService.Setup(x => x.GetReviewState("req1", "actor1")).Returns(ReviewState.Pending);
-        _mockCommandRequestService.Setup(x => x.IsRequestApproved("req1")).Returns(true);
+        _mockCommandRequestService.Setup(x => x.IsRequestApproved(It.IsAny<DomainCommandRequest>())).Returns(true);
         _mockAccountService.Setup(x => x.GetUserAccount()).Returns(new DomainAccount { Id = "actor1" });
 
         await _subject.UpdateRequestReview("req1", new UpdateCommandReviewRequest { ReviewState = ReviewState.Approved, Overriden = false });
 
-        _mockLogger.Verify(
-            x => x.LogAudit(It.Is<string>(s => s.Contains("Review state of") && s.Contains("updated to")), It.IsAny<string>()),
-            Times.Never
-        );
+        _mockLogger.Verify(x => x.LogAudit(It.Is<string>(s => s.Contains("Review state of") && s.Contains("updated to")), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -121,8 +139,8 @@ public class CommandRequestsControllerTests
         };
         _mockCommandRequestContext.Setup(x => x.GetSingle("req1")).Returns(request);
         _mockCommandRequestService.Setup(x => x.GetReviewState("req1", "actor1")).Returns(ReviewState.Pending);
-        _mockCommandRequestService.Setup(x => x.IsRequestApproved("req1")).Returns(false);
-        _mockCommandRequestService.Setup(x => x.IsRequestRejected("req1")).Returns(false);
+        _mockCommandRequestService.Setup(x => x.IsRequestApproved(It.IsAny<DomainCommandRequest>())).Returns(false);
+        _mockCommandRequestService.Setup(x => x.IsRequestRejected(It.IsAny<DomainCommandRequest>())).Returns(false);
         _mockAccountService.Setup(x => x.GetUserAccount()).Returns(new DomainAccount { Id = "actor1" });
         _mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<DomainAccount>())).Returns("Tim");
 
