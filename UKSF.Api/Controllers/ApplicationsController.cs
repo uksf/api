@@ -38,7 +38,7 @@ public class ApplicationsController(IAccountContext accountContext, INotificatio
             new DomainNotification
             {
                 Owner = oldAccount.Application.Recruiter,
-                Icon = NotificationIcons.Application,
+                Icon = Icons.Application,
                 Message = $"{oldAccount.Firstname} {oldAccount.Lastname} updated their application",
                 Link = $"/recruitment/{id}"
             }

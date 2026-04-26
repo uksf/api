@@ -93,7 +93,7 @@ public class CommentThreadController(
                 new DomainNotification
                 {
                     Owner = participant,
-                    Icon = NotificationIcons.Comment,
+                    Icon = Icons.Comment,
                     Message = $"{displayNameService.GetDisplayName(comment.Author)} replied to a comment:\n\"{comment.Content}\"",
                     Link = link
                 }

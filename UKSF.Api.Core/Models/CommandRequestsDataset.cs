@@ -14,6 +14,8 @@ public class CommandRequestDataset
     public DomainCommandRequest Data { get; set; }
     public string DisplayReason { get; set; }
     public string DisplayType { get; set; }
+    public string IconKey { get; set; }
+    public string ColorKey { get; set; }
     public IEnumerable<CommandRequestReviewDataset> Reviews { get; set; }
 }
 

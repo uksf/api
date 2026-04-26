@@ -181,33 +181,6 @@ public class CommandRequestServiceTests
     }
 
     [Fact]
-    public async Task SetRequestAllReviewStates_ShouldUpdateAllReviewers()
-    {
-        var request = new DomainCommandRequest
-        {
-            Id = "req1", Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Pending }, { "r2", ReviewState.Pending } }
-        };
-
-        await _subject.SetRequestAllReviewStates(request, ReviewState.Approved);
-
-        _mockCommandRequestContext.Verify(x => x.Update("req1", It.IsAny<UpdateDefinition<DomainCommandRequest>>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task SetRequestAllReviewStates_ShouldNotMutateCachedRequest()
-    {
-        var request = new DomainCommandRequest
-        {
-            Id = "req1", Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Pending }, { "r2", ReviewState.Pending } }
-        };
-
-        await _subject.SetRequestAllReviewStates(request, ReviewState.Approved);
-
-        request.Reviews["r1"].Should().Be(ReviewState.Pending);
-        request.Reviews["r2"].Should().Be(ReviewState.Pending);
-    }
-
-    [Fact]
     public void GetReviewState_ShouldReturnReviewerState()
     {
         var request = new DomainCommandRequest { Id = "req1", Reviews = { { "reviewer1", ReviewState.Approved } } };
@@ -364,5 +337,89 @@ public class CommandRequestServiceTests
         _mockCommandRequestContext.Setup(x => x.GetSingle("missing")).Returns((DomainCommandRequest)null);
 
         _subject.IsRequestRejected("missing").Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsRequestApproved_WhenOverriddenStateApproved_ReturnsTrue_RegardlessOfReviews()
+    {
+        var request = new DomainCommandRequest
+        {
+            Id = "req1",
+            Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Pending }, { "r2", ReviewState.Rejected } },
+            OverriddenState = ReviewState.Approved
+        };
+        _mockCommandRequestContext.Setup(x => x.GetSingle("req1")).Returns(request);
+        _subject.IsRequestApproved("req1").Should().BeTrue();
+        _subject.IsRequestRejected("req1").Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsRequestRejected_WhenOverriddenStateRejected_ReturnsTrue_RegardlessOfReviews()
+    {
+        var request = new DomainCommandRequest
+        {
+            Id = "req1",
+            Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Approved }, { "r2", ReviewState.Approved } },
+            OverriddenState = ReviewState.Rejected
+        };
+        _mockCommandRequestContext.Setup(x => x.GetSingle("req1")).Returns(request);
+        _subject.IsRequestRejected("req1").Should().BeTrue();
+        _subject.IsRequestApproved("req1").Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsRequestApproved_WhenOverriddenStateNull_FallsBackToReviewsRule()
+    {
+        var request = new DomainCommandRequest
+        {
+            Id = "req1", Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Approved }, { "r2", ReviewState.Approved } }
+        };
+        _mockCommandRequestContext.Setup(x => x.GetSingle("req1")).Returns(request);
+        _subject.IsRequestApproved("req1").Should().BeTrue();
+        _subject.IsRequestRejected("req1").Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsRequestApproved_WhenOverriddenStatePending_FallsBackToReviewsRule()
+    {
+        var request = new DomainCommandRequest
+        {
+            Id = "req1",
+            Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Approved }, { "r2", ReviewState.Approved } },
+            OverriddenState = ReviewState.Pending
+        };
+        _mockCommandRequestContext.Setup(x => x.GetSingle("req1")).Returns(request);
+        _subject.IsRequestApproved("req1").Should().BeTrue();
+        _subject.IsRequestRejected("req1").Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsRequestRejected_WhenOverriddenStatePending_FallsBackToReviewsRule()
+    {
+        var request = new DomainCommandRequest
+        {
+            Id = "req1",
+            Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Approved }, { "r2", ReviewState.Rejected } },
+            OverriddenState = ReviewState.Pending
+        };
+        _mockCommandRequestContext.Setup(x => x.GetSingle("req1")).Returns(request);
+        _subject.IsRequestRejected("req1").Should().BeTrue();
+        _subject.IsRequestApproved("req1").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SetRequestOverride_PersistsStateAndActor_WithoutTouchingReviews()
+    {
+        var existingReviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Approved }, { "r2", ReviewState.Pending } };
+        var request = new DomainCommandRequest { Id = "req1", Reviews = existingReviews };
+        UpdateDefinition<DomainCommandRequest> capturedUpdate = null;
+        _mockCommandRequestContext.Setup(x => x.Update("req1", It.IsAny<UpdateDefinition<DomainCommandRequest>>()))
+                                  .Callback<string, UpdateDefinition<DomainCommandRequest>>((_, u) => capturedUpdate = u)
+                                  .Returns(Task.CompletedTask);
+
+        await _subject.SetRequestOverride(request, ReviewState.Approved, "actor1");
+
+        _mockCommandRequestContext.Verify(x => x.Update("req1", It.IsAny<UpdateDefinition<DomainCommandRequest>>()), Times.Once);
+        request.Reviews.Should().BeEquivalentTo(existingReviews);
     }
 }

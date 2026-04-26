@@ -43,8 +43,9 @@ public class NotificationsController(INotificationsService notificationsService,
             new DomainNotification
             {
                 Owner = httpContextService.GetUserId(),
-                Icon = NotificationIcons.Comment,
-                Message = "This comment is a test:\n\"Many things were said that day but none greater than the declaration of autodefenstration\"",
+                Icon = Icons.Comment,
+                Message =
+                    "This comment is a test:\n\"Many things were said that day but none greater than the declaration of autodefenstration\"",
                 Link = $"/recruitment/{httpContextService.GetUserId()}"
             }
         );

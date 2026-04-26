@@ -227,7 +227,7 @@ public class UpdateApplicationCommandTests
         _mockNotificationsService.Verify(
             x => x.Add(
                 It.Is<DomainNotification>(n => n.Owner == RecruiterId &&
-                                               n.Icon == NotificationIcons.Application &&
+                                               n.Icon == Icons.Application &&
                                                n.Message.Contains("was Accepted") &&
                                                n.Message.Contains(SessionUserDisplayName) &&
                                                n.Link == $"/recruitment/{AccountId}"
@@ -267,8 +267,8 @@ public class UpdateApplicationCommandTests
 
         await _subject.ExecuteAsync(AccountId, ApplicationState.Accepted);
 
-        _mockNotificationsService.Verify(x => x.Add(It.Is<DomainNotification>(n => n.Owner == leadId1 && n.Icon == NotificationIcons.Application)), Times.Once);
-        _mockNotificationsService.Verify(x => x.Add(It.Is<DomainNotification>(n => n.Owner == leadId2 && n.Icon == NotificationIcons.Application)), Times.Once);
+        _mockNotificationsService.Verify(x => x.Add(It.Is<DomainNotification>(n => n.Owner == leadId1 && n.Icon == Icons.Application)), Times.Once);
+        _mockNotificationsService.Verify(x => x.Add(It.Is<DomainNotification>(n => n.Owner == leadId2 && n.Icon == Icons.Application)), Times.Once);
         _mockNotificationsService.Verify(x => x.Add(It.Is<DomainNotification>(n => n.Owner == SessionUserId)), Times.Never);
     }
 

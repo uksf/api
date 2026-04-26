@@ -33,6 +33,7 @@ public class CommandRequestCompletionServiceTests
     private readonly Mock<IHubContext<CommandRequestsHub, ICommandRequestsClient>> _mockHub = new();
     private readonly Mock<ICommandRequestsClient> _mockHubClients = new();
     private readonly Mock<INotificationsService> _mockNotificationsService = new();
+    private readonly Mock<IDisplayNameService> _mockDisplayNameService = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly CommandRequestCompletionService _subject;
 
@@ -40,19 +41,22 @@ public class CommandRequestCompletionServiceTests
     {
         _mockHubClients.Setup(x => x.ReceiveRequestUpdate()).Returns(Task.CompletedTask);
         _mockHub.Setup(x => x.Clients.All).Returns(_mockHubClients.Object);
+        _mockHttpContextService.Setup(x => x.GetUserId()).Returns("actor-default");
+        _mockDisplayNameService.Setup(x => x.GetDisplayName(It.IsAny<string>())).Returns<string>(id => $"Name({id})");
 
         _subject = new CommandRequestCompletionService(
             _mockDischargeContext.Object,
             _mockCommandRequestContext.Object,
             _mockAccountContext.Object,
             _mockUnitsContext.Object,
-            _mockHttpContextService.Object,
             _mockCommandRequestService.Object,
             _mockAssignmentService.Object,
             _mockLoaService.Object,
             _mockUnitsService.Object,
             _mockHub.Object,
             _mockNotificationsService.Object,
+            _mockHttpContextService.Object,
+            _mockDisplayNameService.Object,
             _mockLogger.Object
         );
     }
@@ -423,7 +427,7 @@ public class CommandRequestCompletionServiceTests
             x => x.Add(
                 It.Is<DomainNotification>(n => n.Owner == "account-1" &&
                                                n.Message == "You have been unassigned from all chain of command positions in all units" &&
-                                               n.Icon == NotificationIcons.Demotion
+                                               n.Icon == Icons.Demotion
                 )
             ),
             Times.Once
@@ -452,7 +456,7 @@ public class CommandRequestCompletionServiceTests
                                                n.Message.Contains("unassigned as") &&
                                                n.Message.Contains("Commander") &&
                                                n.Message.Contains("1 Platoon") &&
-                                               n.Icon == NotificationIcons.Demotion
+                                               n.Icon == Icons.Demotion
                 )
             ),
             Times.Once
@@ -479,7 +483,7 @@ public class CommandRequestCompletionServiceTests
                                                n.Message.Contains("assigned as") &&
                                                n.Message.Contains("Commander") &&
                                                n.Message.Contains("1 Platoon") &&
-                                               n.Icon == NotificationIcons.Promotion
+                                               n.Icon == Icons.Promotion
                 )
             ),
             Times.Once
@@ -589,10 +593,7 @@ public class CommandRequestCompletionServiceTests
         _mockAssignmentService.Verify(x => x.UnassignUnit("account-1", unitId), Times.Once);
         _mockNotificationsService.Verify(
             x => x.Add(
-                It.Is<DomainNotification>(n => n.Owner == "account-1" &&
-                                               n.Message == "You have been removed from 3 Section" &&
-                                               n.Icon == NotificationIcons.Demotion
-                )
+                It.Is<DomainNotification>(n => n.Owner == "account-1" && n.Message == "You have been removed from 3 Section" && n.Icon == Icons.Demotion)
             ),
             Times.Once
         );
@@ -657,7 +658,8 @@ public class CommandRequestCompletionServiceTests
             Times.Once
         );
         _mockNotificationsService.Verify(x => x.Add(notification), Times.Once);
-        _mockLogger.Verify(x => x.LogAudit(It.Is<string>(s => s.Contains("reinstated") && s.Contains("Smith.J"))), Times.Once);
+        _mockLogger.Verify(x => x.LogAudit(It.Is<string>(s => s.Contains("approved") && s.Contains("Reinstate"))), Times.Once);
+        _mockLogger.Verify(x => x.LogAudit(It.Is<string>(s => s.Contains("reinstated") && s.Contains("Smith.J"))), Times.Never);
         _mockCommandRequestService.Verify(x => x.ArchiveRequest(id), Times.Once);
     }
 
@@ -676,6 +678,165 @@ public class CommandRequestCompletionServiceTests
             Times.Never
         );
         _mockLogger.Verify(x => x.LogAudit(It.Is<string>(s => s.Contains("rejected"))), Times.Once);
+    }
+
+    #endregion
+
+    #region ResolveAndAudit unified emission
+
+    [Fact]
+    public async Task Resolve_WhenApproved_EmitsSingleAuditLineWithFinaliserAndContext()
+    {
+        var id = "request-1";
+        var request = new DomainCommandRequest
+        {
+            Id = id,
+            Type = CommandRequestType.Loa,
+            Value = "loa-1",
+            DisplayRecipient = "Cpl Bridg",
+            DisplayFrom = "2026-05-15",
+            DisplayValue = "2026-05-22",
+            Reason = "holiday",
+            Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Approved } }
+        };
+        SetupApproved(id, request);
+        _mockHttpContextService.Setup(x => x.GetUserId()).Returns("r1");
+        _mockDisplayNameService.Setup(x => x.GetDisplayName("r1")).Returns("Sgt Finaliser");
+
+        await _subject.Resolve(id);
+
+        _mockLogger.Verify(
+            x => x.LogAudit(
+                It.Is<string>(s => s.Contains("approved") &&
+                                   s.Contains("Loa") &&
+                                   s.Contains("Cpl Bridg") &&
+                                   s.Contains("holiday") &&
+                                   s.Contains("Sgt Finaliser") &&
+                                   !s.Contains("[overridden")
+                )
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Resolve_WhenOverriddenApproved_EmitsSingleAuditLineWithOverrideSuffixAndOverrideActor()
+    {
+        var id = "request-1";
+        var request = new DomainCommandRequest
+        {
+            Id = id,
+            Type = CommandRequestType.Loa,
+            Value = "loa-1",
+            DisplayRecipient = "Cpl Bridg",
+            DisplayFrom = "2026-05-15",
+            DisplayValue = "2026-05-22",
+            Reason = "holiday",
+            Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Pending } },
+            OverriddenState = ReviewState.Approved,
+            OverriddenBy = "admin1"
+        };
+        SetupApproved(id, request);
+        _mockDisplayNameService.Setup(x => x.GetDisplayName("admin1")).Returns("Cpl Override");
+
+        await _subject.Resolve(id);
+
+        _mockLogger.Verify(
+            x => x.LogAudit(It.Is<string>(s => s.Contains("overridden to approved by") && s.Contains("Cpl Override") && !s.Contains("admin1"))),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Resolve_WhenRejected_AuditNamesActor()
+    {
+        var id = "request-1";
+        var request = new DomainCommandRequest
+        {
+            Id = id,
+            Type = CommandRequestType.Loa,
+            Value = "loa-1",
+            DisplayRecipient = "Cpl Bridg",
+            DisplayFrom = "2026-05-15",
+            DisplayValue = "2026-05-22",
+            Reason = "holiday",
+            Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Rejected } }
+        };
+        SetupRejected(id, request);
+        _mockHttpContextService.Setup(x => x.GetUserId()).Returns("r1");
+        _mockDisplayNameService.Setup(x => x.GetDisplayName("r1")).Returns("Sgt Finaliser");
+
+        await _subject.Resolve(id);
+
+        _mockLogger.Verify(
+            x => x.LogAudit(It.Is<string>(s => s.Contains("rejected") && s.Contains("Sgt Finaliser") && !s.Contains("holiday") && !s.Contains("[overridden"))),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Resolve_WhenOverriddenReset_ToPending_EmitsAuditWithoutOverrideSuffix()
+    {
+        var id = "request-1";
+        var request = new DomainCommandRequest
+        {
+            Id = id,
+            Type = CommandRequestType.Loa,
+            Value = "loa-1",
+            DisplayRecipient = "Cpl Bridg",
+            DisplayFrom = "2026-05-15",
+            DisplayValue = "2026-05-22",
+            Reason = "holiday",
+            Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Approved } },
+            OverriddenState = ReviewState.Pending,
+            OverriddenBy = null
+        };
+        SetupApproved(id, request);
+        _mockHttpContextService.Setup(x => x.GetUserId()).Returns("r1");
+        _mockDisplayNameService.Setup(x => x.GetDisplayName("r1")).Returns("Sgt Finaliser");
+
+        await _subject.Resolve(id);
+
+        _mockLogger.Verify(
+            x => x.LogAudit(It.Is<string>(s => s.Contains("approved") && s.Contains("Sgt Finaliser") && !s.Contains("[overridden"))),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Resolve_Reinstate_DoesNotEmitLegacyMembershipReinstatedAuditLine()
+    {
+        var id = "request-1";
+        var request = new DomainCommandRequest
+        {
+            Id = id,
+            Type = CommandRequestType.ReinstateMember,
+            DisplayRecipient = "Mr Carter",
+            DisplayFrom = "Discharged",
+            DisplayValue = "BTU Recruit",
+            Reason = "returning",
+            Recipient = "acc1",
+            Reviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Approved } }
+        };
+        SetupApproved(id, request);
+        _mockDischargeContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainDischargeCollection, bool>>()))
+                             .Returns(
+                                 new DomainDischargeCollection
+                                 {
+                                     Id = "d1",
+                                     AccountId = "acc1",
+                                     Name = "Carter.M"
+                                 }
+                             );
+        _mockHttpContextService.Setup(x => x.GetUserId()).Returns("admin1");
+
+        await _subject.Resolve(id);
+
+        _mockLogger.Verify(
+            x => x.LogAudit(It.Is<string>(s => s.Contains("reinstated") && s.Contains("Carter.M's membership")), It.IsAny<string>()),
+            Times.Never
+        );
+        _mockLogger.Verify(x => x.LogAudit(It.Is<string>(s => s.Contains("approved") && s.Contains("Reinstate"))), Times.Once);
     }
 
     #endregion

@@ -42,6 +42,12 @@ public class DomainCommandRequest : MongoObject
     public string Requester { get; set; }
 
     public Dictionary<string, ReviewState> Reviews { get; set; } = new();
+
+    public ReviewState? OverriddenState { get; set; }
+
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string OverriddenBy { get; set; }
+
     public string SecondaryValue { get; set; }
     public string Type { get; set; }
     public string Value { get; set; }

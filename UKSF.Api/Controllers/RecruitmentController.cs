@@ -110,7 +110,7 @@ public class RecruitmentController(
                 new DomainNotification
                 {
                     Owner = assignRecruiterRequest.NewRecruiter,
-                    Icon = NotificationIcons.Application,
+                    Icon = Icons.Application,
                     Message = $"{account.Firstname} {account.Lastname}'s application has been transferred to you",
                     Link = $"/recruitment/{account.Id}"
                 }

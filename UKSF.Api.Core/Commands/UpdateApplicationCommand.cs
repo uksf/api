@@ -63,7 +63,7 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
                 new DomainNotification
                 {
                     Owner = updatedDomainAccount.Application.Recruiter,
-                    Icon = NotificationIcons.Application,
+                    Icon = Icons.Application,
                     Message = $"{updatedDomainAccount.Firstname} {updatedDomainAccount.Lastname}'s application {message} by {instigatorName}",
                     Link = $"/recruitment/{accountId}"
                 }
@@ -77,7 +77,7 @@ public class UpdateApplicationCommand : IUpdateApplicationCommand
                 new DomainNotification
                 {
                     Owner = value,
-                    Icon = NotificationIcons.Application,
+                    Icon = Icons.Application,
                     Message = $"{updatedDomainAccount.Firstname} {updatedDomainAccount.Lastname}'s application {message} by {instigatorName}",
                     Link = $"/recruitment/{accountId}"
                 }

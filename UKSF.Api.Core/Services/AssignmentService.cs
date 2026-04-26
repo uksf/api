@@ -92,7 +92,7 @@ public class AssignmentService(
             {
                 Owner = id,
                 Message = message,
-                Icon = positive ? NotificationIcons.Promotion : NotificationIcons.Demotion
+                Icon = positive ? Icons.Promotion : Icons.Demotion
             }
             : null;
     }

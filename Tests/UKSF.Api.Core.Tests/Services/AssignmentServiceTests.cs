@@ -110,7 +110,7 @@ public class AssignmentServiceTests
         result.Should().NotBeNull();
         result.Owner.Should().Be(MemberId);
         result.Message.Should().Contain("You have been transferred to 1 Platoon > Alpha Squad");
-        result.Icon.Should().Be(NotificationIcons.Promotion);
+        result.Icon.Should().Be(Icons.Promotion);
         _mockUnitsService.Verify(x => x.RemoveMember(MemberId, "OldUnit"), Times.Once);
         _mockAccountContext.Verify(x => x.Update(MemberId, It.IsAny<System.Linq.Expressions.Expression<Func<DomainAccount, string>>>(), "NewUnit"), Times.Once);
         _mockUnitsService.Verify(x => x.AddMember(MemberId, "newUnitId"), Times.Once);
@@ -160,7 +160,7 @@ public class AssignmentServiceTests
 
         result.Should().NotBeNull();
         result.Message.Should().Contain("You have been removed from 1 Platoon > CurrentUnit");
-        result.Icon.Should().Be(NotificationIcons.Promotion);
+        result.Icon.Should().Be(Icons.Promotion);
         _mockUnitsService.Verify(x => x.RemoveMember(MemberId, "CurrentUnit"), Times.Once);
         _mockAccountContext.Verify(
             x => x.Update(MemberId, It.IsAny<System.Linq.Expressions.Expression<Func<DomainAccount, string>>>(), (string)null),
@@ -191,7 +191,7 @@ public class AssignmentServiceTests
 
         result.Should().NotBeNull();
         result.Message.Should().Contain("You have been assigned as a Rifleman");
-        result.Icon.Should().Be(NotificationIcons.Promotion);
+        result.Icon.Should().Be(Icons.Promotion);
         _mockAccountContext.Verify(
             x => x.Update(MemberId, It.IsAny<System.Linq.Expressions.Expression<Func<DomainAccount, string>>>(), "Rifleman"),
             Times.Once
@@ -224,7 +224,7 @@ public class AssignmentServiceTests
 
         result.Should().NotBeNull();
         result.Message.Should().Contain("You have been unassigned as a Medic");
-        result.Icon.Should().Be(NotificationIcons.Promotion);
+        result.Icon.Should().Be(Icons.Promotion);
         _mockAccountContext.Verify(
             x => x.Update(MemberId, It.IsAny<System.Linq.Expressions.Expression<Func<DomainAccount, string>>>(), (string)null),
             Times.Once
@@ -242,7 +242,7 @@ public class AssignmentServiceTests
 
         result.Should().NotBeNull();
         result.Message.Should().Contain("You have been unassigned from your role");
-        result.Icon.Should().Be(NotificationIcons.Promotion);
+        result.Icon.Should().Be(Icons.Promotion);
     }
 
     [Fact]
@@ -274,7 +274,7 @@ public class AssignmentServiceTests
         result.Should().NotBeNull();
         result.Message.Should().Contain("You have been promoted to Corporal");
         result.Message.Should().Contain("Please change your TeamSpeak and Arma name to Cpl.J.Doe");
-        result.Icon.Should().Be(NotificationIcons.Promotion);
+        result.Icon.Should().Be(Icons.Promotion);
     }
 
     [Fact]
@@ -289,7 +289,7 @@ public class AssignmentServiceTests
 
         result.Should().NotBeNull();
         result.Message.Should().Contain("You have been promoted to Private");
-        result.Icon.Should().Be(NotificationIcons.Promotion);
+        result.Icon.Should().Be(Icons.Promotion);
     }
 
     [Fact]
@@ -305,7 +305,7 @@ public class AssignmentServiceTests
 
         result.Should().NotBeNull();
         result.Message.Should().Contain("You have been demoted to Private");
-        result.Icon.Should().Be(NotificationIcons.Promotion);
+        result.Icon.Should().Be(Icons.Promotion);
     }
 
     [Fact]
@@ -332,7 +332,7 @@ public class AssignmentServiceTests
 
         result.Should().NotBeNull();
         result.Message.Should().Contain("You have been demoted from Corporal");
-        result.Icon.Should().Be(NotificationIcons.Promotion);
+        result.Icon.Should().Be(Icons.Promotion);
     }
 
     [Fact]
@@ -352,7 +352,7 @@ public class AssignmentServiceTests
         result.Message.Should().Contain("You have been transferred to NewUnit");
         result.Message.Should().Contain("as a Rifleman");
         result.Message.Should().Contain("and promoted to Corporal");
-        result.Icon.Should().Be(NotificationIcons.Promotion);
+        result.Icon.Should().Be(Icons.Promotion);
     }
 
     [Fact]
@@ -447,7 +447,7 @@ public class AssignmentServiceTests
         var result = await _subject.UpdateUnitRankAndRole(MemberId, unitString: "NewUnit", rankString: "Private");
 
         result.Should().NotBeNull();
-        result.Icon.Should().Be(NotificationIcons.Promotion);
+        result.Icon.Should().Be(Icons.Promotion);
     }
 
     [Fact]
@@ -474,7 +474,7 @@ public class AssignmentServiceTests
         var result = await _subject.UpdateUnitRankAndRole(MemberId, unitString: AssignmentService.RemoveFlag, rankString: "Corporal");
 
         result.Should().NotBeNull();
-        result.Icon.Should().Be(NotificationIcons.Promotion);
+        result.Icon.Should().Be(Icons.Promotion);
     }
 
     [Fact]

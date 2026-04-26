@@ -55,7 +55,7 @@ public class LoaController(
                     new DomainNotification
                     {
                         Owner = reviewerId,
-                        Icon = NotificationIcons.Request,
+                        Icon = Icons.Request,
                         Message = $"Your review for {request.DisplayRequester}'s LOA is no longer required as they deleted their LOA",
                         Link = "/command/requests"
                     }

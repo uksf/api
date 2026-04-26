@@ -89,7 +89,7 @@ public class CreateApplicationCommand(
             new DomainNotification
             {
                 Owner = application.Recruiter,
-                Icon = NotificationIcons.Application,
+                Icon = Icons.Application,
                 Message = $"You have been assigned {account.Firstname} {account.Lastname}'s application",
                 Link = $"/recruitment/{account.Id}"
             }
@@ -101,7 +101,7 @@ public class CreateApplicationCommand(
                 new DomainNotification
                 {
                     Owner = id,
-                    Icon = NotificationIcons.Application,
+                    Icon = Icons.Application,
                     Message =
                         $"{displayNameService.GetDisplayName(account.Application.Recruiter)} has been assigned {account.Firstname} {account.Lastname}'s application",
                     Link = $"/recruitment/{account.Id}"

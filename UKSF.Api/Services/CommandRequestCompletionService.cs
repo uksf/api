@@ -22,13 +22,14 @@ public class CommandRequestCompletionService(
     ICommandRequestContext commandRequestContext,
     IAccountContext accountContext,
     IUnitsContext unitsContext,
-    IHttpContextService httpContextService,
     ICommandRequestService commandRequestService,
     IAssignmentService assignmentService,
     ILoaService loaService,
     IUnitsService unitsService,
     IHubContext<CommandRequestsHub, ICommandRequestsClient> commandRequestsHub,
     INotificationsService notificationsService,
+    IHttpContextService httpContextService,
+    IDisplayNameService displayNameService,
     IUksfLogger logger
 ) : ICommandRequestCompletionService
 {
@@ -64,16 +65,9 @@ public class CommandRequestCompletionService(
             var role = HandleRecruitToPrivate(request.Recipient, request.Value);
             var notification = await assignmentService.UpdateUnitRankAndRole(request.Recipient, rankString: request.Value, role: role, reason: request.Reason);
             notificationsService.Add(notification);
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit(
-                $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
-            );
         }
-        else if (commandRequestService.IsRequestRejected(request.Id))
-        {
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue}");
-        }
+
+        await ResolveAndAudit(request);
     }
 
     private async Task Loa(DomainCommandRequest request)
@@ -81,19 +75,13 @@ public class CommandRequestCompletionService(
         if (commandRequestService.IsRequestApproved(request.Id))
         {
             await loaService.SetLoaState(request.Value, LoaReviewState.Approved);
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit(
-                $"{request.Type} request approved for {request.DisplayRecipient} from {FormatDate(request.DisplayFrom)} to {FormatDate(request.DisplayValue)} because '{request.Reason}'"
-            );
         }
         else if (commandRequestService.IsRequestRejected(request.Id))
         {
             await loaService.SetLoaState(request.Value, LoaReviewState.Rejected);
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit(
-                $"{request.Type} request rejected for {request.DisplayRecipient} from {FormatDate(request.DisplayFrom)} to {FormatDate(request.DisplayValue)}"
-            );
         }
+
+        await ResolveAndAudit(request);
     }
 
     private async Task Discharge(DomainCommandRequest request)
@@ -140,16 +128,9 @@ public class CommandRequestCompletionService(
             );
             notificationsService.Add(notification);
             await assignmentService.UnassignAllUnits(account.Id);
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit(
-                $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
-            );
         }
-        else if (commandRequestService.IsRequestRejected(request.Id))
-        {
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue}");
-        }
+
+        await ResolveAndAudit(request);
     }
 
     private async Task IndividualRole(DomainCommandRequest request)
@@ -162,16 +143,9 @@ public class CommandRequestCompletionService(
                 reason: request.Reason
             );
             notificationsService.Add(notification);
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit(
-                $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
-            );
         }
-        else if (commandRequestService.IsRequestRejected(request.Id))
-        {
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue}");
-        }
+
+        await ResolveAndAudit(request);
     }
 
     private async Task ChainOfCommandPosition(DomainCommandRequest request)
@@ -188,7 +162,7 @@ public class CommandRequestCompletionService(
                         {
                             Owner = request.Recipient,
                             Message = "You have been unassigned from all chain of command positions in all units",
-                            Icon = NotificationIcons.Demotion
+                            Icon = Icons.Demotion
                         }
                     );
                 }
@@ -201,7 +175,7 @@ public class CommandRequestCompletionService(
                             Owner = request.Recipient,
                             Message =
                                 $"You have been unassigned as {AvsAn.Query(position).Article} {position} in {unitsService.GetChainString(unitsContext.GetSingle(request.Value))}",
-                            Icon = NotificationIcons.Demotion
+                            Icon = Icons.Demotion
                         }
                     );
                 }
@@ -215,21 +189,13 @@ public class CommandRequestCompletionService(
                         Owner = request.Recipient,
                         Message =
                             $"You have been assigned as {AvsAn.Query(request.SecondaryValue).Article} {request.SecondaryValue} in {unitsService.GetChainString(unitsContext.GetSingle(request.Value))}",
-                        Icon = NotificationIcons.Promotion
+                        Icon = Icons.Promotion
                     }
                 );
             }
+        }
 
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit(
-                $"{request.Type} request approved for {request.DisplayRecipient} as {request.DisplayValue} in {request.Value} because '{request.Reason}'"
-            );
-        }
-        else if (commandRequestService.IsRequestRejected(request.Id))
-        {
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} as {request.DisplayValue} in {request.Value}");
-        }
+        await ResolveAndAudit(request);
     }
 
     private async Task UnitRemoval(DomainCommandRequest request)
@@ -243,17 +209,12 @@ public class CommandRequestCompletionService(
                 {
                     Owner = request.Recipient,
                     Message = $"You have been removed from {unitsService.GetChainString(unit)}",
-                    Icon = NotificationIcons.Demotion
+                    Icon = Icons.Demotion
                 }
             );
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit($"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} because '{request.Reason}'");
         }
-        else if (commandRequestService.IsRequestRejected(request.Id))
-        {
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom}");
-        }
+
+        await ResolveAndAudit(request);
     }
 
     private async Task Transfer(DomainCommandRequest request)
@@ -263,16 +224,9 @@ public class CommandRequestCompletionService(
             var unit = unitsContext.GetSingle(request.Value);
             var notification = await assignmentService.UpdateUnitRankAndRole(request.Recipient, unit.Name, reason: request.Reason);
             notificationsService.Add(notification);
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit(
-                $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
-            );
         }
-        else if (commandRequestService.IsRequestRejected(request.Id))
-        {
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue}");
-        }
+
+        await ResolveAndAudit(request);
     }
 
     private async Task Reinstate(DomainCommandRequest request)
@@ -292,18 +246,24 @@ public class CommandRequestCompletionService(
                 "your membership was reinstated"
             );
             notificationsService.Add(notification);
+        }
 
-            logger.LogAudit($"{httpContextService.GetUserId()} reinstated {dischargeCollection.Name}'s membership");
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit(
-                $"{request.Type} request approved for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue} because '{request.Reason}'"
-            );
-        }
-        else if (commandRequestService.IsRequestRejected(request.Id))
-        {
-            await commandRequestService.ArchiveRequest(request.Id);
-            logger.LogAudit($"{request.Type} request rejected for {request.DisplayRecipient} from {request.DisplayFrom} to {request.DisplayValue}");
-        }
+        await ResolveAndAudit(request);
+    }
+
+    private async Task ResolveAndAudit(DomainCommandRequest request)
+    {
+        var approved = commandRequestService.IsRequestApproved(request.Id);
+        var outcome = approved ? "approved" : "rejected";
+        var isOverridden = request.OverriddenState.HasValue && request.OverriddenState.Value != ReviewState.Pending;
+        var actorId = isOverridden ? request.OverriddenBy : httpContextService.GetUserId();
+        var actorDisplayName = displayNameService.GetDisplayName(actorId);
+        var verbClause = isOverridden ? $"overridden to {outcome} by {actorDisplayName}" : $"{outcome} by {actorDisplayName}";
+        var displayFrom = FormatDate(request.DisplayFrom);
+        var displayValue = FormatDate(request.DisplayValue);
+        var reasonClause = approved && !string.IsNullOrEmpty(request.Reason) ? $" because '{request.Reason}'" : string.Empty;
+        await commandRequestService.ArchiveRequest(request.Id);
+        logger.LogAudit($"{request.Type} request {verbClause} for {request.DisplayRecipient} from {displayFrom} to {displayValue}{reasonClause}");
     }
 
     private string HandleRecruitToPrivate(string id, string targetRank)

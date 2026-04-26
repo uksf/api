@@ -69,7 +69,7 @@ public class DischargesController(
                 new DomainNotification
                 {
                     Owner = member,
-                    Icon = NotificationIcons.Promotion,
+                    Icon = Icons.Promotion,
                     Message = $"{dischargeCollection.Name}'s membership was reinstated by {httpContextService.GetUserId()}"
                 }
             );
