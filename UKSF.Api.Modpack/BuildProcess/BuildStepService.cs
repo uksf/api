@@ -106,6 +106,7 @@ public class BuildStepService : IBuildStepService
             new ModpackBuildStep(BuildStepLockServerControl.Name),
             new ModpackBuildStep(BuildStepBackup.Name),
             new ModpackBuildStep(BuildStepDeploy.Name),
+            new ModpackBuildStep(BuildStepConfigExport.Name),
             new ModpackBuildStep(BuildStepReleaseKeys.Name),
             new ModpackBuildStep(BuildStepCbaSettings.Name),
             new ModpackBuildStep(BuildStepBuildRepo.Name),

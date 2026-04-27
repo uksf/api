@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -59,7 +60,7 @@ public class GameServerProcessManagerTests
     [Fact]
     public void GetInstanceCount_ReturnsCountOfArmaProcesses()
     {
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(new Process[2]);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(1, ""), new ProcessCommandLineInfo(2, "")]);
 
         _sut.GetInstanceCount().Should().Be(2);
     }
@@ -67,7 +68,7 @@ public class GameServerProcessManagerTests
     [Fact]
     public void GetInstanceCount_WhenNoProcesses_ReturnsZero()
     {
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         _sut.GetInstanceCount().Should().Be(0);
     }
@@ -76,7 +77,7 @@ public class GameServerProcessManagerTests
     public async Task PushServerUpdateAsync_SendsReceiveServerUpdateWithInstanceCount()
     {
         var server = new DomainGameServer { Id = "s1", Name = "Test" };
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(new Process[1]);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(1, "")]);
 
         await _sut.PushServerUpdateAsync(server);
 
@@ -89,7 +90,7 @@ public class GameServerProcessManagerTests
     {
         var server = new DomainGameServer { Id = "s1" };
         var logSources = new List<RptLogSource> { new("server", true) };
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
         _mockRptLogService.Setup(x => x.GetLogSources(server)).Returns(logSources);
 
         await _sut.PushServerUpdateAsync(server);
@@ -103,7 +104,7 @@ public class GameServerProcessManagerTests
         var servers = new List<DomainGameServer> { new() { Id = "s1" } };
         _mockContext.Setup(x => x.Get()).Returns(servers);
         _mockMissionsService.Setup(x => x.GetActiveMissions()).Returns([]);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.PushAllServersUpdateAsync();
 
@@ -118,7 +119,7 @@ public class GameServerProcessManagerTests
         var servers = new List<DomainGameServer> { server1, server2 };
         _mockContext.Setup(x => x.Get()).Returns(servers);
         _mockMissionsService.Setup(x => x.GetActiveMissions()).Returns([]);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
         _mockRptLogService.Setup(x => x.GetLogSources(It.IsAny<DomainGameServer>())).Returns(new List<RptLogSource> { new("server", true) });
 
         await _sut.PushAllServersUpdateAsync();
@@ -138,7 +139,7 @@ public class GameServerProcessManagerTests
         var missions = new List<MissionFile> { new(new FileInfo(tempFile)) };
         _mockContext.Setup(x => x.Get()).Returns(servers);
         _mockMissionsService.Setup(x => x.GetActiveMissions()).Returns(missions);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.PushAllServersUpdateAsync();
 
@@ -158,7 +159,7 @@ public class GameServerProcessManagerTests
             Status = new GameServerStatus { Running = true }
         };
         _mockProcessUtilities.Setup(x => x.FindProcessById(1234)).Returns((Process)null);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.KillServerAsync(server);
 
@@ -181,7 +182,7 @@ public class GameServerProcessManagerTests
             Status = new GameServerStatus { Running = true }
         };
         _mockProcessUtilities.Setup(x => x.FindProcessById(It.IsAny<int>())).Returns((Process)null);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.KillServerAsync(server);
 
@@ -201,7 +202,7 @@ public class GameServerProcessManagerTests
             HeadlessClientProcessIds = [],
             Status = new GameServerStatus { Running = true, CurrentMissionSessionId = "session-1" }
         };
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.KillServerAsync(server);
 
@@ -230,7 +231,7 @@ public class GameServerProcessManagerTests
         };
         _mockContext.Setup(x => x.Get()).Returns(servers);
         _mockProcessUtilities.Setup(x => x.FindProcessById(It.IsAny<int>())).Returns((Process)null);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         var killed = await _sut.KillAllAsync();
 
@@ -255,7 +256,7 @@ public class GameServerProcessManagerTests
             ApiPort = 2303,
             Status = new GameServerStatus { Running = true }
         };
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.StopServerAsync(server);
 
@@ -277,7 +278,7 @@ public class GameServerProcessManagerTests
             Status = new GameServerStatus { Running = false, Launching = true }
         };
         _mockProcessUtilities.Setup(x => x.FindProcessById(1234)).Returns((Process)null);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.StopServerAsync(server);
 
@@ -304,7 +305,7 @@ public class GameServerProcessManagerTests
         _mockHelpers.Setup(x => x.FormatGameServerConfig(server, 40, "mission.Altis.pbo")).Returns("config content");
         _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302")).Returns(1234);
         _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302 -client")).Returns(5001);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(new Process[2]);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(1, ""), new ProcessCommandLineInfo(2, "")]);
 
         await _sut.LaunchServerAsync(server, "mission.Altis.pbo", "user1", 40);
 
@@ -332,7 +333,7 @@ public class GameServerProcessManagerTests
         };
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockProcessUtilities.Setup(x => x.FindProcessById(It.IsAny<int>())).Returns((Process)null);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.HandleShutdownCompleteAsync(2303);
 
@@ -367,7 +368,7 @@ public class GameServerProcessManagerTests
             Status = new GameServerStatus { CurrentMissionSessionId = "session-abc" }
         };
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.HandleShutdownCompleteAsync(2303);
 
@@ -386,7 +387,7 @@ public class GameServerProcessManagerTests
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetMaxPlayerCountFromConfig(server)).Returns("40");
         _mockHelpers.Setup(x => x.StripMilliseconds(It.IsAny<TimeSpan>())).Returns(TimeSpan.Zero);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(new Process[1]);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(1, "")]);
 
         var data = new Dictionary<string, object> { { "map", "Altis" }, { "mission", "test_mission" } };
 
@@ -423,7 +424,7 @@ public class GameServerProcessManagerTests
             }
         };
         _mockContext.Setup(x => x.Get()).Returns(servers);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         var result = await _sut.GetAllServerStatusesAsync();
 
@@ -444,7 +445,7 @@ public class GameServerProcessManagerTests
         result.Should().HaveCount(1);
         result[0].Status.Running.Should().BeTrue();
         _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Once);
-        _mockHelpers.Verify(x => x.GetArmaProcesses(), Times.Never);
+        _mockHelpers.Verify(x => x.GetGameServerArmaProcesses(), Times.Never);
     }
 
     [Fact]
@@ -460,7 +461,7 @@ public class GameServerProcessManagerTests
             }
         };
         _mockContext.Setup(x => x.Get()).Returns(servers);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.GetAllServerStatusesAsync();
 
@@ -481,8 +482,7 @@ public class GameServerProcessManagerTests
         };
         _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { server });
         _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(new Process[] { null! });
-        _mockHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([new ProcessCommandLineInfo(5678, "-config=ServerConfigs/Main.cfg -port=2302 ")]);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(5678, "-config=ServerConfigs/Main.cfg -port=2302 ")]);
 
         var mockHandler = new MockHttpMessageHandler(HttpStatusCode.RequestTimeout);
         var httpClient = new HttpClient(mockHandler);
@@ -509,8 +509,7 @@ public class GameServerProcessManagerTests
         };
         _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { server });
         _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(new Process[] { null! });
-        _mockHelpers.Setup(x => x.GetArmaProcessesWithCommandLine()).Returns([]);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(5678, "-config=ServerConfigs/Other.cfg -port=2310 ")]);
 
         var result = await _sut.GetAllServerStatusesAsync();
 
@@ -530,7 +529,7 @@ public class GameServerProcessManagerTests
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
         _mockHelpers.Setup(x => x.GetMaxPlayerCountFromConfig(server)).Returns("40");
         _mockHelpers.Setup(x => x.StripMilliseconds(It.IsAny<TimeSpan>())).Returns(TimeSpan.FromSeconds(120));
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(new Process[1]);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(1, "")]);
 
         var data = new Dictionary<string, object>
         {
@@ -565,7 +564,7 @@ public class GameServerProcessManagerTests
             Status = new GameServerStatus()
         };
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.HandleShutdownCompleteAsync(2303);
 
@@ -593,7 +592,7 @@ public class GameServerProcessManagerTests
                             return callCount == 1 ? new List<DomainGameServer> { server } : new List<DomainGameServer>();
                         }
                     );
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         _sut.EnsureMonitorRunning();
         await Task.Delay(1000);
@@ -607,7 +606,7 @@ public class GameServerProcessManagerTests
     public async Task Monitor_WhenNoServersAndNoOrphanedProcesses_ExitsAndPushesZeroCount()
     {
         _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer>());
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         _sut.EnsureMonitorRunning();
         await Task.Delay(500);
@@ -623,7 +622,8 @@ public class GameServerProcessManagerTests
     {
         var instanceCount = 2;
         _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer>());
-        _mockHelpers.Setup(x => x.GetArmaProcesses()).Returns(() => instanceCount > 0 ? new Process[instanceCount] : Array.Empty<Process>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses())
+                    .Returns(() => instanceCount > 0 ? Enumerable.Range(0, instanceCount).Select(i => new ProcessCommandLineInfo(i + 1, "")).ToList() : []);
 
         _sut.EnsureMonitorRunning();
         await Task.Delay(500);

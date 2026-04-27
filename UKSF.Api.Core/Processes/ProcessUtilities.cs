@@ -18,6 +18,7 @@ public interface IProcessUtilities
     Process[] GetProcessesByName(string name);
     Process[] GetProcesses();
     IReadOnlyList<ProcessCommandLineInfo> GetProcessesWithCommandLine(string processNamePrefix);
+    bool IsProcessAlive(int pid);
 }
 
 [ExcludeFromCodeCoverage]
@@ -85,6 +86,23 @@ public class ProcessUtilities : IProcessUtilities
     public Process[] GetProcesses()
     {
         return Process.GetProcesses();
+    }
+
+    public bool IsProcessAlive(int pid)
+    {
+        try
+        {
+            var process = Process.GetProcessById(pid);
+            return process is { HasExited: false };
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 
     public IReadOnlyList<ProcessCommandLineInfo> GetProcessesWithCommandLine(string processNamePrefix)

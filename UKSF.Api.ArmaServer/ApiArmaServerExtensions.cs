@@ -47,7 +47,8 @@ public static class ApiArmaServerExtensions
                            .AddContext<IMissionStatsBatchesContext, MissionStatsBatchesContext>()
                            .AddContext<IPlayerMissionStatsContext, PlayerMissionStatsContext>()
                            .AddContext<IMissionStatsContext, MissionStatsContext>()
-                           .AddContext<IPersistenceSessionsContext, PersistenceSessionsContext>();
+                           .AddContext<IPersistenceSessionsContext, PersistenceSessionsContext>()
+                           .AddContext<IGameConfigExportsContext, GameConfigExportsContext>();
         }
 
         private IServiceCollection AddServices()
@@ -71,7 +72,10 @@ public static class ApiArmaServerExtensions
                            .AddTransient<IPerformanceService, PerformanceService>()
                            .AddScoped<IGameServerEventHandler, GameServerEventHandler>()
                            .AddSingleton<IGameServerProcessManager, GameServerProcessManager>()
-                           .AddHostedService<GameServerProcessManagerStartup>();
+                           .AddSingleton<IConfigExportProcessLauncher, ConfigExportProcessLauncher>()
+                           .AddSingleton<IConfigExportService, ConfigExportService>()
+                           .AddHostedService<GameServerProcessManagerStartup>()
+                           .AddHostedService<ConfigExportRecoveryStartup>();
         }
 
         private IServiceCollection AddCommands()

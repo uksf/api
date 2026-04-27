@@ -28,7 +28,7 @@ public class ActionCleanupRunningServers(
 
     public override async Task Run(params object[] parameters)
     {
-        var armaProcesses = gameServerHelpers.GetArmaProcesses();
+        var armaProcesses = gameServerHelpers.GetGameServerArmaProcesses();
         if (!armaProcesses.Any())
         {
             return;

@@ -21,4 +21,8 @@
         <Folder Include="Models\Request"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="UKSF.Api.ArmaServer.Tests"/>
+    </ItemGroup>
+
 </Project>

@@ -53,7 +53,7 @@ public class GameServerProcessManager(
 
     public int GetInstanceCount()
     {
-        return gameServerHelpers.GetArmaProcesses().Count();
+        return gameServerHelpers.GetGameServerArmaProcesses().Count;
     }
 
     public async Task PushServerUpdateAsync(DomainGameServer server)
@@ -181,7 +181,10 @@ public class GameServerProcessManager(
 
     public async Task<int> KillAllAsync()
     {
-        var processes = gameServerHelpers.GetArmaProcesses().ToList();
+        var processes = gameServerHelpers.GetGameServerArmaProcesses()
+                                         .Select(p => processUtilities.FindProcessById(p.ProcessId))
+                                         .Where(p => p is not null)
+                                         .ToList();
         foreach (var process in processes)
         {
             process.Kill(true);
@@ -331,7 +334,7 @@ public class GameServerProcessManager(
             return gameServers;
         }
 
-        if (!gameServerHelpers.GetArmaProcesses().Any())
+        if (!gameServerHelpers.GetGameServerArmaProcesses().Any())
         {
             StatusCache.Clear();
 
@@ -354,7 +357,7 @@ public class GameServerProcessManager(
             return gameServers;
         }
 
-        var armaProcesses = gameServerHelpers.GetArmaProcessesWithCommandLine();
+        var armaProcesses = gameServerHelpers.GetGameServerArmaProcesses();
         await Task.WhenAll(gameServers.Select(server => UpdateServerStatus(server, armaProcesses)));
         return gameServers;
     }

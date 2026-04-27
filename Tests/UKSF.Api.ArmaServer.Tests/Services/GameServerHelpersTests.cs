@@ -276,4 +276,49 @@ public class GameServerHelpersTests
         result.Should().Contain("-filePatching");
         result.Should().Contain("-limitFPS=200");
     }
+
+    [Theory]
+    [InlineData("-profiles=C:/profiles/ConfigExport -port=3302", true)]
+    [InlineData(@"-profiles=C:\profiles\ConfigExport -port=3302", true)]
+    [InlineData("-profiles=C:/profiles/ConfigExport", true)]
+    [InlineData("-profiles=C:/profiles/ConfigExport -client", true)]
+    [InlineData("-profiles=C:/profiles/ConfigExportSomethingElse -port=3302", false)]
+    [InlineData("-profiles=C:/profiles/MainServer -port=2302", false)]
+    [InlineData("-profiles=C:/profiles/NotConfigExport -port=2302", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    // Quoted -profiles= form — the actual form the launcher emits
+    [InlineData("\"arma3server_x64.exe\" -profiles=\"C:/profiles/ConfigExport\" -port=3302", true)]
+    [InlineData("\"arma3server_x64.exe\" -profiles=\"C:/profiles/ConfigExportSomethingElse\" -port=3302", false)]
+    public void IsConfigExportProcess_Matches_Only_ConfigExport_Profile_Leaf(string commandLine, bool expected)
+    {
+        var result = _sut.IsConfigExportProcess(commandLine);
+
+        result.Should().Be(expected);
+    }
+
+    [Fact]
+    public void GetGameServerArmaProcesses_Excludes_ConfigExport_Processes()
+    {
+        var gameServerProcess = new ProcessCommandLineInfo(1001, "-profiles=C:/profiles/MainServer -port=2302");
+        var exportProcess = new ProcessCommandLineInfo(1002, "-profiles=C:/profiles/ConfigExport -port=3302");
+        _mockProcessUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns([gameServerProcess, exportProcess]);
+
+        var result = _sut.GetGameServerArmaProcesses();
+
+        result.Should().ContainSingle();
+        result.Single().ProcessId.Should().Be(1001);
+    }
+
+    [Fact]
+    public void GetGameServerArmaProcesses_Returns_All_When_No_ConfigExport_Processes()
+    {
+        var process1 = new ProcessCommandLineInfo(1001, "-profiles=C:/profiles/MainServer -port=2302");
+        var process2 = new ProcessCommandLineInfo(1002, "-profiles=C:/profiles/AnotherServer -port=2402");
+        _mockProcessUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns([process1, process2]);
+
+        var result = _sut.GetGameServerArmaProcesses();
+
+        result.Should().HaveCount(2);
+    }
 }
