@@ -29,6 +29,7 @@ public static class ApiArmaMissionsExtensions
                            .AddTransient<ISqmReader, SqmReader>()
                            .AddTransient<ISqmWriter, SqmWriter>()
                            .AddTransient<ISqmPatcher, SqmPatcher>()
+                           .AddTransient<IHeadlessClientPatcher, HeadlessClientPatcher>()
                            .AddTransient<IDescriptionReader, DescriptionReader>()
                            .AddTransient<IDescriptionWriter, DescriptionWriter>()
                            .AddTransient<IDescriptionPatcher, DescriptionPatcher>()

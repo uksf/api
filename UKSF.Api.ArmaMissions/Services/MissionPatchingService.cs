@@ -22,6 +22,7 @@ public class MissionPatchingService(
     ISettingsReader settingsReader,
     IPatchDataBuilder patchDataBuilder,
     ISqmDecompiler sqmDecompiler,
+    IHeadlessClientPatcher headlessClientPatcher,
     IUksfLogger logger
 ) : IMissionPatchingService
 {
@@ -57,6 +58,8 @@ public class MissionPatchingService(
             {
                 await sqmDecompiler.Decompile(context.SqmPath);
             }
+
+            headlessClientPatcher.Patch(context);
 
             sqmReader.Read(context);
 

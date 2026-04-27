@@ -57,6 +57,8 @@ public class MissionPatchingIntegrationTests : IDisposable
         var descPatcher = new DescriptionPatcher();
         var settingsReader = new SettingsReader();
 
+        var headlessClientPatcher = new HeadlessClientPatcher(_mockVariablesService.Object);
+
         _service = new MissionPatchingService(
             pboHandler,
             sqmReader,
@@ -68,6 +70,7 @@ public class MissionPatchingIntegrationTests : IDisposable
             settingsReader,
             patchDataBuilder,
             _mockDecompiler.Object,
+            headlessClientPatcher,
             _mockLogger.Object
         );
     }
