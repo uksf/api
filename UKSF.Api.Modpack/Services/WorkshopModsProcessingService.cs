@@ -295,7 +295,7 @@ public class WorkshopModsProcessingService(
 
     public async Task QueueDevBuild()
     {
-        var skipBuild = variablesService.GetVariable("WORKSHOP_SKIP_DEV_BUILD")?.AsBool() ?? false;
+        var skipBuild = variablesService.GetVariable("WORKSHOP_SKIP_DEV_BUILD").AsBoolWithDefault(false);
         if (skipBuild)
         {
             logger.LogInfo("Skipping dev build queue (WORKSHOP_SKIP_DEV_BUILD is enabled)");

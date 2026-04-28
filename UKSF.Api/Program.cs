@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using UKSF.Api.AppStart;
 using UKSF.Api.ArmaServer;
+using UKSF.Api.ArmaServer.Middleware;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Configuration;
 using UKSF.Api.Core.Converters;
@@ -84,6 +86,21 @@ app.UseCookiePolicy(new CookiePolicyOptions { MinimumSameSitePolicy = SameSiteMo
    .UseAuthorization()
    .UseHsts()
    .UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto })
+   .Use(async (ctx, next) =>
+       {
+           if (ctx.Request.Path.StartsWithSegments("/dev-run/internal"))
+           {
+               var feature = ctx.Features.Get<IHttpMaxRequestBodySizeFeature>();
+               if (feature is { IsReadOnly: false })
+               {
+                   feature.MaxRequestBodySize = 50 * 1024 * 1024;
+               }
+           }
+
+           await next();
+       }
+   )
+   .UseWhen(ctx => ctx.Request.Path.StartsWithSegments("/dev-run/internal"), branch => branch.UseMiddleware<LoopbackOnlyMiddleware>())
    .UseEndpoints(endpoints =>
        {
            endpoints.MapControllers().RequireCors("CorsPolicy");

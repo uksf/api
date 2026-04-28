@@ -1,204 +1,157 @@
-using System;
 using System.IO;
 using FluentAssertions;
 using Moq;
+using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core.Models.Domain;
-using UKSF.Api.Core.Processes;
 using UKSF.Api.Core.Services;
 using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Services;
 
-public class ConfigExportProcessLauncherTests : IDisposable
+public class ConfigExportProcessLauncherTests
 {
+    private readonly Mock<ISyntheticServerLauncher> _mockSyntheticLauncher = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
-    private readonly Mock<IProcessUtilities> _mockProcessUtilities = new();
-    private readonly string _tempCfgDir;
-    private readonly string _tempProfilesDir;
-    private readonly string _tempServerRoot;
-    private readonly string _tempModpackRoot;
-    private readonly string _tempMissionsRoot;
 
     public ConfigExportProcessLauncherTests()
     {
-        _tempServerRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        _tempCfgDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        _tempProfilesDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        _tempModpackRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        _tempMissionsRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-
-        Directory.CreateDirectory(_tempServerRoot);
-        Directory.CreateDirectory(_tempCfgDir);
-        Directory.CreateDirectory(_tempProfilesDir);
-        Directory.CreateDirectory(_tempModpackRoot);
-        Directory.CreateDirectory(_tempMissionsRoot);
-
-        SetupVariable("SERVER_PATH_RELEASE", _tempServerRoot);
-        SetupVariable("SERVER_PATH_CONFIGS", _tempCfgDir);
-        SetupVariable("SERVER_PATH_PROFILES", _tempProfilesDir);
-        SetupVariable("MODPACK_PATH_RELEASE", _tempModpackRoot);
-        SetupVariable("MISSIONS_PATH", _tempMissionsRoot);
+        SetupVariable("SERVER_PATH_RELEASE", "/server/release");
+        SetupVariable("MODPACK_PATH_RELEASE", "/modpack/release");
         SetupVariable("SERVER_COMMAND_PASSWORD", "testcmdpass");
 
-        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess(It.IsAny<string>(), It.IsAny<string>())).Returns(4242);
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Returns(new SyntheticLaunchResult(4242, "/profiles/ConfigExport", "/missions/ConfigExport.VR"));
     }
 
-    public void Dispose()
-    {
-        TryDelete(_tempServerRoot);
-        TryDelete(_tempCfgDir);
-        TryDelete(_tempProfilesDir);
-        TryDelete(_tempModpackRoot);
-        TryDelete(_tempMissionsRoot);
-    }
+    private static DomainVariableItem CreateVariable(string key, object item) => new() { Key = key, Item = item };
 
-    private static void TryDelete(string path)
-    {
-        try
-        {
-            Directory.Delete(path, recursive: true);
-        }
-        catch
-        {
-            /* best-effort */
-        }
-    }
+    private void SetupVariable(string key, string value) => _mockVariablesService.Setup(x => x.GetVariable(key)).Returns(CreateVariable(key, value));
 
-    private static DomainVariableItem CreateVariable(string key, object item)
-    {
-        return new DomainVariableItem { Key = key, Item = item };
-    }
+    private ConfigExportProcessLauncher CreateSut() => new(_mockSyntheticLauncher.Object, _mockVariablesService.Object);
 
-    private void SetupVariable(string key, string value)
+    [Fact]
+    public void Launch_DelegatesToSyntheticLauncher()
     {
-        _mockVariablesService.Setup(x => x.GetVariable(key)).Returns(CreateVariable(key, value));
-    }
+        var sut = CreateSut();
+        sut.Launch("5.23.8");
 
-    private ConfigExportProcessLauncher CreateSut()
-    {
-        return new ConfigExportProcessLauncher(_mockProcessUtilities.Object, _mockVariablesService.Object);
+        _mockSyntheticLauncher.Verify(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()), Times.Once);
     }
 
     [Fact]
-    public void Launch_WritesConfigFileWithRequiredEntries()
+    public void Launch_BuildsSpecWithCorrectProfileAndMissionName()
     {
-        var sut = CreateSut();
-        sut.Launch("5.23.9");
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
 
-        var cfgPath = Path.Combine(_tempCfgDir, "ConfigExport.cfg");
-        File.Exists(cfgPath).Should().BeTrue();
-        var content = File.ReadAllText(cfgPath);
-        content.Should().Contain("persistent = 1;");
-        content.Should().Contain("serverCommandPassword = \"testcmdpass\";");
-        content.Should().Contain("template = \"ConfigExport.VR\";");
+        CreateSut().Launch("5.23.8");
+
+        captured.Should().NotBeNull();
+        captured.ProfileName.Should().Be("ConfigExport");
+        captured.MissionName.Should().Be("ConfigExport.VR");
+        captured.ConfigFileName.Should().Be("ConfigExport.cfg");
     }
 
     [Fact]
-    public void Launch_PassesExecutableAutoInitAndCorrectPorts()
+    public void Launch_BuildsSpecWithCorrectPorts()
     {
-        var sut = CreateSut();
-        sut.Launch("5.23.9");
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
 
-        _mockProcessUtilities.Verify(
-            x => x.LaunchManagedProcess(
-                It.Is<string>(exe => exe.EndsWith("arma3server_x64.exe")),
-                It.Is<string>(args => args.Contains("-server") && args.Contains("-autoInit") && args.Contains("-port=3302") && args.Contains("-apiport=3303"))
-            ),
-            Times.Once
-        );
+        CreateSut().Launch("5.23.8");
+
+        captured.GamePort.Should().Be(3302);
+        captured.ApiPort.Should().Be(3303);
+    }
+
+    [Fact]
+    public void Launch_BuildsSpecWithCorrectServerExecutable()
+    {
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
+
+        CreateSut().Launch("5.23.8");
+
+        captured.ServerExecutablePath.Should().EndWith("arma3server_x64.exe");
+    }
+
+    [Fact]
+    public void Launch_BuildsSpecWithDescriptionExtContainingPostInit()
+    {
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
+
+        CreateSut().Launch("5.23.8");
+
+        captured.DescriptionExt.Should().Contain("postInit = 1");
+        captured.DescriptionExt.Should().Contain("respawn = \"INSTANT\"");
+        captured.DescriptionExt.Should().Contain("class CfgFunctions");
+    }
+
+    [Fact]
+    public void Launch_BuildsSpecWithMissionSqmContainingRequiredEntries()
+    {
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
+
+        CreateSut().Launch("5.23.8");
+
+        captured.MissionSqm.Should().Contain("binarizationWanted=0");
+        captured.MissionSqm.Should().Contain("isPlayable=1");
+        captured.MissionSqm.Should().Contain("B_Soldier_F");
+        captured.MissionSqm.Should().Contain("sourceName=\"ConfigExport\"");
+        captured.MissionSqm.Should().Contain("\"A3_Characters_F\"");
+    }
+
+    [Fact]
+    public void Launch_BuildsSpecWithServerConfigContainingRequiredEntries()
+    {
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
+
+        CreateSut().Launch("5.23.8");
+
+        captured.ServerConfig.Should().Contain("persistent = 1;");
+        captured.ServerConfig.Should().Contain("serverCommandPassword = \"testcmdpass\"");
+        captured.ServerConfig.Should().Contain("template = \"ConfigExport.VR\"");
+    }
+
+    [Fact]
+    public void Launch_BuildsSpecWithRunExportSqfFunctionFile()
+    {
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
+
+        CreateSut().Launch("5.23.8");
+
+        captured.FunctionFiles.Should().ContainKey("fn_runExport.sqf");
+        captured.FunctionFiles["fn_runExport.sqf"].Should().Contain("uksf_common_fnc_configExport");
+        captured.FunctionFiles["fn_runExport.sqf"].Should().Contain("configExportFinish");
     }
 
     [Fact]
     public void Launch_ReturnsExpectedOutputDirectoryAndGlob()
     {
-        var sut = CreateSut();
-        var result = sut.Launch("5.23.9");
+        var result = CreateSut().Launch("5.23.9");
+
         result.ProcessId.Should().Be(4242);
         result.ExpectedOutputDirectory.Should().EndWith("uksf_config_export");
         result.ExpectedFilenameGlob.Should().Be("config_*_uksf-5-23-9.cpp");
-    }
-
-    [Fact]
-    public void Launch_CreatesProfileDirectory()
-    {
-        var sut = CreateSut();
-        sut.Launch("5.23.9");
-
-        var profilePath = Path.Combine(_tempProfilesDir, "ConfigExport");
-        Directory.Exists(profilePath).Should().BeTrue();
-    }
-
-    [Fact]
-    public void Launch_BuildsModChainFromAtSubdirs()
-    {
-        var repoPath = Path.Combine(_tempModpackRoot, "Repo");
-        Directory.CreateDirectory(Path.Combine(repoPath, "@CBA_A3"));
-        Directory.CreateDirectory(Path.Combine(repoPath, "@uksf"));
-        Directory.CreateDirectory(Path.Combine(repoPath, "@uksf_ace"));
-        Directory.CreateDirectory(Path.Combine(repoPath, "Backup"));
-
-        var sut = CreateSut();
-        sut.Launch("5.23.9");
-
-        _mockProcessUtilities.Verify(
-            x => x.LaunchManagedProcess(
-                It.IsAny<string>(),
-                It.Is<string>(args => args.Contains("@CBA_A3") && args.Contains("@uksf") && args.Contains("@uksf_ace") && !args.Contains("Backup"))
-            ),
-            Times.Once
-        );
-    }
-
-    [Fact]
-    public void Launch_FallsBackToSingleModPath_WhenNoAtSubdirs()
-    {
-        var repoPath = Path.Combine(_tempModpackRoot, "Repo");
-        Directory.CreateDirectory(repoPath);
-
-        var sut = CreateSut();
-        sut.Launch("5.23.9");
-
-        _mockProcessUtilities.Verify(
-            x => x.LaunchManagedProcess(It.IsAny<string>(), It.Is<string>(args => args.Contains("-mod=\"") && args.Contains("Repo"))),
-            Times.Once
-        );
-    }
-
-    [Fact]
-    public void Launch_WritesMissionFiles_WithPlayableUnitAndInstantRespawn()
-    {
-        var sut = CreateSut();
-        sut.Launch("5.23.9");
-
-        var missionDir = Path.Combine(_tempMissionsRoot, "ConfigExport.VR");
-        Directory.Exists(missionDir).Should().BeTrue();
-
-        var sqm = File.ReadAllText(Path.Combine(missionDir, "mission.sqm"));
-        sqm.Should().Contain("version=54");
-        sqm.Should().Contain("isPlayable=1"); // CRITICAL — -autoInit needs a playable slot to simulate the "first client" into
-        sqm.Should().Contain("B_Soldier_F");
-        sqm.Should().Contain("binarizationWanted=0"); // raw mission needs this to skip .ebo lookup
-        sqm.Should().Contain("sourceName=\"ConfigExport\"");
-        sqm.Should().Contain("\"A3_Characters_F\""); // explicit dep — without addons[] engine fails with misleading "DLC deleted" warning
-
-        var description = File.ReadAllText(Path.Combine(missionDir, "description.ext"));
-        description.Should().Contain("respawn = \"INSTANT\";"); // INSTANT does not need a respawn marker; BASE does
-        description.Should().Contain("class Header");
-        description.Should().Contain("class CfgFunctions"); // postInit registration is what runs the export non-scheduled
-        description.Should().Contain("postInit = 1");
-
-        var runExport = File.ReadAllText(Path.Combine(missionDir, "functions", "fn_runExport.sqf"));
-        runExport.Should().Contain("uksf_common_fnc_configExport");
-        runExport.Should().Contain("configExportFinish");
-    }
-
-    [Fact]
-    public void Launch_GlobContainsModpackVersion()
-    {
-        var sut = CreateSut();
-        var result = sut.Launch("6.0.1");
-        result.ExpectedFilenameGlob.Should().Be("config_*_uksf-6-0-1.cpp");
     }
 
     [Theory]
@@ -208,8 +161,96 @@ public class ConfigExportProcessLauncherTests : IDisposable
     [InlineData("6", "config_*_uksf-6.cpp")]
     public void Launch_GlobMatchesSqfFilenameContract(string modpackVersion, string expectedGlob)
     {
-        var sut = CreateSut();
-        var result = sut.Launch(modpackVersion);
+        var result = CreateSut().Launch(modpackVersion);
+
         result.ExpectedFilenameGlob.Should().Be(expectedGlob);
+    }
+
+    [Fact]
+    public void Launch_Mods_FallsBackToRepoPath_WhenNoAtSubdirs()
+    {
+        var tempModpackRoot = Path.Combine(Path.GetTempPath(), System.Guid.NewGuid().ToString());
+        var repoPath = Path.Combine(tempModpackRoot, "Repo");
+        Directory.CreateDirectory(repoPath);
+        SetupVariable("MODPACK_PATH_RELEASE", tempModpackRoot);
+
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
+
+        try
+        {
+            CreateSut().Launch("5.23.8");
+
+            captured.Mods.Should().HaveCount(1);
+            captured.Mods[0].Should().Contain("Repo");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(tempModpackRoot, recursive: true);
+            }
+            catch
+            {
+                /* best-effort */
+            }
+        }
+    }
+
+    [Fact]
+    public void Launch_Mods_EnumeratesAtSubdirs_WhenPresent()
+    {
+        var tempModpackRoot = Path.Combine(Path.GetTempPath(), System.Guid.NewGuid().ToString());
+        var repoPath = Path.Combine(tempModpackRoot, "Repo");
+        Directory.CreateDirectory(Path.Combine(repoPath, "@CBA_A3"));
+        Directory.CreateDirectory(Path.Combine(repoPath, "@uksf"));
+        Directory.CreateDirectory(Path.Combine(repoPath, "@uksf_ace"));
+        Directory.CreateDirectory(Path.Combine(repoPath, "Backup")); // should be excluded
+        SetupVariable("MODPACK_PATH_RELEASE", tempModpackRoot);
+
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
+
+        try
+        {
+            CreateSut().Launch("5.23.8");
+
+            captured.Mods.Should().HaveCount(3);
+            captured.Mods.Should().Contain(m => m.Contains("@CBA_A3"));
+            captured.Mods.Should().Contain(m => m.Contains("@uksf"));
+            captured.Mods.Should().Contain(m => m.Contains("@uksf_ace"));
+            captured.Mods.Should().NotContain(m => m.Contains("Backup"));
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(tempModpackRoot, recursive: true);
+            }
+            catch
+            {
+                /* best-effort */
+            }
+        }
+    }
+
+    [Fact]
+    public void Launch_Mods_FallsBackToRepoPath_WhenRepoPathDoesNotExist()
+    {
+        SetupVariable("MODPACK_PATH_RELEASE", "/nonexistent/path");
+
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
+
+        CreateSut().Launch("5.23.8");
+
+        captured.Mods.Should().HaveCount(1);
+        captured.Mods[0].Should().Contain("Repo");
     }
 }

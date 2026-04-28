@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Configuration;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
@@ -29,14 +30,22 @@ public interface IGameServerHelpers
     IEnumerable<Process> GetArmaProcesses();
 
     IReadOnlyList<ProcessCommandLineInfo> GetArmaProcessesWithCommandLine();
+
+    /// Returns true if the command line belongs to a synthetic-mission server
+    /// (config-export or dev-run). Used to filter these out of game-server lifecycle.
+    bool IsSyntheticProcess(string commandLine);
+
     bool IsConfigExportProcess(string commandLine);
     IReadOnlyList<ProcessCommandLineInfo> GetGameServerArmaProcesses();
     bool IsMainOpTime();
     string GetDlcModFoldersRegexString();
 }
 
-public class GameServerHelpers(IVariablesService variablesService, IProcessUtilities processUtilities, IUksfLogger logger) : IGameServerHelpers
+public class GameServerHelpers(IVariablesService variablesService, IProcessUtilities processUtilities, IUksfLogger logger, IConfiguration configuration)
+    : IGameServerHelpers
 {
+    private string ApiUrl => configuration["Kestrel:Endpoints:Http:Url"];
+
     private static readonly string[] BaseConfig =
     [
         "hostname = \"{0}\";",
@@ -155,6 +164,7 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
                $" -name={gameServer.Name}" +
                $" -port={gameServer.Port}" +
                $" -apiport=\"{gameServer.ApiPort}\"" +
+               $" -apiUrl=\"{ApiUrl}\"" +
                $" {(string.IsNullOrEmpty(FormatGameServerServerMods(gameServer)) ? "" : $"\"-serverMod={FormatGameServerServerMods(gameServer)}\"")}" +
                $" {(string.IsNullOrEmpty(FormatGameServerMods(gameServer)) ? "" : $"\"-mod={FormatGameServerMods(gameServer)}\"")}" +
                " -bandwidthAlg=2 -hugepages -loadMissionToMemory -filePatching -limitFPS=200";
@@ -166,6 +176,7 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
                $" -name={GetHeadlessClientName(index)}" +
                $" -port={gameServer.Port}" +
                $" -apiport=\"{gameServer.ApiPort + index + 1}\"" +
+               $" -apiUrl=\"{ApiUrl}\"" +
                $" {(string.IsNullOrEmpty(FormatGameServerMods(gameServer)) ? "" : $"\"-mod={FormatGameServerMods(gameServer)}\"")}" +
                $" -password={gameServer.Password}" +
                " -localhost=127.0.0.1 -connect=localhost -client -hugepages -filePatching -limitFPS=200";
@@ -215,19 +226,17 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
         return processUtilities.GetProcessesWithCommandLine("arma3server");
     }
 
-    public bool IsConfigExportProcess(string commandLine)
+    public bool IsSyntheticProcess(string commandLine)
     {
-        if (string.IsNullOrEmpty(commandLine))
-        {
-            return false;
-        }
-
-        return Regex.IsMatch(commandLine, @"-profiles=""?[^\s""]*[/\\]ConfigExport(?:[\s""]|$)", RegexOptions.IgnoreCase);
+        if (string.IsNullOrEmpty(commandLine)) return false;
+        return Regex.IsMatch(commandLine, @"-profiles=""?[^\s""]*[/\\](ConfigExport|DevRun_[A-Za-z0-9]+)(?:[\s""]|$)", RegexOptions.IgnoreCase);
     }
+
+    public bool IsConfigExportProcess(string commandLine) => IsSyntheticProcess(commandLine);
 
     public IReadOnlyList<ProcessCommandLineInfo> GetGameServerArmaProcesses()
     {
-        return GetArmaProcessesWithCommandLine().Where(p => !IsConfigExportProcess(p.CommandLine)).ToList();
+        return GetArmaProcessesWithCommandLine().Where(p => !IsSyntheticProcess(p.CommandLine)).ToList();
     }
 
     public bool IsMainOpTime()

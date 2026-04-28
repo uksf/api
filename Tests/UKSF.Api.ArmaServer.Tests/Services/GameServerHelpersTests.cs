@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
@@ -19,11 +21,18 @@ public class GameServerHelpersTests
     private readonly Mock<IVariablesService> _mockVariablesService = new();
     private readonly Mock<IProcessUtilities> _mockProcessUtilities = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
+
+    private readonly IConfiguration _configuration = new ConfigurationBuilder()
+                                                     .AddInMemoryCollection(
+                                                         new Dictionary<string, string> { ["Kestrel:Endpoints:Http:Url"] = "http://localhost:5500" }
+                                                     )
+                                                     .Build();
+
     private readonly GameServerHelpers _sut;
 
     public GameServerHelpersTests()
     {
-        _sut = new GameServerHelpers(_mockVariablesService.Object, _mockProcessUtilities.Object, _mockLogger.Object);
+        _sut = new GameServerHelpers(_mockVariablesService.Object, _mockProcessUtilities.Object, _mockLogger.Object, _configuration);
     }
 
     private static DomainVariableItem CreateVariable(string key, object item)
@@ -320,5 +329,29 @@ public class GameServerHelpersTests
         var result = _sut.GetGameServerArmaProcesses();
 
         result.Should().HaveCount(2);
+    }
+
+    [Theory]
+    [InlineData(@"-profiles=""C:/profs/ConfigExport"" -port=3302", true)]
+    [InlineData(@"-profiles=""C:/profs/DevRun_abcd1234"" -port=3304", true)]
+    [InlineData(@"-profiles=""C:/profs/uksf"" -port=2302", false)]
+    [InlineData("", false)]
+    public void IsSyntheticProcess_matches_config_export_and_devrun_profile_names(string commandLine, bool expected)
+    {
+        _sut.IsSyntheticProcess(commandLine).Should().Be(expected);
+    }
+
+    [Fact]
+    public void GetGameServerArmaProcesses_Excludes_Both_ConfigExport_And_DevRun_Processes()
+    {
+        var normalProcess = new ProcessCommandLineInfo(1001, "-profiles=C:/profiles/uksf -port=2302");
+        var configExportProcess = new ProcessCommandLineInfo(1002, "-profiles=C:/profiles/ConfigExport -port=3302");
+        var devRunProcess = new ProcessCommandLineInfo(1003, "-profiles=C:/profiles/DevRun_abcd1234 -port=3304");
+        _mockProcessUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns([normalProcess, configExportProcess, devRunProcess]);
+
+        var result = _sut.GetGameServerArmaProcesses();
+
+        result.Should().ContainSingle();
+        result.Single().ProcessId.Should().Be(1001);
     }
 }

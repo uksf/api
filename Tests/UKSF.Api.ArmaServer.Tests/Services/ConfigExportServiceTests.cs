@@ -24,6 +24,7 @@ public class ConfigExportServiceTests
     private readonly Mock<IProcessUtilities> _processUtilities = new();
     private readonly Mock<IVariablesService> _variablesService = new();
     private readonly Mock<IUksfLogger> _logger = new();
+    private readonly Mock<IArmaSyntheticLaunchGate> _gate = new();
 
     private readonly List<DomainGameConfigExport> _persistedRecords = new();
 
@@ -32,11 +33,14 @@ public class ConfigExportServiceTests
         _context.Setup(x => x.Add(It.IsAny<DomainGameConfigExport>()))
                 .Callback<DomainGameConfigExport>(record => _persistedRecords.Add(record))
                 .Returns(Task.CompletedTask);
+
+        // Default: gate is free — happy-path tests proceed without change.
+        _gate.Setup(x => x.TryAcquire(It.IsAny<string>())).Returns(true);
     }
 
     private ConfigExportService CreateSut()
     {
-        return new ConfigExportService(_launcher.Object, _context.Object, _processUtilities.Object, _variablesService.Object, _logger.Object);
+        return new ConfigExportService(_launcher.Object, _context.Object, _processUtilities.Object, _variablesService.Object, _logger.Object, _gate.Object);
     }
 
     // Fast-polling SUT: 100 ms poll, 5 s wall-clock timeout — keeps watcher tests well under 10 s.
@@ -48,6 +52,7 @@ public class ConfigExportServiceTests
             _processUtilities.Object,
             _variablesService.Object,
             _logger.Object,
+            _gate.Object,
             pollMs: 100,
             timeoutSeconds: 5
         );
@@ -62,6 +67,7 @@ public class ConfigExportServiceTests
             _processUtilities.Object,
             _variablesService.Object,
             _logger.Object,
+            _gate.Object,
             pollMs: pollMs,
             timeoutSeconds: timeoutSeconds
         );
@@ -85,23 +91,54 @@ public class ConfigExportServiceTests
         return null;
     }
 
-    // ─── Existing gate / status tests ────────────────────────────────────────
+    // ─── Gate / status tests ─────────────────────────────────────────────────
 
     [Fact]
-    public void Trigger_FirstCallStarts_SecondReturnsAlreadyRunning()
+    public void Trigger_returns_AlreadyRunning_when_gate_is_held()
     {
-        _launcher.Setup(x => x.Launch(It.IsAny<string>()))
-                 .Returns(new ConfigExportLaunchResult(4242, "C:/uksf_config_export", "config_*_uksf-5.23.9.cpp"))
-                 .Callback(() => Thread.Sleep(200)); // simulate launch taking measurable time
+        _gate.Setup(x => x.TryAcquire(It.IsAny<string>())).Returns(false);
+        _gate.SetupGet(x => x.CurrentRunId).Returns("active-run");
+
+        var sut = CreateSut();
+
+        var result = sut.Trigger("5.0.0");
+
+        result.Outcome.Should().Be(TriggerOutcome.AlreadyRunning);
+        result.RunId.Should().Be("active-run");
+        _launcher.Verify(x => x.Launch(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public void Trigger_WhenGateFree_Starts_WhenGateHeld_SecondReturnsAlreadyRunning()
+    {
+        // Capture the runId assigned on first acquire so CurrentRunId can echo it back.
+        var capturedRunId = "";
+        var callCount = 0;
+        _gate.Setup(x => x.TryAcquire(It.IsAny<string>()))
+             .Returns((string id) =>
+                 {
+                     callCount++;
+                     if (callCount == 1)
+                     {
+                         capturedRunId = id;
+                         return true;
+                     }
+
+                     return false;
+                 }
+             );
+        _gate.SetupGet(x => x.CurrentRunId).Returns(() => capturedRunId);
+
+        _launcher.Setup(x => x.Launch(It.IsAny<string>())).Returns(new ConfigExportLaunchResult(4242, "C:/uksf_config_export", "config_*_uksf-5.23.9.cpp"));
 
         var sut = CreateSut();
 
         var first = sut.Trigger("5.23.9");
-        var second = sut.Trigger("5.23.9"); // immediate, while first still running
+        var second = sut.Trigger("5.23.9");
 
         first.Outcome.Should().Be(TriggerOutcome.Started);
         second.Outcome.Should().Be(TriggerOutcome.AlreadyRunning);
-        first.RunId.Should().Be(second.RunId);
+        second.RunId.Should().Be(first.RunId);
     }
 
     [Fact]
@@ -294,6 +331,7 @@ public class ConfigExportServiceTests
             _processUtilities.Object,
             _variablesService.Object,
             _logger.Object,
+            _gate.Object,
             pollMs: 100,
             timeoutSeconds: 1
         );

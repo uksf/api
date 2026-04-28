@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
@@ -22,10 +21,10 @@ public class ConfigExportService : IConfigExportService
     private readonly IProcessUtilities _processUtilities;
     private readonly IVariablesService _variablesService;
     private readonly IUksfLogger _logger;
+    private readonly IArmaSyntheticLaunchGate _gate;
     private readonly int _pollMs;
     private readonly int _timeoutSeconds;
 
-    private readonly SemaphoreSlim _gate = new(1, 1);
     private volatile CurrentRun _current;
 
     private record CurrentRun(string RunId, int ProcessId, string ExpectedDir, string FilenameGlob, DateTime StartedAt, ConfigExportStatus Status);
@@ -36,8 +35,9 @@ public class ConfigExportService : IConfigExportService
         IGameConfigExportsContext context,
         IProcessUtilities processUtilities,
         IVariablesService variablesService,
-        IUksfLogger logger
-    ) : this(launcher, context, processUtilities, variablesService, logger, DefaultPollMs, DefaultTimeoutSeconds) { }
+        IUksfLogger logger,
+        IArmaSyntheticLaunchGate gate
+    ) : this(launcher, context, processUtilities, variablesService, logger, gate, DefaultPollMs, DefaultTimeoutSeconds) { }
 
     // Test constructor — allows short poll and timeout intervals.
     internal ConfigExportService(
@@ -46,6 +46,7 @@ public class ConfigExportService : IConfigExportService
         IProcessUtilities processUtilities,
         IVariablesService variablesService,
         IUksfLogger logger,
+        IArmaSyntheticLaunchGate gate,
         int pollMs,
         int timeoutSeconds
     )
@@ -55,20 +56,21 @@ public class ConfigExportService : IConfigExportService
         _processUtilities = processUtilities;
         _variablesService = variablesService;
         _logger = logger;
+        _gate = gate;
         _pollMs = pollMs;
         _timeoutSeconds = timeoutSeconds;
     }
 
     public TriggerResult Trigger(string modpackVersion)
     {
-        if (!_gate.Wait(0))
+        var runId = Guid.NewGuid().ToString();
+        if (!_gate.TryAcquire(runId))
         {
-            return new TriggerResult(TriggerOutcome.AlreadyRunning, _current?.RunId ?? "");
+            return new TriggerResult(TriggerOutcome.AlreadyRunning, _gate.CurrentRunId ?? "");
         }
 
         try
         {
-            var runId = Guid.NewGuid().ToString();
             var launch = _launcher.Launch(modpackVersion);
             _current = new CurrentRun(
                 runId,
@@ -78,7 +80,6 @@ public class ConfigExportService : IConfigExportService
                 DateTime.UtcNow,
                 ConfigExportStatus.Running
             );
-            // Detached background work — Task.Run; no await on the public path.
             _ = Task.Run(() => RunWatcherAsync(modpackVersion, launch));
             return new TriggerResult(TriggerOutcome.Started, runId);
         }

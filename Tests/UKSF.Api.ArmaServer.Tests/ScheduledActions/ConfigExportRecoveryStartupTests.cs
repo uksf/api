@@ -40,6 +40,18 @@ public class ConfigExportRecoveryStartupTests
         new(_helpers.Object, _processUtilities.Object, _context.Object, _variablesService.Object, _logger.Object);
 
     [Fact]
+    public async Task StartAsync_LogsKeyOfMissingVariable()
+    {
+        _variablesService.Setup(x => x.GetVariable("SERVER_PATH_CONFIG_EXPORT")).Returns(new DomainVariableItem { Key = "SERVER_PATH_CONFIG_EXPORT" });
+        _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(Array.Empty<ProcessCommandLineInfo>());
+
+        var sut = CreateSut();
+        await sut.StartAsync(CancellationToken.None);
+
+        _logger.Verify(x => x.LogError(It.Is<Exception>(ex => ex.Message.Contains("SERVER_PATH_CONFIG_EXPORT"))), Times.Once);
+    }
+
+    [Fact]
     public async Task StartAsync_KillsOrphanConfigExportProcess()
     {
         var orphan = new ProcessCommandLineInfo(9999, "\"arma3server_x64.exe\" -profiles=C:/p/ConfigExport -port=3302");

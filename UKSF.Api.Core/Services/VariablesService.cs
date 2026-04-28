@@ -14,7 +14,7 @@ public class VariablesService(IVariablesContext context) : IVariablesService
 {
     public DomainVariableItem GetVariable(string key)
     {
-        return context.GetSingle(key);
+        return context.GetSingle(key) ?? new DomainVariableItem { Key = key };
     }
 
     public bool GetFeatureState(string featureKey)

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Extensions;
@@ -6,56 +5,40 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.Services;
 
-public class ConfigExportProcessLauncher(ISyntheticServerLauncher syntheticLauncher, IVariablesService variablesService) : IConfigExportProcessLauncher
+public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariablesService variablesService) : IDevRunLauncher
 {
-    private const string ProfileName = "ConfigExport";
-    private const string ConfigFileName = "ConfigExport.cfg";
-    private const string MissionName = "ConfigExport.VR";
-    private const int GamePort = 3302;
-    private const int ApiPort = 3303;
+    private const int GamePort = 3304;
+    private const int ApiPort = 3305;
 
-    public ConfigExportLaunchResult Launch(string modpackVersion)
+    public SyntheticLaunchResult Launch(string runId, string sqf, IReadOnlyList<string> mods)
     {
         var serverRoot = variablesService.GetVariable("SERVER_PATH_RELEASE").AsString();
-        var modpackRoot = variablesService.GetVariable("MODPACK_PATH_RELEASE").AsString();
-        var commandPassword = variablesService.GetVariable("SERVER_COMMAND_PASSWORD").AsString();
+        var shortId = runId.Length >= 8 ? runId[..8] : runId;
+        var profileName = $"DevRun_{shortId}";
+        var missionName = $"{profileName}.VR";
 
         var spec = new SyntheticLaunchSpec(
-            ProfileName: ProfileName,
-            ConfigFileName: ConfigFileName,
-            MissionName: MissionName,
+            ProfileName: profileName,
+            ConfigFileName: $"{profileName}.cfg",
+            MissionName: missionName,
             ServerExecutablePath: Path.Combine(serverRoot, "arma3server_x64.exe"),
             GamePort: GamePort,
             ApiPort: ApiPort,
-            Mods: ResolveMods(Path.Combine(modpackRoot, "Repo")),
-            ServerConfig: BuildConfig(commandPassword),
+            Mods: mods,
+            ServerConfig: BuildConfig(profileName, missionName),
             MissionSqm: MissionSqm,
             DescriptionExt: DescriptionExt,
-            FunctionFiles: new Dictionary<string, string> { ["fn_runExport.sqf"] = RunExportSqf }
+            FunctionFiles: new Dictionary<string, string> { ["fn_runUserSqf.sqf"] = BuildWrapperSqf(runId, sqf) }
         );
 
-        var launch = syntheticLauncher.Launch(spec);
-
-        var expectedDir = Path.Combine(serverRoot, "uksf_config_export");
-        var glob = $"config_*_uksf-{(modpackVersion ?? "").Replace('.', '-')}.cpp";
-        return new ConfigExportLaunchResult(launch.ProcessId, expectedDir, glob);
+        return syntheticLauncher.Launch(spec);
     }
 
-    private static IReadOnlyList<string> ResolveMods(string modPath)
-    {
-        if (!Directory.Exists(modPath)) return new[] { modPath };
-        var modDirs = Directory.GetDirectories(modPath, "@*");
-        return modDirs.Length == 0 ? new[] { modPath } : modDirs;
-    }
-
-    // persistent = 1 in server.cfg + respawn = "INSTANT" in description.ext are both required
-    // for -autoInit to actually fire (and INSTANT does not need a respawn marker — BASE would).
-    private static string BuildConfig(string commandPassword) =>
+    private static string BuildConfig(string profileName, string missionName) =>
         $$"""
-          hostname = "Config Export";
+          hostname = "{{profileName}}";
           password = "";
           passwordAdmin = "";
-          serverCommandPassword = "{{commandPassword}}";
           maxPlayers = 1;
           voteThreshold = 0.33;
           disableVoN = 1;
@@ -65,23 +48,31 @@ public class ConfigExportProcessLauncher(ISyntheticServerLauncher syntheticLaunc
           {
               class Mission
               {
-                  template = "{{MissionName}}";
+                  template = "{{missionName}}";
                   difficulty = "Custom";
               };
           };
           """;
 
-    // INSTANT respawn does not need a respawn_<side> marker (BASE does and falls back to
-    // INSTANT silently if missing). A persistent mission requires either INSTANT or BASE
-    // respawn AND server.cfg persistent = 1; for -autoInit to fire.
-    //
-    // CfgFunctions postInit = 1 fires the registered function in NON-SCHEDULED context after
-    // mission init. initServer.sqf is scheduled (canSuspend=true per BI wiki "Available
-    // Scripts" table) so a configFile traversal called from there gets throttled to ~3ms/frame
-    // and takes 10x longer than the same work non-scheduled. postInit avoids that throttle.
+    private static string BuildWrapperSqf(string runId, string userSqf)
+    {
+        var escaped = userSqf.Replace("\"", "\"\"");
+        return $$"""
+                 uksf_dev_runId = "{{runId}}";
+                 uksf_dev_resultPosted = false;
+
+                 private _userFn = compileFinal "{{escaped}}";
+                 [] call _userFn;
+
+                 if (!uksf_dev_resultPosted) then {
+                     [nil] call uksf_dev_fnc_postResult;
+                 };
+                 """;
+    }
+
     private const string DescriptionExt = """
-                                          onLoadName = "Config Export";
-                                          briefingName = "Config Export";
+                                          onLoadName = "DevRun";
+                                          briefingName = "DevRun";
                                           respawn = "INSTANT";
                                           respawnDelay = 5;
                                           class Header
@@ -94,10 +85,10 @@ public class ConfigExportProcessLauncher(ISyntheticServerLauncher syntheticLaunc
                                           {
                                               class UKSF
                                               {
-                                                  class Export
+                                                  class DevRun
                                                   {
                                                       file = "functions";
-                                                      class runExport
+                                                      class runUserSqf
                                                       {
                                                           postInit = 1;
                                                       };
@@ -106,18 +97,10 @@ public class ConfigExportProcessLauncher(ISyntheticServerLauncher syntheticLaunc
                                           };
                                           """;
 
-    // Raw (unbinarized) mission.sqm needs binarizationWanted=0 + sourceName + explicit addons[]
-    // + AddonsMetaData. Without these the engine auto-detects deps from entities, fails the DLC
-    // validation path, and rejects the mission with "dependent on downloadable content that has
-    // been deleted" — silent abort, autoInit no-ops. PBO-packed missions get this baked at
-    // binarize time; raw missions must declare it.
-    //
-    // Playable B_Soldier_F (flags=7, isPlayable=1) gives -autoInit a slot to simulate "first
-    // client" into; without it autoInit has nothing to initialise.
     private const string MissionSqm = """
                                       version=54;
                                       binarizationWanted=0;
-                                      sourceName="ConfigExport";
+                                      sourceName="DevRun";
                                       addons[]=
                                       {
                                           "A3_Characters_F"
@@ -183,21 +166,4 @@ public class ConfigExportProcessLauncher(ISyntheticServerLauncher syntheticLaunc
                                       {
                                       };
                                       """;
-
-    // Registered as UKSF_Export_fnc_runExport via CfgFunctions postInit = 1 in description.ext.
-    // Runs non-scheduled so the configFile traversal isn't throttled. We don't need inherited
-    // properties — the consumer can walk the inheritance chain when querying. Skipping it
-    // dramatically cuts both output size and SQF work (no per-class O(props × inheritance-depth)
-    // dedup, no re-emission of parent props for every child class).
-    private const string RunExportSqf = """
-                                        private _result = [configFile, false] call uksf_common_fnc_configExport;
-
-                                        if (_result isEqualTo "") then {
-                                            diag_log text "ConfigExport.VR: uksf_common_fnc_configExport returned empty string — export failed";
-                                        } else {
-                                            diag_log text format ["ConfigExport.VR: config export completed successfully -> %1", _result];
-                                        };
-
-                                        "uksf" callExtension ["configExportFinish", []];
-                                        """;
 }
