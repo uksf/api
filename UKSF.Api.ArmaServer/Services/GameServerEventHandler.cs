@@ -70,6 +70,37 @@ public class GameServerEventHandler(
             }
         }
 
+        var receivedAt = DateTime.UtcNow;
+        var enqueueAt = receivedAt;
+        if (data.TryGetValue("enqueueAt", out var enqueueAtValue) && enqueueAtValue is not null)
+        {
+            if (enqueueAtValue is DateTime dt)
+            {
+                enqueueAt = dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
+            }
+            else if (enqueueAtValue is JsonElement enqueueElement &&
+                     enqueueElement.ValueKind == JsonValueKind.String &&
+                     DateTime.TryParse(
+                         enqueueElement.GetString(),
+                         null,
+                         System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                         out var parsedEnqueue
+                     ))
+            {
+                enqueueAt = parsedEnqueue;
+            }
+            else if (enqueueAtValue is string s &&
+                     DateTime.TryParse(
+                         s,
+                         null,
+                         System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                         out var parsedString
+                     ))
+            {
+                enqueueAt = parsedString;
+            }
+        }
+
         await publishEndpoint.Publish(
             new ProcessMissionStatsBatch
             {
@@ -77,7 +108,8 @@ public class GameServerEventHandler(
                 Mission = mission,
                 Map = map,
                 Events = events,
-                ReceivedAt = DateTime.UtcNow
+                ReceivedAt = receivedAt,
+                EnqueueAt = enqueueAt
             }
         );
     }

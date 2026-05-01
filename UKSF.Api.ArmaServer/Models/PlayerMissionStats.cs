@@ -26,8 +26,6 @@ public class KillStats
 {
     public int Direct { get; set; }
     public int Indirect { get; set; }
-    public int Assists { get; set; }
-    public double TotalAssistDamage { get; set; }
 }
 
 public class KillTargetTypeStats
@@ -64,7 +62,7 @@ public class PlayerMissionStats : MongoObject
     public Dictionary<string, int> BodyPartHits { get; set; } = new();
     public Dictionary<string, int> HitsByTargetType { get; set; } = new();
 
-    // Kills and assists
+    // Kills
     public KillStats Kills { get; set; } = new();
     public Dictionary<string, KillTargetTypeStats> KillsByTargetType { get; set; } = new();
     public Dictionary<string, KillWeaponStats> KillsByWeapon { get; set; } = new();
@@ -91,8 +89,6 @@ public class PlayerMissionStats : MongoObject
     public int? FpsMax { get; set; }
     public double? FpsAverage { get; set; }
     public int? FpsP1 { get; set; } // 1st percentile (1% low)
-    public int FpsSampleCount { get; set; } // For rolling average computation
-    public double FpsSampleSum { get; set; } // For rolling average computation
 
     // Health
     public int TimesUnconscious { get; set; }

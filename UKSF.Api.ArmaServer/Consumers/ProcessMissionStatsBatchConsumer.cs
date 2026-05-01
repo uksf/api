@@ -3,11 +3,16 @@ using MongoDB.Bson;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.ArmaServer.Services.StatsEventProcessors;
+using UKSF.Api.Core;
 
 namespace UKSF.Api.ArmaServer.Consumers;
 
-public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsService, IEnumerable<IStatsEventProcessor> processors)
-    : IConsumer<ProcessMissionStatsBatch>
+public class ProcessMissionStatsBatchConsumer(
+    IMissionStatsService missionStatsService,
+    IRawEventStore rawEventStore,
+    IEnumerable<IStatsEventProcessor> processors,
+    IUksfLogger logger
+) : IConsumer<ProcessMissionStatsBatch>
 {
     private readonly Dictionary<string, IStatsEventProcessor> _processorsByType = processors.ToDictionary(p => p.EventType);
 
@@ -18,7 +23,14 @@ public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsS
         var events = message.Events.Select(BsonDocument.Parse).ToList();
 
         var session = await missionStatsService.GetOrCreateSessionAsync(message.SessionId, message.Mission, message.Map, message.ReceivedAt);
-        await missionStatsService.StoreRawBatchAsync(message.SessionId, message.Mission, message.Map, events, message.ReceivedAt);
+
+        if (session.MissionEnded.HasValue && message.EnqueueAt > session.MissionEnded.Value)
+        {
+            logger.LogInfo($"Rejecting late batch for session '{message.SessionId}' — enqueueAt {message.EnqueueAt:O} > missionEnded {session.MissionEnded:O}");
+            return;
+        }
+
+        await rawEventStore.StoreAsync(message.SessionId, events);
 
         var playerStats = new Dictionary<string, PlayerMissionStats>();
         var missionStats = new MissionStats();
@@ -27,9 +39,6 @@ public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsS
         {
             var eventType = evt.GetValue("type", "unknown").AsString;
 
-            missionStats.EventCounts[eventType] = missionStats.EventCounts.GetValueOrDefault(eventType) + 1;
-
-            // Kill events use "killerUid" instead of "uid" and have assists that affect other players
             if (eventType is "kill")
             {
                 ProcessKillEvent(evt, playerStats);
@@ -60,7 +69,7 @@ public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsS
         var playerUpdateTasks = playerStats.Select(kvp => missionStatsService.UpdatePlayerStatsAsync(session.SessionId, kvp.Key, kvp.Value));
         await Task.WhenAll(playerUpdateTasks);
 
-        if (missionStats.EventCounts.Count > 0)
+        if (missionStats.VehiclesDestroyed > 0)
         {
             await missionStatsService.UpdateMissionStatsAsync(session.SessionId, missionStats);
         }
@@ -68,40 +77,14 @@ public class ProcessMissionStatsBatchConsumer(IMissionStatsService missionStatsS
 
     private void ProcessKillEvent(BsonDocument evt, Dictionary<string, PlayerMissionStats> playerStats)
     {
-        // Process the kill for the killer
         var killerUid = evt.GetValue("killerUid", "").AsString;
-        if (!string.IsNullOrEmpty(killerUid) && _processorsByType.TryGetValue("kill", out var killProcessor))
-        {
-            var killerStats = GetOrCreatePlayerStats(playerStats, killerUid);
-            killProcessor.ProcessForPlayer(evt, killerStats);
-        }
-
-        // Process assists — each assist entry affects a different player
-        if (!evt.Contains("assists") || !evt["assists"].IsBsonArray)
+        if (string.IsNullOrEmpty(killerUid) || !_processorsByType.TryGetValue("kill", out var killProcessor))
         {
             return;
         }
 
-        foreach (var assistEntry in evt["assists"].AsBsonArray)
-        {
-            if (!assistEntry.IsBsonDocument)
-            {
-                continue;
-            }
-
-            var assistDoc = assistEntry.AsBsonDocument;
-            var assistUid = assistDoc.GetValue("uid", "").AsString;
-            var assistDamage = assistDoc.GetValue("totalDamage", 0).ToDouble();
-
-            if (string.IsNullOrEmpty(assistUid))
-            {
-                continue;
-            }
-
-            var assistStats = GetOrCreatePlayerStats(playerStats, assistUid);
-            assistStats.Kills.Assists++;
-            assistStats.Kills.TotalAssistDamage += assistDamage;
-        }
+        var killerStats = GetOrCreatePlayerStats(playerStats, killerUid);
+        killProcessor.ProcessForPlayer(evt, killerStats);
     }
 
     private static PlayerMissionStats GetOrCreatePlayerStats(Dictionary<string, PlayerMissionStats> playerStats, string uid)

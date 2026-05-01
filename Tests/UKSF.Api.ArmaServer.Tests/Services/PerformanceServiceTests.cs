@@ -121,70 +121,6 @@ public class PerformanceServiceTests
     }
 
     [Fact]
-    public async Task HandlePerformanceEvent_WhenNewPlayer_ShouldCreateStatsDocument()
-    {
-        var session = new MissionSession
-        {
-            SessionId = "session-1",
-            MissionStarted = DateTime.UtcNow.AddMinutes(-5),
-            PlayerPerformance = []
-        };
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
-        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns((PlayerMissionStats)null);
-
-        var players = new List<PlayerPerformance> { new() { Uid = "player1", Fps = [40, 45, 50] } };
-
-        await _subject.HandlePerformanceEventAsync("session-1", [50], [], players);
-
-        _mockPlayerStatsContext.Verify(
-            x => x.Add(
-                It.Is<PlayerMissionStats>(s => s.MissionSessionId == "session-1" &&
-                                               s.PlayerUid == "player1" &&
-                                               s.FpsMin == 40 &&
-                                               s.FpsMax == 50 &&
-                                               s.FpsSampleCount == 3 &&
-                                               Math.Abs(s.FpsSampleSum - 135) < 0.01
-                )
-            ),
-            Times.Once
-        );
-    }
-
-    [Fact]
-    public async Task HandlePerformanceEvent_WhenExistingPlayer_ShouldUpdateRollingStats()
-    {
-        var session = new MissionSession
-        {
-            SessionId = "session-1",
-            MissionStarted = DateTime.UtcNow.AddMinutes(-5),
-            PlayerPerformance = [new PlayerPerformance { Uid = "player1", Fps = [40, 45] }]
-        };
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
-
-        var existingStats = new PlayerMissionStats
-        {
-            MissionSessionId = "session-1",
-            PlayerUid = "player1",
-            FpsMin = 38,
-            FpsMax = 45,
-            FpsSampleCount = 2,
-            FpsSampleSum = 83
-        };
-        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns(existingStats);
-
-        var players = new List<PlayerPerformance> { new() { Uid = "player1", Fps = [50, 55] } };
-
-        await _subject.HandlePerformanceEventAsync("session-1", [50], [], players);
-
-        // Should use atomic Min/Max/Inc update, not Add
-        _mockPlayerStatsContext.Verify(x => x.Add(It.IsAny<PlayerMissionStats>()), Times.Never);
-        _mockPlayerStatsContext.Verify(
-            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
-            Times.Once
-        );
-    }
-
-    [Fact]
     public async Task HandlePerformanceEvent_ShouldExtendGapForAbsentPlayer()
     {
         var session = new MissionSession
@@ -207,19 +143,16 @@ public class PerformanceServiceTests
         var session = new MissionSession { SessionId = "session-1", PlayerPerformance = [new PlayerPerformance { Uid = "player1", Fps = fpsSamples }] };
         _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
 
-        var existingStats = new PlayerMissionStats
-        {
-            MissionSessionId = "session-1",
-            PlayerUid = "player1",
-            FpsSampleCount = 100,
-            FpsSampleSum = 5050
-        };
-        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns(existingStats);
-
-        var expectedUpdate = Builders<PlayerMissionStats>.Update.Set(x => x.FpsP1, 1).Set(x => x.FpsAverage, 50.5).RenderUpdate();
+        var expectedUpdate = Builders<PlayerMissionStats>.Update.SetOnInsert(x => x.MissionSessionId, "session-1")
+                                                         .SetOnInsert(x => x.PlayerUid, "player1")
+                                                         .Set(x => x.FpsP1, 1)
+                                                         .Set(x => x.FpsAverage, 50.5)
+                                                         .Min(x => x.FpsMin, 1)
+                                                         .Max(x => x.FpsMax, 100)
+                                                         .RenderUpdate();
 
         UpdateDefinition<PlayerMissionStats> capturedUpdate = null;
-        _mockPlayerStatsContext.Setup(x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
+        _mockPlayerStatsContext.Setup(x => x.Upsert(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
                                .Callback((Expression<Func<PlayerMissionStats, bool>> _, UpdateDefinition<PlayerMissionStats> update) => capturedUpdate = update)
                                .Returns(Task.CompletedTask);
 
@@ -243,19 +176,16 @@ public class PerformanceServiceTests
         var session = new MissionSession { SessionId = "session-1", PlayerPerformance = [new PlayerPerformance { Uid = "player1", Fps = fps }] };
         _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
 
-        var existingStats = new PlayerMissionStats
-        {
-            MissionSessionId = "session-1",
-            PlayerUid = "player1",
-            FpsSampleCount = 4,
-            FpsSampleSum = 190
-        };
-        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns(existingStats);
-
-        var expectedUpdate = Builders<PlayerMissionStats>.Update.Set(x => x.FpsP1, 40).Set(x => x.FpsAverage, 47.5).RenderUpdate();
+        var expectedUpdate = Builders<PlayerMissionStats>.Update.SetOnInsert(x => x.MissionSessionId, "session-1")
+                                                         .SetOnInsert(x => x.PlayerUid, "player1")
+                                                         .Set(x => x.FpsP1, 40)
+                                                         .Set(x => x.FpsAverage, 47.5)
+                                                         .Min(x => x.FpsMin, 40)
+                                                         .Max(x => x.FpsMax, 55)
+                                                         .RenderUpdate();
 
         UpdateDefinition<PlayerMissionStats> capturedUpdate = null;
-        _mockPlayerStatsContext.Setup(x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
+        _mockPlayerStatsContext.Setup(x => x.Upsert(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
                                .Callback((Expression<Func<PlayerMissionStats, bool>> _, UpdateDefinition<PlayerMissionStats> update) => capturedUpdate = update)
                                .Returns(Task.CompletedTask);
 
@@ -266,107 +196,38 @@ public class PerformanceServiceTests
     }
 
     [Fact]
-    public async Task HandlePerformanceEvent_WhenSamplesContainNegativeGaps_ShouldFilterThemFromRollingStats()
+    public async Task ComputeFinalFpsStatsAsync_ComputesAverageFromSessionFpsSamples_NotFromRollingTotals()
     {
-        var session = new MissionSession
+        var fps = new List<int>
         {
-            SessionId = "session-1",
-            MissionStarted = DateTime.UtcNow.AddMinutes(-5),
-            PlayerPerformance = []
+            40,
+            50,
+            60
         };
+        var session = new MissionSession { SessionId = "session-1", PlayerPerformance = [new PlayerPerformance { Uid = "player1", Fps = fps }] };
         _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
-        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns((PlayerMissionStats)null);
 
-        var players = new List<PlayerPerformance> { new() { Uid = "player1", Fps = [40, -10, 50] } };
+        var expectedUpdate = Builders<PlayerMissionStats>.Update.SetOnInsert(x => x.MissionSessionId, "session-1")
+                                                         .SetOnInsert(x => x.PlayerUid, "player1")
+                                                         .Set(x => x.FpsP1, 40)
+                                                         .Set(x => x.FpsAverage, 50.0)
+                                                         .Min(x => x.FpsMin, 40)
+                                                         .Max(x => x.FpsMax, 60)
+                                                         .RenderUpdate();
 
-        await _subject.HandlePerformanceEventAsync("session-1", [50], [], players);
+        UpdateDefinition<PlayerMissionStats> capturedUpdate = null;
+        _mockPlayerStatsContext.Setup(x => x.Upsert(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()))
+                               .Callback((Expression<Func<PlayerMissionStats, bool>> _, UpdateDefinition<PlayerMissionStats> update) => capturedUpdate = update)
+                               .Returns(Task.CompletedTask);
 
-        // Should only include the two valid samples (40, 50), not the gap (-10)
-        _mockPlayerStatsContext.Verify(
-            x => x.Add(It.Is<PlayerMissionStats>(s => s.FpsMin == 40 && s.FpsMax == 50 && s.FpsSampleCount == 2 && Math.Abs(s.FpsSampleSum - 90) < 0.01)),
-            Times.Once
-        );
+        await _subject.ComputeFinalFpsStatsAsync("session-1");
+
+        capturedUpdate.Should().NotBeNull();
+        capturedUpdate.RenderUpdate().Should().BeEquivalentTo(expectedUpdate);
     }
 
     [Fact]
-    public async Task HandlePerformanceEvent_WhenAllSamplesAreNegative_ShouldNotCreateStats()
-    {
-        var session = new MissionSession
-        {
-            SessionId = "session-1",
-            MissionStarted = DateTime.UtcNow.AddMinutes(-5),
-            PlayerPerformance = []
-        };
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
-
-        var players = new List<PlayerPerformance> { new() { Uid = "player1", Fps = [-5, -10] } };
-
-        await _subject.HandlePerformanceEventAsync("session-1", [50], [], players);
-
-        _mockPlayerStatsContext.Verify(x => x.Add(It.IsAny<PlayerMissionStats>()), Times.Never);
-        _mockPlayerStatsContext.Verify(
-            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
-            Times.Never
-        );
-    }
-
-    [Fact]
-    public async Task HandlePerformanceEvent_WhenDuplicateKeyOnAdd_ShouldFallThroughToUpdate()
-    {
-        var session = new MissionSession
-        {
-            SessionId = "session-1",
-            MissionStarted = DateTime.UtcNow.AddMinutes(-5),
-            PlayerPerformance = []
-        };
-        _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
-        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns((PlayerMissionStats)null);
-
-        // Simulate duplicate key exception on Add using reflection (MongoWriteException has no public constructor in v3)
-        var exception = CreateDuplicateKeyWriteException();
-        _mockPlayerStatsContext.Setup(x => x.Add(It.IsAny<PlayerMissionStats>())).ThrowsAsync(exception);
-
-        var players = new List<PlayerPerformance> { new() { Uid = "player1", Fps = [40, 50] } };
-
-        await _subject.HandlePerformanceEventAsync("session-1", [50], [], players);
-
-        // Should fall through to update after duplicate key
-        _mockPlayerStatsContext.Verify(
-            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
-            Times.Once
-        );
-    }
-
-#pragma warning disable SYSLIB0050 // FormatterServices is the only way to construct MongoWriteException in tests (no public constructor in v3)
-    private static MongoWriteException CreateDuplicateKeyWriteException()
-    {
-        // WriteError and MongoWriteException have no convenient public constructors in MongoDB.Driver v3,
-        // so we use GetUninitializedObject and reflection to set the required fields.
-        var writeError = (WriteError)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(WriteError));
-        var categoryField = typeof(WriteError).GetField("_category", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance) ??
-                            typeof(WriteError).GetProperty("Category")
-                                              ?.DeclaringType?.GetField(
-                                                  "<Category>k__BackingField",
-                                                  System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
-                                              );
-        categoryField?.SetValue(writeError, ServerErrorCategory.DuplicateKey);
-
-        var mongoWriteException = (MongoWriteException)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(MongoWriteException));
-        var writeErrorField =
-            typeof(MongoWriteException).GetField("_writeError", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance) ??
-            typeof(MongoWriteException).GetProperty("WriteError")
-                                       ?.DeclaringType?.GetField(
-                                           "<WriteError>k__BackingField",
-                                           System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance
-                                       );
-        writeErrorField?.SetValue(mongoWriteException, writeError);
-
-        return mongoWriteException;
-    }
-#pragma warning restore SYSLIB0050
-
-    [Fact]
-    public async Task ComputeFinalFpsStats_WhenStatsDocAbsent_ShouldCreateIt()
+    public async Task ComputeFinalFpsStatsAsync_UsesUpsert_NotCheckThenInsert()
     {
         var fps = new List<int>
         {
@@ -377,22 +238,18 @@ public class PerformanceServiceTests
         };
         var session = new MissionSession { SessionId = "session-1", PlayerPerformance = [new PlayerPerformance { Uid = "player1", Fps = fps }] };
         _mockSessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<MissionSession, bool>>())).Returns(session);
-        _mockPlayerStatsContext.Setup(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>())).Returns((PlayerMissionStats)null);
 
         await _subject.ComputeFinalFpsStatsAsync("session-1");
 
         _mockPlayerStatsContext.Verify(
-            x => x.Add(
-                It.Is<PlayerMissionStats>(s => s.MissionSessionId == "session-1" &&
-                                               s.PlayerUid == "player1" &&
-                                               s.FpsP1 == 40 &&
-                                               s.FpsAverage.HasValue &&
-                                               Math.Abs(s.FpsAverage.Value) < 0.01 &&
-                                               s.FpsMin == 40 &&
-                                               s.FpsMax == 55
-                )
-            ),
+            x => x.Upsert(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
             Times.Once
+        );
+        _mockPlayerStatsContext.Verify(x => x.GetSingle(It.IsAny<Func<PlayerMissionStats, bool>>()), Times.Never);
+        _mockPlayerStatsContext.Verify(x => x.Add(It.IsAny<PlayerMissionStats>()), Times.Never);
+        _mockPlayerStatsContext.Verify(
+            x => x.Update(It.IsAny<Expression<Func<PlayerMissionStats, bool>>>(), It.IsAny<UpdateDefinition<PlayerMissionStats>>()),
+            Times.Never
         );
     }
 }

@@ -9,7 +9,7 @@ namespace UKSF.Api.ArmaServer.Services;
 public interface IMissionStatsService
 {
     Task<MissionSession> GetOrCreateSessionAsync(string sessionId, string mission, string map, DateTime receivedAt);
-    Task<MissionStatsBatch> StoreRawBatchAsync(string sessionId, string mission, string map, List<BsonDocument> events, DateTime receivedAt);
+    Task<MissionSession> GetSessionAsync(string sessionId);
     Task UpdatePlayerStatsAsync(string sessionId, string playerUid, PlayerMissionStats updates);
     Task UpdateMissionStatsAsync(string sessionId, MissionStats updates);
     Task HandleMissionStartedAsync(string sessionId, string mission, string map, DateTime timestamp);
@@ -21,7 +21,7 @@ public interface IMissionStatsService
 
 public class MissionStatsService(
     IMissionSessionsContext sessionsContext,
-    IMissionStatsBatchesContext batchesContext,
+    IRawEventStore rawEventStore,
     IPlayerMissionStatsContext playerStatsContext,
     IMissionStatsContext missionStatsContext,
     IPerformanceService performanceService,
@@ -55,25 +55,13 @@ public class MissionStatsService(
         return session;
     }
 
-    public async Task<MissionStatsBatch> StoreRawBatchAsync(string sessionId, string mission, string map, List<BsonDocument> events, DateTime receivedAt)
+    public Task<MissionSession> GetSessionAsync(string sessionId)
     {
-        var batch = new MissionStatsBatch
-        {
-            MissionSessionId = sessionId,
-            Mission = mission,
-            Map = map,
-            Events = events,
-            ReceivedAt = receivedAt
-        };
-
-        await batchesContext.Add(batch);
-        return batch;
+        return Task.FromResult(sessionsContext.GetSingle(s => s.SessionId == sessionId));
     }
 
     public async Task UpdatePlayerStatsAsync(string sessionId, string playerUid, PlayerMissionStats updates)
     {
-        // Upsert is atomic — avoids the check-then-insert race where two concurrent batches
-        // both observe no existing document and both insert, producing duplicates.
         var updateBuilder = Builders<PlayerMissionStats>.Update.SetOnInsert(x => x.MissionSessionId, sessionId)
                                                         .SetOnInsert(x => x.PlayerUid, playerUid)
                                                         .Inc(x => x.TotalShots, updates.TotalShots)
@@ -86,8 +74,6 @@ public class MissionStatsService(
                                                         .Inc(x => x.OtherHits, updates.OtherHits)
                                                         .Inc(x => x.Kills.Direct, updates.Kills.Direct)
                                                         .Inc(x => x.Kills.Indirect, updates.Kills.Indirect)
-                                                        .Inc(x => x.Kills.Assists, updates.Kills.Assists)
-                                                        .Inc(x => x.Kills.TotalAssistDamage, updates.Kills.TotalAssistDamage)
                                                         .Inc(x => x.TotalDamageDealt, updates.TotalDamageDealt)
                                                         .Inc(x => x.TimesWounded, updates.TimesWounded)
                                                         .Inc(x => x.DistanceOnFoot, updates.DistanceOnFoot)
@@ -194,23 +180,14 @@ public class MissionStatsService(
 
     public async Task UpdateMissionStatsAsync(string sessionId, MissionStats updates)
     {
-        // Upsert is atomic — avoids the check-then-insert race where two concurrent batches
-        // for the same session both observe no existing document and both insert, producing duplicates.
-        var updateDefinitions = updates.EventCounts.Select(kvp => Builders<MissionStats>.Update.Inc(x => x.EventCounts[kvp.Key], kvp.Value)).ToList();
-
-        if (updates.VehiclesDestroyed > 0)
-        {
-            updateDefinitions.Add(Builders<MissionStats>.Update.Inc(x => x.VehiclesDestroyed, updates.VehiclesDestroyed));
-        }
-
-        if (updateDefinitions.Count == 0)
+        if (updates.VehiclesDestroyed <= 0)
         {
             return;
         }
 
-        updateDefinitions.Add(Builders<MissionStats>.Update.SetOnInsert(x => x.MissionSessionId, sessionId));
+        var update = Builders<MissionStats>.Update.SetOnInsert(x => x.MissionSessionId, sessionId).Inc(x => x.VehiclesDestroyed, updates.VehiclesDestroyed);
 
-        await missionStatsContext.Upsert(x => x.MissionSessionId == sessionId, Builders<MissionStats>.Update.Combine(updateDefinitions));
+        await missionStatsContext.Upsert(x => x.MissionSessionId == sessionId, update);
     }
 
     public async Task HandleMissionStartedAsync(string sessionId, string mission, string map, DateTime timestamp)
@@ -231,7 +208,6 @@ public class MissionStatsService(
         var update = Builders<MissionSession>.Update.Set(x => x.MissionEnded, timestamp).Set(x => x.DurationSeconds, durationSeconds);
         await sessionsContext.Update(existing.Id, update);
 
-        await MergeBatchesAsync(sessionId);
         await performanceService.ComputeFinalFpsStatsAsync(sessionId);
     }
 
@@ -285,7 +261,6 @@ public class MissionStatsService(
 
         await BackfillSyntheticEventsAsync(session, openPresenceEntries.Select(x => x.Entry).ToList(), endTimestamp);
 
-        await MergeBatchesAsync(sessionId);
         await performanceService.ComputeFinalFpsStatsAsync(sessionId);
 
         logger.LogInfo($"FinaliseKilledSession: finalised session '{sessionId}' — closed {openPresenceEntries.Count} open player entries");
@@ -319,37 +294,7 @@ public class MissionStatsService(
             );
         }
 
-        await StoreRawBatchAsync(session.SessionId, session.Mission, session.Map, syntheticEvents, endTimestamp);
-
-        var eventCounts = new Dictionary<string, int> { ["mission_ended"] = 1 };
-        if (closedEntries.Count > 0)
-        {
-            eventCounts["player_disconnected"] = closedEntries.Count;
-        }
-
-        await UpdateMissionStatsAsync(session.SessionId, new MissionStats { EventCounts = eventCounts });
-    }
-
-    private async Task MergeBatchesAsync(string sessionId)
-    {
-        var batches = batchesContext.Get(b => b.MissionSessionId == sessionId).OrderBy(b => b.ReceivedAt).ToList();
-        if (batches.Count <= 1)
-        {
-            return;
-        }
-
-        var mergedBatch = new MissionStatsBatch
-        {
-            MissionSessionId = sessionId,
-            Mission = batches[0].Mission,
-            Map = batches[0].Map,
-            ReceivedAt = batches[0].ReceivedAt,
-            Events = batches.SelectMany(b => b.Events).ToList()
-        };
-
-        var originalIds = batches.Select(b => b.Id).ToHashSet();
-        await batchesContext.Add(mergedBatch);
-        await batchesContext.DeleteMany(b => originalIds.Contains(b.Id));
+        await rawEventStore.StoreAsync(session.SessionId, syntheticEvents);
     }
 
     public async Task HandlePlayerConnectedAsync(string sessionId, string uid, string name, DateTime timestamp)

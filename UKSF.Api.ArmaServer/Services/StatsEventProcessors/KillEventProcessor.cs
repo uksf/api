@@ -3,10 +3,6 @@ using UKSF.Api.ArmaServer.Models;
 
 namespace UKSF.Api.ArmaServer.Services.StatsEventProcessors;
 
-/// <summary>
-/// Processes kill events for the killer. Assists are handled separately
-/// by the consumer since they affect different players.
-/// </summary>
 public class KillEventProcessor : IStatsEventProcessor
 {
     public string EventType => "kill";

@@ -7,4 +7,5 @@ public record ProcessMissionStatsBatch
     public string Map { get; init; } = string.Empty;
     public List<string> Events { get; init; } = [];
     public DateTime ReceivedAt { get; init; }
+    public DateTime EnqueueAt { get; init; }
 }
