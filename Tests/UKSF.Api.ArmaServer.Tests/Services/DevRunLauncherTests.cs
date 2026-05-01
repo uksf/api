@@ -18,6 +18,8 @@ public class DevRunLauncherTests
     {
         _mockVariables.Setup(x => x.GetVariable("SERVER_PATH_RELEASE"))
                       .Returns(new DomainVariableItem { Key = "SERVER_PATH_RELEASE", Item = @"C:/dev/server" });
+        _mockVariables.Setup(x => x.GetVariable("MODPACK_REPO_PATH"))
+                      .Returns(new DomainVariableItem { Key = "MODPACK_REPO_PATH", Item = Path.Combine(Path.GetTempPath(), "uksf-devrun-tests-modpack") });
     }
 
     private DevRunLauncher CreateSut() => new(_mockSyntheticLauncher.Object, _mockVariables.Object);
