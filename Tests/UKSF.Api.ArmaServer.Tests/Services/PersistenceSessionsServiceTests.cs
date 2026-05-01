@@ -86,128 +86,30 @@ public class PersistenceSessionsServiceTests
     }
 
     [Fact]
-    public async Task HandleSaveChunkAsync_SingleChunk_SavesImmediately()
+    public async Task HandleSaveAsync_DeserialisesAndSavesSession()
     {
         var session = new DomainPersistenceSession
         {
-            Key = "chunk-key",
+            Key = "save-key",
             Objects = [],
             Players = new(),
             Markers = []
         };
         var json = JsonSerializer.Serialize(session);
-        var chunk = new ChunkEnvelope
-        {
-            Id = "chunk-1",
-            Key = "chunk-key",
-            Index = 0,
-            Total = 1,
-            Data = json
-        };
 
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
-        await _subject.HandleSaveChunkAsync(chunk);
+        await _subject.HandleSaveAsync("save-key", string.Empty, json);
 
-        _mockContext.Verify(x => x.Add(It.Is<DomainPersistenceSession>(s => s.Key == "chunk-key")), Times.Once);
+        _mockContext.Verify(x => x.Add(It.Is<DomainPersistenceSession>(s => s.Key == "save-key")), Times.Once);
     }
 
     [Fact]
-    public async Task HandleSaveChunkAsync_MultipleChunks_SavesWhenComplete()
+    public async Task HandleSaveAsync_PreservesObjectAndPlayerData()
     {
         var session = new DomainPersistenceSession
         {
-            Key = "multi-key",
-            Objects = [],
-            Players = new(),
-            Markers = []
-        };
-        var json = JsonSerializer.Serialize(session);
-        var half = json.Length / 2;
-        var part1 = json[..half];
-        var part2 = json[half..];
-
-        var chunk1 = new ChunkEnvelope
-        {
-            Id = "multi-1",
-            Key = "multi-key",
-            Index = 0,
-            Total = 2,
-            Data = part1
-        };
-        var chunk2 = new ChunkEnvelope
-        {
-            Id = "multi-1",
-            Key = "multi-key",
-            Index = 1,
-            Total = 2,
-            Data = part2
-        };
-
-        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
-
-        await _subject.HandleSaveChunkAsync(chunk1);
-        _mockContext.Verify(x => x.Add(It.IsAny<DomainPersistenceSession>()), Times.Never);
-
-        await _subject.HandleSaveChunkAsync(chunk2);
-        _mockContext.Verify(x => x.Add(It.Is<DomainPersistenceSession>(s => s.Key == "multi-key")), Times.Once);
-    }
-
-    [Fact]
-    public async Task HandleSaveChunkAsync_DuplicateChunk_IsIdempotent()
-    {
-        var session = new DomainPersistenceSession
-        {
-            Key = "dup-key",
-            Objects = [],
-            Players = new(),
-            Markers = []
-        };
-        var json = JsonSerializer.Serialize(session);
-        var half = json.Length / 2;
-        var part1 = json[..half];
-        var part2 = json[half..];
-
-        var chunk1 = new ChunkEnvelope
-        {
-            Id = "dup-1",
-            Key = "dup-key",
-            Index = 0,
-            Total = 2,
-            Data = part1
-        };
-        var chunk1Duplicate = new ChunkEnvelope
-        {
-            Id = "dup-1",
-            Key = "dup-key",
-            Index = 0,
-            Total = 2,
-            Data = part1
-        };
-        var chunk2 = new ChunkEnvelope
-        {
-            Id = "dup-1",
-            Key = "dup-key",
-            Index = 1,
-            Total = 2,
-            Data = part2
-        };
-
-        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
-
-        await _subject.HandleSaveChunkAsync(chunk1);
-        await _subject.HandleSaveChunkAsync(chunk1Duplicate);
-        await _subject.HandleSaveChunkAsync(chunk2);
-
-        _mockContext.Verify(x => x.Add(It.IsAny<DomainPersistenceSession>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task HandleSaveChunkAsync_ReassemblesDataCorrectly()
-    {
-        var session = new DomainPersistenceSession
-        {
-            Key = "reassemble-key",
+            Key = "preserve-key",
             Objects =
             [
                 new PersistenceObject
@@ -230,12 +132,7 @@ public class PersistenceSessionsServiceTests
             },
             Markers = []
         };
-
         var json = JsonSerializer.Serialize(session);
-
-        // Split into 3 chunks
-        var chunkSize = json.Length / 3;
-        var parts = new[] { json[..chunkSize], json[chunkSize..(chunkSize * 2)], json[(chunkSize * 2)..] };
 
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
@@ -244,19 +141,7 @@ public class PersistenceSessionsServiceTests
                     .Callback<DomainPersistenceSession>(s => savedSession = s)
                     .Returns(Task.CompletedTask);
 
-        for (var i = 0; i < 3; i++)
-        {
-            await _subject.HandleSaveChunkAsync(
-                new ChunkEnvelope
-                {
-                    Id = "reassemble-1",
-                    Key = "reassemble-key",
-                    Index = i,
-                    Total = 3,
-                    Data = parts[i]
-                }
-            );
-        }
+        await _subject.HandleSaveAsync("preserve-key", string.Empty, json);
 
         savedSession.Should().NotBeNull();
         savedSession!.Objects.Should().HaveCount(1);
@@ -268,48 +153,12 @@ public class PersistenceSessionsServiceTests
     }
 
     [Fact]
-    public async Task HandleSaveChunkAsync_EvictsExpiredBuffers()
+    public async Task HandleSaveAsync_WithInvalidJson_DoesNotSave()
     {
-        // Send a chunk that will never complete (total=2 but only 1 sent)
-        var incompleteChunk = new ChunkEnvelope
-        {
-            Id = "expired-1",
-            Key = "expired-key",
-            Index = 0,
-            Total = 2,
-            Data = "partial"
-        };
+        await _subject.HandleSaveAsync("bad-key", string.Empty, "{not valid json");
 
-        await _subject.HandleSaveChunkAsync(incompleteChunk);
-
-        // The buffer exists but is incomplete - no save should have happened
         _mockContext.Verify(x => x.Add(It.IsAny<DomainPersistenceSession>()), Times.Never);
-
-        // Send a normal complete chunk - this triggers eviction check but the expired buffer
-        // won't be evicted because it was just created (less than 5 minutes ago)
-        var session = new DomainPersistenceSession
-        {
-            Key = "normal-key",
-            Objects = [],
-            Players = new(),
-            Markers = []
-        };
-        var json = JsonSerializer.Serialize(session);
-        var normalChunk = new ChunkEnvelope
-        {
-            Id = "normal-1",
-            Key = "normal-key",
-            Index = 0,
-            Total = 1,
-            Data = json
-        };
-
-        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
-
-        await _subject.HandleSaveChunkAsync(normalChunk);
-
-        // The normal chunk should save successfully
-        _mockContext.Verify(x => x.Add(It.Is<DomainPersistenceSession>(s => s.Key == "normal-key")), Times.Once);
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainPersistenceSession>()), Times.Never);
     }
 
     [Fact]
@@ -1254,7 +1103,7 @@ public class PersistenceSessionsServiceTests
     }
 
     [Fact]
-    public async Task HandleSaveChunkAsync_WithHashmapFormat_ShouldSaveViaConverter()
+    public async Task HandleSaveAsync_WithHashmapFormat_SavesViaConverter()
     {
         // Build a hashmap JSON with plain keys and nested players
         const string rawJson = """
@@ -1269,16 +1118,6 @@ public class PersistenceSessionsServiceTests
                                }
                                """;
 
-        var chunk = new ChunkEnvelope
-        {
-            Id = "raw-1",
-            Key = "raw-key",
-            Index = 0,
-            Total = 1,
-            Data = rawJson,
-            SessionId = "session-1"
-        };
-
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
         DomainPersistenceSession savedSession = null;
@@ -1286,7 +1125,7 @@ public class PersistenceSessionsServiceTests
                     .Callback<DomainPersistenceSession>(s => savedSession = s)
                     .Returns(Task.CompletedTask);
 
-        await _subject.HandleSaveChunkAsync(chunk);
+        await _subject.HandleSaveAsync("raw-key", "session-1", rawJson);
 
         savedSession.Should().NotBeNull();
         savedSession!.Key.Should().Be("raw-key");
