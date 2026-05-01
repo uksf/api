@@ -44,6 +44,10 @@ public class GameServerEventHandler(
         catch (Exception ex)
         {
             logger.LogError($"Error handling game server event: {gameServerEvent.Type}", ex);
+            if (gameServerEvent.Type == "persistence_save")
+            {
+                throw;
+            }
         }
     }
 
@@ -225,6 +229,12 @@ public class GameServerEventHandler(
         var key = data.GetValueOrDefault("key")?.ToString() ?? string.Empty;
         var sessionId = data.GetValueOrDefault("sessionId")?.ToString() ?? string.Empty;
         var json = data.GetValueOrDefault("data")?.ToString() ?? string.Empty;
+
+        if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(json))
+        {
+            logger.LogWarning($"persistence_save event missing key or data (key='{key}', dataLength={json.Length})");
+            return;
+        }
 
         await persistenceSessionsService.HandleSaveAsync(key, sessionId, json);
     }
