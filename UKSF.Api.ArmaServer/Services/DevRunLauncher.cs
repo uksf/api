@@ -17,6 +17,22 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
         var profileName = $"DevRun_{shortId}";
         var missionName = $"{profileName}.VR";
 
+        var modpackPath = variablesService.GetVariable("MODPACK_REPO_PATH").AsString();
+        var serverCbaSource = Path.Combine(modpackPath, "cba_settings.sqf");
+        var userconfigDir = Path.Combine(serverRoot, "userconfig");
+        if (File.Exists(serverCbaSource))
+        {
+            Directory.CreateDirectory(userconfigDir);
+            File.Copy(serverCbaSource, Path.Combine(userconfigDir, "cba_settings.sqf"), overwrite: true);
+        }
+
+        var missionFiles = new Dictionary<string, string>();
+        var missionCbaSource = Path.Combine(modpackPath, "UKSFTemplate.VR", "cba_settings.sqf");
+        if (File.Exists(missionCbaSource))
+        {
+            missionFiles["cba_settings.sqf"] = File.ReadAllText(missionCbaSource);
+        }
+
         var spec = new SyntheticLaunchSpec(
             ProfileName: profileName,
             ConfigFileName: $"{profileName}.cfg",
@@ -28,7 +44,8 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
             ServerConfig: BuildConfig(profileName, missionName),
             MissionSqm: MissionSqm,
             DescriptionExt: DescriptionExt,
-            FunctionFiles: new Dictionary<string, string> { ["fn_runUserSqf.sqf"] = BuildWrapperSqf(runId, sqf) }
+            FunctionFiles: new Dictionary<string, string> { ["fn_runUserSqf.sqf"] = BuildWrapperSqf(runId, sqf) },
+            MissionFiles: missionFiles
         );
 
         return syntheticLauncher.Launch(spec);
@@ -75,6 +92,7 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
                                           briefingName = "DevRun";
                                           respawn = "INSTANT";
                                           respawnDelay = 5;
+                                          cba_settings_hasSettingsFile = 1;
                                           class Header
                                           {
                                               gameType = "Coop";

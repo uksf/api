@@ -68,6 +68,14 @@ public class SyntheticServerLauncher : ISyntheticServerLauncher
             File.WriteAllText(Path.Combine(functionsDir, name), body);
         }
 
+        if (spec.MissionFiles is not null)
+        {
+            foreach (var (name, body) in spec.MissionFiles)
+            {
+                File.WriteAllText(Path.Combine(missionPath, name), body);
+            }
+        }
+
         var modList = string.Join(";", spec.Mods);
         var args = "-server -autoInit" +
                    $" -config=\"{configPath}\"" +

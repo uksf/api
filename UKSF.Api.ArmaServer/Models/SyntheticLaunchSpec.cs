@@ -11,5 +11,6 @@ public record SyntheticLaunchSpec(
     string ServerConfig,
     string MissionSqm,
     string DescriptionExt,
-    IReadOnlyDictionary<string, string> FunctionFiles
+    IReadOnlyDictionary<string, string> FunctionFiles,
+    IReadOnlyDictionary<string, string>? MissionFiles = null
 );
