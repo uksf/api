@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
 using MassTransit;
 using MongoDB.Driver;
 using Moq;
+using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
@@ -184,21 +186,82 @@ public class GameServerEventHandlerTests
         // modification of the same array in one update.
         mockSessionsContext.Verify(x => x.Update(session.Id, It.IsAny<UpdateDefinition<MissionSession>>()), Times.Exactly(2));
 
-        // Verify rolling player stats was added (new player path)
-        mockPlayerStatsContext.Verify(
-            x => x.Add(
-                It.Is<PlayerMissionStats>(p => p.MissionSessionId == "test-session-id" &&
-                                               p.PlayerUid == "76561198000000000" &&
-                                               p.FpsSampleCount == 2 &&
-                                               p.FpsSampleSum == 142 &&
-                                               p.FpsMin == 70 &&
-                                               p.FpsMax == 72
-                )
-            ),
-            Times.Once
-        );
-
         // No exception should have been logged
         _mockLogger.Verify(x => x.LogError(It.IsAny<string>(), It.IsAny<Exception>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleEventAsync_MissionStatsWithoutEnqueueAt_FallsBackToReceivedAt()
+    {
+        const string json = """
+                            {
+                                "apiPort": 2303,
+                                "type": "mission_stats",
+                                "data": {
+                                    "sessionId": "session-x",
+                                    "mission": "m",
+                                    "map": "k",
+                                    "events": [{"type":"shot","uid":"u1"}]
+                                }
+                            }
+                            """;
+
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true,
+            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+            Converters = { new InferredTypeConverter() }
+        };
+
+        var evt = JsonSerializer.Deserialize<GameServerEvent>(json, options);
+
+        ProcessMissionStatsBatch published = null;
+        _mockPublishEndpoint.Setup(x => x.Publish(It.IsAny<ProcessMissionStatsBatch>(), It.IsAny<CancellationToken>()))
+                            .Callback<ProcessMissionStatsBatch, CancellationToken>((b, _) => published = b)
+                            .Returns(Task.CompletedTask);
+
+        await _sut.HandleEventAsync(evt);
+
+        published.Should().NotBeNull();
+        published.EnqueueAt.Should().Be(published.ReceivedAt);
+    }
+
+    [Fact]
+    public async Task HandleEventAsync_MissionStatsWithEnqueueAt_PreservesIt()
+    {
+        const string json = """
+                            {
+                                "apiPort": 2303,
+                                "type": "mission_stats",
+                                "data": {
+                                    "sessionId": "session-x",
+                                    "mission": "m",
+                                    "map": "k",
+                                    "enqueueAt": "2026-04-25T18:00:00.000Z",
+                                    "events": [{"type":"shot","uid":"u1"}]
+                                }
+                            }
+                            """;
+
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true,
+            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+            Converters = { new InferredTypeConverter() }
+        };
+
+        var evt = JsonSerializer.Deserialize<GameServerEvent>(json, options);
+
+        ProcessMissionStatsBatch published = null;
+        _mockPublishEndpoint.Setup(x => x.Publish(It.IsAny<ProcessMissionStatsBatch>(), It.IsAny<CancellationToken>()))
+                            .Callback<ProcessMissionStatsBatch, CancellationToken>((b, _) => published = b)
+                            .Returns(Task.CompletedTask);
+
+        await _sut.HandleEventAsync(evt);
+
+        published.Should().NotBeNull();
+        published.EnqueueAt.Should().Be(new DateTime(2026, 4, 25, 18, 0, 0, DateTimeKind.Utc));
     }
 }

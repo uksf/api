@@ -61,7 +61,6 @@ public class PerformanceService(IMissionSessionsContext sessionsContext, IPlayer
         {
             var i = session.PlayerPerformance.FindIndex(p => p.Uid == player.Uid);
             if (i >= 0) updates.Add(update.PushEach(x => x.PlayerPerformance[i].Fps, player.Fps));
-            await UpdateRollingFpsStatsAsync(sessionId, player.Uid, player.Fps);
         }
 
         var reported = players.Select(p => p.Uid).ToHashSet();
@@ -84,53 +83,6 @@ public class PerformanceService(IMissionSessionsContext sessionsContext, IPlayer
         }
     }
 
-    private async Task UpdateRollingFpsStatsAsync(string sessionId, string playerUid, List<int> newSamples)
-    {
-        // Filter out negative gap values to avoid corrupting stats
-        var validSamples = newSamples.Where(v => v >= 0).ToList();
-        if (validSamples.Count == 0)
-        {
-            return;
-        }
-
-        var min = validSamples.Min();
-        var max = validSamples.Max();
-        var sum = (double)validSamples.Sum();
-        var count = validSamples.Count;
-
-        // Ensure the document exists before atomic update — Min/Max/Inc no-op without a document
-        var existing = playerStatsContext.GetSingle(x => x.MissionSessionId == sessionId && x.PlayerUid == playerUid);
-        if (existing is null)
-        {
-            var newStats = new PlayerMissionStats
-            {
-                MissionSessionId = sessionId,
-                PlayerUid = playerUid,
-                FpsMin = min,
-                FpsMax = max,
-                FpsSampleCount = count,
-                FpsSampleSum = sum
-            };
-
-            try
-            {
-                await playerStatsContext.Add(newStats);
-                return;
-            }
-            catch (MongoWriteException exception) when (exception.WriteError.Category == ServerErrorCategory.DuplicateKey)
-            {
-                // Another concurrent call already inserted the document — fall through to update path
-            }
-        }
-
-        var update = Builders<PlayerMissionStats>.Update.Min(x => x.FpsMin, min)
-                                                 .Max(x => x.FpsMax, max)
-                                                 .Inc(x => x.FpsSampleCount, count)
-                                                 .Inc(x => x.FpsSampleSum, sum);
-
-        await playerStatsContext.Update(x => x.MissionSessionId == sessionId && x.PlayerUid == playerUid, update);
-    }
-
     public async Task ComputeFinalFpsStatsAsync(string sessionId)
     {
         var session = sessionsContext.GetSingle(s => s.SessionId == sessionId);
@@ -150,34 +102,18 @@ public class PerformanceService(IMissionSessionsContext sessionsContext, IPlayer
             samples.Sort();
             var p1Index = Math.Max(0, (int)Math.Ceiling(samples.Count * 0.01) - 1);
             var p1 = samples[p1Index];
+            var average = samples.Average();
+            var min = samples[0];
+            var max = samples[^1];
 
-            // Compute average from rolling totals
-            var stats = playerStatsContext.GetSingle(x => x.MissionSessionId == sessionId && x.PlayerUid == player.Uid);
-            var average = stats is { FpsSampleCount: > 0 } ? stats.FpsSampleSum / stats.FpsSampleCount : 0;
+            var update = Builders<PlayerMissionStats>.Update.SetOnInsert(x => x.MissionSessionId, sessionId)
+                                                     .SetOnInsert(x => x.PlayerUid, player.Uid)
+                                                     .Set(x => x.FpsP1, p1)
+                                                     .Set(x => x.FpsAverage, average)
+                                                     .Min(x => x.FpsMin, min)
+                                                     .Max(x => x.FpsMax, max);
 
-            var update = Builders<PlayerMissionStats>.Update.Set(x => x.FpsP1, p1).Set(x => x.FpsAverage, average);
-
-            if (stats is not null)
-            {
-                await playerStatsContext.Update(x => x.MissionSessionId == sessionId && x.PlayerUid == player.Uid, update);
-            }
-            else
-            {
-                // Stats document absent (e.g. all samples were gaps filtered by rolling stats) — create it
-                await playerStatsContext.Add(
-                    new PlayerMissionStats
-                    {
-                        MissionSessionId = sessionId,
-                        PlayerUid = player.Uid,
-                        FpsP1 = p1,
-                        FpsAverage = average,
-                        FpsSampleCount = samples.Count,
-                        FpsSampleSum = samples.Sum(),
-                        FpsMin = samples[0],
-                        FpsMax = samples[^1]
-                    }
-                );
-            }
+            await playerStatsContext.Upsert(x => x.MissionSessionId == sessionId && x.PlayerUid == player.Uid, update);
         }
     }
 }
