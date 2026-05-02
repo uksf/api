@@ -453,4 +453,53 @@ public class SqfNotationParserTests
         outer[0].Should().BeOfType<List<object>>();
         ((List<object>)outer[0]).Should().HaveCount(4);
     }
+
+    [Fact]
+    public void Parse_RealMagazinesAllTurrets_HeliAttack_Parses()
+    {
+        // Real str(magazinesAllTurrets _heli) for B_Heli_Attack_01_F. 5-tuple form.
+        var input =
+            "[[\"240Rnd_CMFlare_Chaff_Magazine\",[-1],240,1.00001e+07,2],[\"ACE_500Rnd_20mm_shells_Comanche\",[0],500,1.00001e+07,2],[\"4Rnd_AAA_missiles\",[0],4,1.00001e+07,2],[\"24Rnd_PG_missiles\",[0],24,1.00001e+07,2],[\"Laserbatteries\",[0],1,1.00001e+07,2]]";
+        SqfNotationParser.Parse(input).Should().BeOfType<List<object>>();
+    }
+
+    [Fact]
+    public void Parse_RealMagazinesAllTurrets_Tank_Parses()
+    {
+        var input =
+            "[[\"24Rnd_120mm_APFSDS_shells_Tracer_Red\",[0],24,1.00001e+07,2],[\"12Rnd_120mm_HE_shells_Tracer_Red\",[0],12,1.00001e+07,2],[\"SmokeLauncherMag\",[0,0],2,1.00002e+07,2]]";
+        SqfNotationParser.Parse(input).Should().BeOfType<List<object>>();
+    }
+
+    [Fact]
+    public void Parse_UnquotedSideWest_CoercesToLowercaseString()
+    {
+        SqfNotationParser.Parse("WEST").Should().Be("west");
+    }
+
+    [Fact]
+    public void Parse_UnquotedSideInArray_CoercesToLowercaseString()
+    {
+        SqfNotationParser.Parse("[false,WEST]").Should().BeEquivalentTo(new List<object> { false, "west" });
+    }
+
+    [Fact]
+    public void Parse_AllUnquotedSideKeywords_Coerce()
+    {
+        SqfNotationParser.Parse("EAST").Should().Be("east");
+        SqfNotationParser.Parse("GUER").Should().Be("guer");
+        SqfNotationParser.Parse("CIV").Should().Be("civ");
+        SqfNotationParser.Parse("ENEMY").Should().Be("enemy");
+        SqfNotationParser.Parse("FRIENDLY").Should().Be("friendly");
+        SqfNotationParser.Parse("UNKNOWN").Should().Be("unknown");
+        SqfNotationParser.Parse("EMPTY").Should().Be("empty");
+        SqfNotationParser.Parse("LOGIC").Should().Be("logic");
+    }
+
+    [Fact]
+    public void Parse_UnknownUppercaseToken_Throws()
+    {
+        Action a = () => SqfNotationParser.Parse("FOOBAR");
+        a.Should().Throw<FormatException>();
+    }
 }

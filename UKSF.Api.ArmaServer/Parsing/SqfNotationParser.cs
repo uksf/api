@@ -98,12 +98,31 @@ public static class SqfNotationParser
         var c = cursor.Peek();
         return c switch
         {
-            '['        => ParseArray(cursor),
-            '"'        => ParseString(cursor),
-            't' or 'f' => ParseBool(cursor),
-            'a'        => ParseAny(cursor),
-            _          => ParseNumber(cursor)
+            '['               => ParseArray(cursor),
+            '"'               => ParseString(cursor),
+            't' or 'f'        => ParseBool(cursor),
+            'a'               => ParseAny(cursor),
+            >= 'A' and <= 'Z' => ParseSideOrThrow(cursor),
+            _                 => ParseNumber(cursor)
         };
+    }
+
+    private static readonly string[] SideKeywords =
+    [
+        "WEST", "EAST", "GUER", "CIV", "ENEMY", "FRIENDLY", "UNKNOWN", "EMPTY", "LOGIC"
+    ];
+
+    private static string ParseSideOrThrow(Cursor cursor)
+    {
+        // Defensive: SQF Side type str-emits as unquoted uppercase keyword (e.g. WEST, EAST).
+        // Persistence data should serialise sides as quoted lowercase strings, but coerce here
+        // for any leak path we haven't caught.
+        foreach (var keyword in SideKeywords)
+        {
+            if (cursor.MatchLiteral(keyword)) return keyword.ToLowerInvariant();
+        }
+
+        throw new FormatException($"Unexpected token at position {cursor.Position}");
     }
 
     private static List<object> ParseArray(Cursor cursor)
