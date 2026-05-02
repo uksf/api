@@ -2,7 +2,9 @@ using System.Text.Json;
 using UKSF.Api.ArmaServer.Converters;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models.Persistence;
+using UKSF.Api.ArmaServer.Parsing;
 using UKSF.Api.Core;
+using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
 namespace UKSF.Api.ArmaServer.Services;
 
@@ -74,21 +76,11 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
         }
     }
 
-    public async Task HandleSaveAsync(string key, string sessionId, string json)
+    public async Task HandleSaveAsync(string key, string sessionId, string payload)
     {
         try
         {
-            var rawDict = JsonSerializer.Deserialize<Dictionary<string, object>>(json, SerializerOptions);
-            DomainPersistenceSession session;
-            if (rawDict is not null && rawDict.ContainsKey("mapMarkers"))
-            {
-                session = PersistenceConverter.FromHashmap(rawDict);
-            }
-            else
-            {
-                session = JsonSerializer.Deserialize<DomainPersistenceSession>(json, SerializerOptions);
-            }
-
+            var session = ParsePayload(payload);
             if (session is not null)
             {
                 await SaveAsync(key, session, sessionId);
@@ -98,9 +90,32 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
                 logger.LogWarning($"Failed to deserialize persistence session for key '{key}'");
             }
         }
-        catch (JsonException exception)
+        catch (Exception exception) when (exception is JsonException or FormatException)
         {
             logger.LogError($"Failed to deserialize persistence session for key '{key}'", exception);
         }
+    }
+
+    private static DomainPersistenceSession ParsePayload(string payload)
+    {
+        // SQF `str` output of the session HashMap starts with '['.
+        // Legacy JSON object payload starts with '{'.
+        // Skip leading whitespace before deciding.
+        var firstNonWs = payload.AsSpan().TrimStart();
+        if (firstNonWs.IsEmpty) return null;
+
+        if (firstNonWs[0] == '[')
+        {
+            var raw = ToDict(SqfNotationParser.ParseAndNormalize(payload));
+            return PersistenceConverter.FromHashmap(raw);
+        }
+
+        var rawDict = JsonSerializer.Deserialize<Dictionary<string, object>>(payload, SerializerOptions);
+        if (rawDict is not null && rawDict.ContainsKey("mapMarkers"))
+        {
+            return PersistenceConverter.FromHashmap(rawDict);
+        }
+
+        return JsonSerializer.Deserialize<DomainPersistenceSession>(payload, SerializerOptions);
     }
 }

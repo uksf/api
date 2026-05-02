@@ -17,10 +17,11 @@ public static class PersistenceConverter
             Markers = ToList(raw.GetValueOrDefault("mapMarkers")).Select(o => ToList(o)).ToList()
         };
 
-        // Players are nested under a "players" key as a dictionary of UID → data
-        if (raw.TryGetValue("players", out var playersObj) && playersObj is Dictionary<string, object> playersDict)
+        // Players are nested under a "players" key as a dictionary of UID → data.
+        // Source can be either a Dictionary (from JSON) or a pair-list (from SQF str output).
+        if (raw.TryGetValue("players", out var playersObj))
         {
-            foreach (var kvp in playersDict)
+            foreach (var kvp in ToDict(playersObj))
             {
                 session.Players[kvp.Key] = PersistencePlayerConverter.FromHashmap(ToDict(kvp.Value));
             }

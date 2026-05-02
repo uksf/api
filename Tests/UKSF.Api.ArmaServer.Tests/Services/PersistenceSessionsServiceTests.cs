@@ -1138,4 +1138,81 @@ public class PersistenceSessionsServiceTests
         savedSession.DeletedObjects.Should().ContainSingle().Which.Should().Be("del-1");
         savedSession.ArmaDateTime.Should().BeEquivalentTo(new[] { 2035, 6, 15, 12, 30 });
     }
+
+    [Fact]
+    public async Task HandleSaveAsync_WithSqfNotationPayload_SavesParsedSession()
+    {
+        // Engine-native str() output of a session HashMap as produced by fnc_saveDataApi.
+        // HashMaps become [["k",v],...] pair-lists, identical syntax to nested arrays.
+        const string sqfPayload = "[[\"dateTime\",[2026,5,2,14,18]]," +
+                                  "[\"deletedObjects\",[\"obsolete-1\"]]," +
+                                  "[\"mapMarkers\",[]]," +
+                                  "[\"objects\",[" +
+                                  "[[\"id\",\"sqf-obj-1\"]," +
+                                  "[\"type\",\"B_MRAP_01_F\"]," +
+                                  "[\"position\",[100.5,200.3,0.1]]," +
+                                  "[\"vectorDirUp\",[[1,0,0],[0,0,1]]]," +
+                                  "[\"damage\",0.25]," +
+                                  "[\"fuel\",0.8]," +
+                                  "[\"turretWeapons\",[]]," +
+                                  "[\"turretMagazines\",[]]," +
+                                  "[\"pylonLoadout\",[]]," +
+                                  "[\"logistics\",[-1,-1,-1]]," +
+                                  "[\"attached\",[]]," +
+                                  "[\"rackChannels\",[]]," +
+                                  "[\"aceCargo\",[]]," +
+                                  "[\"inventory\",[[[],[]],[[],[]],[[],[]],[[],[]]]]," +
+                                  "[\"aceFortify\",[false,\"west\"]]," +
+                                  "[\"aceMedical\",[0,false,false]]," +
+                                  "[\"aceRepair\",[0,0]]," +
+                                  "[\"customName\",\"\"]]" +
+                                  "]]," +
+                                  "[\"players\",[[\"7656119800001\",[" +
+                                  "[\"position\",[50,60,0]]," +
+                                  "[\"vehicleState\",[\"\",\"\",-1]]," +
+                                  "[\"direction\",180]," +
+                                  "[\"animation\",\"AmovPercMstpSnonWnonDnon\"]," +
+                                  "[\"loadout\",[]]," +
+                                  "[\"damage\",0]," +
+                                  "[\"aceMedical\",[]]," +
+                                  "[\"earplugs\",false]," +
+                                  "[\"attachedItems\",[]]," +
+                                  "[\"radios\",[]]," +
+                                  "[\"diveState\",[false]]" +
+                                  "]]]]" +
+                                  "]";
+
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
+
+        DomainPersistenceSession savedSession = null;
+        _mockContext.Setup(x => x.Add(It.IsAny<DomainPersistenceSession>()))
+                    .Callback<DomainPersistenceSession>(s => savedSession = s)
+                    .Returns(Task.CompletedTask);
+
+        await _subject.HandleSaveAsync("sqf-key", "session-id", sqfPayload);
+
+        savedSession.Should().NotBeNull();
+        savedSession!.Key.Should().Be("sqf-key");
+        savedSession.ArmaDateTime.Should().BeEquivalentTo(new[] { 2026, 5, 2, 14, 18 });
+        savedSession.DeletedObjects.Should().ContainSingle().Which.Should().Be("obsolete-1");
+        savedSession.Objects.Should().HaveCount(1);
+        savedSession.Objects[0].Id.Should().Be("sqf-obj-1");
+        savedSession.Objects[0].Type.Should().Be("B_MRAP_01_F");
+        savedSession.Objects[0].Position.Should().BeEquivalentTo(new[] { 100.5, 200.3, 0.1 });
+        savedSession.Objects[0].Damage.Should().Be(0.25);
+        savedSession.Objects[0].Fuel.Should().Be(0.8);
+        savedSession.Players.Should().ContainKey("7656119800001");
+        savedSession.Players["7656119800001"].Animation.Should().Be("AmovPercMstpSnonWnonDnon");
+        savedSession.Players["7656119800001"].Direction.Should().Be(180.0);
+    }
+
+    [Fact]
+    public async Task HandleSaveAsync_WithMalformedSqfPayload_DoesNotSave()
+    {
+        // Unterminated string in pair-list — parser must throw FormatException, handler must catch.
+        await _subject.HandleSaveAsync("bad-sqf-key", string.Empty, "[[\"key\",\"unterminated]");
+
+        _mockContext.Verify(x => x.Add(It.IsAny<DomainPersistenceSession>()), Times.Never);
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainPersistenceSession>()), Times.Never);
+    }
 }

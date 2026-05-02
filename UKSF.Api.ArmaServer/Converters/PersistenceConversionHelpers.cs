@@ -42,6 +42,21 @@ internal static class PersistenceConversionHelpers
         v switch
         {
             Dictionary<string, object> dict => dict,
+            List<object> list               => PairListToDict(list),
             _                               => new Dictionary<string, object>()
         };
+
+    private static Dictionary<string, object> PairListToDict(List<object> list)
+    {
+        var dict = new Dictionary<string, object>(list.Count);
+        foreach (var entry in list)
+        {
+            if (entry is List<object> pair && pair.Count == 2 && pair[0] is string key)
+            {
+                dict[key] = pair[1];
+            }
+        }
+
+        return dict;
+    }
 }
