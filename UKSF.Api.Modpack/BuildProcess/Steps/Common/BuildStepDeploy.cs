@@ -48,10 +48,17 @@ public class BuildStepDeploy : FileBuildStep
         StepLogger.LogSurround("Removed UKSF optionals");
     }
 
-    private Task RemoveRcOptional(string repoPath)
+    private async Task RemoveRcOptional(string repoPath)
     {
         var addonsPath = Path.Join(repoPath, "@uksf", "addons");
-        return DeleteFiles(GetDirectoryContents(new DirectoryInfo(addonsPath), "uksf_rc.*"));
+        var keysPath = Path.Join(repoPath, "@uksf", "keys");
+        await DeleteFiles(GetDirectoryContents(new DirectoryInfo(addonsPath), "uksf_rc.*"));
+
+        var keys = new DirectoryInfo(keysPath);
+        if (keys.Exists)
+        {
+            await DeleteFiles(GetDirectoryContents(keys, "*_uksf_rc.bikey*"));
+        }
     }
 
     private Task RemoveUksfOptionalsFolder(string repoPath)
