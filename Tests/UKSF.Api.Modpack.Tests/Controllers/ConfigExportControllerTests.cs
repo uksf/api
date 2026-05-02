@@ -102,4 +102,156 @@ public class ConfigExportControllerTests
             catch { }
         }
     }
+
+    [Fact]
+    public void DownloadByVersion_ReturnsNotFound_WhenNoSuccessfulExport()
+    {
+        _context.Setup(x => x.Get(It.IsAny<Func<DomainGameConfigExport, bool>>()))
+                .Returns((Func<DomainGameConfigExport, bool> predicate) => Array.Empty<DomainGameConfigExport>().Where(predicate));
+        var sut = new ConfigExportController(_service.Object, _context.Object);
+
+        var result = sut.DownloadByVersion("5.23.9");
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
+    public void DownloadByVersion_ReturnsNotFound_WhenFileMissingOnDisk()
+    {
+        var records = new[]
+        {
+            new DomainGameConfigExport
+            {
+                ModpackVersion = "5.23.9",
+                Status = ConfigExportStatus.Success,
+                CompletedAt = DateTime.UtcNow,
+                FilePath = "C:/does/not/exist.cpp"
+            }
+        };
+        _context.Setup(x => x.Get(It.IsAny<Func<DomainGameConfigExport, bool>>()))
+                .Returns((Func<DomainGameConfigExport, bool> predicate) => records.Where(predicate));
+        var sut = new ConfigExportController(_service.Object, _context.Object);
+
+        var result = sut.DownloadByVersion("5.23.9");
+
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
+    public void DownloadByVersion_ReturnsLatestSuccessfulExport_WhenMultipleExist()
+    {
+        var older = Path.GetTempFileName();
+        var newer = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(older, "old");
+            File.WriteAllText(newer, "new");
+            var records = new[]
+            {
+                new DomainGameConfigExport
+                {
+                    ModpackVersion = "5.23.9",
+                    Status = ConfigExportStatus.Success,
+                    CompletedAt = DateTime.UtcNow.AddHours(-1),
+                    FilePath = older
+                },
+                new DomainGameConfigExport
+                {
+                    ModpackVersion = "5.23.9",
+                    Status = ConfigExportStatus.Success,
+                    CompletedAt = DateTime.UtcNow,
+                    FilePath = newer
+                },
+                new DomainGameConfigExport
+                {
+                    ModpackVersion = "5.23.9",
+                    Status = ConfigExportStatus.FailedTimeout,
+                    CompletedAt = DateTime.UtcNow.AddMinutes(1),
+                    FilePath = older
+                }
+            };
+            _context.Setup(x => x.Get(It.IsAny<Func<DomainGameConfigExport, bool>>()))
+                    .Returns((Func<DomainGameConfigExport, bool> predicate) => records.Where(predicate));
+            var sut = new ConfigExportController(_service.Object, _context.Object);
+
+            var result = sut.DownloadByVersion("5.23.9") as PhysicalFileResult;
+
+            result.Should().NotBeNull();
+            result.FileName.Should().Be(newer);
+            result.FileDownloadName.Should().Be("config_5.23.9.cpp");
+            result.ContentType.Should().Be("text/plain");
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(older);
+            }
+            catch { }
+
+            try
+            {
+                File.Delete(newer);
+            }
+            catch { }
+        }
+    }
+
+    [Fact]
+    public void GetAvailableVersions_ReturnsDistinctVersions_WithExistingFiles()
+    {
+        var existing = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(existing, "x");
+            var records = new[]
+            {
+                new DomainGameConfigExport
+                {
+                    ModpackVersion = "5.23.9",
+                    Status = ConfigExportStatus.Success,
+                    FilePath = existing
+                },
+                new DomainGameConfigExport
+                {
+                    ModpackVersion = "5.23.9",
+                    Status = ConfigExportStatus.Success,
+                    FilePath = existing
+                },
+                new DomainGameConfigExport
+                {
+                    ModpackVersion = "5.23.8",
+                    Status = ConfigExportStatus.Success,
+                    FilePath = "C:/missing.cpp"
+                },
+                new DomainGameConfigExport
+                {
+                    ModpackVersion = "5.23.7",
+                    Status = ConfigExportStatus.FailedTimeout,
+                    FilePath = existing
+                },
+                new DomainGameConfigExport
+                {
+                    ModpackVersion = "5.23.6",
+                    Status = ConfigExportStatus.Success,
+                    FilePath = null
+                }
+            };
+            _context.Setup(x => x.Get(It.IsAny<Func<DomainGameConfigExport, bool>>()))
+                    .Returns((Func<DomainGameConfigExport, bool> predicate) => records.Where(predicate));
+            var sut = new ConfigExportController(_service.Object, _context.Object);
+
+            var result = sut.GetAvailableVersions();
+
+            result.Should().BeEquivalentTo(new[] { "5.23.9" });
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(existing);
+            }
+            catch { }
+        }
+    }
 }

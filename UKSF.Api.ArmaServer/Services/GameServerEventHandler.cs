@@ -25,6 +25,14 @@ public class GameServerEventHandler(
 {
     public async Task HandleEventAsync(GameServerEvent gameServerEvent)
     {
+        // Synthetic launches (config export, dev run) reuse the production -apiUrl pipeline so
+        // the engine emits server_status / shutdown_complete tagged with their reserved apiPorts.
+        // None of those ports map to a row in gameServers, so handling would only spam warnings.
+        if (SyntheticApiPorts.IsSynthetic(gameServerEvent.ApiPort))
+        {
+            return;
+        }
+
         try
         {
             switch (gameServerEvent.Type)

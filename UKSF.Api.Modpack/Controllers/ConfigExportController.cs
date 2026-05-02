@@ -45,4 +45,30 @@ public class ConfigExportController(IConfigExportService service, IGameConfigExp
 
         return PhysicalFile(record.FilePath, "text/plain", Path.GetFileName(record.FilePath));
     }
+
+    [HttpGet("by-version/{version}")]
+    [Permissions(Permissions.Admin)]
+    public IActionResult DownloadByVersion(string version)
+    {
+        var record = context.Get(x => x.ModpackVersion == version && x.Status == ConfigExportStatus.Success)
+                            .OrderByDescending(x => x.CompletedAt)
+                            .FirstOrDefault();
+        if (record is null || string.IsNullOrEmpty(record.FilePath) || !System.IO.File.Exists(record.FilePath))
+        {
+            return NotFound();
+        }
+
+        return PhysicalFile(record.FilePath, "text/plain", $"config_{version}.cpp");
+    }
+
+    [HttpGet("available-versions")]
+    [Permissions(Permissions.Admin)]
+    public string[] GetAvailableVersions()
+    {
+        return context.Get(x => x.Status == ConfigExportStatus.Success && !string.IsNullOrEmpty(x.FilePath))
+                      .Where(x => System.IO.File.Exists(x.FilePath))
+                      .Select(x => x.ModpackVersion)
+                      .Distinct()
+                      .ToArray();
+    }
 }

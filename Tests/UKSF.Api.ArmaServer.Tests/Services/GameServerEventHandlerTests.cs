@@ -83,6 +83,39 @@ public class GameServerEventHandlerTests
         _mockLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("unknown_event"))), Times.Once);
     }
 
+    [Theory]
+    [InlineData(SyntheticApiPorts.ConfigExport)]
+    [InlineData(SyntheticApiPorts.DevRun)]
+    public async Task HandleEventAsync_ServerStatusFromSyntheticApiPort_IsSilentlyDropped(int apiPort)
+    {
+        var evt = new GameServerEvent
+        {
+            Type = "server_status",
+            ApiPort = apiPort,
+            Data = new Dictionary<string, object> { { "map", "Altis" } }
+        };
+
+        await _sut.HandleEventAsync(evt);
+
+        _mockProcessManager.Verify(x => x.HandleServerStatusAsync(It.IsAny<int>(), It.IsAny<Dictionary<string, object>>()), Times.Never);
+        _mockLogger.Verify(x => x.LogWarning(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleEventAsync_ShutdownFromSyntheticApiPort_IsSilentlyDropped()
+    {
+        var evt = new GameServerEvent
+        {
+            Type = "shutdown_complete",
+            ApiPort = SyntheticApiPorts.ConfigExport,
+            Data = new Dictionary<string, object>()
+        };
+
+        await _sut.HandleEventAsync(evt);
+
+        _mockProcessManager.Verify(x => x.HandleShutdownCompleteAsync(It.IsAny<int>()), Times.Never);
+    }
+
     // Reproduces the production wire format that the controller would receive from the
     // Rust extension. Deserialises with the same JsonSerializerOptions configuration as
     // Program.cs (PropertyNameCaseInsensitive + InferredTypeConverter), then runs the

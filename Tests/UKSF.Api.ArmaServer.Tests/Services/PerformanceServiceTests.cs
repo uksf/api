@@ -133,7 +133,10 @@ public class PerformanceServiceTests
 
         await _subject.HandlePerformanceEventAsync("session-1", [50], [], []);
 
-        _mockSessionsContext.Verify(x => x.Update(session.Id, It.IsAny<UpdateDefinition<MissionSession>>()), Times.Once);
+        // Two writes: pushes (serverFps) + gap-extensions (player1 absent). Splitting these
+        // is what prevents the Code 40 path conflict between $push on `.fps` and $set on
+        // `.fps.<n>` for the same player index.
+        _mockSessionsContext.Verify(x => x.Update(session.Id, It.IsAny<UpdateDefinition<MissionSession>>()), Times.Exactly(2));
     }
 
     [Fact]

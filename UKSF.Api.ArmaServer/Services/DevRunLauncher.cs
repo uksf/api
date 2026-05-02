@@ -8,7 +8,7 @@ namespace UKSF.Api.ArmaServer.Services;
 public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariablesService variablesService) : IDevRunLauncher
 {
     private const int GamePort = 3304;
-    private const int ApiPort = 3305;
+    private const int ApiPort = SyntheticApiPorts.DevRun;
 
     public SyntheticLaunchResult Launch(string runId, string sqf, IReadOnlyList<string> mods)
     {

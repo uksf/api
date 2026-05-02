@@ -12,7 +12,7 @@ public class ConfigExportProcessLauncher(ISyntheticServerLauncher syntheticLaunc
     private const string ConfigFileName = "ConfigExport.cfg";
     private const string MissionName = "ConfigExport.VR";
     private const int GamePort = 3302;
-    private const int ApiPort = 3303;
+    private const int ApiPort = SyntheticApiPorts.ConfigExport;
 
     public ConfigExportLaunchResult Launch(string modpackVersion)
     {
