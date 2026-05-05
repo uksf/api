@@ -16,17 +16,17 @@ using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.ScheduledActions;
 
-public class ConfigExportRecoveryStartupTests
+public class GameDataExportRecoveryStartupTests
 {
     private readonly Mock<IGameServerHelpers> _helpers = new();
     private readonly Mock<IProcessUtilities> _processUtilities = new();
-    private readonly Mock<IGameConfigExportsContext> _context = new();
+    private readonly Mock<IGameDataExportsContext> _context = new();
     private readonly Mock<IVariablesService> _variablesService = new();
     private readonly Mock<IUksfLogger> _logger = new();
 
-    public ConfigExportRecoveryStartupTests()
+    public GameDataExportRecoveryStartupTests()
     {
-        _context.Setup(x => x.Add(It.IsAny<DomainGameConfigExport>())).Returns(Task.CompletedTask);
+        _context.Setup(x => x.Add(It.IsAny<DomainGameDataExport>())).Returns(Task.CompletedTask);
     }
 
     private static DomainVariableItem CreateVariable(string key, object item) => new() { Key = key, Item = item };
@@ -36,7 +36,7 @@ public class ConfigExportRecoveryStartupTests
         _variablesService.Setup(x => x.GetVariable(key)).Returns(CreateVariable(key, value));
     }
 
-    private ConfigExportRecoveryStartup CreateSut() =>
+    private GameDataExportRecoveryStartup CreateSut() =>
         new(_helpers.Object, _processUtilities.Object, _context.Object, _variablesService.Object, _logger.Object);
 
     [Fact]
@@ -52,14 +52,13 @@ public class ConfigExportRecoveryStartupTests
     }
 
     [Fact]
-    public async Task StartAsync_KillsOrphanConfigExportProcess()
+    public async Task StartAsync_KillsOrphanGameDataExportProcess()
     {
-        var orphan = new ProcessCommandLineInfo(9999, "\"arma3server_x64.exe\" -profiles=C:/p/ConfigExport -port=3302");
+        var orphan = new ProcessCommandLineInfo(9999, "\"arma3server_x64.exe\" -profiles=C:/p/GameDataExport -port=3302");
         _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(new[] { orphan });
-        _helpers.Setup(x => x.IsConfigExportProcess(It.IsAny<string>())).Returns(true);
+        _helpers.Setup(x => x.IsGameDataExportProcess(It.IsAny<string>())).Returns(true);
         _processUtilities.Setup(x => x.FindProcessById(9999)).Returns((System.Diagnostics.Process)null);
 
-        // Salvage path: no export dir configured so it won't scan
         SetupVariable("SERVER_PATH_CONFIG_EXPORT", Path.Combine(Path.GetTempPath(), "nonexistent-" + Guid.NewGuid()));
 
         var sut = CreateSut();
@@ -78,13 +77,13 @@ public class ConfigExportRecoveryStartupTests
         SetupVariable("SERVER_PATH_CONFIG_EXPORT", tempStorage);
 
         _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(Array.Empty<ProcessCommandLineInfo>());
-        _context.Setup(x => x.Get(It.IsAny<Func<DomainGameConfigExport, bool>>())).Returns(new List<DomainGameConfigExport>());
+        _context.Setup(x => x.Get(It.IsAny<Func<DomainGameDataExport, bool>>())).Returns(new List<DomainGameDataExport>());
 
         var sut = CreateSut();
         await sut.StartAsync(CancellationToken.None);
 
         _context.Verify(
-            x => x.Add(It.Is<DomainGameConfigExport>(r => r.ModpackVersion == "5.23.9" && r.Status == ConfigExportStatus.Success && r.FilePath == file)),
+            x => x.Add(It.Is<DomainGameDataExport>(r => r.ModpackVersion == "5.23.9" && r.Status == GameDataExportStatus.Success && r.HasConfig)),
             Times.Once
         );
 
@@ -106,12 +105,12 @@ public class ConfigExportRecoveryStartupTests
         SetupVariable("SERVER_PATH_CONFIG_EXPORT", tempStorage);
 
         _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(Array.Empty<ProcessCommandLineInfo>());
-        _context.Setup(x => x.Get(It.IsAny<Func<DomainGameConfigExport, bool>>())).Returns(new List<DomainGameConfigExport>());
+        _context.Setup(x => x.Get(It.IsAny<Func<DomainGameDataExport, bool>>())).Returns(new List<DomainGameDataExport>());
 
         var sut = CreateSut();
         await sut.StartAsync(CancellationToken.None);
 
-        _context.Verify(x => x.Add(It.IsAny<DomainGameConfigExport>()), Times.Never);
+        _context.Verify(x => x.Add(It.IsAny<DomainGameDataExport>()), Times.Never);
 
         try
         {
@@ -130,13 +129,13 @@ public class ConfigExportRecoveryStartupTests
         SetupVariable("SERVER_PATH_CONFIG_EXPORT", tempStorage);
 
         _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(Array.Empty<ProcessCommandLineInfo>());
-        _context.Setup(x => x.Get(It.IsAny<Func<DomainGameConfigExport, bool>>()))
-                .Returns(new List<DomainGameConfigExport> { new() { ModpackVersion = "5.23.9", Status = ConfigExportStatus.Success } });
+        _context.Setup(x => x.Get(It.IsAny<Func<DomainGameDataExport, bool>>()))
+                .Returns(new List<DomainGameDataExport> { new() { ModpackVersion = "5.23.9", Status = GameDataExportStatus.Success } });
 
         var sut = CreateSut();
         await sut.StartAsync(CancellationToken.None);
 
-        _context.Verify(x => x.Add(It.IsAny<DomainGameConfigExport>()), Times.Never);
+        _context.Verify(x => x.Add(It.IsAny<DomainGameDataExport>()), Times.Never);
 
         try
         {

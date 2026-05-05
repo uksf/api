@@ -25,17 +25,17 @@ public interface IGameServerHelpers
     int GetMaxCuratorCountFromSettings();
     TimeSpan StripMilliseconds(TimeSpan time);
 
-    /// Returns all arma3server processes, including the config-export server process.
+    /// Returns all arma3server processes, including the game-data-export server process.
     /// Use <see cref="GetGameServerArmaProcesses"/> for game-server lifecycle operations.
     IEnumerable<Process> GetArmaProcesses();
 
     IReadOnlyList<ProcessCommandLineInfo> GetArmaProcessesWithCommandLine();
 
     /// Returns true if the command line belongs to a synthetic-mission server
-    /// (config-export or dev-run). Used to filter these out of game-server lifecycle.
+    /// (game-data-export or dev-run). Used to filter these out of game-server lifecycle.
     bool IsSyntheticProcess(string commandLine);
 
-    bool IsConfigExportProcess(string commandLine);
+    bool IsGameDataExportProcess(string commandLine);
     IReadOnlyList<ProcessCommandLineInfo> GetGameServerArmaProcesses();
     bool IsMainOpTime();
     string GetDlcModFoldersRegexString();
@@ -213,7 +213,7 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
         return new TimeSpan(time.Hours, time.Minutes, time.Seconds);
     }
 
-    // Intentionally unfiltered: includes the config-export server process so the export
+    // Intentionally unfiltered: includes the game-data-export server process so the export
     // subsystem can enumerate its own process. Game-server lifecycle code should use
     // GetGameServerArmaProcesses() instead.
     public IEnumerable<Process> GetArmaProcesses()
@@ -229,10 +229,10 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
     public bool IsSyntheticProcess(string commandLine)
     {
         if (string.IsNullOrEmpty(commandLine)) return false;
-        return Regex.IsMatch(commandLine, @"-profiles=""?[^\s""]*[/\\](ConfigExport|DevRun_[A-Za-z0-9]+)(?:[\s""]|$)", RegexOptions.IgnoreCase);
+        return Regex.IsMatch(commandLine, @"-profiles=""?[^\s""]*[/\\](GameDataExport|DevRun_[A-Za-z0-9]+)(?:[\s""]|$)", RegexOptions.IgnoreCase);
     }
 
-    public bool IsConfigExportProcess(string commandLine) => IsSyntheticProcess(commandLine);
+    public bool IsGameDataExportProcess(string commandLine) => IsSyntheticProcess(commandLine);
 
     public IReadOnlyList<ProcessCommandLineInfo> GetGameServerArmaProcesses()
     {

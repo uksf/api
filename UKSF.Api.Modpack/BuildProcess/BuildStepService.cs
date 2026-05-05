@@ -113,7 +113,7 @@ public class BuildStepService : IBuildStepService
             new ModpackBuildStep(BuildStepPublish.Name),
             new ModpackBuildStep(BuildStepNotify.Name),
             new ModpackBuildStep(BuildStepMerge.Name),
-            new ModpackBuildStep(BuildStepConfigExport.Name),
+            new ModpackBuildStep(BuildStepGameDataExport.Name),
             new ModpackBuildStep(BuildStepUnlockServerControl.Name)
         ];
     }

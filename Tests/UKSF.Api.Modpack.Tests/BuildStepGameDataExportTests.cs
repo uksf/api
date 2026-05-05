@@ -14,17 +14,17 @@ using Xunit;
 
 namespace UKSF.Api.Modpack.Tests;
 
-public class BuildStepConfigExportTests
+public class BuildStepGameDataExportTests
 {
     private readonly CancellationTokenSource _cancellationTokenSource = new();
-    private readonly Mock<IConfigExportService> _mockConfigExportService = new();
+    private readonly Mock<IGameDataExportService> _mockGameDataExportService = new();
     private readonly Mock<IProcessCommandFactory> _mockProcessCommandFactory = new();
     private readonly Mock<IBuildProcessTracker> _mockProcessTracker = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
     private readonly DomainModpackBuild _build;
 
-    public BuildStepConfigExportTests()
+    public BuildStepGameDataExportTests()
     {
         _mockVariablesService.Setup(x => x.GetVariable("BUILD_STATE_UPDATE_INTERVAL"))
                              .Returns(new DomainVariableItem { Key = "BUILD_STATE_UPDATE_INTERVAL", Item = 1.0 });
@@ -41,19 +41,19 @@ public class BuildStepConfigExportTests
     [Fact]
     public async Task ProcessExecute_CallsTriggerWithBuildVersion()
     {
-        _mockConfigExportService.Setup(x => x.Trigger(It.IsAny<string>())).Returns(new TriggerResult(TriggerOutcome.Started, "id-1"));
+        _mockGameDataExportService.Setup(x => x.Trigger(It.IsAny<string>())).Returns(new TriggerResult(TriggerOutcome.Started, "id-1"));
         var step = CreateStep();
 
         await step.Setup();
         await step.Process();
 
-        _mockConfigExportService.Verify(x => x.Trigger(_build.Version), Times.Once);
+        _mockGameDataExportService.Verify(x => x.Trigger(_build.Version), Times.Once);
     }
 
     [Fact]
     public async Task ProcessExecute_DoesNotThrow_WhenAlreadyRunning()
     {
-        _mockConfigExportService.Setup(x => x.Trigger(It.IsAny<string>())).Returns(new TriggerResult(TriggerOutcome.AlreadyRunning, "in-flight"));
+        _mockGameDataExportService.Setup(x => x.Trigger(It.IsAny<string>())).Returns(new TriggerResult(TriggerOutcome.AlreadyRunning, "in-flight"));
         var step = CreateStep();
 
         await step.Setup();
@@ -65,7 +65,7 @@ public class BuildStepConfigExportTests
     [Fact]
     public async Task ProcessExecute_DoesNotThrow_WhenTriggerThrows()
     {
-        _mockConfigExportService.Setup(x => x.Trigger(It.IsAny<string>())).Throws(new InvalidOperationException("simulated launcher failure"));
+        _mockGameDataExportService.Setup(x => x.Trigger(It.IsAny<string>())).Throws(new InvalidOperationException("simulated launcher failure"));
         var step = CreateStep();
 
         await step.Setup();
@@ -74,16 +74,16 @@ public class BuildStepConfigExportTests
         await act.Should().NotThrowAsync();
     }
 
-    private BuildStepConfigExport CreateStep()
+    private BuildStepGameDataExport CreateStep()
     {
-        var step = new BuildStepConfigExport();
+        var step = new BuildStepGameDataExport();
         var serviceProvider = new ServiceCollection().AddSingleton(_mockVariablesService.Object)
                                                      .AddSingleton(_mockProcessCommandFactory.Object)
                                                      .AddSingleton(_mockProcessTracker.Object)
-                                                     .AddSingleton(_mockConfigExportService.Object)
+                                                     .AddSingleton(_mockGameDataExportService.Object)
                                                      .BuildServiceProvider();
 
-        var buildStep = new ModpackBuildStep(BuildStepConfigExport.Name) { Logs = [] };
+        var buildStep = new ModpackBuildStep(BuildStepGameDataExport.Name) { Logs = [] };
 
         step.Init(serviceProvider, _mockLogger.Object, _build, buildStep, _ => Task.CompletedTask, () => Task.CompletedTask, _cancellationTokenSource);
 

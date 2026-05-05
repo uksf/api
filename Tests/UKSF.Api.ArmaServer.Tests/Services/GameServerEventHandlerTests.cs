@@ -84,7 +84,7 @@ public class GameServerEventHandlerTests
     }
 
     [Theory]
-    [InlineData(SyntheticApiPorts.ConfigExport)]
+    [InlineData(SyntheticApiPorts.GameDataExport)]
     [InlineData(SyntheticApiPorts.DevRun)]
     public async Task HandleEventAsync_ServerStatusFromSyntheticApiPort_IsSilentlyDropped(int apiPort)
     {
@@ -107,7 +107,7 @@ public class GameServerEventHandlerTests
         var evt = new GameServerEvent
         {
             Type = "shutdown_complete",
-            ApiPort = SyntheticApiPorts.ConfigExport,
+            ApiPort = SyntheticApiPorts.GameDataExport,
             Data = new Dictionary<string, object>()
         };
 

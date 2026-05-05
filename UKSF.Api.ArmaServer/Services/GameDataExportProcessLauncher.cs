@@ -6,15 +6,15 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.Services;
 
-public class ConfigExportProcessLauncher(ISyntheticServerLauncher syntheticLauncher, IVariablesService variablesService) : IConfigExportProcessLauncher
+public class GameDataExportProcessLauncher(ISyntheticServerLauncher syntheticLauncher, IVariablesService variablesService) : IGameDataExportProcessLauncher
 {
-    private const string ProfileName = "ConfigExport";
-    private const string ConfigFileName = "ConfigExport.cfg";
-    private const string MissionName = "ConfigExport.VR";
+    private const string ProfileName = "GameDataExport";
+    private const string ConfigFileName = "GameDataExport.cfg";
+    private const string MissionName = "GameDataExport.VR";
     private const int GamePort = 3302;
-    private const int ApiPort = SyntheticApiPorts.ConfigExport;
+    private const int ApiPort = SyntheticApiPorts.GameDataExport;
 
-    public ConfigExportLaunchResult Launch(string modpackVersion)
+    public GameDataExportLaunchResult Launch(string modpackVersion)
     {
         var serverRoot = variablesService.GetVariable("SERVER_PATH_RELEASE").AsString();
         var modpackRoot = variablesService.GetVariable("MODPACK_PATH_RELEASE").AsString();
@@ -36,9 +36,15 @@ public class ConfigExportProcessLauncher(ISyntheticServerLauncher syntheticLaunc
 
         var launch = syntheticLauncher.Launch(spec);
 
-        var expectedDir = Path.Combine(serverRoot, "uksf_config_export");
-        var glob = $"config_*_uksf-{(modpackVersion ?? "").Replace('.', '-')}.cpp";
-        return new ConfigExportLaunchResult(launch.ProcessId, expectedDir, glob);
+        var expectedDir = Path.Combine(serverRoot, "uksf_exports");
+        var versionSegment = (modpackVersion ?? "").Replace('.', '-');
+        return new GameDataExportLaunchResult(
+            launch.ProcessId,
+            expectedDir,
+            ConfigGlob: $"config_*_uksf-{versionSegment}.cpp",
+            CbaSettingsGlob: $"cba_settings_*_uksf-{versionSegment}.sqf",
+            CbaSettingsReferenceGlob: $"cba_settings_reference_*_uksf-{versionSegment}.json"
+        );
     }
 
     private static IReadOnlyList<string> ResolveMods(string modPath)
@@ -52,7 +58,7 @@ public class ConfigExportProcessLauncher(ISyntheticServerLauncher syntheticLaunc
     // for -autoInit to actually fire (and INSTANT does not need a respawn marker — BASE would).
     private static string BuildConfig(string commandPassword) =>
         $$"""
-          hostname = "Config Export";
+          hostname = "Game Data Export";
           password = "";
           passwordAdmin = "";
           serverCommandPassword = "{{commandPassword}}";
@@ -80,8 +86,8 @@ public class ConfigExportProcessLauncher(ISyntheticServerLauncher syntheticLaunc
     // Scripts" table) so a configFile traversal called from there gets throttled to ~3ms/frame
     // and takes 10x longer than the same work non-scheduled. postInit avoids that throttle.
     private const string DescriptionExt = """
-                                          onLoadName = "Config Export";
-                                          briefingName = "Config Export";
+                                          onLoadName = "Game Data Export";
+                                          briefingName = "Game Data Export";
                                           respawn = "INSTANT";
                                           respawnDelay = 5;
                                           class Header
@@ -117,7 +123,7 @@ public class ConfigExportProcessLauncher(ISyntheticServerLauncher syntheticLaunc
     private const string MissionSqm = """
                                       version=54;
                                       binarizationWanted=0;
-                                      sourceName="ConfigExport";
+                                      sourceName="GameDataExport";
                                       addons[]=
                                       {
                                           "A3_Characters_F"
@@ -185,19 +191,16 @@ public class ConfigExportProcessLauncher(ISyntheticServerLauncher syntheticLaunc
                                       """;
 
     // Registered as UKSF_Export_fnc_runExport via CfgFunctions postInit = 1 in description.ext.
-    // Runs non-scheduled so the configFile traversal isn't throttled. We don't need inherited
-    // properties — the consumer can walk the inheritance chain when querying. Skipping it
-    // dramatically cuts both output size and SQF work (no per-class O(props × inheritance-depth)
-    // dedup, no re-emission of parent props for every child class).
+    // Runs non-scheduled so the configFile traversal isn't throttled.
     private const string RunExportSqf = """
-                                        private _result = [configFile, false] call uksf_common_fnc_configExport;
+                                        private _result = [configFile, false] call uksf_common_fnc_gameDataExport;
 
                                         if (_result isEqualTo "") then {
-                                            diag_log text "ConfigExport.VR: uksf_common_fnc_configExport returned empty string — export failed";
+                                            diag_log text "GameDataExport.VR: uksf_common_fnc_gameDataExport returned empty string — export failed";
                                         } else {
-                                            diag_log text format ["ConfigExport.VR: config export completed successfully -> %1", _result];
+                                            diag_log text format ["GameDataExport.VR: game data export completed successfully -> %1", _result];
                                         };
 
-                                        "uksf" callExtension ["configExportFinish", []];
+                                        "uksf" callExtension ["fileExportFinish", []];
                                         """;
 }

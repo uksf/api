@@ -9,10 +9,10 @@ using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.ScheduledActions;
 
-public class ConfigExportRecoveryStartup(
+public class GameDataExportRecoveryStartup(
     IGameServerHelpers helpers,
     IProcessUtilities processUtilities,
-    IGameConfigExportsContext context,
+    IGameDataExportsContext context,
     IVariablesService variablesService,
     IUksfLogger logger
 ) : IHostedService
@@ -38,14 +38,14 @@ public class ConfigExportRecoveryStartup(
     {
         foreach (var process in processUtilities.GetProcessesWithCommandLine("arma3server"))
         {
-            if (!helpers.IsConfigExportProcess(process.CommandLine)) continue;
+            if (!helpers.IsGameDataExportProcess(process.CommandLine)) continue;
             try
             {
                 var runningProcess = processUtilities.FindProcessById(process.ProcessId);
                 if (runningProcess is { HasExited: false })
                 {
                     runningProcess.Kill(true);
-                    logger.LogInfo($"ConfigExportRecovery: killed orphan PID {process.ProcessId}");
+                    logger.LogInfo($"GameDataExportRecovery: killed orphan PID {process.ProcessId}");
                 }
             }
             catch (Exception ex)
@@ -55,6 +55,7 @@ public class ConfigExportRecoveryStartup(
         }
     }
 
+    // Salvage scope is intentionally config-only — CBA settings outputs have no recovery history yet.
     private async Task SalvageRecentExportsAsync()
     {
         var storageRoot = variablesService.GetVariable("SERVER_PATH_CONFIG_EXPORT").AsString();
@@ -67,22 +68,22 @@ public class ConfigExportRecoveryStartup(
             if (info.LastWriteTimeUtc < cutoff) continue;
 
             var version = Path.GetFileNameWithoutExtension(file).Replace("config_", "");
-            var existing = context.Get(x => x.ModpackVersion == version && x.Status == ConfigExportStatus.Success);
+            var existing = context.Get(x => x.ModpackVersion == version && x.Status == GameDataExportStatus.Success);
             if (existing.Any()) continue;
 
             await context.Add(
-                new DomainGameConfigExport
+                new DomainGameDataExport
                 {
                     ModpackVersion = version,
                     GameVersion = "unknown",
                     TriggeredAt = info.CreationTimeUtc,
                     CompletedAt = info.LastWriteTimeUtc,
-                    Status = ConfigExportStatus.Success,
-                    FilePath = file,
+                    Status = GameDataExportStatus.Success,
+                    HasConfig = true,
                     FailureDetail = "Salvaged on API restart."
                 }
             );
-            logger.LogInfo($"ConfigExportRecovery: salvaged {file}");
+            logger.LogInfo($"GameDataExportRecovery: salvaged {file}");
         }
     }
 }

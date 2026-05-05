@@ -287,30 +287,30 @@ public class GameServerHelpersTests
     }
 
     [Theory]
-    [InlineData("-profiles=C:/profiles/ConfigExport -port=3302", true)]
-    [InlineData(@"-profiles=C:\profiles\ConfigExport -port=3302", true)]
-    [InlineData("-profiles=C:/profiles/ConfigExport", true)]
-    [InlineData("-profiles=C:/profiles/ConfigExport -client", true)]
-    [InlineData("-profiles=C:/profiles/ConfigExportSomethingElse -port=3302", false)]
+    [InlineData("-profiles=C:/profiles/GameDataExport -port=3302", true)]
+    [InlineData(@"-profiles=C:\profiles\GameDataExport -port=3302", true)]
+    [InlineData("-profiles=C:/profiles/GameDataExport", true)]
+    [InlineData("-profiles=C:/profiles/GameDataExport -client", true)]
+    [InlineData("-profiles=C:/profiles/GameDataExportSomethingElse -port=3302", false)]
     [InlineData("-profiles=C:/profiles/MainServer -port=2302", false)]
-    [InlineData("-profiles=C:/profiles/NotConfigExport -port=2302", false)]
+    [InlineData("-profiles=C:/profiles/NotGameDataExport -port=2302", false)]
     [InlineData("", false)]
     [InlineData(null, false)]
     // Quoted -profiles= form — the actual form the launcher emits
-    [InlineData("\"arma3server_x64.exe\" -profiles=\"C:/profiles/ConfigExport\" -port=3302", true)]
-    [InlineData("\"arma3server_x64.exe\" -profiles=\"C:/profiles/ConfigExportSomethingElse\" -port=3302", false)]
-    public void IsConfigExportProcess_Matches_Only_ConfigExport_Profile_Leaf(string commandLine, bool expected)
+    [InlineData("\"arma3server_x64.exe\" -profiles=\"C:/profiles/GameDataExport\" -port=3302", true)]
+    [InlineData("\"arma3server_x64.exe\" -profiles=\"C:/profiles/GameDataExportSomethingElse\" -port=3302", false)]
+    public void IsGameDataExportProcess_Matches_Only_GameDataExport_Profile_Leaf(string commandLine, bool expected)
     {
-        var result = _sut.IsConfigExportProcess(commandLine);
+        var result = _sut.IsGameDataExportProcess(commandLine);
 
         result.Should().Be(expected);
     }
 
     [Fact]
-    public void GetGameServerArmaProcesses_Excludes_ConfigExport_Processes()
+    public void GetGameServerArmaProcesses_Excludes_GameDataExport_Processes()
     {
         var gameServerProcess = new ProcessCommandLineInfo(1001, "-profiles=C:/profiles/MainServer -port=2302");
-        var exportProcess = new ProcessCommandLineInfo(1002, "-profiles=C:/profiles/ConfigExport -port=3302");
+        var exportProcess = new ProcessCommandLineInfo(1002, "-profiles=C:/profiles/GameDataExport -port=3302");
         _mockProcessUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns([gameServerProcess, exportProcess]);
 
         var result = _sut.GetGameServerArmaProcesses();
@@ -320,7 +320,7 @@ public class GameServerHelpersTests
     }
 
     [Fact]
-    public void GetGameServerArmaProcesses_Returns_All_When_No_ConfigExport_Processes()
+    public void GetGameServerArmaProcesses_Returns_All_When_No_GameDataExport_Processes()
     {
         var process1 = new ProcessCommandLineInfo(1001, "-profiles=C:/profiles/MainServer -port=2302");
         var process2 = new ProcessCommandLineInfo(1002, "-profiles=C:/profiles/AnotherServer -port=2402");
@@ -332,7 +332,7 @@ public class GameServerHelpersTests
     }
 
     [Theory]
-    [InlineData(@"-profiles=""C:/profs/ConfigExport"" -port=3302", true)]
+    [InlineData(@"-profiles=""C:/profs/GameDataExport"" -port=3302", true)]
     [InlineData(@"-profiles=""C:/profs/DevRun_abcd1234"" -port=3304", true)]
     [InlineData(@"-profiles=""C:/profs/uksf"" -port=2302", false)]
     [InlineData("", false)]
@@ -342,12 +342,12 @@ public class GameServerHelpersTests
     }
 
     [Fact]
-    public void GetGameServerArmaProcesses_Excludes_Both_ConfigExport_And_DevRun_Processes()
+    public void GetGameServerArmaProcesses_Excludes_Both_GameDataExport_And_DevRun_Processes()
     {
         var normalProcess = new ProcessCommandLineInfo(1001, "-profiles=C:/profiles/uksf -port=2302");
-        var configExportProcess = new ProcessCommandLineInfo(1002, "-profiles=C:/profiles/ConfigExport -port=3302");
+        var gameDataExportProcess = new ProcessCommandLineInfo(1002, "-profiles=C:/profiles/GameDataExport -port=3302");
         var devRunProcess = new ProcessCommandLineInfo(1003, "-profiles=C:/profiles/DevRun_abcd1234 -port=3304");
-        _mockProcessUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns([normalProcess, configExportProcess, devRunProcess]);
+        _mockProcessUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns([normalProcess, gameDataExportProcess, devRunProcess]);
 
         var result = _sut.GetGameServerArmaProcesses();
 

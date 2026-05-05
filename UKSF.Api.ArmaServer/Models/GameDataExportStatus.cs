@@ -1,10 +1,11 @@
 namespace UKSF.Api.ArmaServer.Models;
 
-public enum ConfigExportStatus
+public enum GameDataExportStatus
 {
     Pending,
     Running,
     Success,
+    PartialSuccess,
     FailedTimeout,
     FailedNoOutput,
     FailedTruncated,

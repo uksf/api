@@ -87,7 +87,7 @@ public class DevRunRecoveryStartupTests
     [Fact]
     public async Task StartAsync_DoesNotKillNonDevRunProcess()
     {
-        var unrelated = new ProcessCommandLineInfo(456, "-profiles=C:/x/ConfigExport -port=3302");
+        var unrelated = new ProcessCommandLineInfo(456, "-profiles=C:/x/GameDataExport -port=3302");
         _processUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns(new[] { unrelated });
 
         var sut = CreateSut();

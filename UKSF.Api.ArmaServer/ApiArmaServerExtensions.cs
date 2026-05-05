@@ -50,7 +50,7 @@ public static class ApiArmaServerExtensions
                            .AddContext<IPlayerMissionStatsContext, PlayerMissionStatsContext>()
                            .AddContext<IMissionStatsContext, MissionStatsContext>()
                            .AddContext<IPersistenceSessionsContext, PersistenceSessionsContext>()
-                           .AddContext<IGameConfigExportsContext, GameConfigExportsContext>()
+                           .AddContext<IGameDataExportsContext, GameDataExportsContext>()
                            .AddContext<IDevRunsContext, DevRunsContext>();
         }
 
@@ -77,13 +77,13 @@ public static class ApiArmaServerExtensions
                            .AddScoped<IGameServerEventHandler, GameServerEventHandler>()
                            .AddSingleton<IGameServerProcessManager, GameServerProcessManager>()
                            .AddSingleton<ISyntheticServerLauncher, SyntheticServerLauncher>()
-                           .AddSingleton<IConfigExportProcessLauncher, ConfigExportProcessLauncher>()
+                           .AddSingleton<IGameDataExportProcessLauncher, GameDataExportProcessLauncher>()
                            .AddSingleton<IArmaSyntheticLaunchGate, ArmaSyntheticLaunchGate>()
-                           .AddSingleton<IConfigExportService, ConfigExportService>()
+                           .AddSingleton<IGameDataExportService, GameDataExportService>()
                            .AddSingleton<IDevRunLauncher, DevRunLauncher>()
                            .AddSingleton<IDevRunService, DevRunService>()
                            .AddHostedService<GameServerProcessManagerStartup>()
-                           .AddHostedService<ConfigExportRecoveryStartup>()
+                           .AddHostedService<GameDataExportRecoveryStartup>()
                            .AddHostedService<DevRunRecoveryStartup>();
         }
 
