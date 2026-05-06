@@ -55,7 +55,8 @@ public class PersistenceReloadPayloadProducer
         ctx.Setup(x => x.Replace(It.IsAny<DomainPersistenceSession>())).Callback<DomainPersistenceSession>(s => captured = s).Returns(Task.CompletedTask);
 
         var service = new PersistenceSessionsService(ctx.Object, new Mock<IUksfLogger>().Object);
-        await service.HandleSaveAsync(key, sessionId, payload);
+        var sessionDict = ToDict(SqfNotationParser.ParseAndNormalize(payload));
+        await service.HandleSaveAsync(key, sessionId, sessionDict);
         captured.Should().NotBeNull();
 
         // Emit the canonical SQF str payload the load endpoint will ship to the game.

@@ -1,6 +1,5 @@
 using System.Text.Json;
 using UKSF.Api.ArmaServer.Models.Persistence;
-using UKSF.Api.ArmaServer.Services;
 using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
 namespace UKSF.Api.ArmaServer.Converters;
@@ -12,6 +11,22 @@ public static class PersistencePlayerConverter
         PropertyNameCaseInsensitive = true,
         Converters =
         {
+            new WoundEntryConverter(),
+            new MedicationEntryConverter(),
+            new OccludedMedicationEntryConverter(),
+            new IvBagEntryConverter(),
+            new TriageCardEntryConverter(),
+            new MedicalLogCategoryConverter(),
+            new MedicalLogEntryConverter()
+        }
+    };
+
+    private static readonly JsonSerializerOptions DictReadOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters =
+        {
+            new Models.Persistence.PersistenceTypeConverter(),
             new WoundEntryConverter(),
             new MedicationEntryConverter(),
             new OccludedMedicationEntryConverter(),
@@ -180,7 +195,7 @@ public static class PersistencePlayerConverter
         // Round-trip through JSON so nested ACE entries emit as positional arrays (via the
         // registered converters), matching the wire format from ace_medical_fnc_serializeState.
         var json = JsonSerializer.Serialize(state, JsonOptions);
-        return JsonSerializer.Deserialize<Dictionary<string, object>>(json, PersistenceSessionsService.SerializerOptions) ?? new Dictionary<string, object>();
+        return JsonSerializer.Deserialize<Dictionary<string, object>>(json, DictReadOptions) ?? new Dictionary<string, object>();
     }
 
     private static List<object> SerializeDiveState(PlayerDiveState state)

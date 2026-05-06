@@ -7,6 +7,7 @@ using FluentAssertions;
 using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models.Persistence;
+using UKSF.Api.ArmaServer.Parsing;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 using Xunit;
@@ -24,6 +25,15 @@ public class PersistenceSessionsServiceTests
     {
         _subject = new PersistenceSessionsService(_mockContext.Object, _mockLogger.Object);
     }
+
+    private static Dictionary<string, object> JsonToDict(string json)
+    {
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true, Converters = { new PersistenceTypeConverter() } };
+        return JsonSerializer.Deserialize<Dictionary<string, object>>(json, options) ?? new();
+    }
+
+    private static Dictionary<string, object> SqfToDict(string sqf) =>
+        UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers.ToDict(SqfNotationParser.ParseAndNormalize(sqf));
 
     [Fact]
     public void Load_WithExistingKey_ReturnsSession()
@@ -88,18 +98,16 @@ public class PersistenceSessionsServiceTests
     [Fact]
     public async Task HandleSaveAsync_DeserialisesAndSavesSession()
     {
-        var session = new DomainPersistenceSession
+        var sessionData = new Dictionary<string, object>
         {
-            Key = "save-key",
-            Objects = [],
-            Players = new(),
-            Markers = []
+            ["objects"] = new List<object>(),
+            ["players"] = new Dictionary<string, object>(),
+            ["mapMarkers"] = new List<object>()
         };
-        var json = JsonSerializer.Serialize(session);
 
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
-        await _subject.HandleSaveAsync("save-key", string.Empty, json);
+        await _subject.HandleSaveAsync("save-key", string.Empty, sessionData);
 
         _mockContext.Verify(x => x.Add(It.Is<DomainPersistenceSession>(s => s.Key == "save-key")), Times.Once);
     }
@@ -107,32 +115,16 @@ public class PersistenceSessionsServiceTests
     [Fact]
     public async Task HandleSaveAsync_PreservesObjectAndPlayerData()
     {
-        var session = new DomainPersistenceSession
-        {
-            Key = "preserve-key",
-            Objects =
-            [
-                new PersistenceObject
-                {
-                    Id = "obj-1",
-                    Type = "B_MRAP_01_F",
-                    Position = [100.5, 200.3, 0.1],
-                    Damage = 0.25,
-                    Fuel = 0.8
-                }
-            ],
-            Players = new Dictionary<string, PlayerRedeployData>
-            {
-                ["player-uid"] = new()
-                {
-                    Position = [50.0, 60.0, 0.0],
-                    Direction = 180.0,
-                    Animation = "AmovPercMstpSnonWnonDnon"
-                }
-            },
-            Markers = []
-        };
-        var json = JsonSerializer.Serialize(session);
+        const string json = """
+                            {
+                                "objects": [
+                                    {"id":"obj-1","type":"B_MRAP_01_F","position":[100.5,200.3,0.1],"vectorDirUp":[[0,1,0],[0,0,1]],"damage":0.25,"fuel":0.8,"turretWeapons":[],"turretMagazines":[],"pylonLoadout":[],"logistics":[],"attached":[],"rackChannels":[],"aceCargo":[],"inventory":[[[],[]],[[],[]],[[],[]],[[],[]]],"aceFortify":[false,""],"aceMedical":[0,false,false],"aceRepair":[0,0],"customName":""}
+                                ],
+                                "players": {"player-uid": {"position":[50.0,60.0,0.0],"direction":180.0,"animation":"AmovPercMstpSnonWnonDnon","vehicleState":["","",-1],"loadout":[],"damage":0,"aceMedical":[],"earplugs":false,"attachedItems":[],"radios":[],"diveState":[false]}},
+                                "mapMarkers": []
+                            }
+                            """;
+        var sessionData = JsonToDict(json);
 
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainPersistenceSession, bool>>())).Returns((DomainPersistenceSession)null);
 
@@ -141,7 +133,7 @@ public class PersistenceSessionsServiceTests
                     .Callback<DomainPersistenceSession>(s => savedSession = s)
                     .Returns(Task.CompletedTask);
 
-        await _subject.HandleSaveAsync("preserve-key", string.Empty, json);
+        await _subject.HandleSaveAsync("preserve-key", string.Empty, sessionData);
 
         savedSession.Should().NotBeNull();
         savedSession!.Objects.Should().HaveCount(1);
@@ -153,9 +145,9 @@ public class PersistenceSessionsServiceTests
     }
 
     [Fact]
-    public async Task HandleSaveAsync_WithInvalidJson_DoesNotSave()
+    public async Task HandleSaveAsync_WithEmptyData_DoesNotSave()
     {
-        await _subject.HandleSaveAsync("bad-key", string.Empty, "{not valid json");
+        await _subject.HandleSaveAsync("bad-key", string.Empty, new Dictionary<string, object>());
 
         _mockContext.Verify(x => x.Add(It.IsAny<DomainPersistenceSession>()), Times.Never);
         _mockContext.Verify(x => x.Replace(It.IsAny<DomainPersistenceSession>()), Times.Never);
@@ -1125,7 +1117,7 @@ public class PersistenceSessionsServiceTests
                     .Callback<DomainPersistenceSession>(s => savedSession = s)
                     .Returns(Task.CompletedTask);
 
-        await _subject.HandleSaveAsync("raw-key", "session-1", rawJson);
+        await _subject.HandleSaveAsync("raw-key", "session-1", JsonToDict(rawJson));
 
         savedSession.Should().NotBeNull();
         savedSession!.Key.Should().Be("raw-key");
@@ -1189,7 +1181,7 @@ public class PersistenceSessionsServiceTests
                     .Callback<DomainPersistenceSession>(s => savedSession = s)
                     .Returns(Task.CompletedTask);
 
-        await _subject.HandleSaveAsync("sqf-key", "session-id", sqfPayload);
+        await _subject.HandleSaveAsync("sqf-key", "session-id", SqfToDict(sqfPayload));
 
         savedSession.Should().NotBeNull();
         savedSession!.Key.Should().Be("sqf-key");
@@ -1209,8 +1201,10 @@ public class PersistenceSessionsServiceTests
     [Fact]
     public async Task HandleSaveAsync_WithMalformedSqfPayload_DoesNotSave()
     {
-        // Unterminated string in pair-list — parser must throw FormatException, handler must catch.
-        await _subject.HandleSaveAsync("bad-sqf-key", string.Empty, "[[\"key\",\"unterminated]");
+        // Parser throws FormatException for unterminated string. Caller (controller)
+        // catches at parse time, but cover the SqfToDict helper path here directly.
+        Action act = () => SqfToDict("[[\"key\",\"unterminated]");
+        act.Should().Throw<FormatException>();
 
         _mockContext.Verify(x => x.Add(It.IsAny<DomainPersistenceSession>()), Times.Never);
         _mockContext.Verify(x => x.Replace(It.IsAny<DomainPersistenceSession>()), Times.Never);

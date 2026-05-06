@@ -4,7 +4,7 @@ namespace UKSF.Api.ArmaMissions;
 
 public static class ApiArmaMissionsExtensions
 {
-    private extension(IServiceCollection services)
+    extension(IServiceCollection services)
     {
         public IServiceCollection AddUksfArmaMissions()
         {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using MassTransit;
 using MongoDB.Driver;
@@ -5,6 +6,7 @@ using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core;
+using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
 namespace UKSF.Api.ArmaServer.Services;
 
@@ -75,45 +77,26 @@ public class GameServerEventHandler(
             return;
         }
 
+        // Each event in the buffer is a parsed hashmap (List<object> pair-list normalised
+        // to Dictionary<string,object>). Re-serialise to JSON for the BsonDocument-based
+        // batch consumer, which already expects JSON strings.
         var events = new List<string>();
-        if (data.TryGetValue("events", out var eventsObj) && eventsObj is JsonElement jsonElement)
+        if (data.TryGetValue("events", out var eventsObj) && eventsObj is List<object> eventList)
         {
-            events.EnsureCapacity(jsonElement.GetArrayLength());
-            foreach (var element in jsonElement.EnumerateArray())
+            events.EnsureCapacity(eventList.Count);
+            foreach (var entry in eventList)
             {
-                events.Add(element.GetRawText());
+                events.Add(JsonSerializer.Serialize(entry));
             }
         }
 
         var receivedAt = DateTime.UtcNow;
         var enqueueAt = receivedAt;
-        if (data.TryGetValue("enqueueAt", out var enqueueAtValue) && enqueueAtValue is not null)
+        if (data.TryGetValue("enqueueAt", out var enqueueAtValue) &&
+            enqueueAtValue is string enqueueAtString &&
+            DateTime.TryParse(enqueueAtString, null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsedEnqueue))
         {
-            if (enqueueAtValue is DateTime dt)
-            {
-                enqueueAt = dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
-            }
-            else if (enqueueAtValue is JsonElement enqueueElement &&
-                     enqueueElement.ValueKind == JsonValueKind.String &&
-                     DateTime.TryParse(
-                         enqueueElement.GetString(),
-                         null,
-                         System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
-                         out var parsedEnqueue
-                     ))
-            {
-                enqueueAt = parsedEnqueue;
-            }
-            else if (enqueueAtValue is string s &&
-                     DateTime.TryParse(
-                         s,
-                         null,
-                         System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
-                         out var parsedString
-                     ))
-            {
-                enqueueAt = parsedString;
-            }
+            enqueueAt = parsedEnqueue;
         }
 
         await publishEndpoint.Publish(
@@ -195,21 +178,16 @@ public class GameServerEventHandler(
             return;
         }
 
-        var serverFps = new List<int>();
-        if (data.TryGetValue("server", out var serverValue) && serverValue is JsonElement serverElement && serverElement.ValueKind == JsonValueKind.Array)
-        {
-            serverFps = serverElement.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Number).Select(e => e.GetInt32()).ToList();
-        }
+        var serverFps = ToIntList(data.GetValueOrDefault("server"));
 
         var headlessClients = new List<HeadlessClientPerformance>();
-        if (data.TryGetValue("headlessClients", out var hcValue) && hcValue is JsonElement hcElement && hcElement.ValueKind == JsonValueKind.Array)
+        if (data.TryGetValue("headlessClients", out var hcValue) && hcValue is List<object> hcList)
         {
-            foreach (var hc in hcElement.EnumerateArray())
+            foreach (var entry in hcList)
             {
-                var name = hc.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : string.Empty;
-                var fps = hc.TryGetProperty("fps", out var fpsProp) && fpsProp.ValueKind == JsonValueKind.Array
-                    ? fpsProp.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Number).Select(e => e.GetInt32()).ToList()
-                    : [];
+                var hc = ToDict(entry);
+                var name = hc.GetValueOrDefault("name")?.ToString() ?? string.Empty;
+                var fps = ToIntList(hc.GetValueOrDefault("fps"));
                 if (!string.IsNullOrEmpty(name) && fps.Count > 0)
                 {
                     headlessClients.Add(new HeadlessClientPerformance { Name = name, Fps = fps });
@@ -218,14 +196,13 @@ public class GameServerEventHandler(
         }
 
         var players = new List<PlayerPerformance>();
-        if (data.TryGetValue("players", out var playersValue) && playersValue is JsonElement playersElement && playersElement.ValueKind == JsonValueKind.Array)
+        if (data.TryGetValue("players", out var playersValue) && playersValue is List<object> playerList)
         {
-            foreach (var player in playersElement.EnumerateArray())
+            foreach (var entry in playerList)
             {
-                var uid = player.TryGetProperty("uid", out var uidProp) ? uidProp.GetString() : string.Empty;
-                var fps = player.TryGetProperty("fps", out var fpsProp) && fpsProp.ValueKind == JsonValueKind.Array
-                    ? fpsProp.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Number).Select(e => e.GetInt32()).ToList()
-                    : [];
+                var player = ToDict(entry);
+                var uid = player.GetValueOrDefault("uid")?.ToString() ?? string.Empty;
+                var fps = ToIntList(player.GetValueOrDefault("fps"));
                 if (!string.IsNullOrEmpty(uid) && fps.Count > 0)
                 {
                     players.Add(new PlayerPerformance { Uid = uid, Fps = fps });
@@ -240,17 +217,34 @@ public class GameServerEventHandler(
     {
         var key = data.GetValueOrDefault("key")?.ToString() ?? string.Empty;
         var sessionId = data.GetValueOrDefault("sessionId")?.ToString() ?? string.Empty;
-        var json = data.GetValueOrDefault("data")?.ToString() ?? string.Empty;
+        var sessionData = data.GetValueOrDefault("data");
 
-        logger.LogInfo($"persistence_save received: key='{key}', sessionId='{sessionId}', dataLen={json.Length}, dataKeys=[{string.Join(",", data.Keys)}]");
+        logger.LogInfo($"persistence_save received: key='{key}', sessionId='{sessionId}', dataKeys=[{string.Join(",", data.Keys)}]");
 
-        if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(json))
+        if (string.IsNullOrEmpty(key) || sessionData is null)
         {
-            logger.LogWarning($"persistence_save event missing key or data (key='{key}', dataLength={json.Length})");
+            logger.LogWarning($"persistence_save event missing key or data (key='{key}', hasData={sessionData is not null})");
             return;
         }
 
-        await persistenceSessionsService.HandleSaveAsync(key, sessionId, json);
+        await persistenceSessionsService.HandleSaveAsync(key, sessionId, sessionData);
         logger.LogInfo($"persistence_save handled: key='{key}'");
+    }
+
+    private static List<int> ToIntList(object value)
+    {
+        if (value is not List<object> list) return [];
+        var result = new List<int>(list.Count);
+        foreach (var entry in list)
+        {
+            switch (entry)
+            {
+                case long l:   result.Add((int)l); break;
+                case int i:    result.Add(i); break;
+                case double d: result.Add((int)d); break;
+            }
+        }
+
+        return result;
     }
 }

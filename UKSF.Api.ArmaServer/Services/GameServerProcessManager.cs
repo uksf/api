@@ -1,15 +1,16 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net.Http.Headers;
-using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Parsing;
 using UKSF.Api.ArmaServer.Signalr.Clients;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Processes;
 using UKSF.Api.Core.Services;
+using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
 namespace UKSF.Api.ArmaServer.Services;
 
@@ -302,8 +303,9 @@ public class GameServerProcessManager(
         try
         {
             using var client = httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            var content = new StringContent("{\"type\":\"shutdown\"}", System.Text.Encoding.UTF8, "application/json");
+            // Game-side handleCommand expects an SQF array envelope; the extension
+            // forwards the body to the game callback verbatim.
+            var content = new StringContent("[\"shutdown\"]", System.Text.Encoding.UTF8, "text/plain");
             await client.PostAsync($"http://localhost:{port}/command", content);
         }
         catch (HttpRequestException ex)
@@ -429,20 +431,13 @@ public class GameServerProcessManager(
 
             if (data.TryGetValue("map", out var map)) status.Map = map.ToString();
             if (data.TryGetValue("mission", out var mission)) status.Mission = mission.ToString();
-            if (data.TryGetValue("players", out var players))
+            if (data.TryGetValue("players", out var players) && players is List<object> playersList)
             {
-                if (players is JsonElement playersElement && playersElement.ValueKind == JsonValueKind.Array)
-                {
-                    status.Players = playersElement.EnumerateArray().Select(e => e.GetString()).Where(s => s is not null).ToList();
-                }
-                else
-                {
-                    logger.LogWarning($"server_status players field is {players?.GetType().Name ?? "null"}, not JsonElement array. Value: {players}");
-                }
+                status.Players = playersList.OfType<string>().ToList();
             }
             else
             {
-                logger.LogWarning($"server_status event missing 'players' key. Keys: {string.Join(", ", data.Keys)}");
+                logger.LogWarning($"server_status 'players' missing or not a list. Keys: {string.Join(", ", data.Keys)}");
             }
 
             if (data.TryGetValue("uptime", out var uptime) &&
@@ -475,6 +470,46 @@ public class GameServerProcessManager(
         }
     }
 
+    private void ApplyPolledStatus(DomainGameServer gameServer, string sqfBody)
+    {
+        // Body is engine-native SQF str() of the server_status data hashmap (pair-list).
+        // Parse to a Dictionary<string,object> then map fields onto the in-memory status.
+        Dictionary<string, object> polled;
+        try
+        {
+            polled = ToDict(SqfNotationParser.ParseAndNormalize(sqfBody));
+        }
+        catch (FormatException exception)
+        {
+            logger.LogWarning($"Failed to parse polled server status SQF for '{gameServer.Name}': {exception.Message}");
+            return;
+        }
+
+        if (polled.TryGetValue("map", out var map)) gameServer.Status.Map = map?.ToString();
+        if (polled.TryGetValue("mission", out var mission)) gameServer.Status.Mission = mission?.ToString();
+        if (polled.TryGetValue("players", out var players) && players is List<object> playersList)
+        {
+            gameServer.Status.Players = playersList.OfType<string>().ToList();
+        }
+
+        if (polled.TryGetValue("uptime", out var uptime) &&
+            float.TryParse(uptime?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var uptimeValue))
+        {
+            gameServer.Status.Uptime = uptimeValue;
+            gameServer.Status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(uptimeValue)).ToString();
+        }
+
+        if (polled.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount?.ToString(), out var entityCountValue))
+            gameServer.Status.EntityCount = entityCountValue;
+        if (polled.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount?.ToString(), out var aiCountValue)) gameServer.Status.AiCount = aiCountValue;
+        if (polled.TryGetValue("headlessClientCount", out var headlessClientCount) &&
+            int.TryParse(headlessClientCount?.ToString(), out var headlessClientCountValue)) gameServer.Status.HeadlessClientCount = headlessClientCountValue;
+
+        gameServer.Status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
+        gameServer.Status.Running = true;
+        gameServer.Status.Launching = false;
+    }
+
     private async Task UpdateServerStatus(DomainGameServer gameServer, IReadOnlyList<ProcessCommandLineInfo> armaProcesses)
     {
         var matchingProcess = FindMatchingServerProcess(gameServer, armaProcesses);
@@ -499,7 +534,7 @@ public class GameServerProcessManager(
         gameServer.Status.Launching = true;
 
         using var client = httpClientFactory.CreateClient();
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
         client.Timeout = TimeSpan.FromSeconds(5);
         try
         {
@@ -521,18 +556,7 @@ public class GameServerProcessManager(
             else
             {
                 var content = await response.Content.ReadAsStringAsync();
-                var polled = JsonSerializer.Deserialize<GameServerStatus>(content, DefaultJsonSerializerOptions.Options);
-                gameServer.Status.Map = polled.Map;
-                gameServer.Status.Mission = polled.Mission;
-                gameServer.Status.Players = polled.Players;
-                gameServer.Status.Uptime = polled.Uptime;
-                gameServer.Status.EntityCount = polled.EntityCount;
-                gameServer.Status.AiCount = polled.AiCount;
-                gameServer.Status.HeadlessClientCount = polled.HeadlessClientCount;
-                gameServer.Status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(polled.Uptime)).ToString();
-                gameServer.Status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
-                gameServer.Status.Running = true;
-                gameServer.Status.Launching = false;
+                ApplyPolledStatus(gameServer, content);
             }
         }
         catch (HttpRequestException)

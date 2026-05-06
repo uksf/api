@@ -88,7 +88,8 @@ public class PersistenceProfileE2eTests
         mockLogger.Setup(x => x.LogWarning(It.IsAny<string>())).Callback<string>(loggerErrors.Add);
 
         var service = new PersistenceSessionsService(mockContext.Object, mockLogger.Object);
-        await service.HandleSaveAsync(key!, sessionId!, payload!);
+        var sessionDict = ToDict(SqfNotationParser.ParseAndNormalize(payload!));
+        await service.HandleSaveAsync(key!, sessionId!, sessionDict);
 
         loggerErrors.Should().BeEmpty("HandleSaveAsync must not log errors or warnings on a real profile snapshot");
         captured.Should().NotBeNull("HandleSaveAsync must persist the session");

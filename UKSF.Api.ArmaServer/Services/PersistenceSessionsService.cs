@@ -1,8 +1,6 @@
-using System.Text.Json;
 using UKSF.Api.ArmaServer.Converters;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models.Persistence;
-using UKSF.Api.ArmaServer.Parsing;
 using UKSF.Api.Core;
 using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
@@ -12,31 +10,11 @@ public interface IPersistenceSessionsService
 {
     DomainPersistenceSession Load(string key);
     Task SaveAsync(string key, DomainPersistenceSession session, string sessionId = "");
-    Task HandleSaveAsync(string key, string sessionId, string json);
+    Task HandleSaveAsync(string key, string sessionId, object sessionData);
 }
 
 public class PersistenceSessionsService(IPersistenceSessionsContext context, IUksfLogger logger) : IPersistenceSessionsService
 {
-    // Dedicated options for persistence deserialization.
-    // Uses PersistenceTypeConverter to unwrap JsonElement → native .NET types in object fields.
-    // Does NOT use InferredTypeConverter (would convert date-like strings to DateTime)
-    // Does NOT use DictionaryKeyPolicy (would mutate CustomData keys)
-    internal static readonly JsonSerializerOptions SerializerOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        Converters =
-        {
-            new PersistenceTypeConverter(),
-            new WoundEntryConverter(),
-            new MedicationEntryConverter(),
-            new OccludedMedicationEntryConverter(),
-            new IvBagEntryConverter(),
-            new TriageCardEntryConverter(),
-            new MedicalLogCategoryConverter(),
-            new MedicalLogEntryConverter()
-        }
-    };
-
     public DomainPersistenceSession Load(string key)
     {
         return context.GetSingle(x => x.Key == key);
@@ -76,11 +54,18 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
         }
     }
 
-    public async Task HandleSaveAsync(string key, string sessionId, string payload)
+    public async Task HandleSaveAsync(string key, string sessionId, object sessionData)
     {
         try
         {
-            var session = ParsePayload(payload);
+            var rawDict = ToDict(sessionData);
+            if (rawDict.Count == 0)
+            {
+                logger.LogWarning($"persistence_save data was empty for key '{key}'");
+                return;
+            }
+
+            var session = PersistenceConverter.FromHashmap(rawDict);
             if (session is not null)
             {
                 await SaveAsync(key, session, sessionId);
@@ -90,32 +75,9 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
                 logger.LogWarning($"Failed to deserialize persistence session for key '{key}'");
             }
         }
-        catch (Exception exception) when (exception is JsonException or FormatException)
+        catch (FormatException exception)
         {
             logger.LogError($"Failed to deserialize persistence session for key '{key}'", exception);
         }
-    }
-
-    private static DomainPersistenceSession ParsePayload(string payload)
-    {
-        // SQF `str` output of the session HashMap starts with '['.
-        // Legacy JSON object payload starts with '{'.
-        // Skip leading whitespace before deciding.
-        var firstNonWs = payload.AsSpan().TrimStart();
-        if (firstNonWs.IsEmpty) return null;
-
-        if (firstNonWs[0] == '[')
-        {
-            var raw = ToDict(SqfNotationParser.ParseAndNormalize(payload));
-            return PersistenceConverter.FromHashmap(raw);
-        }
-
-        var rawDict = JsonSerializer.Deserialize<Dictionary<string, object>>(payload, SerializerOptions);
-        if (rawDict is not null && rawDict.ContainsKey("mapMarkers"))
-        {
-            return PersistenceConverter.FromHashmap(rawDict);
-        }
-
-        return JsonSerializer.Deserialize<DomainPersistenceSession>(payload, SerializerOptions);
     }
 }

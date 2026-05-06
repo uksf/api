@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -9,11 +8,12 @@ using MassTransit;
 using MongoDB.Driver;
 using Moq;
 using UKSF.Api.ArmaServer.Consumers;
+using UKSF.Api.ArmaServer.Converters;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Parsing;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
-using UKSF.Api.Core.Converters;
 using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Services;
@@ -40,6 +40,22 @@ public class GameServerEventHandlerTests
             _mockPersistenceSessionsService.Object,
             _mockLogger.Object
         );
+    }
+
+    /// <summary>
+    /// Mirrors the controller's parse-and-bind step: takes an SQF wire body
+    /// (the engine-native str() output of `[type, data]`) and produces the
+    /// GameServerEvent shape the handler receives in production.
+    /// </summary>
+    private static GameServerEvent EventFromSqf(string sqfBody, int apiPort = 2303)
+    {
+        var parsed = (List<object>)SqfNotationParser.ParseAndNormalize(sqfBody);
+        return new GameServerEvent
+        {
+            Type = (string)parsed[0],
+            ApiPort = apiPort,
+            Data = PersistenceConversionHelpers.ToDict(parsed[1])
+        };
     }
 
     [Fact]
@@ -124,29 +140,14 @@ public class GameServerEventHandlerTests
     [Fact]
     public async Task HandleEventAsync_Performance_PassesParsedDataToPerformanceService()
     {
-        const string json = """
-                            {
-                                "apiPort": 2303,
-                                "type": "performance",
-                                "data": {
-                                    "sessionId": "test-session-id",
-                                    "timestamp": "2026-04-04T18:15:17Z",
-                                    "server": [60, 59, 61],
-                                    "headlessClients": [{"name": "HC1", "fps": [55, 56]}],
-                                    "players": [{"uid": "76561198000000000", "fps": [70, 72]}]
-                                }
-                            }
-                            """;
-
-        var options = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            PropertyNameCaseInsensitive = true,
-            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
-            Converters = { new InferredTypeConverter() }
-        };
-
-        var evt = JsonSerializer.Deserialize<GameServerEvent>(json, options);
+        const string sqf = "[\"performance\",[" +
+                           "[\"sessionId\",\"test-session-id\"]," +
+                           "[\"timestamp\",\"2026-04-04T18:15:17Z\"]," +
+                           "[\"server\",[60,59,61]]," +
+                           "[\"headlessClients\",[[[\"name\",\"HC1\"],[\"fps\",[55,56]]]]]," +
+                           "[\"players\",[[[\"uid\",\"76561198000000000\"],[\"fps\",[70,72]]]]]" +
+                           "]]";
+        var evt = EventFromSqf(sqf);
 
         await _sut.HandleEventAsync(evt);
 
@@ -188,28 +189,14 @@ public class GameServerEventHandlerTests
             _mockLogger.Object
         );
 
-        const string json = """
-                            {
-                                "apiPort": 2303,
-                                "type": "performance",
-                                "data": {
-                                    "sessionId": "test-session-id",
-                                    "timestamp": "2026-04-04T18:15:17Z",
-                                    "server": [60, 59, 61],
-                                    "headlessClients": [{"name": "HC1", "fps": [55, 56]}],
-                                    "players": [{"uid": "76561198000000000", "fps": [70, 72]}]
-                                }
-                            }
-                            """;
-
-        var options = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            PropertyNameCaseInsensitive = true,
-            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
-            Converters = { new InferredTypeConverter() }
-        };
-        var evt = JsonSerializer.Deserialize<GameServerEvent>(json, options);
+        const string sqf = "[\"performance\",[" +
+                           "[\"sessionId\",\"test-session-id\"]," +
+                           "[\"timestamp\",\"2026-04-04T18:15:17Z\"]," +
+                           "[\"server\",[60,59,61]]," +
+                           "[\"headlessClients\",[[[\"name\",\"HC1\"],[\"fps\",[55,56]]]]]," +
+                           "[\"players\",[[[\"uid\",\"76561198000000000\"],[\"fps\",[70,72]]]]]" +
+                           "]]";
+        var evt = EventFromSqf(sqf);
 
         await sut.HandleEventAsync(evt);
 
@@ -226,28 +213,13 @@ public class GameServerEventHandlerTests
     [Fact]
     public async Task HandleEventAsync_MissionStatsWithoutEnqueueAt_FallsBackToReceivedAt()
     {
-        const string json = """
-                            {
-                                "apiPort": 2303,
-                                "type": "mission_stats",
-                                "data": {
-                                    "sessionId": "session-x",
-                                    "mission": "m",
-                                    "map": "k",
-                                    "events": [{"type":"shot","uid":"u1"}]
-                                }
-                            }
-                            """;
-
-        var options = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            PropertyNameCaseInsensitive = true,
-            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
-            Converters = { new InferredTypeConverter() }
-        };
-
-        var evt = JsonSerializer.Deserialize<GameServerEvent>(json, options);
+        const string sqf = "[\"mission_stats\",[" +
+                           "[\"sessionId\",\"session-x\"]," +
+                           "[\"mission\",\"m\"]," +
+                           "[\"map\",\"k\"]," +
+                           "[\"events\",[[[\"type\",\"shot\"],[\"uid\",\"u1\"]]]]" +
+                           "]]";
+        var evt = EventFromSqf(sqf);
 
         ProcessMissionStatsBatch published = null;
         _mockPublishEndpoint.Setup(x => x.Publish(It.IsAny<ProcessMissionStatsBatch>(), It.IsAny<CancellationToken>()))
@@ -263,29 +235,15 @@ public class GameServerEventHandlerTests
     [Fact]
     public async Task HandleEventAsync_MissionStatsWithEnqueueAt_PreservesIt()
     {
-        const string json = """
-                            {
-                                "apiPort": 2303,
-                                "type": "mission_stats",
-                                "data": {
-                                    "sessionId": "session-x",
-                                    "mission": "m",
-                                    "map": "k",
-                                    "enqueueAt": "2026-04-25T18:00:00.000Z",
-                                    "events": [{"type":"shot","uid":"u1"}]
-                                }
-                            }
-                            """;
-
-        var options = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            PropertyNameCaseInsensitive = true,
-            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
-            Converters = { new InferredTypeConverter() }
-        };
-
-        var evt = JsonSerializer.Deserialize<GameServerEvent>(json, options);
+        const string sqf = "[\"mission_stats\",[" +
+                           "[\"sessionId\",\"session-x\"]," +
+                           "[\"mission\",\"m\"]," +
+                           "[\"map\",\"k\"]," +
+                           "[\"events\",[[[\"type\",\"shot\"],[\"uid\",\"u1\"]]]]" +
+                           "]]";
+        var evt = EventFromSqf(sqf);
+        // Mirror the controller's header-injection step.
+        evt.Data["enqueueAt"] = "2026-04-25T18:00:00.000Z";
 
         ProcessMissionStatsBatch published = null;
         _mockPublishEndpoint.Setup(x => x.Publish(It.IsAny<ProcessMissionStatsBatch>(), It.IsAny<CancellationToken>()))
