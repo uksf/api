@@ -1199,14 +1199,14 @@ public class PersistenceSessionsServiceTests
     }
 
     [Fact]
-    public async Task HandleSaveAsync_WithMalformedSqfPayload_DoesNotSave()
+    public async Task HandleSaveAsync_WithUnexpectedDataType_LogsErrorAndDoesNotSave()
     {
-        // Parser throws FormatException for unterminated string. Caller (controller)
-        // catches at parse time, but cover the SqfToDict helper path here directly.
-        Action act = () => SqfToDict("[[\"key\",\"unterminated]");
-        act.Should().Throw<FormatException>();
+        // sessionData should be a hashmap (Dict / pair-list). Anything else means the
+        // wire contract drifted — must be loud, not a silent empty-save warning.
+        await _subject.HandleSaveAsync("bad-key", string.Empty, 42L);
 
         _mockContext.Verify(x => x.Add(It.IsAny<DomainPersistenceSession>()), Times.Never);
         _mockContext.Verify(x => x.Replace(It.IsAny<DomainPersistenceSession>()), Times.Never);
+        _mockLogger.Verify(x => x.LogError(It.Is<string>(s => s.Contains("unexpected type") && s.Contains("bad-key")), It.IsAny<Exception>()), Times.Once);
     }
 }

@@ -13,7 +13,13 @@ namespace UKSF.Api.ArmaServer.Controllers;
 [LocalhostOnly]
 public class GameServerEventsController(IGameServerEventHandler eventHandler, IUksfLogger logger) : ControllerBase
 {
+    // Loopback-only endpoint receiving SQF event bodies from the extension.
+    // persistence_save payloads can grow into the tens-of-MB range for large
+    // sessions; default Kestrel cap (30MB) would 413 silently before the
+    // controller is reached and the extension's fire-and-forget retry would
+    // eventually drop the event. Lift the cap to keep large saves intact.
     [HttpPost]
+    [DisableRequestSizeLimit]
     public async Task<IActionResult> ReceiveEvent()
     {
         // Wire format is engine-native SQF str() output: `[<type>,<data>]`.
@@ -53,8 +59,15 @@ public class GameServerEventsController(IGameServerEventHandler eventHandler, IU
         }
 
         // Inject enqueueAt into data so existing handler logic continues to read it from there.
+        // The header is the source of truth (extension stamps at queue time); warn loudly if the
+        // game side ever sends its own value so a contract drift doesn't slip through silently.
         if (!string.IsNullOrEmpty(enqueueAt))
         {
+            if (data.ContainsKey("enqueueAt"))
+            {
+                logger.LogWarning($"SQF payload already contains 'enqueueAt' for type '{type}'; overwriting with header value");
+            }
+
             data["enqueueAt"] = enqueueAt;
         }
 

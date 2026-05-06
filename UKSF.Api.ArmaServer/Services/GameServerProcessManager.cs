@@ -472,6 +472,13 @@ public class GameServerProcessManager(
 
     private void ApplyPolledStatus(DomainGameServer gameServer, string sqfBody)
     {
+        // Empty body during the boot race (extension up but no server_status seen yet)
+        // is expected — treat as "no data, try again next poll" rather than parse failure.
+        if (string.IsNullOrWhiteSpace(sqfBody))
+        {
+            return;
+        }
+
         // Body is engine-native SQF str() of the server_status data hashmap (pair-list).
         // Parse to a Dictionary<string,object> then map fields onto the in-memory status.
         Dictionary<string, object> polled;

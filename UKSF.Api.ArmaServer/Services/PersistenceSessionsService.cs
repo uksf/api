@@ -56,6 +56,17 @@ public class PersistenceSessionsService(IPersistenceSessionsContext context, IUk
 
     public async Task HandleSaveAsync(string key, string sessionId, object sessionData)
     {
+        // Fail loud on shape drift: ToDict's catch-all silently returns an empty dict for any
+        // unexpected type. Type-narrow first so a wire mismatch can't masquerade as "empty save".
+        if (sessionData is not Dictionary<string, object> and not List<object>)
+        {
+            logger.LogError(
+                $"persistence_save data has unexpected type '{sessionData?.GetType().FullName ?? "null"}' for key '{key}'",
+                new InvalidOperationException("persistence_save data must be a hashmap (dict or pair-list)")
+            );
+            return;
+        }
+
         try
         {
             var rawDict = ToDict(sessionData);
