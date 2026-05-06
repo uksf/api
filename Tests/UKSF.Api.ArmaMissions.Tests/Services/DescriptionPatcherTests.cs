@@ -90,6 +90,95 @@ public class DescriptionPatcherTests
     }
 
     [Fact]
+    public void Patch_RemovesScalarEnableDebugConsoleLine()
+    {
+        var context = CreateContext(
+            [
+                "    maxPlayers = 10;",
+                "    enableDebugConsole = 1;",
+                "    author = \"UKSF\";"
+            ]
+        );
+
+        _subject.Patch(context);
+
+        context.Description.Lines.Should().NotContain(l => l.Contains("enableDebugConsole"));
+        context.Description.Lines.Should().Contain("    author = \"UKSF\";");
+    }
+
+    [Fact]
+    public void Patch_RemovesScalarEnableDebugConsoleLine_CaseInsensitive()
+    {
+        var context = CreateContext(
+            [
+                "    maxPlayers = 10;",
+                "    EnableDebugConsole = 2;"
+            ]
+        );
+
+        _subject.Patch(context);
+
+        context.Description.Lines.Should().NotContain(l => l.ToLowerInvariant().Contains("debugconsole"));
+    }
+
+    [Fact]
+    public void Patch_RemovesSingleLineEnableDebugConsoleArray()
+    {
+        var context = CreateContext(
+            [
+                "    maxPlayers = 10;",
+                "    enableDebugConsole[] = { \"76561198000000000\", \"76561198000000001\" };",
+                "    author = \"UKSF\";"
+            ]
+        );
+
+        _subject.Patch(context);
+
+        context.Description.Lines.Should().NotContain(l => l.Contains("enableDebugConsole"));
+        context.Description.Lines.Should().NotContain(l => l.Contains("76561198"));
+    }
+
+    [Fact]
+    public void Patch_RemovesMultiLineEnableDebugConsoleArray()
+    {
+        var context = CreateContext(
+            [
+                "    maxPlayers = 10;",
+                "    enableDebugConsole[] =",
+                "    {",
+                "        \"76561198000000000\",",
+                "        \"76561198000000001\"",
+                "    };",
+                "    author = \"UKSF\";"
+            ]
+        );
+
+        _subject.Patch(context);
+
+        context.Description.Lines.Should().NotContain(l => l.Contains("enableDebugConsole"));
+        context.Description.Lines.Should().NotContain(l => l.Contains("76561198"));
+        context.Description.Lines.Should().Contain("    author = \"UKSF\";");
+    }
+
+    [Fact]
+    public void Patch_UnterminatedEnableDebugConsoleBlock_LeavesLinesIntact()
+    {
+        var context = CreateContext(
+            [
+                "    maxPlayers = 10;",
+                "    enableDebugConsole[] =",
+                "    {",
+                "        \"76561198000000000\""
+            ]
+        );
+
+        _subject.Patch(context);
+
+        context.Description.Lines.Should().Contain(l => l.Contains("enableDebugConsole"));
+        context.Description.Lines.Should().Contain(l => l.Contains("maxPlayers"));
+    }
+
+    [Fact]
     public void Patch_RemovesLinesContainingExec()
     {
         var context = CreateContext(

@@ -30,6 +30,7 @@ public static class ApiArmaMissionsExtensions
                            .AddTransient<ISqmWriter, SqmWriter>()
                            .AddTransient<ISqmPatcher, SqmPatcher>()
                            .AddTransient<IHeadlessClientPatcher, HeadlessClientPatcher>()
+                           .AddTransient<IDebugConsoleStripper, DebugConsoleStripper>()
                            .AddTransient<IDescriptionReader, DescriptionReader>()
                            .AddTransient<IDescriptionWriter, DescriptionWriter>()
                            .AddTransient<IDescriptionPatcher, DescriptionPatcher>()

@@ -58,6 +58,7 @@ public class MissionPatchingIntegrationTests : IDisposable
         var settingsReader = new SettingsReader();
 
         var headlessClientPatcher = new HeadlessClientPatcher(_mockVariablesService.Object);
+        var debugConsoleStripper = new DebugConsoleStripper();
 
         _service = new MissionPatchingService(
             pboHandler,
@@ -71,6 +72,7 @@ public class MissionPatchingIntegrationTests : IDisposable
             patchDataBuilder,
             _mockDecompiler.Object,
             headlessClientPatcher,
+            debugConsoleStripper,
             _mockLogger.Object
         );
     }

@@ -23,6 +23,7 @@ public class MissionPatchingService(
     IPatchDataBuilder patchDataBuilder,
     ISqmDecompiler sqmDecompiler,
     IHeadlessClientPatcher headlessClientPatcher,
+    IDebugConsoleStripper debugConsoleStripper,
     IUksfLogger logger
 ) : IMissionPatchingService
 {
@@ -60,6 +61,7 @@ public class MissionPatchingService(
             }
 
             headlessClientPatcher.Patch(context);
+            debugConsoleStripper.Patch(context);
 
             sqmReader.Read(context);
 

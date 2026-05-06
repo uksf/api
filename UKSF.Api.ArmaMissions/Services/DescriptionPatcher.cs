@@ -12,13 +12,43 @@ public interface IDescriptionPatcher
 
 public class DescriptionPatcher : IDescriptionPatcher
 {
+    private static readonly Regex EnableDebugConsoleStart = new(@"^\s*enableDebugConsole\s*(\[\])?\s*=", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     public void Patch(MissionPatchContext context)
     {
+        StripEnableDebugConsole(context);
         PatchMaxPlayers(context);
         CheckRequiredDescriptionItems(context);
         CheckConfigurableDescriptionItems(context);
 
         context.Description.Lines = context.Description.Lines.Where(x => !x.Contains("__EXEC")).ToList();
+    }
+
+    private static void StripEnableDebugConsole(MissionPatchContext context)
+    {
+        var lines = context.Description.Lines;
+        var i = 0;
+        while (i < lines.Count)
+        {
+            if (!EnableDebugConsoleStart.IsMatch(lines[i]))
+            {
+                i++;
+                continue;
+            }
+
+            var end = i;
+            while (end < lines.Count && !lines[end].TrimEnd().EndsWith(";"))
+            {
+                end++;
+            }
+
+            if (end >= lines.Count)
+            {
+                return;
+            }
+
+            lines.RemoveRange(i, end - i + 1);
+        }
     }
 
     private static void PatchMaxPlayers(MissionPatchContext context)
