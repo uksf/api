@@ -13,12 +13,19 @@ namespace UKSF.Api.ArmaServer.Converters;
 /// </summary>
 public class WoundEntryConverter : JsonConverter<WoundEntry>
 {
-    // SQF: [classComplex, amountOf, bleedingRate, woundDamage]
+    // Supports two legacy SQF/JSON shapes:
+    //   array:  [classComplex, amountOf, bleedingRate, woundDamage]
+    //   object: { "classComplex":..., "amountOf":..., "bleedingRate":..., "woundDamage":... }
     public override WoundEntry Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
+        if (reader.TokenType == JsonTokenType.StartObject)
+        {
+            return ReadFromObject(ref reader);
+        }
+
         if (reader.TokenType != JsonTokenType.StartArray)
         {
-            throw new JsonException($"Expected StartArray for WoundEntry, got {reader.TokenType}");
+            throw new JsonException($"Expected StartArray or StartObject for WoundEntry, got {reader.TokenType}");
         }
 
         reader.Read();
@@ -38,6 +45,27 @@ public class WoundEntryConverter : JsonConverter<WoundEntry>
             BleedingRate = bleedingRate,
             WoundDamage = woundDamage
         };
+    }
+
+    private static WoundEntry ReadFromObject(ref Utf8JsonReader reader)
+    {
+        var entry = new WoundEntry();
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+        {
+            if (reader.TokenType != JsonTokenType.PropertyName) continue;
+            var name = reader.GetString();
+            reader.Read();
+            switch (name?.ToLowerInvariant())
+            {
+                case "classcomplex": entry.ClassComplex = reader.GetInt32(); break;
+                case "amountof":     entry.AmountOf = reader.GetInt32(); break;
+                case "bleedingrate": entry.BleedingRate = reader.GetDouble(); break;
+                case "wounddamage":  entry.WoundDamage = reader.GetDouble(); break;
+                default:             reader.Skip(); break;
+            }
+        }
+
+        return entry;
     }
 
     public override void Write(Utf8JsonWriter writer, WoundEntry value, JsonSerializerOptions options)
@@ -226,12 +254,19 @@ public class TriageCardEntryConverter : JsonConverter<TriageCardEntry>
 
 public class MedicalLogCategoryConverter : JsonConverter<MedicalLogCategory>
 {
-    // SQF: [varName, [[message, timeStamp, arguments, logType], ...]]
+    // SQF (current): [varName, [[message, timeStamp, arguments, logType], ...]]
+    // Legacy A:      { "logType": "...", "entries": [...] }                    — named-object shape
+    // Legacy B:      { "logType": {<arbitrary metadata>}, ... }                — corrupted historic shape; skip
     public override MedicalLogCategory Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
+        if (reader.TokenType == JsonTokenType.StartObject)
+        {
+            return ReadFromObject(ref reader, options);
+        }
+
         if (reader.TokenType != JsonTokenType.StartArray)
         {
-            throw new JsonException($"Expected StartArray for MedicalLogCategory, got {reader.TokenType}");
+            throw new JsonException($"Expected StartArray or StartObject for MedicalLogCategory, got {reader.TokenType}");
         }
 
         reader.Read();
@@ -241,6 +276,36 @@ public class MedicalLogCategoryConverter : JsonConverter<MedicalLogCategory>
         WoundEntryConverter.DrainToEndArray(ref reader);
 
         return new MedicalLogCategory { LogType = logType, Entries = entries };
+    }
+
+    private static MedicalLogCategory ReadFromObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    {
+        var category = new MedicalLogCategory();
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+        {
+            if (reader.TokenType != JsonTokenType.PropertyName) continue;
+            var name = reader.GetString();
+            reader.Read();
+            switch (name?.ToLowerInvariant())
+            {
+                case "logtype":
+                    if (reader.TokenType == JsonTokenType.String)
+                    {
+                        category.LogType = reader.GetString() ?? string.Empty;
+                    }
+                    else
+                    {
+                        // Legacy B corrupted shape (logType is an object) — discard
+                        reader.Skip();
+                    }
+
+                    break;
+                case "entries": category.Entries = JsonSerializer.Deserialize<List<MedicalLogEntry>>(ref reader, options) ?? []; break;
+                default:        reader.Skip(); break;
+            }
+        }
+
+        return category;
     }
 
     public override void Write(Utf8JsonWriter writer, MedicalLogCategory value, JsonSerializerOptions options)
@@ -254,12 +319,18 @@ public class MedicalLogCategoryConverter : JsonConverter<MedicalLogCategory>
 
 public class MedicalLogEntryConverter : JsonConverter<MedicalLogEntry>
 {
-    // SQF: [message, timeStamp, arguments, logType]
+    // SQF (current): [message, timeStamp, arguments, logType]
+    // Legacy:        { "message":..., "timestamp":..., "arguments":[...], "logType":... }
     public override MedicalLogEntry Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
+        if (reader.TokenType == JsonTokenType.StartObject)
+        {
+            return ReadFromObject(ref reader, options);
+        }
+
         if (reader.TokenType != JsonTokenType.StartArray)
         {
-            throw new JsonException($"Expected StartArray for MedicalLogEntry, got {reader.TokenType}");
+            throw new JsonException($"Expected StartArray or StartObject for MedicalLogEntry, got {reader.TokenType}");
         }
 
         reader.Read();
@@ -279,6 +350,27 @@ public class MedicalLogEntryConverter : JsonConverter<MedicalLogEntry>
             Arguments = arguments,
             LogType = logType
         };
+    }
+
+    private static MedicalLogEntry ReadFromObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    {
+        var entry = new MedicalLogEntry();
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+        {
+            if (reader.TokenType != JsonTokenType.PropertyName) continue;
+            var name = reader.GetString();
+            reader.Read();
+            switch (name?.ToLowerInvariant())
+            {
+                case "message":   entry.Message = reader.GetString() ?? string.Empty; break;
+                case "timestamp": entry.Timestamp = reader.GetString() ?? string.Empty; break;
+                case "arguments": entry.Arguments = JsonSerializer.Deserialize<List<string>>(ref reader, options) ?? []; break;
+                case "logtype":   entry.LogType = reader.GetString() ?? string.Empty; break;
+                default:          reader.Skip(); break;
+            }
+        }
+
+        return entry;
     }
 
     public override void Write(Utf8JsonWriter writer, MedicalLogEntry value, JsonSerializerOptions options)

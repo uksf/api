@@ -72,18 +72,18 @@ public class PersistenceTypeConverterTests
     }
 
     [Fact]
-    public void Deserialize_EmptyArray_ReturnsEmptyObjectArray()
+    public void Deserialize_EmptyArray_ReturnsEmptyList()
     {
         var result = JsonSerializer.Deserialize<object>("[]", Options);
-        result.Should().BeOfType<object[]>();
-        ((object[])result).Should().BeEmpty();
+        result.Should().BeOfType<List<object>>();
+        ((List<object>)result).Should().BeEmpty();
     }
 
     [Fact]
     public void Deserialize_MixedArray_PreservesTypes()
     {
         var result = JsonSerializer.Deserialize<object>("""["ACRE_PRC343",8,0.8,true,null]""", Options);
-        var arr = result.Should().BeOfType<object[]>().Subject;
+        var arr = result.Should().BeOfType<List<object>>().Subject;
         arr[0].Should().BeOfType<string>().And.Be("ACRE_PRC343");
         arr[1].Should().BeOfType<long>().And.Be(8L);
         arr[2].Should().BeOfType<double>().And.Be(0.8);
@@ -92,12 +92,12 @@ public class PersistenceTypeConverterTests
     }
 
     [Fact]
-    public void Deserialize_NestedArray_ReturnsNestedObjectArrays()
+    public void Deserialize_NestedArray_ReturnsNestedLists()
     {
         var result = JsonSerializer.Deserialize<object>("""[[1,2],[3]]""", Options);
-        var outer = result.Should().BeOfType<object[]>().Subject;
+        var outer = result.Should().BeOfType<List<object>>().Subject;
         outer.Should().HaveCount(2);
-        var inner1 = outer[0].Should().BeOfType<object[]>().Subject;
+        var inner1 = outer[0].Should().BeOfType<List<object>>().Subject;
         inner1.Should().BeEquivalentTo(new object[] { 1L, 2L });
     }
 

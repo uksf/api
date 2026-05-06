@@ -9,16 +9,21 @@ namespace UKSF.Api.ArmaServer.Models.Persistence;
 /// </summary>
 public class AceMedicalState
 {
-    [JsonPropertyName("ace_medical_bloodVolume")]
+    // SQF identifiers are case-insensitive; BIS str() of a hashmap lowercases all keys.
+    // ACE medical state arrives from-game with lowercase compound names — match exactly
+    // so the load-path payload (built via JSON-serialise → re-deserialise as Dict) emits
+    // keys identical to the profile-side snapshot. Avoids spurious case mismatches in
+    // proofing comparison.
+    [JsonPropertyName("ace_medical_bloodvolume")]
     public double BloodVolume { get; set; }
 
-    [JsonPropertyName("ace_medical_heartRate")]
+    [JsonPropertyName("ace_medical_heartrate")]
     public double HeartRate { get; set; }
 
-    [JsonPropertyName("ace_medical_bloodPressure")]
+    [JsonPropertyName("ace_medical_bloodpressure")]
     public double[] BloodPressure { get; set; } = [];
 
-    [JsonPropertyName("ace_medical_peripheralResistance")]
+    [JsonPropertyName("ace_medical_peripheralresistance")]
     public double PeripheralResistance { get; set; }
 
     [JsonPropertyName("ace_medical_hemorrhage")]
@@ -27,19 +32,19 @@ public class AceMedicalState
     [JsonPropertyName("ace_medical_pain")]
     public double Pain { get; set; }
 
-    [JsonPropertyName("ace_medical_inPain")]
+    [JsonPropertyName("ace_medical_inpain")]
     public bool InPain { get; set; }
 
-    [JsonPropertyName("ace_medical_painSuppress")]
+    [JsonPropertyName("ace_medical_painsuppress")]
     public double PainSuppress { get; set; }
 
-    [JsonPropertyName("ace_medical_openWounds")]
+    [JsonPropertyName("ace_medical_openwounds")]
     public Dictionary<string, List<WoundEntry>> OpenWounds { get; set; } = new();
 
-    [JsonPropertyName("ace_medical_bandagedWounds")]
+    [JsonPropertyName("ace_medical_bandagedwounds")]
     public Dictionary<string, List<WoundEntry>> BandagedWounds { get; set; } = new();
 
-    [JsonPropertyName("ace_medical_stitchedWounds")]
+    [JsonPropertyName("ace_medical_stitchedwounds")]
     public Dictionary<string, List<WoundEntry>> StitchedWounds { get; set; } = new();
 
     [JsonPropertyName("ace_medical_fractures")]
@@ -48,25 +53,25 @@ public class AceMedicalState
     [JsonPropertyName("ace_medical_tourniquets")]
     public double[] Tourniquets { get; set; } = [];
 
-    [JsonPropertyName("ace_medical_bodyPartDamage")]
+    [JsonPropertyName("ace_medical_bodypartdamage")]
     public double[] BodyPartDamage { get; set; } = [];
 
     [JsonPropertyName("ace_medical_medications")]
     public List<MedicationEntry> Medications { get; set; } = [];
 
-    [JsonPropertyName("ace_medical_occludedMedications")]
+    [JsonPropertyName("ace_medical_occludedmedications")]
     public List<OccludedMedicationEntry> OccludedMedications { get; set; } = [];
 
-    [JsonPropertyName("ace_medical_ivBags")]
+    [JsonPropertyName("ace_medical_ivbags")]
     public List<IvBagEntry> IvBags { get; set; } = [];
 
-    [JsonPropertyName("ace_medical_triageLevel")]
+    [JsonPropertyName("ace_medical_triagelevel")]
     public double TriageLevel { get; set; }
 
-    [JsonPropertyName("ace_medical_triageCard")]
+    [JsonPropertyName("ace_medical_triagecard")]
     public List<TriageCardEntry> TriageCard { get; set; } = [];
 
-    [JsonPropertyName("ace_medical_statemachineState")]
+    [JsonPropertyName("ace_medical_statemachinestate")]
     public string StateMachineState { get; set; } = string.Empty;
 
     [JsonPropertyName("ace_medical_logs")]

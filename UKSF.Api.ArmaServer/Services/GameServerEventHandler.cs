@@ -25,20 +25,24 @@ public class GameServerEventHandler(
 {
     public async Task HandleEventAsync(GameServerEvent gameServerEvent)
     {
-        // Synthetic launches (config export, dev run) reuse the production -apiUrl pipeline so
-        // the engine emits server_status / shutdown_complete tagged with their reserved apiPorts.
-        // None of those ports map to a row in gameServers, so handling would only spam warnings.
-        if (SyntheticApiPorts.IsSynthetic(gameServerEvent.ApiPort))
-        {
-            return;
-        }
+        // Synthetic launches (config export, dev run) reuse the production -apiUrl pipeline.
+        // server_status / shutdown_complete reference a gameServers row keyed by apiPort and
+        // synthetic ports never have one — gate ONLY those two off. Other event types
+        // (mission_stats, performance, persistence_save, mission lifecycle, player presence)
+        // are content-driven and have no port dependency, so they should still flow through
+        // for synthetic runs (e.g. dev-test-server e2e validation of the persistence pipeline).
+        var isSynthetic = SyntheticApiPorts.IsSynthetic(gameServerEvent.ApiPort);
 
         try
         {
             switch (gameServerEvent.Type)
             {
-                case "server_status":       await processManager.HandleServerStatusAsync(gameServerEvent.ApiPort, gameServerEvent.Data); break;
-                case "shutdown_complete":   await processManager.HandleShutdownCompleteAsync(gameServerEvent.ApiPort); break;
+                case "server_status":
+                    if (!isSynthetic) await processManager.HandleServerStatusAsync(gameServerEvent.ApiPort, gameServerEvent.Data);
+                    break;
+                case "shutdown_complete":
+                    if (!isSynthetic) await processManager.HandleShutdownCompleteAsync(gameServerEvent.ApiPort);
+                    break;
                 case "mission_stats":       await HandleMissionStatsEvent(gameServerEvent.Data); break;
                 case "mission_started":     await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, true); break;
                 case "mission_ended":       await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, false); break;
@@ -238,6 +242,8 @@ public class GameServerEventHandler(
         var sessionId = data.GetValueOrDefault("sessionId")?.ToString() ?? string.Empty;
         var json = data.GetValueOrDefault("data")?.ToString() ?? string.Empty;
 
+        logger.LogInfo($"persistence_save received: key='{key}', sessionId='{sessionId}', dataLen={json.Length}, dataKeys=[{string.Join(",", data.Keys)}]");
+
         if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(json))
         {
             logger.LogWarning($"persistence_save event missing key or data (key='{key}', dataLength={json.Length})");
@@ -245,5 +251,6 @@ public class GameServerEventHandler(
         }
 
         await persistenceSessionsService.HandleSaveAsync(key, sessionId, json);
+        logger.LogInfo($"persistence_save handled: key='{key}'");
     }
 }

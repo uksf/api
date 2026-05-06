@@ -24,20 +24,20 @@ public sealed class PersistenceTypeConverter : JsonConverter<object>
         JsonSerializer.Serialize(writer, objectToWrite, objectToWrite.GetType(), options);
     }
 
-    private static object[] ReadArray(ref Utf8JsonReader reader, JsonSerializerOptions options)
+    private static List<object> ReadArray(ref Utf8JsonReader reader, JsonSerializerOptions options)
     {
         var list = new List<object>();
         while (reader.Read())
         {
             if (reader.TokenType == JsonTokenType.EndArray)
             {
-                return list.ToArray();
+                return list;
             }
 
             list.Add(ReadValue(ref reader, options));
         }
 
-        return list.ToArray();
+        return list;
     }
 
     private static Dictionary<string, object> ReadObject(ref Utf8JsonReader reader, JsonSerializerOptions options)

@@ -898,9 +898,9 @@ public class PersistenceSessionsServiceTests
     {
         var json = """
                    {
-                       "ace_medical_bloodVolume": 5.5,
-                       "ace_medical_heartRate": 90,
-                       "ace_medical_bloodPressure": [70, 110],
+                       "ace_medical_bloodvolume": 5.5,
+                       "ace_medical_heartrate": 90,
+                       "ace_medical_bloodpressure": [70, 110],
                        "ace_medical_future_field": [1, 2, 3],
                        "ace_medical_another_new_thing": "test"
                    }

@@ -88,14 +88,17 @@ public static class PersistenceLoadoutConverter
             return new ContainerSlot();
         }
 
-        return new ContainerSlot { ClassName = ToSafeString(raw[0]), Items = ToList(raw[1]).Select(ParseContainerItem).ToList() };
+        // raw[1] is the items list — uniformly 2-elem [name,count] entries fool the
+        // SqfNotationParser hashmap heuristic into producing a Dict; force back to list.
+        return new ContainerSlot { ClassName = ToSafeString(raw[0]), Items = ToListFromAny(raw[1]).Select(ParseContainerItem).ToList() };
     }
 
     private static ContainerItem ParseContainerItem(object raw)
     {
         var list = ToList(raw);
 
-        if (list.Count >= 1 && list[0] is List<object>)
+        // Weapon stowed in container: [[weapon, muzzle, pointer, optic, [primMag,count], [secMag,count], bipod], count]
+        if (list.Count >= 1 && list[0] is List<object> or object[])
         {
             return new ContainerItem
             {
@@ -105,6 +108,7 @@ public static class PersistenceLoadoutConverter
             };
         }
 
+        // Sub-container (backpack inside backpack): [className, isBackpack]
         if (list.Count == 2 && list[1] is bool)
         {
             return new ContainerItem
@@ -115,7 +119,8 @@ public static class PersistenceLoadoutConverter
             };
         }
 
-        if (list.Count == 3)
+        // Magazine: [className, count, ammo]
+        if (list.Count == 3 && list[0] is string)
         {
             return new ContainerItem
             {
@@ -126,12 +131,20 @@ public static class PersistenceLoadoutConverter
             };
         }
 
-        return new ContainerItem
+        // Item: [className, count]
+        if (list.Count == 2 && list[0] is string)
         {
-            Type = "item",
-            ClassName = ToSafeString(list[0]),
-            Count = list.Count >= 2 ? ToInt(list[1]) : 0
-        };
+            return new ContainerItem
+            {
+                Type = "item",
+                ClassName = ToSafeString(list[0]),
+                Count = ToInt(list[1])
+            };
+        }
+
+        throw new FormatException(
+            $"Unknown container item shape: count={list.Count}, types=[{string.Join(",", list.Select(e => e?.GetType().Name ?? "null"))}]"
+        );
     }
 
     private static LinkedItems ParseLinkedItems(List<object> raw)

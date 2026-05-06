@@ -80,12 +80,51 @@ public static class PersistencePlayerConverter
 
     private static AceMedicalState ParseAceMedical(object raw)
     {
+        // Legacy player records stored aceMedical as a JSON-encoded SQF string
+        // (pre-HashMap ACE format). Parse it directly through the typed
+        // deserialiser — same converters apply.
+        if (raw is string legacyJson)
+        {
+            if (string.IsNullOrWhiteSpace(legacyJson)) return new AceMedicalState();
+            try
+            {
+                return JsonSerializer.Deserialize<AceMedicalState>(legacyJson, JsonOptions) ?? new AceMedicalState();
+            }
+            catch (JsonException)
+            {
+                return new AceMedicalState();
+            }
+        }
+
         if (raw is not Dictionary<string, object> dict || dict.Count == 0)
         {
             return new AceMedicalState();
         }
 
-        var json = JsonSerializer.Serialize(dict);
+        // SqfNotationParser.Normalize aggressively converts pair-of-string-keyed lists
+        // into Dictionary<string,object>. That misfires for a few ACE fields whose
+        // canonical SQF shape is "array of [string, list] pairs" (a list, not a hashmap)
+        // or "empty list standing in for empty hashmap". Massage the shape here so the
+        // typed deserialiser sees the JSON the converters expect.
+        var normalised = new Dictionary<string, object>(dict, StringComparer.OrdinalIgnoreCase);
+
+        // ace_medical_logs: SQF emits [[logType, [entries]], ...]. Parser flips it to
+        // a Dict on misdetection. Reverse so MedicalLogCategoryConverter sees an array.
+        if (normalised.TryGetValue("ace_medical_logs", out var logsRaw) && logsRaw is Dictionary<string, object> logsDict)
+        {
+            normalised["ace_medical_logs"] = logsDict.Select(kvp => (object)new List<object> { kvp.Key, kvp.Value }).ToList();
+        }
+
+        // Wound buckets: empty list stands in for empty hashmap when no wounds exist.
+        foreach (var key in new[] { "ace_medical_openwounds", "ace_medical_bandagedwounds", "ace_medical_stitchedwounds" })
+        {
+            if (normalised.TryGetValue(key, out var bucket) && bucket is List<object> { Count: 0 })
+            {
+                normalised[key] = new Dictionary<string, object>();
+            }
+        }
+
+        var json = JsonSerializer.Serialize(normalised);
         return JsonSerializer.Deserialize<AceMedicalState>(json, JsonOptions) ?? new AceMedicalState();
     }
 

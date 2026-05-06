@@ -24,7 +24,7 @@ public class PersistenceControllerTests
     }
 
     [Fact]
-    public void Get_WithExistingKey_ReturnsHashmapFormat()
+    public void Get_WithExistingKey_ReturnsSqfTextWithExpectedKeys()
     {
         var session = new DomainPersistenceSession
         {
@@ -58,15 +58,20 @@ public class PersistenceControllerTests
 
         var result = _sut.Get("test-key");
 
-        var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
-        var raw = jsonResult.Value.Should().BeOfType<Dictionary<string, object>>().Subject;
-        raw.Should().ContainKey("objects");
-        raw.Should().ContainKey("dateTime");
-        raw.Should().ContainKey("deletedObjects");
-        raw.Should().ContainKey("mapMarkers");
-        raw.Should().ContainKey("players");
-        raw.Should().NotContainKey("key");
-        raw.Should().NotContainKey("savedAt");
+        var content = result.Should().BeOfType<ContentResult>().Subject;
+        content.ContentType.Should().Be("text/plain");
+        content.Content.Should().StartWith("[");
+        // Top-level pair-list contains expected keys (BIS HashMap str format).
+        content.Content.Should().Contain("\"objects\"");
+        content.Content.Should().Contain("\"dateTime\"");
+        content.Content.Should().Contain("\"deletedObjects\"");
+        content.Content.Should().Contain("\"mapMarkers\"");
+        content.Content.Should().Contain("\"players\"");
+        // Internal MongoObject fields must NOT be exposed in the load payload.
+        content.Content.Should().NotContain("\"key\"");
+        content.Content.Should().NotContain("\"savedAt\"");
+        // Object id round-trips through SqfNotationWriter.
+        content.Content.Should().Contain("\"obj-1\"");
     }
 
     [Fact]

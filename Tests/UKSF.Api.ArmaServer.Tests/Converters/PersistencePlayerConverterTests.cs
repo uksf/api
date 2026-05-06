@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using UKSF.Api.ArmaServer.Converters;
@@ -286,6 +287,82 @@ public class PersistencePlayerConverterTests
     }
 
     [Fact]
+    public void FromHashmap_WithStowedWeaponAsObjectArray_ShouldStillBeWeaponType()
+    {
+        // Regression: legacy JSON path produced object[] for nested arrays (PersistenceTypeConverter
+        // used to call list.ToArray()). ParseContainerItem must still detect a weapon entry whose
+        // inner weapon array is object[] rather than List<object>.
+        var hashmap = BuildMinimalPlayerHashmap();
+        hashmap["loadout"] = new List<object>
+        {
+            new List<object>(),
+            new List<object>(),
+            new List<object>(),
+            new List<object>(),
+            new List<object>(),
+            new List<object>
+            {
+                "STKR_PackCom",
+                new object[]
+                {
+                    new object[] { new object[] { "arifle_MX_F", "", "", "", new object[] { "30Rnd_65x39_caseless_mag", 30L }, new object[] { }, "" }, 1L }
+                }
+            },
+            "",
+            "",
+            new List<object>(),
+            new List<object>
+            {
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+            }
+        };
+
+        var result = PersistencePlayerConverter.FromHashmap(hashmap);
+
+        var items = result.Loadout.Backpack.Items;
+        items.Should().HaveCount(1);
+        items[0].Type.Should().Be("weapon");
+        items[0].Weapon.Should().NotBeNull();
+        items[0].Weapon!.Weapon.Should().Be("arifle_MX_F");
+        items[0].ClassName.Should().NotBe("System.Object[]");
+    }
+
+    [Fact]
+    public void FromHashmap_WithUnknownContainerItemShape_ShouldThrow()
+    {
+        var hashmap = BuildMinimalPlayerHashmap();
+        hashmap["loadout"] = new List<object>
+        {
+            new List<object>(),
+            new List<object>(),
+            new List<object>(),
+            new List<object>(),
+            new List<object>(),
+            new List<object> { "STKR_PackCom", new List<object> { new List<object> { 42L, 1L } } },
+            "",
+            "",
+            new List<object>(),
+            new List<object>
+            {
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+            }
+        };
+
+        var act = () => PersistencePlayerConverter.FromHashmap(hashmap);
+        act.Should().Throw<FormatException>().WithMessage("Unknown container item shape*");
+    }
+
+    [Fact]
     public void FromHashmap_WithAceMedicalDictionary_PopulatedWounds_ArrayInner()
     {
         var hashmap = BuildMinimalPlayerHashmap();
@@ -448,8 +525,8 @@ public class PersistencePlayerConverterTests
 
         result["aceMedical"].Should().BeOfType<Dictionary<string, object>>();
         var medical = (Dictionary<string, object>)result["aceMedical"];
-        medical["ace_medical_bloodVolume"].Should().Be(6.0);
-        medical["ace_medical_heartRate"].Should().Be(80.0);
+        medical["ace_medical_bloodvolume"].Should().Be(6.0);
+        medical["ace_medical_heartrate"].Should().Be(80.0);
     }
 
     [Fact]

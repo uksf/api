@@ -17,9 +17,12 @@ public static class PersistenceObjectConverter
             Fuel = ToDouble(raw.GetValueOrDefault("fuel") ?? 0.0),
             TurretWeapons = ParseTurretWeapons(ToList(raw.GetValueOrDefault("turretWeapons"))),
             TurretMagazines = ParseTurretMagazines(ToList(raw.GetValueOrDefault("turretMagazines"))),
-            PylonLoadout = ParsePylonLoadout(ToList(raw.GetValueOrDefault("pylonLoadout"))),
+            // pylonLoadout entries are [mag,ammo] pairs — pure 2-elem string-keyed shape
+            // gets mis-detected as a hashmap by the parser; ToListFromAny rebuilds the list.
+            PylonLoadout = ParsePylonLoadout(ToListFromAny(raw.GetValueOrDefault("pylonLoadout"))),
             Logistics = ToList(raw.GetValueOrDefault("logistics")).Select(ToDouble).ToArray(),
-            Attached = ParseAttached(ToList(raw.GetValueOrDefault("attached"))),
+            // Same for attached: [className, offset] pairs.
+            Attached = ParseAttached(ToListFromAny(raw.GetValueOrDefault("attached"))),
             RackChannels = ToList(raw.GetValueOrDefault("rackChannels")).Select(ToInt).ToArray(),
             AceCargo = ParseAceCargo(ToList(raw.GetValueOrDefault("aceCargo"))),
             Inventory = ParseInventory(ToList(raw.GetValueOrDefault("inventory"))),
@@ -213,26 +216,17 @@ public static class PersistenceObjectConverter
                )
                .ToList();
 
-    private static object SerializeInventory(InventoryContainer inv)
-    {
-        // If all cargo slots are empty, return an empty list to match the SQF representation.
-        // SQF sends [] for empty inventories; inflating to [[[],[]],[[],[]],[[],[]],[[],[]]] would mismatch.
-        if (inv.Weapons.ClassNames.Length == 0 &&
-            inv.Magazines.ClassNames.Length == 0 &&
-            inv.Items.ClassNames.Length == 0 &&
-            inv.Backpacks.ClassNames.Length == 0)
-        {
-            return new List<object>();
-        }
-
-        return new List<object>
+    private static object SerializeInventory(InventoryContainer inv) =>
+        // Always emit the 4-slot positional shape — matches what the SQF
+        // [getWeaponCargo, getMagazineCargo, getItemCargo, getBackpackCargo] capture
+        // produces, so profile vs API comparisons line up byte-for-byte.
+        new List<object>
         {
             SerializeCargoSlot(inv.Weapons),
             SerializeCargoSlot(inv.Magazines),
             SerializeCargoSlot(inv.Items),
             SerializeCargoSlot(inv.Backpacks)
         };
-    }
 
     private static List<object> SerializeCargoSlot(CargoSlot slot) => new() { slot.ClassNames.Cast<object>().ToList(), slot.Counts.Cast<object>().ToList() };
 }

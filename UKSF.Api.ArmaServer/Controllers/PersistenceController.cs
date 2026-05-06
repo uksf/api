@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UKSF.Api.ArmaServer.Converters;
+using UKSF.Api.ArmaServer.Parsing;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 
@@ -11,6 +12,12 @@ namespace UKSF.Api.ArmaServer.Controllers;
 [LocalhostOnly]
 public class PersistenceController(IPersistenceSessionsService persistenceSessionsService, IUksfLogger logger) : ControllerBase
 {
+    /// <summary>
+    /// Emits the persistence session in canonical Arma 3 SQF <c>str</c> format
+    /// (a hashmap as <c>[[k,v],...]</c> with string-quoting matching BIS's str()).
+    /// The game side runs <c>parseSimpleArray</c> on the response — drops
+    /// <c>CBA_fnc_parseJSON</c> from the per-load critical path.
+    /// </summary>
     [HttpGet("{key}")]
     public IActionResult Get([FromRoute] string key)
     {
@@ -23,6 +30,7 @@ public class PersistenceController(IPersistenceSessionsService persistenceSessio
         }
 
         var hashmap = PersistenceConverter.ToHashmap(session);
-        return new JsonResult(hashmap, PersistenceSessionsService.SerializerOptions);
+        var sqf = SqfNotationWriter.Write(hashmap);
+        return Content(sqf, "text/plain");
     }
 }

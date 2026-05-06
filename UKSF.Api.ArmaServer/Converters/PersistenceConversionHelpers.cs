@@ -38,6 +38,22 @@ internal static class PersistenceConversionHelpers
             _                 => []
         };
 
+    /// <summary>
+    /// Convert back from a dict to a list-of-pairs. Used when the SQF parser's
+    /// hashmap heuristic mis-detected a list of <c>[string, value]</c> entries
+    /// (e.g. a uniform's items list of <c>[[name, count], ...]</c>) as a dict.
+    /// Order preservation isn't critical for the consumers that use this —
+    /// they only need to walk the entries.
+    /// </summary>
+    internal static List<object> ToListFromAny(object v) =>
+        v switch
+        {
+            List<object> list               => list,
+            object[] array                  => [..array],
+            Dictionary<string, object> dict => dict.Select(kvp => (object)new List<object> { kvp.Key, kvp.Value }).ToList(),
+            _                               => []
+        };
+
     internal static Dictionary<string, object> ToDict(object v) =>
         v switch
         {
