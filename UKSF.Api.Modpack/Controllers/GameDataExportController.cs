@@ -5,13 +5,19 @@ using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
 using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
+using UKSF.Api.Modpack.Context;
 
 namespace UKSF.Api.Modpack.Controllers;
 
-public record TriggerGameDataExportRequest(string ModpackVersion);
+public record TriggerGameDataExportRequest(string ModpackVersion = null);
 
 [Route("modpack/gamedata")]
-public class GameDataExportController(IGameDataExportService service, IGameDataExportsContext context, IVariablesService variablesService) : ControllerBase
+public class GameDataExportController(
+    IGameDataExportService service,
+    IGameDataExportsContext context,
+    IVariablesService variablesService,
+    IReleasesContext releasesContext
+) : ControllerBase
 {
     private static readonly System.Buffers.SearchValues<char> UnsafeVersionChars = System.Buffers.SearchValues.Create("/\\:\0");
 
@@ -37,10 +43,19 @@ public class GameDataExportController(IGameDataExportService service, IGameDataE
     [Permissions(Permissions.Admin)]
     public IActionResult Trigger([FromBody] TriggerGameDataExportRequest request)
     {
-        var result = service.Trigger(request.ModpackVersion);
+        var version = !string.IsNullOrWhiteSpace(request?.ModpackVersion)
+            ? request.ModpackVersion
+            : releasesContext.Get().Where(x => !x.IsDraft).OrderByDescending(x => x.Timestamp).FirstOrDefault()?.Version;
+
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return BadRequest(new { Error = "No released modpack version available" });
+        }
+
+        var result = service.Trigger(version);
         return result.Outcome switch
         {
-            TriggerOutcome.Started        => Accepted(new { RunId = result.RunId }),
+            TriggerOutcome.Started        => Accepted(new { RunId = result.RunId, Version = version }),
             TriggerOutcome.AlreadyRunning => Conflict(new { Error = "GameDataExport already running", RunId = result.RunId }),
             _                             => StatusCode(500)
         };

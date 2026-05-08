@@ -6,7 +6,9 @@ using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core.Models.Domain;
 using UKSF.Api.Core.Services;
+using UKSF.Api.Modpack.Context;
 using UKSF.Api.Modpack.Controllers;
+using UKSF.Api.Modpack.Models;
 using Xunit;
 
 namespace UKSF.Api.Modpack.Tests.Controllers;
@@ -16,6 +18,7 @@ public class GameDataExportControllerTests : IDisposable
     private readonly Mock<IGameDataExportsContext> _context = new();
     private readonly Mock<IGameDataExportService> _service = new();
     private readonly Mock<IVariablesService> _variablesService = new();
+    private readonly Mock<IReleasesContext> _releasesContext = new();
     private readonly GameDataExportController _controller;
     private readonly string _tempConfig;
     private readonly string _tempSettings;
@@ -26,7 +29,7 @@ public class GameDataExportControllerTests : IDisposable
         _tempSettings = Path.Combine(Path.GetTempPath(), "uksf-gamedata-settings-" + Guid.NewGuid());
         Directory.CreateDirectory(_tempConfig);
         Directory.CreateDirectory(_tempSettings);
-        _controller = new GameDataExportController(_service.Object, _context.Object, _variablesService.Object);
+        _controller = new GameDataExportController(_service.Object, _context.Object, _variablesService.Object, _releasesContext.Object);
     }
 
     public void Dispose()
@@ -60,6 +63,52 @@ public class GameDataExportControllerTests : IDisposable
         result.StatusCode.Should().Be(202);
         var json = System.Text.Json.JsonSerializer.Serialize(result.Value);
         json.Should().Contain("\"RunId\":\"abc-123\"", "result body should include the run id");
+    }
+
+    [Fact]
+    public void Trigger_WithoutVersion_ResolvesCurrentReleasedVersion()
+    {
+        var releases = new[]
+        {
+            new DomainModpackRelease
+            {
+                Version = "5.23.10",
+                IsDraft = false,
+                Timestamp = new DateTime(2026, 5, 1)
+            },
+            new DomainModpackRelease
+            {
+                Version = "5.24.0",
+                IsDraft = true,
+                Timestamp = new DateTime(2026, 5, 8)
+            },
+            new DomainModpackRelease
+            {
+                Version = "5.23.9",
+                IsDraft = false,
+                Timestamp = new DateTime(2026, 4, 1)
+            }
+        };
+        _releasesContext.Setup(x => x.Get()).Returns(releases);
+        _service.Setup(x => x.Trigger("5.23.10")).Returns(new TriggerResult(TriggerOutcome.Started, "abc-123"));
+
+        var result = _controller.Trigger(new TriggerGameDataExportRequest()) as AcceptedResult;
+
+        result.Should().NotBeNull();
+        _service.Verify(x => x.Trigger("5.23.10"), Times.Once);
+        var json = System.Text.Json.JsonSerializer.Serialize(result.Value);
+        json.Should().Contain("\"Version\":\"5.23.10\"");
+    }
+
+    [Fact]
+    public void Trigger_WithoutVersion_AndNoReleasedVersion_ReturnsBadRequest()
+    {
+        _releasesContext.Setup(x => x.Get()).Returns(Array.Empty<DomainModpackRelease>());
+
+        var result = _controller.Trigger(new TriggerGameDataExportRequest());
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+        _service.Verify(x => x.Trigger(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
