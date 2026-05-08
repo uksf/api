@@ -10,12 +10,13 @@ public class DevRunLauncher(ISyntheticServerLauncher syntheticLauncher, IVariabl
     private const int GamePort = 3304;
     private const int ApiPort = SyntheticApiPorts.DevRun;
 
-    public SyntheticLaunchResult Launch(string runId, string sqf, IReadOnlyList<string> mods)
+    public SyntheticLaunchResult Launch(string runId, string sqf, IReadOnlyList<string> mods, string worldName = null)
     {
         var serverRoot = variablesService.GetVariable("SERVER_PATH_RELEASE").AsString();
         var shortId = runId.Length >= 8 ? runId[..8] : runId;
         var profileName = $"DevRun_{shortId}";
-        var missionName = $"{profileName}.VR";
+        var effectiveWorld = string.IsNullOrWhiteSpace(worldName) ? "VR" : worldName;
+        var missionName = $"{profileName}.{effectiveWorld}";
 
         var modpackPath = variablesService.GetVariable("MODPACK_REPO_PATH").AsString();
         var serverCbaSource = Path.Combine(modpackPath, "cba_settings.sqf");

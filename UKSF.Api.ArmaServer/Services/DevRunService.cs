@@ -61,7 +61,7 @@ public class DevRunService : IDevRunService
         _defaultTimeoutSeconds = defaultTimeoutSeconds;
     }
 
-    public DevRunTriggerResult Trigger(string sqf, IReadOnlyList<string> mods, int? timeoutSeconds)
+    public DevRunTriggerResult Trigger(string sqf, IReadOnlyList<string> mods, int? timeoutSeconds, string worldName = null)
     {
         var runId = Guid.NewGuid().ToString();
         if (!_gate.TryAcquire(runId))
@@ -83,7 +83,7 @@ public class DevRunService : IDevRunService
             };
             _context.Add(record).GetAwaiter().GetResult();
 
-            var launch = _launcher.Launch(runId, sqf, mods);
+            var launch = _launcher.Launch(runId, sqf, mods, worldName);
             _activePids[runId] = launch.ProcessId;
             _ = Task.Run(() => RunWatcherAsync(launch.ProcessId, record, effectiveTimeout));
 

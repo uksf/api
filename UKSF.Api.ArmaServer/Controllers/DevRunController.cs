@@ -6,7 +6,7 @@ using UKSF.Api.Core;
 
 namespace UKSF.Api.ArmaServer.Controllers;
 
-public record TriggerDevRunRequest(string Sqf, IReadOnlyList<string> Mods, int? TimeoutSeconds);
+public record TriggerDevRunRequest(string Sqf, IReadOnlyList<string> Mods, int? TimeoutSeconds, string WorldName = null);
 
 [Route("dev-run")]
 public class DevRunController(IDevRunService service, IDevRunsContext context) : ControllerBase
@@ -15,7 +15,7 @@ public class DevRunController(IDevRunService service, IDevRunsContext context) :
     [Permissions(Permissions.Admin)]
     public IActionResult Trigger([FromBody] TriggerDevRunRequest request)
     {
-        var result = service.Trigger(request.Sqf, request.Mods, request.TimeoutSeconds);
+        var result = service.Trigger(request.Sqf, request.Mods, request.TimeoutSeconds, request.WorldName);
         return result.Outcome switch
         {
             DevRunTriggerOutcome.Started        => Accepted(new { result.RunId }),

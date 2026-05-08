@@ -16,7 +16,7 @@ public record DevRunStatusResponse(string RunId, DevRunStatus Status, DateTime? 
 
 public interface IDevRunService
 {
-    DevRunTriggerResult Trigger(string sqf, IReadOnlyList<string> mods, int? timeoutSeconds);
+    DevRunTriggerResult Trigger(string sqf, IReadOnlyList<string> mods, int? timeoutSeconds, string worldName = null);
     DevRunStatusResponse GetStatus(string runId);
     Task AppendLogAsync(string runId, string line);
     Task AppendResultAsync(string runId, string payload);
