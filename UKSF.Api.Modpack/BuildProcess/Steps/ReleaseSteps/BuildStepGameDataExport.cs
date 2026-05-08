@@ -6,7 +6,7 @@ namespace UKSF.Api.Modpack.BuildProcess.Steps.ReleaseSteps;
 [BuildStep(Name)]
 public class BuildStepGameDataExport : BuildStep
 {
-    public const string Name = "Game Data Export";
+    public const string Name = "Data Export";
 
     private IGameDataExportService _gameDataExportService;
 
