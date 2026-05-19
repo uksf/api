@@ -47,11 +47,29 @@ public class GameDataExportProcessLauncher(ISyntheticServerLauncher syntheticLau
         );
     }
 
-    private static IReadOnlyList<string> ResolveMods(string modPath)
+    // @ocap is a server mod (lives in the arma server install dir, not the modpack Repo). It must be
+    // loaded so its CBA settings appear in the exported settings reference json.
+    private IReadOnlyList<string> ResolveMods(string modPath)
+    {
+        var repoMods = ResolveRepoMods(modPath);
+        var ocapPath = ResolveOcapPath();
+        return ocapPath is null ? repoMods : [.. repoMods, ocapPath];
+    }
+
+    private static IReadOnlyList<string> ResolveRepoMods(string modPath)
     {
         if (!Directory.Exists(modPath)) return new[] { modPath };
         var modDirs = Directory.GetDirectories(modPath, "@*");
         return modDirs.Length == 0 ? new[] { modPath } : modDirs;
+    }
+
+    private string ResolveOcapPath()
+    {
+        var variable = variablesService.GetVariable("SERVER_PATH_MODS");
+        if (variable?.Item is null) return null;
+
+        var ocapPath = Path.Combine(variable.AsString(), "@ocap");
+        return Directory.Exists(ocapPath) ? ocapPath : null;
     }
 
     // persistent = 1 in server.cfg + respawn = "INSTANT" in description.ext are both required

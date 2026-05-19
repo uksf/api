@@ -158,9 +158,9 @@ public class GameDataExportProcessLauncherTests
 
     [Theory]
     [InlineData("5.23.8", "config_*_uksf-5-23-8.cpp", "cba_settings_*_uksf-5-23-8.sqf", "cba_settings_reference_*_uksf-5-23-8.json")]
-    [InlineData("5.23",   "config_*_uksf-5-23.cpp",   "cba_settings_*_uksf-5-23.sqf",   "cba_settings_reference_*_uksf-5-23.json")]
-    [InlineData("6.0.1",  "config_*_uksf-6-0-1.cpp",  "cba_settings_*_uksf-6-0-1.sqf",  "cba_settings_reference_*_uksf-6-0-1.json")]
-    [InlineData("6",      "config_*_uksf-6.cpp",      "cba_settings_*_uksf-6.sqf",      "cba_settings_reference_*_uksf-6.json")]
+    [InlineData("5.23", "config_*_uksf-5-23.cpp", "cba_settings_*_uksf-5-23.sqf", "cba_settings_reference_*_uksf-5-23.json")]
+    [InlineData("6.0.1", "config_*_uksf-6-0-1.cpp", "cba_settings_*_uksf-6-0-1.sqf", "cba_settings_reference_*_uksf-6-0-1.json")]
+    [InlineData("6", "config_*_uksf-6.cpp", "cba_settings_*_uksf-6.sqf", "cba_settings_reference_*_uksf-6.json")]
     public void Launch_GlobsMatchSqfFilenameContract(string modpackVersion, string expectedConfig, string expectedSettings, string expectedReference)
     {
         var result = CreateSut().Launch(modpackVersion);
@@ -256,5 +256,135 @@ public class GameDataExportProcessLauncherTests
 
         captured.Mods.Should().HaveCount(1);
         captured.Mods[0].Should().Contain("Repo");
+    }
+
+    [Fact]
+    public void Launch_Mods_AppendsOcap_FromServerPathMods()
+    {
+        var tempModpackRoot = Path.Combine(Path.GetTempPath(), System.Guid.NewGuid().ToString());
+        var repoPath = Path.Combine(tempModpackRoot, "Repo");
+        Directory.CreateDirectory(Path.Combine(repoPath, "@uksf"));
+
+        var tempServerInstall = Path.Combine(Path.GetTempPath(), System.Guid.NewGuid().ToString());
+        Directory.CreateDirectory(Path.Combine(tempServerInstall, "@ocap"));
+
+        SetupVariable("MODPACK_PATH_RELEASE", tempModpackRoot);
+        SetupVariable("SERVER_PATH_MODS", tempServerInstall);
+
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
+
+        try
+        {
+            CreateSut().Launch("5.23.8");
+
+            captured.Mods.Should().HaveCount(2);
+            captured.Mods.Should().Contain(m => m.Contains("@uksf"));
+            captured.Mods.Should().Contain(m => m.Replace('\\', '/').EndsWith("@ocap"));
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(tempModpackRoot, recursive: true);
+            }
+            catch
+            {
+                /* best-effort */
+            }
+
+            try
+            {
+                Directory.Delete(tempServerInstall, recursive: true);
+            }
+            catch
+            {
+                /* best-effort */
+            }
+        }
+    }
+
+    [Fact]
+    public void Launch_Mods_OmitsOcap_WhenServerPathModsHasNoOcapDir()
+    {
+        var tempModpackRoot = Path.Combine(Path.GetTempPath(), System.Guid.NewGuid().ToString());
+        var repoPath = Path.Combine(tempModpackRoot, "Repo");
+        Directory.CreateDirectory(Path.Combine(repoPath, "@uksf"));
+
+        var tempServerInstall = Path.Combine(Path.GetTempPath(), System.Guid.NewGuid().ToString());
+        Directory.CreateDirectory(tempServerInstall);
+
+        SetupVariable("MODPACK_PATH_RELEASE", tempModpackRoot);
+        SetupVariable("SERVER_PATH_MODS", tempServerInstall);
+
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
+
+        try
+        {
+            CreateSut().Launch("5.23.8");
+
+            captured.Mods.Should().HaveCount(1);
+            captured.Mods[0].Should().Contain("@uksf");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(tempModpackRoot, recursive: true);
+            }
+            catch
+            {
+                /* best-effort */
+            }
+
+            try
+            {
+                Directory.Delete(tempServerInstall, recursive: true);
+            }
+            catch
+            {
+                /* best-effort */
+            }
+        }
+    }
+
+    [Fact]
+    public void Launch_Mods_OmitsOcap_WhenServerPathModsVariableUnset()
+    {
+        var tempModpackRoot = Path.Combine(Path.GetTempPath(), System.Guid.NewGuid().ToString());
+        var repoPath = Path.Combine(tempModpackRoot, "Repo");
+        Directory.CreateDirectory(Path.Combine(repoPath, "@uksf"));
+
+        SetupVariable("MODPACK_PATH_RELEASE", tempModpackRoot);
+        // SERVER_PATH_MODS deliberately not configured
+
+        SyntheticLaunchSpec captured = null;
+        _mockSyntheticLauncher.Setup(x => x.Launch(It.IsAny<SyntheticLaunchSpec>()))
+                              .Callback<SyntheticLaunchSpec>(s => captured = s)
+                              .Returns(new SyntheticLaunchResult(4242, "p", "m"));
+
+        try
+        {
+            CreateSut().Launch("5.23.8");
+
+            captured.Mods.Should().HaveCount(1);
+            captured.Mods[0].Should().Contain("@uksf");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(tempModpackRoot, recursive: true);
+            }
+            catch
+            {
+                /* best-effort */
+            }
+        }
     }
 }
