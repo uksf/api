@@ -131,4 +131,69 @@ public class UnconsciousEventProcessorTests
 
         stats.TimesUnconscious.Should().Be(3);
     }
+
+    [Fact]
+    public void ProcessForPlayer_ShouldOnlyCountEnterEvents()
+    {
+        var enter = new BsonDocument { { "value", 1 } };
+        var leave = new BsonDocument { { "value", 0 } };
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(enter, stats);
+        _subject.ProcessForPlayer(leave, stats);
+        _subject.ProcessForPlayer(enter, stats);
+        _subject.ProcessForPlayer(leave, stats);
+
+        stats.TimesUnconscious.Should().Be(2);
+    }
+}
+
+public class CardiacArrestEventProcessorTests
+{
+    private readonly CardiacArrestEventProcessor _subject = new();
+
+    [Fact]
+    public void EventType_ShouldBeCardiacArrest()
+    {
+        _subject.EventType.Should().Be("cardiacArrest");
+    }
+
+    [Fact]
+    public void ProcessForPlayer_ShouldOnlyCountEnterEvents()
+    {
+        var enter = new BsonDocument { { "value", 1 } };
+        var leave = new BsonDocument { { "value", 0 } };
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(enter, stats);
+        _subject.ProcessForPlayer(leave, stats);
+        _subject.ProcessForPlayer(enter, stats);
+
+        stats.TimesInCardiacArrest.Should().Be(2);
+    }
+}
+
+public class ComaEventProcessorTests
+{
+    private readonly ComaEventProcessor _subject = new();
+
+    [Fact]
+    public void EventType_ShouldBeComa()
+    {
+        _subject.EventType.Should().Be("coma");
+    }
+
+    [Fact]
+    public void ProcessForPlayer_ShouldOnlyCountEnterEvents()
+    {
+        var enter = new BsonDocument { { "value", 1 } };
+        var leave = new BsonDocument { { "value", 0 } };
+        var stats = new PlayerMissionStats();
+
+        _subject.ProcessForPlayer(enter, stats);
+        _subject.ProcessForPlayer(leave, stats);
+        _subject.ProcessForPlayer(enter, stats);
+
+        stats.TimesInComa.Should().Be(2);
+    }
 }

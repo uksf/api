@@ -73,6 +73,8 @@ public static class ApiArmaServerExtensions
                            .AddTransient<IStatsEventProcessor, SamplerBatchEventProcessor>()
                            .AddTransient<IStatsEventProcessor, ExplosivePlacedEventProcessor>()
                            .AddTransient<IStatsEventProcessor, UnconsciousEventProcessor>()
+                           .AddTransient<IStatsEventProcessor, CardiacArrestEventProcessor>()
+                           .AddTransient<IStatsEventProcessor, ComaEventProcessor>()
                            .AddTransient<IPerformanceService, PerformanceService>()
                            .AddScoped<IGameServerEventHandler, GameServerEventHandler>()
                            .AddSingleton<IGameServerProcessManager, GameServerProcessManager>()

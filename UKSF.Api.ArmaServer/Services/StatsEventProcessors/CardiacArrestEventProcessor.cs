@@ -3,16 +3,15 @@ using UKSF.Api.ArmaServer.Models;
 
 namespace UKSF.Api.ArmaServer.Services.StatsEventProcessors;
 
-public class UnconsciousEventProcessor : IStatsEventProcessor
+public class CardiacArrestEventProcessor : IStatsEventProcessor
 {
-    public string EventType => "unconscious";
+    public string EventType => "cardiacArrest";
 
     public void ProcessForPlayer(BsonDocument evt, PlayerMissionStats stats)
     {
-        // value = 1 on enter, value = 0 on leave (wake). Missing value (legacy events) treated as enter.
         if (evt.GetValue("value", 1).ToInt32() == 1)
         {
-            stats.TimesUnconscious++;
+            stats.TimesInCardiacArrest++;
         }
     }
 }
