@@ -865,6 +865,31 @@ public class DocumentPermissionsServiceTests
         result.Should().Be(expectedResult);
     }
 
+    [Fact]
+    public void DoesContextHaveReadPermission_WhenViewersOnlyListsOtherMember_ShouldReturnFalse()
+    {
+        var otherUserId = ObjectId.GenerateNewId().ToString();
+        var metadata = new DomainDocumentMetadata { Permissions = new DocumentPermissions { Viewers = new DocumentPermission { Members = [otherUserId] } } };
+
+        var result = _subject.CanContextView(metadata);
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void DoesContextHaveWritePermission_WhenCollaboratorsOnlyListsOtherMember_ShouldReturnFalse()
+    {
+        var otherUserId = ObjectId.GenerateNewId().ToString();
+        var metadata = new DomainDocumentMetadata
+        {
+            Permissions = new DocumentPermissions { Collaborators = new DocumentPermission { Members = [otherUserId] } }
+        };
+
+        var result = _subject.CanContextCollaborate(metadata);
+
+        result.Should().BeFalse();
+    }
+
     private void GivenUserIsInChildUnit()
     {
         _mockIUnitsService.Setup(x => x.AnyChildHasMember(_unitId, _memberId)).Returns(true);

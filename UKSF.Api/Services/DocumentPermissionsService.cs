@@ -296,6 +296,12 @@ public class DocumentPermissionsService(
             return true;
         }
 
+        // With no unit or rank criteria, only the explicit Members list grants access
+        if (permission.Units.Count == 0 && string.IsNullOrEmpty(permission.Rank))
+        {
+            return false;
+        }
+
         // If not in Members list, check (Units AND Rank) logic
         var hasUnitPermission = true;
         var hasRankPermission = true;
