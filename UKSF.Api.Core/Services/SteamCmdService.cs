@@ -19,10 +19,12 @@ public class SteamCmdService : ISteamCmdService
     private readonly string _password;
     private readonly string _username;
     private readonly IVariablesService _variablesService;
+    private readonly ISteamGuardCodeService _steamGuardCodeService;
 
-    public SteamCmdService(IVariablesService variablesService, IOptions<AppSettings> options)
+    public SteamCmdService(IVariablesService variablesService, IOptions<AppSettings> options, ISteamGuardCodeService steamGuardCodeService)
     {
         _variablesService = variablesService;
+        _steamGuardCodeService = steamGuardCodeService;
 
         var appSettings = options.Value;
         _username = appSettings.Secrets.SteamCmd.Username;
@@ -36,12 +38,12 @@ public class SteamCmdService : ISteamCmdService
 
     public async Task<string> UpdateServer()
     {
-        return await ExecuteSteamCmd($"+login {_username} {_password} +\"app_update 233780 -beta creatordlc\" validate +quit");
+        return await ExecuteSteamCmd($"{BuildLogin()} +\"app_update 233780 -beta creatordlc\" validate +quit");
     }
 
     public async Task<string> DownloadWorkshopMod(string workshopModId)
     {
-        var output = await ExecuteSteamCmd($"+login {_username} {_password} +workshop_download_item 107410 {workshopModId} +quit");
+        var output = await ExecuteSteamCmd($"{BuildLogin()} +workshop_download_item 107410 {workshopModId} +quit");
 
         if (output.Contains("failed"))
         {
@@ -53,7 +55,13 @@ public class SteamCmdService : ISteamCmdService
 
     public async Task<string> RefreshLogin()
     {
-        return await ExecuteSteamCmd($"+login {_username} {_password} +quit");
+        return await ExecuteSteamCmd($"{BuildLogin()} +quit");
+    }
+
+    private string BuildLogin()
+    {
+        var guardCode = _steamGuardCodeService.GenerateCode();
+        return guardCode is null ? $"+login {_username} {_password}" : $"+login {_username} {_password} {guardCode}";
     }
 
     private async Task<string> ExecuteSteamCmd(string arguments)

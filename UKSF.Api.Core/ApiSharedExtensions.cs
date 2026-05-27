@@ -45,6 +45,7 @@ public static class ApiSharedExtensions
                     .AddTransient<IMongoCollectionFactory, MongoCollectionFactory>()
                     .AddSingleton<IUksfLogger, UksfLogger>()
                     .AddSingleton<IClock, Clock>()
+                    .AddSingleton<ISteamGuardCodeService, SteamGuardCodeService>()
                     .AddSingleton<IProcessCommandFactory, ProcessCommandFactory>()
                     .AddSingleton<IProcessUtilities, ProcessUtilities>();
 
