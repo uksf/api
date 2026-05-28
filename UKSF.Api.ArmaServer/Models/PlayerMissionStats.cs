@@ -92,4 +92,6 @@ public class PlayerMissionStats : MongoObject
 
     // Health
     public int TimesUnconscious { get; set; }
+    public int TimesInCardiacArrest { get; set; }
+    public int TimesInComa { get; set; }
 }
