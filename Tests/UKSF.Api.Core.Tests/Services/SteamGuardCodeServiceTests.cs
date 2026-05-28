@@ -80,4 +80,25 @@ public class SteamGuardCodeServiceTests
 
         CreateSubject(sharedSecret).GenerateCode().Should().BeNull();
     }
+
+    [Theory]
+    [InlineData(KnownSecret, true)]
+    [InlineData(null, false)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    public void IsConfigured_ReflectsWhetherSharedSecretIsSet(string sharedSecret, bool expected)
+    {
+        CreateSubject(sharedSecret).IsConfigured.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(1600000000, 20)] // 10s into the 30s window -> 20s remaining
+    [InlineData(1600000029, 21)] // 9s into the window -> 21s remaining
+    [InlineData(1600000020, 30)] // exactly on a boundary -> full window remaining
+    public void TimeUntilNextCode_ReturnsSecondsRemainingInWindow(long unixSeconds, double expectedSeconds)
+    {
+        GivenTime(unixSeconds);
+
+        CreateSubject(KnownSecret).TimeUntilNextCode().TotalSeconds.Should().BeApproximately(expectedSeconds, 0.001);
+    }
 }

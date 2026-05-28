@@ -7,8 +7,14 @@ namespace UKSF.Api.Core.Services;
 
 public interface ISteamGuardCodeService
 {
+    /// <summary>True when a shared secret is configured and codes can be generated.</summary>
+    bool IsConfigured { get; }
+
     /// <summary>Generates the current Steam Guard mobile authenticator code, or null when no shared secret is configured.</summary>
     string GenerateCode();
+
+    /// <summary>Time until the current code rolls over to the next one — used to retry with a fresh code after a rejection.</summary>
+    TimeSpan TimeUntilNextCode();
 }
 
 public class SteamGuardCodeService(IOptions<AppSettings> options, IClock clock) : ISteamGuardCodeService
@@ -17,9 +23,18 @@ public class SteamGuardCodeService(IOptions<AppSettings> options, IClock clock) 
     private const long TimeStepSeconds = 30;
     private readonly string _sharedSecret = options.Value.Secrets.SteamCmd.SharedSecret;
 
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(_sharedSecret);
+
+    public TimeSpan TimeUntilNextCode()
+    {
+        var unixMs = new DateTimeOffset(DateTime.SpecifyKind(clock.UtcNow(), DateTimeKind.Utc)).ToUnixTimeMilliseconds();
+        var stepMs = TimeStepSeconds * 1000;
+        return TimeSpan.FromMilliseconds(stepMs - unixMs % stepMs);
+    }
+
     public string GenerateCode()
     {
-        if (string.IsNullOrWhiteSpace(_sharedSecret))
+        if (!IsConfigured)
         {
             return null;
         }

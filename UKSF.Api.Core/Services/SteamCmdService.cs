@@ -16,15 +16,19 @@ public interface ISteamCmdService
 
 public class SteamCmdService : ISteamCmdService
 {
+    private const int MaxLoginAttempts = 3;
+
     private readonly string _password;
     private readonly string _username;
     private readonly IVariablesService _variablesService;
     private readonly ISteamGuardCodeService _steamGuardCodeService;
+    private readonly IUksfLogger _logger;
 
-    public SteamCmdService(IVariablesService variablesService, IOptions<AppSettings> options, ISteamGuardCodeService steamGuardCodeService)
+    public SteamCmdService(IVariablesService variablesService, IOptions<AppSettings> options, ISteamGuardCodeService steamGuardCodeService, IUksfLogger logger)
     {
         _variablesService = variablesService;
         _steamGuardCodeService = steamGuardCodeService;
+        _logger = logger;
 
         var appSettings = options.Value;
         _username = appSettings.Secrets.SteamCmd.Username;
@@ -38,14 +42,14 @@ public class SteamCmdService : ISteamCmdService
 
     public async Task<string> UpdateServer()
     {
-        return await ExecuteSteamCmd($"{BuildLogin()} +\"app_update 233780 -beta creatordlc\" validate +quit");
+        return await ExecuteAuthenticatedSteamCmd("+\"app_update 233780 -beta creatordlc\" validate +quit");
     }
 
     public async Task<string> DownloadWorkshopMod(string workshopModId)
     {
-        var output = await ExecuteSteamCmd($"{BuildLogin()} +workshop_download_item 107410 {workshopModId} +quit");
+        var output = await ExecuteAuthenticatedSteamCmd($"+workshop_download_item 107410 {workshopModId} +quit");
 
-        if (output.Contains("failed"))
+        if (output.Contains("failed") || IsTransientLoginFailure(output))
         {
             throw new Exception(output);
         }
@@ -55,7 +59,52 @@ public class SteamCmdService : ISteamCmdService
 
     public async Task<string> RefreshLogin()
     {
-        return await ExecuteSteamCmd($"{BuildLogin()} +quit");
+        return await ExecuteAuthenticatedSteamCmd("+quit");
+    }
+
+    /// <summary>True when SteamCMD rejected the login because of the Steam Guard code — retryable with a freshly generated code.</summary>
+    public static bool IsTransientLoginFailure(string output)
+    {
+        return output is not null &&
+               (output.Contains("Two-factor code mismatch", StringComparison.OrdinalIgnoreCase) ||
+                output.Contains("Account Logon Denied", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    ///     Runs an authenticated SteamCMD command, retrying when the Steam Guard code is rejected. A rejection is almost
+    ///     always a TOTP window boundary race (the code expired between generation and submission), so each retry waits for
+    ///     the next code window before generating a fresh code.
+    /// </summary>
+    public static async Task<string> ExecuteWithCodeRetry(
+        Func<Task<string>> execute,
+        Func<TimeSpan> timeUntilNextCode,
+        Func<TimeSpan, Task> delay,
+        bool codeConfigured,
+        Action<int> onRetry,
+        int maxAttempts = MaxLoginAttempts
+    )
+    {
+        var output = await execute();
+
+        for (var attempt = 1; attempt < maxAttempts && codeConfigured && IsTransientLoginFailure(output); attempt++)
+        {
+            onRetry(attempt);
+            await delay(timeUntilNextCode());
+            output = await execute();
+        }
+
+        return output;
+    }
+
+    private Task<string> ExecuteAuthenticatedSteamCmd(string commandTail)
+    {
+        return ExecuteWithCodeRetry(
+            () => ExecuteSteamCmd($"{BuildLogin()} {commandTail}"),
+            () => _steamGuardCodeService.TimeUntilNextCode() + TimeSpan.FromSeconds(1),
+            Task.Delay,
+            _steamGuardCodeService.IsConfigured,
+            attempt => _logger.LogWarning($"Steam Guard code rejected (attempt {attempt}/{MaxLoginAttempts}); retrying with a fresh code")
+        );
     }
 
     private string BuildLogin()
