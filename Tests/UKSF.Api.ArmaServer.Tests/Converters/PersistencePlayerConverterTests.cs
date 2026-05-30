@@ -383,6 +383,30 @@ public class PersistencePlayerConverterTests
     }
 
     [Fact]
+    public void FromHashmap_WithPartiallyBandagedWound_FractionalAmountOf_ShouldParse()
+    {
+        // ACE fnc_bandageLocal sets a partially-bandaged open wound's amountOf to
+        // (amountOf - impact), a fractional value (e.g. 0.3). CBA encodes it as "0.3",
+        // which must not break the int-typed reader.
+        var hashmap = BuildMinimalPlayerHashmap();
+        hashmap["aceMedical"] = new Dictionary<string, object>
+        {
+            ["ace_medical_openWounds"] = new Dictionary<string, object>
+            {
+                ["leftleg"] = new object[] { new object[] { 20L, 1L, 0.0, 0.04 }, new object[] { 31L, 0.3, 0.015287, 0.492462 } }
+            }
+        };
+
+        var act = () => PersistencePlayerConverter.FromHashmap(hashmap);
+
+        var result = act.Should().NotThrow().Subject;
+        result.AceMedical.OpenWounds["leftleg"].Should().HaveCount(2);
+        result.AceMedical.OpenWounds["leftleg"][1].ClassComplex.Should().Be(31);
+        result.AceMedical.OpenWounds["leftleg"][1].AmountOf.Should().BeApproximately(0.3, 0.0001);
+        result.AceMedical.OpenWounds["leftleg"][1].WoundDamage.Should().BeApproximately(0.492462, 0.0001);
+    }
+
+    [Fact]
     public void ToHashmap_RoundTrip_ShouldPreserveAllFields()
     {
         var original = new PlayerRedeployData

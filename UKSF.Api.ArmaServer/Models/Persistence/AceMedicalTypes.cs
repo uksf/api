@@ -7,8 +7,10 @@ public class WoundEntry
     [JsonPropertyName("classComplex")]
     public int ClassComplex { get; set; }
 
+    // Fractional after a partial bandage: ACE's fnc_bandageLocal sets amountOf to
+    // (amountOf - impact). Must be double — not int — to accept those values.
     [JsonPropertyName("amountOf")]
-    public int AmountOf { get; set; }
+    public double AmountOf { get; set; }
 
     [JsonPropertyName("bleedingRate")]
     public double BleedingRate { get; set; }

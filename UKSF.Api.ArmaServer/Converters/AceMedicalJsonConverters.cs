@@ -31,7 +31,7 @@ public class WoundEntryConverter : JsonConverter<WoundEntry>
         reader.Read();
         var classComplex = reader.GetInt32();
         reader.Read();
-        var amountOf = reader.GetInt32();
+        var amountOf = reader.GetDouble();
         reader.Read();
         var bleedingRate = reader.GetDouble();
         reader.Read();
@@ -58,7 +58,7 @@ public class WoundEntryConverter : JsonConverter<WoundEntry>
             switch (name?.ToLowerInvariant())
             {
                 case "classcomplex": entry.ClassComplex = reader.GetInt32(); break;
-                case "amountof":     entry.AmountOf = reader.GetInt32(); break;
+                case "amountof":     entry.AmountOf = reader.GetDouble(); break;
                 case "bleedingrate": entry.BleedingRate = reader.GetDouble(); break;
                 case "wounddamage":  entry.WoundDamage = reader.GetDouble(); break;
                 default:             reader.Skip(); break;

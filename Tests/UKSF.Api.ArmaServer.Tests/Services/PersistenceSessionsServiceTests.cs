@@ -982,6 +982,25 @@ public class PersistenceSessionsServiceTests
     }
 
     [Fact]
+    public void BsonDeserialize_LegacyWound_AmountOfStoredAsInt32_ReadsAsDouble()
+    {
+        // Pre-fix saves stored amountOf as BSON Int32. After widening the field to double,
+        // loading those existing documents must still succeed.
+        var bson = new MongoDB.Bson.BsonDocument
+        {
+            { "classComplex", 31 },
+            { "amountOf", 2 },
+            { "bleedingRate", 0.015287 },
+            { "woundDamage", 0.492462 }
+        };
+
+        var act = () => MongoDB.Bson.Serialization.BsonSerializer.Deserialize<WoundEntry>(bson);
+
+        var wound = act.Should().NotThrow().Subject;
+        wound.AmountOf.Should().Be(2);
+    }
+
+    [Fact]
     public void RoundTrip_ArmaLoadout_WithAllSlots_PreservesData()
     {
         var original = new ArmaLoadout
