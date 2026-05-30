@@ -28,8 +28,7 @@ public class ActionRefreshSteamToken(
         {
             var output = await steamCmdService.RefreshLogin();
 
-            if (output.Contains("Steam Guard", StringComparison.OrdinalIgnoreCase) ||
-                output.Contains("Account Logon Denied", StringComparison.OrdinalIgnoreCase))
+            if (SteamCmdService.IsTransientLoginFailure(output))
             {
                 logger.LogError($"Steam Guard code required — manual re-authentication needed. SteamCMD output:\n{output}");
                 throw new InvalidOperationException("Steam Guard code required — manual re-authentication needed");

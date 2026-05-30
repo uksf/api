@@ -63,6 +63,18 @@ public class ActionRefreshSteamTokenTests
     }
 
     [Fact]
+    public async Task Run_WhenLoginSucceedsAfterRetry_DoesNotThrow()
+    {
+        var output =
+            "Loading Steam API...OK\nLogging in using username/password.\nSteam Guard code provided.\nLogging in user 'atomictim700' [U:1:80887582] to Steam Public...OK\nWaiting for client config...OK\nWaiting for user info...OK";
+        _mockSteamCmdService.Setup(x => x.RefreshLogin()).ReturnsAsync(output);
+
+        await _action.Run();
+
+        _mockLogger.Verify(x => x.LogError(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Run_WhenOutputContainsSteamGuard_ShouldThrowAndLogError()
     {
         var output =
