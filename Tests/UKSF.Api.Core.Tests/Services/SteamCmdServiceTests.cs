@@ -28,6 +28,32 @@ public class SteamCmdServiceTests
         SteamCmdService.IsTransientLoginFailure(output).Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData("ERROR! Download item 583496184 failed (No Connection).")]
+    [InlineData("ERROR! Download item 1981964169 failed (Failure).")]
+    [InlineData("steamcmd has been disconnected from steam with result 26 (Request revoked)")]
+    [InlineData("Update canceled: Missing game files")]
+    [InlineData("ERROR! Timeout downloading item 107410 583496184")]
+    [InlineData("ERROR! Download item 123 FAILED (No Connection).")]
+    public void IsDownloadFailure_ForFailureOutputs_ReturnsTrue(string output)
+    {
+        SteamCmdService.IsDownloadFailure(output).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("Success. Downloaded item 583496184 to \"C:\\Server\\SteamCMD\\steamapps\\workshop\\content\\107410\\583496184\" (123 bytes after 1 chunks).")]
+    [InlineData("Logging in user 'x' to Steam Public...OK\nDownloading item 123 ...\nSuccess.")]
+    public void IsDownloadFailure_ForSuccessOutputs_ReturnsFalse(string output)
+    {
+        SteamCmdService.IsDownloadFailure(output).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsDownloadFailure_ForNullOutput_ReturnsTrue()
+    {
+        SteamCmdService.IsDownloadFailure(null).Should().BeTrue();
+    }
+
     [Fact]
     public async Task ExecuteWithCodeRetry_WhenFirstAttemptSucceeds_DoesNotRetry()
     {

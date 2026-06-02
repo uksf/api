@@ -32,7 +32,7 @@ public class WorkshopModsProcessingService(
     IUksfLogger logger
 ) : IWorkshopModsProcessingService
 {
-    public async Task DownloadWithRetries(string workshopModId, int maxRetries = 2, CancellationToken cancellationToken = default)
+    public async Task DownloadWithRetries(string workshopModId, int maxRetries = 3, CancellationToken cancellationToken = default)
     {
         var retryDelay = TimeSpan.FromSeconds(5);
 
@@ -42,10 +42,12 @@ public class WorkshopModsProcessingService(
             return;
         }
 
-        logger.LogWarning($"All {maxRetries} download attempts failed for {workshopModId}. Clearing workshop cache and retrying");
+        logger.LogWarning(
+            $"All {maxRetries} download attempts failed for {workshopModId} ({firstRoundException.Message}). Clearing workshop cache and retrying"
+        );
         ClearWorkshopCache();
 
-        var secondRoundException = await TryDownloadWithRetries(workshopModId, 1, retryDelay, cancellationToken);
+        var secondRoundException = await TryDownloadWithRetries(workshopModId, maxRetries, retryDelay, cancellationToken);
         if (secondRoundException == null)
         {
             return;
@@ -63,6 +65,7 @@ public class WorkshopModsProcessingService(
             try
             {
                 await steamCmdService.DownloadWorkshopMod(workshopModId);
+                VerifyDownloadedFiles(workshopModId);
                 return null;
             }
             catch (Exception exception)
@@ -71,12 +74,29 @@ public class WorkshopModsProcessingService(
                 if (attempt < maxRetries)
                 {
                     logger.LogWarning($"Download attempt {attempt}/{maxRetries} failed for {workshopModId}: {exception.Message}");
-                    await Task.Delay(retryDelay, cancellationToken);
+                    await Task.Delay(retryDelay * attempt, cancellationToken);
                 }
             }
         }
 
         return lastException;
+    }
+
+    /// <summary>
+    ///     SteamCMD reports success on stdout even when a download is silently dropped (transient content-delivery failures),
+    ///     leaving no files on disk. The downstream copy then fails with an opaque "Could not find a part of the path" error,
+    ///     so the download is verified here and the real reason surfaced while the operation can still be retried.
+    /// </summary>
+    private void VerifyDownloadedFiles(string workshopModId)
+    {
+        var workshopModPath = GetWorkshopModPath(workshopModId);
+        if (!fileSystemService.DirectoryExists(workshopModPath) || !fileSystemService.EnumerateFiles(workshopModPath, "*", SearchOption.AllDirectories).Any())
+        {
+            throw new Exception(
+                $"SteamCMD reported success but downloaded no files for {workshopModId} at {workshopModPath}. " +
+                "Steam likely failed silently (transient content delivery / no connection)."
+            );
+        }
     }
 
     private void ClearWorkshopCache()

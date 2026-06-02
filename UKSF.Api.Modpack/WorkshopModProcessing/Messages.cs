@@ -3,7 +3,8 @@ namespace UKSF.Api.Modpack.WorkshopModProcessing;
 public enum WorkshopModOperationType
 {
     Install,
-    Update
+    Update,
+    Uninstall
 }
 
 public interface IWorkshopModCommand

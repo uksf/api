@@ -12,6 +12,7 @@ public interface IWorkshopModsService
     Task<DateTime> GetWorkshopModUpdatedDate(string workshopModId);
     Task InstallWorkshopMod(string workshopModId, bool rootMod, string folderName = null);
     Task UpdateWorkshopMod(string workshopModId);
+    Task RetryWorkshopMod(string workshopModId);
     Task UninstallWorkshopMod(string workshopModId);
     Task DeleteWorkshopMod(string workshopModId);
     Task ResolveWorkshopModManualIntervention(string workshopModId, List<string> selectedPbos);
@@ -58,7 +59,8 @@ public class WorkshopModsService(
                 Name = modInfo.Name,
                 Status = WorkshopModStatus.Installing,
                 RootMod = rootMod,
-                FolderName = folderName
+                FolderName = folderName,
+                LastOperation = WorkshopModOperationType.Install
             };
             await workshopModsContext.Add(workshopMod);
         }
@@ -72,6 +74,7 @@ public class WorkshopModsService(
             existingMod.AvailablePbos = [];
             existingMod.StatusMessage = null;
             existingMod.ErrorMessage = null;
+            existingMod.LastOperation = WorkshopModOperationType.Install;
             await workshopModsContext.Replace(existingMod);
             workshopMod = existingMod;
         }
@@ -107,10 +110,54 @@ public class WorkshopModsService(
 
         workshopMod.Status = WorkshopModStatus.Updating;
         workshopMod.StatusMessage = "Preparing to update...";
+        workshopMod.LastOperation = WorkshopModOperationType.Update;
         await workshopModsContext.Replace(workshopMod);
         logger.LogAudit($"Workshop mod updated: {workshopModId}, {workshopMod.Name}");
 
         await publishEndpoint.Publish(new WorkshopModUpdateCommand { WorkshopModId = workshopModId });
+    }
+
+    public async Task RetryWorkshopMod(string workshopModId)
+    {
+        var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
+        if (workshopMod == null)
+        {
+            throw new NotFoundException($"Cannot find workshop mod with Steam ID {workshopModId}");
+        }
+
+        if (workshopMod.Status != WorkshopModStatus.Error)
+        {
+            throw new BadRequestException($"Workshop mod is not in an error state: {workshopMod.Name}");
+        }
+
+        // Mods that errored before operation tracking existed have no recorded operation; they are installed mods whose
+        // update failed, so reprocessing them as an update is the safe default.
+        var operation = workshopMod.LastOperation ?? WorkshopModOperationType.Update;
+
+        workshopMod.ErrorMessage = null;
+        switch (operation)
+        {
+            case WorkshopModOperationType.Install:
+                workshopMod.Status = WorkshopModStatus.Installing;
+                workshopMod.StatusMessage = "Retrying install...";
+                await workshopModsContext.Replace(workshopMod);
+                await publishEndpoint.Publish(new WorkshopModInstallCommand { WorkshopModId = workshopModId });
+                break;
+            case WorkshopModOperationType.Uninstall:
+                workshopMod.Status = WorkshopModStatus.Uninstalling;
+                workshopMod.StatusMessage = "Retrying uninstall...";
+                await workshopModsContext.Replace(workshopMod);
+                await publishEndpoint.Publish(new WorkshopModUninstallCommand { WorkshopModId = workshopModId });
+                break;
+            default:
+                workshopMod.Status = WorkshopModStatus.Updating;
+                workshopMod.StatusMessage = "Retrying update...";
+                await workshopModsContext.Replace(workshopMod);
+                await publishEndpoint.Publish(new WorkshopModUpdateCommand { WorkshopModId = workshopModId });
+                break;
+        }
+
+        logger.LogAudit($"Workshop mod retry ({operation}): {workshopModId}, {workshopMod.Name}");
     }
 
     public async Task UninstallWorkshopMod(string workshopModId)
@@ -138,6 +185,7 @@ public class WorkshopModsService(
 
         workshopMod.Status = WorkshopModStatus.Uninstalling;
         workshopMod.StatusMessage = "Preparing to uninstall...";
+        workshopMod.LastOperation = WorkshopModOperationType.Uninstall;
         await workshopModsContext.Replace(workshopMod);
         logger.LogAudit($"Workshop mod uninstalled: {workshopModId}, {workshopMod.Name}");
 

@@ -1,4 +1,5 @@
 using UKSF.Api.Core.Models;
+using UKSF.Api.Modpack.WorkshopModProcessing;
 
 namespace UKSF.Api.Modpack.Models;
 
@@ -31,4 +32,7 @@ public class DomainWorkshopMod : MongoObject
     public WorkshopModStatus Status { get; set; }
     public string StatusMessage { get; set; }
     public string ErrorMessage { get; set; }
+
+    /// <summary>The last operation requested for this mod, used to retry it after it ends up in the Error state.</summary>
+    public WorkshopModOperationType? LastOperation { get; set; }
 }

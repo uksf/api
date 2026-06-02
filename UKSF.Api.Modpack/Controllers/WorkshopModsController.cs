@@ -54,6 +54,13 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
         return workshopModsService.UpdateWorkshopMod(workshopModId);
     }
 
+    [HttpPost("{workshopModId}/retry")]
+    [Permissions(Permissions.Admin)]
+    public Task RetryWorkshopMod([FromRoute] string workshopModId)
+    {
+        return workshopModsService.RetryWorkshopMod(workshopModId);
+    }
+
     [HttpPost("{workshopModId}/uninstall")]
     [Permissions(Permissions.Admin)]
     public Task UninstallWorkshopMod([FromRoute] string workshopModId)

@@ -45,7 +45,11 @@ public class WorkshopModsProcessingServiceTests
     [Fact]
     public async Task DownloadWithRetries_WhenSuccessful_ShouldReturn()
     {
+        _variablesService.Setup(x => x.GetVariable("SERVER_PATH_STEAM")).Returns(new DomainVariableItem { Key = "SERVER_PATH_STEAM", Item = "C:\\steam" });
         _steamCmdService.Setup(x => x.DownloadWorkshopMod("123")).ReturnsAsync("ok");
+        var workshopPath = Path.Combine("C:\\steam", "steamapps", "workshop", "content", "107410", "123");
+        _fileSystemService.Setup(x => x.DirectoryExists(workshopPath)).Returns(true);
+        _fileSystemService.Setup(x => x.EnumerateFiles(workshopPath, "*", SearchOption.AllDirectories)).Returns([Path.Combine(workshopPath, "mod.pbo")]);
 
         await _subject.DownloadWithRetries("123", 1);
 
@@ -69,6 +73,9 @@ public class WorkshopModsProcessingServiceTests
                                 return Task.FromResult("ok");
                             }
                         );
+        var workshopPath = Path.Combine("C:\\steam", "steamapps", "workshop", "content", "107410", "123");
+        _fileSystemService.Setup(x => x.DirectoryExists(workshopPath)).Returns(true);
+        _fileSystemService.Setup(x => x.EnumerateFiles(workshopPath, "*", SearchOption.AllDirectories)).Returns([Path.Combine(workshopPath, "mod.pbo")]);
 
         await _subject.DownloadWithRetries("123", 1);
 
@@ -87,6 +94,33 @@ public class WorkshopModsProcessingServiceTests
 
         await action.Should().ThrowAsync<Exception>().WithMessage("*clearing cache*");
         _steamCmdService.Verify(x => x.DownloadWorkshopMod("123"), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task DownloadWithRetries_WhenSteamCmdSucceedsButNoFolderDownloaded_ShouldThrow()
+    {
+        _variablesService.Setup(x => x.GetVariable("SERVER_PATH_STEAM")).Returns(new DomainVariableItem { Key = "SERVER_PATH_STEAM", Item = "C:\\steam" });
+        _steamCmdService.Setup(x => x.DownloadWorkshopMod("123")).ReturnsAsync("Success. Downloaded item 123");
+        var workshopPath = Path.Combine("C:\\steam", "steamapps", "workshop", "content", "107410", "123");
+        _fileSystemService.Setup(x => x.DirectoryExists(workshopPath)).Returns(false);
+
+        var action = async () => await _subject.DownloadWithRetries("123", 1);
+
+        await action.Should().ThrowAsync<Exception>().WithMessage("*no files*");
+    }
+
+    [Fact]
+    public async Task DownloadWithRetries_WhenSteamCmdSucceedsButFolderEmpty_ShouldThrow()
+    {
+        _variablesService.Setup(x => x.GetVariable("SERVER_PATH_STEAM")).Returns(new DomainVariableItem { Key = "SERVER_PATH_STEAM", Item = "C:\\steam" });
+        _steamCmdService.Setup(x => x.DownloadWorkshopMod("123")).ReturnsAsync("Success. Downloaded item 123");
+        var workshopPath = Path.Combine("C:\\steam", "steamapps", "workshop", "content", "107410", "123");
+        _fileSystemService.Setup(x => x.DirectoryExists(workshopPath)).Returns(true);
+        _fileSystemService.Setup(x => x.EnumerateFiles(workshopPath, "*", SearchOption.AllDirectories)).Returns([]);
+
+        var action = async () => await _subject.DownloadWithRetries("123", 1);
+
+        await action.Should().ThrowAsync<Exception>().WithMessage("*no files*");
     }
 
     [Fact]

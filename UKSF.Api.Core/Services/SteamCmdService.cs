@@ -49,12 +49,30 @@ public class SteamCmdService : ISteamCmdService
     {
         var output = await ExecuteAuthenticatedSteamCmd($"+workshop_download_item 107410 {workshopModId} +quit");
 
-        if (output.Contains("failed") || IsTransientLoginFailure(output))
+        if (IsDownloadFailure(output))
         {
             throw new Exception(output);
         }
 
         return output;
+    }
+
+    private static readonly string[] DownloadFailureMarkers =
+    [
+        "failed", "no connection", "request revoked", "missing game files", "timeout downloading", "canceled", "cancelled"
+    ];
+
+    /// <summary>
+    ///     True when SteamCMD's workshop download output indicates a failure that should be retried. SteamCMD does not use a
+    ///     reliable exit code, so the only signal is its stdout. Matching is case-insensitive and covers the transient
+    ///     content-delivery failures observed in practice (no connection, request revoked, missing game files, timeouts) in
+    ///     addition to the generic "failed" marker. A null output is treated as a failure.
+    /// </summary>
+    public static bool IsDownloadFailure(string output)
+    {
+        return output is null ||
+               DownloadFailureMarkers.Any(marker => output.Contains(marker, StringComparison.OrdinalIgnoreCase)) ||
+               IsTransientLoginFailure(output);
     }
 
     public async Task<string> RefreshLogin()
@@ -118,12 +136,24 @@ public class SteamCmdService : ISteamCmdService
         var steamPath = _variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
         var cmdPath = Path.Combine(steamPath, "steamcmd.exe");
 
-        var result = await Cli.Wrap(cmdPath)
-                              .WithWorkingDirectory(steamPath)
-                              .WithArguments(arguments)
-                              .WithValidation(CommandResultValidation.None)
-                              .ExecuteBufferedAsync();
+        // SteamCMD shares one install directory and one Steam session per machine. Running two processes concurrently
+        // races the workshop manifest and triggers Steam to revoke download requests, so every invocation is serialised.
+        await SteamCmdGate.WaitAsync();
+        try
+        {
+            var result = await Cli.Wrap(cmdPath)
+                                  .WithWorkingDirectory(steamPath)
+                                  .WithArguments(arguments)
+                                  .WithValidation(CommandResultValidation.None)
+                                  .ExecuteBufferedAsync();
 
-        return result.StandardOutput;
+            return result.StandardOutput;
+        }
+        finally
+        {
+            SteamCmdGate.Release();
+        }
     }
+
+    private static readonly SemaphoreSlim SteamCmdGate = new(1, 1);
 }

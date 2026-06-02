@@ -100,6 +100,14 @@ public class WorkshopModsControllerTests
     }
 
     [Fact]
+    public async Task RetryWorkshopMod_ShouldCallService()
+    {
+        await _subject.RetryWorkshopMod("123");
+
+        _service.Verify(x => x.RetryWorkshopMod("123"), Times.Once);
+    }
+
+    [Fact]
     public async Task UninstallWorkshopMod_ShouldCallService()
     {
         await _subject.UninstallWorkshopMod("123");
