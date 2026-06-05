@@ -40,7 +40,7 @@ public class BuildStepBuildModpack : ModBuildStep
             extensionPath,
             "cmd.exe",
             "/c \"cargo build --release\"",
-            (int)TimeSpan.FromMinutes(5).TotalMilliseconds,
+            (int)TimeSpan.FromMinutes(10).TotalMilliseconds,
             true,
             redirectStderrToOutput: true
         );
@@ -52,6 +52,17 @@ public class BuildStepBuildModpack : ModBuildStep
         File.Copy(builtDll, targetDll, true);
         StepLogger.Log($"Copied {builtDll} to {targetDll}");
         StepLogger.LogSurround("Copied extension DLL");
+
+        StepLogger.LogSurround("\nProvisioning whisper STT model...");
+        await RunProcess(
+            rootPath,
+            "cmd.exe",
+            "/c \"powershell -NoProfile -ExecutionPolicy Bypass -File tools\\fetch_whisper_model.ps1\"",
+            (int)TimeSpan.FromMinutes(15).TotalMilliseconds,
+            true,
+            redirectStderrToOutput: true
+        );
+        StepLogger.LogSurround("Provisioned whisper STT model");
 
         StepLogger.LogSurround("\nSetting configuration...");
         var configurationFile = Path.Join(rootPath, "addons", "main", "script_configuration.hpp");
