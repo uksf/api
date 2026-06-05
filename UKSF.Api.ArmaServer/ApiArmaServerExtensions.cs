@@ -7,6 +7,7 @@ using UKSF.Api.ArmaServer.Models.Persistence;
 using UKSF.Api.ArmaServer.Queries;
 using UKSF.Api.ArmaServer.ScheduledActions;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.ArmaServer.Npc.Services;
 using UKSF.Api.ArmaServer.Services.StatsEventProcessors;
 using UKSF.Api.ArmaServer.Signalr.Hubs;
 using UKSF.Api.Core.Extensions;
@@ -51,7 +52,9 @@ public static class ApiArmaServerExtensions
                            .AddContext<IMissionStatsContext, MissionStatsContext>()
                            .AddContext<IPersistenceSessionsContext, PersistenceSessionsContext>()
                            .AddContext<IGameDataExportsContext, GameDataExportsContext>()
-                           .AddContext<IDevRunsContext, DevRunsContext>();
+                           .AddContext<IDevRunsContext, DevRunsContext>()
+                           .AddContext<INpcSessionsContext, NpcSessionsContext>()
+                           .AddContext<INpcAudioClipsContext, NpcAudioClipsContext>();
         }
 
         private IServiceCollection AddServices()
@@ -86,7 +89,10 @@ public static class ApiArmaServerExtensions
                            .AddSingleton<IDevRunService, DevRunService>()
                            .AddHostedService<GameServerProcessManagerStartup>()
                            .AddHostedService<GameDataExportRecoveryStartup>()
-                           .AddHostedService<DevRunRecoveryStartup>();
+                           .AddHostedService<DevRunRecoveryStartup>()
+                           .AddSingleton<INpcBrainClient, NpcBrainClient>()
+                           .AddSingleton<IGameServerCommandSender, GameServerCommandSender>()
+                           .AddSingleton<INpcBrokerService, NpcBrokerService>();
         }
 
         private IServiceCollection AddCommands()

@@ -5,6 +5,7 @@ using MongoDB.Driver;
 using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Npc.Services;
 using UKSF.Api.Core;
 using static UKSF.Api.ArmaServer.Converters.PersistenceConversionHelpers;
 
@@ -22,7 +23,8 @@ public class GameServerEventHandler(
     IMissionStatsService missionStatsService,
     IPerformanceService performanceService,
     IPersistenceSessionsService persistenceSessionsService,
-    IUksfLogger logger
+    IUksfLogger logger,
+    INpcBrokerService npcBrokerService
 ) : IGameServerEventHandler
 {
     public async Task HandleEventAsync(GameServerEvent gameServerEvent)
@@ -52,6 +54,8 @@ public class GameServerEventHandler(
                 case "player_disconnected": await HandlePlayerPresenceEvent(gameServerEvent.Data, isConnected: false); break;
                 case "performance":         await HandlePerformanceEvent(gameServerEvent.Data); break;
                 case "persistence_save":    await HandlePersistenceSaveEvent(gameServerEvent.Data); break;
+                case "npc_register":        await npcBrokerService.HandleRegisterAsync(gameServerEvent.ApiPort, gameServerEvent.Data); break;
+                case "npc_turn":            await npcBrokerService.HandleTurnAsync(gameServerEvent.ApiPort, gameServerEvent.Data); break;
                 default:                    logger.LogWarning($"Unknown game server event type: {gameServerEvent.Type}"); break;
             }
         }
@@ -144,6 +148,7 @@ public class GameServerEventHandler(
         {
             var duration = data.TryGetValue("duration", out var durationValue) && double.TryParse(durationValue?.ToString(), out var parsed) ? parsed : 0;
             await missionStatsService.HandleMissionEndedAsync(sessionId, duration, now);
+            await npcBrokerService.HandleMissionEndedAsync(sessionId);
         }
     }
 

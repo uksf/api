@@ -11,6 +11,7 @@ using UKSF.Api.ArmaServer.Consumers;
 using UKSF.Api.ArmaServer.Converters;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.ArmaServer.Npc.Services;
 using UKSF.Api.ArmaServer.Parsing;
 using UKSF.Api.ArmaServer.Services;
 using UKSF.Api.Core;
@@ -27,6 +28,7 @@ public class GameServerEventHandlerTests
     private readonly Mock<IPerformanceService> _mockPerformanceService = new();
     private readonly Mock<IPersistenceSessionsService> _mockPersistenceSessionsService = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
+    private readonly Mock<INpcBrokerService> _mockNpcBrokerService = new();
     private readonly GameServerEventHandler _sut;
 
     public GameServerEventHandlerTests()
@@ -38,7 +40,8 @@ public class GameServerEventHandlerTests
             _mockMissionStatsService.Object,
             _mockPerformanceService.Object,
             _mockPersistenceSessionsService.Object,
-            _mockLogger.Object
+            _mockLogger.Object,
+            _mockNpcBrokerService.Object
         );
     }
 
@@ -186,7 +189,8 @@ public class GameServerEventHandlerTests
             _mockMissionStatsService.Object,
             realPerformanceService,
             _mockPersistenceSessionsService.Object,
-            _mockLogger.Object
+            _mockLogger.Object,
+            _mockNpcBrokerService.Object
         );
 
         const string sqf = "[\"performance\",[" +
@@ -254,5 +258,67 @@ public class GameServerEventHandlerTests
 
         published.Should().NotBeNull();
         published.EnqueueAt.Should().Be(new DateTime(2026, 4, 25, 18, 0, 0, DateTimeKind.Utc));
+    }
+
+    [Fact]
+    public async Task HandleEventAsync_NpcRegister_DelegatesToNpcBrokerService()
+    {
+        var data = new Dictionary<string, object> { { "npcId", "npc1" }, { "sessionId", "sess1" } };
+        var evt = new GameServerEvent
+        {
+            Type = "npc_register",
+            ApiPort = 5006,
+            Data = data
+        };
+
+        await _sut.HandleEventAsync(evt);
+
+        _mockNpcBrokerService.Verify(x => x.HandleRegisterAsync(5006, data), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleEventAsync_NpcTurn_DelegatesToNpcBrokerService()
+    {
+        var data = new Dictionary<string, object>
+        {
+            { "npcId", "npc1" },
+            { "turnId", "t1" },
+            { "newTurns", new List<object>() }
+        };
+        var evt = new GameServerEvent
+        {
+            Type = "npc_turn",
+            ApiPort = 5006,
+            Data = data
+        };
+
+        await _sut.HandleEventAsync(evt);
+
+        _mockNpcBrokerService.Verify(x => x.HandleTurnAsync(5006, data), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleEventAsync_MissionEnded_CallsNpcBrokerHandleMissionEnded()
+    {
+        var data = new Dictionary<string, object> { { "sessionId", "sess1" }, { "duration", "120.5" } };
+        var evt = new GameServerEvent
+        {
+            Type = "mission_ended",
+            ApiPort = 2303,
+            Data = data
+        };
+
+        var gameServer = new DomainGameServer
+        {
+            Id = "srv1",
+            ApiPort = 2303,
+            Status = new GameServerStatus()
+        };
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(gameServer);
+        _mockContext.Setup(x => x.Update(It.IsAny<string>(), It.IsAny<UpdateDefinition<DomainGameServer>>())).Returns(Task.CompletedTask);
+
+        await _sut.HandleEventAsync(evt);
+
+        _mockNpcBrokerService.Verify(x => x.HandleMissionEndedAsync("sess1"), Times.Once);
     }
 }
