@@ -38,7 +38,13 @@ public static class ApiArmaServerExtensions
                 }
             );
 
-            return services.AddContexts().AddServices().AddCommands().AddQueries().AddActions().AddHostedService<MissionStatsIndexes>();
+            return services.AddContexts()
+                           .AddServices()
+                           .AddCommands()
+                           .AddQueries()
+                           .AddActions()
+                           .AddHostedService<MissionStatsIndexes>()
+                           .AddHostedService<NpcIndexes>();
         }
 
         private IServiceCollection AddContexts()

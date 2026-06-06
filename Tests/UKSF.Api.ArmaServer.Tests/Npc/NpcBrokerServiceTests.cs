@@ -480,6 +480,8 @@ public class NpcBrokerServiceTests
                          {
                              var deflectionClip = new DomainNpcAudioClip
                              {
+                                 SessionId = "session1",
+                                 NpcId = "npc1",
                                  VoiceId = "bm_george",
                                  ClipId = "__deflection__",
                                  AudioBase64 = "REVG",

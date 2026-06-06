@@ -3,10 +3,14 @@ using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.ArmaServer.Npc.Models;
 
-// A pre-rendered clip: scripted line, deflection, or filler. Keyed logically by (VoiceId, ClipId);
-// shared across NPCs that use the same voice. Persisted so a mid-mission API restart keeps them.
+// A pre-rendered clip: scripted line, deflection, or filler. Keyed per-NPC by (SessionId, NpcId, ClipId)
+// so two NPCs sharing a voice can't clobber each other's scripted lines. Persisted so a mid-mission
+// API restart keeps them.
 public class DomainNpcAudioClip : MongoObject
 {
+    [JsonPropertyName("npcId")]
+    public string NpcId { get; set; } = string.Empty;
+
     [JsonPropertyName("voiceId")]
     public string VoiceId { get; set; } = string.Empty;
 

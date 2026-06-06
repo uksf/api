@@ -24,7 +24,16 @@ public class NpcBrainDtosTests
             Knowledge = "knows the ammo cache location",
             Mode = "dynamic",
             VoiceId = "bm_george",
-            History = "",
+            History =
+            [
+                new NpcHistoryEntry
+                {
+                    Role = "npc",
+                    Speaker = "",
+                    Text = "leave now",
+                    T = 1699999999000
+                }
+            ],
             NewTurns =
             [
                 new NpcTurnDto
@@ -40,6 +49,8 @@ public class NpcBrainDtosTests
 
         json.Should().Contain("\"npcId\":\"npc1\"");
         json.Should().Contain("\"attitudeToPlayers\":\"hostile\"");
+        json.Should().Contain("\"history\":[");
+        json.Should().Contain("\"role\":\"npc\"");
         json.Should().Contain("\"newTurns\":[");
         json.Should().Contain("\"speakerId\":\"76561\"");
         json.Should().Contain("\"t\":1700000000000");

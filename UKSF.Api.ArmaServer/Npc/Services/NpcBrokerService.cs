@@ -28,6 +28,7 @@ public class NpcBrokerService(
 ) : INpcBrokerService
 {
     private const string DeflectionId = "__deflection__";
+    private const int HistoryLimit = 40;
 
     private static readonly (string Id, string Text)[] Fillers = [("f0", "hmm"), ("f1", "let me think"), ("f2", "give me a sec"), ("f3", "hold on")];
 
@@ -89,7 +90,7 @@ public class NpcBrokerService(
             CreatedAt = DateTime.UtcNow
         };
 
-        var existing = sessionsContext.GetSingle(x => x.NpcId == session.NpcId);
+        var existing = sessionsContext.GetSingle(x => x.SessionId == session.SessionId && x.NpcId == session.NpcId);
         if (existing is not null)
         {
             session.Id = existing.Id;
@@ -127,6 +128,7 @@ public class NpcBrokerService(
         {
             var clip = new DomainNpcAudioClip
             {
+                NpcId = npcId,
                 VoiceId = voiceId,
                 ClipId = item.Id,
                 AudioBase64 = item.AudioBase64,
@@ -134,7 +136,7 @@ public class NpcBrokerService(
                 SessionId = sessionId
             };
 
-            var existingClip = clipsContext.GetSingle(x => x.VoiceId == voiceId && x.ClipId == item.Id);
+            var existingClip = clipsContext.GetSingle(x => x.SessionId == sessionId && x.NpcId == npcId && x.ClipId == item.Id);
             if (existingClip is not null)
             {
                 clip.Id = existingClip.Id;
@@ -149,7 +151,11 @@ public class NpcBrokerService(
         foreach (var (fillerId, _) in Fillers)
         {
             var fillerClip = result.Items.Find(i => i.Id == fillerId);
-            if (fillerClip is null) continue;
+            if (fillerClip is null)
+            {
+                logger.LogWarning($"NPC prerender missing filler '{fillerId}' for voiceId '{voiceId}'");
+                continue;
+            }
 
             foreach (var cmd in NpcAudioEnvelopeBuilder.BuildFiller(npcId, voiceId, fillerId, fillerClip.AudioBase64, fillerClip.DurationMs))
             {
@@ -163,6 +169,7 @@ public class NpcBrokerService(
         if (!variablesService.GetFeatureState("NPC_BROKER")) return;
 
         var npcId = ToSafeString(data.GetValueOrDefault("npcId"));
+        var sessionId = ToSafeString(data.GetValueOrDefault("sessionId"));
         var turnId = ToSafeString(data.GetValueOrDefault("turnId"));
         var rawTurns = ToList(data.GetValueOrDefault("newTurns"));
 
@@ -172,10 +179,10 @@ public class NpcBrokerService(
             return;
         }
 
-        var session = sessionsContext.GetSingle(x => x.NpcId == npcId);
+        var session = sessionsContext.GetSingle(x => x.NpcId == npcId && x.SessionId == sessionId);
         if (session is null)
         {
-            logger.LogWarning($"npc_turn for unregistered npcId '{npcId}' — register must precede turns");
+            logger.LogWarning($"npc_turn for unregistered npcId '{npcId}' (sessionId '{sessionId}') — register must precede turns");
             return;
         }
 
@@ -208,7 +215,7 @@ public class NpcBrokerService(
             Mode = session.Mode,
             Scripted = session.Mode == "scripted" ? new NpcScriptedDto { Lines = session.Scripted.Lines, Deflection = session.Scripted.Deflection } : null,
             VoiceId = session.VoiceId,
-            History = NpcHistoryFormatter.Format(session.History),
+            History = session.History,
             NewTurns = parsedTurns
         };
 
@@ -225,7 +232,7 @@ public class NpcBrokerService(
         if (session.Mode == "scripted")
         {
             var lineId = string.IsNullOrEmpty(result.LineId) ? DeflectionId : result.LineId;
-            var clip = clipsContext.GetSingle(x => x.VoiceId == session.VoiceId && x.ClipId == lineId);
+            var clip = clipsContext.GetSingle(x => x.SessionId == session.SessionId && x.NpcId == npcId && x.ClipId == lineId);
             if (clip is null)
             {
                 logger.LogWarning($"npc_turn: scripted clip not found for voiceId='{session.VoiceId}', lineId='{lineId}'");
@@ -276,8 +283,8 @@ public class NpcBrokerService(
             }
         );
 
-        var update = Builders<DomainNpcSession>.Update.PushEach(x => x.History, newEntries);
-        await sessionsContext.Update(x => x.NpcId == npcId, update);
+        var update = Builders<DomainNpcSession>.Update.PushEach(x => x.History, newEntries, slice: -HistoryLimit);
+        await sessionsContext.Update(x => x.NpcId == npcId && x.SessionId == sessionId, update);
     }
 
     public async Task HandleMissionEndedAsync(string sessionId)

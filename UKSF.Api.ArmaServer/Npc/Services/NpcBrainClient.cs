@@ -23,6 +23,12 @@ public class NpcBrainClient(IHttpClientFactory httpClientFactory, IVariablesServ
     private async Task<TResult> PostAsync<TBody, TResult>(string path, TBody body) where TResult : class
     {
         var baseUrl = variablesService.GetVariable("NPC_BRAIN_URL").AsString().TrimEnd('/');
+        if (string.IsNullOrEmpty(baseUrl))
+        {
+            logger.LogWarning("NPC_BRAIN_URL not configured — NPC brain call skipped");
+            return null;
+        }
+
         var url = $"{baseUrl}/{path}";
         try
         {

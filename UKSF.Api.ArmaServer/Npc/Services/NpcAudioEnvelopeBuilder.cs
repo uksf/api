@@ -24,7 +24,8 @@ public static class NpcAudioEnvelopeBuilder
         for (var index = 0; index < total; index++)
         {
             var lead = string.Join(",", leadingFields);
-            commands.Add($"[\"{type}\",{lead},{index},{total},\"{Escape(chunks[index])}\",{durationMs}]");
+            // base64 never contains a double-quote, so the chunk payload needs no escaping.
+            commands.Add($"[\"{type}\",{lead},{index},{total},\"{chunks[index]}\",{durationMs}]");
         }
 
         return commands;

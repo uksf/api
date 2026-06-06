@@ -32,7 +32,7 @@ public class RespondRequest
     public string Mode { get; set; } = "dynamic";
     public NpcScriptedDto Scripted { get; set; } // null for dynamic -> omitted by WhenWritingNull
     public string VoiceId { get; set; } = string.Empty;
-    public string History { get; set; } = string.Empty;
+    public List<NpcHistoryEntry> History { get; set; } = [];
     public List<NpcTurnDto> NewTurns { get; set; } = [];
     public string Provider { get; set; }
 }
