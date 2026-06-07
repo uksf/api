@@ -57,6 +57,20 @@ public class ClacksClientTests
     }
 
     [Fact]
+    public async Task ChatAsync_ReturnsNullWhenClacksUrlNotConfigured()
+    {
+        var factory = new Mock<IHttpClientFactory>();
+        var variables = new Mock<IVariablesService>();
+        variables.Setup(x => x.GetVariable("CLACKS_URL")).Returns(new DomainVariableItem { Key = "CLACKS_URL", Item = null });
+        var client = new ClacksClient(factory.Object, variables.Object, Mock.Of<IUksfLogger>());
+
+        var result = await client.ChatAsync("npc", "s", "u", false, 80, 0.7);
+
+        result.Should().BeNull();
+        factory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
     public async Task ChatAsync_ReturnsNullOnHttpFailure()
     {
         var (client, _) = Build(HttpStatusCode.ServiceUnavailable, "{\"error\":\"no route\"}");

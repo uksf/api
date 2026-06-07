@@ -4,7 +4,6 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.Npc.Models;
 using UKSF.Api.Core;
-using UKSF.Api.Core.Extensions;
 using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.Npc.Services;
@@ -28,7 +27,8 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
 {
     public async Task<ClacksChatResult> ChatAsync(string role, string system, string user, bool json, int maxTokens, double temperature)
     {
-        var baseUrl = variablesService.GetVariable("CLACKS_URL").AsString().TrimEnd('/');
+        // Non-throwing read: AsString() throws on a missing item, which would make this guard dead code
+        var baseUrl = variablesService.GetVariable("CLACKS_URL")?.Item?.ToString()?.TrimEnd('/');
         if (string.IsNullOrEmpty(baseUrl))
         {
             logger.LogWarning("CLACKS_URL not configured — clacks call skipped");
