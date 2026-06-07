@@ -48,7 +48,7 @@ public class NpcBrainService(IClacksClient clacksClient, IUksfLogger logger) : I
         }
 
         var cleanText = NpcReplyCleaner.Clean(result.Text);
-        var speech = await clacksClient.SpeakAsync("voice", cleanText, request.VoiceId);
+        var speech = cleanText.Length == 0 ? null : await clacksClient.SpeakAsync("voice", cleanText, request.VoiceId);
         if (speech is null) logger.LogWarning($"NPC speak failed for npcId '{request.NpcId}' — turn will be silent");
         return new RespondResult
         {

@@ -103,6 +103,17 @@ public class NpcBrainServiceTests
     }
 
     [Fact]
+    public async Task RespondAsync_Dynamic_EmptyCleanedReply_DoesNotSpeak()
+    {
+        var (service, clacks) = Build("You said:"); // cleaner strips this to empty
+        var result = await service.RespondAsync(Dynamic());
+
+        result.Text.Should().Be(string.Empty);
+        result.AudioBase64.Should().BeNull();
+        clacks.Verify(x => x.SpeakAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
     public async Task RespondAsync_Dynamic_SpeakFailure_ReturnsTextWithNullAudio()
     {
         var clacks = new Mock<IClacksClient>();
