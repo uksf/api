@@ -77,4 +77,45 @@ public class ClacksClientTests
         var result = await client.ChatAsync("npc", "s", "u", false, 80, 0.7);
         result.Should().BeNull();
     }
+
+    [Fact]
+    public async Task SpeakAsync_PostsRoleTextVoiceIdAndParsesResult()
+    {
+        var (client, sent) = Build(HttpStatusCode.OK, "{\"audioBase64\":\"V0FW\",\"durationMs\":2500,\"node\":\"ultron\",\"model\":\"kokoro\",\"ms\":2600}");
+        var result = await client.SpeakAsync("voice", "Get back.", "bm_george");
+
+        result.AudioBase64.Should().Be("V0FW");
+        result.DurationMs.Should().Be(2500);
+        result.Node.Should().Be("ultron");
+        result.Model.Should().Be("kokoro");
+
+        sent.Should().HaveCount(1);
+        sent[0].RequestUri.ToString().Should().Be("http://dedi-ts:8800/speak");
+        var body = JsonDocument.Parse(await sent[0].Content.ReadAsStringAsync());
+        body.RootElement.GetProperty("role").GetString().Should().Be("voice");
+        body.RootElement.GetProperty("text").GetString().Should().Be("Get back.");
+        body.RootElement.GetProperty("voiceId").GetString().Should().Be("bm_george");
+    }
+
+    [Fact]
+    public async Task SpeakAsync_ReturnsNullOnHttpFailure()
+    {
+        var (client, _) = Build(HttpStatusCode.BadGateway, "{\"error\":\"voicebox generation failed\"}");
+        var result = await client.SpeakAsync("voice", "t", "v");
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SpeakAsync_ReturnsNullWhenClacksUrlNotConfigured()
+    {
+        var factory = new Mock<IHttpClientFactory>();
+        var variables = new Mock<IVariablesService>();
+        variables.Setup(x => x.GetVariable("CLACKS_URL")).Returns(new DomainVariableItem { Key = "CLACKS_URL", Item = null });
+        var client = new ClacksClient(factory.Object, variables.Object, Mock.Of<IUksfLogger>());
+
+        var result = await client.SpeakAsync("voice", "t", "v");
+
+        result.Should().BeNull();
+        factory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
+    }
 }
