@@ -96,7 +96,8 @@ public static class ApiArmaServerExtensions
                            .AddHostedService<GameServerProcessManagerStartup>()
                            .AddHostedService<GameDataExportRecoveryStartup>()
                            .AddHostedService<DevRunRecoveryStartup>()
-                           .AddSingleton<INpcBrainClient, NpcBrainClient>()
+                           .AddSingleton<IClacksClient, ClacksClient>()
+                           .AddSingleton<INpcBrainClient, NpcBrainService>()
                            .AddSingleton<IGameServerCommandSender, GameServerCommandSender>()
                            .AddSingleton<INpcBrokerService, NpcBrokerService>();
         }
