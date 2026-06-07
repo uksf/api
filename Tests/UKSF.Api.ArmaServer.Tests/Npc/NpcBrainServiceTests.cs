@@ -57,7 +57,7 @@ public class NpcBrainServiceTests
         return req;
     }
 
-    private static (NpcBrainService service, Mock<IClacksClient> clacks) Build(string text)
+    private static (NpcBrainService service, Mock<IClacksClient> clacks) Build(string text, ClacksSpeakResult speak = null)
     {
         var clacks = new Mock<IClacksClient>();
         clacks.Setup(x => x.ChatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<double>()))
@@ -72,30 +72,70 @@ public class NpcBrainServiceTests
                           Ms = 1200
                       }
               );
+        clacks.Setup(x => x.SpeakAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+              .ReturnsAsync(
+                  speak ??
+                  new ClacksSpeakResult
+                  {
+                      AudioBase64 = "V0FW",
+                      DurationMs = 2500,
+                      Node = "ultron",
+                      Model = "kokoro",
+                      Ms = 2600
+                  }
+              );
         return (new NpcBrainService(clacks.Object, Mock.Of<IUksfLogger>()), clacks);
     }
 
     [Fact]
-    public async Task RespondAsync_Dynamic_CleansTextAndReturnsNullAudio()
+    public async Task RespondAsync_Dynamic_CleansTextAndSpeaksIt()
     {
         var (service, clacks) = Build("You said: Get off my land.");
         var result = await service.RespondAsync(Dynamic());
 
         result.Text.Should().Be("Get off my land.");
         result.LineId.Should().BeNull();
-        result.AudioBase64.Should().BeNull();
+        result.AudioBase64.Should().Be("V0FW");
+        result.DurationMs.Should().Be(2500);
         result.Provider.Should().Be("qwen2.5-3b@server");
         clacks.Verify(x => x.ChatAsync("npc", It.Is<string>(s => s.Contains("Abu Hassan")), It.Is<string>(u => u.Contains("open up")), false, 80, 0.7));
+        clacks.Verify(x => x.SpeakAsync("voice", "Get off my land.", "v1"), Times.Once); // speaks the CLEANED text
+    }
+
+    [Fact]
+    public async Task RespondAsync_Dynamic_SpeakFailure_ReturnsTextWithNullAudio()
+    {
+        var clacks = new Mock<IClacksClient>();
+        clacks.Setup(x => x.ChatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<double>()))
+              .ReturnsAsync(
+                  new ClacksChatResult
+                  {
+                      Text = "Go away.",
+                      Node = "server",
+                      Model = "qwen2.5-3b",
+                      Ms = 1200
+                  }
+              );
+        clacks.Setup(x => x.SpeakAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync((ClacksSpeakResult)null);
+        var service = new NpcBrainService(clacks.Object, Mock.Of<IUksfLogger>());
+
+        var result = await service.RespondAsync(Dynamic());
+
+        result.Text.Should().Be("Go away.");
+        result.AudioBase64.Should().BeNull();
+        result.DurationMs.Should().BeNull();
     }
 
     [Fact]
     public async Task RespondAsync_Scripted_ResolvesValidLineId()
     {
-        var (service, _) = Build("{\"lineId\":\"ammo\"}");
+        var (service, clacks) = Build("{\"lineId\":\"ammo\"}");
         var result = await service.RespondAsync(Scripted());
         result.LineId.Should().Be("ammo");
         result.Text.Should().Be("North building.");
         result.AudioBase64.Should().BeNull();
+        // scripted turns use prerendered clips — no synth at respond time
+        clacks.Verify(x => x.SpeakAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -124,10 +164,38 @@ public class NpcBrainServiceTests
     }
 
     [Fact]
-    public async Task PrerenderAsync_ReturnsNullWhileTtsStubbed()
+    public async Task PrerenderAsync_SynthsEveryItem()
     {
-        var (service, _) = Build("x");
-        var result = await service.PrerenderAsync(new PrerenderRequest());
-        result.Should().BeNull();
+        var (service, clacks) = Build("x");
+        var result = await service.PrerenderAsync(
+            new PrerenderRequest
+            {
+                VoiceId = "bm_george", Items = [new PrerenderItem { Id = "f0", Text = "hmm" }, new PrerenderItem { Id = "f1", Text = "let me think" }]
+            }
+        );
+
+        result.Items.Should().HaveCount(2);
+        result.Items[0].Id.Should().Be("f0");
+        result.Items[0].AudioBase64.Should().Be("V0FW");
+        result.Items[0].DurationMs.Should().Be(2500);
+        clacks.Verify(x => x.SpeakAsync("voice", "hmm", "bm_george"), Times.Once);
+        clacks.Verify(x => x.SpeakAsync("voice", "let me think", "bm_george"), Times.Once);
+    }
+
+    [Fact]
+    public async Task PrerenderAsync_SkipsFailedItems_AndReturnsTheRest()
+    {
+        var clacks = new Mock<IClacksClient>();
+        clacks.SetupSequence(x => x.SpeakAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+              .ReturnsAsync((ClacksSpeakResult)null)
+              .ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "V0FW", DurationMs = 100 });
+        var service = new NpcBrainService(clacks.Object, Mock.Of<IUksfLogger>());
+
+        var result = await service.PrerenderAsync(
+            new PrerenderRequest { VoiceId = "v", Items = [new PrerenderItem { Id = "f0", Text = "a" }, new PrerenderItem { Id = "f1", Text = "b" }] }
+        );
+
+        result.Items.Should().HaveCount(1);
+        result.Items[0].Id.Should().Be("f1");
     }
 }
