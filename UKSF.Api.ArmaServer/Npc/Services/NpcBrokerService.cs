@@ -23,6 +23,7 @@ public class NpcBrokerService(
     INpcAudioClipsContext clipsContext,
     INpcBrainClient brainClient,
     IGameServerCommandSender commandSender,
+    INpcAudioStore audioStore,
     IVariablesService variablesService,
     IUksfLogger logger
 ) : INpcBrokerService
@@ -126,12 +127,23 @@ public class NpcBrokerService(
 
         foreach (var item in result.Items)
         {
+            string filePath;
+            try
+            {
+                filePath = await audioStore.SaveAsync(sessionId, npcId, item.Id, Convert.FromBase64String(item.AudioBase64));
+            }
+            catch (Exception exception)
+            {
+                logger.LogError($"NPC clip save failed for clipId '{item.Id}' — clip skipped", exception);
+                continue;
+            }
+
             var clip = new DomainNpcAudioClip
             {
                 NpcId = npcId,
                 VoiceId = voiceId,
                 ClipId = item.Id,
-                AudioBase64 = item.AudioBase64,
+                FilePath = filePath,
                 DurationMs = item.DurationMs,
                 SessionId = sessionId
             };
@@ -239,7 +251,14 @@ public class NpcBrokerService(
                 return;
             }
 
-            audioBase64 = clip.AudioBase64;
+            var bytes = await audioStore.ReadAsync(clip.FilePath);
+            if (bytes is null)
+            {
+                logger.LogWarning($"npc_turn: scripted clip file missing '{clip.FilePath}' for lineId '{lineId}'");
+                return;
+            }
+
+            audioBase64 = Convert.ToBase64String(bytes);
             durationMs = clip.DurationMs;
         }
         else
@@ -257,6 +276,19 @@ public class NpcBrokerService(
         foreach (var cmd in NpcAudioEnvelopeBuilder.BuildAudio(npcId, turnId, audioBase64, durationMs))
         {
             await commandSender.SendCommandAsync(apiPort, cmd);
+        }
+
+        if (session.Mode != "scripted")
+        {
+            // Archive is best-effort — players already heard the clip.
+            try
+            {
+                await audioStore.SaveAsync(sessionId, npcId, turnId, Convert.FromBase64String(audioBase64));
+            }
+            catch (Exception exception)
+            {
+                logger.LogError($"npc_turn: dynamic clip archive failed for turnId '{turnId}'", exception);
+            }
         }
 
         var newEntries = new List<NpcHistoryEntry>();

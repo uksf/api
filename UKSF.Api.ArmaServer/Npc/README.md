@@ -1,6 +1,6 @@
 # NPC Speech Broker (sub-plan #5)
 
-This directory contains the C# implementation of the NPC speech broker. Inbound events arrive on the existing `/gameservers/events` channel (`npc_register`, `npc_turn`); outbound audio commands are POSTed as SQF-array literals to `http://localhost:{apiPort}/command` on the game server; outbound brain calls go to `{NPC_BRAIN_URL}/npc/prerender` and `/npc/respond` on the arc VM over Tailscale. Session and cached-audio state persist in Mongo collections `npcSessions` and `npcAudioClips` so a mid-mission API restart loses nothing. The entire feature is gated by the `FEATURE_NPC_BROKER` variable.
+This directory contains the C# implementation of the NPC speech broker. Inbound events arrive on the existing `/gameservers/events` channel (`npc_register`, `npc_turn`); outbound audio commands are POSTed as SQF-array literals to `http://localhost:{apiPort}/command` on the game server; outbound brain calls go to the local clacks daemon ({CLACKS_URL}/chat for routing, /speak for TTS); prerendered + dynamic clips are stored as WAV files under {NPC_AUDIO_PATH} with paths in Mongo. Session and cached-audio state persist in Mongo collections `npcSessions` and `npcAudioClips` so a mid-mission API restart loses nothing. The entire feature is gated by the `FEATURE_NPC_BROKER` variable.
 
 ---
 
@@ -9,13 +9,7 @@ This directory contains the C# implementation of the NPC speech broker. Inbound 
 | Key | Type | Example value | Purpose |
 |-----|------|---------------|---------|
 | `FEATURE_NPC_BROKER` | bool | `true` | Gates the entire feature. Read via `variablesService.GetFeatureState("NPC_BROKER")`. |
-| `NPC_BRAIN_URL` | string | `http://100.67.131.75:4400` | Base URL of the arc VM brain service, reachable from the dedi over Tailscale. Read via `variablesService.GetVariable("NPC_BRAIN_URL").AsString()`. |
-
----
-
-## Ops prerequisite — arc VM bind address
-
-The `arma-npc` service on arc currently binds `127.0.0.1:4400` (loopback only). Before live testing, the service must bind an interface reachable from the dedi over Tailscale (e.g. `HOST=0.0.0.0` or the Tailscale IP directly). Keep the port private to the Tailscale network — do not expose it to the public internet.
+| `NPC_AUDIO_PATH` | string | `D:/NpcAudio` | Root folder for WAV clips (date-foldered). Mongo npcAudioClips stores paths relative to this root. Files survive mission end as the session voice-line archive. |
 
 ---
 

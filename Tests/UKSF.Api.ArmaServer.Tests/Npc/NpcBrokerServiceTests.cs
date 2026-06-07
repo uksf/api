@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -21,6 +22,7 @@ public class NpcBrokerServiceTests
     private readonly Mock<INpcAudioClipsContext> _clipsContext = new();
     private readonly Mock<INpcBrainClient> _brainClient = new();
     private readonly Mock<IGameServerCommandSender> _commandSender = new();
+    private readonly Mock<INpcAudioStore> _audioStore = new();
     private readonly Mock<IVariablesService> _variablesService = new();
     private readonly Mock<IUksfLogger> _logger = new();
     private readonly NpcBrokerService _sut;
@@ -39,6 +41,9 @@ public class NpcBrokerServiceTests
         _clipsContext.Setup(x => x.Replace(It.IsAny<DomainNpcAudioClip>())).Returns(Task.CompletedTask);
         _clipsContext.Setup(x => x.DeleteMany(It.IsAny<Expression<Func<DomainNpcAudioClip, bool>>>())).Returns(Task.CompletedTask);
         _commandSender.Setup(x => x.SendCommandAsync(It.IsAny<int>(), It.IsAny<string>())).Returns(Task.CompletedTask);
+        _audioStore.Setup(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()))
+                   .ReturnsAsync((string sessionId, string npcId, string clipId, byte[] _) => $"2026-06-07/{sessionId}_{npcId}_{clipId}.wav");
+        _audioStore.Setup(x => x.ReadAsync(It.IsAny<string>())).ReturnsAsync(Convert.FromBase64String("QUJD"));
 
         _brainClient.Setup(x => x.PrerenderAsync(It.IsAny<PrerenderRequest>()))
                     .ReturnsAsync(
@@ -79,6 +84,7 @@ public class NpcBrokerServiceTests
             _clipsContext.Object,
             _brainClient.Object,
             _commandSender.Object,
+            _audioStore.Object,
             _variablesService.Object,
             _logger.Object
         );
@@ -200,8 +206,9 @@ public class NpcBrokerServiceTests
         capturedRequest.Items.Should().HaveCount(4);
         capturedRequest.Items.Select(i => i.Id).Should().BeEquivalentTo(["f0", "f1", "f2", "f3"]);
 
-        // 4 clips stored
-        _clipsContext.Verify(x => x.Add(It.IsAny<DomainNpcAudioClip>()), Times.Exactly(4));
+        // 4 clips stored as files, docs carry the path
+        _clipsContext.Verify(x => x.Add(It.Is<DomainNpcAudioClip>(c => c.FilePath.EndsWith(".wav") && c.FilePath.Contains(c.ClipId))), Times.Exactly(4));
+        _audioStore.Verify(x => x.SaveAsync("session1", "npc1", It.IsAny<string>(), It.IsAny<byte[]>()), Times.Exactly(4));
 
         // At least 4 filler commands pushed (one per filler — single chunk each for small base64)
         _commandSender.Verify(x => x.SendCommandAsync(5006, It.IsAny<string>()), Times.AtLeast(4));
@@ -265,8 +272,8 @@ public class NpcBrokerServiceTests
         capturedRequest!.Items.Should().HaveCount(6);
         capturedRequest.Items.Select(i => i.Id).Should().BeEquivalentTo(["ammo", "__deflection__", "f0", "f1", "f2", "f3"]);
 
-        // 6 clips stored
-        _clipsContext.Verify(x => x.Add(It.IsAny<DomainNpcAudioClip>()), Times.Exactly(6));
+        _clipsContext.Verify(x => x.Add(It.Is<DomainNpcAudioClip>(c => c.FilePath.EndsWith(".wav"))), Times.Exactly(6));
+        _audioStore.Verify(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()), Times.Exactly(6));
 
         // Only filler clips (f0..f3) pushed — not scripted lines or deflection
         _commandSender.Verify(x => x.SendCommandAsync(5006, It.IsAny<string>()), Times.AtLeast(4));
@@ -444,7 +451,7 @@ public class NpcBrokerServiceTests
                          {
                              VoiceId = "bm_george",
                              ClipId = "ammo",
-                             AudioBase64 = "QUJD",
+                             FilePath = "2026-06-07/session1_npc1_ammo.wav",
                              DurationMs = 1200
                          }
                      );
@@ -484,7 +491,7 @@ public class NpcBrokerServiceTests
                                  NpcId = "npc1",
                                  VoiceId = "bm_george",
                                  ClipId = "__deflection__",
-                                 AudioBase64 = "REVG",
+                                 FilePath = "2026-06-07/session1_npc1___deflection__.wav",
                                  DurationMs = 800
                              };
                              capturedClipLookup = predicate(deflectionClip) ? deflectionClip : null;
@@ -572,5 +579,72 @@ public class NpcBrokerServiceTests
 
         _sessionsContext.Verify(x => x.DeleteMany(It.IsAny<Expression<Func<DomainNpcSession, bool>>>()), Times.Never);
         _clipsContext.Verify(x => x.DeleteMany(It.IsAny<Expression<Func<DomainNpcAudioClip, bool>>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleTurnAsync_ScriptedTurn_MissingClipFile_StaysSilent()
+    {
+        _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeScriptedSession());
+        _brainClient.Setup(x => x.RespondAsync(It.IsAny<RespondRequest>()))
+                    .ReturnsAsync(new RespondResult { Text = "The ammo is in the basement.", LineId = "ammo" });
+        _clipsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcAudioClip, bool>>()))
+                     .Returns(
+                         new DomainNpcAudioClip
+                         {
+                             ClipId = "ammo",
+                             FilePath = "2026-06-07/gone.wav",
+                             DurationMs = 1200
+                         }
+                     );
+        _audioStore.Setup(x => x.ReadAsync("2026-06-07/gone.wav")).ReturnsAsync((byte[])null);
+
+        await _sut.HandleTurnAsync(5006, MakeTurnData());
+
+        _commandSender.Verify(x => x.SendCommandAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+        _logger.Verify(x => x.LogWarning(It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleTurnAsync_DynamicTurn_ArchivesTheClipByTurnId()
+    {
+        _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeDynamicSession());
+        _brainClient.Setup(x => x.RespondAsync(It.IsAny<RespondRequest>()))
+        .ReturnsAsync(
+            new RespondResult
+            {
+                Text = "go away",
+                AudioBase64 = "QQ==",
+                DurationMs = 900
+            }
+        );
+
+        await _sut.HandleTurnAsync(5006, MakeTurnData());
+
+        _audioStore.Verify(x => x.SaveAsync("session1", "npc1", "turn7", It.IsAny<byte[]>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleTurnAsync_DynamicTurn_ArchiveFailureDoesNotBlockHistory()
+    {
+        _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeDynamicSession());
+        _brainClient.Setup(x => x.RespondAsync(It.IsAny<RespondRequest>()))
+        .ReturnsAsync(
+            new RespondResult
+            {
+                Text = "go away",
+                AudioBase64 = "QQ==",
+                DurationMs = 900
+            }
+        );
+        _audioStore.Setup(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()))
+                   .ThrowsAsync(new IOException("disk full"));
+
+        await _sut.HandleTurnAsync(5006, MakeTurnData());
+
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio"))), Times.AtLeastOnce);
+        _sessionsContext.Verify(
+            x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
+            Times.Once
+        );
     }
 }
