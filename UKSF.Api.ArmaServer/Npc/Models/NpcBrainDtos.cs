@@ -44,6 +44,7 @@ public class RespondResult
     public string AudioBase64 { get; set; }
     public long? DurationMs { get; set; }
     public string Provider { get; set; } = string.Empty;
+    public string Mood { get; set; } = "neutral";
 }
 
 public class PrerenderItem

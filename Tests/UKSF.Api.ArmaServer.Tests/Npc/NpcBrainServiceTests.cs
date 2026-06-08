@@ -1,6 +1,8 @@
+using System;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Npc.Models;
 using UKSF.Api.ArmaServer.Npc.Services;
 using UKSF.Api.Core;
@@ -84,7 +86,7 @@ public class NpcBrainServiceTests
                       Ms = 2600
                   }
               );
-        return (new NpcBrainService(clacks.Object, Mock.Of<IUksfLogger>()), clacks);
+        return (new NpcBrainService(clacks.Object, Mock.Of<INpcVoicesContext>(), Mock.Of<IUksfLogger>()), clacks);
     }
 
     [Fact]
@@ -128,7 +130,7 @@ public class NpcBrainServiceTests
                   }
               );
         clacks.Setup(x => x.SpeakAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync((ClacksSpeakResult)null);
-        var service = new NpcBrainService(clacks.Object, Mock.Of<IUksfLogger>());
+        var service = new NpcBrainService(clacks.Object, Mock.Of<INpcVoicesContext>(), Mock.Of<IUksfLogger>());
 
         var result = await service.RespondAsync(Dynamic());
 
@@ -200,7 +202,7 @@ public class NpcBrainServiceTests
         clacks.SetupSequence(x => x.SpeakAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
               .ReturnsAsync((ClacksSpeakResult)null)
               .ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "V0FW", DurationMs = 100 });
-        var service = new NpcBrainService(clacks.Object, Mock.Of<IUksfLogger>());
+        var service = new NpcBrainService(clacks.Object, Mock.Of<INpcVoicesContext>(), Mock.Of<IUksfLogger>());
 
         var result = await service.PrerenderAsync(
             new PrerenderRequest { VoiceId = "v", Items = [new PrerenderItem { Id = "f0", Text = "a" }, new PrerenderItem { Id = "f1", Text = "b" }] }
@@ -208,5 +210,108 @@ public class NpcBrainServiceTests
 
         result.Items.Should().HaveCount(1);
         result.Items[0].Id.Should().Be("f1");
+    }
+
+    [Fact]
+    public async Task Dynamic_turn_with_a_registered_variant_speaks_the_variant_slug()
+    {
+        var clacks = new Mock<IClacksClient>();
+        var voices = new Mock<INpcVoicesContext>();
+        var logger = new Mock<IUksfLogger>();
+
+        clacks.Setup(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), false, It.IsAny<int>(), It.IsAny<double>()))
+              .ReturnsAsync(
+                  new ClacksChatResult
+                  {
+                      Text = "[mood:angry] Get out.",
+                      Node = "ultron",
+                      Model = "qwen3.5-9b"
+                  }
+              );
+        voices.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>()))
+              .Returns((Func<DomainNpcVoice, bool> p) =>
+                           p(new DomainNpcVoice { VoiceId = "smuggler_angry" }) ? new DomainNpcVoice { VoiceId = "smuggler_angry" } : null
+              );
+        clacks.Setup(x => x.SpeakAsync("voice", "Get out.", "smuggler_angry")).ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "AA==", DurationMs = 500 });
+
+        var service = new NpcBrainService(clacks.Object, voices.Object, logger.Object);
+        var result = await service.RespondAsync(
+            new RespondRequest
+            {
+                Mode = "dynamic",
+                NpcId = "n1",
+                VoiceId = "smuggler"
+            }
+        );
+
+        result.Mood.Should().Be("angry");
+        result.Text.Should().Be("Get out.");
+        clacks.Verify(x => x.SpeakAsync("voice", "Get out.", "smuggler_angry"), Times.Once);
+    }
+
+    [Fact]
+    public async Task Dynamic_turn_with_an_unregistered_variant_falls_back_to_base_voice()
+    {
+        var clacks = new Mock<IClacksClient>();
+        var voices = new Mock<INpcVoicesContext>();
+        var logger = new Mock<IUksfLogger>();
+
+        clacks.Setup(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), false, It.IsAny<int>(), It.IsAny<double>()))
+              .ReturnsAsync(
+                  new ClacksChatResult
+                  {
+                      Text = "[mood:sad] They're gone.",
+                      Node = "ultron",
+                      Model = "qwen3.5-9b"
+                  }
+              );
+        voices.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>())).Returns((DomainNpcVoice)null);
+        clacks.Setup(x => x.SpeakAsync("voice", "They're gone.", "smuggler")).ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "AA==", DurationMs = 400 });
+
+        var service = new NpcBrainService(clacks.Object, voices.Object, logger.Object);
+        var result = await service.RespondAsync(
+            new RespondRequest
+            {
+                Mode = "dynamic",
+                NpcId = "n1",
+                VoiceId = "smuggler"
+            }
+        );
+
+        result.Mood.Should().Be("sad");
+        clacks.Verify(x => x.SpeakAsync("voice", "They're gone.", "smuggler"), Times.Once);
+    }
+
+    [Fact]
+    public async Task Neutral_mood_speaks_the_base_voice_without_a_registry_lookup()
+    {
+        var clacks = new Mock<IClacksClient>();
+        var voices = new Mock<INpcVoicesContext>();
+        var logger = new Mock<IUksfLogger>();
+
+        clacks.Setup(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), false, It.IsAny<int>(), It.IsAny<double>()))
+              .ReturnsAsync(
+                  new ClacksChatResult
+                  {
+                      Text = "Move along.",
+                      Node = "ultron",
+                      Model = "qwen3.5-9b"
+                  }
+              );
+        clacks.Setup(x => x.SpeakAsync("voice", "Move along.", "smuggler")).ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "AA==", DurationMs = 300 });
+
+        var service = new NpcBrainService(clacks.Object, voices.Object, logger.Object);
+        var result = await service.RespondAsync(
+            new RespondRequest
+            {
+                Mode = "dynamic",
+                NpcId = "n1",
+                VoiceId = "smuggler"
+            }
+        );
+
+        result.Mood.Should().Be("neutral");
+        clacks.Verify(x => x.SpeakAsync("voice", "Move along.", "smuggler"), Times.Once);
+        voices.Verify(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>()), Times.Never);
     }
 }

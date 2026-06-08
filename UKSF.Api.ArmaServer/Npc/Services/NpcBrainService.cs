@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Npc.Models;
 using UKSF.Api.Core;
 
@@ -17,7 +19,7 @@ public interface INpcBrainClient
 /// resolves scripted line choices, cleans dynamic replies, and voices them (role "voice").
 /// Scripted turns use prerendered clips, so only dynamic turns synth at respond time.
 /// </summary>
-public class NpcBrainService(IClacksClient clacksClient, IUksfLogger logger) : INpcBrainClient
+public class NpcBrainService(IClacksClient clacksClient, INpcVoicesContext voicesContext, IUksfLogger logger) : INpcBrainClient
 {
     public async Task<RespondResult> RespondAsync(RespondRequest request)
     {
@@ -47,8 +49,10 @@ public class NpcBrainService(IClacksClient clacksClient, IUksfLogger logger) : I
             };
         }
 
-        var cleanText = NpcReplyCleaner.Clean(result.Text);
-        var speech = cleanText.Length == 0 ? null : await clacksClient.SpeakAsync("voice", cleanText, request.VoiceId);
+        var (mood, body) = NpcReplyCleaner.ExtractMood(result.Text);
+        var cleanText = NpcReplyCleaner.Clean(body);
+        var voiceId = ResolveVoiceId(request.VoiceId, mood);
+        var speech = cleanText.Length == 0 ? null : await clacksClient.SpeakAsync("voice", cleanText, voiceId);
         if (speech is null) logger.LogWarning($"NPC speak failed for npcId '{request.NpcId}' — turn will be silent");
         return new RespondResult
         {
@@ -56,7 +60,8 @@ public class NpcBrainService(IClacksClient clacksClient, IUksfLogger logger) : I
             LineId = null,
             AudioBase64 = speech?.AudioBase64,
             DurationMs = speech?.DurationMs,
-            Provider = provider
+            Provider = provider,
+            Mood = mood
         };
     }
 
@@ -84,5 +89,17 @@ public class NpcBrainService(IClacksClient clacksClient, IUksfLogger logger) : I
         }
 
         return new PrerenderResult { Items = items };
+    }
+
+    // neutral → the base voice; otherwise {base}_{mood} if registered, else fall back to base.
+    private string ResolveVoiceId(string baseVoiceId, string mood)
+    {
+        if (mood == MoodScripts.Neutral)
+        {
+            return baseVoiceId;
+        }
+
+        var variant = $"{baseVoiceId}_{mood}";
+        return voicesContext.GetSingle(x => x.VoiceId == variant) is not null ? variant : baseVoiceId;
     }
 }
