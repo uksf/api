@@ -12,6 +12,7 @@ using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Npc.Models;
 using UKSF.Api.ArmaServer.Npc.Services;
 using UKSF.Api.Core;
+using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Services;
 using Xunit;
 
@@ -20,6 +21,7 @@ namespace UKSF.Api.ArmaServer.Tests.Controllers;
 public class NpcVoicesControllerTests
 {
     private readonly Mock<INpcVoicesContext> _context = new();
+    private readonly Mock<INpcVoiceJobsContext> _jobs = new();
     private readonly Mock<INpcVoiceStore> _store = new();
     private readonly Mock<IClacksClient> _clacks = new();
     private readonly Mock<IHttpContextService> _httpContext = new();
@@ -34,7 +36,7 @@ public class NpcVoicesControllerTests
         // Dup-slug check (predicate overload) defaults to "not found".
         _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>())).Returns((DomainNpcVoice)null);
         _clacks.Setup(x => x.PutVoiceAsync(It.IsAny<string>(), It.IsAny<byte[]>())).ReturnsAsync(true);
-        _sut = new NpcVoicesController(_context.Object, _store.Object, _clacks.Object, _httpContext.Object, _logger.Object);
+        _sut = new NpcVoicesController(_context.Object, _jobs.Object, _store.Object, _clacks.Object, _httpContext.Object, _logger.Object);
     }
 
     private static IFormFile WavFile(int dataBytes)
@@ -158,5 +160,45 @@ public class NpcVoicesControllerTests
         var result = await _sut.Delete("v1");
         result.Should().BeOfType<ForbidResult>();
         _store.Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GenerateMoods_enqueues_a_job_with_the_four_pending_moods()
+    {
+        _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>()))
+        .Returns(
+            new DomainNpcVoice
+            {
+                VoiceId = "smuggler",
+                MoodOf = null,
+                OwnerId = "owner1"
+            }
+        );
+        _httpContext.Setup(x => x.GetUserId()).Returns("owner1");
+        _jobs.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoiceJob, bool>>())).Returns((DomainNpcVoiceJob)null);
+        _jobs.Setup(x => x.Add(It.IsAny<DomainNpcVoiceJob>())).Returns(Task.CompletedTask);
+
+        var job = await _sut.GenerateMoods("smuggler");
+
+        job.BaseVoiceId.Should().Be("smuggler");
+        job.Moods.Select(m => m.Mood).Should().BeEquivalentTo(MoodScripts.Generated);
+        _jobs.Verify(x => x.Add(It.Is<DomainNpcVoiceJob>(j => j.BaseVoiceId == "smuggler")), Times.Once);
+    }
+
+    [Fact]
+    public async Task GenerateMoods_rejects_an_unknown_base_voice()
+    {
+        _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>())).Returns((DomainNpcVoice)null);
+        var act = async () => await _sut.GenerateMoods("ghost");
+        await act.Should().ThrowAsync<BadRequestException>();
+    }
+
+    [Fact]
+    public async Task GenerateMoods_rejects_a_mood_variant_as_base()
+    {
+        _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>()))
+                .Returns(new DomainNpcVoice { VoiceId = "smuggler_angry", MoodOf = "smuggler" });
+        var act = async () => await _sut.GenerateMoods("smuggler_angry");
+        await act.Should().ThrowAsync<BadRequestException>();
     }
 }

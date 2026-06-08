@@ -44,7 +44,8 @@ public static class ApiArmaServerExtensions
                            .AddQueries()
                            .AddActions()
                            .AddHostedService<MissionStatsIndexes>()
-                           .AddHostedService<NpcIndexes>();
+                           .AddHostedService<NpcIndexes>()
+                           .AddHostedService<NpcMoodGenWorker>();
         }
 
         private IServiceCollection AddContexts()
@@ -61,7 +62,8 @@ public static class ApiArmaServerExtensions
                            .AddContext<IDevRunsContext, DevRunsContext>()
                            .AddContext<INpcSessionsContext, NpcSessionsContext>()
                            .AddContext<INpcAudioClipsContext, NpcAudioClipsContext>()
-                           .AddContext<INpcVoicesContext, NpcVoicesContext>();
+                           .AddContext<INpcVoicesContext, NpcVoicesContext>()
+                           .AddContext<INpcVoiceJobsContext, NpcVoiceJobsContext>();
         }
 
         private IServiceCollection AddServices()

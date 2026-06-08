@@ -19,6 +19,7 @@ namespace UKSF.Api.ArmaServer.Controllers;
 [Permissions(Permissions.Nco, Permissions.Servers, Permissions.Command, Permissions.Admin)]
 public class NpcVoicesController(
     INpcVoicesContext context,
+    INpcVoiceJobsContext jobs,
     INpcVoiceStore store,
     IClacksClient clacks,
     IHttpContextService httpContextService,
@@ -146,5 +147,45 @@ public class NpcVoicesController(
         await context.Delete(id);
         logger.LogAudit($"Deleted NPC voice '{doc.VoiceId}'");
         return Ok();
+    }
+
+    [HttpPost("{baseVoiceId}/generate-moods")]
+    [Authorize]
+    public async Task<DomainNpcVoiceJob> GenerateMoods(string baseVoiceId)
+    {
+        var baseDoc = context.GetSingle(x => x.VoiceId == baseVoiceId);
+        if (baseDoc is null)
+        {
+            throw new BadRequestException($"Voice '{baseVoiceId}' not found");
+        }
+
+        if (baseDoc.MoodOf is not null)
+        {
+            throw new BadRequestException("Moods can only be generated for a base voice, not a mood variant");
+        }
+
+        if (baseDoc.OwnerId != httpContextService.GetUserId() && !httpContextService.UserHasPermission(Permissions.Admin))
+        {
+            throw new BadRequestException("Only the owner or an admin can generate moods for this voice");
+        }
+
+        var existing = jobs.GetSingle(x => x.BaseVoiceId == baseVoiceId);
+        if (existing is not null)
+        {
+            await jobs.Delete(existing.Id); // re-run replaces the prior job
+        }
+
+        var job = DomainNpcVoiceJob.NewJob(baseVoiceId, baseDoc.OwnerId);
+        await jobs.Add(job);
+        logger.LogAudit($"Queued mood generation for NPC voice '{baseVoiceId}'");
+        return job;
+    }
+
+    [HttpGet("{baseVoiceId}/job")]
+    [Authorize]
+    public ActionResult<DomainNpcVoiceJob> GetJob(string baseVoiceId)
+    {
+        var job = jobs.GetSingle(x => x.BaseVoiceId == baseVoiceId);
+        return job is null ? NotFound() : job;
     }
 }
