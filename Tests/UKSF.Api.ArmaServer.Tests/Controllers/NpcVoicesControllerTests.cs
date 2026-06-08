@@ -103,9 +103,21 @@ public class NpcVoicesControllerTests
     [Fact]
     public async Task Mood_variant_gets_compound_slug_and_moodOf()
     {
+        // Parent "smuggler" exists; the new slug "smuggler_angry" does not.
+        _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>()))
+                .Returns((Func<DomainNpcVoice, bool> p) => p(new DomainNpcVoice { VoiceId = "smuggler" }) ? new DomainNpcVoice { VoiceId = "smuggler" } : null);
         var result = await _sut.Upload(WavFile(24000 * 2 * 5), "ignored", "smuggler", "Angry");
         result.VoiceId.Should().Be("smuggler_angry");
         result.MoodOf.Should().Be("smuggler");
+    }
+
+    [Fact]
+    public async Task Mood_variant_with_unknown_parent_is_rejected()
+    {
+        // Default GetSingle(predicate) returns null → parent not found.
+        var act = () => _sut.Upload(WavFile(24000 * 2 * 5), "ignored", "ghost", "Angry");
+        await act.Should().ThrowAsync<Exception>();
+        _store.Verify(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
 
     [Fact]

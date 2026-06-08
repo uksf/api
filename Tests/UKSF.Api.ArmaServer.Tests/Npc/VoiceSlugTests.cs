@@ -13,6 +13,7 @@ public class VoiceSlugTests
     [InlineData("Café Owner!!", null, null, "caf_owner")]
     [InlineData("Smuggler", "smuggler", "Angry", "smuggler_angry")]
     [InlineData("ignored", "smuggler", "Very Angry", "smuggler_very_angry")]
+    [InlineData("ignored", "Some Smuggler!", "Angry", "some_smuggler_angry")] // dirty moodOf is slugified too
     public void Derives_expected_slug(string displayName, string moodOf, string moodLabel, string expected)
     {
         VoiceSlug.Derive(displayName, moodOf, moodLabel).Should().Be(expected);

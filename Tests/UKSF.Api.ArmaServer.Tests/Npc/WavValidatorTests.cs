@@ -7,8 +7,8 @@ namespace UKSF.Api.ArmaServer.Tests.Npc;
 
 public class WavValidatorTests
 {
-    // Build a minimal 16-bit PCM WAV header + `dataBytes` of silence.
-    private static byte[] Wav(int sampleRate, short channels, short bits, int dataBytes)
+    // Build a minimal WAV header (PCM by default) + `dataBytes` of silence.
+    private static byte[] Wav(int sampleRate, short channels, short bits, int dataBytes, short format = 1)
     {
         var blockAlign = (short)(channels * bits / 8);
         var byteRate = sampleRate * blockAlign;
@@ -19,7 +19,7 @@ public class WavValidatorTests
         w.Write("WAVE"u8.ToArray());
         w.Write("fmt "u8.ToArray());
         w.Write(16); // fmt chunk size
-        w.Write((short)1); // PCM
+        w.Write(format); // 1 = PCM
         w.Write(channels);
         w.Write(sampleRate);
         w.Write(byteRate);
@@ -54,5 +54,14 @@ public class WavValidatorTests
     {
         var result = WavValidator.Parse("RIFF"u8.ToArray());
         result.Valid.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Rejects_non_pcm_format()
+    {
+        // format tag 3 = IEEE float — valid RIFF/WAVE but not PCM
+        var result = WavValidator.Parse(Wav(24000, 1, 16, 48000, format: 3));
+        result.Valid.Should().BeFalse();
+        result.Error.Should().Contain("PCM");
     }
 }

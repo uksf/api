@@ -62,6 +62,12 @@ public class NpcVoicesController(
             throw new BadRequestException($"Sample must be 3-15 s (got {wav.DurationMs / 1000.0:0.0} s)");
         }
 
+        var parentVoiceId = string.IsNullOrWhiteSpace(moodOf) ? null : VoiceSlug.Slugify(moodOf);
+        if (parentVoiceId is not null && context.GetSingle(x => x.VoiceId == parentVoiceId) is null)
+        {
+            throw new BadRequestException($"Parent voice '{parentVoiceId}' not found");
+        }
+
         string voiceId;
         try
         {
@@ -85,7 +91,7 @@ public class NpcVoicesController(
             VoiceId = voiceId,
             DisplayName = displayName,
             OwnerId = httpContextService.GetUserId(),
-            MoodOf = string.IsNullOrWhiteSpace(moodOf) ? null : moodOf,
+            MoodOf = parentVoiceId,
             FilePath = filePath,
             Sha256 = sha,
             DurationMs = wav.DurationMs

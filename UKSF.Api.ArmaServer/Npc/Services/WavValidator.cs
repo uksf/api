@@ -21,7 +21,7 @@ public static class WavValidator
         }
 
         int sampleRate = 0, byteRate = 0;
-        short channels = 0, bits = 0;
+        short channels = 0, bits = 0, format = 0;
         long dataBytes = 0;
         var hasFmt = false;
         var hasData = false;
@@ -39,6 +39,7 @@ public static class WavValidator
             var body = pos + 8;
             if (chunkId == "fmt " && body + 16 <= bytes.Length)
             {
+                format = BitConverter.ToInt16(bytes, body);
                 channels = BitConverter.ToInt16(bytes, body + 2);
                 sampleRate = BitConverter.ToInt32(bytes, body + 4);
                 byteRate = BitConverter.ToInt32(bytes, body + 8);
@@ -57,6 +58,11 @@ public static class WavValidator
         if (!hasFmt || !hasData)
         {
             return new WavInfo(false, "Missing fmt or data chunk", 0);
+        }
+
+        if (format != 1) // 1 = PCM; reject float/compressed (wrong duration math + the clone engine expects PCM)
+        {
+            return new WavInfo(false, "Only uncompressed PCM WAV is supported", 0);
         }
 
         var divisor = byteRate > 0 ? byteRate : sampleRate * channels * (bits / 8);
