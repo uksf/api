@@ -60,7 +60,8 @@ public static class ApiArmaServerExtensions
                            .AddContext<IGameDataExportsContext, GameDataExportsContext>()
                            .AddContext<IDevRunsContext, DevRunsContext>()
                            .AddContext<INpcSessionsContext, NpcSessionsContext>()
-                           .AddContext<INpcAudioClipsContext, NpcAudioClipsContext>();
+                           .AddContext<INpcAudioClipsContext, NpcAudioClipsContext>()
+                           .AddContext<INpcVoicesContext, NpcVoicesContext>();
         }
 
         private IServiceCollection AddServices()
@@ -97,6 +98,7 @@ public static class ApiArmaServerExtensions
                            .AddHostedService<GameDataExportRecoveryStartup>()
                            .AddHostedService<DevRunRecoveryStartup>()
                            .AddSingleton<INpcAudioStore, NpcAudioStore>()
+                           .AddSingleton<INpcVoiceStore, NpcVoiceStore>()
                            .AddSingleton<IClacksClient, ClacksClient>()
                            .AddSingleton<INpcBrainClient, NpcBrainService>()
                            .AddSingleton<IGameServerCommandSender, GameServerCommandSender>()
