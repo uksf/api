@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -26,11 +27,29 @@ public class ClacksSpeakResult
     public long Ms { get; set; }
 }
 
+public enum EmoteStatus
+{
+    Ok,
+    NodeDown,
+    Failed
+}
+
+public class ClacksEmoteResult
+{
+    public EmoteStatus Status { get; init; }
+    public byte[] WavBytes { get; init; }
+    public long DurationMs { get; init; }
+
+    public static ClacksEmoteResult NodeDown() => new() { Status = EmoteStatus.NodeDown };
+    public static ClacksEmoteResult Failed() => new() { Status = EmoteStatus.Failed };
+}
+
 public interface IClacksClient
 {
     Task<ClacksChatResult> ChatAsync(string role, string system, string user, bool json, int maxTokens, double temperature);
     Task<ClacksSpeakResult> SpeakAsync(string role, string text, string voiceId);
     Task<bool> PutVoiceAsync(string voiceId, byte[] wavBytes);
+    Task<ClacksEmoteResult> EmoteAsync(string voiceId, string text, string emoText, double emoAlpha);
 }
 
 // HTTP client for the local clacks daemon (the LLM mesh). The daemon owns all model routing/fallback;
@@ -145,6 +164,62 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
         {
             logger.LogError($"clacks PUT /voice/{voiceId} failed", exception);
             return false;
+        }
+    }
+
+    public async Task<ClacksEmoteResult> EmoteAsync(string voiceId, string text, string emoText, double emoAlpha)
+    {
+        var baseUrl = variablesService.GetVariable("CLACKS_URL")?.Item?.ToString()?.TrimEnd('/');
+        if (string.IsNullOrEmpty(baseUrl))
+        {
+            logger.LogWarning("CLACKS_URL not configured — emote skipped");
+            return ClacksEmoteResult.Failed();
+        }
+
+        try
+        {
+            using var client = httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(180); // IndexTTS-2 can be ~74s/line on the mac fallback
+            var response = await client.PostAsJsonAsync(
+                $"{baseUrl}/emote",
+                new
+                {
+                    role = "emotion",
+                    voiceId,
+                    text,
+                    emoText,
+                    emoAlpha
+                },
+                NpcBrainJson.Options
+            );
+            if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+            {
+                return ClacksEmoteResult.NodeDown(); // no emotion node up — requeue
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning($"clacks /emote returned {(int)response.StatusCode} for voice '{voiceId}'");
+                return ClacksEmoteResult.Failed();
+            }
+
+            var speak = await response.Content.ReadFromJsonAsync<ClacksSpeakResult>(NpcBrainJson.Options);
+            if (speak is null || string.IsNullOrEmpty(speak.AudioBase64))
+            {
+                return ClacksEmoteResult.Failed();
+            }
+
+            return new ClacksEmoteResult
+            {
+                Status = EmoteStatus.Ok,
+                WavBytes = Convert.FromBase64String(speak.AudioBase64),
+                DurationMs = speak.DurationMs
+            };
+        }
+        catch (Exception exception)
+        {
+            logger.LogError($"clacks /emote call failed for voice '{voiceId}'", exception);
+            return ClacksEmoteResult.Failed();
         }
     }
 }
