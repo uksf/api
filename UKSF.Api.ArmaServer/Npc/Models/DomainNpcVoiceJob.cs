@@ -10,7 +10,6 @@ namespace UKSF.Api.ArmaServer.Npc.Models;
 public enum NpcMoodStatus
 {
     Pending,
-    Generating,
     Ready,
     Failed
 }
