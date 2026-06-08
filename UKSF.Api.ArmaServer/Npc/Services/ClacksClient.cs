@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.Npc.Models;
@@ -29,6 +30,7 @@ public interface IClacksClient
 {
     Task<ClacksChatResult> ChatAsync(string role, string system, string user, bool json, int maxTokens, double temperature);
     Task<ClacksSpeakResult> SpeakAsync(string role, string text, string voiceId);
+    Task<bool> PutVoiceAsync(string voiceId, byte[] wavBytes);
 }
 
 // HTTP client for the local clacks daemon (the LLM mesh). The daemon owns all model routing/fallback;
@@ -112,6 +114,37 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
         {
             logger.LogError($"clacks /speak call failed for role '{role}'", exception);
             return null;
+        }
+    }
+
+    public async Task<bool> PutVoiceAsync(string voiceId, byte[] wavBytes)
+    {
+        var baseUrl = variablesService.GetVariable("CLACKS_URL")?.Item?.ToString()?.TrimEnd('/');
+        if (string.IsNullOrEmpty(baseUrl))
+        {
+            logger.LogWarning("CLACKS_URL not configured — voice push skipped");
+            return false;
+        }
+
+        try
+        {
+            using var client = httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(30);
+            using var content = new ByteArrayContent(wavBytes);
+            content.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
+            var response = await client.PutAsync($"{baseUrl}/voice/{Uri.EscapeDataString(voiceId)}", content);
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning($"clacks PUT /voice/{voiceId} returned {(int)response.StatusCode}");
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError($"clacks PUT /voice/{voiceId} failed", exception);
+            return false;
         }
     }
 }
