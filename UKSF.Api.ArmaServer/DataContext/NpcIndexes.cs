@@ -46,6 +46,15 @@ public class NpcIndexes(IMongoDatabase database, IUksfLogger logger) : IHostedSe
                 ),
                 cancellationToken: cancellationToken
             );
+
+            var jobs = database.GetCollection<DomainNpcVoiceJob>("npcVoiceJobs");
+            await jobs.Indexes.CreateOneAsync(
+                new CreateIndexModel<DomainNpcVoiceJob>(
+                    Builders<DomainNpcVoiceJob>.IndexKeys.Ascending(x => x.BaseVoiceId),
+                    new CreateIndexOptions { Name = "ix_baseVoiceId", Unique = true }
+                ),
+                cancellationToken: cancellationToken
+            );
         }
         catch (Exception exception)
         {
