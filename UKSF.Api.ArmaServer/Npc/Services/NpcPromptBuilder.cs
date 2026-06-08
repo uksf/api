@@ -44,13 +44,17 @@ public static partial class NpcPromptBuilder
         }
         else
         {
+            var moods = string.Join(", ", MoodScripts.All);
             lines.Add(
                 "Your entire reply is fed straight to a text-to-speech engine and spoken aloud, so output ONLY " +
                 "the exact words your character says — one or two short sentences of dialogue, nothing else. " +
                 "Never include stage directions, actions, gestures, tone or expression descriptions, narration, " +
                 "asterisks, parentheses, brackets, or quotation marks — they would be read out literally and ruin it.\n" +
+                $"Begin your reply with a mood tag chosen from [{moods}] that fits your persona, your attitude to " +
+                "the people in front of you, and what was just said. Format it exactly as [mood:<one of the list>].\n" +
                 "Wrong: *narrows eyes, grips rifle* Get back, you shouldn't be here.\n" +
-                "Right: Get back. You shouldn't be here."
+                "Right: [mood:angry] Get back. You shouldn't be here.\n" +
+                "Right: [mood:afraid] Please, I don't want any trouble."
             );
         }
 

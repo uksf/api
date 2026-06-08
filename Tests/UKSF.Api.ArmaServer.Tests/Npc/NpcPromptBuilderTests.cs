@@ -124,4 +124,51 @@ public class NpcPromptBuilderTests
     {
         NpcPromptBuilder.ParseScriptedChoice(raw).Should().Be(expected);
     }
+
+    [Fact]
+    public void Dynamic_system_prompt_instructs_a_mood_tag_with_the_full_mood_set()
+    {
+        var req = new RespondRequest
+        {
+            Mode = "dynamic",
+            Persona = new NpcPersona
+            {
+                Name = "Vasiliy",
+                Role = "smuggler",
+                Language = "English",
+                Mood = "wary",
+                AttitudeToPlayers = "suspicious"
+            },
+            Knowledge = "nothing useful"
+        };
+
+        var prompt = NpcPromptBuilder.BuildSystemPrompt(req);
+
+        prompt.Should().Contain("[mood:");
+        foreach (var mood in MoodScripts.All)
+        {
+            prompt.Should().Contain(mood);
+        }
+    }
+
+    [Fact]
+    public void Scripted_prompt_does_not_mention_the_mood_tag()
+    {
+        var req = new RespondRequest
+        {
+            Mode = "scripted",
+            Persona = new NpcPersona
+            {
+                Name = "X",
+                Role = "guard",
+                Language = "English",
+                Mood = "calm",
+                AttitudeToPlayers = "neutral"
+            },
+            Knowledge = "k",
+            Scripted = new NpcScriptedDto { Lines = [], Deflection = "I have nothing to say." }
+        };
+
+        NpcPromptBuilder.BuildSystemPrompt(req).Should().NotContain("[mood:");
+    }
 }
