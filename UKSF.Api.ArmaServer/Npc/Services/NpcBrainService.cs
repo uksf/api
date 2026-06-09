@@ -27,10 +27,25 @@ public class NpcBrainService(IClacksClient clacksClient, INpcVoicesContext voice
         var user = NpcPromptBuilder.BuildUserPrompt(request);
         var scripted = request.Mode == "scripted";
 
-        var result = await clacksClient.ChatAsync("npc", system, user, scripted, 80, 0.7);
+        var result = await clacksClient.ChatAsync(
+            "npc",
+            system,
+            user,
+            scripted,
+            80,
+            0.7,
+            new
+            {
+                npcId = request.NpcId,
+                persona = request.Persona?.Name,
+                mode = request.Mode
+            }
+        );
         if (result is null) return null;
 
         var provider = $"{result.Model}@{result.Node}";
+        // served-by per turn (model-differential traceability when scheduling routes a turn off the usual node)
+        logger.LogInfo($"NPC turn npcId '{request.NpcId}' ({request.Mode}) served by {provider}");
 
         if (scripted)
         {

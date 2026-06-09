@@ -46,7 +46,7 @@ public class ClacksEmoteResult
 
 public interface IClacksClient
 {
-    Task<ClacksChatResult> ChatAsync(string role, string system, string user, bool json, int maxTokens, double temperature);
+    Task<ClacksChatResult> ChatAsync(string role, string system, string user, bool json, int maxTokens, double temperature, object meta = null);
     Task<ClacksSpeakResult> SpeakAsync(string role, string text, string voiceId);
     Task<bool> PutVoiceAsync(string voiceId, byte[] wavBytes);
     Task<ClacksEmoteResult> EmoteAsync(string voiceId, string text, string emoText, double emoAlpha);
@@ -56,7 +56,7 @@ public interface IClacksClient
 // this client just asks for a role and reads text back.
 public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesService variablesService, IUksfLogger logger) : IClacksClient
 {
-    public async Task<ClacksChatResult> ChatAsync(string role, string system, string user, bool json, int maxTokens, double temperature)
+    public async Task<ClacksChatResult> ChatAsync(string role, string system, string user, bool json, int maxTokens, double temperature, object meta = null)
     {
         // Non-throwing read: AsString() throws on a missing item, which would make this guard dead code
         var baseUrl = variablesService.GetVariable("CLACKS_URL")?.Item?.ToString()?.TrimEnd('/');
@@ -79,7 +79,8 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
                     user,
                     json,
                     maxTokens,
-                    temperature
+                    temperature,
+                    meta // null is omitted by WhenWritingNull; carries per-role context for the mesh dashboard
                 },
                 NpcBrainJson.Options
             );
