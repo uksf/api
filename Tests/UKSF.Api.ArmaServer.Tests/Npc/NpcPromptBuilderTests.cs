@@ -93,9 +93,28 @@ public class NpcPromptBuilderTests
         ];
         var u = NpcPromptBuilder.BuildUserPrompt(req);
         u.Should().Contain("[p1] who are you?");
-        u.Should().Contain("You said: Leave.");
+        u.Should().Contain("You said: [mood:neutral] Leave."); // npc turns carry their mood back into history
         u.Should().Contain("where is the ammo?");
         u.Should().Contain("said the following out loud");
+    }
+
+    [Fact]
+    public void BuildUserPrompt_RendersStoredMoodOnNpcHistoryTurns()
+    {
+        var req = Base();
+        req.History =
+        [
+            new NpcHistoryEntry
+            {
+                Role = "npc",
+                Speaker = "",
+                Text = "Get back!",
+                Mood = "angry",
+                T = 1
+            }
+        ];
+        var u = NpcPromptBuilder.BuildUserPrompt(req);
+        u.Should().Contain("You said: [mood:angry] Get back!");
     }
 
     [Fact]

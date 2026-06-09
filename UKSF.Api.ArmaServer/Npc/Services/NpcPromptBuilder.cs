@@ -52,6 +52,8 @@ public static partial class NpcPromptBuilder
                 "asterisks, parentheses, brackets, or quotation marks — they would be read out literally and ruin it.\n" +
                 $"Begin your reply with a mood tag chosen from [{moods}] that fits your persona, your attitude to " +
                 "the people in front of you, and what was just said. Format it exactly as [mood:<one of the list>].\n" +
+                "Your earlier replies above are tagged with the mood you used; stay consistent with your recent mood " +
+                "unless what just happened clearly calls for a shift.\n" +
                 "Wrong: *narrows eyes, grips rifle* Get back, you shouldn't be here.\n" +
                 "Right: [mood:angry] Get back. You shouldn't be here.\n" +
                 "Right: [mood:afraid] Please, I don't want any trouble."
@@ -66,7 +68,7 @@ public static partial class NpcPromptBuilder
         var parts = new List<string>();
         if (req.History is { Count: > 0 })
         {
-            var past = string.Join("\n", req.History.Select(h => h.Role == "npc" ? $"You said: {h.Text}" : $"[{h.Speaker}] {h.Text}"));
+            var past = string.Join("\n", req.History.Select(h => h.Role == "npc" ? $"You said: [mood:{h.Mood}] {h.Text}" : $"[{h.Speaker}] {h.Text}"));
             parts.Add($"Earlier exchange (oldest first):\n{past}");
         }
 

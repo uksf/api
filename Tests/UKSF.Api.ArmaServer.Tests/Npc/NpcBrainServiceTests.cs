@@ -62,7 +62,16 @@ public class NpcBrainServiceTests
     private static (NpcBrainService service, Mock<IClacksClient> clacks) Build(string text, ClacksSpeakResult speak = null)
     {
         var clacks = new Mock<IClacksClient>();
-        clacks.Setup(x => x.ChatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<double>()))
+        clacks.Setup(x => x.ChatAsync(
+                         It.IsAny<string>(),
+                         It.IsAny<string>(),
+                         It.IsAny<string>(),
+                         It.IsAny<bool>(),
+                         It.IsAny<int>(),
+                         It.IsAny<double>(),
+                         It.IsAny<object>()
+                     )
+              )
               .ReturnsAsync(
                   text is null
                       ? null
@@ -100,7 +109,16 @@ public class NpcBrainServiceTests
         result.AudioBase64.Should().Be("V0FW");
         result.DurationMs.Should().Be(2500);
         result.Provider.Should().Be("qwen2.5-3b@server");
-        clacks.Verify(x => x.ChatAsync("npc", It.Is<string>(s => s.Contains("Abu Hassan")), It.Is<string>(u => u.Contains("open up")), false, 80, 0.7));
+        clacks.Verify(x => x.ChatAsync(
+                          "npc",
+                          It.Is<string>(s => s.Contains("Abu Hassan")),
+                          It.Is<string>(u => u.Contains("open up")),
+                          false,
+                          80,
+                          0.7,
+                          It.IsAny<object>()
+                      )
+        );
         clacks.Verify(x => x.SpeakAsync("voice", "Get off my land.", "v1"), Times.Once); // speaks the CLEANED text
     }
 
@@ -119,7 +137,16 @@ public class NpcBrainServiceTests
     public async Task RespondAsync_Dynamic_SpeakFailure_ReturnsTextWithNullAudio()
     {
         var clacks = new Mock<IClacksClient>();
-        clacks.Setup(x => x.ChatAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<int>(), It.IsAny<double>()))
+        clacks.Setup(x => x.ChatAsync(
+                         It.IsAny<string>(),
+                         It.IsAny<string>(),
+                         It.IsAny<string>(),
+                         It.IsAny<bool>(),
+                         It.IsAny<int>(),
+                         It.IsAny<double>(),
+                         It.IsAny<object>()
+                     )
+              )
               .ReturnsAsync(
                   new ClacksChatResult
                   {
@@ -165,7 +192,7 @@ public class NpcBrainServiceTests
     {
         var (service, clacks) = Build("{\"lineId\":\"ammo\"}");
         await service.RespondAsync(Scripted());
-        clacks.Verify(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), true, 80, 0.7));
+        clacks.Verify(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), true, 80, 0.7, It.IsAny<object>()));
     }
 
     [Fact]
@@ -219,7 +246,7 @@ public class NpcBrainServiceTests
         var voices = new Mock<INpcVoicesContext>();
         var logger = new Mock<IUksfLogger>();
 
-        clacks.Setup(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), false, It.IsAny<int>(), It.IsAny<double>()))
+        clacks.Setup(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), false, It.IsAny<int>(), It.IsAny<double>(), It.IsAny<object>()))
               .ReturnsAsync(
                   new ClacksChatResult
                   {
@@ -256,7 +283,7 @@ public class NpcBrainServiceTests
         var voices = new Mock<INpcVoicesContext>();
         var logger = new Mock<IUksfLogger>();
 
-        clacks.Setup(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), false, It.IsAny<int>(), It.IsAny<double>()))
+        clacks.Setup(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), false, It.IsAny<int>(), It.IsAny<double>(), It.IsAny<object>()))
               .ReturnsAsync(
                   new ClacksChatResult
                   {
@@ -289,7 +316,7 @@ public class NpcBrainServiceTests
         var voices = new Mock<INpcVoicesContext>();
         var logger = new Mock<IUksfLogger>();
 
-        clacks.Setup(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), false, It.IsAny<int>(), It.IsAny<double>()))
+        clacks.Setup(x => x.ChatAsync("npc", It.IsAny<string>(), It.IsAny<string>(), false, It.IsAny<int>(), It.IsAny<double>(), It.IsAny<object>()))
               .ReturnsAsync(
                   new ClacksChatResult
                   {

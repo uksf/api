@@ -53,6 +53,9 @@ public class NpcHistoryEntry
     [JsonPropertyName("text")]
     public string Text { get; set; } = string.Empty;
 
+    [JsonPropertyName("mood")]
+    public string Mood { get; set; } = "neutral"; // npc turns only; lets the model see its own emotional trajectory next turn
+
     [JsonPropertyName("t")]
     public long T { get; set; } // epoch ms
 }

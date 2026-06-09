@@ -311,6 +311,7 @@ public class NpcBrokerService(
                 Role = "npc",
                 Speaker = string.Empty,
                 Text = result.Text,
+                Mood = result.Mood,
                 T = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
             }
         );
