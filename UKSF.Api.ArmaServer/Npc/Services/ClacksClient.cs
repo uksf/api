@@ -185,7 +185,7 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
                 $"{baseUrl}/emote",
                 new
                 {
-                    role = "emotion",
+                    role = "npc-mood-gen",
                     voiceId,
                     text,
                     emoText,

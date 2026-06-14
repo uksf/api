@@ -16,7 +16,7 @@ public interface INpcBrainClient
 
 /// <summary>
 /// The absorbed arma-npc brain: builds NPC prompts, asks the clacks mesh (role "npc"),
-/// resolves scripted line choices, cleans dynamic replies, and voices them (role "voice").
+/// resolves scripted line choices, cleans dynamic replies, and voices them (role "npc-voice").
 /// Scripted turns use prerendered clips, so only dynamic turns synth at respond time.
 /// </summary>
 public class NpcBrainService(IClacksClient clacksClient, INpcVoicesContext voicesContext, IUksfLogger logger) : INpcBrainClient
@@ -67,7 +67,7 @@ public class NpcBrainService(IClacksClient clacksClient, INpcVoicesContext voice
         var (mood, body) = NpcReplyCleaner.ExtractMood(result.Text);
         var cleanText = NpcReplyCleaner.Clean(body);
         var voiceId = ResolveVoiceId(request.VoiceId, mood);
-        var speech = cleanText.Length == 0 ? null : await clacksClient.SpeakAsync("voice", cleanText, voiceId);
+        var speech = cleanText.Length == 0 ? null : await clacksClient.SpeakAsync("npc-voice", cleanText, voiceId);
         if (speech is null) logger.LogWarning($"NPC speak failed for npcId '{request.NpcId}' — turn will be silent");
         return new RespondResult
         {
@@ -86,7 +86,7 @@ public class NpcBrainService(IClacksClient clacksClient, INpcVoicesContext voice
         // Sequential on purpose — one python child per node; parallel submits just queue inside it.
         foreach (var item in request.Items)
         {
-            var speech = await clacksClient.SpeakAsync("voice", item.Text, request.VoiceId);
+            var speech = await clacksClient.SpeakAsync("npc-voice", item.Text, request.VoiceId);
             if (speech is null)
             {
                 logger.LogWarning($"NPC prerender failed for clip '{item.Id}' (voiceId '{request.VoiceId}') — skipped");

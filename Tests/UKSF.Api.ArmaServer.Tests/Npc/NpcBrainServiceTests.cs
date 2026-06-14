@@ -119,7 +119,7 @@ public class NpcBrainServiceTests
                           It.IsAny<object>()
                       )
         );
-        clacks.Verify(x => x.SpeakAsync("voice", "Get off my land.", "v1"), Times.Once); // speaks the CLEANED text
+        clacks.Verify(x => x.SpeakAsync("npc-voice", "Get off my land.", "v1"), Times.Once); // speaks the CLEANED text
     }
 
     [Fact]
@@ -218,8 +218,8 @@ public class NpcBrainServiceTests
         result.Items[0].Id.Should().Be("f0");
         result.Items[0].AudioBase64.Should().Be("V0FW");
         result.Items[0].DurationMs.Should().Be(2500);
-        clacks.Verify(x => x.SpeakAsync("voice", "hmm", "bm_george"), Times.Once);
-        clacks.Verify(x => x.SpeakAsync("voice", "let me think", "bm_george"), Times.Once);
+        clacks.Verify(x => x.SpeakAsync("npc-voice", "hmm", "bm_george"), Times.Once);
+        clacks.Verify(x => x.SpeakAsync("npc-voice", "let me think", "bm_george"), Times.Once);
     }
 
     [Fact]
@@ -259,7 +259,8 @@ public class NpcBrainServiceTests
               .Returns((Func<DomainNpcVoice, bool> p) =>
                            p(new DomainNpcVoice { VoiceId = "smuggler_angry" }) ? new DomainNpcVoice { VoiceId = "smuggler_angry" } : null
               );
-        clacks.Setup(x => x.SpeakAsync("voice", "Get out.", "smuggler_angry")).ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "AA==", DurationMs = 500 });
+        clacks.Setup(x => x.SpeakAsync("npc-voice", "Get out.", "smuggler_angry"))
+              .ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "AA==", DurationMs = 500 });
 
         var service = new NpcBrainService(clacks.Object, voices.Object, logger.Object);
         var result = await service.RespondAsync(
@@ -273,7 +274,7 @@ public class NpcBrainServiceTests
 
         result.Mood.Should().Be("angry");
         result.Text.Should().Be("Get out.");
-        clacks.Verify(x => x.SpeakAsync("voice", "Get out.", "smuggler_angry"), Times.Once);
+        clacks.Verify(x => x.SpeakAsync("npc-voice", "Get out.", "smuggler_angry"), Times.Once);
     }
 
     [Fact]
@@ -293,7 +294,8 @@ public class NpcBrainServiceTests
                   }
               );
         voices.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>())).Returns((DomainNpcVoice)null);
-        clacks.Setup(x => x.SpeakAsync("voice", "They're gone.", "smuggler")).ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "AA==", DurationMs = 400 });
+        clacks.Setup(x => x.SpeakAsync("npc-voice", "They're gone.", "smuggler"))
+              .ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "AA==", DurationMs = 400 });
 
         var service = new NpcBrainService(clacks.Object, voices.Object, logger.Object);
         var result = await service.RespondAsync(
@@ -306,7 +308,7 @@ public class NpcBrainServiceTests
         );
 
         result.Mood.Should().Be("sad");
-        clacks.Verify(x => x.SpeakAsync("voice", "They're gone.", "smuggler"), Times.Once);
+        clacks.Verify(x => x.SpeakAsync("npc-voice", "They're gone.", "smuggler"), Times.Once);
     }
 
     [Fact]
@@ -325,7 +327,7 @@ public class NpcBrainServiceTests
                       Model = "qwen3.5-9b"
                   }
               );
-        clacks.Setup(x => x.SpeakAsync("voice", "Move along.", "smuggler")).ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "AA==", DurationMs = 300 });
+        clacks.Setup(x => x.SpeakAsync("npc-voice", "Move along.", "smuggler")).ReturnsAsync(new ClacksSpeakResult { AudioBase64 = "AA==", DurationMs = 300 });
 
         var service = new NpcBrainService(clacks.Object, voices.Object, logger.Object);
         var result = await service.RespondAsync(
@@ -338,7 +340,7 @@ public class NpcBrainServiceTests
         );
 
         result.Mood.Should().Be("neutral");
-        clacks.Verify(x => x.SpeakAsync("voice", "Move along.", "smuggler"), Times.Once);
+        clacks.Verify(x => x.SpeakAsync("npc-voice", "Move along.", "smuggler"), Times.Once);
         voices.Verify(x => x.GetSingle(It.IsAny<Func<DomainNpcVoice, bool>>()), Times.Never);
     }
 }
