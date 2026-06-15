@@ -22,6 +22,7 @@ public class NpcBrokerService(
     INpcSessionsContext sessionsContext,
     INpcAudioClipsContext clipsContext,
     INpcBrainClient brainClient,
+    IClacksClient clacksClient,
     IGameServerCommandSender commandSender,
     INpcAudioStore audioStore,
     IVariablesService variablesService,
@@ -43,6 +44,11 @@ public class NpcBrokerService(
             logger.LogWarning("NPC register event received with empty npcId — ignoring.");
             return;
         }
+
+        // Warm the NPC chat + voice engines while we build the session below, so the prerender
+        // (and the first turn) hit a loaded model instead of a cold load. Fire-and-forget — a
+        // warm hint must never delay or fail registration (WarmAsync swallows its own errors).
+        _ = clacksClient.WarmAsync(NpcWarmKeeper.WarmRoles, NpcWarmKeeper.LeaseMs);
 
         var sessionId = ToSafeString(data.GetValueOrDefault("sessionId"));
         var knowledge = ToSafeString(data.GetValueOrDefault("knowledge"));

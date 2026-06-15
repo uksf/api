@@ -21,6 +21,7 @@ public class NpcBrokerServiceTests
     private readonly Mock<INpcSessionsContext> _sessionsContext = new();
     private readonly Mock<INpcAudioClipsContext> _clipsContext = new();
     private readonly Mock<INpcBrainClient> _brainClient = new();
+    private readonly Mock<IClacksClient> _clacks = new();
     private readonly Mock<IGameServerCommandSender> _commandSender = new();
     private readonly Mock<INpcAudioStore> _audioStore = new();
     private readonly Mock<IVariablesService> _variablesService = new();
@@ -79,10 +80,13 @@ public class NpcBrokerServiceTests
                         }
                     );
 
+        _clacks.Setup(x => x.WarmAsync(It.IsAny<IReadOnlyCollection<string>>(), It.IsAny<int>())).ReturnsAsync(true);
+
         _sut = new NpcBrokerService(
             _sessionsContext.Object,
             _clipsContext.Object,
             _brainClient.Object,
+            _clacks.Object,
             _commandSender.Object,
             _audioStore.Object,
             _variablesService.Object,
@@ -153,6 +157,18 @@ public class NpcBrokerServiceTests
         _clipsContext.Verify(x => x.Add(It.IsAny<DomainNpcAudioClip>()), Times.Never);
         _clipsContext.Verify(x => x.Replace(It.IsAny<DomainNpcAudioClip>()), Times.Never);
         _brainClient.Verify(x => x.PrerenderAsync(It.IsAny<PrerenderRequest>()), Times.Never);
+        _clacks.Verify(x => x.WarmAsync(It.IsAny<IReadOnlyCollection<string>>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Register_WarmsNpcAndVoiceRoles()
+    {
+        await _sut.HandleRegisterAsync(5006, MakeRegisterData());
+
+        _clacks.Verify(
+            x => x.WarmAsync(It.Is<IReadOnlyCollection<string>>(r => r.Contains("npc") && r.Contains("npc-voice")), NpcWarmKeeper.LeaseMs),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -287,6 +303,7 @@ public class NpcBrokerServiceTests
         _sessionsContext.Verify(x => x.Add(It.IsAny<DomainNpcSession>()), Times.Never);
         _sessionsContext.Verify(x => x.Replace(It.IsAny<DomainNpcSession>()), Times.Never);
         _brainClient.Verify(x => x.PrerenderAsync(It.IsAny<PrerenderRequest>()), Times.Never);
+        _clacks.Verify(x => x.WarmAsync(It.IsAny<IReadOnlyCollection<string>>(), It.IsAny<int>()), Times.Never);
         _logger.Verify(x => x.LogWarning(It.IsAny<string>()), Times.Once);
     }
 

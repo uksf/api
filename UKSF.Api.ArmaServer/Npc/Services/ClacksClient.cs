@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -50,6 +51,7 @@ public interface IClacksClient
     Task<ClacksSpeakResult> SpeakAsync(string role, string text, string voiceId);
     Task<bool> PutVoiceAsync(string voiceId, byte[] wavBytes);
     Task<ClacksEmoteResult> EmoteAsync(string voiceId, string text, string emoText, double emoAlpha);
+    Task<bool> WarmAsync(IReadOnlyCollection<string> roles, int leaseMs);
 }
 
 // HTTP client for the local clacks daemon (the LLM mesh). The daemon owns all model routing/fallback;
@@ -221,6 +223,37 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
         {
             logger.LogError($"clacks /emote call failed for voice '{voiceId}'", exception);
             return ClacksEmoteResult.Failed();
+        }
+    }
+
+    public async Task<bool> WarmAsync(IReadOnlyCollection<string> roles, int leaseMs)
+    {
+        var baseUrl = variablesService.GetVariable("CLACKS_URL")?.Item?.ToString()?.TrimEnd('/');
+        if (string.IsNullOrEmpty(baseUrl))
+        {
+            logger.LogWarning("CLACKS_URL not configured — warm skipped");
+            return false;
+        }
+
+        if (roles.Count == 0) return false;
+
+        try
+        {
+            using var client = httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(10); // /warm kicks the load and returns; it does not block on readiness
+            var response = await client.PostAsJsonAsync($"{baseUrl}/warm", new { roles, leaseMs }, NpcBrainJson.Options);
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning($"clacks /warm returned {(int)response.StatusCode} for roles [{string.Join(", ", roles)}]");
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError("clacks /warm call failed", exception);
+            return false;
         }
     }
 }

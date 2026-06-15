@@ -45,7 +45,8 @@ public static class ApiArmaServerExtensions
                            .AddActions()
                            .AddHostedService<MissionStatsIndexes>()
                            .AddHostedService<NpcIndexes>()
-                           .AddHostedService<NpcMoodGenWorker>();
+                           .AddHostedService<NpcMoodGenWorker>()
+                           .AddHostedService<NpcWarmKeeper>();
         }
 
         private IServiceCollection AddContexts()
