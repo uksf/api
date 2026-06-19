@@ -17,7 +17,7 @@ dotnet test Tests/UKSF.Api.Tests/UKSF.Api.Tests.csproj
 # Run tests with coverage (as used in CI)
 dotnet test **/*.Tests*.csproj --configuration Release /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
 
-# Run the API
+# Run the API (http://localhost:5500, https://localhost:5501)
 dotnet run --project UKSF.Api/UKSF.Api.csproj
 
 # Publish
@@ -165,3 +165,14 @@ SignalR hubs for live updates:
 - Do not create summary documents unless explicitly asked to do so
 - When investigating bugs and issues, you should always write a failing test first to replicate the behaviour. The expectation is that these tests should then pass when the implementation is fixed. You must always triple check the test fails for the correct reason, to be highly certain it is not failing for an unrelated reason. When taking this approach, do not continue if the tests are unable to run or you cannot get test output to verify the test does fail in practice.
 - Always write tests for the whole code files that are being edited, but don't duplicate coverage. Do this before making implementation changes and verify the tests pass before editing implementation code files
+
+## Brain & skills
+
+- **Vault:** `work/uksf-api/index.md` (backlog, specs, plans) and `work/uksf/index.md`
+  (cross-repo/deploy) in the Brain vault (`E:/Workspace/workshop/Brain`).
+  Entity `entities/uksf-api-stack.md` mirrors this stack; sources under `sources/uksf/`
+  (signalr-core, masstransit-saga-state-machine, mongo2go);
+  `concepts/signalr-json-casing-mismatch.md` documents a silent SignalR push bug.
+- **Skills:** `api-deep-review` (run before `/code-review` on C# changes), `local-dev`
+  (run/restart the API), `azure-pipelines` (CI on pool "Avengers"/agent "Thor" — never
+  manually queue), `fullstack-deep-review` for changes spanning web.
