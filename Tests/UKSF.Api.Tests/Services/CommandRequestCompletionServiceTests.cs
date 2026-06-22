@@ -35,6 +35,7 @@ public class CommandRequestCompletionServiceTests
     private readonly Mock<INotificationsService> _mockNotificationsService = new();
     private readonly Mock<IDisplayNameService> _mockDisplayNameService = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
+    private readonly Mock<IMedicAttachmentService> _mockMedicAttachmentService = new();
     private readonly CommandRequestCompletionService _subject;
 
     public CommandRequestCompletionServiceTests()
@@ -57,7 +58,8 @@ public class CommandRequestCompletionServiceTests
             _mockNotificationsService.Object,
             _mockHttpContextService.Object,
             _mockDisplayNameService.Object,
-            _mockLogger.Object
+            _mockLogger.Object,
+            _mockMedicAttachmentService.Object
         );
     }
 
@@ -837,6 +839,40 @@ public class CommandRequestCompletionServiceTests
             Times.Never
         );
         _mockLogger.Verify(x => x.LogAudit(It.Is<string>(s => s.Contains("approved") && s.Contains("Reinstate"))), Times.Once);
+    }
+
+    #endregion
+
+    #region MedicAttachment
+
+    [Fact]
+    public async Task Resolve_WhenMedicAttachment_AndApproved_WithTroop_ShouldUpdateAttachedTroopAndNotify()
+    {
+        var id = "r";
+        var request = CreateRequest(id, CommandRequestType.MedicAttachment, recipient: "rec", value: "troop");
+        SetupApproved(id, request);
+        _mockAccountContext.Setup(x => x.GetSingle("rec")).Returns(new DomainAccount { Id = "rec" });
+        _mockUnitsContext.Setup(x => x.GetSingle("troop")).Returns(new DomainUnit { Id = "troop", Name = "3 Troop", ChainOfCommand = new() });
+
+        await _subject.Resolve(id);
+
+        _mockAccountContext.Verify(
+            x => x.Update("rec", It.IsAny<Expression<Func<DomainAccount, string>>>(), "troop"),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task Resolve_WhenMedicAttachment_AndApproved_WithEmptyValue_ShouldCallSeverAttachment()
+    {
+        var id = "r";
+        var request = CreateRequest(id, CommandRequestType.MedicAttachment, recipient: "rec", value: "");
+        SetupApproved(id, request);
+        _mockMedicAttachmentService.Setup(x => x.SeverAttachment("rec", It.IsAny<string>())).ReturnsAsync(true);
+
+        await _subject.Resolve(id);
+
+        _mockMedicAttachmentService.Verify(x => x.SeverAttachment("rec", It.IsAny<string>()), Times.Once);
     }
 
     #endregion

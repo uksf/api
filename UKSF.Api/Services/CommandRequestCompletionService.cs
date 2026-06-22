@@ -30,7 +30,8 @@ public class CommandRequestCompletionService(
     INotificationsService notificationsService,
     IHttpContextService httpContextService,
     IDisplayNameService displayNameService,
-    IUksfLogger logger
+    IUksfLogger logger,
+    IMedicAttachmentService medicAttachmentService
 ) : ICommandRequestCompletionService
 {
     public async Task Resolve(string id)
@@ -49,9 +50,10 @@ public class CommandRequestCompletionService(
                 case CommandRequestType.Transfer:
                 case CommandRequestType.AuxiliaryTransfer:
                 case CommandRequestType.SecondaryTransfer: await Transfer(request); break;
-                case CommandRequestType.UnitRemoval:     await UnitRemoval(request); break;
-                case CommandRequestType.ReinstateMember: await Reinstate(request); break;
-                default:                                 throw new BadRequestException($"Request type not recognized: '{request.Type}'");
+                case CommandRequestType.UnitRemoval:       await UnitRemoval(request); break;
+                case CommandRequestType.ReinstateMember:   await Reinstate(request); break;
+                case CommandRequestType.MedicAttachment:   await MedicAttachment(request); break;
+                default:                                   throw new BadRequestException($"Request type not recognized: '{request.Type}'");
             }
         }
 
@@ -246,6 +248,31 @@ public class CommandRequestCompletionService(
                 "your membership was reinstated"
             );
             notificationsService.Add(notification);
+        }
+
+        await ResolveAndAudit(request);
+    }
+
+    private async Task MedicAttachment(DomainCommandRequest request)
+    {
+        if (commandRequestService.IsRequestApproved(request.Id))
+        {
+            if (string.IsNullOrEmpty(request.Value))
+            {
+                await medicAttachmentService.SeverAttachment(request.Recipient, "detached by request");
+            }
+            else
+            {
+                var troop = unitsContext.GetSingle(request.Value);
+                await accountContext.Update(request.Recipient, x => x.AttachedTroop, request.Value);
+                notificationsService.Add(new DomainNotification
+                {
+                    Owner = request.Recipient,
+                    Icon = Icons.MedicAttachment,
+                    Message = $"You have been attached as a medic to {troop?.Name ?? "a troop"}",
+                    Link = "/units"
+                });
+            }
         }
 
         await ResolveAndAudit(request);
