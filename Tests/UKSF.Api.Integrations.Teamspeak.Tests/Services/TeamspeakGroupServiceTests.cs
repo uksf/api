@@ -66,7 +66,9 @@ public class TeamspeakGroupServiceTests
             new Mock<IChainOfCommandService>().Object,
             new Mock<IDisplayNameService>().Object,
             new Mock<IAccountContext>().Object,
-            new UnitMapper()
+            new UnitMapper(),
+            new Mock<IMedicAttachmentService>().Object,
+            new Mock<IVariablesContext>().Object
         );
         _teamspeakGroupService = new TeamspeakGroupService(
             _mockRanksContext.Object,
