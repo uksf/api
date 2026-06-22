@@ -18,4 +18,5 @@ public static class Icons
     public const string UnitRemoval = "group_off";
     public const string Discharge = "person_off";
     public const string Reinstate = "person_add";
+    public const string MedicAttachment = "medical_services";
 }

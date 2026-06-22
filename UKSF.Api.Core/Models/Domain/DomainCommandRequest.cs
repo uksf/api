@@ -24,6 +24,7 @@ public static class CommandRequestType
     public const string Transfer = "Transfer";
     public const string UnitRemoval = "Unit Removal";
     public const string ChainOfCommandPosition = "Chain of Command Position";
+    public const string MedicAttachment = "Medic Attachment";
 }
 
 public class DomainCommandRequest : MongoObject
