@@ -47,6 +47,15 @@ public class CommandRequestService(
             unitsContext.GetSingle(x => x.Name == recipientDomainAccount.UnitAssignment),
             unitsContext.GetSingle(request.Value)
         );
+        if (request.Type == CommandRequestType.Loa && !string.IsNullOrEmpty(recipientDomainAccount.AttachedTroop))
+        {
+            var troopUnit = unitsContext.GetSingle(recipientDomainAccount.AttachedTroop);
+            if (troopUnit is not null)
+            {
+                ids.UnionWith(chainOfCommandService.ResolveChain(
+                    ChainOfCommandMode.Next_Commander_Exclude_Self, recipientDomainAccount.Id, troopUnit, null));
+            }
+        }
         await AddWithReviewers(request, ids);
     }
 

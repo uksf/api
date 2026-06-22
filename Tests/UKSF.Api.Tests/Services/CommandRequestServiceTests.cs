@@ -430,6 +430,95 @@ public class CommandRequestServiceTests
     }
 
     [Fact]
+    public async Task Add_LoaRequest_WithAttachedTroop_IncludesTroopCommanderInReviews()
+    {
+        var requester = new DomainAccount { Id = "requester1", Firstname = "Tim", Lastname = "Smith" };
+        var recipient = new DomainAccount
+        {
+            Id = "recipient1",
+            Firstname = "John",
+            Lastname = "Doe",
+            UnitAssignment = "SFM",
+            AttachedTroop = "troop"
+        };
+        var sfmCmdr = new DomainAccount { Id = "sfmCmdr", Firstname = "A", Lastname = "B", Rank = "Sgt" };
+        var troopCmdr = new DomainAccount { Id = "troopCmdr", Firstname = "C", Lastname = "D", Rank = "Cpl" };
+        var sfmUnit = new DomainUnit { Name = "SFM" };
+        var troopUnit = new DomainUnit { Name = "troop" };
+        var targetUnit = new DomainUnit { Name = "target" };
+        var request = new DomainCommandRequest
+        {
+            Recipient = "recipient1",
+            Type = CommandRequestType.Loa,
+            Value = "target",
+            Reason = "Holiday"
+        };
+
+        _mockAccountService.Setup(x => x.GetUserAccount()).Returns(requester);
+        _mockAccountContext.Setup(x => x.GetSingle("recipient1")).Returns(recipient);
+        _mockAccountContext.Setup(x => x.GetSingle("sfmCmdr")).Returns(sfmCmdr);
+        _mockAccountContext.Setup(x => x.GetSingle("troopCmdr")).Returns(troopCmdr);
+        _mockDisplayNameService.Setup(x => x.GetDisplayName(requester)).Returns("Tim Smith");
+        _mockDisplayNameService.Setup(x => x.GetDisplayName(recipient)).Returns("John Doe");
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(sfmUnit);
+        _mockUnitsContext.Setup(x => x.GetSingle("target")).Returns(targetUnit);
+        _mockUnitsContext.Setup(x => x.GetSingle("troop")).Returns(troopUnit);
+        _mockChainOfCommandService
+            .Setup(x => x.ResolveChain(ChainOfCommandMode.Next_Commander_Exclude_Self, "recipient1", sfmUnit, targetUnit))
+            .Returns(new HashSet<string> { "sfmCmdr" });
+        _mockChainOfCommandService
+            .Setup(x => x.ResolveChain(ChainOfCommandMode.Next_Commander_Exclude_Self, "recipient1", troopUnit, null))
+            .Returns(new HashSet<string> { "troopCmdr" });
+        _mockRanksService.Setup(x => x.Sort(It.IsAny<string>(), It.IsAny<string>())).Returns(0);
+
+        await _subject.Add(request, ChainOfCommandMode.Next_Commander_Exclude_Self);
+
+        request.Reviews.Keys.Should().Contain("sfmCmdr");
+        request.Reviews.Keys.Should().Contain("troopCmdr");
+    }
+
+    [Fact]
+    public async Task Add_LoaRequest_WithoutAttachedTroop_DoesNotIncludeExtraReviewer()
+    {
+        var requester = new DomainAccount { Id = "requester1", Firstname = "Tim", Lastname = "Smith" };
+        var recipient = new DomainAccount
+        {
+            Id = "recipient1",
+            Firstname = "John",
+            Lastname = "Doe",
+            UnitAssignment = "SFM",
+            AttachedTroop = null
+        };
+        var sfmCmdr = new DomainAccount { Id = "sfmCmdr", Firstname = "A", Lastname = "B", Rank = "Sgt" };
+        var sfmUnit = new DomainUnit { Name = "SFM" };
+        var targetUnit = new DomainUnit { Name = "target" };
+        var request = new DomainCommandRequest
+        {
+            Recipient = "recipient1",
+            Type = CommandRequestType.Loa,
+            Value = "target",
+            Reason = "Holiday"
+        };
+
+        _mockAccountService.Setup(x => x.GetUserAccount()).Returns(requester);
+        _mockAccountContext.Setup(x => x.GetSingle("recipient1")).Returns(recipient);
+        _mockAccountContext.Setup(x => x.GetSingle("sfmCmdr")).Returns(sfmCmdr);
+        _mockDisplayNameService.Setup(x => x.GetDisplayName(requester)).Returns("Tim Smith");
+        _mockDisplayNameService.Setup(x => x.GetDisplayName(recipient)).Returns("John Doe");
+        _mockUnitsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainUnit, bool>>())).Returns(sfmUnit);
+        _mockUnitsContext.Setup(x => x.GetSingle("target")).Returns(targetUnit);
+        _mockChainOfCommandService
+            .Setup(x => x.ResolveChain(ChainOfCommandMode.Next_Commander_Exclude_Self, "recipient1", sfmUnit, targetUnit))
+            .Returns(new HashSet<string> { "sfmCmdr" });
+        _mockRanksService.Setup(x => x.Sort(It.IsAny<string>(), It.IsAny<string>())).Returns(0);
+
+        await _subject.Add(request, ChainOfCommandMode.Next_Commander_Exclude_Self);
+
+        request.Reviews.Keys.Should().Contain("sfmCmdr");
+        request.Reviews.Keys.Should().HaveCount(1);
+    }
+
+    [Fact]
     public async Task SetRequestOverride_PersistsStateAndActor_WithoutTouchingReviews()
     {
         var existingReviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Approved }, { "r2", ReviewState.Pending } };
