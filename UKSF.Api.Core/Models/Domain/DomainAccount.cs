@@ -29,6 +29,8 @@ public class DomainAccount : MongoObject
     public bool SuperAdmin { get; set; }
     public HashSet<int> TeamspeakIdentities { get; set; }
     public string UnitAssignment { get; set; }
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string AttachedTroop { get; set; }
     public string UnitsExperience { get; set; }
 
     [BsonRepresentation(BsonType.ObjectId)]
