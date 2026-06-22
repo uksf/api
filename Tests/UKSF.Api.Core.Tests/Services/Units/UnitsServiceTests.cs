@@ -17,6 +17,9 @@ namespace UKSF.Api.Core.Tests.Services.Units;
 public class UnitsServiceTests
 {
     private readonly Mock<IUnitsContext> _mockUnitsContext;
+    private readonly Mock<IAccountContext> _mockAccountContext;
+    private readonly Mock<IChainOfCommandService> _mockChainOfCommandService;
+    private readonly Mock<IDisplayNameService> _mockDisplayNameService;
     private readonly Mock<IMedicAttachmentService> _mockMedicAttachmentService;
     private readonly Mock<IVariablesContext> _mockVariablesContext;
     private readonly UnitsService _unitsService;
@@ -30,19 +33,22 @@ public class UnitsServiceTests
     {
         _mockUnitsContext = new Mock<IUnitsContext>();
         var mockRanksService = new Mock<IRanksService>();
-        var mockChainOfCommandService = new Mock<IChainOfCommandService>();
-        var mockDisplayNameService = new Mock<IDisplayNameService>();
-        var mockAccountContext = new Mock<IAccountContext>();
+        _mockChainOfCommandService = new Mock<IChainOfCommandService>();
+        _mockDisplayNameService = new Mock<IDisplayNameService>();
+        _mockAccountContext = new Mock<IAccountContext>();
         var mockUnitMapper = new Mock<IUnitMapper>();
         _mockMedicAttachmentService = new Mock<IMedicAttachmentService>();
         _mockVariablesContext = new Mock<IVariablesContext>();
 
+        // Default: accountContext.Get returns empty list so existing tests don't NRE
+        _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount>());
+
         _unitsService = new UnitsService(
             _mockUnitsContext.Object,
             mockRanksService.Object,
-            mockChainOfCommandService.Object,
-            mockDisplayNameService.Object,
-            mockAccountContext.Object,
+            _mockChainOfCommandService.Object,
+            _mockDisplayNameService.Object,
+            _mockAccountContext.Object,
             mockUnitMapper.Object,
             _mockMedicAttachmentService.Object,
             _mockVariablesContext.Object
@@ -720,5 +726,48 @@ public class UnitsServiceTests
         // Assert
         result.Should().Be(secondaryRoot);
         result.Branch.Should().Be(UnitBranch.Secondary);
+    }
+
+    [Fact]
+    public void MapUnitMembers_Should_Include_Attached_Medic_With_IsAttachedMedic_True()
+    {
+        // Arrange
+        var troop = new DomainUnit { Id = "troop", Name = "3 Troop", Members = [], ChainOfCommand = new ChainOfCommand() };
+        var medic = new DomainAccount { Id = "medic", AttachedTroop = "troop", Firstname = "M", Lastname = "Edic" };
+
+        _mockAccountContext.Setup(x => x.Get(It.Is<Func<DomainAccount, bool>>(f => f(medic))))
+                           .Returns(new List<DomainAccount> { medic });
+        _mockAccountContext.Setup(x => x.GetSingle("medic")).Returns(medic);
+        _mockDisplayNameService.Setup(x => x.GetDisplayName(medic)).Returns("Pvt.Edic");
+
+        // Act
+        var result = _unitsService.MapUnitMembers(troop).ToList();
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].IsAttachedMedic.Should().BeTrue();
+        result[0].Name.Should().Be("Pvt.Edic");
+    }
+
+    [Fact]
+    public void MapUnitMembers_Should_Set_AttachedTroopName_For_Organic_Member_With_Attachment()
+    {
+        // Arrange
+        var troop = new DomainUnit { Id = "troop", Name = "3 Troop", Members = [], ChainOfCommand = new ChainOfCommand() };
+        var sfmMemberId = ObjectId.GenerateNewId().ToString();
+        var sfmUnit = new DomainUnit { Id = "sfm", Name = "SFM", Members = [sfmMemberId], ChainOfCommand = new ChainOfCommand() };
+        var sfmMember = new DomainAccount { Id = sfmMemberId, AttachedTroop = "troop", Firstname = "J", Lastname = "Smith" };
+
+        _mockAccountContext.Setup(x => x.GetSingle(sfmMemberId)).Returns(sfmMember);
+        _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>())).Returns(new List<DomainAccount>());
+        _mockUnitsContext.Setup(x => x.GetSingle("troop")).Returns(troop);
+        _mockDisplayNameService.Setup(x => x.GetDisplayName(sfmMember)).Returns("Pvt.Smith");
+
+        // Act
+        var result = _unitsService.MapUnitMembers(sfmUnit).ToList();
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].AttachedTroopName.Should().Be("3 Troop");
     }
 }

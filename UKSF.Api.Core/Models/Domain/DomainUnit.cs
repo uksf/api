@@ -54,6 +54,8 @@ public class UnitMemberDto
     public string Name { get; set; }
     public string Role { get; set; }
     public string ChainOfCommandPosition { get; set; }
+    public bool IsAttachedMedic { get; set; }
+    public string AttachedTroopName { get; set; }
 }
 
 public class UnitTreeDto

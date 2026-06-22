@@ -226,7 +226,11 @@ public class UnitsService(
 
     public IEnumerable<UnitMemberDto> MapUnitMembers(DomainUnit unit)
     {
-        return SortMembers(unit.Members, unit).Select(x => MapUnitMember(x, unit));
+        var organic = SortMembers(unit.Members, unit).Select(x => MapUnitMember(x, unit));
+        var attached = accountContext.Get(x => x.AttachedTroop == unit.Id)
+                                     .Where(x => !unit.Members.Contains(x.Id))
+                                     .Select(MapAttachedMedic);
+        return organic.Concat(attached);
     }
 
     private UnitMemberDto MapUnitMember(DomainAccount member, DomainUnit unit)
@@ -235,7 +239,21 @@ public class UnitsService(
         {
             Name = displayNameService.GetDisplayName(member),
             Role = member.RoleAssignment,
-            ChainOfCommandPosition = chainOfCommandService.GetChainOfCommandPosition(unit, member.Id)
+            ChainOfCommandPosition = chainOfCommandService.GetChainOfCommandPosition(unit, member.Id),
+            AttachedTroopName = string.IsNullOrEmpty(member.AttachedTroop)
+                ? null
+                : unitsContext.GetSingle(member.AttachedTroop)?.Name
+        };
+    }
+
+    private UnitMemberDto MapAttachedMedic(DomainAccount member)
+    {
+        return new UnitMemberDto
+        {
+            Name = displayNameService.GetDisplayName(member),
+            Role = member.RoleAssignment,
+            ChainOfCommandPosition = string.Empty,
+            IsAttachedMedic = true
         };
     }
 
