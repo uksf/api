@@ -98,6 +98,7 @@ public class Account
     public HashSet<int> TeamspeakIdentities { get; set; }
     public List<Training> Trainings { get; set; }
     public string UnitAssignment { get; set; }
+    public string AttachedTroop { get; set; }
     public UnitTreeNodeDto UnitObject { get; set; }
     public List<UnitTreeNodeDto> UnitObjects { get; set; }
     public string UnitsExperience { get; set; }

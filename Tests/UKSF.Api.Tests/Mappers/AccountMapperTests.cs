@@ -66,4 +66,15 @@ public class AccountMapperTests
 
         subject.ServiceRecord.Should().ContainInOrder(newest, middle, oldest);
     }
+
+    [Fact]
+    public void ShouldCopyAttachedTroop()
+    {
+        var troopId = ObjectId.GenerateNewId().ToString();
+        DomainAccount account = new() { Id = ObjectId.GenerateNewId().ToString(), AttachedTroop = troopId };
+
+        var subject = _subject.MapToAccount(account);
+
+        subject.AttachedTroop.Should().Be(troopId);
+    }
 }

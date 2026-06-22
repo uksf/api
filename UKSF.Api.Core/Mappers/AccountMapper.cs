@@ -37,6 +37,7 @@ public class AccountMapper(IDisplayNameService displayNameService) : IAccountMap
             Steamname = account.Steamname,
             TeamspeakIdentities = account.TeamspeakIdentities,
             UnitAssignment = account.UnitAssignment,
+            AttachedTroop = account.AttachedTroop,
             UnitsExperience = account.UnitsExperience
         };
     }
