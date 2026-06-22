@@ -18,17 +18,19 @@ namespace UKSF.Api.Tests.Controllers;
 
 public class UnitsControllerTests
 {
+    private readonly Mock<IAccountContext> _mockAccountContext;
     private readonly Mock<IUnitsContext> _mockUnitsContext;
     private readonly Mock<IUnitsService> _mockUnitsService;
     private readonly Mock<IGetUnitTreeQuery> _mockGetUnitTreeQuery;
     private readonly Mock<IUnitTreeMapper> _mockUnitTreeMapper;
+    private readonly Mock<IMedicAttachmentService> _mockMedicAttachmentService;
     private readonly UnitsController _controller;
 
     private readonly string _accountId = ObjectId.GenerateNewId().ToString();
 
     public UnitsControllerTests()
     {
-        var mockAccountContext = new Mock<IAccountContext>();
+        _mockAccountContext = new Mock<IAccountContext>();
         _mockUnitsContext = new Mock<IUnitsContext>();
         _mockUnitsService = new Mock<IUnitsService>();
         var mockAssignmentService = new Mock<IAssignmentService>();
@@ -36,17 +38,39 @@ public class UnitsControllerTests
         var mockLogger = new Mock<IUksfLogger>();
         _mockGetUnitTreeQuery = new Mock<IGetUnitTreeQuery>();
         _mockUnitTreeMapper = new Mock<IUnitTreeMapper>();
+        _mockMedicAttachmentService = new Mock<IMedicAttachmentService>();
 
         _controller = new UnitsController(
-            mockAccountContext.Object,
+            _mockAccountContext.Object,
             _mockUnitsContext.Object,
             _mockUnitsService.Object,
             mockAssignmentService.Object,
             mockNotificationsService.Object,
             mockLogger.Object,
             _mockGetUnitTreeQuery.Object,
-            _mockUnitTreeMapper.Object
+            _mockUnitTreeMapper.Object,
+            _mockMedicAttachmentService.Object
         );
+    }
+
+    [Fact]
+    public async Task DeleteUnit_Should_Sever_Medic_Attachment_For_Attached_Accounts()
+    {
+        // Arrange
+        var troopId = ObjectId.GenerateNewId().ToString();
+        var troop = new DomainUnit { Id = troopId, Name = "Troop Alpha", Members = [] };
+        var attachedAccount = new DomainAccount { Id = "rec", AttachedTroop = troopId };
+
+        _mockUnitsContext.Setup(x => x.GetSingle(troopId)).Returns(troop);
+        _mockAccountContext.Setup(x => x.Get(It.IsAny<Func<DomainAccount, bool>>()))
+                           .Returns<Func<DomainAccount, bool>>(predicate => new List<DomainAccount> { attachedAccount }.Where(predicate));
+        _mockMedicAttachmentService.Setup(x => x.SeverAttachment("rec", It.IsAny<string>())).ReturnsAsync(true);
+
+        // Act
+        await _controller.DeleteUnit(troopId);
+
+        // Assert
+        _mockMedicAttachmentService.Verify(x => x.SeverAttachment("rec", It.IsAny<string>()), Times.Once);
     }
 
     [Fact]

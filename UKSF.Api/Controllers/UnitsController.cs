@@ -21,7 +21,8 @@ public class UnitsController(
     INotificationsService notificationsService,
     IUksfLogger logger,
     IGetUnitTreeQuery getUnitTreeQuery,
-    IUnitTreeMapper unitTreeMapper
+    IUnitTreeMapper unitTreeMapper,
+    IMedicAttachmentService medicAttachmentService
 ) : ControllerBase
 {
     [HttpGet]
@@ -117,6 +118,11 @@ public class UnitsController(
     {
         var unit = unitsContext.GetSingle(id);
         logger.LogAudit($"Unit deleted '{unit.Name}'");
+        foreach (var attached in accountContext.Get(x => x.AttachedTroop == unit.Id))
+        {
+            await medicAttachmentService.SeverAttachment(attached.Id, "troop deleted");
+        }
+
         foreach (var account in accountContext.Get(x => x.UnitAssignment == unit.Name))
         {
             var notification = await assignmentService.UpdateUnitRankAndRole(account.Id, "Reserves", reason: $"{unit.Name} was deleted");

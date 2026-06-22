@@ -3,6 +3,7 @@ using MongoDB.Driver;
 using UKSF.Api.Core.Context;
 using UKSF.Api.Core.Mappers;
 using UKSF.Api.Core.Models.Domain;
+using UKSF.Api.Core.Extensions;
 
 namespace UKSF.Api.Core.Services;
 
@@ -34,7 +35,9 @@ public class UnitsService(
     IChainOfCommandService chainOfCommandService,
     IDisplayNameService displayNameService,
     IAccountContext accountContext,
-    IUnitMapper unitMapper
+    IUnitMapper unitMapper,
+    IMedicAttachmentService medicAttachmentService,
+    IVariablesContext variablesContext
 ) : IUnitsService
 {
     public UnitDto GetSingle(string id)
@@ -91,6 +94,18 @@ public class UnitsService(
 
         // Use ChainOfCommandService to remove from chain of command
         await chainOfCommandService.SetMemberChainOfCommandPosition(id, unit);
+
+        var sfmUnitId = TryGetSfmUnitId();
+        if (!string.IsNullOrEmpty(sfmUnitId) && unit.Id == sfmUnitId)
+        {
+            await medicAttachmentService.SeverAttachment(id, "removed from SFM");
+        }
+    }
+
+    private string TryGetSfmUnitId()
+    {
+        try { return variablesContext.GetSingle("UNIT_ID_SFM")?.AsString(); }
+        catch { return null; }
     }
 
     public bool HasMember(string unitId, string memberId)

@@ -17,6 +17,8 @@ namespace UKSF.Api.Core.Tests.Services.Units;
 public class UnitsServiceTests
 {
     private readonly Mock<IUnitsContext> _mockUnitsContext;
+    private readonly Mock<IMedicAttachmentService> _mockMedicAttachmentService;
+    private readonly Mock<IVariablesContext> _mockVariablesContext;
     private readonly UnitsService _unitsService;
 
     private readonly string _combatRootId = ObjectId.GenerateNewId().ToString();
@@ -32,6 +34,8 @@ public class UnitsServiceTests
         var mockDisplayNameService = new Mock<IDisplayNameService>();
         var mockAccountContext = new Mock<IAccountContext>();
         var mockUnitMapper = new Mock<IUnitMapper>();
+        _mockMedicAttachmentService = new Mock<IMedicAttachmentService>();
+        _mockVariablesContext = new Mock<IVariablesContext>();
 
         _unitsService = new UnitsService(
             _mockUnitsContext.Object,
@@ -39,8 +43,60 @@ public class UnitsServiceTests
             mockChainOfCommandService.Object,
             mockDisplayNameService.Object,
             mockAccountContext.Object,
-            mockUnitMapper.Object
+            mockUnitMapper.Object,
+            _mockMedicAttachmentService.Object,
+            _mockVariablesContext.Object
         );
+    }
+
+    [Fact]
+    public async Task RemoveMember_From_SFM_Unit_Should_Sever_Medic_Attachment()
+    {
+        // Arrange
+        var sfmUnitId = "sfm";
+        var sfmVariable = new DomainVariableItem { Key = "UNIT_ID_SFM", Item = sfmUnitId };
+        var sfmUnit = new DomainUnit { Id = sfmUnitId, Name = "SFM", Members = [_memberId] };
+
+        _mockVariablesContext.Setup(x => x.GetSingle("UNIT_ID_SFM")).Returns(sfmVariable);
+        _mockMedicAttachmentService.Setup(x => x.SeverAttachment(_memberId, It.IsAny<string>())).ReturnsAsync(true);
+
+        // Act
+        await _unitsService.RemoveMember(_memberId, sfmUnit);
+
+        // Assert
+        _mockMedicAttachmentService.Verify(x => x.SeverAttachment(_memberId, It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemoveMember_From_Non_SFM_Unit_Should_Not_Sever_Medic_Attachment()
+    {
+        // Arrange
+        var sfmUnitId = "sfm";
+        var sfmVariable = new DomainVariableItem { Key = "UNIT_ID_SFM", Item = sfmUnitId };
+        var otherUnit = new DomainUnit { Id = "other", Name = "Other Unit", Members = [_memberId] };
+
+        _mockVariablesContext.Setup(x => x.GetSingle("UNIT_ID_SFM")).Returns(sfmVariable);
+
+        // Act
+        await _unitsService.RemoveMember(_memberId, otherUnit);
+
+        // Assert
+        _mockMedicAttachmentService.Verify(x => x.SeverAttachment(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RemoveMember_When_SFM_Variable_Missing_Should_Not_Throw()
+    {
+        // Arrange
+        var sfmUnit = new DomainUnit { Id = "sfm", Name = "SFM", Members = [_memberId] };
+        _mockVariablesContext.Setup(x => x.GetSingle("UNIT_ID_SFM")).Returns((DomainVariableItem)null);
+
+        // Act
+        var act = async () => await _unitsService.RemoveMember(_memberId, sfmUnit);
+
+        // Assert
+        await act.Should().NotThrowAsync();
+        _mockMedicAttachmentService.Verify(x => x.SeverAttachment(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
