@@ -113,6 +113,7 @@ public static class ApiSharedExtensions
                            .AddSingleton<IObjectIdConversionService, ObjectIdConversionService>()
                            .AddSingleton<IAccountService, AccountService>()
                            .AddSingleton<IAssignmentService, AssignmentService>()
+                           .AddSingleton<IMedicAttachmentService, MedicAttachmentService>()
                            .AddSingleton<IServiceRecordService, ServiceRecordService>()
                            .AddSingleton<IGitService, GitService>()
                            .AddSingleton<IFileSystemService, FileSystemService>();
