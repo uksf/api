@@ -34,6 +34,7 @@ public class CommandRequestsControllerTests
     private readonly Mock<IRanksService> _mockRanksService = new();
     private readonly Mock<ILoaService> _mockLoaService = new();
     private readonly Mock<IChainOfCommandService> _mockChainOfCommandService = new();
+    private readonly Mock<IMedicAttachmentService> _mockMedicAttachmentService = new();
     private readonly CommandRequestsController _subject;
 
     private readonly string _requesterId = ObjectId.GenerateNewId().ToString();
@@ -56,7 +57,8 @@ public class CommandRequestsControllerTests
             _mockAccountContext.Object,
             _mockRanksService.Object,
             _mockLoaService.Object,
-            _mockChainOfCommandService.Object
+            _mockChainOfCommandService.Object,
+            _mockMedicAttachmentService.Object
         );
 
         _mockHttpContextService.Setup(x => x.GetUserId()).Returns(_requesterId);
@@ -534,6 +536,50 @@ public class CommandRequestsControllerTests
                 It.Is<DomainCommandRequest>(r => r.Type == CommandRequestType.ReinstateMember && r.DisplayValue == "Member" && r.DisplayFrom == "Discharged"),
                 ChainOfCommandMode.Personnel
             ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task CreateRequestMedicAttachment_WhenRecipientNotSfmMember_ThrowsBadRequestException()
+    {
+        var recipientId = ObjectId.GenerateNewId().ToString();
+        var sfmUnitId = "sfm";
+        var sfmUnit = new DomainUnit { Id = sfmUnitId, Name = "SFM", Members = new List<string>() };
+        _mockVariablesContext.Setup(x => x.GetSingle("UNIT_ID_SFM")).Returns(new DomainVariableItem { Item = sfmUnitId });
+        _mockUnitsContext.Setup(x => x.GetSingle(sfmUnitId)).Returns(sfmUnit);
+
+        var request = new CreateMedicAttachmentRequest { Recipient = recipientId, TroopId = _unitId, Reason = "Test" };
+
+        var act = async () => await _subject.CreateRequestMedicAttachment(request);
+        var exception = await act.Should().ThrowAsync<BadRequestException>();
+        exception.Which.Message.Should().Be("Recipient must be an SFM member to receive a medic attachment");
+    }
+
+    [Fact]
+    public async Task CreateRequestMedicAttachment_WhenSfmMemberWithValidTroop_CallsAddWithReviewers()
+    {
+        var recipientId = ObjectId.GenerateNewId().ToString();
+        var troopId = ObjectId.GenerateNewId().ToString();
+        var sfmUnitId = "sfm";
+        var sfmUnit = new DomainUnit { Id = sfmUnitId, Name = "SFM", Members = new List<string> { recipientId } };
+        var recipient = new DomainAccount { Id = recipientId, AttachedTroop = null };
+        var troop = new DomainUnit { Id = troopId, Name = "Troop Alpha" };
+        var reviewers = new HashSet<string> { ObjectId.GenerateNewId().ToString() };
+
+        _mockVariablesContext.Setup(x => x.GetSingle("UNIT_ID_SFM")).Returns(new DomainVariableItem { Item = sfmUnitId });
+        _mockUnitsContext.Setup(x => x.GetSingle(sfmUnitId)).Returns(sfmUnit);
+        _mockAccountContext.Setup(x => x.GetSingle(recipientId)).Returns(recipient);
+        _mockUnitsContext.Setup(x => x.GetSingle(troopId)).Returns(troop);
+        _mockCommandRequestService.Setup(x => x.DoesEquivalentRequestExist(It.IsAny<DomainCommandRequest>())).Returns(false);
+        _mockMedicAttachmentService.Setup(x => x.ResolveAttachmentReviewers(recipient, troopId, null)).Returns(reviewers);
+
+        var request = new CreateMedicAttachmentRequest { Recipient = recipientId, TroopId = troopId, Reason = "Attach medic" };
+
+        await _subject.CreateRequestMedicAttachment(request);
+
+        _mockCommandRequestService.Verify(
+            x => x.Add(It.IsAny<DomainCommandRequest>(), It.IsAny<HashSet<string>>()),
             Times.Once
         );
     }

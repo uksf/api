@@ -28,7 +28,8 @@ public class CommandRequestsController(
     IAccountContext accountContext,
     IRanksService ranksService,
     ILoaService loaService,
-    IChainOfCommandService chainOfCommandService
+    IChainOfCommandService chainOfCommandService,
+    IMedicAttachmentService medicAttachmentService
 ) : ControllerBase
 {
     [HttpGet]
@@ -381,6 +382,56 @@ public class CommandRequestsController(
         await commandRequestService.Add(request, ChainOfCommandMode.Personnel);
     }
 
+    [HttpPost("Create/medicattachment")]
+    [Permissions(Permissions.Command)]
+    public async Task CreateRequestMedicAttachment([FromBody] CreateMedicAttachmentRequest request)
+    {
+        var sfmUnitId = variablesContext.GetSingle("UNIT_ID_SFM").AsString();
+        var sfmUnit = unitsContext.GetSingle(sfmUnitId);
+        if (sfmUnit is null || !sfmUnit.Members.Contains(request.Recipient))
+        {
+            throw new BadRequestException("Recipient must be an SFM member to receive a medic attachment");
+        }
+
+        var recipient = accountContext.GetSingle(request.Recipient);
+        var oldTroopId = recipient.AttachedTroop;
+        var detaching = string.IsNullOrEmpty(request.TroopId);
+        if (detaching && string.IsNullOrEmpty(oldTroopId))
+        {
+            throw new BadRequestException("Recipient has no medic attachment to remove");
+        }
+
+        if (!detaching && request.TroopId == oldTroopId)
+        {
+            throw new BadRequestException("Recipient is already attached to that troop");
+        }
+
+        var newTroop = detaching ? null : unitsContext.GetSingle(request.TroopId);
+        if (!detaching && newTroop is null)
+        {
+            throw new BadRequestException("Target troop not found");
+        }
+
+        var commandRequest = new DomainCommandRequest
+        {
+            Recipient = request.Recipient,
+            Requester = httpContextService.GetUserId(),
+            Reason = request.Reason,
+            Type = CommandRequestType.MedicAttachment,
+            Value = request.TroopId ?? string.Empty,
+            DisplayValue = detaching ? "Detached" : newTroop.Name,
+            DisplayFrom = string.IsNullOrEmpty(oldTroopId) ? "None" : (unitsContext.GetSingle(oldTroopId)?.Name ?? "None")
+        };
+
+        if (commandRequestService.DoesEquivalentRequestExist(commandRequest))
+        {
+            throw new BadRequestException("An equivalent request already exists");
+        }
+
+        var reviewers = medicAttachmentService.ResolveAttachmentReviewers(recipient, request.TroopId, oldTroopId);
+        await commandRequestService.Add(commandRequest, reviewers);
+    }
+
     private string GetCurrentChainOfCommandPosition(DomainUnit unit, string memberId)
     {
         if (unit.ChainOfCommand?.First == memberId)
@@ -452,6 +503,7 @@ public class CommandRequestsController(
             CommandRequestType.UnitRemoval                                                                              => Icons.UnitRemoval,
             CommandRequestType.Discharge                                                                                => Icons.Discharge,
             CommandRequestType.ReinstateMember                                                                          => Icons.Reinstate,
+            CommandRequestType.MedicAttachment                                                                           => Icons.MedicAttachment,
             _                                                                                                           => Icons.Request
         };
 
@@ -469,6 +521,7 @@ public class CommandRequestsController(
             CommandRequestType.UnitRemoval            => "unit-removal",
             CommandRequestType.Discharge              => "discharge",
             CommandRequestType.ReinstateMember        => "reinstate",
+            CommandRequestType.MedicAttachment        => "medic-attachment",
             _                                         => "default"
         };
 }
