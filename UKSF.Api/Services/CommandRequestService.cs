@@ -11,6 +11,7 @@ namespace UKSF.Api.Services;
 public interface ICommandRequestService
 {
     Task Add(DomainCommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.Commander_And_One_Above);
+    Task Add(DomainCommandRequest request, HashSet<string> reviewerIds);
     Task ArchiveRequest(string id);
     Task SetRequestReviewState(DomainCommandRequest request, string reviewerId, ReviewState newState);
     Task SetRequestOverride(DomainCommandRequest request, ReviewState newState, string actorId);
@@ -39,16 +40,28 @@ public class CommandRequestService(
 {
     public async Task Add(DomainCommandRequest request, ChainOfCommandMode mode = ChainOfCommandMode.Commander_And_One_Above)
     {
-        var requesterDomainAccount = accountService.GetUserAccount();
         var recipientDomainAccount = accountContext.GetSingle(request.Recipient);
-        request.DisplayRequester = displayNameService.GetDisplayName(requesterDomainAccount);
-        request.DisplayRecipient = displayNameService.GetDisplayName(recipientDomainAccount);
         var ids = chainOfCommandService.ResolveChain(
             mode,
             recipientDomainAccount.Id,
             unitsContext.GetSingle(x => x.Name == recipientDomainAccount.UnitAssignment),
             unitsContext.GetSingle(request.Value)
         );
+        await AddWithReviewers(request, ids);
+    }
+
+    public async Task Add(DomainCommandRequest request, HashSet<string> reviewerIds)
+    {
+        await AddWithReviewers(request, reviewerIds);
+    }
+
+    private async Task AddWithReviewers(DomainCommandRequest request, HashSet<string> ids)
+    {
+        var requesterDomainAccount = accountService.GetUserAccount();
+        var recipientDomainAccount = accountContext.GetSingle(request.Recipient);
+        request.DisplayRequester = displayNameService.GetDisplayName(requesterDomainAccount);
+        request.DisplayRecipient = displayNameService.GetDisplayName(recipientDomainAccount);
+
         if (ids.Count == 0)
         {
             throw new Exception(
@@ -77,13 +90,7 @@ public class CommandRequestService(
         foreach (var account in accounts.Where(x => x.Id != requesterDomainAccount.Id))
         {
             notificationsService.Add(
-                new DomainNotification
-                {
-                    Owner = account.Id,
-                    Icon = Icons.Request,
-                    Message = notificationMessage,
-                    Link = "/command/requests"
-                }
+                new DomainNotification { Owner = account.Id, Icon = Icons.Request, Message = notificationMessage, Link = "/command/requests" }
             );
         }
     }

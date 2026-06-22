@@ -409,6 +409,27 @@ public class CommandRequestServiceTests
     }
 
     [Fact]
+    public async Task Add_WithExplicitReviewers_PopulatesReviewsAndNotifies()
+    {
+        var requester = new DomainAccount { Id = "requester1", Firstname = "Tim", Lastname = "Smith" };
+        var recipient = new DomainAccount { Id = "rec", Firstname = "John", Lastname = "Doe" };
+        var reviewer = new DomainAccount { Id = "a", Firstname = "Bob", Lastname = "Jones", Rank = "Sgt" };
+
+        _mockAccountService.Setup(x => x.GetUserAccount()).Returns(requester);
+        _mockAccountContext.Setup(x => x.GetSingle("rec")).Returns(recipient);
+        _mockAccountContext.Setup(x => x.GetSingle("a")).Returns(reviewer);
+        _mockDisplayNameService.Setup(x => x.GetDisplayName(requester)).Returns("Tim Smith");
+        _mockDisplayNameService.Setup(x => x.GetDisplayName(recipient)).Returns("John Doe");
+        _mockRanksService.Setup(x => x.Sort(It.IsAny<string>(), It.IsAny<string>())).Returns(0);
+
+        var request = new DomainCommandRequest { Recipient = "rec", Type = CommandRequestType.MedicAttachment };
+        await _subject.Add(request, new HashSet<string> { "a" });
+
+        request.Reviews.Should().ContainKey("a").WhoseValue.Should().Be(ReviewState.Pending);
+        _mockNotificationsService.Verify(x => x.Add(It.Is<DomainNotification>(n => n.Owner == "a")), Times.Once);
+    }
+
+    [Fact]
     public async Task SetRequestOverride_PersistsStateAndActor_WithoutTouchingReviews()
     {
         var existingReviews = new Dictionary<string, ReviewState> { { "r1", ReviewState.Approved }, { "r2", ReviewState.Pending } };
