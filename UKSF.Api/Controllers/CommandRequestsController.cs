@@ -386,8 +386,13 @@ public class CommandRequestsController(
     [Permissions(Permissions.Command)]
     public async Task CreateRequestMedicAttachment([FromBody] CreateMedicAttachmentRequest request)
     {
-        var sfmUnitId = variablesContext.GetSingle("UNIT_ID_SFM").AsString();
-        var sfmUnit = unitsContext.GetSingle(sfmUnitId);
+        var sfmVariable = variablesContext.GetSingle("UNIT_ID_SFM");
+        if (sfmVariable is null)
+        {
+            throw new BadRequestException("SFM unit is not configured. The UNIT_ID_SFM variable must be set.");
+        }
+
+        var sfmUnit = unitsContext.GetSingle(sfmVariable.AsString());
         if (sfmUnit is null || !sfmUnit.Members.Contains(request.Recipient))
         {
             throw new BadRequestException("Recipient must be an SFM member to receive a medic attachment");
