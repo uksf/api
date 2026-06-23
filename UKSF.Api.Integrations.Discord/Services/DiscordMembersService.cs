@@ -239,13 +239,22 @@ public class DiscordMembersService(
         }
     }
 
-    private void UpdateAccountUnits(DomainAccount account, HashSet<string> allowedRoles)
+    internal void UpdateAccountUnits(DomainAccount account, HashSet<string> allowedRoles)
     {
         var accountUnit = unitsContext.GetSingle(x => x.Name == account.UnitAssignment);
         var accountUnits = unitsContext.Get(x => x.Members.Contains(account.Id)).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
         var accountUnitParents = unitsService.GetParents(accountUnit).Where(x => !string.IsNullOrEmpty(x.DiscordRoleId)).ToList();
         accountUnits.ForEach(x => allowedRoles.Add(x.DiscordRoleId));
         accountUnitParents.ForEach(x => allowedRoles.Add(x.DiscordRoleId));
+
+        if (!string.IsNullOrEmpty(account.AttachedTroop))
+        {
+            var attachedTroop = unitsContext.GetSingle(account.AttachedTroop);
+            if (!string.IsNullOrEmpty(attachedTroop?.DiscordRoleId))
+            {
+                allowedRoles.Add(attachedTroop.DiscordRoleId);
+            }
+        }
     }
 
     private Task ClientOnGuildMemberUpdated(Cacheable<SocketGuildUser, ulong> cachedOldUser, SocketGuildUser user)
