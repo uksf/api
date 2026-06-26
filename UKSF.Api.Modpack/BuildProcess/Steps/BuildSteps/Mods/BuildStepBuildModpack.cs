@@ -39,7 +39,7 @@ public class BuildStepBuildModpack : ModBuildStep
         await RunProcess(
             extensionPath,
             "cmd.exe",
-            "/c \"cargo build --release\"",
+            "/c \"..\\tools\\build_extension.bat --release\"",
             (int)TimeSpan.FromMinutes(10).TotalMilliseconds,
             true,
             redirectStderrToOutput: true
