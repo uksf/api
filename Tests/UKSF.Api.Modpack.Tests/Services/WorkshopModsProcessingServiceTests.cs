@@ -85,6 +85,32 @@ public class WorkshopModsProcessingServiceTests
     }
 
     [Fact]
+    public async Task DownloadWithRetries_WhenFirstRoundFails_ShouldDeleteModContentFolderBeforeRetrying()
+    {
+        _variablesService.Setup(x => x.GetVariable("SERVER_PATH_STEAM")).Returns(new DomainVariableItem { Key = "SERVER_PATH_STEAM", Item = "C:\\steam" });
+        var workshopPath = Path.Combine("C:\\steam", "steamapps", "workshop", "content", "107410", "123");
+        var callCount = 0;
+        _steamCmdService.Setup(x => x.DownloadWorkshopMod("123"))
+                        .Returns(() =>
+                            {
+                                callCount++;
+                                if (callCount <= 1)
+                                {
+                                    throw new Exception("download failed");
+                                }
+
+                                return Task.FromResult("ok");
+                            }
+                        );
+        _fileSystemService.Setup(x => x.DirectoryExists(workshopPath)).Returns(true);
+        _fileSystemService.Setup(x => x.EnumerateFiles(workshopPath, "*", SearchOption.AllDirectories)).Returns([Path.Combine(workshopPath, "mod.pbo")]);
+
+        await _subject.DownloadWithRetries("123", 1);
+
+        _fileSystemService.Verify(x => x.DeleteDirectory(workshopPath, true), Times.Once);
+    }
+
+    [Fact]
     public async Task DownloadWithRetries_WhenBothRoundsFail_ShouldThrow()
     {
         _variablesService.Setup(x => x.GetVariable("SERVER_PATH_STEAM")).Returns(new DomainVariableItem { Key = "SERVER_PATH_STEAM", Item = "C:\\steam" });

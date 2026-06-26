@@ -32,7 +32,7 @@ public class WorkshopModsProcessingService(
     IUksfLogger logger
 ) : IWorkshopModsProcessingService
 {
-    public async Task DownloadWithRetries(string workshopModId, int maxRetries = 3, CancellationToken cancellationToken = default)
+    public async Task DownloadWithRetries(string workshopModId, int maxRetries = 2, CancellationToken cancellationToken = default)
     {
         var retryDelay = TimeSpan.FromSeconds(5);
 
@@ -45,7 +45,7 @@ public class WorkshopModsProcessingService(
         logger.LogWarning(
             $"All {maxRetries} download attempts failed for {workshopModId} ({firstRoundException.Message}). Clearing workshop cache and retrying"
         );
-        ClearWorkshopCache();
+        ClearWorkshopCache(workshopModId);
 
         var secondRoundException = await TryDownloadWithRetries(workshopModId, maxRetries, retryDelay, cancellationToken);
         if (secondRoundException == null)
@@ -99,7 +99,7 @@ public class WorkshopModsProcessingService(
         }
     }
 
-    private void ClearWorkshopCache()
+    private void ClearWorkshopCache(string workshopModId)
     {
         var steamPath = variablesService.GetVariable("SERVER_PATH_STEAM").AsString();
         var workshopPath = Path.Combine(steamPath, "steamapps", "workshop");
@@ -116,6 +116,15 @@ public class WorkshopModsProcessingService(
         {
             logger.LogWarning($"Clearing Steam workshop downloads: {downloadsPath}");
             fileSystemService.DeleteDirectory(downloadsPath, true);
+        }
+
+        // A failed update can leave the mod's content folder present but stale or empty, so SteamCMD treats the item as
+        // already downloaded and never refetches the PBOs. Delete it to force a clean download on the retry.
+        var modContentPath = GetWorkshopModPath(workshopModId);
+        if (fileSystemService.DirectoryExists(modContentPath))
+        {
+            logger.LogWarning($"Clearing stale workshop mod content: {modContentPath}");
+            fileSystemService.DeleteDirectory(modContentPath, true);
         }
     }
 
