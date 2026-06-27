@@ -1,4 +1,3 @@
-using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 
 namespace UKSF.Api.ArmaServer.Services;
@@ -10,7 +9,7 @@ public interface IOpsService
     OpDto ToDto(DomainOp op);
 }
 
-public class OpsService(IOpsContext opsContext, IGameServersService gameServersService, IMissionsService missionsService) : IOpsService
+public class OpsService(IGameServersService gameServersService, IMissionsService missionsService) : IOpsService
 {
     private const int StandardOpHourLocal = 19;
     private static readonly TimeZoneInfo LondonZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/London");

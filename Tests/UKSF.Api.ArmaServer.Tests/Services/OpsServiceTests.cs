@@ -1,8 +1,5 @@
-using System;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
-using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
 using Xunit;
@@ -11,14 +8,13 @@ namespace UKSF.Api.ArmaServer.Tests.Services;
 
 public class OpsServiceTests
 {
-    private readonly Mock<IOpsContext> _mockOpsContext = new();
     private readonly Mock<IGameServersService> _mockGameServersService = new();
     private readonly Mock<IMissionsService> _mockMissionsService = new();
     private readonly OpsService _service;
 
     public OpsServiceTests()
     {
-        _service = new OpsService(_mockOpsContext.Object, _mockGameServersService.Object, _mockMissionsService.Object);
+        _service = new OpsService(_mockGameServersService.Object, _mockMissionsService.Object);
     }
 
     [Fact]
