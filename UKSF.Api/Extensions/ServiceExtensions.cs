@@ -51,8 +51,6 @@ public static class ServiceExtensions
                            .AddCachedContext<ICommandRequestContext, CommandRequestContext>()
                            .AddCachedContext<IDischargeContext, DischargeContext>()
                            .AddCachedContext<ILoaContext, LoaContext>()
-                           .AddCachedContext<IOperationOrderContext, OperationOrderContext>()
-                           .AddCachedContext<IOperationReportContext, OperationReportContext>()
                            .AddCachedContext<ICommentThreadContext, CommentThreadContext>()
                            .AddContext<IBoardContext, BoardContext>();
         }
@@ -76,8 +74,6 @@ public static class ServiceExtensions
                            .AddTransient<ICommandRequestCompletionService, CommandRequestCompletionService>()
                            .AddTransient<ICommandRequestService, CommandRequestService>()
                            .AddTransient<ILoaService, LoaService>()
-                           .AddTransient<IOperationOrderService, OperationOrderService>()
-                           .AddTransient<IOperationReportService, OperationReportService>()
                            .AddTransient<ILoginService, LoginService>()
                            .AddTransient<IPermissionsService, PermissionsService>()
                            .AddTransient<ICommentThreadService, CommentThreadService>()
