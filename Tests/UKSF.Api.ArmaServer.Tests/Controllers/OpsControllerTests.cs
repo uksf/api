@@ -66,6 +66,21 @@ public class OpsControllerTests
     }
 
     [Fact]
+    public async Task LaunchOp_failed_launch_does_not_persist_snapshot()
+    {
+        DomainOp op = new() { Id = "op1", ServerId = "s1", MissionName = "m.Altis.pbo" };
+        _mockContext.Setup(x => x.GetSingle("op1")).Returns(op);
+        _mockOpsService.Setup(x => x.ToDto(op)).Returns(new OpDto { Op = op, MissionFileState = MissionFileState.Present });
+        _mockHttp.Setup(x => x.GetUserId()).Returns("user1");
+        _mockLaunch.Setup(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1")).ThrowsAsync(new BadRequestException("boom"));
+
+        var act = () => _controller.LaunchOp("op1");
+
+        await act.Should().ThrowAsync<BadRequestException>();
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainOp>()), Times.Never);
+    }
+
+    [Fact]
     public async Task LaunchOp_snapshots_and_delegates()
     {
         DomainOp op = new() { Id = "op1", ServerId = "s1", MissionName = "m.Altis.pbo" };

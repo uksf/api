@@ -77,11 +77,13 @@ public class OpsController(
             throw new BadRequestException("The mission file for this op is missing. Re-assign or restore it before launching.");
         }
 
+        var reports = await gameServerLaunchService.LaunchAsync(op.ServerId, op.MissionName, httpContextService.GetUserId());
+
         op.LaunchedServerId = op.ServerId;
         op.LaunchedMission = op.MissionName;
         op.LaunchedAt = DateTime.UtcNow;
         await opsContext.Replace(op);
 
-        return await gameServerLaunchService.LaunchAsync(op.ServerId, op.MissionName, httpContextService.GetUserId());
+        return reports;
     }
 }
