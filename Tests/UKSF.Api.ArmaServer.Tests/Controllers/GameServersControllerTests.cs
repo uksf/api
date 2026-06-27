@@ -19,7 +19,6 @@ public class GameServersControllerTests
     private readonly Mock<IGameServerProcessManager> _mockProcessManager = new();
     private readonly Mock<IMissionsService> _mockMissionsService = new();
     private readonly Mock<IRptLogService> _mockRptLogService = new();
-    private readonly Mock<IGameServerHelpers> _mockGameServerHelpers = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<IHttpContextService> _mockHttpContextService = new();
     private readonly GameServersController _sut;
@@ -31,9 +30,9 @@ public class GameServersControllerTests
             _mockProcessManager.Object,
             _mockMissionsService.Object,
             _mockRptLogService.Object,
-            _mockGameServerHelpers.Object,
             _mockLogger.Object,
-            _mockHttpContextService.Object
+            _mockHttpContextService.Object,
+            Mock.Of<IGameServerLaunchService>()
         );
 
         _sut.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };

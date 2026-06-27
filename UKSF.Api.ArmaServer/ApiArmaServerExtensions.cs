@@ -109,7 +109,8 @@ public static class ApiArmaServerExtensions
                            .AddSingleton<INpcBrainClient, NpcBrainService>()
                            .AddSingleton<IGameServerCommandSender, GameServerCommandSender>()
                            .AddSingleton<INpcBrokerService, NpcBrokerService>()
-                           .AddTransient<IOpsService, OpsService>();
+                           .AddTransient<IOpsService, OpsService>()
+                           .AddTransient<IGameServerLaunchService, GameServerLaunchService>();
         }
 
         private IServiceCollection AddCommands()

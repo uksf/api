@@ -31,9 +31,9 @@ public class GameServersControllerRptTests : IDisposable
             Mock.Of<IGameServerProcessManager>(),
             Mock.Of<IMissionsService>(),
             _mockRptLogService.Object,
-            Mock.Of<IGameServerHelpers>(),
             _mockLogger.Object,
-            Mock.Of<IHttpContextService>()
+            Mock.Of<IHttpContextService>(),
+            Mock.Of<IGameServerLaunchService>()
         );
 
         _sut.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };

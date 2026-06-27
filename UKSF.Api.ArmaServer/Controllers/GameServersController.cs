@@ -20,9 +20,9 @@ public class GameServersController(
     IGameServerProcessManager processManager,
     IMissionsService missionsService,
     IRptLogService rptLogService,
-    IGameServerHelpers gameServerHelpers,
     IUksfLogger logger,
-    IHttpContextService httpContextService
+    IHttpContextService httpContextService,
+    IGameServerLaunchService gameServerLaunchService
 ) : ControllerBase
 {
     [HttpGet]
@@ -87,50 +87,9 @@ public class GameServersController(
     [Authorize]
     public async Task<List<ValidationReport>> LaunchServer(string id, [FromBody] LaunchServerRequest launchServerRequest)
     {
-        var gameServer = gameServersService.GetServer(id);
-        if (gameServer.Status.Running || gameServer.Status.Launching)
-        {
-            throw new BadRequestException("Server is already running. This shouldn't happen so please contact an admin");
-        }
-
-        var allServers = gameServersService.GetServers();
-
-        if (gameServerHelpers.IsMainOpTime())
-        {
-            if (gameServer.ServerOption == GameServerOption.Singleton)
-            {
-                if (allServers.Where(x => x.ServerOption != GameServerOption.Singleton).Any(x => x.Status.Launching || x.Status.Running))
-                {
-                    throw new BadRequestException("Server must be launched on its own. Stop the other running servers first");
-                }
-            }
-
-            if (allServers.Where(x => x.ServerOption == GameServerOption.Singleton).Any(x => x.Status.Launching || x.Status.Running))
-            {
-                throw new BadRequestException("Server cannot be launched whilst main server is running at this time");
-            }
-        }
-
-        if (allServers.Where(x => x.Port == gameServer.Port).Any(x => x.Status.Launching || x.Status.Running))
-        {
-            throw new BadRequestException("Server cannot be launched while another server with the same port is running");
-        }
-
-        var patchingResult = await missionsService.PatchMissionFile(launchServerRequest.MissionName);
-        if (!patchingResult.Success)
-        {
-            patchingResult.Reports = patchingResult.Reports.OrderByDescending(x => x.Error).ToList();
-            var error =
-                $"{(patchingResult.Reports.Count > 0 ? "Failed to patch mission for the reasons detailed below" : "Failed to patch mission for an unknown reason")}.\n\nContact an admin for help";
-            throw new MissionPatchingFailedException(error, new ValidationReportDataset { Reports = patchingResult.Reports });
-        }
-
-        var currentUserId = httpContextService.GetUserId();
-        await processManager.LaunchServerAsync(gameServer, launchServerRequest.MissionName, currentUserId, patchingResult.PlayerCount);
-
-        logger.LogAudit($"Game server launched '{launchServerRequest.MissionName}' on '{gameServer.Name}'");
-
-        return patchingResult.Reports;
+        var reports = await gameServerLaunchService.LaunchAsync(id, launchServerRequest.MissionName, httpContextService.GetUserId());
+        logger.LogAudit($"Game server launched '{launchServerRequest.MissionName}' on '{gameServersService.GetServer(id).Name}'");
+        return reports;
     }
 
     [HttpPost("{id}/stop")]
