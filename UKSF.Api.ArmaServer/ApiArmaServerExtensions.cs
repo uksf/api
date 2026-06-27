@@ -108,7 +108,8 @@ public static class ApiArmaServerExtensions
                            .AddSingleton<IClacksClient, ClacksClient>()
                            .AddSingleton<INpcBrainClient, NpcBrainService>()
                            .AddSingleton<IGameServerCommandSender, GameServerCommandSender>()
-                           .AddSingleton<INpcBrokerService, NpcBrokerService>();
+                           .AddSingleton<INpcBrokerService, NpcBrokerService>()
+                           .AddTransient<IOpsService, OpsService>();
         }
 
         private IServiceCollection AddCommands()
