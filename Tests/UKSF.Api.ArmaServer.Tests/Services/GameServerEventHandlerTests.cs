@@ -29,6 +29,7 @@ public class GameServerEventHandlerTests
     private readonly Mock<IPersistenceSessionsService> _mockPersistenceSessionsService = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<INpcBrokerService> _mockNpcBrokerService = new();
+    private readonly Mock<IOpSessionCaptureService> _mockOpSessionCaptureService = new();
     private readonly GameServerEventHandler _sut;
 
     public GameServerEventHandlerTests()
@@ -41,7 +42,8 @@ public class GameServerEventHandlerTests
             _mockPerformanceService.Object,
             _mockPersistenceSessionsService.Object,
             _mockLogger.Object,
-            _mockNpcBrokerService.Object
+            _mockNpcBrokerService.Object,
+            _mockOpSessionCaptureService.Object
         );
     }
 
@@ -190,7 +192,8 @@ public class GameServerEventHandlerTests
             realPerformanceService,
             _mockPersistenceSessionsService.Object,
             _mockLogger.Object,
-            _mockNpcBrokerService.Object
+            _mockNpcBrokerService.Object,
+            _mockOpSessionCaptureService.Object
         );
 
         const string sqf = "[\"performance\",[" +

@@ -110,6 +110,7 @@ public static class ApiArmaServerExtensions
                            .AddSingleton<IGameServerCommandSender, GameServerCommandSender>()
                            .AddSingleton<INpcBrokerService, NpcBrokerService>()
                            .AddTransient<IOpsService, OpsService>()
+                           .AddTransient<IOpSessionCaptureService, OpSessionCaptureService>()
                            .AddTransient<IGameServerLaunchService, GameServerLaunchService>();
         }
 

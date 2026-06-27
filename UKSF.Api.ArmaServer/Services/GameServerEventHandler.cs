@@ -24,7 +24,8 @@ public class GameServerEventHandler(
     IPerformanceService performanceService,
     IPersistenceSessionsService persistenceSessionsService,
     IUksfLogger logger,
-    INpcBrokerService npcBrokerService
+    INpcBrokerService npcBrokerService,
+    IOpSessionCaptureService opSessionCaptureService
 ) : IGameServerEventHandler
 {
     public async Task HandleEventAsync(GameServerEvent gameServerEvent)
@@ -129,6 +130,18 @@ public class GameServerEventHandler(
         {
             var newSessionId = isStart ? sessionId : null;
             await gameServersContext.Update(gameServer.Id, Builders<DomainGameServer>.Update.Set(x => x.Status.CurrentMissionSessionId, newSessionId));
+        }
+
+        if (isStart)
+        {
+            if (gameServer is not null)
+            {
+                await opSessionCaptureService.CaptureStartedAsync(gameServer.Id, sessionId);
+            }
+        }
+        else
+        {
+            await opSessionCaptureService.CaptureEndedAsync(sessionId);
         }
 
         var now = DateTime.UtcNow;
