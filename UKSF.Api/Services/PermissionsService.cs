@@ -31,6 +31,12 @@ public class PermissionsService(
             {
                 permissions.Add(Permissions.Member);
 
+                var testerAccountIds = variablesService.GetVariable("TESTER_ACCOUNT_IDS").AsArrayWithDefault();
+                if (testerAccountIds.Contains(account.Id))
+                {
+                    permissions.Add(Permissions.Tester);
+                }
+
                 if (account.Admin)
                 {
                     permissions.UnionWith(Permissions.All);
@@ -38,6 +44,7 @@ public class PermissionsService(
                     if (account.SuperAdmin)
                     {
                         permissions.Add(Permissions.Superadmin);
+                        permissions.Add(Permissions.Tester);
                     }
 
                     break;
@@ -74,12 +81,6 @@ public class PermissionsService(
                 if (unitsContext.Get(x => missionsId.Contains(x.Id)).Any(x => x.Members.Contains(account.Id)))
                 {
                     permissions.Add(Permissions.Servers);
-                }
-
-                var testersId = variablesService.GetVariable("UNIT_ID_TESTERS").AsString();
-                if (unitsContext.GetSingle(testersId)?.Members.Contains(account.Id) == true)
-                {
-                    permissions.Add(Permissions.Tester);
                 }
 
                 break;

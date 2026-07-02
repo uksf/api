@@ -32,10 +32,36 @@ public class IntelPagesControllerTests
     }
 
     [Fact]
+    public void GetById_returns_the_single_page()
+    {
+        DomainIntelPage a = new() { Id = "i1", Title = "A" };
+        _mockContext.Setup(x => x.GetSingle("i1")).Returns(a);
+
+        var result = _controller.Get("i1");
+
+        result.Should().Be(a);
+    }
+
+    [Fact]
     public async Task Post_adds_intel_page()
     {
         DomainIntelPage a = new() { Title = "A" };
         await _controller.Post(a);
         _mockContext.Verify(x => x.Add(a), Times.Once);
+    }
+
+    [Fact]
+    public async Task Put_replaces_intel_page()
+    {
+        DomainIntelPage a = new() { Id = "i1", Title = "A" };
+        await _controller.Put(a);
+        _mockContext.Verify(x => x.Replace(a), Times.Once);
+    }
+
+    [Fact]
+    public async Task Delete_removes_intel_page()
+    {
+        await _controller.Delete("i1");
+        _mockContext.Verify(x => x.Delete("i1"), Times.Once);
     }
 }

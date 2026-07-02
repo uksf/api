@@ -29,7 +29,7 @@ public class MissionsService(IMissionPatchingService missionPatchingService, IGa
 
     public async Task<string> UploadMissionFile(IFormFile file)
     {
-        var fileName = Path.GetFileName(file.FileName);
+        var fileName = SanitizeFileName(file.FileName);
         var filePath = Path.Combine(GetActiveMissionsPath(), fileName);
         await using FileStream stream = new(filePath, FileMode.Create);
         await file.CopyToAsync(stream);
@@ -38,7 +38,7 @@ public class MissionsService(IMissionPatchingService missionPatchingService, IGa
 
     public async Task<MissionPatchingResult> PatchMissionFile(string missionName)
     {
-        var sanitizedName = Path.GetFileName(missionName);
+        var sanitizedName = SanitizeFileName(missionName);
         var missionPath = Path.Combine(GetActiveMissionsPath(), sanitizedName);
         return await missionPatchingService.PatchMission(
             missionPath,
@@ -49,7 +49,7 @@ public class MissionsService(IMissionPatchingService missionPatchingService, IGa
 
     public string FindMissionFilePath(string fileName)
     {
-        var sanitizedName = Path.GetFileName(fileName);
+        var sanitizedName = SanitizeFileName(fileName);
 
         var activePath = Path.Combine(GetActiveMissionsPath(), sanitizedName);
         if (File.Exists(activePath))
@@ -74,7 +74,7 @@ public class MissionsService(IMissionPatchingService missionPatchingService, IGa
 
     public void ArchiveMissionFile(string fileName)
     {
-        var sanitizedName = Path.GetFileName(fileName);
+        var sanitizedName = SanitizeFileName(fileName);
         var sourcePath = Path.Combine(GetActiveMissionsPath(), sanitizedName);
         if (!File.Exists(sourcePath))
         {
@@ -89,7 +89,7 @@ public class MissionsService(IMissionPatchingService missionPatchingService, IGa
 
     public void RestoreMissionFile(string fileName)
     {
-        var sanitizedName = Path.GetFileName(fileName);
+        var sanitizedName = SanitizeFileName(fileName);
         var sourcePath = Path.Combine(GetArchivedMissionsPath(), sanitizedName);
         if (!File.Exists(sourcePath))
         {
@@ -106,6 +106,16 @@ public class MissionsService(IMissionPatchingService missionPatchingService, IGa
     {
         var path = FindMissionFilePath(fileName) ?? throw new FileNotFoundException($"Mission file '{fileName}' not found");
         return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+    }
+
+    // Strip any directory component using both separators regardless of host OS.
+    // Path.GetFileName only honours the current platform's separator, so a Windows-style
+    // "..\..\x" traversal would pass through unsanitised on Linux/macOS.
+    private static string SanitizeFileName(string fileName)
+    {
+        var normalised = fileName.Replace('\\', '/');
+        var lastSlash = normalised.LastIndexOf('/');
+        return lastSlash >= 0 ? normalised[(lastSlash + 1)..] : normalised;
     }
 
     private static List<MissionFile> GetMissionsFromPath(string path)

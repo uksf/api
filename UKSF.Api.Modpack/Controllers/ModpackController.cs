@@ -144,7 +144,7 @@ public class ModpackController(IModpackService modpackService, IGithubService gi
     }
 
     [HttpPost("newbuild")]
-    [Permissions(Permissions.Tester)]
+    [Permissions(Permissions.Admin)]
     public async Task NewBuild([FromBody] NewBuild newBuild)
     {
         if (!await githubService.IsReferenceValid(newBuild.Reference))

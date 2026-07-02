@@ -186,7 +186,7 @@ public class DocumentFolderService(
     private static string ResolveFullFolderPath(IEnumerable<DomainDocumentFolderMetadata> allFolders, string parent, string name)
     {
         var parentFolder = allFolders.FirstOrDefault(x => x.Id == parent);
-        return parentFolder == null ? name : Path.Combine(parentFolder.FullPath, name);
+        return parentFolder == null ? name : DocumentPaths.CombineLogical(parentFolder.FullPath, name);
     }
 
     private DomainDocumentFolderMetadata ValidateAndGetFolder(string folderId)

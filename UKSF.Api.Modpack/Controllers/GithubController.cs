@@ -46,7 +46,7 @@ public class GithubController(IModpackService modpackService, IGithubService git
     }
 
     [HttpGet("branches")]
-    [Permissions(Permissions.Tester)]
+    [Permissions(Permissions.Admin)]
     public async Task<List<string>> GetBranches()
     {
         return await githubService.GetBranches();

@@ -52,7 +52,7 @@ public class DocumentService(
         {
             Folder = folderId,
             Name = createDocument.Name,
-            FullPath = Path.Combine(folderMetadata.FullPath, createDocument.Name),
+            FullPath = DocumentPaths.CombineLogical(folderMetadata.FullPath, createDocument.Name),
             Created = clock.UtcNow(),
             LastUpdated = clock.UtcNow(),
             Creator = httpContextService.GetUserId(),
@@ -89,7 +89,7 @@ public class DocumentService(
         }
 
         // Calculate new full path
-        var newFullPath = Path.Combine(folderMetadata.FullPath, newPermissions.Name);
+        var newFullPath = DocumentPaths.CombineLogical(folderMetadata.FullPath, newPermissions.Name);
 
         // Check for name collision
         if (folderMetadata.Documents.Any(x => x.Id != documentId && x.Name.EqualsIgnoreCase(newPermissions.Name)))

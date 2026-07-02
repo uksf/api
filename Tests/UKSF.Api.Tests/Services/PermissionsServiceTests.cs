@@ -25,19 +25,17 @@ public class PermissionsServiceTests
 
     private readonly PermissionsService _permissionsService;
     private readonly string _personnelUnitId = ObjectId.GenerateNewId().ToString();
-    private readonly string _testersUnitId = ObjectId.GenerateNewId().ToString();
 
     public PermissionsServiceTests()
     {
         // Setup default variable values
         _mockVariablesService.Setup(x => x.GetVariable("PERMISSIONS_NCO_RANK")).Returns(new DomainVariableItem { Item = "Corporal" });
         _mockVariablesService.Setup(x => x.GetVariable("UNIT_ID_PERSONNEL")).Returns(new DomainVariableItem { Item = _personnelUnitId });
-        _mockVariablesService.Setup(x => x.GetVariable("UNIT_ID_TESTERS")).Returns(new DomainVariableItem { Item = _testersUnitId });
-        _mockVariablesService.Setup(x => x.GetVariable("UNIT_ID_MISSIONS")).Returns(new DomainVariableItem { Item = new[] { _missionsUnitId } });
+        _mockVariablesService.Setup(x => x.GetVariable("TESTER_ACCOUNT_IDS")).Returns(new DomainVariableItem { Item = "" });
+        _mockVariablesService.Setup(x => x.GetVariable("UNIT_ID_MISSIONS")).Returns(new DomainVariableItem { Item = _missionsUnitId });
 
         // Setup default unit responses
         _mockUnitsContext.Setup(x => x.GetSingle(_personnelUnitId)).Returns(new DomainUnit { Id = _personnelUnitId, Members = [] });
-        _mockUnitsContext.Setup(x => x.GetSingle(_testersUnitId)).Returns(new DomainUnit { Id = _testersUnitId, Members = [] });
         _mockUnitsContext.Setup(x => x.Get(It.IsAny<Func<DomainUnit, bool>>())).Returns(new List<DomainUnit>());
 
         _permissionsService = new PermissionsService(
@@ -161,12 +159,11 @@ public class PermissionsServiceTests
     }
 
     [Fact]
-    public void GrantPermissions_Should_Grant_Tester_Permission_When_In_Testers_Unit()
+    public void GrantPermissions_Should_Grant_Tester_Permission_When_In_Tester_Account_Ids()
     {
         // Arrange
         var account = CreateAccount(MembershipState.Member);
-        var testersUnit = new DomainUnit { Id = _testersUnitId, Members = [account.Id] };
-        _mockUnitsContext.Setup(x => x.GetSingle(_testersUnitId)).Returns(testersUnit);
+        _mockVariablesService.Setup(x => x.GetVariable("TESTER_ACCOUNT_IDS")).Returns(new DomainVariableItem { Item = account.Id });
 
         // Act
         var result = _permissionsService.GrantPermissions(account);
@@ -278,18 +275,31 @@ public class PermissionsServiceTests
     }
 
     [Fact]
-    public void GrantPermissions_Should_Not_Grant_Tester_Permission_When_Not_In_Testers_Unit()
+    public void GrantPermissions_Should_Not_Grant_Tester_Permission_When_Not_In_Tester_Account_Ids()
     {
         // Arrange
         var account = CreateAccount(MembershipState.Member);
-        var testersUnit = new DomainUnit { Id = _testersUnitId, Members = [] };
-        _mockUnitsContext.Setup(x => x.GetSingle(_testersUnitId)).Returns(testersUnit);
 
         // Act
         var result = _permissionsService.GrantPermissions(account);
 
         // Assert
         result.Should().NotContain(Permissions.Tester);
+    }
+
+    [Fact]
+    public void GrantPermissions_Should_Not_Throw_When_Tester_Account_Ids_Variable_Is_Missing()
+    {
+        // Arrange
+        var account = CreateAccount(MembershipState.Member);
+        _mockVariablesService.Setup(x => x.GetVariable("TESTER_ACCOUNT_IDS")).Returns(new DomainVariableItem { Key = "TESTER_ACCOUNT_IDS", Item = null });
+
+        // Act
+        var act = () => _permissionsService.GrantPermissions(account);
+
+        // Assert
+        act.Should().NotThrow();
+        act().Should().NotContain(Permissions.Tester);
     }
 
     [Fact]
@@ -335,7 +345,7 @@ public class PermissionsServiceTests
         result.Should().Contain(Permissions.RecruiterLead);
         result.Should().Contain(Permissions.Personnel);
         result.Should().Contain(Permissions.Servers);
-        result.Should().Contain(Permissions.Tester);
+        result.Should().NotContain(Permissions.Tester);
         result.Should().NotContain(Permissions.Superadmin);
     }
 
@@ -407,6 +417,34 @@ public class PermissionsServiceTests
         result.Should().Contain(Permissions.Superadmin);
         result.Should().Contain(Permissions.Admin);
         result.Should().Contain(Permissions.Member);
+        result.Should().Contain(Permissions.Tester);
+    }
+
+    [Fact]
+    public void GrantPermissions_Should_Grant_Tester_Permission_When_Admin_Is_In_Tester_Account_Ids()
+    {
+        // Arrange
+        var account = CreateAccount(MembershipState.Member, true);
+        _mockVariablesService.Setup(x => x.GetVariable("TESTER_ACCOUNT_IDS")).Returns(new DomainVariableItem { Item = account.Id });
+
+        // Act
+        var result = _permissionsService.GrantPermissions(account);
+
+        // Assert
+        result.Should().Contain(Permissions.Tester);
+    }
+
+    [Fact]
+    public void GrantPermissions_Should_Not_Grant_Tester_Permission_For_Admin_Not_In_Tester_Account_Ids()
+    {
+        // Arrange
+        var account = CreateAccount(MembershipState.Member, true);
+
+        // Act
+        var result = _permissionsService.GrantPermissions(account);
+
+        // Assert
+        result.Should().NotContain(Permissions.Tester);
     }
 
     [Fact]

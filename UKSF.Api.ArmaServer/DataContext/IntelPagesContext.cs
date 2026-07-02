@@ -1,10 +1,11 @@
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Services;
 
 namespace UKSF.Api.ArmaServer.DataContext;
 
-public interface IIntelPagesContext : IMongoContext<DomainIntelPage>;
+public interface IIntelPagesContext : IMongoContext<DomainIntelPage>, ICachedMongoContext;
 
-public class IntelPagesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus)
-    : MongoContext<DomainIntelPage>(mongoCollectionFactory, eventBus, "intelPages"), IIntelPagesContext;
+public class IntelPagesContext(IMongoCollectionFactory mongoCollectionFactory, IEventBus eventBus, IVariablesService variablesService)
+    : CachedMongoContext<DomainIntelPage>(mongoCollectionFactory, eventBus, variablesService, "intelPages"), IIntelPagesContext;

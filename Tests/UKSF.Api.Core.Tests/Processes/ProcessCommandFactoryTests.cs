@@ -131,7 +131,7 @@ public class ProcessCommandFactoryTests
     public async Task ExecuteAsync_Should_DeliverTimeoutAsErrorOutput_NotThrowOperationCanceledException()
     {
         // Arrange
-        GetPlatformCommand(out var executable, out var args, "powershell.exe -Command \"Start-Sleep 10\"");
+        GetPlatformCommand(out var executable, out var args, SleepCommand(10));
         var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
         var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(3));
 
@@ -158,7 +158,7 @@ public class ProcessCommandFactoryTests
     public async Task ExecuteAsync_Should_HandleTimeout_WithoutThrowingOperationCanceledException()
     {
         // Arrange
-        GetPlatformCommand(out var executable, out var args, "powershell.exe -Command \"Start-Sleep 15\"");
+        GetPlatformCommand(out var executable, out var args, SleepCommand(15));
         var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
         var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(3));
 
@@ -184,7 +184,7 @@ public class ProcessCommandFactoryTests
     {
         // Arrange
         var cancellationTokenSource = new CancellationTokenSource();
-        GetPlatformCommand(out var executable, out var args, "powershell.exe -Command \"Start-Sleep 5\"");
+        GetPlatformCommand(out var executable, out var args, SleepCommand(5));
         var processService = new ProcessCommandFactory(_mockUksfLogger.Object);
         var command = processService.CreateCommand(executable, ".", args).WithTimeout(TimeSpan.FromSeconds(5));
 
@@ -416,5 +416,10 @@ public class ProcessCommandFactoryTests
             executable = "sh";
             args = $"-c \"{command}\"";
         }
+    }
+
+    private static string SleepCommand(int seconds)
+    {
+        return Environment.OSVersion.Platform == PlatformID.Win32NT ? $"powershell.exe -Command \"Start-Sleep {seconds}\"" : $"sleep {seconds}";
     }
 }

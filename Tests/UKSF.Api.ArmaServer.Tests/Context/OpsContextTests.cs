@@ -4,6 +4,7 @@ using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.Core.Context.Base;
 using UKSF.Api.Core.Events;
+using UKSF.Api.Core.Services;
 using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Context;
@@ -17,8 +18,10 @@ public class OpsContextTests
     {
         Mock<IMongoCollectionFactory> mockFactory = new();
         Mock<IEventBus> mockEventBus = new();
+        Mock<IVariablesService> mockVariablesService = new();
         mockFactory.Setup(x => x.CreateMongoCollection<DomainOp>(It.IsAny<string>())).Returns(_mockDataCollection.Object);
-        _opsContext = new OpsContext(mockFactory.Object, mockEventBus.Object);
+        mockVariablesService.Setup(x => x.GetFeatureState("USE_MEMORY_DATA_CACHE")).Returns(true);
+        _opsContext = new OpsContext(mockFactory.Object, mockEventBus.Object, mockVariablesService.Object);
     }
 
     [Fact]

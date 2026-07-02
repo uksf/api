@@ -39,6 +39,14 @@ public class OpsControllerTests
     }
 
     [Fact]
+    public async Task Delete_delegates_to_ops_service_cascade()
+    {
+        await _controller.Delete("op1");
+
+        _mockOpsService.Verify(x => x.DeleteOp("op1"), Times.Once);
+    }
+
+    [Fact]
     public void GetByCampaign_filters_by_campaignId()
     {
         DomainOp a = new() { CampaignId = "c1", Title = "A" };
@@ -50,6 +58,53 @@ public class OpsControllerTests
 
         result.Should().HaveCount(1);
         result[0].Op.Should().Be(a);
+    }
+
+    [Fact]
+    public void Get_without_campaignId_returns_all_ops_as_dtos()
+    {
+        DomainOp a = new() { CampaignId = "c1", Title = "A" };
+        DomainOp b = new() { CampaignId = "c2", Title = "B" };
+        _mockContext.Setup(x => x.Get()).Returns([a, b]);
+        _mockOpsService.Setup(x => x.ToDto(It.IsAny<DomainOp>())).Returns<DomainOp>(o => new OpDto { Op = o, MissionFileState = MissionFileState.Present });
+
+        var result = _controller.Get(null).ToList();
+
+        result.Should().HaveCount(2);
+        result.Select(x => x.Op).Should().BeEquivalentTo([a, b]);
+    }
+
+    [Fact]
+    public void GetById_returns_dto_for_the_op()
+    {
+        DomainOp op = new() { Id = "op1", Title = "A" };
+        _mockContext.Setup(x => x.GetSingle("op1")).Returns(op);
+        _mockOpsService.Setup(x => x.ToDto(op)).Returns(new OpDto { Op = op, MissionFileState = MissionFileState.Present });
+
+        var result = _controller.GetById("op1");
+
+        result.Op.Should().Be(op);
+    }
+
+    [Fact]
+    public async Task Put_replaces_the_op()
+    {
+        DomainOp op = new() { Id = "op1", Title = "A" };
+
+        await _controller.Put(op);
+
+        _mockContext.Verify(x => x.Replace(op), Times.Once);
+    }
+
+    [Fact]
+    public async Task LaunchOp_throws_when_op_not_found()
+    {
+        _mockContext.Setup(x => x.GetSingle("missing")).Returns((DomainOp)null);
+
+        var act = () => _controller.LaunchOp("missing");
+
+        await act.Should().ThrowAsync<BadRequestException>();
+        _mockLaunch.Verify(x => x.LaunchAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]

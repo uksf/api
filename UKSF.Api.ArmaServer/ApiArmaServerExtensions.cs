@@ -65,9 +65,9 @@ public static class ApiArmaServerExtensions
                            .AddContext<INpcAudioClipsContext, NpcAudioClipsContext>()
                            .AddContext<INpcVoicesContext, NpcVoicesContext>()
                            .AddContext<INpcVoiceJobsContext, NpcVoiceJobsContext>()
-                           .AddContext<ICampaignsContext, CampaignsContext>()
-                           .AddContext<IOpsContext, OpsContext>()
-                           .AddContext<IIntelPagesContext, IntelPagesContext>();
+                           .AddCachedContext<ICampaignsContext, CampaignsContext>()
+                           .AddCachedContext<IOpsContext, OpsContext>()
+                           .AddCachedContext<IIntelPagesContext, IntelPagesContext>();
         }
 
         private IServiceCollection AddServices()

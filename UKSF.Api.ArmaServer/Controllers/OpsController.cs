@@ -58,7 +58,7 @@ public class OpsController(
     [Permissions(Permissions.Command)]
     public async Task Delete([FromRoute] string id)
     {
-        await opsContext.Delete(id);
+        await opsService.DeleteOp(id);
     }
 
     [HttpPost("{id}/launch")]

@@ -69,6 +69,20 @@ public class MissionsServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PatchMissionFile_ShouldSanitizeForwardSlashTraversal()
+    {
+        _mockGameServerHelpers.Setup(x => x.GetGameServerMissionsPath()).Returns(@"C:\missions");
+        _mockGameServerHelpers.Setup(x => x.GetGameServerModsPaths(GameEnvironment.Release)).Returns(@"C:\mods\Repo");
+        _mockGameServerHelpers.Setup(x => x.GetMaxCuratorCountFromSettings()).Returns(5);
+        _mockMissionPatchingService.Setup(x => x.PatchMission(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+                                   .ReturnsAsync(new MissionPatchingResult { Success = true });
+
+        await _subject.PatchMissionFile("../../etc/passwd");
+
+        _mockMissionPatchingService.Verify(x => x.PatchMission(Path.Combine(@"C:\missions", "passwd"), It.IsAny<string>(), It.IsAny<int>()), Times.Once);
+    }
+
+    [Fact]
     public async Task PatchMissionFile_ShouldReturnResultFromPatchingService()
     {
         var expectedResult = new MissionPatchingResult

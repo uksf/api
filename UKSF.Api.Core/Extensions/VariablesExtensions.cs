@@ -96,6 +96,11 @@ public static class VariablesExtensions
             return predicate is not null ? items.Select(predicate).ToArray() : items;
         }
 
+        public string[] AsArrayWithDefault(Func<string, string> predicate = null)
+        {
+            return variable?.Item == null ? [] : variable.AsArray(predicate);
+        }
+
         public IEnumerable<string> AsEnumerable(Func<string, string> predicate = null)
         {
             var items = variable.AsArray();
