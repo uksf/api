@@ -16,7 +16,8 @@ public class CampaignsController(
     IOpsContext opsContext,
     IIntelPagesContext intelPagesContext,
     IOpsService opsService,
-    IHttpContextService httpContextService
+    IHttpContextService httpContextService,
+    IUksfLogger logger
 ) : ControllerBase
 {
     [HttpGet]
@@ -50,6 +51,7 @@ public class CampaignsController(
     public async Task Post([FromBody] DomainCampaign campaign)
     {
         await campaignsContext.Add(campaign);
+        logger.LogAudit($"Campaign added '{campaign.Name}'");
     }
 
     [HttpPut]
@@ -57,12 +59,19 @@ public class CampaignsController(
     public async Task Put([FromBody] DomainCampaign campaign)
     {
         await campaignsContext.Replace(campaign);
+        logger.LogAudit($"Campaign updated '{campaign.Name}'");
     }
 
     [HttpDelete("{id}")]
     [Permissions(Permissions.Command)]
     public async Task Delete([FromRoute] string id)
     {
+        var campaign = campaignsContext.GetSingle(id);
+        if (campaign is { Status: CampaignStatus.Past })
+        {
+            throw new BadRequestException("Past campaigns cannot be deleted");
+        }
+
         foreach (var op in opsContext.Get(x => x.CampaignId == id).ToList())
         {
             await opsService.DeleteOp(op.Id);
@@ -70,5 +79,6 @@ public class CampaignsController(
 
         await intelPagesContext.DeleteMany(x => x.Scope == IntelScope.Campaign && x.OwnerId == id);
         await campaignsContext.Delete(id);
+        logger.LogAudit($"Campaign deleted '{campaign.Name}'");
     }
 }

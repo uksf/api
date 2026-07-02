@@ -14,9 +14,12 @@ namespace UKSF.Api.ArmaServer.Controllers;
 [Permissions(Permissions.Member)]
 public class OpsController(
     IOpsContext opsContext,
+    ICampaignsContext campaignsContext,
     IOpsService opsService,
+    IGameServersService gameServersService,
     IGameServerLaunchService gameServerLaunchService,
-    IHttpContextService httpContextService
+    IHttpContextService httpContextService,
+    IUksfLogger logger
 ) : ControllerBase
 {
     [HttpGet]
@@ -45,6 +48,7 @@ public class OpsController(
     {
         opsService.ApplyDefaults(op);
         await opsContext.Add(op);
+        logger.LogAudit($"Op '{op.Title}' added for campaign '{campaignsContext.GetSingle(op.CampaignId).Name}'");
     }
 
     [HttpPut]
@@ -52,13 +56,16 @@ public class OpsController(
     public async Task Put([FromBody] DomainOp op)
     {
         await opsContext.Replace(op);
+        logger.LogAudit($"Op '{op.Title}' updated for campaign '{campaignsContext.GetSingle(op.CampaignId).Name}'");
     }
 
     [HttpDelete("{id}")]
     [Permissions(Permissions.Command)]
     public async Task Delete([FromRoute] string id)
     {
+        var op = opsContext.GetSingle(id);
         await opsService.DeleteOp(id);
+        logger.LogAudit($"Op '{op.Title}' deleted for campaign '{campaignsContext.GetSingle(op.CampaignId).Name}'");
     }
 
     [HttpPost("{id}/launch")]
@@ -83,6 +90,7 @@ public class OpsController(
         op.LaunchedMission = op.MissionName;
         op.LaunchedAt = DateTime.UtcNow;
         await opsContext.Replace(op);
+        logger.LogAudit($"Op '{op.Title}' launched '{op.MissionName}' on '{gameServersService.GetServer(op.ServerId).Name}'");
 
         return reports;
     }
