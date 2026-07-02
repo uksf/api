@@ -22,18 +22,21 @@ public class CampaignsControllerTests
     private readonly Mock<IIntelPagesContext> _mockIntelPagesContext = new();
     private readonly Mock<IOpsService> _mockOpsService = new();
     private readonly Mock<IHttpContextService> _mockHttpContextService = new();
+    private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly CampaignsController _controller;
 
     public CampaignsControllerTests()
     {
         _mockOpsContext.Setup(x => x.Get(It.IsAny<Func<DomainOp, bool>>())).Returns([]);
         _mockHttpContextService.Setup(x => x.UserHasPermission(Permissions.Command)).Returns(true);
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(new DomainCampaign { Name = "Op Storm" });
         _controller = new CampaignsController(
             _mockContext.Object,
             _mockOpsContext.Object,
             _mockIntelPagesContext.Object,
             _mockOpsService.Object,
-            _mockHttpContextService.Object
+            _mockHttpContextService.Object,
+            _mockLogger.Object
         );
     }
 
@@ -161,5 +164,18 @@ public class CampaignsControllerTests
         predicate(new DomainIntelPage { Scope = IntelScope.Campaign, OwnerId = "c1" }).Should().BeTrue();
         predicate(new DomainIntelPage { Scope = IntelScope.Campaign, OwnerId = "c2" }).Should().BeFalse();
         predicate(new DomainIntelPage { Scope = IntelScope.Op, OwnerId = "c1" }).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Delete_rejects_past_campaign()
+    {
+        _mockContext.Setup(x => x.GetSingle("past")).Returns(new DomainCampaign { Id = "past", Status = CampaignStatus.Past });
+
+        var act = () => _controller.Delete("past");
+
+        await act.Should().ThrowAsync<BadRequestException>();
+        _mockOpsService.Verify(x => x.DeleteOp(It.IsAny<string>()), Times.Never);
+        _mockIntelPagesContext.Verify(x => x.DeleteMany(It.IsAny<Expression<Func<DomainIntelPage, bool>>>()), Times.Never);
+        _mockContext.Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
     }
 }

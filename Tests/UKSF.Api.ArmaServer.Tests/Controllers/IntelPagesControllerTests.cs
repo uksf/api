@@ -5,6 +5,7 @@ using Moq;
 using UKSF.Api.ArmaServer.Controllers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.Core;
 using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Controllers;
@@ -12,11 +13,16 @@ namespace UKSF.Api.ArmaServer.Tests.Controllers;
 public class IntelPagesControllerTests
 {
     private readonly Mock<IIntelPagesContext> _mockContext = new();
+    private readonly Mock<ICampaignsContext> _mockCampaigns = new();
+    private readonly Mock<IOpsContext> _mockOps = new();
+    private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly IntelPagesController _controller;
 
     public IntelPagesControllerTests()
     {
-        _controller = new IntelPagesController(_mockContext.Object);
+        _mockCampaigns.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(new DomainCampaign { Name = "Op Storm" });
+        _mockOps.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(new DomainOp { Title = "Alpha" });
+        _controller = new IntelPagesController(_mockContext.Object, _mockCampaigns.Object, _mockOps.Object, _mockLogger.Object);
     }
 
     [Fact]
@@ -61,6 +67,8 @@ public class IntelPagesControllerTests
     [Fact]
     public async Task Delete_removes_intel_page()
     {
+        _mockContext.Setup(x => x.GetSingle("i1")).Returns(new DomainIntelPage { Id = "i1", Title = "A", Scope = IntelScope.Campaign, OwnerId = "c1" });
+
         await _controller.Delete("i1");
         _mockContext.Verify(x => x.Delete("i1"), Times.Once);
     }

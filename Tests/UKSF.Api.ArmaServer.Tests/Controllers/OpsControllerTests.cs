@@ -8,6 +8,7 @@ using UKSF.Api.ArmaServer.Controllers;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Core;
 using UKSF.Api.Core.Exceptions;
 using UKSF.Api.Core.Services;
 using Xunit;
@@ -17,14 +18,27 @@ namespace UKSF.Api.ArmaServer.Tests.Controllers;
 public class OpsControllerTests
 {
     private readonly Mock<IOpsContext> _mockContext = new();
+    private readonly Mock<ICampaignsContext> _mockCampaigns = new();
     private readonly Mock<IOpsService> _mockOpsService = new();
+    private readonly Mock<IGameServersService> _mockGameServers = new();
     private readonly Mock<IGameServerLaunchService> _mockLaunch = new();
     private readonly Mock<IHttpContextService> _mockHttp = new();
+    private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly OpsController _controller;
 
     public OpsControllerTests()
     {
-        _controller = new OpsController(_mockContext.Object, _mockOpsService.Object, _mockLaunch.Object, _mockHttp.Object);
+        _mockCampaigns.Setup(x => x.GetSingle(It.IsAny<string>())).Returns(new DomainCampaign { Name = "Op Storm" });
+        _mockGameServers.Setup(x => x.GetServer(It.IsAny<string>())).Returns(new DomainGameServer { Name = "Main Server" });
+        _controller = new OpsController(
+            _mockContext.Object,
+            _mockCampaigns.Object,
+            _mockOpsService.Object,
+            _mockGameServers.Object,
+            _mockLaunch.Object,
+            _mockHttp.Object,
+            _mockLogger.Object
+        );
     }
 
     [Fact]
@@ -41,6 +55,8 @@ public class OpsControllerTests
     [Fact]
     public async Task Delete_delegates_to_ops_service_cascade()
     {
+        _mockContext.Setup(x => x.GetSingle("op1")).Returns(new DomainOp { Id = "op1", Title = "A", CampaignId = "c1" });
+
         await _controller.Delete("op1");
 
         _mockOpsService.Verify(x => x.DeleteOp("op1"), Times.Once);
