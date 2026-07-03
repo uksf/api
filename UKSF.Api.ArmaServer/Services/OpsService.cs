@@ -37,10 +37,11 @@ public class OpsService(
     public DateTime NextStandardOpTimeUtc(DateTime nowUtc)
     {
         var nowLondon = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, LondonZone);
-        var candidate = new DateTime(nowLondon.Year, nowLondon.Month, nowLondon.Day, StandardOpHourLocal, 0, 0, DateTimeKind.Unspecified);
+        var daysUntilSaturday = ((int)DayOfWeek.Saturday - (int)nowLondon.DayOfWeek + 7) % 7;
+        var candidate = new DateTime(nowLondon.Year, nowLondon.Month, nowLondon.Day, StandardOpHourLocal, 0, 0, DateTimeKind.Unspecified).AddDays(daysUntilSaturday);
         if (nowLondon >= candidate)
         {
-            candidate = candidate.AddDays(1);
+            candidate = candidate.AddDays(7);
         }
 
         return TimeZoneInfo.ConvertTimeToUtc(candidate, LondonZone);

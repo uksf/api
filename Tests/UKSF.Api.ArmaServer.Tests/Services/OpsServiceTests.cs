@@ -24,25 +24,47 @@ public class OpsServiceTests
     }
 
     [Fact]
-    public void NextStandardOpTime_is_next_1900_london_in_utc()
+    public void NextStandardOpTime_advances_to_upcoming_saturday_from_a_weekday()
     {
-        // 2026-06-10 is a Wednesday; 12:00 UTC. BST (+1) so 19:00 London == 18:00 UTC same day.
+        // 2026-06-10 is a Wednesday; 12:00 UTC = 13:00 BST (before 19:00). Next Saturday is 2026-06-13.
         var now = new DateTime(2026, 6, 10, 12, 0, 0, DateTimeKind.Utc);
 
         var result = _service.NextStandardOpTimeUtc(now);
 
-        result.Should().Be(new DateTime(2026, 6, 10, 18, 0, 0, DateTimeKind.Utc));
+        result.Should().Be(new DateTime(2026, 6, 13, 18, 0, 0, DateTimeKind.Utc));
     }
 
     [Fact]
-    public void NextStandardOpTime_rolls_to_tomorrow_when_past_1900()
+    public void NextStandardOpTime_advances_to_upcoming_saturday_even_when_time_already_past()
     {
-        // 2026-06-10 20:00 UTC (= 21:00 BST, past 19:00) → next is 2026-06-11 18:00 UTC.
+        // 2026-06-10 20:00 UTC (= 21:00 BST, past 19:00) is still a Wednesday. Target is still 2026-06-13.
         var now = new DateTime(2026, 6, 10, 20, 0, 0, DateTimeKind.Utc);
 
         var result = _service.NextStandardOpTimeUtc(now);
 
-        result.Should().Be(new DateTime(2026, 6, 11, 18, 0, 0, DateTimeKind.Utc));
+        result.Should().Be(new DateTime(2026, 6, 13, 18, 0, 0, DateTimeKind.Utc));
+    }
+
+    [Fact]
+    public void NextStandardOpTime_uses_today_when_today_is_saturday_before_1900()
+    {
+        // 2026-06-13 is a Saturday. 12:00 UTC = 13:00 BST (before 19:00) → same day 19:00 BST.
+        var now = new DateTime(2026, 6, 13, 12, 0, 0, DateTimeKind.Utc);
+
+        var result = _service.NextStandardOpTimeUtc(now);
+
+        result.Should().Be(new DateTime(2026, 6, 13, 18, 0, 0, DateTimeKind.Utc));
+    }
+
+    [Fact]
+    public void NextStandardOpTime_rolls_to_next_saturday_when_today_is_saturday_after_1900()
+    {
+        // 2026-06-13 is a Saturday. 20:00 UTC = 21:00 BST (past 19:00) → next Saturday, 2026-06-20.
+        var now = new DateTime(2026, 6, 13, 20, 0, 0, DateTimeKind.Utc);
+
+        var result = _service.NextStandardOpTimeUtc(now);
+
+        result.Should().Be(new DateTime(2026, 6, 20, 18, 0, 0, DateTimeKind.Utc));
     }
 
     [Fact]
