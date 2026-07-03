@@ -415,6 +415,29 @@ public class GameServerProcessManagerTests
     }
 
     [Fact]
+    public async Task HandleServerStatusAsync_WhenAlreadyStopping_DoesNotResurrectRunning()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s-stopping-guard",
+            ApiPort = 2399,
+            Status = new GameServerStatus { Stopping = true, StoppingInitiatedAt = DateTime.UtcNow }
+        };
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
+        _mockHelpers.Setup(x => x.GetMaxPlayerCountFromConfig(server)).Returns("40");
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+
+        var data = new Dictionary<string, object> { { "map", "Altis" } };
+
+        await _sut.HandleServerStatusAsync(2399, data);
+
+        server.Status.Running.Should().BeFalse();
+        server.Status.Stopping.Should().BeTrue();
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
+        _mockServersClient.Verify(x => x.ReceiveServerUpdate(It.IsAny<GameServerUpdate>()), Times.Never);
+    }
+
+    [Fact]
     public async Task GetAllServerStatusesAsync_WhenNoProcesses_ResetsAllServers()
     {
         var servers = new List<DomainGameServer>
@@ -637,5 +660,17 @@ public class GameServerProcessManagerTests
         await Task.Delay(3000);
 
         _mockServersClient.Verify(x => x.ReceiveInstanceCount(0), Times.Once);
+    }
+
+    [Fact]
+    public async Task Monitor_WhenOrphanedProcessesLingerBriefly_DoesNotForceKillBeforeCeiling()
+    {
+        _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer>());
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(1, "")]);
+
+        _sut.EnsureMonitorRunning();
+        await Task.Delay(2500);
+
+        _mockProcessUtilities.Verify(x => x.FindProcessById(1), Times.Never);
     }
 }

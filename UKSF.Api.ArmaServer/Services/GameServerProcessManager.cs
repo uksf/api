@@ -44,6 +44,7 @@ public class GameServerProcessManager(
 ) : IGameServerProcessManager
 {
     private static readonly ConcurrentDictionary<string, GameServerStatus> StatusCache = new();
+    private static readonly TimeSpan OrphanKillCeiling = TimeSpan.FromMinutes(5);
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _serverLocks = new();
     private readonly Lock _monitorLock = new();
     private bool _monitorRunning;
@@ -415,6 +416,10 @@ public class GameServerProcessManager(
         try
         {
             var status = StatusCache.GetOrAdd(gameServer.Id, _ => gameServer.Status ?? new GameServerStatus());
+            if (status.Stopping)
+            {
+                return;
+            }
 
             if (data.TryGetValue("map", out var map)) status.Map = map.ToString();
             if (data.TryGetValue("mission", out var mission)) status.Mission = mission.ToString();
@@ -678,6 +683,7 @@ public class GameServerProcessManager(
                 var orphanStart = DateTime.UtcNow;
                 var lastReportedCount = remainingProcesses;
                 var lastLogAt = orphanStart;
+                var forceKilled = false;
                 logger.LogInfo($"Process monitor: {remainingProcesses} orphaned arma process(es) still running after server state cleared, waiting for exit");
 
                 while (true)
@@ -695,6 +701,15 @@ public class GameServerProcessManager(
                     {
                         logger.LogInfo($"Process monitor: orphaned arma process(es) exited after {(DateTime.UtcNow - orphanStart).TotalSeconds:F0}s");
                         break;
+                    }
+
+                    if (!forceKilled && DateTime.UtcNow - orphanStart >= OrphanKillCeiling)
+                    {
+                        logger.LogWarning(
+                            $"Process monitor: {currentCount} orphaned arma process(es) exceeded {OrphanKillCeiling.TotalMinutes:F0}m ceiling, force-killing"
+                        );
+                        KillOrphanedArmaProcesses();
+                        forceKilled = true;
                     }
 
                     if (DateTime.UtcNow - lastLogAt >= TimeSpan.FromSeconds(30))
@@ -718,6 +733,18 @@ public class GameServerProcessManager(
             lock (_monitorLock)
             {
                 _monitorRunning = false;
+            }
+        }
+    }
+
+    private void KillOrphanedArmaProcesses()
+    {
+        foreach (var processInfo in gameServerHelpers.GetGameServerArmaProcesses())
+        {
+            var process = processUtilities.FindProcessById(processInfo.ProcessId);
+            if (process is { HasExited: false })
+            {
+                process.Kill(true);
             }
         }
     }
