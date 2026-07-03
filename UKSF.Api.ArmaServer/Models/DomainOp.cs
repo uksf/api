@@ -24,6 +24,7 @@ public class DomainOp : MongoObject
     public string MissionName { get; set; }
     public string Warno { get; set; }
     public OpStatus Status { get; set; } = OpStatus.Scheduled;
+    public bool AutoLaunch { get; set; }
 
     // Captured asynchronously from the game when the op's launch produces a session.
     public string SessionId { get; set; }

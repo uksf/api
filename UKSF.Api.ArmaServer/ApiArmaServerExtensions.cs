@@ -129,7 +129,8 @@ public static class ApiArmaServerExtensions
         private IServiceCollection AddActions()
         {
             return services.AddSelfCreatingScheduledAction<IActionCheckForServerUpdate, ActionCheckForServerUpdate>()
-                           .AddSelfCreatingScheduledAction<IActionCleanupRunningServers, ActionCleanupRunningServers>();
+                           .AddSelfCreatingScheduledAction<IActionCleanupRunningServers, ActionCleanupRunningServers>()
+                           .AddSelfCreatingScheduledAction<IActionLaunchDueOps, ActionLaunchDueOps>();
         }
     }
 
