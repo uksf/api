@@ -6,6 +6,8 @@ using Moq;
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
 using UKSF.Api.ArmaServer.Services;
+using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Models;
 using Xunit;
 
 namespace UKSF.Api.ArmaServer.Tests.Services;
@@ -16,11 +18,18 @@ public class OpsServiceTests
     private readonly Mock<IMissionsService> _mockMissionsService = new();
     private readonly Mock<IOpsContext> _mockOpsContext = new();
     private readonly Mock<IIntelPagesContext> _mockIntelPagesContext = new();
+    private readonly Mock<IGameServerLaunchService> _mockGameServerLaunchService = new();
     private readonly OpsService _service;
 
     public OpsServiceTests()
     {
-        _service = new OpsService(_mockGameServersService.Object, _mockMissionsService.Object, _mockOpsContext.Object, _mockIntelPagesContext.Object);
+        _service = new OpsService(
+            _mockGameServersService.Object,
+            _mockMissionsService.Object,
+            _mockOpsContext.Object,
+            _mockIntelPagesContext.Object,
+            _mockGameServerLaunchService.Object
+        );
     }
 
     [Fact]
@@ -181,5 +190,47 @@ public class OpsServiceTests
 
         dto.MissionFileState.Should().Be(MissionFileState.Missing);
         _mockMissionsService.Verify(x => x.FindMissionFilePath(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task LaunchOpAsync_throws_when_mission_file_missing()
+    {
+        DomainOp op = new() { Id = "op1", MissionName = "gone.Altis.pbo", ServerId = "s1" };
+        _mockMissionsService.Setup(x => x.FindMissionFilePath("gone.Altis.pbo")).Returns((string)null);
+
+        var act = () => _service.LaunchOpAsync(op, "user1");
+
+        await act.Should().ThrowAsync<BadRequestException>();
+        _mockGameServerLaunchService.Verify(x => x.LaunchAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task LaunchOpAsync_does_not_persist_when_launch_fails()
+    {
+        DomainOp op = new() { Id = "op1", MissionName = "m.Altis.pbo", ServerId = "s1" };
+        _mockMissionsService.Setup(x => x.FindMissionFilePath("m.Altis.pbo")).Returns("/missions/m.Altis.pbo");
+        _mockGameServerLaunchService.Setup(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1")).ThrowsAsync(new BadRequestException("boom"));
+
+        var act = () => _service.LaunchOpAsync(op, "user1");
+
+        await act.Should().ThrowAsync<BadRequestException>();
+        _mockOpsContext.Verify(x => x.Replace(It.IsAny<DomainOp>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task LaunchOpAsync_snapshots_and_resets_session_and_status_on_success()
+    {
+        DomainOp op = new()
+        {
+            Id = "op1", MissionName = "m.Altis.pbo", ServerId = "s1", Status = OpStatus.Complete, SessionId = "stale-session"
+        };
+        _mockMissionsService.Setup(x => x.FindMissionFilePath("m.Altis.pbo")).Returns("/missions/m.Altis.pbo");
+        _mockGameServerLaunchService.Setup(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1")).ReturnsAsync([]);
+
+        await _service.LaunchOpAsync(op, "user1");
+
+        _mockOpsContext.Verify(x => x.Replace(It.Is<DomainOp>(o =>
+            o.LaunchedServerId == "s1" && o.LaunchedMission == "m.Altis.pbo" && o.LaunchedAt != null
+            && o.SessionId == null && o.Status == OpStatus.Scheduled)), Times.Once);
     }
 }

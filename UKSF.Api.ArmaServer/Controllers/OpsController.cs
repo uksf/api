@@ -17,7 +17,6 @@ public class OpsController(
     ICampaignsContext campaignsContext,
     IOpsService opsService,
     IGameServersService gameServersService,
-    IGameServerLaunchService gameServerLaunchService,
     IHttpContextService httpContextService,
     IUksfLogger logger
 ) : ControllerBase
@@ -78,20 +77,7 @@ public class OpsController(
             throw new BadRequestException("Op not found");
         }
 
-        var dto = opsService.ToDto(op);
-        if (dto.MissionFileState == MissionFileState.Missing)
-        {
-            throw new BadRequestException("The mission file for this op is missing. Re-assign or restore it before launching.");
-        }
-
-        var reports = await gameServerLaunchService.LaunchAsync(op.ServerId, op.MissionName, httpContextService.GetUserId());
-
-        op.LaunchedServerId = op.ServerId;
-        op.LaunchedMission = op.MissionName;
-        op.LaunchedAt = DateTime.UtcNow;
-        op.SessionId = null;
-        op.Status = OpStatus.Scheduled;
-        await opsContext.Replace(op);
+        var reports = await opsService.LaunchOpAsync(op, httpContextService.GetUserId());
         logger.LogAudit($"Op '{op.Title}' launched '{op.MissionName}' on '{gameServersService.GetServer(op.ServerId).Name}'");
 
         return reports;

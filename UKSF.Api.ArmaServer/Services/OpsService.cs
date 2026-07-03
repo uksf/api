@@ -1,5 +1,7 @@
 using UKSF.Api.ArmaServer.DataContext;
 using UKSF.Api.ArmaServer.Models;
+using UKSF.Api.Core.Exceptions;
+using UKSF.Api.Core.Models;
 
 namespace UKSF.Api.ArmaServer.Services;
 
@@ -9,13 +11,15 @@ public interface IOpsService
     DateTime NextStandardOpTimeUtc(DateTime nowUtc);
     OpDto ToDto(DomainOp op);
     Task DeleteOp(string id);
+    Task<List<ValidationReport>> LaunchOpAsync(DomainOp op, string launchedBy);
 }
 
 public class OpsService(
     IGameServersService gameServersService,
     IMissionsService missionsService,
     IOpsContext opsContext,
-    IIntelPagesContext intelPagesContext
+    IIntelPagesContext intelPagesContext,
+    IGameServerLaunchService gameServerLaunchService
 ) : IOpsService
 {
     private const int StandardOpHourLocal = 19;
@@ -56,6 +60,26 @@ public class OpsService(
     {
         await intelPagesContext.DeleteMany(x => x.Scope == IntelScope.Op && x.OwnerId == id);
         await opsContext.Delete(id);
+    }
+
+    public async Task<List<ValidationReport>> LaunchOpAsync(DomainOp op, string launchedBy)
+    {
+        var dto = ToDto(op);
+        if (dto.MissionFileState == MissionFileState.Missing)
+        {
+            throw new BadRequestException("The mission file for this op is missing. Re-assign or restore it before launching.");
+        }
+
+        var reports = await gameServerLaunchService.LaunchAsync(op.ServerId, op.MissionName, launchedBy);
+
+        op.LaunchedServerId = op.ServerId;
+        op.LaunchedMission = op.MissionName;
+        op.LaunchedAt = DateTime.UtcNow;
+        op.SessionId = null;
+        op.Status = OpStatus.Scheduled;
+        await opsContext.Replace(op);
+
+        return reports;
     }
 
     private string ResolveMainServerId()

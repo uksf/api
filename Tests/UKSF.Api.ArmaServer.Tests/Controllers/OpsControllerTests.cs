@@ -21,7 +21,6 @@ public class OpsControllerTests
     private readonly Mock<ICampaignsContext> _mockCampaigns = new();
     private readonly Mock<IOpsService> _mockOpsService = new();
     private readonly Mock<IGameServersService> _mockGameServers = new();
-    private readonly Mock<IGameServerLaunchService> _mockLaunch = new();
     private readonly Mock<IHttpContextService> _mockHttp = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly OpsController _controller;
@@ -35,7 +34,6 @@ public class OpsControllerTests
             _mockCampaigns.Object,
             _mockOpsService.Object,
             _mockGameServers.Object,
-            _mockLaunch.Object,
             _mockHttp.Object,
             _mockLogger.Object
         );
@@ -120,68 +118,20 @@ public class OpsControllerTests
         var act = () => _controller.LaunchOp("missing");
 
         await act.Should().ThrowAsync<BadRequestException>();
-        _mockLaunch.Verify(x => x.LaunchAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _mockOpsService.Verify(x => x.LaunchOpAsync(It.IsAny<DomainOp>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public async Task LaunchOp_blocks_when_mission_file_missing()
+    public async Task LaunchOp_delegates_to_ops_service_and_audits()
     {
-        DomainOp op = new() { Id = "op1", ServerId = "s1", MissionName = "gone.Altis.pbo" };
+        DomainOp op = new() { Id = "op1", Title = "Alpha", ServerId = "s1", MissionName = "m.Altis.pbo" };
         _mockContext.Setup(x => x.GetSingle("op1")).Returns(op);
-        _mockOpsService.Setup(x => x.ToDto(op)).Returns(new OpDto { Op = op, MissionFileState = MissionFileState.Missing });
-
-        var act = () => _controller.LaunchOp("op1");
-
-        await act.Should().ThrowAsync<BadRequestException>();
-        _mockLaunch.Verify(x => x.LaunchAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task LaunchOp_failed_launch_does_not_persist_snapshot()
-    {
-        DomainOp op = new() { Id = "op1", ServerId = "s1", MissionName = "m.Altis.pbo" };
-        _mockContext.Setup(x => x.GetSingle("op1")).Returns(op);
-        _mockOpsService.Setup(x => x.ToDto(op)).Returns(new OpDto { Op = op, MissionFileState = MissionFileState.Present });
         _mockHttp.Setup(x => x.GetUserId()).Returns("user1");
-        _mockLaunch.Setup(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1")).ThrowsAsync(new BadRequestException("boom"));
+        _mockOpsService.Setup(x => x.LaunchOpAsync(op, "user1")).ReturnsAsync([]);
 
-        var act = () => _controller.LaunchOp("op1");
+        var result = await _controller.LaunchOp("op1");
 
-        await act.Should().ThrowAsync<BadRequestException>();
-        _mockContext.Verify(x => x.Replace(It.IsAny<DomainOp>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task LaunchOp_snapshots_and_delegates()
-    {
-        DomainOp op = new() { Id = "op1", ServerId = "s1", MissionName = "m.Altis.pbo" };
-        _mockContext.Setup(x => x.GetSingle("op1")).Returns(op);
-        _mockOpsService.Setup(x => x.ToDto(op)).Returns(new OpDto { Op = op, MissionFileState = MissionFileState.Present });
-        _mockHttp.Setup(x => x.GetUserId()).Returns("user1");
-        _mockLaunch.Setup(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1")).ReturnsAsync([]);
-
-        await _controller.LaunchOp("op1");
-
-        _mockContext.Verify(x => x.Replace(It.Is<DomainOp>(o =>
-            o.LaunchedServerId == "s1" && o.LaunchedMission == "m.Altis.pbo" && o.LaunchedAt != null)), Times.Once);
-        _mockLaunch.Verify(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1"), Times.Once);
-    }
-
-    [Fact]
-    public async Task LaunchOp_resets_session_and_status_so_a_relaunch_after_crash_or_completion_recaptures()
-    {
-        DomainOp op = new()
-        {
-            Id = "op1", ServerId = "s1", MissionName = "m.Altis.pbo", Status = OpStatus.Complete, SessionId = "stale-session"
-        };
-        _mockContext.Setup(x => x.GetSingle("op1")).Returns(op);
-        _mockOpsService.Setup(x => x.ToDto(op)).Returns(new OpDto { Op = op, MissionFileState = MissionFileState.Present });
-        _mockHttp.Setup(x => x.GetUserId()).Returns("user1");
-        _mockLaunch.Setup(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1")).ReturnsAsync([]);
-
-        await _controller.LaunchOp("op1");
-
-        _mockContext.Verify(x => x.Replace(It.Is<DomainOp>(o =>
-            o.Status == OpStatus.Scheduled && o.SessionId == null)), Times.Once);
+        _mockOpsService.Verify(x => x.LaunchOpAsync(op, "user1"), Times.Once);
+        result.Should().BeEmpty();
     }
 }
