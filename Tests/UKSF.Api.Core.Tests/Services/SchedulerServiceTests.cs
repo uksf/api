@@ -203,4 +203,38 @@ public class SchedulerServiceTests
 
         _mockContext.Verify(x => x.Add(It.IsAny<DomainScheduledJob>()), Times.Once);
     }
+
+    [Fact]
+    public async Task CreateScheduledJob_ShouldCreateSeparateJobs_WhenSameActionWithDifferentParameters()
+    {
+        DomainScheduledJob storedJob = null;
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainScheduledJob, bool>>()))
+                    .Returns<Func<DomainScheduledJob, bool>>(predicate => storedJob is not null && predicate(storedJob) ? storedJob : null);
+        _mockContext.Setup(x => x.Add(It.IsAny<DomainScheduledJob>()))
+                    .Callback<DomainScheduledJob>(job => storedJob ??= job)
+                    .Returns(Task.CompletedTask);
+
+        var first = await _subject.CreateScheduledJob("SharedAction", DateTime.UtcNow.AddMinutes(30), TimeSpan.Zero, "code-1");
+        var second = await _subject.CreateScheduledJob("SharedAction", DateTime.UtcNow.AddMinutes(30), TimeSpan.Zero, "code-2");
+
+        first.Should().NotBe(second);
+        _mockContext.Verify(x => x.Add(It.IsAny<DomainScheduledJob>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task CreateScheduledJob_ShouldReuseJob_WhenSameActionWithSameParameters()
+    {
+        DomainScheduledJob storedJob = null;
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainScheduledJob, bool>>()))
+                    .Returns<Func<DomainScheduledJob, bool>>(predicate => storedJob is not null && predicate(storedJob) ? storedJob : null);
+        _mockContext.Setup(x => x.Add(It.IsAny<DomainScheduledJob>()))
+                    .Callback<DomainScheduledJob>(job => storedJob ??= job)
+                    .Returns(Task.CompletedTask);
+
+        var first = await _subject.CreateScheduledJob("SharedAction", DateTime.UtcNow.AddMinutes(30), TimeSpan.Zero, "code-1");
+        var second = await _subject.CreateScheduledJob("SharedAction", DateTime.UtcNow.AddMinutes(30), TimeSpan.Zero, "code-1");
+
+        first.Should().Be(second);
+        _mockContext.Verify(x => x.Add(It.IsAny<DomainScheduledJob>()), Times.Once);
+    }
 }

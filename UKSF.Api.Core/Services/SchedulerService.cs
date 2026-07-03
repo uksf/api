@@ -45,7 +45,8 @@ public class SchedulerService(ISchedulerContext context, IScheduledActionFactory
 
     public async Task<DomainScheduledJob> CreateScheduledJob(string actionName, DateTime next, TimeSpan interval, params object[] actionParameters)
     {
-        var job = context.GetSingle(x => x.Action == actionName);
+        var serializedParameters = actionParameters.Length > 0 ? JsonSerializer.Serialize(actionParameters, DefaultJsonSerializerOptions.Options) : null;
+        var job = context.GetSingle(x => x.Action == actionName && x.ActionParameters == serializedParameters);
         if (job is not null)
         {
             if (job.Interval != interval)
@@ -56,11 +57,7 @@ public class SchedulerService(ISchedulerContext context, IScheduledActionFactory
             return job;
         }
 
-        job = new DomainScheduledJob { Next = next, Action = actionName };
-        if (actionParameters.Length > 0)
-        {
-            job.ActionParameters = JsonSerializer.Serialize(actionParameters, DefaultJsonSerializerOptions.Options);
-        }
+        job = new DomainScheduledJob { Next = next, Action = actionName, ActionParameters = serializedParameters };
 
         if (interval != TimeSpan.Zero)
         {
