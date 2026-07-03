@@ -38,6 +38,7 @@ public class GameServerProcessManager(
     IMissionsService missionsService,
     IRptLogService rptLogService,
     IMissionStatsService missionStatsService,
+    IOpSessionCaptureService opSessionCaptureService,
     IVariablesService variablesService,
     IUksfLogger logger
 ) : IGameServerProcessManager
@@ -214,14 +215,7 @@ public class GameServerProcessManager(
             {
                 if (!string.IsNullOrEmpty(gameServer.Status.CurrentMissionSessionId))
                 {
-                    try
-                    {
-                        await missionStatsService.FinaliseKilledSessionAsync(gameServer.Status.CurrentMissionSessionId);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError($"Failed to finalise killed session '{gameServer.Status.CurrentMissionSessionId}', proceeding with server cleanup", ex);
-                    }
+                    await TryFinaliseKilledSessionAsync(gameServer.Status.CurrentMissionSessionId);
                 }
 
                 gameServer.ProcessId = null;
@@ -261,14 +255,7 @@ public class GameServerProcessManager(
 
         if (!string.IsNullOrEmpty(activeSessionId))
         {
-            try
-            {
-                await missionStatsService.FinaliseKilledSessionAsync(activeSessionId);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"Failed to finalise killed session '{activeSessionId}', proceeding with server cleanup", ex);
-            }
+            await TryFinaliseKilledSessionAsync(activeSessionId);
         }
 
         server.ProcessId = null;
@@ -628,6 +615,15 @@ public class GameServerProcessManager(
         catch (Exception ex)
         {
             logger.LogError($"Failed to finalise killed session '{sessionId}', proceeding with server cleanup", ex);
+        }
+
+        try
+        {
+            await opSessionCaptureService.CaptureEndedAsync(sessionId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"Failed to capture op completion for killed session '{sessionId}', proceeding with server cleanup", ex);
         }
     }
 

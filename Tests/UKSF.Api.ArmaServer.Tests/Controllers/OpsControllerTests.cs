@@ -166,4 +166,22 @@ public class OpsControllerTests
             o.LaunchedServerId == "s1" && o.LaunchedMission == "m.Altis.pbo" && o.LaunchedAt != null)), Times.Once);
         _mockLaunch.Verify(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1"), Times.Once);
     }
+
+    [Fact]
+    public async Task LaunchOp_resets_session_and_status_so_a_relaunch_after_crash_or_completion_recaptures()
+    {
+        DomainOp op = new()
+        {
+            Id = "op1", ServerId = "s1", MissionName = "m.Altis.pbo", Status = OpStatus.Complete, SessionId = "stale-session"
+        };
+        _mockContext.Setup(x => x.GetSingle("op1")).Returns(op);
+        _mockOpsService.Setup(x => x.ToDto(op)).Returns(new OpDto { Op = op, MissionFileState = MissionFileState.Present });
+        _mockHttp.Setup(x => x.GetUserId()).Returns("user1");
+        _mockLaunch.Setup(x => x.LaunchAsync("s1", "m.Altis.pbo", "user1")).ReturnsAsync([]);
+
+        await _controller.LaunchOp("op1");
+
+        _mockContext.Verify(x => x.Replace(It.Is<DomainOp>(o =>
+            o.Status == OpStatus.Scheduled && o.SessionId == null)), Times.Once);
+    }
 }

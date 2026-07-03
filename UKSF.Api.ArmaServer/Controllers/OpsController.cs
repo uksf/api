@@ -89,6 +89,8 @@ public class OpsController(
         op.LaunchedServerId = op.ServerId;
         op.LaunchedMission = op.MissionName;
         op.LaunchedAt = DateTime.UtcNow;
+        op.SessionId = null;
+        op.Status = OpStatus.Scheduled;
         await opsContext.Replace(op);
         logger.LogAudit($"Op '{op.Title}' launched '{op.MissionName}' on '{gameServersService.GetServer(op.ServerId).Name}'");
 

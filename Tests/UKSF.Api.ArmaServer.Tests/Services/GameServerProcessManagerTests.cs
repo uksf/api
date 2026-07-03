@@ -31,6 +31,7 @@ public class GameServerProcessManagerTests
     private readonly Mock<IMissionsService> _mockMissionsService = new();
     private readonly Mock<IRptLogService> _mockRptLogService = new();
     private readonly Mock<IMissionStatsService> _mockMissionStatsService = new();
+    private readonly Mock<IOpSessionCaptureService> _mockOpSessionCaptureService = new();
     private readonly Mock<IVariablesService> _mockVariablesService = new();
     private readonly Mock<IUksfLogger> _mockLogger = new();
     private readonly Mock<IServersClient> _mockServersClient;
@@ -52,6 +53,7 @@ public class GameServerProcessManagerTests
             _mockMissionsService.Object,
             _mockRptLogService.Object,
             _mockMissionStatsService.Object,
+            _mockOpSessionCaptureService.Object,
             _mockVariablesService.Object,
             _mockLogger.Object
         );
@@ -207,6 +209,7 @@ public class GameServerProcessManagerTests
         await _sut.KillServerAsync(server);
 
         _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("session-1"), Times.Once);
+        _mockOpSessionCaptureService.Verify(x => x.CaptureEndedAsync("session-1"), Times.Once);
     }
 
     [Fact]
@@ -373,6 +376,7 @@ public class GameServerProcessManagerTests
         await _sut.HandleShutdownCompleteAsync(2303);
 
         _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("session-abc"), Times.Once);
+        _mockOpSessionCaptureService.Verify(x => x.CaptureEndedAsync("session-abc"), Times.Once);
     }
 
     [Fact]
@@ -466,6 +470,7 @@ public class GameServerProcessManagerTests
         await _sut.GetAllServerStatusesAsync();
 
         _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("session-1"), Times.Once);
+        _mockOpSessionCaptureService.Verify(x => x.CaptureEndedAsync("session-1"), Times.Once);
     }
 
     [Fact]
