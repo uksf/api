@@ -435,13 +435,30 @@ public class GameServerProcessManagerTests
         _mockHelpers.Setup(x => x.StripMilliseconds(It.IsAny<TimeSpan>())).Returns(TimeSpan.Zero);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(1, "")]);
 
-        var data = new Dictionary<string, object> { { "map", "Altis" }, { "mission", "test_mission" } };
+        var data = new Dictionary<string, object>
+        {
+            { "map", "Altis" },
+            { "mission", "test_mission" },
+            { "players", new List<object> { "Alpha", "Bravo" } },
+            { "uptime", "120.5" },
+            { "entityCount", "10" },
+            { "aiCount", "5" },
+            { "headlessClientCount", "1" }
+        };
 
         await _sut.HandleServerStatusAsync(2303, data);
 
         server.Status.Running.Should().BeTrue();
+        server.Status.Launching.Should().BeFalse();
         server.Status.Map.Should().Be("Altis");
         server.Status.Mission.Should().Be("test_mission");
+        server.Status.Players.Should().BeEquivalentTo("Alpha", "Bravo");
+        server.Status.Uptime.Should().Be(120.5f);
+        server.Status.EntityCount.Should().Be(10);
+        server.Status.AiCount.Should().Be(5);
+        server.Status.HeadlessClientCount.Should().Be(1);
+        server.Status.MaxPlayers.Should().Be("40");
+        server.Status.StartedAt.Should().NotBeNull();
         _mockContext.Verify(x => x.Replace(server), Times.Once);
         _mockServersClient.Verify(x => x.ReceiveServerUpdate(It.IsAny<GameServerUpdate>()), Times.Once);
     }

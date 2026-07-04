@@ -371,30 +371,18 @@ public class GameServerProcessManager(
                 return;
             }
 
-            if (data.TryGetValue("map", out var map)) status.Map = map.ToString();
-            if (data.TryGetValue("mission", out var mission)) status.Mission = mission.ToString();
-            if (data.TryGetValue("players", out var players) && players is List<object> playersList)
-            {
-                status.Players = playersList.OfType<string>().ToList();
-            }
-            else
+            ApplyStatusFields(status, data);
+
+            if (!(data.TryGetValue("players", out var playersRaw) && playersRaw is List<object>))
             {
                 logger.LogWarning($"server_status 'players' missing or not a list. Keys: {string.Join(", ", data.Keys)}");
             }
 
-            if (data.TryGetValue("uptime", out var uptime) &&
-                float.TryParse(uptime.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var uptimeValue))
+            if (status.StartedAt is null && data.TryGetValue("uptime", out var uptimeRaw) &&
+                float.TryParse(uptimeRaw?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var startUptime))
             {
-                status.Uptime = uptimeValue;
-                status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(uptimeValue)).ToString();
-                status.StartedAt ??= DateTime.UtcNow.AddSeconds(-uptimeValue);
+                status.StartedAt = DateTime.UtcNow.AddSeconds(-startUptime);
             }
-
-            if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount.ToString(), out var entityCountValue))
-                status.EntityCount = entityCountValue;
-            if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount.ToString(), out var aiCountValue)) status.AiCount = aiCountValue;
-            if (data.TryGetValue("headlessClientCount", out var headlessClientCount) &&
-                int.TryParse(headlessClientCount.ToString(), out var headlessClientCountValue)) status.HeadlessClientCount = headlessClientCountValue;
 
             status.Running = true;
             status.Launching = false;
@@ -410,6 +398,31 @@ public class GameServerProcessManager(
         {
             serverLock.Release();
         }
+    }
+
+    private void ApplyStatusFields(GameServerStatus status, IReadOnlyDictionary<string, object> data)
+    {
+        if (data.TryGetValue("map", out var map)) status.Map = map?.ToString();
+        if (data.TryGetValue("mission", out var mission)) status.Mission = mission?.ToString();
+        if (data.TryGetValue("players", out var players) && players is List<object> playersList)
+        {
+            status.Players = playersList.OfType<string>().ToList();
+        }
+
+        if (data.TryGetValue("uptime", out var uptime) &&
+            float.TryParse(uptime?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var uptimeValue))
+        {
+            status.Uptime = uptimeValue;
+            status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(uptimeValue)).ToString();
+        }
+
+        if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount?.ToString(), out var entityCountValue))
+            status.EntityCount = entityCountValue;
+        if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount?.ToString(), out var aiCountValue))
+            status.AiCount = aiCountValue;
+        if (data.TryGetValue("headlessClientCount", out var headlessClientCount) &&
+            int.TryParse(headlessClientCount?.ToString(), out var headlessClientCountValue))
+            status.HeadlessClientCount = headlessClientCountValue;
     }
 
     private void ApplyPolledStatus(DomainGameServer gameServer, string sqfBody)
@@ -434,25 +447,7 @@ public class GameServerProcessManager(
             return;
         }
 
-        if (polled.TryGetValue("map", out var map)) gameServer.Status.Map = map?.ToString();
-        if (polled.TryGetValue("mission", out var mission)) gameServer.Status.Mission = mission?.ToString();
-        if (polled.TryGetValue("players", out var players) && players is List<object> playersList)
-        {
-            gameServer.Status.Players = playersList.OfType<string>().ToList();
-        }
-
-        if (polled.TryGetValue("uptime", out var uptime) &&
-            float.TryParse(uptime?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var uptimeValue))
-        {
-            gameServer.Status.Uptime = uptimeValue;
-            gameServer.Status.ParsedUptime = gameServerHelpers.StripMilliseconds(TimeSpan.FromSeconds(uptimeValue)).ToString();
-        }
-
-        if (polled.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount?.ToString(), out var entityCountValue))
-            gameServer.Status.EntityCount = entityCountValue;
-        if (polled.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount?.ToString(), out var aiCountValue)) gameServer.Status.AiCount = aiCountValue;
-        if (polled.TryGetValue("headlessClientCount", out var headlessClientCount) &&
-            int.TryParse(headlessClientCount?.ToString(), out var headlessClientCountValue)) gameServer.Status.HeadlessClientCount = headlessClientCountValue;
+        ApplyStatusFields(gameServer.Status, polled);
 
         gameServer.Status.MaxPlayers = gameServerHelpers.GetMaxPlayerCountFromConfig(gameServer);
         gameServer.Status.Running = true;
