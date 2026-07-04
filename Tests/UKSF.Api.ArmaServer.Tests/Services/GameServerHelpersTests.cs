@@ -211,16 +211,6 @@ public class GameServerHelpersTests
     }
 
     [Fact]
-    public void GetArmaProcesses_Filters_By_Arma3Server_Prefix()
-    {
-        _mockProcessUtilities.Setup(x => x.GetProcesses()).Returns([]);
-
-        _sut.GetArmaProcesses().ToList();
-
-        _mockProcessUtilities.Verify(x => x.GetProcesses(), Times.Once);
-    }
-
-    [Fact]
     public void GetArmaProcessesWithCommandLine_Uses_Arma3Server_Prefix()
     {
         _mockProcessUtilities.Setup(x => x.GetProcessesWithCommandLine("arma3server")).Returns([]);

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using UKSF.Api.ArmaServer.Models;
@@ -24,10 +23,6 @@ public interface IGameServerHelpers
     string GetMaxPlayerCountFromConfig(DomainGameServer gameServer);
     int GetMaxCuratorCountFromSettings();
     TimeSpan StripMilliseconds(TimeSpan time);
-
-    /// Returns all arma3server processes, including the game-data-export server process.
-    /// Use <see cref="GetGameServerArmaProcesses"/> for game-server lifecycle operations.
-    IEnumerable<Process> GetArmaProcesses();
 
     IReadOnlyList<ProcessCommandLineInfo> GetArmaProcessesWithCommandLine();
 
@@ -211,14 +206,6 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
     public TimeSpan StripMilliseconds(TimeSpan time)
     {
         return new TimeSpan(time.Hours, time.Minutes, time.Seconds);
-    }
-
-    // Intentionally unfiltered: includes the game-data-export server process so the export
-    // subsystem can enumerate its own process. Game-server lifecycle code should use
-    // GetGameServerArmaProcesses() instead.
-    public IEnumerable<Process> GetArmaProcesses()
-    {
-        return processUtilities.GetProcesses().Where(x => x.ProcessName.StartsWith("arma3server"));
     }
 
     public IReadOnlyList<ProcessCommandLineInfo> GetArmaProcessesWithCommandLine()
