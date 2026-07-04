@@ -314,17 +314,39 @@ public class GameServerProcessManager(
 
         if (!gameServerHelpers.GetGameServerArmaProcesses().Any())
         {
-            foreach (var gameServer in gameServers)
-            {
-                await ResetServerToDeadAsync(gameServer, push: false);
-            }
-
+            await Task.WhenAll(gameServers.Select(server => ReconcileServerSafely(server, () => ResetServerToDeadAsync(server, push: false))));
             return gameServers;
         }
 
         var armaProcesses = gameServerHelpers.GetGameServerArmaProcesses();
-        await Task.WhenAll(gameServers.Select(server => UpdateServerStatus(server, armaProcesses)));
+        await Task.WhenAll(gameServers.Select(server => ReconcileServerSafely(server, () => UpdateServerStatus(server, armaProcesses))));
         return gameServers;
+    }
+
+    // Poll-path reconciliation runs under the same per-server lock the monitor uses, so poll and monitor
+    // cannot concurrently reset the same server (which would double-finalise its session). WaitAsync(0)
+    // skips a server another operation already owns; per-server try/catch keeps one failure from failing
+    // the whole poll batch.
+    private async Task ReconcileServerSafely(DomainGameServer gameServer, Func<Task> reconcile)
+    {
+        var serverLock = GetServerLock(gameServer.Id);
+        if (!await serverLock.WaitAsync(0))
+        {
+            return;
+        }
+
+        try
+        {
+            await reconcile();
+        }
+        catch (Exception exception)
+        {
+            logger.LogError($"Error reconciling status for server '{gameServer.Name}'", exception);
+        }
+        finally
+        {
+            serverLock.Release();
+        }
     }
 
     public Task HandleStopEndingAsync(int apiPort) => AdvanceStopPhaseAsync(apiPort, StopPhase.Ending, "shutdown_ending");

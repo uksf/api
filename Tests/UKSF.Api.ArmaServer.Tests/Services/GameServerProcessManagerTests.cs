@@ -625,6 +625,61 @@ public class GameServerProcessManagerTests
     }
 
     [Fact]
+    public async Task GetAllServerStatusesAsync_WhenOneServerReconcileThrows_StillProcessesOthersAndDoesNotThrow()
+    {
+        var serverA = new DomainGameServer
+        {
+            Id = "a", Name = "A", ApiPort = 2303, Port = 2302, ProcessId = 1234,
+            Status = new GameServerStatus { CurrentMissionSessionId = "sess-a" }
+        };
+        var serverB = new DomainGameServer
+        {
+            Id = "b", Name = "B", ApiPort = 2313, Port = 2312, ProcessId = 5678,
+            Status = new GameServerStatus { CurrentMissionSessionId = "sess-b" }
+        };
+        _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { serverA, serverB });
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        // Non-empty arma processes (skip the no-arma branch) that match neither server's main process,
+        // so both servers route through the gone-branch -> HandleProcessGone -> Replace.
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(1, "")]);
+        _mockProcessUtilities.Setup(x => x.FindProcessById(It.IsAny<int>())).Returns((Process)null);
+        _mockContext.Setup(x => x.Replace(serverA)).ThrowsAsync(new Exception("boom"));
+
+        var act = async () => await _sut.GetAllServerStatusesAsync();
+
+        await act.Should().NotThrowAsync();
+        _mockContext.Verify(x => x.Replace(serverB), Times.Once); // sibling still reconciled
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("sess-b"), Times.Once);
+        _mockLogger.Verify(x => x.LogError(It.IsAny<string>(), It.IsAny<Exception>()), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task GetAllServerStatusesAsync_WhenNoArmaProcesses_OneResetThrows_StillResetsOthers()
+    {
+        var serverA = new DomainGameServer
+        {
+            Id = "a", Name = "A", ProcessId = 1,
+            Status = new GameServerStatus { CurrentMissionSessionId = "sess-a" }
+        };
+        var serverB = new DomainGameServer
+        {
+            Id = "b", Name = "B", ProcessId = 2,
+            Status = new GameServerStatus { CurrentMissionSessionId = "sess-b" }
+        };
+        _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { serverA, serverB });
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]); // no-arma branch
+        _mockProcessUtilities.Setup(x => x.FindProcessById(It.IsAny<int>())).Returns((Process)null);
+        _mockContext.Setup(x => x.Replace(serverA)).ThrowsAsync(new Exception("boom"));
+
+        var act = async () => await _sut.GetAllServerStatusesAsync();
+
+        await act.Should().NotThrowAsync();
+        _mockContext.Verify(x => x.Replace(serverB), Times.Once); // sibling still reset despite serverA throwing
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("sess-b"), Times.Once);
+    }
+
+    [Fact]
     public async Task GetAllServerStatusesAsync_WithProcesses_QueriesStatusEndpoint()
     {
         var server = new DomainGameServer
