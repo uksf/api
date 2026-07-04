@@ -47,6 +47,11 @@ public class GameServerProcessManager(
 ) : IGameServerProcessManager
 {
     private readonly ConcurrentDictionary<string, GameServerStatus> StatusCache = new();
+
+    // Two independent force-kill ceilings, kept separate on purpose:
+    // OrphanKillCeiling catches a process that died or hung outside any stop; the per-stage
+    // stop watchdog (Ending/Saving/Stopping/StopBackstop) bounds a graceful stop's lifecycle.
+    // Do not merge them (see commit 364f5cc2, hung-engine orphan incident).
     private static readonly TimeSpan OrphanKillCeiling = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan EndingCeiling = TimeSpan.FromSeconds(15);   // 10s SQF drain cap + 5s buffer so shutdown_saving lands before force-kill
     private static readonly TimeSpan SavingCeiling = TimeSpan.FromSeconds(120);  // == SQF object-save cap
