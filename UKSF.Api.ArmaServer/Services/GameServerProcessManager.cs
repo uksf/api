@@ -777,7 +777,7 @@ public class GameServerProcessManager(
 
     private async Task ForceKillServer(DomainGameServer server)
     {
-        logger.LogInfo($"Force-killing server '{server.Name}' after 60s stopping timeout");
+        logger.LogInfo($"Force-killing server '{server.Name}' after stop watchdog exceeded (phase {server.Status.StopPhase})");
 
         var process = processUtilities.FindProcessById(server.ProcessId!.Value);
         if (process is { HasExited: false })
