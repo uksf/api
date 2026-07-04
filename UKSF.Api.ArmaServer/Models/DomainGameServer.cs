@@ -11,6 +11,14 @@ public enum GameServerOption
     Dcg
 }
 
+public enum StopPhase
+{
+    None,
+    Ending,
+    Saving,
+    Stopping
+}
+
 public class DomainGameServer : MongoObject
 {
     public List<GameServerMod> Mods { get; set; } = [];
@@ -53,8 +61,9 @@ public class GameServerStatus
     public List<string> Players { get; set; } = [];
     public bool Running { get; set; }
     public bool Launching { get; set; }
-    public bool Stopping { get; set; }
-    public DateTime? StoppingInitiatedAt { get; set; }
+    public StopPhase StopPhase { get; set; }
+    public DateTime? StopPhaseEnteredAt { get; set; }
+    public DateTime? StopRequestedAt { get; set; }
     public float Uptime { get; set; }
     public int EntityCount { get; set; }
     public int AiCount { get; set; }

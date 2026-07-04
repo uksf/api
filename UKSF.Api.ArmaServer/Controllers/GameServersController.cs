@@ -111,7 +111,7 @@ public class GameServersController(
     public async Task KillServer(string id)
     {
         var gameServer = gameServersService.GetServer(id);
-        if (!gameServer.Status.Launching && !gameServer.Status.Running && !gameServer.Status.Stopping)
+        if (!gameServer.Status.Launching && !gameServer.Status.Running && gameServer.Status.StopPhase == StopPhase.None)
         {
             throw new BadRequestException("Server is not running. This shouldn't happen so please contact an admin");
         }

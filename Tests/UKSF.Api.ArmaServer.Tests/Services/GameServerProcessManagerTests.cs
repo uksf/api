@@ -250,21 +250,20 @@ public class GameServerProcessManagerTests
     }
 
     [Fact]
-    public async Task StopServerAsync_SetsStoppingAndPushes()
+    public async Task StopServerAsync_SetsProvisionalEndingAndPushes()
     {
         var server = new DomainGameServer
         {
-            Id = "s1",
-            Name = "Test",
-            ApiPort = 2303,
+            Id = "s1", Name = "Test", ApiPort = 2303,
             Status = new GameServerStatus { Running = true }
         };
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
         await _sut.StopServerAsync(server);
 
-        server.Status.Stopping.Should().BeTrue();
-        server.Status.StoppingInitiatedAt.Should().NotBeNull();
+        server.Status.StopPhase.Should().Be(StopPhase.Ending);
+        server.Status.StopRequestedAt.Should().NotBeNull();
+        server.Status.StopPhaseEnteredAt.Should().BeNull(); // provisional, not armed until a game event
         _mockContext.Verify(x => x.Replace(server), Times.Once);
         _mockServersClient.Verify(x => x.ReceiveServerUpdate(It.IsAny<GameServerUpdate>()), Times.Once);
     }
@@ -415,26 +414,75 @@ public class GameServerProcessManagerTests
     }
 
     [Fact]
-    public async Task HandleServerStatusAsync_WhenAlreadyStopping_DoesNotResurrectRunning()
+    public async Task HandleServerStatusAsync_WhenStopping_DoesNotResurrectRunning()
     {
         var server = new DomainGameServer
         {
-            Id = "s-stopping-guard",
-            ApiPort = 2399,
-            Status = new GameServerStatus { Stopping = true, StoppingInitiatedAt = DateTime.UtcNow }
+            Id = "s-stopping-guard", ApiPort = 2399,
+            Status = new GameServerStatus { StopPhase = StopPhase.Ending, StopPhaseEnteredAt = DateTime.UtcNow }
         };
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
-        _mockHelpers.Setup(x => x.GetMaxPlayerCountFromConfig(server)).Returns("40");
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
-        var data = new Dictionary<string, object> { { "map", "Altis" } };
-
-        await _sut.HandleServerStatusAsync(2399, data);
+        await _sut.HandleServerStatusAsync(2399, new Dictionary<string, object> { { "map", "Altis" } });
 
         server.Status.Running.Should().BeFalse();
-        server.Status.Stopping.Should().BeTrue();
+        server.Status.StopPhase.Should().Be(StopPhase.Ending);
         _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
         _mockServersClient.Verify(x => x.ReceiveServerUpdate(It.IsAny<GameServerUpdate>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(StopPhase.None,     0,   0, false)] // not stopping
+    [InlineData(StopPhase.Ending,  14,  -1, false)] // armed, within 15s
+    [InlineData(StopPhase.Ending,  16,  -1, true)]  // armed, past 15s
+    [InlineData(StopPhase.Saving, 119,  -1, false)] // armed, within 120s
+    [InlineData(StopPhase.Saving, 121,  -1, true)]  // armed, past 120s
+    [InlineData(StopPhase.Stopping, 9,  -1, false)] // armed, within 10s
+    [InlineData(StopPhase.Stopping,11,  -1, true)]  // armed, past 10s
+    public void StopWatchdogExceeded_ArmedUsesPerStageCeiling(StopPhase phase, int secondsInPhase, int unusedRequested, bool expected)
+    {
+        var now = DateTime.UtcNow;
+        var status = new GameServerStatus
+        {
+            StopPhase = phase,
+            StopPhaseEnteredAt = phase == StopPhase.None ? null : now.AddSeconds(-secondsInPhase),
+            StopRequestedAt = now.AddSeconds(-secondsInPhase)
+        };
+
+        GameServerProcessManager.StopWatchdogExceeded(status, now).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(179, false)] // unarmed backstop, within 180s
+    [InlineData(181, true)]  // unarmed backstop, past 180s
+    public void StopWatchdogExceeded_UnarmedUsesBackstop(int secondsSinceRequested, bool expected)
+    {
+        var now = DateTime.UtcNow;
+        var status = new GameServerStatus
+        {
+            StopPhase = StopPhase.Ending,      // API-set provisional phase
+            StopPhaseEnteredAt = null,          // NOT armed (old modpack: no game event)
+            StopRequestedAt = now.AddSeconds(-secondsSinceRequested)
+        };
+
+        GameServerProcessManager.StopWatchdogExceeded(status, now).Should().Be(expected);
+    }
+
+    [Fact]
+    public void StopWatchdogExceeded_ArmedPastBackstopButWithinPerStage_NotExceeded()
+    {
+        // Mutual exclusivity: an armed server long past 180s-from-request but within its
+        // per-stage ceiling is NOT killed (backstop applies only when unarmed).
+        var now = DateTime.UtcNow;
+        var status = new GameServerStatus
+        {
+            StopPhase = StopPhase.Saving,
+            StopPhaseEnteredAt = now.AddSeconds(-100), // within 120s Saving ceiling
+            StopRequestedAt = now.AddSeconds(-300)      // way past 180s backstop
+        };
+
+        GameServerProcessManager.StopWatchdogExceeded(status, now).Should().BeFalse();
     }
 
     [Fact]

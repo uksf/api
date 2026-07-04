@@ -45,6 +45,10 @@ public class GameServerProcessManager(
 {
     private static readonly ConcurrentDictionary<string, GameServerStatus> StatusCache = new();
     private static readonly TimeSpan OrphanKillCeiling = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan EndingCeiling = TimeSpan.FromSeconds(15);   // 10s SQF drain cap + 5s buffer so shutdown_saving lands before force-kill
+    private static readonly TimeSpan SavingCeiling = TimeSpan.FromSeconds(120);  // == SQF object-save cap
+    private static readonly TimeSpan StoppingCeiling = TimeSpan.FromSeconds(10); // 5s SQF pre-#shutdown delay + process teardown
+    private static readonly TimeSpan StopBackstopCeiling = TimeSpan.FromSeconds(180); // old modpack (30s drain): full ~155s shutdown + margin
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _serverLocks = new();
     private readonly Lock _monitorLock = new();
     private bool _monitorRunning;
@@ -153,8 +157,9 @@ public class GameServerProcessManager(
                 return;
             }
 
-            server.Status.Stopping = true;
-            server.Status.StoppingInitiatedAt = DateTime.UtcNow;
+            server.Status.StopPhase = StopPhase.Ending;
+            server.Status.StopRequestedAt = DateTime.UtcNow;
+            server.Status.StopPhaseEnteredAt = null; // provisional, armed only by a game shutdown event
             await gameServersContext.Replace(server);
             await SendShutdownAsync(server.ApiPort, $"game server '{server.Name}'");
             await PushServerUpdateAsync(server);
@@ -416,7 +421,7 @@ public class GameServerProcessManager(
         try
         {
             var status = StatusCache.GetOrAdd(gameServer.Id, _ => gameServer.Status ?? new GameServerStatus());
-            if (status.Stopping)
+            if (gameServer.Status.StopPhase != StopPhase.None)
             {
                 return;
             }
@@ -764,9 +769,7 @@ public class GameServerProcessManager(
                 return;
             }
 
-            if (server.Status.Stopping &&
-                server.Status.StoppingInitiatedAt.HasValue &&
-                DateTime.UtcNow - server.Status.StoppingInitiatedAt.Value > TimeSpan.FromSeconds(60))
+            if (StopWatchdogExceeded(server.Status, DateTime.UtcNow))
             {
                 await ForceKillServer(server);
                 return;
@@ -840,6 +843,28 @@ public class GameServerProcessManager(
         logger.LogInfo($"Process monitor detected server '{server.Name}' is offline");
     }
 
+    public static bool StopWatchdogExceeded(GameServerStatus status, DateTime nowUtc)
+    {
+        if (status.StopPhase == StopPhase.None)
+        {
+            return false;
+        }
+
+        if (status.StopPhaseEnteredAt is { } enteredAt)
+        {
+            var ceiling = status.StopPhase switch
+            {
+                StopPhase.Ending   => EndingCeiling,
+                StopPhase.Saving   => SavingCeiling,
+                StopPhase.Stopping => StoppingCeiling,
+                _                  => StopBackstopCeiling
+            };
+            return nowUtc - enteredAt > ceiling;
+        }
+
+        return status.StopRequestedAt is { } requestedAt && nowUtc - requestedAt > StopBackstopCeiling;
+    }
+
     private static TimeSpan CalculateTickInterval(List<DomainGameServer> servers)
     {
         var minInterval = TimeSpan.FromSeconds(30);
@@ -847,9 +872,9 @@ public class GameServerProcessManager(
         {
             var interval = server.Status switch
             {
-                { Stopping: true }  => TimeSpan.FromSeconds(1),
-                { Launching: true } => TimeSpan.FromSeconds(2),
-                _                   => TimeSpan.FromSeconds(30)
+                { StopPhase: not StopPhase.None } => TimeSpan.FromSeconds(1),
+                { Launching: true }               => TimeSpan.FromSeconds(2),
+                _                                  => TimeSpan.FromSeconds(30)
             };
 
             if (interval < minInterval)
