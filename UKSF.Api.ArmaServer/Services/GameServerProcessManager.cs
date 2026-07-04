@@ -22,7 +22,9 @@ public interface IGameServerProcessManager
     Task<int> KillAllAsync();
     int GetInstanceCount();
     Task<List<DomainGameServer>> GetAllServerStatusesAsync();
-    Task HandleShutdownCompleteAsync(int apiPort);
+    Task HandleStopEndingAsync(int apiPort);
+    Task HandleStopSavingAsync(int apiPort);
+    Task HandleStopStoppingAsync(int apiPort);
     Task HandleServerStatusAsync(int apiPort, Dictionary<string, object> data);
     Task PushServerUpdateAsync(DomainGameServer server);
     Task PushAllServersUpdateAsync();
@@ -357,12 +359,16 @@ public class GameServerProcessManager(
         return gameServers;
     }
 
-    public async Task HandleShutdownCompleteAsync(int apiPort)
+    public Task HandleStopEndingAsync(int apiPort) => AdvanceStopPhaseAsync(apiPort, StopPhase.Ending, "shutdown_ending");
+    public Task HandleStopSavingAsync(int apiPort) => AdvanceStopPhaseAsync(apiPort, StopPhase.Saving, "shutdown_saving");
+    public Task HandleStopStoppingAsync(int apiPort) => AdvanceStopPhaseAsync(apiPort, StopPhase.Stopping, "shutdown_stopping");
+
+    private async Task AdvanceStopPhaseAsync(int apiPort, StopPhase phase, string eventName)
     {
         var gameServer = gameServersContext.GetSingle(x => x.ApiPort == apiPort);
         if (gameServer is null)
         {
-            logger.LogWarning($"Received shutdown_complete but no server matches apiPort {apiPort}");
+            logger.LogWarning($"Received {eventName} but no server matches apiPort {apiPort}");
             return;
         }
 
@@ -370,36 +376,12 @@ public class GameServerProcessManager(
         await serverLock.WaitAsync();
         try
         {
-            foreach (var processId in gameServer.HeadlessClientProcessIds)
-            {
-                var process = processUtilities.FindProcessById(processId);
-                if (process is { HasExited: false })
-                {
-                    process.Kill(true);
-                    try
-                    {
-                        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                    }
-                    catch (TimeoutException) { }
-                    catch (InvalidOperationException) { }
-                }
-            }
-
-            var activeSessionId = gameServer.Status.CurrentMissionSessionId;
-            if (!string.IsNullOrEmpty(activeSessionId))
-            {
-                await TryFinaliseKilledSessionAsync(activeSessionId);
-            }
-
-            gameServer.ProcessId = null;
-            gameServer.LaunchedBy = null;
-            gameServer.HeadlessClientProcessIds.Clear();
-            gameServer.Status = new GameServerStatus();
-            StatusCache.TryRemove(gameServer.Id, out _);
+            var now = DateTime.UtcNow;
+            gameServer.Status.StopRequestedAt ??= now; // in-game trigger: API never set it on a stop press
+            gameServer.Status.StopPhase = phase;
+            gameServer.Status.StopPhaseEnteredAt = now; // arms the per-stage watchdog
             await gameServersContext.Replace(gameServer);
-
             await PushServerUpdateAsync(gameServer);
-            logger.LogInfo($"Server shutdown complete: {gameServer.Name} (apiPort {gameServer.ApiPort})");
         }
         finally
         {

@@ -64,18 +64,35 @@ public class GameServerEventHandlerTests
     }
 
     [Fact]
-    public async Task HandleEventAsync_ShutdownComplete_DelegatesToProcessManager()
+    public async Task HandleEventAsync_ShutdownEnding_DelegatesToProcessManager()
     {
-        var evt = new GameServerEvent
-        {
-            Type = "shutdown_complete",
-            ApiPort = 2303,
-            Data = new Dictionary<string, object>()
-        };
-
+        var evt = new GameServerEvent { Type = "shutdown_ending", ApiPort = 2303, Data = new Dictionary<string, object>() };
         await _sut.HandleEventAsync(evt);
+        _mockProcessManager.Verify(x => x.HandleStopEndingAsync(2303), Times.Once);
+    }
 
-        _mockProcessManager.Verify(x => x.HandleShutdownCompleteAsync(2303), Times.Once);
+    [Fact]
+    public async Task HandleEventAsync_ShutdownSaving_DelegatesToProcessManager()
+    {
+        var evt = new GameServerEvent { Type = "shutdown_saving", ApiPort = 2303, Data = new Dictionary<string, object>() };
+        await _sut.HandleEventAsync(evt);
+        _mockProcessManager.Verify(x => x.HandleStopSavingAsync(2303), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleEventAsync_ShutdownStopping_DelegatesToProcessManager()
+    {
+        var evt = new GameServerEvent { Type = "shutdown_stopping", ApiPort = 2303, Data = new Dictionary<string, object>() };
+        await _sut.HandleEventAsync(evt);
+        _mockProcessManager.Verify(x => x.HandleStopStoppingAsync(2303), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleEventAsync_LegacyShutdownComplete_DelegatesToStopStopping()
+    {
+        var evt = new GameServerEvent { Type = "shutdown_complete", ApiPort = 2303, Data = new Dictionary<string, object>() };
+        await _sut.HandleEventAsync(evt);
+        _mockProcessManager.Verify(x => x.HandleStopStoppingAsync(2303), Times.Once);
     }
 
     [Fact]
@@ -125,16 +142,9 @@ public class GameServerEventHandlerTests
     [Fact]
     public async Task HandleEventAsync_ShutdownFromSyntheticApiPort_IsSilentlyDropped()
     {
-        var evt = new GameServerEvent
-        {
-            Type = "shutdown_complete",
-            ApiPort = SyntheticApiPorts.GameDataExport,
-            Data = new Dictionary<string, object>()
-        };
-
+        var evt = new GameServerEvent { Type = "shutdown_stopping", ApiPort = SyntheticApiPorts.GameDataExport, Data = new Dictionary<string, object>() };
         await _sut.HandleEventAsync(evt);
-
-        _mockProcessManager.Verify(x => x.HandleShutdownCompleteAsync(It.IsAny<int>()), Times.Never);
+        _mockProcessManager.Verify(x => x.HandleStopStoppingAsync(It.IsAny<int>()), Times.Never);
     }
 
     // Reproduces the production wire format that the controller would receive from the

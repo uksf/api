@@ -31,8 +31,8 @@ public class GameServerEventHandler(
     public async Task HandleEventAsync(GameServerEvent gameServerEvent)
     {
         // Synthetic launches (config export, dev run) reuse the production -apiUrl pipeline.
-        // server_status / shutdown_complete reference a gameServers row keyed by apiPort and
-        // synthetic ports never have one — gate ONLY those two off. Other event types
+        // server_status and the shutdown_* events reference a gameServers row keyed by apiPort
+        // and synthetic ports never have one — gate ONLY those off. Other event types
         // (mission_stats, performance, persistence_save, mission lifecycle, player presence)
         // are content-driven and have no port dependency, so they should still flow through
         // for synthetic runs (e.g. dev-test-server e2e validation of the persistence pipeline).
@@ -45,8 +45,15 @@ public class GameServerEventHandler(
                 case "server_status":
                     if (!isSynthetic) await processManager.HandleServerStatusAsync(gameServerEvent.ApiPort, gameServerEvent.Data);
                     break;
-                case "shutdown_complete":
-                    if (!isSynthetic) await processManager.HandleShutdownCompleteAsync(gameServerEvent.ApiPort);
+                case "shutdown_ending":
+                    if (!isSynthetic) await processManager.HandleStopEndingAsync(gameServerEvent.ApiPort);
+                    break;
+                case "shutdown_saving":
+                    if (!isSynthetic) await processManager.HandleStopSavingAsync(gameServerEvent.ApiPort);
+                    break;
+                case "shutdown_stopping":
+                case "shutdown_complete": // legacy alias — remove once the modpack update is fully deployed
+                    if (!isSynthetic) await processManager.HandleStopStoppingAsync(gameServerEvent.ApiPort);
                     break;
                 case "mission_stats":       await HandleMissionStatsEvent(gameServerEvent.Data); break;
                 case "mission_started":     await HandleMissionLifecycleEvent(gameServerEvent.ApiPort, gameServerEvent.Data, true); break;

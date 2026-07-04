@@ -322,60 +322,103 @@ public class GameServerProcessManagerTests
     }
 
     [Fact]
-    public async Task HandleShutdownCompleteAsync_ClearsStateAndPushes()
+    public async Task HandleStopEndingAsync_SetsEndingArmedAndPushes()
     {
         var server = new DomainGameServer
         {
-            Id = "s1",
-            Name = "Test",
-            ApiPort = 2303,
-            ProcessId = 1234,
-            HeadlessClientProcessIds = [5001],
-            Status = new GameServerStatus { Running = true }
+            Id = "s1", Name = "Test", ApiPort = 2303,
+            ProcessId = 1234, HeadlessClientProcessIds = [5001],
+            Status = new GameServerStatus { Running = true, CurrentMissionSessionId = "sess-1" }
         };
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
-        _mockProcessUtilities.Setup(x => x.FindProcessById(It.IsAny<int>())).Returns((Process)null);
         _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
 
-        await _sut.HandleShutdownCompleteAsync(2303);
+        await _sut.HandleStopEndingAsync(2303);
 
-        server.ProcessId.Should().BeNull();
-        server.Status.Running.Should().BeFalse();
-        server.HeadlessClientProcessIds.Should().BeEmpty();
+        server.Status.StopPhase.Should().Be(StopPhase.Ending);
+        server.Status.StopPhaseEnteredAt.Should().NotBeNull();   // armed
+        server.Status.StopRequestedAt.Should().NotBeNull();      // set for in-game path
+        // Must NOT clear process/session state:
+        server.ProcessId.Should().Be(1234);
+        server.HeadlessClientProcessIds.Should().Contain(5001);
+        server.Status.CurrentMissionSessionId.Should().Be("sess-1");
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync(It.IsAny<string>()), Times.Never);
         _mockContext.Verify(x => x.Replace(server), Times.Once);
-        _mockServersClient.Verify(x => x.ReceiveServerUpdate(It.Is<GameServerUpdate>(u => u.InstanceCount == 0)), Times.Once);
+        _mockServersClient.Verify(x => x.ReceiveServerUpdate(It.IsAny<GameServerUpdate>()), Times.Once);
     }
 
     [Fact]
-    public async Task HandleShutdownCompleteAsync_WhenNoMatchingServer_LogsWarning()
+    public async Task HandleStopEndingAsync_PreservesExistingStopRequestedAt()
+    {
+        var requested = DateTime.UtcNow.AddSeconds(-3);
+        var server = new DomainGameServer
+        {
+            Id = "s1", ApiPort = 2303,
+            Status = new GameServerStatus { StopPhase = StopPhase.Ending, StopRequestedAt = requested }
+        };
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+
+        await _sut.HandleStopEndingAsync(2303);
+
+        server.Status.StopRequestedAt.Should().Be(requested); // web-press value preserved, not overwritten
+        server.Status.StopPhaseEnteredAt.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task HandleStopSavingAsync_SetsSavingArmedWithoutClearingState()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1", ApiPort = 2303, ProcessId = 1234,
+            HeadlessClientProcessIds = [5001],
+            Status = new GameServerStatus { StopPhase = StopPhase.Ending, StopRequestedAt = DateTime.UtcNow.AddSeconds(-4), CurrentMissionSessionId = "sess-1" }
+        };
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+
+        await _sut.HandleStopSavingAsync(2303);
+
+        server.Status.StopPhase.Should().Be(StopPhase.Saving);
+        server.Status.StopPhaseEnteredAt.Should().NotBeNull();
+        server.ProcessId.Should().Be(1234);
+        server.HeadlessClientProcessIds.Should().Contain(5001);
+        server.Status.CurrentMissionSessionId.Should().Be("sess-1");
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleStopStoppingAsync_SetsStoppingArmedWithoutClearingState()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1", ApiPort = 2303, ProcessId = 1234,
+            HeadlessClientProcessIds = [5001],
+            Status = new GameServerStatus { StopPhase = StopPhase.Saving, StopRequestedAt = DateTime.UtcNow.AddSeconds(-8), CurrentMissionSessionId = "sess-1" }
+        };
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+
+        await _sut.HandleStopStoppingAsync(2303);
+
+        server.Status.StopPhase.Should().Be(StopPhase.Stopping);
+        server.Status.StopPhaseEnteredAt.Should().NotBeNull();
+        server.ProcessId.Should().Be(1234); // NOT cleared — OS-death owns that
+        server.HeadlessClientProcessIds.Should().Contain(5001);
+        server.Status.CurrentMissionSessionId.Should().Be("sess-1");
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync(It.IsAny<string>()), Times.Never);
+        _mockOpSessionCaptureService.Verify(x => x.CaptureEndedAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleStopStoppingAsync_WhenNoMatchingServer_LogsWarning()
     {
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns((DomainGameServer)null);
 
-        await _sut.HandleShutdownCompleteAsync(9999);
+        await _sut.HandleStopStoppingAsync(9999);
 
         _mockLogger.Verify(x => x.LogWarning(It.Is<string>(s => s.Contains("9999"))), Times.Once);
         _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task HandleShutdownCompleteAsync_FinalisesActiveSession()
-    {
-        var server = new DomainGameServer
-        {
-            Id = "s1",
-            Name = "Test",
-            ApiPort = 2303,
-            ProcessId = null,
-            HeadlessClientProcessIds = [],
-            Status = new GameServerStatus { CurrentMissionSessionId = "session-abc" }
-        };
-        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
-        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
-
-        await _sut.HandleShutdownCompleteAsync(2303);
-
-        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("session-abc"), Times.Once);
-        _mockOpSessionCaptureService.Verify(x => x.CaptureEndedAsync("session-abc"), Times.Once);
     }
 
     [Fact]
@@ -625,26 +668,6 @@ public class GameServerProcessManagerTests
         server.Status.HeadlessClientCount.Should().Be(2);
         server.Status.MaxPlayers.Should().Be("40");
         server.Status.Launching.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task HandleShutdownCompleteAsync_LogsCompletionMessage()
-    {
-        var server = new DomainGameServer
-        {
-            Id = "s1",
-            Name = "Main",
-            ApiPort = 2303,
-            ProcessId = null,
-            HeadlessClientProcessIds = [],
-            Status = new GameServerStatus()
-        };
-        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
-        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
-
-        await _sut.HandleShutdownCompleteAsync(2303);
-
-        _mockLogger.Verify(x => x.LogInfo(It.Is<string>(s => s.Contains("Main") && s.Contains("2303"))), Times.Once);
     }
 
     [Fact]
