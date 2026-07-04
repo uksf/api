@@ -503,16 +503,7 @@ public class GameServerProcessManager(
 
         if (matchingProcess is null)
         {
-            var sessionId = gameServer.Status.CurrentMissionSessionId;
-            if (!string.IsNullOrEmpty(sessionId))
-            {
-                await TryFinaliseKilledSessionAsync(sessionId);
-            }
-
-            gameServer.Status = new GameServerStatus();
-            gameServer.ProcessId = null;
-            StatusCache.TryRemove(gameServer.Id, out _);
-            await gameServersContext.Replace(gameServer);
+            await HandleProcessGone(gameServer);
             return;
         }
 

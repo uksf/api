@@ -657,6 +657,33 @@ public class GameServerProcessManagerTests
     }
 
     [Fact]
+    public async Task GetAllServerStatusesAsync_WhenMainProcessGoneButHeadlessClientAlive_KillsAndClearsHeadlessClient()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "leak-1",
+            Name = "Test",
+            ApiPort = 2303,
+            Port = 2302,
+            ProcessId = 1234,
+            HeadlessClientProcessIds = [],
+            Status = new GameServerStatus { Running = true, CurrentMissionSessionId = "sess-1" }
+        };
+        var hcProcess = new ProcessCommandLineInfo(5001, "-port=2302 -client");
+        _mockContext.Setup(x => x.Get()).Returns([server]);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([hcProcess]);
+        _mockProcessUtilities.Setup(x => x.FindProcessById(It.IsAny<int>())).Returns((Process)null);
+
+        await _sut.GetAllServerStatusesAsync();
+
+        _mockProcessUtilities.Verify(x => x.FindProcessById(5001), Times.Once);
+        server.HeadlessClientProcessIds.Should().BeEmpty();
+        server.ProcessId.Should().BeNull();
+        server.Status.Running.Should().BeFalse();
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("sess-1"), Times.Once);
+    }
+
+    [Fact]
     public async Task HandleServerStatusAsync_ParsesUptimeAndEntityCounts()
     {
         var server = new DomainGameServer
