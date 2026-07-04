@@ -588,6 +588,26 @@ public class GameServerProcessManagerTests
     }
 
     [Fact]
+    public async Task GetAllServerStatusesAsync_WhenNoProcesses_ClearsHeadlessClientProcessIds()
+    {
+        var servers = new List<DomainGameServer>
+        {
+            new()
+            {
+                Id = "s1",
+                HeadlessClientProcessIds = [5001, 5002],
+                Status = new GameServerStatus { Running = true }
+            }
+        };
+        _mockContext.Setup(x => x.Get()).Returns(servers);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+
+        await _sut.GetAllServerStatusesAsync();
+
+        servers[0].HeadlessClientProcessIds.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task GetAllServerStatusesAsync_WithProcesses_QueriesStatusEndpoint()
     {
         var server = new DomainGameServer
@@ -699,6 +719,40 @@ public class GameServerProcessManagerTests
         server.ProcessId.Should().BeNull();
         server.Status.Running.Should().BeFalse();
         _mockServersClient.Verify(x => x.ReceiveServerUpdate(It.Is<GameServerUpdate>(u => u.Server.Id == "s1")), Times.Once);
+    }
+
+    [Fact]
+    public async Task Monitor_WhenProcessGone_KillsHeadlessClientsAndFinalisesSession()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1",
+            Name = "Test",
+            ProcessId = 1234,
+            HeadlessClientProcessIds = [5001, 5002],
+            Status = new GameServerStatus { Running = true, CurrentMissionSessionId = "sess-1" }
+        };
+
+        _mockProcessUtilities.Setup(x => x.FindProcessById(It.IsAny<int>())).Returns((Process)null);
+        var callCount = 0;
+        _mockContext.Setup(x => x.Get())
+                    .Returns(() =>
+                        {
+                            callCount++;
+                            return callCount == 1 ? new List<DomainGameServer> { server } : new List<DomainGameServer>();
+                        }
+                    );
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+
+        _sut.EnsureMonitorRunning();
+        await Task.Delay(1000);
+
+        _mockProcessUtilities.Verify(x => x.FindProcessById(5001), Times.Once);
+        _mockProcessUtilities.Verify(x => x.FindProcessById(5002), Times.Once);
+        server.HeadlessClientProcessIds.Should().BeEmpty();
+        _mockMissionStatsService.Verify(x => x.FinaliseKilledSessionAsync("sess-1"), Times.Once);
+        _mockOpSessionCaptureService.Verify(x => x.CaptureEndedAsync("sess-1"), Times.Once);
+        _mockContext.Verify(x => x.Replace(server), Times.Once);
     }
 
     [Fact]
