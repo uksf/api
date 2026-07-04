@@ -46,7 +46,7 @@ public class GameServerProcessManager(
     IUksfLogger logger
 ) : IGameServerProcessManager
 {
-    private static readonly ConcurrentDictionary<string, GameServerStatus> StatusCache = new();
+    private readonly ConcurrentDictionary<string, GameServerStatus> StatusCache = new();
     private static readonly TimeSpan OrphanKillCeiling = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan EndingCeiling = TimeSpan.FromSeconds(15);   // 10s SQF drain cap + 5s buffer so shutdown_saving lands before force-kill
     private static readonly TimeSpan SavingCeiling = TimeSpan.FromSeconds(120);  // == SQF object-save cap
