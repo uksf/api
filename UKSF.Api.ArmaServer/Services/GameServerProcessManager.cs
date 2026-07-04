@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Globalization;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.SignalR;
@@ -788,13 +789,14 @@ public class GameServerProcessManager(
             var hcProcess = processUtilities.FindProcessById(hcProcessId);
             if (hcProcess is { HasExited: false })
             {
-                hcProcess.Kill(true);
                 try
                 {
+                    hcProcess.Kill(true);
                     await hcProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
                 }
                 catch (TimeoutException) { }
                 catch (InvalidOperationException) { }
+                catch (Win32Exception) { }
             }
         }
 
