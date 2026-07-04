@@ -249,17 +249,7 @@ public class GameServerProcessManager(
 
         if (server.ProcessId is not null)
         {
-            var process = processUtilities.FindProcessById(server.ProcessId.Value);
-            if (process is { HasExited: false })
-            {
-                process.Kill(true);
-                try
-                {
-                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                }
-                catch (TimeoutException) { }
-                catch (InvalidOperationException) { }
-            }
+            await KillProcessAndWaitAsync(server.ProcessId.Value);
         }
 
         if (!string.IsNullOrEmpty(activeSessionId))
@@ -272,26 +262,26 @@ public class GameServerProcessManager(
         server.Status = new GameServerStatus();
         StatusCache.TryRemove(server.Id, out _);
 
-        await Task.WhenAll(
-            server.HeadlessClientProcessIds.Select(async hcProcessId =>
-                {
-                    var hcProcess = processUtilities.FindProcessById(hcProcessId);
-                    if (hcProcess is { HasExited: false })
-                    {
-                        hcProcess.Kill(true);
-                        try
-                        {
-                            await hcProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                        }
-                        catch (TimeoutException) { }
-                        catch (InvalidOperationException) { }
-                    }
-                }
-            )
-        );
+        await Task.WhenAll(server.HeadlessClientProcessIds.Select(KillProcessAndWaitAsync));
         server.HeadlessClientProcessIds.Clear();
 
         await gameServersContext.Replace(server);
+    }
+
+    private async Task KillProcessAndWaitAsync(int processId)
+    {
+        var process = processUtilities.FindProcessById(processId);
+        if (process is { HasExited: false })
+        {
+            try
+            {
+                process.Kill(true);
+                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            catch (TimeoutException) { }
+            catch (InvalidOperationException) { }
+            catch (Win32Exception) { }
+        }
     }
 
     private async Task SendShutdownAsync(int port, string context)
@@ -784,21 +774,7 @@ public class GameServerProcessManager(
     {
         var activeSessionId = server.Status.CurrentMissionSessionId;
 
-        foreach (var hcProcessId in server.HeadlessClientProcessIds)
-        {
-            var hcProcess = processUtilities.FindProcessById(hcProcessId);
-            if (hcProcess is { HasExited: false })
-            {
-                try
-                {
-                    hcProcess.Kill(true);
-                    await hcProcess.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                }
-                catch (TimeoutException) { }
-                catch (InvalidOperationException) { }
-                catch (Win32Exception) { }
-            }
-        }
+        await Task.WhenAll(server.HeadlessClientProcessIds.Select(KillProcessAndWaitAsync));
 
         if (!string.IsNullOrEmpty(activeSessionId))
         {
