@@ -245,27 +245,12 @@ public class GameServerProcessManager(
 
     private async Task KillServerCoreAsync(DomainGameServer server)
     {
-        var activeSessionId = server.Status.CurrentMissionSessionId;
-
         if (server.ProcessId is not null)
         {
             await KillProcessAndWaitAsync(server.ProcessId.Value);
         }
 
-        if (!string.IsNullOrEmpty(activeSessionId))
-        {
-            await TryFinaliseKilledSessionAsync(activeSessionId);
-        }
-
-        server.ProcessId = null;
-        server.LaunchedBy = null;
-        server.Status = new GameServerStatus();
-        StatusCache.TryRemove(server.Id, out _);
-
-        await Task.WhenAll(server.HeadlessClientProcessIds.Select(KillProcessAndWaitAsync));
-        server.HeadlessClientProcessIds.Clear();
-
-        await gameServersContext.Replace(server);
+        await ResetServerToDeadAsync(server, push: false);
     }
 
     private async Task KillProcessAndWaitAsync(int processId)
@@ -324,22 +309,9 @@ public class GameServerProcessManager(
 
         if (!gameServerHelpers.GetGameServerArmaProcesses().Any())
         {
-            StatusCache.Clear();
-
             foreach (var gameServer in gameServers)
             {
-                if (!string.IsNullOrEmpty(gameServer.Status.CurrentMissionSessionId))
-                {
-                    await TryFinaliseKilledSessionAsync(gameServer.Status.CurrentMissionSessionId);
-                }
-            }
-
-            foreach (var gameServer in gameServers)
-            {
-                gameServer.Status = new GameServerStatus();
-                gameServer.ProcessId = null;
-                gameServer.HeadlessClientProcessIds.Clear();
-                await gameServersContext.Replace(gameServer);
+                await ResetServerToDeadAsync(gameServer, push: false);
             }
 
             return gameServers;
@@ -770,7 +742,7 @@ public class GameServerProcessManager(
         await HandleProcessGone(server);
     }
 
-    private async Task HandleProcessGone(DomainGameServer server)
+    private async Task ResetServerToDeadAsync(DomainGameServer server, bool push)
     {
         var activeSessionId = server.Status.CurrentMissionSessionId;
 
@@ -789,7 +761,15 @@ public class GameServerProcessManager(
 
         await gameServersContext.Replace(server);
 
-        await PushServerUpdateAsync(server);
+        if (push)
+        {
+            await PushServerUpdateAsync(server);
+        }
+    }
+
+    private async Task HandleProcessGone(DomainGameServer server)
+    {
+        await ResetServerToDeadAsync(server, push: true);
 
         logger.LogInfo($"Process monitor detected server '{server.Name}' is offline");
     }
