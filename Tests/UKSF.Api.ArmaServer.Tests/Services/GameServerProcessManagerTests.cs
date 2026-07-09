@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -250,6 +251,56 @@ public class GameServerProcessManagerTests
     }
 
     [Fact]
+    public async Task KillAllAsync_WhenOneProcessThrowsOnKill_StillKillsOthersAndCleansUpAllServers()
+    {
+        var servers = new List<DomainGameServer>
+        {
+            new() { Id = "s1", ProcessId = 1234, HeadlessClientProcessIds = [], Status = new GameServerStatus { Running = true } },
+            new() { Id = "s2", ProcessId = 5678, HeadlessClientProcessIds = [], Status = new GameServerStatus { Running = true } }
+        };
+        _mockContext.Setup(x => x.Get()).Returns(servers);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses())
+                    .Returns([new ProcessCommandLineInfo(1234, ""), new ProcessCommandLineInfo(5678, "")]);
+        // Same-PID handles to the live test process: HasExited never flips, and Kill is
+        // fully intercepted via the mocked seam, so the real process is never touched.
+        var process1 = Process.GetCurrentProcess();
+        var process2 = Process.GetCurrentProcess();
+        _mockProcessUtilities.Setup(x => x.FindProcessById(1234)).Returns(process1);
+        _mockProcessUtilities.Setup(x => x.FindProcessById(5678)).Returns(process2);
+        _mockProcessUtilities.Setup(x => x.KillProcess(process1, It.IsAny<bool>())).Throws<Win32Exception>();
+
+        var killed = await _sut.KillAllAsync();
+
+        killed.Should().Be(2);
+        _mockProcessUtilities.Verify(x => x.KillProcess(process2, It.IsAny<bool>()), Times.Once);
+        servers.Should()
+               .AllSatisfy(s =>
+                   {
+                       s.ProcessId.Should().BeNull();
+                       s.Status.Running.Should().BeFalse();
+                   }
+               );
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public void KillOrphanedArmaProcesses_WhenOneProcessThrowsOnKill_StillKillsTheOthers()
+    {
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses())
+                    .Returns([new ProcessCommandLineInfo(1234, ""), new ProcessCommandLineInfo(5678, "")]);
+        var process1 = Process.GetCurrentProcess();
+        var process2 = Process.GetCurrentProcess();
+        _mockProcessUtilities.Setup(x => x.FindProcessById(1234)).Returns(process1);
+        _mockProcessUtilities.Setup(x => x.FindProcessById(5678)).Returns(process2);
+        _mockProcessUtilities.Setup(x => x.KillProcess(process1, It.IsAny<bool>())).Throws<Win32Exception>();
+
+        var act = () => _sut.KillOrphanedArmaProcesses();
+
+        act.Should().NotThrow();
+        _mockProcessUtilities.Verify(x => x.KillProcess(process2, It.IsAny<bool>()), Times.Once);
+    }
+
+    [Fact]
     public async Task StopServerAsync_SetsProvisionalEndingAndPushes()
     {
         var server = new DomainGameServer
@@ -266,6 +317,23 @@ public class GameServerProcessManagerTests
         server.Status.StopPhaseEnteredAt.Should().BeNull(); // provisional, not armed until a game event
         _mockContext.Verify(x => x.Replace(server), Times.Once);
         _mockServersClient.Verify(x => x.ReceiveServerUpdate(It.IsAny<GameServerUpdate>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task StopServerAsync_SetsShortTimeoutOnShutdownRequest_ToAvoidBlockingTheServerLock()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1", Name = "Test", ApiPort = 2303,
+            Status = new GameServerStatus { Running = true }
+        };
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+        var httpClient = new HttpClient(new MockHttpMessageHandler(HttpStatusCode.OK));
+        _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(httpClient);
+
+        await _sut.StopServerAsync(server);
+
+        httpClient.Timeout.Should().Be(TimeSpan.FromSeconds(5)); // matches UpdateServerStatus's timeout for the same class of call
     }
 
     [Fact]
@@ -363,6 +431,26 @@ public class GameServerProcessManagerTests
 
         server.Status.StopRequestedAt.Should().Be(requested); // web-press value preserved, not overwritten
         server.Status.StopPhaseEnteredAt.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task AdvanceStopPhaseAsync_NeverRegressesPhase()
+    {
+        var enteredAt = DateTime.UtcNow.AddSeconds(-30);
+        var server = new DomainGameServer
+        {
+            Id = "s1", ApiPort = 2303,
+            Status = new GameServerStatus { StopPhase = StopPhase.Saving, StopPhaseEnteredAt = enteredAt, StopRequestedAt = enteredAt }
+        };
+        _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainGameServer, bool>>())).Returns(server);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+
+        await _sut.HandleStopEndingAsync(2303); // late/duplicated ending event, arrives during Saving
+
+        server.Status.StopPhase.Should().Be(StopPhase.Saving);
+        server.Status.StopPhaseEnteredAt.Should().Be(enteredAt); // 120s Saving ceiling clock untouched
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never);
+        _mockServersClient.Verify(x => x.ReceiveServerUpdate(It.IsAny<GameServerUpdate>()), Times.Never);
     }
 
     [Fact]
@@ -896,5 +984,39 @@ public class GameServerProcessManagerTests
         await Task.Delay(2500);
 
         _mockProcessUtilities.Verify(x => x.FindProcessById(1), Times.Never);
+    }
+
+    [Fact]
+    public async Task Monitor_WhenServerLaunchedDuringOrphanDrain_ReconcilesItAfterDrainInsteadOfExiting()
+    {
+        var serverB = new DomainGameServer
+        {
+            Id = "b", Name = "B", ProcessId = 9999,
+            HeadlessClientProcessIds = [],
+            Status = new GameServerStatus { Running = true }
+        };
+        var getCallCount = 0;
+        _mockContext.Setup(x => x.Get())
+                    .Returns(() =>
+                        {
+                            getCallCount++;
+                            // First read (before drain starts): no DB server holds a ProcessId.
+                            // Any later read (only reachable if the monitor loops back after drain
+                            // instead of exiting) picks up B, launched while orphans were draining.
+                            return getCallCount == 1 ? new List<DomainGameServer>() : new List<DomainGameServer> { serverB };
+                        }
+                    );
+
+        var orphanPresent = true;
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns(() => orphanPresent ? [new ProcessCommandLineInfo(1, "")] : []);
+        _mockProcessUtilities.Setup(x => x.FindProcessById(9999)).Returns((Process)null);
+
+        _sut.EnsureMonitorRunning();
+        await Task.Delay(500);
+        orphanPresent = false; // orphan exits -> drain completes
+
+        await Task.Delay(3000);
+
+        _mockProcessUtilities.Verify(x => x.FindProcessById(9999), Times.AtLeastOnce);
     }
 }

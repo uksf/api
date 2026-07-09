@@ -203,7 +203,12 @@ public class GameServerProcessManager(
                                          .ToList();
         foreach (var process in processes)
         {
-            process.Kill(true);
+            try
+            {
+                processUtilities.KillProcess(process);
+            }
+            catch (InvalidOperationException) { }
+            catch (Win32Exception) { }
         }
 
         await Task.WhenAll(
@@ -279,6 +284,7 @@ public class GameServerProcessManager(
         try
         {
             using var client = httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(5); // this call runs under the per-server lock; don't block it on a hung endpoint
             // Game-side handleCommand expects an SQF array envelope; the extension
             // forwards the body to the game callback verbatim.
             var content = new StringContent("[\"shutdown\"]", System.Text.Encoding.UTF8, "text/plain");
@@ -366,6 +372,11 @@ public class GameServerProcessManager(
         await serverLock.WaitAsync();
         try
         {
+            if (phase < gameServer.Status.StopPhase)
+            {
+                return; // never regress a stop (late/duplicated event racing a later phase)
+            }
+
             var now = DateTime.UtcNow;
             gameServer.Status.StopRequestedAt ??= now; // in-game trigger: API never set it on a stop press
             gameServer.Status.StopPhase = phase;
@@ -684,6 +695,11 @@ public class GameServerProcessManager(
                     }
                 }
 
+                if (gameServersContext.Get().Any(s => s.ProcessId is not null))
+                {
+                    continue; // a server was launched during the drain; reconcile it instead of exiting
+                }
+
                 break;
             }
         }
@@ -700,14 +716,19 @@ public class GameServerProcessManager(
         }
     }
 
-    private void KillOrphanedArmaProcesses()
+    internal void KillOrphanedArmaProcesses()
     {
         foreach (var processInfo in gameServerHelpers.GetGameServerArmaProcesses())
         {
             var process = processUtilities.FindProcessById(processInfo.ProcessId);
             if (process is { HasExited: false })
             {
-                process.Kill(true);
+                try
+                {
+                    processUtilities.KillProcess(process);
+                }
+                catch (InvalidOperationException) { }
+                catch (Win32Exception) { }
             }
         }
     }

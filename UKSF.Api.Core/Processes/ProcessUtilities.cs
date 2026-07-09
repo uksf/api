@@ -13,6 +13,7 @@ public interface IProcessUtilities
     int LaunchManagedProcess(string executable, string arguments = null);
     Task LaunchExternalProcess(string name, string command, string workingDirectory = null);
     Task CloseProcessGracefully(Process process);
+    void KillProcess(Process process, bool entireProcessTree = true);
     Process FindProcessById(int id);
     Process FindProcessByName(string name);
     Process[] GetProcessesByName(string name);
@@ -66,6 +67,11 @@ public class ProcessUtilities : IProcessUtilities
     {
         // UKSF.PostMessage exe location should be set as a PATH variable
         await LaunchExternalProcess("CloseProcess", $"start \"\" \"UKSF.PostMessage\" {process.ProcessName} {WmSysCommand} {ScClose} 0");
+    }
+
+    public void KillProcess(Process process, bool entireProcessTree = true)
+    {
+        process.Kill(entireProcessTree);
     }
 
     public Process FindProcessById(int id)
