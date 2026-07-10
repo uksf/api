@@ -61,6 +61,10 @@ public class GameServerProcessManager(
     private readonly Lock _monitorLock = new();
     private bool _monitorRunning;
 
+    // Guards one DomainGameServer instance per Id only because gameServersContext is a
+    // CachedMongoContext: with USE_MEMORY_DATA_CACHE on, Get()/GetSingle return the same
+    // shared instance every call. If that cache is ever disabled, this lock guards unrelated
+    // per-call instances instead -> lost updates / double-finalise.
     private SemaphoreSlim GetServerLock(string serverId)
     {
         return _serverLocks.GetOrAdd(serverId, _ => new SemaphoreSlim(1, 1));
@@ -101,14 +105,16 @@ public class GameServerProcessManager(
         await serverLock.WaitAsync();
         try
         {
-            File.WriteAllText(gameServerHelpers.GetGameServerConfigPath(server), gameServerHelpers.FormatGameServerConfig(server, playerCount, missionName));
+            await File.WriteAllTextAsync(gameServerHelpers.GetGameServerConfigPath(server), gameServerHelpers.FormatGameServerConfig(server, playerCount, missionName));
 
             server.Status = new GameServerStatus { Launching = true };
+            server.HeadlessClientProcessIds.Clear(); // defensive: don't accumulate onto a stale list from a prior run
             StatusCache.TryRemove(server.Id, out _);
 
             if (missionName is not null)
             {
-                var nameWithoutExtension = Path.GetFileNameWithoutExtension(missionName);
+                var fileName = Path.GetFileName(missionName);
+                var nameWithoutExtension = fileName.EndsWith(".pbo", StringComparison.OrdinalIgnoreCase) ? fileName[..^4] : fileName;
                 var lastDot = nameWithoutExtension.LastIndexOf('.');
                 if (lastDot > 0)
                 {
@@ -310,21 +316,16 @@ public class GameServerProcessManager(
 
         if (variablesService.GetFeatureState("SKIP_SERVER_STATUS"))
         {
-            foreach (var gameServer in gameServers)
-            {
-                await gameServersContext.Replace(gameServer);
-            }
-
             return gameServers;
         }
 
-        if (!gameServerHelpers.GetGameServerArmaProcesses().Any())
+        var armaProcesses = gameServerHelpers.GetGameServerArmaProcesses();
+        if (armaProcesses.Count == 0)
         {
             await Task.WhenAll(gameServers.Select(server => ReconcileServerSafely(server, () => ResetServerToDeadAsync(server, push: false))));
             return gameServers;
         }
 
-        var armaProcesses = gameServerHelpers.GetGameServerArmaProcesses();
         await Task.WhenAll(gameServers.Select(server => ReconcileServerSafely(server, () => UpdateServerStatus(server, armaProcesses))));
         return gameServers;
     }

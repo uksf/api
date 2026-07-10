@@ -390,6 +390,55 @@ public class GameServerProcessManagerTests
     }
 
     [Fact]
+    public async Task LaunchServerAsync_ClearsStaleHeadlessClientProcessIdsBeforeRelaunch()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1",
+            Name = "Test",
+            NumberHeadlessClients = 1,
+            HeadlessClientProcessIds = [9999], // stale from a previous run
+            Status = new GameServerStatus()
+        };
+        _mockHelpers.Setup(x => x.GetGameServerExecutablePath(server)).Returns("arma3server_x64.exe");
+        _mockHelpers.Setup(x => x.FormatGameServerLaunchArguments(server)).Returns("-port=2302");
+        _mockHelpers.Setup(x => x.FormatHeadlessClientLaunchArguments(server, 0)).Returns("-port=2302 -client");
+        _mockHelpers.Setup(x => x.GetGameServerConfigPath(server)).Returns(Path.Combine(Path.GetTempPath(), "test_config.cfg"));
+        _mockHelpers.Setup(x => x.FormatGameServerConfig(server, 40, "mission.Altis.pbo")).Returns("config content");
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302")).Returns(1234);
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302 -client")).Returns(5001);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+
+        await _sut.LaunchServerAsync(server, "mission.Altis.pbo", "user1", 40);
+
+        server.HeadlessClientProcessIds.Should().BeEquivalentTo([5001]);
+    }
+
+    [Fact]
+    public async Task LaunchServerAsync_WhenMissionNameHasNoPboExtension_StillParsesMap()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1",
+            Name = "Test",
+            NumberHeadlessClients = 0,
+            HeadlessClientProcessIds = [],
+            Status = new GameServerStatus()
+        };
+        _mockHelpers.Setup(x => x.GetGameServerExecutablePath(server)).Returns("arma3server_x64.exe");
+        _mockHelpers.Setup(x => x.FormatGameServerLaunchArguments(server)).Returns("-port=2302");
+        _mockHelpers.Setup(x => x.GetGameServerConfigPath(server)).Returns(Path.Combine(Path.GetTempPath(), "test_config.cfg"));
+        _mockHelpers.Setup(x => x.FormatGameServerConfig(server, 40, "mission.Altis")).Returns("config content");
+        _mockProcessUtilities.Setup(x => x.LaunchManagedProcess("arma3server_x64.exe", "-port=2302")).Returns(1234);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([]);
+
+        await _sut.LaunchServerAsync(server, "mission.Altis", "user1", 40);
+
+        server.Status.Mission.Should().Be("mission");
+        server.Status.Map.Should().Be("Altis");
+    }
+
+    [Fact]
     public async Task HandleStopEndingAsync_SetsEndingArmedAndPushes()
     {
         var server = new DomainGameServer
@@ -657,7 +706,7 @@ public class GameServerProcessManagerTests
     }
 
     [Fact]
-    public async Task GetAllServerStatusesAsync_WhenSkipFeatureEnabled_ReplacesWithoutStatusCheck()
+    public async Task GetAllServerStatusesAsync_WhenSkipFeatureEnabled_ReturnsServersUnchangedWithoutWriting()
     {
         var servers = new List<DomainGameServer> { new() { Id = "s1", Status = new GameServerStatus { Running = true } } };
         _mockContext.Setup(x => x.Get()).Returns(servers);
@@ -667,7 +716,7 @@ public class GameServerProcessManagerTests
 
         result.Should().HaveCount(1);
         result[0].Status.Running.Should().BeTrue();
-        _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Once);
+        _mockContext.Verify(x => x.Replace(It.IsAny<DomainGameServer>()), Times.Never); // no-op write removed (S3)
         _mockHelpers.Verify(x => x.GetGameServerArmaProcesses(), Times.Never);
     }
 
@@ -792,6 +841,25 @@ public class GameServerProcessManagerTests
         result.Should().HaveCount(1);
         result[0].ProcessId.Should().Be(5678);
         mockHandler.RequestCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetAllServerStatusesAsync_ScansArmaProcessesOnlyOncePerCall()
+    {
+        var server = new DomainGameServer
+        {
+            Id = "s1", Name = "Test", Port = 2302, ApiPort = 2303,
+            HeadlessClientProcessIds = [], Status = new GameServerStatus()
+        };
+        _mockContext.Setup(x => x.Get()).Returns(new List<DomainGameServer> { server });
+        _mockVariablesService.Setup(x => x.GetFeatureState("SKIP_SERVER_STATUS")).Returns(false);
+        _mockHelpers.Setup(x => x.GetGameServerArmaProcesses()).Returns([new ProcessCommandLineInfo(5678, "-config=ServerConfigs/Main.cfg -port=2302 ")]);
+        var httpClient = new HttpClient(new MockHttpMessageHandler(HttpStatusCode.RequestTimeout));
+        _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(httpClient);
+
+        await _sut.GetAllServerStatusesAsync();
+
+        _mockHelpers.Verify(x => x.GetGameServerArmaProcesses(), Times.Once); // one OS process enumeration + WMI scan per poll, not two
     }
 
     [Fact]
