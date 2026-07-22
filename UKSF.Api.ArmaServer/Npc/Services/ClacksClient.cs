@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using UKSF.Api.ArmaServer.Npc.Models;
 using UKSF.Api.Core;
@@ -16,6 +17,30 @@ public class ClacksChatResult
     public string Text { get; set; } = string.Empty;
     public string Node { get; set; } = string.Empty;
     public string Model { get; set; } = string.Empty;
+    public long Ms { get; set; }
+}
+
+// OpenAI /v1/chat/completions response shape (only the fields npc reads).
+public class V1ChatResponse
+{
+    public string Model { get; set; }
+    public List<V1Choice> Choices { get; set; }
+    [JsonPropertyName("_clacks")] public V1Clacks Clacks { get; set; }
+}
+
+public class V1Choice
+{
+    public V1Message Message { get; set; }
+}
+
+public class V1Message
+{
+    public string Content { get; set; }
+}
+
+public class V1Clacks
+{
+    public string Node { get; set; }
     public long Ms { get; set; }
 }
 
@@ -73,14 +98,13 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
             using var client = httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(30);
             var response = await client.PostAsJsonAsync(
-                $"{baseUrl}/chat",
+                $"{baseUrl}/v1/chat/completions",
                 new
                 {
-                    role,
-                    system,
-                    user,
+                    model = role,
+                    messages = new[] { new { role = "system", content = system }, new { role = "user", content = user } },
                     json,
-                    maxTokens,
+                    max_tokens = maxTokens,
                     temperature,
                     meta // null is omitted by WhenWritingNull; carries per-role context for the mesh dashboard
                 },
@@ -88,15 +112,27 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
             );
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning($"clacks /chat returned {(int)response.StatusCode} for role '{role}'");
+                logger.LogWarning($"clacks /v1/chat/completions returned {(int)response.StatusCode} for role '{role}'");
                 return null;
             }
 
-            return await response.Content.ReadFromJsonAsync<ClacksChatResult>(NpcBrainJson.Options);
+            var v1 = await response.Content.ReadFromJsonAsync<V1ChatResponse>(NpcBrainJson.Options);
+            if (v1 is null)
+            {
+                return null;
+            }
+
+            return new ClacksChatResult
+            {
+                Text = v1.Choices?.Count > 0 ? v1.Choices[0].Message?.Content ?? string.Empty : string.Empty,
+                Model = v1.Model ?? string.Empty,
+                Node = v1.Clacks?.Node ?? string.Empty,
+                Ms = v1.Clacks?.Ms ?? 0
+            };
         }
         catch (Exception exception)
         {
-            logger.LogError($"clacks /chat call failed for role '{role}'", exception);
+            logger.LogError($"clacks /v1/chat/completions call failed for role '{role}'", exception);
             return null;
         }
     }
