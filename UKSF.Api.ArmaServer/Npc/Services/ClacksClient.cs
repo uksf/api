@@ -76,11 +76,11 @@ public interface IClacksClient
     Task<ClacksSpeakResult> SpeakAsync(string role, string text, string voiceId);
     Task<bool> PutVoiceAsync(string voiceId, byte[] wavBytes);
     Task<ClacksEmoteResult> EmoteAsync(string voiceId, string text, string emoText, double emoAlpha);
-    Task<bool> WarmAsync(IReadOnlyCollection<string> roles, int leaseMs);
+    Task<bool> WarmAsync(IReadOnlyCollection<string> models, int leaseMs);
 }
 
-// HTTP client for the local clacks daemon (the LLM mesh). The daemon owns all model routing/fallback;
-// this client just asks for a role and reads text back.
+// HTTP client for the local clacks daemon (the LLM mesh). clacks serves MODELS; the npc candidate
+// lists + placement live in ClacksCandidates.
 public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesService variablesService, IUksfLogger logger) : IClacksClient
 {
     public async Task<ClacksChatResult> ChatAsync(string role, string system, string user, bool json, int maxTokens, double temperature, object meta = null)
@@ -101,12 +101,13 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
                 $"{baseUrl}/v1/chat/completions",
                 new
                 {
-                    model = role,
+                    model = ClacksCandidates.NpcChatModel,
+                    fallbacks = ClacksCandidates.NpcChatFallbacks,
                     messages = new[] { new { role = "system", content = system }, new { role = "user", content = user } },
                     json,
                     max_tokens = maxTokens,
                     temperature,
-                    meta // null is omitted by WhenWritingNull; carries per-role context for the mesh dashboard
+                    meta // null is omitted by WhenWritingNull; carries per-call context for the mesh dashboard
                 },
                 NpcBrainJson.Options
             );
@@ -154,7 +155,8 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
                 $"{baseUrl}/speak",
                 new
                 {
-                    role,
+                    model = ClacksCandidates.VoiceModel,
+                    nodes = ClacksCandidates.VoiceNodes,
                     text,
                     voiceId
                 },
@@ -223,7 +225,7 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
                 $"{baseUrl}/emote",
                 new
                 {
-                    role = "npc-mood-gen",
+                    model = ClacksCandidates.EmoteModel,
                     voiceId,
                     text,
                     emoText,
@@ -262,7 +264,7 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
         }
     }
 
-    public async Task<bool> WarmAsync(IReadOnlyCollection<string> roles, int leaseMs)
+    public async Task<bool> WarmAsync(IReadOnlyCollection<string> models, int leaseMs)
     {
         var baseUrl = variablesService.GetVariable("CLACKS_URL")?.Item?.ToString()?.TrimEnd('/');
         if (string.IsNullOrEmpty(baseUrl))
@@ -271,16 +273,16 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
             return false;
         }
 
-        if (roles.Count == 0) return false;
+        if (models.Count == 0) return false;
 
         try
         {
             using var client = httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(10); // /warm kicks the load and returns; it does not block on readiness
-            var response = await client.PostAsJsonAsync($"{baseUrl}/warm", new { roles, leaseMs }, NpcBrainJson.Options);
+            var response = await client.PostAsJsonAsync($"{baseUrl}/warm", new { models, leaseMs }, NpcBrainJson.Options);
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning($"clacks /warm returned {(int)response.StatusCode} for roles [{string.Join(", ", roles)}]");
+                logger.LogWarning($"clacks /warm returned {(int)response.StatusCode} for models [{string.Join(", ", models)}]");
                 return false;
             }
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -47,13 +48,16 @@ public class ClacksClientTests
         result.Model.Should().Be("qwen2.5-3b");
 
         sent.Should().HaveCount(1);
-        sent[0].RequestUri.ToString().Should().Be("http://dedi-ts:8800/chat");
+        sent[0].RequestUri.ToString().Should().Be("http://dedi-ts:8800/v1/chat/completions");
         var body = JsonDocument.Parse(await sent[0].Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("role").GetString().Should().Be("npc");
-        body.RootElement.GetProperty("system").GetString().Should().Be("SYS");
-        body.RootElement.GetProperty("user").GetString().Should().Be("USR");
+        body.RootElement.GetProperty("model").GetString().Should().Be("qwen3.5-9b");
+        var fallbacks = body.RootElement.GetProperty("fallbacks").EnumerateArray().Select(e => e.GetString()).ToArray();
+        fallbacks.Should().Equal("qwen3.5-9b-npc", "haiku");
+        var messages = body.RootElement.GetProperty("messages").EnumerateArray().ToArray();
+        messages[0].GetProperty("content").GetString().Should().Be("SYS");
+        messages[1].GetProperty("content").GetString().Should().Be("USR");
         body.RootElement.GetProperty("json").GetBoolean().Should().BeTrue();
-        body.RootElement.GetProperty("maxTokens").GetInt32().Should().Be(80);
+        body.RootElement.GetProperty("max_tokens").GetInt32().Should().Be(80);
     }
 
     [Fact]
@@ -92,7 +96,9 @@ public class ClacksClientTests
         sent.Should().HaveCount(1);
         sent[0].RequestUri.ToString().Should().Be("http://dedi-ts:8800/speak");
         var body = JsonDocument.Parse(await sent[0].Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("role").GetString().Should().Be("npc-voice");
+        body.RootElement.GetProperty("model").GetString().Should().Be("pockettts");
+        var nodes = body.RootElement.GetProperty("nodes").EnumerateArray().Select(e => e.GetString()).ToArray();
+        nodes.Should().Equal("server", "ultron", "iultron");
         body.RootElement.GetProperty("text").GetString().Should().Be("Get back.");
         body.RootElement.GetProperty("voiceId").GetString().Should().Be("bm_george");
     }

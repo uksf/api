@@ -17,7 +17,7 @@ namespace UKSF.Api.ArmaServer.Npc.Services;
 /// </summary>
 public class NpcWarmKeeper(INpcSessionsContext sessions, IClacksClient clacks, IUksfLogger logger) : BackgroundService
 {
-    public static readonly IReadOnlyCollection<string> WarmRoles = ["npc", "npc-voice"];
+    public static readonly IReadOnlyCollection<string> WarmRoles = ClacksCandidates.WarmModels;
     public const int LeaseMs = 180_000;
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(120);
 

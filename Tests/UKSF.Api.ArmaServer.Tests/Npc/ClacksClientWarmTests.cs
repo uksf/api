@@ -41,7 +41,7 @@ public class ClacksClientWarmTests
     {
         var (client, sent) = Build(HttpStatusCode.OK);
 
-        var ok = await client.WarmAsync(["npc", "npc-voice"], 180_000);
+        var ok = await client.WarmAsync(["qwen3.5-9b", "pockettts"], 180_000);
 
         ok.Should().BeTrue();
         sent.Should().HaveCount(1);
@@ -49,10 +49,10 @@ public class ClacksClientWarmTests
         sent[0].RequestUri!.ToString().Should().Be("http://dedi-ts:8800/warm");
         var body = JsonDocument.Parse(await sent[0].Content!.ReadAsStringAsync());
         body.RootElement.GetProperty("leaseMs").GetInt32().Should().Be(180_000);
-        var roles = body.RootElement.GetProperty("roles");
-        roles.GetArrayLength().Should().Be(2);
-        roles[0].GetString().Should().Be("npc");
-        roles[1].GetString().Should().Be("npc-voice");
+        var models = body.RootElement.GetProperty("models");
+        models.GetArrayLength().Should().Be(2);
+        models[0].GetString().Should().Be("qwen3.5-9b");
+        models[1].GetString().Should().Be("pockettts");
     }
 
     [Fact]
