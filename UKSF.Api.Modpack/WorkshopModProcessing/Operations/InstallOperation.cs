@@ -18,7 +18,12 @@ public sealed class InstallOperation(
     protected override string CompletedMessage => "Installed pending next modpack release";
     protected override string ActiveStatusMessage => "Installing...";
 
-    protected override Task ExecuteCoreAsync(DomainWorkshopMod workshopMod, List<string> selectedPbos, CancellationToken cancellationToken)
+    protected override Task ExecuteCoreAsync(
+        DomainWorkshopMod workshopMod,
+        List<string> selectedPbos,
+        List<string> selectedExtensions,
+        CancellationToken cancellationToken
+    )
     {
         if (workshopMod.RootMod)
         {
@@ -26,14 +31,13 @@ public sealed class InstallOperation(
             return Task.CompletedTask;
         }
 
-        var extensionFiles = WorkshopModsProcessingService.GetExtensionFiles(WorkshopModsProcessingService.GetWorkshopModPath(workshopMod.SteamId));
-
         WorkshopModDependencyFilesService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
-        WorkshopModDependencyFilesService.CopyExtensionFilesToDependencies(workshopMod, extensionFiles, cancellationToken);
+        WorkshopModDependencyFilesService.CopyExtensionsToDependencies(workshopMod, selectedExtensions, cancellationToken);
 
         workshopMod.Pbos = selectedPbos;
-        workshopMod.ExtensionFiles = extensionFiles;
+        workshopMod.Extensions = selectedExtensions;
         workshopMod.AvailablePbos = [];
+        workshopMod.AvailableExtensions = [];
 
         return Task.CompletedTask;
     }

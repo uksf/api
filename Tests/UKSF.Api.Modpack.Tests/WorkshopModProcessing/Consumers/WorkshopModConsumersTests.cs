@@ -217,7 +217,7 @@ public class WorkshopModExecuteConsumerTests
     [Fact]
     public async Task Consume_WhenInstallExecuteSucceeds_ShouldPublishCompleteWithFilesChanged()
     {
-        _installOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+        _installOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                          .ReturnsAsync(OperationResult.Successful());
 
         var context = TestHelpers.CreateContext(
@@ -237,13 +237,14 @@ public class WorkshopModExecuteConsumerTests
 
         published.Should().NotBeNull();
         published!.WorkshopModId.Should().Be("mod1");
-        _installOperation.Verify(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _installOperation.Verify(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Consume_WhenUpdateExecuteSucceeds_ShouldPublishCompleteWithUpdateStatus()
     {
-        _updateOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(OperationResult.Successful());
+        _updateOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(OperationResult.Successful());
 
         var context = TestHelpers.CreateContext(
             new WorkshopModExecuteCommand
@@ -262,13 +263,13 @@ public class WorkshopModExecuteConsumerTests
 
         published.Should().NotBeNull();
         published!.WorkshopModId.Should().Be("mod1");
-        _updateOperation.Verify(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _updateOperation.Verify(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Consume_WhenExecuteFails_ShouldPublishFaulted()
     {
-        _installOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+        _installOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                          .ReturnsAsync(OperationResult.Failure("mod1 not found"));
 
         var context = TestHelpers.CreateContext(
@@ -308,7 +309,7 @@ public class WorkshopModUninstallConsumerTests
     [Fact]
     public async Task Consume_WhenUninstallSucceeds_ShouldPublishCompleteWithFilesChanged()
     {
-        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                            .ReturnsAsync(OperationResult.Successful());
 
         var context = TestHelpers.CreateContext(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });
@@ -327,7 +328,7 @@ public class WorkshopModUninstallConsumerTests
     [Fact]
     public async Task Consume_WhenUninstallSucceeds_WithNoFilesChanged_ShouldPublishFilesChangedFalse()
     {
-        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                            .ReturnsAsync(OperationResult.Successful(filesChanged: false));
 
         var context = TestHelpers.CreateContext(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });
@@ -345,7 +346,7 @@ public class WorkshopModUninstallConsumerTests
     [Fact]
     public async Task Consume_WhenUninstallFails_ShouldPublishFaulted()
     {
-        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+        _uninstallOperation.Setup(x => x.ExecuteAsync("mod1", It.IsAny<List<string>>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                            .ReturnsAsync(OperationResult.Failure("mod1 not found"));
 
         var context = TestHelpers.CreateContext(new WorkshopModUninstallInternalCommand { WorkshopModId = "mod1" });

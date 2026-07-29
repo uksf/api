@@ -73,13 +73,19 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
                 .IfElse(
                     context => context.Message.InterventionRequired,
                     binder => binder.TransitionTo(AwaitingIntervention),
-                    binder => binder.Then(context => { context.Saga.SelectedPbos = context.Message.AvailablePbos ?? context.Saga.SelectedPbos; })
+                    binder => binder.Then(context =>
+                                        {
+                                            context.Saga.SelectedPbos = context.Message.AvailablePbos ?? context.Saga.SelectedPbos;
+                                            context.Saga.SelectedExtensions = context.Message.AvailableExtensions ?? context.Saga.SelectedExtensions;
+                                        }
+                                    )
                                     .TransitionTo(Executing)
                                     .Publish(context => new WorkshopModExecuteCommand
                                         {
                                             WorkshopModId = context.Saga.WorkshopModId,
                                             OperationType = context.Saga.OperationType!.Value,
-                                            SelectedPbos = context.Saga.SelectedPbos
+                                            SelectedPbos = context.Saga.SelectedPbos,
+                                            SelectedExtensions = context.Saga.SelectedExtensions
                                         }
                                     )
                 )
@@ -88,13 +94,19 @@ public class WorkshopModStateMachine : MassTransitStateMachine<WorkshopModInstan
         During(
             AwaitingIntervention,
             When(InterventionResolved)
-                .Then(context => { context.Saga.SelectedPbos = context.Message.SelectedPbos; })
+                .Then(context =>
+                    {
+                        context.Saga.SelectedPbos = context.Message.SelectedPbos ?? [];
+                        context.Saga.SelectedExtensions = context.Message.SelectedExtensions ?? [];
+                    }
+                )
                 .TransitionTo(Executing)
                 .Publish(context => new WorkshopModExecuteCommand
                     {
                         WorkshopModId = context.Saga.WorkshopModId,
                         OperationType = context.Saga.OperationType!.Value,
-                        SelectedPbos = context.Saga.SelectedPbos
+                        SelectedPbos = context.Saga.SelectedPbos,
+                        SelectedExtensions = context.Saga.SelectedExtensions
                     }
                 )
         );

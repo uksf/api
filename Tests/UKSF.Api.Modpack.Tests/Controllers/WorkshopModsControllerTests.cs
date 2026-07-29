@@ -38,7 +38,7 @@ public class WorkshopModsControllerTests
             ModpackVersionFirstAdded = "1.0.0",
             ModpackVersionLastUpdated = "1.1.0",
             Pbos = ["a.pbo"],
-            ExtensionFiles = ["extension.dll"]
+            Extensions = ["extension.dll"]
         };
         _context.Setup(x => x.Get()).Returns([workshopMod]);
 
@@ -57,7 +57,7 @@ public class WorkshopModsControllerTests
         mapped.ModpackVersionFirstAdded.Should().Be("1.0.0");
         mapped.ModpackVersionLastUpdated.Should().Be("1.1.0");
         mapped.Pbos.Should().BeEquivalentTo("a.pbo");
-        mapped.ExtensionFiles.Should().BeEquivalentTo("extension.dll");
+        mapped.Extensions.Should().BeEquivalentTo("extension.dll");
     }
 
     [Fact]
@@ -119,11 +119,11 @@ public class WorkshopModsControllerTests
     [Fact]
     public async Task ResolveWorkshopModManualIntervention_ShouldCallService()
     {
-        var request = new WorkshopModResolveInterventionRequest { SelectedPbos = ["a.pbo", "b.pbo"] };
+        var request = new WorkshopModResolveInterventionRequest { SelectedPbos = ["a.pbo", "b.pbo"], SelectedExtensions = ["extension.dll"] };
 
         await _subject.ResolveWorkshopModManualIntervention("123", request);
 
-        _service.Verify(x => x.ResolveWorkshopModManualIntervention("123", request.SelectedPbos), Times.Once);
+        _service.Verify(x => x.ResolveWorkshopModManualIntervention("123", request.SelectedPbos, request.SelectedExtensions), Times.Once);
     }
 
     [Fact]

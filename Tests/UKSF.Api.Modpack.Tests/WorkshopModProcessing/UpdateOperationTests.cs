@@ -19,12 +19,12 @@ public class UpdateOperationTests
     public UpdateOperationTests()
     {
         _mockProcessingService.Setup(x => x.GetWorkshopModPath("test-mod-123")).Returns("/path/to/mod");
-        _mockProcessingService.Setup(x => x.GetExtensionFiles(It.IsAny<string>())).Returns([]);
+        _mockProcessingService.Setup(x => x.GetExtensions(It.IsAny<string>())).Returns([]);
         _mockContext.Setup(x => x.Replace(It.IsAny<DomainWorkshopMod>())).Returns(Task.CompletedTask);
         _operation = new UpdateOperation(_mockContext.Object, _mockProcessingService.Object, _mockDependencyFilesService.Object, _mockRootFilesService.Object);
     }
 
-    private DomainWorkshopMod SetupWorkshopMod(bool rootMod = false, List<string> pbos = null, List<string> extensionFiles = null)
+    private DomainWorkshopMod SetupWorkshopMod(bool rootMod = false, List<string> pbos = null, List<string> files = null)
     {
         var workshopMod = new DomainWorkshopMod
         {
@@ -34,7 +34,7 @@ public class UpdateOperationTests
             RootMod = rootMod,
             Status = WorkshopModStatus.Updating,
             Pbos = pbos ?? [],
-            ExtensionFiles = extensionFiles ?? []
+            Extensions = files ?? []
         };
         _mockContext.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
         return workshopMod;
@@ -79,7 +79,7 @@ public class UpdateOperationTests
         workshopMod.Pbos.Should().BeEquivalentTo(installed);
         _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.Updating, "Checking..."), Times.Once);
         _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.InterventionRequired, "Select files to install"), Times.Once);
-        _mockProcessingService.Verify(x => x.SetAvailablePbos(workshopMod, candidate), Times.Once);
+        _mockProcessingService.Verify(x => x.SetAvailable(workshopMod, candidate, It.IsAny<List<string>>()), Times.Once);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class UpdateOperationTests
         var workshopMod = SetupWorkshopMod(rootMod: true);
         _mockRootFilesService.Setup(x => x.SyncRootModToRepos(workshopMod)).Returns(true);
 
-        var result = await _operation.ExecuteAsync("test-mod-123", []);
+        var result = await _operation.ExecuteAsync("test-mod-123", [], []);
 
         result.Success.Should().BeTrue();
         result.FilesChanged.Should().BeTrue();
@@ -124,7 +124,7 @@ public class UpdateOperationTests
         var workshopMod = SetupWorkshopMod(rootMod: true);
         _mockRootFilesService.Setup(x => x.SyncRootModToRepos(workshopMod)).Returns(false);
 
-        var result = await _operation.ExecuteAsync("test-mod-123", []);
+        var result = await _operation.ExecuteAsync("test-mod-123", [], []);
 
         result.Success.Should().BeTrue();
         result.FilesChanged.Should().BeFalse();
@@ -136,7 +136,7 @@ public class UpdateOperationTests
         var workshopMod = SetupWorkshopMod(pbos: ["old1.pbo", "old2.pbo", "kept.pbo"]);
         var selectedPbos = new List<string> { "kept.pbo", "new1.pbo" };
 
-        var result = await _operation.ExecuteAsync("test-mod-123", selectedPbos);
+        var result = await _operation.ExecuteAsync("test-mod-123", selectedPbos, []);
 
         result.Success.Should().BeTrue();
         _mockDependencyFilesService.Verify(x => x.CopyPbosToDependencies(workshopMod, selectedPbos, It.IsAny<CancellationToken>()), Times.Once);
@@ -152,38 +152,36 @@ public class UpdateOperationTests
     {
         SetupWorkshopMod(pbos: ["mod1.pbo"]);
 
-        await _operation.ExecuteAsync("test-mod-123", ["mod1.pbo", "mod2.pbo"]);
+        await _operation.ExecuteAsync("test-mod-123", ["mod1.pbo", "mod2.pbo"], []);
 
         _mockDependencyFilesService.Verify(x => x.DeletePbosFromDependencies(It.IsAny<List<string>>()), Times.Never);
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithExtensionFiles_ShouldCopyThenDeleteRemovedExtensionFiles()
+    public async Task ExecuteAsync_WithFiles_ShouldCopyThenDeleteDeselectedExtensions()
     {
-        var workshopMod = SetupWorkshopMod(pbos: ["mod1.pbo"], extensionFiles: ["old_extension.dll", "kept_extension.dll"]);
-        var extensionFiles = new List<string> { "kept_extension.dll", "new_extension.dll" };
-        _mockProcessingService.Setup(x => x.GetExtensionFiles("/path/to/mod")).Returns(extensionFiles);
+        var workshopMod = SetupWorkshopMod(pbos: ["mod1.pbo"], files: ["old_extension.dll", "kept_extension.dll"]);
+        var selectedExtensions = new List<string> { "kept_extension.dll", "new_extension.dll" };
 
-        var result = await _operation.ExecuteAsync("test-mod-123", ["mod1.pbo"]);
+        var result = await _operation.ExecuteAsync("test-mod-123", ["mod1.pbo"], selectedExtensions);
 
         result.Success.Should().BeTrue();
-        workshopMod.ExtensionFiles.Should().BeEquivalentTo(extensionFiles);
-        _mockDependencyFilesService.Verify(x => x.CopyExtensionFilesToDependencies(workshopMod, extensionFiles, It.IsAny<CancellationToken>()), Times.Once);
+        workshopMod.Extensions.Should().BeEquivalentTo(selectedExtensions);
+        _mockDependencyFilesService.Verify(x => x.CopyExtensionsToDependencies(workshopMod, selectedExtensions, It.IsAny<CancellationToken>()), Times.Once);
         _mockDependencyFilesService.Verify(
-            x => x.DeleteExtensionFilesFromDependencies(It.Is<List<string>>(files => files.Single() == "old_extension.dll")),
+            x => x.DeleteExtensionsFromDependencies(It.Is<List<string>>(files => files.Single() == "old_extension.dll")),
             Times.Once
         );
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenExtensionFilesUnchanged_ShouldSkipDelete()
+    public async Task ExecuteAsync_WhenFilesUnchanged_ShouldSkipDelete()
     {
-        SetupWorkshopMod(pbos: ["mod1.pbo"], extensionFiles: ["extension.dll"]);
-        _mockProcessingService.Setup(x => x.GetExtensionFiles("/path/to/mod")).Returns(["extension.dll"]);
+        SetupWorkshopMod(pbos: ["mod1.pbo"], files: ["extension.dll"]);
 
-        await _operation.ExecuteAsync("test-mod-123", ["mod1.pbo"]);
+        await _operation.ExecuteAsync("test-mod-123", ["mod1.pbo"], ["extension.dll"]);
 
-        _mockDependencyFilesService.Verify(x => x.DeleteExtensionFilesFromDependencies(It.IsAny<List<string>>()), Times.Never);
+        _mockDependencyFilesService.Verify(x => x.DeleteExtensionsFromDependencies(It.IsAny<List<string>>()), Times.Never);
     }
 
     [Fact]
@@ -193,7 +191,7 @@ public class UpdateOperationTests
         workshopMod.AvailablePbos = ["old.pbo", "new.pbo"];
         workshopMod.ErrorMessage = "Previous error";
 
-        await _operation.ExecuteAsync("test-mod-123", ["new.pbo"]);
+        await _operation.ExecuteAsync("test-mod-123", ["new.pbo"], []);
 
         workshopMod.AvailablePbos.Should().BeEmpty();
         workshopMod.Status.Should().Be(WorkshopModStatus.UpdatedPendingRelease);
@@ -212,7 +210,7 @@ public class UpdateOperationTests
         _mockDependencyFilesService.Setup(x => x.CopyPbosToDependencies(workshopMod, selectedPbos, It.IsAny<CancellationToken>()))
                                    .Throws(new IOException("Copy failed"));
 
-        var result = await _operation.ExecuteAsync("test-mod-123", selectedPbos);
+        var result = await _operation.ExecuteAsync("test-mod-123", selectedPbos, []);
 
         result.Success.Should().BeFalse();
         result.ErrorMessage.Should().Contain("Copy failed");
@@ -227,7 +225,7 @@ public class UpdateOperationTests
         _mockDependencyFilesService.Setup(x => x.CopyPbosToDependencies(workshopMod, selectedPbos, It.IsAny<CancellationToken>()))
                                    .Throws(new OperationCanceledException());
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => _operation.ExecuteAsync("test-mod-123", selectedPbos));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => _operation.ExecuteAsync("test-mod-123", selectedPbos, []));
         _mockProcessingService.Verify(x => x.UpdateModStatus(workshopMod, WorkshopModStatus.Error, "Update cancelled"), Times.Once);
     }
 
@@ -237,7 +235,7 @@ public class UpdateOperationTests
         var workshopMod = SetupWorkshopMod(rootMod: true);
         _mockRootFilesService.Setup(x => x.SyncRootModToRepos(workshopMod)).Throws(new IOException("Sync failed"));
 
-        var result = await _operation.ExecuteAsync("test-mod-123", []);
+        var result = await _operation.ExecuteAsync("test-mod-123", [], []);
 
         result.Success.Should().BeFalse();
         result.ErrorMessage.Should().Contain("Sync failed");
@@ -248,7 +246,7 @@ public class UpdateOperationTests
     {
         _mockContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainWorkshopMod, bool>>())).Returns((DomainWorkshopMod)null);
 
-        var result = await _operation.ExecuteAsync("missing-mod", []);
+        var result = await _operation.ExecuteAsync("missing-mod", [], []);
 
         result.Success.Should().BeFalse();
         result.ErrorMessage.Should().Contain("not found");

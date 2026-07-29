@@ -72,7 +72,7 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
     [Permissions(Permissions.Admin)]
     public Task ResolveWorkshopModManualIntervention([FromRoute] string workshopModId, [FromBody] WorkshopModResolveInterventionRequest request)
     {
-        return workshopModsService.ResolveWorkshopModManualIntervention(workshopModId, request.SelectedPbos);
+        return workshopModsService.ResolveWorkshopModManualIntervention(workshopModId, request.SelectedPbos, request.SelectedExtensions);
     }
 
     [HttpDelete("{workshopModId}")]
@@ -98,8 +98,9 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
             ModpackVersionFirstAdded = mod.ModpackVersionFirstAdded,
             ModpackVersionLastUpdated = mod.ModpackVersionLastUpdated,
             Pbos = mod.Pbos,
+            Extensions = mod.Extensions,
             AvailablePbos = mod.AvailablePbos,
-            ExtensionFiles = mod.ExtensionFiles
+            AvailableExtensions = mod.AvailableExtensions
         };
     }
 }

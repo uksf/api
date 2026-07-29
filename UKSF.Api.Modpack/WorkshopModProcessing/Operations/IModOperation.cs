@@ -4,7 +4,13 @@ public interface IModOperation
 {
     Task<OperationResult> DownloadAsync(string workshopModId, CancellationToken cancellationToken = default);
     Task<OperationResult> CheckAsync(string workshopModId, CancellationToken cancellationToken = default);
-    Task<OperationResult> ExecuteAsync(string workshopModId, List<string> selectedPbos, CancellationToken cancellationToken = default);
+
+    Task<OperationResult> ExecuteAsync(
+        string workshopModId,
+        List<string> selectedPbos,
+        List<string> selectedExtensions,
+        CancellationToken cancellationToken = default
+    );
 }
 
 public interface IInstallOperation : IModOperation;

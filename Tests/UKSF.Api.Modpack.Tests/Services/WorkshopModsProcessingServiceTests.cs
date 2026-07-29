@@ -41,63 +41,63 @@ public class WorkshopModsProcessingServiceTests
         result.Should().Be(Path.Combine("C:\\steam", "steamapps", "workshop", "content", "107410", "123"));
     }
 
-    [Fact]
-    public void GetPboFiles_ShouldReturnPboFileNames()
-    {
-        _fileSystemService.Setup(x => x.EnumerateFiles("C:\\mod", "*.pbo", SearchOption.AllDirectories))
-                          .Returns([Path.Combine("C:\\mod", "addons", "a.pbo"), Path.Combine("C:\\mod", "addons", "b.pbo")]);
+    private const string ModPath = "C:\\mod";
+    private static readonly string AddonsPath = Path.Combine(ModPath, "addons");
 
-        var result = _subject.GetPboFiles("C:\\mod");
+    private void SetupAddons(params string[] pboPaths)
+    {
+        _fileSystemService.Setup(x => x.DirectoryExists(AddonsPath)).Returns(true);
+        _fileSystemService.Setup(x => x.EnumerateFiles(AddonsPath, "*.pbo", SearchOption.AllDirectories)).Returns(pboPaths);
+    }
+
+    [Fact]
+    public void GetPboFiles_ShouldReturnPboFileNamesFromAddons()
+    {
+        SetupAddons(Path.Combine(AddonsPath, "a.pbo"), Path.Combine(AddonsPath, "optional", "b.pbo"));
+
+        var result = _subject.GetPboFiles(ModPath);
 
         result.Should().BeEquivalentTo("a.pbo", "b.pbo");
     }
 
     [Fact]
-    public void GetPboFiles_WhenNoPbos_ShouldReturnEmpty()
+    public void GetPboFiles_WhenNoAddonsDirectory_ShouldReturnEmpty()
     {
-        _fileSystemService.Setup(x => x.EnumerateFiles("C:\\mod", "*.pbo", SearchOption.AllDirectories)).Returns([]);
+        _fileSystemService.Setup(x => x.DirectoryExists(AddonsPath)).Returns(false);
 
-        var result = _subject.GetPboFiles("C:\\mod");
+        var result = _subject.GetPboFiles(ModPath);
 
         result.Should().BeEmpty();
+        _fileSystemService.Verify(x => x.EnumerateFiles(It.IsAny<string>(), "*.pbo", It.IsAny<SearchOption>()), Times.Never);
     }
 
     [Fact]
     public void GetPboFiles_WhenDuplicateNames_ShouldThrow()
     {
-        _fileSystemService.Setup(x => x.EnumerateFiles("C:\\mod", "*.pbo", SearchOption.AllDirectories))
-                          .Returns([Path.Combine("C:\\mod", "addons", "a.pbo"), Path.Combine("C:\\mod", "optionals", "a.pbo")]);
+        SetupAddons(Path.Combine(AddonsPath, "a.pbo"), Path.Combine(AddonsPath, "optional", "a.pbo"));
 
-        var action = () => _subject.GetPboFiles("C:\\mod");
+        var action = () => _subject.GetPboFiles(ModPath);
 
         action.Should().Throw<InvalidOperationException>().WithMessage("*Duplicate PBO names*");
     }
 
     [Fact]
-    public void GetExtensionFiles_ShouldReturnRootBinariesOnly()
+    public void GetExtensions_ShouldReturnRootDllNames()
     {
-        _fileSystemService.Setup(x => x.EnumerateFiles("C:\\mod", "*", SearchOption.TopDirectoryOnly))
-                          .Returns(
-                              [
-                                  Path.Combine("C:\\mod", "ctab_connect.dll"),
-                                  Path.Combine("C:\\mod", "ctab_connect_x64.DLL"),
-                                  Path.Combine("C:\\mod", "ctab_connect.so"),
-                                  Path.Combine("C:\\mod", "mod.cpp"),
-                                  Path.Combine("C:\\mod", "meta.cpp")
-                              ]
-                          );
+        _fileSystemService.Setup(x => x.EnumerateFiles(ModPath, "*.dll", SearchOption.TopDirectoryOnly))
+                          .Returns([Path.Combine(ModPath, "ctab_connect.dll"), Path.Combine(ModPath, "ctab_connect_x64.dll")]);
 
-        var result = _subject.GetExtensionFiles("C:\\mod");
+        var result = _subject.GetExtensions(ModPath);
 
-        result.Should().BeEquivalentTo("ctab_connect.dll", "ctab_connect_x64.DLL", "ctab_connect.so");
+        result.Should().BeEquivalentTo("ctab_connect.dll", "ctab_connect_x64.dll");
     }
 
     [Fact]
-    public void GetExtensionFiles_WhenNoBinaries_ShouldReturnEmpty()
+    public void GetExtensions_WhenNoDlls_ShouldReturnEmpty()
     {
-        _fileSystemService.Setup(x => x.EnumerateFiles("C:\\mod", "*", SearchOption.TopDirectoryOnly)).Returns([Path.Combine("C:\\mod", "mod.cpp")]);
+        _fileSystemService.Setup(x => x.EnumerateFiles(ModPath, "*.dll", SearchOption.TopDirectoryOnly)).Returns([]);
 
-        var result = _subject.GetExtensionFiles("C:\\mod");
+        var result = _subject.GetExtensions(ModPath);
 
         result.Should().BeEmpty();
     }
@@ -208,16 +208,17 @@ public class WorkshopModsProcessingServiceTests
     }
 
     [Fact]
-    public async Task SetAvailablePbos_ShouldWriteAvailablePbos_AndLeaveInstalledPbosUntouched()
+    public async Task SetAvailable_ShouldWriteAvailableLists_AndLeaveInstalledPbosUntouched()
     {
         var existingInstalled = new List<string> { "a.pbo", "b.pbo" };
         var candidate = new List<string> { "b.pbo", "c.pbo" };
         var workshopMod = new DomainWorkshopMod { SteamId = "123", Pbos = [..existingInstalled] };
         _context.Setup(x => x.Replace(workshopMod)).Returns(Task.CompletedTask);
 
-        await _subject.SetAvailablePbos(workshopMod, candidate);
+        await _subject.SetAvailable(workshopMod, candidate, ["extension.dll"]);
 
         workshopMod.AvailablePbos.Should().BeEquivalentTo(candidate);
+        workshopMod.AvailableExtensions.Should().BeEquivalentTo("extension.dll");
         workshopMod.Pbos.Should().BeEquivalentTo(existingInstalled);
         _context.Verify(x => x.Replace(workshopMod), Times.Once);
     }

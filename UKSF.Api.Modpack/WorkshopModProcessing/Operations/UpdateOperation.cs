@@ -18,7 +18,12 @@ public sealed class UpdateOperation(
     protected override string CompletedMessage => "Updated pending next modpack release";
     protected override string ActiveStatusMessage => "Updating...";
 
-    protected override Task ExecuteCoreAsync(DomainWorkshopMod workshopMod, List<string> selectedPbos, CancellationToken cancellationToken)
+    protected override Task ExecuteCoreAsync(
+        DomainWorkshopMod workshopMod,
+        List<string> selectedPbos,
+        List<string> selectedExtensions,
+        CancellationToken cancellationToken
+    )
     {
         if (workshopMod.RootMod)
         {
@@ -26,10 +31,8 @@ public sealed class UpdateOperation(
             return Task.CompletedTask;
         }
 
-        var extensionFiles = WorkshopModsProcessingService.GetExtensionFiles(WorkshopModsProcessingService.GetWorkshopModPath(workshopMod.SteamId));
-
         WorkshopModDependencyFilesService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
-        WorkshopModDependencyFilesService.CopyExtensionFilesToDependencies(workshopMod, extensionFiles, cancellationToken);
+        WorkshopModDependencyFilesService.CopyExtensionsToDependencies(workshopMod, selectedExtensions, cancellationToken);
 
         var pbosToDelete = (workshopMod.Pbos ?? []).Except(selectedPbos, StringComparer.OrdinalIgnoreCase).ToList();
         if (pbosToDelete.Count > 0)
@@ -37,15 +40,16 @@ public sealed class UpdateOperation(
             WorkshopModDependencyFilesService.DeletePbosFromDependencies(pbosToDelete);
         }
 
-        var extensionFilesToDelete = (workshopMod.ExtensionFiles ?? []).Except(extensionFiles, StringComparer.OrdinalIgnoreCase).ToList();
-        if (extensionFilesToDelete.Count > 0)
+        var filesToDelete = (workshopMod.Extensions ?? []).Except(selectedExtensions, StringComparer.OrdinalIgnoreCase).ToList();
+        if (filesToDelete.Count > 0)
         {
-            WorkshopModDependencyFilesService.DeleteExtensionFilesFromDependencies(extensionFilesToDelete);
+            WorkshopModDependencyFilesService.DeleteExtensionsFromDependencies(filesToDelete);
         }
 
         workshopMod.Pbos = selectedPbos;
-        workshopMod.ExtensionFiles = extensionFiles;
+        workshopMod.Extensions = selectedExtensions;
         workshopMod.AvailablePbos = [];
+        workshopMod.AvailableExtensions = [];
 
         return Task.CompletedTask;
     }

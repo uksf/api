@@ -21,7 +21,12 @@ public class WorkshopModExecuteConsumer(
             context,
             context.Message.WorkshopModId,
             "Executing",
-            () => operation.ExecuteAsync(context.Message.WorkshopModId, context.Message.SelectedPbos, context.CancellationToken),
+            () => operation.ExecuteAsync(
+                context.Message.WorkshopModId,
+                context.Message.SelectedPbos,
+                context.Message.SelectedExtensions,
+                context.CancellationToken
+            ),
             result => context.Publish(new WorkshopModExecuteComplete { WorkshopModId = context.Message.WorkshopModId, FilesChanged = result.FilesChanged }),
             processingService,
             workshopModsContext,

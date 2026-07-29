@@ -27,7 +27,8 @@ public class WorkshopModCheckConsumer(
                 {
                     WorkshopModId = context.Message.WorkshopModId,
                     InterventionRequired = result.InterventionRequired,
-                    AvailablePbos = result.AvailablePbos
+                    AvailablePbos = result.AvailablePbos,
+                    AvailableExtensions = result.AvailableExtensions
                 }
             ),
             processingService,

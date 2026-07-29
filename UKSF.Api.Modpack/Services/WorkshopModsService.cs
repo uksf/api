@@ -15,7 +15,7 @@ public interface IWorkshopModsService
     Task RetryWorkshopMod(string workshopModId);
     Task UninstallWorkshopMod(string workshopModId);
     Task DeleteWorkshopMod(string workshopModId);
-    Task ResolveWorkshopModManualIntervention(string workshopModId, List<string> selectedPbos);
+    Task ResolveWorkshopModManualIntervention(string workshopModId, List<string> selectedPbos, List<string> selectedExtensions);
     List<DomainWorkshopMod> GetPendingReleaseMods();
 }
 
@@ -72,8 +72,9 @@ public class WorkshopModsService(
             existingMod.RootMod = rootMod;
             existingMod.FolderName = folderName;
             existingMod.Pbos = [];
-            existingMod.ExtensionFiles = [];
+            existingMod.Extensions = [];
             existingMod.AvailablePbos = [];
+            existingMod.AvailableExtensions = [];
             existingMod.StatusMessage = null;
             existingMod.ErrorMessage = null;
             existingMod.LastOperation = WorkshopModOperationType.Install;
@@ -176,8 +177,8 @@ public class WorkshopModsService(
         }
 
         var otherMods = workshopModsContext.Get().Where(x => x.SteamId != workshopModId && x.Status != WorkshopModStatus.Uninstalled).ToList();
-        var otherModFiles = otherMods.SelectMany(x => x.Pbos).Concat(otherMods.SelectMany(x => x.ExtensionFiles ?? []));
-        var modFiles = workshopMod.Pbos.Concat(workshopMod.ExtensionFiles ?? []);
+        var otherModFiles = otherMods.SelectMany(x => x.Pbos).Concat(otherMods.SelectMany(x => x.Extensions ?? []));
+        var modFiles = workshopMod.Pbos.Concat(workshopMod.Extensions ?? []);
         var conflicts = otherModFiles.Intersect(modFiles, StringComparer.OrdinalIgnoreCase).ToList();
         if (conflicts.Count != 0)
         {
@@ -195,7 +196,7 @@ public class WorkshopModsService(
         await publishEndpoint.Publish(new WorkshopModUninstallCommand { WorkshopModId = workshopModId });
     }
 
-    public async Task ResolveWorkshopModManualIntervention(string workshopModId, List<string> selectedPbos)
+    public async Task ResolveWorkshopModManualIntervention(string workshopModId, List<string> selectedPbos, List<string> selectedExtensions)
     {
         var workshopMod = workshopModsContext.GetSingle(x => x.SteamId == workshopModId);
         if (workshopMod == null)
@@ -208,12 +209,19 @@ public class WorkshopModsService(
             throw new BadRequestException($"Workshop mod does not require manual intervention: {workshopMod.Name}");
         }
 
-        if (selectedPbos == null || selectedPbos.Count == 0)
+        if ((selectedPbos == null || selectedPbos.Count == 0) && (selectedExtensions == null || selectedExtensions.Count == 0))
         {
-            throw new BadRequestException($"No PBOs selected to install for workshop mod with Steam ID {workshopModId}");
+            throw new BadRequestException($"Nothing selected to install for workshop mod with Steam ID {workshopModId}");
         }
 
-        await publishEndpoint.Publish(new WorkshopModInterventionResolved { WorkshopModId = workshopModId, SelectedPbos = selectedPbos });
+        await publishEndpoint.Publish(
+            new WorkshopModInterventionResolved
+            {
+                WorkshopModId = workshopModId,
+                SelectedPbos = selectedPbos ?? [],
+                SelectedExtensions = selectedExtensions ?? []
+            }
+        );
     }
 
     public async Task DeleteWorkshopMod(string workshopModId)

@@ -11,11 +11,11 @@ public interface IWorkshopModsProcessingService
     Task DownloadWithRetries(string workshopModId, int maxRetries = 2, CancellationToken cancellationToken = default);
     string GetWorkshopModPath(string workshopModId);
     List<string> GetPboFiles(string workshopModPath);
-    List<string> GetExtensionFiles(string workshopModPath);
+    List<string> GetExtensions(string workshopModPath);
     void CleanupWorkshopModFiles(string workshopModPath);
     Task QueueDevBuild(string workshopModName, WorkshopModStatus workshopModStatus);
     Task UpdateModStatus(DomainWorkshopMod workshopMod, WorkshopModStatus status, string message);
-    Task SetAvailablePbos(DomainWorkshopMod workshopMod, List<string> pbos);
+    Task SetAvailable(DomainWorkshopMod workshopMod, List<string> pbos, List<string> extensions);
 }
 
 public class WorkshopModsProcessingService(
@@ -27,7 +27,7 @@ public class WorkshopModsProcessingService(
     IUksfLogger logger
 ) : IWorkshopModsProcessingService
 {
-    private static readonly string[] ExtensionFileExtensions = [".dll", ".so"];
+    private const string AddonsFolderName = "addons";
 
     public async Task DownloadWithRetries(string workshopModId, int maxRetries = 2, CancellationToken cancellationToken = default)
     {
@@ -130,11 +130,18 @@ public class WorkshopModsProcessingService(
         return WorkshopModPaths.WorkshopMod(variablesService, workshopModId);
     }
 
+    /// <summary>PBOs are always in the mod's addons directory, so nothing outside it can be mistaken for one.</summary>
     public List<string> GetPboFiles(string workshopModPath)
     {
-        var pboFiles = fileSystemService.EnumerateFiles(workshopModPath, "*.pbo", SearchOption.AllDirectories).Select(Path.GetFileName).ToList();
+        var addonsPath = Path.Combine(workshopModPath, AddonsFolderName);
+        if (!fileSystemService.DirectoryExists(addonsPath))
+        {
+            return [];
+        }
 
-        var duplicates = pboFiles.GroupBy(f => f!, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        var pboFiles = fileSystemService.EnumerateFiles(addonsPath, "*.pbo", SearchOption.AllDirectories).Select(x => Path.GetFileName(x)!).ToList();
+
+        var duplicates = pboFiles.GroupBy(f => f, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
 
         if (duplicates.Count != 0)
         {
@@ -145,14 +152,12 @@ public class WorkshopModsProcessingService(
     }
 
     /// <summary>
-    ///     Extension binaries live in the root of a mod's folder rather than in addons, and Arma only loads them from there.
+    ///     Extension binaries, which sit in the mod root because that is the only place Arma loads them from. Everything else
+    ///     outside addons is the mod's own baggage and is left alone.
     /// </summary>
-    public List<string> GetExtensionFiles(string workshopModPath)
+    public List<string> GetExtensions(string workshopModPath)
     {
-        return fileSystemService.EnumerateFiles(workshopModPath, "*", SearchOption.TopDirectoryOnly)
-                                .Where(x => ExtensionFileExtensions.Contains(Path.GetExtension(x), StringComparer.OrdinalIgnoreCase))
-                                .Select(x => Path.GetFileName(x)!)
-                                .ToList();
+        return fileSystemService.EnumerateFiles(workshopModPath, "*.dll", SearchOption.TopDirectoryOnly).Select(x => Path.GetFileName(x)!).ToList();
     }
 
     public void CleanupWorkshopModFiles(string workshopModPath)
@@ -221,9 +226,10 @@ public class WorkshopModsProcessingService(
         await workshopModsContext.Replace(workshopMod);
     }
 
-    public async Task SetAvailablePbos(DomainWorkshopMod workshopMod, List<string> pbos)
+    public async Task SetAvailable(DomainWorkshopMod workshopMod, List<string> pbos, List<string> extensions)
     {
         workshopMod.AvailablePbos = pbos;
+        workshopMod.AvailableExtensions = extensions;
         await workshopModsContext.Replace(workshopMod);
     }
 }

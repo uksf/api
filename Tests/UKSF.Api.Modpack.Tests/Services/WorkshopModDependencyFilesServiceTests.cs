@@ -35,9 +35,10 @@ public class WorkshopModDependencyFilesServiceTests
     [Fact]
     public void CopyPbosToDependencies_ShouldCopySelectedPbosToBothRepos()
     {
-        var sourcePbo = Path.Combine(_workshopModPath, "addons", "selected.pbo");
-        _fileSystemService.Setup(x => x.EnumerateFiles(_workshopModPath, "*.pbo", SearchOption.AllDirectories))
-                          .Returns([sourcePbo, Path.Combine(_workshopModPath, "optionals", "other.pbo")]);
+        var addonsPath = Path.Combine(_workshopModPath, "addons");
+        var sourcePbo = Path.Combine(addonsPath, "selected.pbo");
+        _fileSystemService.Setup(x => x.EnumerateFiles(addonsPath, "*.pbo", SearchOption.AllDirectories))
+                          .Returns([sourcePbo, Path.Combine(addonsPath, "optional", "other.pbo")]);
 
         _subject.CopyPbosToDependencies(CreateWorkshopMod(), ["selected.pbo"]);
 
@@ -55,22 +56,27 @@ public class WorkshopModDependencyFilesServiceTests
     }
 
     [Fact]
-    public void CopyExtensionFilesToDependencies_ShouldCopyFromModRootToDependenciesRoot()
+    public void CopyExtensionsToDependencies_ShouldCopyFromModRootToDependenciesRoot()
     {
-        _subject.CopyExtensionFilesToDependencies(CreateWorkshopMod(), ["ctab_connect.dll", "ctab_connect_x64.dll"]);
+        _subject.CopyExtensionsToDependencies(CreateWorkshopMod(), ["ctab_connect.dll"]);
 
         var source = Path.Combine(_workshopModPath, "ctab_connect.dll");
-        var sourceX64 = Path.Combine(_workshopModPath, "ctab_connect_x64.dll");
         _fileSystemService.Verify(x => x.CopyFile(source, Path.Combine(_devDependenciesPath, "ctab_connect.dll"), true), Times.Once);
         _fileSystemService.Verify(x => x.CopyFile(source, Path.Combine(_rcDependenciesPath, "ctab_connect.dll"), true), Times.Once);
-        _fileSystemService.Verify(x => x.CopyFile(sourceX64, Path.Combine(_devDependenciesPath, "ctab_connect_x64.dll"), true), Times.Once);
-        _fileSystemService.Verify(x => x.CopyFile(sourceX64, Path.Combine(_rcDependenciesPath, "ctab_connect_x64.dll"), true), Times.Once);
     }
 
     [Fact]
-    public void CopyExtensionFilesToDependencies_WhenNoExtensionFiles_ShouldNotCopy()
+    public void CopyExtensionsToDependencies_ShouldNotTouchTheAddonsDirectory()
     {
-        _subject.CopyExtensionFilesToDependencies(CreateWorkshopMod(), []);
+        _subject.CopyExtensionsToDependencies(CreateWorkshopMod(), ["ctab_connect_x64.dll"]);
+
+        _fileSystemService.Verify(x => x.CopyFile(It.IsAny<string>(), It.Is<string>(destination => destination.Contains("addons")), true), Times.Never);
+    }
+
+    [Fact]
+    public void CopyExtensionsToDependencies_WhenNoFiles_ShouldNotCopy()
+    {
+        _subject.CopyExtensionsToDependencies(CreateWorkshopMod(), []);
 
         _fileSystemService.Verify(x => x.CopyFile(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
     }
@@ -97,22 +103,22 @@ public class WorkshopModDependencyFilesServiceTests
     }
 
     [Fact]
-    public void DeleteExtensionFilesFromDependencies_WhenFilesExist_ShouldDeleteFromDependenciesRoot()
+    public void DeleteExtensionsFromDependencies_WhenFilesExist_ShouldDeleteFromDependenciesRoot()
     {
         _fileSystemService.Setup(x => x.FileExists(It.IsAny<string>())).Returns(true);
 
-        _subject.DeleteExtensionFilesFromDependencies(["ctab_connect.dll"]);
+        _subject.DeleteExtensionsFromDependencies(["ctab_connect.dll"]);
 
         _fileSystemService.Verify(x => x.DeleteFile(Path.Combine(_devDependenciesPath, "ctab_connect.dll")), Times.Once);
         _fileSystemService.Verify(x => x.DeleteFile(Path.Combine(_rcDependenciesPath, "ctab_connect.dll")), Times.Once);
     }
 
     [Fact]
-    public void DeleteExtensionFilesFromDependencies_WhenFilesDoNotExist_ShouldNotDelete()
+    public void DeleteExtensionsFromDependencies_WhenFilesDoNotExist_ShouldNotDelete()
     {
         _fileSystemService.Setup(x => x.FileExists(It.IsAny<string>())).Returns(false);
 
-        _subject.DeleteExtensionFilesFromDependencies(["ctab_connect.dll"]);
+        _subject.DeleteExtensionsFromDependencies(["ctab_connect.dll"]);
 
         _fileSystemService.Verify(x => x.DeleteFile(It.IsAny<string>()), Times.Never);
     }

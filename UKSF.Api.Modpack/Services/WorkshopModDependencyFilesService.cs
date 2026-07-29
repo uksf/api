@@ -7,8 +7,8 @@ public interface IWorkshopModDependencyFilesService
 {
     void CopyPbosToDependencies(DomainWorkshopMod workshopMod, List<string> pbos, CancellationToken cancellationToken = default);
     void DeletePbosFromDependencies(List<string> pbos);
-    void CopyExtensionFilesToDependencies(DomainWorkshopMod workshopMod, List<string> extensionFiles, CancellationToken cancellationToken = default);
-    void DeleteExtensionFilesFromDependencies(List<string> extensionFiles);
+    void CopyExtensionsToDependencies(DomainWorkshopMod workshopMod, List<string> extensions, CancellationToken cancellationToken = default);
+    void DeleteExtensionsFromDependencies(List<string> extensions);
 }
 
 public class WorkshopModDependencyFilesService(IVariablesService variablesService, IFileSystemService fileSystemService) : IWorkshopModDependencyFilesService
@@ -18,7 +18,7 @@ public class WorkshopModDependencyFilesService(IVariablesService variablesServic
     public void CopyPbosToDependencies(DomainWorkshopMod workshopMod, List<string> pbos, CancellationToken cancellationToken = default)
     {
         var workshopModPath = WorkshopModPaths.WorkshopMod(variablesService, workshopMod.SteamId);
-        var pboPathsByName = fileSystemService.EnumerateFiles(workshopModPath, "*.pbo", SearchOption.AllDirectories)
+        var pboPathsByName = fileSystemService.EnumerateFiles(Path.Combine(workshopModPath, "addons"), "*.pbo", SearchOption.AllDirectories)
                                               .ToDictionary(path => Path.GetFileName(path)!, path => path, StringComparer.OrdinalIgnoreCase);
 
         CopyToRepos(pbos, name => pboPathsByName[name], WorkshopModPaths.DependenciesAddons, cancellationToken);
@@ -29,20 +29,17 @@ public class WorkshopModDependencyFilesService(IVariablesService variablesServic
         DeleteFromRepos(pbos, WorkshopModPaths.DependenciesAddons);
     }
 
-    /// <summary>
-    ///     Extension DLLs are loaded by Arma from the root of a mod folder, so they sit alongside the dependencies addons
-    ///     directory rather than inside it.
-    /// </summary>
-    public void CopyExtensionFilesToDependencies(DomainWorkshopMod workshopMod, List<string> extensionFiles, CancellationToken cancellationToken = default)
+    /// <summary>Extensions go to the root of the dependencies mod folder, the only place Arma loads them from.</summary>
+    public void CopyExtensionsToDependencies(DomainWorkshopMod workshopMod, List<string> extensions, CancellationToken cancellationToken = default)
     {
         var workshopModPath = WorkshopModPaths.WorkshopMod(variablesService, workshopMod.SteamId);
 
-        CopyToRepos(extensionFiles, name => Path.Combine(workshopModPath, name), WorkshopModPaths.Dependencies, cancellationToken);
+        CopyToRepos(extensions, name => Path.Combine(workshopModPath, name), WorkshopModPaths.Dependencies, cancellationToken);
     }
 
-    public void DeleteExtensionFilesFromDependencies(List<string> extensionFiles)
+    public void DeleteExtensionsFromDependencies(List<string> extensions)
     {
-        DeleteFromRepos(extensionFiles, WorkshopModPaths.Dependencies);
+        DeleteFromRepos(extensions, WorkshopModPaths.Dependencies);
     }
 
     private void CopyToRepos(

@@ -42,7 +42,12 @@ public sealed class UninstallOperation(
         return null;
     }
 
-    protected override Task ExecuteCoreAsync(DomainWorkshopMod workshopMod, List<string> selectedPbos, CancellationToken cancellationToken)
+    protected override Task ExecuteCoreAsync(
+        DomainWorkshopMod workshopMod,
+        List<string> selectedPbos,
+        List<string> selectedExtensions,
+        CancellationToken cancellationToken
+    )
     {
         ExecutionFilesChanged = false;
 
@@ -60,10 +65,10 @@ public sealed class UninstallOperation(
                 ExecutionFilesChanged = true;
             }
 
-            var extensionFilesToDelete = workshopMod.ExtensionFiles ?? [];
-            if (extensionFilesToDelete.Count > 0)
+            var filesToDelete = workshopMod.Extensions ?? [];
+            if (filesToDelete.Count > 0)
             {
-                WorkshopModDependencyFilesService.DeleteExtensionFilesFromDependencies(extensionFilesToDelete);
+                WorkshopModDependencyFilesService.DeleteExtensionsFromDependencies(filesToDelete);
                 ExecutionFilesChanged = true;
             }
         }
@@ -82,7 +87,8 @@ public sealed class UninstallOperation(
         }
 
         workshopMod.Pbos = [];
-        workshopMod.ExtensionFiles = [];
+        workshopMod.Extensions = [];
         workshopMod.AvailablePbos = [];
+        workshopMod.AvailableExtensions = [];
     }
 }

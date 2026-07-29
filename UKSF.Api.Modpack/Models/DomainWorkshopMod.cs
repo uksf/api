@@ -23,14 +23,18 @@ public class DomainWorkshopMod : MongoObject
     public string Name { get; set; }
     public bool RootMod { get; set; }
     public string FolderName { get; set; }
+
+    /// <summary>PBO file names taken from the mod's addons directory.</summary>
     public List<string> Pbos { get; set; } = [];
+
+    /// <summary>Extension DLL names taken from the mod root, kept so they can be removed again.</summary>
+    public List<string> Extensions { get; set; } = [];
+
     public List<string> AvailablePbos { get; set; } = [];
+    public List<string> AvailableExtensions { get; set; } = [];
     public DateTime LastUpdatedLocally { get; set; }
     public string ModpackVersionFirstAdded { get; set; }
     public string ModpackVersionLastUpdated { get; set; }
-
-    /// <summary>Extension binaries copied to the root of the dependencies mod folder, tracked so they can be removed again.</summary>
-    public List<string> ExtensionFiles { get; set; } = [];
 
     public WorkshopModStatus Status { get; set; }
     public string StatusMessage { get; set; }

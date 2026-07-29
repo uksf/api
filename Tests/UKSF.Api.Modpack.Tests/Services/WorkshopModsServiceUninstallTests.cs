@@ -84,7 +84,7 @@ public class WorkshopModsServiceUninstallTests
             Id = "mod-id",
             Name = "Test",
             Status = WorkshopModStatus.Installed,
-            ExtensionFiles = ["Shared_Extension.dll"],
+            Extensions = ["Shared_Extension.dll"],
             SteamId = "steam-id"
         };
         _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
@@ -97,7 +97,7 @@ public class WorkshopModsServiceUninstallTests
                 {
                     Id = "other-mod",
                     Status = WorkshopModStatus.Installed,
-                    ExtensionFiles = ["shared_extension.dll"],
+                    Extensions = ["shared_extension.dll"],
                     SteamId = "other-steam-id"
                 }
             }
@@ -139,7 +139,7 @@ public class WorkshopModsServiceUninstallTests
     {
         _context.Setup(x => x.GetSingle(It.IsAny<Func<DomainWorkshopMod, bool>>())).Returns((DomainWorkshopMod)null);
 
-        await Assert.ThrowsAsync<NotFoundException>(() => _subject.ResolveWorkshopModManualIntervention("missing", ["a"]));
+        await Assert.ThrowsAsync<NotFoundException>(() => _subject.ResolveWorkshopModManualIntervention("missing", ["a"], []));
     }
 
     [Fact]
@@ -153,11 +153,11 @@ public class WorkshopModsServiceUninstallTests
         };
         _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
 
-        await Assert.ThrowsAsync<BadRequestException>(() => _subject.ResolveWorkshopModManualIntervention("steam-id", ["a"]));
+        await Assert.ThrowsAsync<BadRequestException>(() => _subject.ResolveWorkshopModManualIntervention("steam-id", ["a"], []));
     }
 
     [Fact]
-    public async Task ResolveWorkshopModManualIntervention_WhenSelectedNull_ShouldThrowBadRequest()
+    public async Task ResolveWorkshopModManualIntervention_WhenNothingSelected_ShouldThrowBadRequest()
     {
         var workshopMod = new DomainWorkshopMod
         {
@@ -167,7 +167,7 @@ public class WorkshopModsServiceUninstallTests
         };
         _context.Setup(x => x.GetSingle(It.Is<Func<DomainWorkshopMod, bool>>(predicate => predicate(workshopMod)))).Returns(workshopMod);
 
-        await Assert.ThrowsAsync<BadRequestException>(() => _subject.ResolveWorkshopModManualIntervention("steam-id", null));
+        await Assert.ThrowsAsync<BadRequestException>(() => _subject.ResolveWorkshopModManualIntervention("steam-id", null, null));
     }
 
     [Fact]
