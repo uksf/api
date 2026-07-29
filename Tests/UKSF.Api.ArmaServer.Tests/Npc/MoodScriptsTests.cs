@@ -22,8 +22,15 @@ public class MoodScriptsTests
         {
             MoodScripts.Table.Should().ContainKey(mood);
             MoodScripts.Table[mood].EmoText.Should().NotBeNullOrWhiteSpace();
-            MoodScripts.Table[mood].Script.Should().NotBeNullOrWhiteSpace();
+            MoodScripts.Table[mood].Script.Should().Be(MoodScripts.Script);
         }
+    }
+
+    [Fact]
+    public void Every_mood_reads_the_same_script_so_only_delivery_differs()
+    {
+        MoodScripts.Table.Values.Select(x => x.Script).Distinct().Should().HaveCount(1);
+        MoodScripts.Table.Values.Select(x => x.EmoText).Distinct().Should().HaveCount(MoodScripts.Generated.Count);
     }
 
     [Theory]
