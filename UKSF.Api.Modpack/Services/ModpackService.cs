@@ -85,6 +85,11 @@ public class ModpackService(
             commit.Author = httpContextService.GetUserEmail();
         }
 
+        if (!string.IsNullOrEmpty(newBuild.Changes))
+        {
+            commit.Message = newBuild.Changes;
+        }
+
         var version = await githubService.GetReferenceVersion(newBuild.Reference);
         var build = await buildsService.CreateDevBuild(version, commit, newBuild);
         logger.LogAudit($"New build created ({GetBuildName(build)})");

@@ -8,54 +8,79 @@ namespace UKSF.Api.Modpack.Services;
 public interface ISteamApiService
 {
     Task<WorkshopModInfo> GetWorkshopModInfo(string workshopModId);
+    Task<Dictionary<string, WorkshopModInfo>> GetWorkshopModInfos(IReadOnlyCollection<string> workshopModIds);
 }
 
 public class SteamApiService(IHttpClientFactory httpClientFactory, IUksfLogger logger) : ISteamApiService
 {
     public async Task<WorkshopModInfo> GetWorkshopModInfo(string workshopModId)
     {
+        var infos = await GetWorkshopModInfos([workshopModId]);
+        if (!infos.TryGetValue(workshopModId, out var info))
+        {
+            throw new BadRequestException($"Workshop mod with Steam ID {workshopModId} not found");
+        }
+
+        return info;
+    }
+
+    public async Task<Dictionary<string, WorkshopModInfo>> GetWorkshopModInfos(IReadOnlyCollection<string> workshopModIds)
+    {
+        if (workshopModIds.Count == 0)
+        {
+            return [];
+        }
+
         using var client = httpClientFactory.CreateClient("Steam");
 
-        var formData = new Dictionary<string, string> { ["itemcount"] = "1", ["publishedfileids[0]"] = workshopModId };
-        var content = new FormUrlEncodedContent(formData);
+        var formData = new Dictionary<string, string> { ["itemcount"] = workshopModIds.Count.ToString() };
+        foreach (var (workshopModId, index) in workshopModIds.Select((id, index) => (id, index)))
+        {
+            formData[$"publishedfileids[{index}]"] = workshopModId;
+        }
 
+        var response = await client.PostAsync(
+            "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/",
+            new FormUrlEncodedContent(formData)
+        );
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadAsStringAsync();
         try
         {
-            var response = await client.PostAsync("https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/", content);
-            response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            if (root.TryGetProperty("response", out var resp) &&
-                resp.TryGetProperty("publishedfiledetails", out var detailsArray) &&
-                detailsArray.GetArrayLength() > 0)
+            using var document = JsonDocument.Parse(json);
+            if (!document.RootElement.TryGetProperty("response", out var responseElement) ||
+                !responseElement.TryGetProperty("publishedfiledetails", out var detailsArray))
             {
-                var item = detailsArray[0];
-
-                if (item.TryGetProperty("result", out var resultElement) && resultElement.GetInt32() != 1)
-                {
-                    throw new BadRequestException($"Workshop mod with Steam ID {workshopModId} not found");
-                }
-
-                if (item.TryGetProperty("title", out var titleElement) &&
-                    item.TryGetProperty("time_updated", out var tsElement) &&
-                    tsElement.TryGetInt64(out var unixTimestamp))
-                {
-                    return new WorkshopModInfo
-                    {
-                        Name = titleElement.GetString() ?? "NO NAME FOUND", UpdatedDate = DateTimeOffset.FromUnixTimeSeconds(unixTimestamp).UtcDateTime
-                    };
-                }
+                throw new Exception($"Failed getting info for workshop mods {string.Join(", ", workshopModIds)}");
             }
 
-            throw new Exception($"Failed getting info for workshop mod id {workshopModId}");
+            return detailsArray.EnumerateArray().Select(ReadWorkshopModInfo).Where(x => x is not null).ToDictionary(x => x!.Value.Key, x => x!.Value.Value);
         }
         catch (JsonException exception)
         {
-            logger.LogError($"Failed to parse JSON response for workshop mod id {workshopModId}", exception);
+            logger.LogError($"Failed to parse JSON response for workshop mods {string.Join(", ", workshopModIds)}", exception);
             throw;
         }
+    }
+
+    private static KeyValuePair<string, WorkshopModInfo>? ReadWorkshopModInfo(JsonElement item)
+    {
+        if (!item.TryGetProperty("publishedfileid", out var idElement) ||
+            (item.TryGetProperty("result", out var resultElement) && resultElement.GetInt32() != 1) ||
+            !item.TryGetProperty("title", out var titleElement) ||
+            !item.TryGetProperty("time_updated", out var updatedElement) ||
+            !updatedElement.TryGetInt64(out var unixTimestamp))
+        {
+            return null;
+        }
+
+        return new KeyValuePair<string, WorkshopModInfo>(
+            idElement.GetString()!,
+            new WorkshopModInfo
+            {
+                Name = titleElement.GetString() ?? "NO NAME FOUND", UpdatedDate = DateTimeOffset.FromUnixTimeSeconds(unixTimestamp).UtcDateTime
+            }
+        );
     }
 }

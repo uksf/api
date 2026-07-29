@@ -59,6 +59,8 @@ public static class ApiModpackExtensions
                            .AddTransient<IWorkshopModsService, WorkshopModsService>()
                            .AddSingleton<ISteamApiService, SteamApiService>()
                            .AddTransient<IWorkshopModsProcessingService, WorkshopModsProcessingService>()
+                           .AddTransient<IWorkshopModDependencyFilesService, WorkshopModDependencyFilesService>()
+                           .AddTransient<IWorkshopModRootFilesService, WorkshopModRootFilesService>()
                            .AddTransient<IInstallOperation, InstallOperation>()
                            .AddTransient<IUpdateOperation, UpdateOperation>()
                            .AddTransient<IUninstallOperation, UninstallOperation>();

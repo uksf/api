@@ -4,8 +4,13 @@ using UKSF.Api.Modpack.Services;
 
 namespace UKSF.Api.Modpack.WorkshopModProcessing.Operations;
 
-public sealed class UninstallOperation(IWorkshopModsContext workshopModsContext, IWorkshopModsProcessingService workshopModsProcessingService)
-    : WorkshopModOperationBase(workshopModsContext, workshopModsProcessingService), IUninstallOperation
+public sealed class UninstallOperation(
+    IWorkshopModsContext workshopModsContext,
+    IWorkshopModsProcessingService workshopModsProcessingService,
+    IWorkshopModDependencyFilesService workshopModDependencyFilesService,
+    IWorkshopModRootFilesService workshopModRootFilesService
+) : WorkshopModOperationBase(workshopModsContext, workshopModsProcessingService, workshopModDependencyFilesService, workshopModRootFilesService),
+    IUninstallOperation
 {
     private WorkshopModStatus _previousStatus;
     private bool _wasEverReleased;
@@ -43,7 +48,7 @@ public sealed class UninstallOperation(IWorkshopModsContext workshopModsContext,
 
         if (workshopMod.RootMod)
         {
-            WorkshopModsProcessingService.DeleteRootModFromRepos(workshopMod);
+            WorkshopModRootFilesService.DeleteRootModFromRepos(workshopMod);
             ExecutionFilesChanged = true;
         }
         else
@@ -51,7 +56,14 @@ public sealed class UninstallOperation(IWorkshopModsContext workshopModsContext,
             var pbosToDelete = workshopMod.Pbos ?? [];
             if (pbosToDelete.Count > 0)
             {
-                WorkshopModsProcessingService.DeletePbosFromDependencies(pbosToDelete);
+                WorkshopModDependencyFilesService.DeletePbosFromDependencies(pbosToDelete);
+                ExecutionFilesChanged = true;
+            }
+
+            var extensionFilesToDelete = workshopMod.ExtensionFiles ?? [];
+            if (extensionFilesToDelete.Count > 0)
+            {
+                WorkshopModDependencyFilesService.DeleteExtensionFilesFromDependencies(extensionFilesToDelete);
                 ExecutionFilesChanged = true;
             }
         }
@@ -70,6 +82,7 @@ public sealed class UninstallOperation(IWorkshopModsContext workshopModsContext,
         }
 
         workshopMod.Pbos = [];
+        workshopMod.ExtensionFiles = [];
         workshopMod.AvailablePbos = [];
     }
 }

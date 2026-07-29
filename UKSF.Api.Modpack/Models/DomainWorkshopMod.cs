@@ -28,7 +28,10 @@ public class DomainWorkshopMod : MongoObject
     public DateTime LastUpdatedLocally { get; set; }
     public string ModpackVersionFirstAdded { get; set; }
     public string ModpackVersionLastUpdated { get; set; }
-    public List<string> CustomFilesList { get; set; } = [];
+
+    /// <summary>Extension binaries copied to the root of the dependencies mod folder, tracked so they can be removed again.</summary>
+    public List<string> ExtensionFiles { get; set; } = [];
+
     public WorkshopModStatus Status { get; set; }
     public string StatusMessage { get; set; }
     public string ErrorMessage { get; set; }

@@ -38,7 +38,7 @@ public class WorkshopModsControllerTests
             ModpackVersionFirstAdded = "1.0.0",
             ModpackVersionLastUpdated = "1.1.0",
             Pbos = ["a.pbo"],
-            CustomFilesList = ["custom.txt"]
+            ExtensionFiles = ["extension.dll"]
         };
         _context.Setup(x => x.Get()).Returns([workshopMod]);
 
@@ -57,7 +57,7 @@ public class WorkshopModsControllerTests
         mapped.ModpackVersionFirstAdded.Should().Be("1.0.0");
         mapped.ModpackVersionLastUpdated.Should().Be("1.1.0");
         mapped.Pbos.Should().BeEquivalentTo("a.pbo");
-        mapped.CustomFilesList.Should().BeEquivalentTo("custom.txt");
+        mapped.ExtensionFiles.Should().BeEquivalentTo("extension.dll");
     }
 
     [Fact]
@@ -71,14 +71,15 @@ public class WorkshopModsControllerTests
     }
 
     [Fact]
-    public async Task GetWorkshopModUpdatedDate_ShouldReturnIsoString()
+    public async Task GetWorkshopModUpdatedDates_ShouldReturnIsoStringPerMod()
     {
         var updatedDate = new DateTime(2024, 2, 3, 4, 5, 6, DateTimeKind.Utc);
-        _service.Setup(x => x.GetWorkshopModUpdatedDate("123")).ReturnsAsync(updatedDate);
+        _service.Setup(x => x.GetWorkshopModUpdatedDates()).ReturnsAsync(new Dictionary<string, DateTime> { ["123"] = updatedDate });
 
-        var result = await _subject.GetWorkshopModUpdatedDate("123");
+        var result = await _subject.GetWorkshopModUpdatedDates();
 
-        result.UpdatedDate.Should().Be(updatedDate.ToString("o"));
+        result.Single().SteamId.Should().Be("123");
+        result.Single().UpdatedDate.Should().Be(updatedDate.ToString("o"));
     }
 
     [Fact]

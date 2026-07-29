@@ -31,6 +31,7 @@ public class SteamApiServiceTests
                    {
                        "response": {
                            "publishedfiledetails": [{
+                               "publishedfileid": "12345",
                                "result": 1,
                                "title": "Test Mod",
                                "time_updated": 1700000000
@@ -47,54 +48,55 @@ public class SteamApiServiceTests
     }
 
     [Fact]
-    public async Task GetWorkshopModInfo_ShouldThrowBadRequest_WhenModNotFound()
+    public async Task GetWorkshopModInfos_ShouldReturnEveryModInOneRequest()
     {
         var json = """
                    {
                        "response": {
-                           "publishedfiledetails": [{
-                               "result": 9
-                           }]
+                           "publishedfiledetails": [
+                               { "publishedfileid": "111", "result": 1, "title": "First", "time_updated": 1700000000 },
+                               { "publishedfileid": "222", "result": 1, "title": "Second", "time_updated": 1700000001 },
+                               { "publishedfileid": "333", "result": 9 }
+                           ]
                        }
                    }
                    """;
         SetupHttpResponse(json, HttpStatusCode.OK);
 
-        var act = () => _subject.GetWorkshopModInfo("99999");
+        var result = await _subject.GetWorkshopModInfos(["111", "222", "333"]);
 
-        await act.Should().ThrowAsync<BadRequestException>().WithMessage("*99999*not found*");
+        result.Should().HaveCount(2);
+        result["111"].Name.Should().Be("First");
+        result["222"].UpdatedDate.Should().Be(DateTimeOffset.FromUnixTimeSeconds(1700000001).UtcDateTime);
+        result.Should().NotContainKey("333");
     }
 
     [Fact]
-    public async Task GetWorkshopModInfo_ShouldThrow_WhenResponseMissingFields()
+    public async Task GetWorkshopModInfos_WithNoIds_ShouldReturnEmptyWithoutCallingSteam()
     {
-        var json = """
-                   {
-                       "response": {
-                           "publishedfiledetails": [{
-                               "result": 1
-                           }]
-                       }
-                   }
-                   """;
+        var result = await _subject.GetWorkshopModInfos([]);
+
+        result.Should().BeEmpty();
+        _mockHttpClientFactory.Verify(x => x.CreateClient(It.IsAny<string>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("""{ "response": { "publishedfiledetails": [{ "publishedfileid": "12345", "result": 9 }] } }""")]
+    [InlineData("""{ "response": { "publishedfiledetails": [{ "publishedfileid": "12345", "result": 1 }] } }""")]
+    [InlineData("""{ "response": { "publishedfiledetails": [] } }""")]
+    public async Task GetWorkshopModInfo_ShouldThrowBadRequest_WhenModDetailsUnusable(string json)
+    {
         SetupHttpResponse(json, HttpStatusCode.OK);
 
         var act = () => _subject.GetWorkshopModInfo("12345");
 
-        await act.Should().ThrowAsync<Exception>().WithMessage("*Failed getting info*");
+        await act.Should().ThrowAsync<BadRequestException>().WithMessage("*12345*not found*");
     }
 
     [Fact]
-    public async Task GetWorkshopModInfo_ShouldThrow_WhenEmptyResponse()
+    public async Task GetWorkshopModInfo_ShouldThrow_WhenResponseShapeUnexpected()
     {
-        var json = """
-                   {
-                       "response": {
-                           "publishedfiledetails": []
-                       }
-                   }
-                   """;
-        SetupHttpResponse(json, HttpStatusCode.OK);
+        SetupHttpResponse("""{ "response": {} }""", HttpStatusCode.OK);
 
         var act = () => _subject.GetWorkshopModInfo("12345");
 
@@ -129,6 +131,7 @@ public class SteamApiServiceTests
                    {
                        "response": {
                            "publishedfiledetails": [{
+                               "publishedfileid": "12345",
                                "result": 1,
                                "title": null,
                                "time_updated": 1700000000

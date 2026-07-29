@@ -9,7 +9,7 @@ namespace UKSF.Api.Modpack.Services;
 
 public interface IWorkshopModsService
 {
-    Task<DateTime> GetWorkshopModUpdatedDate(string workshopModId);
+    Task<Dictionary<string, DateTime>> GetWorkshopModUpdatedDates();
     Task InstallWorkshopMod(string workshopModId, bool rootMod, string folderName = null);
     Task UpdateWorkshopMod(string workshopModId);
     Task RetryWorkshopMod(string workshopModId);
@@ -35,10 +35,11 @@ public class WorkshopModsService(
                                   .ToList();
     }
 
-    public async Task<DateTime> GetWorkshopModUpdatedDate(string workshopModId)
+    public async Task<Dictionary<string, DateTime>> GetWorkshopModUpdatedDates()
     {
-        var info = await steamApiService.GetWorkshopModInfo(workshopModId);
-        return info.UpdatedDate;
+        var steamIds = workshopModsContext.Get().Select(x => x.SteamId).Distinct().ToList();
+        var infos = await steamApiService.GetWorkshopModInfos(steamIds);
+        return infos.ToDictionary(x => x.Key, x => x.Value.UpdatedDate);
     }
 
     public async Task InstallWorkshopMod(string workshopModId, bool rootMod, string folderName = null)
@@ -71,6 +72,7 @@ public class WorkshopModsService(
             existingMod.RootMod = rootMod;
             existingMod.FolderName = folderName;
             existingMod.Pbos = [];
+            existingMod.ExtensionFiles = [];
             existingMod.AvailablePbos = [];
             existingMod.StatusMessage = null;
             existingMod.ErrorMessage = null;
@@ -173,14 +175,15 @@ public class WorkshopModsService(
             throw new BadRequestException($"Workshop mod is already uninstalled: {workshopMod.Name}");
         }
 
-        var otherModPbos = workshopModsContext.Get()
-                                              .Where(x => x.SteamId != workshopModId && x.Status != WorkshopModStatus.Uninstalled)
-                                              .SelectMany(x => x.Pbos)
-                                              .ToList();
-        var conflicts = otherModPbos.Intersect(workshopMod.Pbos, StringComparer.OrdinalIgnoreCase).ToList();
+        var otherMods = workshopModsContext.Get().Where(x => x.SteamId != workshopModId && x.Status != WorkshopModStatus.Uninstalled).ToList();
+        var otherModFiles = otherMods.SelectMany(x => x.Pbos).Concat(otherMods.SelectMany(x => x.ExtensionFiles ?? []));
+        var modFiles = workshopMod.Pbos.Concat(workshopMod.ExtensionFiles ?? []);
+        var conflicts = otherModFiles.Intersect(modFiles, StringComparer.OrdinalIgnoreCase).ToList();
         if (conflicts.Count != 0)
         {
-            throw new BadRequestException($"Cannot uninstall mod '{workshopMod.Name}' because other mods depend on these PBOs: {string.Join(", ", conflicts)}");
+            throw new BadRequestException(
+                $"Cannot uninstall mod '{workshopMod.Name}' because other mods depend on these files: {string.Join(", ", conflicts)}"
+            );
         }
 
         workshopMod.Status = WorkshopModStatus.Uninstalling;

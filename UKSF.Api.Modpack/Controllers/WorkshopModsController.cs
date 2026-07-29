@@ -32,12 +32,12 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
         return MapToResponse(workshopMod);
     }
 
-    [HttpGet("{workshopModId}/updatedDate")]
+    [HttpGet("updatedDates")]
     [Permissions(Permissions.Member)]
-    public async Task<WorkshopModUpdatedDateResponse> GetWorkshopModUpdatedDate([FromRoute] string workshopModId)
+    public async Task<List<WorkshopModUpdatedDateResponse>> GetWorkshopModUpdatedDates()
     {
-        var updatedDate = await workshopModsService.GetWorkshopModUpdatedDate(workshopModId);
-        return new WorkshopModUpdatedDateResponse { UpdatedDate = updatedDate.ToString("o") };
+        var updatedDates = await workshopModsService.GetWorkshopModUpdatedDates();
+        return updatedDates.Select(x => new WorkshopModUpdatedDateResponse { SteamId = x.Key, UpdatedDate = x.Value.ToString("o") }).ToList();
     }
 
     [HttpPost]
@@ -99,7 +99,7 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
             ModpackVersionLastUpdated = mod.ModpackVersionLastUpdated,
             Pbos = mod.Pbos,
             AvailablePbos = mod.AvailablePbos,
-            CustomFilesList = mod.CustomFilesList
+            ExtensionFiles = mod.ExtensionFiles
         };
     }
 }
@@ -134,8 +134,6 @@ public class WorkshopModsController(IWorkshopModsService workshopModsService, IW
  * - mods should be deletable from the list. when a mod is deleted, does it show in the list until the next release?
  * - the mod list should show when an update is available. mods that are updated are updated in the next release by being moved to RC.
  * - deleting a mod should check for the same pbos in other mods that if deleted would cause issues
- * - what if the mod has more than just pbos? like dlls? don't handle, throw a warning when adding mod that there are custom files to handle. let admin handle.
- * - what if we want the mod to be at the modpack root? for example CBA and CUP. handle later
  *
  * 2 is more useful than 1. 1 is easier to build. build 2 first.
  *

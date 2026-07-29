@@ -4,8 +4,13 @@ using UKSF.Api.Modpack.Services;
 
 namespace UKSF.Api.Modpack.WorkshopModProcessing.Operations;
 
-public sealed class InstallOperation(IWorkshopModsContext workshopModsContext, IWorkshopModsProcessingService workshopModsProcessingService)
-    : WorkshopModOperationBase(workshopModsContext, workshopModsProcessingService), IInstallOperation
+public sealed class InstallOperation(
+    IWorkshopModsContext workshopModsContext,
+    IWorkshopModsProcessingService workshopModsProcessingService,
+    IWorkshopModDependencyFilesService workshopModDependencyFilesService,
+    IWorkshopModRootFilesService workshopModRootFilesService
+) : WorkshopModOperationBase(workshopModsContext, workshopModsProcessingService, workshopModDependencyFilesService, workshopModRootFilesService),
+    IInstallOperation
 {
     protected override WorkshopModStatus ActiveStatus => WorkshopModStatus.Installing;
     protected override string CancelPrefix => "Install";
@@ -13,17 +18,23 @@ public sealed class InstallOperation(IWorkshopModsContext workshopModsContext, I
     protected override string CompletedMessage => "Installed pending next modpack release";
     protected override string ActiveStatusMessage => "Installing...";
 
-    protected override async Task ExecuteCoreAsync(DomainWorkshopMod workshopMod, List<string> selectedPbos, CancellationToken cancellationToken)
+    protected override Task ExecuteCoreAsync(DomainWorkshopMod workshopMod, List<string> selectedPbos, CancellationToken cancellationToken)
     {
         if (workshopMod.RootMod)
         {
-            await WorkshopModsProcessingService.CopyRootModToRepos(workshopMod, cancellationToken);
+            ExecutionFilesChanged = WorkshopModRootFilesService.SyncRootModToRepos(workshopMod);
+            return Task.CompletedTask;
         }
-        else
-        {
-            await WorkshopModsProcessingService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
-            workshopMod.Pbos = selectedPbos;
-            workshopMod.AvailablePbos = [];
-        }
+
+        var extensionFiles = WorkshopModsProcessingService.GetExtensionFiles(WorkshopModsProcessingService.GetWorkshopModPath(workshopMod.SteamId));
+
+        WorkshopModDependencyFilesService.CopyPbosToDependencies(workshopMod, selectedPbos, cancellationToken);
+        WorkshopModDependencyFilesService.CopyExtensionFilesToDependencies(workshopMod, extensionFiles, cancellationToken);
+
+        workshopMod.Pbos = selectedPbos;
+        workshopMod.ExtensionFiles = extensionFiles;
+        workshopMod.AvailablePbos = [];
+
+        return Task.CompletedTask;
     }
 }

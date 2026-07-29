@@ -4,11 +4,17 @@ using UKSF.Api.Modpack.Services;
 
 namespace UKSF.Api.Modpack.WorkshopModProcessing.Operations;
 
-public abstract class WorkshopModOperationBase(IWorkshopModsContext workshopModsContext, IWorkshopModsProcessingService workshopModsProcessingService)
-    : IModOperation
+public abstract class WorkshopModOperationBase(
+    IWorkshopModsContext workshopModsContext,
+    IWorkshopModsProcessingService workshopModsProcessingService,
+    IWorkshopModDependencyFilesService workshopModDependencyFilesService,
+    IWorkshopModRootFilesService workshopModRootFilesService
+) : IModOperation
 {
     protected readonly IWorkshopModsContext WorkshopModsContext = workshopModsContext;
     protected readonly IWorkshopModsProcessingService WorkshopModsProcessingService = workshopModsProcessingService;
+    protected readonly IWorkshopModDependencyFilesService WorkshopModDependencyFilesService = workshopModDependencyFilesService;
+    protected readonly IWorkshopModRootFilesService WorkshopModRootFilesService = workshopModRootFilesService;
 
     protected abstract WorkshopModStatus ActiveStatus { get; }
     protected abstract string CancelPrefix { get; }
@@ -62,12 +68,17 @@ public abstract class WorkshopModOperationBase(IWorkshopModsContext workshopMods
 
             var workshopModPath = WorkshopModsProcessingService.GetWorkshopModPath(workshopMod.SteamId);
             var currentPbos = workshopMod.Pbos ?? [];
-            var pbos = WorkshopModsProcessingService.GetModFiles(workshopModPath);
+            var pbos = WorkshopModsProcessingService.GetPboFiles(workshopModPath);
+            if (pbos.Count == 0 && WorkshopModsProcessingService.GetExtensionFiles(workshopModPath).Count == 0)
+            {
+                throw new InvalidOperationException($"No PBO or extension files found in {workshopModPath}");
+            }
+
             var pbosChanged = !currentPbos.OrderBy(x => x).SequenceEqual(pbos.OrderBy(x => x));
 
             if (pbosChanged)
             {
-                await WorkshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.InterventionRequired, "Select PBOs to install");
+                await WorkshopModsProcessingService.UpdateModStatus(workshopMod, WorkshopModStatus.InterventionRequired, "Select files to install");
             }
 
             await WorkshopModsProcessingService.SetAvailablePbos(workshopMod, pbos);
