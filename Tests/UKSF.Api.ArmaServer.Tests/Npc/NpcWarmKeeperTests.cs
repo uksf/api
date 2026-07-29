@@ -29,10 +29,7 @@ public class NpcWarmKeeperTests
 
         await keeper.TickAsync();
 
-        clacks.Verify(
-            x => x.WarmAsync(It.Is<IReadOnlyCollection<string>>(r => r.Contains("qwen3.5-9b") && r.Contains("pockettts")), NpcWarmKeeper.LeaseMs),
-            Times.Once
-        );
+        clacks.Verify(x => x.WarmAsync(It.Is<IReadOnlyCollection<string>>(r => r.Contains("pockettts")), NpcWarmKeeper.LeaseMs), Times.Once);
     }
 
     [Fact]

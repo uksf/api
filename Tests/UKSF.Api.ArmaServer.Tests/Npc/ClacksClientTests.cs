@@ -38,21 +38,25 @@ public class ClacksClientTests
     }
 
     [Fact]
-    public async Task ChatAsync_PostsRoleSystemUserAndParsesResult()
+    public async Task ChatAsync_PostsModelSystemUserAndParsesResult()
     {
-        var (client, sent) = Build(HttpStatusCode.OK, "{\"text\":\"Get back.\",\"node\":\"server\",\"model\":\"qwen2.5-3b\",\"ms\":1400}");
+        var (client, sent) = Build(
+            HttpStatusCode.OK,
+            "{\"model\":\"gpt-5.6-luna\",\"choices\":[{\"message\":{\"content\":\"Get back.\"}}],\"_clacks\":{\"node\":\"server\",\"ms\":1400}}"
+        );
         var result = await client.ChatAsync("npc", "SYS", "USR", json: true, maxTokens: 80, temperature: 0.7);
 
         result.Text.Should().Be("Get back.");
         result.Node.Should().Be("server");
-        result.Model.Should().Be("qwen2.5-3b");
+        result.Model.Should().Be("gpt-5.6-luna");
 
         sent.Should().HaveCount(1);
         sent[0].RequestUri.ToString().Should().Be("http://dedi-ts:8800/v1/chat/completions");
         var body = JsonDocument.Parse(await sent[0].Content.ReadAsStringAsync());
-        body.RootElement.GetProperty("model").GetString().Should().Be("qwen3.5-9b");
+        body.RootElement.GetProperty("model").GetString().Should().Be("luna");
+        body.RootElement.GetProperty("effort").GetString().Should().Be("low");
         var fallbacks = body.RootElement.GetProperty("fallbacks").EnumerateArray().Select(e => e.GetString()).ToArray();
-        fallbacks.Should().Equal("qwen3.5-9b-npc", "haiku");
+        fallbacks.Should().Equal("qwen3.5-9b", "qwen3.5-9b-npc", "haiku");
         var messages = body.RootElement.GetProperty("messages").EnumerateArray().ToArray();
         messages[0].GetProperty("content").GetString().Should().Be("SYS");
         messages[1].GetProperty("content").GetString().Should().Be("USR");

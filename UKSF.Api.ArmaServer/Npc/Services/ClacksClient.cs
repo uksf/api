@@ -25,7 +25,9 @@ public class V1ChatResponse
 {
     public string Model { get; set; }
     public List<V1Choice> Choices { get; set; }
-    [JsonPropertyName("_clacks")] public V1Clacks Clacks { get; set; }
+
+    [JsonPropertyName("_clacks")]
+    public V1Clacks Clacks { get; set; }
 }
 
 public class V1Choice
@@ -102,6 +104,7 @@ public class ClacksClient(IHttpClientFactory httpClientFactory, IVariablesServic
                 new
                 {
                     model = ClacksCandidates.NpcChatModel,
+                    effort = ClacksCandidates.NpcChatEffort,
                     fallbacks = ClacksCandidates.NpcChatFallbacks,
                     messages = new[] { new { role = "system", content = system }, new { role = "user", content = user } },
                     json,

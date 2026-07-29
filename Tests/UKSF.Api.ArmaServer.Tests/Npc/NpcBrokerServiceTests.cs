@@ -165,10 +165,7 @@ public class NpcBrokerServiceTests
     {
         await _sut.HandleRegisterAsync(5006, MakeRegisterData());
 
-        _clacks.Verify(
-            x => x.WarmAsync(It.Is<IReadOnlyCollection<string>>(r => r.Contains("qwen3.5-9b") && r.Contains("pockettts")), NpcWarmKeeper.LeaseMs),
-            Times.Once
-        );
+        _clacks.Verify(x => x.WarmAsync(It.Is<IReadOnlyCollection<string>>(r => r.Contains("pockettts")), NpcWarmKeeper.LeaseMs), Times.Once);
     }
 
     [Fact]
