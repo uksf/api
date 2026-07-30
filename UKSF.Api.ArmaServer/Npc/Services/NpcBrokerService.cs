@@ -33,7 +33,10 @@ public partial class NpcBrokerService(
     private const string DeflectionId = "__deflection__";
     private const int HistoryLimit = 40;
 
-    private static readonly (string Id, string Text)[] Fillers = [("f0", "hmm"), ("f1", "let me think"), ("f2", "give me a sec"), ("f3", "hold on")];
+    // Non-lexical only. A worded filler ("let me think") commits the NPC to a stance
+    // before the brain has one, and repeats badly; a noise reads as thinking and
+    // survives being heard many times per session.
+    private static readonly (string Id, string Text)[] Fillers = [("f0", "Hmm."), ("f1", "Uhh..."), ("f2", "Umm..."), ("f3", "Hm, ah.")];
 
     public async Task HandleRegisterAsync(int apiPort, Dictionary<string, object> data)
     {
