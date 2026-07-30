@@ -33,15 +33,15 @@ public class NpcHistoryBudgetTests
     {
         var trimmed = NpcHistoryBudget.Trim(Entries(40, 500));
 
-        trimmed.Should().HaveCount(12); // 6000 char budget / 500 per entry
+        trimmed.Should().HaveCount(20); // 10000 char budget / 500 per entry
         trimmed.Last().Text.Should().StartWith("39"); // newest survives
-        trimmed.First().Text.Should().StartWith("28");
+        trimmed.First().Text.Should().StartWith("20");
     }
 
     [Fact]
     public void Keeps_The_Newest_Entry_Even_When_It_Alone_Exceeds_The_Budget()
     {
-        var trimmed = NpcHistoryBudget.Trim(Entries(3, 4000));
+        var trimmed = NpcHistoryBudget.Trim(Entries(3, 12000));
 
         trimmed.Should().ContainSingle();
         trimmed[0].Text.Should().StartWith("2");

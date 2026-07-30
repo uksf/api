@@ -5,13 +5,14 @@ namespace UKSF.Api.ArmaServer.Npc.Services;
 
 /// Bounds the conversation sent to the brain.
 ///
-/// A player can keep talking to an NPC for as long as they like, and every exchange is
-/// kept, so without a ceiling the prompt grows for the whole mission and each reply gets
-/// slower than the last. The stored history keeps its full depth; only the slice handed
-/// to the brain is trimmed, newest first, so the NPC always has the recent thread.
+/// A player can keep talking to an NPC for as long as they like and every exchange is kept,
+/// so the prompt needs a ceiling or it grows for the whole mission. Measured against the
+/// live brain, reply latency is flat from 500 to 6000 tokens of prompt — length is not what
+/// costs the time — so the ceiling is set for memory depth rather than speed, and only the
+/// oldest exchanges fall off. The stored history keeps its full depth regardless.
 public static class NpcHistoryBudget
 {
-    public const int MaxChars = 6000;
+    public const int MaxChars = 10000;
 
     public static List<NpcHistoryEntry> Trim(List<NpcHistoryEntry> history, int maxChars = MaxChars)
     {
