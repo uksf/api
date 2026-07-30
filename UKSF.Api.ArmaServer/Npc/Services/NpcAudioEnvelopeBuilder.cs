@@ -16,6 +16,16 @@ public static class NpcAudioEnvelopeBuilder
         BuildFiller(string npcId, string voiceId, string fillerId, string audioBase64, long durationMs, int chunkSize = DefaultChunkSize) =>
         BuildChunked("npc_filler", [Quote(npcId), Quote(voiceId), Quote(fillerId)], audioBase64, durationMs, chunkSize);
 
+    /// One streamed PCM frame for a dynamic turn. Unlike npc_audio there is no fixed
+    /// total — the client appends frames to an open clip until npc_audio_end. `seq`
+    /// orders frames; `pcm` is base64 raw i16 LE at 24 kHz mono (~750 ms per frame).
+    public static string BuildAudioFrame(string npcId, string turnId, int seq, string pcm) =>
+        $"[\"npc_audio_frame\",{Quote(npcId)},{Quote(turnId)},{seq},\"{pcm}\"]";
+
+    /// Close a streamed turn. The client stops expecting frames and lets the clip
+    /// finish naturally once its queue drains.
+    public static string BuildAudioEnd(string npcId, string turnId) => $"[\"npc_audio_end\",{Quote(npcId)},{Quote(turnId)}]";
+
     private static List<string> BuildChunked(string type, string[] leadingFields, string audioBase64, long durationMs, int chunkSize)
     {
         var chunks = Chunk(audioBase64, chunkSize);

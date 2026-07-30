@@ -430,15 +430,17 @@ public class NpcBrokerServiceTests
             new RespondResult
             {
                 Text = "go away",
-                LineId = null,
-                AudioBase64 = "QQ==",
-                DurationMs = 900
+                Mood = "neutral",
+                VoiceId = "bm_george"
             }
         );
+        _clacks.Setup(x => x.SpeakStreamAsync("npc-voice", "go away", "bm_george", It.IsAny<Func<string, Task>>()))
+               .Returns(async (string r, string t, string v, Func<string, Task> onFrame) => await onFrame("QQ=="));
 
         await _sut.HandleTurnAsync(5006, MakeTurnData());
 
-        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio") && s.Contains("turn7"))), Times.AtLeastOnce);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_frame") && s.Contains("turn7"))), Times.Once);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_end") && s.Contains("turn7"))), Times.Once);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
             Times.Once
@@ -619,7 +621,7 @@ public class NpcBrokerServiceTests
     }
 
     [Fact]
-    public async Task HandleTurnAsync_DynamicTurn_ArchivesTheClipByTurnId()
+    public async Task HandleTurnAsync_DynamicTurn_StreamsFramesThenEnd()
     {
         _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeDynamicSession());
         _brainClient.Setup(x => x.RespondAsync(It.IsAny<RespondRequest>()))
@@ -627,18 +629,27 @@ public class NpcBrokerServiceTests
             new RespondResult
             {
                 Text = "go away",
-                AudioBase64 = "QQ==",
-                DurationMs = 900
+                Mood = "neutral",
+                VoiceId = "bm_george"
             }
         );
+        _clacks.Setup(x => x.SpeakStreamAsync("npc-voice", "go away", "bm_george", It.IsAny<Func<string, Task>>()))
+               .Returns(async (string r, string t, string v, Func<string, Task> onFrame) =>
+                   {
+                       await onFrame("QQ==");
+                       await onFrame("Qg==");
+                   }
+               );
 
         await _sut.HandleTurnAsync(5006, MakeTurnData());
 
-        _audioStore.Verify(x => x.SaveAsync("session1", "npc1", "turn7", It.IsAny<byte[]>()), Times.Once);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_frame") && s.Contains("turn7"))), Times.Exactly(2));
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_end") && s.Contains("turn7"))), Times.Once);
+        _audioStore.Verify(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()), Times.Never);
     }
 
     [Fact]
-    public async Task HandleTurnAsync_DynamicTurn_ArchiveFailureDoesNotBlockHistory()
+    public async Task HandleTurnAsync_DynamicTurn_StreamFailureDoesNotBlockHistory()
     {
         _sessionsContext.Setup(x => x.GetSingle(It.IsAny<Func<DomainNpcSession, bool>>())).Returns(MakeDynamicSession());
         _brainClient.Setup(x => x.RespondAsync(It.IsAny<RespondRequest>()))
@@ -646,16 +657,16 @@ public class NpcBrokerServiceTests
             new RespondResult
             {
                 Text = "go away",
-                AudioBase64 = "QQ==",
-                DurationMs = 900
+                Mood = "neutral",
+                VoiceId = "bm_george"
             }
         );
-        _audioStore.Setup(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<byte[]>()))
-                   .ThrowsAsync(new IOException("disk full"));
+        _clacks.Setup(x => x.SpeakStreamAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Func<string, Task>>()))
+               .ThrowsAsync(new IOException("mesh down"));
 
         await _sut.HandleTurnAsync(5006, MakeTurnData());
 
-        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio"))), Times.AtLeastOnce);
+        _commandSender.Verify(x => x.SendCommandAsync(5006, It.Is<string>(s => s.Contains("npc_audio_end"))), Times.Once);
         _sessionsContext.Verify(
             x => x.Update(It.IsAny<Expression<Func<DomainNpcSession, bool>>>(), It.IsAny<UpdateDefinition<DomainNpcSession>>()),
             Times.Once

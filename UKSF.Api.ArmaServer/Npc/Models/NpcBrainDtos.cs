@@ -34,6 +34,11 @@ public class RespondRequest
     public string VoiceId { get; set; } = string.Empty;
     public List<NpcHistoryEntry> History { get; set; } = [];
     public List<NpcTurnDto> NewTurns { get; set; } = [];
+
+    /// When set, the brain returns text and mood without synthesising audio; the
+    /// caller streams the line itself. Used by the dynamic streaming turn.
+    public bool TextOnly { get; set; }
+
     public string Provider { get; set; }
 }
 
@@ -45,6 +50,10 @@ public class RespondResult
     public long? DurationMs { get; set; }
     public string Provider { get; set; } = string.Empty;
     public string Mood { get; set; } = "neutral";
+
+    /// Resolved voice for this turn ({base} or {base}_{mood}). Set when TextOnly
+    /// asks the brain to skip synthesis so the caller can stream the line itself.
+    public string VoiceId { get; set; }
 }
 
 public class PrerenderItem

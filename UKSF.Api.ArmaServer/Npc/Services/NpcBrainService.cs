@@ -66,6 +66,22 @@ public class NpcBrainService(IClacksClient clacksClient, INpcVoicesContext voice
 
         var (mood, body) = NpcReplyCleaner.ExtractMood(result.Text);
         var cleanText = NpcReplyCleaner.Clean(body);
+        if (request.TextOnly)
+        {
+            // The caller streams the line itself (dynamic streaming turn). Return
+            // text, mood and the resolved voiceId; no audio is synthesised here.
+            return new RespondResult
+            {
+                Text = cleanText,
+                LineId = null,
+                AudioBase64 = null,
+                DurationMs = null,
+                Provider = provider,
+                Mood = mood,
+                VoiceId = ResolveVoiceId(request.VoiceId, mood)
+            };
+        }
+
         var voiceId = ResolveVoiceId(request.VoiceId, mood);
         var speech = cleanText.Length == 0 ? null : await clacksClient.SpeakAsync("npc-voice", cleanText, voiceId);
         if (speech is null) logger.LogWarning($"NPC speak failed for npcId '{request.NpcId}' — turn will be silent");

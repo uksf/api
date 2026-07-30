@@ -18,7 +18,8 @@ public interface INpcBrokerService
     Task HandleMissionEndedAsync(string sessionId);
 }
 
-public class NpcBrokerService(
+// Turn-serving helpers (scripted clip + dynamic stream) live in NpcBrokerService.Turns.cs.
+public partial class NpcBrokerService(
     INpcSessionsContext sessionsContext,
     INpcAudioClipsContext clipsContext,
     INpcBrainClient brainClient,
@@ -225,16 +226,18 @@ public class NpcBrokerService(
 
         if (parsedTurns.Count == 0) return;
 
+        var scripted = session.Mode == "scripted";
         var request = new RespondRequest
         {
             NpcId = npcId,
             Persona = session.Persona,
             Knowledge = session.Knowledge,
             Mode = session.Mode,
-            Scripted = session.Mode == "scripted" ? new NpcScriptedDto { Lines = session.Scripted.Lines, Deflection = session.Scripted.Deflection } : null,
+            Scripted = scripted ? new NpcScriptedDto { Lines = session.Scripted.Lines, Deflection = session.Scripted.Deflection } : null,
             VoiceId = session.VoiceId,
             History = session.History,
-            NewTurns = parsedTurns
+            NewTurns = parsedTurns,
+            TextOnly = !scripted // dynamic turns stream; the brain returns text + mood only
         };
 
         var result = await brainClient.RespondAsync(request);
@@ -244,57 +247,13 @@ public class NpcBrokerService(
             return;
         }
 
-        string audioBase64;
-        long durationMs;
-
-        if (session.Mode == "scripted")
+        if (scripted)
         {
-            var lineId = string.IsNullOrEmpty(result.LineId) ? DeflectionId : result.LineId;
-            var clip = clipsContext.GetSingle(x => x.SessionId == session.SessionId && x.NpcId == npcId && x.ClipId == lineId);
-            if (clip is null)
-            {
-                logger.LogWarning($"npc_turn: scripted clip not found for voiceId='{session.VoiceId}', lineId='{lineId}'");
-                return;
-            }
-
-            var bytes = await audioStore.ReadAsync(clip.FilePath);
-            if (bytes is null)
-            {
-                logger.LogWarning($"npc_turn: scripted clip file missing '{clip.FilePath}' for lineId '{lineId}'");
-                return;
-            }
-
-            audioBase64 = Convert.ToBase64String(bytes);
-            durationMs = clip.DurationMs;
+            await SendScriptedClip(apiPort, session, npcId, turnId, result);
         }
         else
         {
-            if (string.IsNullOrEmpty(result.AudioBase64))
-            {
-                logger.LogWarning($"npc_turn: dynamic response had no audio for npcId '{npcId}'");
-                return;
-            }
-
-            audioBase64 = result.AudioBase64;
-            durationMs = result.DurationMs ?? 0;
-        }
-
-        foreach (var cmd in NpcAudioEnvelopeBuilder.BuildAudio(npcId, turnId, audioBase64, durationMs))
-        {
-            await commandSender.SendCommandAsync(apiPort, cmd);
-        }
-
-        if (session.Mode != "scripted")
-        {
-            // Archive is best-effort — players already heard the clip.
-            try
-            {
-                await audioStore.SaveAsync(sessionId, npcId, turnId, Convert.FromBase64String(audioBase64));
-            }
-            catch (Exception exception)
-            {
-                logger.LogError($"npc_turn: dynamic clip archive failed for turnId '{turnId}'", exception);
-            }
+            await StreamDynamicTurn(apiPort, npcId, turnId, result);
         }
 
         var newEntries = new List<NpcHistoryEntry>();
