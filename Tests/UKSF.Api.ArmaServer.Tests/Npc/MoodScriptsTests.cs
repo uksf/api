@@ -8,11 +8,13 @@ namespace UKSF.Api.ArmaServer.Tests.Npc;
 public class MoodScriptsTests
 {
     [Fact]
-    public void All_moods_are_neutral_plus_the_four_generated()
+    public void Every_mood_including_neutral_is_generated()
     {
         MoodScripts.All.Should().BeEquivalentTo(["neutral", "angry", "afraid", "sad", "happy"]);
-        MoodScripts.Generated.Should().BeEquivalentTo(["angry", "afraid", "sad", "happy"]);
-        MoodScripts.Generated.Should().NotContain(MoodScripts.Neutral);
+
+        // neutral is rendered by the same engine as the moods, from the same seed, so a
+        // player never hears one engine for neutral and another the moment a mood turns.
+        MoodScripts.Generated.Should().Contain(MoodScripts.Neutral);
     }
 
     [Fact]

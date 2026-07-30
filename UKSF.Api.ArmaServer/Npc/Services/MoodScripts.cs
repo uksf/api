@@ -34,8 +34,14 @@ public static class MoodScripts
                                  "Keep the radio on and tell me what you find when you get there.";
 
     // emoText = IndexTTS-2 natural-language emotion description, the only thing that varies.
+    //
+    // neutral is generated like any other mood. The uploaded sample is only ever a seed now:
+    // using it directly for neutral meant neutral came from one engine and every mood from
+    // another, and the NPC did not merely change timbre between them, he changed person.
+    // Every mood a player hears is the same engine's rendering of the same seed.
     public static readonly IReadOnlyDictionary<string, Entry> Table = new Dictionary<string, Entry>
     {
+        [Neutral] = new("calm, even and matter-of-fact", Script),
         ["angry"] = new("furious, harsh and contemptuous", Script),
         ["afraid"] = new("panicked, fearful and trembling", Script),
         ["sad"] = new("grief-stricken, sorrowful and weary", Script),
@@ -43,7 +49,7 @@ public static class MoodScripts
     };
 
     public static readonly IReadOnlyList<string> Generated = Table.Keys.ToList();
-    public static readonly IReadOnlyList<string> All = new[] { Neutral }.Concat(Generated).ToList();
+    public static readonly IReadOnlyList<string> All = Generated;
 
     public static bool IsValid(string mood) => All.Contains(mood);
 }

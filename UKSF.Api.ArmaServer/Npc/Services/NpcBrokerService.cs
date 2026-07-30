@@ -26,6 +26,7 @@ public partial class NpcBrokerService(
     IClacksClient clacksClient,
     IGameServerCommandSender commandSender,
     INpcAudioStore audioStore,
+    INpcVoicesContext voicesContext,
     IVariablesService variablesService,
     IUksfLogger logger
 ) : INpcBrokerService
@@ -36,7 +37,10 @@ public partial class NpcBrokerService(
     // Non-lexical only. A worded filler ("let me think") commits the NPC to a stance
     // before the brain has one, and repeats badly; a noise reads as thinking and
     // survives being heard many times per session.
-    private static readonly (string Id, string Text)[] Fillers = [("f0", "Hmm."), ("f1", "Uhh..."), ("f2", "Umm..."), ("f3", "Hm, ah.")];
+    private static readonly (string Id, string Text)[] Fillers =
+    [
+        ("f0", "Hmm."), ("f1", "Uhh..."), ("f2", "Umm..."), ("f3", "Hm, ah."), ("f4", "Ah..."), ("f5", "Mm."), ("f6", "Er..."), ("f7", "Hm.")
+    ];
 
     public async Task HandleRegisterAsync(int apiPort, Dictionary<string, object> data)
     {
@@ -112,78 +116,7 @@ public partial class NpcBrokerService(
             await sessionsContext.Add(session);
         }
 
-        var items = new List<PrerenderItem>();
-        if (mode == "scripted")
-        {
-            foreach (var line in scripted.Lines)
-            {
-                items.Add(new PrerenderItem { Id = line.Id, Text = line.Line });
-            }
-
-            items.Add(new PrerenderItem { Id = DeflectionId, Text = scripted.Deflection });
-        }
-
-        foreach (var (fillerId, fillerText) in Fillers)
-        {
-            items.Add(new PrerenderItem { Id = fillerId, Text = fillerText });
-        }
-
-        var result = await brainClient.PrerenderAsync(new PrerenderRequest { VoiceId = voiceId, Items = items });
-        if (result is null)
-        {
-            logger.LogWarning($"NPC prerender returned null for npcId '{npcId}' — no clips stored.");
-            return;
-        }
-
-        foreach (var item in result.Items)
-        {
-            string filePath;
-            try
-            {
-                filePath = await audioStore.SaveAsync(sessionId, npcId, item.Id, Convert.FromBase64String(item.AudioBase64));
-            }
-            catch (Exception exception)
-            {
-                logger.LogError($"NPC clip save failed for clipId '{item.Id}' — clip skipped", exception);
-                continue;
-            }
-
-            var clip = new DomainNpcAudioClip
-            {
-                NpcId = npcId,
-                VoiceId = voiceId,
-                ClipId = item.Id,
-                FilePath = filePath,
-                DurationMs = item.DurationMs,
-                SessionId = sessionId
-            };
-
-            var existingClip = clipsContext.GetSingle(x => x.SessionId == sessionId && x.NpcId == npcId && x.ClipId == item.Id);
-            if (existingClip is not null)
-            {
-                clip.Id = existingClip.Id;
-                await clipsContext.Replace(clip);
-            }
-            else
-            {
-                await clipsContext.Add(clip);
-            }
-        }
-
-        foreach (var (fillerId, _) in Fillers)
-        {
-            var fillerClip = result.Items.Find(i => i.Id == fillerId);
-            if (fillerClip is null)
-            {
-                logger.LogWarning($"NPC prerender missing filler '{fillerId}' for voiceId '{voiceId}'");
-                continue;
-            }
-
-            foreach (var cmd in NpcAudioEnvelopeBuilder.BuildFiller(npcId, voiceId, fillerId, fillerClip.AudioBase64, fillerClip.DurationMs))
-            {
-                await commandSender.SendCommandAsync(apiPort, cmd);
-            }
-        }
+        await PrerenderClipsAsync(apiPort, npcId, sessionId, voiceId, mode, scripted);
     }
 
     public async Task HandleTurnAsync(int apiPort, Dictionary<string, object> data)

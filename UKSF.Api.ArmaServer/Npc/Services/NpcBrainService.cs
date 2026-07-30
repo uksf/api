@@ -122,14 +122,10 @@ public class NpcBrainService(IClacksClient clacksClient, INpcVoicesContext voice
         return new PrerenderResult { Items = items };
     }
 
-    // neutral → the base voice; otherwise {base}_{mood} if registered, else fall back to base.
+    // {base}_{mood} if registered, else the seed. neutral is a generated variant like any
+    // other mood, so every mood a player hears comes from one engine and one seed.
     private string ResolveVoiceId(string baseVoiceId, string mood)
     {
-        if (mood == MoodScripts.Neutral)
-        {
-            return baseVoiceId;
-        }
-
         var variant = $"{baseVoiceId}_{mood}";
         return voicesContext.GetSingle(x => x.VoiceId == variant) is not null ? variant : baseVoiceId;
     }
