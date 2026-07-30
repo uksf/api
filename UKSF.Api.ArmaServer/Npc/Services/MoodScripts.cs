@@ -10,7 +10,12 @@ namespace UKSF.Api.ArmaServer.Npc.Services;
 public static class MoodScripts
 {
     public const string Neutral = "neutral";
-    public const double EmoAlpha = 0.8;
+
+    /// A mood reference is the emotion engine's rendering of the base voice, and the runtime
+    /// engine then clones from it, so the two engines' differences compound. Strong emotion
+    /// transfer drags the timbre with it and the NPC audibly changes person when their mood
+    /// turns. Held low enough that the mood reads while the character stays the same man.
+    public const double EmoAlpha = 0.55;
 
     public record Entry(string EmoText, string Script);
 

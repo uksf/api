@@ -238,7 +238,7 @@ public partial class NpcBrokerService(
             Mode = session.Mode,
             Scripted = scripted ? new NpcScriptedDto { Lines = session.Scripted.Lines, Deflection = session.Scripted.Deflection } : null,
             VoiceId = session.VoiceId,
-            History = session.History,
+            History = NpcHistoryBudget.Trim(session.History),
             NewTurns = parsedTurns,
             TextOnly = !scripted // dynamic turns stream; the brain returns text + mood only
         };
