@@ -122,10 +122,7 @@ public partial class ClacksClient(IHttpClientFactory httpClientFactory, IVariabl
             }
 
             var v1 = await response.Content.ReadFromJsonAsync<V1ChatResponse>(NpcBrainJson.Options);
-            if (v1 is null)
-            {
-                return null;
-            }
+            if (v1 is null) return null;
 
             return new ClacksChatResult
             {
@@ -230,6 +227,7 @@ public partial class ClacksClient(IHttpClientFactory httpClientFactory, IVariabl
                 new
                 {
                     model = ClacksCandidates.EmoteModel,
+                    nodes = ClacksCandidates.EmoteNodes,
                     voiceId,
                     text,
                     emoText,

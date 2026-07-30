@@ -23,6 +23,10 @@ public static class ClacksCandidates
 
     public const string EmoteModel = "indextts2";
 
+    // Only the GPU boxes run indextts2. Unpinned, a local refusal (governor slot)
+    // walks the whole peer list and can land on a node that cannot serve it.
+    public static readonly string[] EmoteNodes = ["ultron", "iultron"];
+
     // Warm the voice engine while a session is live. The chat primary is a cloud model with no
     // load to pay for, and warming the local fallback would hold a GPU for a model that may never
     // be reached.
