@@ -99,7 +99,7 @@ public partial class ClacksClient(IHttpClientFactory httpClientFactory, IVariabl
         try
         {
             using var client = httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.Timeout = TimeSpan.FromSeconds(60); // a fallback may need a cold model load
             var response = await client.PostAsJsonAsync(
                 $"{baseUrl}/v1/chat/completions",
                 new
