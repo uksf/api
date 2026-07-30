@@ -90,8 +90,13 @@ public class NpcMoodGenWorker(INpcVoiceJobsContext jobs, INpcVoicesContext voice
             await voices.Delete(existing.Id);
         }
 
-        var filePath = await store.SaveAsync(voiceId, result.WavBytes);
-        var sha = Convert.ToHexString(SHA256.HashData(result.WavBytes)).ToLowerInvariant();
+        // The mood engine renders louder than the clone engine, so an unmatched variant
+        // makes the same character jump in volume the moment their mood changes.
+        var baseBytes = await store.ReadAsync(baseDoc.FilePath);
+        var wavBytes = baseBytes is null ? result.WavBytes : WavLoudness.MatchRms(result.WavBytes, WavLoudness.Rms(baseBytes));
+
+        var filePath = await store.SaveAsync(voiceId, wavBytes);
+        var sha = Convert.ToHexString(SHA256.HashData(wavBytes)).ToLowerInvariant();
         await voices.Add(
             new DomainNpcVoice
             {
@@ -105,7 +110,7 @@ public class NpcMoodGenWorker(INpcVoiceJobsContext jobs, INpcVoicesContext voice
             }
         );
 
-        var pushed = await clacks.PutVoiceAsync(voiceId, result.WavBytes);
+        var pushed = await clacks.PutVoiceAsync(voiceId, wavBytes);
         if (!pushed)
         {
             logger.LogWarning($"Generated voice '{voiceId}' stored but clacks push failed — lazy-syncs on first use");
