@@ -91,6 +91,7 @@ public class GameServersService(
                                       .Set(x => x.Environment, server.Environment)
                                       .Set(x => x.ServerOption, server.ServerOption)
                                       .Set(x => x.VerifySignatures, server.VerifySignatures)
+                                      .Set(x => x.AllowedFilePatching, server.AllowedFilePatching)
                                       .Set(x => x.Mods, server.Mods)
                                       .Set(x => x.ServerMods, server.ServerMods)
         );

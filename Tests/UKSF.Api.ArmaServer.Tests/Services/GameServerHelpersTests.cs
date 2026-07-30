@@ -174,7 +174,7 @@ public class GameServerHelpersTests
         result.Should().Contain("maxPlayers = 40;");
         result.Should().Contain("template = \"mission_name\";");
         result.Should().Contain("serverCommandPassword = \"cmdpass\";");
-        result.Should().Contain("verifySignatures = 2;");
+        result.Should().Contain("verifySignatures = 2;").And.Contain("allowedFilePatching = 1;");
     }
 
     [Fact]

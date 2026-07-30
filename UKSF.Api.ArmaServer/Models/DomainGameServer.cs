@@ -40,6 +40,10 @@ public class DomainGameServer : MongoObject
     /// unsigned dev-build PBOs (hemtt dev junctions) can connect without a signed release mirror.
     public int? VerifySignatures { get; set; }
 
+    /// Arma allowedFilePatching level. Null means 1 (server only). Dev servers set 2 so
+    /// filepatching clients (dev junction workflows) are not kicked.
+    public int? AllowedFilePatching { get; set; }
+
     public List<GameServerMod> ServerMods { get; set; } = [];
     public GameServerOption ServerOption { get; set; }
 
