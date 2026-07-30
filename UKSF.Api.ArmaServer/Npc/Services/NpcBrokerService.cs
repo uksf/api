@@ -34,12 +34,18 @@ public partial class NpcBrokerService(
     private const string DeflectionId = "__deflection__";
     private const int HistoryLimit = 40;
 
-    // Non-lexical only. A worded filler ("let me think") commits the NPC to a stance
-    // before the brain has one, and repeats badly; a noise reads as thinking and
-    // survives being heard many times per session.
+    // Non-lexical only. A worded filler ("let me think") commits the NPC to a stance before
+    // the brain has one, and repeats badly; a noise reads as thinking and survives being
+    // heard many times per session.
+    //
+    // Two classes, because a filler is a promise about the wait that follows it: a listener
+    // expects roughly a second after "uh" and four after "um" (Clark & Fox Tree 2002). The
+    // s-set covers a short wait, the l-set a long one, and the game picks by how long the
+    // reply has already taken.
     private static readonly (string Id, string Text)[] Fillers =
     [
-        ("f0", "Hmm."), ("f1", "Uhh..."), ("f2", "Umm..."), ("f3", "Hm, ah."), ("f4", "Ah..."), ("f5", "Mm."), ("f6", "Er..."), ("f7", "Hm.")
+        ("s0", "Hm."), ("s1", "Uh..."), ("s2", "Mm."), ("s3", "Er..."), ("s4", "Ah."), ("s5", "Hm, ah."), ("s6", "Mn."), ("s7", "Uh, hm."),
+        ("l0", "Ummmm..."), ("l1", "Hmmmmm..."), ("l2", "Errrrm..."), ("l3", "Mmmm, uhh..."), ("l4", "Hmm, errr...")
     ];
 
     public async Task HandleRegisterAsync(int apiPort, Dictionary<string, object> data)

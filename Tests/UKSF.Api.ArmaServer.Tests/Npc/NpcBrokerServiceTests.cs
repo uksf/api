@@ -236,10 +236,10 @@ public partial class NpcBrokerServiceTests
         // Each command should be a npc_filler envelope containing the filler id
         pushedCommands.Should().HaveCountGreaterThanOrEqualTo(4);
         pushedCommands.Should().Contain(c => c.Contains("\"npc_filler\""));
-        pushedCommands.Should().Contain(c => c.Contains("\"f0\""));
-        pushedCommands.Should().Contain(c => c.Contains("\"f1\""));
-        pushedCommands.Should().Contain(c => c.Contains("\"f2\""));
-        pushedCommands.Should().Contain(c => c.Contains("\"f3\""));
+        foreach (var fillerId in FillerIds)
+        {
+            pushedCommands.Should().Contain(c => c.Contains($"\"{fillerId}\""));
+        }
     }
 
     private static DomainNpcSession MakeDynamicSession(string npcId = "npc1", string sessionId = "session1", string voiceId = "bm_george") =>

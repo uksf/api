@@ -31,7 +31,7 @@ public partial class NpcBrokerServiceTests
 
     // Mirrors the broker's filler set; asserting against it keeps the tests honest when
     // the set grows without pinning them to a count.
-    private static readonly IReadOnlyList<string> FillerIds = ["f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7"];
+    private static readonly IReadOnlyList<string> FillerIds = ["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "l0", "l1", "l2", "l3", "l4"];
 
     public NpcBrokerServiceTests()
     {
@@ -55,33 +55,14 @@ public partial class NpcBrokerServiceTests
                     .ReturnsAsync(
                         new PrerenderResult
                         {
-                            Items =
-                            [
-                                new PrerenderResultItem
-                                {
-                                    Id = "f0",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f1",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f2",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                },
-                                new PrerenderResultItem
-                                {
-                                    Id = "f3",
-                                    AudioBase64 = "QQ==",
-                                    DurationMs = 100
-                                }
-                            ]
+                            Items = FillerIds.Select(id => new PrerenderResultItem
+                                                 {
+                                                     Id = id,
+                                                     AudioBase64 = "QQ==",
+                                                     DurationMs = 100
+                                                 }
+                                             )
+                                             .ToList()
                         }
                     );
 
