@@ -75,6 +75,7 @@ public static class ServiceExtensions
                            .AddTransient<ICommandRequestService, CommandRequestService>()
                            .AddTransient<ILoaService, LoaService>()
                            .AddTransient<ILoginService, LoginService>()
+                           .AddTransient<IOcapEmbedTokenService, OcapEmbedTokenService>()
                            .AddTransient<IPermissionsService, PermissionsService>()
                            .AddTransient<ICommentThreadService, CommentThreadService>()
                            .AddTransient<IBoardService, BoardService>()
