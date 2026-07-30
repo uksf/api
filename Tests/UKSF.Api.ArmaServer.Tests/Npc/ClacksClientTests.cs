@@ -102,7 +102,7 @@ public class ClacksClientTests
         var body = JsonDocument.Parse(await sent[0].Content.ReadAsStringAsync());
         body.RootElement.GetProperty("model").GetString().Should().Be("pockettts");
         var nodes = body.RootElement.GetProperty("nodes").EnumerateArray().Select(e => e.GetString()).ToArray();
-        nodes.Should().Equal("server", "ultron", "iultron");
+        nodes.Should().Equal("ultron", "iultron", "server");
         body.RootElement.GetProperty("text").GetString().Should().Be("Get back.");
         body.RootElement.GetProperty("voiceId").GetString().Should().Be("bm_george");
     }

@@ -2,7 +2,8 @@ namespace UKSF.Api.ArmaServer.Npc.Services;
 
 // clacks now serves MODELS, not roles: the caller owns the model + fallback list. The npc usages
 // keep their intent here — chat runs on luna, which needs no desktop up, and falls back to the
-// local 9B; voice prefers the always-on pockettts on the dedi itself.
+// local 9B; voice runs the same clone engine on every node, so a mission maker hears in testing
+// what players hear live.
 public static class ClacksCandidates
 {
     public const string NpcChatModel = "luna";
@@ -14,7 +15,11 @@ public static class ClacksCandidates
     public static readonly string[] NpcChatFallbacks = ["qwen3.5-9b", "qwen3.5-9b-npc", "haiku"];
 
     public const string VoiceModel = "pockettts";
-    public static readonly string[] VoiceNodes = ["server", "ultron", "iultron"];
+
+    // Desktop, then laptop, then dedi. The engine is CPU-bound and the dedi's pinned BelowNormal
+    // cores run it about 2.5x slower than the desktop (measured 1.54x realtime against 3.9x), so
+    // the dedi is the backup for when no personal machine is up.
+    public static readonly string[] VoiceNodes = ["ultron", "iultron", "server"];
 
     public const string EmoteModel = "indextts2";
 
