@@ -39,6 +39,10 @@ public class RespondRequest
     /// caller streams the line itself. Used by the dynamic streaming turn.
     public bool TextOnly { get; set; }
 
+    /// Set when the address check could not decide whether this NPC was spoken to.
+    /// The brain may then decline the turn by answering with [none] alone.
+    public bool MayNotBeAddressed { get; set; }
+
     public string Provider { get; set; }
 }
 

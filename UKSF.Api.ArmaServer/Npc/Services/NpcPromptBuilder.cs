@@ -58,6 +58,16 @@ public static partial class NpcPromptBuilder
                 "Right: [mood:angry] Get back. You shouldn't be here.\n" +
                 "Right: [mood:afraid] Please, I don't want any trouble."
             );
+
+            if (req.MayNotBeAddressed)
+            {
+                lines.Add(
+                    "It is not clear that the people near you are talking to YOU and not to someone else nearby. " +
+                    "If what was said is plainly meant for another person — a different name, a different role, a topic " +
+                    "that belongs to them — answer with exactly [none] and nothing else. Only answer normally if a " +
+                    "reasonable person in your place would take it as addressed to them."
+                );
+            }
         }
 
         return string.Join("\n\n", lines);

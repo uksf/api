@@ -168,6 +168,21 @@ public partial class NpcBrokerService(
 
         if (parsedTurns.Count == 0) return;
 
+        // Deconflict before any brain call: if the utterance clearly names another NPC in
+        // this space, this one stays silent. A player talking to two NPCs side by side
+        // must get one reply, not two.
+        var joinedText = string.Join(" ", parsedTurns.Select(t => t.Text));
+        var allNames = sessionsContext.Get(x => x.SessionId == sessionId)
+                                      .Select(s => s.Persona?.Name ?? string.Empty)
+                                      .Where(n => !string.IsNullOrEmpty(n))
+                                      .ToList();
+        var addressed = NpcNameMatcher.Classify(joinedText, session.Persona?.Name ?? string.Empty, allNames);
+        if (addressed == NpcNameMatcher.Match.Other)
+        {
+            logger.LogInfo($"npc_turn: utterance names another NPC, '{npcId}' stays silent");
+            return;
+        }
+
         var scripted = session.Mode == "scripted";
         var request = new RespondRequest
         {
@@ -179,13 +194,22 @@ public partial class NpcBrokerService(
             VoiceId = session.VoiceId,
             History = NpcHistoryBudget.Trim(session.History),
             NewTurns = parsedTurns,
-            TextOnly = !scripted // dynamic turns stream; the brain returns text + mood only
+            TextOnly = !scripted, // dynamic turns stream; the brain returns text + mood only
+            MayNotBeAddressed = addressed == NpcNameMatcher.Match.Borderline
         };
 
         var result = await brainClient.RespondAsync(request);
         if (result is null)
         {
             logger.LogWarning($"npc_turn: brain returned null for npcId '{npcId}' — NPC stays silent this turn");
+            return;
+        }
+
+        // The brain declined the turn: the address check was borderline and it judged the
+        // words meant for someone else. No audio, no history entry — as if never asked.
+        if (string.Equals(result.Text?.Trim(), "[none]", StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogInfo($"npc_turn: brain declined turn for '{npcId}' — not addressed");
             return;
         }
 
