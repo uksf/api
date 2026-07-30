@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -48,14 +49,23 @@ public partial class ClacksClient
 
             await using var stream = await response.Content.ReadAsStreamAsync();
             using var reader = new StreamReader(stream);
+            var clock = Stopwatch.StartNew();
+            long firstFrameMs = -1;
+            var frames = 0;
             string line;
             while ((line = await reader.ReadLineAsync()) is not null)
             {
                 if (line.StartsWith("data: ", StringComparison.Ordinal))
                 {
+                    if (firstFrameMs < 0) firstFrameMs = clock.ElapsedMilliseconds;
+                    frames++;
                     await onFrame(line["data: ".Length..]);
                 }
             }
+
+            // Frame spread is the difference between streaming and batching: if first and
+            // last land together the audio arrives as one burst and plays late.
+            logger.LogInfo($"npc stream: {frames} frames, first at {firstFrameMs}ms, last at {clock.ElapsedMilliseconds}ms");
         }
         catch (Exception exception)
         {

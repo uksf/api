@@ -53,8 +53,8 @@ public class GameServerProcessManager(
     // stop watchdog (Ending/Saving/Stopping/StopBackstop) bounds a graceful stop's lifecycle.
     // Do not merge them (see commit 364f5cc2, hung-engine orphan incident).
     private static readonly TimeSpan OrphanKillCeiling = TimeSpan.FromMinutes(5);
-    private static readonly TimeSpan EndingCeiling = TimeSpan.FromSeconds(15);   // 10s SQF drain cap + 5s buffer so shutdown_saving lands before force-kill
-    private static readonly TimeSpan SavingCeiling = TimeSpan.FromSeconds(120);  // == SQF object-save cap
+    private static readonly TimeSpan EndingCeiling = TimeSpan.FromSeconds(15); // 10s SQF drain cap + 5s buffer so shutdown_saving lands before force-kill
+    private static readonly TimeSpan SavingCeiling = TimeSpan.FromSeconds(120); // == SQF object-save cap
     private static readonly TimeSpan StoppingCeiling = TimeSpan.FromSeconds(10); // 5s SQF pre-#shutdown delay + process teardown
     private static readonly TimeSpan StopBackstopCeiling = TimeSpan.FromSeconds(180); // old modpack (30s drain): full ~155s shutdown + margin
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _serverLocks = new();
@@ -105,7 +105,10 @@ public class GameServerProcessManager(
         await serverLock.WaitAsync();
         try
         {
-            await File.WriteAllTextAsync(gameServerHelpers.GetGameServerConfigPath(server), gameServerHelpers.FormatGameServerConfig(server, playerCount, missionName));
+            await File.WriteAllTextAsync(
+                gameServerHelpers.GetGameServerConfigPath(server),
+                gameServerHelpers.FormatGameServerConfig(server, playerCount, missionName)
+            );
 
             server.Status = new GameServerStatus { Launching = true };
             server.HeadlessClientProcessIds.Clear(); // defensive: don't accumulate onto a stale list from a prior run
@@ -294,7 +297,7 @@ public class GameServerProcessManager(
             // Game-side handleCommand expects an SQF array envelope; the extension
             // forwards the body to the game callback verbatim.
             var content = new StringContent("[\"shutdown\"]", System.Text.Encoding.UTF8, "text/plain");
-            await client.PostAsync($"http://localhost:{port}/command", content);
+            await client.PostAsync($"http://127.0.0.1:{port}/command", content);
         }
         catch (HttpRequestException ex)
         {
@@ -417,7 +420,8 @@ public class GameServerProcessManager(
                 logger.LogWarning($"server_status 'players' missing or not a list. Keys: {string.Join(", ", data.Keys)}");
             }
 
-            if (status.StartedAt is null && data.TryGetValue("uptime", out var uptimeRaw) &&
+            if (status.StartedAt is null &&
+                data.TryGetValue("uptime", out var uptimeRaw) &&
                 float.TryParse(uptimeRaw?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var startUptime))
             {
                 status.StartedAt = DateTime.UtcNow.AddSeconds(-startUptime);
@@ -457,11 +461,9 @@ public class GameServerProcessManager(
 
         if (data.TryGetValue("entityCount", out var entityCount) && int.TryParse(entityCount?.ToString(), out var entityCountValue))
             status.EntityCount = entityCountValue;
-        if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount?.ToString(), out var aiCountValue))
-            status.AiCount = aiCountValue;
+        if (data.TryGetValue("aiCount", out var aiCount) && int.TryParse(aiCount?.ToString(), out var aiCountValue)) status.AiCount = aiCountValue;
         if (data.TryGetValue("headlessClientCount", out var headlessClientCount) &&
-            int.TryParse(headlessClientCount?.ToString(), out var headlessClientCountValue))
-            status.HeadlessClientCount = headlessClientCountValue;
+            int.TryParse(headlessClientCount?.ToString(), out var headlessClientCountValue)) status.HeadlessClientCount = headlessClientCountValue;
     }
 
     private void ApplyPolledStatus(DomainGameServer gameServer, string sqfBody)
@@ -512,7 +514,7 @@ public class GameServerProcessManager(
         client.Timeout = TimeSpan.FromSeconds(5);
         try
         {
-            var response = await client.GetAsync($"http://localhost:{gameServer.ApiPort}/server");
+            var response = await client.GetAsync($"http://127.0.0.1:{gameServer.ApiPort}/server");
             if (!response.IsSuccessStatusCode)
             {
                 var statusCode = (int)response.StatusCode;
@@ -849,7 +851,7 @@ public class GameServerProcessManager(
             {
                 { StopPhase: not StopPhase.None } => TimeSpan.FromSeconds(1),
                 { Launching: true }               => TimeSpan.FromSeconds(2),
-                _                                  => TimeSpan.FromSeconds(30)
+                _                                 => TimeSpan.FromSeconds(30)
             };
 
             if (interval < minInterval)
