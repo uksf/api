@@ -174,37 +174,34 @@ public class GameServerHelpersTests
         result.Should().Contain("maxPlayers = 40;");
         result.Should().Contain("template = \"mission_name\";");
         result.Should().Contain("serverCommandPassword = \"cmdpass\";");
+        result.Should().Contain("verifySignatures = 2;");
+    }
+
+    [Fact]
+    public void FormatGameServerConfig_Uses_Server_VerifySignatures_Override()
+    {
+        SetupVariable("SERVER_COMMAND_PASSWORD", "cmdpass");
+        var gameServer = CreateGameServer();
+        gameServer.VerifySignatures = 0;
+        _sut.FormatGameServerConfig(gameServer, 40, "mission_name").Should().Contain("verifySignatures = 0;");
     }
 
     [Fact]
     public void FormatGameServerConfig_Strips_Pbo_From_MissionSelection()
     {
         SetupVariable("SERVER_COMMAND_PASSWORD", "cmdpass");
-        var gameServer = CreateGameServer();
-
-        var result = _sut.FormatGameServerConfig(gameServer, 40, "my_mission.pbo");
+        var result = _sut.FormatGameServerConfig(CreateGameServer(), 40, "my_mission.pbo");
 
         result.Should().Contain("template = \"my_mission\";");
         result.Should().NotContain(".pbo");
     }
 
     [Fact]
-    public void StripMilliseconds_Removes_Milliseconds()
+    public void StripMilliseconds_Removes_Only_Milliseconds()
     {
-        var time = new TimeSpan(0, 2, 30, 45, 123);
-
-        var result = _sut.StripMilliseconds(time);
+        var result = _sut.StripMilliseconds(new TimeSpan(0, 5, 42, 17, 999));
 
         result.Milliseconds.Should().Be(0);
-    }
-
-    [Fact]
-    public void StripMilliseconds_Preserves_Hours_Minutes_Seconds()
-    {
-        var time = new TimeSpan(0, 5, 42, 17, 999);
-
-        var result = _sut.StripMilliseconds(time);
-
         result.Hours.Should().Be(5);
         result.Minutes.Should().Be(42);
         result.Seconds.Should().Be(17);

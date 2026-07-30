@@ -35,6 +35,11 @@ public class DomainGameServer : MongoObject
     public int Port { get; set; }
     public int? ProcessId { get; set; }
     public string ProfileName { get; set; }
+
+    /// Arma verifySignatures level. Null means 2 (full verification). Dev servers set 0 so
+    /// unsigned dev-build PBOs (hemtt dev junctions) can connect without a signed release mirror.
+    public int? VerifySignatures { get; set; }
+
     public List<GameServerMod> ServerMods { get; set; } = [];
     public GameServerOption ServerOption { get; set; }
 

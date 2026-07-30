@@ -52,7 +52,7 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
         "motdInterval = 999999;",
         "maxPlayers = {3};",
         "kickDuplicate = 1;",
-        "verifySignatures = 2;",
+        "verifySignatures = {6};",
         "allowedFilePatching = 1;",
         "unsafeCVL = 1;",
         "disableVoN = 1;",
@@ -147,7 +147,8 @@ public class GameServerHelpers(IVariablesService variablesService, IProcessUtili
             gameServer.AdminPassword,
             playerCount,
             missionSelection.Replace(".pbo", ""),
-            variablesService.GetVariable("SERVER_COMMAND_PASSWORD").AsString()
+            variablesService.GetVariable("SERVER_COMMAND_PASSWORD").AsString(),
+            gameServer.VerifySignatures ?? 2
         );
     }
 
