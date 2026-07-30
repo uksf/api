@@ -39,7 +39,11 @@ public interface IGameServerHelpers
 public class GameServerHelpers(IVariablesService variablesService, IProcessUtilities processUtilities, IUksfLogger logger, IConfiguration configuration)
     : IGameServerHelpers
 {
-    private string ApiUrl => configuration["Kestrel:Endpoints:Http:Url"];
+    // Force 127.0.0.1 — the game extension posts events here, and on Windows
+    // `localhost` can resolve to ::1 in a way that hangs the arma process's HTTP
+    // client even when curl from the shell reaches both stacks fine.
+    private string ApiUrl =>
+        (configuration["Kestrel:Endpoints:Http:Url"] ?? "http://127.0.0.1:5500").Replace("localhost", "127.0.0.1", StringComparison.OrdinalIgnoreCase);
 
     private static readonly string[] BaseConfig =
     [
